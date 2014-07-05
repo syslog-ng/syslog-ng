@@ -494,24 +494,15 @@ vp_stack_height(vp_stack_t *stack)
   return stack->count;
 }
 
-static vp_walk_stack_data_t *
+static void
 vp_walker_stack_unwind_until (vp_stack_t *stack, vp_walk_state_t *state,
                               const gchar *name)
 {
-  vp_walk_stack_data_t *found;
   vp_walk_stack_data_t *t;
 
   if (!stack)
-    return NULL;
+    return;
 
-  found = vp_stack_peek(stack);
-  if (found == NULL)
-    return NULL;
-
-  if (strncmp(name, found->prefix, found->prefix_len) == 0)
-    return found;
-
-  found = NULL;
   while ((t = vp_stack_pop(stack)) != NULL)
     {
       vp_walk_stack_data_t *p;
@@ -519,8 +510,7 @@ vp_walker_stack_unwind_until (vp_stack_t *stack, vp_walk_state_t *state,
       if (strncmp(name, t->prefix, t->prefix_len) == 0)
         {
           /* This one matched, put it back, PUT IT BACK! */
-          found = t;
-          vp_stack_push(stack, found);
+          vp_stack_push(stack, t);
           break;
         }
 
@@ -538,8 +528,6 @@ vp_walker_stack_unwind_until (vp_stack_t *stack, vp_walk_state_t *state,
       g_free(t->prefix);
       g_free(t);
     }
-
-  return found;
 }
 
 static void
@@ -691,7 +679,9 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
   gchar *key;
   gboolean result;
 
-  data = vp_walker_stack_unwind_until (state->stack, state, name);
+  vp_walker_stack_unwind_until (state->stack, state, name);
+  key = vp_walker_name_split (state->stack, state, name);
+  data = vp_stack_peek (state->stack);
 
   key = vp_walker_name_split (state->stack, state, name);
 
