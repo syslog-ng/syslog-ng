@@ -502,7 +502,6 @@ afsmtp_dd_free(LogPipe *d)
   log_template_unref(self->body_tmpl);
   g_free(self->body);
   g_free(self->subject);
-  g_string_free(self->str, TRUE);
 
   l = self->rcpt_tos;
   while (l)
