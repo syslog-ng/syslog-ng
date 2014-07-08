@@ -397,8 +397,9 @@ afsmtp_worker_insert(LogThrDestDriver *s)
   log_template_append_format(self->body_tmpl, msg, NULL, LTZ_SEND,
                              self->seq_num, NULL, self->str);
   smtp_set_message_str(message, self->str->str);
+  success = smtp_start_session(session);
 
-  if (!smtp_start_session(session))
+  if (!success)
     {
       gchar error[1024];
       smtp_strerror(smtp_errno(), error, sizeof (error) - 1);
