@@ -6,6 +6,9 @@ SUBDIRS += agent-config eventlog windows-resource
 # mongodb
 SUBDIRS += afmongodb
 
+# smtp
+SUBDIRS += afsmtp
+
 # pe modules
 SUBDIRS += license confighash diskq logstore rltp-proto snmp
 

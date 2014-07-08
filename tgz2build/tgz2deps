@@ -10,3 +10,5 @@ libxml2
 libxml2-dev
 libmongo-client-dev
 libmongo-client
+libesmtp6
+libesmtp6-dev

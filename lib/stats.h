@@ -71,6 +71,7 @@ enum
   SCS_FACILITY       = 25,
   SCS_SENDER         = 26,
   SCS_SNMP           = 27,
+  SCS_SMTP           = 28,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };
