@@ -500,6 +500,18 @@ afsmtp_dd_init(LogPipe *s)
               evt_tag_int("port", self->port),
               NULL);
 
+  if (!self->subject)
+    {
+      msg_error("Error subject is required option", NULL);
+      return FALSE;
+    }
+
+  if (!self->body)
+    {
+      msg_error("Error Body is required option", NULL);
+      return FALSE;
+    }
+
   g_list_foreach(self->headers, (GFunc)afsmtp_dd_init_header, cfg);
   if (!self->subject_tmpl)
     {
