@@ -395,6 +395,7 @@ StatsOptions *last_stats_options;
 %type   <ptr> parser_stmt
 %type   <ptr> rewrite_stmt
 %type   <ptr> log_stmt
+%type   <ptr> plugin_stmt
 
 /* START_DECLS */
 
@@ -465,6 +466,7 @@ stmt
 	| template_stmt
 	| options_stmt
 	| block_stmt
+	| plugin_stmt
 	;
 
 expr_stmt
@@ -534,6 +536,24 @@ log_stmt
           }
 
 	;
+
+
+plugin_stmt
+        : LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_ROOT;
+            gpointer result;
+
+            p = plugin_find(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            result = plugin_parse_config(p, configuration, &@1, NULL);
+            free($1);
+            if (!result)
+              YYERROR;
+            $$ = NULL;
+          }
 
 /* START_RULES */
 
