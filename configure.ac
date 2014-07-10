@@ -987,6 +987,17 @@ dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
 
 if test "x$with_librabbitmq_client" = "xinternal"; then
+    AC_CHECK_PROG(HAVE_PYTHON, python, 1, 0)
+    PYTHON_VERSION=`python -V 2>&1 | cut -d ' ' -f 2`
+    PYTHON_MAJOR=`echo $PYTHON_VERSION | cut -d '.' -f 1`
+    PYTHON_MINOR=`echo $PYTHON_VERSION | cut -d '.' -f 2`
+    if test ${HAVE_PYTHON} = 0 || test $PYTHON_MAJOR -eq 2 && test $PYTHON_MINOR -lt 5; then
+        AC_MSG_WARN([Was about to execute rabbitmq configure script, but that requires Python >= 2.5, which you don't seem to have, disabling rabbitmq])
+        with_librabbitmq_client=no
+    fi
+fi
+
+if test "x$with_librabbitmq_client" = "xinternal"; then
     if test -f "$srcdir/modules/afamqp/rabbitmq-c/librabbitmq/amqp.h"; then
         AC_CONFIG_SUBDIRS([modules/afamqp/rabbitmq-c])
         # these can only be used in modules/amqp as it assumes
