@@ -42,26 +42,21 @@ log_source_wakeup(LogSource *self)
     self->wakeup(self);
 }
 
-/**
- * log_source_msg_ack:
- *
- * This is running in the same thread as the _destination_, thus care must
- * be taken when manipulating the LogSource data structure.
- **/
-static void
-log_source_msg_ack(LogMessage *msg, gpointer user_data)
+static inline void
+_flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
 {
-  LogSource *self = (LogSource *) user_data;
   guint32 old_window_size;
-  guint32 cur_ack_count, last_ack_count;
-  
-  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, 1);
-  if (old_window_size == 0)
-    {
-      log_source_wakeup(self);
-    }
-  log_msg_unref(msg);
 
+  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, window_size_increment);
+
+  if (old_window_size == 0)
+    log_source_wakeup(self);
+}
+
+static void
+_flow_control_rate_adjust(LogSource *self)
+{
+  guint32 cur_ack_count, last_ack_count;
   /* NOTE: this is racy. msg_ack may be executing in different writer
    * threads. I don't want to lock, all we need is an approximate value of
    * the ACK rate of the last couple of seconds.  */
@@ -119,6 +114,27 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
         }
     }
 #endif
+}
+
+void
+log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment)
+{
+  _flow_control_window_size_adjust(self, window_size_increment);
+  _flow_control_rate_adjust(self);
+}
+
+/**
+ * log_source_msg_ack:
+ *
+ * This is running in the same thread as the _destination_, thus care must
+ * be taken when manipulating the LogSource data structure.
+ **/
+static void
+log_source_msg_ack(LogMessage *msg, gpointer user_data)
+{
+  LogSource *self = (LogSource *) user_data;
+  log_source_flow_control_adjust(self, 1);
+  log_msg_unref(msg);
   log_pipe_unref(&self->super);
 }
 
