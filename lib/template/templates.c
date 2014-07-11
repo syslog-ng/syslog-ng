@@ -815,6 +815,28 @@ log_template_add_value_elem(LogTemplateCompiler *self, gchar *value_name, gsize 
   self->result = g_list_prepend(self->result, e);
 }
 
+static gboolean
+log_template_prepare_function_call(LogTemplateCompiler *self, Plugin *p, LogTemplateElem *e, gint argc, gchar *argv[], GError **error)
+{
+  gchar *argv_copy[argc + 1];
+
+  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  e->func.ops = plugin_construct(p, self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+  e->func.state = g_malloc0(e->func.ops->size_of_state);
+
+  /* prepare may modify the argv array: remove and rearrange elements */
+  memcpy(argv_copy, argv, (argc + 1) * sizeof(argv[0]));
+  if (!e->func.ops->prepare(e->func.ops, e->func.state, self->template, argc, argv_copy, error))
+    {
+      e->func.ops->free_state(e->func.state);
+      g_free(e->func.state);
+      return FALSE;
+    }
+  g_strfreev(argv);
+  self->result = g_list_prepend(self->result, e);
+  return TRUE;
+}
+
 
 /* NOTE: this steals argv if successful */
 static gboolean
@@ -822,7 +844,6 @@ log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], 
 {
   LogTemplateElem *e;
   Plugin *p;
-  gchar *argv_copy[argc + 1];
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
@@ -841,23 +862,8 @@ log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], 
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function %s", argv[0]);
       goto error;
     }
-  else
-    {
-      e->func.ops = plugin_construct(p, self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
-    }
-
-  e->func.state = g_malloc0(e->func.ops->size_of_state);
-
-  /* prepare may modify the argv array: remove and rearrange elements */
-  memcpy(argv_copy, argv, (argc + 1) * sizeof(argv[0]));
-  if (!e->func.ops->prepare(e->func.ops, e->func.state, self->template, argc, argv_copy, error))
-    {
-      e->func.ops->free_state(e->func.state);
-      g_free(e->func.state);
-      goto error;
-    }
-  g_strfreev(argv);
-  self->result = g_list_prepend(self->result, e);
+  if (!log_template_prepare_function_call(self, p, e, argc, argv, error))
+    goto error;
   return TRUE;
 
  error:
