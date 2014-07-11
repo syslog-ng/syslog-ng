@@ -4,7 +4,7 @@ export top_srcdir
 
 module_LTLIBRARIES := libaffile.la
 
-libaffile_la_SOURCES = affile-grammar.y affile-parser.c affile-parser.h affile-plugin.c
+libaffile_la_SOURCES = affile-grammar.y affile-parser.c affile-parser.h affile-plugin.c uniq_queue.c uniq_queue.h
 
 if IS_WINDOWS
 libaffile_la_SOURCES += \
