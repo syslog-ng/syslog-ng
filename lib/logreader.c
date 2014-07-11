@@ -456,6 +456,9 @@ log_reader_free(LogPipe *s)
       log_proto_server_free(self->proto);
       self->proto = NULL;
     }
+  if (self->poll_events)
+    poll_events_free(self->poll_events);
+
   log_pipe_unref(self->control);
   g_sockaddr_unref(self->peer_addr);
   g_static_mutex_free(&self->pending_proto_lock);
