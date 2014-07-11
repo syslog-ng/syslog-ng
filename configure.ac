@@ -231,7 +231,7 @@ AC_ARG_ENABLE(man-pages,
 
 AC_ARG_ENABLE(kafka,
               [ --disable-kafka           Disable Kafka support (default: auto)]
-              ,,enable_redis="auto")
+              ,,enable_kafka="auto")
 
 AC_ARG_WITH(librdkafka,
              AC_HELP_STRING([--with-librdkafka=DIR],
