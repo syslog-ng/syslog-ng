@@ -42,7 +42,7 @@ enum
   /* direction bits, used to distinguish between source/destination drivers */
   SCS_SOURCE         = 0x0100,
   SCS_DESTINATION    = 0x0200,
-  
+
   /* drivers, this should be registered dynamically */
   SCS_FILE           = 1,
   SCS_PIPE           = 2,
@@ -76,6 +76,7 @@ enum
   SCS_STOMP          = 30,
   SCS_REDIS          = 31,
   SCS_SNMP           = 32,
+  SCS_KAFKA          = 33,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };

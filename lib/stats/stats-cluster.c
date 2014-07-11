@@ -92,6 +92,7 @@ _get_module_name(gint source)
     "stomp",
     "redis",
     "snmp",
+    "kafka",
   };
   return module_names[source & SCS_SOURCE_MASK];
 }
@@ -119,7 +120,7 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
     }
   else
     {
-      g_snprintf(buf, buf_len, "%s%s", 
+      g_snprintf(buf, buf_len, "%s%s",
                  _get_component_prefix(self->component),
                  _get_module_name(self->component));
       return buf;
@@ -164,7 +165,7 @@ StatsCluster *
 stats_cluster_new(gint component, const gchar *id, const gchar *instance)
 {
   StatsCluster *self = g_new0(StatsCluster, 1);
-      
+
   self->component = component;
   self->id = g_strdup(id ? : "");
   self->instance = g_strdup(instance ? : "");
@@ -174,7 +175,7 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance)
 
 void
 stats_cluster_free(StatsCluster *self)
-{ 
+{
   g_free(self->id);
   g_free(self->instance);
   g_free(self);

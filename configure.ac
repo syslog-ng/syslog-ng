@@ -229,6 +229,13 @@ AC_ARG_ENABLE(man-pages,
               [  --disable-man-pages     Disable building the man pages (default: on)]
               ,,enable_man_pages="yes")
 
+AC_ARG_ENABLE(kafka,
+              [ --disable-kafka           Disable Kafka support (default: auto)]
+              ,,enable_redis="auto")
+
+AC_ARG_WITH(librdkafka,
+             AC_HELP_STRING([--with-librdkafka=DIR],
+                            [use librdkafka library from (prefix) directory DIR]),,)
 patheval()
 {
         OLD=$1
@@ -983,6 +990,40 @@ if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
 fi
 
 dnl ***************************************************************************
+dnl librdkafka headers/libraries
+dnl ***************************************************************************
+if test "x$enable_kafka" != "xno" && test "x$with_kafka" != "xno"; then
+       rdkafka="yes"
+       if test "x$with_librdkafka" != "xyes"; then
+               CFLAGS_SAVE="$CFLAGS"
+               LDFLAGS_SAVE="$LDFLAGS"
+               CFLAGS="$CFLAGS -I$with_librdkafka/include"
+               LDFLAGS="$LDFLAGS -L$with_librdkafka/lib"
+               AC_CHECK_HEADER(librdkafka/rdkafka.h, [RDKAFKA_CFLAGS="-I$with_librdkafka/include"
+                                                      RDKAFKA_LIBS="-L$with_librdkafka/lib -lrdkafka"], [rdkafka=no])
+               CFLAGS="$CFLAGS_SAVE"
+               LDFLAGS="$LDFLAGS_SAVE"
+       else
+               CFLAGS_SAVE="$CFLAGS"
+               LDFLAGS_SAVE="$LDFLAGS"
+               CFLAGS="$CFLAGS -I$with_librdkafka/include"
+               LDFLAGS="$LDFLAGS -L$with_librdkafka/lib"
+               AC_CHECK_HEADER(librdkafka/rdkafka.h, [RDKAFKA_CFLAGS="-I$with_librdkafka/include"
+                                                      RDKAFKA_LIBS="-L$with_librdkafka/lib -lrdkafka"], [rdkafka=no])
+               CFLAGS="$CFLAGS_SAVE"
+               LDFLAGS="$LDFLAGS_SAVE"
+       fi
+
+       if test "x$enable_kafka" = "xyes" && test "x$rdkafka" = "xno"; then
+               AC_MSG_ERROR(librdkafka not found)
+       fi
+
+       enable_kafka=$rdkafka
+       echo "libs: $RDKAFKA_LIBS"
+fi
+
+
+dnl ***************************************************************************
 dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
 
@@ -1278,6 +1319,7 @@ AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 AM_CONDITIONAL(ENABLE_MAN_PAGES, [test "x$enable_man_pages" = "xyes"])
+AM_CONDITIONAL(ENABLE_KAFKA, [test "x$enable_kafka" = "xyes"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1377,3 +1419,4 @@ echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
+echo "  Kafka support (module)      : ${enable_kafka:=no}"
