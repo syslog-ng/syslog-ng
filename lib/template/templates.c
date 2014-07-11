@@ -837,13 +837,35 @@ log_template_prepare_function_call(LogTemplateCompiler *self, Plugin *p, LogTemp
   return TRUE;
 }
 
+static gboolean
+log_template_lookup_and_setup_function_call(LogTemplateCompiler *self, LogTemplateElem *e, gint argc, gchar *argv[], GError **error)
+{
+  Plugin *p;
+
+  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+  p = plugin_find(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+
+  if (!p)
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function \"%s\"", argv[0]);
+      goto error;
+    }
+
+  if (!log_template_prepare_function_call(self, p, e, argc, argv, error))
+    goto error;
+
+  return TRUE;
+ error:
+  return FALSE;
+}
+
 
 /* NOTE: this steals argv if successful */
 static gboolean
 log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], GError **error)
 {
   LogTemplateElem *e;
-  Plugin *p;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
@@ -856,13 +878,7 @@ log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], 
   e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
   e->msg_ref = self->msg_ref;
 
-  p = plugin_find(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
-  if (!p)
-    {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function %s", argv[0]);
-      goto error;
-    }
-  if (!log_template_prepare_function_call(self, p, e, argc, argv, error))
+  if (!log_template_lookup_and_setup_function_call(self, e, argc, argv, error))
     goto error;
   return TRUE;
 

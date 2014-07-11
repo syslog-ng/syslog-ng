@@ -423,7 +423,7 @@ test_template_function_bad3(void)
 static void
 test_unknown_function(void)
 {
-  assert_failed_template_compile("$(unknown function)", "Unknown template function unknown");
+  assert_failed_template_compile("$(unknown function)", "Unknown template function \"unknown\"");
   assert_compiled_template(text = "error in template: $(unknown function)", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
