@@ -355,8 +355,16 @@ afsmtp_worker_insert(LogThrDestDriver *s)
   msg = log_queue_pop_head(s->queue, &path_options);
   if (!msg)
     return TRUE;
-
   msg_set_context(msg);
+
+  if (msg->flags & LF_MARK)
+    {
+      msg_debug("Mark messages are dropped by SMTP destination", NULL);
+      log_msg_drop(msg, &path_options);
+      msg_set_context(NULL);
+      return TRUE;
+    }
+
 
   session = smtp_create_session();
   message = smtp_add_message(session);
