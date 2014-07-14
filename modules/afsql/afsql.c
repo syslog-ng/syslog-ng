@@ -832,7 +832,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
   if (success)
     {
-      log_msg_ack(msg, &path_options);
+      log_msg_ack(msg, &path_options, TRUE);
       log_msg_unref(msg);
       step_sequence_number(&self->seq_num);
       self->failed_message_counter = 0;

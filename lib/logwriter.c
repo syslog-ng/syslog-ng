@@ -1058,7 +1058,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         {
           if (lm->flags & LF_LOCAL)
             step_sequence_number(&self->seq_num);
-          log_msg_ack(lm, &path_options);
+          log_msg_ack(lm, &path_options, TRUE);
           log_msg_unref(lm);
         }
       else

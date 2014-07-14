@@ -29,6 +29,14 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+typedef struct _BufferedServerBookmarkData
+{
+  PersistEntryHandle persist_handle;
+  gint32 pending_buffer_pos;
+  gint64 pending_raw_stream_pos;
+  gint32 pending_raw_buffer_size;
+} BufferedServerBookmarkData;
+
 LogProtoBufferedServerState *
 log_proto_buffered_server_get_state(LogProtoBufferedServer *self)
 {
@@ -703,12 +711,67 @@ _convert_io_status_to_log_proto_status(GIOStatus io_status)
   g_assert_not_reached();
 }
 
+
+static void
+_buffered_server_update_pos(LogProtoServer *s)
+{
+  LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+
+  if (state->pending_buffer_pos == state->pending_buffer_end)
+    {
+      state->pending_buffer_end = 0;
+      state->pending_buffer_pos = 0;
+      if (self->pos_tracking)
+        {
+          state->pending_raw_stream_pos += state->pending_raw_buffer_size;
+          state->pending_raw_buffer_size = 0;
+        }
+    }
+
+  log_proto_buffered_server_put_state(self);
+}
+
+static void
+_buffered_server_bookmark_save(Bookmark *bookmark)
+{
+  BufferedServerBookmarkData *bookmark_data = (BufferedServerBookmarkData *)(&bookmark->container);
+  LogProtoBufferedServerState *state = persist_state_map_entry(bookmark->persist_state, bookmark_data->persist_handle);
+
+  state->buffer_pos = bookmark_data->pending_buffer_pos;
+  state->raw_stream_pos = bookmark_data->pending_raw_stream_pos;
+  state->raw_buffer_size = bookmark_data->pending_raw_buffer_size;
+
+  msg_trace("Last message got confirmed",
+            evt_tag_int("raw_stream_pos", state->raw_stream_pos),
+            evt_tag_int("raw_buffer_len", state->raw_buffer_size),
+            evt_tag_int("buffer_pos", state->buffer_pos),
+            evt_tag_int("buffer_end", state->pending_buffer_end),
+            NULL);
+  persist_state_unmap_entry(bookmark->persist_state, bookmark_data->persist_handle);
+}
+
+static void
+_buffered_server_bookmark_fill(LogProtoBufferedServer *self, Bookmark *bookmark)
+{
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+  BufferedServerBookmarkData *data = (BufferedServerBookmarkData *)(&bookmark->container);
+
+  data->pending_buffer_pos = state->pending_buffer_pos;
+  data->pending_raw_stream_pos = state->pending_raw_stream_pos;
+  data->pending_raw_buffer_size = state->pending_raw_buffer_size;
+  data->persist_handle = self->persist_handle;
+  bookmark->save = _buffered_server_bookmark_save;
+
+  log_proto_buffered_server_put_state(self);
+}
+
 /**
  * Returns: TRUE to indicate success, FALSE otherwise. The returned
  * msg can be NULL even if no failure occurred.
  **/
 static LogProtoStatus
-log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux)
+log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
   LogProtoStatus result = LPS_SUCCESS;
@@ -764,43 +827,23 @@ log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *ms
   /* result contains our result, but once an error happens, the error condition remains persistent */
   if (result != LPS_SUCCESS)
     self->super.status = result;
+  else
+    {
+      if (bookmark && *msg)
+        {
+          _buffered_server_bookmark_fill(self, bookmark);
+          _buffered_server_update_pos(&self->super);
+        }
+    }
   return result;
 }
 
-void
-log_proto_buffered_server_queued(LogProtoServer *s)
+static gboolean
+log_proto_buffered_server_is_position_tracked(LogProtoServer *s)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
-  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
 
-  /* NOTE: we modify the current file position _after_ updating
-     buffer_pos, since if we crash right here, at least we
-     won't lose data on the next restart, but rather we
-     duplicate some data */
-
-  state->buffer_pos = state->pending_buffer_pos;
-  state->raw_stream_pos = state->pending_raw_stream_pos;
-  state->raw_buffer_size = state->pending_raw_buffer_size;
-  if (state->pending_buffer_pos == state->pending_buffer_end)
-    {
-      state->pending_buffer_end = 0;
-      state->buffer_pos = state->pending_buffer_pos = 0;
-    }
-  if (self->pos_tracking)
-    {
-      if (state->buffer_pos == state->pending_buffer_end)
-        {
-          state->raw_stream_pos += state->raw_buffer_size;
-          state->raw_buffer_size = 0;
-        }
-    }
-  msg_trace("Last message got confirmed",
-            evt_tag_int("raw_stream_pos", state->raw_stream_pos),
-            evt_tag_int("raw_buffer_len", state->raw_buffer_size),
-            evt_tag_int("buffer_pos", state->buffer_pos),
-            evt_tag_int("buffer_end", state->pending_buffer_end),
-            NULL);
-  log_proto_buffered_server_put_state(self);
+  return self->pos_tracking;
 }
 
 void
@@ -824,10 +867,10 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   log_proto_server_init(&self->super, transport, options);
   self->super.prepare = log_proto_buffered_server_prepare;
   self->super.fetch = log_proto_buffered_server_fetch;
-  self->super.queued = log_proto_buffered_server_queued;
   self->super.free_fn = log_proto_buffered_server_free_method;
   self->super.transport = transport;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;
+  self->super.is_position_tracked = log_proto_buffered_server_is_position_tracked;
   self->convert = (GIConv) -1;
   self->read_data = log_proto_buffered_server_read_data_method;
   self->io_status = G_IO_STATUS_NORMAL;

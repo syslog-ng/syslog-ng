@@ -122,7 +122,10 @@ pkginclude_HEADERS			+= \
 	lib/uuid.h			\
 	lib/value-pairs.h		\
 	lib/vptransform.h		\
-	lib/versioning.h
+	lib/versioning.h		\
+	lib/bookmark.h			\
+	lib/ringbuffer.h		\
+	lib/ack_tracker.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_crypto_la_sources	= \
@@ -196,6 +199,9 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/type-hinting.c		\
 	lib/value-pairs.c		\
 	lib/vptransform.c		\
+	lib/ringbuffer.c		\
+	lib/late_ack_tracker.c		\
+	lib/early_ack_tracker.c		\
 					\
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\
