@@ -92,6 +92,7 @@ afsocket_sc_init(LogPipe *s)
       proto = log_proto_server_factory_construct(self->owner->proto_factory, transport, &self->owner->reader_options.proto_options.super);
       self->reader = log_reader_new(s->cfg);
       log_reader_reopen(self->reader, proto, poll_fd_events_new(self->sock));
+      log_reader_set_peer_addr(self->reader, self->peer_addr);
     }
   log_reader_set_options(self->reader, s,
                          &self->owner->reader_options,
@@ -99,7 +100,6 @@ afsocket_sc_init(LogPipe *s)
                          self->owner->transport_mapper->stats_source,
                          self->owner->super.super.id,
                          afsocket_sc_stats_instance(self));
-  log_reader_set_peer_addr(self->reader, self->peer_addr);
   log_pipe_append((LogPipe *) self->reader, s);
   if (log_pipe_init((LogPipe *) self->reader))
     {
