@@ -491,6 +491,12 @@ afsmtp_dd_init(LogPipe *s)
   AFSMTPDriver *self = (AFSMTPDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (!server_mode)
+    {
+      msg_error("syslog-ng running in client/relay mode, MongoDB destination is unavailable", NULL);
+      return FALSE;
+    }
+
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
