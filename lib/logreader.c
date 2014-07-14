@@ -533,7 +533,8 @@ log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr)
 {
   LogReader *self = (LogReader *) s;
 
-  self->peer_addr = g_sockaddr_ref(peer_addr);
+  if (self->peer_addr != peer_addr)
+    self->peer_addr = g_sockaddr_ref(peer_addr);
 }
 
 LogReader *
