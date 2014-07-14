@@ -11,8 +11,7 @@ modules_kafka_libkafka_la_SOURCES	=	\
 	modules/kafka/kafka.c			        \
 	modules/kafka/kafka.h						  \
 	modules/kafka/kafka-parser.h      \
-	modules/kafka/kafka-parser.c			\
-  modules/kafka/crc32.c
+	modules/kafka/kafka-parser.c
 
 modules_kafka_libkafka_la_LIBADD	=	\
 	-lrdkafka $(RDKAFKA_LIBS) $(MODULE_DEPS_LIBS)

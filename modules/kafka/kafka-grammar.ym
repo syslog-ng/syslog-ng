@@ -75,7 +75,14 @@ kafka_option
             free($3);
             last_property = NULL;
         }
-        | KW_PARTITION '(' kafka_partition ')'
+        | KW_PARTITION '(' KW_RANDOM ')'
+        {
+            kafka_dd_set_partition_random(last_driver);
+        }
+        | KW_PARTITION '(' template_content ')'
+        {
+          kafka_dd_set_partition_field(last_driver, $3);
+        }
         | KW_PROP '(' kafka_properties ')'
         {
             kafka_dd_set_props(last_driver, last_property);
@@ -87,22 +94,6 @@ kafka_option
         }
         | dest_driver_option
         | { last_template_options = kafka_dd_get_template_options(last_driver); } template_option 
-        ;
-
-kafka_partition
-        : KW_RANDOM
-        {
-          kafka_dd_set_partition_random(last_driver);
-        }
-        | KW_FIELD '(' template_content ')'
-        {
-          kafka_dd_set_partition_field(last_driver, $3);
-        }
-        | string
-        {
-          kafka_dd_set_partition_str(last_driver, $1);
-          free($1);
-        }
         ;
 
 kafka_properties

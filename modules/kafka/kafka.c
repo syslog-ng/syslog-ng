@@ -24,6 +24,7 @@
 
 #include <librdkafka/rdkafka.h>
 #include <stdlib.h>
+#include <zlib.h>
 
 #include "kafka.h"
 #include "kafka-parser.h"
@@ -49,8 +50,8 @@
  * - _payload_, mandatory. A template to describe payload content
  * - _partition_, optional. Describes the partitioning method for the topic.
  *   a random partition is assigned by default. Accepts the following arguments:
- *   "random" for random partitions, field(<template>) to use the checksum of a
- *   message payload, any other string to use the checksum of a fixed string.
+ *   "random" for random partitions any other string to use the checksum of a
+ *   message template.
  */
 
 GList *last_property = NULL;
@@ -74,8 +75,7 @@ typedef struct
     rd_kafka_t *kafka;
     enum {
         PARTITION_RANDOM = 0,
-        PARTITION_STR = 1,
-        PARTITION_FIELD = 2
+        PARTITION_FIELD = 1
     } partition_type;
 } KafkaDriver;
 
@@ -128,15 +128,6 @@ kafka_dd_set_props(LogDriver *d, GList *props)
   }
   self->kafka = rd_kafka_new(RD_KAFKA_PRODUCER, conf,
                              errbuf, sizeof(errbuf));
-}
-
-void
-kafka_dd_set_partition_str(LogDriver *d, const gchar *key)
-{
-  KafkaDriver *self = (KafkaDriver *)d;
-
-  self->partition_type = PARTITION_STR;
-  self->key_str = g_strdup(key);
 }
 
 void
@@ -265,16 +256,6 @@ kafka_worker_insert(LogThrDestDriver *s)
   case PARTITION_RANDOM:
       key =  rand();
       break;
-  case PARTITION_STR:
-      key = kafka_crc32((const u_char *)self->key_str,
-                  strlen(self->key_str));
-      msg_debug("kafka str crc32",
-                evt_tag_str("payload", self->key_str),
-                evt_tag_int("length", strlen(self->key_str)),
-                evt_tag_int("crc32", key),
-                NULL
-                );
-      break;
   case PARTITION_FIELD:
       field = g_string_sized_new(1024);
       log_template_format(self->field, msg, &self->field_template_options,
@@ -282,7 +263,8 @@ kafka_worker_insert(LogThrDestDriver *s)
       msg_debug("kafka dynamic key",
                 evt_tag_str("key", field->str),
                 NULL);
-      key = kafka_crc32((const u_char *)field->str, field->len);
+      key = crc32(0L, Z_NULL, 0);
+      key = crc32(key, (const u_char *)field->str, field->len);
       msg_debug("kafka field crc32",
                 evt_tag_str("payload", field->str),
                 evt_tag_int("length", field->len),

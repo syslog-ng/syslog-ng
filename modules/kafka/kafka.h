@@ -27,7 +27,6 @@
 
 LogDriver *kafka_dd_new(GlobalConfig *cfg);
 
-void kafka_dd_set_partition_str(LogDriver *d, const gchar *key_str);
 void kafka_dd_set_partition_field(LogDriver *d, LogTemplate *key_field);
 void kafka_dd_set_partition_random(LogDriver *d);
 void kafka_dd_set_props(LogDriver *d, GList *props);
@@ -35,6 +34,5 @@ void kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props);
 void kafka_dd_set_payload(LogDriver *d, LogTemplate *payload);
 LogTemplateOptions *kafka_dd_get_template_options(LogDriver *d);
 void kafka_property_free(void *p);
-u_int32_t kafka_crc32(const u_char *, size_t);
 
 #endif
