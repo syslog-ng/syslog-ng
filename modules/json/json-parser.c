@@ -217,7 +217,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
     {
       msg_error("Unparsable JSON stream encountered",
                 evt_tag_str ("input", input),
-                tok->err != json_tokener_success ? evt_tag_str ("error", json_tokener_errors[tok->err]) : NULL,
+                tok->err != json_tokener_success ? evt_tag_str ("error", json_tokener_error_desc(tok->err)) : NULL,
                 NULL);
       json_tokener_free (tok);
       return FALSE;
