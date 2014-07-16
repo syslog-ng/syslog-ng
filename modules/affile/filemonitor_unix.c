@@ -262,7 +262,8 @@ file_monitor_chk_file(FileMonitor * monitor, MonitorBase *source, const gchar *f
     {
       /* FIXME: resolve symlink */
       /* callback to affile */
-      msg_debug("file_monitor_chk_file filter passed", evt_tag_str("file",path),NULL);
+      if (G_LIKELY(filename != END_OF_LIST))
+        msg_trace("file_monitor_chk_file filter passed", evt_tag_str("file",path),NULL);
       monitor->file_callback(path, monitor->user_data, ACTION_NONE);
       ret = TRUE;
     }
@@ -282,6 +283,8 @@ file_monitor_list_directory(FileMonitor *self, MonitorBase *source, const gchar 
   GDir *dir = NULL;
   GError *error = NULL;
   const gchar *file_name = NULL;
+  guint files_count = 0;
+
   /* try to open diretory */
   dir = g_dir_open(basedir, 0, &error);
   if (dir == NULL)
@@ -304,8 +307,10 @@ file_monitor_list_directory(FileMonitor *self, MonitorBase *source, const gchar 
           /* if file or symlink, match with the filter pattern */
           file_monitor_chk_file(self, source, file_name);
         }
+      files_count++;
       g_free(path);
     }
+  msg_trace("file_monitor_list_directory directory scanning has been finished", evt_tag_int("Sum of file(s) found in directory", files_count), NULL);
   g_dir_close(dir);
   if (self->file_callback != NULL)
     self->file_callback(END_OF_LIST, self->user_data, ACTION_NONE);
@@ -357,7 +362,6 @@ void
 file_monitor_start_inotify(FileMonitor *self, MonitorBase *source, const gchar *base_dir)
 {
   file_monitor_list_directory(self, source, base_dir);
-  //g_source_set_callback(&source->super, (GSourceFunc) file_monitor_process_inotify_event, self, NULL);
 }
 
 void
@@ -421,6 +425,7 @@ monitor_source_poll_new(guint32 poll_freq, FileMonitor *monitor)
 static gboolean
 file_monitor_process_poll_event(FileMonitor *monitor, MonitorPoll *source)
 {
+  msg_trace("file_monitor_process_poll_event", NULL);
   file_monitor_list_directory(monitor, &source->super, source->super.base_dir);
   return TRUE;
 }

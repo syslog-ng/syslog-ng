@@ -223,6 +223,8 @@ affile_pop_next_file(LogPipe *s, gboolean *last_item)
     return ret;
 
   ret = uniq_queue_pop_head(self->file_list);
+  if (G_LIKELY(ret && ret != END_OF_LIST))
+    msg_trace("affile_pop_next_file remove file from top of queue and process it", evt_tag_str("file",ret), NULL);
 
   if (G_UNLIKELY(ret == END_OF_LIST))
     {
@@ -464,6 +466,7 @@ affile_sd_monitor_pushback_filename(AFFileSourceDriver *self, const gchar *filen
   else
   {
     uniq_queue_push_tail(self->file_list, strdup(filename));
+    msg_trace("affile_sd_monitor_pushback_filename queue size", evt_tag_int("size",uniq_queue_length(self->file_list)), evt_tag_str("file",filename), NULL);
   }
 }
 
@@ -635,7 +638,7 @@ affile_sd_free(LogPipe *s)
     {
       while ((i = uniq_queue_pop_head(self->file_list)) != NULL)
         {
-          if ((G_LIKELY(i != END_OF_LIST))
+          if (G_LIKELY(i != END_OF_LIST))
             g_free(i);
         }
       uniq_queue_free(self->file_list);

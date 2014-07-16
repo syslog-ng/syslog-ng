@@ -130,7 +130,7 @@ affile_sd_monitor_callback(const gchar *filename, gpointer s, FileActionType act
       gboolean end_of_list = TRUE;
       gchar *filename = affile_pop_next_file(s, &end_of_list);
 
-      msg_trace("affile_sd_monitor_callback self->reader is NULL", evt_tag_str("file",filename), NULL);
+      msg_trace("affile_sd_monitor_callback self->reader is NULL", NULL);
       if (filename)
         {
           g_string_assign(self->filename, filename);

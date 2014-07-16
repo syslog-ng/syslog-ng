@@ -247,6 +247,8 @@ affile_sd_monitor_callback(const gchar *filename, gpointer s, FileActionType act
 
   if (strcmp(self->filename->str, filename) != 0)
     {
+      if (G_LIKELY(filename != END_OF_LIST))
+        msg_trace("affile_sd_monitor_callback add filename to queue", evt_tag_str("file",filename), NULL);
       affile_sd_add_file_to_the_queue(self, filename);
     }
   if (self->reader == NULL)
@@ -254,7 +256,7 @@ affile_sd_monitor_callback(const gchar *filename, gpointer s, FileActionType act
       gboolean end_of_list = TRUE;
       gchar *filename = affile_pop_next_file(s, &end_of_list);
 
-      msg_trace("affile_sd_monitor_callback self->reader is NULL", evt_tag_str("file",filename), NULL);
+      msg_trace("affile_sd_monitor_callback self->reader is NULL", NULL);
       if (filename)
         {
           g_string_assign(self->filename, filename);

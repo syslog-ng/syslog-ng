@@ -82,6 +82,8 @@ file_monitor_list_directory(FileMonitorWindows *self, const gchar *basedir)
   GDir *dir = NULL;
   GError *error = NULL;
   const gchar *file_name = NULL;
+  guint files_count = 0;
+
   /* try to open diretory */
   dir = g_dir_open(basedir, 0, &error);
   if (dir == NULL)
@@ -104,8 +106,10 @@ file_monitor_list_directory(FileMonitorWindows *self, const gchar *basedir)
           /* if file or symlink, match with the filter pattern */
           file_monitor_chk_file(self, basedir, file_name, ACTION_NONE);
         }
+      files_count++;
       g_free(path);
     }
+  msg_trace("file_monitor_list_directory directory scanning has been finished", evt_tag_int("Sum of file(s) found in directory", files_count), NULL);
   g_dir_close(dir);
   if (self->super.file_callback != NULL)
     self->super.file_callback(END_OF_LIST, self->super.user_data,ACTION_NONE);

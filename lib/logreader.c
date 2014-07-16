@@ -270,7 +270,7 @@ log_reader_io_follow_file(gpointer s)
   off_t pos = -1;
   gint fd = log_proto_get_fd(self->proto);
 
-  msg_trace("Checking if the followed file has new lines",
+  msg_debug("Checking if the followed file has new lines",
             evt_tag_str("follow_filename", self->follow_filename),
             NULL);
   if (fd >= 0)
