@@ -280,7 +280,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   log_msg_ref(msg);
   log_msg_add_ack(msg, &local_options);
   msg->ack_func = log_source_msg_ack;
-  msg->ack_userdata = log_pipe_ref(s);
     
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
 

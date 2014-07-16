@@ -42,7 +42,7 @@
 
 typedef struct _LogPathOptions LogPathOptions;
 
-typedef void (*LMAckFunc)(LogMessage *lm, gpointer user_data, gboolean acked);
+typedef void (*LMAckFunc)(LogMessage *lm, gboolean acked);
 
 #define RE_MAX_MATCHES 256
 
@@ -142,7 +142,6 @@ struct _LogMessage
 
   AckRecord *ack_record;
   LMAckFunc ack_func;
-  gpointer ack_userdata;
   LogMessage *original;
 
   /* message parts */ 

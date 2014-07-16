@@ -1146,12 +1146,10 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   if (!path_options->ack_needed)
     {
       self->ack_func  = NULL;
-      self->ack_userdata = NULL;
     }
   else
     {
       self->ack_func = (LMAckFunc) log_msg_clone_ack;
-      self->ack_userdata = NULL;
     }
 
   self->flags &= ~LF_STATE_MASK;
@@ -1373,7 +1371,7 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options, gboolean acked
       old_value = log_msg_update_ack_and_ref(self, 0, -1);
       if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == 1)
         {
-          self->ack_func(self, self->ack_userdata, acked);
+          self->ack_func(self, acked);
         }
     }
 }
@@ -1527,7 +1525,7 @@ log_msg_refcache_stop(void)
   if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -current_cached_acks) && logmsg_cached_ack_needed)
     {
       /* 3) call the ack handler */
-      logmsg_current->ack_func(logmsg_current, logmsg_current->ack_userdata, TRUE);
+      logmsg_current->ack_func(logmsg_current, TRUE);
 
       /* the ack callback may not change the ack counters, it already
        * dropped to zero atomically, changing that again is an error */
