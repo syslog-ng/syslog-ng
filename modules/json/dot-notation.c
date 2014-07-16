@@ -202,6 +202,19 @@ json_dot_notation_compile(JSONDotNotation *self, const gchar *dot_notation)
   return self->compiled_elems != NULL;
 }
 
+#ifdef JSON_C_VERSION
+struct json_object *
+_json_object_object_get(struct json_object* obj, const char *key)
+{
+  struct json_object *value;
+
+  json_object_object_get_ex(obj, key, &value);
+  return value;
+}
+#else
+#define _json_object_object_get json_object_object_get
+#endif
+
 struct json_object *
 json_dot_notation_eval(JSONDotNotation *self, struct json_object *jso)
 {
@@ -224,7 +237,7 @@ json_dot_notation_eval(JSONDotNotation *self, struct json_object *jso)
                   jso = NULL;
                   goto error;
                 }
-              jso = json_object_object_get(jso, name);
+              jso = _json_object_object_get(jso, name);
             }
           else if (compiled[i].type == JS_ARRAY_REF)
             {
