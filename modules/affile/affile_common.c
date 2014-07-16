@@ -179,7 +179,7 @@ affile_sd_collect_files(const gchar *filename, gpointer s, FileActionType action
   AFFileSourceDriver *self = (AFFileSourceDriver*)args[0];
   GlobalConfig *cfg = (GlobalConfig *)args[1];
 
-  if (filename != END_OF_LIST)
+  if (G_LIKELY(filename != END_OF_LIST))
     {
       g_string_assign(self->filename, filename);
       affile_sd_set_file_pos(self, cfg);
@@ -219,23 +219,23 @@ affile_pop_next_file(LogPipe *s, gboolean *last_item)
 
   *last_item = FALSE;
 
-  if (g_queue_is_empty(self->file_list))
+  if (uniq_queue_is_empty(self->file_list))
     return ret;
 
-  ret = g_queue_pop_head(self->file_list);
+  ret = uniq_queue_pop_head(self->file_list);
 
-  if (ret == END_OF_LIST)
+  if (G_UNLIKELY(ret == END_OF_LIST))
     {
       /*skip the *END* item and try the next file in the list*/
-      ret = g_queue_pop_head(self->file_list);
+      ret = uniq_queue_pop_head(self->file_list);
       if (ret)
         *last_item = TRUE;
     }
-  else if (self->file_list->length == 0)
+  else if (uniq_queue_is_empty(self->file_list))
     {
       *last_item = TRUE;
     }
-  if (!ret || ret == END_OF_LIST)
+  if (G_UNLIKELY(!ret || ret == END_OF_LIST))
     ret = NULL;
 
   return ret;
@@ -293,15 +293,8 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 void
 affile_sd_add_file_to_the_queue(AFFileSourceDriver *self, const gchar *filename)
 {
-  /* FIXME: use something else than a linear search */
-  if (g_queue_find_custom(self->file_list, filename, (GCompareFunc)strcmp) == NULL)
-    {
-      affile_sd_monitor_pushback_filename(self, filename);
-      if (filename != END_OF_LIST)
-        {
-          msg_debug("affile_sd_monitor_callback append", evt_tag_str("file",filename),NULL);
-        }
-    }
+  if (!uniq_queue_check_element(self->file_list, filename))
+    affile_sd_monitor_pushback_filename(self, filename);
 }
 
 void
@@ -464,15 +457,14 @@ affile_sd_monitor_pushback_filename(AFFileSourceDriver *self, const gchar *filen
   /* NOTE: the list contains an allocated copy of the filename, it needs to
    * be freed when removed from the list.
    */
-  if (filename != END_OF_LIST)
-    msg_trace("affile_sd_monitor_pushback_filename",
-              evt_tag_str("filename", filename),
-              NULL);
-
-  if (filename == END_OF_LIST)
-    g_queue_push_tail(self->file_list, END_OF_LIST);
+  if (G_UNLIKELY(filename == END_OF_LIST))
+  {
+    uniq_queue_push_tail(self->file_list, END_OF_LIST);
+  }
   else
-    g_queue_push_tail(self->file_list, strdup(filename));
+  {
+    uniq_queue_push_tail(self->file_list, strdup(filename));
+  }
 }
 
 gboolean
@@ -641,12 +633,12 @@ affile_sd_free(LogPipe *s)
   gpointer i = NULL;
   if (self->file_list)
     {
-      while ((i = g_queue_pop_head(self->file_list)) != NULL)
+      while ((i = uniq_queue_pop_head(self->file_list)) != NULL)
         {
-          if (i != END_OF_LIST)
+          if ((G_LIKELY(i != END_OF_LIST))
             g_free(i);
         }
-      g_queue_free(self->file_list);
+      uniq_queue_free(self->file_list);
       self->file_list = NULL;
     }
 

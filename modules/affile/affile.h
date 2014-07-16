@@ -28,6 +28,7 @@
 #include "logreader.h"
 #include "logwriter.h"
 #include "filemonitor.h"
+#include "uniq_queue.h"
 
 #define AFFILE_PIPE        0x00000001
 #define AFFILE_NO_EXPAND   0x00000002
@@ -49,7 +50,7 @@ typedef struct _AFFileSourceDriver
   guint32 flags;
   /* state information to follow a set of files using a wildcard expression */
   FileMonitor *file_monitor;
-  GQueue *file_list;
+  UniqQueue *file_list;
   gboolean is_regular;
 } AFFileSourceDriver;
 

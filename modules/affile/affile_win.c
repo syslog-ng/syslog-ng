@@ -150,7 +150,7 @@ affile_file_monitor_stop(AFFileSourceDriver *self)
 void affile_file_monitor_init(AFFileSourceDriver *self, const gchar *filename)
 {
   self->file_monitor = file_monitor_new();
-  self->file_list = g_queue_new();
+  self->file_list = uniq_queue_new();
 }
 
 gboolean
