@@ -383,7 +383,8 @@ const gchar *source_names[SCS_MAX] =
   "severity",
   "facility",
   "sender",
-  "snmp"
+  "snmp",
+  "smtp"
 };
 
 
