@@ -165,6 +165,14 @@ log_json_parser_process_object (struct json_object *jso,
     }
 }
 
+#ifndef JSON_C_VERSION
+static char *
+json_tokener_error_desc(enum json_tokener_error err)
+{
+  return json_tokener_errors[err];
+}
+#endif
+
 static gboolean
 log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
@@ -187,7 +195,7 @@ log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *
   if (tok->err != json_tokener_success)
     {
       msg_error ("Unparsable JSON stream encountered",
-                 evt_tag_str ("error", json_tokener_errors[tok->err]), NULL);
+                 evt_tag_str ("error", json_tokener_error_desc(tok->err)), NULL);
       json_tokener_free (tok);
       return FALSE;
     }
