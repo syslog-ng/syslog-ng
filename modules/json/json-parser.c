@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -194,6 +194,14 @@ json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
   return TRUE;
 }
 
+#ifndef JSON_C_VERSION
+static char *
+json_tokener_error_desc(enum json_tokener_error err)
+{
+  return json_tokener_errors[err];
+}
+#endif
+
 static gboolean
 json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
@@ -217,7 +225,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
     {
       msg_error("Unparsable JSON stream encountered",
                 evt_tag_str ("input", input),
-                tok->err != json_tokener_success ? evt_tag_str ("error", json_tokener_errors[tok->err]) : NULL,
+                tok->err != json_tokener_success ? evt_tag_str ("error", json_tokener_error_desc(tok->err)) : NULL,
                 NULL);
       json_tokener_free (tok);
       return FALSE;
