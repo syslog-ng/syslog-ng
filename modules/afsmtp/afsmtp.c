@@ -591,6 +591,54 @@ afsmtp_dd_init_header(AFSMTPHeader *hdr, GlobalConfig *cfg)
 }
 
 static gboolean
+__check_rcpt_tos(AFSMTPDriver *self)
+{
+  gboolean result = FALSE;
+  GList *l = self->rcpt_tos;
+  while (l)
+    {
+      AFSMTPRecipient *rcpt = (AFSMTPRecipient *)l->data;
+      if (rcpt->address && (rcpt->type == AFSMTP_RCPT_TYPE_BCC || rcpt->type == AFSMTP_RCPT_TYPE_TO))
+        {
+          result = TRUE;
+          break;
+        }
+      l = l->next;
+    }
+
+  return result;
+}
+
+static gboolean
+__check_required_options(AFSMTPDriver *self)
+{
+  if (!self->mail_from->address)
+    {
+      msg_error("Error from or sender option is required", evt_tag_str("driver", self->super.super.super.id), NULL);
+      return FALSE;
+    }
+
+  if (!__check_rcpt_tos(self))
+    {
+      msg_error("to or bcc option is required", evt_tag_str("driver", self->super.super.super.id), NULL);
+      return FALSE;
+    }
+
+  if (!self->subject)
+    {
+      msg_error("Error subject is required option", evt_tag_str("driver", self->super.super.super.id), NULL);
+      return FALSE;
+    }
+
+  if (!self->body)
+    {
+      msg_error("Error Body is required option", evt_tag_str("driver", self->super.super.super.id), NULL);
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
 afsmtp_dd_init(LogPipe *s)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)s;
@@ -611,17 +659,8 @@ afsmtp_dd_init(LogPipe *s)
               evt_tag_int("port", self->port),
               NULL);
 
-  if (!self->subject)
-    {
-      msg_error("Error subject is required option", NULL);
-      return FALSE;
-    }
-
-  if (!self->body)
-    {
-      msg_error("Error Body is required option", NULL);
-      return FALSE;
-    }
+  if (!__check_required_options(self))
+    return FALSE;
 
   g_list_foreach(self->headers, (GFunc)afsmtp_dd_init_header, cfg);
   if (!self->subject_tmpl)
