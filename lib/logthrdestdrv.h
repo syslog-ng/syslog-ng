@@ -30,6 +30,8 @@
 #include "stats/stats-registry.h"
 #include "logqueue.h"
 #include "mainloop-worker.h"
+#include <iv.h>
+#include <iv_event.h>
 
 typedef struct _LogThrDestDriver LogThrDestDriver;
 
@@ -41,14 +43,6 @@ struct _LogThrDestDriver
   StatsCounterItem *stored_messages;
 
   time_t time_reopen;
-
-  /* Thread related stuff; shared */
-  GMutex *suspend_mutex;
-  GCond *writer_thread_wakeup_cond;
-
-  gboolean writer_thread_terminate;
-  gboolean writer_thread_suspended;
-  GTimeVal writer_thread_suspend_target;
 
   LogQueue *queue;
 
@@ -70,6 +64,11 @@ struct _LogThrDestDriver
 
   void (*queue_method) (LogThrDestDriver *s);
   WorkerOptions worker_options;
+  struct iv_event wake_up_event;
+  struct iv_event shutdown_event;
+  struct iv_timer timer_reopen;
+  struct iv_timer timer_throttle;
+  struct iv_task  do_work;
 };
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
