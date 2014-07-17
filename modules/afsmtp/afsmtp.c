@@ -74,6 +74,7 @@ typedef struct
   GString *str;
   guint num_retries;
   guint failed_message_counter;
+  LogTemplateOptions template_options;
 } AFSMTPDriver;
 
 static gchar *
@@ -87,6 +88,13 @@ afsmtp_wash_string (gchar *str)
       str[i] = ' ';
 
   return str;
+}
+
+LogTemplateOptions *
+afsmtp_dd_get_template_options(LogDriver *d)
+{
+  AFSMTPDriver *self = (AFSMTPDriver *)d;
+  return &self->template_options;
 }
 
 /*
@@ -256,7 +264,7 @@ afsmtp_dd_msg_add_header(AFSMTPHeader *hdr, gpointer user_data)
   LogMessage *msg = ((gpointer *)user_data)[1];
   smtp_message_t message = ((gpointer *)user_data)[2];
 
-  log_template_format(hdr->value, msg, NULL, LTZ_SEND, self->seq_num, NULL, self->str);
+  log_template_format(hdr->value, msg, &self->template_options, LTZ_LOCAL, self->seq_num, NULL, self->str);
 
   smtp_set_header(message, hdr->name, afsmtp_wash_string (self->str->str), NULL);
   smtp_set_header_option(message, hdr->name, Hdr_OVERRIDE, 1);
@@ -384,7 +392,7 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
   smtp_set_header(message, "To", NULL, NULL);
   smtp_set_header(message, "From", NULL, NULL);
 
-  log_template_format(self->subject_tmpl, msg, NULL, LTZ_SEND, self->seq_num,
+  log_template_format(self->subject_tmpl, msg, &self->template_options, LTZ_SEND, self->seq_num,
   NULL, self->str);
   smtp_set_header(message, "Subject", afsmtp_wash_string(self->str->str));
   smtp_set_header_option(message, "Subject", Hdr_OVERRIDE, 1);
@@ -665,7 +673,7 @@ afsmtp_dd_free(LogPipe *d)
       g_free(hdr);
       l = g_list_delete_link(l, l);
     }
-
+  log_template_options_destroy(&self->template_options);
   log_threaded_dest_driver_free(d);
 }
 
@@ -697,6 +705,8 @@ afsmtp_dd_new(GlobalConfig *cfg)
   self->num_retries = DEFAULT_NUM_RETRIES;
 
   init_sequence_number(&self->seq_num);
+  log_template_options_init(&self->template_options, cfg);
+  log_template_options_defaults(&self->template_options);
 
   return (LogDriver *)self;
 }
