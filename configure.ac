@@ -144,6 +144,9 @@ AC_CONFIG_HEADERS(config.h)
 dnl ***************************************************************************
 dnl Arguments
 
+AC_ARG_ENABLE(libnet,
+              [  --enable-libnet      Enable libnet support (default: yes)],, enable_libnet="yes")
+
 AC_ARG_WITH(libnet,
    [  --with-libnet=path      use path to libnet-config script],
    ,
@@ -1069,23 +1072,25 @@ dnl ***************************************************************************
 dnl libnet headers/libraries
 dnl ***************************************************************************
 AC_MSG_CHECKING(for LIBNET)
-if test "x$with_libnet" = "x"; then
-        LIBNET_CONFIG="`which libnet-config`"
-else
-        LIBNET_CONFIG="$with_libnet/libnet-config"
-fi
+if test "x$enable_libnet" = xyes; then
+    if test "x$with_libnet" = "x"; then
+            LIBNET_CONFIG="`which libnet-config`"
+    else
+            LIBNET_CONFIG="$with_libnet/libnet-config"
+    fi
 
-if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
-        LIBNET_CFLAGS="`$LIBNET_CONFIG --defines`"
-        LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
-        AC_MSG_RESULT(yes)
-dnl libnet-config does not provide the _DEFAULT_SOURCE define, that can cause warning during build
-dnl as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till
-        LIBNET_CFLAGS="$LIBNET_CFLAGS -D_DEFAULT_SOURCE"
+    if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
+            LIBNET_CFLAGS="`$LIBNET_CONFIG --defines`"
+            LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
+            AC_MSG_RESULT(yes)
+    dnl libnet-config does not provide the _DEFAULT_SOURCE define, that can cause warning during build
+    dnl as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till
+            LIBNET_CFLAGS="$LIBNET_CFLAGS -D_DEFAULT_SOURCE"
 
-else
-        LIBNET_LIBS=
-        AC_MSG_RESULT(no)
+    else
+            LIBNET_LIBS=
+            AC_MSG_RESULT(no)
+    fi
 fi
 
 
