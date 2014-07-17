@@ -29,7 +29,8 @@
 #include "persist-state.h"
 #include "state.h"
 #include "tlscontext.h"
-#include "bookmark.h" // TODO: remove...
+#include "syslog-ng.h"
+#include "bookmark.h"
 
 #include <pcre.h>
 

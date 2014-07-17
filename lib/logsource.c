@@ -44,8 +44,19 @@ log_source_wakeup(LogSource *self)
     self->wakeup(self);
 }
 
+static inline void
+_flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
+{
+  guint32 old_window_size;
+
+  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, window_size_increment);
+
+  if (old_window_size == 0)
+    log_source_wakeup(self);
+}
+
 static void
-_ack_rate_adjust(LogSource *self)
+_flow_control_rate_adjust(LogSource *self)
 {
   /* NOTE: this is racy. msg_ack may be executing in different writer
    * threads. I don't want to lock, all we need is an approximate value of
@@ -120,10 +131,10 @@ log_source_msg_ack(LogMessage *msg, AckType ack_type)
 }
 
 void
-log_source_finalize_ack(LogSource *self, guint number_of_acks)
+log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment)
 {
-  log_source_window_size_grow(self, number_of_acks);
-  _ack_rate_adjust(self);
+  _flow_control_window_size_adjust(self, window_size_increment);
+  _flow_control_rate_adjust(self);
 
   if (self->is_external_ack_required)
     log_source_wakeup(self);
@@ -336,14 +347,20 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     }
 }
 
-void
-log_source_set_pos_tracking(LogSource *self, gboolean pos_tracking)
+static inline void
+_create_ack_tracker_if_not_exists(LogSource *self, gboolean pos_tracked)
 {
-  self->pos_tracking = pos_tracking;
+  if (!self->ack_tracker)
+    {
+      if (pos_tracked)
+        self->ack_tracker = late_ack_tracker_new(self);
+      else
+        self->ack_tracker = early_ack_tracker_new(self);
+    }
 }
 
 void
-log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded)
+log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked)
 {
   /* NOTE: we don't adjust window_size even in case it was changed in the
    * configuration and we received a SIGHUP.  This means that opened
@@ -361,8 +378,8 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
     g_free(self->stats_instance);
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
-  if (!self->ack_tracker)
-    self->ack_tracker = ack_tracker_new(self);
+  self->pos_tracked = pos_tracked;
+  _create_ack_tracker_if_not_exists(self, pos_tracked);
 }
 
 void

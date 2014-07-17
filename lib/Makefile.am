@@ -186,7 +186,8 @@ libsyslog_ng_la_SOURCES = \
 	rewrite-expr-grammar.y	\
 	reloc.c                 \
 	ringbuffer.c		\
-	ack_tracker.c		\
+	early_ack_tracker.c	\
+	late_ack_tracker.c	\
 	$(libsyslog_ng_crypto_la_SOURCES) \
   $(template_sources)
 

@@ -1020,22 +1020,17 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
 {
   LogReader *self = (LogReader *) s;
 
-  self->options = options;
-  if (self->proto && log_proto_is_position_tracked(self->proto))
-    {
-      log_source_set_pos_tracking(&self->super, TRUE);
-    }
+  gboolean pos_tracked = ((self->proto != NULL) && log_proto_is_position_tracked(self->proto));
 
-  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & LR_THREADED));
+  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & LR_THREADED), pos_tracked);
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);
   self->control = control;
 
+  self->options = options;
   if (self->proto)
-    {
-      log_proto_set_options(self->proto,proto_options);
-    }
+    log_proto_set_options(self->proto,proto_options);
 }
 
 /* run in the main thread in reaction to a log_reader_reopen to change
@@ -1074,11 +1069,6 @@ log_reader_reopen_deferred(gpointer s)
           log_reader_set_immediate_check(&self->super.super);
         }
       log_reader_start_watches(self);
-
-      if (log_proto_is_position_tracked(proto))
-        {
-          log_source_set_pos_tracking(&self->super, TRUE);
-        }
     }
 }
 

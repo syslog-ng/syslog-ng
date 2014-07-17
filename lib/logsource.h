@@ -70,7 +70,7 @@ struct _LogSource
   guint16 stats_level;
   guint16 stats_source;
   gboolean threaded;
-  gboolean pos_tracking;
+  gboolean pos_tracked;
   gchar *stats_id;
   gchar *stats_instance;
   GAtomicCounter window_size;
@@ -96,8 +96,7 @@ log_source_free_to_send(LogSource *self)
 gboolean log_source_init(LogPipe *s);
 gboolean log_source_deinit(LogPipe *s);
 
-void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded);
-void log_source_set_pos_tracking(LogSource *self, gboolean pos_tracking);
+void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
 void log_source_init_instance(LogSource *self);
 void log_source_options_defaults(LogSourceOptions *options);
@@ -106,19 +105,8 @@ void log_source_options_destroy(LogSourceOptions *options);
 void log_source_options_set_tags(LogSourceOptions *options, GList *tags);
 void log_source_free(LogPipe *s);
 void log_source_wakeup(LogSource *self);
-void log_source_finalize_ack(LogSource *self, guint number_of_acks);
+void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
 void log_source_global_init(void);
-
-static inline void
-log_source_window_size_grow(LogSource *self, guint32 growth)
-{
-  guint32 old_window_size;
-
-  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, growth);
-
-  if (old_window_size == 0)
-    log_source_wakeup(self);
-}
 
 static inline gint
 log_source_get_init_window_size(LogSource *self)
