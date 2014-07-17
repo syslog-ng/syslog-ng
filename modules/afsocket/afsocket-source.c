@@ -659,6 +659,7 @@ afsocket_sd_free_method(LogPipe *s)
 
   log_reader_options_destroy(&self->reader_options);
   transport_mapper_free(self->transport_mapper);
+  g_free(self->socket_options);
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
   log_src_driver_free(s);

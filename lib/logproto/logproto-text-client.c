@@ -146,12 +146,23 @@ log_proto_text_client_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboole
 }
 
 void
+log_proto_text_client_free(LogProtoClient *s)
+{
+  LogProtoTextClient *self = (LogProtoTextClient *)s;
+  if (self->partial_free)
+    self->partial_free(self->partial);
+  self->partial = NULL;
+  log_proto_client_free_method(s);
+};
+
+void
 log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport, const LogProtoClientOptions *options)
 {
   log_proto_client_init(&self->super, transport, options);
   self->super.prepare = log_proto_text_client_prepare;
   self->super.flush = log_proto_text_client_flush;
   self->super.post = log_proto_text_client_post;
+  self->super.free_fn = log_proto_text_client_free;
   self->super.transport = transport;
   self->next_state = -1;
 }

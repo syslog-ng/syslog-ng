@@ -129,4 +129,6 @@ transport_mapper_free(TransportMapper *self)
 {
   if (self->free_fn)
     self->free_fn(self);
+
+  g_free(self);
 }

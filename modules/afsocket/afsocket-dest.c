@@ -425,6 +425,7 @@ afsocket_dd_free(LogPipe *s)
   g_sockaddr_unref(self->dest_addr);
   log_pipe_unref((LogPipe *) self->writer);
   transport_mapper_free(self->transport_mapper);
+  g_free(self->socket_options);
   log_dest_driver_free(s);
 }
 
