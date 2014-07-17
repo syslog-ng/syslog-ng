@@ -275,13 +275,26 @@ afsmtp_dd_log_rcpt_status(smtp_recipient_t rcpt, const char *mailbox,
                           gpointer user_data)
 {
   const smtp_status_t *status;
+  gboolean success = *(gboolean *)user_data;
 
   status = smtp_recipient_status(rcpt);
-  msg_debug("SMTP recipient result",
+  if (status->code != 250 && success)
+    {
+      success = FALSE;
+      msg_error("SMTP recipient result",
             evt_tag_str("recipient", mailbox),
             evt_tag_int("code", status->code),
             evt_tag_str("text", status->text),
             NULL);
+    }
+  else
+    {
+      msg_debug("SMTP recipient result",
+            evt_tag_str("recipient", mailbox),
+            evt_tag_int("code", status->code),
+            evt_tag_str("text", status->text),
+            NULL);
+    }
 }
 
 static void
@@ -349,40 +362,29 @@ afsmtp_dd_cb_monitor(const gchar *buf, gint buflen, gint writing,
     }
 }
 
-static gboolean
-afsmtp_worker_insert(LogThrDestDriver *s)
+static smtp_session_t
+__build_session(AFSMTPDriver *self, LogMessage *msg)
 {
-  AFSMTPDriver *self = (AFSMTPDriver *)s;
-  gboolean success = TRUE;
-  LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   smtp_session_t session;
-  smtp_message_t message;
-  gpointer args[] = { self, NULL, NULL };
-
-  msg = log_queue_pop_head(s->queue, &path_options);
-  if (!msg)
-    return TRUE;
-  msg_set_context(msg);
-
-  if (msg->flags & LF_MARK)
-    {
-      msg_debug("Mark messages are dropped by SMTP destination", NULL);
-      log_msg_drop(msg, &path_options);
-      msg_set_context(NULL);
-      return TRUE;
-    }
-
 
   session = smtp_create_session();
-  message = smtp_add_message(session);
 
   g_string_printf(self->str, "%s:%d", self->host, self->port);
   smtp_set_server(session, self->str->str);
 
-  smtp_set_eventcb(session, (smtp_eventcb_t)afsmtp_dd_cb_event, (void *)self);
-  smtp_set_monitorcb(session, (smtp_monitorcb_t)afsmtp_dd_cb_monitor,
-                     (void *)self, 1);
+  smtp_set_eventcb(session, (smtp_eventcb_t) afsmtp_dd_cb_event, (void *) self);
+  smtp_set_monitorcb(session, (smtp_monitorcb_t) afsmtp_dd_cb_monitor, (void *) self, 1);
+
+  return session;
+}
+
+static smtp_message_t
+__build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
+{
+  smtp_message_t message;
+  gpointer args[] = { self, NULL, NULL };
+
+  message = smtp_add_message(session);
 
   smtp_set_reverse_path(message, self->mail_from->address);
 
@@ -396,13 +398,13 @@ afsmtp_worker_insert(LogThrDestDriver *s)
   smtp_set_header_option(message, "Subject", Hdr_OVERRIDE, 1);
 
   /* Add recipients */
-  g_list_foreach(self->rcpt_tos, (GFunc)afsmtp_dd_msg_add_recipient, message);
+  g_list_foreach(self->rcpt_tos, (GFunc) afsmtp_dd_msg_add_recipient, message);
 
   /* Add custom header (overrides anything set before, or in the
-     body). */
+   body). */
   args[1] = msg;
   args[2] = message;
-  g_list_foreach(self->headers, (GFunc)afsmtp_dd_msg_add_header, args);
+  g_list_foreach(self->headers, (GFunc) afsmtp_dd_msg_add_header, args);
 
   /* Set the body.
    *
@@ -413,44 +415,148 @@ afsmtp_worker_insert(LogThrDestDriver *s)
   log_template_append_format(self->body_tmpl, msg, &self->template_options, LTZ_SEND,
       self->seq_num, NULL, self->str);
   smtp_set_message_str(message, self->str->str);
-  success = smtp_start_session(session);
+  return message;
+}
 
-  if (!success)
+static gboolean
+__check_transfer_status(AFSMTPDriver *self, smtp_message_t message)
+{
+  gboolean success = TRUE;
+  const smtp_status_t *status = smtp_message_transfer_status(message);
+  if (status->code != 250)
     {
-      gchar error[1024];
-      smtp_strerror(smtp_errno(), error, sizeof (error) - 1);
-
-      msg_error("SMTP server error, suspending",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("error", error),
-                evt_tag_int("time_reopen", self->super.time_reopen),
-                NULL);
       success = FALSE;
+      msg_error("Failed to send message",
+          evt_tag_str("driver", self->super.super.super.id),
+          evt_tag_int("code", status->code),
+          evt_tag_str("text", status->text),
+          NULL);
     }
   else
     {
-      const smtp_status_t *status = smtp_message_transfer_status(message);
       msg_debug("SMTP result",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_int("code", status->code),
-                evt_tag_str("text", status->text),
-                NULL);
-      smtp_enumerate_recipients(message, afsmtp_dd_log_rcpt_status, NULL);
+          evt_tag_str("driver", self->super.super.super.id),
+          evt_tag_int("code", status->code),
+          evt_tag_str("text", status->text),
+          NULL);
+      smtp_enumerate_recipients(message, afsmtp_dd_log_rcpt_status, &success);
     }
-  smtp_destroy_session(session);
+  return success;
+}
 
-  msg_set_context(NULL);
+static gboolean
+__send_message(AFSMTPDriver *self, smtp_session_t session)
+{
+  gboolean success = smtp_start_session(session);
+  if (!(success))
+      {
+        gchar error[1024] = {0};
+        smtp_strerror(smtp_errno(), error, sizeof (error) - 1);
+
+        msg_error("SMTP server error, suspending",
+                  evt_tag_str("driver", self->super.super.super.id),
+                  evt_tag_str("error", error),
+                  evt_tag_int("time_reopen", self->super.time_reopen),
+                  NULL);
+        success = FALSE;
+      }
+  return success;
+}
+
+static void
+__accept_message(AFSMTPDriver *self, LogMessage *msg)
+{
+  log_queue_ack_backlog(self->super.queue,1);
+  log_msg_unref(msg);
+  self->failed_message_counter = 0;
+}
+
+
+
+void __rewind_message(AFSMTPDriver* self, LogMessage* msg)
+{
+  log_queue_rewind_backlog(self->super.queue, 1);
+  log_msg_unref(msg);
+}
+
+void __drop_message(AFSMTPDriver* self, LogMessage* msg)
+{
+  msg_error("Multiple failures while sending message in email to the server, message dropped",
+      evt_tag_int("attempts", self->num_retries), NULL);
+  stats_counter_inc(self->super.dropped_messages);
+  __accept_message(self, msg);
+}
+
+static gboolean
+__handle_error(AFSMTPDriver *self, LogMessage *msg, gboolean message_sent)
+{
+  gboolean result = FALSE;
+  if (!message_sent)
+    {
+      __rewind_message(self, msg);
+    }
+  else if (self->failed_message_counter < self->num_retries - 1)
+    {
+      __rewind_message(self, msg);
+      self->failed_message_counter++;
+    }
+  else
+    {
+      __drop_message(self, msg);
+      result = TRUE;
+    }
+  return result;
+}
+
+
+static gboolean
+afsmtp_worker_insert(LogThrDestDriver *s)
+{
+  AFSMTPDriver *self = (AFSMTPDriver *)s;
+  gboolean success = TRUE;
+  gboolean message_sent = TRUE;
+  LogMessage *msg;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  smtp_session_t session = NULL;
+  smtp_message_t message;
+
+  msg = log_queue_pop_head(s->queue, &path_options);
+  if (!msg)
+    return TRUE;
+
+  msg_set_context(msg);
+  log_msg_refcache_start_consumer(msg, &path_options);
+
+  if (msg->flags & LF_MARK)
+    {
+      msg_debug("Mark messages are dropped by SMTP destination", NULL);
+      __accept_message(self, msg);
+      goto exit;
+    }
+
+
+  session = __build_session(self, msg);
+  message = __build_message(self, msg, session);
+
+  message_sent = __send_message(self, session);
+  success = message_sent && __check_transfer_status(self, message);
 
   if (success)
     {
       stats_counter_inc(s->stored_messages);
       step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options, AT_PROCESSED);
-      log_msg_unref(msg);
+      __accept_message(self, msg);
     }
   else
-    log_queue_push_head(s->queue, msg, &path_options);
+    {
+      success = __handle_error(self, msg, message_sent);
+    }
 
+exit:
+  if (session)
+    smtp_destroy_session(session);
+  msg_set_context(NULL);
+  log_msg_refcache_stop();
   return success;
 }
 
@@ -460,6 +566,7 @@ afsmtp_worker_thread_init(LogThrDestDriver *d)
   AFSMTPDriver *self = (AFSMTPDriver *)d;
 
   self->str = g_string_sized_new(1024);
+  self->super.queue->use_backlog = TRUE;
 
   ignore_sigpipe();
 }
