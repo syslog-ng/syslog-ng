@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -659,6 +659,7 @@ afsocket_sd_free_method(LogPipe *s)
 
   log_reader_options_destroy(&self->reader_options);
   transport_mapper_free(self->transport_mapper);
+  socket_options_free(self->socket_options);
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
   log_src_driver_free(s);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -41,6 +41,7 @@ struct _SocketOptions
   gint so_broadcast;
   gint so_keepalive;
   gboolean (*setup_socket)(SocketOptions *s, gint sock, GSockAddr *bind_addr, AFSocketDirection dir);
+  void (*free)(gpointer s);
 };
 
 gboolean socket_options_setup_socket_method(SocketOptions *self, gint fd, GSockAddr *bind_addr, AFSocketDirection dir);
@@ -51,6 +52,12 @@ static inline gboolean
 socket_options_setup_socket(SocketOptions *s, gint sock, GSockAddr *bind_addr, AFSocketDirection dir)
 {
   return s->setup_socket(s, sock, bind_addr, dir);
+}
+
+static inline void
+socket_options_free(SocketOptions *s)
+{
+  s->free(s);
 }
 
 #endif
