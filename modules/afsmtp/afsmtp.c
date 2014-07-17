@@ -412,7 +412,7 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
    * recognise headers, and will append them to the end of the body.
    */
   g_string_assign(self->str, "X-Mailer: syslog-ng " VERSION "\r\n\r\n");
-  log_template_append_format(self->body_tmpl, msg, NULL, LTZ_SEND,
+  log_template_append_format(self->body_tmpl, msg, &self->template_options, LTZ_SEND,
       self->seq_num, NULL, self->str);
   smtp_set_message_str(message, self->str->str);
   return message;
@@ -673,7 +673,7 @@ afsmtp_dd_init(LogPipe *s)
       self->body_tmpl = log_template_new(cfg, "body");
       log_template_compile(self->body_tmpl, self->body, NULL);
     }
-
+  log_template_options_init(&self->template_options, cfg);
   return log_threaded_dest_driver_start(s);
 }
 
@@ -744,7 +744,7 @@ afsmtp_dd_new(GlobalConfig *cfg)
   self->num_retries = DEFAULT_NUM_RETRIES;
 
   init_sequence_number(&self->seq_num);
-  log_template_options_init(&self->template_options, cfg);
+
   log_template_options_defaults(&self->template_options);
 
   return (LogDriver *)self;
