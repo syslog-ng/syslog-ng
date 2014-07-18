@@ -1,3 +1,116 @@
+3.5.5
+        Mon, 21 Jul 2014 17:00:00 +0200
+
+        This is the fifth bug-fix release for the 3.5.x series.
+        Starting with this release, the 3.5 branch replaces 3.4 as the
+        current "stable" version. Upgrading from earlier versions -
+        and especially earlier branches - is highly recommended.
+
+        New features
+        ============
+
+        * The facility() filter now supports ranges, allowing one to
+          capture a range of facilities: facility(local0..local6).
+
+        * The $(format-json) template function now supports SEQNUM.
+
+        * The upstart script in contrib has been improved to allow the
+          user to override certain settings (such as the configuration
+          file, and the pidfile), and allow extra options to be
+          specified.
+
+        Bugfixes
+        ========
+
+        * Major memory leaks have been fixed in various parts of
+          syslog-ng, including but not limited to network and file
+          destinations and sources, value-pairs (thus affecting
+          mongodb, $(format-json), and others), template handling and
+          rewrite rules.
+
+          Some of these leaks only happened during reload, some
+          leaked on every message. They have now been plugged.
+
+        * The value-pairs framework has seen a lot of updates, too:
+
+          - It now honors time zone settings, so everything that uses
+            value-pairs, will correctly take time zone settings into
+            account.
+
+          - Using globs in the key() option of value pairs will now
+            also search macros for matches (thus key("D*") will match
+            DATE too).
+
+          - The syslog-proto (RFC5424) scope now correctly includes
+            SDATA.
+
+          - A bug that resulted in hierarchical elements being
+            misparsed and made to appear in random places have been
+            fixed.
+
+        * The body() and subject() options of the SMTP destinations
+          are now mandatory, and a double-free was also fixed in the
+          driver.
+
+        * Minor fixes were made to the $(env) template function, so
+          that when looking up an empty environment variable, we will
+          no longer trigger a glib warning. A misleading error message
+          was also corrected.
+
+        * The pdbtool patternize tool will now output version 4 PDB
+          XML.
+
+        * The configure script will not try to configure the AMQP
+          module if no suitable version of python is installed. This
+          avoids a difficult to diagnose error message during
+          compilation.
+
+        Developer news
+        ==============
+
+        * When compiled with internal ivykis, we will now install its
+          headers too, along with our own. This is to make it easier
+          for the Incubator to be compiled against a syslog-ng with
+          embedded ivykis.
+
+        * Plugin symbols are now loaded differently, in a way that
+          lets plugins load further plugins, and use already loaded
+          symbols. This is required for the various scripting
+          destinations in the Incubator.
+
+        * Starting with this release, we are installing the testing
+          helpers as a convenience library (available under the
+          syslog-ng-test pkg-config module). This allows third party
+          projects to use our helpers.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Daniel Gados
+        Fabien Wernli
+        Gergely Nagy <algernon@balabit.hu>
+        Laszlo Budai <lbudai@balabit.hu>
+        Laszlo Meszaros <lmesz@balabit.hu>
+        Nick Alcock <nix@esperi.org.uk>
+        Peter Czanik <czanik@balabit.hu>
+        Peter Gyongyosi <gyp@balabit.hu>
+        Sebastien Badia <seb@sebian.fr>
+        Tibor Benke <tibor.benke@balabit.com>
+        Viktor Juhasz <viktor.juhasz@balabit.com>
+        Viktor Tusa <tusa@balabit.hu>
+        Xufeng Zhang <xufeng.zhang@windriver.com>
+        Zoltan Pallagi <pzolee@balabit.hu>
+
 3.5.4.1
         Thu, 13 Mar 2014 10:46:07 +0100
 
