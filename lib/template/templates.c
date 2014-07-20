@@ -848,7 +848,7 @@ log_template_lookup_and_setup_function_call(LogTemplateCompiler *self, LogTempla
 
   if (!p)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function or template \"%s\"", argv[0]);
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function \"%s\"", argv[0]);
       goto error;
     }
 
