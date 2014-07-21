@@ -195,7 +195,7 @@ json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
 }
 
 #ifndef JSON_C_VERSION
-static char *
+const char *
 json_tokener_error_desc(enum json_tokener_error err)
 {
   return json_tokener_errors[err];
