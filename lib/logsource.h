@@ -62,6 +62,7 @@ struct _LogSource
   guint16 stats_level;
   guint16 stats_source;
   gboolean threaded;
+  gboolean pos_tracked;
   gchar *stats_id;
   gchar *stats_instance;
   GAtomicCounter window_size;
@@ -71,6 +72,7 @@ struct _LogSource
   guint32 ack_count;
   glong window_full_sleep_nsec;
   struct timespec last_ack_rate_time;
+  AckTracker *ack_tracker;
 
   void (*wakeup)(LogSource *s);
 };
@@ -81,10 +83,16 @@ log_source_free_to_send(LogSource *self)
   return g_atomic_counter_get(&self->window_size) > 0;
 }
 
+static inline gint
+log_source_get_init_window_size(LogSource *self)
+{
+  return self->options->init_window_size;
+}
+
 gboolean log_source_init(LogPipe *s);
 gboolean log_source_deinit(LogPipe *s);
 
-void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded);
+void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
 void log_source_init_instance(LogSource *self, GlobalConfig *cfg);
 void log_source_options_defaults(LogSourceOptions *options);
@@ -92,8 +100,9 @@ void log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const
 void log_source_options_destroy(LogSourceOptions *options);
 void log_source_options_set_tags(LogSourceOptions *options, GList *tags);
 void log_source_free(LogPipe *s);
+void log_source_wakeup(LogSource *self);
+void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
 
 void log_source_global_init(void);
-
 
 #endif

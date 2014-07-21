@@ -30,6 +30,7 @@
 #include "stats/stats-registry.h"
 #include "stats/stats-syslog.h"
 #include "tags.h"
+#include "ack_tracker.h"
 
 #include <string.h>
 
@@ -42,26 +43,21 @@ log_source_wakeup(LogSource *self)
     self->wakeup(self);
 }
 
-/**
- * log_source_msg_ack:
- *
- * This is running in the same thread as the _destination_, thus care must
- * be taken when manipulating the LogSource data structure.
- **/
-static void
-log_source_msg_ack(LogMessage *msg, gpointer user_data)
+static inline void
+_flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
 {
-  LogSource *self = (LogSource *) user_data;
   guint32 old_window_size;
-  guint32 cur_ack_count, last_ack_count;
-  
-  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, 1);
-  if (old_window_size == 0)
-    {
-      log_source_wakeup(self);
-    }
-  log_msg_unref(msg);
 
+  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, window_size_increment);
+
+  if (old_window_size == 0)
+    log_source_wakeup(self);
+}
+
+static void
+_flow_control_rate_adjust(LogSource *self)
+{
+  guint32 cur_ack_count, last_ack_count;
   /* NOTE: this is racy. msg_ack may be executing in different writer
    * threads. I don't want to lock, all we need is an approximate value of
    * the ACK rate of the last couple of seconds.  */
@@ -119,7 +115,26 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
         }
     }
 #endif
-  log_pipe_unref(&self->super);
+}
+
+void
+log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment)
+{
+  _flow_control_window_size_adjust(self, window_size_increment);
+  _flow_control_rate_adjust(self);
+}
+
+/**
+ * log_source_msg_ack:
+ *
+ * This is running in the same thread as the _destination_, thus care must
+ * be taken when manipulating the LogSource data structure.
+ **/
+static void
+log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean acked)
+{
+  AckTracker *ack_tracker = msg->ack_record->tracker;
+  ack_tracker_manage_msg_ack(ack_tracker, msg, acked);
 }
 
 void
@@ -210,6 +225,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
     
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
+  ack_tracker_track_msg(self->ack_tracker, msg);
 
   /* $HOST setup */
   log_source_mangle_hostname(self, msg);
@@ -264,7 +280,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   log_msg_ref(msg);
   log_msg_add_ack(msg, &local_options);
   msg->ack_func = log_source_msg_ack;
-  msg->ack_userdata = log_pipe_ref(s);
     
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
 
@@ -296,8 +311,20 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
 }
 
+static inline void
+_create_ack_tracker_if_not_exists(LogSource *self, gboolean pos_tracked)
+{
+  if (!self->ack_tracker)
+    {
+      if (pos_tracked)
+        self->ack_tracker = late_ack_tracker_new(self);
+      else
+        self->ack_tracker = early_ack_tracker_new(self);
+    }
+}
+
 void
-log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded)
+log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked)
 {
   /* NOTE: we don't adjust window_size even in case it was changed in the
    * configuration and we received a SIGHUP.  This means that opened
@@ -315,6 +342,8 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
     g_free(self->stats_instance);
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
+  self->pos_tracked = pos_tracked;
+  _create_ack_tracker_if_not_exists(self, pos_tracked);
 }
 
 void
@@ -326,6 +355,7 @@ log_source_init_instance(LogSource *self, GlobalConfig *cfg)
   self->super.init = log_source_init;
   self->super.deinit = log_source_deinit;
   g_atomic_counter_set(&self->window_size, -1);
+  self->ack_tracker = NULL;
 }
 
 void
@@ -336,6 +366,8 @@ log_source_free(LogPipe *s)
   g_free(self->stats_id);
   g_free(self->stats_instance);
   log_pipe_free_method(s);
+
+  ack_tracker_free(self->ack_tracker);
 }
 
 void

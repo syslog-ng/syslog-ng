@@ -25,6 +25,7 @@
 #include "logreader.h"
 #include "mainloop-io-worker.h"
 #include "mainloop-call.h"
+#include "ack_tracker.h"
 
 struct _LogReader
 {
@@ -341,6 +342,7 @@ log_reader_fetch_log(LogReader *self)
   log_transport_aux_data_init(&aux);
   while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
     {
+      Bookmark *bookmark;
       const guchar *msg;
       gsize msg_len;
       LogProtoStatus status;
@@ -354,7 +356,8 @@ log_reader_fetch_log(LogReader *self)
        */
 
       log_transport_aux_data_reinit(&aux);
-      status = log_proto_server_fetch(self->proto, &msg, &msg_len, &may_read, &aux);
+      bookmark = ack_tracker_request_bookmark(self->super.ack_tracker);
+      status = log_proto_server_fetch(self->proto, &msg, &msg_len, &may_read, &aux, bookmark);
       switch (status)
         {
         case LPS_EOF:
@@ -380,11 +383,9 @@ log_reader_fetch_log(LogReader *self)
           if (!log_reader_handle_line(self, msg, msg_len, &aux))
             {
               /* window is full, don't generate further messages */
-              log_proto_server_queued(self->proto);
               break;
             }
         }
-      log_proto_server_queued(self->proto);
     }
   log_transport_aux_data_destroy(&aux);
   if (self->options->flags & LR_PREEMPT)
@@ -471,7 +472,9 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
 {
   LogReader *self = (LogReader *) s;
 
-  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & LR_THREADED));
+  gboolean pos_tracked = ((self->proto != NULL) && log_proto_server_is_position_tracked(self->proto));
+
+  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & LR_THREADED), pos_tracked);
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);

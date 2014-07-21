@@ -400,7 +400,7 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
       iv_list_del(&node->list);
       self->qbacklog_len--;
       path_options.ack_needed = node->ack_needed;
-      log_msg_ack(msg, &path_options);
+      log_msg_ack(msg, &path_options, TRUE);
       log_msg_free_queue_node(node);
       log_msg_unref(msg);
     }
@@ -443,7 +443,7 @@ log_queue_fifo_free_queue(struct iv_list_head *q)
       path_options.ack_needed = node->ack_needed;
       msg = node->msg;
       log_msg_free_queue_node(node);
-      log_msg_ack(msg, &path_options);
+      log_msg_ack(msg, &path_options, FALSE);
       log_msg_unref(msg);
     }
 }

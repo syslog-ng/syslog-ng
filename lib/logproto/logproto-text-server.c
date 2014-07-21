@@ -428,6 +428,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.stream_based = TRUE;
   self->reverse_convert = (GIConv) -1;
   self->consumed_len = -1;
+  self->super.pos_tracking = TRUE;
 }
 
 LogProtoServer *

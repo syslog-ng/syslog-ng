@@ -28,6 +28,7 @@
 #include "logproto.h"
 #include "persist-state.h"
 #include "transport/transport-aux-data.h"
+#include "bookmark.h"
 
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
@@ -64,11 +65,11 @@ struct _LogProtoServer
   const LogProtoServerOptions *options;
   LogTransport *transport;
   /* FIXME: rename to something else */
+  gboolean (*is_position_tracked)(LogProtoServer *s);
   gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond);
   gboolean (*is_preemptable)(LogProtoServer *s);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
-  LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux);
-  void (*queued)(LogProtoServer *s);
+  LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark);
   gboolean (*validate_options)(LogProtoServer *s);
   void (*free_fn)(LogProtoServer *s);
 };
@@ -111,18 +112,11 @@ log_proto_server_restart_with_state(LogProtoServer *s, PersistState *state, cons
 }
 
 static inline LogProtoStatus
-log_proto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux)
+log_proto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark)
 {
   if (s->status == LPS_SUCCESS)
-    return s->fetch(s, msg, msg_len, may_read, aux);
+    return s->fetch(s, msg, msg_len, may_read, aux, bookmark);
   return s->status;
-}
-
-static inline void
-log_proto_server_queued(LogProtoServer *s)
-{
-  if (s->queued)
-    s->queued(s);
 }
 
 static inline gint
@@ -136,6 +130,15 @@ static inline void
 log_proto_server_reset_error(LogProtoServer *s)
 {
   s->status = LPS_SUCCESS;
+}
+
+static inline gboolean
+log_proto_server_is_position_tracked(LogProtoServer *s)
+{
+  if (s->is_position_tracked)
+    return s->is_position_tracked(s);
+
+  return FALSE;
 }
 
 gboolean log_proto_server_validate_options(LogProtoServer *self);
