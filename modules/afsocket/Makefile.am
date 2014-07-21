@@ -32,7 +32,9 @@ modules_afsocket_libafsocket_notls_la_SOURCES	=	\
 	modules/afsocket/afsocket-grammar.y		\
 	modules/afsocket/afsocket-parser.c		\
 	modules/afsocket/afsocket-parser.h		\
-	modules/afsocket/afsocket-plugin.c
+	modules/afsocket/afsocket-plugin.c      \
+	modules/afsocket/systemd-source.h       \
+	modules/afsocket/systemd-source.c
 
 modules_afsocket_libafsocket_notls_la_CPPFLAGS	=	\
 	$(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)	\

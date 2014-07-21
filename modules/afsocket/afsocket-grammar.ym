@@ -36,6 +36,7 @@
 #include "afunix-dest.h"
 #include "afinet-source.h"
 #include "afinet-dest.h"
+#include "systemd-source.h"
 #include "messages.h"
 #include "syslog-names.h"
 #include "plugin.h"
@@ -107,6 +108,12 @@ afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
   afsocket_grammar_set_dest_driver(&dd->super);
 }
 
+static void
+systemd_grammar_set_source_driver(SystemDSourceDriver *sd)
+{
+  afsocket_grammar_set_source_driver(&sd->super);
+}
+
 }
 
 %name-prefix "afsocket_"
@@ -128,6 +135,7 @@ afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
 %token KW_NETWORK
 %token KW_TRANSPORT
 %token KW_IP_PROTOCOL
+%token KW_SYSTEMD
 
 %token KW_IP_TTL
 %token KW_SO_BROADCAST
@@ -176,6 +184,7 @@ afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
 %type	<ptr> source_afnetwork
 %type	<ptr> source_afnetwork_params
 %type   <ptr> source_afsocket_stream_params
+%type	<ptr> source_systemd
 
 %type	<ptr> dest_afunix
 %type	<ptr> dest_afunix_dgram_params
@@ -209,6 +218,7 @@ driver
         | LL_CONTEXT_SOURCE source_afinet                     { $$ = $2; }
         | LL_CONTEXT_SOURCE source_afsyslog                   { $$ = $2; }
         | LL_CONTEXT_SOURCE source_afnetwork                  { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_systemd                    { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afunix                  { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afinet                  { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afsyslog                { $$ = $2; }
@@ -416,6 +426,18 @@ source_afsocket_transport
 #endif
           }
         ;
+
+source_systemd
+        : KW_SYSTEMD '('  ')'
+          {
+            SystemDSourceDriver *d = systemd_sd_new(configuration);
+
+            systemd_grammar_set_source_driver(d);
+
+            $$ = d;
+          }
+        ;
+
         
 dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
