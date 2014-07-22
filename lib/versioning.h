@@ -63,7 +63,7 @@
 #define VERSION_VALUE_PE_5_1   0x0501
 #define VERSION_VALUE_PE_5_2   0x0502
 
-#define CURRENT_VERSION_VALUE  0x0501
+#define CURRENT_VERSION_VALUE  0x0502
 
 gint compare_versions(gint version1, gint version2);
 gboolean check_config_version(gint version, gint required_version);
