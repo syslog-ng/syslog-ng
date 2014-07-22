@@ -1,3 +1,5 @@
+if ! IS_WINDOWS
+
 module_LTLIBRARIES			= libafsmtp.la
 export top_srcdir
 
@@ -25,3 +27,5 @@ uninstall:
 
 BUILT_SOURCES	= afsmtp-grammar.y afsmtp-grammar.c afsmtp-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) afsmtp-grammar.ym
+
+endif
