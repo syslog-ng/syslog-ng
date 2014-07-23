@@ -28,11 +28,12 @@
 #include "syslog-ng.h"
 #include "persist-state.h"
 
-#define MAX_BOOKMARK_DATA_LENGTH (128-4*sizeof(void *)) /* Bookmark structure should be aligned (ie. HPUX-11v2 ia64) */
+#define MAX_BOOKMARK_DATA_LENGTH (128)
 
 typedef struct _BookmarkContainer
 {
-  char other_state[MAX_BOOKMARK_DATA_LENGTH];
+  /* Bookmark structure should be aligned (ie. HPUX-11v2 ia64) */
+  long long other_state[MAX_BOOKMARK_DATA_LENGTH/sizeof(long long)];
 } BookmarkContainer;
 
 struct _Bookmark
@@ -40,9 +41,7 @@ struct _Bookmark
   PersistState *persist_state;
   void (*save)(Bookmark *self);
   void (*destroy)(Bookmark *self);
-  void *padding;
   BookmarkContainer container;
-  /* take care of the size of the structure because of the required alignment on some platforms (see comment above) */
 };
 
 static inline void
@@ -51,7 +50,6 @@ bookmark_init(Bookmark *self)
   self->persist_state = NULL;
   self->save = NULL;
   self->destroy = NULL;
-  self->padding = NULL;
 }
 
 #endif

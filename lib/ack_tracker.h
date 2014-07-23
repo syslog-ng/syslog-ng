@@ -35,7 +35,6 @@ struct _AckTracker
   Bookmark* (*request_bookmark)(AckTracker *self);
   void (*track_msg)(AckTracker *self, LogMessage *msg);
   void (*manage_msg_ack)(AckTracker *self, LogMessage *msg, AckType ack_type);
-  void *padding; /* keep this structure 64bit aligned */
 };
 
 struct _AckRecord
