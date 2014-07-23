@@ -25,6 +25,7 @@
 
 #if ENABLE_SYSTEMD
 #include <systemd/sd-daemon.h>
+#include "messages.h"
 
 void
 service_management_publish_status(const gchar *status)
@@ -47,6 +48,38 @@ void
 service_management_indicate_readiness(void)
 {
   sd_notify(0, "READY=1");
+}
+
+gboolean
+service_management_systemd_is_used(void)
+{
+  int number_of_fds = sd_listen_fds(0); 
+
+  if (number_of_fds == 1)
+    {
+      return TRUE;
+    }
+  else if (number_of_fds < 0)
+    {
+      msg_error ("system(): getting socket activation file descriptors from"
+                 " systemd failed",
+                 evt_tag_int("errno", number_of_fds),
+                 NULL);
+      return FALSE;
+    }
+  else if (number_of_fds == 0)
+    {
+      msg_error("system(): no file descriptors received for socket activation",
+                NULL);
+      return FALSE;
+    }
+  else
+    {
+      msg_error("system(): Too many sockets passed in for socket activation"
+                ", syslog-ng only supports one.",
+                NULL);
+      return FALSE;
+    }
 }
 
 #endif

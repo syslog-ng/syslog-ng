@@ -32,13 +32,14 @@
 void service_management_publish_status(const gchar *status);
 void service_management_clear_status(void);
 void service_management_indicate_readiness(void);
+gboolean service_management_systemd_is_used(void);
 
 #else
 
 #define service_management_publish_status(x)
 #define service_management_clear_status()
 #define service_management_indicate_readiness()
-
+#define service_management_systemd_is_used(x) FALSE
 #endif
 
 #endif

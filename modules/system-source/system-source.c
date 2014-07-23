@@ -38,7 +38,7 @@
 #include <iv.h>
 
 #if ENABLE_SYSTEMD
-#include <systemd/sd-daemon.h>
+#include "service-management.h"
 #endif
 
 #if __FreeBSD__
@@ -152,48 +152,6 @@ system_sysblock_add_freebsd_klog(GString *sysblock, const gchar *release)
     system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse", NULL);
 }
 
-#if ENABLE_SYSTEMD
-static char *
-system_linux_find_dev_log(void)
-{
-  int r, fd;
-
-  r = sd_listen_fds(0);
-  if (r == 0)
-    return "/dev/log";
-  if (r < 0)
-    {
-      msg_error ("system(): sd_listen_fds() failed",
-                 evt_tag_int("errno", r),
-                 NULL);
-      return NULL;
-    }
-
-  /* We only support socket activation for /dev/log, meaning
-   * one socket only. Bail out if we get more.
-   */
-  if (r != 1)
-    {
-      msg_error("system(): Too many sockets passed in for socket activation, syslog-ng only supports one.",
-                NULL);
-      return NULL;
-    }
-
-  fd = SD_LISTEN_FDS_START;
-  if (sd_is_socket_unix(fd, SOCK_DGRAM, -1,
-                        "/run/systemd/journal/syslog", 0) != 1)
-    {
-      msg_error("system(): Socket activation is only supported on /run/systemd/journal/syslog",
-                NULL);
-      return NULL;
-    }
-
-  return "/run/systemd/journal/syslog";
-}
-#else
-#define system_linux_find_dev_log() "/dev/log"
-#endif
-
 static gboolean
 _is_fd_pollable(gint fd)
 {
@@ -208,6 +166,19 @@ _is_fd_pollable(gint fd)
   if (pollable)
     iv_fd_unregister(&check_fd);
   return pollable;
+}
+
+
+static void
+systemd_sysblock_add_systemd_source(GString *sysblock)
+{
+  g_string_append_printf(sysblock, 
+"channel {\n"
+"  log {\n"
+"    source { %s };\n"
+"    rewrite { set(\"${.unix.pid}\" value(\"PID\") condition(\"${.unix.pid}\" != \"\")); };\n"
+"  };\n"
+"};\n", "systemd();");
 }
 
 static void
@@ -240,6 +211,24 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
                              "kernel", "kernel", format);
 }
 
+static gboolean
+system_sysblock_add_linux(GString *sysblock)
+{
+  gboolean ret = FALSE;
+
+#ifdef ENABLE_SYSTEMD
+  ret = service_management_systemd_is_used();
+      
+  if (ret)
+    systemd_sysblock_add_systemd_source(sysblock);
+#else
+    system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
+#endif
+
+  system_sysblock_add_linux_kmsg(sysblock);
+  return TRUE;
+}
+
 gboolean
 system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
                        CfgArgs *args, gpointer user_data)
@@ -248,7 +237,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
   GString *sysblock;
   struct utsname u;
   gboolean result;
-
+  
   g_snprintf(buf, sizeof(buf), "source confgen system");
 
   sysblock = g_string_sized_new(1024);
@@ -263,15 +252,8 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
 
   if (strcmp(u.sysname, "Linux") == 0)
     {
-      char *log = system_linux_find_dev_log ();
-
-      if (!log)
-        {
-          return FALSE;
-        }
-
-      system_sysblock_add_unix_dgram(sysblock, log, NULL, "8192");
-      system_sysblock_add_linux_kmsg(sysblock);
+      if(system_sysblock_add_linux(sysblock) == FALSE)
+        return FALSE;
     }
   else if (strcmp(u.sysname, "SunOS") == 0)
     {
