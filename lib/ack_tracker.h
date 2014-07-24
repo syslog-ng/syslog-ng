@@ -34,7 +34,7 @@ struct _AckTracker
   LogSource *source;
   Bookmark* (*request_bookmark)(AckTracker *self);
   void (*track_msg)(AckTracker *self, LogMessage *msg);
-  void (*manage_msg_ack)(AckTracker *self, LogMessage *msg, gboolean acked);
+  void (*manage_msg_ack)(AckTracker *self, LogMessage *msg, AckType ack_type);
 };
 
 struct _AckRecord
@@ -79,9 +79,9 @@ ack_tracker_track_msg(AckTracker *self, LogMessage *msg)
 }
 
 static inline void
-ack_tracker_manage_msg_ack(AckTracker *self, LogMessage *msg, gboolean acked)
+ack_tracker_manage_msg_ack(AckTracker *self, LogMessage *msg, AckType ack_type)
 {
-  self->manage_msg_ack(self, msg, acked);
+  self->manage_msg_ack(self, msg, ack_type);
 }
 
 #endif
