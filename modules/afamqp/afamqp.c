@@ -467,7 +467,7 @@ afamqp_worker_insert(LogThrDestDriver *s)
     {
       stats_counter_inc(s->stored_messages);
       step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options, TRUE);
+      log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
   else

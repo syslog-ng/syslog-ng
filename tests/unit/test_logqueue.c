@@ -59,7 +59,7 @@ send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
   for (i = 0; i < n; i++)
     {
       log_queue_pop_head(q, &msg, &path_options, use_app_acks, FALSE);
-      log_msg_ack(msg, &path_options, TRUE);
+      log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
 }
@@ -230,7 +230,7 @@ threaded_consume(gpointer st)
         }
       else
         {
-          log_msg_ack(msg, &path_options, TRUE);
+          log_msg_ack(msg, &path_options, AT_PROCESSED);
           log_msg_unref(msg);
           msg_count++;
         }

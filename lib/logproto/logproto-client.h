@@ -42,6 +42,16 @@ typedef union _LogProtoClientOptionsStorage
   gchar __padding[LOG_PROTO_CLIENT_OPTIONS_SIZE];
 } LogProtoClientOptionsStorage;
 
+typedef void (*LogProtoClientAckCallback)(gint num_msg_acked, gpointer user_data);
+typedef void (*LogProtoClientRewindCallback)(gpointer user_data);
+
+typedef struct
+{
+  LogProtoClientAckCallback ack_callback;
+  LogProtoClientRewindCallback rewind_callback;
+  gpointer user_data;
+} LogProtoClientFlowControlFuncs;
+
 gboolean log_proto_client_options_validate(const LogProtoClientOptions *options);
 void log_proto_client_options_defaults(LogProtoClientOptions *options);
 void log_proto_client_options_init(LogProtoClientOptions *options, GlobalConfig *cfg);
@@ -58,7 +68,29 @@ struct _LogProtoClient
   LogProtoStatus (*flush)(LogProtoClient *s);
   gboolean (*validate_options)(LogProtoClient *s);
   void (*free_fn)(LogProtoClient *s);
+  LogProtoClientFlowControlFuncs flow_control_funcs;
 };
+
+static inline void
+log_proto_client_set_client_flow_control(LogProtoClient *self, LogProtoClientFlowControlFuncs *flow_control_funcs)
+{
+  self->flow_control_funcs.ack_callback = flow_control_funcs->ack_callback;
+  self->flow_control_funcs.rewind_callback = flow_control_funcs->rewind_callback;
+  self->flow_control_funcs.user_data = flow_control_funcs->user_data;
+}
+static inline void
+log_proto_client_msg_ack(LogProtoClient *self, gint num_msg_acked)
+{
+  if (self->flow_control_funcs.ack_callback)
+    self->flow_control_funcs.ack_callback(num_msg_acked, self->flow_control_funcs.user_data);
+}
+
+static inline void
+log_proto_client_msg_rewind(LogProtoClient *self)
+{
+  if (self->flow_control_funcs.rewind_callback)
+    self->flow_control_funcs.rewind_callback(self->flow_control_funcs.user_data);
+}
 
 static inline gboolean
 log_proto_client_validate_options(LogProtoClient *self)

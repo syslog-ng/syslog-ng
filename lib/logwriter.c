@@ -89,7 +89,6 @@ struct _LogWriter
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
-  gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
 };
@@ -123,6 +122,24 @@ static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
 static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
+static void log_writer_free_proto(LogWriter *self);
+static void log_writer_set_proto(LogWriter *self, LogProtoClient *proto);
+static void log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto);
+
+
+static void
+log_writer_msg_ack(gint num_msg_acked, gpointer user_data)
+{
+  LogWriter *self = (LogWriter *)user_data;
+  log_queue_ack_backlog(self->queue, num_msg_acked);
+}
+
+static void
+log_writer_msg_rewind(gpointer user_data)
+{
+  LogWriter *self = (LogWriter *)user_data;
+  log_queue_rewind_backlog(self->queue);
+}
 
 void
 log_writer_set_flags(LogWriter *self, guint32 flags)
@@ -174,7 +191,7 @@ log_writer_work_finished(gpointer s)
   main_loop_assert_main_thread();
   self->flush_waiting_for_timeout = FALSE;
 
-  if (self->pending_proto_present)
+  if (self->pending_proto != NULL)
     {
       /* pending proto is only set in the main thread, so no need to
        * lock it before coming here. After we're syncing with the
@@ -182,12 +199,10 @@ log_writer_work_finished(gpointer s)
        * non-main thread. */
 
       g_static_mutex_lock(&self->pending_proto_lock);
-      if (self->proto)
-        log_proto_client_free(self->proto);
+      log_writer_free_proto(self);
 
-      self->proto = self->pending_proto;
-      self->pending_proto = NULL;
-      self->pending_proto_present = FALSE;
+      log_writer_set_proto(self, self->pending_proto);
+      log_writer_set_pending_proto(self, NULL);
 
       g_cond_signal(self->pending_proto_cond);
       g_static_mutex_unlock(&self->pending_proto_lock);
@@ -1058,8 +1073,9 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         {
           if (lm->flags & LF_LOCAL)
             step_sequence_number(&self->seq_num);
-          log_msg_ack(lm, &path_options, TRUE);
           log_msg_unref(lm);
+          msg_set_context(NULL);
+          log_msg_refcache_stop(AT_PROCESSED);
         }
       else
         {
@@ -1071,12 +1087,10 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
               log_queue_push_head(self->queue, lm, &path_options);
             }
           msg_set_context(NULL);
-          log_msg_refcache_stop();
+          log_msg_refcache_stop(AT_ABORTED);
           break;
         }
 
-      msg_set_context(NULL);
-      log_msg_refcache_stop();
       count++;
     }
 
@@ -1155,7 +1169,7 @@ log_writer_init(LogPipe *s)
       LogProtoClient *proto;
 
       proto = self->proto;
-      self->proto = NULL;
+      log_writer_set_proto(self, NULL);
       log_writer_reopen(self, proto);
     }
 
@@ -1205,8 +1219,7 @@ log_writer_free(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
 
-  if (self->proto)
-    log_proto_client_free(self->proto);
+  log_writer_free_proto(self);
 
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
@@ -1238,6 +1251,38 @@ log_writer_opened(LogWriter *self)
   return self->proto != NULL;
 }
 
+
+static void
+log_writer_free_proto(LogWriter *self)
+{
+  if (self->proto)
+    log_proto_client_free(self->proto);
+
+  self->proto = NULL;
+}
+
+static void
+log_writer_set_proto(LogWriter *self, LogProtoClient *proto)
+{
+  self->proto = proto;
+
+  if (proto)
+    {
+      LogProtoClientFlowControlFuncs flow_control_funcs;
+      flow_control_funcs.ack_callback = log_writer_msg_ack;
+      flow_control_funcs.rewind_callback = log_writer_msg_rewind;
+      flow_control_funcs.user_data = self;
+
+      log_proto_client_set_client_flow_control(self->proto, &flow_control_funcs);
+    }
+}
+
+static void
+log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto)
+{
+  self->pending_proto = proto;
+}
+
 /* run in the main thread in reaction to a log_writer_reopen to change
  * the destination LogProtoClient instance. It needs to be ran in the main
  * thread as it reregisters the watches associated with the main
@@ -1254,17 +1299,14 @@ log_writer_reopen_deferred(gpointer s)
   if (self->io_job.working)
     {
       /* NOTE: proto can be NULL */
-      self->pending_proto = proto;
-      self->pending_proto_present = TRUE;
+      log_writer_set_pending_proto(self, proto);
       return;
     }
 
   log_writer_stop_watches(self);
 
-  if (self->proto)
-    log_proto_client_free(self->proto);
-
-  self->proto = proto;
+  log_writer_free_proto(self);
+  log_writer_set_proto(self, proto);
 
   if (proto)
     log_writer_start_watches(self);
@@ -1307,7 +1349,7 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
   if (!main_loop_is_main_thread())
     {
       g_static_mutex_lock(&self->pending_proto_lock);
-      while (self->pending_proto_present)
+      while (self->pending_proto != NULL)
         {
           g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
         }
