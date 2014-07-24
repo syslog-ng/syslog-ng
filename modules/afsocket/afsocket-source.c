@@ -478,16 +478,24 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
   /* fetch persistent connections first */
   if (self->connections_kept_alive_accross_reloads)
     {
-      GList *p;
-
+      GList *p = NULL;
       self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE));
 
       self->num_connections = 0;
       for (p = self->connections; p; p = p->next)
         {
           afsocket_sc_set_owner((AFSocketSourceConnection *) p->data, self);
-          log_pipe_init((LogPipe *) p->data);
-          self->num_connections++;
+          if (log_pipe_init((LogPipe *) p->data))
+            {
+              self->num_connections++;
+            }
+          else
+            {
+              AFSocketSourceConnection *sc = (AFSocketSourceConnection *)p->data;
+
+              self->connections = g_list_remove(self->connections, sc);
+              afsocket_sd_kill_connection((AFSocketSourceConnection *)sc);
+            }
         }
     }
   return TRUE;

@@ -312,7 +312,7 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
   return log_writer_new(writer_flags, self->super.super.super.cfg);
 }
 
-static void
+static gboolean
 afsocket_dd_setup_writer(AFSocketDestDriver *self)
 {
   if (!self->writer)
@@ -330,8 +330,14 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
                          afsocket_dd_stats_instance(self));
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
 
-  log_pipe_init((LogPipe *) self->writer);
+  if (!log_pipe_init((LogPipe *) self->writer))
+    {
+      log_pipe_unref((LogPipe *) self->writer);
+      return FALSE;
+    }
+
   log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
+  return TRUE;
 }
 
 static gboolean
@@ -342,7 +348,8 @@ afsocket_dd_setup_connection(AFSocketDestDriver *self)
   self->time_reopen = cfg->time_reopen;
 
   afsocket_dd_restore_connection(self);
-  afsocket_dd_setup_writer(self);
+  if (!afsocket_dd_setup_writer(self))
+    return FALSE;
 
   if (!log_writer_opened(self->writer))
     afsocket_dd_reconnect(self);

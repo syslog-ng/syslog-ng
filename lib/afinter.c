@@ -334,7 +334,14 @@ afinter_sd_init(LogPipe *s)
   log_source_options_init(&self->source_options, cfg, self->super.super.group);
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
-  log_pipe_init(&self->source->super);
+
+  if (!log_pipe_init(&self->source->super))
+    {
+      log_pipe_unref(&self->source->super);
+      self->source = NULL;
+      return FALSE;
+    }
+
   return TRUE;
 }
 
