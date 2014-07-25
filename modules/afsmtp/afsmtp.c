@@ -543,7 +543,6 @@ afsmtp_worker_insert(LogThrDestDriver *s)
 
   if (success)
     {
-      stats_counter_inc(s->stored_messages);
       step_sequence_number(&self->seq_num);
       __accept_message(self, msg);
     }
