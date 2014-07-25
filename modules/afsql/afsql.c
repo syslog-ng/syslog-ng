@@ -821,6 +821,9 @@ afsql_dd_ensure_initialized_connection(AFSqlDestDriver *self)
   dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
   dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
 
+  if (!strcmp(self->type, s_oracle))
+    dbi_conn_set_option_numeric(self->dbi_ctx, "oracle_ignore_tns_config", self->ignore_tns_config);
+
   if (dbi_conn_connect(self->dbi_ctx) < 0)
     {
       const gchar *dbi_error;
