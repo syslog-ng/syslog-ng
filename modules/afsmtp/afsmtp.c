@@ -35,6 +35,8 @@
 #include <libesmtp.h>
 #include <signal.h>
 
+#define DEFAULT_NUM_RETRIES 3
+
 typedef struct
 {
   gchar *name;
@@ -70,6 +72,8 @@ typedef struct
   /* Writer-only stuff */
   gint32 seq_num;
   GString *str;
+  guint num_retries;
+  guint failed_message_counter;
 } AFSMTPDriver;
 
 static gchar *
@@ -172,6 +176,13 @@ afsmtp_dd_add_header(LogDriver *d, const gchar *header, const gchar *value)
   self->headers = g_list_append(self->headers, h);
 
   return TRUE;
+}
+
+void
+afsmtp_dd_set_retries(LogDriver *s, gint num_retries)
+{
+  AFSMTPDriver *self = (AFSMTPDriver *)s;
+  self->num_retries = num_retries;
 }
 
 /*
@@ -577,6 +588,7 @@ afsmtp_dd_new(GlobalConfig *cfg)
   afsmtp_dd_set_port((LogDriver *)self, 25);
 
   self->mail_from = g_new0(AFSMTPRecipient, 1);
+  self->num_retries = DEFAULT_NUM_RETRIES;
 
   init_sequence_number(&self->seq_num);
 
