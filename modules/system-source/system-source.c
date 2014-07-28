@@ -170,7 +170,7 @@ _is_fd_pollable(gint fd)
 
 
 static void
-systemd_sysblock_add_systemd_source(GString *sysblock)
+system_sysblock_add_systemd_source(GString *sysblock)
 {
   g_string_append_printf(sysblock, 
 "channel {\n"
@@ -220,7 +220,7 @@ system_sysblock_add_linux(GString *sysblock)
   ret = service_management_systemd_is_used();
       
   if (ret)
-    systemd_sysblock_add_systemd_source(sysblock);
+    system_sysblock_add_systemd_source(sysblock);
 #else
     system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
 #endif
