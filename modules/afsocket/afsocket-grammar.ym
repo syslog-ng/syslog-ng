@@ -238,7 +238,7 @@ source_afunix_dgram_params
         SystemDSyslogSourceDriver *sd;
         AFUnixSourceDriver *ud;
  
-        if (service_management_systemd_is_used() && strncmp("/dev/log", $1, 9) == 0)
+        if (service_management_get_type() == SMT_SYSTEMD && strncmp("/dev/log", $1, 9) == 0)
           {
             msg_warning("Using /dev/log Unix dgram socket with systemd is not"
                       " possible. Changing to systemd source, which supports"

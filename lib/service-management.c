@@ -50,7 +50,7 @@ service_management_indicate_readiness(void)
   sd_notify(0, "READY=1");
 }
 
-gboolean
+static gboolean
 service_management_systemd_is_used(void)
 {
   int number_of_fds = sd_listen_fds(0); 
@@ -81,5 +81,15 @@ service_management_systemd_is_used(void)
       return FALSE;
     }
 }
+
+ServiceManagementType
+service_management_get_type(void)
+{
+  if (service_management_systemd_is_used())
+    return SMT_SYSTEMD;
+  else
+    return SMT_NONE;
+}
+
 
 #endif

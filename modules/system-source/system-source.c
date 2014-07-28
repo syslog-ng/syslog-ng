@@ -214,16 +214,10 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
 static gboolean
 system_sysblock_add_linux(GString *sysblock)
 {
-  gboolean ret = FALSE;
-
-#ifdef ENABLE_SYSTEMD
-  ret = service_management_systemd_is_used();
-      
-  if (ret)
-    system_sysblock_add_systemd_syslog_source(sysblock);
-#else
+  if (service_management_get_type() == SMT_SYSTEMD)
+    system_sysblock_add_systemd_syslog_source(sysblock); 
+  else
     system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
-#endif
 
   system_sysblock_add_linux_kmsg(sysblock);
   return TRUE;
