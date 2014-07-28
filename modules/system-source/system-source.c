@@ -36,10 +36,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <iv.h>
-
-#if ENABLE_SYSTEMD
 #include "service-management.h"
-#endif
 
 #if __FreeBSD__
 #include <sys/sysctl.h>
