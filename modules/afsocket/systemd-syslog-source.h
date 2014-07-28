@@ -23,17 +23,17 @@
  */
 
 
-#ifndef SYSTEMD_SOURCE_H_INCLUDED
-#define SYSTEMD_SOURCE_H_INCLUDED 1
+#ifndef SYSTEMD_SYSLOG_SOURCE_H_INCLUDED
+#define SYSTEMD_SYSLOG_SOURCE_H_INCLUDED 1
 
 #include "afsocket-source.h"
 #include "transport-mapper-unix.h"
 
-typedef struct _SystemDSourceDriver
+typedef struct _SystemDSyslogSourceDriver
 {
   AFSocketSourceDriver super;
-} SystemDSourceDriver;
+} SystemDSyslogSourceDriver;
 
-SystemDSourceDriver *systemd_sd_new(GlobalConfig *cfg);
+SystemDSyslogSourceDriver *systemd_syslog_sd_new(GlobalConfig *cfg);
 
 #endif

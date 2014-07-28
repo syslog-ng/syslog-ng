@@ -36,7 +36,7 @@
 #include "afunix-dest.h"
 #include "afinet-source.h"
 #include "afinet-dest.h"
-#include "systemd-source.h"
+#include "systemd-syslog-source.h"
 #include "messages.h"
 #include "syslog-names.h"
 #include "plugin.h"
@@ -110,7 +110,7 @@ afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
 }
 
 static void
-systemd_grammar_set_source_driver(SystemDSourceDriver *sd)
+systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 {
   afsocket_grammar_set_source_driver(&sd->super);
 }
@@ -136,7 +136,7 @@ systemd_grammar_set_source_driver(SystemDSourceDriver *sd)
 %token KW_NETWORK
 %token KW_TRANSPORT
 %token KW_IP_PROTOCOL
-%token KW_SYSTEMD
+%token KW_SYSTEMD_SYSLOG
 
 %token KW_IP_TTL
 %token KW_SO_BROADCAST
@@ -185,7 +185,7 @@ systemd_grammar_set_source_driver(SystemDSourceDriver *sd)
 %type	<ptr> source_afnetwork
 %type	<ptr> source_afnetwork_params
 %type   <ptr> source_afsocket_stream_params
-%type	<ptr> source_systemd
+%type	<ptr> source_systemd_syslog
 
 %type	<ptr> dest_afunix
 %type	<ptr> dest_afunix_dgram_params
@@ -219,7 +219,7 @@ driver
         | LL_CONTEXT_SOURCE source_afinet                     { $$ = $2; }
         | LL_CONTEXT_SOURCE source_afsyslog                   { $$ = $2; }
         | LL_CONTEXT_SOURCE source_afnetwork                  { $$ = $2; }
-        | LL_CONTEXT_SOURCE source_systemd                    { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_systemd_syslog             { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afunix                  { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afinet                  { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afsyslog                { $$ = $2; }
@@ -235,7 +235,7 @@ source_afunix
 source_afunix_dgram_params
 	: string
 	  {
-        SystemDSourceDriver *sd;
+        SystemDSyslogSourceDriver *sd;
         AFUnixSourceDriver *ud;
  
         if (service_management_systemd_is_used() && strncmp("/dev/log", $1, 9) == 0)
@@ -245,8 +245,8 @@ source_afunix_dgram_params
                       " socket activation.",
                       NULL);
             
-            sd = systemd_sd_new(configuration);
-            systemd_grammar_set_source_driver(sd);
+            sd = systemd_syslog_sd_new(configuration);
+            systemd_syslog_grammar_set_source_driver(sd);
           }
         else
           {
@@ -444,12 +444,12 @@ source_afsocket_transport
           }
         ;
 
-source_systemd
-        : KW_SYSTEMD '('  ')'
+source_systemd_syslog
+        : KW_SYSTEMD_SYSLOG '('  ')'
           {
-            SystemDSourceDriver *d = systemd_sd_new(configuration);
+            SystemDSyslogSourceDriver *d = systemd_syslog_sd_new(configuration);
 
-            systemd_grammar_set_source_driver(d);
+            systemd_syslog_grammar_set_source_driver(d);
 
             $$ = d;
           }
