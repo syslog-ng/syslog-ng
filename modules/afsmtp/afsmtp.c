@@ -334,15 +334,15 @@ static gboolean
 afsmtp_worker_insert(LogThrDestDriver *s)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)s;
-  gboolean success;
+  gboolean success = TRUE;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   smtp_session_t session;
   smtp_message_t message;
   gpointer args[] = { self, NULL, NULL };
 
-  success = log_queue_pop_head(s->queue, &msg, &path_options, FALSE, FALSE);
-  if (!success)
+  msg = log_queue_pop_head(s->queue, &path_options);
+  if (!msg)
     return TRUE;
 
   msg_set_context(msg);
@@ -417,7 +417,7 @@ afsmtp_worker_insert(LogThrDestDriver *s)
     {
       stats_counter_inc(s->stored_messages);
       step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options, TRUE);
+      log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
   else

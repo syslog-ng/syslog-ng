@@ -316,15 +316,15 @@ static gboolean
 afstomp_worker_insert(LogThrDestDriver *s)
 {
   STOMPDestDriver *self = (STOMPDestDriver *)s;
-  gboolean success;
+  gboolean success = TRUE;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   if (!afstomp_dd_connect(self, TRUE))
     return FALSE;
 
-  success = log_queue_pop_head(self->super.queue, &msg, &path_options, FALSE, FALSE);
-  if (!success)
+  msg = log_queue_pop_head(self->super.queue, &path_options);
+  if (!msg)
     return TRUE;
 
   msg_set_context(msg);
@@ -335,7 +335,7 @@ afstomp_worker_insert(LogThrDestDriver *s)
     {
       stats_counter_inc(self->super.stored_messages);
       step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options, TRUE);
+      log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
   else

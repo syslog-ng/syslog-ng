@@ -57,7 +57,7 @@ early_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 }
 
 static void
-early_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, gboolean acked)
+early_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
   EarlyAckTracker *self = (EarlyAckTracker *)s;
 

@@ -26,13 +26,13 @@ test_ack(LogMessage *msg, gpointer user_data)
 }
 
 void
-feed_some_messages(LogQueue **q, int n, gboolean ack_needed)
+feed_some_messages(LogQueue **q, int n)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
   gint i;
 
-  path_options.ack_needed = ack_needed;
+  path_options.ack_needed = (*q)->use_backlog;
   for (i = 0; i < n; i++)
     {
       char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
@@ -50,7 +50,7 @@ feed_some_messages(LogQueue **q, int n, gboolean ack_needed)
 }
 
 void
-send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
+send_some_messages(LogQueue *q, gint n)
 {
   gint i;
   LogMessage *msg;
@@ -58,8 +58,8 @@ send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
 
   for (i = 0; i < n; i++)
     {
-      log_queue_pop_head(q, &msg, &path_options, use_app_acks, FALSE);
-      log_msg_ack(msg, &path_options, TRUE);
+      msg = log_queue_pop_head(q, &path_options);
+      log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
 }
@@ -73,7 +73,7 @@ app_ack_some_messages(LogQueue *q, gint n)
 void
 rewind_messages(LogQueue *q)
 {
-  log_queue_rewind_backlog(q);
+  log_queue_rewind_backlog_all(q);
 }
 
 void
@@ -83,12 +83,14 @@ testcase_zero_diskbuf_and_normal_acks()
   gint i;
 
   q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
-    feed_some_messages(&q, 10, TRUE);
+    feed_some_messages(&q, 10);
 
-  send_some_messages(q, fed_messages, TRUE);
+  send_some_messages(q, fed_messages);
   app_ack_some_messages(q, fed_messages);
   if (fed_messages != acked_messages)
     {
@@ -106,12 +108,14 @@ testcase_zero_diskbuf_alternating_send_acks()
   gint i;
 
   q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
     {
-      feed_some_messages(&q, 10, TRUE);
-      send_some_messages(q, 10, TRUE);
+      feed_some_messages(&q, 10);
+      send_some_messages(q, 10);
       app_ack_some_messages(q, 10);
     }
   if (fed_messages != acked_messages)
@@ -124,7 +128,7 @@ testcase_zero_diskbuf_alternating_send_acks()
 }
 
 #define FEEDERS 1
-#define MESSAGES_PER_FEEDER 50000
+#define MESSAGES_PER_FEEDER 30000
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 
@@ -195,34 +199,23 @@ threaded_consume(gpointer st)
       gint slept = 0;
       msg = NULL;
 
-      do
+      while((msg = log_queue_pop_head(q, &path_options)) == NULL)
         {
-          success = log_queue_pop_head(q, &msg, &path_options, FALSE, FALSE);
-          if (!success)
-            {
-              struct timespec ns;
+          struct timespec ns;
 
-              /* sleep 1 msec */
-              ns.tv_sec = 0;
-              ns.tv_nsec = 1000000;
-              nanosleep(&ns, NULL);
-              slept++;
-              if (slept > 10000)
-                {
-                  /* slept for more than 10 seconds */
-                  fprintf(stderr, "The wait for messages took too much time, loops=%d, msg_count=%d\n", loops, msg_count);
-                  return GUINT_TO_POINTER(1);
-                }
+          /* sleep 1 msec */
+          ns.tv_sec = 0;
+          ns.tv_nsec = 1000000;
+          nanosleep(&ns, NULL);
+          slept++;
+          if (slept > 10000)
+            {
+              /* slept for more than 10 seconds */
+              fprintf(stderr, "The wait for messages took too much time, loops=%d, msg_count=%d\n", loops, msg_count);
+              return GUINT_TO_POINTER(1);
             }
         }
-      while (!success);
 
-      g_assert(!success || (success && msg != NULL));
-      if (!success)
-        {
-          fprintf(stderr, "Queue didn't return enough messages: loops=%d, msg_count=%d\n", loops, msg_count);
-          return GUINT_TO_POINTER(1);
-        }
       if ((loops % 10) == 0)
         {
           /* push the message back to the queue */
@@ -230,7 +223,7 @@ threaded_consume(gpointer st)
         }
       else
         {
-          log_msg_ack(msg, &path_options, TRUE);
+          log_msg_ack(msg, &path_options, AT_PROCESSED);
           log_msg_unref(msg);
           msg_count++;
         }
@@ -271,6 +264,7 @@ testcase_with_threads()
     {
       fprintf(stderr,"starting testrun: %d\n",i);
       q = log_queue_fifo_new(MESSAGES_SUM, NULL);
+      log_queue_set_use_backlog(q, TRUE);
 
       for (j = 0; j < FEEDERS; j++)
         {
