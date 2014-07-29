@@ -505,11 +505,6 @@ AC_CHECK_LIB(nsl, gethostbyname, BASE_LIBS="$BASE_LIBS -lnsl")
 AC_CHECK_LIB(regex, regexec, REGEX_LIBS="-lregex")
 AC_CHECK_LIB(resolv, res_init, RESOLV_LIBS="-lresolv")
 
-
-if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
-	AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap")
-fi
-
 AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getnameinfo getutent getutxent pread pwrite strcasestr memrchr localtime_r gmtime_r)
 old_LIBS=$LIBS
 LIBS=$BASE_LIBS
@@ -1011,12 +1006,12 @@ fi
 
 
 if test "x$enable_linux_caps" = "xauto"; then
-        AC_MSG_CHECKING(whether to enable Linux capability support)
         if test "x$ac_cv_header_sys_capability_h" = "xyes"; then
-                enable_linux_caps="yes"
+                AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap"; enable_linux_caps="yes", enable_linux_caps="no")
         else
                 enable_linux_caps="no"
         fi
+        AC_MSG_CHECKING(whether to enable Linux capability support)
         AC_MSG_RESULT([$enable_linux_caps])
 fi
 
