@@ -1262,7 +1262,7 @@ log_writer_free(LogPipe *s)
 gboolean
 log_writer_has_pending_writes(LogWriter *self)
 {
-  return log_queue_get_length(self->queue) > 0 || !self->watches_running;
+  return !log_queue_is_empty_racy(self->queue) || !self->watches_running;
 }
 
 gboolean
