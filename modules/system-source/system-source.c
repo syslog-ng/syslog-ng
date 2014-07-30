@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2014      BalaBit S.a.r.l., Luxembourg, Luxembourg
+ * Copyright (c) 2012-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -208,7 +209,7 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
                              "kernel", "kernel", format);
 }
 
-static gboolean
+static void
 system_sysblock_add_linux(GString *sysblock)
 {
   if (service_management_get_type() == SMT_SYSTEMD)
@@ -217,7 +218,6 @@ system_sysblock_add_linux(GString *sysblock)
     system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
 
   system_sysblock_add_linux_kmsg(sysblock);
-  return TRUE;
 }
 
 gboolean
@@ -243,8 +243,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
 
   if (strcmp(u.sysname, "Linux") == 0)
     {
-      if(system_sysblock_add_linux(sysblock) == FALSE)
-        return FALSE;
+      system_sysblock_add_linux(sysblock);
     }
   else if (strcmp(u.sysname, "SunOS") == 0)
     {
