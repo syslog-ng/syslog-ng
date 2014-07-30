@@ -29,11 +29,13 @@
 #include "afsocket-source.h"
 #include "transport-mapper-unix.h"
 
+
 typedef struct _SystemDSyslogSourceDriver
 {
   AFSocketSourceDriver super;
 } SystemDSyslogSourceDriver;
 
 SystemDSyslogSourceDriver *systemd_syslog_sd_new(GlobalConfig *cfg);
+AFSocketSourceDriver *create_and_set_unix_dgram_or_systemd_source(gchar *filename, GlobalConfig *cfg);
 
 #endif

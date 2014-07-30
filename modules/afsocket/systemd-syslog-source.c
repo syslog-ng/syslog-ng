@@ -24,6 +24,9 @@
 
 
 #include "systemd-syslog-source.h"
+#include "afunix-source.h"
+#include "afsocket-grammar-extra.h"
+#include "service-management.h"
 
 #if ENABLE_SYSTEMD
 #include <systemd/sd-daemon.h>
@@ -126,5 +129,30 @@ systemd_syslog_sd_new(GlobalConfig *cfg)
     self->super.bind_addr = g_sockaddr_unix_new(NULL);
 
   return self;
+}
+
+AFSocketSourceDriver*
+create_and_set_unix_dgram_or_systemd_source(gchar *filename, GlobalConfig *cfg)
+{
+  SystemDSyslogSourceDriver *sd;
+  AFUnixSourceDriver *ud;
+
+  if (service_management_get_type() == SMT_SYSTEMD && strncmp("/dev/log", filename, 9) == 0)
+    {
+      msg_warning("Using /dev/log Unix dgram socket with systemd is not"
+                " possible. Changing to systemd source, which supports"
+                " socket activation.",
+                NULL);
+      
+      sd = systemd_syslog_sd_new(configuration);
+      systemd_syslog_grammar_set_source_driver(sd);
+      return &sd->super;
+    }
+  else
+    {
+      ud = afunix_sd_new_dgram(filename, configuration);
+      afunix_grammar_set_source_driver(ud);
+      return &ud->super;
+    }
 }
 
