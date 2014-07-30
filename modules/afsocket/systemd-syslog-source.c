@@ -32,12 +32,6 @@
 #include "misc.h"
 
 
-static gint
-systemd_syslog_sd_get_fd()
-{
-  return SD_LISTEN_FDS_START;
-}
-
 static gboolean
 systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
                           gint *acquired_fd)
@@ -65,7 +59,7 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
     }
   else
     {
-      fd = systemd_syslog_sd_get_fd();
+      fd = SD_LISTEN_FDS_START;
       msg_debug("Systemd socket activation",
                 evt_tag_int("file-descriptor", fd),
                 NULL);
