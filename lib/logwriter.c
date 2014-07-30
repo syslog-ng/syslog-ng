@@ -90,6 +90,7 @@ struct _LogWriter
   gint pollable_state;
   LogProto *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
+  gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
   /* messages posted, and we're not certain were properly sent out on the wire */
@@ -132,7 +133,7 @@ static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
 static void log_writer_free_proto(LogWriter *self);
 static void log_writer_set_proto(LogWriter *self, LogProto *proto);
-static void log_writer_set_pending_proto(LogWriter *self, LogProto *proto);
+static void log_writer_set_pending_proto(LogWriter *self, LogProto *proto, gboolean present);
 
 static void
 log_writer_msg_ack(guint num_msg_acked, gpointer user_data)
@@ -176,9 +177,10 @@ log_writer_set_proto(LogWriter *self, LogProto *proto)
 }
 
 static void
-log_writer_set_pending_proto(LogWriter *self, LogProto *proto)
+log_writer_set_pending_proto(LogWriter *self, LogProto *proto, gboolean present)
 {
   self->pending_proto = proto;
+  self->pending_proto_present = present;
 }
 
 static void
@@ -198,7 +200,7 @@ log_writer_work_finished(gpointer s)
   main_loop_assert_main_thread();
   self->flush_waiting_for_timeout = FALSE;
 
-  if (self->pending_proto != NULL)
+  if (self->pending_proto_present)
     {
       /* pending proto is only set in the main thread, so no need to
        * lock it before coming here. After we're syncing with the
@@ -209,7 +211,7 @@ log_writer_work_finished(gpointer s)
 
       log_writer_free_proto(self);
       log_writer_set_proto(self, self->pending_proto);
-      log_writer_set_pending_proto(self, NULL);
+      log_writer_set_pending_proto(self, NULL, FALSE);
 
       g_cond_signal(self->pending_proto_cond);
       g_static_mutex_unlock(&self->pending_proto_lock);
@@ -1469,13 +1471,6 @@ log_writer_idle_time_elapsed(gpointer user_data)
   log_pipe_notify(self->control, &self->super, NC_CLOSE, self);
 }
 
-/* FIXME: this is inherently racy */
-gboolean
-log_writer_has_pending_writes(LogWriter *self)
-{
-  return !log_queue_is_empty(self->queue) || !self->watches_running;
-}
-
 gboolean
 log_writer_opened(LogWriter *self)
 {
@@ -1508,7 +1503,8 @@ log_writer_reopen_deferred(gpointer s)
 
   if (self->io_job.working)
     {
-      log_writer_set_pending_proto(self, proto);
+      /* NOTE: proto can be NULL but it is present... */
+      log_writer_set_pending_proto(self, proto, TRUE);
       return;
     }
 
@@ -1560,7 +1556,7 @@ log_writer_reopen(LogPipe *s, LogProto *proto, LogProtoOptions *proto_options)
   if (!main_loop_is_main_thread())
     {
       g_static_mutex_lock(&self->pending_proto_lock);
-      while (self->pending_proto != NULL)
+      while (self->pending_proto_present)
         {
           g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
         }
