@@ -1383,12 +1383,10 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options, AckType ack_ty
       old_value = log_msg_update_ack_and_ref_and_abort(self, 0, -1, ACKTYPE_TO_ABORTFLAG(ack_type));
       if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == 1)
         {
-          AckType ack_type_cummulated = AT_ABORTED;
-
-          if (ack_type != AT_ABORTED)
-            ack_type_cummulated = ABORTFLAG_TO_ACKTYPE(LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value));
-
-          self->ack_func(self, ack_type_cummulated);
+          if (ack_type == AT_ABORTED)
+            self->ack_func(self, AT_ABORTED);
+          else
+            self->ack_func(self, ABORTFLAG_TO_ACKTYPE(LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value)));
         }
     }
 }
