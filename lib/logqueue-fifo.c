@@ -405,9 +405,6 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint rewind_count)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gint pos;
 
-  if (!self->super.use_backlog)
-    return;
-
   for (pos = 0; pos < rewind_count && self->qbacklog_len > 0; pos++)
     {
       LogMessageQueueNode *node;
@@ -439,9 +436,6 @@ log_queue_fifo_rewind_backlog_all(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
 
-  if (!self->super.use_backlog)
-    return;
-
   iv_list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
   self->qoverflow_output_len += self->qbacklog_len;
   stats_counter_add(self->super.stored_messages, self->qbacklog_len);
@@ -453,9 +447,6 @@ log_queue_fifo_rewind_backlog(LogQueue *s, guint rewind_count)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   guint pos;
-
-  if (!self->super.use_backlog)
-    return;
 
   if (rewind_count > self->qbacklog_len)
     rewind_count = self->qbacklog_len;
