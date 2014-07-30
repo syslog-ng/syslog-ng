@@ -77,6 +77,7 @@ struct _LogWriter
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
+  gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
 };
@@ -112,7 +113,7 @@ static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
 static void log_writer_free_proto(LogWriter *self);
 static void log_writer_set_proto(LogWriter *self, LogProtoClient *proto);
-static void log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto);
+static void log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto, gboolean present);
 
 
 static void
@@ -182,7 +183,7 @@ log_writer_work_finished(gpointer s)
   main_loop_assert_main_thread();
   self->flush_waiting_for_timeout = FALSE;
 
-  if (self->pending_proto != NULL)
+  if (self->pending_proto_present)
     {
       /* pending proto is only set in the main thread, so no need to
        * lock it before coming here. After we're syncing with the
@@ -193,7 +194,7 @@ log_writer_work_finished(gpointer s)
       log_writer_free_proto(self);
 
       log_writer_set_proto(self, self->pending_proto);
-      log_writer_set_pending_proto(self, NULL);
+      log_writer_set_pending_proto(self, NULL, FALSE);
 
       g_cond_signal(self->pending_proto_cond);
       g_static_mutex_unlock(&self->pending_proto_lock);
@@ -1298,9 +1299,10 @@ log_writer_set_proto(LogWriter *self, LogProtoClient *proto)
 }
 
 static void
-log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto)
+log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto, gboolean present)
 {
   self->pending_proto = proto;
+  self->pending_proto_present = present;
 }
 
 /* run in the main thread in reaction to a log_writer_reopen to change
@@ -1318,8 +1320,8 @@ log_writer_reopen_deferred(gpointer s)
 
   if (self->io_job.working)
     {
-      /* NOTE: proto can be NULL */
-      log_writer_set_pending_proto(self, proto);
+      /* NOTE: proto can be NULL but it is present... */
+      log_writer_set_pending_proto(self, proto, TRUE);
       return;
     }
 
@@ -1369,7 +1371,7 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
   if (!main_loop_is_main_thread())
     {
       g_static_mutex_lock(&self->pending_proto_lock);
-      while (self->pending_proto != NULL)
+      while (self->pending_proto_present)
         {
           g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
         }
