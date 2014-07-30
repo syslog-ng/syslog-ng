@@ -127,7 +127,7 @@ log_queue_fifo_get_length(LogQueue *s)
 }
 
 gboolean
-log_queue_fifo_is_empty(LogQueue *s)
+log_queue_fifo_is_empty_racy(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   gboolean has_message_in_queue = FALSE;
@@ -139,7 +139,7 @@ log_queue_fifo_is_empty(LogQueue *s)
   else
     {
       gint i;
-      for (i = 0; i < log_queue_max_threads; i++)
+      for (i = 0; i < log_queue_max_threads && !has_message_in_queue; i++)
         {
           has_message_in_queue |= self->qoverflow_input[i].finish_cb_registered;
         }
@@ -530,7 +530,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   self->super.type = log_queue_fifo_type;
   self->super.use_backlog = FALSE;
   self->super.get_length = log_queue_fifo_get_length;
-  self->super.is_empty = log_queue_fifo_is_empty;
+  self->super.is_empty_racy = log_queue_fifo_is_empty_racy;
   self->super.keep_on_reload = log_queue_fifo_keep_on_reload;
   self->super.push_tail = log_queue_fifo_push_tail;
   self->super.push_head = log_queue_fifo_push_head;

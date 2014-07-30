@@ -1446,6 +1446,13 @@ log_writer_free(LogPipe *s)
   log_pipe_free_method(s);
 }
 
+/* FIXME: this is inherently racy */
+gboolean
+log_writer_has_pending_writes(LogWriter *self)
+{
+  return !log_queue_is_empty_racy(self->queue) || !self->watches_running;
+}
+
 gboolean
 log_writer_reopen_elapsed(gpointer user_data)
 {
