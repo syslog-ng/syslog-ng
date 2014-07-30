@@ -44,6 +44,16 @@
 #include <iv_event.h>
 #include <iv_work.h>
 
+typedef enum
+{
+  /* flush modes */
+
+  /* business as usual, flush when the buffer is full */
+  LW_FLUSH_NORMAL,
+  /* flush the buffer immediately please */
+  LW_FLUSH_FORCE,
+} LogWriterFlushMode;
+
 struct _LogWriter
 {
   LogPipe super;
@@ -105,7 +115,7 @@ struct _LogWriter
  *
  **/
 
-static gboolean log_writer_flush(LogWriter *self, gboolean force_flush);
+static gboolean log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
@@ -172,7 +182,7 @@ log_writer_work_perform(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   g_assert((self->super.flags & PIF_INITIALIZED) != 0);
-  self->work_result = log_writer_flush(self, FALSE);
+  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_FORCE : LW_FLUSH_NORMAL);
 }
 
 static void
@@ -1096,8 +1106,17 @@ log_writer_queue_pop_message(LogWriter *self, LogPathOptions *path_options, gboo
     return log_queue_pop_head(self->queue, path_options);
 }
 
+/*
+ * @flush_mode specifies how hard LogWriter is trying to send messages to
+ * the actual destination:
+ *
+ *
+ * LW_FLUSH_NORMAL    - business as usual, flush when the buffer is full
+ * LW_FLUSH_FORCE     - flush the buffer immediately please
+ *
+ */
 gboolean
-log_writer_flush(LogWriter *self, gboolean force_flush)
+log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 {
   gboolean write_error = FALSE;
 
@@ -1109,10 +1128,10 @@ log_writer_flush(LogWriter *self, gboolean force_flush)
    * infinite loop, since the reader will cease to produce new messages when
    * main_loop_io_worker_job_quit() is set. */
 
-  while ((!main_loop_worker_job_quit() || force_flush) && !write_error)
+  while ((!main_loop_worker_job_quit() || flush_mode == LW_FLUSH_FORCE) && !write_error)
     {
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-      LogMessage *msg = log_writer_queue_pop_message(self, &path_options, force_flush);
+      LogMessage *msg = log_writer_queue_pop_message(self, &path_options, flush_mode == LW_FLUSH_FORCE);
 
       if (!msg)
         break;
@@ -1213,7 +1232,7 @@ log_writer_deinit(LogPipe *s)
   main_loop_assert_main_thread();
 
   log_queue_reset_parallel_push(self->queue);
-  log_writer_flush(self, TRUE);
+  log_writer_flush(self, LW_FLUSH_FORCE);
   /* FIXME: by the time we arrive here, it must be guaranteed that no
    * _queue() call is running in a different thread, otherwise we'd need
    * some kind of locking. */
