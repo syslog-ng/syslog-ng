@@ -82,13 +82,13 @@ log_queue_get_length(LogQueue *self)
   return self->get_length(self);
 }
 
-static inline gint64
+static inline gboolean
 log_queue_is_empty_racy(LogQueue *self)
 {
   if (self->is_empty_racy)
     return self->is_empty_racy(self);
   else
-    return self->get_length(self) > 0;
+    return (self->get_length(self) == 0);
 }
 
 static inline void
