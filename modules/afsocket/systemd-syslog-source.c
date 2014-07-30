@@ -6,10 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "misc.h"
-#endif
 
-
-#if ENABLE_SYSTEMD
 
 static gint
 systemd_syslog_sd_get_fd()
@@ -91,6 +88,12 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s, gint *acquired_fd)
 SystemDSyslogSourceDriver*
 systemd_syslog_sd_new(GlobalConfig *cfg)
 {
+#if ! ENABLE_SYSTEMD
+  msg_error("systemd-syslog() source is not enabled, but you are trying"
+            " to use it. Please compile your syslog-ng with --enable-systemd"
+            " flag.",
+            NULL);
+#endif
   SystemDSyslogSourceDriver *self = g_new0(SystemDSyslogSourceDriver, 1);
 
   TransportMapper *transport_mapper = transport_mapper_unix_dgram_new();

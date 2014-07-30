@@ -27,10 +27,6 @@
 #include "gprocess.h"
 #include "transport-mapper-unix.h"
 
-#if ENABLE_SYSTEMD
-#include <systemd/sd-daemon.h>
-#endif
-
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>

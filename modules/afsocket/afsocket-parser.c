@@ -75,9 +75,7 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "ip_protocol",        KW_IP_PROTOCOL },
   { "max_connections",    KW_MAX_CONNECTIONS },
   { "keep_alive",         KW_KEEP_ALIVE },
-#if ENABLE_SYSTEMD
-  { "systemd-syslog",            KW_SYSTEMD_SYSLOG  },
-#endif
+  { "systemd_syslog",            KW_SYSTEMD_SYSLOG  },
   { NULL }
 };
 
