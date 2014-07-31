@@ -106,7 +106,7 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s, gint *acquired_fd)
 }
 #endif
 
-gboolean
+static gboolean
 systemd_syslog_sd_init_method(LogPipe *s)
 {
   SystemDSyslogSourceDriver *self = (SystemDSyslogSourceDriver*) s;

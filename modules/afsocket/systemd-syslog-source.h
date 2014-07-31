@@ -37,6 +37,5 @@ typedef struct _SystemDSyslogSourceDriver
 
 SystemDSyslogSourceDriver *systemd_syslog_sd_new(GlobalConfig *cfg);
 AFSocketSourceDriver *create_and_set_unix_dgram_or_systemd_source(gchar *filename, GlobalConfig *cfg);
-gboolean systemd_syslog_sd_init_method(LogPipe *s);
 
 #endif
