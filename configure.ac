@@ -426,7 +426,8 @@ AC_CHECK_HEADERS(strings.h	\
 	utmpx.h)
 AC_CHECK_HEADERS(tcpd.h)
 
-AC_CHECK_TYPES([struct ucred, struct cmsgcred], [], [], [#include <sys/types.h>
+AC_CHECK_TYPES([struct ucred, struct cmsgcred], [], [], [#define _GNU_SOURCE 1
+#include <sys/types.h>
 #include <sys/socket.h>])
 
 dnl ***************************************************************************
