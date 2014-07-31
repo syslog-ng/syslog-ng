@@ -52,6 +52,7 @@ void afsql_dd_set_send_time_zone(LogDriver *s, const gchar *send_time_zone);
 void afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines);
 void afsql_dd_set_flush_timeout(LogDriver *s, gint flush_timeout);
 void afsql_dd_set_session_statements(LogDriver *s, GList *session_statements);
+void afsql_dd_set_utf8_fallback(LogDriver *s, gchar *from_encoding);
 void afsql_dd_set_flags(LogDriver *s, gint flags);
 LogDriver *afsql_dd_new();
 gint afsql_dd_lookup_flag(const gchar *flag);
