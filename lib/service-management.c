@@ -22,6 +22,9 @@
  *
  */
 #include "service-management.h"
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #if ENABLE_SYSTEMD
 #include <systemd/sd-daemon.h>
@@ -53,33 +56,21 @@ service_management_indicate_readiness(void)
 static gboolean
 service_management_systemd_is_used(void)
 {
-  int number_of_fds = sd_listen_fds(0); 
+  int fd;
 
-  if (number_of_fds == 1)
-    {
-      return TRUE;
-    }
-  else if (number_of_fds < 0)
-    {
-      msg_error ("system(): getting socket activation file descriptors from"
-                 " systemd failed",
-                 evt_tag_int("errno", number_of_fds),
-                 NULL);
-      return FALSE;
-    }
-  else if (number_of_fds == 0)
-    {
-      msg_error("system(): no file descriptors received for socket activation",
-                NULL);
-      return FALSE;
-    }
+  fd = open("/run/systemd/system/", O_RDONLY);
+
+  if (fd < 0)
+  {
+    msg_debug("Systemd is not detected as the running init system", NULL);
+    return FALSE;
+  }
   else
-    {
-      msg_error("system(): Too many sockets passed in for socket activation"
-                ", syslog-ng only supports one.",
-                NULL);
-      return FALSE;
-    }
+  {
+    msg_debug("Systemd is detected as the running init system", NULL);
+    close(fd);
+    return TRUE;
+  }
 }
 
 ServiceManagementType
