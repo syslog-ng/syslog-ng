@@ -28,7 +28,7 @@ LIBDBI_MIN_VERSION="0.8.0"
 IVYKIS_MIN_VERSION="0.36.1"
 JSON_C_MIN_VERSION="0.9"
 PCRE_MIN_VERSION="6.1"
-LMC_MIN_VERSION="0.1.6"
+LMC_MIN_VERSION="0.1.8"
 LRMQ_MIN_VERSION="0.0.1"
 
 dnl ***************************************************************************
