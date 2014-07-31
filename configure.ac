@@ -1005,14 +1005,18 @@ if test "x$enable_ipv6" = "xauto"; then
 fi
 
 
-if test "x$enable_linux_caps" = "xauto"; then
+if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
         if test "x$ac_cv_header_sys_capability_h" = "xyes"; then
-                AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap"; enable_linux_caps="yes", enable_linux_caps="no")
+                AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap"; has_linux_caps="yes", has_linux_caps="no")
         else
-                enable_linux_caps="no"
+                has_linux_caps="no"
         fi
         AC_MSG_CHECKING(whether to enable Linux capability support)
-        AC_MSG_RESULT([$enable_linux_caps])
+        AC_MSG_RESULT([$has_linux_caps])
+
+        if test "x$enable_linux_caps" = "xyes" -a "x$has_linux_caps" = "xno"; then
+           AC_MSG_ERROR([Cannot enable Linux capability support.])
+        fi
 fi
 
 if test "x$enable_mongodb" = "xauto"; then
@@ -1307,7 +1311,7 @@ echo "  Memtrace                    : ${enable_memtrace:=no}"
 echo "  IPV6 support                : ${enable_ipv6:=no}"
 echo "  spoof-source support        : ${enable_spoof_source:=no}"
 echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
-echo "  Linux capability support    : ${enable_linux_caps:=no}"
+echo "  Linux capability support    : ${has_linux_caps:=no}"
 echo "  PCRE support                : ${enable_pcre:=no}"
 echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
 echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
