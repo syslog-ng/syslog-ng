@@ -112,7 +112,7 @@ systemd_syslog_sd_init_method(LogPipe *s)
   SystemDSyslogSourceDriver *self = (SystemDSyslogSourceDriver*) s;
 
   msg_warning("systemd-syslog() source ignores configuration options. "
-              "Please, does not set anything on it",
+              "Please, do not set anything on it",
               NULL);
 
   socket_options_free(self->super.socket_options);
