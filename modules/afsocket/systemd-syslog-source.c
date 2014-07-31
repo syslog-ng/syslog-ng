@@ -25,7 +25,7 @@
 
 #include "systemd-syslog-source.h"
 #include "afunix-source.h"
-#include "afsocket-grammar-extra.h"
+#include "afsocket-systemd-override.h"
 #include "service-management.h"
 
 #if ENABLE_SYSTEMD
