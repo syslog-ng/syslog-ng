@@ -684,8 +684,6 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
   key = vp_walker_name_split (state->stack, state, name);
   data = vp_stack_peek (state->stack);
 
-  key = vp_walker_name_split (state->stack, state, name);
-
   if (data != NULL)
     result = state->process_value(key, data->prefix,
                                   type, value,
