@@ -106,6 +106,22 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s, gint *acquired_fd)
 }
 #endif
 
+gboolean
+systemd_syslog_sd_init_method(LogPipe *s)
+{
+  SystemDSyslogSourceDriver *self = (SystemDSyslogSourceDriver*) s;
+
+  msg_warning("systemd-syslog() source ignores configuration options. "
+              "Please, does not set anything on it",
+              NULL);
+
+  socket_options_free(self->super.socket_options);
+  self->super.socket_options = socket_options_new();
+  socket_options_init_instance(self->super.socket_options);
+
+  return afsocket_sd_init_method((LogPipe*) &self->super);
+}
+
 SystemDSyslogSourceDriver*
 systemd_syslog_sd_new(GlobalConfig *cfg)
 {
@@ -120,6 +136,7 @@ systemd_syslog_sd_new(GlobalConfig *cfg)
   TransportMapper *transport_mapper = transport_mapper_unix_dgram_new();
 
   afsocket_sd_init_instance(&self->super, socket_options_new(), transport_mapper, cfg);
+  self->super.super.super.super.init = systemd_syslog_sd_init_method;
 
   self->super.acquire_socket = systemd_syslog_sd_acquire_socket;
   self->super.max_connections = 256;
