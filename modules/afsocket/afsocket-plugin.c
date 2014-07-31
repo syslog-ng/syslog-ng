@@ -109,6 +109,11 @@ static Plugin afsocket_plugins[] =
     .name = "network",
     .parser = &afsocket_parser,
   },
+  {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "systemd-syslog",
+    .parser = &afsocket_parser,
+  },
 };
 
 gboolean
