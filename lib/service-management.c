@@ -22,8 +22,8 @@
  *
  */
 #include "service-management.h"
+#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
 
 #if ENABLE_SYSTEMD
@@ -56,11 +56,9 @@ service_management_indicate_readiness(void)
 static gboolean
 service_management_systemd_is_used(void)
 {
-  int fd;
+  struct stat st;
 
-  fd = open("/run/systemd/system/", O_RDONLY);
-
-  if (fd < 0)
+  if (lstat("/run/systemd/system/", &st) < 0 || !S_ISDIR(st.st_mode))
   {
     msg_debug("Systemd is not detected as the running init system", NULL);
     return FALSE;
@@ -68,7 +66,6 @@ service_management_systemd_is_used(void)
   else
   {
     msg_debug("Systemd is detected as the running init system", NULL);
-    close(fd);
     return TRUE;
   }
 }
