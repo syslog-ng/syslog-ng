@@ -131,7 +131,7 @@ log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment)
  * be taken when manipulating the LogSource data structure.
  **/
 static void
-log_source_msg_ack(LogMessage *msg, gpointer user_data, AckType ack_type)
+log_source_msg_ack(LogMessage *msg, AckType ack_type)
 {
   AckTracker *ack_tracker = msg->ack_record->tracker;
   ack_tracker_manage_msg_ack(ack_tracker, msg, ack_type);

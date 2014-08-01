@@ -20,7 +20,7 @@ MsgFormatOptions parse_options;
 #define OVERFLOW_SIZE 10000
 
 void
-test_ack(LogMessage *msg, gpointer user_data)
+test_ack(LogMessage *msg, AckType ack_type)
 {
   acked_messages++;
 }
@@ -187,7 +187,6 @@ threaded_consume(gpointer st)
   LogQueue *q = (LogQueue *) st;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  gboolean success;
   gint loops = 0;
   gint msg_count = 0;
 
