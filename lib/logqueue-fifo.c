@@ -110,7 +110,7 @@ log_queue_fifo_get_length(LogQueue *s)
 }
 
 gboolean
-log_queue_fifo_is_empty(LogQueue *s)
+log_queue_fifo_is_empty_racy(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   gboolean has_message_in_queue = FALSE;
@@ -122,7 +122,7 @@ log_queue_fifo_is_empty(LogQueue *s)
   else
     {
       gint i;
-      for (i = 0; i < log_queue_max_threads; i++)
+      for (i = 0; i < log_queue_max_threads && !has_message_in_queue; i++)
         {
           has_message_in_queue |= self->qoverflow_input[i].finish_cb_registered;
         }
@@ -405,9 +405,6 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint rewind_count)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gint pos;
 
-  if (!self->super.use_backlog)
-    return;
-
   for (pos = 0; pos < rewind_count && self->qbacklog_len > 0; pos++)
     {
       LogMessageQueueNode *node;
@@ -439,9 +436,6 @@ log_queue_fifo_rewind_backlog_all(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
 
-  if (!self->super.use_backlog)
-    return;
-
   iv_list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
   self->qoverflow_output_len += self->qbacklog_len;
   stats_counter_add(self->super.stored_messages, self->qbacklog_len);
@@ -453,9 +447,6 @@ log_queue_fifo_rewind_backlog(LogQueue *s, guint rewind_count)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   guint pos;
-
-  if (!self->super.use_backlog)
-    return;
 
   if (rewind_count > self->qbacklog_len)
     rewind_count = self->qbacklog_len;
@@ -523,7 +514,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   log_queue_init_instance(&self->super, persist_name);
   self->super.use_backlog = FALSE;
   self->super.get_length = log_queue_fifo_get_length;
-  self->super.is_empty = log_queue_fifo_is_empty;
+  self->super.is_empty_racy = log_queue_fifo_is_empty_racy;
   self->super.keep_on_reload = log_queue_fifo_keep_on_reload;
   self->super.push_tail = log_queue_fifo_push_tail;
   self->super.push_head = log_queue_fifo_push_head;

@@ -44,6 +44,16 @@
 #include <iv_event.h>
 #include <iv_work.h>
 
+typedef enum
+{
+  /* flush modes */
+
+  /* business as usual, flush when the buffer is full */
+  LW_FLUSH_NORMAL,
+  /* flush the buffer immediately please */
+  LW_FLUSH_FORCE,
+} LogWriterFlushMode;
+
 struct _LogWriter
 {
   LogPipe super;
@@ -77,6 +87,7 @@ struct _LogWriter
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
+  gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
 };
@@ -104,7 +115,7 @@ struct _LogWriter
  *
  **/
 
-static gboolean log_writer_flush(LogWriter *self, gboolean force_flush);
+static gboolean log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
@@ -112,7 +123,7 @@ static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
 static void log_writer_free_proto(LogWriter *self);
 static void log_writer_set_proto(LogWriter *self, LogProtoClient *proto);
-static void log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto);
+static void log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto, gboolean present);
 
 
 static void
@@ -171,7 +182,7 @@ log_writer_work_perform(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   g_assert((self->super.flags & PIF_INITIALIZED) != 0);
-  self->work_result = log_writer_flush(self, FALSE);
+  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_FORCE : LW_FLUSH_NORMAL);
 }
 
 static void
@@ -182,7 +193,7 @@ log_writer_work_finished(gpointer s)
   main_loop_assert_main_thread();
   self->flush_waiting_for_timeout = FALSE;
 
-  if (self->pending_proto != NULL)
+  if (self->pending_proto_present)
     {
       /* pending proto is only set in the main thread, so no need to
        * lock it before coming here. After we're syncing with the
@@ -193,7 +204,7 @@ log_writer_work_finished(gpointer s)
       log_writer_free_proto(self);
 
       log_writer_set_proto(self, self->pending_proto);
-      log_writer_set_pending_proto(self, NULL);
+      log_writer_set_pending_proto(self, NULL, FALSE);
 
       g_cond_signal(self->pending_proto_cond);
       g_static_mutex_unlock(&self->pending_proto_lock);
@@ -1095,8 +1106,17 @@ log_writer_queue_pop_message(LogWriter *self, LogPathOptions *path_options, gboo
     return log_queue_pop_head(self->queue, path_options);
 }
 
+/*
+ * @flush_mode specifies how hard LogWriter is trying to send messages to
+ * the actual destination:
+ *
+ *
+ * LW_FLUSH_NORMAL    - business as usual, flush when the buffer is full
+ * LW_FLUSH_FORCE     - flush the buffer immediately please
+ *
+ */
 gboolean
-log_writer_flush(LogWriter *self, gboolean force_flush)
+log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 {
   gboolean write_error = FALSE;
 
@@ -1108,10 +1128,10 @@ log_writer_flush(LogWriter *self, gboolean force_flush)
    * infinite loop, since the reader will cease to produce new messages when
    * main_loop_io_worker_job_quit() is set. */
 
-  while ((!main_loop_worker_job_quit() || force_flush) && !write_error)
+  while ((!main_loop_worker_job_quit() || flush_mode == LW_FLUSH_FORCE) && !write_error)
     {
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-      LogMessage *msg = log_writer_queue_pop_message(self, &path_options, force_flush);
+      LogMessage *msg = log_writer_queue_pop_message(self, &path_options, flush_mode == LW_FLUSH_FORCE);
 
       if (!msg)
         break;
@@ -1212,7 +1232,7 @@ log_writer_deinit(LogPipe *s)
   main_loop_assert_main_thread();
 
   log_queue_reset_parallel_push(self->queue);
-  log_writer_flush(self, TRUE);
+  log_writer_flush(self, LW_FLUSH_FORCE);
   /* FIXME: by the time we arrive here, it must be guaranteed that no
    * _queue() call is running in a different thread, otherwise we'd need
    * some kind of locking. */
@@ -1262,7 +1282,7 @@ log_writer_free(LogPipe *s)
 gboolean
 log_writer_has_pending_writes(LogWriter *self)
 {
-  return log_queue_get_length(self->queue) > 0 || !self->watches_running;
+  return !log_queue_is_empty_racy(self->queue) || !self->watches_running;
 }
 
 gboolean
@@ -1298,9 +1318,10 @@ log_writer_set_proto(LogWriter *self, LogProtoClient *proto)
 }
 
 static void
-log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto)
+log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto, gboolean present)
 {
   self->pending_proto = proto;
+  self->pending_proto_present = present;
 }
 
 /* run in the main thread in reaction to a log_writer_reopen to change
@@ -1318,8 +1339,8 @@ log_writer_reopen_deferred(gpointer s)
 
   if (self->io_job.working)
     {
-      /* NOTE: proto can be NULL */
-      log_writer_set_pending_proto(self, proto);
+      /* NOTE: proto can be NULL but it is present... */
+      log_writer_set_pending_proto(self, proto, TRUE);
       return;
     }
 
@@ -1369,7 +1390,7 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
   if (!main_loop_is_main_thread())
     {
       g_static_mutex_lock(&self->pending_proto_lock);
-      while (self->pending_proto != NULL)
+      while (self->pending_proto_present)
         {
           g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
         }

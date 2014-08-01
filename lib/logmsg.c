@@ -124,7 +124,7 @@ TLS_BLOCK_START
   /* number of cached acks by the current thread */
   gint logmsg_cached_acks;
   /* abort flag in the current thread for acks */
-  gint logmsg_cached_abort;
+  gboolean logmsg_cached_abort;
 }
 TLS_BLOCK_END;
 
@@ -1376,19 +1376,17 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options, AckType ack_ty
            * delayed until log_msg_refcache_stop() is called */
 
           logmsg_cached_acks--;
-          logmsg_cached_abort |= ACKTYPE_TO_ABORTFLAG(ack_type);
+          logmsg_cached_abort |= (ACKTYPE_TO_ABORTFLAG(ack_type) == AT_ABORTED ? TRUE : FALSE);
           return;
         }
 
       old_value = log_msg_update_ack_and_ref_and_abort(self, 0, -1, ACKTYPE_TO_ABORTFLAG(ack_type));
       if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == 1)
         {
-          AckType ack_type_cummulated = AT_ABORTED;
-
-          if (ack_type != AT_ABORTED)
-            ack_type_cummulated = ABORTFLAG_TO_ACKTYPE(LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value));
-
-          self->ack_func(self, ack_type_cummulated);
+          if (ack_type == AT_ABORTED)
+            self->ack_func(self, AT_ABORTED);
+          else
+            self->ack_func(self, ABORTFLAG_TO_ACKTYPE(LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value)));
         }
     }
 }
@@ -1446,7 +1444,7 @@ log_msg_refcache_start_producer(LogMessage *self)
 
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
-  logmsg_cached_abort = 0;
+  logmsg_cached_abort = FALSE;
   logmsg_cached_ack_needed = TRUE;
 }
 
@@ -1471,7 +1469,7 @@ log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_opt
   logmsg_cached_ack_needed = path_options->ack_needed;
   logmsg_cached_refs = 0;
   logmsg_cached_acks = 0;
-  logmsg_cached_abort = 0;
+  logmsg_cached_abort = FALSE;
 }
 
 /*
@@ -1485,7 +1483,7 @@ log_msg_refcache_stop(void)
 {
   gint old_value;
   gint current_cached_acks;
-  gint current_cached_abort;
+  gboolean current_cached_abort;
 
   g_assert(logmsg_current != NULL);
 
@@ -1542,7 +1540,7 @@ log_msg_refcache_stop(void)
   logmsg_cached_acks = 0;
 
   current_cached_abort = logmsg_cached_abort;
-  logmsg_cached_abort = 0;
+  logmsg_cached_abort = FALSE;
 
   old_value = log_msg_update_ack_and_ref_and_abort(logmsg_current, 0, current_cached_acks, current_cached_abort);
 

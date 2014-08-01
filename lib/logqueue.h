@@ -57,7 +57,7 @@ struct _LogQueue
   /* queue management */
   gboolean (*keep_on_reload)(LogQueue *self);
   gint64 (*get_length)(LogQueue *self);
-  gboolean (*is_empty)(LogQueue *self);
+  gboolean (*is_empty_racy)(LogQueue *self);
   void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   void (*push_head)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   LogMessage *(*pop_head)(LogQueue *self, LogPathOptions *path_options);
@@ -82,13 +82,13 @@ log_queue_get_length(LogQueue *self)
   return self->get_length(self);
 }
 
-static inline gint64
-log_queue_is_empty(LogQueue *self)
+static inline gboolean
+log_queue_is_empty_racy(LogQueue *self)
 {
-  if (self->is_empty)
-    return self->is_empty(self);
+  if (self->is_empty_racy)
+    return self->is_empty_racy(self);
   else
-    return self->get_length(self) > 0;
+    return (self->get_length(self) == 0);
 }
 
 static inline void
@@ -128,18 +128,27 @@ log_queue_pop_head_ignore_throttle(LogQueue *self, LogPathOptions *path_options)
 static inline void
 log_queue_rewind_backlog(LogQueue *self, guint rewind_count)
 {
+  if (!self->use_backlog)
+    return;
+
   return self->rewind_backlog(self, rewind_count);
 }
 
 static inline void
 log_queue_rewind_backlog_all(LogQueue *self)
 {
+  if (!self->use_backlog)
+    return;
+
   return self->rewind_backlog_all(self);
 }
 
 static inline void
 log_queue_ack_backlog(LogQueue *self, guint rewind_count)
 {
+  if (!self->use_backlog)
+    return;
+
   return self->ack_backlog(self, rewind_count);
 }
 
