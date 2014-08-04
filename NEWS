@@ -1,3 +1,42 @@
+3.5.6
+        Mon,  4 Aug 2014 13:39:42 +0200
+
+        This is the sixth bug-fix release for the 3.5.x series.
+        Upgrading from earlier versions is highly recommended, as the
+        changes in this release are very small, yet, also very
+        important for most platforms and workloads.
+
+        Bugfixes
+        ========
+
+        * A major memory leak was fixed in the value-pairs framework,
+          which affects $(format-json), MongoDB, AMQP and more. The
+          leak was supposed to be fixed in 3.5.5, but due to a merging
+          mistake, it was missed.
+
+        * The configure script now detects Linux capabilities
+          properly, there is no need to use --disable-linux-caps on
+          non-Linux platforms anymore.
+
+        * The pdbtool merge command will now generate version 4
+          patterndb files, instead of version 3.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Fabien Wernli
+        Gergely Nagy
+        Peter Czanik
+
 3.5.5
         Mon, 21 Jul 2014 17:00:00 +0200
 
