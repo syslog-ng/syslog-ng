@@ -36,7 +36,8 @@ modules_afsocket_libafsocket_notls_la_SOURCES	=	\
 	modules/afsocket/afsocket-parser.h		\
 	modules/afsocket/afsocket-plugin.c      \
 	modules/afsocket/systemd-syslog-source.h       \
-	modules/afsocket/systemd-syslog-source.c
+	modules/afsocket/systemd-syslog-source.c	\
+	modules/afsocket/afsocket-systemd-override.h
 
 modules_afsocket_libafsocket_notls_la_CPPFLAGS	=	\
 	$(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)	\
