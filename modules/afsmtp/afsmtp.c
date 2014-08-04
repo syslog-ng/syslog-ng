@@ -77,6 +77,12 @@ typedef struct
   LogTemplateOptions template_options;
 } AFSMTPDriver;
 
+typedef struct
+{
+  gboolean success;
+  AFSMTPDriver *driver;
+} LogRcptStatusData;
+
 static gchar *
 afsmtp_wash_string (gchar *str)
 {
@@ -275,13 +281,14 @@ afsmtp_dd_log_rcpt_status(smtp_recipient_t rcpt, const char *mailbox,
                           gpointer user_data)
 {
   const smtp_status_t *status;
-  gboolean success = *(gboolean *)user_data;
+  LogRcptStatusData *status_data = (LogRcptStatusData *)user_data;
 
   status = smtp_recipient_status(rcpt);
-  if (status->code != 250 && success)
+  if (status->code != 250)
     {
-      success = FALSE;
+      status_data->success = FALSE;
       msg_error("SMTP recipient result",
+            evt_tag_str("driver", status_data->driver->super.super.super.id),
             evt_tag_str("recipient", mailbox),
             evt_tag_int("code", status->code),
             evt_tag_str("text", status->text),
@@ -290,6 +297,7 @@ afsmtp_dd_log_rcpt_status(smtp_recipient_t rcpt, const char *mailbox,
   else
     {
       msg_debug("SMTP recipient result",
+            evt_tag_str("driver", status_data->driver->super.super.super.id),
             evt_tag_str("recipient", mailbox),
             evt_tag_int("code", status->code),
             evt_tag_str("text", status->text),
@@ -421,11 +429,15 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
 static gboolean
 __check_transfer_status(AFSMTPDriver *self, smtp_message_t message)
 {
-  gboolean success = TRUE;
+  LogRcptStatusData status_data;
   const smtp_status_t *status = smtp_message_transfer_status(message);
+
+  status_data.success = TRUE;
+  status_data.driver = self;
+
   if (status->code != 250)
     {
-      success = FALSE;
+      status_data.success = FALSE;
       msg_error("Failed to send message",
           evt_tag_str("driver", self->super.super.super.id),
           evt_tag_int("code", status->code),
@@ -439,9 +451,10 @@ __check_transfer_status(AFSMTPDriver *self, smtp_message_t message)
           evt_tag_int("code", status->code),
           evt_tag_str("text", status->text),
           NULL);
-      smtp_enumerate_recipients(message, afsmtp_dd_log_rcpt_status, &success);
+      smtp_enumerate_recipients(message, afsmtp_dd_log_rcpt_status, &status_data);
     }
-  return success;
+
+  return status_data.success;
 }
 
 static gboolean
