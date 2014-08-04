@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -326,7 +326,7 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   
   log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
 
-  log_pipe_forward_msg(s, msg, path_options);
+  log_src_driver_queue_method(s, msg, path_options, user_data);
 }
 
 static gboolean
