@@ -189,7 +189,7 @@ log_writer_work_perform(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   g_assert((self->super.flags & PIF_INITIALIZED) != 0);
-  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_FORCE : LW_FLUSH_NORMAL);
+  self->work_result = log_writer_flush(self, LW_FLUSH_NORMAL);
 }
 
 static void
