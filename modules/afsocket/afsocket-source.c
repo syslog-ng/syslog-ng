@@ -684,8 +684,6 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->super.super.super.init = afsocket_sd_init_method;
   self->super.super.super.deinit = afsocket_sd_deinit_method;
   self->super.super.super.free_fn = afsocket_sd_free_method;
-  /* NULL behaves as if log_pipe_forward_msg was specified */
-  self->super.super.super.queue = NULL;
   self->super.super.super.notify = afsocket_sd_notify;
   self->setup_addresses = afsocket_sd_setup_addresses_method;
   self->socket_options = socket_options;
