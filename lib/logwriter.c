@@ -86,7 +86,7 @@ struct _LogWriter
   gboolean work_result;
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
-  gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
+  gboolean watches_running:1, suspended:1, working:1, waiting_for_throttle:1;
   gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
@@ -182,7 +182,7 @@ log_writer_work_perform(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   g_assert((self->super.flags & PIF_INITIALIZED) != 0);
-  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_FORCE : LW_FLUSH_NORMAL);
+  self->work_result = log_writer_flush(self, LW_FLUSH_NORMAL);
 }
 
 static void
@@ -191,7 +191,7 @@ log_writer_work_finished(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   main_loop_assert_main_thread();
-  self->flush_waiting_for_timeout = FALSE;
+  self->waiting_for_throttle = FALSE;
 
   if (self->pending_proto_present)
     {
@@ -434,7 +434,7 @@ log_writer_update_watches(LogWriter *self)
   /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
 
   if (log_proto_client_prepare(self->proto, &fd, &cond) ||
-      self->flush_waiting_for_timeout ||
+      self->waiting_for_throttle ||
       log_queue_check_items(self->queue, &timeout_msec,
                             (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
     {
@@ -446,7 +446,7 @@ log_writer_update_watches(LogWriter *self)
       /* few elements are available, but less than flush_lines, we need to start a timer to initiate a flush */
 
       log_writer_update_fd_callbacks(self, 0);
-      self->flush_waiting_for_timeout = TRUE;
+      self->waiting_for_throttle = TRUE;
       log_writer_arm_suspend_timer(self, (void (*)(void *)) log_writer_update_watches, timeout_msec);
     }
   else
