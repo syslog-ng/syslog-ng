@@ -41,6 +41,7 @@ static CfgLexerKeyword afsmtp_keywords[] = {
   { "sender",			KW_SENDER },
   { "body",			KW_BODY },
   { "header",			KW_HEADER },
+  { "retries", KW_RETRIES},
   { NULL }
 };
 

@@ -46,7 +46,9 @@ void afsmtp_dd_set_from(LogDriver *d, const gchar *phrase, const gchar *mbox);
 void afsmtp_dd_add_rcpt(LogDriver *d, afsmtp_rcpt_type_t type,
                         const gchar *phrase, const gchar *mbox);
 void afsmtp_dd_set_body(LogDriver *d, const gchar *body);
+void afsmtp_dd_set_retries(LogDriver *s, gint num_retries);
 gboolean afsmtp_dd_add_header(LogDriver *d, const gchar *header,
                               const gchar *value);
+LogTemplateOptions *afsmtp_dd_get_template_options(LogDriver *d);
 
 #endif
