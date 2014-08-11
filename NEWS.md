@@ -220,7 +220,7 @@ Credits
 -------
 
 syslog-ng is developed as a community project, and as such it relies
-on volunteers, to do the work necessarily to produce syslog-ng.
+on volunteers, to do the work necessary to produce syslog-ng.
 
 Reporting bugs, testing changes, writing code or simply providing
 feedback are all important contributions, so please if you are a user
