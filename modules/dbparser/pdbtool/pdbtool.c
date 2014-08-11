@@ -311,7 +311,7 @@ pdbtool_merge(int argc, char *argv[])
   g_date_clear(&date, 1);
   g_date_set_time_t(&date, time (NULL));
 
-  buff = g_markup_printf_escaped("<?xml version='1.0' encoding='UTF-8'?>\n<patterndb version='3' pub_date='%04d-%02d-%02d'>",
+  buff = g_markup_printf_escaped("<?xml version='1.0' encoding='UTF-8'?>\n<patterndb version='4' pub_date='%04d-%02d-%02d'>",
                                     g_date_get_year(&date), g_date_get_month(&date), g_date_get_day(&date));
   g_string_append(merged, buff);
   g_free(buff);
