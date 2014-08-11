@@ -10,9 +10,30 @@ include lib/stats/Makefile.am
 include lib/control/Makefile.am
 include lib/compat/Makefile.am
 
+LSNG_RELEASE		= $(shell echo @VERSION@ | cut -d. -f1,2)
+
+# * Start with version information of ‘0:0:0’ for each libtool
+#   library.
+# * Update the version information only immediately before a public
+#   release of your software. More frequent updates are unnecessary,
+#   and only guarantee that the current interface number gets larger
+#   faster.
+# * If the library source code has changed at all since the last
+#   update, then increment revision (‘c:r:a’ becomes ‘c:r+1:a’).
+# * If any interfaces have been added, removed, or changed since the
+#   last update, increment current, and set revision to 0.
+# * If any interfaces have been added since the last public release,
+#   then increment age.
+# * If any interfaces have been removed or changed since the last
+#   public release, then set age to 0.
+LSNG_CURRENT		= 0
+LSNG_REVISION		= 0
+LSNG_AGE		= 0
+
 lib_LTLIBRARIES				+= lib/libsyslog-ng.la
 lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
-lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release @VERSION@
+lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release ${LSNG_RELEASE} \
+					  -version-info ${LSNG_CURRENT}:${LSNG_REVISION}:${LSNG_AGE}
 
 lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite lib_template lib_stats lib_control
 
