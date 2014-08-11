@@ -1,3 +1,87 @@
+3.6.0alpha2
+===========
+<!-- Released: Mon, 11 Aug 2014 15:02:59 +0200 -->
+
+This is the second alpha release of the upcoming syslog-ng OSE 3.6
+branch, with more internal changes and features compared to the
+previous 3.6.0alpha1 release. Above the changes in the latest 3.5.6
+stable version, this release contains the following noteworthy
+changes:
+
+Changed defaults
+----------------
+
+* Threaded mode is now **enabled** by default. To turn it off, use
+  `threaded(no)` in the global options section.
+
+* The versioning of the `libsyslog-ng` internal library has changed:
+  instead of always using the current release number, we will now try
+  to maintain ABI compatibility during the lifetime of a stable
+  branch. Therefore, we use only the first two components of our
+  version as the base of the library version. Another number will be
+  part of the SONAME too, but that will only change when we break
+  compatibility.
+
+  The SONAME is currently set to `libsyslog-ng-3.6.so.0`, and will
+  remain the same during alpha and beta releases, even when the ABI
+  changes. We will start bumping the version after the first stable
+  release from this branch, if needed.
+
+Features
+--------
+
+* The new `systemd-syslog()` source replaces the former implicit
+  support for the same thing. Users who use systemd are advised to use
+  either the `system()` source, or this new one when they want to
+  receive logs from systemd via the `/run/systemd/journal/syslog`
+  socket.
+
+### SMTP destination changes
+
+* The `smtp()` destination now supports a `retries()` option, which
+  controls how many times a message delivery will be attempted before
+  dropping it.
+
+* The destination no longer counts delivered messages as `stored`.
+
+* The templates used in the destination now honor the time-zone
+  settings.
+
+* The driver will abort if required options (any of `to()`, `cc()`,
+  `bcc()` and `from()`, and `subject()` and `body()`) are not set.
+
+Bugfixes
+--------
+
+* The `file()` and `network()` (including `tcp()` et al) sources will
+  now properly set the `$SOURCE` macro.
+
+* To build syslog-ng with the MongoDB destination, libmongo-client
+  version 0.1.8+ is now required. (The internal copy has been updated
+  accordingly.)
+
+* The UNIX credential extracting feature was ported to FreeBSD,
+  syslog-ng now compiles, and has support for this feature. (The
+  previous support in alpha1 was sadly incomplete.)
+
+* The `pdbtool merge` command will now generate version 4 patterndb
+  files.
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessary to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Fabien Wernli, Gergely Nagy, Laszlo Budai, Peter Czanik, Tibor Benke,
+Viktor Juhasz, Viktor Tusa.
+
 3.6.0alpha1
 ===========
 
