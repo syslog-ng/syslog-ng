@@ -147,6 +147,9 @@ struct _LogTemplateFunction
   /* free data in state */
   void (*free_state)(gpointer s);
 
+  /* free LogTemplateFunction instance (if not static) */
+  void (*free_fn)(LogTemplateFunction *self);
+
   /* generic argument that can be used to pass information from registration time */
   gpointer arg;
 };
@@ -184,6 +187,7 @@ void tf_simple_func_free_state(gpointer state);
       eval,                                                             \
       call,                                                             \
       free_state,                                                       \
+      NULL,								\
       arg                                                               \
     };                                                                  \
     return &func;                                                       \
