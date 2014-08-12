@@ -480,7 +480,7 @@ static void
 afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
 {
   step_sequence_number(&self->seq_num);
-  log_msg_ack(msg, path_options, TRUE);
+  log_msg_ack(msg, path_options, AT_PROCESSED);
   log_msg_unref(msg);
   self->failed_message_counter = 0;
 }
@@ -497,8 +497,8 @@ afmongodb_worker_insert (LogThrDestDriver *s)
   if (!afmongodb_dd_connect(self, TRUE))
     return FALSE;
 
-  success = log_queue_pop_head(self->super.queue, &msg, &path_options, FALSE, FALSE);
-  if (!success)
+  msg = log_queue_pop_head(self->super.queue, &path_options);
+  if (!msg)
     return TRUE;
 
   msg_set_context(msg);

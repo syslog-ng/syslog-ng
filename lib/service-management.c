@@ -22,9 +22,13 @@
  *
  */
 #include "service-management.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #if ENABLE_SYSTEMD
 #include <systemd/sd-daemon.h>
+#include "messages.h"
 
 void
 service_management_publish_status(const gchar *status)
@@ -48,5 +52,32 @@ service_management_indicate_readiness(void)
 {
   sd_notify(0, "READY=1");
 }
+
+static gboolean
+service_management_systemd_is_used(void)
+{
+  struct stat st;
+
+  if (lstat("/run/systemd/system/", &st) < 0 || !S_ISDIR(st.st_mode))
+  {
+    msg_debug("Systemd is not detected as the running init system", NULL);
+    return FALSE;
+  }
+  else
+  {
+    msg_debug("Systemd is detected as the running init system", NULL);
+    return TRUE;
+  }
+}
+
+ServiceManagementType
+service_management_get_type(void)
+{
+  if (service_management_systemd_is_used())
+    return SMT_SYSTEMD;
+  else
+    return SMT_NONE;
+}
+
 
 #endif

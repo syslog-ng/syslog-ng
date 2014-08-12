@@ -36,12 +36,15 @@
 #include "afunix-dest.h"
 #include "afinet-source.h"
 #include "afinet-dest.h"
+#include "systemd-syslog-source.h"
 #include "messages.h"
 #include "syslog-names.h"
 #include "plugin.h"
 #include "cfg-grammar.h"
 #include "socket-options-inet.h"
 #include "transport-mapper-inet.h"
+#include "service-management.h"
+#include "afsocket-systemd-override.h"
 
 #if BUILD_WITH_SSL
 #include "tlscontext.h"
@@ -82,7 +85,7 @@ afsocket_grammar_set_dest_driver(AFSocketDestDriver *dd)
   last_transport_mapper = ((AFSocketDestDriver *) last_driver)->transport_mapper;
 }
 
-static void
+void
 afunix_grammar_set_source_driver(AFUnixSourceDriver *sd)
 {
   afsocket_grammar_set_source_driver(&sd->super);
@@ -107,6 +110,12 @@ afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
   afsocket_grammar_set_dest_driver(&dd->super);
 }
 
+void
+systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
+{
+  afsocket_grammar_set_source_driver(&sd->super);
+}
+
 }
 
 %name-prefix "afsocket_"
@@ -128,6 +137,7 @@ afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
 %token KW_NETWORK
 %token KW_TRANSPORT
 %token KW_IP_PROTOCOL
+%token KW_SYSTEMD_SYSLOG
 
 %token KW_IP_TTL
 %token KW_SO_BROADCAST
@@ -176,6 +186,7 @@ afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
 %type	<ptr> source_afnetwork
 %type	<ptr> source_afnetwork_params
 %type   <ptr> source_afsocket_stream_params
+%type	<ptr> source_systemd_syslog
 
 %type	<ptr> dest_afunix
 %type	<ptr> dest_afunix_dgram_params
@@ -209,6 +220,7 @@ driver
         | LL_CONTEXT_SOURCE source_afinet                     { $$ = $2; }
         | LL_CONTEXT_SOURCE source_afsyslog                   { $$ = $2; }
         | LL_CONTEXT_SOURCE source_afnetwork                  { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_systemd_syslog             { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afunix                  { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afinet                  { $$ = $2; }
         | LL_CONTEXT_DESTINATION dest_afsyslog                { $$ = $2; }
@@ -224,9 +236,8 @@ source_afunix
 source_afunix_dgram_params
 	: string
 	  {
-	    AFUnixSourceDriver *d = afunix_sd_new_dgram($1, configuration);
+        create_and_set_unix_dgram_or_systemd_source($1, configuration);
 
-            afunix_grammar_set_source_driver(d);
 	    free($1);
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
@@ -416,6 +427,18 @@ source_afsocket_transport
 #endif
           }
         ;
+
+source_systemd_syslog
+        : KW_SYSTEMD_SYSLOG '('  ')'
+          {
+            SystemDSyslogSourceDriver *d = systemd_syslog_sd_new(configuration, FALSE);
+
+            systemd_syslog_grammar_set_source_driver(d);
+
+            $$ = d;
+          }
+        ;
+
         
 dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }

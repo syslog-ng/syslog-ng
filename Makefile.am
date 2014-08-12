@@ -6,7 +6,7 @@ AM_TESTS_ENVIRONMENT	= top_srcdir="$(top_srcdir)"
 
 ACLOCAL_AMFLAGS		= -I m4 --install
 
-EXTRA_DIST		= ${BUILT_SOURCES} VERSION autogen.sh \
+EXTRA_DIST		= ${BUILT_SOURCES} VERSION NEWS.md autogen.sh \
 			  syslog-ng.spec syslog-ng.spec.in \
 			  dist.conf dist.conf.in syslog-ng.pc.in
 

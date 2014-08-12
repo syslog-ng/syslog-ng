@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -41,6 +41,7 @@ static CfgLexerKeyword afsmtp_keywords[] = {
   { "sender",			KW_SENDER },
   { "body",			KW_BODY },
   { "header",			KW_HEADER },
+  { "retries",			KW_RETRIES},
   { NULL }
 };
 

@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2014 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -24,11 +25,13 @@
 #include "transport/transport-socket.h"
 #include "scratch-buffers.h"
 #include "str-format.h"
+#include "unix-credentials.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <fcntl.h>
-                     
+
 static void
 _add_nv_pair_int(LogTransportAuxData *aux, const gchar *name, gint value)
 {
@@ -142,11 +145,11 @@ _add_nv_pair_proc_readlink(LogTransportAuxData *aux, const gchar *name, pid_t pi
 }
 
 static void
-_feed_aux_from_ucred(LogTransportAuxData *aux, struct ucred *uc)
+_feed_aux_from_ucred(LogTransportAuxData *aux, cred_t *uc)
 {
-  _add_nv_pair_int(aux, ".unix.pid", uc->pid);
-  _add_nv_pair_int(aux, ".unix.uid", uc->uid);
-  _add_nv_pair_int(aux, ".unix.gid", uc->gid);
+  _add_nv_pair_int(aux, ".unix.pid", cred_get(uc, pid));
+  _add_nv_pair_int(aux, ".unix.uid", cred_get(uc, uid));
+  _add_nv_pair_int(aux, ".unix.gid", cred_get(uc, gid));
 }
 
 #if defined(__linux__)
@@ -187,9 +190,9 @@ _feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
     {
       if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS) 
         {
-          struct ucred *uc = (struct ucred *) CMSG_DATA(cmsg);
+          cred_t *uc = (cred_t *) CMSG_DATA(cmsg);
 
-          _feed_aux_from_procfs(aux, uc->pid);
+          _feed_aux_from_procfs(aux, cred_get(uc, pid));
           _feed_aux_from_ucred(aux, uc);
           break;
         }
@@ -241,10 +244,11 @@ LogTransport *
 log_transport_unix_socket_new(gint fd)
 {
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
-  gint one = 1;
-  
+
   log_transport_dgram_socket_init_instance(self, fd);
   self->super.read = log_transport_unix_socket_read_method;
-  setsockopt(fd, SOL_SOCKET, SO_PASSCRED, &one, sizeof(one));
+
+  socket_set_pass_credentials(fd);
+
   return &self->super;
 }

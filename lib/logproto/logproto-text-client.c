@@ -77,6 +77,9 @@ log_proto_text_client_flush(LogProtoClient *s)
               self->state = self->next_state;
               self->next_state = -1;
             }
+
+          log_proto_client_msg_ack(&self->super, 1);
+
           /* NOTE: we return here to give a chance to the framed protocol to send the frame header. */
           return LPS_SUCCESS;
         }

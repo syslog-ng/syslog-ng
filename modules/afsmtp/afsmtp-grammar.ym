@@ -30,6 +30,7 @@
 %code {
 
 #include "cfg-parser.h"
+#include "cfg-grammar.h"
 #include "afsmtp-grammar.h"
 #include "plugin.h"
 
@@ -55,6 +56,7 @@ extern LogDriver *last_driver;
 %token KW_BCC
 %token KW_SENDER
 %token KW_REPLY_TO
+%token KW_RETRIES
 
 %%
 
@@ -93,8 +95,10 @@ afsmtp_option
 	| KW_BCC '(' string string ')'		{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_BCC, $3, $4); free($3); free($4); }
 	| KW_REPLY_TO '(' string ')'		{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_REPLY_TO, $3, $3); free($3); }
 	| KW_REPLY_TO '(' string string ')'	{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_REPLY_TO, $3, $4); free($3); free($4); }
-        | dest_driver_option
-        ;
+	| KW_RETRIES '(' LL_NUMBER ')'          { afsmtp_dd_set_retries(last_driver, $3); }
+	| dest_driver_option
+	| { last_template_options = afsmtp_dd_get_template_options(last_driver); } template_option
+	;
 
 /* INCLUDE_RULES */
 

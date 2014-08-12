@@ -29,10 +29,15 @@ modules_afsocket_libafsocket_notls_la_SOURCES	=	\
 	modules/afsocket/transport-mapper-unix.h 	\
 	modules/afsocket/transport-unix-socket.c	\
 	modules/afsocket/transport-unix-socket.h	\
+	modules/afsocket/unix-credentials.c		\
+	modules/afsocket/unix-credentials.h		\
 	modules/afsocket/afsocket-grammar.y		\
 	modules/afsocket/afsocket-parser.c		\
 	modules/afsocket/afsocket-parser.h		\
-	modules/afsocket/afsocket-plugin.c
+	modules/afsocket/afsocket-plugin.c      \
+	modules/afsocket/systemd-syslog-source.h       \
+	modules/afsocket/systemd-syslog-source.c	\
+	modules/afsocket/afsocket-systemd-override.h
 
 modules_afsocket_libafsocket_notls_la_CPPFLAGS	=	\
 	$(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)	\

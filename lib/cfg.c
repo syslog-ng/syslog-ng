@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -322,7 +322,7 @@ cfg_new(gint version)
   self->dns_cache_size = 1007;
   self->dns_cache_expire = 3600;
   self->dns_cache_expire_failed = 60;
-  self->threaded = FALSE;
+  self->threaded = TRUE;
   
   log_template_options_defaults(&self->template_options);
   self->template_options.ts_format = TS_FMT_BSD;
