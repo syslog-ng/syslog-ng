@@ -204,15 +204,23 @@ stats_timer_kickoff(GlobalConfig *cfg)
   stats_timer_rearm(cfg->stats_freq);
 }
 
+void
+stats_timer_init(GlobalConfig *cfg)
+{
+  IV_TIMER_INIT(&stats_timer);
+  stats_timer.handler = stats_timer_elapsed;
+
+  stats_timer_kickoff(cfg);
+};
 
 /************************************************************************************
  * config load/reload
  ************************************************************************************/
 
 /* the old configuration that is being reloaded */
-static GlobalConfig *main_loop_old_config;
+GlobalConfig *main_loop_old_config;
 /* the pending configuration we wish to switch to */
-static GlobalConfig *main_loop_new_config;
+GlobalConfig *main_loop_new_config;
 
 static guint32
 main_loop_inc_and_set_run_id(guint32 run_id)
@@ -247,7 +255,7 @@ main_loop_init_run_id(PersistState *persist_state)
 
 /* called when syslog-ng first starts up */
 
-static gboolean
+gboolean
 main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 {
   gboolean success;
@@ -274,7 +282,7 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 }
 
 /* called to apply the new configuration once all I/O worker threads have finished */
-static void
+void
 main_loop_reload_config_apply(void)
 {
   if (__main_loop_is_terminating)
@@ -589,13 +597,10 @@ main_loop_run(void)
 {
   show_config_startup_message(current_configuration);
 
-  IV_TIMER_INIT(&stats_timer);
-  stats_timer.handler = stats_timer_elapsed;
-
   setup_signals();
   control_init(ctlfilename);
 
-  stats_timer_kickoff(current_configuration);
+  stats_timer_init(current_configuration);
 
   /* main loop */
   iv_main();

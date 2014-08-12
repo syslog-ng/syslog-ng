@@ -63,6 +63,10 @@ int main_loop_init(gchar *config_string);
 int  main_loop_run(void);
 void main_loop_terminate();
 void main_loop_reload();
+void main_loop_reload_config_apply(void);
+gboolean main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename);
+
+void stats_timer_init(GlobalConfig *cfg);
 
 void main_loop_add_options(GOptionContext *ctx);
 
