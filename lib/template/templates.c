@@ -895,6 +895,8 @@ log_template_elem_free(LogTemplateElem *e)
           e->func.ops->free_state(e->func.state);
           g_free(e->func.state);
         }
+      if (e->func.ops && e->func.ops->free_fn)
+        e->func.ops->free_fn(e->func.ops);
       break;
     }
   if (e->default_value)
