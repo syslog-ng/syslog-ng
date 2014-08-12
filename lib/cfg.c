@@ -476,7 +476,7 @@ cfg_free(GlobalConfig *self)
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
   g_free(self->custom_domain);
-  g_list_free(self->plugins);
+  plugin_free_plugins(self);
   plugin_free_candidate_modules(self);
   cfg_tree_free_instance(&self->tree);
   g_free(self);
