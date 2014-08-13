@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2014 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -43,6 +43,7 @@
 #include "cond-funcs.c"
 #include "ip-funcs.c"
 #include "misc-funcs.c"
+#include "tf-template.c"
 
 static Plugin basicfuncs_plugins[] =
 {
@@ -76,6 +77,7 @@ static Plugin basicfuncs_plugins[] =
   /* misc funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_context_length, "context-length"),
   TEMPLATE_FUNCTION_PLUGIN(tf_env, "env"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_template, "template")
 };
 
 gboolean
