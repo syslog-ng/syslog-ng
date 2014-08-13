@@ -1,10 +1,10 @@
 [Unit]
 Description=System Logger Daemon
 Documentation=man:syslog-ng(8)
+Requires=syslog.socket
 
 [Service]
 Type=notify
-Sockets=syslog.socket
 ExecStart=/usr/sbin/syslog-ng -F
 ExecReload=/bin/kill -HUP $MAINPID
 StandardOutput=null
