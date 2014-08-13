@@ -260,6 +260,14 @@ test_escaping(void)
                                        TRUE, "\\\"value\\\"");
 }
 
+static void
+test_user_template_function(void)
+{
+  user_template_function_register(configuration, "dummy", compile_template("this is a user-defined template function $DATE", FALSE));
+  assert_template_format("$(dummy)", "this is a user-defined template function Feb 11 10:34:56.000");
+  assert_template_failure("$(dummy arg)", "User defined template function $(dummy) cannot have arguments");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -282,7 +290,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_compat();
   test_multi_thread();
   test_escaping();
-
+  test_user_template_function();
   /* multi-threaded expansion */
 
 
