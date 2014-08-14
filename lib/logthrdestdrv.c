@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
  */
 
 #include "logthrdestdrv.h"
+#include "misc.h"
 
 void
 log_threaded_dest_driver_suspend(LogThrDestDriver *self)
@@ -287,4 +288,26 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
+
+  init_sequence_number(&self->seq_num);
+}
+
+void
+log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
+                                        LogMessage *msg,
+                                        LogPathOptions *path_options)
+{
+  step_sequence_number(&self->seq_num);
+  log_msg_ack(msg, path_options, AT_PROCESSED);
+  log_msg_unref(msg);
+}
+
+void
+log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
+                                      LogMessage *msg,
+                                      LogPathOptions *path_options)
+{
+  stats_counter_inc(self->dropped_messages);
+  step_sequence_number(&self->seq_num);
+  log_msg_drop(msg, path_options);
 }
