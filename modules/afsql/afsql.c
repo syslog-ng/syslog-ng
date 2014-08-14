@@ -283,6 +283,106 @@ afsql_dd_check_sql_identifier(gchar *token, gboolean sanitize)
 }
 
 /**
+ * afsql_dd_handle_transaction_error:
+ *
+ * Handle errors inside during a SQL transaction (e.g. INSERT or COMMIT failures).
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
+static void
+afsql_dd_handle_transaction_error(AFSqlDestDriver *self)
+{
+  log_queue_rewind_backlog_all(self->queue);
+  self->flush_lines_queued = 0;
+}
+
+/**
+ * afsql_dd_begin_transaction:
+ *
+ * Commit SQL transaction.
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
+static gboolean
+afsql_dd_commit_transaction(AFSqlDestDriver *self)
+{
+  gboolean success;
+
+ if (!self->transaction_active)
+    return TRUE;
+
+  success = afsql_dd_run_query(self, "COMMIT", FALSE, NULL);
+  if (success)
+    {
+      log_queue_ack_backlog(self->queue, self->flush_lines_queued);
+      self->flush_lines_queued = 0;
+      self->transaction_active = FALSE;
+    }
+  else
+    {
+      msg_error("SQL transaction commit failed, rewinding backlog and starting again",
+                NULL);
+      afsql_dd_handle_transaction_error(self);
+    }
+  return success;
+}
+
+/**
+ * afsql_dd_begin_transaction:
+ *
+ * Begin SQL transaction.
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
+static gboolean
+afsql_dd_begin_transaction(AFSqlDestDriver *self)
+{
+  gboolean success = TRUE;
+  const char *s_begin = "BEGIN";
+  if (!strcmp(self->type, s_freetds))
+    {
+      /* the mssql requires this command */
+      s_begin = "BEGIN TRANSACTION";
+    }
+
+  if (strcmp(self->type, s_oracle) != 0)
+    {
+      /* oracle db has no BEGIN TRANSACTION command, it implicitly starts one, after every commit. */
+      success = afsql_dd_run_query(self, s_begin, FALSE, NULL);
+    }
+  self->transaction_active = TRUE;
+  return success;
+}
+
+static gboolean
+afsql_dd_rollback_transaction(AFSqlDestDriver *self)
+{
+  if (!self->transaction_active)
+    return TRUE;
+
+  self->transaction_active = FALSE;
+
+  return afsql_dd_run_query(self, "ROLLBACK", FALSE, NULL);
+}
+
+
+
+static gboolean
+afsql_dd_begin_new_transaction(AFSqlDestDriver *self)
+{
+  if (self->transaction_active)
+    {
+      if (!afsql_dd_commit_transaction(self))
+        {
+          afsql_dd_rollback_transaction(self);
+          return FALSE;
+        }
+    }
+
+  return afsql_dd_begin_transaction(self);
+}
+
+/**
  * afsql_dd_create_index:
  *
  * This function creates an index for the column specified and returns
@@ -356,8 +456,9 @@ static gboolean
 afsql_dd_validate_table(AFSqlDestDriver *self, GString *table)
 {
   GString *query_string;
-  dbi_result db_res;
+  dbi_result db_res = NULL;
   gboolean success = FALSE;
+  gboolean new_transaction_started = FALSE;
   gint i;
 
   if (self->flags & AFSQL_DDF_DONT_CREATE_TABLES)
@@ -368,11 +469,20 @@ afsql_dd_validate_table(AFSqlDestDriver *self, GString *table)
   if (g_hash_table_lookup(self->validated_tables, table->str))
     return TRUE;
 
+  // when table not found, we should request a new txn (and close/commit the existing one)
+
+  if (!afsql_dd_begin_new_transaction(self))
+    {
+      msg_error("Starting new transaction for querying(SELECT) table has failed",
+                evt_tag_str("table", table->str),
+                NULL);
+      return FALSE;
+    }
+
   query_string = g_string_sized_new(32);
   g_string_printf(query_string, "SELECT * FROM %s WHERE 0=1", table->str);
   if (afsql_dd_run_query(self, query_string->str, TRUE, &db_res))
     {
-
       /* table exists, check structure */
       success = TRUE;
       for (i = 0; success && (i < self->fields_len); i++)
@@ -380,6 +490,18 @@ afsql_dd_validate_table(AFSqlDestDriver *self, GString *table)
           if (dbi_result_get_field_idx(db_res, self->fields[i].name) == 0)
             {
               GList *l;
+              if (!new_transaction_started)
+                {
+                  if (!afsql_dd_begin_new_transaction(self))
+                    {
+                      msg_error("Starting new transaction for modifying(ALTER) table has failed",
+                                evt_tag_str("table", table->str),
+                                NULL);
+                      success = FALSE;
+                      break;
+                    }
+                  new_transaction_started = TRUE;
+                }
               /* field does not exist, add this column */
               g_string_printf(query_string, "ALTER TABLE %s ADD %s %s", table->str, self->fields[i].name, self->fields[i].type);
               if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
@@ -401,11 +523,22 @@ afsql_dd_validate_table(AFSqlDestDriver *self, GString *table)
                 }
             }
         }
-      dbi_result_free(db_res);
+      if (db_res)
+        dbi_result_free(db_res);
     }
   else
     {
       /* table does not exist, create it */
+      if (!afsql_dd_begin_new_transaction(self))
+        {
+          msg_error("Starting new transaction for table creation has failed",
+                    evt_tag_str("table", table->str),
+                    NULL);
+          success = FALSE;
+          goto out;
+        }
+
+      new_transaction_started = TRUE;
 
       g_string_printf(query_string, "CREATE TABLE %s (", table->str);
       for (i = 0; i < self->fields_len; i++)
@@ -430,8 +563,19 @@ afsql_dd_validate_table(AFSqlDestDriver *self, GString *table)
           msg_error("Error creating table, giving up",
                     evt_tag_str("table", table->str),
                     NULL);
+          success = FALSE;
+          goto out;
         }
     }
+
+out:
+
+  if (new_transaction_started && ( !success || !afsql_dd_commit_transaction(self)))
+    {
+      afsql_dd_rollback_transaction(self);
+      success = FALSE;
+    }
+
   if (success)
     {
       /* we have successfully created/altered the destination table, record this information */
@@ -441,72 +585,6 @@ afsql_dd_validate_table(AFSqlDestDriver *self, GString *table)
   return success;
 }
 
-/**
- * afsql_dd_begin_txn:
- *
- * Begin SQL transaction.
- *
- * NOTE: This function can only be called from the database thread.
- **/
-static gboolean
-afsql_dd_begin_txn(AFSqlDestDriver *self)
-{
-  gboolean success = TRUE;
-  const char *s_begin = "BEGIN";
-  if (!strcmp(self->type, s_freetds))
-    {
-      /* the mssql requires this command */
-      s_begin = "BEGIN TRANSACTION";
-    }
-
-  if (strcmp(self->type, s_oracle) != 0)
-    {
-      /* oracle db has no BEGIN TRANSACTION command, it implicitly starts one, after every commit. */
-      success = afsql_dd_run_query(self, s_begin, FALSE, NULL);
-    }
-  return success;
-}
-
-/**
- * afsql_dd_handle_transaction_error:
- *
- * Handle errors inside during a SQL transaction (e.g. INSERT or COMMIT failures).
- *
- * NOTE: This function can only be called from the database thread.
- **/
-static void
-afsql_dd_handle_transaction_error(AFSqlDestDriver *self)
-{
-  log_queue_rewind_backlog_all(self->queue);
-  self->flush_lines_queued = 0;
-}
-
-/**
- * afsql_dd_begin_txn:
- *
- * Commit SQL transaction.
- *
- * NOTE: This function can only be called from the database thread.
- **/
-static gboolean
-afsql_dd_commit_txn(AFSqlDestDriver *self)
-{
-  gboolean success;
-
-  success = afsql_dd_run_query(self, "COMMIT", FALSE, NULL);
-  if (success)
-    {
-      log_queue_ack_backlog(self->queue, self->flush_lines_queued);
-      self->flush_lines_queued = 0;
-    }
-  else
-    {
-      msg_error("SQL transaction commit failed, rewinding backlog and starting again",
-                NULL);
-      afsql_dd_handle_transaction_error(self);
-    }
-  return success;
-}
 
 /**
  * afsql_dd_suspend:
@@ -712,7 +790,7 @@ afsql_dd_is_transaction_handling_enabled(const AFSqlDestDriver *self)
 }
 
 static inline gboolean
-afsql_dd_should_start_new_transaction(const AFSqlDestDriver *self)
+afsql_dd_should_begin_new_transaction(const AFSqlDestDriver *self)
 {
   return self->flush_lines_queued == 0;
 }
@@ -805,7 +883,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       goto out;
     }
 
-  if (afsql_dd_should_start_new_transaction(self) && !afsql_dd_begin_txn(self))
+  if (afsql_dd_should_begin_new_transaction(self) && !afsql_dd_begin_transaction(self))
     {
       success = FALSE;
       goto out;
@@ -818,9 +896,10 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     {
       self->flush_lines_queued++;
 
-      if (afsql_dd_should_commit_transaction(self) && !afsql_dd_commit_txn(self))
+      if (afsql_dd_should_commit_transaction(self) && !afsql_dd_commit_transaction(self))
         {
-          /* Assuming that in case of error, the queue is rewound by afsql_dd_commit_txn() */
+          /* Assuming that in case of error, the queue is rewound by afsql_dd_commit_transaction() */
+          afsql_dd_rollback_transaction(self);
 
           g_string_free(insert_command, TRUE);
           msg_set_context(NULL);
@@ -919,10 +998,13 @@ afsql_dd_database_thread(gpointer arg)
 
           if (self->flush_lines_queued > 0)
             {
-              if (!afsql_dd_commit_txn(self))
+              if (!afsql_dd_commit_transaction(self))
                 {
-                  afsql_dd_disconnect(self);
-                  afsql_dd_suspend(self);
+                  if (!afsql_dd_rollback_transaction(self))
+                    {
+                      afsql_dd_disconnect(self);
+                      afsql_dd_suspend(self);
+                    }
                   g_mutex_unlock(self->db_thread_mutex);
                   continue;
                 }
@@ -961,7 +1043,8 @@ afsql_dd_database_thread(gpointer arg)
        * submitting that back to the SQL engine.
        */
 
-      afsql_dd_commit_txn(self);
+      if (!afsql_dd_commit_transaction(self))
+        afsql_dd_rollback_transaction(self);
     }
 exit:
   afsql_dd_disconnect(self);
@@ -1270,6 +1353,7 @@ afsql_dd_new(GlobalConfig *cfg)
   self->password = g_strdup("");
   self->database = g_strdup("logs");
   self->encoding = g_strdup("UTF-8");
+  self->transaction_active = FALSE;
 
   self->table = log_template_new(configuration, NULL);
   log_template_compile(self->table, "messages", NULL);

@@ -112,6 +112,7 @@ typedef struct _AFSqlDestDriver
   GHashTable *validated_tables;
   guint32 failed_message_counter;
   WorkerOptions worker_options;
+  gboolean transaction_active;
 } AFSqlDestDriver;
 
 
