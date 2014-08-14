@@ -25,6 +25,17 @@
 #include "logthrdestdrv.h"
 #include "misc.h"
 
+static gchar *
+log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
+{
+  static gchar persist_name[256];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "%s.seqnum", self->format.persist_name(self));
+
+  return persist_name;
+}
+
 void
 log_threaded_dest_driver_suspend(LogThrDestDriver *self)
 {
@@ -217,6 +228,10 @@ log_threaded_dest_driver_start(LogPipe *s)
   log_queue_set_counters(self->queue, self->stored_messages,
                          self->dropped_messages);
 
+  self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, log_threaded_dest_driver_format_seqnum_for_persist(self)));
+  if (!self->seq_num)
+    init_sequence_number(&self->seq_num);
+
   log_threaded_dest_driver_start_thread(self);
 
   return TRUE;
@@ -230,6 +245,10 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
+
+  cfg_persist_config_add(log_pipe_get_config(s),
+                         log_threaded_dest_driver_format_seqnum_for_persist(self),
+                         GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
   stats_lock();
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->super.super.id,
@@ -288,8 +307,6 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
-
-  init_sequence_number(&self->seq_num);
 }
 
 void
