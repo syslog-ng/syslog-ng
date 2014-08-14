@@ -31,6 +31,7 @@ check_PROGRAMS =			\
 	test_value_pairs		\
 	test_value_pairs_walk   \
 	test_filereader			\
+	test_misc			\
 	test_multiline			\
 	test_msgserialize_benchmark	\
 	test_msgserialize_tags		\
@@ -89,6 +90,7 @@ test_findeom_SOURCES = test_findeom.c
 test_findcrlf_SOURCES = test_findcrlf.c
 test_clone_logmsg_SOURCES = test_clone_logmsg.c
 test_matcher_SOURCES = test_matcher.c
+test_misc_SOURCES = test_misc.c
 test_filters_SOURCES = test_filters.c
 test_filters_in_list_SOURCES = test_filters_in_list.c
 test_logqueue_SOURCES = test_logqueue.c

@@ -3,6 +3,7 @@
 #include "gsocket.h"
 #include "value-pairs.h"
 #include "str-format.h"
+#include "misc.h"
 
 static void
 tf_ipv4_to_int(LogMessage *msg, gint argc, GString *argv[], GString *result)
@@ -44,7 +45,7 @@ static gboolean
 tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value, gpointer user_data)
 {
   GString *result=(GString *) user_data;
-  gchar *escaped_value = g_strescape(value, NULL);
+  gchar *escaped_value = utf8_escape_string_ex(value);
 
   if (result->len > 0)
     g_string_append(result," ");

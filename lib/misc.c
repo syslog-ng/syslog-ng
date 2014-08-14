@@ -726,6 +726,56 @@ utf8_escape_string(const gchar *str, gssize len)
   return res;
 }
 
+gchar *
+utf8_escape_string_ex(const gchar *str)
+{
+  guint8 *char_ptr = str;
+  GString *escaped_string;
+
+  escaped_string = g_string_sized_new(strlen(str));
+  while (*char_ptr)
+    {
+      gunichar uchar = g_utf8_get_char_validated(char_ptr, -1);
+
+      switch (uchar)
+        {
+          case (gunichar)-1:
+            g_string_append_printf(escaped_string, "\\x%02x", *char_ptr);
+            char_ptr++;
+            continue;
+            break;
+          case '\b':
+            g_string_append(escaped_string, "\\b");
+            break;
+          case '\f':
+            g_string_append(escaped_string, "\\f");
+            break;
+          case '\n':
+            g_string_append(escaped_string, "\\n");
+            break;
+          case '\r':
+            g_string_append(escaped_string, "\\r");
+            break;
+          case '\t':
+            g_string_append(escaped_string, "\\t");
+            break;
+          case '\\':
+            g_string_append(escaped_string, "\\\\");
+            break;
+          case '"':
+            g_string_append(escaped_string, "\\\"");
+            break;
+          default:
+            if (g_unichar_isprint(uchar))
+              g_string_append_unichar(escaped_string, uchar);
+            else
+              g_string_append_printf(escaped_string, "\\x%02x", uchar);
+            break;
+        }
+      char_ptr = g_utf8_next_char(char_ptr);
+    }
+  return g_string_free(escaped_string, FALSE);
+}
 
 gint
 set_permissions(gchar *name, gint uid, gint gid, gint mode)
