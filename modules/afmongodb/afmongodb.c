@@ -75,7 +75,6 @@ typedef struct
   /* Writer-only stuff */
   mongo_sync_conn_recovery_cache *recovery_cache;
   mongo_sync_connection *conn;
-  gint32 seq_num;
 
   gchar *ns;
 
@@ -470,18 +469,14 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
 static void
 afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
 {
-  stats_counter_inc(self->super.dropped_messages);
-  step_sequence_number(&self->seq_num);
-  log_msg_drop(msg, path_options);
+  log_threaded_dest_driver_message_drop(&self->super, msg, path_options);
   self->failed_message_counter = 0;
 };
 
 static void
 afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
 {
-  step_sequence_number(&self->seq_num);
-  log_msg_ack(msg, path_options, AT_PROCESSED);
-  log_msg_unref(msg);
+  log_threaded_dest_driver_message_accept(&self->super, msg, path_options);
   self->failed_message_counter = 0;
 }
 
@@ -509,7 +504,8 @@ afmongodb_worker_insert (LogThrDestDriver *s)
                              afmongodb_vp_obj_start,
                              afmongodb_vp_process_value,
                              afmongodb_vp_obj_end,
-                             msg, self->seq_num, LTZ_SEND,
+                             msg, self->super.seq_num,
+                             LTZ_SEND,
                              &self->template_options,
                              self);
   bson_finish (self->bson);
@@ -519,9 +515,11 @@ afmongodb_worker_insert (LogThrDestDriver *s)
       if (!drop_silently)
         {
           msg_error("Failed to format message for MongoDB, dropping message",
-                     evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
-                     evt_tag_str("driver", self->super.super.super.id),
-                     NULL);
+                    evt_tag_value_pairs("message", self->vp, msg,
+                                        self->super.seq_num,
+                                        LTZ_SEND, &self->template_options),
+                    evt_tag_str("driver", self->super.super.super.id),
+                    NULL);
         }
       msg_set_context(NULL);
       afmongodb_worker_drop_message(self, msg, &path_options);
@@ -530,9 +528,11 @@ afmongodb_worker_insert (LogThrDestDriver *s)
   else
     {
       msg_debug("Outgoing message to MongoDB destination",
-                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
-                 evt_tag_str("driver", self->super.super.super.id),
-                 NULL);
+                evt_tag_value_pairs("message", self->vp, msg,
+                                    self->super.seq_num,
+                                    LTZ_SEND, &self->template_options),
+                evt_tag_str("driver", self->super.super.super.id),
+                NULL);
       if (!mongo_sync_cmd_insert_n(self->conn, self->ns, 1,
                                    (const bson **)&self->bson))
         {
@@ -558,7 +558,9 @@ afmongodb_worker_insert (LogThrDestDriver *s)
         {
           msg_error("Multiple failures while inserting this record into the database, message dropped",
                     evt_tag_int("number_of_retries", self->max_retry_of_failed_inserts),
-                    evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                    evt_tag_value_pairs("message", self->vp, msg,
+                                        self->super.seq_num,
+                                        LTZ_SEND, &self->template_options),
                     evt_tag_str("driver", self->super.super.super.id),
                     NULL);
           afmongodb_worker_drop_message(self, msg, &path_options);
@@ -791,9 +793,6 @@ afmongodb_dd_new(GlobalConfig *cfg)
   afmongodb_dd_set_database((LogDriver *)self, "syslog");
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
   afmongodb_dd_set_safe_mode((LogDriver *)self, FALSE);
-
-  init_sequence_number(&self->seq_num);
-
 
   self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   self->safe_mode = TRUE;

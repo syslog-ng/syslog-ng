@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -69,7 +69,6 @@ typedef struct
   LogTemplate *body_tmpl;
 
   /* Writer-only stuff */
-  gint32 seq_num;
   GString *str;
   guint num_retries;
   guint failed_message_counter;
@@ -270,7 +269,7 @@ afsmtp_dd_msg_add_header(AFSMTPHeader *hdr, gpointer user_data)
   smtp_message_t message = ((gpointer *)user_data)[2];
 
   log_template_format(hdr->value, msg, &self->template_options, LTZ_LOCAL,
-                      self->seq_num, NULL, self->str);
+                      self->super.seq_num, NULL, self->str);
 
   smtp_set_header(message, hdr->name, afsmtp_wash_string (self->str->str), NULL);
   smtp_set_header_option(message, hdr->name, Hdr_OVERRIDE, 1);
@@ -401,7 +400,7 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
   smtp_set_header(message, "From", NULL, NULL);
 
   log_template_format(self->subject_tmpl, msg, &self->template_options, LTZ_SEND,
-                      self->seq_num, NULL, self->str);
+                      self->super.seq_num, NULL, self->str);
   smtp_set_header(message, "Subject", afsmtp_wash_string(self->str->str));
   smtp_set_header_option(message, "Subject", Hdr_OVERRIDE, 1);
 
@@ -421,7 +420,8 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
    */
   g_string_assign(self->str, "X-Mailer: syslog-ng " VERSION "\r\n\r\n");
   log_template_append_format(self->body_tmpl, msg, &self->template_options,
-                             LTZ_SEND, self->seq_num, NULL, self->str);
+                             LTZ_SEND, self->super.seq_num,
+                             NULL, self->str);
   smtp_set_message_str(message, self->str->str);
   return message;
 }
@@ -563,7 +563,7 @@ afsmtp_worker_insert(LogThrDestDriver *s)
 
   if (success)
     {
-      step_sequence_number(&self->seq_num);
+      step_sequence_number(&self->super.seq_num);
       __accept_message(self, msg);
     }
   else
@@ -772,8 +772,6 @@ afsmtp_dd_new(GlobalConfig *cfg)
 
   self->mail_from = g_new0(AFSMTPRecipient, 1);
   self->num_retries = DEFAULT_NUM_RETRIES;
-
-  init_sequence_number(&self->seq_num);
 
   log_template_options_defaults(&self->template_options);
 
