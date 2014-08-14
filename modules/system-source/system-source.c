@@ -220,22 +220,10 @@ system_sysblock_add_linux(GString *sysblock)
   system_sysblock_add_linux_kmsg(sysblock);
 }
 
-gboolean
-system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
-                       CfgArgs *args, gpointer user_data)
+static gboolean
+system_generate_system_transports(GString *sysblock)
 {
-  gchar buf[256];
-  GString *sysblock;
   struct utsname u;
-  gboolean result;
-  
-  g_snprintf(buf, sizeof(buf), "source confgen system");
-
-  sysblock = g_string_sized_new(1024);
-
-  g_string_append(sysblock,
-                  "channel {\n"
-                  "    source {\n");
 
   if (uname(&u) < 0)
     {
@@ -292,14 +280,59 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
                 NULL);
       return FALSE;
     }
+  g_string_append(sysblock, "\n");
+  return TRUE;
+}
 
-  g_string_append(sysblock, "\n"
-                  "    }; # source\n"
+static gboolean
+system_generate_system_parsers(GlobalConfig *cfg, GString *sysblock)
+{
+  if (!plugin_find(cfg, LL_CONTEXT_PARSER, "json-parser"))
+    {
+      msg_notice("system(): json-parser plugin is missing, skipping the automatic parsing of Common Information Model (@cim) messages over /dev/log, please install the json module",
+                 NULL);
+      return TRUE;
+    }
+  g_string_append(sysblock,
                   "    parser {\n"
                   "        json-parser(prefix('.cim.') marker('@cim:'));\n"
-                  "    };\n"
-                  "}; # channel\n");
+                  "    };\n");
+
+  return TRUE;
+}
+
+static gboolean
+system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
+                       CfgArgs *args, gpointer user_data)
+{
+  gchar buf[256];
+  GString *sysblock;
+  gboolean result = FALSE;
+  GlobalConfig *cfg = (GlobalConfig *) user_data;
+
+  g_snprintf(buf, sizeof(buf), "source confgen system");
+
+  sysblock = g_string_sized_new(1024);
+
+  g_string_append(sysblock,
+                  "channel {\n"
+                  "    source {\n");
+
+  if (!system_generate_system_transports(sysblock))
+    {
+      goto exit;
+    }
+
+  g_string_append(sysblock, "    }; # source\n");
+
+  if (!system_generate_system_parsers(cfg, sysblock))
+    {
+      goto exit;
+    }
+
+  g_string_append(sysblock, "}; # channel\n");
   result = cfg_lexer_include_buffer(lexer, buf, sysblock->str, sysblock->len);
+ exit:
   g_string_free(sysblock, TRUE);
   return result;
 }
@@ -310,7 +343,7 @@ system_source_module_init(GlobalConfig *cfg, CfgArgs *args)
   cfg_lexer_register_block_generator(cfg->lexer,
                                      cfg_lexer_lookup_context_type_by_name("source"),
                                      "system", system_generate_system,
-                                     NULL, NULL);
+                                     cfg, NULL);
 
   return TRUE;
 }
