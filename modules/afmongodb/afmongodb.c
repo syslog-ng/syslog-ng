@@ -467,16 +467,16 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
 }
 
 static void
-afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
+afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg)
 {
-  log_threaded_dest_driver_message_drop(&self->super, msg, path_options);
+  log_threaded_dest_driver_message_drop(&self->super, msg);
   self->failed_message_counter = 0;
 };
 
 static void
-afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
+afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg)
 {
-  log_threaded_dest_driver_message_accept(&self->super, msg, path_options);
+  log_threaded_dest_driver_message_accept(&self->super, msg);
   self->failed_message_counter = 0;
 }
 
@@ -522,7 +522,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
                     NULL);
         }
       msg_set_context(NULL);
-      afmongodb_worker_drop_message(self, msg, &path_options);
+      afmongodb_worker_drop_message(self, msg);
       return TRUE;
     }
   else
@@ -549,7 +549,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
 
   if (success)
     {
-      afmongodb_worker_accept_message(self, msg, &path_options);
+      afmongodb_worker_accept_message(self, msg);
     }
   else
     {
@@ -563,7 +563,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
                                         LTZ_SEND, &self->template_options),
                     evt_tag_str("driver", self->super.super.super.id),
                     NULL);
-          afmongodb_worker_drop_message(self, msg, &path_options);
+          afmongodb_worker_drop_message(self, msg);
         }
       else
         log_queue_push_head(self->super.queue, msg, &path_options);

@@ -311,20 +311,25 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
 
 void
 log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
-                                        LogMessage *msg,
-                                        LogPathOptions *path_options)
+                                        LogMessage *msg)
 {
   step_sequence_number(&self->seq_num);
-  log_msg_ack(msg, path_options, AT_PROCESSED);
+  log_queue_ack_backlog(self->queue, 1);
   log_msg_unref(msg);
 }
 
 void
 log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
-                                      LogMessage *msg,
-                                      LogPathOptions *path_options)
+                                      LogMessage *msg)
 {
   stats_counter_inc(self->dropped_messages);
-  step_sequence_number(&self->seq_num);
-  log_msg_drop(msg, path_options);
+  log_threaded_dest_driver_message_accept(self, msg);
+}
+
+void
+log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
+                                        LogMessage *msg)
+{
+  log_queue_rewind_backlog(self->queue, 1);
+  log_msg_unref(msg);
 }

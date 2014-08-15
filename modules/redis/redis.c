@@ -243,7 +243,7 @@ redis_worker_insert(LogThrDestDriver *s)
 
   if (success)
     {
-      log_threaded_dest_driver_message_accept(&self->super, msg, &path_options);
+      log_threaded_dest_driver_message_accept(&self->super, msg);
     }
   else
     {

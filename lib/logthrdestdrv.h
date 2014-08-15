@@ -81,10 +81,10 @@ void log_threaded_dest_driver_free(LogPipe *s);
 void log_threaded_dest_driver_suspend(LogThrDestDriver *self);
 
 void log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
-                                             LogMessage *msg,
-                                             LogPathOptions *path_options);
+                                             LogMessage *msg);
 void log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
-                                           LogMessage *msg,
-                                           LogPathOptions *path_options);
+                                           LogMessage *msg);
+void log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
+                                             LogMessage *msg);
 
 #endif
