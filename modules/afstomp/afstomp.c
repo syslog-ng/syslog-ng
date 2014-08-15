@@ -136,14 +136,6 @@ afstomp_dd_set_ack(LogDriver *s, gboolean ack_needed)
 }
 
 void
-afstomp_dd_set_retries(LogDriver *s, gint max_retries)
-{
-  STOMPDestDriver *self = (STOMPDestDriver *) s;
-
-  self->super.retries.max = max_retries;
-}
-
-void
 afstomp_dd_set_value_pairs(LogDriver *s, ValuePairs *vp)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) s;

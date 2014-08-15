@@ -208,13 +208,6 @@ afmongodb_dd_set_safe_mode(LogDriver *d, gboolean state)
   self->safe_mode = state;
 }
 
-void
-afmongodb_dd_set_retries(LogDriver *d, gint retries)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  self->super.retries.max = retries;
-};
 /*
  * Utilities
  */

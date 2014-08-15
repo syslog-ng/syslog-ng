@@ -38,7 +38,6 @@ void afstomp_dd_set_persistent(LogDriver *d, gboolean persistent);
 void afstomp_dd_set_ack(LogDriver *d, gboolean ack);
 void afstomp_dd_set_user(LogDriver *d, const gchar *user);
 void afstomp_dd_set_password(LogDriver *d, const gchar *password);
-void afstomp_dd_set_retries(LogDriver *d, gint max_retries);
 void afstomp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 
 LogTemplateOptions *afstomp_dd_get_template_options(LogDriver *s);

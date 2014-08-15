@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012, 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012, 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -43,7 +43,6 @@ static CfgLexerKeyword afamqp_keywords[] = {
   { "password",			KW_PASSWORD },
   { "log_fifo_size",		KW_LOG_FIFO_SIZE  },
   { "body",			KW_BODY },
-  { "retries",			KW_RETRIES },
   { NULL }
 };
 

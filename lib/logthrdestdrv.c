@@ -400,3 +400,11 @@ log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
   log_queue_rewind_backlog(self->queue, 1);
   log_msg_unref(msg);
 }
+
+void
+log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
+{
+  LogThrDestDriver *self = (LogThrDestDriver *)s;
+
+  self->retries.max = max_retries;
+}

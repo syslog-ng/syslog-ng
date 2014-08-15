@@ -95,14 +95,6 @@ redis_dd_set_command(LogDriver *d, const gchar *command,
   self->param2 = log_template_ref(param2);
 }
 
-void
-redis_dd_set_retries(LogDriver *d, gint max_retries)
-{
-  RedisDriver *self = (RedisDriver *)d;
-
-  self->super.retries.max = max_retries;
-}
-
 LogTemplateOptions *
 redis_dd_get_template_options(LogDriver *d)
 {

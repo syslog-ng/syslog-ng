@@ -51,7 +51,6 @@
 %token KW_PERSISTENT
 %token KW_ACK
 %token KW_BODY
-%token KW_RETRIES
 
 %%
 
@@ -77,9 +76,9 @@ afstomp_option
         | KW_ACK '(' yesno ')'			{ afstomp_dd_set_ack(last_driver, $3); }
         | KW_USERNAME '(' string ')'		{ afstomp_dd_set_user(last_driver, $3); free($3); }
         | KW_PASSWORD '(' string ')'		{ afstomp_dd_set_password(last_driver, $3); free($3); }
-        | KW_RETRIES '(' LL_NUMBER ')'          { afstomp_dd_set_retries(last_driver, $3); }
         | value_pair_option			{ afstomp_dd_set_value_pairs(last_driver, $1); }
         | dest_driver_option
+        | threaded_dest_driver_option
 	| { last_template_options = afstomp_dd_get_template_options(last_driver); } template_option
         ;
 

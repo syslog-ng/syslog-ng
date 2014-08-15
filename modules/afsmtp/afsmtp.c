@@ -186,14 +186,6 @@ afsmtp_dd_add_header(LogDriver *d, const gchar *header, const gchar *value)
   return TRUE;
 }
 
-void
-afsmtp_dd_set_retries(LogDriver *s, gint num_retries)
-{
-  AFSMTPDriver *self = (AFSMTPDriver *)s;
-
-  self->super.retries.max = num_retries;
-}
-
 /*
  * Utilities
  */

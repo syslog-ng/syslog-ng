@@ -41,7 +41,6 @@ void afamqp_dd_set_body(LogDriver *d, const gchar *body);
 void afamqp_dd_set_persistent(LogDriver *d, gboolean persistent);
 void afamqp_dd_set_user(LogDriver *d, const gchar *user);
 void afamqp_dd_set_password(LogDriver *d, const gchar *password);
-void afamqp_dd_set_retries(LogDriver *d, gint max_retries);
 void afamqp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 
 LogTemplateOptions *afamqp_dd_get_template_options(LogDriver *s);

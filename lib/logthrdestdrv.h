@@ -105,4 +105,6 @@ void log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
 void log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
                                              LogMessage *msg);
 
+void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
+
 #endif

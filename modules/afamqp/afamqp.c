@@ -170,14 +170,6 @@ afamqp_dd_set_persistent(LogDriver *s, gboolean persistent)
 }
 
 void
-afamqp_dd_set_retries(LogDriver *s, gint max_retries)
-{
-  AMQPDestDriver *self = (AMQPDestDriver *) s;
-
-  self->super.retries.max = max_retries;
-}
-
-void
 afamqp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
