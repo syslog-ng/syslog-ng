@@ -285,12 +285,30 @@ system_generate_system_transports(GString *sysblock)
 }
 
 static gboolean
-system_generate_system_parsers(GlobalConfig *cfg, GString *sysblock)
+_is_json_parser_available(GlobalConfig *cfg)
 {
-  if (!plugin_find(cfg, LL_CONTEXT_PARSER, "json-parser"))
+  return plugin_find(cfg, LL_CONTEXT_PARSER, "json-parser") != NULL;
+}
+
+static gboolean
+system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
+{
+  if (cfg_is_config_version_older(cfg, 0x0307))
     {
-      msg_notice("system(): json-parser plugin is missing, skipping the automatic parsing of Common Information Model (@cim) messages over /dev/log, please install the json module",
-                 NULL);
+      msg_warning("WARNING: Starting with " VERSION_3_7 ", the system() source performs JSON parsing of messages starting with the '@cim:' prefix. No additional action is needed",
+                  NULL);
+      return TRUE;
+    }
+  if (!_is_json_parser_available(cfg))
+    {
+      static gboolean notice_logged = FALSE;
+
+      if (!notice_logged)
+        {
+          msg_notice("system(): json-parser() is missing, skipping the automatic JSON parsing of messages submitted via syslog(3), Please install the json module",
+                     NULL);
+          notice_logged = TRUE;
+        }
       return TRUE;
     }
   g_string_append(sysblock,
@@ -325,7 +343,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
 
   g_string_append(sysblock, "    }; # source\n");
 
-  if (!system_generate_system_parsers(cfg, sysblock))
+  if (!system_generate_cim_parser(cfg, sysblock))
     {
       goto exit;
     }
