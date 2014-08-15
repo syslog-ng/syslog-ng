@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -43,6 +43,8 @@
 
 %token KW_REDIS
 %token KW_COMMAND
+%token KW_RETRIES
+
 %%
 
 start
@@ -82,6 +84,10 @@ redis_option
           {
             redis_dd_set_command(last_driver, $3, $4, $5, $6);
             free($3);
+          }
+        | KW_RETRIES '(' LL_NUMBER ')'
+          {
+            redis_dd_set_retries(last_driver, $3);
           }
         | dest_driver_option
         | { last_template_options = redis_dd_get_template_options(last_driver); } template_option

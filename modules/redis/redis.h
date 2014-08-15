@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ void redis_dd_set_port(LogDriver *d, gint port);
 void redis_dd_set_command(LogDriver *d, const gchar *command,
                           LogTemplate *key,
                           LogTemplate *param1, LogTemplate *param2);
+void redis_dd_set_retries(LogDriver *d, gint max_retries);
 LogTemplateOptions *redis_dd_get_template_options(LogDriver *d);
 
 #endif

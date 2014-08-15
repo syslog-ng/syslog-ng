@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2013 Viktor Tusa <tusa@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -38,6 +38,7 @@ void afstomp_dd_set_persistent(LogDriver *d, gboolean persistent);
 void afstomp_dd_set_ack(LogDriver *d, gboolean ack);
 void afstomp_dd_set_user(LogDriver *d, const gchar *user);
 void afstomp_dd_set_password(LogDriver *d, const gchar *password);
+void afstomp_dd_set_retries(LogDriver *d, gint max_retries);
 void afstomp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 
 LogTemplateOptions *afstomp_dd_get_template_options(LogDriver *s);

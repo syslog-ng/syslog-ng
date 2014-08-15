@@ -34,8 +34,6 @@
 #include <libesmtp.h>
 #include <signal.h>
 
-#define DEFAULT_NUM_RETRIES 3
-
 typedef struct
 {
   gchar *name;
@@ -70,8 +68,6 @@ typedef struct
 
   /* Writer-only stuff */
   GString *str;
-  guint num_retries;
-  guint failed_message_counter;
   LogTemplateOptions template_options;
 } AFSMTPDriver;
 
@@ -194,7 +190,8 @@ void
 afsmtp_dd_set_retries(LogDriver *s, gint num_retries)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)s;
-  self->num_retries = num_retries;
+
+  self->super.retries.max = num_retries;
 }
 
 /*
@@ -479,72 +476,32 @@ __send_message(AFSMTPDriver *self, smtp_session_t session)
 }
 
 static void
-__accept_message(AFSMTPDriver *self, LogMessage *msg)
+__worker_message_retry_over(LogThrDestDriver *self, LogMessage *msg)
 {
-  log_threaded_dest_driver_message_accept(&self->super, msg);
-  self->failed_message_counter = 0;
-}
-
-void
-__drop_message(AFSMTPDriver* self, LogMessage* msg)
-{
-  msg_error("Multiple failures while sending message in email to the server, message dropped",
-            evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_int("attempts", self->num_retries),
+  msg_error("Multiple failures while sending message in email to the server, "
+            "message dropped",
+            evt_tag_str("driver", self->super.super.id),
+            evt_tag_int("attempts", self->retries.counter),
+            evt_tag_int("max-attempts", self->retries.max),
             NULL);
-  log_threaded_dest_driver_message_drop(&self->super, msg);
 }
 
-static gboolean
-__handle_error(AFSMTPDriver *self, LogMessage *msg, gboolean message_sent)
-{
-  gboolean result = FALSE;
-
-  if (!message_sent)
-    {
-      log_threaded_dest_driver_message_rewind(&self->super, msg);
-    }
-  else if (self->failed_message_counter < self->num_retries - 1)
-    {
-      log_threaded_dest_driver_message_rewind(&self->super, msg);
-      self->failed_message_counter++;
-    }
-  else
-    {
-      __drop_message(self, msg);
-      result = TRUE;
-    }
-  return result;
-}
-
-
-static gboolean
-afsmtp_worker_insert(LogThrDestDriver *s)
+static worker_insert_result_t
+afsmtp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)s;
   gboolean success = TRUE;
   gboolean message_sent = TRUE;
-  LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   smtp_session_t session = NULL;
   smtp_message_t message;
-
-  msg = log_queue_pop_head(s->queue, &path_options);
-  if (!msg)
-    return TRUE;
-
-  msg_set_context(msg);
-  log_msg_refcache_start_consumer(msg, &path_options);
 
   if (msg->flags & LF_MARK)
     {
       msg_debug("Mark messages are dropped by SMTP destination",
                 evt_tag_str("driver", self->super.super.super.id),
                 NULL);
-      __accept_message(self, msg);
-      goto exit;
+      return WORKER_INSERT_RESULT_SUCCESS;
     }
-
 
   session = __build_session(self, msg);
   message = __build_message(self, msg, session);
@@ -552,22 +509,17 @@ afsmtp_worker_insert(LogThrDestDriver *s)
   message_sent = __send_message(self, session);
   success = message_sent && __check_transfer_status(self, message);
 
-  if (success)
+  smtp_destroy_session(session);
+
+  if (!success)
     {
-      step_sequence_number(&self->super.seq_num);
-      __accept_message(self, msg);
-    }
-  else
-    {
-      success = __handle_error(self, msg, message_sent);
+      if (!message_sent)
+        return WORKER_INSERT_RESULT_REWIND;
+      else
+        return WORKER_INSERT_RESULT_ERROR;
     }
 
-exit:
-  if (session)
-    smtp_destroy_session(session);
-  msg_set_context(NULL);
-  log_msg_refcache_stop();
-  return success;
+  return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 static void
@@ -758,11 +710,12 @@ afsmtp_dd_new(GlobalConfig *cfg)
   self->super.format.persist_name = afsmtp_dd_format_persist_name;
   self->super.stats_source = SCS_SMTP;
 
+  self->super.messages.retry_over = __worker_message_retry_over;
+
   afsmtp_dd_set_host((LogDriver *)self, "127.0.0.1");
   afsmtp_dd_set_port((LogDriver *)self, 25);
 
   self->mail_from = g_new0(AFSMTPRecipient, 1);
-  self->num_retries = DEFAULT_NUM_RETRIES;
 
   log_template_options_defaults(&self->template_options);
 

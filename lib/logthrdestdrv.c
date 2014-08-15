@@ -25,6 +25,8 @@
 #include "logthrdestdrv.h"
 #include "misc.h"
 
+#define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
+
 static gchar *
 log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
 {
@@ -87,28 +89,80 @@ log_threaded_dest_driver_shutdown(gpointer data)
   iv_quit();
 }
 
+static void
+_disconnect_and_suspend(LogThrDestDriver *self)
+{
+  if (self->worker.disconnect)
+    self->worker.disconnect(self);
+  log_queue_reset_parallel_push(self->queue);
+  log_threaded_dest_driver_suspend(self);
+}
 
 static void
 log_threaded_dest_driver_do_work(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
   gint timeout_msec = 0;
+
   log_threaded_dest_driver_stop_watches(self);
   if (log_queue_check_items(self->queue, &timeout_msec,
                                         log_threaded_dest_driver_message_became_available_in_the_queue,
                                         self, NULL))
     {
-      if (!self->worker.insert(self))
-        {
-          if (self->worker.disconnect)
-            self->worker.disconnect(self);
-          log_queue_reset_parallel_push(self->queue);
-          log_threaded_dest_driver_suspend(self);
-         }
-      else
+      LogMessage *msg;
+      worker_insert_result_t result;
+      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+      msg = log_queue_pop_head(self->queue, &path_options);
+      if (!msg)
         {
           iv_task_register(&self->do_work);
+          return;
         }
+      msg_set_context(msg);
+      log_msg_refcache_start_consumer(msg, &path_options);
+
+      result = self->worker.insert(self, msg);
+
+      switch (result)
+        {
+        case WORKER_INSERT_RESULT_DROP:
+          log_threaded_dest_driver_message_drop(self, msg);
+          _disconnect_and_suspend(self);
+          break;
+
+        case WORKER_INSERT_RESULT_ERROR:
+          self->retries.counter++;
+
+          if (self->retries.counter >= self->retries.max)
+            {
+              if (self->messages.retry_over)
+                self->messages.retry_over(self, msg);
+              log_threaded_dest_driver_message_drop(self, msg);
+              iv_task_register(&self->do_work);
+            }
+          else
+            {
+              log_threaded_dest_driver_message_rewind(self, msg);
+              _disconnect_and_suspend(self);
+            }
+          break;
+
+        case WORKER_INSERT_RESULT_REWIND:
+          log_threaded_dest_driver_message_rewind(self, msg);
+          break;
+
+        case WORKER_INSERT_RESULT_SUCCESS:
+          log_threaded_dest_driver_message_accept(self, msg);
+          iv_task_register(&self->do_work);
+          break;
+
+        default:
+          break;
+        }
+
+      msg_set_context(NULL);
+      log_msg_refcache_stop();
     }
   else if (timeout_msec != 0)
     {
@@ -216,6 +270,16 @@ log_threaded_dest_driver_start(LogPipe *s)
       return FALSE;
     }
 
+  if (self->retries.max <= 0)
+    {
+      msg_warning("Wrong value for retries(), setting to default",
+                  evt_tag_int("value", self->retries.max),
+                  evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
+                  evt_tag_str("driver", self->super.super.id),
+                  NULL);
+      self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
+    }
+
   stats_lock();
   stats_register_counter(0, self->stats_source | SCS_DESTINATION, self->super.super.id,
                          self->format.stats_instance(self),
@@ -307,12 +371,15 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
+
+  self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
 }
 
 void
 log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
                                         LogMessage *msg)
 {
+  self->retries.counter = 0;
   step_sequence_number(&self->seq_num);
   log_queue_ack_backlog(self->queue, 1);
   log_msg_unref(msg);

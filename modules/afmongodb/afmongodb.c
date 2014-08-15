@@ -38,7 +38,6 @@
 #include "mongo.h"
 #include <time.h>
 
-#define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 #define SOCKET_TIMEOUT_FOR_MONGO_CONNECTION_IN_MILLISECS 60000
 
 typedef struct
@@ -65,8 +64,6 @@ typedef struct
 
   gchar *user;
   gchar *password;
-  gint failed_message_counter;
-  gint max_retry_of_failed_inserts;
 
   time_t last_msg_stamp;
 
@@ -216,7 +213,7 @@ afmongodb_dd_set_retries(LogDriver *d, gint retries)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  self->max_retry_of_failed_inserts = retries;
+  self->super.retries.max = retries;
 };
 /*
  * Utilities
@@ -457,36 +454,29 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
 }
 
 static void
-afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg)
+afmongodb_worker_retry_over_message(LogThrDestDriver *s, LogMessage *msg)
 {
-  log_threaded_dest_driver_message_drop(&self->super, msg);
-  self->failed_message_counter = 0;
-};
+  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
-static void
-afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg)
-{
-  log_threaded_dest_driver_message_accept(&self->super, msg);
-  self->failed_message_counter = 0;
+  msg_error("Multiple failures while inserting this record into the database, "
+            "message dropped",
+            evt_tag_str("driver", self->super.super.super.id),
+            evt_tag_int("number_of_retries", s->retries.max),
+            evt_tag_value_pairs("message", self->vp, msg,
+                                self->super.seq_num,
+                                LTZ_SEND, &self->template_options),
+            NULL);
 }
 
-static gboolean
-afmongodb_worker_insert (LogThrDestDriver *s)
+static worker_insert_result_t
+afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   gboolean success;
   gboolean drop_silently = self->template_options.on_error & ON_ERROR_SILENT;
-  LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   if (!afmongodb_dd_connect(self, TRUE))
-    return FALSE;
-
-  msg = log_queue_pop_head(self->super.queue, &path_options);
-  if (!msg)
-    return TRUE;
-
-  msg_set_context(msg);
+    return WORKER_INSERT_RESULT_ERROR;
 
   bson_reset (self->bson);
 
@@ -511,9 +501,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
                     evt_tag_str("driver", self->super.super.super.id),
                     NULL);
         }
-      msg_set_context(NULL);
-      afmongodb_worker_drop_message(self, msg);
-      return TRUE;
+      return WORKER_INSERT_RESULT_DROP;
     }
   else
     {
@@ -535,31 +523,10 @@ afmongodb_worker_insert (LogThrDestDriver *s)
         }
     }
 
-  msg_set_context(NULL);
+  if (!success)
+    return WORKER_INSERT_RESULT_ERROR;
 
-  if (success)
-    {
-      afmongodb_worker_accept_message(self, msg);
-    }
-  else
-    {
-      self->failed_message_counter++;
-      if (self->failed_message_counter >= self->max_retry_of_failed_inserts)
-        {
-          msg_error("Multiple failures while inserting this record into the database, message dropped",
-                    evt_tag_int("number_of_retries", self->max_retry_of_failed_inserts),
-                    evt_tag_value_pairs("message", self->vp, msg,
-                                        self->super.seq_num,
-                                        LTZ_SEND, &self->template_options),
-                    evt_tag_str("driver", self->super.super.super.id),
-                    NULL);
-          afmongodb_worker_drop_message(self, msg);
-        }
-      else
-        log_queue_push_head(self->super.queue, msg, &path_options);
-    }
-
-  return success;
+  return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 static void
@@ -626,16 +593,6 @@ afmongodb_dd_init(LogPipe *s)
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
-
-  if (self->max_retry_of_failed_inserts <= 0)
-    {
-      msg_warning("WARNING: Wrong value for retries in MongoDB destination, setting it to default",
-                   evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
-                   evt_tag_str("driver", self->super.super.super.id),
-                   NULL);
-
-      self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
-    }
 
   if (!afmongodb_dd_check_auth_options(self))
     return FALSE;
@@ -773,12 +730,12 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.format.stats_instance = afmongodb_dd_format_stats_instance;
   self->super.format.persist_name = afmongodb_dd_format_persist_name;
   self->super.stats_source = SCS_MONGODB;
+  self->super.messages.retry_over = afmongodb_worker_retry_over_message;
 
   afmongodb_dd_set_database((LogDriver *)self, "syslog");
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
   afmongodb_dd_set_safe_mode((LogDriver *)self, FALSE);
 
-  self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   self->safe_mode = TRUE;
 
   log_template_options_defaults(&self->template_options);

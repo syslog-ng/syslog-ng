@@ -43,6 +43,7 @@ static CfgLexerKeyword afamqp_keywords[] = {
   { "password",			KW_PASSWORD },
   { "log_fifo_size",		KW_LOG_FIFO_SIZE  },
   { "body",			KW_BODY },
+  { "retries",			KW_RETRIES },
   { NULL }
 };
 
