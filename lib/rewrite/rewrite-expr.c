@@ -36,7 +36,6 @@ static void
 log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogRewrite *self = (LogRewrite *) s;
-  gchar buf[128];
   gssize length;
   const gchar *value;
 
@@ -57,7 +56,7 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
                 evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)),
                 evt_tag_printf("new_value", "%.*s", (gint) length, value),
                 evt_tag_str("rule", self->name),
-                evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
+                log_pipe_location_tag(s),
                 NULL);
     }
   log_pipe_forward_msg(s, msg, path_options);

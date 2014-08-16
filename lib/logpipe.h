@@ -317,10 +317,8 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       path_options = &local_path_options;
       if (G_UNLIKELY(debug_flag))
         {
-          gchar buf[32];
-
           msg_debug("Requesting flow control",
-                    evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
+                    log_pipe_location_tag(s),
                     NULL);
         }
     }
