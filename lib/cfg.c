@@ -289,7 +289,7 @@ cfg_allow_config_dups(GlobalConfig *self)
   else
     {
       /* duplicate found, but allow-config-dups is not enabled, hint the user that he might want to use allow-config-dups */
-      msg_notice("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to reenable", NULL);
+      msg_warning_once("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to reenable", NULL);
       return FALSE;
     }
 }
