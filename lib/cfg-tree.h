@@ -28,6 +28,7 @@
 #include "syslog-ng.h"
 #include "template/templates.h"
 #include "cfg-lexer.h"
+#include "messages.h"
 
 const gchar *log_expr_node_get_content_name(gint content);
 
@@ -126,6 +127,7 @@ gint log_expr_node_lookup_flag(const gchar *flag);
 LogExprNode *log_expr_node_append_tail(LogExprNode *a, LogExprNode *b);
 void log_expr_node_set_object(LogExprNode *self, gpointer object, GDestroyNotify destroy);
 const gchar *log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len);
+EVTTAG *log_expr_node_location_tag(LogExprNode *self);
 
 LogExprNode *log_expr_node_new(gint layout, gint content, const gchar *name, LogExprNode *children, guint32 flags, YYLTYPE *yylloc);
 void log_expr_node_free(LogExprNode *self);

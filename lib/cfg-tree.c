@@ -154,6 +154,14 @@ log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len)
   return buf;
 }
 
+EVTTAG *
+log_expr_node_location_tag(LogExprNode *self)
+{
+  gchar buf[128];
+
+  return evt_tag_str("location", log_expr_node_format_location(self, buf, sizeof(buf)));
+}
+
 /*
  * Set the list of children of a LogExprNode. It automatically updates
  * the children's "parent" pointers so that the tree can be traversed
