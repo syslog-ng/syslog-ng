@@ -61,17 +61,11 @@ log_matcher_posix_re_compile(LogMatcher *s, const gchar *re, GError **error)
          {
            if (re[i] == 'i')
              {
-               static gboolean warn_written = FALSE;
-
-               if (!warn_written)
-                 {
-                   /* deprecated */
-                   msg_warning("WARNING: Your configuration file uses an obsoleted regexp option, please update your configuration",
-                               evt_tag_str("option", "(?i)"),
-                               evt_tag_str("change", "use ignore-case flag instead of (?i)"),
-                               NULL);
-                   warn_written = TRUE;
-                 }
+               /* deprecated */
+               msg_warning_once("WARNING: Your configuration file uses an obsoleted regexp option, please update your configuration",
+                                evt_tag_str("option", "(?i)"),
+                                evt_tag_str("change", "use ignore-case flag instead of (?i)"),
+                                NULL);
  
                flags |= REG_ICASE;
              }
@@ -229,14 +223,8 @@ log_matcher_posix_re_new(const LogMatcherOptions *options)
 
   if (configuration && cfg_is_config_version_older(configuration, 0x0300))
     {
-      static gboolean warn_written = FALSE;
-
-      if (!warn_written)
-        {
-          msg_warning("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
-                      NULL);
-          warn_written = TRUE;
-        }
+      msg_warning_once("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
+                       NULL);
       self->super.flags = LMF_STORE_MATCHES;
     }
   return &self->super;
@@ -805,14 +793,8 @@ log_matcher_pcre_re_new(const LogMatcherOptions *options)
 
   if (configuration && cfg_is_config_version_older(configuration, 0x0300))
     {
-      static gboolean warn_written = FALSE;
-
-      if (!warn_written)
-        {
-          msg_warning("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
-                      NULL);
-          warn_written = TRUE;
-        }
+      msg_warning_once("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
+                       NULL);
       self->super.flags = LMF_STORE_MATCHES;
     }
 
@@ -928,14 +910,8 @@ log_matcher_options_init(LogMatcherOptions *options, GlobalConfig *cfg)
 
       if (cfg_is_config_version_older(cfg, 0x0306))
         {
-          static gboolean warn_printed = FALSE;
-
-          if (!warn_printed)
-            {
-              msg_warning("WARNING: syslog-ng changed the default regexp implementation to PCRE starting from " VERSION_3_6 ", please ensure your regexp works with PCRE or please specify type(\"posix\") in filters explicitly",
-                          NULL);
-              warn_printed = TRUE;
-            }
+          msg_warning_once("WARNING: syslog-ng changed the default regexp implementation to PCRE starting from " VERSION_3_6 ", please ensure your regexp works with PCRE or please specify type(\"posix\") in filters explicitly",
+                           NULL);
           default_matcher = "posix";
         }
       if (!log_matcher_options_set_type(options, default_matcher))
