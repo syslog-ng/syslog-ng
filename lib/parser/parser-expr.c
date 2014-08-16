@@ -41,7 +41,6 @@ static void
 log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogParser *self = (LogParser *) s;
-  gchar buf[128];
   gboolean success;
 
   if (G_LIKELY(!self->template))
@@ -74,7 +73,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg_debug("Message parsing complete",
             evt_tag_int("result", success),
             evt_tag_str("rule", self->name),
-            evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
+            log_pipe_location_tag(s),
             NULL);
   if (success)
     {
