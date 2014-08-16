@@ -890,7 +890,7 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
 
   if (debug_flag)
     {
-      gchar buf[32];
+      gchar buf[128];
       gchar compile_message[256];
 
       indent++;
