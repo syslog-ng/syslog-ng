@@ -52,19 +52,13 @@ afunix_sd_setup_addresses(AFSocketSourceDriver *s)
 static gboolean
 afunix_sd_adjust_reader_options(AFUnixSourceDriver *self, GlobalConfig *cfg)
 {
-  static gboolean warned = FALSE;
-
   self->super.reader_options.parse_options.flags |= LP_LOCAL;
   if (cfg_is_config_version_older(cfg, 0x0302))
     {
-      if (!warned)
-        {
-          msg_warning("WARNING: the expected message format is being changed for unix-domain transports to improve "
-                      "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
-                      "applications which bypass the syslog() API, you might "
-                      "need the 'expect-hostname' flag to get the old behaviour back", NULL);
-          warned = TRUE;
-        }
+      msg_warning_once("WARNING: the expected message format is being changed for unix-domain transports to improve "
+                       "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
+                       "applications which bypass the syslog() API, you might "
+                       "need the 'expect-hostname' flag to get the old behaviour back", NULL);
     }
   else
     {

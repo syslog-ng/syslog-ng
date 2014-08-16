@@ -664,13 +664,8 @@ log_macro_lookup(gchar *macro, gint len)
 
   if (cfg_is_config_version_older(configuration, 0x0300) && (macro_id == M_MESSAGE))
     {
-      static gboolean msg_macro_warning = FALSE;
-
-      if (!msg_macro_warning)
-        {
-          msg_warning("WARNING: template: the meaning of the $MSG/$MESSAGE macros has changed from " VERSION_3_0 ", please prepend a $MSGHDR when upgrading to " VERSION_3_0 " config format", NULL);
-          msg_macro_warning = TRUE;
-        }
+      msg_warning_once("WARNING: template: the meaning of the $MSG/$MESSAGE macros has changed from " VERSION_3_0 ", please prepend a $MSGHDR when upgrading to " VERSION_3_0 " config format",
+                       NULL);
     }
   return macro_id;
 }
@@ -1470,14 +1465,8 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   g_static_mutex_init(&self->arg_lock);
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
-      static gboolean warn_written = FALSE;
-
-      if (!warn_written)
-        {
-          msg_warning("WARNING: template: the default value for template-escape has changed to 'no' from " VERSION_3_0 ", please update your configuration file accordingly",
-                      NULL);
-          warn_written = TRUE;
-        }
+      msg_warning_once("WARNING: template: the default value for template-escape has changed to 'no' from " VERSION_3_0 ", please update your configuration file accordingly",
+                       NULL);
       self->escape = TRUE;
     }
   return self;
