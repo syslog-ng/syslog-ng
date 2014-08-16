@@ -629,7 +629,7 @@ afmongodb_dd_init(LogPipe *s)
 
   if (self->max_retry_of_failed_inserts <= 0)
     {
-      msg_warning("WARNING! Wrong value for retries in MongoDB destination, setting it to default",
+      msg_warning("WARNING: Wrong value for retries in MongoDB destination, setting it to default",
                    evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
                    evt_tag_str("driver", self->super.super.super.id),
                    NULL);
