@@ -95,6 +95,20 @@ void msg_add_option_group(GOptionContext *ctx);
 #define msg_trace(desc, tag1, tags...)
 #endif
 
+#define __once()					\
+        ({						\
+          static gboolean __guard = TRUE;		\
+          gboolean __current_guard = __guard;		\
+          __guard = FALSE;				\
+          __current_guard;				\
+        })
+
+#define msg_warning_once(desc, tags...)	\
+        do {				\
+          if (__once())			\
+            msg_warning(desc, ##tags );	\
+        } while (0)
+
 void msg_post_message(LogMessage *msg);
 void msg_send_formatted_message(int prio, const char *msg);
 
