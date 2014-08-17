@@ -44,19 +44,18 @@ static void
 log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
-  gchar buf[128];
   gboolean res;
 
   msg_debug("Filter rule evaluation begins",
             evt_tag_str("rule", self->name),
-            evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
+            log_pipe_location_tag(s),
             NULL);
 
   res = filter_expr_eval_root(self->expr, &msg, path_options);
   msg_debug("Filter rule evaluation result",
             evt_tag_str("result", res ? "match" : "not-match"),
             evt_tag_str("rule", self->name),
-            evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
+            log_pipe_location_tag(s),
             NULL);
   if (res)
     {

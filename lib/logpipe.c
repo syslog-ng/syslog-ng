@@ -23,6 +23,13 @@
  */
   
 #include "logpipe.h"
+#include "cfg-tree.h"
+
+EVTTAG *
+log_pipe_location_tag(LogPipe *pipe)
+{
+  return log_expr_node_location_tag(pipe->expr_node);
+}
 
 void
 log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
