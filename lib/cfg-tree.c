@@ -154,6 +154,14 @@ log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len)
   return buf;
 }
 
+EVTTAG *
+log_expr_node_location_tag(LogExprNode *self)
+{
+  gchar buf[128];
+
+  return evt_tag_str("location", log_expr_node_format_location(self, buf, sizeof(buf)));
+}
+
 /*
  * Set the list of children of a LogExprNode. It automatically updates
  * the children's "parent" pointers so that the tree can be traversed
@@ -445,10 +453,8 @@ cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
       pipe = log_pipe_clone(pipe);
       if (!pipe)
         {
-          gchar buf[128];
-
           msg_error("Error cloning pipe into its reference point, probably the element in question is not meant to be used in this situation",
-                    evt_tag_str("location", log_expr_node_format_location(node, buf, sizeof(buf))),
+                    log_expr_node_location_tag(node),
                     NULL);
           goto error;
         }
@@ -484,12 +490,10 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
 
   if (!referenced_node)
     {
-      gchar buf[128];
-
       msg_error("Error resolving reference",
                 evt_tag_str("content", log_expr_node_get_content_name(node->content)),
                 evt_tag_str("name", node->name),
-                evt_tag_str("location", log_expr_node_format_location(node, buf, sizeof(buf))),
+                log_expr_node_location_tag(node),
                 NULL);
       goto error;
     }
@@ -721,10 +725,8 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 
           if (first_pipe)
             {
-              gchar buf[128];
-
               msg_error("Error compiling sequence, source-pipe follows a non-source one, please list source references/definitions first",
-                        evt_tag_str("location", log_expr_node_format_location(ep, buf, sizeof(buf))),
+                        log_expr_node_location_tag(ep),
                         NULL);
               goto error;
             }
@@ -822,10 +824,8 @@ cfg_tree_compile_junction(CfgTree *self,
 
           if (!is_first_branch && !fork_mpx)
             {
-              gchar buf[128];
-
               msg_error("Error compiling junction, source and non-source branches are mixed",
-                        evt_tag_str("location", log_expr_node_format_location(ep, buf, sizeof(buf))),
+                        log_expr_node_location_tag(ep),
                         NULL);
               goto error;
             }
@@ -842,10 +842,8 @@ cfg_tree_compile_junction(CfgTree *self,
 
           if (fork_mpx)
             {
-              gchar buf[128];
-
               msg_error("Error compiling junction, source and non-source branches are mixed",
-                        evt_tag_str("location", log_expr_node_format_location(ep, buf, sizeof(buf))),
+                        log_expr_node_location_tag(ep),
                         NULL);
               goto error;
             }
@@ -890,7 +888,7 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
 
   if (debug_flag)
     {
-      gchar buf[32];
+      gchar buf[128];
       gchar compile_message[256];
 
       indent++;
