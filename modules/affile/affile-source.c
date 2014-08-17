@@ -475,14 +475,8 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
-      static gboolean warned = FALSE;
-      
-      if (!warned)
-        {
-          msg_warning("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0 " to '1' for all files except /proc/kmsg",
-                      NULL);
-          warned = TRUE;
-        }
+      msg_warning_once("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0 " to '1' for all files except /proc/kmsg",
+                       NULL);
       self->follow_freq = -1;
     }
   else
@@ -507,15 +501,10 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
 
   if (cfg_is_config_version_older(cfg, 0x0302))
     {
-      static gboolean warned = FALSE;
-      if (!warned)
-        {
-          msg_warning("WARNING: the expected message format is being changed for pipe() to improve "
-                      "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
-                      "applications which bypass the syslog() API, you might "
-                      "need the 'expect-hostname' flag to get the old behaviour back", NULL);
-          warned = TRUE;
-        }
+      msg_warning_once("WARNING: the expected message format is being changed for pipe() to improve "
+                       "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
+                       "applications which bypass the syslog() API, you might "
+                       "need the 'expect-hostname' flag to get the old behaviour back", NULL);
     }
   else
     {

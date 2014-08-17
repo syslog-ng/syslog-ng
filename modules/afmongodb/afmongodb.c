@@ -109,12 +109,7 @@ afmongodb_dd_set_host(LogDriver *d, const gchar *host)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  static gboolean host_warning_displayed = FALSE;
-  if (!host_warning_displayed)
-    {
-      msg_warning("WARNING! Using host() option is deprecated in mongodb driver, please use servers() instead!", NULL);
-      host_warning_displayed = TRUE;
-    }
+  msg_warning_once("WARNING: Using host() option is deprecated in mongodb driver, please use servers() instead", NULL);
 
   g_free(self->address);
   self->address = g_strdup(host);
@@ -125,12 +120,7 @@ afmongodb_dd_set_port(LogDriver *d, gint port)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  static gboolean port_warning_displayed = FALSE;
-  if (!port_warning_displayed)
-    {
-      msg_warning("WARNING! Using port() option is deprecated in mongodb driver, please use servers() instead!", NULL);
-      port_warning_displayed = TRUE;
-    }
+  msg_warning_once("WARNING: Using port() option is deprecated in mongodb driver, please use servers() instead", NULL);
 
   self->port = port;
 }
@@ -639,7 +629,7 @@ afmongodb_dd_init(LogPipe *s)
 
   if (self->max_retry_of_failed_inserts <= 0)
     {
-      msg_warning("WARNING! Wrong value for retries in MongoDB destination, setting it to default",
+      msg_warning("WARNING: Wrong value for retries in MongoDB destination, setting it to default",
                    evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
                    evt_tag_str("driver", self->super.super.super.id),
                    NULL);
