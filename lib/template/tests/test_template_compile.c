@@ -136,6 +136,19 @@ assert_failed_template_compile(const gchar *template_string, const gchar *expect
   select_first_element();
 }
 
+static gpointer
+get_template_function_ops(const gchar *name)
+{
+  Plugin *plugin;
+
+  plugin = plugin_find(configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
+  assert_not_null(plugin, "Template function %s is not found", name);
+
+  if (plugin)
+    return plugin->construct(plugin, configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
+  return NULL;
+}
+
 static void
 test_simple_string_literal(void)
 {
@@ -334,21 +347,21 @@ static void
 test_simple_template_function(void)
 {
   assert_template_compile("$(hello)");
-  assert_compiled_template(text = "", default_value = NULL, func.ops = hello_construct(&hello_plugin, configuration, LL_CONTEXT_TEMPLATE_FUNC, "hello"), type = LTE_FUNC, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"), type = LTE_FUNC, msg_ref = 0);
 }
 
 static void
 test_complicated_template_function(void)
 {
   assert_template_compile("$( hello \\tes\t\t\t value(xyz) \"value with spaces\" 'test value with spa\"ces')@2");
-  assert_compiled_template(text = "", default_value = NULL, func.ops = hello_construct(&hello_plugin, configuration, LL_CONTEXT_TEMPLATE_FUNC, "hello"), type = LTE_FUNC, msg_ref = 3);
+  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"), type = LTE_FUNC, msg_ref = 3);
 }
 
 static void
 test_simple_template_function_with_additional_text(void)
 {
   assert_template_compile("$(hello)test value");
-  assert_compiled_template(text = "", default_value = NULL, func.ops = hello_construct(&hello_plugin, configuration, LL_CONTEXT_TEMPLATE_FUNC, "hello"), type = LTE_FUNC, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"), type = LTE_FUNC, msg_ref = 0);
 
   select_next_element();
   assert_compiled_template(text = "test value", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
@@ -358,7 +371,7 @@ static void
 test_qouted_string_in_name_template_function(void)
 {
   assert_template_compile("$(he\"ll\"o)");
-  assert_compiled_template(text = "", default_value = NULL, func.ops = hello_construct(&hello_plugin, configuration, LL_CONTEXT_TEMPLATE_FUNC, "hello"), type = LTE_FUNC, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"), type = LTE_FUNC, msg_ref = 0);
 }
 
 static void
@@ -410,7 +423,7 @@ test_template_function_bad3(void)
 static void
 test_unknown_function(void)
 {
-  assert_failed_template_compile("$(unknown function)", "Unknown template function unknown");
+  assert_failed_template_compile("$(unknown function)", "Unknown template function \"unknown\"");
   assert_compiled_template(text = "error in template: $(unknown function)", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
