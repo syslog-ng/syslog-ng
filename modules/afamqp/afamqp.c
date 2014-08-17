@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -64,7 +64,6 @@ typedef struct
   amqp_connection_state_t conn;
   amqp_table_entry_t *entries;
   gint32 max_entries;
-  gint32 seq_num;
 } AMQPDestDriver;
 
 /*
@@ -399,8 +398,9 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
 
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };
 
-  value_pairs_foreach(self->vp, afamqp_vp_foreach, msg, self->seq_num, LTZ_SEND,
-                      &self->template_options, user_data);
+  value_pairs_foreach(self->vp, afamqp_vp_foreach, msg,
+                      self->super.seq_num,
+                      LTZ_SEND, &self->template_options, user_data);
 
   table.num_entries = pos;
   table.entries = self->entries;
@@ -412,12 +412,14 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   props.headers = table;
 
   log_template_format(self->routing_key_template, msg, NULL, LTZ_LOCAL,
-                      self->seq_num, NULL, sb_gstring_string(routing_key));
+                      self->super.seq_num,
+                      NULL, sb_gstring_string(routing_key));
 
   if (self->body_template)
     {
       log_template_format(self->body_template, msg, NULL, LTZ_LOCAL,
-                          self->seq_num, NULL, sb_gstring_string(body));
+                          self->super.seq_num,
+                          NULL, sb_gstring_string(body));
       body_bytes = amqp_cstring_bytes(sb_gstring_string(body)->str);
     }
 
@@ -465,10 +467,7 @@ afamqp_worker_insert(LogThrDestDriver *s)
 
   if (success)
     {
-      stats_counter_inc(s->stored_messages);
-      step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options, AT_PROCESSED);
-      log_msg_unref(msg);
+      log_threaded_dest_driver_message_accept(&self->super, msg);
     }
   else
     log_queue_push_head(s->queue, msg, &path_options);
@@ -572,8 +571,6 @@ afamqp_dd_new(GlobalConfig *cfg)
   afamqp_dd_set_routing_key((LogDriver *) self, "");
   afamqp_dd_set_persistent((LogDriver *) self, TRUE);
   afamqp_dd_set_exchange_declare((LogDriver *) self, FALSE);
-
-  init_sequence_number(&self->seq_num);
 
   self->max_entries = 256;
   self->entries = g_new(amqp_table_entry_t, self->max_entries);

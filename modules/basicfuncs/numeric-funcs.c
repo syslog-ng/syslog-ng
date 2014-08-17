@@ -23,7 +23,7 @@
 
 static gboolean
 tf_num_parse(gint argc, GString *argv[],
-	     const gchar *func_name, glong *n, glong *m)
+	     const gchar *func_name, gint64 *n, gint64 *m)
 {
   if (argc != 2)
     {
@@ -54,7 +54,7 @@ tf_num_parse(gint argc, GString *argv[],
 static void
 tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  glong n, m;
+  gint64 n, m;
 
   if (!tf_num_parse(argc, argv, "+", &n, &m))
     {
@@ -70,7 +70,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_plus);
 static void
 tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  glong n, m;
+  gint64 n, m;
 
   if (!tf_num_parse(argc, argv, "-", &n, &m))
     {
@@ -86,7 +86,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_minus);
 static void
 tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  glong n, m;
+  gint64 n, m;
 
   if (!tf_num_parse(argc, argv, "*", &n, &m))
     {
@@ -102,7 +102,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_multi);
 static void
 tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  glong n, m;
+  gint64 n, m;
 
   if (!tf_num_parse(argc, argv, "/", &n, &m) || !m)
     {
@@ -118,7 +118,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_div);
 static void
 tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  glong n, m;
+  gint64 n, m;
 
   if (!tf_num_parse(argc, argv, "%", &n, &m) || !m)
     {

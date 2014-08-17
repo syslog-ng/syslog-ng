@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
+ * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -51,7 +52,6 @@ typedef struct
   LogTemplate *param2;
   GString *param2_str;
 
-  gint32 seq_num;
   redisContext *c;
 } RedisDriver;
 
@@ -198,14 +198,14 @@ redis_worker_insert(LogThrDestDriver *s)
   msg_set_context(msg);
 
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
-                      self->seq_num, NULL, self->key_str);
+                      self->super.seq_num, NULL, self->key_str);
 
   if (self->param1)
     log_template_format(self->param1, msg, &self->template_options, LTZ_SEND,
-                        self->seq_num, NULL, self->param1_str);
+                        self->super.seq_num, NULL, self->param1_str);
   if (self->param2)
     log_template_format(self->param2, msg, &self->template_options, LTZ_SEND,
-                        self->seq_num, NULL, self->param2_str);
+                        self->super.seq_num, NULL, self->param2_str);
 
   argv[0] = self->command->str;
   argvlen[0] = self->command->len;
@@ -243,10 +243,7 @@ redis_worker_insert(LogThrDestDriver *s)
 
   if (success)
     {
-      stats_counter_inc(self->super.stored_messages);
-      step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options, AT_PROCESSED);
-      log_msg_unref(msg);
+      log_threaded_dest_driver_message_accept(&self->super, msg);
     }
   else
     {
@@ -351,7 +348,6 @@ redis_dd_new(GlobalConfig *cfg)
 
   self->command = g_string_sized_new(32);
 
-  init_sequence_number(&self->seq_num);
   log_template_options_defaults(&self->template_options);
 
   return (LogDriver *)self;

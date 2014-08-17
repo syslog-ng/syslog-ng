@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,18 @@
  */
 
 #include "logthrdestdrv.h"
+#include "misc.h"
+
+static gchar *
+log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
+{
+  static gchar persist_name[256];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "%s.seqnum", self->format.persist_name(self));
+
+  return persist_name;
+}
 
 void
 log_threaded_dest_driver_suspend(LogThrDestDriver *self)
@@ -216,6 +228,10 @@ log_threaded_dest_driver_start(LogPipe *s)
   log_queue_set_counters(self->queue, self->stored_messages,
                          self->dropped_messages);
 
+  self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, log_threaded_dest_driver_format_seqnum_for_persist(self)));
+  if (!self->seq_num)
+    init_sequence_number(&self->seq_num);
+
   log_threaded_dest_driver_start_thread(self);
 
   return TRUE;
@@ -229,6 +245,10 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
+
+  cfg_persist_config_add(log_pipe_get_config(s),
+                         log_threaded_dest_driver_format_seqnum_for_persist(self),
+                         GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
   stats_lock();
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->super.super.id,
@@ -287,4 +307,29 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
+}
+
+void
+log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
+                                        LogMessage *msg)
+{
+  step_sequence_number(&self->seq_num);
+  log_queue_ack_backlog(self->queue, 1);
+  log_msg_unref(msg);
+}
+
+void
+log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
+                                      LogMessage *msg)
+{
+  stats_counter_inc(self->dropped_messages);
+  log_threaded_dest_driver_message_accept(self, msg);
+}
+
+void
+log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
+                                        LogMessage *msg)
+{
+  log_queue_rewind_backlog(self->queue, 1);
+  log_msg_unref(msg);
 }

@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2013 Viktor Tusa <tusa@balabit.hu>
+ * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -57,7 +58,6 @@ typedef struct {
   ValuePairs *vp;
 
   stomp_connection *conn;
-  gint32 seq_num;
 } STOMPDestDriver;
 
 /*
@@ -260,7 +260,7 @@ afstomp_set_frame_body(STOMPDestDriver *self, SBGString *body, stomp_frame* fram
   if (self->body_template)
     {
       log_template_format(self->body_template, msg, NULL, LTZ_LOCAL,
-                          self->seq_num, NULL, sb_gstring_string(body));
+                          self->super.seq_num, NULL, sb_gstring_string(body));
       stomp_frame_set_body(frame, sb_gstring_string(body)->str, sb_gstring_string(body)->len);
     }
 }
@@ -289,11 +289,12 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
   stomp_frame_add_header(&frame, "destination", self->destination);
   if (self->ack_needed)
     {
-      g_snprintf(seq_num, sizeof(seq_num), "%i", self->seq_num);
+      g_snprintf(seq_num, sizeof(seq_num), "%i", self->super.seq_num);
       stomp_frame_add_header(&frame, "receipt", seq_num);
     };
 
-  value_pairs_foreach(self->vp, afstomp_vp_foreach, msg, self->seq_num, LTZ_SEND,
+  value_pairs_foreach(self->vp, afstomp_vp_foreach, msg,
+                      self->super.seq_num, LTZ_SEND,
                       &self->template_options, &frame);
 
   afstomp_set_frame_body(self, body, &frame, msg);
@@ -333,10 +334,7 @@ afstomp_worker_insert(LogThrDestDriver *s)
 
   if (success)
     {
-      stats_counter_inc(self->super.stored_messages);
-      step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options, AT_PROCESSED);
-      log_msg_unref(msg);
+      log_threaded_dest_driver_message_accept(&self->super, msg);
     }
   else
     {
@@ -415,8 +413,6 @@ afstomp_dd_new(GlobalConfig *cfg)
   afstomp_dd_set_destination((LogDriver *) self, "/topic/syslog");
   afstomp_dd_set_persistent((LogDriver *) self, TRUE);
   afstomp_dd_set_ack((LogDriver *) self, FALSE);
-
-  init_sequence_number(&self->seq_num);
 
   log_template_options_defaults(&self->template_options);
   afstomp_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
