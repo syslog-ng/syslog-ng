@@ -34,6 +34,7 @@
 #include "tls-support.h"
 #include "compat/string.h"
 #include "rcptid.h"
+#include "template/macros.h"
 
 #include <sys/types.h>
 #include <time.h>
