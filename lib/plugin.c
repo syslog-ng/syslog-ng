@@ -564,3 +564,17 @@ plugin_list_modules(FILE *out, gboolean verbose)
   if (!verbose)
     fprintf(out, "\n");
 }
+
+static void
+_free_plugin(Plugin *plugin, gpointer user_data)
+{
+  if (plugin->free_fn)
+    plugin->free_fn(plugin);
+}
+
+void
+plugin_free_plugins(GlobalConfig *cfg)
+{
+  g_list_foreach(cfg->plugins, (GFunc) _free_plugin, NULL);
+  g_list_free(cfg->plugins);
+}
