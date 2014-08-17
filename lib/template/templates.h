@@ -88,19 +88,6 @@ typedef struct _LogTemplateOptions
   gint on_error;
 } LogTemplateOptions;
 
-/* macros (not NV pairs!) that syslog-ng knows about. This was the
- * earliest mechanism for inserting message-specific information into
- * texts. It is now superseeded by name-value pairs where the value is
- * text, but remains to be used for time and other metadata.
- */
-typedef struct _LogMacroDef
-{
-  char *name;
-  int id;
-} LogMacroDef;
-
-extern LogMacroDef macros[];
-
 /* This structure contains the arguments for template-function
  * expansion. It is defined in a struct because otherwise a large
  * number of function arguments, that are passed around, possibly
@@ -213,12 +200,6 @@ void log_template_append_format(LogTemplate *self, LogMessage *lm, const LogTemp
 void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_append_format_recursive(LogTemplate *self, const LogTemplateInvokeArgs *args, GString *result);
-
-
-/* low level macro functions */
-guint log_macro_lookup(gchar *macro, gint len);
-gboolean log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg);
-gboolean log_macro_expand_simple(GString *result, gint id, LogMessage *msg);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name);
 LogTemplate *log_template_ref(LogTemplate *s);

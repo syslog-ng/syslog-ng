@@ -26,6 +26,7 @@
 #include "vptransform.h"
 #include "logmsg.h"
 #include "template/templates.h"
+#include "template/macros.h"
 #include "type-hinting.h"
 #include "cfg-parser.h"
 #include "misc.h"
