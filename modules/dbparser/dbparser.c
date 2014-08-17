@@ -310,7 +310,8 @@ log_db_parser_new(GlobalConfig *cfg)
   g_static_mutex_init(&self->lock);
   if (cfg_is_config_version_older(cfg, 0x0303))
     {
-      msg_warning("WARNING: The default behaviour for injecting messages in db-parser() has changed in " VERSION_3_3 " from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour", NULL);
+      msg_warning_once("WARNING: The default behaviour for injecting messages in db-parser() has changed in " VERSION_3_3 " from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour",
+                       NULL);
       self->inject_mode = LDBP_IM_INTERNAL;
     }
   else
