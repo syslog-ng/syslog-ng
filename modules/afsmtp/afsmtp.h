@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -46,7 +46,6 @@ void afsmtp_dd_set_from(LogDriver *d, const gchar *phrase, const gchar *mbox);
 void afsmtp_dd_add_rcpt(LogDriver *d, afsmtp_rcpt_type_t type,
                         const gchar *phrase, const gchar *mbox);
 void afsmtp_dd_set_body(LogDriver *d, const gchar *body);
-void afsmtp_dd_set_retries(LogDriver *s, gint num_retries);
 gboolean afsmtp_dd_add_header(LogDriver *d, const gchar *header,
                               const gchar *value);
 LogTemplateOptions *afsmtp_dd_get_template_options(LogDriver *d);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -38,6 +38,7 @@
 #include "parser/parser-expr-parser.h"
 #include "rewrite/rewrite-expr-parser.h"
 #include "logmatcher.h"
+#include "logthrdestdrv.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
@@ -338,6 +339,8 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_REPLACE_PREFIX              10509
 
 %token KW_ON_ERROR                    10510
+
+%token KW_RETRIES                     10511
 
 /* END_DECLS */
 
@@ -1034,6 +1037,12 @@ source_reader_option_flags
         | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
 	|
 	;
+
+threaded_dest_driver_option
+	: KW_RETRIES '(' LL_NUMBER ')'
+        {
+          log_threaded_dest_driver_set_max_retries(last_driver, $3);
+        }
 
 dest_driver_option
         /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */

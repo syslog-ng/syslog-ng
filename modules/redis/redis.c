@@ -174,28 +174,20 @@ redis_dd_disconnect(LogThrDestDriver *s)
  * Worker thread
  */
 
-static gboolean
-redis_worker_insert(LogThrDestDriver *s)
+static worker_insert_result_t
+redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
   RedisDriver *self = (RedisDriver *)s;
-  gboolean success = TRUE;
-  LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   redisReply *reply;
   const char *argv[5];
   size_t argvlen[5];
   int argc = 2;
 
-  redis_dd_connect(self, TRUE);
+  if (!redis_dd_connect(self, TRUE))
+    return WORKER_INSERT_RESULT_ERROR;
 
   if (self->c->err)
-    return FALSE;
-
-  msg = log_queue_pop_head(self->super.queue, &path_options);
-  if (!msg)
-    return TRUE;
-
-  msg_set_context(msg);
+    return WORKER_INSERT_RESULT_ERROR;
 
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
                       self->super.seq_num, NULL, self->key_str);
@@ -235,22 +227,9 @@ redis_worker_insert(LogThrDestDriver *s)
             evt_tag_str("param1", self->param1_str->str),
             evt_tag_str("param2", self->param2_str->str),
             NULL);
-  success = TRUE;
-
   freeReplyObject(reply);
 
-  msg_set_context(NULL);
-
-  if (success)
-    {
-      log_threaded_dest_driver_message_accept(&self->super, msg);
-    }
-  else
-    {
-      log_queue_push_head(self->super.queue, msg, &path_options);
-    }
-
-  return success;
+  return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 static void

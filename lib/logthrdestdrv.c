@@ -25,6 +25,8 @@
 #include "logthrdestdrv.h"
 #include "misc.h"
 
+#define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
+
 static gchar *
 log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
 {
@@ -56,10 +58,17 @@ static void
 log_threaded_dest_driver_wake_up(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
+
   if (!iv_task_registered(&self->do_work))
     {
       iv_task_register(&self->do_work);
     }
+}
+
+static void
+log_threaded_dest_driver_start_watches(LogThrDestDriver* self)
+{
+  iv_task_register(&self->do_work);
 }
 
 static void
@@ -87,28 +96,87 @@ log_threaded_dest_driver_shutdown(gpointer data)
   iv_quit();
 }
 
+static void
+_disconnect_and_suspend(LogThrDestDriver *self)
+{
+  self->suspended = TRUE;
+  if (self->worker.disconnect)
+    self->worker.disconnect(self);
+  log_queue_reset_parallel_push(self->queue);
+  log_threaded_dest_driver_suspend(self);
+}
+
+static void
+log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
+{
+  LogMessage *msg;
+  worker_insert_result_t result;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  while (!self->suspended &&
+         (msg = log_queue_pop_head(self->queue, &path_options)) != NULL)
+    {
+      msg_set_context(msg);
+      log_msg_refcache_start_consumer(msg, &path_options);
+
+      result = self->worker.insert(self, msg);
+
+      switch (result)
+        {
+        case WORKER_INSERT_RESULT_DROP:
+          log_threaded_dest_driver_message_drop(self, msg);
+          _disconnect_and_suspend(self);
+          break;
+
+        case WORKER_INSERT_RESULT_ERROR:
+          self->retries.counter++;
+
+          if (self->retries.counter >= self->retries.max)
+            {
+              if (self->messages.retry_over)
+                self->messages.retry_over(self, msg);
+              log_threaded_dest_driver_message_drop(self, msg);
+            }
+          else
+            {
+              log_threaded_dest_driver_message_rewind(self, msg);
+              _disconnect_and_suspend(self);
+            }
+          break;
+
+        case WORKER_INSERT_RESULT_REWIND:
+          log_threaded_dest_driver_message_rewind(self, msg);
+          break;
+
+        case WORKER_INSERT_RESULT_SUCCESS:
+          log_threaded_dest_driver_message_accept(self, msg);
+          break;
+
+        default:
+          break;
+        }
+
+      msg_set_context(NULL);
+      log_msg_refcache_stop();
+    }
+}
 
 static void
 log_threaded_dest_driver_do_work(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
   gint timeout_msec = 0;
+
+  self->suspended = FALSE;
   log_threaded_dest_driver_stop_watches(self);
+
   if (log_queue_check_items(self->queue, &timeout_msec,
                                         log_threaded_dest_driver_message_became_available_in_the_queue,
                                         self, NULL))
     {
-      if (!self->worker.insert(self))
-        {
-          if (self->worker.disconnect)
-            self->worker.disconnect(self);
-          log_queue_reset_parallel_push(self->queue);
-          log_threaded_dest_driver_suspend(self);
-         }
-      else
-        {
-          iv_task_register(&self->do_work);
-        }
+      log_threaded_dest_driver_do_insert(self);
+      if (!self->suspended)
+        log_threaded_dest_driver_start_watches(self);
     }
   else if (timeout_msec != 0)
     {
@@ -144,12 +212,6 @@ log_threaded_dest_driver_init_watches(LogThrDestDriver* self)
   IV_TASK_INIT(&self->do_work);
   self->do_work.cookie = self;
   self->do_work.handler = log_threaded_dest_driver_do_work;
-}
-
-static void
-log_threaded_dest_driver_start_watches(LogThrDestDriver* self)
-{
-  iv_task_register(&self->do_work);
 }
 
 static void
@@ -214,6 +276,16 @@ log_threaded_dest_driver_start(LogPipe *s)
   if (self->queue == NULL)
     {
       return FALSE;
+    }
+
+  if (self->retries.max <= 0)
+    {
+      msg_warning("Wrong value for retries(), setting to default",
+                  evt_tag_int("value", self->retries.max),
+                  evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
+                  evt_tag_str("driver", self->super.super.id),
+                  NULL);
+      self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
     }
 
   stats_lock();
@@ -307,12 +379,15 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
+
+  self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
 }
 
 void
 log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
                                         LogMessage *msg)
 {
+  self->retries.counter = 0;
   step_sequence_number(&self->seq_num);
   log_queue_ack_backlog(self->queue, 1);
   log_msg_unref(msg);
@@ -332,4 +407,12 @@ log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
 {
   log_queue_rewind_backlog(self->queue, 1);
   log_msg_unref(msg);
+}
+
+void
+log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
+{
+  LogThrDestDriver *self = (LogThrDestDriver *)s;
+
+  self->retries.max = max_retries;
 }

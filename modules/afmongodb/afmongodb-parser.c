@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2010-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2010-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -39,7 +39,6 @@ static CfgLexerKeyword afmongodb_keywords[] = {
   { "host",                     KW_HOST, 0, KWS_OBSOLETE, "Use the servers() option instead of host() and port()" },
   { "port",                     KW_PORT, 0, KWS_OBSOLETE, "Use the servers() option instead of host() and port()" },
   { "path",                     KW_PATH },
-  { "retries",                  KW_RETRIES},
   { NULL }
 };
 

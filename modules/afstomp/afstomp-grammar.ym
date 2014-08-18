@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2013 Viktor Tusa <tusa@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -78,6 +78,7 @@ afstomp_option
         | KW_PASSWORD '(' string ')'		{ afstomp_dd_set_password(last_driver, $3); free($3); }
         | value_pair_option			{ afstomp_dd_set_value_pairs(last_driver, $1); }
         | dest_driver_option
+        | threaded_dest_driver_option
 	| { last_template_options = afstomp_dd_get_template_options(last_driver); } template_option
         ;
 

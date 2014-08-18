@@ -313,35 +313,18 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
   return success;
 }
 
-static gboolean
-afstomp_worker_insert(LogThrDestDriver *s)
+static worker_insert_result_t
+afstomp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
   STOMPDestDriver *self = (STOMPDestDriver *)s;
-  gboolean success = TRUE;
-  LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   if (!afstomp_dd_connect(self, TRUE))
-    return FALSE;
+    return WORKER_INSERT_RESULT_ERROR;
 
-  msg = log_queue_pop_head(self->super.queue, &path_options);
-  if (!msg)
-    return TRUE;
+  if (!afstomp_worker_publish (self, msg))
+    return WORKER_INSERT_RESULT_ERROR;
 
-  msg_set_context(msg);
-  success = afstomp_worker_publish (self, msg);
-  msg_set_context(NULL);
-
-  if (success)
-    {
-      log_threaded_dest_driver_message_accept(&self->super, msg);
-    }
-  else
-    {
-      log_queue_push_head(self->super.queue, msg, &path_options);
-    }
-
-  return success;
+  return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 static void
