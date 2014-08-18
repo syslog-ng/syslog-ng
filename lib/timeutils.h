@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2010 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -26,7 +26,7 @@
 #define TIMEUTILS_H_INCLUDED
 
 #include "syslog-ng.h"
-#include <time.h>
+#include "compat/time.h"
 
 time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
