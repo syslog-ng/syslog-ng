@@ -1,6 +1,15 @@
 #include "template_lib.h"
 #include "apphook.h"
 #include "plugin.h"
+#include "cfg.h"
+
+static void
+add_dummy_template_to_configuration(void)
+{
+  LogTemplate *dummy = log_template_new(configuration, "dummy");
+  assert_true(log_template_compile(dummy, "dummy template expanded $HOST", NULL), "Unexpected error compiling dummy template");
+  cfg_tree_add_template(&configuration->tree, dummy);
+}
 
 void
 test_cond_funcs(void)
@@ -102,17 +111,26 @@ test_misc_funcs(void)
   assert_template_format("$(env TEST_ENV)", "test-env");
 }
 
+static void
+test_tf_template(void)
+{
+  assert_template_format("foo $(template dummy) bar", "foo dummy template expanded bzorp bar");
+  assert_template_failure("foo $(template unknown) bar", "Unknown template function or template \"unknown\"");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
   init_template_tests();
+  add_dummy_template_to_configuration();
   plugin_load_module("basicfuncs", configuration, NULL);
 
   test_cond_funcs();
   test_str_funcs();
   test_numeric_funcs();
   test_misc_funcs();
+  test_tf_template();
 
   deinit_template_tests();
   app_shutdown();
