@@ -277,6 +277,7 @@ extern struct _StatsOptions *last_stats_options;
 
 %token KW_TEMPLATE                    10270
 %token KW_TEMPLATE_ESCAPE             10271
+%token KW_TEMPLATE_FUNCTION           10272
 
 %token KW_DEFAULT_FACILITY            10300
 %token KW_DEFAULT_LEVEL               10301
@@ -444,6 +445,11 @@ StatsOptions *last_stats_options;
 %type   <num> level_string
 
 /* END_DECLS */
+
+%type   <ptr> template_def
+%type   <ptr> template_block
+%type   <ptr> template_simple
+%type   <ptr> template_fn
 
 
 %%
@@ -736,15 +742,46 @@ options_stmt
 	;
 	
 template_stmt
+        : template_def
+          {
+            CHECK_ERROR(cfg_tree_add_template(&configuration->tree, $1) || cfg_allow_config_dups(configuration), @1, "duplicate template");
+          }
+        | template_fn
+          {
+            user_template_function_register(configuration, last_template->name, last_template);
+          }
+        ;
+
+template_def
+        : template_block
+        | template_simple
+        ;
+
+template_block
 	: KW_TEMPLATE string
 	  {
 	    last_template = log_template_new(configuration, $2);
 	    free($2);
 	  }
-	  '{' template_items '}'
+	  '{' template_items '}'						{ $$ = last_template; }
+        ;
+
+template_simple
+        : KW_TEMPLATE string
           {
-            CHECK_ERROR(cfg_tree_add_template(&configuration->tree, last_template) || cfg_allow_config_dups(configuration), @2, "duplicate template");
+	    last_template = log_template_new(configuration, $2);
+	    free($2);
           }
+          template_content_inner						{ $$ = last_template; }
+	;
+
+template_fn
+        : KW_TEMPLATE_FUNCTION string
+          {
+	    last_template = log_template_new(configuration, $2);
+	    free($2);
+          }
+          template_content_inner						{ $$ = last_template; }
 	;
 	
 template_items
