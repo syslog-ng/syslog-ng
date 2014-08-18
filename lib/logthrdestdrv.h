@@ -49,6 +49,7 @@ struct _LogThrDestDriver
   StatsCounterItem *dropped_messages;
   StatsCounterItem *stored_messages;
 
+  gboolean suspended;
   time_t time_reopen;
 
   LogQueue *queue;
