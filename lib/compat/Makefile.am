@@ -7,8 +7,9 @@ compatinclude_HEADERS		= 	\
 	lib/compat/lfs.h		\
 	lib/compat/pio.h		\
 	lib/compat/socket.h		\
-	lib/compat/string.h
-	
+	lib/compat/string.h		\
+	lib/compat/time.h
+
 compat_sources			= 	\
 	lib/compat/getutent.c		\
 	lib/compat/inet_aton.c		\

@@ -73,7 +73,7 @@ test_type_hint_parse(void)
   assert_false(type_hint_parse("invalid-hint", &t, &e),
                "Parsing an invalid hint results in an error.");
 
-  assert_error(e, TYPE_HINTING_INVALID_TYPE, "invalid-hint");
+  assert_error(e, TYPE_HINTING_INVALID_TYPE, "Unknown type specified in type hinting: invalid-hint");
 
   testcase_end();
 }

@@ -52,7 +52,6 @@
 /* INCLUDE_DECLS */
 
 %token KW_DEFAULT
-%token KW_RETRIES
 %token KW_DBD_OPTION
 
 %type   <ptr> dest_afsql
