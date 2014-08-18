@@ -59,10 +59,17 @@ static void
 log_threaded_dest_driver_wake_up(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
+
   if (!iv_task_registered(&self->do_work))
     {
       iv_task_register(&self->do_work);
     }
+}
+
+static void
+log_threaded_dest_driver_start_watches(LogThrDestDriver* self)
+{
+  iv_task_register(&self->do_work);
 }
 
 static void
@@ -93,6 +100,7 @@ log_threaded_dest_driver_shutdown(gpointer data)
 static void
 _disconnect_and_suspend(LogThrDestDriver *self)
 {
+  self->suspended = TRUE;
   if (self->worker.disconnect)
     self->worker.disconnect(self);
   log_queue_reset_parallel_push(self->queue);
@@ -105,9 +113,8 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
   LogMessage *msg;
   worker_insert_result_t result;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  gboolean suspend = FALSE;
 
-  while (!suspend &&
+  while (!self->suspended &&
          (msg = log_queue_pop_head(self->queue, &path_options)) != NULL)
     {
       msg_set_context(msg);
@@ -120,7 +127,6 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
         case WORKER_INSERT_RESULT_DROP:
           log_threaded_dest_driver_message_drop(self, msg);
           _disconnect_and_suspend(self);
-          suspend = TRUE;
           break;
 
         case WORKER_INSERT_RESULT_ERROR:
@@ -136,7 +142,6 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
             {
               log_threaded_dest_driver_message_rewind(self, msg);
               _disconnect_and_suspend(self);
-              suspend = TRUE;
             }
           break;
 
@@ -155,9 +160,6 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
       msg_set_context(NULL);
       log_msg_refcache_stop();
     }
-
-  if (!suspend)
-    iv_task_register(&self->do_work);
 }
 
 static void
@@ -166,12 +168,16 @@ log_threaded_dest_driver_do_work(gpointer data)
   LogThrDestDriver *self = (LogThrDestDriver *)data;
   gint timeout_msec = 0;
 
+  self->suspended = FALSE;
   log_threaded_dest_driver_stop_watches(self);
+
   if (log_queue_check_items(self->queue, &timeout_msec,
                                         log_threaded_dest_driver_message_became_available_in_the_queue,
                                         self, NULL))
     {
       log_threaded_dest_driver_do_insert(self);
+      if (!self->suspended)
+        log_threaded_dest_driver_start_watches(self);
     }
   else if (timeout_msec != 0)
     {
@@ -207,12 +213,6 @@ log_threaded_dest_driver_init_watches(LogThrDestDriver* self)
   IV_TASK_INIT(&self->do_work);
   self->do_work.cookie = self;
   self->do_work.handler = log_threaded_dest_driver_do_work;
-}
-
-static void
-log_threaded_dest_driver_start_watches(LogThrDestDriver* self)
-{
-  iv_task_register(&self->do_work);
 }
 
 static void
