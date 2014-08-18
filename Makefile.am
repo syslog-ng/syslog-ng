@@ -8,7 +8,8 @@ ACLOCAL_AMFLAGS		= -I m4 --install
 
 EXTRA_DIST		= ${BUILT_SOURCES} VERSION NEWS.md autogen.sh \
 			  syslog-ng.spec syslog-ng.spec.in \
-			  dist.conf dist.conf.in syslog-ng.pc.in
+			  dist.conf dist.conf.in syslog-ng.pc.in \
+			  CONTRIBUTING.md
 
 pkgconfigdir		= $(libdir)/pkgconfig
 pkgconfig_DATA		= syslog-ng.pc
