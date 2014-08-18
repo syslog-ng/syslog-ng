@@ -293,9 +293,9 @@ _is_json_parser_available(GlobalConfig *cfg)
 static void
 system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
 {
-  if (cfg_is_config_version_older(cfg, 0x0307))
+  if (cfg_is_config_version_older(cfg, 0x0306))
     {
-      msg_warning_once("WARNING: Starting with " VERSION_3_7 ", the system() source performs JSON parsing of messages starting with the '@cim:' prefix. No additional action is needed",
+      msg_warning_once("WARNING: Starting with " VERSION_3_6 ", the system() source performs JSON parsing of messages starting with the '@cim:' prefix. No additional action is needed",
                        NULL);
       return;
     }
