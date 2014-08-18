@@ -99,6 +99,65 @@ _disconnect_and_suspend(LogThrDestDriver *self)
 }
 
 static void
+log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
+{
+  LogMessage *msg;
+  worker_insert_result_t result;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  msg = log_queue_pop_head(self->queue, &path_options);
+  if (!msg)
+    {
+      iv_task_register(&self->do_work);
+      return;
+    }
+  msg_set_context(msg);
+  log_msg_refcache_start_consumer(msg, &path_options);
+
+  result = self->worker.insert(self, msg);
+
+  switch (result)
+    {
+    case WORKER_INSERT_RESULT_DROP:
+      log_threaded_dest_driver_message_drop(self, msg);
+      _disconnect_and_suspend(self);
+      break;
+
+    case WORKER_INSERT_RESULT_ERROR:
+      self->retries.counter++;
+
+      if (self->retries.counter >= self->retries.max)
+        {
+          if (self->messages.retry_over)
+            self->messages.retry_over(self, msg);
+          log_threaded_dest_driver_message_drop(self, msg);
+          iv_task_register(&self->do_work);
+        }
+      else
+        {
+          log_threaded_dest_driver_message_rewind(self, msg);
+          _disconnect_and_suspend(self);
+        }
+      break;
+
+    case WORKER_INSERT_RESULT_REWIND:
+      log_threaded_dest_driver_message_rewind(self, msg);
+      break;
+
+    case WORKER_INSERT_RESULT_SUCCESS:
+      log_threaded_dest_driver_message_accept(self, msg);
+      iv_task_register(&self->do_work);
+      break;
+
+    default:
+      break;
+    }
+
+  msg_set_context(NULL);
+  log_msg_refcache_stop();
+}
+
+static void
 log_threaded_dest_driver_do_work(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
@@ -109,60 +168,7 @@ log_threaded_dest_driver_do_work(gpointer data)
                                         log_threaded_dest_driver_message_became_available_in_the_queue,
                                         self, NULL))
     {
-      LogMessage *msg;
-      worker_insert_result_t result;
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-      msg = log_queue_pop_head(self->queue, &path_options);
-      if (!msg)
-        {
-          iv_task_register(&self->do_work);
-          return;
-        }
-      msg_set_context(msg);
-      log_msg_refcache_start_consumer(msg, &path_options);
-
-      result = self->worker.insert(self, msg);
-
-      switch (result)
-        {
-        case WORKER_INSERT_RESULT_DROP:
-          log_threaded_dest_driver_message_drop(self, msg);
-          _disconnect_and_suspend(self);
-          break;
-
-        case WORKER_INSERT_RESULT_ERROR:
-          self->retries.counter++;
-
-          if (self->retries.counter >= self->retries.max)
-            {
-              if (self->messages.retry_over)
-                self->messages.retry_over(self, msg);
-              log_threaded_dest_driver_message_drop(self, msg);
-              iv_task_register(&self->do_work);
-            }
-          else
-            {
-              log_threaded_dest_driver_message_rewind(self, msg);
-              _disconnect_and_suspend(self);
-            }
-          break;
-
-        case WORKER_INSERT_RESULT_REWIND:
-          log_threaded_dest_driver_message_rewind(self, msg);
-          break;
-
-        case WORKER_INSERT_RESULT_SUCCESS:
-          log_threaded_dest_driver_message_accept(self, msg);
-          iv_task_register(&self->do_work);
-          break;
-
-        default:
-          break;
-        }
-
-      msg_set_context(NULL);
-      log_msg_refcache_stop();
+      log_threaded_dest_driver_do_insert(self);
     }
   else if (timeout_msec != 0)
     {
