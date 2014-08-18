@@ -53,11 +53,6 @@ requests (they're all tagged with the
 label. You are welcome to share your ideas on existing requests, or to
 submit your own.
 
-Before submitting a separate module, please consider submitting it to
-the [Incubator](https://github.com/balabit/syslog-ng-incubator) first,
-because it is easier to have your code accepted there. The Incubator
-is the repository of new and experimental modules.
-
 ### Testing
 
 An incredibly useful way to contribute is to test patches and pull
@@ -90,6 +85,11 @@ guidelines are very, very simple:
     branch.
  7. If possible, write tests! We love tests.
  8. A well-documented pull request is much easier to review and merge.
+
+Before submitting a separate module, please consider submitting it to
+the [Incubator](https://github.com/balabit/syslog-ng-incubator) first,
+because it is easier to have your code accepted there. The Incubator
+is the repository of new and experimental modules.
 
 ## Additional resources
 
