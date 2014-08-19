@@ -36,6 +36,11 @@ test_cond_funcs(void)
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@0", "23323");
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@1", "23323");
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@2", "");
+
+  assert_template_format_with_context("$(or 1 \"\" 2)", "1");
+  assert_template_format_with_context("$(or \"\" 2)", "2");
+  assert_template_format_with_context("$(or \"\" \"\")", "");
+  assert_template_format_with_context("$(or)", "");
 }
 
 void
@@ -75,6 +80,10 @@ test_str_funcs(void)
   assert_template_format("$(uppercase őrült író)", "ŐRÜLT ÍRÓ");
 
   assert_template_format("$(replace-delimiter \"\t\" \",\" \"hello\tworld\")", "hello,world");
+
+  assert_template_format("$(padding foo 10)", "       foo");
+  assert_template_format("$(padding foo 10 x)", "xxxxxxxfoo");
+  assert_template_format("$(padding foo 10 abc)", "abcabcafoo");
 }
 
 void

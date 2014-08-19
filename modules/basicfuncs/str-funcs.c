@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2014 Viktor Tusa <tusavik@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -383,3 +384,45 @@ tf_replace_delimiter(LogMessage *msg, gint argc, GString *argv[], GString *resul
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_replace_delimiter);
+
+static void
+tf_string_padding(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  GString *text = argv[0];
+  GString *padding;
+  gint64 width, i;
+
+  if (argc <= 1)
+    {
+      msg_debug("Not enough arguments for padding template function!", NULL);
+      return;
+    }
+
+  if (!parse_number_with_suffix(argv[1]->str, &width))
+    {
+      msg_debug("Padding template function requires a number as second argument!", NULL);
+      return;
+    }
+
+  if (argc <= 2)
+    padding = g_string_new(" ");
+  else
+    padding = argv[2];
+
+  if (text->len < width)
+    {
+      for (i = 0; i < width - text->len; i++)
+        {
+          g_string_append_c(result, *(padding->str + (i % padding->len)));
+        }
+    }
+
+  g_string_append_len(result, text->str, text->len);
+
+  if (argc <= 2)
+    {
+      g_string_free(padding, TRUE);
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_string_padding);
