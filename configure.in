@@ -1195,9 +1195,9 @@ dnl ***************************************************************************
 ### configuration file, that's the preferred form.
 
 if test "x$default_modules" = "xauto"; then
-    default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash,convertfuncs,basic-proto,rltp-proto,license-plugin,json-plugin"
+    default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash,convertfuncs,basic-proto,rltp-proto,license-plugin,json-plugin,cryptofuncs"
     if test $IS_WINDOWS -ne 0; then
-        default_modules="affile,afsocket,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash,convertfuncs,basic-proto,rltp-proto,license-plugin,eventlog,json-plugin"
+        default_modules="affile,afsocket,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash,convertfuncs,basic-proto,rltp-proto,license-plugin,eventlog,json-plugin,cryptofuncs"
     fi
     if test "x$enable_mongodb" = "xyes"; then
         default_modules="$default_modules,afmongodb"
@@ -1540,6 +1540,8 @@ AC_OUTPUT(dist.conf
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
           modules/basicfuncs/tests/Makefile
+          modules/cryptofuncs/Makefile
+          modules/cryptofuncs/tests/Makefile
           modules/convertfuncs/Makefile
           modules/convertfuncs/tests/Makefile
           modules/json/Makefile

@@ -90,6 +90,7 @@ pkginclude_HEADERS = 		\
   tlswincrypt.h   \
 	type-hinting.h	\
 	utils.h			\
+	uuid.h			\
 	value-pairs.h		\
 	versioning.h	\
 	vptransform.h	\
@@ -177,6 +178,7 @@ libsyslog_ng_la_SOURCES = \
 	timeutils.c		\
 	type-hinting.c	\
 	utils.c			\
+	uuid.c			\
 	value-pairs.c		\
 	versioning.c		\
 	vptransform.c		\
