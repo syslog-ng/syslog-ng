@@ -30,6 +30,7 @@ JSON_C_MIN_VERSION="0.9"
 PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="0.1.8"
 LRMQ_MIN_VERSION="0.0.1"
+LRC_MIN_VERSION="1.0.0"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -214,6 +215,10 @@ AC_ARG_ENABLE(systemd,
 AC_ARG_ENABLE(geoip,
               [  --enable-geoip          Enable GeoIP support (default: auto)]
               ,,enable_geoip="auto")
+
+AC_ARG_ENABLE(riemann,
+              [  --disable-riemann       Disable riemann destination]
+              ,,enable_riemann="auto")
 
 AC_ARG_WITH(compile-date,
 	      [  --without-compile-date  Do not include the compile date in the binary]
@@ -1017,6 +1022,21 @@ if test "x$enable_amqp" = "xno"; then
 fi
 
 dnl ***************************************************************************
+dnl riemann-client headers/libraries
+dnl ***************************************************************************
+if test "$enable_riemann" != "no"; then
+ PKG_CHECK_MODULES(RIEMANN_CLIENT, riemann-client >= $LRC_MIN_VERSION,,riemann_found="no")
+ if test "$riemann_found" = "no" && test "$enable_riemann" = "yes"; then
+   AC_MSG_ERROR([Dependency for Riemann not found!])
+ fi
+ if test "$riemann_found" = "no"; then
+   enable_riemann="no";
+ else
+   enable_riemann="yes";
+ fi
+fi
+
+dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
 
@@ -1281,6 +1301,7 @@ AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$IVYKIS_SUBDIRS" != "x"])
 AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
+AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1380,3 +1401,4 @@ echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
+echo "  Riemann destination (module): ${enable_riemann:=no}"
