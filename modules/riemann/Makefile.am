@@ -20,6 +20,8 @@ modules_riemann_libriemann_la_LIBADD		 = \
 
 modules_riemann_libriemann_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS)
+modules_riemann_libriemann_la_DEPENDENCIES	 = \
+	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES					+= \
 	modules/riemann/riemann-grammar.y	   \
