@@ -1,7 +1,10 @@
 language: c
 install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq pkg-config flex bison xsltproc docbook-xsl libevtlog-dev libnet1-dev libglib2.0-dev libdbi0-dev libssl-dev libjson0-dev libwrap0-dev libpcre3-dev libcap-dev libesmtp-dev libgeoip-dev libhiredis-dev sqlite3 libdbd-sqlite3
+  - sudo apt-get install -qq curl
+  - curl http://packages.madhouse-project.org/debian/add-release.sh | sudo sh
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq pkg-config flex bison xsltproc docbook-xsl libevtlog-dev libnet1-dev libglib2.0-dev libdbi0-dev libssl-dev libjson0-dev libwrap0-dev libpcre3-dev libcap-dev libesmtp-dev libgeoip-dev libhiredis-dev sqlite3 libdbd-sqlite3 libriemann-client-dev
 before_script:
   - ./autogen.sh
 script:

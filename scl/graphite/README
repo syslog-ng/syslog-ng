@@ -1,0 +1,21 @@
+An example graphite() destination config can be found below:
+
+@version: 3.6
+@include "scl.conf"
+
+source s_all {
+       internal();
+       system();
+};
+
+destination d_graphite {
+	graphite(
+		payload("--key monitor.*")
+        );
+};
+
+log {
+    source(s_all);
+    destination(d_graphite);
+    flags(flow-control);
+};
