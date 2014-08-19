@@ -1,3 +1,98 @@
+3.6.0alpha3
+===========
+<!-- Released: Tue, 19 Aug 2014 14:33:00 +0200 -->
+
+This is the third alpha release of the upcoming syslog-ng OSE 3.6
+branch. It is expected to be the last alpha release, with the first
+beta in about two weeks. This release contains a number of important
+features and bugfixes:
+
+Changed defaults
+----------------
+
+* The `flush-lines()` setting now defaults to *100*, rather than *1*,
+  for increased speed.
+
+Features
+--------
+
+* The `system()` source will now parse `@cim` marked messages as JSON,
+  if the JSON module is available at run-time. This improves
+  inter-operation with other software that uses the *Common
+  Information Model*.
+
+### Features from the [Incubator][incubator]
+
+* The `$(or)` template function that returns the first non-empty
+  argument is now included in syslog-ng itself.
+
+* The `$(padding)` template function, to pad text with custom padding
+  to a given length is also included.
+
+* The `$(graphite-output)` template function, to be used for sending
+  metrics to [Graphite][graphite] was ported over from the Incubator.
+  The `graphite()` destination SCL block is also available now, to
+  make it even easier to talk to Graphite.
+
+* The `riemann()` destination, which allows sending metrics to the
+  [Riemann][riemann] monitoring system was also ported over from the
+  Incubator.
+
+ [graphite]: http://graphite.wikidot.com/
+ [incubator]: https://github.com/balabit/syslog-ng-incubator
+ [riemann]: http://riemann.io/
+
+### Threaded destinations
+
+A number of features were implemented for all threaded destinations:
+`amqp()`, `mongodb()`, `redis()`, `riemann()`, `smtp()` and `stomp()`.
+
+* The destinations gained support for `SEQNUM` persistence: the
+  counter will be preserved across reloads and restarts.
+
+* A new option called `retries()` was implemented for all of these,
+  which controls how many times a message delivery is retried before
+  dropping it.
+
+* The `throttle()` option is now implemented, and works for all of the
+  aforementioned destination drivers.
+
+* The message delivery loop was optimised to do less sleep/wakeup
+  cycles, which should make the drivers not only faster, but more CPU
+  friendly too.
+
+Bugfixes
+--------
+
+* The basicfuncs module was fixed to work correctly on 32-bit
+  architectures.
+* The `stored` statistics is no longer incremented by various drivers
+  when they mean `processed`.
+* The type hinting feature is now more picky about what kind of type
+  hints it accepts, allowing one to use template functions in - for
+  example - `$(format-json)` pairs.
+
+Miscellaneous changes
+---------------------
+
+* We now ship a "Contributors Guide" in the `CONTRIBUTING.md` file.
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessary to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Andras Mitzki, Balazs Scheidler, Fabien Wernli, Gergely Nagy, Laszlo
+Budai, Peter Czanik, Robert Fekete, Tibor Benke, Viktor Juhasz, Viktor
+Tusa.
+
 3.6.0alpha2
 ===========
 <!-- Released: Mon, 11 Aug 2014 15:02:59 +0200 -->
