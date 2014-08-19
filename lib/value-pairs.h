@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,7 @@ typedef gboolean (*VPWalkCallbackFunc)(const gchar *name,
 
 gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
 void value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern, gboolean include);
+void value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include);
 gboolean value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
 
 void value_pairs_add_transforms(ValuePairs *vp, gpointer vpts);
