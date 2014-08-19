@@ -21,6 +21,7 @@ include modules/tfgeoip/Makefile.am
 include modules/afstomp/Makefile.am
 include modules/redis/Makefile.am
 include modules/pseudofile/Makefile.am
+include modules/graphite/Makefile.am
 
 SYSLOG_NG_MODULES	=	\
 	mod-afsocket mod-afstreams mod-affile mod-afprog \
@@ -28,7 +29,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-syslogformat mod-linux-kmsg mod-pacctformat \
 	mod-confgen mod-system-source mod-csvparser mod-dbparser \
 	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
-	mod-redis mod-pseudofile
+	mod-redis mod-pseudofile mod-graphite
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
@@ -39,6 +40,7 @@ modules_test_subdirs	=	\
 	modules_syslogformat modules_linux_kmsg \
 	modules_pacctformat modules_confgen modules_system_source \
 	modules_csvparser modules_dbparser modules_basicfuncs \
-	modules_cryptofuncs modules_geoip modules_afstomp
+	modules_cryptofuncs modules_geoip modules_afstomp \
+	modules_graphite
 
 .PHONY: modules modules/
