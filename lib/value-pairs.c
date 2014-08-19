@@ -1154,13 +1154,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   gpointer user_data_args[4];
   gboolean success;
   gint i = 0;
-  gint argc_new = argc + 1;
-  gchar **argv_new = g_new0 (gchar *, argc_new + 1);
-
-  argv_new[0] = "value-pairs";
-  for (i = 0; i < argc; i++)
-    argv_new[i+1] = argv[i];
-  argv_new[argc_new] = NULL;
 
   vp = value_pairs_new();
   user_data_args[0] = cfg;
@@ -1173,10 +1166,9 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   g_option_group_add_entries (og, vp_options);
   g_option_context_set_main_group (ctx, og);
 
-  success = g_option_context_parse (ctx, &argc_new, &argv_new, error);
+  success = g_option_context_parse (ctx, &argc, &argv, error);
   vp_cmdline_parse_rekey_finish (user_data_args);
   g_option_context_free (ctx);
-  g_free(argv_new);
 
   if (!success)
     {

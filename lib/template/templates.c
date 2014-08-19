@@ -709,51 +709,65 @@ typedef struct _LogTemplateElem
 
 /* simple template functions which take templates as arguments */
 void
-tf_simple_func_free_state(gpointer state)
+tf_simple_func_free_state(gpointer userdata)
 {
-  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
+  TFSimpleFuncState *state = (TFSimpleFuncState *) userdata;
   gint i;
 
-  for (i = 0; i < args->argc; i++)
+  for (i = 0; i < state->number_of_templates; i++)
     {
-      if (args->argv[i])
-        log_template_unref(args->argv[i]);
+      if (state->templates[i])
+        log_template_unref(state->templates[i]);
     }
-  g_free(args);
+  g_free(state->templates);
+  g_free(state);
 }
 
 gboolean
-tf_simple_func_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *argv[], gpointer *state, GDestroyNotify *state_destroy, GError **error)
+tf_simple_func_compile_templates(LogTemplate *parent, gint number_of_raw_templates, gchar *raw_templates[], TFSimpleFuncState *state, GError **error)
 {
-  TFSimpleFuncState *args;
+  int i;
+  /* First argument is the name of the template function */
+  state->number_of_templates = number_of_raw_templates;
+  state->templates = g_malloc0(state->number_of_templates * sizeof(LogTemplate *));
+  for (i = 0; i < state->number_of_templates; i++)
+    {
+      state->templates[i] = log_template_new(parent->cfg, NULL);
+      if (!log_template_compile(state->templates[i], raw_templates[i], error))
+        return FALSE;
+    }
+  return TRUE;
+};
+
+gboolean
+tf_simple_func_prepare(LogTemplateFunction *self, LogTemplate *parent, gint number_of_arguments, gchar *arguments[], gpointer *tf_state, GDestroyNotify *tf_state_destroy, GError **error)
+{
+  TFSimpleFuncState *state;
   gint i;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  state = g_new0(TFSimpleFuncState,  1);
 
-  args = g_malloc0(sizeof(TFSimpleFuncState) + argc * sizeof(LogTemplate *));
-  for (i = 0; i < argc; i++)
-    {
-      args->argv[i] = log_template_new(parent->cfg, NULL);
-      if (!log_template_compile(args->argv[i], argv[i], error))
-        goto error;
-    }
-  args->argc = argc;
-  *state = args;
-  *state_destroy = tf_simple_func_free_state;
+  /* First argument is template function name, do not try to compile it as a template */
+  if (!tf_simple_func_compile_templates(parent, number_of_arguments - 1, &arguments[1], state, error))
+    goto error;
+
+  *tf_state = state;
+  *tf_state_destroy = tf_simple_func_free_state;
   return TRUE;
  error:
-  tf_simple_func_free_state(args);
+  tf_simple_func_free_state(state);
   return FALSE;
 }
 
 void
-tf_simple_func_eval(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages,
+tf_simple_func_eval(LogTemplateFunction *self, gpointer tf_state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages,
                     LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id)
 {
-  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
+  TFSimpleFuncState *state = (TFSimpleFuncState *) tf_state;
   gint i;
 
-  for (i = 0; i < args->argc; i++)
+  for (i = 0; i < state->number_of_templates; i++)
     {
       GString **arg;
 
@@ -763,18 +777,18 @@ tf_simple_func_eval(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bu
       arg = (GString **) &g_ptr_array_index(arg_bufs, i);
       g_string_truncate(*arg, 0);
 
-      log_template_append_format_with_context(args->argv[i], messages, num_messages, opts, tz, seq_num, context_id, *arg);
+      log_template_append_format_with_context(state->templates[i], messages, num_messages, opts, tz, seq_num, context_id, *arg);
     }
 }
 
 void
-tf_simple_func_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages,
+tf_simple_func_call(LogTemplateFunction *self, gpointer tf_state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages,
                     LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
 {
   TFSimpleFunc simple_func = (TFSimpleFunc) self->arg;
-  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
+  TFSimpleFuncState *state = (TFSimpleFuncState *) tf_state;
 
-  simple_func(messages[num_messages-1], args->argc, (GString **) arg_bufs->pdata, result);
+  simple_func(messages[num_messages-1], state->number_of_templates, (GString **) arg_bufs->pdata, result);
 }
 
 void
@@ -879,7 +893,7 @@ log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], 
       e->func.ops = plugin_construct(p, self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
     }
 
-  if (!e->func.ops->prepare(e->func.ops, self->template, argc - 1, &argv[1], &e->func.state, &e->func.state_destroy, error))
+  if (!e->func.ops->prepare(e->func.ops, self->template, argc, argv, &e->func.state, &e->func.state_destroy, error))
     goto error;
   g_strfreev(argv);
   self->template->compiled_template = g_list_prepend(self->template->compiled_template, e);

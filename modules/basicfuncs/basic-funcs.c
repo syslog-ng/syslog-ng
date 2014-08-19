@@ -159,9 +159,8 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);
 
 typedef struct _TFCondState
 {
+  TFSimpleFuncState super;
   FilterExprNode *filter;
-  gint argc;
-  LogTemplate *argv[0];
 } TFCondState;
 
 void
@@ -171,12 +170,7 @@ tf_cond_free_state(TFCondState *args)
 
   if (args->filter)
     filter_expr_unref(args->filter);
-  for (i = 0; i < args->argc; i++)
-    {
-      if (args->argv[i])
-        log_template_unref(args->argv[i]);
-    }
-  g_free(args);
+  tf_simple_func_free_state(args);
 }
 
 gboolean
@@ -188,21 +182,19 @@ tf_cond_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-  args = g_malloc0(sizeof(TFCondState) + (argc - 1) * sizeof(LogTemplate *));
-  args->argc = argc - 1;
-  lexer = cfg_lexer_new_buffer(argv[0], strlen(argv[0]));
+  args = g_malloc0(sizeof(TFCondState));
+
+  lexer = cfg_lexer_new_buffer(argv[1], strlen(argv[1]));
   if (!cfg_run_parser(parent->cfg, lexer, &filter_expr_parser, (gpointer *) &args->filter, NULL))
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Error parsing conditional filter expression");
       goto error;
     }
-  for (i = 1; i < argc; i++)
-    {
-      args->argv[i - 1] = log_template_new(parent->cfg, NULL);
-      log_template_set_escape(args->argv[i - 1], parent->escape);
-      if (!log_template_compile(args->argv[i - 1], argv[i], error))
-        goto error;
-    }
+
+  /* First argument is function name, second is condition, do not try to compile them as templates */
+  if (!tf_simple_func_compile_templates(parent, argc - 2, &argv[2], &args->super, error))
+    goto error;
+
   *state = args;
   *state_destroy = (GDestroyNotify) tf_cond_free_state;
   return TRUE;
@@ -222,7 +214,7 @@ gboolean
 tf_grep_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *argv[], gpointer *state, GDestroyNotify *state_destroy, GError **error)
 {
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  if (argc < 2)
+  if (argc < 3)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(grep) requires at least two arguments");
       return FALSE;
@@ -244,11 +236,11 @@ tf_grep_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, Log
 
       if (filter_expr_eval(args->filter, msg))
         {
-          for (i = 0; i < args->argc; i++)
+          for (i = 0; i < args->super.number_of_templates; i++)
             {
               if (!first)
                 g_string_append_c(result, ',');
-              log_template_append_format(args->argv[i], msg, opts, tz, seq_num, context_id, result);
+              log_template_append_format(args->super.templates[i], msg, opts, tz, seq_num, context_id, result);
               first = FALSE;
             }
         }
@@ -260,7 +252,7 @@ tf_if_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *
 {
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-  if (argc != 3)
+  if (argc != 4)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(if) requires three arguments");
       return FALSE;
@@ -277,11 +269,11 @@ tf_if_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMe
 
   if (filter_expr_eval_with_context(args->filter, messages, num_messages))
     {
-      log_template_append_format_with_context(args->argv[0], messages, num_messages, opts, tz, seq_num, context_id, result);
+      log_template_append_format_with_context(args->super.templates[0], messages, num_messages, opts, tz, seq_num, context_id, result);
     }
   else
     {
-      log_template_append_format_with_context(args->argv[1], messages, num_messages, opts, tz, seq_num, context_id, result);
+      log_template_append_format_with_context(args->super.templates[1], messages, num_messages, opts, tz, seq_num, context_id, result);
     }
 }
 

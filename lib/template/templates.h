@@ -103,13 +103,14 @@ struct _LogTemplateFunction
 
 typedef struct _TFSimpleFuncState
 {
-  gint argc;
-  LogTemplate *argv[0];
+  gint number_of_templates;
+  LogTemplate **templates;
 } TFSimpleFuncState;
 
 typedef void (*TFSimpleFunc)(LogMessage *msg, gint argc, GString *argv[], GString *result);
 
 gboolean tf_simple_func_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *argv[], gpointer *state, GDestroyNotify *state_destroy, GError **error);
+gboolean tf_simple_func_compile_templates(LogTemplate *parent, gint number_of_raw_templates, gchar *raw_templates[], TFSimpleFuncState *state, GError **error);
 void tf_simple_func_eval(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id);
 void tf_simple_func_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, const gchar *context_id, GString *result);
 void tf_simple_func_free_state(gpointer state);

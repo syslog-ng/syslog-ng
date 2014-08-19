@@ -117,8 +117,6 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
                 GError **error)
 {
   GError *err = NULL;
-  gchar **cargv;
-  gint cargc = argc + 1;
   GString *event_template_str = g_string_sized_new(512);
   SnareFormatOptions *options = g_new0(SnareFormatOptions,1);
   gint i;
@@ -136,21 +134,14 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
   options->criticality = 1;
   options->cfg = parent->cfg;
 
-  cargv = g_new0 (gchar *, cargc + 1);
-  for (i = 0; i < cargc; i++)
-    cargv[i+1] = argv[i];
-  cargv[0] = "snare-format";
-  cargv[cargc] = NULL;
-
   ctx = g_option_context_new ("snare-format");
   og = g_option_group_new (NULL, NULL, NULL, NULL, NULL);
   g_option_group_add_entries (og, snare_options);
   g_option_context_set_main_group (ctx, og);
 
-  if (!g_option_context_parse (ctx, &cargc, &cargv, error))
+  if (!g_option_context_parse (ctx, &argc, &argv, error))
     {
       g_option_context_free (ctx);
-      g_free(cargv);
       g_free(options);
       g_string_free(event_template_str,TRUE);
       return FALSE;
@@ -189,7 +180,6 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
   *state = options;
   *state_destroy = (GDestroyNotify)snare_format_options_destroy;
   g_string_free(event_template_str,TRUE);
-  g_free(cargv);
   return err == NULL;
 }
 
@@ -258,8 +248,6 @@ tf_cut_prepare(LogTemplateFunction *self, LogTemplate *parent,
                 gpointer *state, GDestroyNotify *state_destroy,
                 GError **error)
 {
-  gchar **cargv;
-  gint cargc = argc + 1;
   StrcutOptions *options = g_new0(StrcutOptions,1);
   gint i;
   GOptionContext *ctx;
@@ -276,18 +264,12 @@ tf_cut_prepare(LogTemplateFunction *self, LogTemplate *parent,
   options->start_from = 0x0100;
   options->length = 0x0100;
 
-  cargv = g_new0 (gchar *, cargc + 1);
-  for (i = 0; i < cargc; i++)
-    cargv[i+1] = argv[i];
-  cargv[0] = "cut";
-  cargv[cargc] = NULL;
-
   ctx = g_option_context_new ("cut");
   og = g_option_group_new (NULL, NULL, NULL, NULL, NULL);
   g_option_group_add_entries (og, cut_options);
   g_option_context_set_main_group (ctx, og);
 
-  if (!g_option_context_parse (ctx, &cargc, &cargv, error))
+  if (!g_option_context_parse (ctx, &argc, &argv, error))
     {
       result = FALSE;
       goto exit;
@@ -307,13 +289,13 @@ tf_cut_prepare(LogTemplateFunction *self, LogTemplate *parent,
       result = FALSE;
       goto exit;
     }
-  if (cargc != 2)
+  if (argc != 2)
     {
       result = FALSE;
       goto exit;
     }
   options->compiled_template = log_template_new(parent->cfg,NULL);
-  if (!log_template_compile(options->compiled_template,cargv[1],error))
+  if (!log_template_compile(options->compiled_template,argv[1],error))
     {
       result = FALSE;
       log_template_unref(options->compiled_template);
@@ -328,7 +310,6 @@ exit:
       g_free(options);
     }
   g_option_context_free(ctx);
-  g_free(cargv);
   return result;
 }
 
