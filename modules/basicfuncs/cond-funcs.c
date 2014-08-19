@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2013-2014 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -160,3 +161,20 @@ tf_if_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *a
 }
 
 TEMPLATE_FUNCTION(TFCondState, tf_if, tf_if_prepare, NULL, tf_if_call, tf_cond_free_state, NULL);
+
+static void
+tf_or (LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      if (argv[i]->len == 0)
+        continue;
+
+      g_string_append_len (result, argv[i]->str, argv[i]->len);
+      break;
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_or);

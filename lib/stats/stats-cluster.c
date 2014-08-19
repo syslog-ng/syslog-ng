@@ -92,7 +92,7 @@ _get_module_name(gint source)
     "stomp",
     "redis",
     "snmp",
-    "smtp"
+    "riemann"
   };
   return module_names[source & SCS_SOURCE_MASK];
 }

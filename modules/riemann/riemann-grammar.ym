@@ -1,0 +1,150 @@
+/*
+ * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "riemann-parser.h"
+#include "value-pairs.h"
+#include "vptransform.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "cfg-parser.h"
+#include "plugin.h"
+}
+
+%name-prefix "riemann_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_RIEMANN
+%token KW_SERVER
+%token KW_STATE
+%token KW_SERVICE
+%token KW_DESCRIPTION
+%token KW_METRIC
+%token KW_TTL
+%token KW_ATTRIBUTES
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_RIEMANN
+          {
+            last_driver = *instance = riemann_dd_new(configuration);
+          }
+          '(' riemann_options ')'         { YYACCEPT; }
+        ;
+
+riemann_options
+        : riemann_option riemann_options
+        |
+        ;
+
+riemann_option
+        : KW_SERVER '(' string ')'
+          {
+            riemann_dd_set_server(last_driver, $3);
+            free($3);
+          }
+        | KW_PORT '(' LL_NUMBER ')'
+          {
+            riemann_dd_set_port(last_driver, $3);
+          }
+        | KW_HOST '(' template_content ')'
+          {
+            riemann_dd_set_field_host(last_driver, $3);
+          }
+        | KW_SERVICE '(' template_content ')'
+          {
+            riemann_dd_set_field_service(last_driver, $3);
+          }
+        | KW_STATE '(' template_content ')'
+          {
+            riemann_dd_set_field_state(last_driver, $3);
+          }
+        | KW_DESCRIPTION '(' template_content ')'
+          {
+            riemann_dd_set_field_description(last_driver, $3);
+          }
+        | KW_TTL '(' template_content ')'
+          {
+            riemann_dd_set_field_ttl(last_driver, $3);
+          }
+        | KW_METRIC '(' template_content ')'
+          {
+            riemann_dd_set_field_metric(last_driver, $3);
+          }
+        | KW_TAGS '(' string_list ')'
+          {
+            riemann_dd_set_field_tags(last_driver, $3);
+          }
+        | KW_TYPE '(' LL_IDENTIFIER ')'
+          {
+            CHECK_ERROR(riemann_dd_set_connection_type(last_driver, $3), @3,
+                        "Unknown Riemann connection type: %s", $3);
+            free($3);
+          }
+        | KW_TYPE '(' LL_STRING ')'
+          {
+            CHECK_ERROR(riemann_dd_set_connection_type(last_driver, $3), @3,
+                        "Unknown Riemann connection type: %s", $3);
+            free($3);
+          }
+        | KW_ATTRIBUTES
+          {
+            last_value_pairs = value_pairs_new();
+          }
+          '(' attribute_options ')'
+          {
+            riemann_dd_set_field_attributes(last_driver, last_value_pairs);
+          }
+        | dest_driver_option
+        | threaded_dest_driver_option
+        | { last_template_options = riemann_dd_get_template_options(last_driver); } template_option
+        ;
+
+attribute_options
+        : attribute_option attribute_options
+        |
+        ;
+
+attribute_option
+        : LL_IDENTIFIER '(' template_content ')'
+          {
+            value_pairs_add_pair(last_value_pairs, $1, $3);
+            free($1);
+          }
+        | vp_option
+        ;
+
+/* INCLUDE_RULES */
+
+%%

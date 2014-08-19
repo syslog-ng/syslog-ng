@@ -76,6 +76,7 @@ enum
   SCS_STOMP          = 30,
   SCS_REDIS          = 31,
   SCS_SNMP           = 32,
+  SCS_RIEMANN        = 33,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };

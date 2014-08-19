@@ -49,6 +49,7 @@ static Plugin basicfuncs_plugins[] =
   /* cond-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_grep, "grep"),
   TEMPLATE_FUNCTION_PLUGIN(tf_if, "if"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_or, "or"),
 
   /* str-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_echo, "echo"),
@@ -59,6 +60,7 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_lowercase, "lowercase"),
   TEMPLATE_FUNCTION_PLUGIN(tf_uppercase, "uppercase"),
   TEMPLATE_FUNCTION_PLUGIN(tf_replace_delimiter, "replace-delimiter"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_string_padding, "padding"),
 
   /* numeric-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_num_plus, "+"),
