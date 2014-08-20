@@ -24,7 +24,7 @@
 
 #include "template/templates.h"
 #include "template/macros.h"
-#include "template/function.h"
+#include "template/repr.h"
 #include "messages.h"
 #include "logmsg.h"
 #include "syslog-names.h"
@@ -50,33 +50,6 @@ typedef struct
   GString *text;
   gint msg_ref;
 } LogTemplateCompiler;
-
-enum
-{
-  LTE_MACRO,
-  LTE_VALUE,
-  LTE_FUNC
-};
-
-typedef struct _LogTemplateElem
-{
-  gsize text_len;
-  gchar *text;
-  gchar *default_value;
-  guint16 msg_ref;
-  guint8 type;
-  union
-  {
-    guint macro;
-    NVHandle value_handle;
-    struct
-    {
-      LogTemplateFunction *ops;
-      gpointer state;
-    } func;
-  };
-} LogTemplateElem;
-
 
 static void
 log_template_add_macro_elem(LogTemplateCompiler *self, guint macro, gchar *default_value)
@@ -187,38 +160,6 @@ log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], 
     g_free(e->text);
   g_free(e);
   return FALSE;
-}
-
-static void
-log_template_elem_free(LogTemplateElem *e)
-{
-  switch (e->type)
-    {
-    case LTE_FUNC:
-      if (e->func.state)
-        {
-          e->func.ops->free_state(e->func.state);
-          g_free(e->func.state);
-        }
-      if (e->func.ops && e->func.ops->free_fn)
-        e->func.ops->free_fn(e->func.ops);
-      break;
-    }
-  if (e->default_value)
-    g_free(e->default_value);
-  if (e->text)
-    g_free(e->text);
-  g_free(e);
-}
-
-static void
-log_template_elem_free_list(GList *el)
-{
-  for (; el; el = el->next)
-    {
-      log_template_elem_free((LogTemplateElem *) el->data);
-    }
-  g_list_free(el);
 }
 
 static void
