@@ -23,25 +23,10 @@
  */
 
 #include "template/templates.h"
-#include "template/macros.h"
 #include "template/repr.h"
 #include "template/compiler.h"
-#include "messages.h"
-#include "logmsg.h"
-#include "syslog-names.h"
-#include "messages.h"
-#include "hostname.h"
-#include "filter/filter-expr.h"
-#include "gsocket.h"
-#include "plugin.h"
-#include "plugin-types.h"
-#include "str-format.h"
-#include "rcptid.h"
-#include "run-id.h"
-
-#include <time.h>
-#include <string.h>
-
+#include "template/macros.h"
+#include "cfg.h"
 
 static void
 log_template_reset_compiled(LogTemplate *self)
