@@ -138,6 +138,7 @@ struct _LogSrcDriver
 
 gboolean log_src_driver_init_method(LogPipe *s);
 gboolean log_src_driver_deinit_method(LogPipe *s);
+void log_src_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
 void log_src_driver_init_instance(LogSrcDriver *self, GlobalConfig *cfg);
 void log_src_driver_free(LogPipe *s);
 
