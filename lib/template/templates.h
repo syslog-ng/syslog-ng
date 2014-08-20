@@ -232,8 +232,6 @@ void log_template_options_defaults(LogTemplateOptions *options);
 void log_template_global_init(void);
 void log_template_global_deinit(void);
 
-void user_template_function_register(GlobalConfig *cfg, const gchar *name, LogTemplate *template);
-
 gboolean log_template_on_error_parse(const gchar *on_error, gint *out);
 void log_template_options_set_on_error(LogTemplateOptions *options, gint on_error);
 

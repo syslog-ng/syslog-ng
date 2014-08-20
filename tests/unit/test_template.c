@@ -3,6 +3,7 @@
 
 #include "logmsg.h"
 #include "template/templates.h"
+#include "template/user-function.h"
 #include "misc.h"
 #include "apphook.h"
 #include "cfg.h"
