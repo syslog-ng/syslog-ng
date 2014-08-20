@@ -26,6 +26,7 @@
 #include "template/repr.h"
 #include "template/compiler.h"
 #include "template/macros.h"
+#include "template/escaping.h"
 #include "cfg.h"
 
 static void

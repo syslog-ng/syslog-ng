@@ -23,6 +23,7 @@
  */
 
 #include "template/macros.h"
+#include "template/escaping.h"
 #include "timeutils.h"
 #include "logstamp.h"
 #include "messages.h"
@@ -177,39 +178,8 @@ static GTimeVal app_uptime;
 static GHashTable *macro_hash;
 static LogTemplateOptions template_options_for_macro_expand;
 
-
-void
-result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
-{
-  gint i;
-  const guchar *ustr = (const guchar *) sstr;
-
-  if (len < 0)
-    len = strlen(sstr);
-
-  if (escape)
-    {
-      for (i = 0; i < len; i++)
-        {
-          if (ustr[i] == '\'' || ustr[i] == '"' || ustr[i] == '\\')
-            {
-              g_string_append_c(result, '\\');
-              g_string_append_c(result, ustr[i]);
-            }
-          else if (ustr[i] < ' ')
-            {
-              format_uint32_padded(result, 3, '0', 8, ustr[i]);
-            }
-          else
-            g_string_append_c(result, ustr[i]);
-        }
-    }
-  else
-    g_string_append_len(result, sstr, len);
-}
-
-void
-result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean escape)
+static void
+_result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean escape)
 {
   const gchar *str;
   gssize len = 0;
@@ -312,7 +282,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           }
         else
           {
-            result_append_value(result, msg, LM_V_HOST, escape);
+            _result_append_value(result, msg, LM_V_HOST, escape);
           }
         break;
       }
@@ -335,7 +305,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
         {
           /* fast path for now, as most messages come from legacy devices */
 
-          result_append_value(result, msg, LM_V_LEGACY_MSGHDR, escape);
+          _result_append_value(result, msg, LM_V_LEGACY_MSGHDR, escape);
         }
       else
         {
@@ -343,7 +313,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           gssize len;
 
           len = result->len;
-          result_append_value(result, msg, LM_V_PROGRAM, escape);
+          _result_append_value(result, msg, LM_V_PROGRAM, escape);
           if (len != result->len)
             {
               const gchar *pid = log_msg_get_value(msg, LM_V_PID, &len);
@@ -360,7 +330,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
     case M_MESSAGE:
       if (cfg_is_config_version_older(configuration, 0x0300))
         log_macro_expand(result, M_MSGHDR, escape, opts, tz, seq_num, context_id, msg);
-      result_append_value(result, msg, LM_V_MESSAGE, escape);
+      _result_append_value(result, msg, LM_V_MESSAGE, escape);
       break;
     case M_SOURCE_IP:
       {
