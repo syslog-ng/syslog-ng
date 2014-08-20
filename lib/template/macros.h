@@ -108,8 +108,6 @@ typedef struct _LogMacroDef
 
 extern LogMacroDef macros[];
 
-void result_append(GString *result, const gchar *sstr, gssize len, gboolean escape);
-
 /* low level macro functions */
 guint log_macro_lookup(gchar *macro, gint len);
 gboolean log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg);
