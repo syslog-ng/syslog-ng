@@ -71,7 +71,7 @@ assert_template_format(const gchar *template, const gchar *expected)
 
   templ = compile_template(template);
   log_template_format(templ, msg, NULL, LTZ_LOCAL, 999, context_id, res);
-  assert_string(res->str, expected, "template test failed, template=%s", template);
+  assert_nstring(res->str, res->len, expected, strlen(expected), "template test failed, template=%s", template);
   log_template_unref(templ);
   g_string_free(res, TRUE);
   log_msg_unref(msg);
@@ -92,7 +92,7 @@ assert_template_format_with_context(const gchar *template, const gchar *expected
   templ = compile_template(template);
 
   log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 999, context_id, res);
-  assert_string(res->str, expected, "context template test failed, template=%s", template);
+  assert_nstring(res->str, res->len, expected, strlen(expected), "context template test failed, template=%s", template);
   log_template_unref(templ);
   g_string_free(res, TRUE);
   log_msg_unref(msg);
