@@ -112,7 +112,7 @@ tf_hash_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
       return FALSE;
     }
   state->md = md;
-  if (state->length == 0)
+  if ((state->length == 0) || (state->length > md->md_size * 2))
     state->length = md->md_size * 2;
   *s = (gpointer) state;
   *state_destroy = tf_simple_func_free_state;
