@@ -1185,14 +1185,14 @@ vp_option
         }
         vp_rekey_options
         ')' { value_pairs_add_transforms(last_value_pairs, last_vp_transset); } ')'
-	| KW_KEY '(' string ')'		         { value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE); free($3);  }
+	| KW_KEY '(' string_list ')'		         { value_pairs_add_glob_patterns(last_value_pairs, $3, TRUE); }
         | KW_REKEY '(' string
         {
           last_vp_transset = value_pairs_transform_set_new($3);
           free($3);
         }
         vp_rekey_options ')'                     { value_pairs_add_transforms(last_value_pairs, last_vp_transset); }
-	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_glob_pattern(last_value_pairs, $3, FALSE); free($3); }
+        | KW_EXCLUDE '(' string_list ')'         { value_pairs_add_glob_patterns(last_value_pairs, $3, FALSE); }
 	| KW_SCOPE '(' vp_scope_list ')'
 	;
 
