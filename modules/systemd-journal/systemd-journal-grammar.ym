@@ -1,0 +1,127 @@
+/*
+ * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2010 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "systemd-journal-parser.h"
+
+}
+
+%code {
+
+#include "systemd-journal.h"
+#include "cfg-parser.h"
+#include "systemd-journal-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+
+#include <string.h>
+
+JournalReaderOptions *last_journal_reader_options;
+
+}
+
+%name-prefix "systemd_journal_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_SYSTEMD_JOURNAL
+%token KW_PREFIX
+%token KW_MAX_FIELD_SIZE
+
+%type   <ptr> source_systemd_journal
+%type   <ptr> source_systemd_journal_params
+
+%%
+
+start
+        : LL_CONTEXT_SOURCE source_systemd_journal                     { YYACCEPT; }
+        ;
+
+source_systemd_journal
+	: KW_SYSTEMD_JOURNAL '(' source_systemd_journal_params ')' { $$ = $3; }
+	;
+
+source_systemd_journal_params
+	:
+	  {
+	    last_driver = *instance = systemd_journal_sd_new(configuration);
+      last_journal_reader_options = systemd_journal_get_reader_options(last_driver);
+	    last_source_options = &last_journal_reader_options->super;
+	  }
+	  source_systemd_journal_options		{ $$ = last_driver; }
+	;
+
+source_systemd_journal_options
+	: source_systemd_journal_option source_systemd_journal_options
+	|
+	;
+
+source_systemd_journal_option
+  : KW_DEFAULT_LEVEL '(' level_string ')'
+    {
+      if (last_journal_reader_options->default_pri == 0xFFFF)
+        last_journal_reader_options->default_pri = LOG_USER;
+      last_journal_reader_options->default_pri = (last_journal_reader_options->default_pri & ~7) | $3;
+    }
+  | KW_DEFAULT_FACILITY '(' facility_string ')'
+    {
+      if (last_journal_reader_options->default_pri == 0xFFFF)
+        last_journal_reader_options->default_pri = LOG_NOTICE;
+      last_journal_reader_options->default_pri = (last_journal_reader_options->default_pri & 7) | $3;
+    }
+  | KW_TIME_ZONE '(' string ')'
+    {
+      if (last_journal_reader_options->recv_time_zone);
+        free(last_journal_reader_options->recv_time_zone);
+      last_journal_reader_options->recv_time_zone = strdup($3);
+      free($3);
+    }
+
+  | KW_PREFIX '(' string ')'
+    {
+      if (last_journal_reader_options->prefix)
+        free(last_journal_reader_options->prefix);
+      last_journal_reader_options->prefix = strdup($3);
+      free($3);
+    }
+  | KW_MAX_FIELD_SIZE '(' LL_NUMBER ')'
+    {
+      last_journal_reader_options->max_field_size = $3;
+    }
+  | source_option
+  ;
+
+
+/* INCLUDE_RULES */
+
+%%
