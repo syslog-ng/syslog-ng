@@ -49,6 +49,12 @@ ifneq (,$(findstring amd64,$(ZBS_ARCH)))
 endif
 endif
 
+ifneq (,$(findstring linux-glibc2.11,$(ZBS_DIST)))
+ifneq (,$(findstring amd64,$(ZBS_ARCH)))
+  CONFIGURE_OPTS+= --enable-systemd
+endif
+endif
+
 # FreeBSD 9.0 have sys/capabilities.h support, but bifferent than linux caps
 ifneq (,$(findstring freebsd,$(ZBS_DIST)))
   CONFIGURE_OPTS+= --disable-linux-caps

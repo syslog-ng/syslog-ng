@@ -12,3 +12,5 @@ libmongo-client-dev
 libmongo-client
 libesmtp6
 libesmtp6-dev
+libsystemd-client-dev
+libsystemd-client

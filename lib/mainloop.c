@@ -38,6 +38,7 @@
 #include "tls-support.h"
 #include "scratch-buffers.h"
 #include "reloc.h"
+#include "service-management.h"
 #include "compat.h"
 #include "sgroup.h"
 #include "driver.h"
@@ -310,10 +311,12 @@ main_loop_reload_config_apply(void)
       persist_config_free(main_loop_new_config->persist);
       main_loop_new_config->persist = NULL;
       current_configuration = main_loop_new_config;
+      service_management_clear_status();
     }
   else
     {
       msg_error("Error initializing new configuration, reverting to old config", NULL);
+      service_management_publish_status("Error initializing new configuration, using the old config");
       cfg_deinit(main_loop_new_config);
       cfg_persist_config_move(main_loop_new_config, main_loop_old_config);
       if (!cfg_init(main_loop_old_config))
@@ -353,6 +356,7 @@ main_loop_reload_config_apply(void)
 static void
 main_loop_reload_config_initiate(void)
 {
+  service_management_publish_status("Reloading configuration");
   if (main_loop_new_config)
     {
       /* This block is entered only if this function is reentered before
@@ -375,6 +379,7 @@ main_loop_reload_config_initiate(void)
       msg_error("Error parsing configuration",
                 evt_tag_str(EVT_TAG_FILENAME, cfgfilename),
                 NULL);
+      service_management_publish_status("Error parsing new configuration, using the old config");
       return;
     }
   main_loop_worker_sync_call(main_loop_reload_config_apply);
@@ -537,6 +542,8 @@ int
 main_loop_init(gchar *config_string)
 {
   app_startup();
+  service_management_publish_status("Starting up...");
+
   init_signals();
 #ifdef _WIN32
   signal(SIGTERM,term_signal);
@@ -603,7 +610,11 @@ main_loop_run(void)
   stats_timer_init(current_configuration);
 
   /* main loop */
+  service_management_indicate_readiness();
+  service_management_clear_status();
   iv_main();
+  service_management_publish_status("Shutting down...");
+
 
   main_loop_deinit();
   return 0;

@@ -1168,7 +1168,7 @@ if test "x$enable_systemd" = "xauto"; then
 fi
 
 if test "x$enable_systemd" = "xyes"; then
-    PKG_CHECK_MODULES(libsystemd_daemon, libsystemd-daemon >= 31,with_libsystemd="yes",with_libsystemd="no")
+    PKG_CHECK_MODULES(SYSTEMD, libsystemd-daemon >= 31,with_libsystemd="yes",with_libsystemd="no")
     if test "x$with_systemdsystemunitdir" = "xyes"; then
         # no arguments, just --with-systemdsystemunitdir
         systemdsystemunitdir=`$PKG_CONFIG --variable=systemdsystemunitdir systemd`

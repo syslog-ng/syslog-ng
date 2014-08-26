@@ -12,7 +12,7 @@ YFLAGS=@YFLAGS@
 export top_srcdir
 
 lib_LTLIBRARIES = libsyslog-ng.la
-libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@ @OPENSSL_LIBS@ $(PCRE_LIBS) -ljson
+libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@ @OPENSSL_LIBS@ $(PCRE_LIBS) -ljson $(SYSTEMD_LIBS)
 libsyslog_ng_la_LDFLAGS = -no-undefined -release @LIBSYSLOGNG_VERSION@
 libsyslog_ng_la_CFLAGS = -DLIBSYSLOG_NG -ggdb
 
@@ -103,6 +103,7 @@ pkginclude_HEADERS = 		\
 	poll-events.h \
 	poll-fd-events.h \
 	parse-number.h \
+  service-management.h \
   $(template_headers)
 
 if !IS_WINDOWS
@@ -200,6 +201,7 @@ libsyslog_ng_la_SOURCES = \
 	poll-events.c		\
 	poll-fd-events.c	\
 	parse-number.c		\
+  service-management.c \
 	$(libsyslog_ng_crypto_la_SOURCES) \
   $(template_sources)
 

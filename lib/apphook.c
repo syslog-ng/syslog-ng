@@ -40,6 +40,7 @@
 #include "state.h"
 #include "scratch-buffers.h"
 #include "mainloop-call.h"
+#include "service-management.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -135,6 +136,7 @@ app_startup(void)
   log_source_global_init();
   log_template_global_init();
   state_handler_register_default_constructors();
+  service_management_init();
 }
 
 void

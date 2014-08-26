@@ -148,6 +148,7 @@ version(void)
   printf("Enable-Linux-Caps: %s\n",   ON_OFF_STR(ENABLE_LINUX_CAPS));
   printf("Enable-Pcre: %s\n",         ON_OFF_STR(ENABLE_PCRE));
   printf("Enable-FIPS: %s\n",         ON_OFF_STR(ENABLE_FIPS));
+  printf("Enable-Systemd: %s\n",      ON_OFF_STR(ENABLE_SYSTEMD));
 }
 
 #if ENABLE_LINUX_CAPS
