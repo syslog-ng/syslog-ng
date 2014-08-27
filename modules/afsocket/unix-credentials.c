@@ -24,9 +24,11 @@
 #include "syslog-ng.h"
 #include "unix-credentials.h"
 
+
 void
 socket_set_pass_credentials(gint fd)
 {
+#if defined(CRED_PASS_SUPPORTED)
 #if defined(LOCAL_CREDS) || defined(SO_PASSCRED)
   static gint one = 1;
 #endif
@@ -36,6 +38,7 @@ socket_set_pass_credentials(gint fd)
 #else
 #ifdef SO_PASSCRED
   setsockopt(fd, SOL_SOCKET, SO_PASSCRED, &one, sizeof(one));
+#endif
 #endif
 #endif
 }

@@ -29,20 +29,23 @@
 
 #include "syslog-ng.h"
 
-#if HAVE_STRUCT_UCRED
-#define cred_t struct ucred
-#define cred_get(c,x) (c->x)
-#else
+#if defined(__linux__)
+# if HAVE_STRUCT_UCRED
+# define CRED_PASS_SUPPORTED
+# define cred_t struct ucred
+# define cred_get(c,x) (c->x)
+# endif
+#else if defined(__FreeBSD__)
 # if HAVE_STRUCT_CMSGCRED
+#  define CRED_PASS_SUPPORTED
+#  define SCM_CREDENTIALS SCM_CREDS
 #  define cred_t struct cmsgcred
 #  define cred_get(c,x) (c->cmcred_##x)
 # endif
 #endif
 
-#ifndef SCM_CREDENTIALS
-#define SCM_CREDENTIALS SCM_CREDS
-#endif
-
+#if defined(CRED_PASS_SUPPORTED)
 void socket_set_pass_credentials(gint fd);
+#endif
 
 #endif
