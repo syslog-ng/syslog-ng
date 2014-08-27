@@ -97,6 +97,9 @@ pkginclude_HEADERS = 		\
 	ringbuffer.h	\
 	bookmark.h	\
 	ack_tracker.h \
+	poll-events.h \
+	poll-fd-events.h \
+	parse-number.h \
   $(template_headers)
 
 if !IS_WINDOWS
@@ -188,6 +191,9 @@ libsyslog_ng_la_SOURCES = \
 	ringbuffer.c		\
 	early_ack_tracker.c	\
 	late_ack_tracker.c	\
+	poll-events.c		\
+	poll-fd-events.c	\
+	parse-number.c		\
 	$(libsyslog_ng_crypto_la_SOURCES) \
   $(template_sources)
 

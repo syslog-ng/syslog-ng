@@ -1485,7 +1485,6 @@ AC_SUBST(JSON_CFLAGS)
 AC_SUBST(IVYKIS_SUBDIRS)
 AC_SUBST(RESOLV_LIBS)
 AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
-
 AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)
 AC_SUBST(PATH_LOCALSTATEDIR)
@@ -1550,6 +1549,8 @@ AC_OUTPUT(dist.conf
           modules/agent-config/tests/func/Makefile
           modules/eventlog/Makefile
           modules/eventlog/tests/Makefile
+          modules/systemd-journal/Makefile
+          modules/systemd-journal/tests/Makefile
 
 dnl PE modules
 	modules/license/Makefile
