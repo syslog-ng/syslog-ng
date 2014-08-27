@@ -118,6 +118,10 @@ source_systemd_journal_option
     {
       last_journal_reader_options->max_field_size = $3;
     }
+  | KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'
+    {
+      last_journal_reader_options->fetch_limit = $3;
+    }
   | source_option
   ;
 
