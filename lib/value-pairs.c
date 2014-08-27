@@ -986,8 +986,8 @@ value_pairs_parse_type(gchar *spec, gchar **value, gchar **type)
     sp++;
 
   if (*sp != '(' ||
-      !(g_ascii_toupper(spec[0]) >= 'A' &&
-        g_ascii_toupper(spec[0]) <= 'Z' ||
+      !((g_ascii_toupper(spec[0]) >= 'A' &&
+         g_ascii_toupper(spec[0]) <= 'Z') ||
         spec[0] == '_'))
     {
       *value = spec;
