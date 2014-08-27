@@ -31,6 +31,7 @@ PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="0.1.8"
 LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.0.0"
+JOURNALD_MIN_VERSION="195"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -223,6 +224,11 @@ AC_ARG_ENABLE(riemann,
 AC_ARG_WITH(compile-date,
 	      [  --without-compile-date  Do not include the compile date in the binary]
 	      ,wcmp_date="${withval}", wcmp_date="yes")
+
+AC_ARG_WITH(systemd-journal,
+              [  --with-systemd-journal=[system/optional/auto]
+                                         Link against the system supplied or the wrapper library. (default: auto)]
+              ,,with_systemd_journal="auto")
 
 if test "x$wcmp_date" != "xno"; then
   wcmp_date="1"
@@ -948,7 +954,7 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
 	enable_smtp=$libesmtp
 fi
 
- dnl ***************************************************************************
+dnl ***************************************************************************
 dnl libhiredis headers/libraries
 dnl ***************************************************************************
 if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
@@ -1138,6 +1144,24 @@ if test "x$enable_systemd" = "xyes"; then
 	fi
 fi
 
+dnl ***************************************************************************
+dnl libsystemd-journal headers/libraries
+dnl ***************************************************************************
+
+if test "x$enable_systemd" != "xyes"; then
+  if test "x$with_systemd_journal" = "xauto"; then
+    with_systemd_journal=no
+  fi
+fi
+
+if test "x$with_systemd_journal" = "xauto"; then
+  echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION, with_systemd_journal=system, with_systemd_journal=optional)
+elif test "x$with_systemd_journal" = "xsystem"; then
+  echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+  PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION,, AC_MSG_ERROR[Detecting system releted systemd-journal library failed])
+fi
+
 PKG_CHECK_MODULES(UUID, uuid, enable_libuuid="yes", enable_libuuid="no")
 
 dnl ***************************************************************************
@@ -1241,11 +1265,26 @@ enable_value()
         fi
 }
 
+journald_mode()
+{
+  if test "x$with_systemd_journal" = "xno"; then
+    echo JOURNALD_OFF
+  elif test "x$with_systemd_journal" = "xsystem"; then
+    echo JOURNALD_SYSTEM
+  else
+    echo JOURNALD_OPTIONS
+  fi
+}
+
 if test "${with_embedded_crypto}" = "yes"; then
    CRYPTO_LIBS=""
 else
    CRYPTO_LIBS="\${top_builddir}/lib/libsyslog-ng-crypto.la"
 fi
+
+AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, [Test value])
+AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, [Test value])
+AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, [Test value])
 
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [package name])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
@@ -1269,6 +1308,8 @@ if test -n "$env_ld_library_path"; then
 fi
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 
+
+
 AC_DEFINE_UNQUOTED(WITH_COMPILE_DATE, $wcmp_date, [Include the compile date in the binary])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
 AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
@@ -1281,6 +1322,8 @@ AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enab
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
+AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
+
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
@@ -1302,6 +1345,7 @@ AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
+AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1354,6 +1398,8 @@ AC_SUBST(SNAPSHOT_VERSION)
 AC_SUBST(SOURCE_REVISION)
 AC_SUBST(with_ivykis)
 AC_SUBST(INTERNAL_IVYKIS_CFLAGS)
+AC_SUBST(LIBSYSTEMD_JOURNAL_CFLAGS)
+AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
 
 AC_OUTPUT(dist.conf
           Makefile
@@ -1388,6 +1434,7 @@ echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
 echo "  Linux capability support    : ${has_linux_caps:=no}"
 echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
 echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
+echo "  systemd-journal support     : ${with_systemd_journal:=no}"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
