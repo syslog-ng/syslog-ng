@@ -152,7 +152,7 @@ _feed_aux_from_ucred(LogTransportAuxData *aux, cred_t *uc)
   _add_nv_pair_int(aux, ".unix.gid", cred_get(uc, gid));
 }
 
-#if defined(__linux__)
+#if defined(__linux__) && defined(CRED_PASS_SUPPORTED)
 static void
 _feed_aux_from_procfs(LogTransportAuxData *aux, pid_t pid)
 {
@@ -164,31 +164,24 @@ _feed_aux_from_procfs(LogTransportAuxData *aux, pid_t pid)
   _add_nv_pair_proc_read_unless_unset(aux, ".audit.ses", pid, "sessionid", "4294967295");
 }
 
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) && defined(CRED_PASS_SUPPORTED)
 static void
 _feed_aux_from_procfs(LogTransportAuxData *aux, pid_t pid)
 {
   _add_nv_pair_proc_read_argv(aux, ".unix.cmdline", pid, "cmdline");
   _add_nv_pair_proc_readlink(aux, ".unix.exe", pid, "file");
 }
-
-#else
-
-static void
-_feed_aux_from_procfs(LogTransportAuxData *aux, pid_t pid)
-{
-}
-
 #endif
 
 static void
-_feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
+_feed_credentials_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
 {
+#if defined(CRED_PASS_SUPPORTED)
   struct cmsghdr *cmsg;
 
   for (cmsg = CMSG_FIRSTHDR(msg); cmsg != NULL; cmsg = CMSG_NXTHDR(msg, cmsg)) 
     {
-      if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS) 
+      if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS)
         {
           cred_t *uc = (cred_t *) CMSG_DATA(cmsg);
 
@@ -197,6 +190,13 @@ _feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
           break;
         }
     }
+#endif
+}
+
+static void
+_feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
+{
+  _feed_credentials_from_cmsg(aux, msg);
 }
 
 static gssize
