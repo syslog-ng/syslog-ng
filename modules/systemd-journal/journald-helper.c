@@ -26,7 +26,7 @@
 
 #include <string.h>
 
-#define SD_JOURNAL_FOREACH_DATA(j, data, l)                             \
+#define JOURNALD_FOREACH_DATA(j, data, l)                             \
         for (journald_restart_data(j); journald_enumerate_data((j), &(data), &(l)) > 0; )
 
 static void
@@ -50,7 +50,7 @@ void journald_foreach_data(Journald *self, FOREACH_DATA_CALLBACK func, gpointer 
 {
   const void *data;
   size_t l = 0;
-  SD_JOURNAL_FOREACH_DATA(self, data, l)
+  JOURNALD_FOREACH_DATA(self, data, l)
   {
     gchar *key;
     gchar *value;

@@ -26,6 +26,22 @@
 #include <glib.h>
 #include <gmodule.h>
 
+#if SYSTEMD_JOURNAL_MODE == JOURNALD_SYSTEM
+
+struct _Journald
+{
+  sd_journal *journal;
+};
+
+gboolean
+load_journald_subsystem()
+{
+  return TRUE;
+}
+
+#else
+
+
 #define LOAD_SYMBOL(library, symbol) g_module_symbol(library, #symbol, (gpointer*)&symbol)
 
 #define JOURNAL_LIBRARY_NAME "libsystemd-journal.so.0"
@@ -128,6 +144,8 @@ load_journald_subsystem()
   journald_module = NULL;
   return FALSE;
 }
+
+#endif
 
 int
 journald_open(Journald *self, int flags)

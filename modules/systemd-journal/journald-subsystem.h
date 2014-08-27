@@ -27,6 +27,19 @@
 
 #include <stdlib.h>
 #include <glib.h>
+#include "config.h"
+
+#if SYSTEMD_JOURNAL_MODE == JOURNALD_SYSTEM
+#include <systemd/sd-journal.h>
+#else
+/* Open flags */
+enum {
+        SD_JOURNAL_LOCAL_ONLY = 1,
+        SD_JOURNAL_RUNTIME_ONLY = 2,
+        SD_JOURNAL_SYSTEM_ONLY = 4
+};
+#endif
+
 
 typedef struct _Journald Journald;
 
@@ -34,12 +47,6 @@ typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gchar *value, gpointer user_da
 
 void journald_foreach_data(Journald *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
 
-/* Open flags */
-enum {
-        SD_JOURNAL_LOCAL_ONLY = 1,
-        SD_JOURNAL_RUNTIME_ONLY = 2,
-        SD_JOURNAL_SYSTEM_ONLY = 4
-};
 
 gboolean load_journald_subsystem();
 Journald *journald_new();
