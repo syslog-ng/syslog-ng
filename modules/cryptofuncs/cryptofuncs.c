@@ -105,7 +105,7 @@ tf_hash_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
       return FALSE;
     }
   state->length = length;
-  md = EVP_get_digestbyname(strcmp(argv[0], "hash") ? argv[0] : "md5" );
+  md = EVP_get_digestbyname(strcmp(argv[0], "hash") ? argv[0] : "sha256" );
   if (!md)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(hash) parsing failed, unknown digest type");
