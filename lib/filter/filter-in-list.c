@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,8 +64,7 @@ filter_in_list_new(const gchar *list_file, const gchar *property)
 {
   FilterInList *self;
   FILE *stream;
-  size_t n;
-  gchar *line = NULL;
+  gchar line[16384];
 
   stream = fopen(list_file, "r");
   if (!stream)
@@ -82,12 +81,11 @@ filter_in_list_new(const gchar *list_file, const gchar *property)
   self->value_handle = log_msg_get_value_handle(property);
   self->tree = g_tree_new((GCompareFunc) strcmp);
 
-  while (getline(&line, &n, stream) != -1)
+  while (fgets(line, sizeof(line), stream) != NULL)
     {
       line[strlen(line) - 1] = '\0';
       if (line[0])
         g_tree_insert(self->tree, line, GINT_TO_POINTER(1));
-      line = NULL;
     }
   fclose(stream);
 
