@@ -136,13 +136,6 @@ service_management_dummy_is_active()
 }
 
 ServiceManagement service_managements[] = {
-  {
-    .type = SMT_NONE,
-    .publish_status = service_management_dummy_publish_status,
-    .clear_status = service_management_dummy_clear_status,
-    .indicate_readiness = service_management_dummy_indicate_readiness,
-    .is_active = service_management_dummy_is_active
-  },
 #if ENABLE_SYSTEMD
   {
     .type = SMT_SYSTEMD,
@@ -150,30 +143,29 @@ ServiceManagement service_managements[] = {
     .clear_status = service_management_systemd_clear_status,
     .indicate_readiness = service_management_systemd_indicate_readiness,
     .is_active = service_management_systemd_is_active
-  }
+  },
 #endif
+  /* This type is always active, so it must be the last item */
+  {
+    .type = SMT_NONE,
+    .publish_status = service_management_dummy_publish_status,
+    .clear_status = service_management_dummy_clear_status,
+    .indicate_readiness = service_management_dummy_indicate_readiness,
+    .is_active = service_management_dummy_is_active
+  }
 };
 
 void
 service_management_init()
 {
-  int i;
-  ServiceManagement *s_mgmt;
+  gint i = 0;
 
-  for (i = 0; i < sizeof(service_managements) / sizeof(ServiceManagement); i++)
-  {
-    s_mgmt = &service_managements[i];
-
-    if (s_mgmt->is_active())
+  while (service_managements[i].type != SMT_NONE)
     {
-      current_service_mgmt = s_mgmt;
-      return;
+      if (service_managements[i].is_active())
+        current_service_mgmt = &service_managements[i];
+      i++;
     }
-  }
-  msg_error("service-management: unable to determine the type of the used"
-            " service management",
-            NULL);
 
-  if (current_service_mgmt == NULL)
-    current_service_mgmt = &service_managements[0];
+   current_service_mgmt = &service_managements[0];
 }
