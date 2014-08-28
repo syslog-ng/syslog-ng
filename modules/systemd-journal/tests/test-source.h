@@ -41,7 +41,7 @@ struct _TestCase {
 };
 
 
-TestSource *test_source_new(GlobalConfig *cfg);
+TestSource *test_source_new();
 
 void test_source_add_test_case(TestSource *s, TestCase *tc);
 void test_source_run_tests(TestSource *s);

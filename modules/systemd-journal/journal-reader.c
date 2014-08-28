@@ -538,7 +538,7 @@ __init_watches(JournalReader *self)
 }
 
 JournalReader *
-journal_reader_new(GlobalConfig *cfg, Journald *journal)
+journal_reader_new(Journald *journal)
 {
   JournalReader *self = g_new0(JournalReader, 1);
   log_source_init_instance(&self->super);

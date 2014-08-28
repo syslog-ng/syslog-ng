@@ -42,7 +42,7 @@ typedef struct _JournalReaderOptions {
   guint32 max_field_size;
 } JournalReaderOptions;
 
-JournalReader *journal_reader_new(GlobalConfig *cfg, Journald *journal);
+JournalReader *journal_reader_new(Journald *journal);
 void journal_reader_set_persist_name(JournalReader *self, gchar *persist_name);
 void journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance);
 

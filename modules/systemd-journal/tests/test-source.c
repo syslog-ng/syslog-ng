@@ -43,7 +43,7 @@ static gboolean
 __init(LogPipe *s)
 {
   TestSource *self = (TestSource *)s;
-  self->reader = journal_reader_new(configuration, self->journald_mock);
+  self->reader = journal_reader_new(self->journald_mock);
   journal_reader_options_defaults(&self->options);
   if (self->current_test_case && self->current_test_case->init)
     {
@@ -53,7 +53,7 @@ __init(LogPipe *s)
   journal_reader_set_options((LogPipe *)self->reader, &self->super, &self->options, 3, SCS_JOURNALD, "test", "1");
   journal_reader_set_persist_name(self->reader, "test_cursor");
   log_pipe_append((LogPipe *)self->reader, &self->super);
-  assert_true(log_pipe_init((LogPipe *)self->reader), ASSERTION_ERROR("Can't initialize reader"));
+  assert_true(log_pipe_init((LogPipe *)self->reader, configuration), ASSERTION_ERROR("Can't initialize reader"));
   return TRUE;
 }
 
@@ -94,7 +94,7 @@ static void
 __start_source(gpointer user_data)
 {
   TestSource *self = (TestSource *)user_data;
-  log_pipe_init(&self->super);
+  log_pipe_init(&self->super, configuration);
 }
 
 static void
@@ -106,10 +106,10 @@ __stop_source(gpointer user_data)
 }
 
 TestSource *
-test_source_new(GlobalConfig *cfg)
+test_source_new()
 {
   TestSource *self = g_new0(TestSource, 1);
-  log_pipe_init_instance(&self->super, cfg);
+  log_pipe_init_instance(&self->super);
   self->super.init = __init;
   self->super.deinit = __deinit;
   self->super.free_fn = __free;

@@ -54,11 +54,10 @@ static gboolean
 __init(LogPipe *s)
 {
   SystemdJournalSourceDriver *self = (SystemdJournalSourceDriver *)s;
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
   gchar *persist_name = __generate_persist_name(self);
-  self->reader = journal_reader_new(cfg, self->journald);
+  self->reader = journal_reader_new(self->journald);
 
-  journal_reader_options_init(&self->reader_options, cfg, self->super.super.group);
+  journal_reader_options_init(&self->reader_options, configuration, self->super.super.group);
 
   journal_reader_set_options((LogPipe *)self->reader, &self->super.super.super,  &self->reader_options, 0, SCS_JOURNALD, self->super.super.id, "journal");
 
@@ -66,7 +65,7 @@ __init(LogPipe *s)
   g_free(persist_name);
 
   log_pipe_append((LogPipe *)self->reader, &self->super.super.super);
-  if (!log_pipe_init((LogPipe *)self->reader, cfg))
+  if (!log_pipe_init((LogPipe *)self->reader, configuration))
     {
       msg_error("Error initializing journal_reader",
                 NULL);
