@@ -148,6 +148,7 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
   const gchar *orig_host;
   
   resolve_sockaddr(resolved_name, &resolved_name_len, msg->saddr, self->options->use_dns, self->options->use_fqdn, self->options->use_dns_cache, self->options->normalize_hostnames);
+
   log_msg_set_value(msg, LM_V_HOST_FROM, resolved_name, resolved_name_len);
 
   orig_host = log_msg_get_value(msg, LM_V_HOST, NULL);

@@ -147,13 +147,13 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 void
 resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
-  const gchar *hname;
+  const gchar *hname = NULL;
   gboolean positive;
   gchar buf[256];
 #ifndef HAVE_GETNAMEINFO
   gchar hostent_buf[256];
 #endif
- 
+
   if (saddr && saddr->sa.sa_family != AF_UNIX)
     {
       if (saddr->sa.sa_family == AF_INET
@@ -261,10 +261,17 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     {
       gsize len = strlen(hname);
 
+      if  (len == 0)
+        {
+          *result_len = 0;
+          result[len] = '\0';
+          return;
+        }
+
       if (*result_len < len - 1)
         len = *result_len - 1;
       memcpy(result, hname, len);
-      result[len] = 0;
+      result[len] = '\0';
       *result_len = len;
     }
 }
