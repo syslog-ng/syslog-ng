@@ -74,7 +74,7 @@ source_systemd_journal
 source_systemd_journal_params
 	:
 	  {
-	    last_driver = *instance = systemd_journal_sd_new(configuration);
+	    last_driver = *instance = systemd_journal_sd_new();
       last_journal_reader_options = systemd_journal_get_reader_options(last_driver);
 	    last_source_options = &last_journal_reader_options->super;
 	  }

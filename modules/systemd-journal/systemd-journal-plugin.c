@@ -39,7 +39,7 @@ static Plugin systemd_journal_plugins[] =
 };
 
 gboolean
-systemd_journal_module_init(GlobalConfig *cfg, CfgArgs *args)
+sdjournal_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   if (!load_journald_subsystem())
     {
