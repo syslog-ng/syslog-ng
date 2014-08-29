@@ -1155,10 +1155,8 @@ if test "x$enable_systemd" != "xyes"; then
 fi
 
 if test "x$with_systemd_journal" = "xauto"; then
-  echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
   PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION, with_systemd_journal=system, with_systemd_journal=optional)
 elif test "x$with_systemd_journal" = "xsystem"; then
-  echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
   PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION,, AC_MSG_ERROR[Detecting system releted systemd-journal library failed])
 fi
 
