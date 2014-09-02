@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
+#include "logmsg.h"
 
 #define PRETTY_STRING_FORMAT "%s%s%s"
 #define PRETTY_STRING(str) ((str) ? "'" : "<"), ((str) ? (str) : "NULL"), ((str) ? "'" : ">")
@@ -43,6 +44,8 @@ gboolean assert_not_null_non_fatal(void *pointer, const gchar *error_message, ..
 gboolean assert_no_error_non_fatal(GError *error, const gchar *error_message, ...);
 gboolean assert_guint32_set_non_fatal(guint32 *actual, guint32 actual_length, guint32 *expected, guint32 expected_length, const gchar *error_message, ...);
 gboolean assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gchar *error_message, ...);
+gboolean assert_msg_field_equals_non_fatal(LogMessage *msg, gchar *field_name, gchar *expected_value, gssize expected_value_len, const gchar *error_message, ...);
+
 
 #define assert_guint16(actual, expected, error_message, ...) (assert_guint16_non_fatal(actual, expected, error_message, ##__VA_ARGS__) ? 1 : (exit(1),0))
 
@@ -77,6 +80,7 @@ gboolean assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gch
 #define assert_guint32_set(actual, actual_length, expected, expected_length, error_message, ...) (assert_guint32_set_non_fatal(actual, actual_length, expected, expected_length, error_message, ##__VA_ARGS__) ? 1 : (exit(1),0))
 
 #define assert_gpointer(actual, expected, error_message, ...) (assert_gpointer_non_fatal(actual, expected, error_message, ##__VA_ARGS__) ? 1 : (exit(1),0))
+#define assert_msg_field_equals(msg, field_name, expected_value, expected_value_len, error_message, ...) (assert_msg_field_equals_non_fatal(msg, field_name, expected_value, expected_value_len, error_message, ##__VA_ARGS__) ? 1 : (exit(1),0))
 
 extern GString *current_testcase_description;
 extern gchar *current_testcase_function;
