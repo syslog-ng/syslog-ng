@@ -168,15 +168,9 @@ _is_fd_pollable(gint fd)
 
 
 static void
-system_sysblock_add_systemd_syslog_source(GString *sysblock)
+system_sysblock_add_systemd_source(GString *sysblock)
 {
-  g_string_append_printf(sysblock, 
-"channel {\n"
-"  log {\n"
-"    source { %s };\n"
-"    rewrite { set(\"${.unix.pid}\" value(\"PID\") condition(\"${.unix.pid}\" != \"\")); };\n"
-"  };\n"
-"};\n", "systemd-syslog();");
+  g_string_append(sysblock, "systemd-journal();\n");
 }
 
 static void
@@ -213,7 +207,7 @@ static void
 system_sysblock_add_linux(GString *sysblock)
 {
   if (service_management_get_type() == SMT_SYSTEMD)
-    system_sysblock_add_systemd_syslog_source(sysblock); 
+    system_sysblock_add_systemd_source(sysblock);
   else
     system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
 
