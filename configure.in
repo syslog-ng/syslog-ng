@@ -10,6 +10,7 @@ dnl SOURCE_REVISION    - Revision of the source-tree, will added to the version 
 dnl
 AC_INIT(syslog-ng/main.c)
 AC_CONFIG_MACRO_DIR([m4])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_LIBTOOL_WIN32_DLL
 
 dnl ***************************************************************************
