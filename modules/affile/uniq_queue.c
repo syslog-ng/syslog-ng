@@ -30,7 +30,7 @@ uniq_queue_length(UniqQueue *self)
   return g_queue_get_length(self->queue);
 }
 
-void *
+void
 uniq_queue_push_tail(UniqQueue *self, gchar *element)
 {
   g_queue_push_head(self->queue, element);
@@ -38,7 +38,7 @@ uniq_queue_push_tail(UniqQueue *self, gchar *element)
 }
 
 gboolean
-uniq_queue_check_element(UniqQueue *self, gchar *element)
+uniq_queue_check_element(UniqQueue *self, const gchar *element)
 {
   return g_hash_table_lookup_extended(self->dict, element, NULL, NULL);
 }
