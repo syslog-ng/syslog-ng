@@ -11,13 +11,11 @@ libsdjournal_la_SOURCES = \
 	systemd-journal-parser.c \
 	systemd-journal-parser.h \
 	systemd-journal-plugin.c \
-	journal-interface.h \
 	journal-reader.c \
 	journal-reader.h \
 	journald-subsystem.c \
 	journald-subsystem.h \
-	journald-helper.c \
-	journald-helper.h
+	journald-helper.c
 
 
 BUILT_SOURCES = systemd-journal-grammar.y \
