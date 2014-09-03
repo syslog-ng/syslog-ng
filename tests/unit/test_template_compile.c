@@ -429,11 +429,9 @@ test_template_compile_negativ_tests(void)
 
 int main(int argc, char **argv)
 {
-  msg_init(FALSE);
+  app_startup();
 
   configuration = cfg_new(CURRENT_VERSION_VALUE);
-  log_msg_registry_init();
-  log_template_global_init();
   plugin_register(configuration, &hello_plugin, 1);
 
   test_template_compile_macro();
@@ -441,7 +439,6 @@ int main(int argc, char **argv)
   test_template_compile_func();
   test_template_compile_negativ_tests();
 
-  log_msg_registry_deinit();
-  msg_deinit();
+  app_shutdown();
   return 0;
 }

@@ -37,6 +37,7 @@
 #include "cfg-parser.h"
 #include "stats.h"
 #include "versioning.h"
+#include "service-management.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -357,6 +358,11 @@ cfg_load_default_modules_if_necessary(GlobalConfig *self)
             is_license_module_loaded = TRUE;
         }
       g_strfreev(mods);
+    }
+
+  if (service_management_get_type() == SMT_SYSTEMD)
+    {
+      plugin_load_module("sdjournal", self, NULL);
     }
 
   if (!is_license_module_loaded)

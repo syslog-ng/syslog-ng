@@ -196,7 +196,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_paths)
             evt_tag_str("filename", plugin_module_name),
             NULL);
 
-  mod = g_module_open(plugin_module_name, G_MODULE_BIND_LOCAL);
+  mod = g_module_open(plugin_module_name, G_MODULE_BIND_LAZY);
   g_free(plugin_module_name);
   if (!mod)
     {

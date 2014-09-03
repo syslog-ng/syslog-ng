@@ -34,11 +34,42 @@
 #include "afsocket-grammar.h"
 #ifndef G_OS_WIN32
 #include "afunix.h"
+#include "service-management.h"
+#include "../systemd-journal/journal-reader.h"
+#include "../systemd-journal/systemd-journal.h"
 #endif
 #include "afinet.h"
 #include "messages.h"
 #include "syslog-names.h"
 #include "plugin.h"
+
+#ifndef _WIN32
+void
+migrate_dev_log_to_systemd_journal(LogDriver *sd, LogDriver *sd_journal)
+{
+  JournalReaderOptions *journal_reader_options = systemd_journal_get_reader_options(sd_journal);
+  journal_reader_options->super = last_reader_options->super;
+  journal_reader_options->fetch_limit = last_reader_options->fetch_limit;
+  journal_reader_options->default_pri = last_reader_options->parse_options.default_pri;
+  journal_reader_options->recv_time_zone = g_strdup(last_reader_options->parse_options.recv_time_zone);
+  log_pipe_unref((LogPipe *)sd);
+  last_driver = sd_journal;
+}
+
+void
+fallback_journald_if_required(LogDriver *sd)
+{
+  if (((strcmp(((AFUnixSourceDriver *)sd)->filename, "/dev/log") == 0) ||
+      (strcmp(((AFUnixSourceDriver *)sd)->filename, "/run/systemd/system/journal") == 0)) &&
+      (service_management_get_type() == SMT_SYSTEMD))
+    {
+      msg_warning("Using /dev/log Unix dgram socket with systemd is not possible. Changing to systemd-journal source", NULL);
+      plugin_load_module("sdjournal", configuration, NULL);
+      migrate_dev_log_to_systemd_journal(sd, systemd_journal_sd_new());
+    }
+}
+
+#endif
 
 #if ENABLE_SSL /* BEGIN MARK: tls */
 #include "tlscontext.h"
@@ -154,10 +185,10 @@ start
         ;
 
 source_afsocket
-        : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
-	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                                { $$ = $3; }
-	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
-	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
+  : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'                            { $$ = $3; }
+	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                        { $$ = $3; }
+	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'     { $$ = $4; }
+	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'     { $$ = $4; }
 	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
 	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
   ;
@@ -181,7 +212,11 @@ source_afunix_dgram_params
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
-	  source_afunix_options			{ $$ = last_driver; }
+	  source_afunix_options
+    {
+      fallback_journald_if_required(last_driver);
+      $$ = *instance = last_driver;
+    }
         | KW_ENDIF {
 #endif
 }
@@ -199,7 +234,11 @@ source_afunix_stream_params
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
-	  source_afunix_options			{ $$ = last_driver; }
+	  source_afunix_options
+    {
+      fallback_journald_if_required(last_driver);
+      $$ = *instance = last_driver;
+    }
         | KW_ENDIF {
 #endif
 }

@@ -159,7 +159,7 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       log_msg_set_value(msg, LM_V_MESSAGE, value, value_len);
       msg_debug("Incoming log entry from journal",
-                evt_tag_printf("message", "%.*s", value_len, value),
+                evt_tag_printf("message", "%.*s", (int)value_len, value),
                 NULL);
     }
   else if (strcmp(key, "_HOSTNAME") == 0)
