@@ -44,7 +44,7 @@ TLS_BLOCK_END;
 
 #define local_state __tls_deref(geoip_state)
 
-static void
+static inline void
 tf_geoip_init(void)
 {
   if (!local_state)
@@ -58,6 +58,8 @@ static gboolean
 tf_geoip(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
   const char *country;
+
+  tf_geoip_init();
 
   if (argc != 1)
     {
@@ -83,7 +85,6 @@ static Plugin tfgeoip_plugins[] =
 gboolean
 tfgeoip_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-  tf_geoip_init();
   plugin_register(cfg, tfgeoip_plugins, G_N_ELEMENTS(tfgeoip_plugins));
   return TRUE;
 }

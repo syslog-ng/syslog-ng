@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2014 Balázs Scheidler
- * Copyright (c) 2013-2014 Benke Tibor
+ * Copyright (c) 2014      BalaBit S.a.r.l., Luxembourg, Luxembourg
+ * Copyright (c) 2010-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2014 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -23,21 +23,18 @@
  */
 
 
-#ifndef SYSTEMD_SYSLOG_SOURCE_H_INCLUDED
-#define SYSTEMD_SYSLOG_SOURCE_H_INCLUDED 1
+#ifndef SYSTEMD_JOURNAL_H_
+#define SYSTEMD_JOURNAL_H_
 
-#include "afsocket-source.h"
-#include "transport-mapper-unix.h"
+#include "driver.h"
+#include "logsource.h"
+#include "journal-reader.h"
 
+typedef struct _SystemdJournalSourceDriver SystemdJournalSourceDriver;
 
-typedef struct _SystemDSyslogSourceDriver
-{
-  AFSocketSourceDriver super;
-  gboolean from_unix_source;
-} SystemDSyslogSourceDriver;
+LogDriver *systemd_journal_sd_new(GlobalConfig *cfg);
 
-SystemDSyslogSourceDriver *systemd_syslog_sd_new(GlobalConfig *cfg, gboolean fallback);
-AFSocketSourceDriver *create_and_set_unix_dgram_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg);
-AFSocketSourceDriver *create_and_set_unix_stream_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg);
+LogSourceOptions *systemd_journal_get_source_options(LogDriver *s);
+JournalReaderOptions *systemd_journal_get_reader_options(LogDriver *s);
 
-#endif
+#endif /* SYSTEMD_JOURNAL_H_ */

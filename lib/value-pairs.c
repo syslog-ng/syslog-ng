@@ -154,6 +154,19 @@ value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
   vp->patterns[i] = p;
 }
 
+void
+value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include)
+{
+  GList *l = patterns;
+
+  while (l)
+    {
+      value_pairs_add_glob_pattern(vp, (gchar *)l->data, include);
+      l = g_list_next (l);
+    }
+  string_list_free(patterns);
+}
+
 gboolean
 value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
 {
@@ -909,9 +922,16 @@ vp_cmdline_parse_exclude(const gchar *option_name, const gchar *value,
 {
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
+  gchar **excludes;
+  gint i;
 
   vp_cmdline_parse_rekey_finish (data);
-  value_pairs_add_glob_pattern(vp, value, FALSE);
+
+  excludes = g_strsplit(value, ",", -1);
+  for (i = 0; excludes[i] != NULL; i++)
+    value_pairs_add_glob_pattern(vp, excludes[i], FALSE);
+  g_strfreev(excludes);
+
   return TRUE;
 }
 
@@ -930,9 +950,16 @@ vp_cmdline_parse_key(const gchar *option_name, const gchar *value,
 {
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
+  gchar **keys;
+  gint i;
 
   vp_cmdline_start_key(data, value);
-  value_pairs_add_glob_pattern(vp, value, TRUE);
+
+  keys = g_strsplit(value, ",", -1);
+  for (i = 0; keys[i] != NULL; i++)
+    value_pairs_add_glob_pattern(vp, keys[i], TRUE);
+  g_strfreev(keys);
+
   return TRUE;
 }
 
@@ -959,8 +986,8 @@ value_pairs_parse_type(gchar *spec, gchar **value, gchar **type)
     sp++;
 
   if (*sp != '(' ||
-      !(g_ascii_toupper(spec[0]) >= 'A' &&
-        g_ascii_toupper(spec[0]) <= 'Z' ||
+      !((g_ascii_toupper(spec[0]) >= 'A' &&
+         g_ascii_toupper(spec[0]) <= 'Z') ||
         spec[0] == '_'))
     {
       *value = spec;

@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2014 BalaBit S.a.r.l., Luxembourg, Luxembourg
- * Copyright (c) 2014 Gergely Nagy
+ * Copyright (c) 2014      BalaBit S.a.r.l., Luxembourg, Luxembourg
+ * Copyright (c) 2010-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2014 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,31 +22,30 @@
  *
  */
 
-#ifndef _SYSLOG_NG_UNIX_CREDENTIALS_H
-#define _SYSLOG_NG_UNIX_CREDENTIALS_H
-
-#include <sys/types.h>
-#include <sys/socket.h>
+#ifndef TEST_SOURCE_H_
+#define TEST_SOURCE_H_
 
 #include "syslog-ng.h"
+#include "journal-reader.h"
+#include "journald-mock.h"
+#include <iv.h>
 
-#if defined(__linux__)
-# if HAVE_STRUCT_UCRED
-# define CRED_PASS_SUPPORTED
-# define cred_t struct ucred
-# define cred_get(c,x) (c->x)
-# endif
-#elif defined(__FreeBSD__)
-# if HAVE_STRUCT_CMSGCRED
-#  define CRED_PASS_SUPPORTED
-#  define SCM_CREDENTIALS SCM_CREDS
-#  define cred_t struct cmsgcred
-#  define cred_get(c,x) (c->cmcred_##x)
-# endif
-#endif
+typedef struct _TestSource TestSource;
+typedef struct _TestCase TestCase;
 
-#if defined(CRED_PASS_SUPPORTED)
-void socket_set_pass_credentials(gint fd);
-#endif
+struct _TestCase {
+    void (*init)(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader, JournalReaderOptions *options);
+    void (*checker)(TestCase *self, TestSource *src, LogMessage *msg);
+    void (*finish)(TestCase *self);
+    gpointer user_data;
+};
 
-#endif
+
+TestSource *test_source_new(GlobalConfig *cfg);
+
+void test_source_add_test_case(TestSource *s, TestCase *tc);
+void test_source_run_tests(TestSource *s);
+void test_source_finish_tc(TestSource *s);
+
+
+#endif /* TEST_SOURCE_H_ */

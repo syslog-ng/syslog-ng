@@ -249,8 +249,8 @@ assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expe
     return TRUE;
 
   va_start(args, error_message);
-  print_failure(error_message, args, "actual=" PRETTY_NSTRING_FORMAT ", expected=" PRETTY_NSTRING_FORMAT "",
-                                     PRETTY_NSTRING(actual, actual_len), PRETTY_NSTRING(expected, expected_len));
+  print_failure(error_message, args, "actual=" PRETTY_NSTRING_FORMAT ", expected=" PRETTY_NSTRING_FORMAT " actual_length=%d expected_length=%d",
+                                     PRETTY_NSTRING(actual, actual_len), PRETTY_NSTRING(expected, expected_len), actual_len, expected_len);
   va_end(args);
 
   return FALSE;

@@ -22,16 +22,34 @@
  *
  */
 #include "service-management.h"
+#include "messages.h"
+
+#if ENABLE_SYSTEMD
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <systemd/sd-daemon.h>
+
+#endif
+
+typedef struct _ServiceManagement ServiceManagement;
+
+struct _ServiceManagement
+{
+  ServiceManagementType type;
+  void (*publish_status)(const gchar *status);
+  void (*clear_status)();
+  void (*indicate_readiness)();
+  gboolean (*is_active)();
+};
+
+ServiceManagement *current_service_mgmt = NULL;
 
 #if ENABLE_SYSTEMD
-#include <systemd/sd-daemon.h>
-#include "messages.h"
 
-void
-service_management_publish_status(const gchar *status)
+static inline void
+service_management_systemd_publish_status(const gchar *status)
 {
   gchar *status_buffer;
   time_t now = time(NULL);
@@ -41,20 +59,20 @@ service_management_publish_status(const gchar *status)
   g_free(status_buffer);
 }
 
-void
-service_management_clear_status(void)
+static inline void
+service_management_systemd_clear_status()
 {
   sd_notify(0, "STATUS=");
 }
 
-void
-service_management_indicate_readiness(void)
+static inline void
+service_management_systemd_indicate_readiness()
 {
   sd_notify(0, "READY=1");
 }
 
 static gboolean
-service_management_systemd_is_used(void)
+service_management_systemd_is_active()
 {
   struct stat st;
 
@@ -70,14 +88,84 @@ service_management_systemd_is_used(void)
   }
 }
 
+#endif
+
+void
+service_management_publish_status(const gchar *status)
+{
+  current_service_mgmt->publish_status(status);
+}
+
+void
+service_management_clear_status(void)
+{
+  current_service_mgmt->clear_status();
+}
+
+void
+service_management_indicate_readiness(void)
+{
+  current_service_mgmt->indicate_readiness();
+}
+
 ServiceManagementType
 service_management_get_type(void)
 {
-  if (service_management_systemd_is_used())
-    return SMT_SYSTEMD;
-  else
-    return SMT_NONE;
+  return current_service_mgmt->type;
 }
 
+static inline void
+service_management_dummy_publish_status(const gchar *status)
+{
+}
 
+static inline void
+service_management_dummy_clear_status()
+{
+}
+
+static inline void
+service_management_dummy_indicate_readiness()
+{
+}
+
+static gboolean
+service_management_dummy_is_active()
+{
+  return TRUE;
+}
+
+ServiceManagement service_managements[] = {
+#if ENABLE_SYSTEMD
+  {
+    .type = SMT_SYSTEMD,
+    .publish_status = service_management_systemd_publish_status,
+    .clear_status = service_management_systemd_clear_status,
+    .indicate_readiness = service_management_systemd_indicate_readiness,
+    .is_active = service_management_systemd_is_active
+  },
 #endif
+  /* This type is always active, so it must be the last item */
+  {
+    .type = SMT_NONE,
+    .publish_status = service_management_dummy_publish_status,
+    .clear_status = service_management_dummy_clear_status,
+    .indicate_readiness = service_management_dummy_indicate_readiness,
+    .is_active = service_management_dummy_is_active
+  }
+};
+
+void
+service_management_init()
+{
+  gint i = 0;
+
+  while (service_managements[i].type != SMT_NONE)
+    {
+      if (service_managements[i].is_active())
+        current_service_mgmt = &service_managements[i];
+      i++;
+    }
+
+   current_service_mgmt = &service_managements[0];
+}

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2014 Balázs Scheidler
- * Copyright (c) 2013-2014 Benke Tibor
+ * Copyright (c) 2014      BalaBit S.a.r.l., Luxembourg, Luxembourg
+ * Copyright (c) 2010-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2014 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,22 +22,15 @@
  *
  */
 
+#ifndef AFPROG_PARSER_H_INCLUDED
+#define AFPROG_PARSER_H_INCLUDED
 
-#ifndef SYSTEMD_SYSLOG_SOURCE_H_INCLUDED
-#define SYSTEMD_SYSLOG_SOURCE_H_INCLUDED 1
+#include "cfg-parser.h"
+#include "cfg-lexer.h"
+#include "driver.h"
 
-#include "afsocket-source.h"
-#include "transport-mapper-unix.h"
+extern CfgParser systemd_journal_parser;
 
-
-typedef struct _SystemDSyslogSourceDriver
-{
-  AFSocketSourceDriver super;
-  gboolean from_unix_source;
-} SystemDSyslogSourceDriver;
-
-SystemDSyslogSourceDriver *systemd_syslog_sd_new(GlobalConfig *cfg, gboolean fallback);
-AFSocketSourceDriver *create_and_set_unix_dgram_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg);
-AFSocketSourceDriver *create_and_set_unix_stream_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg);
+CFG_PARSER_DECLARE_LEXER_BINDING(systemd_journal_, LogDriver **)
 
 #endif

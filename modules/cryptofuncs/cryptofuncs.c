@@ -95,14 +95,14 @@ tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       return FALSE;
     }
   state->length = length;
-  md = EVP_get_digestbyname(strcmp(argv[0], "hash") == 0 ? "md5" : argv[0]);
+  md = EVP_get_digestbyname(strcmp(argv[0], "hash") == 0 ? "sha256" : argv[0]);
   if (!md)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(hash) parsing failed, unknown digest type");
       return FALSE;
     }
   state->md = md;
-  if (state->length == 0)
+  if ((state->length == 0) || (state->length > md->md_size * 2))
     state->length = md->md_size * 2;
   return TRUE;
 }
