@@ -302,9 +302,15 @@ system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
     }
 
   g_string_append(sysblock,
+                  "channel {\n"
+                  "  channel {\n"
                   "    parser {\n"
-                  "        json-parser(prefix('.cim.') marker('@cim:'));\n"
-                  "    };\n");
+                  "      json-parser(prefix('.cim.') marker('@cim:'));\n"
+                  "    };\n"
+                  "    flags(final);\n"
+                  "  };\n"
+                  "  channel { };\n"
+                  "};\n");
 }
 
 static gboolean
