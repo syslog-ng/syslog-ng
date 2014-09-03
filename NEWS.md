@@ -1,3 +1,52 @@
+3.6.0beta1
+==========
+<!-- Wed,  3 Sep 2014 14:40:14 +0200 -->
+
+This is the first beta release of the upcoming syslog-ng OSE 3.6
+branch. Compared to the alphas, this release contains a moderate
+amount of new functionality and bugfixes. Further releases will focus
+on stability and bugfixes.
+
+Features
+--------
+* One can now use multiple elements in the `key()` and `exclude()`
+  options of any value-pairs declaration.
+
+* A new source driver was added to the syslog-ng: `systemd-journal()`,
+  which reads from the Journal directly, not via the syslog forwarding
+  socket. The `system()` source defaults to using this source when
+  systemd is detected.
+
+Bugfixes
+--------
+
+* All the various crypto-related template functions now check that the
+  desired length of the digest is not larger than the digest itself.
+  If a larger value is requested, they will truncate it to the digest
+  length.
+
+* The `$(geoip)` template function now works with `threaded(yes)` too.
+
+* The unix domain socket credentials code was changed to only build on
+  Linux and FreeBSD. With this change, syslog-ng should compile again
+  on platforms where the OS does not support this, with the feature
+  disabled.
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessary to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Andras Mitzki, Fabien Wernli, Gergely Nagy, Laszlo Budai, Michael
+Hocke, Tibor Benke, Viktor Juhasz, Viktor Tusa.
+
 3.6.0alpha3
 ===========
 <!-- Released: Tue, 19 Aug 2014 14:33:00 +0200 -->
