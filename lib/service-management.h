@@ -32,19 +32,10 @@ typedef enum _ServiceManagementType {
     SMT_MAX
 } ServiceManagementType;
 
-#if ENABLE_SYSTEMD
-
 void service_management_publish_status(const gchar *status);
 void service_management_clear_status(void);
 void service_management_indicate_readiness(void);
 ServiceManagementType service_management_get_type(void);
-
-#else
-
-#define service_management_publish_status(x)
-#define service_management_clear_status()
-#define service_management_indicate_readiness()
-#define service_management_get_type() SMT_NONE
-#endif
+void service_management_init(void);
 
 #endif

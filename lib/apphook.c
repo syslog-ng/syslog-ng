@@ -38,6 +38,7 @@
 #include "hostname.h"
 #include "scratch-buffers.h"
 #include "mainloop-call.h"
+#include "service-management.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -130,6 +131,7 @@ app_startup(void)
   log_tags_global_init();
   log_source_global_init();
   log_template_global_init();
+  service_management_init();
 }
 
 void

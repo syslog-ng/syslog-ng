@@ -33,9 +33,11 @@
 typedef struct _SystemDSyslogSourceDriver
 {
   AFSocketSourceDriver super;
+  gboolean from_unix_source;
 } SystemDSyslogSourceDriver;
 
 SystemDSyslogSourceDriver *systemd_syslog_sd_new(GlobalConfig *cfg, gboolean fallback);
-AFSocketSourceDriver *create_and_set_unix_dgram_or_systemd_source(gchar *filename, GlobalConfig *cfg);
+AFSocketSourceDriver *create_and_set_unix_dgram_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg);
+AFSocketSourceDriver *create_and_set_unix_stream_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg);
 
 #endif

@@ -36,7 +36,6 @@
 #include "afunix-dest.h"
 #include "afinet-source.h"
 #include "afinet-dest.h"
-#include "systemd-syslog-source.h"
 #include "messages.h"
 #include "syslog-names.h"
 #include "plugin.h"
@@ -44,6 +43,8 @@
 #include "socket-options-inet.h"
 #include "transport-mapper-inet.h"
 #include "service-management.h"
+
+#include "systemd-syslog-source.h"
 #include "afsocket-systemd-override.h"
 
 #if BUILD_WITH_SSL
@@ -187,6 +188,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %type	<ptr> source_afnetwork_params
 %type   <ptr> source_afsocket_stream_params
 %type	<ptr> source_systemd_syslog
+%type	<ptr> source_systemd_syslog_params
 
 %type	<ptr> dest_afunix
 %type	<ptr> dest_afunix_dgram_params
@@ -236,7 +238,7 @@ source_afunix
 source_afunix_dgram_params
 	: string
 	  {
-        create_and_set_unix_dgram_or_systemd_source($1, configuration);
+        create_and_set_unix_dgram_or_systemd_syslog_source($1, configuration);
 
 	    free($1);
 	  }
@@ -246,9 +248,7 @@ source_afunix_dgram_params
 source_afunix_stream_params
 	: string
 	  {
-	    AFUnixSourceDriver *d = afunix_sd_new_stream($1, configuration);
-
-            afunix_grammar_set_source_driver(d);
+      create_and_set_unix_stream_or_systemd_syslog_source($1, configuration);
 	    free($1);
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
@@ -429,15 +429,37 @@ source_afsocket_transport
         ;
 
 source_systemd_syslog
-        : KW_SYSTEMD_SYSLOG '('  ')'
-          {
-            SystemDSyslogSourceDriver *d = systemd_syslog_sd_new(configuration, FALSE);
+  : KW_SYSTEMD_SYSLOG '(' source_systemd_syslog_params ')'  { $$ = $3; }
+  ;
 
-            systemd_syslog_grammar_set_source_driver(d);
+source_systemd_syslog_params
+   :
+      {
+#if ! ENABLE_SYSTEMD
+      msg_error("systemd-syslog() source cannot be enabled and it is not"
+                " functioning. Please compile your syslog-ng with --enable-systemd"
+                " flag",
+                NULL);
+      YYERROR;
+#else
+     SystemDSyslogSourceDriver *d = systemd_syslog_sd_new(configuration, FALSE);
+     systemd_syslog_grammar_set_source_driver(d);
+#endif
+      }
+    source_systemd_syslog_options { $$ = last_driver; }
+      ;
 
-            $$ = d;
-          }
-        ;
+
+source_systemd_syslog_options
+  : source_systemd_syslog_option source_systemd_syslog_options
+  |
+  ;
+
+
+source_systemd_syslog_option:
+  | source_reader_option
+  | socket_option
+  ;
 
         
 dest_afunix
