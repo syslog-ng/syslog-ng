@@ -11,23 +11,128 @@
 
 #include "testutils.h"
 
+#define MSG_1 "<15>Sep  4 15:03:55 localhost test-program[3086]: some random message"
+#define MSG_2 "<15>Sep  4 15:03:55 localhost foo[3086]: some random message"
+#define MSG_3 "<15>Sep  4 15:03:55 192.168.1.1 foo[3086]: some random message"
+#define MSG_LONG "<15>Sep  4 15:03:55 test-hostAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA foo[3086]: some random message"
+
+#define LIST_FILE_DIR "%s/lib/filter/tests/filters-in-list/"
+
 static MsgFormatOptions parse_options;
 
-static LogMessage *
-create_test_message (void)
+gboolean
+evaluate_testcase(gchar *msg,
+         FilterExprNode *filter_node)
 {
-  const gchar *log_message = "<15>Sep  4 15:03:55 localhost test-program[3086]: some random message";
+  LogMessage *log_msg;
+  gboolean result;
 
-  return log_msg_new(log_message, strlen(log_message), NULL, &parse_options);
+  assert_not_null(filter_node, "Constructing an in-list filter");
+  log_msg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
+  result = filter_expr_eval(filter_node, log_msg);
+
+  log_msg_unref(log_msg);
+  filter_expr_unref(filter_node);
+  return result;
+}
+
+void
+test_filter_returns_false_when_list_is_empty(const char* top_srcdir)
+{
+  gchar* list_file_with_zero_lines = g_strdup_printf(LIST_FILE_DIR "empty.list", top_srcdir);
+
+  assert_gboolean(evaluate_testcase(MSG_1, filter_in_list_new(list_file_with_zero_lines, "PROGRAM")),
+                  FALSE,
+                  "in-list filter matches");
+
+  g_free(list_file_with_zero_lines);
+}
+
+void
+test_string_searched_for_is_not_in_the_list(const char* top_srcdir)
+{
+  gchar* list_file_with_one_line = g_strdup_printf(LIST_FILE_DIR "test.list", top_srcdir);
+  assert_gboolean(evaluate_testcase(MSG_2, filter_in_list_new(list_file_with_one_line, "PROGRAM")),
+                  FALSE,
+                  "in-list filter matches");
+  g_free(list_file_with_one_line);
+}
+
+void
+test_given_macro_is_not_available_in_this_message(const char* top_srcdir)
+{
+  gchar* list_file_with_one_line = g_strdup_printf(LIST_FILE_DIR "test.list", top_srcdir);
+  assert_gboolean(evaluate_testcase(MSG_2, filter_in_list_new(list_file_with_one_line, "FOO_MACRO")),
+                  FALSE,
+                  "in-list filter matches");
+  g_free(list_file_with_one_line);
+}
+
+void
+test_list_file_doesnt_exist(const char* top_srcdir)
+{
+  gchar* list_file_which_doesnt_exist = g_strdup_printf(LIST_FILE_DIR "notexisting.list", top_srcdir);
+  assert_null(filter_in_list_new(list_file_which_doesnt_exist, "PROGRAM"), "in-list filter should fail, when the list file does not exist");
+  g_free(list_file_which_doesnt_exist);
+}
+
+void
+test_list_file_contains_only_one_line(const char* top_srcdir)
+{
+  gchar* list_file_with_one_line = g_strdup_printf(LIST_FILE_DIR "test.list", top_srcdir);
+  assert_gboolean(evaluate_testcase(MSG_1, filter_in_list_new(list_file_with_one_line, "PROGRAM")),
+                  TRUE,
+                  "in-list filter matches");
+  g_free(list_file_with_one_line);
+}
+
+void
+test_list_file_contains_lot_of_lines(const char* top_srcdir)
+{
+  gchar* list_file_which_has_a_lot_of_lines = g_strdup_printf(LIST_FILE_DIR "lot_of_lines.list", top_srcdir);
+  assert_gboolean(evaluate_testcase(MSG_1, filter_in_list_new(list_file_which_has_a_lot_of_lines, "PROGRAM")),
+                  TRUE,
+                  "in-list filter matches");
+  g_free(list_file_which_has_a_lot_of_lines);
+}
+
+void
+test_filter_with_ip_address(const char* top_srcdir)
+{
+  gchar* list_file_with_ip_address = g_strdup_printf(LIST_FILE_DIR "ip.list", top_srcdir);
+  assert_gboolean(evaluate_testcase(MSG_3, filter_in_list_new(list_file_with_ip_address, "HOST")),
+                  TRUE,
+                  "in-list filter matches");
+  g_free(list_file_with_ip_address);
+}
+
+void
+test_filter_with_long_line(const char* top_srcdir)
+{
+  gchar* list_file_with_long_line = g_strdup_printf(LIST_FILE_DIR "long_line.list", top_srcdir);
+  assert_gboolean(evaluate_testcase(MSG_LONG, filter_in_list_new(list_file_with_long_line, "HOST")),
+                  TRUE,
+                  "in-list filter matches");
+  g_free(list_file_with_long_line);
+}
+
+void
+run_testcases(const char* top_srcdir)
+{
+  test_filter_returns_false_when_list_is_empty(top_srcdir);
+  test_string_searched_for_is_not_in_the_list(top_srcdir);
+  test_given_macro_is_not_available_in_this_message(top_srcdir);
+  test_list_file_doesnt_exist(top_srcdir);
+  test_list_file_contains_only_one_line(top_srcdir);
+  test_list_file_contains_lot_of_lines(top_srcdir);
+  test_filter_with_ip_address(top_srcdir);
+  test_filter_with_long_line(top_srcdir);
 }
 
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
-  LogMessage *msg;
-  FilterExprNode *filter_node;
   char *top_srcdir = getenv("top_srcdir");
-  gchar *list_file;
 
   app_startup();
 
@@ -38,14 +143,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   assert_not_null(top_srcdir, "The $top_srcdir environment variable MUST NOT be empty!");
 
-  list_file = g_strdup_printf("%s/lib/filter/tests/test.list", top_srcdir);
-  filter_node = filter_in_list_new(list_file, "PROGRAM");
-  assert_not_null(filter_node, "Constructing an in-list filter");
-  g_free (list_file);
-
-  msg = create_test_message();
-
-  assert_true(filter_expr_eval(filter_node, msg), "in-list filter matches");
+  run_testcases(top_srcdir);
 
   app_shutdown();
 
