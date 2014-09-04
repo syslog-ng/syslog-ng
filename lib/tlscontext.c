@@ -293,7 +293,7 @@ tls_context_setup_session(TLSContext *self)
       if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
         goto error;
 
-      if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_file(self->ssl_ctx, self->cert_file, SSL_FILETYPE_PEM))
+      if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
         goto error;
       if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
         goto error;
