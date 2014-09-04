@@ -25,6 +25,7 @@
 #include "template/templates.h"
 #include "cfg.h"
 #include "uuid.h"
+#include "misc.h"
 #include "str-format.h"
 
 #if ENABLE_SSL

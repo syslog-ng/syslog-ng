@@ -119,7 +119,6 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
   GError *err = NULL;
   GString *event_template_str = g_string_sized_new(512);
   SnareFormatOptions *options = g_new0(SnareFormatOptions,1);
-  gint i;
   GOptionContext *ctx;
   GOptionGroup *og;
 
@@ -249,7 +248,6 @@ tf_cut_prepare(LogTemplateFunction *self, LogTemplate *parent,
                 GError **error)
 {
   StrcutOptions *options = g_new0(StrcutOptions,1);
-  gint i;
   GOptionContext *ctx;
   GOptionGroup *og;
   gboolean result = TRUE;

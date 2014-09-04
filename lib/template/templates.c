@@ -743,7 +743,6 @@ gboolean
 tf_simple_func_prepare(LogTemplateFunction *self, LogTemplate *parent, gint number_of_arguments, gchar *arguments[], gpointer *tf_state, GDestroyNotify *tf_state_destroy, GError **error)
 {
   TFSimpleFuncState *state;
-  gint i;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
   state = g_new0(TFSimpleFuncState,  1);

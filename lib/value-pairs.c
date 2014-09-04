@@ -1153,7 +1153,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   GOptionGroup *og;
   gpointer user_data_args[4];
   gboolean success;
-  gint i = 0;
 
   vp = value_pairs_new();
   user_data_args[0] = cfg;

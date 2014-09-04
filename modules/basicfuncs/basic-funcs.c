@@ -166,8 +166,6 @@ typedef struct _TFCondState
 void
 tf_cond_free_state(TFCondState *args)
 {
-  gint i;
-
   if (args->filter)
     filter_expr_unref(args->filter);
   tf_simple_func_free_state(args);
@@ -178,7 +176,6 @@ tf_cond_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
 {
   TFCondState *args;
   CfgLexer *lexer;
-  gint i;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
