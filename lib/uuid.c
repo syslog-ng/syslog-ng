@@ -26,7 +26,9 @@
 
 #if ENABLE_SSL
 #include <openssl/rand.h>
+#ifndef _WIN32
 #include <arpa/inet.h>
+#endif
 
 void
 uuid_gen_random(gchar *buf, gsize buflen)
