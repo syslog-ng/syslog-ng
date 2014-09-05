@@ -49,6 +49,7 @@ struct _FilterExprNode
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
 gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg);
 void filter_expr_unref(FilterExprNode *self);
+void filter_expr_node_init(FilterExprNode *self);
 FilterExprNode *filter_expr_ref(FilterExprNode *self);
 
 typedef struct _FilterRE

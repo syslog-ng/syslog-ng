@@ -33,6 +33,7 @@
 #include "template/templates.h"
 #include "syslog-names.h"
 #include "filter-expr-grammar.h"
+#include "filter-in-list.h"
 #include "plugin.h"
 #include "cfg-grammar.h"
 
@@ -48,7 +49,7 @@ FilterRE *last_re_filter;
 
 /* INCLUDE_DECLS */
 
-%token KW_PROGRAM
+%token KW_PROGRAM KW_IN_LIST
 
 %left   ';'
 %left	KW_OR
@@ -89,6 +90,34 @@ filter_simple_expr
 	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
 	| KW_NETMASK '(' string ')'		{ $$ = filter_netmask_new($3); free($3); }
         | KW_TAGS '(' string_list ')'           { $$ = filter_tags_new($3); }
+        | KW_IN_LIST '(' string string ')'
+          {
+            const gchar *p = $4;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $4),
+                            NULL);
+                p++;
+              }
+            $$ = filter_in_list_new($3, p);
+            free($3);
+            free($4);
+          }
+        | KW_IN_LIST '(' string KW_VALUE '(' string ')' ')'
+          {
+            const gchar *p = $6;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $6),
+                            NULL);
+                p++;
+              }
+            $$ = filter_in_list_new($3, p);
+            free($3);
+            free($6);
+          }
 	| KW_PROGRAM '(' string
 	  {
 	    last_re_filter = (FilterRE *) filter_re_new(LM_V_PROGRAM);

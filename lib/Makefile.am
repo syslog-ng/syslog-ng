@@ -38,6 +38,7 @@ pkginclude_HEADERS = 		\
 	dnscache.h		\
 	driver.h		\
 	filter-expr-parser.h	\
+	filter-in-list.h	\
 	filter.h		\
 	gsocket.h		\
 	gsockaddr.h		\
@@ -133,6 +134,7 @@ libsyslog_ng_la_SOURCES = \
 	driver.c		\
 	filter.c		\
 	filter-expr-parser.c	\
+	filter-in-list.c  \
 	globals.c		\
 	gsocket.c		\
 	gsockaddr.c		\

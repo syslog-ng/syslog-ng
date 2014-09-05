@@ -1,8 +1,12 @@
+SUBDIRS = filters-in-list
+
 # we need the dotdot version of the include path to find generated headers
 AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../lib -I$(top_srcdir)/modules/basic-proto -I$(top_srcdir)/modules
 AM_LDFLAGS = -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la -dlpreopen $(top_builddir)/modules/basic-proto/libbasic-proto.la
 LIBS = @TOOL_DEPS_LIBS@
 LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a @TOOL_DEPS_LIBS@
+
+export top_srcdir
 
 check_PROGRAMS =			\
 	test_nvtable			\
@@ -15,6 +19,7 @@ check_PROGRAMS =			\
 	test_template			\
 	test_template_speed		\
 	test_filters			\
+	test_filters_in_list			\
 	test_dnscache			\
 	test_findeom			\
 	test_findcrlf			\
@@ -83,6 +88,7 @@ test_findcrlf_SOURCES = test_findcrlf.c
 test_clone_logmsg_SOURCES = test_clone_logmsg.c
 test_matcher_SOURCES = test_matcher.c
 test_filters_SOURCES = test_filters.c
+test_filters_in_list_SOURCES = test_filters_in_list.c
 test_logqueue_SOURCES = test_logqueue.c
 test_msgsdata_SOURCES = test_msgsdata.c
 test_tags_SOURCES = test_tags.c
