@@ -450,6 +450,45 @@ _test_default_facility_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
+_test_program_field_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader, JournalReaderOptions *options)
+{
+  MockEntry *entry = mock_entry_new("test _COMM first win");
+  mock_entry_add_data(entry, "_COMM=comm_program");
+  mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
+  journald_mock_add_entry(journal, entry);
+
+  entry = mock_entry_new("test _COMM second win");
+  mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
+  mock_entry_add_data(entry, "_COMM=comm_program");
+  journald_mock_add_entry(journal, entry);
+
+  entry = mock_entry_new("no _COMM");
+  mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
+  journald_mock_add_entry(journal, entry);
+
+  self->user_data = journal;
+}
+
+void
+_test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
+{
+  Journald *journal = self->user_data;
+  gchar *cursor;
+  journald_get_cursor(journal, &cursor);
+  if (strcmp(cursor, "no _COMM") != 0)
+    {
+      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "comm_program", ASSERTION_ERROR("Bad program name"));
+      g_free(cursor);
+    }
+  else
+    {
+      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", ASSERTION_ERROR("Bad program name"));
+      g_free(cursor);
+      test_source_finish_tc(src);
+    }
+}
+
+void
 test_journal_reader()
 {
   TestSource *src = test_source_new(configuration);
@@ -459,6 +498,7 @@ test_journal_reader()
   TestCase tc_timezone = { _test_timezone_init, _test_timezone_test, NULL, NULL };
   TestCase tc_default_level =  { _test_default_level_init, _test_default_level_test, NULL, GINT_TO_POINTER(LOG_ERR) };
   TestCase tc_default_facility = { _test_default_facility_init, _test_default_facility_test, NULL, GINT_TO_POINTER(LOG_AUTH) };
+  TestCase tc_program_field = { _test_program_field_init, _test_program_field_test, NULL, NULL };
 
   test_source_add_test_case(src, &tc_default_working);
   test_source_add_test_case(src, &tc_prefix);
@@ -466,6 +506,7 @@ test_journal_reader()
   test_source_add_test_case(src, &tc_timezone);
   test_source_add_test_case(src, &tc_default_level);
   test_source_add_test_case(src, &tc_default_facility);
+  test_source_add_test_case(src, &tc_program_field);
 
   test_source_run_tests(src);
   log_pipe_unref((LogPipe *)src);
