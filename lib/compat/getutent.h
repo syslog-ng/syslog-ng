@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@
 #ifndef COMPAT_GETUTENT_H_INCLUDED
 #define COMPAT_GETUTENT_H_INCLUDED
 
+#include <inttypes.h>
 #include "compat/compat.h"
 
 #ifdef HAVE_UTMPX_H
