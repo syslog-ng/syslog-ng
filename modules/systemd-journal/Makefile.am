@@ -21,6 +21,7 @@ BUILT_SOURCES += modules/systemd-journal/systemd-journal-grammar.y \
 modules_systemd_journal_libsdjournal_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBSYSTEMD_JOURNAL_CFLAGS) -I$(top_srcdir)/modules/systemd-journal -I$(top_builddir)/modules/systemd-journal
 modules_systemd_journal_libsdjournal_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBSYSTEMD_JOURNAL_LIBS)
 modules_systemd_journal_libsdjournal_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules_systemd_journal_libsdjournal_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 include modules/systemd-journal/tests/Makefile.am
 modules/systemd-journal mod-systemd-journal: modules/systemd-journal/libsdjournal.la
