@@ -877,11 +877,11 @@ CfgFlagHandler log_matcher_flag_handlers[] =
 
   { "global",          CFH_SET, offsetof(LogMatcherOptions, flags), LMF_GLOBAL        },
   { "icase",           CFH_SET, offsetof(LogMatcherOptions, flags), LMF_ICASE         },
-  { "ignore_case",     CFH_SET, offsetof(LogMatcherOptions, flags), LMF_ICASE         },
+  { "ignore-case",     CFH_SET, offsetof(LogMatcherOptions, flags), LMF_ICASE         },
   { "newline",         CFH_SET, offsetof(LogMatcherOptions, flags), LMF_NEWLINE       },
   { "unicode",         CFH_SET, offsetof(LogMatcherOptions, flags), LMF_UTF8          },
   { "utf8",            CFH_SET, offsetof(LogMatcherOptions, flags), LMF_UTF8          },
-  { "store_matches",   CFH_SET, offsetof(LogMatcherOptions, flags), LMF_STORE_MATCHES },
+  { "store-matches",   CFH_SET, offsetof(LogMatcherOptions, flags), LMF_STORE_MATCHES },
   { "substring",       CFH_SET, offsetof(LogMatcherOptions, flags), LMF_SUBSTRING     },
   { "prefix",          CFH_SET, offsetof(LogMatcherOptions, flags), LMF_PREFIX        },
 
