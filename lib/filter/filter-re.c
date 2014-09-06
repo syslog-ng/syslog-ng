@@ -66,7 +66,6 @@ filter_re_init(FilterExprNode *s, GlobalConfig *cfg)
 {
   FilterRE *self = (FilterRE *) s;
 
-
   if (self->matcher_options.flags & LMF_STORE_MATCHES)
     self->super.modify = TRUE;
 }
@@ -79,11 +78,9 @@ filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, gchar *re, GError *
   return log_matcher_compile(self->matcher, re, error);
 }
 
-FilterRE *
-filter_re_new(NVHandle value_handle)
+static void
+filter_re_init_instance(FilterRE *self, NVHandle value_handle)
 {
-  FilterRE *self = g_new0(FilterRE, 1);
-
   filter_expr_node_init_instance(&self->super);
   self->value_handle = value_handle;
   self->super.init = filter_re_init;
@@ -91,6 +88,14 @@ filter_re_new(NVHandle value_handle)
   self->super.free_fn = filter_re_free;
   log_matcher_options_defaults(&self->matcher_options);
   self->matcher_options.flags |= LMF_MATCH_ONLY;
+}
+
+FilterRE *
+filter_re_new(NVHandle value_handle)
+{
+  FilterRE *self = g_new0(FilterRE, 1);
+
+  filter_re_init_instance(self, value_handle);
   return self;
 }
 
@@ -140,12 +145,11 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 }
 
 FilterRE *
-filter_match_new()
+filter_match_new(void)
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
-  filter_expr_node_init_instance(&self->super);
-  self->super.free_fn = filter_re_free;
+  filter_re_init_instance(self, 0);
   self->super.eval = filter_match_eval;
   return self;
 }
