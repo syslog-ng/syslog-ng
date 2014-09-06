@@ -61,6 +61,15 @@ filter_re_free(FilterExprNode *s)
   log_matcher_unref(self->matcher);
 }
 
+static void
+filter_re_init(FilterExprNode *s, GlobalConfig *cfg)
+{
+  FilterRE *self = (FilterRE *) s;
+
+  if (self->matcher->flags & LMF_STORE_MATCHES)
+    self->super.modify = TRUE;
+}
+
 void
 filter_re_set_matcher(FilterRE *self, LogMatcher *matcher)
 {
@@ -103,6 +112,7 @@ filter_re_new(NVHandle value_handle)
 
   filter_expr_node_init(&self->super);
   self->value_handle = value_handle;
+  self->super.init = filter_re_init;
   self->super.eval = filter_re_eval;
   self->super.free_fn = filter_re_free;
   return &self->super;
