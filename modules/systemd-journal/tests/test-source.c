@@ -24,6 +24,7 @@
 #include "test-source.h"
 #include "syslog-ng.h"
 #include "testutils.h"
+#include "stats.h"
 
 struct _TestSource {
   LogPipe super;
@@ -51,7 +52,6 @@ __init(LogPipe *s)
     }
   journal_reader_options_init(&self->options, configuration, "test");
   journal_reader_set_options((LogPipe *)self->reader, &self->super, &self->options, 3, SCS_JOURNALD, "test", "1");
-  journal_reader_set_persist_name(self->reader, "test_cursor");
   log_pipe_append((LogPipe *)self->reader, &self->super);
   assert_true(log_pipe_init((LogPipe *)self->reader, configuration), ASSERTION_ERROR("Can't initialize reader"));
   return TRUE;

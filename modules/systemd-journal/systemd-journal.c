@@ -44,26 +44,16 @@ systemd_journal_get_reader_options(LogDriver *s)
   return &self->reader_options;
 }
 
-static gchar *
-__generate_persist_name(SystemdJournalSourceDriver *self)
-{
-  return g_strdup_printf("journald_source_%s_%s", self->super.super.group, self->super.super.id);
-}
-
 static gboolean
 __init(LogPipe *s)
 {
   SystemdJournalSourceDriver *self = (SystemdJournalSourceDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-  gchar *persist_name = __generate_persist_name(self);
   self->reader = journal_reader_new(self->journald);
 
   journal_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   journal_reader_set_options((LogPipe *)self->reader, &self->super.super.super,  &self->reader_options, 0, SCS_JOURNALD, self->super.super.id, "journal");
-
-  journal_reader_set_persist_name(self->reader, persist_name);
-  g_free(persist_name);
 
   log_pipe_append((LogPipe *)self->reader, &self->super.super.super);
   if (!log_pipe_init((LogPipe *)self->reader, cfg))
@@ -101,6 +91,21 @@ __free(LogPipe *s)
   log_src_driver_free(s);
 }
 
+static gboolean
+__skip_old_messages(LogSrcDriver *s, GlobalConfig *cfg)
+{
+  SystemdJournalSourceDriver *self = (SystemdJournalSourceDriver *)s;
+  gboolean result;
+  if (!generate_persist_file && self->reader_options.super.read_old_records)
+    {
+      return TRUE;
+    }
+  JournalReader *reader = journal_reader_new(self->journald);
+  result = journal_reader_skip_old_messages(reader, cfg);
+  log_pipe_unref((LogPipe *)reader);
+  return result;
+}
+
 LogDriver *
 systemd_journal_sd_new()
 {
@@ -109,6 +114,7 @@ systemd_journal_sd_new()
   self->super.super.super.init = __init;
   self->super.super.super.deinit = __deinit;
   self->super.super.super.free_fn = __free;
+  self->super.skip_old_messages = __skip_old_messages;
   journal_reader_options_defaults(&self->reader_options);
   self->journald = journald_new();
   return &self->super.super;

@@ -41,6 +41,8 @@
 #define DEFAULT_PRIO (LOG_LOCAL0 | LOG_NOTICE)
 #define DEFAULT_FETCH_LIMIT 10
 
+static gboolean journal_reader_initialized = FALSE;
+
 typedef struct _JournalReaderState {
   BaseState header;
   gchar cursor[MAX_CURSOR_LENGTH];
@@ -183,18 +185,6 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
           log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
         }
     }
-  else if (strcmp(key, "_SOURCE_REALTIME_TIMESTAMP") == 0)
-    {
-      guint64 ts;
-      parse_number(value, (gint64 *) &ts);
-      msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
-      msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
-      msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(options->recv_time_zone_info, msg->timestamps[LM_TS_STAMP].tv_sec);
-      if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
-        {
-          msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
-        }
-    }
   else if (strcmp(key, "SYSLOG_FACILITY") == 0)
     {
       msg->pri = (msg->pri & 7) | atoi(value) << 3;
@@ -220,6 +210,21 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     }
 }
 
+static void
+__set_message_timestamp(JournalReader *self, LogMessage *msg)
+{
+   guint64 ts;
+   journald_get_realtime_usec(self->journal, &ts);
+   msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
+   msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
+   msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(self->options->recv_time_zone_info, msg->timestamps[LM_TS_STAMP].tv_sec);
+   if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
+     {
+       msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
+     }
+
+}
+
 static gboolean
 __handle_message(JournalReader *self)
 {
@@ -231,16 +236,10 @@ __handle_message(JournalReader *self)
   gpointer args[] = {msg, self->options};
 
   journald_foreach_data(self->journal, __handle_data, args);
+  __set_message_timestamp(self, msg);
 
   log_pipe_queue(&self->super.super, msg, &lpo);
   return log_source_free_to_send(&self->super);
-}
-
-void
-journal_reader_set_persist_name(JournalReader *self, gchar *persist_name)
-{
-  g_free(self->persist_name);
-  self->persist_name = g_strdup(persist_name);
 }
 
 static void
@@ -256,10 +255,8 @@ __alloc_state(JournalReader *self)
 }
 
 static gboolean
-__load_state(JournalReader *self)
+__load_state(JournalReader *self, GlobalConfig *cfg)
 {
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
-
   gsize state_size;
   guint8 persist_version;
 
@@ -275,6 +272,20 @@ __seek_to_head(JournalReader *self)
   if (rc != 0)
     {
       msg_error("Failed to seek to head of journal",
+          evt_tag_errno("error", errno),
+          NULL);
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static inline gboolean
+__seek_to_tail(JournalReader *self)
+{
+  gint rc = journald_seek_tail(self->journal);
+  if (rc != 0)
+    {
+      msg_error("Failed to seek to tail of journal",
           evt_tag_errno("error", errno),
           NULL);
       return FALSE;
@@ -303,7 +314,7 @@ __seek_to_saved_state(JournalReader *self)
 static gboolean
 __set_starting_position(JournalReader *self)
 {
-  if (!__load_state(self))
+  if (!__load_state(self, log_pipe_get_config(&self->super.super)))
     {
       __alloc_state(self);
       return __seek_to_head(self);
@@ -314,7 +325,7 @@ __set_starting_position(JournalReader *self)
 static gchar *
 __get_cursor(JournalReader *self)
 {
-  gchar *cursor;
+  gchar *cursor = NULL;
   journald_get_cursor(self->journal, &cursor);
   return cursor;
 }
@@ -326,6 +337,16 @@ __reader_save_state(Bookmark *bookmark)
   JournalReaderState *state = persist_state_map_entry(bookmark->persist_state, bookmark_data->persist_handle);
   strcpy(state->cursor, bookmark_data->cursor);
   persist_state_unmap_entry(bookmark->persist_state, bookmark_data->persist_handle);
+}
+
+static void
+__save_current_position(JournalReader *self)
+{
+  JournalReaderState *state = persist_state_map_entry(self->persist_state, self->persist_handle);
+  gchar *cursor = __get_cursor(self);
+  strcpy(state->cursor, cursor);
+  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+  g_free(cursor);
 }
 
 static void
@@ -344,6 +365,35 @@ __fill_bookmark(JournalReader *self, Bookmark *bookmark)
   bookmark->save = __reader_save_state;
   bookmark->destroy = __destroy_bookmark;
 }
+
+gboolean
+journal_reader_skip_old_messages(JournalReader *self, GlobalConfig *cfg)
+{
+  if (journald_open(self->journal, SD_JOURNAL_LOCAL_ONLY) < 0)
+    {
+      msg_error("Can't open journal",
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+  if (__load_state(self, cfg))
+    {
+      return TRUE;
+    }
+  __alloc_state(self);
+  if (!__seek_to_tail(self))
+    {
+      return FALSE;
+    }
+  if (journald_next(self->journal) <= 0)
+    {
+      msg_error("Can't get next record after seek to tail", NULL);
+      return FALSE;
+    }
+  __save_current_position(self);
+  return TRUE;
+}
+
 
 static gint
 __fetch_log(JournalReader *self)
@@ -471,6 +521,13 @@ __init(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
 
+  if (journal_reader_initialized)
+    {
+      msg_error("The configuration must not contain more than one systemd-journal source",
+          NULL);
+      return FALSE;
+    }
+
   if (!log_source_init(s))
     return FALSE;
 
@@ -496,6 +553,7 @@ __init(LogPipe *s)
     }
 
   self->immediate_check = TRUE;
+  journal_reader_initialized = TRUE;
   __update_watches(self);
   iv_event_register(&self->schedule_wakeup);
   return TRUE;
@@ -508,6 +566,7 @@ __deinit(LogPipe *s)
   __stop_watches(self);
   journald_close(self->journal);
   poll_events_free(self->poll_events);
+  journal_reader_initialized = FALSE;
   return TRUE;
 }
 
@@ -592,6 +651,7 @@ journal_reader_options_defaults(JournalReaderOptions *options)
   options->fetch_limit = DEFAULT_FETCH_LIMIT;
   options->default_pri = DEFAULT_PRIO;
   options->max_field_size = DEFAULT_FIELD_SIZE;
+  options->super.read_old_records = FALSE;
 }
 
 void

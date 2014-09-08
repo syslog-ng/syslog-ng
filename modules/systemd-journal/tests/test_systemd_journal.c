@@ -31,6 +31,8 @@
 
 #define JOURNALD_TESTCASE(testfunc, ...) { testcase_begin("%s(%s)", #testfunc, #__VA_ARGS__); testfunc(__VA_ARGS__); testcase_end(); }
 
+#define TEST_PERSIST_FILE_NAME "test_systemd_journal.persist"
+
 static gboolean task_called;
 static gboolean poll_triggered;
 
@@ -92,12 +94,23 @@ __test_seeks(Journald *journald)
   assert_gint(result, 0, ASSERTION_ERROR("Can't seek in journald mock"));
   result = journald_next(journald);
   assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+
+  result = journald_seek_tail(journald);
+  assert_gint(result, 0, ASSERTION_ERROR("Can't seek in journald mock"));
+  result = journald_next(journald);
+  assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+  result = journald_next(journald);
+  assert_gint(result, 0, ASSERTION_ERROR("Bad next step result"));
+
+
 }
 
 void
 __test_cursors(Journald *journald)
 {
   gchar *cursor;
+  journald_seek_head(journald);
+  journald_next(journald);
   gint result = journald_get_cursor(journald, &cursor);
   assert_string(cursor, "test_data1", ASSERTION_ERROR("Bad cursor fetched"));\
   g_free(cursor);
@@ -519,14 +532,14 @@ main(int argc, char **argv)
   main_thread_handle =  get_thread_id();
   configuration = cfg_new(0x306);
   configuration->threaded = FALSE;
-  configuration->state = persist_state_new("test_systemd_journal.persist");
+  configuration->state = persist_state_new(TEST_PERSIST_FILE_NAME);
   configuration->keep_hostname = TRUE;
   persist_state_start(configuration->state);
   JOURNALD_TESTCASE(test_journald_mock);
   JOURNALD_TESTCASE(test_journald_helper);
   JOURNALD_TESTCASE(test_journal_reader);
   persist_state_cancel(configuration->state);
-  unlink("test_systemd_journal.persist");
+  unlink(TEST_PERSIST_FILE_NAME);
   app_shutdown();
   return 0;
 }

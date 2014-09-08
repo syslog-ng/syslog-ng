@@ -68,6 +68,14 @@ journald_seek_head(Journald *self)
 }
 
 int
+journald_seek_tail(Journald *self)
+{
+  g_assert(self->opened);
+  self->next_element = g_list_last(self->entries);
+  return 0;
+}
+
+int
 journald_get_cursor(Journald *self, gchar **cursor)
 {
   g_assert(self->opened);
@@ -142,6 +150,13 @@ journald_get_fd(Journald *self)
 {
   g_assert(self->opened);
   return self->fds[0];
+}
+
+int
+journald_get_realtime_usec(Journald *self, guint64 *usec)
+{
+  *usec = 1408967385496986;
+  return 0;
 }
 
 int
