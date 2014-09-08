@@ -66,6 +66,8 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 
 
       self->filter_expr = ((LogFilterPipe *) rule->children->object)->expr;
+      filter_expr_node_init(self->filter_expr);
+      self->super.modify = self->filter_expr->modify;
     }
   else
     {
