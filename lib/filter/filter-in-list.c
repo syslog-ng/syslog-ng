@@ -79,13 +79,13 @@ filter_in_list_new(const gchar *list_file, const gchar *property)
   self = g_new0(FilterInList, 1);
   filter_expr_node_init_instance(&self->super);
   self->value_handle = log_msg_get_value_handle(property);
-  self->tree = g_tree_new((GCompareFunc) strcmp);
+  self->tree = g_tree_new_full((GCompareDataFunc)strcmp, NULL, g_free, NULL);
 
   while (fgets(line, sizeof(line), stream) != NULL)
     {
       line[strlen(line) - 1] = '\0';
       if (line[0])
-        g_tree_insert(self->tree, line, GINT_TO_POINTER(1));
+        g_tree_insert(self->tree, g_strdup(line), GINT_TO_POINTER(1));
     }
   fclose(stream);
 

@@ -132,7 +132,11 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
             line[0] = 0;
           strncpy(p, ut->ut_line, sizeof(line) - (p - line));
           msg_debug("Posting message to user terminal",
+#ifdef HAVE_MODERN_UTMP
                     evt_tag_str("user", ut->ut_user),
+#else
+                    evt_tag_str("user", ut->ut_name),
+#endif
                     evt_tag_str("line", line),
                     NULL);
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);

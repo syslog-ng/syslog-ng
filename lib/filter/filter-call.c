@@ -68,6 +68,7 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 
       self->filter_expr = filter_expr_ref(filter_pipe->expr);
       filter_expr_init(self->filter_expr, cfg);
+      self->super.modify = self->filter_expr->modify;
     }
   else
     {

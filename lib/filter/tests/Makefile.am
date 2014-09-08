@@ -16,5 +16,4 @@ lib_filter_tests_test_filters_in_list_CFLAGS	= $(TEST_CFLAGS) \
 lib_filter_tests_test_filters_in_list_LDADD	= $(TEST_LDADD)  \
 	$(PREOPEN_SYSLOGFORMAT)
 
-EXTRA_DIST				+=	\
-	lib/filter/tests/test.list
+include lib/filter/tests/filters-in-list/Makefile.am
