@@ -35,7 +35,7 @@ tf_format_welf_prepare(LogTemplateFunction *self, LogTemplate *parent,
     return FALSE;
 
   *state = vp;
-  *state_destroy = (GDestroyNotify) value_pairs_free;
+  *state_destroy = (GDestroyNotify) value_pairs_unref;
 
   return TRUE;
 }

@@ -50,6 +50,7 @@ typedef struct
 
 struct _ValuePairs
 {
+  GAtomicCounter ref_cnt;
   VPPatternSpec **patterns;
   GPtrArray *vpairs;
   GList *transforms;
@@ -801,6 +802,29 @@ vp_free_pair(VPPairConf *vpc)
 }
 
 ValuePairs *
+value_pairs_ref(ValuePairs *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    {
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+  return self;
+}
+
+void
+value_pairs_unref(ValuePairs *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    {
+       value_pairs_free(self);
+    }
+}
+
+ValuePairs *
 value_pairs_new(void)
 {
   ValuePairs *vp;
@@ -808,6 +832,7 @@ value_pairs_new(void)
   GArray *a;
 
   vp = g_new0(ValuePairs, 1);
+   g_atomic_counter_set(&vp->ref_cnt, 1);
   vp->vpairs = g_ptr_array_sized_new(8);
 
   if (!value_pair_sets_initialized)
@@ -1171,7 +1196,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
 
   if (!success)
     {
-      value_pairs_free (vp);
+      value_pairs_unref (vp);
       vp = NULL;
     }
 

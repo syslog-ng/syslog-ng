@@ -45,7 +45,7 @@ tf_json_prepare(LogTemplateFunction *self, LogTemplate *parent,
     return FALSE;
 
   *state = vp;
-  *state_destroy = (GDestroyNotify) value_pairs_free;
+  *state_destroy = (GDestroyNotify) value_pairs_unref;
 
   /* Always replace a leading dot with an underscore. */
   vpts = value_pairs_transform_set_new(".*");
