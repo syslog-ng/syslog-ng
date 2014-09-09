@@ -176,7 +176,7 @@ log_rewrite_subst_clone(LogProcessPipe *s)
   LogRewriteSubst *self = (LogRewriteSubst *) s;
   LogRewriteSubst *cloned;
 
-  cloned = (LogRewriteSubst *) log_rewrite_subst_new(log_template_ref(self->replacement));
+  cloned = (LogRewriteSubst *) log_rewrite_subst_new(self->replacement);
   cloned->matcher = log_matcher_ref(self->matcher);
   cloned->super.value_handle = self->super.value_handle;
   cloned->super.condition = self->super.condition ? filter_expr_ref(self->super.condition) : NULL;
@@ -239,7 +239,7 @@ log_rewrite_set_clone(LogProcessPipe *s)
 {
   LogRewriteSet *self = (LogRewriteSet *) s;
   LogRewriteSet *cloned;
-  cloned = (LogRewriteSet *) log_rewrite_set_new(log_template_ref(self->value_template));
+  cloned = (LogRewriteSet *) log_rewrite_set_new(self->value_template);
   cloned->super.value_handle = self->super.value_handle;
   cloned->super.condition = self->super.condition ? filter_expr_ref(self->super.condition) : NULL;
   return &cloned->super.super.super;
