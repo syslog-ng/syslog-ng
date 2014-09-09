@@ -106,7 +106,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   g_list_free(vp_keys_list);
   g_string_free(vp_keys, TRUE);
   log_msg_unref(msg);
-  value_pairs_free(vp);
+  value_pairs_unref(vp);
 }
 
 int
