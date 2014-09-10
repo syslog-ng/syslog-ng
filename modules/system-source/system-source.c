@@ -203,6 +203,31 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
                              "kernel", "kernel", format);
 }
 
+static gboolean
+_is_running_in_linux_container(void)
+{
+  FILE *f;
+  char line[2048];
+  gboolean container = FALSE;
+
+  f = fopen("/proc/1/cgroup", "r");
+  if (!f)
+    return FALSE;
+
+  while (fgets(line, sizeof(line), f) != NULL)
+    {
+      if (line[strlen(line) - 2] != '/')
+        {
+          container = TRUE;
+          break;
+        }
+    }
+
+  fclose (f);
+
+  return container;
+}
+
 static void
 system_sysblock_add_linux(GString *sysblock)
 {
@@ -211,7 +236,8 @@ system_sysblock_add_linux(GString *sysblock)
   else
     {
       system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
-      system_sysblock_add_linux_kmsg(sysblock);
+      if (!_is_running_in_linux_container())
+        system_sysblock_add_linux_kmsg(sysblock);
     }
 }
 
