@@ -46,7 +46,7 @@ struct _LogRewrite
 void log_rewrite_set_condition(LogRewrite *s, FilterExprNode *condition);
 gboolean log_rewrite_set_handle(LogRewrite *s, const gchar *value_name);
 void log_rewrite_free_method(LogPipe *self);
-
+void log_rewrite_init(LogRewrite *self);
 /* LogRewriteSet */
 LogRewrite *log_rewrite_set_new(LogTemplate *new_value);
 

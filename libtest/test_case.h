@@ -17,7 +17,7 @@ struct _TestCase {
 };
 
 
-static void
+static inline void
 run_test_case(TestCase *tc)
 {
   if (tc->setup) tc->setup(tc);

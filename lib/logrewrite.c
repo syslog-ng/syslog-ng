@@ -88,7 +88,7 @@ log_rewrite_free_method(LogPipe *s)
   log_process_pipe_free_method(s);
 }
 
-static void
+void
 log_rewrite_init(LogRewrite *self)
 {
   log_process_pipe_init_instance(&self->super);

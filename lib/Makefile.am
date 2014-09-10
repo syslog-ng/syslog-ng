@@ -40,6 +40,7 @@ pkginclude_HEADERS = 		\
 	filter-expr-parser.h	\
 	filter-in-list.h	\
 	filter.h		\
+    groupset.h      \
 	gsocket.h		\
 	gsockaddr.h		\
   hostname.h  \
@@ -136,6 +137,7 @@ libsyslog_ng_la_SOURCES = \
 	filter-expr-parser.c	\
 	filter-in-list.c  \
 	globals.c		\
+    groupset.c      \
 	gsocket.c		\
 	gsockaddr.c		\
 	hostname_common.c		\

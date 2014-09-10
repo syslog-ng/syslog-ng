@@ -431,7 +431,7 @@ gboolean
 assert_msg_field_equals_non_fatal(LogMessage *msg, gchar *field_name, gchar *expected_value, gssize expected_value_len, const gchar *error_message, ...)
 {
   gssize actual_value_len;
-  gchar* actual_value;
+  const gchar* actual_value;
   va_list args;
   gboolean result;
 

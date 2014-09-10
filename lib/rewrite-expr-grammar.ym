@@ -34,6 +34,7 @@
 #include "syslog-names.h"
 #include "rewrite-expr-grammar.h"
 #include "logrewrite.h"
+#include "groupset.h"
 #include "plugin.h"
 #include "filter.h"
 #include "filter-expr-parser.h"
@@ -79,6 +80,9 @@ is_sdata_valid(const gchar *buffer)
 /* INCLUDE_DECLS */
 
 %token KW_CONDITION
+%token KW_GROUP_SET
+%token KW_FIELDS
+
 
 %%
 
@@ -103,6 +107,7 @@ rewrite_template_content
 
 	    $$ = log_template_new(configuration, $1);
 	    CHECK_ERROR(log_template_compile($$, $1, &error), @1, "Error compiling template (%s)", error->message);
+      free($1);
 	  }
 	;
 
@@ -124,6 +129,12 @@ rewrite_expr
             log_template_unref($3);
           }
           rewrite_expr_opts ')'                 { $$ = last_rewrite; }
+        | KW_GROUP_SET '(' rewrite_template_content
+          {
+            last_rewrite = log_rewrite_groupset_new($3);
+            log_template_unref($3);
+          }
+          rewrite_multiset_opts ')' { $$ = last_rewrite; }
         | LL_IDENTIFIER
           {
             Plugin *p;
@@ -140,6 +151,19 @@ rewrite_expr
               }
             $$ = last_rewrite;
           }
+        ;
+
+rewrite_multiset_opts
+        : rewrite_multiset_opt rewrite_multiset_opts
+        |
+        ;
+
+rewrite_multiset_opt
+        : KW_FIELDS '(' string_list ')'
+          {
+            log_rewrite_groupset_add_fields(last_rewrite, $3);
+          }
+        | rewrite_condition_opt
         ;
 
 rewrite_subst_opts
@@ -190,7 +214,11 @@ rewrite_expr_opt
               }
             free($3);
           }
-        | KW_CONDITION '('
+        | rewrite_condition_opt
+        ;
+
+rewrite_condition_opt
+        : KW_CONDITION '('
           {
             FilterExprNode *filter_expr;
 
@@ -199,6 +227,7 @@ rewrite_expr_opt
             filter_expr_unref(filter_expr);
           } ')'
         ;
+
 
 /* INCLUDE_RULES */
 
