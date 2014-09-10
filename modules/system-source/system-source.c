@@ -209,9 +209,10 @@ system_sysblock_add_linux(GString *sysblock)
   if (service_management_get_type() == SMT_SYSTEMD)
     system_sysblock_add_systemd_source(sysblock);
   else
-    system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
-
-  system_sysblock_add_linux_kmsg(sysblock);
+    {
+      system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
+      system_sysblock_add_linux_kmsg(sysblock);
+    }
 }
 
 static gboolean
