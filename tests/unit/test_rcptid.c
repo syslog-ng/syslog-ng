@@ -1,5 +1,6 @@
 #include "syslog-ng.h"
 #include "logmsg.h"
+#include "logmsg-serialize.h"
 #include "misc.h"
 #include "apphook.h"
 #include "cfg.h"

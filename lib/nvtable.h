@@ -131,6 +131,10 @@ struct _NVEntry
 #define NV_ENTRY_DIRECT_HDR ((gsize) (&((NVEntry *) NULL)->vdirect.data))
 #define NV_ENTRY_INDIRECT_HDR (sizeof(NVEntry))
 
+#define NV_TABLE_DYNVALUE_HANDLE(x)  ((x) >> 16)
+#define NV_TABLE_DYNVALUE_OFS(x)  ((x) & 0xFFFF)
+
+
 static inline const gchar *
 nv_entry_get_name(NVEntry *self)
 {
@@ -205,8 +209,6 @@ NVTable *nv_table_realloc(NVTable *self,NVTable **new);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);
 NVTable *nv_table_ref(NVTable *self);
 void nv_table_unref(NVTable *self);
-NVTable *nv_table_unserialize(SerializeArchive *sa, guint8 log_msg_version);
-gboolean nv_table_serialize(SerializeArchive *sa, NVTable *self);
 
 static inline gsize
 nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_length)
@@ -284,6 +286,20 @@ __nv_table_get_value(NVTable *self, NVHandle handle, guint16 num_static_entries,
       return entry->vdirect.data + entry->name_len + 1;
     }
   return nv_table_resolve_indirect(self, entry, length);
+}
+
+static inline guint32 *
+nv_table_get_dyn_entries(NVTable *self)
+{
+  return (guint32 *) &self->static_entries[self->num_static_entries];
+}
+
+static inline NVEntry *
+nv_table_get_entry_at_ofs(NVTable *self, guint16 ofs)
+{
+  if (!ofs)
+    return NULL;
+  return (NVEntry *) (nv_table_get_top(self) - (ofs << NV_TABLE_SCALE));
 }
 
 static inline const gchar *

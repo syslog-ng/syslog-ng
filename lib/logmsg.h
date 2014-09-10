@@ -213,9 +213,6 @@ LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
 LogMessage *log_msg_clone_cow(LogMessage *m, const LogPathOptions *path_options);
 
-gboolean log_msg_write(LogMessage *self, SerializeArchive *sa);
-gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
-
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);
 const gchar *log_msg_get_value_name(NVHandle handle, gssize *name_len);

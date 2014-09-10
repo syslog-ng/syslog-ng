@@ -2,6 +2,7 @@
 #include "serialize.h"
 #include "misc.h"
 #include "logmsg.h"
+#include "logmsg-serialize.h"
 #include "apphook.h"
 #include "timeutils.h"
 #include "tags.h"

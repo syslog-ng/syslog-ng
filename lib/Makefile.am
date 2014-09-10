@@ -47,6 +47,7 @@ pkginclude_HEADERS = 		\
 	logmatcher.h		\
 	logmpx.h		\
 	logmsg.h		\
+	logmsg-serialize.h \
 	logparser.h		\
 	logpipe.h		\
 	logprocess.h		\
@@ -70,6 +71,7 @@ pkginclude_HEADERS = 		\
 	misc.h			\
 	msg-format.h		\
 	nvtable.h		\
+	nvtable-serialize.h \
 	parser-expr-parser.h	\
 	persist-state.h		\
 	plugin.h		\
@@ -145,6 +147,7 @@ libsyslog_ng_la_SOURCES = \
 	logmatcher.c		\
 	logmpx.c		\
 	logmsg.c		\
+	logmsg-serialize.c \
 	logparser.c		\
 	logpipe.c		\
 	logprocess.c		\
@@ -167,6 +170,7 @@ libsyslog_ng_la_SOURCES = \
 	misc.c			\
 	msg-format.c		\
 	nvtable.c		\
+	nvtable-serialize.c \
 	parser-expr-parser.c	\
 	persist-state.c		\
 	plugin.c		\

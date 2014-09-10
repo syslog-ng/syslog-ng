@@ -3,6 +3,7 @@
 
 #include "syslog-ng.h"
 #include "logmsg.h"
+#include "logmsg-serialize.h"
 #include "serialize.h"
 #include "apphook.h"
 #include "gsockaddr.h"
