@@ -169,6 +169,12 @@ log_msg_unset_flag(LogMessage *self, gint32 flag)
   self->flags &= ~flag;
 }
 
+static inline void
+log_msg_set_hostid(LogMessage *msg)
+{
+  msg->hostid = g_hostid;
+}
+
 /* the index matches the value id */
 const gchar *builtin_value_names[] =
 {
@@ -960,6 +966,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->flags |= LF_STATE_OWN_MASK;
 
   self->rcptid=0;
+  log_msg_set_hostid(self);
 }
 
 void
@@ -1924,7 +1931,7 @@ log_msg_write_tags(LogMessage *self, SerializeArchive *sa)
 gboolean
 log_msg_write(LogMessage *self, SerializeArchive *sa)
 {
-  guint8 version = 24;
+  guint8 version = 25;
   gint i = 0;
   /*
    * version   info
@@ -1943,6 +1950,7 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
    *   22      corrected nvtable serialization
    *   23      new RCTPID field (64 bits)
    *   24      new processed timestamp
+   *   25      added hostid
    */
 
   serialize_write_uint8(sa, version);
@@ -1954,6 +1962,7 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
   log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_STAMP]);
   log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_RECVD]);
   log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED]);
+  serialize_write_uint32(sa, self->hostid);
   log_msg_write_tags(self, sa);
   serialize_write_uint8(sa, self->initial_parse);
   serialize_write_uint8(sa, self->num_matches);
@@ -2252,7 +2261,7 @@ log_msg_read_version_1x(LogMessage *self, SerializeArchive *sa, guint8 version)
 }
 
 /*
-    Read the version 20-21 logmessage
+    Read the version 20-25 logmessage
 */
 gboolean
 log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
@@ -2280,6 +2289,11 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
   else
     {
       self->timestamps[LM_TS_PROCESSED] = self->timestamps[LM_TS_RECVD];
+    }
+  if (version >= 25)
+    {
+      if (!serialize_read_uint32(sa, &self->hostid))
+        return FALSE;
     }
 
   if (!log_msg_read_tags(self, sa))
@@ -2332,7 +2346,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
 
   if (!serialize_read_uint8(sa, &version))
     return FALSE;
-  if ((version > 1 && version < 10) || version > 24)
+  if ((version > 1 && version < 10) || version > 25)
     {
       msg_error("Error deserializing log message, unsupported version",
                 evt_tag_int("version", version),
@@ -2343,7 +2357,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
     return log_msg_read_version_0_1(self, sa, version);
   else if (version < 20)
     return log_msg_read_version_1x(self, sa, version);
-  else if (version <= 24)
+  else if (version <= 25)
     return log_msg_read_version_2x(self, sa, version);
   /****************************************************
    * Should never reach THIS!!!!

@@ -33,6 +33,7 @@ extern gboolean generate_persist_file;
 extern gboolean server_mode;
 extern ThreadId main_thread_handle;
 extern guint32 g_run_id;
+extern guint32 g_hostid;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 

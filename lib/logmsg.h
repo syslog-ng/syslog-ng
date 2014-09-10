@@ -177,6 +177,7 @@ struct _LogMessage
    */
   /* ==== start of directly copied part ==== */
   LogStamp timestamps[LM_TS_MAX];
+  guint32 hostid;
   tag_ulong *tags;
   NVHandle *sdata;
 

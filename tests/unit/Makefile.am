@@ -55,7 +55,8 @@ check_PROGRAMS =			\
 	test_rewrite  \
 	test_resolve_path  \
 	test_ringbuffer \
-	test_mainloop
+	test_mainloop \
+	test_hostid
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -144,5 +145,6 @@ test_resolve_path_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/modules/affile
 test_resolve_path_LDADD = $(top_builddir)/modules/affile/libaffile.la
 
 test_mainloop_SOURCES = test_mainloop.c
+test_hostid_SOURCES = test_hostid.c
 
 TESTS = $(check_PROGRAMS)

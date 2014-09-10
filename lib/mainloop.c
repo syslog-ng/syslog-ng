@@ -42,6 +42,7 @@
 #include "compat.h"
 #include "sgroup.h"
 #include "driver.h"
+#include <openssl/rand.h>
 
 #include <sys/types.h>
 
@@ -105,6 +106,7 @@ gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 gboolean generate_persist_file = FALSE;
 guint32 g_run_id;
+guint32 g_hostid;
 
 /* USED ONLY IN PREMIUM EDITION */
 gboolean server_mode = TRUE;
@@ -230,6 +232,19 @@ main_loop_inc_and_set_run_id(guint32 run_id)
   return ++g_run_id;
 }
 
+static guint32
+create_hostid()
+{
+  union {
+    unsigned char _raw[sizeof(guint32)];
+    guint32 id;
+  } hostid;
+
+  RAND_bytes(hostid._raw, sizeof(hostid._raw));
+
+  return hostid.id;
+}
+
 static void
 main_loop_init_run_id(PersistState *persist_state)
 {
@@ -254,6 +269,31 @@ main_loop_init_run_id(PersistState *persist_state)
   }
 }
 
+static void
+main_loop_init_hostid(PersistState *persist_state)
+{
+  gsize size;
+  guint8 version;
+  PersistEntryHandle handle;
+  guint32 *hostid;
+
+  handle = persist_state_lookup_entry(persist_state, "hostid", &size, &version);
+  if (handle)
+  {
+    hostid = persist_state_map_entry(persist_state,handle);
+    g_hostid = *hostid;
+    persist_state_unmap_entry(persist_state,handle);
+  }
+  else
+  {
+    g_hostid = create_hostid();
+    handle = persist_state_alloc_entry(persist_state, "hostid", sizeof(guint32));
+    hostid = persist_state_map_entry(persist_state,handle);
+    *hostid = g_hostid;
+    persist_state_unmap_entry(persist_state,handle);
+  }
+}
+
 /* called when syslog-ng first starts up */
 
 gboolean
@@ -269,6 +309,7 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   cfg_generate_persist_file(cfg);
 
   main_loop_init_run_id(cfg->state);
+  main_loop_init_hostid(cfg->state);
   if (cfg->use_rcptid)
     {
       log_msg_init_rcptid(cfg->state);
