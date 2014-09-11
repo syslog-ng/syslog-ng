@@ -24,3 +24,5 @@ BUILT_SOURCES += 				\
 	lib/rewrite/rewrite-expr-grammar.h
 
 EXTRA_DIST += lib/rewrite/rewrite-expr-grammar.ym
+
+include lib/rewrite/tests/Makefile.am
