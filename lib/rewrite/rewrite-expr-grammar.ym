@@ -81,6 +81,7 @@ rewrite_template_content
 
 	    $$ = log_template_new(configuration, $1);
 	    CHECK_ERROR_GERROR(log_template_compile($$, $1, &error), @1, error, "error compiling replacement");
+        free($1);
 	  }
 	;
 
