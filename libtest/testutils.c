@@ -24,7 +24,6 @@
 
 #include "testutils.h"
 #include "messages.h"
-#include "logmsg.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -229,11 +228,9 @@ assert_gdouble_non_fatal(gdouble actual, gdouble expected, const gchar *error_me
   return FALSE;
 }
 
-gboolean
-assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expected, gint expected_len, const gchar *error_message, ...)
+static gboolean
+assert_nstring_non_fatal_va(const gchar *actual, gint actual_len, const gchar *expected, gint expected_len, const gchar *error_message, va_list args)
 {
-  va_list args;
-
   if (expected == NULL && actual == NULL)
     return TRUE;
 
@@ -248,13 +245,26 @@ assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expe
       memcmp(actual, expected, actual_len) == 0)
     return TRUE;
 
-  va_start(args, error_message);
   print_failure(error_message, args, "actual=" PRETTY_NSTRING_FORMAT ", expected=" PRETTY_NSTRING_FORMAT " actual_length=%d expected_length=%d",
                                      PRETTY_NSTRING(actual, actual_len), PRETTY_NSTRING(expected, expected_len), actual_len, expected_len);
-  va_end(args);
 
   return FALSE;
 }
+
+gboolean
+assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expected, gint expected_len, const gchar *error_message, ...)
+{
+  va_list args;
+  gboolean result;
+
+  va_start(args, error_message);
+
+  result = assert_nstring_non_fatal_va(actual, actual_len, expected, expected_len, error_message, args);
+
+  va_end(args);
+  return result;
+}
+
 
 static gboolean
 compare_arrays_trivially(void *actual, guint32 actual_length,
@@ -450,3 +460,24 @@ assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gchar *error
 
   return FALSE;
 }
+
+gboolean
+assert_msg_field_equals_non_fatal(LogMessage *msg, gchar *field_name, gchar *expected_value, gssize expected_value_len, const gchar *error_message, ...)
+{
+  gssize actual_value_len;
+  gchar* actual_value;
+  va_list args;
+  gboolean result;
+
+  if (expected_value_len < 0)
+     expected_value_len = strlen(expected_value);
+
+  NVHandle handle = log_msg_get_value_handle(field_name);
+  actual_value = log_msg_get_value(msg, handle, &actual_value_len);
+
+  va_start(args, error_message);
+  result = assert_nstring_non_fatal_va(actual_value, actual_value_len, expected_value, expected_value_len, error_message, args);
+  va_end(args);
+
+  return result;
+};
