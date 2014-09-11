@@ -344,6 +344,16 @@ cfg_new(gint version)
   return self;
 }
 
+void
+cfg_set_global_paths(GlobalConfig *self)
+{
+  cfg_args_set(self->lexer->globals, "syslog-ng-root", get_installation_path_for(PATH_PREFIX));
+  cfg_args_set(self->lexer->globals, "syslog-ng-data", get_installation_path_for(PATH_DATADIR));
+  cfg_args_set(self->lexer->globals, "module-path", module_path);
+  cfg_args_set(self->lexer->globals, "include-path", get_installation_path_for(PATH_SYSCONFDIR));
+  cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
+}
+
 gboolean
 cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg)
 {
@@ -355,11 +365,8 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   configuration = self;
   old_lexer = self->lexer;
   self->lexer = lexer;
-  cfg_args_set(self->lexer->globals, "syslog-ng-root", get_installation_path_for(PATH_PREFIX));
-  cfg_args_set(self->lexer->globals, "syslog-ng-data", get_installation_path_for(PATH_DATADIR));
-  cfg_args_set(self->lexer->globals, "module-path", module_path);
-  cfg_args_set(self->lexer->globals, "include-path", get_installation_path_for(PATH_SYSCONFDIR));
-  cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
+
+  cfg_set_global_paths(self);
 
   res = cfg_parser_parse(parser, lexer, result, arg);
 
