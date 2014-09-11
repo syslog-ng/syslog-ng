@@ -1,3 +1,47 @@
+3.6.0beta2
+==========
+<!-- Thu, 11 Sep 2014 13:09:57 +0200 -->
+
+This is the second beta release of the upcoming syslog-ng OSE 3.6
+branch. Compared to the previous beta, this release contains a few
+minor features and bugfixes. We expect the next release to be a
+release candidate, focusing on stability and bugfixes. Testing is most
+appreciated!
+
+Features
+--------
+
+* It is now possible to load not only a single certificate when using
+  TLS, but a certificate chain.
+* The `system()` source will not include `/dev/kmsg` (or `/proc/kmsg`)
+  when running inside a Linux container.
+
+Bugfixes
+--------
+
+* The `in-list()` filter was fixed to look at all elements of the
+  list, instead of only the last one.
+* Fixed an assertion when using the `match()` filter under certain
+  circumstances.
+* The `system()` source will not add `/dev/kmsg` (or `/proc/kmsg` on
+  older kernels) to the default sources if using the systemd journal,
+  because kernel logs are included in the journal.
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessary to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Andras Mitzki, Balazs Scheidler, Gergely Nagy, Gyorgy Pasztor, Peter
+Czanik, Tibor Benke.
+
 3.6.0beta1
 ==========
 <!-- Wed,  3 Sep 2014 14:40:14 +0200 -->
