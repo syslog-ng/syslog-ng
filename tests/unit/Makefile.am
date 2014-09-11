@@ -56,7 +56,8 @@ check_PROGRAMS =			\
 	test_resolve_path  \
 	test_ringbuffer \
 	test_mainloop \
-	test_hostid
+	test_hostid \
+	test_uniqid
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -146,5 +147,6 @@ test_resolve_path_LDADD = $(top_builddir)/modules/affile/libaffile.la
 
 test_mainloop_SOURCES = test_mainloop.c
 test_hostid_SOURCES = test_hostid.c
+test_uniqid_SOURCES = test_uniqid.c
 
 TESTS = $(check_PROGRAMS)

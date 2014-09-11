@@ -63,6 +63,7 @@ enum
   M_CONTEXT_ID,
   M_RCPTID,
   M_HOSTID,
+  M_UNIQID,
 /* WARNING: Do NOT insert new IDs below this line, because they can break any
  * code using the last 3 entries (M_TIME_MACROS_MAX, M_RECVD_OFS and
  * M_STAMP_OFS)...
@@ -231,6 +232,7 @@ LogMacroDef macros[] =
         { "_", M_CONTEXT_ID },
         { "RCPTID", M_RCPTID},
         { "HOSTID", M_HOSTID},
+        { "UNIQID", M_UNIQID },
 
         /* values that have specific behaviour with older syslog-ng config versions */
         { "MSG", M_MESSAGE },
@@ -499,6 +501,17 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
     case M_HOSTID:
       {
         format_uint32_padded(result, 8, '0', 16, msg->hostid);
+        break;
+      }
+    case M_UNIQID:
+      {
+        if (msg->rcptid)
+          {
+            format_uint32_padded(result, 8, '0', 16, msg->hostid);
+            g_string_append(result, "@");
+            /* currently, rcptid is 48 bit */
+            format_uint64_padded(result, 16, '0', 16, msg->rcptid);
+          }
         break;
       }
    case M_PROGRAM:
