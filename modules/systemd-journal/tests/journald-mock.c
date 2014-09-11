@@ -161,11 +161,24 @@ journald_process(Journald *self)
   return 0;
 }
 
+static void
+_fd_set_nonblock(int fd)
+{
+  int flags;
+  flags = fcntl(fd, F_GETFL);
+  flags |= O_NONBLOCK;
+  fcntl(fd, F_SETFL, flags);
+}
+
 Journald *
 journald_mock_new()
 {
   Journald *self = g_new0(Journald, 1);
-  pipe2(self->fds, O_NONBLOCK);
+
+  pipe(self->fds);
+  _fd_set_nonblock(self->fds[0]);
+  _fd_set_nonblock(self->fds[1]);
+
   return self;
 }
 
