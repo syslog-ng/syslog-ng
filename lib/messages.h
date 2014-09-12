@@ -37,6 +37,7 @@ typedef void (*MsgPostFunc)(LogMessage *msg);
 
 void msg_set_context(LogMessage *msg);
 gboolean msg_limit_internal_message(void);
+EVTREC *msg_event_create_from_array(gint prio, const char *desc, EVTTAG **tags, int ntags);
 EVTREC *msg_event_create(gint prio, const char *desc, EVTTAG *tag1, ...);
 void msg_event_send(EVTREC *e);
 
@@ -54,6 +55,7 @@ void msg_add_option_group(GOptionContext *ctx);
 #define msg_warning(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_WARNING, desc, tag1, ##tags )); } } while (0)
 #define msg_notice(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_NOTICE, desc, tag1, ##tags )); } } while (0)
 #define msg_info(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_INFO, desc, tag1, ##tags )); } } while (0)
+#define msg_error_from_array(desc, tags, ntags) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create_from_array(EVT_PRI_ERR, desc, tags, ntags)); } } while (0)
 
 /* just like msg_info, but prepends the message with a timestamp -- useful in interactive
  * tools with long running time to provide some feedback */
