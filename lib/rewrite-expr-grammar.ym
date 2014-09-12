@@ -81,7 +81,7 @@ is_sdata_valid(const gchar *buffer)
 
 %token KW_CONDITION
 %token KW_GROUP_SET
-%token KW_FIELDS
+%token KW_VALUES
 
 
 %%
@@ -134,7 +134,7 @@ rewrite_expr
             last_rewrite = log_rewrite_groupset_new($3);
             log_template_unref($3);
           }
-          rewrite_multiset_opts ')' { $$ = last_rewrite; }
+          rewrite_groupset_opts ')' { $$ = last_rewrite; }
         | LL_IDENTIFIER
           {
             Plugin *p;
@@ -153,13 +153,13 @@ rewrite_expr
           }
         ;
 
-rewrite_multiset_opts
-        : rewrite_multiset_opt rewrite_multiset_opts
+rewrite_groupset_opts
+        : rewrite_groupset_opt rewrite_groupset_opts
         |
         ;
 
-rewrite_multiset_opt
-        : KW_FIELDS '(' string_list ')'
+rewrite_groupset_opt
+        : KW_VALUES '(' string_list ')'
           {
             log_rewrite_groupset_add_fields(last_rewrite, $3);
           }

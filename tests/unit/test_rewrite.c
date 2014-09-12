@@ -171,7 +171,7 @@ void test_subst_field_exist_and_substring_substituted_when_regexp_matched()
 
 void test_set_field_exist_and_group_set_literal_string()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" fields(\"field1\") );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\") );");
   LogMessage *msg = create_message_with_field("field1", "oldvalue");
   log_pipe_queue_with_default_path_options(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "value", -1, ASSERTION_ERROR("Couldn't set message field"));
@@ -180,7 +180,7 @@ void test_set_field_exist_and_group_set_literal_string()
 
 void test_set_field_exist_and_group_set_multiple_fields_with_glob_pattern_literal_string()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" fields(\"field.*\") );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field.*\") );");
   LogMessage *msg = create_message_with_fields("field.name1", "oldvalue","field.name2", "oldvalue", NULL);
   log_pipe_queue_with_default_path_options(test_rewrite, msg);
   assert_msg_field_equals(msg, "field.name1", "value", -1, ASSERTION_ERROR("Couldn't set message field"));
@@ -190,7 +190,7 @@ void test_set_field_exist_and_group_set_multiple_fields_with_glob_pattern_litera
 
 void test_set_field_exist_and_group_set_multiple_fields_with_glob_question_mark_pattern_literal_string()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" fields(\"field?\") );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field?\") );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue","field2", "oldvalue", NULL);
   log_pipe_queue_with_default_path_options(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "value", -1, ASSERTION_ERROR("Couldn't set message field"));
@@ -200,7 +200,7 @@ void test_set_field_exist_and_group_set_multiple_fields_with_glob_question_mark_
 
 void test_set_field_exist_and_group_set_multiple_fields_with_multiple_glob_pattern_literal_string()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" fields(\"field1\" \"field2\") );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\" \"field2\") );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue","field2", "oldvalue", NULL);
   log_pipe_queue_with_default_path_options(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "value", -1, ASSERTION_ERROR("Couldn't set message field"));
@@ -210,7 +210,7 @@ void test_set_field_exist_and_group_set_multiple_fields_with_multiple_glob_patte
 
 void test_set_field_exist_and_group_set_template_string()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"$field2\" fields(\"field1\") );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"$field2\" values(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "value", NULL);
   log_pipe_queue_with_default_path_options(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "value", -1, ASSERTION_ERROR("Couldn't set message field"));
@@ -219,7 +219,7 @@ void test_set_field_exist_and_group_set_template_string()
 
 void test_set_field_exist_and_group_set_template_string_with_old_value()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"$_ alma\" fields(\"field1\") );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"$_ alma\" values(\"field1\") );");
   LogMessage *msg = create_message_with_field("field1", "value");
   log_pipe_queue_with_default_path_options(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "value alma", -1, ASSERTION_ERROR("Couldn't set message field"));
@@ -228,7 +228,7 @@ void test_set_field_exist_and_group_set_template_string_with_old_value()
 
 void test_set_field_exist_and_group_set_when_condition_doesnt_match()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" fields(\"field1\") condition( program(\"program1\") ) );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program1\") ) );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "PROGRAM", "program2", NULL);
   log_pipe_queue_with_default_path_options(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "oldvalue", -1, ASSERTION_ERROR("Shouldn't rewrite when condition doesn't match"));
@@ -237,7 +237,7 @@ void test_set_field_exist_and_group_set_when_condition_doesnt_match()
 
 void test_set_field_exist_and_group_set_when_condition_matches()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" fields(\"field1\") condition( program(\"program\") ) );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program\") ) );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "PROGRAM", "program", NULL);
   log_pipe_queue_with_default_path_options(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "value", -1, ASSERTION_ERROR("Shouldn't rewrite when condition doesn't match"));
@@ -246,7 +246,7 @@ void test_set_field_exist_and_group_set_when_condition_matches()
 
 void test_set_field_cloned()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" fields(\"field1\") condition( program(\"program\") ) );");
+  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program\") ) );");
   LogPipe *cloned_rule = log_process_pipe_clone(&test_rewrite->super);
   assert_true(cloned_rule != NULL, ASSERTION_ERROR("Can't cloned the rewrite"));
   log_pipe_unref(cloned_rule);
@@ -255,7 +255,7 @@ void test_set_field_cloned()
 
 void test_set_field_invalid_template()
 {
-  expect_config_parse_failure("groupset(\"${alma\" fields(\"field1\") );");
+  expect_config_parse_failure("groupset(\"${alma\" values(\"field1\") );");
 }
 
 int

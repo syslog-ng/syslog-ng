@@ -115,6 +115,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "use_syslogng_pid",   KW_USE_SYSLOGNG_PID },
 
   { "value",              KW_VALUE, VERSION_VALUE_3_0 },
+  { "values",             KW_VALUES, },
 
   { "log_fifo_size",      KW_LOG_FIFO_SIZE },
   { "log_fetch_limit",    KW_LOG_FETCH_LIMIT },
