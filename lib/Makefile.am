@@ -72,6 +72,8 @@ pkginclude_HEADERS = 		\
 	msg-format.h		\
 	nvtable.h		\
 	nvtable-serialize.h \
+	nvtable-serialize-legacy.h \
+	nvtable-serialize-endianutils.h \
 	parser-expr-parser.h	\
 	persist-state.h		\
 	plugin.h		\
@@ -171,6 +173,7 @@ libsyslog_ng_la_SOURCES = \
 	msg-format.c		\
 	nvtable.c		\
 	nvtable-serialize.c \
+	nvtable-serialize-legacy.c \
 	parser-expr-parser.c	\
 	persist-state.c		\
 	plugin.c		\

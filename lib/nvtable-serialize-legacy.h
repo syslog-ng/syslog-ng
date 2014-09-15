@@ -24,27 +24,18 @@
  *
  */
 
-#ifndef _NVTABLE_SERIALIZE_H
-#define _NVTABLE_SERIALIZE_H
+#ifndef NVTABLE_SERIALIZE_LEGACY_H_
+#define NVTABLE_SERIALIZE_LEGACY_H_
 
 #include "nvtable.h"
 #include "serialize.h"
 
-NVTable *nv_table_deserialize(SerializeArchive *sa, guint8 log_msg_version);
-gboolean nv_table_serialize(SerializeArchive *sa, NVTable *self);
-void nv_table_update_ids(NVTable *self, NVRegistry *logmsg_registry,
-                         NVHandle *handles_to_update, guint8 num_handles_to_update);
+/*
+ * Contains the deserialization functions of old NVTable versions.
+ * We should be able to deserialize all previous versions of NVTable or logmsg.
+ */
 
-static inline gboolean
-serialize_read_nvhandle(SerializeArchive *sa, NVHandle* handle)
-{
-  return serialize_read_uint32(sa, handle);
-}
+NVTable* nv_table_deserialize_22(SerializeArchive *sa);
+NVTable* nv_table_deserialize_legacy(SerializeArchive *sa);
 
-static inline gboolean
-serialize_write_nvhandle(SerializeArchive *sa, NVHandle handle)
-{
-  return serialize_write_uint32(sa, handle);
-}
-
-#endif
+#endif /* NVTABLE_SERIALIZE_LEGACY_H_ */

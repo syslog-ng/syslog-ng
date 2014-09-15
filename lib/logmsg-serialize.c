@@ -736,13 +736,13 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
       for(i = 0; i < self->num_sdata; i++)
         {
           /* guint16 NVHandle*/
-          if (!serialize_read_uint16(sa, &self->sdata[i]))
+          if (!serialize_read_uint16(sa, (guint16 *)(&self->sdata[i])))
             return FALSE;
         }
     }
   nv_table_unref(self->payload);
   self->payload = NULL;
-  self->payload = nv_table_unserialize(sa, version);
+  self->payload = nv_table_deserialize(sa, version);
   if(!self->payload)
     return FALSE;
 

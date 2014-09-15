@@ -365,7 +365,7 @@ test_nvtable_indirect()
   /* NOTE: the sizing of the NVTable can easily be broken, it is sized
      to make it possible to store one direct entry */
 
-  tab = nv_table_new(STATIC_VALUES, 0, 138);
+  tab = nv_table_new(STATIC_VALUES, 0, 138+3);  // direct: +3
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
 
@@ -437,7 +437,7 @@ test_nvtable_indirect()
   /* the new entry will not fit to the space allocated to the old and neither to the NVTable */
 
   /* setup code: add static and a dynamic-direct entry */
-  tab = nv_table_new(STATIC_VALUES, 1, 154);
+  tab = nv_table_new(STATIC_VALUES, 1, 154+3+4);  // direct: +3, indirect: +4
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
   success = nv_table_add_value(tab, handle, name, strlen(name), value, 1, NULL);
@@ -535,7 +535,7 @@ test_nvtable_indirect()
 
   /* one that is too large */
 
-  tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
+  tab = nv_table_new(STATIC_VALUES, 4, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
   success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
@@ -600,7 +600,7 @@ test_nvtable_indirect()
 
   /* one that is too large */
 
-  tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
+  tab = nv_table_new(STATIC_VALUES, 4, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
   success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
@@ -743,7 +743,7 @@ test_nvtable_realloc_common(NVTable *payload)
   new_payload = nv_table_realloc(payload, &new_payload);
   TEST_ASSERT(old_size < new_payload->size);
   fprintf(stderr, "New size: %d\n", new_payload->size);
-  TEST_ASSERT(new_payload->size == NVTABLE_MAX_SIZE);
+  TEST_ASSERT(new_payload->size == NV_TABLE_MAX_BYTES);
   value = __nv_table_get_value(new_payload, STATIC_HANDLE, STATIC_VALUES, &value_length);
   TEST_ASSERT(value_length == strlen(STATIC_VALUE));
   TEST_ASSERT(strcmp(value, STATIC_VALUE) == 0);
@@ -757,14 +757,14 @@ test_nvtable_realloc_common(NVTable *payload)
 void
 test_nvtable_realloc_with_one_ref()
 {
-  NVTable *payload = nv_table_new(STATIC_VALUES, 0, 32767 << NV_TABLE_SCALE);
+  NVTable *payload = nv_table_new(STATIC_VALUES, 0, NV_TABLE_MAX_BYTES / 2 + 1);
   test_nvtable_realloc_common(payload);
 }
 
 void
 test_nvtable_realloc_with_more_ref()
 {
-  NVTable *payload = nv_table_new(STATIC_VALUES, 0, 32767 << NV_TABLE_SCALE);
+  NVTable *payload = nv_table_new(STATIC_VALUES, 0, NV_TABLE_MAX_BYTES / 2 + 1);
   nv_table_ref(payload);
   test_nvtable_realloc_common(payload);
   nv_table_unref(payload);
