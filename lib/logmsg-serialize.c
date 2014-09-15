@@ -354,7 +354,7 @@ log_msg_write_tags(LogMessage *self, SerializeArchive *sa)
 gboolean
 log_msg_write(LogMessage *self, SerializeArchive *sa)
 {
-  guint8 version = 24;
+  guint8 version = 26;
   gint i = 0;
   /*
    * version   info
@@ -373,6 +373,8 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
    *   22      corrected nvtable serialization
    *   23      new RCTPID field (64 bits)
    *   24      new processed timestamp
+   *   25      added hostid
+   *   26      use 32 bit values nvtable
    */
 
   serialize_write_uint8(sa, version);
@@ -384,13 +386,14 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
   log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_STAMP]);
   log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_RECVD]);
   log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED]);
+  serialize_write_uint32(sa, self->hostid);
   log_msg_write_tags(self, sa);
   serialize_write_uint8(sa, self->initial_parse);
   serialize_write_uint8(sa, self->num_matches);
   serialize_write_uint8(sa, self->num_sdata);
   serialize_write_uint8(sa, self->alloc_sdata);
   for(i = 0; i < self->num_sdata; i++)
-    serialize_write_uint16(sa, self->sdata[i]);
+    serialize_write_uint32(sa, self->sdata[i]);
   nv_table_serialize(sa, self->payload);
   return TRUE;
 }
@@ -712,6 +715,12 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
       self->timestamps[LM_TS_PROCESSED] = self->timestamps[LM_TS_RECVD];
     }
 
+  if (version >= 25)
+    {
+      if (!serialize_read_uint32(sa, &self->hostid))
+        return FALSE;
+    }
+
   if (!log_msg_read_tags(self, sa))
     return FALSE;
 
@@ -735,9 +744,18 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
     {
       for(i = 0; i < self->num_sdata; i++)
         {
-          /* guint16 NVHandle*/
-          if (!serialize_read_uint16(sa, (guint16 *)(&self->sdata[i])))
-            return FALSE;
+          if (version >= 26)
+            {
+              /* guint32 NVHandle*/
+              if (!serialize_read_uint32(sa, (guint32 *)(&self->sdata[i])))
+                return FALSE;
+            }
+          else
+            {
+              /* guint16 NVHandle*/
+              if (!serialize_read_uint16(sa, (guint16 *)(&self->sdata[i])))
+                return FALSE;
+            }
         }
     }
   nv_table_unref(self->payload);
@@ -762,7 +780,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
 
   if (!serialize_read_uint8(sa, &version))
     return FALSE;
-  if ((version > 1 && version < 10) || version > 24)
+  if ((version > 1 && version < 10) || version > 26)
     {
       msg_error("Error deserializing log message, unsupported version",
                 evt_tag_int("version", version),
@@ -773,7 +791,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
     return log_msg_read_version_0_1(self, sa, version);
   else if (version < 20)
     return log_msg_read_version_1x(self, sa, version);
-  else if (version <= 24)
+  else if (version <= 26)
     return log_msg_read_version_2x(self, sa, version);
   /****************************************************
    * Should never reach THIS!!!!

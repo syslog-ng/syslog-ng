@@ -31,9 +31,9 @@
 
 #define NV_TABLE_OLD_SCALE 2
 #define NV_TABLE_MAGIC_V2  "NVT2"
-static const int NV_TABLE_HEADER_DIFF_V22_V24 = 4;
-static const int NV_TABLE_DYNVALUE_DIFF_V22_V24 = 4;
-static const int NV_TABLE_HANDLE_DIFF_V22_V24 = 2;
+static const int NV_TABLE_HEADER_DIFF_V22_V26 = 4;
+static const int NV_TABLE_DYNVALUE_DIFF_V22_V26 = 4;
+static const int NV_TABLE_HANDLE_DIFF_V22_V26 = 2;
 static const int SIZE_DIFF_OF_OLD_NVENTRY_AND_NEW_NVENTRY = 12;
 #define NVT_SF_BE           0x1
 
@@ -123,9 +123,9 @@ _calculate_new_size(NVTable *self)
   guint32 diff_of_old_used_and_new_used =
     (self->num_static_entries + self->num_dyn_entries) * SIZE_DIFF_OF_OLD_NVENTRY_AND_NEW_NVENTRY;
 
-  return self->size + NV_TABLE_HEADER_DIFF_V22_V24
-      + NV_TABLE_HANDLE_DIFF_V22_V24 * self->num_static_entries
-      + NV_TABLE_DYNVALUE_DIFF_V22_V24 * self->num_dyn_entries
+  return self->size + NV_TABLE_HEADER_DIFF_V22_V26
+      + NV_TABLE_HANDLE_DIFF_V22_V26 * self->num_static_entries
+      + NV_TABLE_DYNVALUE_DIFF_V22_V26 * self->num_dyn_entries
       + diff_of_old_used_and_new_used;
 }
 
@@ -336,9 +336,9 @@ nv_table_deserialize_22(SerializeArchive *sa)
 static inline guint32
 _calculate_new_size_from_legacy_nvtable(OldNVTable *self)
 {
-  return self->size + NV_TABLE_HEADER_DIFF_V22_V24
-    + NV_TABLE_HANDLE_DIFF_V22_V24 * self->num_static_entries
-    + NV_TABLE_DYNVALUE_DIFF_V22_V24 * self->num_dyn_entries;
+  return self->size + NV_TABLE_HEADER_DIFF_V22_V26
+    + NV_TABLE_HANDLE_DIFF_V22_V26 * self->num_static_entries
+    + NV_TABLE_DYNVALUE_DIFF_V22_V26 * self->num_dyn_entries;
 }
 
 static inline guint32* _get_legacy_dynamic_entries(OldNVTable *old)

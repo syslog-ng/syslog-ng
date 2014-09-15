@@ -116,7 +116,7 @@ _update_dynamic_handles(NVTable *self, NVRegistry *logmsg_registry,
       NVHandle old_handle;
       NVEntry *entry;
       const gchar *name;
-      guint16 ofs;
+      guint32 ofs;
 
       entry = nv_table_get_entry_at_ofs(self, NV_TABLE_DYNVALUE_OFS(dyn_entries[i]));
       old_handle = NV_TABLE_DYNVALUE_HANDLE(dyn_entries[i]);
@@ -172,7 +172,7 @@ _deserialize_dyn_value(SerializeArchive *sa, NVDynValue* dyn_value)
 };
 
 static gboolean
-_deserialize_struct_v24(SerializeArchive *sa, NVTable *res)
+_deserialize_struct_v25(SerializeArchive *sa, NVTable *res)
 {
   guint32 i;
   NVDynValue *dyn_entries;
@@ -194,7 +194,7 @@ _deserialize_struct_v24(SerializeArchive *sa, NVTable *res)
 }
 
 NVTable *
-nv_table_deserialize_24(SerializeArchive *sa)
+nv_table_deserialize_newest(SerializeArchive *sa)
 {
   guint32 magic = 0;
   guint8 flags = 0;
@@ -242,7 +242,7 @@ nv_table_deserialize_24(SerializeArchive *sa)
 
   res->borrowed = FALSE;
   res->ref_cnt = 1;
-  if (!_deserialize_struct_v24(sa, res))
+  if (!_deserialize_struct_v25(sa, res))
     {
       g_free(res);
       return NULL;
@@ -268,13 +268,13 @@ nv_table_deserialize(SerializeArchive *sa, guint8 log_msg_version)
     {
       res = nv_table_deserialize_legacy(sa);
     }
-  else if (log_msg_version < 24)
+  else if (log_msg_version < 26)
     {
       res = nv_table_deserialize_22(sa);
     }
   else
     {
-      res = nv_table_deserialize_24(sa);
+      res = nv_table_deserialize_newest(sa);
     }
   return res;
 }
