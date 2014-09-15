@@ -41,12 +41,26 @@ export PATH LIBPATH LD_LIBRARY_PATH
 os=${UNAME_S:-`uname -s`}
 osversion=${UNAME_R:-`uname -r`}
 
-case $os in
-	Linux)
-		cat <<EOF
+add_unix_dgram_or_systemd_journal_source()
+{
+  test -d /run/systemd/system
+  systemd_is_used=$?
+
+  if [ $systemd_is_used -eq 0 ]; then
+    cat <<EOF
+systemd-journal();
+EOF
+  else
+    cat <<EOF
 unix-dgram("/dev/log");
 file("/proc/kmsg" program-override("kernel") flags(kernel));
 EOF
+  fi
+}
+
+case $os in
+	Linux)
+    add_unix_dgram_or_systemd_journal_source
 		;;
 	SunOS)
 		if [ "$osversion" = "5.8" ]; then
