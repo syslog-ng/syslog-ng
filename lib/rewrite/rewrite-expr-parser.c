@@ -38,6 +38,7 @@ static CfgLexerKeyword rewrite_expr_keywords[] = {
   { "type",               KW_TYPE, 0x0300 },
   { "flags",              KW_FLAGS },
   { "condition",          KW_CONDITION, 0x0302 },
+  { "groupset",           KW_GROUP_SET, 0x0306 },
   { NULL }
 };
 

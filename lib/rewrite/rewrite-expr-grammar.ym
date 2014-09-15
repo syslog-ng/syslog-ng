@@ -34,6 +34,7 @@
 #include "rewrite/rewrite-set-tag.h"
 #include "rewrite/rewrite-set.h"
 #include "rewrite/rewrite-subst.h"
+#include "rewrite/rewrite-groupset.h"
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-parser.h"
 #include "cfg-grammar.h"
@@ -61,6 +62,7 @@ LogRewrite *last_rewrite;
 %token KW_CONDITION
 %token KW_SET_TAG
 %token KW_CLEAR_TAG
+%token KW_GROUP_SET
 
 %%
 
@@ -81,6 +83,7 @@ rewrite_template_content
 
 	    $$ = log_template_new(configuration, $1);
 	    CHECK_ERROR_GERROR(log_template_compile($$, $1, &error), @1, error, "error compiling replacement");
+        free($1);
 	  }
 	;
 
@@ -105,6 +108,13 @@ rewrite_expr
           rewrite_expr_opts ')'                 { $$ = last_rewrite; }
 	| KW_SET_TAG '(' string ')'             { $$ = log_rewrite_set_tag_new($3, TRUE, configuration); free($3); }
 	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE, configuration); free($3); }
+        | KW_GROUP_SET '(' rewrite_template_content
+        {
+            last_rewrite = log_rewrite_groupset_new($3, configuration);
+            log_template_unref($3);
+            }
+        rewrite_groupset_opts ')' { $$ = last_rewrite; }
+
         | LL_IDENTIFIER
           {
             Plugin *p;
@@ -121,6 +131,19 @@ rewrite_expr
               }
             $$ = last_rewrite;
           }
+        ;
+
+rewrite_groupset_opts
+        : rewrite_groupset_opt rewrite_groupset_opts
+        |
+        ;
+
+rewrite_groupset_opt
+        : KW_VALUES '(' string_list ')'
+          {
+            log_rewrite_groupset_add_fields(last_rewrite, $3);
+          }
+        | rewrite_condition_opt
         ;
 
 rewrite_subst_opts
@@ -154,7 +177,11 @@ rewrite_expr_opt
 	    CHECK_ERROR(log_msg_is_value_name_valid(p), @3, "%s is not a valid name for a name-value pair, perhaps a misspelled .SDATA reference?", p);
             free($3);
           }
-        | KW_CONDITION '('
+        | rewrite_condition_opt
+        ;
+
+rewrite_condition_opt
+        : KW_CONDITION '('
           {
             FilterExprNode *filter_expr;
 
@@ -162,6 +189,7 @@ rewrite_expr_opt
             log_rewrite_set_condition(last_rewrite, filter_expr);
           } ')'
         ;
+
 
 /* INCLUDE_RULES */
 

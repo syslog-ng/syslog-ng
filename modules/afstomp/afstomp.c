@@ -141,7 +141,7 @@ afstomp_dd_set_value_pairs(LogDriver *s, ValuePairs *vp)
   STOMPDestDriver *self = (STOMPDestDriver *) s;
 
   if (self->vp)
-    value_pairs_free(self->vp);
+    value_pairs_unref(self->vp);
   self->vp = vp;
 }
 
@@ -370,7 +370,7 @@ afstomp_dd_free(LogPipe *d)
   g_free(self->password);
   g_free(self->host);
   if (self->vp)
-    value_pairs_free(self->vp);
+    value_pairs_unref(self->vp);
   log_threaded_dest_driver_free(d);
 }
 

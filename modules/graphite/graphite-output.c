@@ -167,7 +167,7 @@ tf_graphite_free_state(gpointer s)
   TFGraphiteState *state = (TFGraphiteState *)s;
 
   if (state->vp)
-    value_pairs_free(state->vp);
+    value_pairs_unref(state->vp);
   tf_simple_func_free_state(&state->super);
 }
 

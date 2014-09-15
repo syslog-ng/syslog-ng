@@ -229,6 +229,7 @@ LogMacroDef macros[] =
         { "SOURCEIP", M_SOURCE_IP },
         { "SEQNUM", M_SEQNUM },
         { "CONTEXT_ID", M_CONTEXT_ID },
+        { "_", M_CONTEXT_ID },
         { "RCPTID", M_RCPTID },
         { "RUNID", M_RUNID },
 
