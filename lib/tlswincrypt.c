@@ -14,16 +14,12 @@ get_X509_cert_from_cert_context(PCCERT_CONTEXT cert)
 }
 
 gboolean
-load_all_trusted_ca_certificates(SSL_CTX *ctx)
+load_all_trusted_ca_from_container(X509_STORE *ca_storage, gchar *container_name)
 {
-  HCERTSTORE hSystemStore;
-  PCCERT_CONTEXT cert = NULL;
   DWORD flags = CERT_SYSTEM_STORE_LOCAL_MACHINE | CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG;
-  X509_STORE *ca_storage = SSL_CTX_get_cert_store(ctx);
-
-  g_assert(ca_storage);
-
-  hSystemStore = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, 0, 0, flags, "Root");
+  PCCERT_CONTEXT cert = NULL;
+  HCERTSTORE hSystemStore;
+  hSystemStore = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, 0, 0, flags, container_name);
   if (hSystemStore == NULL)
     {
       return FALSE;
@@ -35,6 +31,25 @@ load_all_trusted_ca_certificates(SSL_CTX *ctx)
       cert = CertEnumCertificatesInStore(hSystemStore, cert);
     }
   CertCloseStore(hSystemStore, 0);
+  return TRUE;
+}
+
+gboolean
+load_all_trusted_ca_certificates(SSL_CTX *ctx)
+{
+  X509_STORE *ca_storage = SSL_CTX_get_cert_store(ctx);
+  gchar **stores = {"Root", "CA", NULL};
+  gint i;
+
+  g_assert(ca_storage);
+
+  for (i = 0; stores[i] != NULL; i++)
+    {
+      if(!load_all_trusted_ca_from_container(ca_storage, stores[i]))
+        {
+          return FALSE;
+        }
+    }
   return TRUE;
 }
 
