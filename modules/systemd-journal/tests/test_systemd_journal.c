@@ -380,9 +380,10 @@ __check_value_len(NVHandle handle, const gchar *name, const gchar *value, gssize
 {
   TestCase *self = user_data;
   gchar *error_message = g_strdup_printf("Bad value size; name: %s, value: %s len: %ld", name, value, value_len);
-
-  assert_true(value_len <= GPOINTER_TO_INT(self->user_data), ASSERTION_ERROR(error_message));
-
+  if (strcmp(name, "HOST_FROM") != 0)
+    {
+      assert_true(value_len <= GPOINTER_TO_INT(self->user_data), ASSERTION_ERROR(error_message));
+    }
   g_free(error_message);
   return FALSE;
 }
