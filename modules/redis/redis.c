@@ -184,7 +184,7 @@ redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   int argc = 2;
 
   if (!redis_dd_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_ERROR;
+    return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
   if (self->c->err)
     return WORKER_INSERT_RESULT_ERROR;
