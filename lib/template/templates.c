@@ -77,76 +77,6 @@ typedef struct _LogTemplateElem
 } LogTemplateElem;
 
 
-/* simple template functions which take templates as arguments */
-
-gboolean
-tf_simple_func_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
-{
-  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
-  gint i;
-
-  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  state->argv = g_malloc(sizeof(LogTemplate *) * (argc - 1));
-
-  /* NOTE: the argv argument con tains the function name as argv[0],
-   * but the LogTemplate array doesn't. Thus the index is shifted by
-   * one. */
-  for (i = 0; i < argc - 1; i++)
-    {
-      state->argv[i] = log_template_new(parent->cfg, NULL);
-      log_template_set_escape(state->argv[i], parent->escape);
-      if (!log_template_compile(state->argv[i], argv[i + 1], error))
-        goto error;
-    }
-  state->argc = argc - 1;
-  return TRUE;
- error:
-  return FALSE;
-}
-
-void
-tf_simple_func_eval(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args)
-{
-  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
-  gint i;
-
-  for (i = 0; i < state->argc; i++)
-    {
-      GString **arg;
-
-      if (args->bufs->len <= i)
-        g_ptr_array_add(args->bufs, g_string_sized_new(256));
-
-      arg = (GString **) &g_ptr_array_index(args->bufs, i);
-      g_string_truncate(*arg, 0);
-
-      log_template_append_format_recursive(state->argv[i], args, *arg);
-    }
-}
-
-void
-tf_simple_func_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
-{
-  TFSimpleFunc simple_func = (TFSimpleFunc) self->arg;
-  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
-
-  simple_func(args->messages[args->num_messages-1], state->argc, (GString **) args->bufs->pdata, result);
-}
-
-void
-tf_simple_func_free_state(gpointer s)
-{
-  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
-  gint i;
-
-  for (i = 0; i < state->argc; i++)
-    {
-      if (state->argv[i])
-        log_template_unref(state->argv[i]);
-    }
-  g_free(state->argv);
-}
-
 static void
 log_template_add_macro_elem(LogTemplateCompiler *self, guint macro, gchar *default_value)
 {
@@ -800,14 +730,6 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
           }
         }
     }
-}
-
-void
-log_template_append_format_recursive(LogTemplate *self, const LogTemplateInvokeArgs *args, GString *result)
-{
-  log_template_append_format_with_context(self,
-                                          args->messages, args->num_messages,
-                                          args->opts, args->tz, args->seq_num, args->context_id, result);
 }
 
 void

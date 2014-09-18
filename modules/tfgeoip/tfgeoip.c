@@ -22,7 +22,7 @@
 
 #include "plugin.h"
 #include "plugin-types.h"
-#include "template/templates.h"
+#include "template/simple-function.h"
 #include "messages.h"
 #include "cfg.h"
 #include "tls-support.h"
