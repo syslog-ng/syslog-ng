@@ -31,7 +31,7 @@ static Plugin graphite_plugins[] =
 };
 
 gboolean
-graphite_plugin_module_init(GlobalConfig *cfg, CfgArgs *args)
+graphite_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, graphite_plugins, G_N_ELEMENTS(graphite_plugins));
   return TRUE;
@@ -39,7 +39,7 @@ graphite_plugin_module_init(GlobalConfig *cfg, CfgArgs *args)
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "graphite-plugin",
+  .canonical_name = "graphite",
   .version = VERSION,
   .description = "The graphite module provides graphite output for syslog-ng.",
   .core_revision = SOURCE_REVISION,
