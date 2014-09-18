@@ -322,6 +322,7 @@ cfg_init(GlobalConfig *cfg)
           cfg->bad_hostname_compiled = TRUE;
         }
     }
+
   dns_cache_global_init(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   dns_cache_tls_init();
   set_custom_domain(cfg->custom_domain);
@@ -501,6 +502,7 @@ cfg_new(gint version)
   self->show_reload_message = config_show_reload_message;
   self->show_start_message = config_show_start_message;
   self->show_shutdown_message = config_show_shutdown_message;
+  self->use_uniqid = FALSE;
   return self;
 }
 

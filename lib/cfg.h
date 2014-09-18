@@ -121,8 +121,8 @@ struct _GlobalConfig
   PersistState *state;
   GList *source_mangle_callback_list;
   struct _LogCenter *center;
-  gboolean use_rcptid;
-  
+  gboolean use_uniqid;
+
   gchar *cfg_fingerprint;
   guchar *cfg_hash;
   gchar *cfg_processed_config;
@@ -255,6 +255,12 @@ cfg_check_current_config_version(gint req)
     return TRUE;
 
   return check_config_version(configuration->version, req);
+}
+
+static inline void
+cfg_set_use_uniqid(gboolean flag)
+{
+  configuration->use_uniqid = !!flag;
 }
 
 /* destination mark modes */

@@ -149,7 +149,8 @@ static CfgLexerKeyword main_keywords[] = {
   /* filter items */
   { "type",               KW_TYPE, VERSION_VALUE_3_0 },
   { "tags",               KW_TAGS, VERSION_VALUE_3_0 },
-  { "use_rcptid",         KW_USE_RCPTID },
+  { "use_rcptid",         KW_USE_RCPTID , 0, KWS_OBSOLETE, "This has been deprecated since " VERSION_PE_5_2  ", try use_uniqid() instead"},
+  { "use_uniqid",         KW_USE_UNIQID },
 
   /* on/off switches */
   { "yes",                KW_YES },

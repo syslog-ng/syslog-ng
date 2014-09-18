@@ -310,7 +310,7 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 
   main_loop_init_run_id(cfg->state);
   main_loop_init_hostid(cfg->state);
-  if (cfg->use_rcptid)
+  if (cfg->use_uniqid)
     {
       log_msg_init_rcptid(cfg->state);
     }
