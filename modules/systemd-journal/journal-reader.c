@@ -42,6 +42,8 @@
 #define DEFAULT_PRIO (LOG_LOCAL0 | LOG_NOTICE)
 #define DEFAULT_FETCH_LIMIT 10
 
+static gboolean journal_reader_initialized = FALSE;
+
 typedef struct _JournalReaderState {
   PersistableStateHeader header;
   gchar cursor[MAX_CURSOR_LENGTH];
@@ -234,13 +236,6 @@ __handle_message(JournalReader *self)
 
   log_pipe_queue(&self->super.super, msg, &lpo);
   return log_source_free_to_send(&self->super);
-}
-
-void
-journal_reader_set_persist_name(JournalReader *self, gchar *persist_name)
-{
-  g_free(self->persist_name);
-  self->persist_name = g_strdup(persist_name);
 }
 
 static void
@@ -471,6 +466,13 @@ __init(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
 
+  if (journal_reader_initialized)
+    {
+      msg_error("The configuration must not contain more than one systemd-journal source",
+          NULL);
+      return FALSE;
+    }
+
   if (!log_source_init(s))
     return FALSE;
 
@@ -496,6 +498,7 @@ __init(LogPipe *s)
     }
 
   self->immediate_check = TRUE;
+  journal_reader_initialized = TRUE;
   __update_watches(self);
   iv_event_register(&self->schedule_wakeup);
   return TRUE;
@@ -508,6 +511,7 @@ __deinit(LogPipe *s)
   __stop_watches(self);
   journald_close(self->journal);
   poll_events_free(self->poll_events);
+  journal_reader_initialized = FALSE;
   return TRUE;
 }
 
