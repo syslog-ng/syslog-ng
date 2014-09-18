@@ -2419,6 +2419,15 @@ log_msg_init_rcptid(PersistState *state)
 }
 
 void
+log_msg_deinit_rcptid()
+{
+  if (persist_state_get_rcptcfg_state())
+    {
+      persist_state_set_rcptcfg_state(NULL);
+    }
+}
+
+void
 log_msg_create_rcptid(LogMessage *msg)
 {
   if (persist_state_get_rcptcfg_state())

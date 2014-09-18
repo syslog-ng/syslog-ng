@@ -336,6 +336,7 @@ main_loop_reload_config_apply(void)
         }
       return;
     }
+
   main_loop_old_config->persist = persist_config_new();
   cfg_deinit(main_loop_old_config);
   cfg_persist_config_move(main_loop_old_config, main_loop_new_config);
@@ -353,6 +354,15 @@ main_loop_reload_config_apply(void)
       main_loop_new_config->persist = NULL;
       current_configuration = main_loop_new_config;
       service_management_clear_status();
+
+      if (main_loop_old_config->use_uniqid && !current_configuration->use_uniqid)
+        {
+          log_msg_deinit_rcptid();
+        }
+      else if (!main_loop_old_config->use_uniqid && current_configuration->use_uniqid)
+        {
+          log_msg_init_rcptid(current_configuration->state);
+        }
     }
   else
     {
