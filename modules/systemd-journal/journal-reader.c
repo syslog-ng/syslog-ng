@@ -177,8 +177,13 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
     }
+  else if (strcmp(key, "SYSLOG_IDENTIFIER") == 0)
     {
+      gssize program_length;
+      (void)log_msg_get_value(msg, LM_V_PROGRAM, &program_length);
+      if (program_length == 0)
         {
+          log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
         }
     }
   else if (strcmp(key, "SYSLOG_FACILITY") == 0)
