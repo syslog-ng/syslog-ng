@@ -22,7 +22,7 @@
  */
 
 #include "plugin.h"
-#include "template/templates.h"
+#include "template/simple-function.h"
 #include "cfg.h"
 #include "uuid.h"
 #include "str-format.h"
