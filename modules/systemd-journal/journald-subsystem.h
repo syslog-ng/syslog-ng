@@ -55,6 +55,7 @@ void journald_free(Journald *self);
 int journald_open(Journald *self, int flags);
 void journald_close(Journald *self);
 int journald_seek_head(Journald *self);
+int journald_seek_tail(Journald *self);
 int journald_get_cursor(Journald *self, gchar **cursor);
 int journald_next(Journald *self);
 void journald_restart_data(Journald *self);

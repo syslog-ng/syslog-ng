@@ -62,6 +62,8 @@ typedef void
 typedef int
 (*SD_JOURNAL_SEEK_HEAD)(sd_journal *j);
 typedef int
+(*SD_JOURNAL_SEEK_TAIL)(sd_journal *j);
+typedef int
 (*SD_JOURNAL_GET_CURSOR)(sd_journal *j, char **cursor);
 typedef int
 (*SD_JOURNAL_NEXT)(sd_journal *j);
@@ -81,6 +83,7 @@ typedef int
 SD_JOURNAL_OPEN sd_journal_open;
 SD_JOURNAL_CLOSE sd_journal_close;
 SD_JOURNAL_SEEK_HEAD sd_journal_seek_head;
+SD_JOURNAL_SEEK_TAIL sd_journal_seek_tail;
 SD_JOURNAL_GET_CURSOR sd_journal_get_cursor;
 SD_JOURNAL_NEXT sd_journal_next;
 SD_JOURNAL_RESTART_DATA sd_journal_restart_data;
@@ -100,7 +103,6 @@ load_journald_subsystem()
         {
           return FALSE;
         }
-
       if (!LOAD_SYMBOL(journald_module, sd_journal_open))
         {
           goto error;
@@ -110,6 +112,10 @@ load_journald_subsystem()
           goto error;
         }
       if (!LOAD_SYMBOL(journald_module, sd_journal_seek_head))
+        {
+          goto error;
+        }
+      if (!LOAD_SYMBOL(journald_module, sd_journal_seek_tail))
         {
           goto error;
         }
@@ -171,6 +177,12 @@ int
 journald_seek_head(Journald *self)
 {
   return sd_journal_seek_head(self->journal);
+}
+
+int
+journald_seek_tail(Journald *self)
+{
+  return sd_journal_seek_tail(self->journal);
 }
 
 int

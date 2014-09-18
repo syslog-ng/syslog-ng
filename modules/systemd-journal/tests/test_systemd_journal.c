@@ -94,12 +94,23 @@ __test_seeks(Journald *journald)
   assert_gint(result, 0, ASSERTION_ERROR("Can't seek in journald mock"));
   result = journald_next(journald);
   assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+
+  result = journald_seek_tail(journald);
+  assert_gint(result, 0, ASSERTION_ERROR("Can't seek in journald mock"));
+  result = journald_next(journald);
+  assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+  result = journald_next(journald);
+  assert_gint(result, 0, ASSERTION_ERROR("Bad next step result"));
+
+
 }
 
 void
 __test_cursors(Journald *journald)
 {
   gchar *cursor;
+  journald_seek_head(journald);
+  journald_next(journald);
   gint result = journald_get_cursor(journald, &cursor);
   assert_string(cursor, "test_data1", ASSERTION_ERROR("Bad cursor fetched"));\
   g_free(cursor);
