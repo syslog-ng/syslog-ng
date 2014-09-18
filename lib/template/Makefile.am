@@ -3,6 +3,7 @@ templateincludedir			= ${pkgincludedir}/template
 templateinclude_HEADERS = \
 	lib/template/templates.h		\
 	lib/template/macros.h			\
+	lib/template/function.h			\
 	lib/template/simple-function.h		\
 	lib/template/user-function.h
 

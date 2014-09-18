@@ -24,6 +24,7 @@
 
 #include "template/templates.h"
 #include "template/macros.h"
+#include "template/function.h"
 #include "messages.h"
 #include "logmsg.h"
 #include "syslog-names.h"

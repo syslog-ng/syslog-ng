@@ -23,8 +23,8 @@
 #ifndef GRAPHITE_OUTPUT_H_INCLUDED
 #define GRAPHITE_OUTPUT_H_INCLUDED
 
-#include <template/templates.h>
-#include <plugin.h>
+#include <template/function.h>
+#include <plugin-types.h>
 
 TEMPLATE_FUNCTION_DECLARE(tf_graphite);
 

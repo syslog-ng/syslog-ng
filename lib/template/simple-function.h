@@ -25,7 +25,7 @@
 #ifndef TEMPLATE_SIMPLE_FUNCTION_H_INCLUDED
 #define TEMPLATE_SIMPLE_FUNCTION_H_INCLUDED
 
-#include "template/templates.h"
+#include "template/function.h"
 
 /* function pointers for template functions */
 
