@@ -21,14 +21,13 @@
  */
 
 #include "graphite-output.h"
-#include <syslog-ng.h>
+#include <template/templates.h>
 #include <logmsg.h>
 #include <value-pairs.h>
 #include <vptransform.h>
 
 typedef struct _TFGraphiteState
 {
-  TFSimpleFuncState super;
   ValuePairs *vp;
   LogTemplate *timestamp_template;
 } TFGraphiteState;
@@ -143,7 +142,7 @@ tf_graphite_format(GString *result, ValuePairs *vp, LogMessage *msg, const LogTe
 
   g_string_free(userdata.formatted_unixtime, FALSE);
   return return_value;
-};
+}
 
 static void
 tf_graphite_call(LogTemplateFunction *self, gpointer s,
@@ -168,7 +167,6 @@ tf_graphite_free_state(gpointer s)
 
   if (state->vp)
     value_pairs_free(state->vp);
-  tf_simple_func_free_state(&state->super);
 }
 
 TEMPLATE_FUNCTION(TFGraphiteState, tf_graphite, tf_graphite_prepare, NULL, tf_graphite_call,
