@@ -162,6 +162,13 @@ journald_process(Journald *self)
   return 0;
 }
 
+int
+journald_get_realtime_usec(Journald *self, guint64 *usec)
+{
+  *usec = 1408967385496986;
+  return 0;
+}
+
 Journald *
 journald_mock_new()
 {
