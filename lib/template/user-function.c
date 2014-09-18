@@ -22,7 +22,7 @@
  *
  */
 
-#include "template/templates.h"
+#include "template/function.h"
 #include "plugin-types.h"
 
 typedef struct _UserTemplateFunction
