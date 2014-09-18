@@ -23,6 +23,7 @@
  */
 
 #include "journald-mock.h"
+#include "misc.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -165,7 +166,11 @@ Journald *
 journald_mock_new()
 {
   Journald *self = g_new0(Journald, 1);
-  pipe2(self->fds, O_NONBLOCK);
+
+  pipe(self->fds);
+  g_fd_set_nonblock(self->fds[0], TRUE);
+  g_fd_set_nonblock(self->fds[1], TRUE);
+
   return self;
 }
 
