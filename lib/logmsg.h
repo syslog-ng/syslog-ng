@@ -235,6 +235,13 @@ log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
     return log_msg_get_macro_value(self, flags >> 8, value_len);
 }
 
+static inline const gchar *
+log_msg_get_value_by_name(LogMessage *self, const gchar *name, gssize *value_len)
+{
+  NVHandle handle = log_msg_get_value_handle(name);
+  return log_msg_get_value(self, handle, value_len);
+}
+
 typedef gboolean (*LogMessageTagsForeachFunc)(LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data);
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
@@ -242,6 +249,13 @@ void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_
 void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len);
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
 void log_msg_clear_matches(LogMessage *self);
+
+static inline void
+log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
+{
+  NVHandle handle = log_msg_get_value_handle(name);
+  log_msg_set_value(self, handle, value, length);
+}
 
 void log_msg_append_format_sdata(LogMessage *self, GString *result, guint32 seq_num);
 void log_msg_format_sdata(LogMessage *self, GString *result, guint32 seq_num);
