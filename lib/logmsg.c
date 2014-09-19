@@ -2438,7 +2438,7 @@ log_msg_create_rcptid(LogMessage *msg)
 
     msg->rcptid = g_rcptidstate.g_rcptid++;
 
-    if (!(g_rcptidstate.g_rcptid&=0xFFFFFFFFFFFF))
+    if (!(g_rcptidstate.g_rcptid&=0xFFFFFFFFFFFFFFFF))
       ++g_rcptidstate.g_rcptid;
 
     data = persist_state_map_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());

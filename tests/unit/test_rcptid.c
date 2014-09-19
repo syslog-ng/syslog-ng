@@ -64,10 +64,10 @@ testcase(gchar *message)
   /* Test the serialization handle the rcptid */
   TEST_ASSERT(cloned->rcptid == 1,"%"G_GUINT64_FORMAT,cloned->rcptid, (guint64) 1);
 
-  g_rcptidstate.g_rcptid=0x0000FFFFFFFFFFFE;
+  g_rcptidstate.g_rcptid=0xFFFFFFFFFFFFFFFE;
   log_msg_create_rcptid(msg);
   /* Test the persist handling */
-  TEST_ASSERT(msg->rcptid == 0x0000FFFFFFFFFFFE,"%"G_GUINT64_FORMAT,msg->rcptid,0x0000FFFFFFFFFFFE);
+  TEST_ASSERT(msg->rcptid == 0xFFFFFFFFFFFFFFFE,"%"G_GUINT64_FORMAT,msg->rcptid,0xFFFFFFFFFFFFFFFE);
 
   persist_state_commit(state);
   persist_state_free(state);
@@ -81,7 +81,7 @@ testcase(gchar *message)
   log_msg_init_rcptid(state);
 
   log_msg_create_rcptid(msg);
-  TEST_ASSERT(msg->rcptid == 0x0000FFFFFFFFFFFF,"%"G_GUINT64_FORMAT,msg->rcptid,0x0000FFFFFFFFFFFF);
+  TEST_ASSERT(msg->rcptid == 0xFFFFFFFFFFFFFFFF,"%"G_GUINT64_FORMAT,msg->rcptid,0xFFFFFFFFFFFFFFFF);
   /* End of testing persist handling */
 
   log_msg_create_rcptid(msg);
