@@ -302,9 +302,10 @@ pdb_message_apply(PDBMessage *self, PDBContext *context, LogMessage *msg, GStrin
                                            context ? (LogMessage **) context->messages->pdata : &msg,
                                            context ? context->messages->len : 1,
                                            NULL, LTZ_LOCAL, 0, context ? context->key.session_id : NULL, buffer);
-          log_msg_set_value(msg,
-                            log_msg_get_value_handle(((LogTemplate *) g_ptr_array_index(self->values, i))->name),
-                            buffer->str, buffer->len);
+          log_msg_set_value_by_name(msg,
+                                    ((LogTemplate *) g_ptr_array_index(self->values, i))->name,
+                                    buffer->str,
+                                    buffer->len);
         }
     }
 

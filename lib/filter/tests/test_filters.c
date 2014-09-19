@@ -156,7 +156,7 @@ testcase_with_backref_chk(gchar *msg,
 
   /* NOTE: we test how our filters cope with non-zero terminated values. We don't change message_len, only the value */
   g_snprintf(buf, sizeof(buf), "%sAAAAAAAAAAAA", log_msg_get_value(logmsg, LM_V_MESSAGE, &msglen));
-  log_msg_set_value(logmsg, log_msg_get_value_handle("MESSAGE2"), buf, -1);
+  log_msg_set_value_by_name(logmsg, "MESSAGE2", buf, -1);
 
   /* add a non-zero terminated indirect value which contains the whole message */
   log_msg_set_value_indirect(logmsg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, 0, msglen);
@@ -178,7 +178,8 @@ testcase_with_backref_chk(gchar *msg,
       fprintf(stderr, "Filter test failed (negated); num='%d', msg='%s'\n", testno, msg);
       exit(1);
     }
-  value_msg = log_msg_get_value(logmsg, log_msg_get_value_handle(name), &length);
+
+  value_msg = log_msg_get_value_by_name(logmsg, name, &length);
   nv_table_unref(nv_table);
   if(value == NULL || value[0] == 0)
      {

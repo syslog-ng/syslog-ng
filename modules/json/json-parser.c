@@ -150,14 +150,14 @@ json_parser_process_single(struct json_object *jso,
         {
           g_string_assign(sb_gstring_string(key), prefix);
           g_string_append(sb_gstring_string(key), obj_key);
-          log_msg_set_value(msg,
-                             log_msg_get_value_handle(sb_gstring_string(key)->str),
+          log_msg_set_value_by_name(msg,
+                             sb_gstring_string(key)->str,
                              sb_gstring_string(value)->str,
                              sb_gstring_string(value)->len);
         }
       else
-        log_msg_set_value(msg,
-                           log_msg_get_value_handle(obj_key),
+        log_msg_set_value_by_name(msg,
+                           obj_key,
                            sb_gstring_string(value)->str,
                            sb_gstring_string(value)->len);
     }

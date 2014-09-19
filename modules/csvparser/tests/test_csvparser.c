@@ -116,7 +116,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
       const gchar *value;
       gssize value_len;
 
-      value = log_msg_get_value(logmsg, log_msg_get_value_handle(column_array[i]), &value_len);
+      value = log_msg_get_value_by_name(logmsg, column_array[i], &value_len);
 
       if (expected_value && expected_value[0])
         {

@@ -337,9 +337,8 @@ void
 __test_message_has_no_prefix(TestCase *self, LogMessage *msg)
 {
   gchar *requested_name = g_strdup_printf("%s%s", (gchar *)self->user_data, "MESSAGE");
-  NVHandle handle = log_msg_get_value_handle(requested_name);
   gssize value_len;
-  log_msg_get_value(msg, handle, &value_len);
+  log_msg_get_value_by_name(msg, requested_name, &value_len);
   assert_gint(value_len, 0, ASSERTION_ERROR("MESSAGE has prefix"));
   g_free(requested_name);
 }
@@ -348,9 +347,8 @@ void
 __test_other_has_prefix(TestCase *self, LogMessage *msg)
 {
   gchar *requested_name = g_strdup_printf("%s%s", (gchar *) self->user_data, "_CMDLINE");
-  NVHandle handle = log_msg_get_value_handle(requested_name);
   gssize value_len;
-  const gchar *value = log_msg_get_value(msg, handle, &value_len);
+  const gchar *value = log_msg_get_value_by_name(msg, requested_name, &value_len);
   assert_string(value, "sshd: foo_user [priv]", ASSERTION_ERROR("Bad value for prefixed key"));
   g_free(requested_name);
 }

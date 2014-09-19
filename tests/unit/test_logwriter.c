@@ -31,7 +31,7 @@ init_msg(gchar *msg_string, gboolean use_syslog_protocol)
   sa = g_sockaddr_inet_new("10.10.10.10", 1010);
   msg = log_msg_new(msg_string, strlen(msg_string), sa, &parse_options);
   g_sockaddr_unref(sa);
-  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", 5);
+  log_msg_set_value_by_name(msg, "APP.VALUE", "value", 5);
   log_msg_set_match(msg, 0, "whole-match", 11);
   log_msg_set_match(msg, 1, "first-match", 11);
 

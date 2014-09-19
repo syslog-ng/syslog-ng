@@ -87,7 +87,6 @@ void test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
   ValuePairs *vp;
   LogMessage *msg;
   const char* value = "value";
-  NVHandle handle;
 
   log_template_options_init(&template_options, cfg);
   msg_format_options_init(&parse_options, cfg);
@@ -96,11 +95,9 @@ void test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
   value_pairs_add_glob_pattern(vp, "root.*", TRUE);
   msg = log_msg_new("test",4, NULL, &parse_options);
 
-  handle = log_msg_get_value_handle("root.test.alma");
-  log_msg_set_value(msg, handle, value, strlen(value));
+  log_msg_set_value_by_name(msg, "root.test.alma", value, strlen(value));
 
-  handle = log_msg_get_value_handle("root.test.korte");
-  log_msg_set_value(msg, handle, value, strlen(value));
+  log_msg_set_value_by_name(msg, "root.test.korte", value, strlen(value));
 
   value_pairs_walk(vp, test_vp_obj_start, test_vp_value, test_vp_obj_stop, msg, 0, LTZ_LOCAL, &template_options, NULL);
 
