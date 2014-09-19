@@ -144,6 +144,11 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
             }
           break;
 
+        case WORKER_INSERT_RESULT_NOT_CONNECTED:
+          log_threaded_dest_driver_message_rewind(self, msg);
+          _disconnect_and_suspend(self);
+          break;
+
         case WORKER_INSERT_RESULT_REWIND:
           log_threaded_dest_driver_message_rewind(self, msg);
           break;
@@ -224,6 +229,8 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.id),
             NULL);
+
+  log_queue_set_use_backlog(self->queue, TRUE);
 
   if (self->worker.thread_init)
     self->worker.thread_init(self);

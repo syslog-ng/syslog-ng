@@ -469,7 +469,7 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
   gboolean drop_silently = self->template_options.on_error & ON_ERROR_SILENT;
 
   if (!afmongodb_dd_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_ERROR;
+    return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
   bson_reset (self->bson);
 
@@ -515,6 +515,9 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
           success = FALSE;
         }
     }
+
+  if (!success && (errno == ENOTCONN))
+    return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
   if (!success)
     return WORKER_INSERT_RESULT_ERROR;
