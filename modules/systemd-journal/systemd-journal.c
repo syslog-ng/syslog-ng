@@ -43,26 +43,16 @@ systemd_journal_get_reader_options(LogDriver *s)
   return &self->reader_options;
 }
 
-static gchar *
-__generate_persist_name(SystemdJournalSourceDriver *self)
-{
-  return g_strdup_printf("journald_source_%s_%s", self->super.super.group, self->super.super.id);
-}
-
 static gboolean
 __init(LogPipe *s)
 {
   SystemdJournalSourceDriver *self = (SystemdJournalSourceDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-  gchar *persist_name = __generate_persist_name(self);
   self->reader = journal_reader_new(cfg, self->journald);
 
   journal_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   journal_reader_set_options((LogPipe *)self->reader, &self->super.super.super,  &self->reader_options, 0, SCS_JOURNALD, self->super.super.id, "journal");
-
-  journal_reader_set_persist_name(self->reader, persist_name);
-  g_free(persist_name);
 
   log_pipe_append((LogPipe *)self->reader, &self->super.super.super);
   if (!log_pipe_init((LogPipe *)self->reader))

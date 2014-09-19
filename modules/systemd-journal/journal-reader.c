@@ -42,6 +42,8 @@
 #define DEFAULT_PRIO (LOG_LOCAL0 | LOG_NOTICE)
 #define DEFAULT_FETCH_LIMIT 10
 
+static gboolean journal_reader_initialized = FALSE;
+
 typedef struct _JournalReaderState {
   PersistableStateHeader header;
   gchar cursor[MAX_CURSOR_LENGTH];
@@ -159,6 +161,9 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
   if (strcmp(key, "MESSAGE") == 0)
     {
       log_msg_set_value(msg, LM_V_MESSAGE, value, value_len);
+      msg_debug("Incoming log entry from journal",
+                evt_tag_printf("message", "%.*s", (int)value_len, value),
+                NULL);
     }
   else if (strcmp(key, "_HOSTNAME") == 0)
     {
@@ -172,16 +177,13 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
     }
-  else if (strcmp(key, "_SOURCE_REALTIME_TIMESTAMP") == 0)
+  else if (strcmp(key, "SYSLOG_IDENTIFIER") == 0)
     {
-      guint64 ts;
-      parse_number(value, (gint64 *) &ts);
-      msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
-      msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
-      msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(options->recv_time_zone_info, msg->timestamps[LM_TS_STAMP].tv_sec);
-      if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
+      gssize program_length;
+      (void)log_msg_get_value(msg, LM_V_PROGRAM, &program_length);
+      if (program_length == 0)
         {
-          msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
+          log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
         }
     }
   else if (strcmp(key, "SYSLOG_FACILITY") == 0)
@@ -209,6 +211,21 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     }
 }
 
+static void
+__set_message_timestamp(JournalReader *self, LogMessage *msg)
+{
+   guint64 ts;
+   journald_get_realtime_usec(self->journal, &ts);
+   msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
+   msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
+   msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(self->options->recv_time_zone_info, msg->timestamps[LM_TS_STAMP].tv_sec);
+   if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
+     {
+       msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
+     }
+
+}
+
 static gboolean
 __handle_message(JournalReader *self)
 {
@@ -220,16 +237,10 @@ __handle_message(JournalReader *self)
   gpointer args[] = {msg, self->options};
 
   journald_foreach_data(self->journal, __handle_data, args);
+  __set_message_timestamp(self, msg);
 
   log_pipe_queue(&self->super.super, msg, &lpo);
   return log_source_free_to_send(&self->super);
-}
-
-void
-journal_reader_set_persist_name(JournalReader *self, gchar *persist_name)
-{
-  g_free(self->persist_name);
-  self->persist_name = g_strdup(persist_name);
 }
 
 static void
@@ -460,6 +471,13 @@ __init(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
 
+  if (journal_reader_initialized)
+    {
+      msg_error("The configuration must not contain more than one systemd-journal source",
+          NULL);
+      return FALSE;
+    }
+
   if (!log_source_init(s))
     return FALSE;
 
@@ -485,6 +503,7 @@ __init(LogPipe *s)
     }
 
   self->immediate_check = TRUE;
+  journal_reader_initialized = TRUE;
   __update_watches(self);
   iv_event_register(&self->schedule_wakeup);
   return TRUE;
@@ -497,6 +516,7 @@ __deinit(LogPipe *s)
   __stop_watches(self);
   journald_close(self->journal);
   poll_events_free(self->poll_events);
+  journal_reader_initialized = FALSE;
   return TRUE;
 }
 

@@ -62,6 +62,8 @@ typedef void
 typedef int
 (*SD_JOURNAL_SEEK_HEAD)(sd_journal *j);
 typedef int
+(*SD_JOURNAL_SEEK_TAIL)(sd_journal *j);
+typedef int
 (*SD_JOURNAL_GET_CURSOR)(sd_journal *j, char **cursor);
 typedef int
 (*SD_JOURNAL_NEXT)(sd_journal *j);
@@ -75,10 +77,13 @@ typedef int
 (*SD_JOURNAL_GET_FD)(sd_journal *j);
 typedef int
 (*SD_JOURNAL_PROCESS)(sd_journal *j);
+typedef int
+(*SD_JOURNAL_GET_REALTIME_USEC)(sd_journal *j, guint64 *usec);
 
 SD_JOURNAL_OPEN sd_journal_open;
 SD_JOURNAL_CLOSE sd_journal_close;
 SD_JOURNAL_SEEK_HEAD sd_journal_seek_head;
+SD_JOURNAL_SEEK_TAIL sd_journal_seek_tail;
 SD_JOURNAL_GET_CURSOR sd_journal_get_cursor;
 SD_JOURNAL_NEXT sd_journal_next;
 SD_JOURNAL_RESTART_DATA sd_journal_restart_data;
@@ -86,6 +91,7 @@ SD_JOURNAL_ENUMERATE_DATA sd_journal_enumerate_data;
 SD_JOURNAL_SEEK_CURSOR sd_journal_seek_cursor;
 SD_JOURNAL_GET_FD sd_journal_get_fd;
 SD_JOURNAL_PROCESS sd_journal_process;
+SD_JOURNAL_GET_REALTIME_USEC sd_journal_get_realtime_usec;
 
 gboolean
 load_journald_subsystem()
@@ -97,7 +103,6 @@ load_journald_subsystem()
         {
           return FALSE;
         }
-
       if (!LOAD_SYMBOL(journald_module, sd_journal_open))
         {
           goto error;
@@ -107,6 +112,10 @@ load_journald_subsystem()
           goto error;
         }
       if (!LOAD_SYMBOL(journald_module, sd_journal_seek_head))
+        {
+          goto error;
+        }
+      if (!LOAD_SYMBOL(journald_module, sd_journal_seek_tail))
         {
           goto error;
         }
@@ -138,6 +147,10 @@ load_journald_subsystem()
         {
           goto error;
         }
+      if (!LOAD_SYMBOL(journald_module, sd_journal_get_realtime_usec))
+        {
+          goto error;
+        }
     }
   return TRUE;
   error: g_module_close(journald_module);
@@ -164,6 +177,12 @@ int
 journald_seek_head(Journald *self)
 {
   return sd_journal_seek_head(self->journal);
+}
+
+int
+journald_seek_tail(Journald *self)
+{
+  return sd_journal_seek_tail(self->journal);
 }
 
 int
@@ -206,6 +225,12 @@ int
 journald_process(Journald *self)
 {
   return sd_journal_process(self->journal);
+}
+
+int
+journald_get_realtime_usec(Journald *self, guint64 *usec)
+{
+  return sd_journal_get_realtime_usec(self->journal, usec);
 }
 
 Journald *

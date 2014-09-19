@@ -31,6 +31,8 @@
 
 #define JOURNALD_TESTCASE(testfunc, ...) { testcase_begin("%s(%s)", #testfunc, #__VA_ARGS__); testfunc(__VA_ARGS__); testcase_end(); }
 
+#define TEST_PERSIST_FILE_NAME "test_systemd_journal.persist"
+
 static gboolean task_called;
 static gboolean poll_triggered;
 
@@ -92,12 +94,23 @@ __test_seeks(Journald *journald)
   assert_gint(result, 0, ASSERTION_ERROR("Can't seek in journald mock"));
   result = journald_next(journald);
   assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+
+  result = journald_seek_tail(journald);
+  assert_gint(result, 0, ASSERTION_ERROR("Can't seek in journald mock"));
+  result = journald_next(journald);
+  assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+  result = journald_next(journald);
+  assert_gint(result, 0, ASSERTION_ERROR("Bad next step result"));
+
+
 }
 
 void
 __test_cursors(Journald *journald)
 {
   gchar *cursor;
+  journald_seek_head(journald);
+  journald_next(journald);
   gint result = journald_get_cursor(journald, &cursor);
   assert_string(cursor, "test_data1", ASSERTION_ERROR("Bad cursor fetched"));\
   g_free(cursor);
@@ -380,9 +393,10 @@ __check_value_len(NVHandle handle, const gchar *name, const gchar *value, gssize
 {
   TestCase *self = user_data;
   gchar *error_message = g_strdup_printf("Bad value size; name: %s, value: %s len: %ld", name, value, value_len);
-
-  assert_true(value_len <= GPOINTER_TO_INT(self->user_data), ASSERTION_ERROR(error_message));
-
+  if (strcmp(name, "HOST_FROM") != 0)
+    {
+      assert_true(value_len <= GPOINTER_TO_INT(self->user_data), ASSERTION_ERROR(error_message));
+    }
   g_free(error_message);
   return FALSE;
 }
@@ -450,6 +464,45 @@ _test_default_facility_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
+_test_program_field_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader, JournalReaderOptions *options)
+{
+  MockEntry *entry = mock_entry_new("test _COMM first win");
+  mock_entry_add_data(entry, "_COMM=comm_program");
+  mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
+  journald_mock_add_entry(journal, entry);
+
+  entry = mock_entry_new("test _COMM second win");
+  mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
+  mock_entry_add_data(entry, "_COMM=comm_program");
+  journald_mock_add_entry(journal, entry);
+
+  entry = mock_entry_new("no _COMM");
+  mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
+  journald_mock_add_entry(journal, entry);
+
+  self->user_data = journal;
+}
+
+void
+_test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
+{
+  Journald *journal = self->user_data;
+  gchar *cursor;
+  journald_get_cursor(journal, &cursor);
+  if (strcmp(cursor, "no _COMM") != 0)
+    {
+      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "comm_program", ASSERTION_ERROR("Bad program name"));
+      g_free(cursor);
+    }
+  else
+    {
+      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", ASSERTION_ERROR("Bad program name"));
+      g_free(cursor);
+      test_source_finish_tc(src);
+    }
+}
+
+void
 test_journal_reader()
 {
   TestSource *src = test_source_new(configuration);
@@ -459,6 +512,7 @@ test_journal_reader()
   TestCase tc_timezone = { _test_timezone_init, _test_timezone_test, NULL, NULL };
   TestCase tc_default_level =  { _test_default_level_init, _test_default_level_test, NULL, GINT_TO_POINTER(LOG_ERR) };
   TestCase tc_default_facility = { _test_default_facility_init, _test_default_facility_test, NULL, GINT_TO_POINTER(LOG_AUTH) };
+  TestCase tc_program_field = { _test_program_field_init, _test_program_field_test, NULL, NULL };
 
   test_source_add_test_case(src, &tc_default_working);
   test_source_add_test_case(src, &tc_prefix);
@@ -466,6 +520,7 @@ test_journal_reader()
   test_source_add_test_case(src, &tc_timezone);
   test_source_add_test_case(src, &tc_default_level);
   test_source_add_test_case(src, &tc_default_facility);
+  test_source_add_test_case(src, &tc_program_field);
 
   test_source_run_tests(src);
   log_pipe_unref((LogPipe *)src);
@@ -478,14 +533,14 @@ main(int argc, char **argv)
   main_thread_handle =  get_thread_id();
   configuration = cfg_new(0x306);
   configuration->threaded = FALSE;
-  configuration->state = persist_state_new("test_systemd_journal.persist");
+  configuration->state = persist_state_new(TEST_PERSIST_FILE_NAME);
   configuration->keep_hostname = TRUE;
   persist_state_start(configuration->state);
   JOURNALD_TESTCASE(test_journald_mock);
   JOURNALD_TESTCASE(test_journald_helper);
   JOURNALD_TESTCASE(test_journal_reader);
   persist_state_cancel(configuration->state);
-  unlink("test_systemd_journal.persist");
+  unlink(TEST_PERSIST_FILE_NAME);
   app_shutdown();
   return 0;
 }

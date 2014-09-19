@@ -55,6 +55,7 @@ void journald_free(Journald *self);
 int journald_open(Journald *self, int flags);
 void journald_close(Journald *self);
 int journald_seek_head(Journald *self);
+int journald_seek_tail(Journald *self);
 int journald_get_cursor(Journald *self, gchar **cursor);
 int journald_next(Journald *self);
 void journald_restart_data(Journald *self);
@@ -62,5 +63,6 @@ int journald_enumerate_data(Journald *self, const void **data, gsize *length);
 int journald_seek_cursor(Journald *self, const gchar *cursor);
 int journald_get_fd(Journald *self);
 int journald_process(Journald *self);
+int journald_get_realtime_usec(Journald *self, guint64 *usec);
 
 #endif /* JOURNAL_SOURCE_INTERFACE_H_ */

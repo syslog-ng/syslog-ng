@@ -23,6 +23,7 @@
  */
 
 #include "journald-mock.h"
+#include "misc.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -64,6 +65,14 @@ journald_seek_head(Journald *self)
 {
   g_assert(self->opened);
   self->next_element = g_list_first(self->entries);
+  return 0;
+}
+
+int
+journald_seek_tail(Journald *self)
+{
+  g_assert(self->opened);
+  self->next_element = g_list_last(self->entries);
   return 0;
 }
 
@@ -161,11 +170,22 @@ journald_process(Journald *self)
   return 0;
 }
 
+int
+journald_get_realtime_usec(Journald *self, guint64 *usec)
+{
+  *usec = 1408967385496986;
+  return 0;
+}
+
 Journald *
 journald_mock_new()
 {
   Journald *self = g_new0(Journald, 1);
-  pipe2(self->fds, O_NONBLOCK);
+
+  pipe(self->fds);
+  g_fd_set_nonblock(self->fds[0], TRUE);
+  g_fd_set_nonblock(self->fds[1], TRUE);
+
   return self;
 }
 
