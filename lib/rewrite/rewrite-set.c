@@ -58,7 +58,10 @@ log_rewrite_set_clone(LogPipe *s)
 
   cloned = (LogRewriteSet *) log_rewrite_set_new(log_template_ref(self->value_template), s->cfg);
   cloned->super.value_handle = self->super.value_handle;
-  cloned->super.condition = filter_expr_ref(self->super.condition);
+
+  if (self->super.condition)
+    cloned->super.condition = filter_expr_ref(self->super.condition);
+
   return &cloned->super.super;
 }
 

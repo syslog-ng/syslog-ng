@@ -56,7 +56,9 @@ log_rewrite_set_tag_clone(LogPipe *s)
   log_rewrite_init_instance(&cloned->super, s->cfg);
   cloned->super.super.clone = log_rewrite_set_tag_clone;
   cloned->super.process = log_rewrite_set_tag_process;
-  cloned->super.condition = filter_expr_ref(self->super.condition);
+
+  if (self->super.condition)
+    cloned->super.condition = filter_expr_ref(self->super.condition);
 
   cloned->tag_id = self->tag_id;
   cloned->value = self->value;

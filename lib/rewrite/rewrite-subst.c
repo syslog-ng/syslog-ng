@@ -93,7 +93,10 @@ log_rewrite_subst_clone(LogPipe *s)
   cloned = (LogRewriteSubst *) log_rewrite_subst_new(log_template_ref(self->replacement), s->cfg);
   cloned->matcher = log_matcher_ref(self->matcher);
   cloned->super.value_handle = self->super.value_handle;
-  cloned->super.condition = filter_expr_ref(self->super.condition);
+
+  if (self->super.condition)
+    cloned->super.condition = filter_expr_ref(self->super.condition);
+
   return &cloned->super.super;
 }
 
