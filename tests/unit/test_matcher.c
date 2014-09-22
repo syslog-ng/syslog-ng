@@ -36,7 +36,7 @@ testcase_match(const gchar *log, const gchar *pattern, gboolean expected_result,
   g_sockaddr_unref(sa);
 
   g_snprintf(buf, sizeof(buf), "%sAAAAAAAAAAAA", log_msg_get_value(msg, LM_V_MESSAGE, &msglen));
-  log_msg_set_value(msg, log_msg_get_value_handle("MESSAGE2"), buf, -1);
+  log_msg_set_value_by_name(msg, "MESSAGE2", buf, -1);
 
   /* add a non-zero terminated indirect value which contains the whole message */
   log_msg_set_value_indirect(msg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, 0, msglen);
@@ -77,7 +77,7 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
   /* NOTE: we test how our matchers cope with non-zero terminated values. We don't change message_len, only the value */
 
   g_snprintf(buf, sizeof(buf), "%sAAAAAAAAAAAA", log_msg_get_value(msg, LM_V_MESSAGE, &msglen));
-  log_msg_set_value(msg, log_msg_get_value_handle("MESSAGE2"), buf, -1);
+  log_msg_set_value_by_name(msg, "MESSAGE2", buf, -1);
 
   /* add a non-zero terminated indirect value which contains the whole message */
   log_msg_set_value_indirect(msg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, 0, msglen);

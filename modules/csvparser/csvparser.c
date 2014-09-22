@@ -227,9 +227,9 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
                 len--;
             }
           if (self->null_value && strncmp(src, self->null_value, len) == 0)
-            log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), "", 0);
+            log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
           else
-            log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, len);
+            log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, len);
 
           src = (gchar *) delim;
           if (*src)
@@ -239,7 +239,7 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
           if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
             {
               /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
-              log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, -1);
+              log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, -1);
               cur_column = NULL;
               src = NULL;
               break;
@@ -344,9 +344,9 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
                     len--;
                 }
               if (self->null_value && strcmp(current_value->str, self->null_value) == 0)
-                log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), "", 0);
+                log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
               else
-                log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), current_value->str, len);
+                log_msg_set_value_by_name(msg, (gchar *) cur_column->data, current_value->str, len);
               g_string_truncate(current_value, 0);
               cur_column = cur_column->next;
               state = PS_COLUMN_START;
@@ -355,7 +355,7 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
               if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
                 {
                   /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
-                  log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, -1);
+                  log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, -1);
                   cur_column = NULL;
                   src = NULL;
                   break;

@@ -30,7 +30,7 @@ testcase_update_sdata(const gchar *msg, const gchar *expected_sd_str, gchar *ele
       gchar sd_name[64];
 
       g_snprintf(sd_name, sizeof(sd_name), ".SDATA.%s.%s", elem, param);
-      log_msg_set_value(logmsg, log_msg_get_value_handle(sd_name), value, -1);
+      log_msg_set_value_by_name(logmsg, sd_name, value, -1);
       elem = va_arg(va, char *);
       param = va_arg(va, char *);
       value = va_arg(va, char *);

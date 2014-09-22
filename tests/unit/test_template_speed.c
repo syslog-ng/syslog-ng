@@ -39,13 +39,13 @@ testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
   else
     parse_options.flags &= ~LP_SYSLOG_PROTOCOL;
   msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
-  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", -1);
-  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE2"), "value", -1);
-  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE3"), "value", -1);
-  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE4"), "value", -1);
-  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE5"), "value", -1);
-  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE6"), "value", -1);
-  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE7"), "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE2", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE3", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE4", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE5", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE6", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE7", "value", -1);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
 

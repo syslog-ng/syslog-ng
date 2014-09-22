@@ -582,7 +582,7 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcher *s, LogMessage *msg, int *m
        for (i = 0; i < namecount; i++)
          {
            int n = (tabptr[0] << 8) | tabptr[1];
-           log_msg_set_value(msg, log_msg_get_value_handle(tabptr + 2), value + matches[2*n], matches[2*n+1] - matches[2*n]);
+           log_msg_set_value_by_name(msg, tabptr + 2, value + matches[2*n], matches[2*n+1] - matches[2*n]);
            tabptr += name_entry_size;
          }
      }  

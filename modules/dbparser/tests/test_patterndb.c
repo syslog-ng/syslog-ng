@@ -162,7 +162,7 @@ test_rule_value_without_clean(const gchar *program, const gchar *pattern,
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
 
   result = pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
-  val = log_msg_get_value(msg, log_msg_get_value_handle(name), &len);
+  val = log_msg_get_value_by_name(msg, name, &len);
   if (value)
     found = strcmp(val, value) == 0;
 
@@ -226,7 +226,7 @@ test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, con
       goto exit;
     }
 
-  val = log_msg_get_value((LogMessage *) g_ptr_array_index(messages, ndx), log_msg_get_value_handle(name), &len);
+  val = log_msg_get_value_by_name((LogMessage *) g_ptr_array_index(messages, ndx), name, &len);
   if (value)
     found = strcmp(val, value) == 0;
 

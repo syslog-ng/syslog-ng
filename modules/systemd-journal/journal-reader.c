@@ -198,14 +198,12 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       if (!options->prefix)
         {
-          NVHandle handle = log_msg_get_value_handle(key);
-          log_msg_set_value(msg, handle, value, value_len);
+          log_msg_set_value_by_name(msg, key, value, value_len);
         }
       else
         {
           gchar *prefixed_key = g_strdup_printf("%s%s", options->prefix, key);
-          NVHandle prefixed_handle = log_msg_get_value_handle(prefixed_key);
-          log_msg_set_value(msg, prefixed_handle, value, value_len);
+          log_msg_set_value_by_name(msg, prefixed_key, value, value_len);
           g_free(prefixed_key);
         }
     }

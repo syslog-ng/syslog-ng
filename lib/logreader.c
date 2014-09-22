@@ -295,10 +295,8 @@ static void
 _add_aux_nvpair(const gchar *name, const gchar *value, gsize value_len, gpointer user_data)
 {
   LogMessage *msg = (LogMessage *) user_data;
-  NVHandle handle;
-  
-  handle = log_msg_get_value_handle(name);
-  log_msg_set_value(msg, handle, value, value_len);
+
+  log_msg_set_value_by_name(msg, name, value, value_len);;
 }
 
 static gboolean

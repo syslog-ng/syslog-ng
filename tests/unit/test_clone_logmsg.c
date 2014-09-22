@@ -37,7 +37,7 @@ set_new_log_message_attributes(LogMessage *log_message)
   log_msg_set_value(log_message, LM_V_PID, "newpid", -1);
   log_msg_set_value(log_message, LM_V_MSGID, "newmsgid", -1);
   log_msg_set_value(log_message, LM_V_SOURCE, "newsource", -1);
-  log_msg_set_value(log_message, log_msg_get_value_handle("newvalue"), "newvalue", -1);
+  log_msg_set_value_by_name(log_message, "newvalue", "newvalue", -1);
 }
 
 void
