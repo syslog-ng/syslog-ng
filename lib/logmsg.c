@@ -2419,7 +2419,7 @@ log_msg_init_rcptid(PersistState *state)
 }
 
 void
-log_msg_deinit_rcptid()
+log_msg_deinit_rcptid(void)
 {
   if (persist_state_get_rcptcfg_state())
     {

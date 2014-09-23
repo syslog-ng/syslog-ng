@@ -288,6 +288,7 @@ void log_msg_global_deinit(void);
 gboolean log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
 
 gboolean log_msg_init_rcptid(PersistState *state);
+void log_msg_deinit_rcptid(void);
 
 void log_msg_create_rcptid(LogMessage *msg);
 
