@@ -359,24 +359,6 @@ afsql_dd_run_query(AFSqlDestDriver *self, const gchar *query, gboolean silent, d
   return TRUE;
 }
 
-static gboolean
-afsql_dd_check_sql_identifier(gchar *token, gboolean sanitize)
-{
-  gint i;
-
-  for (i = 0; token[i]; i++)
-    {
-      if (!((token[i] == '.') || (token[i] == '_') || (i && token[i] >= '0' && token[i] <= '9') || (g_ascii_tolower(token[i]) >= 'a' && g_ascii_tolower(token[i]) <= 'z')))
-        {
-          if (sanitize)
-            token[i] = '_';
-          else
-            return FALSE;
-        }
-    }
-  return TRUE;
-}
-
 /**
  * afsql_dd_handle_transaction_error:
  *
@@ -445,7 +427,9 @@ afsql_dd_begin_transaction(AFSqlDestDriver *self)
       /* oracle db has no BEGIN TRANSACTION command, it implicitly starts one, after every commit. */
       success = afsql_dd_run_query(self, s_begin, FALSE, NULL);
     }
-  self->transaction_active = TRUE;
+
+  self->transaction_active = success;
+
   return success;
 }
 
@@ -475,6 +459,40 @@ afsql_dd_begin_new_transaction(AFSqlDestDriver *self)
   return afsql_dd_begin_transaction(self);
 }
 
+static gboolean _sql_identifier_is_valid_char(gchar c)
+{
+  return ((c == '.') ||
+          (c == '_') ||
+          (c >= '0' && c <= '9') ||
+          (g_ascii_tolower(c) >= 'a' && g_ascii_tolower(c) <= 'z'));
+}
+
+static gboolean
+afsql_dd_sql_identifier_is_sanitized(const gchar *token)
+{
+  gint i;
+
+  for (i = 0; token[i]; i++)
+    {
+      if (!_sql_identifier_is_valid_char(token[i]))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+static void
+afsql_dd_sql_identifier_sanitize(gchar *token)
+{
+  gint i;
+
+  for (i = 0; token[i]; i++)
+    {
+      if (!_sql_identifier_is_valid_char(token[i]))
+        token[i] = '_';
+    }
+}
+
 /**
  * afsql_dd_create_index:
  *
@@ -484,7 +502,7 @@ afsql_dd_begin_new_transaction(AFSqlDestDriver *self)
  * NOTE: This function can only be called from the database thread.
  **/
 static gboolean
-afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
+afsql_dd_create_index(AFSqlDestDriver *self, const gchar *table, const gchar *column)
 {
   GString *query_string;
   gboolean success = TRUE;
@@ -537,8 +555,173 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
   return success;
 }
 
+static inline gboolean
+_validated_tables_contain(AFSqlDestDriver *self, const gchar *table)
+{
+  return (g_hash_table_lookup(self->validated_tables, table) != NULL);
+}
+
+static inline void
+_validated_tables_add(AFSqlDestDriver *self, const gchar *table)
+{
+  g_hash_table_insert(self->validated_tables, g_strdup(table), GUINT_TO_POINTER(TRUE));
+}
+
+static gboolean
+_table_is_exist(AFSqlDestDriver *self, const gchar *table, dbi_result *metadata)
+{
+  gboolean res = FALSE;
+  GString *query_string;
+
+  if (!afsql_dd_begin_new_transaction(self))
+    {
+      msg_error("Starting new transaction has failed",
+                NULL);
+
+      return FALSE;
+    }
+
+  query_string = g_string_sized_new(32);
+  g_string_printf(query_string, "SELECT * FROM %s WHERE 0=1", table);
+  res = afsql_dd_run_query(self, query_string->str, TRUE, metadata);
+  g_string_free(query_string, TRUE);
+
+  afsql_dd_commit_transaction(self);
+
+  return res;
+}
+
+static gboolean
+_table_make_valid(AFSqlDestDriver *self, dbi_result db_res, const gchar *table)
+{
+  gboolean success = TRUE;
+  gboolean new_transaction_started = FALSE;
+  gint i;
+  GString *query_string = g_string_sized_new(32);
+
+  for (i = 0; success && (i < self->fields_len); i++)
+    {
+      if (dbi_result_get_field_idx(db_res, self->fields[i].name) == 0)
+        {
+          GList *l;
+          if (!new_transaction_started)
+            {
+              if (!afsql_dd_begin_new_transaction(self))
+                {
+                  msg_error("Starting new transaction for modifying(ALTER) table has failed",
+                            evt_tag_str("table", table),
+                            NULL);
+                  success = FALSE;
+                  break;
+                }
+              new_transaction_started = TRUE;
+            }
+          /* field does not exist, add this column */
+          g_string_printf(query_string, "ALTER TABLE %s ADD %s %s", table, self->fields[i].name, self->fields[i].type);
+          if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
+            {
+              msg_error("Error adding missing column, giving up",
+                        evt_tag_str("table", table),
+                        evt_tag_str("column", self->fields[i].name),
+                        NULL);
+              success = FALSE;
+              break;
+            }
+          for (l = self->indexes; l; l = l->next)
+            {
+              if (strcmp((gchar *) l->data, self->fields[i].name) == 0)
+                {
+                  /* this is an indexed column, create index */
+                  afsql_dd_create_index(self, table, self->fields[i].name);
+                }
+            }
+        }
+    }
+
+  if (new_transaction_started && ( !success || !afsql_dd_commit_transaction(self)))
+    {
+      afsql_dd_rollback_transaction(self);
+      success = FALSE;
+    }
+
+  g_string_free(query_string, TRUE);
+
+  return success;
+}
+
+static gboolean
+_table_create_indexes(AFSqlDestDriver *self, const gchar *table)
+{
+  gboolean success = TRUE;
+  GList *l;
+
+  if (!afsql_dd_begin_new_transaction(self))
+    {
+      msg_error("Starting new transaction for table creation has failed",
+                evt_tag_str("table", table),
+                NULL);
+      return FALSE;
+    }
+
+
+  for (l = self->indexes; l && success; l = l->next)
+    {
+      success = afsql_dd_create_index(self, table, (gchar *) l->data);
+    }
+
+  if (!success || !afsql_dd_commit_transaction(self))
+    {
+      afsql_dd_rollback_transaction(self);
+    }
+
+  return success;
+}
+
+static gboolean
+_table_create(AFSqlDestDriver *self, const gchar *table)
+{
+  gint i;
+  GString *query_string = g_string_sized_new(32);
+  gboolean success = FALSE;
+  if (!afsql_dd_begin_new_transaction(self))
+    {
+      msg_error("Starting new transaction for table creation has failed",
+                evt_tag_str("table", table),
+                NULL);
+      return FALSE;
+    }
+
+  g_string_printf(query_string, "CREATE TABLE %s (", table);
+  for (i = 0; i < self->fields_len; i++)
+    {
+      g_string_append_printf(query_string, "%s %s", self->fields[i].name, self->fields[i].type);
+      if (i != self->fields_len - 1)
+        g_string_append(query_string, ", ");
+    }
+  g_string_append(query_string, ")");
+  if (afsql_dd_run_query(self, query_string->str, FALSE, NULL))
+    {
+      success = TRUE;
+    }
+  else
+    {
+      msg_error("Error creating table, giving up",
+                evt_tag_str("table", table),
+                NULL);
+    }
+
+  if (!success || !afsql_dd_commit_transaction(self))
+    {
+      afsql_dd_rollback_transaction(self);
+    }
+
+  g_string_free(query_string, TRUE);
+
+  return success;
+}
+
 /**
- * afsql_dd_validate_table:
+ * afsql_dd_provide_table:
  *
  * Check if the given table exists in the database. If it doesn't
  * create it, if it does, check if all the required fields are
@@ -547,130 +730,38 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
  * NOTE: This function can only be called from the database thread.
  **/
 static gboolean
-afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
+afsql_dd_provide_table(AFSqlDestDriver *self, GString *table)
 {
-  GString *query_string;
   dbi_result db_res = NULL;
   gboolean success = FALSE;
-  gboolean new_transaction_started = FALSE;
-  gint i;
 
   if (self->flags & AFSQL_DDF_DONT_CREATE_TABLES)
     return TRUE;
 
-  afsql_dd_check_sql_identifier(table, TRUE);
+  afsql_dd_sql_identifier_sanitize(table->str);
 
-  if (g_hash_table_lookup(self->validated_tables, table))
+  if (_validated_tables_contain(self, table->str))
     return TRUE;
 
-  // when table not found, we should request a new txn (and close/commit the existing one)
-
-  if (!afsql_dd_begin_new_transaction(self))
-    {
-      msg_error("Starting new transaction for querying(SELECT) table has failed",
-                evt_tag_str("table", table),
-                NULL);
-      return FALSE;
-    }
-
-  query_string = g_string_sized_new(32);
-  g_string_printf(query_string, "SELECT * FROM %s WHERE 0=1", table);
-  if (afsql_dd_run_query(self, query_string->str, TRUE, &db_res))
+  if (_table_is_exist(self, table->str, &db_res))
     {
       /* table exists, check structure */
-      success = TRUE;
-      for (i = 0; success && (i < self->fields_len); i++)
-        {
-          if (dbi_result_get_field_idx(db_res, self->fields[i].name) == 0)
-            {
-              GList *l;
-              if (!new_transaction_started)
-                {
-                  if (!afsql_dd_begin_new_transaction(self))
-                    {
-                      msg_error("Starting new transaction for modifying(ALTER) table has failed",
-                                evt_tag_str("table", table),
-                                NULL);
-                      success = FALSE;
-                      break;
-                    }
-                  new_transaction_started = TRUE;
-                }
-              /* field does not exist, add this column */
-              g_string_printf(query_string, "ALTER TABLE %s ADD %s %s", table, self->fields[i].name, self->fields[i].type);
-              if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
-                {
-                  msg_error("Error adding missing column, giving up",
-                            evt_tag_str("table", table),
-                            evt_tag_str("column", self->fields[i].name),
-                            NULL);
-                  success = FALSE;
-                  break;
-                }
-              if (self->enable_indexes)
-                {
-                  for (l = self->indexes; l; l = l->next)
-                    {
-                      if (strcmp((gchar *) l->data, self->fields[i].name) == 0)
-                        {
-                          /* this is an indexed column, create index */
-                          afsql_dd_create_index(self, table, self->fields[i].name);
-                        }
-                    }
-                }
-            }
-        }
+      success = _table_make_valid(self, db_res, table->str);
       if (db_res)
         dbi_result_free(db_res);
     }
   else
     {
       /* table does not exist, create it */
-      if (!afsql_dd_begin_new_transaction(self))
-        {
-          msg_error("Starting new transaction for table creation has failed",
-                    evt_tag_str("table", table),
-                    NULL);
-          success = FALSE;
-        }
-
-      new_transaction_started = TRUE;
-
-      g_string_printf(query_string, "CREATE TABLE %s (", table);
-      for (i = 0; i < self->fields_len; i++)
-        {
-          g_string_append_printf(query_string, "%s %s", self->fields[i].name, self->fields[i].type);
-          if (i != self->fields_len - 1)
-            g_string_append(query_string, ", ");
-        }
-      g_string_append(query_string, ")");
-      if (afsql_dd_run_query(self, query_string->str, FALSE, NULL))
-        {
-          GList *l;
-
-          success = TRUE;
-          if (self->enable_indexes)
-            {
-              for (l = self->indexes; l; l = l->next)
-                {
-                  afsql_dd_create_index(self, table, (gchar *) l->data);
-                }
-            }
-        }
-      else
-        {
-          msg_error("Error creating table, giving up",
-                    evt_tag_str("table", table),
-                    NULL);
-          success = FALSE;
-        }
+      success = _table_create(self, table->str) && _table_create_indexes(self, table->str);
     }
+
   if (success)
     {
       /* we have successfully created/altered the destination table, record this information */
-      g_hash_table_insert(self->validated_tables, g_strdup(table), GUINT_TO_POINTER(TRUE));
+      _validated_tables_add(self, table->str);
     }
-  g_string_free(query_string, TRUE);
+
   return success;
 }
 
@@ -775,7 +866,7 @@ afsql_dd_ensure_accessible_database_table(AFSqlDestDriver *self, LogMessage *msg
 
   log_template_format(self->table, msg, &self->template_options, LTZ_LOCAL, 0, NULL, table);
 
-  if (!afsql_dd_validate_table(self, table->str))
+  if (!afsql_dd_provide_table(self, table))
     {
       /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
       msg_error("Error checking table, disconnecting from database, trying again shortly",
@@ -1267,7 +1358,7 @@ afsql_dd_init(LogPipe *s)
               self->fields[i].name = g_strdup(col->data);
               self->fields[i].type = g_strdup("text");
             }
-          if (!afsql_dd_check_sql_identifier(self->fields[i].name, FALSE))
+          if (!afsql_dd_sql_identifier_is_sanitized(self->fields[i].name))
             {
               msg_error("Column name is not a proper SQL name",
                         evt_tag_str("column", self->fields[i].name),
