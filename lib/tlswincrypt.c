@@ -38,7 +38,7 @@ gboolean
 load_all_trusted_ca_certificates(SSL_CTX *ctx)
 {
   X509_STORE *ca_storage = SSL_CTX_get_cert_store(ctx);
-  gchar **stores = {"Root", "CA", NULL};
+  gchar *stores[] = {"Root", "CA", NULL};
   gint i;
 
   g_assert(ca_storage);
