@@ -135,16 +135,6 @@ service_management_dummy_is_active()
 }
 
 ServiceManagement service_managements[] = {
-#if ENABLE_SYSTEMD
-  {
-    .type = SMT_SYSTEMD,
-    .publish_status = service_management_systemd_publish_status,
-    .clear_status = service_management_systemd_clear_status,
-    .indicate_readiness = service_management_systemd_indicate_readiness,
-    .is_active = service_management_systemd_is_active
-  },
-#endif
-  /* This type is always active, so it must be the last item */
   {
     .type = SMT_NONE,
     .publish_status = service_management_dummy_publish_status,
@@ -152,19 +142,25 @@ ServiceManagement service_managements[] = {
     .indicate_readiness = service_management_dummy_indicate_readiness,
     .is_active = service_management_dummy_is_active
   }
+#if ENABLE_SYSTEMD
+  ,{
+    .type = SMT_SYSTEMD,
+    .publish_status = service_management_systemd_publish_status,
+    .clear_status = service_management_systemd_clear_status,
+    .indicate_readiness = service_management_systemd_indicate_readiness,
+    .is_active = service_management_systemd_is_active
+  }
+#endif
 };
 
 void
 service_management_init()
 {
   gint i = 0;
-
-  while (service_managements[i].type != SMT_NONE)
+  while (i < sizeof(service_managements) / sizeof(ServiceManagement))
     {
       if (service_managements[i].is_active())
         current_service_mgmt = &service_managements[i];
       i++;
     }
-
-   current_service_mgmt = &service_managements[0];
 }
