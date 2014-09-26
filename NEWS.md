@@ -1,3 +1,39 @@
+3.6.0rc1
+========
+<!-- Fri, 26 Sep 2014 11:17:31 +0200 -->
+
+This is the first Release Candidate of the syslog-ng OSE 3.6 branch.
+Based on our test results this release is almost production ready.
+
+Features
+--------
+* Added groupset rewrite object.
+  Groupset allows the user to modify multiple log message properties at once.
+  It also allows referencing the old value of the property as the $_ macro.
+
+Bugfixes
+--------
+* Fixed a memory leak during configuration parsing when using `rewrite()`.
+* Change control socket message from notice to debug
+* Fixes for retries() functionality.
+  Retry counter incremented by every message write error
+  (including network connection errors) which can lead to message lost.
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessary to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Balazs Scheidler, Brian De Wolf, Gergely Nagy, Laszlo Budai, Peter Czanik,
+Tibor Benke, Viktor Juhasz, Viktor Tusa
+
 3.6.0beta2
 ==========
 <!-- Thu, 11 Sep 2014 13:09:57 +0200 -->
