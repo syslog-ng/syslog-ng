@@ -753,8 +753,10 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
           else
             {
               /* guint16 NVHandle*/
-              if (!serialize_read_uint16(sa, (guint16 *)(&self->sdata[i])))
+              guint16 old_handle;
+              if (!serialize_read_uint16(sa, &old_handle))
                 return FALSE;
+              self->sdata[i] = old_handle;
             }
         }
     }
