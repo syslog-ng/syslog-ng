@@ -110,6 +110,7 @@ typedef struct
 {
   LogProtoClientAckCallback ack_callback;
   LogProtoClientRewindCallback rewind_callback;
+  void (*rewind_on_error_callback)(guint num_msg_rewind, gpointer user_data);
   gpointer user_data;
 } LogProtoFlowControlFuncs;
 
@@ -165,6 +166,13 @@ log_proto_msg_rewind(LogProto *self)
 {
   if (self->flow_control_funcs.rewind_callback)
     self->flow_control_funcs.rewind_callback(self->flow_control_funcs.user_data);
+}
+
+static inline void
+log_proto_msg_rewind_on_error(LogProto *self)
+{
+  if (self->flow_control_funcs.rewind_on_error_callback && self->pending_ack_count > 0)
+    self->flow_control_funcs.rewind_on_error_callback(self->pending_ack_count, self->flow_control_funcs.user_data);
 }
 
 static inline gboolean

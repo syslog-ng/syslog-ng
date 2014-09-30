@@ -150,6 +150,13 @@ log_writer_msg_rewind(gpointer user_data)
 }
 
 static void
+log_writer_msg_rewind_on_error(guint num_msg_rewind, gpointer user_data)
+{
+  LogWriter *self = (LogWriter *)user_data;
+  log_queue_rewind_backlog(self->queue, num_msg_rewind);
+}
+
+static void
 log_writer_free_proto(LogWriter *self)
 {
   if (self->proto)
@@ -170,6 +177,7 @@ log_writer_set_proto(LogWriter *self, LogProto *proto)
       LogProtoFlowControlFuncs flow_control_funcs;
       flow_control_funcs.ack_callback = log_writer_msg_ack;
       flow_control_funcs.rewind_callback = log_writer_msg_rewind;
+      flow_control_funcs.rewind_on_error_callback = log_writer_msg_rewind_on_error;
       flow_control_funcs.user_data = self;
 
       log_proto_set_flow_control_funcs(self->proto, &flow_control_funcs);
@@ -1122,6 +1130,10 @@ log_writer_broken(LogWriter *self, gint notify_code)
 {
   log_writer_stop_watches(self);
   self->last_notify_code = notify_code;
+  if (self->proto)
+    {
+      log_proto_msg_rewind_on_error(self->proto);
+    }
   log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
