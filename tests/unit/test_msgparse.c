@@ -11,6 +11,7 @@
 #include "serialize.h"
 #include "cfg.h"
 #include "plugin.h"
+#include "messages.h"
 
 #include <time.h>
 #include <string.h>
@@ -156,6 +157,12 @@ testcase(gchar *msg,
   parsed_message = parse_log_message(msg, parse_flags, bad_hostname_re);
   parsed_timestamp = &(parsed_message->timestamps[LM_TS_STAMP]);
 
+  if (msg[0] != '<')
+    {
+      /* if the priority field is not found in the message, then the expected_pri value should be LOG_AUTH | LOG_EMERG */
+      expected_pri = EVT_FAC_USER | EVT_PRI_NOTICE;
+    }
+
   if (expected_stamp_sec)
     {
       if (expected_stamp_sec != 1)
@@ -234,6 +241,15 @@ test_log_messages_can_be_parsed()
            0,//processid
            0,//msgid
            empty_sdata_pairs
+           );
+
+  testcase("PTHREAD support initialized", 0, NULL,
+           0, 			// pri
+           0, 0, 0,		// timestamp (sec/usec/zone)
+           "",		// host
+           "PTHREAD",		// program
+           "support initialized", // msg
+           NULL, NULL, NULL, NULL
            );
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
@@ -505,6 +521,79 @@ test_log_messages_can_be_parsed()
            "app",
            "msg",
            NULL, NULL, NULL, ignore_sdata_pairs
+           );
+
+  // Testing ignore_ambiguous_program_field option
+  testcase("PTHREAD support initialized", LP_FALLBACK_NOPARSE, NULL,
+           0, 			// pri
+           0, 0, 0,		// timestamp (sec/usec/zone)
+           "",		// host
+           "",		// program
+           "PTHREAD support initialized", // msg
+           NULL, NULL, NULL, NULL
+           );
+
+  testcase("<15> PTHREAD support initialized", LP_FALLBACK_NOPARSE, NULL,
+           15, 			// pri
+           0, 0, 0,		// timestamp (sec/usec/zone)
+           "",		// host
+           "",		// program
+           "PTHREAD support initialized", // msg
+           NULL, NULL, NULL, NULL
+           );
+
+  testcase("openvpn[2499]: PTHREAD support initialized", LP_FALLBACK_NOPARSE, NULL,
+           0,                   // pri
+           0, 0, 0,		// timestamp (sec/usec/zone)
+           "",		// host
+           "",		// program
+           "openvpn[2499]: PTHREAD support initialized", // msg
+           NULL, NULL, NULL, NULL
+           );
+
+  testcase("<7>2006-10-29T02:00:00.156+01:00", LP_FALLBACK_NOPARSE, NULL,
+           7, 			// pri
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
+           "",	        	// host
+           "",		// program
+           "", // msg
+           NULL, NULL, NULL, NULL
+           );
+
+  testcase("<7>2006-10-29T02:00:00.156+01:00 snmpd[2499]: PTHREAD support initialized", LP_FALLBACK_NOPARSE, NULL,
+           7, 			// pri
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
+           "",		        // host
+           "snmpd",		// program
+           "PTHREAD support initialized", // msg
+           NULL, "2499", NULL, NULL
+           );
+
+  testcase("<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", LP_FALLBACK_NOPARSE, "^ctld",
+           7, 			// pri
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
+           "",		        // host
+           "ctld",
+           "snmpd[2499]: PTHREAD support initialized", // msg
+           NULL, NULL, NULL, NULL
+           );
+
+  testcase("<7>2006-11-10T10:43:21.156+02:00 openvpn[2499]: PTHREAD support initialized", LP_FALLBACK_NOPARSE, NULL,
+           7, 			// pri
+           1163148201, 156000, 7200,	// timestamp (sec/usec/zone)
+           "",                  // host
+           "openvpn",		// program
+           "PTHREAD support initialized", // msg
+           NULL, "2499", NULL, NULL
+           );
+
+  testcase("<7>2006-11-10T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_FALLBACK_NOPARSE | LP_EXPECT_HOSTNAME, NULL,
+           7, 			// pri
+           1163148201, 156000, 7200,	// timestamp (sec/usec/zone)
+           "bzorp",		// host
+           "openvpn",		// program
+           "PTHREAD support initialized", // msg
+           NULL, "2499", NULL, NULL
            );
 
   const gchar *expected_sd_pairs_test_1[][2]=

@@ -47,6 +47,8 @@ enum
   LP_NO_MULTI_LINE   = 0x0020,
   /* don't store MSGHDR in the LEGACY_MSGHDR macro */
   LP_STORE_LEGACY_MSGHDR = 0x0040,
+  /* do not parse message (program fields) for BSD legacy messages when the date part is missing */
+  LP_FALLBACK_NOPARSE = 0x0800,
   /* expect a hostname field in the message */
   LP_EXPECT_HOSTNAME = 0x0080,
   /* message is locally generated and should be marked with LF_LOCAL */

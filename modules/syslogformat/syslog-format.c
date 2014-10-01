@@ -1051,8 +1051,11 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
       /* No, not a kernel message. */
       else
         {
-          /* Capture the program name */
-          log_msg_parse_legacy_program_name(self, &src, &left, parse_options->flags);
+          if ((parse_options->flags & LP_FALLBACK_NOPARSE) == 0)
+          {
+            /* Capture the program name */
+            log_msg_parse_legacy_program_name(self, &src, &left, parse_options->flags);
+          }
         }
       self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
     }

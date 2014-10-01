@@ -1330,6 +1330,7 @@ CfgFlagHandler log_reader_flag_handlers[] =
   { "dont-store-legacy-msghdr", CFH_CLEAR, offsetof(LogReaderOptions, parse_options.flags), LP_STORE_LEGACY_MSGHDR },
   { "expect-hostname",            CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_EXPECT_HOSTNAME },
   { "no-hostname",              CFH_CLEAR, offsetof(LogReaderOptions, parse_options.flags), LP_EXPECT_HOSTNAME },
+  { "fallback-noparse",           CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_FALLBACK_NOPARSE },
 
   /* LogReaderOptions */
   { "kernel",                     CFH_SET, offsetof(LogReaderOptions, flags),               LR_KERNEL },
