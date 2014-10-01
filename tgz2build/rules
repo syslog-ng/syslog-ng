@@ -32,6 +32,8 @@ ifneq (,$(findstring aix,$(ZBS_DIST)))
   NEED_INSTALL_BEFORE_CHECK=1
   # add -Wl,-bnoquiet for ld debugging
   RPATH=-Wl,-bnolibpath,-blibpath:/opt/syslog-ng/lib:/usr/lib:/lib,-bnoquiet
+  # set memory limit to 2GB
+  LDFLAGS+=-Wl,-bmaxdata:2147483648
 endif
 
 ifneq (,$(findstring hpux,$(ZBS_DIST)))
