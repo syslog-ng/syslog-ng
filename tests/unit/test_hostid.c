@@ -163,6 +163,9 @@ test_if_hostid_is_serialized()
 
 int main(int argc, char **argv)
 {
+#if __hpux__
+  return 0;
+#endif
   app_startup();
 
   HOSTID_TESTCASE(test_if_hostid_generated_when_persist_file_not_exists);

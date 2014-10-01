@@ -505,29 +505,39 @@ void
 test_journal_reader()
 {
   TestSource *src = test_source_new(configuration);
-  TestCase tc_default_working = { _test_default_working_init, _test_default_working_test, NULL, NULL };
-  TestCase tc_prefix = { _test_prefix_init, _test_prefix_test, NULL, "this.is.a.prefix." };
-  TestCase tc_max_field_size = { _test_field_size_init, _test_field_size_test, NULL, GINT_TO_POINTER(10)};
-  TestCase tc_timezone = { _test_timezone_init, _test_timezone_test, NULL, NULL };
-  TestCase tc_default_level =  { _test_default_level_init, _test_default_level_test, NULL, GINT_TO_POINTER(LOG_ERR) };
-  TestCase tc_default_facility = { _test_default_facility_init, _test_default_facility_test, NULL, GINT_TO_POINTER(LOG_AUTH) };
-  TestCase tc_program_field = { _test_program_field_init, _test_program_field_test, NULL, NULL };
+  TestCase *tc_default_working = test_case_new( _test_default_working_init, _test_default_working_test, NULL, NULL );
+  TestCase *tc_prefix = test_case_new( _test_prefix_init, _test_prefix_test, NULL, "this.is.a.prefix." );
+  TestCase *tc_max_field_size = test_case_new( _test_field_size_init, _test_field_size_test, NULL, GINT_TO_POINTER(10));
+  TestCase *tc_timezone = test_case_new( _test_timezone_init, _test_timezone_test, NULL, NULL );
+  TestCase *tc_default_level =  test_case_new( _test_default_level_init, _test_default_level_test, NULL, GINT_TO_POINTER(LOG_ERR) );
+  TestCase *tc_default_facility = test_case_new( _test_default_facility_init, _test_default_facility_test, NULL, GINT_TO_POINTER(LOG_AUTH) );
+  TestCase *tc_program_field = test_case_new( _test_program_field_init, _test_program_field_test, NULL, NULL );
 
-  test_source_add_test_case(src, &tc_default_working);
-  test_source_add_test_case(src, &tc_prefix);
-  test_source_add_test_case(src, &tc_max_field_size);
-  test_source_add_test_case(src, &tc_timezone);
-  test_source_add_test_case(src, &tc_default_level);
-  test_source_add_test_case(src, &tc_default_facility);
-  test_source_add_test_case(src, &tc_program_field);
+  test_source_add_test_case(src, tc_default_working);
+  test_source_add_test_case(src, tc_prefix);
+  test_source_add_test_case(src, tc_max_field_size);
+  test_source_add_test_case(src, tc_timezone);
+  test_source_add_test_case(src, tc_default_level);
+  test_source_add_test_case(src, tc_default_facility);
+  test_source_add_test_case(src, tc_program_field);
 
   test_source_run_tests(src);
   log_pipe_unref((LogPipe *)src);
+
+  g_free(tc_default_working);
+  g_free(tc_prefix);
+  g_free(tc_max_field_size);
+  g_free(tc_timezone);
+  g_free(tc_default_level);
+  g_free(tc_default_facility);
+  g_free(tc_program_field);
 }
 
 int
 main(int argc, char **argv)
 {
+/* This test cause many problems under non-linux platforms */
+#if __linux__
   app_startup();
   main_thread_handle =  get_thread_id();
   configuration = cfg_new(0x306);
@@ -541,5 +551,6 @@ main(int argc, char **argv)
   persist_state_cancel(configuration->state);
   unlink(TEST_PERSIST_FILE_NAME);
   app_shutdown();
+#endif
   return 0;
 }

@@ -40,6 +40,20 @@ struct _TestCase {
     gpointer user_data;
 };
 
+static inline TestCase *
+test_case_new(void (*init)(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader, JournalReaderOptions *options),
+              void (*checker)(TestCase *self, TestSource *src, LogMessage *msg),
+              void (*finish)(TestCase *self),
+              gpointer user_data)
+{
+  TestCase *self = g_new0(TestCase, 1);
+  self->init = init;
+  self->checker = checker;
+  self->finish = finish;
+  self->user_data = user_data;
+  return self;
+}
+
 
 TestSource *test_source_new();
 
