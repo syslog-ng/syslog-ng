@@ -729,13 +729,13 @@ utf8_escape_string(const gchar *str, gssize len)
 gchar *
 utf8_escape_string_ex(const gchar *str)
 {
-  guint8 *char_ptr = str;
+  guint8 *char_ptr = (guint8 *)str;
   GString *escaped_string;
 
   escaped_string = g_string_sized_new(strlen(str));
   while (*char_ptr)
     {
-      gunichar uchar = g_utf8_get_char_validated(char_ptr, -1);
+      gunichar uchar = g_utf8_get_char_validated((char *)char_ptr, -1);
 
       switch (uchar)
         {
@@ -772,7 +772,7 @@ utf8_escape_string_ex(const gchar *str)
               g_string_append_printf(escaped_string, "\\x%02x", uchar);
             break;
         }
-      char_ptr = g_utf8_next_char(char_ptr);
+      char_ptr = (guint8 *)g_utf8_next_char(char_ptr);
     }
   return g_string_free(escaped_string, FALSE);
 }
