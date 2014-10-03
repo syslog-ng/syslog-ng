@@ -44,6 +44,7 @@
 #include "plugin.h"
 
 #ifndef _WIN32
+#if __linux__
 void
 migrate_dev_log_to_systemd_journal(LogDriver *sd, LogDriver *sd_journal)
 {
@@ -68,7 +69,12 @@ fallback_journald_if_required(LogDriver *sd)
       migrate_dev_log_to_systemd_journal(sd, systemd_journal_sd_new());
     }
 }
-
+#else
+void
+fallback_journald_if_required(LogDriver *sd)
+{
+}
+#endif
 #endif
 
 #if ENABLE_SSL /* BEGIN MARK: tls */
