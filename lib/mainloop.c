@@ -430,7 +430,8 @@ main_loop_init(void)
   main_loop_call_init();
 
   main_loop_init_events();
-  control_init(ctlfilename);
+  if (!syntax_only)
+    control_init(ctlfilename);
   setup_signals();
 }
 
@@ -469,7 +470,9 @@ void
 main_loop_deinit(void)
 {
   main_loop_free_config();
-  control_destroy();
+
+  if (!syntax_only)
+    control_destroy();
 
   iv_event_unregister(&exit_requested);
   iv_event_unregister(&reload_config_requested);
