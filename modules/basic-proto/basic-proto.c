@@ -894,8 +894,27 @@ log_proto_buffered_server_skip_character(LogProtoBufferedServer *self, char **in
   return TRUE;
 }
 
+static void
+__skip_invalid_byte(gchar **in,
+                    gsize *avail_in,
+                    const guchar *buffer,
+                    const gsize buffer_len,
+                    const gchar *encoding,
+                    const gint step)
+{
+  msg_error("Invalid byte sequence while converting input, skip it them",
+            evt_tag_str("encoding", encoding),
+            evt_tag_printf("char", "0x%02x", *in[0]),
+            evt_tag_id(MSG_CHAR_ENCODING_FAILED),
+            NULL);
+
+   // skip 1 byte in raw_buffer and try conversion again
+  *in = (gchar *)buffer + step;
+  *avail_in = buffer_len - step;
+}
+
 static gboolean
-log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const guchar *raw_buffer, gsize raw_buffer_len)
+log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const guchar *raw_buffer, gsize raw_buffer_len, gint leftover_size)
 {
   /* some data was read */
   gchar *in = (gchar *)raw_buffer;
@@ -905,6 +924,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
   gint  ret = -1;
   gboolean success = FALSE;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+  gint leftover_size_origin = leftover_size;
 
   do
     {
@@ -917,6 +937,16 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
           switch (errno)
             {
             case EINVAL:
+
+              if (leftover_size > 0 && avail_in > 0 && raw_buffer_len > SUBSTITUTION_BUFFER_LEN)
+                {
+                  gint new_in_start_pos = leftover_size_origin - leftover_size + 1;
+                  __skip_invalid_byte(&in, &avail_in, raw_buffer, raw_buffer_len, self->super.encoding, new_in_start_pos);
+                  state->pending_raw_buffer_size++;
+                  leftover_size--;
+                  continue;
+                }
+
               /* Incomplete text, do not report an error, rather try to read again */
               state->pending_buffer_end = state->buffer_size - avail_out;
 
@@ -926,18 +956,21 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                     {
                       msg_error("Invalid byte sequence, the remaining raw buffer is larger than the supported leftover size",
                                 evt_tag_str("encoding", self->super.encoding),
-                                evt_tag_int("avail_in", avail_in),
+                                evt_tag_int("len", avail_in),
                                 evt_tag_int("leftover_size", sizeof(state->raw_buffer_leftover)),
                                 evt_tag_id(MSG_CHAR_ENCODING_FAILED),
                                 NULL);
                       goto error;
                     }
+
                   memcpy(state->raw_buffer_leftover, in, avail_in);
                   state->raw_buffer_leftover_size = avail_in;
                   state->pending_raw_buffer_size -= avail_in;
-                  msg_trace("Leftover characters remained after conversion, delaying message until another chunk arrives",
+
+                  msg_debug("Leftover characters remained after conversion, delaying message until another chunk arrives",
                             evt_tag_str("encoding", self->super.encoding),
-                            evt_tag_int("avail_in", avail_in),
+                            evt_tag_str("(first part of) log", (gchar *)raw_buffer),
+                            evt_tag_int("leftover_size", sizeof(state->raw_buffer_leftover_size)),
                             NULL);
                   goto success;
                 }
@@ -1132,7 +1165,7 @@ log_proto_buffered_server_apply_state(LogProto *s, StateHandler *state_handler)
       state->pending_buffer_end = 0;
       if (self->super.encoding)
         {
-          if (!log_proto_buffered_server_convert_from_raw(self, pending_raw_buffer, rc))
+          if (!log_proto_buffered_server_convert_from_raw(self, pending_raw_buffer, rc, state->raw_buffer_leftover_size))
             {
               msg_notice("Error re-converting buffer contents of the file to be continued, restarting from the beginning",
                          evt_tag_str("state", state_handler_get_persist_name(state_handler)),
@@ -1610,6 +1643,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
   LogProtoStatus result = self->status;
   LogProtoServerOptions *options = (LogProtoServerOptions *)self->super.options;
+  gint raw_buffer_leftover_size;
 
   if (G_UNLIKELY(!self->buffer))
     {
@@ -1778,11 +1812,12 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
         {
           state->pending_raw_buffer_size += rc;
           rc += state->raw_buffer_leftover_size;
+          raw_buffer_leftover_size = state->raw_buffer_leftover_size;
           state->raw_buffer_leftover_size = 0;
 
           if (self->super.encoding)
             {
-              if (!log_proto_buffered_server_convert_from_raw(self, raw_buffer, rc))
+              if (!log_proto_buffered_server_convert_from_raw(self, raw_buffer, rc, raw_buffer_leftover_size))
                 {
                   result = LPS_ERROR;
                   goto exit;

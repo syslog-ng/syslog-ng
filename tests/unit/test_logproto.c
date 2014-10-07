@@ -333,6 +333,31 @@ test_log_proto_text_record_server_skip_bad_chars(void)
 }
 
 static void
+test_log_proto_text_record_server_leftover(void)
+{
+  LogProto *proto;
+  LogTransport *transport;
+
+  transport = log_transport_mock_new(
+      FALSE,
+      "\x48\x00\x48\x00\x48\x00\x48\x00\x0a\x00\x00\x00\x00\x00\x00\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 32,
+      "\x61\x61\x61\x61\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 32,
+      "\x50\x00\x50\x00\x50\x00\x50\x00\x0a\x00\x00\x00\x00\x00\x00\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 32,
+      LTM_EOF);
+
+  proto = log_proto_record_server_new(transport, 32, 0);
+  log_proto_set_encoding(proto, "utf-16le");
+  assert_proto_fetch(proto, "HHHH", 4);
+  assert_proto_fetch(proto, "\xE6\x85\xA1\xE6\x85\xA1", 6);
+  assert_proto_fetch(proto, "PPPP", 4);
+  assert_proto_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_free(proto);
+}
+
+static void
 test_log_proto_record_server(void)
 {
   /* binary records are only tested in no-encoding mode, as there's only one
@@ -342,7 +367,10 @@ test_log_proto_record_server(void)
   test_log_proto_text_record_server_ucs4();
   test_log_proto_text_record_server_iso_8859_2();
   test_log_proto_text_record_server_skip_bad_chars();
+  test_log_proto_text_record_server_leftover();
 }
+
+
 
 /****************************************************************************************
  * LogProtoTextServer
@@ -543,6 +571,72 @@ test_log_proto_text_server_multi_read(void)
 }
 
 static void
+test_log_proto_text_server_leftover_plus_half_enter_with_big_packets(void)
+{
+  LogProto *proto;
+  LogTransport *transport;
+
+  transport = log_transport_mock_new(
+      FALSE,
+      "\x48\x00\x48\x00\x48\x00\x48\x00\x0a\x00", 10,
+      "\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x0a", 21,
+      "\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x0a\x00", 22,
+      LTM_EOF);
+
+  proto = create_log_proto_text_server_new(transport, 64, 0);
+  log_proto_set_encoding(proto, "utf-16le");
+  assert_proto_fetch(proto, "HHHH", 4);
+  assert_proto_fetch(proto, "aaaaaaaaaaPPPPPPPPPP", 20);
+  assert_proto_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_free(proto);
+}
+
+static void
+test_log_proto_text_server_leftover_plus_half_enter_with_small_packets(void)
+{
+  LogProto *proto;
+  LogTransport *transport;
+
+  transport = log_transport_mock_new(
+      TRUE,
+      "\x48\x00\x48\x00\x48\x00\x48\x00\x0a\x00", 10,
+      "\x61\x00\x61\x00\x0a", 5,
+      "\x50\x00\x50\x00", 4,
+      "\x50\x00\x50\x00", 4,
+      "\x50\x00\x50\x00", 4,
+      "\x50\x00\x50", 3,
+      LTM_EOF);
+
+  proto = create_log_proto_text_server_new(transport, 64, 0);
+  log_proto_set_encoding(proto, "utf-16le");
+  assert_proto_fetch(proto, "HHHH", 4);
+  assert_proto_fetch(proto, "aa\xe5\x80\x8a\xe5\x80\x80\xe5\x80\x80\xe5\x80\x80\xe5\x80\x80\xe5\x80\x80\xe5\x80\x80\xe5\x80\x80", 26);
+  assert_proto_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_free(proto);
+}
+
+static void
+test_log_proto_text_server_leftover_cutted_character(void)
+{
+  LogProto *proto;
+  LogTransport *transport;
+
+  transport = log_transport_mock_new(
+      TRUE,
+      "\x48\x00\x48\x00\x48\x00\x48\x00\x0a\x00", 10,
+      "\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61\x00\x61", 17,
+      "\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00\x50\x00", 17,
+      LTM_EOF);
+
+  proto = create_log_proto_text_server_new(transport, 64, 0);
+  log_proto_set_encoding(proto, "utf-16le");
+  assert_proto_fetch(proto, "HHHH", 4);
+  assert_proto_fetch(proto, "aaaaaaaaaPPPPPPPP", 17);
+  assert_proto_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_free(proto);
+}
+
+static void
 test_log_proto_text_server(void)
 {
   test_log_proto_text_server_no_encoding(FALSE);
@@ -553,6 +647,9 @@ test_log_proto_text_server(void)
   test_log_proto_text_server_iso8859_2();
   test_log_proto_text_server_multi_read();
   test_log_proto_text_server_skip_bad_chars();
+  test_log_proto_text_server_leftover_plus_half_enter_with_big_packets();
+  test_log_proto_text_server_leftover_plus_half_enter_with_small_packets();
+  test_log_proto_text_server_leftover_cutted_character();
 }
 
 /****************************************************************************************
