@@ -271,7 +271,8 @@ riemann_dd_field_maybe_add(riemann_event_t *event, LogMessage *msg,
 
   log_template_format(template, msg, template_options, LTZ_SEND,
                       seq_num, NULL, target);
-  riemann_event_set(event, ftype, target->str, RIEMANN_EVENT_FIELD_NONE);
+  if (target->len != 0)
+    riemann_event_set(event, ftype, target->str, RIEMANN_EVENT_FIELD_NONE);
 }
 
 static void
@@ -329,6 +330,9 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
       log_template_format(self->fields.metric, msg, &self->template_options,
                           LTZ_SEND, self->super.seq_num, NULL, sb_gstring_string(str));
 
+      if (sb_gstring_string(str)->len == 0)
+        goto after_metric;
+
       switch (self->fields.metric->type_hint)
         {
         case TYPE_HINT_INT32:
@@ -364,6 +368,8 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
         }
     }
 
+ after_metric:
+
   if (!need_drop && self->fields.ttl)
     {
       gdouble d;
@@ -372,6 +378,9 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
                           LTZ_SEND, self->super.seq_num, NULL,
                           sb_gstring_string(str));
 
+      if (sb_gstring_string(str)->len == 0)
+        goto after_ttl;
+
       if (type_cast_to_double (sb_gstring_string(str)->str, &d, NULL))
         riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, (float) d,
                           RIEMANN_EVENT_FIELD_NONE);
@@ -379,6 +388,8 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
         need_drop = type_cast_drop_helper(self->template_options.on_error,
                                           sb_gstring_string(str)->str, "double");
     }
+
+ after_ttl:
 
   if (!need_drop)
     {
