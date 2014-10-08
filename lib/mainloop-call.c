@@ -61,7 +61,6 @@ main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
   call_info.func = func;
   call_info.user_data = user_data;
   call_info.wait = wait;
-  main_loop_call_thread_init();
   iv_list_add(&call_info.list, &main_task_queue);
   iv_event_post(&main_task_posted);
   if (wait)
