@@ -1,0 +1,55 @@
+SELINUX SUPPORT FOR SYSLOG-NG ON RHEL-7
+
+  This directory contains syslog-ng's SELinux policy files. By compiling and
+  loading them into your kernel, your syslog-ng will be able to work with its
+  default configuration in a SELinux enabled environment.
+
+  You need the following RPM packages preinstalled to be able to compile and
+  load SELinux policy modules:
+
+    policycoreutils
+    policycoreutils-devel
+
+INSTALLATION
+
+  To compile and load this module, you have to run the 'syslog_ng.sh' script.
+  It compiles and loads the syslog_ng module and restores the right file contexts
+  in syslog-ng's install directory. The changes will be effective after restarting
+  syslog-ng:
+
+  cd /opt/syslog-ng/share/doc/selinux
+  ./syslog_ng.sh
+  systemctl restart syslog-ng
+
+UNINSTALL
+
+ The module will be active, until you remove it. Then you have to restart syslog-ng.
+
+  semodule --remove=syslog_ng
+  systemctl restart syslog-ng
+
+ADDITIONAL INFORMATION
+
+  In permissive mode, SELinux logs all file acces by syslog-ng into
+  /var/log/audit/audit.log. If you don't want to fill the audit.log with
+  syslog-ng clutter, generate some dontaudit rule with audit2allow:
+
+    grep syslogd /var/log/audit/audit.log | audit2allow -D -M syslogddontaudit
+
+  Syslog-ng is able to create coredumps and it's disabled by default. You can
+  enable coredumps by
+
+    setsebool -P daemons_dump_core 1
+
+  Please note, that this command enables core dumping for all daemons on your sysmtem,
+  not just for syslog-ng. There is no way to enable per application core dumps in SELinux.
+
+  If SELinux blocks syslog-ng to acces files, sockets, databases, etc. you can
+  explicitly allow those activities by running the following command and append
+  the allow rules to syslog_ng.te file:
+
+    grep syslog-ng /var/log/audit/audit.log | audit2allow -R
+
+  Then you have to run the 'syslog_ng.sh' script again and restart syslog-ng.
+
+  If you have problems with SELinux, you can turn to BalaBit's support team.

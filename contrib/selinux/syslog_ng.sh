@@ -1,34 +1,18 @@
-#!/bin/sh -e
+#!/bin/sh
 
+set -e
 DIRNAME=`dirname $0`
 cd $DIRNAME
 USAGE="$0 [ --update ]"
 if [ `id -u` != 0 ]; then
-	echo 'You must be root to run this script'
-	exit 1
-fi
-
-if [ ! -f /etc/selinux/config ]; then
-	echo 'SELinux not installed on this machine.'
-	exit 1
-fi
-
-. /etc/selinux/config
-
-if [ -z "$SELINUX" ] || [ "$SELINUX" = "disabled" ]; then
-	echo 'SELinux not configured.'
-	exit 1
-fi
-
-if [ ! -f /usr/share/selinux/devel/Makefile ]; then
-	echo 'selinux-policy package missing. please install it.'
-	exit 1
+echo 'You must be root to run this script'
+exit 1
 fi
 
 if [ $# -eq 1 ]; then
 	if [ "$1" = "--update" ] ; then
 		time=`ls -l --time-style="+%x %X" syslog_ng.te | awk '{ printf "%s %s", $6, $7 }'`
-		rules=`ausearch --start $time -m avc --raw -se syslog_ng`
+		rules=`ausearch --start $time -m avc --raw -se syslogd`
 		if [ x"$rules" != "x" ] ; then
 			echo "Found avc's to update policy with"
 			echo -e "$rules" | audit2allow -R
@@ -53,11 +37,25 @@ elif [ $# -ge 2 ] ; then
 	echo -e $USAGE
 	exit 1
 fi
-
-
+set +e
 echo "Building and Loading Policy"
-make -f /usr/share/selinux/devel/Makefile
-/usr/sbin/semodule -i syslog_ng.pp
+set -x
+make -f /usr/share/selinux/devel/Makefile syslog_ng.pp || exit
+/usr/sbin/semodule -i syslog_ng.pp -v
 
-# Fixing the file context on /opt/syslog-ng/sbin/syslog-ng
+# Fixing the file context
 /sbin/restorecon -F -R -v /opt/syslog-ng/sbin/syslog-ng
+/sbin/restorecon -F -R -v /opt/syslog-ng/bin
+/sbin/restorecon -F -R -v /opt/syslog-ng/etc
+/sbin/restorecon -F -R -v /opt/syslog-ng/lib
+/sbin/restorecon -F -R -v /opt/syslog-ng/var
+/sbin/restorecon -F -R -v /opt/syslog-ng/var/syslog-ng.persist
+/sbin/restorecon -F -R -v /opt/syslog-ng/var/syslog-ng.persist-
+/sbin/restorecon -F -R -v /opt/syslog-ng/libexec
+/sbin/restorecon -F -R -v /opt/syslog-ng/libexec/syslog-ng
+/sbin/restorecon -F -R -v /opt/syslog-ng/var/run
+
+set +x
+
+echo "Please restart syslog-ng (as root) by the following command:"
+echo "systemctl restart syslog-ng"

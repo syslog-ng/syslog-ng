@@ -27,7 +27,7 @@ EXTRA_DIST = README init.d.solaris init.d.HP-UX init.d.RedHat init.d.SuSE 	\
 	selinux/syslog_ng.fc \
 	selinux/syslog_ng.te \
 	selinux/syslog_ng.sh \
-	selinux/README.selinux \
+	selinux/README \
 	apparmor/opt.syslog-ng.sbin.syslog-ng \
 	balabit-initscripts/init.d \
 	balabit-initscripts/init.d.freebsd \

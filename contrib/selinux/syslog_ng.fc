@@ -1,3 +1,10 @@
-
-/opt/syslog-ng/sbin/syslog-ng		--	gen_context(system_u:object_r:syslog_ng_exec_t,s0)
-/dev/log				--	gen_context(unconfined_u:object_r:devlog_t,s0)
+/opt/syslog-ng/sbin/syslog-ng		--	gen_context(system_u:object_r:syslogd_exec_t,s0)
+/opt/syslog-ng/bin(/.*)?			gen_context(system_u:object_r:bin_t,s0)
+/opt/syslog-ng/etc(/.*)?			gen_context(system_u:object_r:syslog_conf_t,s0)
+/opt/syslog-ng/lib(/.*)?			gen_context(system_u:object_r:syslogd_var_lib_t,s0)
+/opt/syslog-ng/var			-d	gen_context(system_u:object_r:syslogd_var_lib_t,s0)
+/opt/syslog-ng/var/syslog-ng.persist    --      gen_context(system_u:object_r:syslogd_var_lib_t,s0)
+/opt/syslog-ng/var/syslog-ng.persist-   --      gen_context(system_u:object_r:syslogd_var_lib_t,s0)
+/opt/syslog-ng/libexec(/.*)?		  	gen_context(system_u:object_r:bin_t,s0)
+/opt/syslog-ng/libexec/syslog-ng	--	gen_context(system_u:object_r:syslogd_exec_t,s0)
+/opt/syslog-ng/var/run(/.*)?			gen_context(system_u:object_r:syslogd_var_run_t,s0)

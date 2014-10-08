@@ -1,32 +1,19 @@
-#############################################
-#
-# Balabit IT Kft.
-# http://www.balabit.hu
-#
-# Gergely Bodnar
-# bodnar.gergely@balabit.hu
-#
-# 2011. 02. 22.
-#
+policy_module(syslog_ng, 1.0.0)
 
-policy_module(syslog_ng,1.0.0)
-
-type syslog_ng_t;
-type syslog_ng_exec_t;
 require {
+	class file { execute };
+	class lnk_file { read };
+	type syslog_conf_t;
 	type syslogd_t;
 	type syslogd_exec_t;
-	type unconfined_t;
-	type initrc_t;
-	type initrc_exec_t;
+	type syslogd_var_run_t;
+	type syslogd_var_lib_t;
 	type bin_t;
+	type lib_t;
 };
-init_daemon_domain(syslogd_t, syslogd_exec_t)
-type_transition initrc_t bin_t : process syslogd_t;
-type_transition unconfined_t initrc_exec_t : process initrc_t;
 
+# Debug or development only
+#permissive syslogd_t;
 
-permissive syslogd_t;
-
-# To generate dontaudit rules, use the following command:
-# grep syslogd /var/log/audit/audit.log | audit2allow -D -M syslogddontaudit
+allow syslogd_t syslogd_var_lib_t:file execute;
+allow syslogd_t syslogd_var_lib_t:lnk_file read;
