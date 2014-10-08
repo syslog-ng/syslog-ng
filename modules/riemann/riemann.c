@@ -309,6 +309,66 @@ riemann_dd_field_add_attribute_vp(const gchar *name,
   return FALSE;
 }
 
+static gboolean
+riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, SBGString *str)
+{
+  log_template_format(self->fields.metric, msg, &self->template_options,
+		    LTZ_SEND, self->super.seq_num, NULL, sb_gstring_string(str));
+
+  switch (self->fields.metric->type_hint)
+    {
+      case TYPE_HINT_INT32:
+      case TYPE_HINT_INT64:
+	{
+	  gint64 i;
+
+	  if (type_cast_to_int64(sb_gstring_string(str)->str, &i, NULL))
+	    riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_S64, i,
+			      RIEMANN_EVENT_FIELD_NONE);
+	  else
+	    return type_cast_drop_helper(self->template_options.on_error,
+					      sb_gstring_string(str)->str, "int");
+	  break;
+	}
+      case TYPE_HINT_DOUBLE:
+      case TYPE_HINT_STRING:
+	{
+	  gdouble d;
+
+	  if (type_cast_to_double(sb_gstring_string(str)->str, &d, NULL))
+	    riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_D, d,
+			      RIEMANN_EVENT_FIELD_NONE);
+	  else
+	    return type_cast_drop_helper(self->template_options.on_error,
+					      sb_gstring_string(str)->str, "double");
+	  break;
+	}
+      default:
+	return type_cast_drop_helper(self->template_options.on_error,
+					  sb_gstring_string(str)->str, "<unknown>");
+	break;
+    }
+  return FALSE;
+};
+
+static gboolean
+riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, SBGString *str)
+{
+  gdouble d;
+
+  log_template_format(self->fields.ttl, msg, &self->template_options,
+		      LTZ_SEND, self->super.seq_num, NULL,
+		      sb_gstring_string(str));
+
+  if (type_cast_to_double (sb_gstring_string(str)->str, &d, NULL))
+    riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, (float) d,
+		      RIEMANN_EVENT_FIELD_NONE);
+  else
+    return type_cast_drop_helper(self->template_options.on_error,
+				      sb_gstring_string(str)->str, "double");
+  return FALSE;
+}
+
 static worker_insert_result_t
 riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
@@ -326,58 +386,12 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 
   if (self->fields.metric)
     {
-      log_template_format(self->fields.metric, msg, &self->template_options,
-                          LTZ_SEND, self->super.seq_num, NULL, sb_gstring_string(str));
-
-      switch (self->fields.metric->type_hint)
-        {
-        case TYPE_HINT_INT32:
-        case TYPE_HINT_INT64:
-          {
-            gint64 i;
-
-            if (type_cast_to_int64(sb_gstring_string(str)->str, &i, NULL))
-              riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_S64, i,
-                                RIEMANN_EVENT_FIELD_NONE);
-            else
-              need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                                sb_gstring_string(str)->str, "int");
-            break;
-          }
-        case TYPE_HINT_DOUBLE:
-        case TYPE_HINT_STRING:
-          {
-            gdouble d;
-
-            if (type_cast_to_double(sb_gstring_string(str)->str, &d, NULL))
-              riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_D, d,
-                                RIEMANN_EVENT_FIELD_NONE);
-            else
-              need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                                sb_gstring_string(str)->str, "double");
-            break;
-          }
-        default:
-          need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                            sb_gstring_string(str)->str, "<unknown>");
-          break;
-        }
+       need_drop = riemann_add_metric_to_event(self, event, msg, str);
     }
 
   if (!need_drop && self->fields.ttl)
     {
-      gdouble d;
-
-      log_template_format(self->fields.ttl, msg, &self->template_options,
-                          LTZ_SEND, self->super.seq_num, NULL,
-                          sb_gstring_string(str));
-
-      if (type_cast_to_double (sb_gstring_string(str)->str, &d, NULL))
-        riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, (float) d,
-                          RIEMANN_EVENT_FIELD_NONE);
-      else
-        need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                          sb_gstring_string(str)->str, "double");
+       need_drop = riemann_add_ttl_to_event(self, event, msg, str);
     }
 
   if (!need_drop)
