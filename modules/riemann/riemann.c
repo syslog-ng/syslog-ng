@@ -271,7 +271,9 @@ riemann_dd_field_maybe_add(riemann_event_t *event, LogMessage *msg,
 
   log_template_format(template, msg, template_options, LTZ_SEND,
                       seq_num, NULL, target);
-  riemann_event_set(event, ftype, target->str, RIEMANN_EVENT_FIELD_NONE);
+
+  if (target->len != 0)
+    riemann_event_set(event, ftype, target->str, RIEMANN_EVENT_FIELD_NONE);
 }
 
 static void
@@ -314,6 +316,9 @@ riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, Log
 {
   log_template_format(self->fields.metric, msg, &self->template_options,
 		    LTZ_SEND, self->super.seq_num, NULL, sb_gstring_string(str));
+
+  if (sb_gstring_string(str)->len == 0)
+    return FALSE;
 
   switch (self->fields.metric->type_hint)
     {
@@ -359,6 +364,9 @@ riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMes
   log_template_format(self->fields.ttl, msg, &self->template_options,
 		      LTZ_SEND, self->super.seq_num, NULL,
 		      sb_gstring_string(str));
+
+  if (sb_gstring_string(str)->len == 0)
+    return FALSE;
 
   if (type_cast_to_double (sb_gstring_string(str)->str, &d, NULL))
     riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, (float) d,
