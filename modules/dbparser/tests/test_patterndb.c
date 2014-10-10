@@ -710,8 +710,8 @@ test_patterndb_context_length()
 {
   create_pattern_db(pdb_msg_count_skeleton);
 
-  test_rule_action_message_value("pattern13", 0, 1, "CONTEXT_LENGTH", "1");
-  test_rule_action_message_value("pattern14", 0, 1, "CONTEXT_LENGTH", "1");
+  test_rule_action_message_value("pattern13", 0, 1, "CONTEXT_LENGTH", "2");
+  test_rule_action_message_value("pattern14", 0, 1, "CONTEXT_LENGTH", "2");
 
   test_rule_value_without_clean("prog2", "pattern15-a", "p15", "-a");
   test_rule_action_message_value("pattern15-b", 0, 2, "fired", "true");
