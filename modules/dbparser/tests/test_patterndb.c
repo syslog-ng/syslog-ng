@@ -230,7 +230,8 @@ test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, con
   if (value)
     found = strcmp(val, value) == 0;
 
-  if (!!value ^ (len > 0))
+  if (((value == NULL) && (len != NULL)) || 
+      ((value != NULL) && ( (len == NULL) || (!found) )))
     test_fail("Value '%s' is %smatching for pattern '%s' (%d) index %d\n", name, found ? "" : "not ", pattern, !!result, ndx);
 
 exit:
