@@ -222,6 +222,16 @@ riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
 /*
  * Main thread
  */
+static void
+_value_pairs_always_exclude_properties(RiemannDestDriver *self)
+{
+  static const gchar *properties[] = {"host", "service", "description", "state",
+                                      "ttl", "metric", NULL};
+  gint i;
+
+  for (i = 0; properties[i]; i++)
+    value_pairs_add_glob_pattern(self->fields.attributes, properties[i], FALSE);
+}
 
 static gboolean
 riemann_worker_init(LogPipe *s)
@@ -249,6 +259,8 @@ riemann_worker_init(LogPipe *s)
       self->fields.service = log_template_new(cfg, NULL);
       log_template_compile(self->fields.service, "${PROGRAM}", NULL);
     }
+
+  _value_pairs_always_exclude_properties(self);
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("driver", self->super.super.super.id),
