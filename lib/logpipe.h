@@ -278,11 +278,9 @@ log_pipe_deinit(LogPipe *s)
     {
       if (!s->deinit || s->deinit(s))
         {
-          log_pipe_reset_config(s);
           s->flags &= ~PIF_INITIALIZED;
           return TRUE;
         }
-      log_pipe_reset_config(s);
       return FALSE;
     }
   return TRUE;
