@@ -134,6 +134,23 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <pattern>pattern12a</pattern>\
    </patterns>\
   </rule>\
+  <rule provider='test' id='11' class='system'>\
+   <patterns>\
+    <pattern>contextlesstest @STRING:field:@</pattern>\
+   </patterns>\
+   <actions>\
+     <action condition='\"${field}\" == \"value1\"'>\
+       <message>\
+         <value name='MESSAGE'>message1</value>\
+       </message>\
+     </action>\
+     <action condition='\"${field}\" == \"value2\"'>\
+       <message>\
+         <value name='MESSAGE'>message2</value>\
+       </message>\
+     </action>\
+   </actions>\
+  </rule>\ 
  </ruleset>\
 </patterndb>";
 
@@ -230,7 +247,8 @@ test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, con
   if (value)
     found = strcmp(val, value) == 0;
 
-  if (!!value ^ (len > 0))
+  if (((value == NULL) && (len != NULL)) || 
+      ((value != NULL) && ( (len == NULL) || (!found) )))
     test_fail("Value '%s' is %smatching for pattern '%s' (%d) index %d\n", name, found ? "" : "not ", pattern, !!result, ndx);
 
 exit:
@@ -322,6 +340,9 @@ test_patterndb_rule(void)
   test_rule_action_message_value("pattern11", 60, 2, "context-id", "999");
   test_rule_action_message_tag("pattern11", 60, 2, "tag11-3", FALSE);
   test_rule_action_message_tag("pattern11", 60, 2, "tag11-4", TRUE);
+
+  test_rule_action_message_value("contextlesstest value1", 0, 1, "MESSAGE",  "message1");
+  test_rule_action_message_value("contextlesstest value2", 0, 1, "MESSAGE",  "message2");
 
   clean_pattern_db();
 }
@@ -689,8 +710,8 @@ test_patterndb_context_length()
 {
   create_pattern_db(pdb_msg_count_skeleton);
 
-  test_rule_action_message_value("pattern13", 0, 1, "CONTEXT_LENGTH", "1");
-  test_rule_action_message_value("pattern14", 0, 1, "CONTEXT_LENGTH", "1");
+  test_rule_action_message_value("pattern13", 0, 1, "CONTEXT_LENGTH", "2");
+  test_rule_action_message_value("pattern14", 0, 1, "CONTEXT_LENGTH", "2");
 
   test_rule_value_without_clean("prog2", "pattern15-a", "p15", "-a");
   test_rule_action_message_value("pattern15-b", 0, 2, "fired", "true");
