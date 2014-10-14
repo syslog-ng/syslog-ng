@@ -1,3 +1,41 @@
+3.6.0rc2
+========
+<!-- Tue, 14 Oct 2014 12:43:39 +0200 -->
+
+This is the second (hopefully last) Release Candidate of the syslog-ng
+OSE 3.6 branch. Some release critical bugs found and fixed.
+
+Bugfixes
+--------
+
+* Opening control socket disabled when syslog-ng is used for only
+  syntax-checking.
+* Reloading a config file containing runtime error now not ends in a crash,
+  it is able to fallback to the original config.
+  (runtime error: config file is grammatically valid but containing invalid
+   value, eg.: wrong database column name)
+* Casting error eliminated in Riemann destination when metric is applied to
+  an empty field.
+* From now, syslog-ng always exclude attributes that conflict with properties
+  in Riemann destination (otherwise value of the attribute would override the
+  property).
+* Patterndb fixed to apply condition even if context-id is missing.
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessary to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Andras Mitzki, Balazs Scheidler, Fabien Wernli, Gergely Nagy, Laszlo Budai,
+Viktor Tusa
+
 3.6.0rc1
 ========
 <!-- Fri, 26 Sep 2014 11:17:31 +0200 -->
