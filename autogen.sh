@@ -9,14 +9,14 @@
 set -e
 
 (
- pemodrepo="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.2/syslog-ng-pe-modules"
+ pemodrepo="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.3/syslog-ng-pe-modules"
  if [ ! -e "$pemodrepo" ]
  then
-     pemodrepo="$ZWA_ROOT/work/syslog-ng-pe-5.2/syslog-ng-pe-modules"
+     pemodrepo="$ZWA_ROOT/work/syslog-ng-pe-5.3/syslog-ng-pe-modules"
  fi
  if [ ! -e "$pemodrepo" ]
  then
-     pemodrepo="$ZWA_ROOT/projects/syslog-ng-pe-5.2/source/syslog-ng-pe-modules"
+     pemodrepo="$ZWA_ROOT/projects/syslog-ng-pe-5.3/source/syslog-ng-pe-modules"
  fi
  if [ ! -e "$pemodrepo" ]
  then
