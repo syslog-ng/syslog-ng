@@ -71,7 +71,12 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
   gboolean match = FALSE;
   X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
 
-  if (!current_fingerprint || !cert)
+  if (!current_fingerprint)
+    {
+      return TRUE;
+    }
+
+  if (!cert)
     return match;
 
   hash = g_string_sized_new(EVP_MAX_MD_SIZE * 3);
@@ -147,12 +152,12 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
     }
 
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
-  if (tls_session_verify_fingerprint(ctx))
+  if (ok && ctx->error_depth == 0 && !tls_session_verify_fingerprint(ctx))
     {
-      msg_notice("Certificate accepted because its fingerprint is listed",
+      msg_notice("Certificate valid, but fingerprint constraints were not met, rejecting",
                   evt_tag_id(MSG_TLS_CERT_ACCEPTED),
                   NULL);
-      return 1;
+      return 0;
     }
 
   if (ok && ctx->error_depth != 0 && (ctx->current_cert->ex_flags & EXFLAG_CA) == 0)
