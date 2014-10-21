@@ -1,6 +1,7 @@
 3.6.1
 =====
-<!-- Date -->
+
+Tue, 21 Oct 2014 14:21:38 +0200
 
 This is the first production ready version of syslog-ng OSE 3.6. 
 More than 25000 lines fof code changed, with about 500 file modified.
