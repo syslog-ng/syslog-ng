@@ -350,10 +350,12 @@ static gboolean
 filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, const gchar *str, gssize str_len)
 {
   FilterRE *self = (FilterRE *) s;
+  LogMatcher *matcher = (LogMatcher *)self->matcher;
 
   if (str_len < 0)
     str_len = strlen(str);
 
+  (*matcher).name = s->type;
   return log_matcher_match(self->matcher, msg, value_handle, str, str_len) ^ self->super.comp;
 }
 

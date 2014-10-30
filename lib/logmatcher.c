@@ -453,16 +453,17 @@ static gboolean
 log_matcher_glob_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
   LogMatcherGlob *self =  (LogMatcherGlob *) s;
-  
+
   if (G_LIKELY((msg->flags & LF_UTF8) || g_utf8_validate(value, value_len, NULL)))
     {
-      static gboolean warned = FALSE;
       gchar *buf;
-      
+      static gboolean warned = FALSE;
+
       if (G_UNLIKELY(!warned && (msg->flags & LF_UTF8) == 0))
         {
-          msg_warning("Input is valid utf8, but the log message is not tagged as such, this performs worse than enabling validate-utf8 flag on input", 
+          msg_warning("Input is valid utf8, but the log message is not flaged this, this performs worse than enabling one of validate-utf8 or assume-utf8 flags on input",
                       evt_tag_printf("value", "%.*s", (gint) value_len, value),
+                      evt_tag_str("filter", s->name),
                       NULL);
           warned = TRUE;
         }
@@ -471,8 +472,9 @@ log_matcher_glob_match(LogMatcher *s, LogMessage *msg, gint value_handle, const 
     }
   else
     {
-      msg_warning("Input is not valid utf8, glob match requires utf8 input, thus it never matches in this case", 
+      msg_warning("Input is not valid utf8, glob match requires utf8 input, thus it never matches in this case",
                   evt_tag_printf("value", "%.*s", (gint) value_len, value),
+                  evt_tag_str("filter", s->name),
                   NULL);
     }
   return FALSE;
@@ -495,6 +497,7 @@ log_matcher_glob_new(void)
   self->super.match = log_matcher_glob_match;
   self->super.replace = NULL;
   self->super.free_fn = log_matcher_glob_free;
+  self->super.name = NULL;
 
   return &self->super;
 }
