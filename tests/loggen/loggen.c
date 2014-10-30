@@ -60,6 +60,7 @@ int loop_reading = 0;
 int dont_parse = 0;
 static gint display_version;
 char *sdata_value = NULL;
+int permanent = 0;
 
 /* results */
 guint64 sum_count;
@@ -397,7 +398,7 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
 
   /* NOTE: all threads calculate raw_message_length. This code could use some refactorization. */
   raw_message_length = linelen = strlen(linebuf);
-  while (time_val_diff_in_usec(&now, &start) < ((int64_t)interval) * USEC_PER_SEC)
+  while (permanent || time_val_diff_in_usec(&now, &start) < ((int64_t)interval) * USEC_PER_SEC)
     {
       if(number_of_messages != 0 && count >= number_of_messages)
         {
@@ -674,6 +675,7 @@ static GOptionEntry loggen_options[] = {
   { "dgram", 'D', 0, G_OPTION_ARG_NONE, &sock_type_d, "Use datagram socket (UDP and unix-dgram)", NULL },
   { "size", 's', 0, G_OPTION_ARG_INT, &message_length, "Specify the size of the syslog message", "<size>" },
   { "interval", 'I', 0, G_OPTION_ARG_INT, &interval, "Number of seconds to run the test for", "<sec>" },
+  { "permanent", 'T', 0, G_OPTION_ARG_NONE, &permanent, "Send logs without time limit", NULL},
   { "syslog-proto", 'P', 0, G_OPTION_ARG_NONE, &syslog_proto, "Use the new syslog-protocol message format (see also framing)", NULL },
   { "sdata", 'p', 0, G_OPTION_ARG_STRING, &sdata_value, "Send the given sdata (e.g. \"[test name=\\\"value\\\"]\") in case of syslog-proto", NULL },
   { "no-framing", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &framing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
