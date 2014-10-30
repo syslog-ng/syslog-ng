@@ -167,7 +167,7 @@ tf_graphite_free_state(gpointer s)
 
   if (state->vp)
     value_pairs_unref(state->vp);
-  tf_simple_func_free_state(&state->super);
+  log_template_unref(state->timestamp_template);
 }
 
 TEMPLATE_FUNCTION(TFGraphiteState, tf_graphite, tf_graphite_prepare, NULL, tf_graphite_call,
