@@ -44,7 +44,4 @@ void tf_simple_func_free_state(gpointer state);
 
 #define TEMPLATE_FUNCTION_SIMPLE(x) TEMPLATE_FUNCTION(TFSimpleFuncState, x, tf_simple_func_prepare, tf_simple_func_eval, tf_simple_func_call, tf_simple_func_free_state, x)
 
-void user_template_function_register(GlobalConfig *cfg, const gchar *name, LogTemplate *template);
-
-
 #endif
