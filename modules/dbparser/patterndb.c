@@ -453,7 +453,7 @@ pdb_action_check_rate_limit(PDBAction *action, PDBRule *rule, PatternDB *db, Log
 }
 
 void
-pdb_action_run(PDBAction *action, PDBRule *rule, gint trigger, PatternDB *db, PDBContext *context, LogMessage *msg, PatternDBEmitFunc emit, gpointer emit_data, GString *buffer)
+pdb_action_run(PDBAction *action, PDBRule *rule, gint trigger, PatternDB *db, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   if (action->trigger == trigger)
     {
@@ -522,7 +522,7 @@ pdb_action_run(PDBAction *action, PDBRule *rule, gint trigger, PatternDB *db, PD
                   pdb_message_apply(&action->content.message, &dummy_context, genmsg, buffer);
                 }
 
-              emit(genmsg, TRUE, emit_data);
+              db->emit(genmsg, TRUE, db->emit_data);
               log_msg_unref(genmsg);
               break;
             default:
@@ -625,7 +625,7 @@ pdb_rule_add_action(PDBRule *self, PDBAction *action)
 }
 
 void
-pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *context, LogMessage *msg, PatternDBEmitFunc emit, gpointer emit_data, GString *buffer)
+pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   gint i;
 
@@ -635,7 +635,7 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
     {
       PDBAction *action = (PDBAction *) g_ptr_array_index(self->actions, i);
 
-      pdb_action_run(action, self, trigger, db, context, msg, emit, emit_data, buffer);
+      pdb_action_run(action, self, trigger, db, context, msg, buffer);
     }
 }
 
@@ -1476,7 +1476,7 @@ pattern_db_expire_entry(guint64 now, gpointer user_data)
             evt_tag_long("utc", timer_wheel_get_time(context->db->timer_wheel)),
             NULL);
   if (pdb->emit)
-    pdb_rule_run_actions(context->rule, RAT_TIMEOUT, context->db, context, g_ptr_array_index(context->messages, context->messages->len - 1), pdb->emit, pdb->emit_data, buffer);
+    pdb_rule_run_actions(context->rule, RAT_TIMEOUT, context->db, context, g_ptr_array_index(context->messages, context->messages->len - 1), buffer);
   g_hash_table_remove(context->db->state, &context->key);
   g_string_free(buffer, TRUE);
 
@@ -1690,7 +1690,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup)
       if (self->emit)
         {
           self->emit(msg, FALSE, self->emit_data);
-          pdb_rule_run_actions(rule, RAT_MATCH, self, context, msg, self->emit, self->emit_data, buffer);
+          pdb_rule_run_actions(rule, RAT_MATCH, self, context, msg, buffer);
         }
       pdb_rule_unref(rule);
       g_static_rw_lock_writer_unlock(&self->lock);
