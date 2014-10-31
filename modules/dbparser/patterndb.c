@@ -80,6 +80,12 @@ static LogTagId unknown_tag;
  * marked with PSK_CONTEXT in the hash table key
  **************************************************************************/
 
+static LogMessage *
+pdb_context_get_last_message(PDBContext *self)
+{
+  return (LogMessage *) g_ptr_array_index(self->messages, self->messages->len - 1);
+}
+
 /*
  * NOTE: borrows "db" and consumes "key" contents.
  */
@@ -1529,13 +1535,14 @@ pattern_db_expire_entry(guint64 now, gpointer user_data)
   PDBContext *context = user_data;
   PatternDB *pdb = context->db;
   GString *buffer = g_string_sized_new(256);
+  LogMessage *msg = pdb_context_get_last_message(context);
 
   msg_debug("Expiring patterndb correllation context",
             evt_tag_str("last_rule", context->rule->rule_id),
             evt_tag_long("utc", timer_wheel_get_time(context->db->timer_wheel)),
             NULL);
   if (pdb->emit)
-    pdb_rule_run_actions(context->rule, context->db, RAT_TIMEOUT, context, g_ptr_array_index(context->messages, context->messages->len - 1), buffer);
+    pdb_rule_run_actions(context->rule, context->db, RAT_TIMEOUT, context, msg, buffer);
   g_hash_table_remove(context->db->state, &context->key);
   g_string_free(buffer, TRUE);
 
