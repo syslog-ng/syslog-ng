@@ -220,23 +220,12 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
     }
   if (self->db)
     {
-      PDBInput pdb_input;
-
       log_msg_make_writable(pmsg, path_options);
 
-      pdb_input.msg = *pmsg;
-      pdb_input.program_handle = LM_V_PROGRAM;
-      pdb_input.message_handle = LM_V_MESSAGE;
-      pdb_input.message_len = 0;
-
-      if (self->super.template)
-        {
-          /* we are using a user-supplied template() in place of $MESSAGE */
-          pdb_input.message_handle = LM_V_NONE;
-          pdb_input.message_string = input;
-          pdb_input.message_len = input_len;
-        }
-      pattern_db_process(self->db, &pdb_input);
+      if (G_UNLIKELY(self->super.template))
+        pattern_db_process_with_custom_message(self->db, *pmsg, input, input_len);
+      else
+        pattern_db_process(self->db, *pmsg);
     }
   return TRUE;
 }

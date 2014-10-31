@@ -1607,8 +1607,8 @@ pattern_db_get_ruleset_version(PatternDB *self)
   return self->ruleset->version;
 }
 
-gboolean
-pattern_db_process(PatternDB *self, PDBInput *input)
+static gboolean
+_pattern_db_process(PatternDB *self, PDBInput *input)
 {
   PDBRule *rule;
   LogMessage *msg = input->msg;
@@ -1705,6 +1705,45 @@ pattern_db_process(PatternDB *self, PDBInput *input)
   return rule != NULL;
 }
 
+gboolean
+pattern_db_process(PatternDB *self, LogMessage *msg)
+{
+  PDBInput input;
+
+  input.msg = msg;
+  input.program_handle = LM_V_PROGRAM;
+  input.message_handle = LM_V_MESSAGE;
+  input.message_len = 0;
+  return _pattern_db_process(self, &input);
+}
+
+gboolean
+pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const gchar *message, gssize message_len)
+{
+  PDBInput input;
+
+  input.msg = msg;
+  input.program_handle = LM_V_PROGRAM;
+  input.message_handle = LM_V_NONE;
+  input.message_string = message;
+  input.message_len = message_len;
+  return _pattern_db_process(self, &input);
+}
+
+void
+pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
+{
+  PDBInput input;
+  PDBRule *rule;
+
+  input.msg = msg;
+  input.program_handle = LM_V_PROGRAM;
+  input.message_handle = LM_V_MESSAGE;
+  input.message_len = 0;
+  rule = pdb_rule_set_lookup(self->ruleset, &input, dbg_list);
+  if (rule)
+    pdb_rule_unref(rule);
+}
 
 PatternDB *
 pattern_db_new(void)

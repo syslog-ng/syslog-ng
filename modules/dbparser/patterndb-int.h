@@ -28,6 +28,27 @@
 
 #include "patterndb.h"
 
+typedef struct _PDBInput
+{
+  LogMessage *msg;
+  NVHandle program_handle;
+  NVHandle message_handle;
+  const gchar *message_string;
+  gssize message_len;
+} PDBInput;
+
+#define PDB_INPUT_DEFAULT(msg) { (msg), LM_V_PROGRAM, LM_V_MESSAGE, NULL, 0 }
+#define PDB_INPUT_WRAP_MESSAGE(input,msg)       \
+  ({                                            \
+    (input)->msg = msg;                         \
+    (input)->program_handle = LM_V_PROGRAM;     \
+    (input)->message_handle = LM_V_MESSAGE;     \
+    (input)->message_string = NULL;             \
+    (input)->message_len = 0;                   \
+    (input);                                    \
+  })
+
+
 typedef struct _PDBRule PDBRule;
 
 /* rule context scope */
@@ -201,5 +222,7 @@ struct _PatternDB
   PatternDBEmitFunc emit;
   gpointer emit_data;
 };
+
+
 
 #endif

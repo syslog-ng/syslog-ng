@@ -31,25 +31,6 @@
 
 typedef struct _PatternDB PatternDB;
 
-typedef struct _PDBInput
-{
-  LogMessage *msg;
-  NVHandle program_handle;
-  NVHandle message_handle;
-  const gchar *message_string;
-  gssize message_len;
-} PDBInput;
-
-#define PDB_INPUT_DEFAULT(msg) { (msg), LM_V_PROGRAM, LM_V_MESSAGE, NULL, 0 }
-#define PDB_INPUT_WRAP_MESSAGE(input,msg)       \
-  ({                                            \
-    (input)->msg = msg;                         \
-    (input)->program_handle = LM_V_PROGRAM;     \
-    (input)->message_handle = LM_V_MESSAGE;     \
-    (input)->message_string = NULL;             \
-    (input)->message_len = 0;                   \
-    (input);                                    \
-  })
 
 typedef void (*PatternDBEmitFunc)(LogMessage *msg, gboolean synthetic, gpointer user_data);
 void pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit_func, gpointer emit_data);
@@ -59,7 +40,9 @@ const gchar *pattern_db_get_ruleset_pub_date(PatternDB *self);
 gboolean pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_file);
 
 void pattern_db_timer_tick(PatternDB *self);
-gboolean pattern_db_process(PatternDB *self, PDBInput *input);
+gboolean pattern_db_process(PatternDB *self, LogMessage *msg);
+gboolean pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const gchar *message, gssize message_len);
+void pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list);
 void pattern_db_expire_state(PatternDB *self);
 void pattern_db_forget_state(PatternDB *self);
 
