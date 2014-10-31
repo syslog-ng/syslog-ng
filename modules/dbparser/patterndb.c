@@ -403,6 +403,136 @@ pdb_action_set_inheritance(PDBAction *self, const gchar *inherit_properties, GEr
     g_set_error(error, 0, 1, "Unknown inheritance type: %s", inherit_properties);
 }
 
+static inline gboolean
+pdb_action_check_rate_limit(PDBAction *action, PDBRule *rule, PatternDB *db, LogMessage *msg, GString *buffer)
+{
+  PDBStateKey key;
+  PDBRateLimit *rl;
+  guint64 now;
+
+  if (action->rate == 0)
+    return TRUE;
+
+  g_string_printf(buffer, "%s:%d", rule->rule_id, action->id);
+  pdb_state_key_setup(&key, PSK_RATE_LIMIT, rule, msg, buffer->str);
+
+  rl = g_hash_table_lookup(db->state, &key);
+  if (!rl)
+    {
+      rl = pdb_rate_limit_new(&key);
+      g_hash_table_insert(db->state, &rl->key, rl);
+      g_string_steal(buffer);
+    }
+  now = timer_wheel_get_time(db->timer_wheel);
+  if (rl->last_check == 0)
+    {
+      rl->last_check = now;
+      rl->buckets = action->rate;
+    }
+  else
+    {
+      /* quick and dirty fixed point arithmetic, 8 bit fraction part */
+      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) action->rate_quantum) << 8) / action->rate);
+
+      if (new_credits)
+        {
+          /* ok, enough time has passed to increase the current credit.
+           * Deposit the new credits in bucket but make sure we don't permit
+           * more than the maximum rate. */
+
+          rl->buckets = MIN(rl->buckets + new_credits, action->rate);
+          rl->last_check = now;
+      }
+    }
+  if (rl->buckets)
+    {
+      rl->buckets--;
+      return TRUE;
+    }
+  return FALSE;
+}
+
+void
+pdb_action_run(PDBAction *action, PDBRule *rule, gint trigger, PatternDB *db, PDBContext *context, LogMessage *msg, PatternDBEmitFunc emit, gpointer emit_data, GString *buffer)
+{
+  if (action->trigger == trigger)
+    {
+      LogMessage *genmsg;
+
+      if ((!action->condition ||
+          (context ?
+            (filter_expr_eval_with_context(action->condition, (LogMessage **) context->messages->pdata, context->messages->len)) :
+            filter_expr_eval(action->condition, msg) )
+          && pdb_action_check_rate_limit(action, rule, db, msg, buffer)))
+        {
+          switch (action->content_type)
+            {
+            case RAC_NONE:
+              break;
+            case RAC_MESSAGE:
+              if (action->inherit_properties)
+                {
+                  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+                  path_options.ack_needed = FALSE;
+                  genmsg = log_msg_clone_cow(msg, &path_options);
+                }
+              else
+                {
+                  genmsg = log_msg_new_empty();
+                  genmsg->flags |= LF_LOCAL;
+                  genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
+                }
+              if (context)
+                {
+                  switch (context->key.scope)
+                    {
+                      case RCS_PROCESS:
+                        log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
+                      case RCS_PROGRAM:
+                        log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
+                      case RCS_HOST:
+                        log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
+                      case RCS_GLOBAL:
+                        break;
+                      default:
+                        g_assert_not_reached();
+                      break;
+                    }
+                }
+              if (context)
+                {
+                  g_ptr_array_add(context->messages, genmsg);
+                  pdb_message_apply(&action->content.message, context, genmsg, buffer);
+                  g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+                }
+              else
+                {
+                  /* no context, which means no correllation. The action
+                   * rule contains the generated message at @0 and the one
+                   * which triggered the rule in @1.
+                   *
+                   * We emulate a context having only these two
+                   * messages, but without allocating a full-blown
+                   * structure.
+                   */
+                  LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
+                  GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
+                  PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
+
+                  pdb_message_apply(&action->content.message, &dummy_context, genmsg, buffer);
+                }
+
+              emit(genmsg, TRUE, emit_data);
+              log_msg_unref(genmsg);
+              break;
+            default:
+              g_assert_not_reached();
+              break;
+            }
+        }
+    }
+}
+
 PDBAction *
 pdb_action_new(gint id)
 {
@@ -494,55 +624,6 @@ pdb_rule_add_action(PDBRule *self, PDBAction *action)
   g_ptr_array_add(self->actions, action);
 }
 
-static inline gboolean
-pdb_rule_check_rate_limit(PDBRule *self, PatternDB *db, PDBAction *action, LogMessage *msg, GString *buffer)
-{
-  PDBStateKey key;
-  PDBRateLimit *rl;
-  guint64 now;
-
-  if (action->rate == 0)
-    return TRUE;
-
-  g_string_printf(buffer, "%s:%d", self->rule_id, action->id);
-  pdb_state_key_setup(&key, PSK_RATE_LIMIT, self, msg, buffer->str);
-
-  rl = g_hash_table_lookup(db->state, &key);
-  if (!rl)
-    {
-      rl = pdb_rate_limit_new(&key);
-      g_hash_table_insert(db->state, &rl->key, rl);
-      g_string_steal(buffer);
-    }
-  now = timer_wheel_get_time(db->timer_wheel);
-  if (rl->last_check == 0)
-    {
-      rl->last_check = now;
-      rl->buckets = action->rate;
-    }
-  else
-    {
-      /* quick and dirty fixed point arithmetic, 8 bit fraction part */
-      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) action->rate_quantum) << 8) / action->rate);
-
-      if (new_credits)
-        {
-          /* ok, enough time has passed to increase the current credit.
-           * Deposit the new credits in bucket but make sure we don't permit
-           * more than the maximum rate. */
-
-          rl->buckets = MIN(rl->buckets + new_credits, action->rate);
-          rl->last_check = now;
-      }
-    }
-  if (rl->buckets)
-    {
-      rl->buckets--;
-      return TRUE;
-    }
-  return FALSE;
-}
-
 void
 pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *context, LogMessage *msg, PatternDBEmitFunc emit, gpointer emit_data, GString *buffer)
 {
@@ -554,82 +635,7 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
     {
       PDBAction *action = (PDBAction *) g_ptr_array_index(self->actions, i);
 
-      if (action->trigger == trigger)
-        {
-          LogMessage *genmsg;
-
-          if ((!action->condition ||
-	      (context ? 
-		(filter_expr_eval_with_context(action->condition, (LogMessage **) context->messages->pdata, context->messages->len)) : 
-		filter_expr_eval(action->condition, msg) ) 
-	      && pdb_rule_check_rate_limit(self, db, action, msg, buffer)))
-            {
-              switch (action->content_type)
-                {
-                case RAC_NONE:
-                  break;
-                case RAC_MESSAGE:
-                  if (action->inherit_properties)
-                    {
-                      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-                      path_options.ack_needed = FALSE;
-                      genmsg = log_msg_clone_cow(msg, &path_options);
-                    }
-                  else
-                    {
-                      genmsg = log_msg_new_empty();
-                      genmsg->flags |= LF_LOCAL;
-                      genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
-                    }
-                  if (context)
-                    {
-                      switch (context->key.scope)
-                        {
-                          case RCS_PROCESS:
-                            log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
-                          case RCS_PROGRAM:
-                            log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
-                          case RCS_HOST:
-                            log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
-                          case RCS_GLOBAL:
-                            break;
-                          default:
-                            g_assert_not_reached();
-                          break;
-                        }
-                    }
-                  if (context)
-                    {
-                      g_ptr_array_add(context->messages, genmsg);
-                      pdb_message_apply(&action->content.message, context, genmsg, buffer);
-                      g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
-                    }
-                  else
-                    {
-                      /* no context, which means no correllation. The action
-                       * rule contains the generated message at @0 and the one
-                       * which triggered the rule in @1.
-                       *
-                       * We emulate a context having only these two
-                       * messages, but without allocating a full-blown
-                       * structure.
-                       */
-                      LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
-                      GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
-                      PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
-
-                      pdb_message_apply(&action->content.message, &dummy_context, genmsg, buffer);
-                    }
-
-                  emit(genmsg, TRUE, emit_data);
-                  log_msg_unref(genmsg);
-                  break;
-                default:
-                  g_assert_not_reached();
-                  break;
-                }
-            }
-        }
+      pdb_action_run(action, self, trigger, db, context, msg, emit, emit_data, buffer);
     }
 }
 
