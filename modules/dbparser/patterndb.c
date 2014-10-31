@@ -473,26 +473,34 @@ pdb_action_is_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, gint trig
 }
 
 LogMessage *
+pdb_action_generate_message_inheriting_properties_from_the_last_message(LogMessage *msg)
+{
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  path_options.ack_needed = FALSE;
+  return log_msg_clone_cow(msg, &path_options);
+}
+
+LogMessage *
+pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(LogStamp *msgstamp)
+{
+  LogMessage *genmsg;
+
+  genmsg = log_msg_new_empty();
+  genmsg->flags |= LF_LOCAL;
+  genmsg->timestamps[LM_TS_STAMP] = *msgstamp;
+  return genmsg;
+}
+
+LogMessage *
 pdb_action_generate_default_message(PDBAction *self, LogMessage *msg)
 {
   switch (self->content.inherit_mode)
     {
     case RAC_MSG_INHERIT_LAST_MESSAGE:
-      {
-        LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-        path_options.ack_needed = FALSE;
-        return log_msg_clone_cow(msg, &path_options);
-      }
+      return pdb_action_generate_message_inheriting_properties_from_the_last_message(msg);
     case RAC_MSG_INHERIT_NONE:
-      {
-        LogMessage *genmsg;
-
-        genmsg = log_msg_new_empty();
-        genmsg->flags |= LF_LOCAL;
-        genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
-        return genmsg;
-      }
+      return pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(&msg->timestamps[LM_TS_STAMP]);
     default:
       g_assert_not_reached();
     }
