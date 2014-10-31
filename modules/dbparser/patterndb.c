@@ -1450,6 +1450,14 @@ pdb_rule_set_free(PDBRuleSet *self)
  * PatternDB
  *********************************************************/
 
+/* NOTE: this function requires PatternDB reader/writer lock to be
+ * write-locked.
+ *
+ * Currently, it is, as timer_wheel_set_time() is only called with that
+ * precondition, and timer-wheel callbacks are only called from within
+ * timer_wheel_set_time().
+ */
+
 static void
 pattern_db_expire_entry(guint64 now, gpointer user_data)
 {
