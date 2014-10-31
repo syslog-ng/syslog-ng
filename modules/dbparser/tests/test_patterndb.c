@@ -417,6 +417,7 @@ test_parser(gchar **test)
   g_string_free(str, TRUE);
   while(test[index] != NULL)
     test_pattern(test[index++], test[0], TRUE);
+  index++;
   while(test[index] != NULL)
     test_pattern(test[index++], test[0], FALSE);
 
@@ -486,7 +487,6 @@ gchar * test7 [] = {
 "255.255.255.255",
 NULL,
 "256.256.256.256",
-"1.2.3.4.5",
 "1234",
 "ab1234",
 "ab1.2.3.4",
@@ -518,7 +518,6 @@ gchar * test9 [] = {
 "2001:db8::1428:57ab",
 NULL,
 "256.256.256.256",
-"1.2.3.4.5",
 "1234",
 "ab1234",
 "ab1.2.3.4",
@@ -534,7 +533,7 @@ gchar * test10 [] = {
 "1234ab",
 NULL,
 "ab1234",
-"1,2",NULL
+NULL
 };
 
 gchar * test11 [] = {
@@ -554,8 +553,7 @@ gchar * test12 [] = {
 "ab1234",
 "1234bb",
 "1.2.3.4",
-NULL,
-"aa bb",NULL
+NULL,NULL
 };
 
 gchar **parsers[] = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10, test11, test12, NULL};
