@@ -404,16 +404,16 @@ pdb_action_set_inheritance(PDBAction *self, const gchar *inherit_properties, GEr
 }
 
 static inline gboolean
-pdb_action_check_rate_limit(PDBAction *action, PDBRule *rule, PatternDB *db, LogMessage *msg, GString *buffer)
+pdb_action_check_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMessage *msg, GString *buffer)
 {
   PDBStateKey key;
   PDBRateLimit *rl;
   guint64 now;
 
-  if (action->rate == 0)
+  if (self->rate == 0)
     return TRUE;
 
-  g_string_printf(buffer, "%s:%d", rule->rule_id, action->id);
+  g_string_printf(buffer, "%s:%d", rule->rule_id, self->id);
   pdb_state_key_setup(&key, PSK_RATE_LIMIT, rule, msg, buffer->str);
 
   rl = g_hash_table_lookup(db->state, &key);
@@ -427,12 +427,12 @@ pdb_action_check_rate_limit(PDBAction *action, PDBRule *rule, PatternDB *db, Log
   if (rl->last_check == 0)
     {
       rl->last_check = now;
-      rl->buckets = action->rate;
+      rl->buckets = self->rate;
     }
   else
     {
       /* quick and dirty fixed point arithmetic, 8 bit fraction part */
-      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) action->rate_quantum) << 8) / action->rate);
+      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) self->rate_quantum) << 8) / self->rate);
 
       if (new_credits)
         {
@@ -440,7 +440,7 @@ pdb_action_check_rate_limit(PDBAction *action, PDBRule *rule, PatternDB *db, Log
            * Deposit the new credits in bucket but make sure we don't permit
            * more than the maximum rate. */
 
-          rl->buckets = MIN(rl->buckets + new_credits, action->rate);
+          rl->buckets = MIN(rl->buckets + new_credits, self->rate);
           rl->last_check = now;
       }
     }
