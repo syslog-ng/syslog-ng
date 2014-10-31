@@ -391,14 +391,14 @@ pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error)
 }
 
 void
-pdb_action_set_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error)
+pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error)
 {
   if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
       inherit_properties[0] == '1')
-    self->inherit_properties = TRUE;
+    self->content.inherit_mode = RAC_MSG_INHERIT_LAST_MESSAGE;
   else if (inherit_properties[0] == 'F' || inherit_properties[0] == 'f' ||
            inherit_properties[0] == '0')
-    self->inherit_properties = FALSE;
+    self->content.inherit_mode = RAC_MSG_INHERIT_NONE;
   else
     g_set_error(error, 0, 1, "Unknown inheritance type: %s", inherit_properties);
 }
@@ -475,22 +475,27 @@ pdb_action_is_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, gint trig
 LogMessage *
 pdb_action_generate_default_message(PDBAction *self, LogMessage *msg)
 {
-  LogMessage *genmsg;
-
-  if (self->inherit_properties)
+  switch (self->content.inherit_mode)
     {
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-      path_options.ack_needed = FALSE;
-      genmsg = log_msg_clone_cow(msg, &path_options);
-    }
-  else
-    {
-      genmsg = log_msg_new_empty();
-      genmsg->flags |= LF_LOCAL;
-      genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
-    }
+    case RAC_MSG_INHERIT_LAST_MESSAGE:
+      {
+        LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-  return genmsg;
+        path_options.ack_needed = FALSE;
+        return log_msg_clone_cow(msg, &path_options);
+      }
+    case RAC_MSG_INHERIT_NONE:
+      {
+        LogMessage *genmsg;
+
+        genmsg = log_msg_new_empty();
+        genmsg->flags |= LF_LOCAL;
+        genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
+        return genmsg;
+      }
+    default:
+      g_assert_not_reached();
+    }
 }
 
 LogMessage *
@@ -1031,7 +1036,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       for (i = 0; attribute_names[i]; i++)
         {
           if (strcmp(attribute_names[i], "inherit-properties") == 0)
-            pdb_action_set_inheritance(state->current_action, attribute_values[i], error);
+            pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
         }
       if (!state->in_action)
         {

@@ -119,6 +119,12 @@ enum
   RAC_MESSAGE
 };
 
+enum
+{
+  RAC_MSG_INHERIT_NONE,
+  RAC_MSG_INHERIT_LAST_MESSAGE,
+};
+
 /* a rule may contain one or more actions to be performed */
 typedef struct _PDBAction
 {
@@ -127,10 +133,12 @@ typedef struct _PDBAction
   guint8 content_type;
   guint16 rate;
   guint32 id:8, rate_quantum:24;
-  gboolean inherit_properties;
   union
   {
-    PDBMessage message;
+    struct {
+      PDBMessage message;
+      gint inherit_mode;
+    };
   } content;
 } PDBAction;
 
