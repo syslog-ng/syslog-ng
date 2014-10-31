@@ -642,7 +642,7 @@ pdb_rule_add_action(PDBRule *self, PDBAction *action)
 }
 
 void
-pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_rule_run_actions(PDBRule *self, PatternDB *db, gint trigger, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   gint i;
 
@@ -1493,7 +1493,7 @@ pattern_db_expire_entry(guint64 now, gpointer user_data)
             evt_tag_long("utc", timer_wheel_get_time(context->db->timer_wheel)),
             NULL);
   if (pdb->emit)
-    pdb_rule_run_actions(context->rule, RAT_TIMEOUT, context->db, context, g_ptr_array_index(context->messages, context->messages->len - 1), buffer);
+    pdb_rule_run_actions(context->rule, context->db, RAT_TIMEOUT, context, g_ptr_array_index(context->messages, context->messages->len - 1), buffer);
   g_hash_table_remove(context->db->state, &context->key);
   g_string_free(buffer, TRUE);
 
@@ -1707,7 +1707,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup)
       if (self->emit)
         {
           self->emit(msg, FALSE, self->emit_data);
-          pdb_rule_run_actions(rule, RAT_MATCH, self, context, msg, buffer);
+          pdb_rule_run_actions(rule, self, RAT_MATCH, context, msg, buffer);
         }
       pdb_rule_unref(rule);
       g_static_rw_lock_writer_unlock(&self->lock);
