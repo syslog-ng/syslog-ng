@@ -49,6 +49,11 @@ assert_log_message_has_tag(LogMessage *log_message, const gchar *tag_name)
 }
 
 void
+assert_log_message_doesnt_have_tag(LogMessage *log_message, const gchar *tag_name)
+{
+  assert_false(log_msg_is_tag_by_name(log_message, tag_name), "Expected message not to have '%s' tag", tag_name);
+}
+
 assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expected_value)
 {
   gssize key_name_length;
