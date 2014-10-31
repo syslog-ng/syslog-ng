@@ -472,70 +472,99 @@ pdb_action_is_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, gint trig
   return TRUE;
 }
 
-void
-pdb_action_execute(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *context, LogMessage *msg, GString *buffer)
+LogMessage *
+pdb_action_generate_default_message(PDBAction *self, LogMessage *msg)
 {
   LogMessage *genmsg;
 
+  if (self->inherit_properties)
+    {
+      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+      path_options.ack_needed = FALSE;
+      genmsg = log_msg_clone_cow(msg, &path_options);
+    }
+  else
+    {
+      genmsg = log_msg_new_empty();
+      genmsg->flags |= LF_LOCAL;
+      genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
+    }
+
+  return genmsg;
+}
+
+LogMessage *
+pdb_action_generate_message_with_context(PDBAction *self, PDBContext *context, GString *buffer)
+{
+  LogMessage *genmsg;
+  LogMessage *msg = (LogMessage *) g_ptr_array_index(context->messages, context->messages->len - 1);
+
+  genmsg = pdb_action_generate_default_message(self, msg);
+  switch (context->key.scope)
+    {
+      case RCS_PROCESS:
+        log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
+      case RCS_PROGRAM:
+        log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
+      case RCS_HOST:
+        log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
+      case RCS_GLOBAL:
+        break;
+      default:
+        g_assert_not_reached();
+      break;
+    }
+  g_ptr_array_add(context->messages, genmsg);
+  pdb_message_apply(&self->content.message, context, genmsg, buffer);
+  g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+  return genmsg;
+}
+
+LogMessage *
+pdb_action_generate_message_without_context(PDBAction *self, LogMessage *msg, GString *buffer)
+{
+  LogMessage *genmsg;
+
+  genmsg = pdb_action_generate_default_message(self, msg);
+
+  /* no context, which means no correllation. The action
+   * rule contains the generated message at @0 and the one
+   * which triggered the rule in @1.
+   *
+   * We emulate a context having only these two
+   * messages, but without allocating a full-blown
+   * structure.
+   */
+  LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
+  GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
+  PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
+
+  pdb_message_apply(&self->content.message, &dummy_context, genmsg, buffer);
+  return genmsg;
+}
+
+void
+pdb_action_execute_message(PDBAction *self, PatternDB *db, PDBContext *context, LogMessage *msg, GString *buffer)
+{
+  LogMessage *genmsg;
+
+  if (context)
+    genmsg = pdb_action_generate_message_with_context(self, context, buffer);
+  else
+    genmsg = pdb_action_generate_message_without_context(self, msg, buffer);
+  db->emit(genmsg, TRUE, db->emit_data);
+  log_msg_unref(genmsg);
+}
+
+void
+pdb_action_execute(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *context, LogMessage *msg, GString *buffer)
+{
   switch (self->content_type)
     {
     case RAC_NONE:
       break;
     case RAC_MESSAGE:
-      if (self->inherit_properties)
-        {
-          LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-          path_options.ack_needed = FALSE;
-          genmsg = log_msg_clone_cow(msg, &path_options);
-        }
-      else
-        {
-          genmsg = log_msg_new_empty();
-          genmsg->flags |= LF_LOCAL;
-          genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
-        }
-      if (context)
-        {
-          switch (context->key.scope)
-            {
-              case RCS_PROCESS:
-                log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
-              case RCS_PROGRAM:
-                log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
-              case RCS_HOST:
-                log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
-              case RCS_GLOBAL:
-                break;
-              default:
-                g_assert_not_reached();
-              break;
-            }
-        }
-      if (context)
-        {
-          g_ptr_array_add(context->messages, genmsg);
-          pdb_message_apply(&self->content.message, context, genmsg, buffer);
-          g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
-        }
-      else
-        {
-          /* no context, which means no correllation. The action
-           * rule contains the generated message at @0 and the one
-           * which triggered the rule in @1.
-           *
-           * We emulate a context having only these two
-           * messages, but without allocating a full-blown
-           * structure.
-           */
-          LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
-          GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
-          PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
-
-          pdb_message_apply(&self->content.message, &dummy_context, genmsg, buffer);
-        }
-
-      db->emit(genmsg, TRUE, db->emit_data);
-      log_msg_unref(genmsg);
+      pdb_action_execute_message(self, db, context, msg, buffer);
       break;
     default:
       g_assert_not_reached();
