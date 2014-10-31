@@ -1338,10 +1338,10 @@ log_db_add_matches(LogMessage *msg, GArray *matches, NVHandle ref_handle, const 
  * NOTE: it also modifies @msg to store the name-value pairs found during lookup, so
  */
 PDBRule *
-pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
+pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
 {
   RNode *node;
-  LogMessage *msg = input->msg;
+  LogMessage *msg = lookup->msg;
   GArray *prg_matches, *matches;
   const gchar *program;
   gssize program_len;
@@ -1349,13 +1349,13 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
   if (G_UNLIKELY(!self->programs))
     return FALSE;
 
-  program = log_msg_get_value(msg, input->program_handle, &program_len);
+  program = log_msg_get_value(msg, lookup->program_handle, &program_len);
   prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
   node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, prg_matches);
 
   if (node)
     {
-      log_db_add_matches(msg, prg_matches, input->program_handle, program);
+      log_db_add_matches(msg, prg_matches, lookup->program_handle, program);
       g_array_free(prg_matches, TRUE);
 
       PDBProgram *program = (PDBProgram *) node->value;
@@ -1373,14 +1373,14 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
           matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
           g_array_set_size(matches, 1);
 
-          if (input->message_handle)
+          if (lookup->message_handle)
             {
-              message = log_msg_get_value(msg, input->message_handle, &message_len);
+              message = log_msg_get_value(msg, lookup->message_handle, &message_len);
             }
           else
             {
-              message = input->message_string;
-              message_len = input->message_len;
+              message = lookup->message_string;
+              message_len = lookup->message_len;
             }
 
           if (G_UNLIKELY(dbg_list))
@@ -1399,7 +1399,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
               log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
               log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
 
-              log_db_add_matches(msg, matches, input->message_handle, message);
+              log_db_add_matches(msg, matches, lookup->message_handle, message);
               g_array_free(matches, TRUE);
 
               if (!rule->class)
@@ -1614,16 +1614,16 @@ pattern_db_get_ruleset_version(PatternDB *self)
 }
 
 static gboolean
-_pattern_db_process(PatternDB *self, PDBInput *input)
+_pattern_db_process(PatternDB *self, PDBLookupParams *lookup)
 {
   PDBRule *rule;
-  LogMessage *msg = input->msg;
+  LogMessage *msg = lookup->msg;
 
   if (G_UNLIKELY(!self->ruleset))
     return FALSE;
 
   g_static_rw_lock_reader_lock(&self->lock);
-  rule = pdb_rule_set_lookup(self->ruleset, input, NULL);
+  rule = pdb_rule_set_lookup(self->ruleset, lookup, NULL);
   g_static_rw_lock_reader_unlock(&self->lock);
   if (rule)
     {
@@ -1711,42 +1711,44 @@ _pattern_db_process(PatternDB *self, PDBInput *input)
   return rule != NULL;
 }
 
+static void
+pdb_lookup_state_init(PDBLookupParams *lookup, LogMessage *msg)
+{
+  lookup->msg = msg;
+  lookup->program_handle = LM_V_PROGRAM;
+  lookup->message_handle = LM_V_MESSAGE;
+  lookup->message_len = 0;
+}
+
 gboolean
 pattern_db_process(PatternDB *self, LogMessage *msg)
 {
-  PDBInput input;
+  PDBLookupParams lookup;
 
-  input.msg = msg;
-  input.program_handle = LM_V_PROGRAM;
-  input.message_handle = LM_V_MESSAGE;
-  input.message_len = 0;
-  return _pattern_db_process(self, &input);
+  pdb_lookup_state_init(&lookup, msg);
+  return _pattern_db_process(self, &lookup);
 }
 
 gboolean
 pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const gchar *message, gssize message_len)
 {
-  PDBInput input;
+  PDBLookupParams lookup;
 
-  input.msg = msg;
-  input.program_handle = LM_V_PROGRAM;
-  input.message_handle = LM_V_NONE;
-  input.message_string = message;
-  input.message_len = message_len;
-  return _pattern_db_process(self, &input);
+  pdb_lookup_state_init(&lookup, msg);
+  lookup.message_handle = LM_V_NONE;
+  lookup.message_string = message;
+  lookup.message_len = message_len;
+  return _pattern_db_process(self, &lookup);
 }
 
 void
 pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
 {
-  PDBInput input;
+  PDBLookupParams lookup;
   PDBRule *rule;
 
-  input.msg = msg;
-  input.program_handle = LM_V_PROGRAM;
-  input.message_handle = LM_V_MESSAGE;
-  input.message_len = 0;
-  rule = pdb_rule_set_lookup(self->ruleset, &input, dbg_list);
+  pdb_lookup_state_init(&lookup, msg);
+  rule = pdb_rule_set_lookup(self->ruleset, &lookup, dbg_list);
   if (rule)
     pdb_rule_unref(rule);
 }

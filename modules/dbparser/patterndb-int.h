@@ -28,27 +28,7 @@
 
 #include "patterndb.h"
 
-typedef struct _PDBInput
-{
-  LogMessage *msg;
-  NVHandle program_handle;
-  NVHandle message_handle;
-  const gchar *message_string;
-  gssize message_len;
-} PDBInput;
-
-#define PDB_INPUT_DEFAULT(msg) { (msg), LM_V_PROGRAM, LM_V_MESSAGE, NULL, 0 }
-#define PDB_INPUT_WRAP_MESSAGE(input,msg)       \
-  ({                                            \
-    (input)->msg = msg;                         \
-    (input)->program_handle = LM_V_PROGRAM;     \
-    (input)->message_handle = LM_V_MESSAGE;     \
-    (input)->message_string = NULL;             \
-    (input)->message_len = 0;                   \
-    (input);                                    \
-  })
-
-
+typedef struct _PDBLookupParams PDBLookupParams;
 typedef struct _PDBRule PDBRule;
 
 /* rule context scope */
@@ -207,10 +187,19 @@ typedef struct _PDBRuleSet
 } PDBRuleSet;
 
 gboolean pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GList **examples);
-PDBRule *pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list);
+PDBRule *pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *input, GArray *dbg_list);
 
 PDBRuleSet *pdb_rule_set_new(void);
 void pdb_rule_set_free(PDBRuleSet *self);
+
+typedef struct _PDBLookupParams
+{
+  LogMessage *msg;
+  NVHandle program_handle;
+  NVHandle message_handle;
+  const gchar *message_string;
+  gssize message_len;
+} PDBLookupParams;
 
 struct _PatternDB
 {
@@ -222,7 +211,5 @@ struct _PatternDB
   PatternDBEmitFunc emit;
   gpointer emit_data;
 };
-
-
 
 #endif
