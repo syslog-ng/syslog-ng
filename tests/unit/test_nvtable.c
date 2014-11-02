@@ -724,7 +724,10 @@ test_nvtable_lookup()
           handle = handles[i];
           g_snprintf(name, sizeof(name), "VAL%d", handle);
           TEST_NVTABLE_ASSERT(tab, handles[i], name, strlen(name));
+          TEST_ASSERT(nv_table_is_value_set(tab, handles[i]));
+
         }
+      TEST_ASSERT(nv_table_is_value_set(tab, 0xFE00) == FALSE);
       nv_table_unref(tab);
     }
 }
