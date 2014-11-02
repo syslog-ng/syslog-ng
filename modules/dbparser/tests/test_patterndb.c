@@ -124,6 +124,19 @@ _construct_message(const gchar *program, const gchar *message)
 }
 
 static void
+_feed_message_to_correllation_state(const gchar *program, const gchar *message, const gchar *name, const gchar *value)
+{
+  LogMessage *msg;
+  gboolean result;
+
+  msg = _construct_message_with_nvpair(program, message, name, value);
+  result = _process(msg);
+  log_msg_unref(msg);
+  assert_true(result, "patterndb expected to match but it didn't");
+  _dont_reset_patterndb_state_for_the_next_call();
+}
+
+static void
 assert_msg_with_program_matches_and_nvpair_equals(const gchar *program, const gchar *message,
                                                   const gchar *name, const gchar *expected_value)
 {
@@ -427,8 +440,50 @@ test_patterndb_message_property_inheritance_disabled()
   assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-disabled", 1, "actiontag", TRUE);
   assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "actionkey", "actionvalue");
 
+  _destroy_pattern_db();
+}
 
+gchar *pdb_inheritance_context_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog2</pattern>\
+  </patterns>\
+  <rule provider='test' id='11' class='system' context-scope='program'\
+        context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>pattern-with-inheritance-context</pattern>\
+   </patterns>\
+   <tags>\
+    <tag>basetag1</tag>\
+    <tag>basetag2</tag>\
+   </tags>\
+   <actions>\
+    <action trigger='timeout'>\
+     <message inherit-properties='context'>\
+      <value name='MESSAGE'>action message</value>\
+      <tags>\
+       <tag>actiontag</tag>\
+      </tags>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+ </ruleset>\
+</patterndb>";
 
+void
+test_patterndb_message_property_inheritance_context(void)
+{
+  _load_pattern_db_from_string(pdb_inheritance_context_skeleton);
+
+  _feed_message_to_correllation_state("prog2", "pattern-with-inheritance-context", "merged1", "merged1");
+  _feed_message_to_correllation_state("prog2", "pattern-with-inheritance-context", "merged2", "merged2");
+  _advance_time(60);
+
+  assert_output_message_nvpair_equals(2, "MESSAGE", "action message");
+  assert_output_message_nvpair_equals(2, "merged1", "merged1");
+  assert_output_message_nvpair_equals(2, "merged2", "merged2");
+  assert_output_message_has_tag(2, "actiontag", TRUE);
 
   _destroy_pattern_db();
 }
@@ -438,6 +493,7 @@ test_patterndb_message_property_inheritance(void)
 {
   test_patterndb_message_property_inheritance_enabled();
   test_patterndb_message_property_inheritance_disabled();
+  test_patterndb_message_property_inheritance_context();
 }
 
 gchar *pdb_msg_count_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\

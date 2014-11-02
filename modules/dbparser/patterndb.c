@@ -399,7 +399,9 @@ pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error)
 void
 pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error)
 {
-  if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
+  if (strcasecmp(inherit_properties, "context") == 0)
+    self->content.inherit_mode = RAC_MSG_INHERIT_CONTEXT;
+  else if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
       inherit_properties[0] == '1')
     self->content.inherit_mode = RAC_MSG_INHERIT_LAST_MESSAGE;
   else if (inherit_properties[0] == 'F' || inherit_properties[0] == 'f' ||
@@ -499,11 +501,21 @@ pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(LogStam
 }
 
 LogMessage *
+pdb_action_generate_message_inheriting_properties_from_the_entire_context(PDBContext *context)
+{
+  LogMessage *genmsg = pdb_action_generate_message_inheriting_properties_from_the_last_message(pdb_context_get_last_message(context));
+
+  log_msg_merge_context(genmsg, (LogMessage **) context->messages->pdata, context->messages->len);
+  return genmsg;
+}
+
+LogMessage *
 pdb_action_generate_default_message(PDBAction *self, LogMessage *msg)
 {
   switch (self->content.inherit_mode)
     {
     case RAC_MSG_INHERIT_LAST_MESSAGE:
+    case RAC_MSG_INHERIT_CONTEXT:
       return pdb_action_generate_message_inheriting_properties_from_the_last_message(msg);
     case RAC_MSG_INHERIT_NONE:
       return pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(&msg->timestamps[LM_TS_STAMP]);
@@ -513,12 +525,22 @@ pdb_action_generate_default_message(PDBAction *self, LogMessage *msg)
 }
 
 LogMessage *
+pdb_action_generate_default_message_from_context(PDBAction *action, PDBContext *context)
+{
+  LogMessage *msg = pdb_context_get_last_message(context);
+
+  if (action->content.inherit_mode != RAC_MSG_INHERIT_CONTEXT)
+    return pdb_action_generate_default_message(action, msg);
+
+  return pdb_action_generate_message_inheriting_properties_from_the_entire_context(context);
+}
+
+LogMessage *
 pdb_action_generate_message_with_context(PDBAction *self, PDBContext *context, GString *buffer)
 {
   LogMessage *genmsg;
-  LogMessage *msg = (LogMessage *) g_ptr_array_index(context->messages, context->messages->len - 1);
 
-  genmsg = pdb_action_generate_default_message(self, msg);
+  genmsg = pdb_action_generate_default_message_from_context(self, context);
   switch (context->key.scope)
     {
       case RCS_PROCESS:
