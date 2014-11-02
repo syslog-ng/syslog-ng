@@ -328,56 +328,25 @@ test_patterndb_rule(void)
   _destroy_pattern_db();
 }
 
-gchar *pdb_inheritance_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+gchar *pdb_inheritance_enabled_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
  <ruleset name='testset' id='1'>\
   <patterns>\
    <pattern>prog2</pattern>\
   </patterns>\
-  <rule provider='test' id='11' class='system' context-scope='program'\
-        context-id='$PID' context-timeout='60'>\
+  <rule provider='test' id='11' class='system'>\
    <patterns>\
-    <pattern>pattern11</pattern>\
+    <pattern>pattern-with-inheritance-enabled</pattern>\
    </patterns>\
    <tags>\
-    <tag>tag11-1</tag>\
-    <tag>tag11-2</tag>\
+    <tag>basetag1</tag>\
+    <tag>basetag2</tag>\
    </tags>\
-   <values>\
-    <value name='n11-1'>v11-1</value>\
-    <value name='vvv'>${HOST}</value>\
-    <value name='context-id'>${CONTEXT_ID}</value>\
-   </values>\
    <actions>\
-    <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='match'>\
+    <action trigger='match'>\
      <message inherit-properties='TRUE'>\
-      <value name='context-id'>${CONTEXT_ID}</value>\
+      <value name='actionkey'>actionvalue</value>\
       <tags>\
-       <tag>tag11-3</tag>\
-      </tags>\
-     </message>\
-    </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='12' class='system' context-scope='program'\
-        context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>pattern12</pattern>\
-   </patterns>\
-   <tags>\
-    <tag>tag12-1</tag>\
-    <tag>tag12-2</tag>\
-   </tags>\
-   <values>\
-    <value name='n12-1'>v12-1</value>\
-    <value name='vvv'>${HOST}</value>\
-    <value name='context-id'>${CONTEXT_ID}</value>\
-   </values>\
-   <actions>\
-    <action rate='1/60' condition='\"${n12-1}\" == \"v12-1\"' trigger='match'>\
-     <message inherit-properties='FALSE'>\
-      <value name='context-id'>${CONTEXT_ID}</value>\
-      <tags>\
-       <tag>tag12-3</tag>\
+       <tag>actiontag</tag>\
       </tags>\
      </message>\
     </action>\
@@ -387,22 +356,68 @@ gchar *pdb_inheritance_skeleton = "<patterndb version='3' pub_date='2010-02-22'>
 </patterndb>";
 
 void
-test_patterndb_message_property_inheritance()
+test_patterndb_message_property_inheritance_enabled()
 {
-  _load_pattern_db_from_string(pdb_inheritance_skeleton);
+  _load_pattern_db_from_string(pdb_inheritance_enabled_skeleton);
 
-  assert_output_message_nvpair_equals("pattern11", 1, "MESSAGE", "pattern11");
-  assert_output_message_has_tag("pattern11", 1, "tag11-1", TRUE);
-  assert_output_message_has_tag("pattern11", 1, "tag11-2", TRUE);
-  assert_output_message_has_tag("pattern11", 1, "tag11-3", TRUE);
-
-
-  assert_output_message_nvpair_equals("pattern12", 1, "MESSAGE", NULL);
-  assert_output_message_has_tag("pattern12", 1, "tag12-1", FALSE);
-  assert_output_message_has_tag("pattern12", 1, "tag12-2", FALSE);
-  assert_output_message_has_tag("pattern12", 1, "tag12-3", TRUE);
+  assert_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "MESSAGE", "pattern-with-inheritance-enabled");
+  assert_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag1", TRUE);
+  assert_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag2", TRUE);
+  assert_output_message_has_tag("pattern-with-inheritance-enabled", 1, "actiontag", TRUE);
+  assert_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "actionkey", "actionvalue");
 
   _destroy_pattern_db();
+}
+
+gchar *pdb_inheritance_disabled_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog2</pattern>\
+  </patterns>\
+  <rule provider='test' id='12' class='system'>\
+   <patterns>\
+    <pattern>pattern-with-inheritance-disabled</pattern>\
+   </patterns>\
+   <tags>\
+    <tag>basetag1</tag>\
+    <tag>basetag2</tag>\
+   </tags>\
+   <actions>\
+    <action trigger='match'>\
+     <message inherit-properties='FALSE'>\
+      <value name='actionkey'>actionvalue</value>\
+      <tags>\
+       <tag>actiontag</tag>\
+      </tags>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+ </ruleset>\
+</patterndb>";
+
+void
+test_patterndb_message_property_inheritance_disabled()
+{
+  _load_pattern_db_from_string(pdb_inheritance_disabled_skeleton);
+
+  assert_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "MESSAGE", NULL);
+  assert_output_message_has_tag("pattern-with-inheritance-disabled", 1, "basetag1", FALSE);
+  assert_output_message_has_tag("pattern-with-inheritance-disabled", 1, "basetag2", FALSE);
+  assert_output_message_has_tag("pattern-with-inheritance-disabled", 1, "actiontag", TRUE);
+  assert_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "actionkey", "actionvalue");
+
+
+
+
+  _destroy_pattern_db();
+}
+
+void
+test_patterndb_message_property_inheritance(void)
+{
+  test_patterndb_message_property_inheritance_enabled();
+  test_patterndb_message_property_inheritance_disabled();
 }
 
 gchar *pdb_msg_count_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
