@@ -175,7 +175,13 @@ assert_msg_matches_and_has_tag(const gchar *pattern, const gchar *tag, gboolean 
 }
 
 void
-assert_output_message_nvpair_equals_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *name, const gchar *value)
+assert_output_message_nvpair_equals(gint ndx, const gchar *name, const gchar *value)
+{
+  assert_log_message_value(_get_output_message(ndx), log_msg_get_value_handle(name), value);
+}
+
+void
+assert_msg_matches_and_output_message_nvpair_equals_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *name, const gchar *value)
 {
   LogMessage *msg;
 
@@ -183,35 +189,41 @@ assert_output_message_nvpair_equals_with_timeout(const gchar *pattern, gint time
   _process(msg);
   _advance_time(timeout);
 
-  assert_log_message_value(_get_output_message(ndx), log_msg_get_value_handle(name), value);
+  assert_output_message_nvpair_equals(ndx, name, value);
   log_msg_unref(msg);
 }
 
 void
-assert_output_message_nvpair_equals(const gchar *pattern, gint ndx, const gchar *name, const gchar *value)
+assert_msg_matches_and_output_message_nvpair_equals(const gchar *pattern, gint ndx, const gchar *name, const gchar *value)
 {
-  assert_output_message_nvpair_equals_with_timeout(pattern, 0, ndx, name, value);
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout(pattern, 0, ndx, name, value);
 }
 
 void
-assert_output_message_has_tag_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *tag, gboolean set)
+assert_output_message_has_tag(gint ndx, const gchar *tag, gboolean set)
 {
-  LogMessage *msg;
-
-  msg = _construct_message("prog2", pattern);
-  _process(msg);
-  _advance_time(timeout);
   if (set)
     assert_log_message_has_tag(_get_output_message(ndx), tag);
   else
     assert_log_message_doesnt_have_tag(_get_output_message(ndx), tag);
+}
+
+void
+assert_msg_matches_and_output_message_has_tag_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *tag, gboolean set)
+{
+  LogMessage *msg;
+
+  msg = _construct_message("prog2", pattern);
+  _process(msg);
+  _advance_time(timeout);
+  assert_output_message_has_tag(ndx, tag, set);
   log_msg_unref(msg);
 }
 
 void
-assert_output_message_has_tag(const gchar *pattern, gint ndx, const gchar *tag, gboolean set)
+assert_msg_matches_and_output_message_has_tag(const gchar *pattern, gint ndx, const gchar *tag, gboolean set)
 {
-  assert_output_message_has_tag_with_timeout(pattern, 0, ndx, tag, set);
+  assert_msg_matches_and_output_message_has_tag_with_timeout(pattern, 0, ndx, tag, set);
 }
 
 /* pdb skeleton used to test patterndb rule actions. E.g. whenever a rule
@@ -320,18 +332,18 @@ test_patterndb_rule(void)
   assert_msg_matches_and_nvpair_equals("pattern12", "n12-3", NULL);
   assert_msg_matches_and_nvpair_equals("pattern11", "vvv", MYHOST);
 
-  assert_output_message_nvpair_equals("pattern11", 1, "MESSAGE", "rule11 matched");
-  assert_output_message_nvpair_equals("pattern11", 1, "context-id", "999");
-  assert_output_message_has_tag("pattern11", 1, "tag11-3", TRUE);
-  assert_output_message_has_tag("pattern11", 1, "tag11-4", FALSE);
+  assert_msg_matches_and_output_message_nvpair_equals("pattern11", 1, "MESSAGE", "rule11 matched");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern11", 1, "context-id", "999");
+  assert_msg_matches_and_output_message_has_tag("pattern11", 1, "tag11-3", TRUE);
+  assert_msg_matches_and_output_message_has_tag("pattern11", 1, "tag11-4", FALSE);
 
-  assert_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "MESSAGE", "rule11 timed out");
-  assert_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "context-id", "999");
-  assert_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-3", FALSE);
-  assert_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-4", TRUE);
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "MESSAGE", "rule11 timed out");
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "context-id", "999");
+  assert_msg_matches_and_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-3", FALSE);
+  assert_msg_matches_and_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-4", TRUE);
 
-  assert_output_message_nvpair_equals("contextlesstest value1", 1, "MESSAGE",  "message1");
-  assert_output_message_nvpair_equals("contextlesstest value2", 1, "MESSAGE",  "message2");
+  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value1", 1, "MESSAGE",  "message1");
+  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value2", 1, "MESSAGE",  "message2");
 
   _destroy_pattern_db();
 }
@@ -368,11 +380,11 @@ test_patterndb_message_property_inheritance_enabled()
 {
   _load_pattern_db_from_string(pdb_inheritance_enabled_skeleton);
 
-  assert_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "MESSAGE", "pattern-with-inheritance-enabled");
-  assert_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag1", TRUE);
-  assert_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag2", TRUE);
-  assert_output_message_has_tag("pattern-with-inheritance-enabled", 1, "actiontag", TRUE);
-  assert_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "actionkey", "actionvalue");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "MESSAGE", "pattern-with-inheritance-enabled");
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag1", TRUE);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag2", TRUE);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "actiontag", TRUE);
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "actionkey", "actionvalue");
 
   _destroy_pattern_db();
 }
@@ -409,11 +421,11 @@ test_patterndb_message_property_inheritance_disabled()
 {
   _load_pattern_db_from_string(pdb_inheritance_disabled_skeleton);
 
-  assert_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "MESSAGE", NULL);
-  assert_output_message_has_tag("pattern-with-inheritance-disabled", 1, "basetag1", FALSE);
-  assert_output_message_has_tag("pattern-with-inheritance-disabled", 1, "basetag2", FALSE);
-  assert_output_message_has_tag("pattern-with-inheritance-disabled", 1, "actiontag", TRUE);
-  assert_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "actionkey", "actionvalue");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "MESSAGE", NULL);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-disabled", 1, "basetag1", FALSE);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-disabled", 1, "basetag2", FALSE);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-disabled", 1, "actiontag", TRUE);
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "actionkey", "actionvalue");
 
 
 
@@ -484,13 +496,13 @@ test_patterndb_context_length()
 {
   _load_pattern_db_from_string(pdb_msg_count_skeleton);
 
-  assert_output_message_nvpair_equals("pattern13", 1, "CONTEXT_LENGTH", "2");
-  assert_output_message_nvpair_equals("pattern14", 1, "CONTEXT_LENGTH", "2");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern13", 1, "CONTEXT_LENGTH", "2");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern14", 1, "CONTEXT_LENGTH", "2");
 
   assert_msg_with_program_matches_and_nvpair_equals("prog2", "pattern15-a", "p15", "-a");
 
   _dont_reset_patterndb_state_for_the_next_call();
-  assert_output_message_nvpair_equals("pattern15-b", 2, "fired", "true");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern15-b", 2, "fired", "true");
 
   _destroy_pattern_db();
 }
