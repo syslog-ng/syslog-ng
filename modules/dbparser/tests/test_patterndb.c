@@ -102,7 +102,7 @@ _get_output_message(gint ndx)
 }
 
 static LogMessage *
-_construct_message(const gchar *program, const gchar *message)
+_construct_message_with_nvpair(const gchar *program, const gchar *message, const gchar *name, const gchar *value)
 {
   LogMessage *msg = log_msg_new_empty();
 
@@ -110,9 +110,17 @@ _construct_message(const gchar *program, const gchar *message)
   log_msg_set_value(msg, LM_V_PROGRAM, program, strlen(program));
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
+  if (name)
+    log_msg_set_value_by_name(msg, name, value, -1);
   msg->timestamps[LM_TS_STAMP].tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec;
 
   return msg;
+}
+
+static LogMessage *
+_construct_message(const gchar *program, const gchar *message)
+{
+  return _construct_message_with_nvpair(program, message, NULL, NULL);
 }
 
 static void
