@@ -273,7 +273,7 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
        </message>\
      </action>\
    </actions>\
-  </rule>\ 
+  </rule>\
  </ruleset>\
 </patterndb>";
 
