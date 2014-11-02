@@ -1068,6 +1068,29 @@ log_msg_alloc(gsize payload_size)
   return msg;
 }
 
+static gboolean
+_merge_value(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data)
+{
+  LogMessage *msg = (LogMessage *) user_data;
+
+  if (!nv_table_is_value_set(msg->payload, handle))
+    log_msg_set_value(msg, handle, value, value_len);
+  return FALSE;
+}
+
+void
+log_msg_merge_context(LogMessage *self, LogMessage **context, gsize context_len)
+{
+  gint i;
+
+  for (i = context_len - 1; i >= 0; i--)
+    {
+      LogMessage *msg_to_be_merged = context[i];
+
+      log_msg_nv_table_foreach(msg_to_be_merged->payload, _merge_value, self);
+    }
+}
+
 /**
  * log_msg_new:
  * @msg: message to parse
