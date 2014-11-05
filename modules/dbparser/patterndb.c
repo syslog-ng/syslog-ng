@@ -235,7 +235,7 @@ pdb_state_key_equal(gconstpointer k1, gconstpointer k2)
 
 /* fills a PDBStateKey structure with borrowed values */
 static void
-pdb_state_key_setup(PDBStateKey *self, gint type, PDBRule *rule, LogMessage *msg, gchar *session_id)
+pdb_state_key_setup(PDBStateKey *self, PDBStateKeyType type, PDBRule *rule, LogMessage *msg, gchar *session_id)
 {
   memset(self, 0, sizeof(*self));
   self->scope = rule->context_scope;
@@ -459,7 +459,7 @@ pdb_action_check_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
 }
 
 gboolean
-pdb_action_is_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, gint trigger, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_action_is_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   if (self->trigger != trigger)
     return FALSE;
@@ -592,7 +592,7 @@ pdb_action_execute(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *co
 }
 
 void
-pdb_action_run(PDBAction *self, PatternDB *db, PDBRule *rule, gint trigger, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_action_run(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   if (pdb_action_is_triggered(self, db, rule, trigger, context, msg, buffer))
     pdb_action_execute(self, db, rule, context, msg, buffer);
@@ -690,7 +690,7 @@ pdb_rule_add_action(PDBRule *self, PDBAction *action)
 }
 
 void
-pdb_rule_run_actions(PDBRule *self, PatternDB *db, gint trigger, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_rule_run_actions(PDBRule *self, PatternDB *db, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   gint i;
 
