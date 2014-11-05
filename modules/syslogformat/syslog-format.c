@@ -526,13 +526,11 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
       log_msg_set_value(self, is_synced, "0", 1);
     }
 
-
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
       if (!__parse_iso_stamp(&now, self, &tm, &src, &left, tz_known))
         goto error;
-      tm.tm_isdst = -1;
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
@@ -546,6 +544,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
       return FALSE;
     }
 
+  tm.tm_isdst = -1;
   unnormalized_tm = tm;
   self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
   unnormalized_hour = __calculate_unnormalized_hour(&unnormalized_tm, &tm);
