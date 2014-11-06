@@ -80,6 +80,12 @@ static LogTagId unknown_tag;
  * marked with PSK_CONTEXT in the hash table key
  **************************************************************************/
 
+static LogMessage *
+pdb_context_get_last_message(PDBContext *self)
+{
+  return (LogMessage *) g_ptr_array_index(self->messages, self->messages->len - 1);
+}
+
 /*
  * NOTE: borrows "db" and consumes "key" contents.
  */
@@ -229,7 +235,7 @@ pdb_state_key_equal(gconstpointer k1, gconstpointer k2)
 
 /* fills a PDBStateKey structure with borrowed values */
 static void
-pdb_state_key_setup(PDBStateKey *self, gint type, PDBRule *rule, LogMessage *msg, gchar *session_id)
+pdb_state_key_setup(PDBStateKey *self, PDBStateKeyType type, PDBRule *rule, LogMessage *msg, gchar *session_id)
 {
   memset(self, 0, sizeof(*self));
   self->scope = rule->context_scope;
@@ -391,16 +397,205 @@ pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error)
 }
 
 void
-pdb_action_set_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error)
+pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error)
 {
   if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
       inherit_properties[0] == '1')
-    self->inherit_properties = TRUE;
+    self->content.inherit_mode = RAC_MSG_INHERIT_LAST_MESSAGE;
   else if (inherit_properties[0] == 'F' || inherit_properties[0] == 'f' ||
            inherit_properties[0] == '0')
-    self->inherit_properties = FALSE;
+    self->content.inherit_mode = RAC_MSG_INHERIT_NONE;
   else
     g_set_error(error, 0, 1, "Unknown inheritance type: %s", inherit_properties);
+}
+
+static inline gboolean
+pdb_action_check_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMessage *msg, GString *buffer)
+{
+  PDBStateKey key;
+  PDBRateLimit *rl;
+  guint64 now;
+
+  if (self->rate == 0)
+    return TRUE;
+
+  g_string_printf(buffer, "%s:%d", rule->rule_id, self->id);
+  pdb_state_key_setup(&key, PSK_RATE_LIMIT, rule, msg, buffer->str);
+
+  rl = g_hash_table_lookup(db->state, &key);
+  if (!rl)
+    {
+      rl = pdb_rate_limit_new(&key);
+      g_hash_table_insert(db->state, &rl->key, rl);
+      g_string_steal(buffer);
+    }
+  now = timer_wheel_get_time(db->timer_wheel);
+  if (rl->last_check == 0)
+    {
+      rl->last_check = now;
+      rl->buckets = self->rate;
+    }
+  else
+    {
+      /* quick and dirty fixed point arithmetic, 8 bit fraction part */
+      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) self->rate_quantum) << 8) / self->rate);
+
+      if (new_credits)
+        {
+          /* ok, enough time has passed to increase the current credit.
+           * Deposit the new credits in bucket but make sure we don't permit
+           * more than the maximum rate. */
+
+          rl->buckets = MIN(rl->buckets + new_credits, self->rate);
+          rl->last_check = now;
+      }
+    }
+  if (rl->buckets)
+    {
+      rl->buckets--;
+      return TRUE;
+    }
+  return FALSE;
+}
+
+gboolean
+pdb_action_is_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
+{
+  if (self->trigger != trigger)
+    return FALSE;
+
+  if (self->condition)
+    {
+      if (context && !filter_expr_eval_with_context(self->condition, (LogMessage **) context->messages->pdata, context->messages->len))
+        return FALSE;
+      if (!context && !filter_expr_eval(self->condition, msg))
+        return FALSE;
+    }
+
+  if (!pdb_action_check_rate_limit(self, rule, db, msg, buffer))
+    return FALSE;
+
+  return TRUE;
+}
+
+LogMessage *
+pdb_action_generate_message_inheriting_properties_from_the_last_message(LogMessage *msg)
+{
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  path_options.ack_needed = FALSE;
+  return log_msg_clone_cow(msg, &path_options);
+}
+
+LogMessage *
+pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(LogStamp *msgstamp)
+{
+  LogMessage *genmsg;
+
+  genmsg = log_msg_new_empty();
+  genmsg->flags |= LF_LOCAL;
+  genmsg->timestamps[LM_TS_STAMP] = *msgstamp;
+  return genmsg;
+}
+
+LogMessage *
+pdb_action_generate_default_message(PDBAction *self, LogMessage *msg)
+{
+  switch (self->content.inherit_mode)
+    {
+    case RAC_MSG_INHERIT_LAST_MESSAGE:
+      return pdb_action_generate_message_inheriting_properties_from_the_last_message(msg);
+    case RAC_MSG_INHERIT_NONE:
+      return pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(&msg->timestamps[LM_TS_STAMP]);
+    default:
+      g_assert_not_reached();
+    }
+}
+
+LogMessage *
+pdb_action_generate_message_with_context(PDBAction *self, PDBContext *context, GString *buffer)
+{
+  LogMessage *genmsg;
+  LogMessage *msg = (LogMessage *) g_ptr_array_index(context->messages, context->messages->len - 1);
+
+  genmsg = pdb_action_generate_default_message(self, msg);
+  switch (context->key.scope)
+    {
+      case RCS_PROCESS:
+        log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
+      case RCS_PROGRAM:
+        log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
+      case RCS_HOST:
+        log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
+      case RCS_GLOBAL:
+        break;
+      default:
+        g_assert_not_reached();
+      break;
+    }
+  g_ptr_array_add(context->messages, genmsg);
+  pdb_message_apply(&self->content.message, context, genmsg, buffer);
+  g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+  return genmsg;
+}
+
+LogMessage *
+pdb_action_generate_message_without_context(PDBAction *self, LogMessage *msg, GString *buffer)
+{
+  LogMessage *genmsg;
+
+  genmsg = pdb_action_generate_default_message(self, msg);
+
+  /* no context, which means no correllation. The action
+   * rule contains the generated message at @0 and the one
+   * which triggered the rule in @1.
+   *
+   * We emulate a context having only these two
+   * messages, but without allocating a full-blown
+   * structure.
+   */
+  LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
+  GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
+  PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
+
+  pdb_message_apply(&self->content.message, &dummy_context, genmsg, buffer);
+  return genmsg;
+}
+
+void
+pdb_action_execute_message(PDBAction *self, PatternDB *db, PDBContext *context, LogMessage *msg, GString *buffer)
+{
+  LogMessage *genmsg;
+
+  if (context)
+    genmsg = pdb_action_generate_message_with_context(self, context, buffer);
+  else
+    genmsg = pdb_action_generate_message_without_context(self, msg, buffer);
+  db->emit(genmsg, TRUE, db->emit_data);
+  log_msg_unref(genmsg);
+}
+
+void
+pdb_action_execute(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *context, LogMessage *msg, GString *buffer)
+{
+  switch (self->content_type)
+    {
+    case RAC_NONE:
+      break;
+    case RAC_MESSAGE:
+      pdb_action_execute_message(self, db, context, msg, buffer);
+      break;
+    default:
+      g_assert_not_reached();
+      break;
+    }
+}
+
+void
+pdb_action_run(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
+{
+  if (pdb_action_is_triggered(self, db, rule, trigger, context, msg, buffer))
+    pdb_action_execute(self, db, rule, context, msg, buffer);
 }
 
 PDBAction *
@@ -494,57 +689,8 @@ pdb_rule_add_action(PDBRule *self, PDBAction *action)
   g_ptr_array_add(self->actions, action);
 }
 
-static inline gboolean
-pdb_rule_check_rate_limit(PDBRule *self, PatternDB *db, PDBAction *action, LogMessage *msg, GString *buffer)
-{
-  PDBStateKey key;
-  PDBRateLimit *rl;
-  guint64 now;
-
-  if (action->rate == 0)
-    return TRUE;
-
-  g_string_printf(buffer, "%s:%d", self->rule_id, action->id);
-  pdb_state_key_setup(&key, PSK_RATE_LIMIT, self, msg, buffer->str);
-
-  rl = g_hash_table_lookup(db->state, &key);
-  if (!rl)
-    {
-      rl = pdb_rate_limit_new(&key);
-      g_hash_table_insert(db->state, &rl->key, rl);
-      g_string_steal(buffer);
-    }
-  now = timer_wheel_get_time(db->timer_wheel);
-  if (rl->last_check == 0)
-    {
-      rl->last_check = now;
-      rl->buckets = action->rate;
-    }
-  else
-    {
-      /* quick and dirty fixed point arithmetic, 8 bit fraction part */
-      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) action->rate_quantum) << 8) / action->rate);
-
-      if (new_credits)
-        {
-          /* ok, enough time has passed to increase the current credit.
-           * Deposit the new credits in bucket but make sure we don't permit
-           * more than the maximum rate. */
-
-          rl->buckets = MIN(rl->buckets + new_credits, action->rate);
-          rl->last_check = now;
-      }
-    }
-  if (rl->buckets)
-    {
-      rl->buckets--;
-      return TRUE;
-    }
-  return FALSE;
-}
-
 void
-pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *context, LogMessage *msg, PatternDBEmitFunc emit, gpointer emit_data, GString *buffer)
+pdb_rule_run_actions(PDBRule *self, PatternDB *db, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   gint i;
 
@@ -554,82 +700,7 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
     {
       PDBAction *action = (PDBAction *) g_ptr_array_index(self->actions, i);
 
-      if (action->trigger == trigger)
-        {
-          LogMessage *genmsg;
-
-          if ((!action->condition ||
-	      (context ? 
-		(filter_expr_eval_with_context(action->condition, (LogMessage **) context->messages->pdata, context->messages->len)) : 
-		filter_expr_eval(action->condition, msg) ) 
-	      && pdb_rule_check_rate_limit(self, db, action, msg, buffer)))
-            {
-              switch (action->content_type)
-                {
-                case RAC_NONE:
-                  break;
-                case RAC_MESSAGE:
-                  if (action->inherit_properties)
-                    {
-                      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-                      path_options.ack_needed = FALSE;
-                      genmsg = log_msg_clone_cow(msg, &path_options);
-                    }
-                  else
-                    {
-                      genmsg = log_msg_new_empty();
-                      genmsg->flags |= LF_LOCAL;
-                      genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
-                    }
-                  if (context)
-                    {
-                      switch (context->key.scope)
-                        {
-                          case RCS_PROCESS:
-                            log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
-                          case RCS_PROGRAM:
-                            log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
-                          case RCS_HOST:
-                            log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
-                          case RCS_GLOBAL:
-                            break;
-                          default:
-                            g_assert_not_reached();
-                          break;
-                        }
-                    }
-                  if (context)
-                    {
-                      g_ptr_array_add(context->messages, genmsg);
-                      pdb_message_apply(&action->content.message, context, genmsg, buffer);
-                      g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
-                    }
-                  else
-                    {
-                      /* no context, which means no correllation. The action
-                       * rule contains the generated message at @0 and the one
-                       * which triggered the rule in @1.
-                       *
-                       * We emulate a context having only these two
-                       * messages, but without allocating a full-blown
-                       * structure.
-                       */
-                      LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
-                      GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
-                      PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
-
-                      pdb_message_apply(&action->content.message, &dummy_context, genmsg, buffer);
-                    }
-
-                  emit(genmsg, TRUE, emit_data);
-                  log_msg_unref(genmsg);
-                  break;
-                default:
-                  g_assert_not_reached();
-                  break;
-                }
-            }
-        }
+      pdb_action_run(action, db, self, trigger, context, msg, buffer);
     }
 }
 
@@ -979,7 +1050,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       for (i = 0; attribute_names[i]; i++)
         {
           if (strcmp(attribute_names[i], "inherit-properties") == 0)
-            pdb_action_set_inheritance(state->current_action, attribute_values[i], error);
+            pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
         }
       if (!state->in_action)
         {
@@ -1332,10 +1403,10 @@ log_db_add_matches(LogMessage *msg, GArray *matches, NVHandle ref_handle, const 
  * NOTE: it also modifies @msg to store the name-value pairs found during lookup, so
  */
 PDBRule *
-pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
+pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
 {
   RNode *node;
-  LogMessage *msg = input->msg;
+  LogMessage *msg = lookup->msg;
   GArray *prg_matches, *matches;
   const gchar *program;
   gssize program_len;
@@ -1343,13 +1414,13 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
   if (G_UNLIKELY(!self->programs))
     return FALSE;
 
-  program = log_msg_get_value(msg, input->program_handle, &program_len);
+  program = log_msg_get_value(msg, lookup->program_handle, &program_len);
   prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
   node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, prg_matches);
 
   if (node)
     {
-      log_db_add_matches(msg, prg_matches, input->program_handle, program);
+      log_db_add_matches(msg, prg_matches, lookup->program_handle, program);
       g_array_free(prg_matches, TRUE);
 
       PDBProgram *program = (PDBProgram *) node->value;
@@ -1367,14 +1438,14 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
           matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
           g_array_set_size(matches, 1);
 
-          if (input->message_handle)
+          if (lookup->message_handle)
             {
-              message = log_msg_get_value(msg, input->message_handle, &message_len);
+              message = log_msg_get_value(msg, lookup->message_handle, &message_len);
             }
           else
             {
-              message = input->message_string;
-              message_len = input->message_len;
+              message = lookup->message_string;
+              message_len = lookup->message_len;
             }
 
           if (G_UNLIKELY(dbg_list))
@@ -1393,7 +1464,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
               log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
               log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
 
-              log_db_add_matches(msg, matches, input->message_handle, message);
+              log_db_add_matches(msg, matches, lookup->message_handle, message);
               g_array_free(matches, TRUE);
 
               if (!rule->class)
@@ -1450,19 +1521,28 @@ pdb_rule_set_free(PDBRuleSet *self)
  * PatternDB
  *********************************************************/
 
+/* NOTE: this function requires PatternDB reader/writer lock to be
+ * write-locked.
+ *
+ * Currently, it is, as timer_wheel_set_time() is only called with that
+ * precondition, and timer-wheel callbacks are only called from within
+ * timer_wheel_set_time().
+ */
+
 static void
 pattern_db_expire_entry(guint64 now, gpointer user_data)
 {
   PDBContext *context = user_data;
   PatternDB *pdb = context->db;
   GString *buffer = g_string_sized_new(256);
+  LogMessage *msg = pdb_context_get_last_message(context);
 
   msg_debug("Expiring patterndb correllation context",
             evt_tag_str("last_rule", context->rule->rule_id),
             evt_tag_long("utc", timer_wheel_get_time(context->db->timer_wheel)),
             NULL);
   if (pdb->emit)
-    pdb_rule_run_actions(context->rule, RAT_TIMEOUT, context->db, context, g_ptr_array_index(context->messages, context->messages->len - 1), pdb->emit, pdb->emit_data, buffer);
+    pdb_rule_run_actions(context->rule, context->db, RAT_TIMEOUT, context, msg, buffer);
   g_hash_table_remove(context->db->state, &context->key);
   g_string_free(buffer, TRUE);
 
@@ -1599,17 +1679,17 @@ pattern_db_get_ruleset_version(PatternDB *self)
   return self->ruleset->version;
 }
 
-gboolean
-pattern_db_process(PatternDB *self, PDBInput *input)
+static gboolean
+_pattern_db_process(PatternDB *self, PDBLookupParams *lookup)
 {
   PDBRule *rule;
-  LogMessage *msg = input->msg;
+  LogMessage *msg = lookup->msg;
 
   if (G_UNLIKELY(!self->ruleset))
     return FALSE;
 
   g_static_rw_lock_reader_lock(&self->lock);
-  rule = pdb_rule_set_lookup(self->ruleset, input, NULL);
+  rule = pdb_rule_set_lookup(self->ruleset, lookup, NULL);
   g_static_rw_lock_reader_unlock(&self->lock);
   if (rule)
     {
@@ -1676,7 +1756,7 @@ pattern_db_process(PatternDB *self, PDBInput *input)
       if (self->emit)
         {
           self->emit(msg, FALSE, self->emit_data);
-          pdb_rule_run_actions(rule, RAT_MATCH, self, context, msg, self->emit, self->emit_data, buffer);
+          pdb_rule_run_actions(rule, self, RAT_MATCH, context, msg, buffer);
         }
       pdb_rule_unref(rule);
       g_static_rw_lock_writer_unlock(&self->lock);
@@ -1697,6 +1777,47 @@ pattern_db_process(PatternDB *self, PDBInput *input)
   return rule != NULL;
 }
 
+static void
+pdb_lookup_state_init(PDBLookupParams *lookup, LogMessage *msg)
+{
+  lookup->msg = msg;
+  lookup->program_handle = LM_V_PROGRAM;
+  lookup->message_handle = LM_V_MESSAGE;
+  lookup->message_len = 0;
+}
+
+gboolean
+pattern_db_process(PatternDB *self, LogMessage *msg)
+{
+  PDBLookupParams lookup;
+
+  pdb_lookup_state_init(&lookup, msg);
+  return _pattern_db_process(self, &lookup);
+}
+
+gboolean
+pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const gchar *message, gssize message_len)
+{
+  PDBLookupParams lookup;
+
+  pdb_lookup_state_init(&lookup, msg);
+  lookup.message_handle = LM_V_NONE;
+  lookup.message_string = message;
+  lookup.message_len = message_len;
+  return _pattern_db_process(self, &lookup);
+}
+
+void
+pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
+{
+  PDBLookupParams lookup;
+  PDBRule *rule;
+
+  pdb_lookup_state_init(&lookup, msg);
+  rule = pdb_rule_set_lookup(self->ruleset, &lookup, dbg_list);
+  if (rule)
+    pdb_rule_unref(rule);
+}
 
 PatternDB *
 pattern_db_new(void)

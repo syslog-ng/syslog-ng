@@ -49,13 +49,23 @@ assert_log_message_has_tag(LogMessage *log_message, const gchar *tag_name)
 }
 
 void
+assert_log_message_doesnt_have_tag(LogMessage *log_message, const gchar *tag_name)
+{
+  assert_false(log_msg_is_tag_by_name(log_message, tag_name), "Expected message not to have '%s' tag", tag_name);
+}
+
+void
 assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expected_value)
 {
   gssize key_name_length;
+  gssize value_length;
   const gchar *key_name = log_msg_get_value_name(handle, &key_name_length);
-  const gchar *actual_value = log_msg_get_value(self, handle, NULL);
+  const gchar *actual_value = log_msg_get_value(self, handle, &value_length);
 
-  assert_string(actual_value, expected_value, "Value is not expected for key %s", key_name);
+  if (expected_value)
+    assert_string(actual_value, expected_value, "Value is not expected for key %s", key_name);
+  else
+    assert_string(actual_value, "", "No value is expected for key %s but its value is %s", key_name, actual_value);
 }
 
 void

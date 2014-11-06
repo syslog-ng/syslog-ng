@@ -28,10 +28,11 @@
 
 #include "patterndb.h"
 
+typedef struct _PDBLookupParams PDBLookupParams;
 typedef struct _PDBRule PDBRule;
 
 /* rule context scope */
-enum
+typedef enum
 {
   /* correllation happens globally, e.g. log messages even on different hosts are considered */
   RCS_GLOBAL,
@@ -41,25 +42,32 @@ enum
   RCS_PROGRAM,
   /* correllation happens for the same process only, e.g. messages from a different program/pid are not considered */
   RCS_PROCESS,
-};
+} PDBCorrellationScope;
 
 /* type field for state key */
-enum
+typedef enum
 {
   /* state entry contains a context */
   PSK_CONTEXT,
   /* state entry contains a ratelimit state */
   PSK_RATE_LIMIT,
-};
+} PDBStateKeyType;
 
+/* Our state hash contains a mixed set of values, they are either
+ * correllation contexts or the state entry required by rate limiting. The
+ * keys of these distinct structures are differentied by their key->type
+ * value, which has one of values of the PSK_* enums above.  */
 typedef struct _PDBStateKey
 {
   const gchar *host;
   const gchar *program;
   const gchar *pid;
   gchar *session_id;
-  guint8 scope;
-  guint8 type;
+
+  /* we use guint8 to limit the size of this structure, we can have 10s of
+   * thousands of this structure present in memory */
+  guint8 /* PDBCorrellationScope */ scope;
+  guint8 /* PDBStateKeyType */ type;
 } PDBStateKey;
 
 /* This class encapsulates a correllation context, keyed by PDBStateKey, type == PSK_RULE. */
@@ -105,31 +113,40 @@ typedef struct _PDBMessage
 } PDBMessage;
 
 /* rule action triggers */
-enum
+typedef enum
  {
   RAT_MATCH = 1,
   RAT_TIMEOUT
-};
+} PDBActionTrigger;
 
 /* action content*/
-enum
+typedef enum
 {
   RAC_NONE,
   RAC_MESSAGE
+} PDBActionContentType;
+
+enum
+{
+  RAC_MSG_INHERIT_NONE,
+  RAC_MSG_INHERIT_LAST_MESSAGE,
 };
 
 /* a rule may contain one or more actions to be performed */
 typedef struct _PDBAction
 {
   FilterExprNode *condition;
-  guint8 trigger;
-  guint8 content_type;
+  PDBActionTrigger trigger;
+  PDBActionContentType content_type;
+  guint32 rate_quantum;
   guint16 rate;
-  guint32 id:8, rate_quantum:24;
-  gboolean inherit_properties;
+  guint8 id;
   union
   {
-    PDBMessage message;
+    struct {
+      PDBMessage message;
+      gint inherit_mode;
+    };
   } content;
 } PDBAction;
 
@@ -144,7 +161,7 @@ struct _PDBRule
   gchar *rule_id;
   PDBMessage msg;
   gint context_timeout;
-  gint context_scope;
+  PDBCorrellationScope context_scope;
   LogTemplate *context_id_template;
   GPtrArray *actions;
 };
@@ -186,10 +203,19 @@ typedef struct _PDBRuleSet
 } PDBRuleSet;
 
 gboolean pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GList **examples);
-PDBRule *pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list);
+PDBRule *pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *input, GArray *dbg_list);
 
 PDBRuleSet *pdb_rule_set_new(void);
 void pdb_rule_set_free(PDBRuleSet *self);
+
+typedef struct _PDBLookupParams
+{
+  LogMessage *msg;
+  NVHandle program_handle;
+  NVHandle message_handle;
+  const gchar *message_string;
+  gssize message_len;
+} PDBLookupParams;
 
 struct _PatternDB
 {
