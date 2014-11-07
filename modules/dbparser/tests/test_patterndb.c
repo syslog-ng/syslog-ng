@@ -102,7 +102,7 @@ _get_output_message(gint ndx)
 }
 
 static LogMessage *
-_construct_message(const gchar *program, const gchar *message)
+_construct_message_with_nvpair(const gchar *program, const gchar *message, const gchar *name, const gchar *value)
 {
   LogMessage *msg = log_msg_new_empty();
 
@@ -110,9 +110,30 @@ _construct_message(const gchar *program, const gchar *message)
   log_msg_set_value(msg, LM_V_PROGRAM, program, strlen(program));
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
+  if (name)
+    log_msg_set_value_by_name(msg, name, value, -1);
   msg->timestamps[LM_TS_STAMP].tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec;
 
   return msg;
+}
+
+static LogMessage *
+_construct_message(const gchar *program, const gchar *message)
+{
+  return _construct_message_with_nvpair(program, message, NULL, NULL);
+}
+
+static void
+_feed_message_to_correllation_state(const gchar *program, const gchar *message, const gchar *name, const gchar *value)
+{
+  LogMessage *msg;
+  gboolean result;
+
+  msg = _construct_message_with_nvpair(program, message, name, value);
+  result = _process(msg);
+  log_msg_unref(msg);
+  assert_true(result, "patterndb expected to match but it didn't");
+  _dont_reset_patterndb_state_for_the_next_call();
 }
 
 static void
@@ -167,7 +188,13 @@ assert_msg_matches_and_has_tag(const gchar *pattern, const gchar *tag, gboolean 
 }
 
 void
-assert_output_message_nvpair_equals_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *name, const gchar *value)
+assert_output_message_nvpair_equals(gint ndx, const gchar *name, const gchar *value)
+{
+  assert_log_message_value(_get_output_message(ndx), log_msg_get_value_handle(name), value);
+}
+
+void
+assert_msg_matches_and_output_message_nvpair_equals_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *name, const gchar *value)
 {
   LogMessage *msg;
 
@@ -175,35 +202,41 @@ assert_output_message_nvpair_equals_with_timeout(const gchar *pattern, gint time
   _process(msg);
   _advance_time(timeout);
 
-  assert_log_message_value(_get_output_message(ndx), log_msg_get_value_handle(name), value);
+  assert_output_message_nvpair_equals(ndx, name, value);
   log_msg_unref(msg);
 }
 
 void
-assert_output_message_nvpair_equals(const gchar *pattern, gint ndx, const gchar *name, const gchar *value)
+assert_msg_matches_and_output_message_nvpair_equals(const gchar *pattern, gint ndx, const gchar *name, const gchar *value)
 {
-  assert_output_message_nvpair_equals_with_timeout(pattern, 0, ndx, name, value);
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout(pattern, 0, ndx, name, value);
 }
 
 void
-assert_output_message_has_tag_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *tag, gboolean set)
+assert_output_message_has_tag(gint ndx, const gchar *tag, gboolean set)
 {
-  LogMessage *msg;
-
-  msg = _construct_message("prog2", pattern);
-  _process(msg);
-  _advance_time(timeout);
   if (set)
     assert_log_message_has_tag(_get_output_message(ndx), tag);
   else
     assert_log_message_doesnt_have_tag(_get_output_message(ndx), tag);
+}
+
+void
+assert_msg_matches_and_output_message_has_tag_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *tag, gboolean set)
+{
+  LogMessage *msg;
+
+  msg = _construct_message("prog2", pattern);
+  _process(msg);
+  _advance_time(timeout);
+  assert_output_message_has_tag(ndx, tag, set);
   log_msg_unref(msg);
 }
 
 void
-assert_output_message_has_tag(const gchar *pattern, gint ndx, const gchar *tag, gboolean set)
+assert_msg_matches_and_output_message_has_tag(const gchar *pattern, gint ndx, const gchar *tag, gboolean set)
 {
-  assert_output_message_has_tag_with_timeout(pattern, 0, ndx, tag, set);
+  assert_msg_matches_and_output_message_has_tag_with_timeout(pattern, 0, ndx, tag, set);
 }
 
 /* pdb skeleton used to test patterndb rule actions. E.g. whenever a rule
@@ -273,7 +306,7 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
        </message>\
      </action>\
    </actions>\
-  </rule>\ 
+  </rule>\
  </ruleset>\
 </patterndb>";
 
@@ -312,72 +345,41 @@ test_patterndb_rule(void)
   assert_msg_matches_and_nvpair_equals("pattern12", "n12-3", NULL);
   assert_msg_matches_and_nvpair_equals("pattern11", "vvv", MYHOST);
 
-  assert_output_message_nvpair_equals("pattern11", 1, "MESSAGE", "rule11 matched");
-  assert_output_message_nvpair_equals("pattern11", 1, "context-id", "999");
-  assert_output_message_has_tag("pattern11", 1, "tag11-3", TRUE);
-  assert_output_message_has_tag("pattern11", 1, "tag11-4", FALSE);
+  assert_msg_matches_and_output_message_nvpair_equals("pattern11", 1, "MESSAGE", "rule11 matched");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern11", 1, "context-id", "999");
+  assert_msg_matches_and_output_message_has_tag("pattern11", 1, "tag11-3", TRUE);
+  assert_msg_matches_and_output_message_has_tag("pattern11", 1, "tag11-4", FALSE);
 
-  assert_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "MESSAGE", "rule11 timed out");
-  assert_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "context-id", "999");
-  assert_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-3", FALSE);
-  assert_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-4", TRUE);
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "MESSAGE", "rule11 timed out");
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "context-id", "999");
+  assert_msg_matches_and_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-3", FALSE);
+  assert_msg_matches_and_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-4", TRUE);
 
-  assert_output_message_nvpair_equals("contextlesstest value1", 1, "MESSAGE",  "message1");
-  assert_output_message_nvpair_equals("contextlesstest value2", 1, "MESSAGE",  "message2");
+  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value1", 1, "MESSAGE",  "message1");
+  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value2", 1, "MESSAGE",  "message2");
 
   _destroy_pattern_db();
 }
 
-gchar *pdb_inheritance_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+gchar *pdb_inheritance_enabled_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
  <ruleset name='testset' id='1'>\
   <patterns>\
    <pattern>prog2</pattern>\
   </patterns>\
-  <rule provider='test' id='11' class='system' context-scope='program'\
-        context-id='$PID' context-timeout='60'>\
+  <rule provider='test' id='11' class='system'>\
    <patterns>\
-    <pattern>pattern11</pattern>\
+    <pattern>pattern-with-inheritance-enabled</pattern>\
    </patterns>\
    <tags>\
-    <tag>tag11-1</tag>\
-    <tag>tag11-2</tag>\
+    <tag>basetag1</tag>\
+    <tag>basetag2</tag>\
    </tags>\
-   <values>\
-    <value name='n11-1'>v11-1</value>\
-    <value name='vvv'>${HOST}</value>\
-    <value name='context-id'>${CONTEXT_ID}</value>\
-   </values>\
    <actions>\
-    <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='match'>\
+    <action trigger='match'>\
      <message inherit-properties='TRUE'>\
-      <value name='context-id'>${CONTEXT_ID}</value>\
+      <value name='actionkey'>actionvalue</value>\
       <tags>\
-       <tag>tag11-3</tag>\
-      </tags>\
-     </message>\
-    </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='12' class='system' context-scope='program'\
-        context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>pattern12</pattern>\
-   </patterns>\
-   <tags>\
-    <tag>tag12-1</tag>\
-    <tag>tag12-2</tag>\
-   </tags>\
-   <values>\
-    <value name='n12-1'>v12-1</value>\
-    <value name='vvv'>${HOST}</value>\
-    <value name='context-id'>${CONTEXT_ID}</value>\
-   </values>\
-   <actions>\
-    <action rate='1/60' condition='\"${n12-1}\" == \"v12-1\"' trigger='match'>\
-     <message inherit-properties='FALSE'>\
-      <value name='context-id'>${CONTEXT_ID}</value>\
-      <tags>\
-       <tag>tag12-3</tag>\
+       <tag>actiontag</tag>\
       </tags>\
      </message>\
     </action>\
@@ -387,22 +389,111 @@ gchar *pdb_inheritance_skeleton = "<patterndb version='3' pub_date='2010-02-22'>
 </patterndb>";
 
 void
-test_patterndb_message_property_inheritance()
+test_patterndb_message_property_inheritance_enabled()
 {
-  _load_pattern_db_from_string(pdb_inheritance_skeleton);
+  _load_pattern_db_from_string(pdb_inheritance_enabled_skeleton);
 
-  assert_output_message_nvpair_equals("pattern11", 1, "MESSAGE", "pattern11");
-  assert_output_message_has_tag("pattern11", 1, "tag11-1", TRUE);
-  assert_output_message_has_tag("pattern11", 1, "tag11-2", TRUE);
-  assert_output_message_has_tag("pattern11", 1, "tag11-3", TRUE);
-
-
-  assert_output_message_nvpair_equals("pattern12", 1, "MESSAGE", NULL);
-  assert_output_message_has_tag("pattern12", 1, "tag12-1", FALSE);
-  assert_output_message_has_tag("pattern12", 1, "tag12-2", FALSE);
-  assert_output_message_has_tag("pattern12", 1, "tag12-3", TRUE);
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "MESSAGE", "pattern-with-inheritance-enabled");
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag1", TRUE);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag2", TRUE);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "actiontag", TRUE);
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "actionkey", "actionvalue");
 
   _destroy_pattern_db();
+}
+
+gchar *pdb_inheritance_disabled_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog2</pattern>\
+  </patterns>\
+  <rule provider='test' id='12' class='system'>\
+   <patterns>\
+    <pattern>pattern-with-inheritance-disabled</pattern>\
+   </patterns>\
+   <tags>\
+    <tag>basetag1</tag>\
+    <tag>basetag2</tag>\
+   </tags>\
+   <actions>\
+    <action trigger='match'>\
+     <message inherit-properties='FALSE'>\
+      <value name='actionkey'>actionvalue</value>\
+      <tags>\
+       <tag>actiontag</tag>\
+      </tags>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+ </ruleset>\
+</patterndb>";
+
+void
+test_patterndb_message_property_inheritance_disabled()
+{
+  _load_pattern_db_from_string(pdb_inheritance_disabled_skeleton);
+
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "MESSAGE", NULL);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-disabled", 1, "basetag1", FALSE);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-disabled", 1, "basetag2", FALSE);
+  assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-disabled", 1, "actiontag", TRUE);
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-disabled", 1, "actionkey", "actionvalue");
+
+  _destroy_pattern_db();
+}
+
+gchar *pdb_inheritance_context_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog2</pattern>\
+  </patterns>\
+  <rule provider='test' id='11' class='system' context-scope='program'\
+        context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>pattern-with-inheritance-context</pattern>\
+   </patterns>\
+   <tags>\
+    <tag>basetag1</tag>\
+    <tag>basetag2</tag>\
+   </tags>\
+   <actions>\
+    <action trigger='timeout'>\
+     <message inherit-properties='context'>\
+      <value name='MESSAGE'>action message</value>\
+      <tags>\
+       <tag>actiontag</tag>\
+      </tags>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+ </ruleset>\
+</patterndb>";
+
+void
+test_patterndb_message_property_inheritance_context(void)
+{
+  _load_pattern_db_from_string(pdb_inheritance_context_skeleton);
+
+  _feed_message_to_correllation_state("prog2", "pattern-with-inheritance-context", "merged1", "merged1");
+  _feed_message_to_correllation_state("prog2", "pattern-with-inheritance-context", "merged2", "merged2");
+  _advance_time(60);
+
+  assert_output_message_nvpair_equals(2, "MESSAGE", "action message");
+  assert_output_message_nvpair_equals(2, "merged1", "merged1");
+  assert_output_message_nvpair_equals(2, "merged2", "merged2");
+  assert_output_message_has_tag(2, "actiontag", TRUE);
+
+  _destroy_pattern_db();
+}
+
+void
+test_patterndb_message_property_inheritance(void)
+{
+  test_patterndb_message_property_inheritance_enabled();
+  test_patterndb_message_property_inheritance_disabled();
+  test_patterndb_message_property_inheritance_context();
 }
 
 gchar *pdb_msg_count_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
@@ -461,13 +552,13 @@ test_patterndb_context_length()
 {
   _load_pattern_db_from_string(pdb_msg_count_skeleton);
 
-  assert_output_message_nvpair_equals("pattern13", 1, "CONTEXT_LENGTH", "2");
-  assert_output_message_nvpair_equals("pattern14", 1, "CONTEXT_LENGTH", "2");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern13", 1, "CONTEXT_LENGTH", "2");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern14", 1, "CONTEXT_LENGTH", "2");
 
   assert_msg_with_program_matches_and_nvpair_equals("prog2", "pattern15-a", "p15", "-a");
 
   _dont_reset_patterndb_state_for_the_next_call();
-  assert_output_message_nvpair_equals("pattern15-b", 2, "fired", "true");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern15-b", 2, "fired", "true");
 
   _destroy_pattern_db();
 }

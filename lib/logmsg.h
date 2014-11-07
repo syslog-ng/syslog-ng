@@ -275,6 +275,8 @@ LogMessageQueueNode *log_msg_alloc_dynamic_queue_node(LogMessage *msg, const Log
 void log_msg_free_queue_node(LogMessageQueueNode *node);
 
 void log_msg_clear(LogMessage *self);
+void log_msg_merge_context(LogMessage *self, LogMessage **context, gsize context_len);
+
 LogMessage *log_msg_new(const gchar *msg, gint length,
                         GSockAddr *saddr,
                         MsgFormatOptions *parse_options);

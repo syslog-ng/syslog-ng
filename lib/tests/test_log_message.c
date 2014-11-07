@@ -128,12 +128,147 @@ test_rcptid_is_automatically_assigned_to_a_newly_created_log_message(void)
   teardown_rcptid_test();
 }
 
+
 void
 test_log_message(void)
 {
   MSG_TESTCASE(test_log_message_can_be_created_and_freed);
   MSG_TESTCASE(test_log_message_can_be_cleared);
   MSG_TESTCASE(test_rcptid_is_automatically_assigned_to_a_newly_created_log_message);
+}
+
+static LogMessage *
+construct_merge_base_message(void)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "base", "basevalue", -1);
+  log_msg_set_tag_by_name(msg, "basetag");
+  return msg;
+}
+
+static LogMessage *
+construct_merged_message(const gchar *name, const gchar *value)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, name, value, -1);
+  log_msg_set_tag_by_name(msg, "mergedtag");
+  return msg;
+}
+
+static void
+test_log_message_merge_with_empty_context(void)
+{
+  LogMessage *msg, *msg_clone;
+  LogMessage *context[] = {};
+
+  msg = construct_log_message_with_all_bells_and_whistles();
+  msg_clone = clone_cow_log_message(msg);
+  log_msg_merge_context(msg, context, 0);
+  log_msg_unref(msg);
+  assert_log_messages_equal(msg, msg_clone);
+}
+
+
+static void
+test_log_message_merge_unset_value(void)
+{
+  LogMessage *msg;
+  GPtrArray *context = g_ptr_array_sized_new(0);
+
+  msg = construct_merge_base_message();
+  g_ptr_array_add(context, construct_merged_message("merged", "mergedvalue"));
+  log_msg_merge_context(msg, (LogMessage **) context->pdata, context->len);
+
+  assert_log_message_value_by_name(msg, "base", "basevalue");
+  assert_log_message_value_by_name(msg, "merged", "mergedvalue");
+  g_ptr_array_foreach(context, (GFunc) log_msg_unref, NULL);
+  g_ptr_array_free(context, TRUE);
+  log_msg_unref(msg);
+}
+
+static void
+test_log_message_merge_doesnt_overwrite_already_set_values(void)
+{
+  LogMessage *msg;
+  GPtrArray *context = g_ptr_array_sized_new(0);
+
+  msg = construct_merge_base_message();
+  g_ptr_array_add(context, construct_merged_message("base", "mergedvalue"));
+  log_msg_merge_context(msg, (LogMessage **) context->pdata, context->len);
+
+  assert_log_message_value_by_name(msg, "base", "basevalue");
+  g_ptr_array_foreach(context, (GFunc) log_msg_unref, NULL);
+  g_ptr_array_free(context, TRUE);
+  log_msg_unref(msg);
+}
+
+static void
+test_log_message_merge_merges_the_closest_value_in_the_context(void)
+{
+  LogMessage *msg;
+  GPtrArray *context = g_ptr_array_sized_new(0);
+
+  msg = construct_merge_base_message();
+  g_ptr_array_add(context, construct_merged_message("merged", "mergedvalue1"));
+  g_ptr_array_add(context, construct_merged_message("merged", "mergedvalue2"));
+  log_msg_merge_context(msg, (LogMessage **) context->pdata, context->len);
+
+  assert_log_message_value_by_name(msg, "merged", "mergedvalue2");
+  g_ptr_array_foreach(context, (GFunc) log_msg_unref, NULL);
+  g_ptr_array_free(context, TRUE);
+  log_msg_unref(msg);
+}
+
+static void
+test_log_message_merge_merges_from_all_messages_in_the_context(void)
+{
+  LogMessage *msg;
+  GPtrArray *context = g_ptr_array_sized_new(0);
+
+  msg = construct_merge_base_message();
+  g_ptr_array_add(context, construct_merged_message("merged1", "mergedvalue1"));
+  g_ptr_array_add(context, construct_merged_message("merged2", "mergedvalue2"));
+  g_ptr_array_add(context, construct_merged_message("merged3", "mergedvalue3"));
+  log_msg_merge_context(msg, (LogMessage **) context->pdata, context->len);
+
+  assert_log_message_value_by_name(msg, "merged1", "mergedvalue1");
+  assert_log_message_value_by_name(msg, "merged2", "mergedvalue2");
+  assert_log_message_value_by_name(msg, "merged3", "mergedvalue3");
+  g_ptr_array_foreach(context, (GFunc) log_msg_unref, NULL);
+  g_ptr_array_free(context, TRUE);
+  log_msg_unref(msg);
+}
+
+static void
+test_log_message_merge_leaves_base_tags_intact(void)
+{
+  LogMessage *msg;
+  GPtrArray *context = g_ptr_array_sized_new(0);
+
+  msg = construct_merge_base_message();
+  g_ptr_array_add(context, construct_merged_message("merged1", "mergedvalue1"));
+  log_msg_merge_context(msg, (LogMessage **) context->pdata, context->len);
+
+  assert_log_message_has_tag(msg, "basetag");
+  assert_log_message_doesnt_have_tag(msg, "mergedtag");
+  g_ptr_array_foreach(context, (GFunc) log_msg_unref, NULL);
+  g_ptr_array_free(context, TRUE);
+  log_msg_unref(msg);
+}
+
+static void
+test_log_message_merge(void)
+{
+  MSG_TESTCASE(test_log_message_merge_with_empty_context);
+  MSG_TESTCASE(test_log_message_merge_unset_value);
+  MSG_TESTCASE(test_log_message_merge_doesnt_overwrite_already_set_values);
+  MSG_TESTCASE(test_log_message_merge_merges_the_closest_value_in_the_context);
+  MSG_TESTCASE(test_log_message_merge_merges_from_all_messages_in_the_context);
+  MSG_TESTCASE(test_log_message_merge_leaves_base_tags_intact);
 }
 
 void
@@ -162,6 +297,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   init_and_load_syslogformat_module();
 
   test_log_message();
+  test_log_message_merge();
   test_log_msg_get_value_with_time_related_macro();
 
   app_shutdown();

@@ -126,11 +126,12 @@ typedef enum
   RAC_MESSAGE
 } PDBActionContentType;
 
-enum
+typedef enum
 {
   RAC_MSG_INHERIT_NONE,
   RAC_MSG_INHERIT_LAST_MESSAGE,
-};
+  RAC_MSG_INHERIT_CONTEXT
+} PDBActionMessageInheritMode;
 
 /* a rule may contain one or more actions to be performed */
 typedef struct _PDBAction
@@ -145,7 +146,7 @@ typedef struct _PDBAction
   {
     struct {
       PDBMessage message;
-      gint inherit_mode;
+      PDBActionMessageInheritMode inherit_mode;
     };
   } content;
 } PDBAction;

@@ -69,6 +69,12 @@ assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expecte
 }
 
 void
+assert_log_message_value_by_name(LogMessage *self, const gchar *name, const gchar *expected_value)
+{
+  assert_log_message_value(self, log_msg_get_value_handle(name), expected_value);
+}
+
+void
 assert_log_messages_saddr(LogMessage *log_message_a, LogMessage *log_message_b)
 {
   gchar address_a[256], address_b[256];

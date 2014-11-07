@@ -284,6 +284,14 @@ nv_table_get_entry(NVTable *self, NVHandle handle, NVDynValue **dyn_slot)
   return __nv_table_get_entry(self, handle, self->num_static_entries, dyn_slot);
 }
 
+static inline gboolean
+nv_table_is_value_set(NVTable *self, NVHandle handle)
+{
+  NVDynValue *dyn_slot;
+
+  return nv_table_get_entry(self, handle, &dyn_slot) != NULL;
+}
+
 static inline const gchar *
 __nv_table_get_value(NVTable *self, NVHandle handle, guint16 num_static_entries, gssize *length)
 {
