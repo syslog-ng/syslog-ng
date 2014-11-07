@@ -1,3 +1,5 @@
+EXTRA_DIST  += modules/dbparser/tests/test_parsers_e2e.c
+
 modules_dbparser_tests_TESTS			=	\
 	modules/dbparser/tests/test_timer_wheel		\
 	modules/dbparser/tests/test_patternize		\
