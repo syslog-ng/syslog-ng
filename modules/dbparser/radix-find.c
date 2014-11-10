@@ -74,37 +74,15 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
     {
       m = MIN(keylen, nodelen);
 
-      /* this is a prefix match algorithm, we are interested how long
-       * the common part between key and root->key is. Currently this
-       * uses a byte-by-byte comparison, using a 64/32/16 bit units
-       * would be better.
-       *
-       * The code below to perform aligned comparison is commented out
-       * as it does not seem to matter and it is way more complex than
-       * the simple algorithm below. */
-
-#if 0
-      if (2 <= m && (((unsigned long)key % 2) == 0))
-        {
-          gushort *keylong = key;
-          gushort *rootlong = root->key;
-          i = 0;
-
-          while ((i + 2) <= m)
-            {
-              if (*keylong != *rootlong)
-                break;
-
-              i += 2;
-              keylong = key + i;
-              rootlong = root->key + i;
-            }
-          /*printf("RESULT %d\n", i); */
-        }
-      else
-#endif
-        i = 1;
-
+      /* this is a prefix match algorithm, we are interested how long the
+       * common part between key and root->key is.  Currently this uses a
+       * byte-by-byte comparison, using a 64/32/16 bit units would be
+       * better.  We had a PoC code to do that, and the performance
+       * difference wasn't big enough to offset the complexity so it was
+       * removed. We might want to rerun perf tests and see if we could
+       * speed things up, but db-parser() seems fast enough as it is.
+       */
+      i = 1;
       while (i < m)
         {
           if (key[i] != root->key[i])
