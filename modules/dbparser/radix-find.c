@@ -28,12 +28,20 @@
 
 /* FIXME: a non-recursive algorithm might be faster */
 
+typedef struct _RFindNodeState
+{
+  guint8 *whole_key;
+  GArray *matches;
+  GArray *dbg_list;
+} RFindNodeState;
+
+
 static void
-r_add_debug_info(GArray *dbg_list, RNode *node, RParserNode *pnode, gint i, gint match_off, gint match_len)
+r_add_debug_info(RFindNodeState *state, RNode *node, RParserNode *pnode, gint i, gint match_off, gint match_len)
 {
   RDebugInfo dbg_info;
 
-  if (dbg_list)
+  if (state->dbg_list)
     {
       dbg_info.node = node;
       dbg_info.pnode = pnode;
@@ -41,22 +49,21 @@ r_add_debug_info(GArray *dbg_list, RNode *node, RParserNode *pnode, gint i, gint
       dbg_info.match_off = match_off;
       dbg_info.match_len = match_len;
 
-      g_array_append_val(dbg_list, dbg_info);
+      g_array_append_val(state->dbg_list, dbg_info);
     }
 }
 
 static void
-r_add_literal_match_to_debug_info(GArray *dbg_list, RNode *node, gint literal_prefix)
+r_add_literal_match_to_debug_info(RFindNodeState *state, RNode *node, gint literal_prefix)
 {
-  if (dbg_list)
-    r_add_debug_info(dbg_list, node, NULL, literal_prefix, 0, 0);
+  r_add_debug_info(state, node, NULL, literal_prefix, 0, 0);
 }
 
 static void
-r_truncate_debug_info(GArray *dbg_list, gint truncated_size)
+r_truncate_debug_info(RFindNodeState *state, gint truncated_size)
 {
-  if (dbg_list)
-    g_array_set_size(dbg_list, truncated_size);
+  if (state->dbg_list)
+    g_array_set_size(state->dbg_list, truncated_size);
 }
 
 static gint
@@ -93,12 +100,6 @@ r_find_matching_literal_prefix(RNode *root, guint8 *key, gint keylen)
   return match_length;
 }
 
-typedef struct _RFindNodeState
-{
-  guint8 *whole_key;
-  GArray *matches;
-  GArray *dbg_list;
-} RFindNodeState;
 
 static RNode *
 _r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen);
@@ -143,7 +144,8 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint key
           match = &g_array_index(matches, RParserMatch, match_ofs);
           memset(match, 0, sizeof(*match));
         }
-      r_truncate_debug_info(state->dbg_list, dbg_entries);
+      r_truncate_debug_info(state, dbg_entries);
+
       if (((parser_node->first <= key[literal_prefix_len]) && (key[literal_prefix_len] <= parser_node->last)) &&
           (parser_node->parse(key + literal_prefix_len, &len, parser_node->param, parser_node->state, match)))
         {
@@ -159,11 +161,11 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint key
 
           ret = _r_find_node(state, root->pchildren[parser_ndx], key + literal_prefix_len + len, keylen - (literal_prefix_len + len));
 
-          r_add_debug_info(state->dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + literal_prefix_len) - state->whole_key, ((gint16) match->len) + len);
+          r_add_debug_info(state, root, parser_node, len, ((gint16) match->ofs) + (key + literal_prefix_len) - state->whole_key, ((gint16) match->len) + len);
           if (matches)
             {
+              /* we have to look up "match" again as the GArray may have moved the data */
               match = &g_array_index(matches, RParserMatch, match_ofs);
-
               if (ret)
                 {
                   if (!(match->match))
@@ -208,7 +210,7 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
   register gint literal_prefix_len;
 
   literal_prefix_len = r_find_matching_literal_prefix(root, key, keylen);
-  r_add_literal_match_to_debug_info(state->dbg_list, root, literal_prefix_len);
+  r_add_literal_match_to_debug_info(state, root, literal_prefix_len);
 
   msg_trace("Looking up node in the radix tree",
             evt_tag_int("literal_prefix_len", literal_prefix_len),
