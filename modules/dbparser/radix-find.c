@@ -61,15 +61,15 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
   RNode *node, *ret;
   gint nodelen = root->keylen;
   gint j, m;
-  register gint i;
+  register gint match_length;
 #ifdef RADIX_DBG
   gint dbg_entries;
 #endif
 
   if (nodelen < 1)
-    i = 0;
+    match_length = 0;
   else if (nodelen == 1)
-    i = 1;
+    match_length = 1;
   else
     {
       m = MIN(keylen, nodelen);
@@ -82,45 +82,45 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
        * removed. We might want to rerun perf tests and see if we could
        * speed things up, but db-parser() seems fast enough as it is.
        */
-      i = 1;
-      while (i < m)
+      match_length = 1;
+      while (match_length < m)
         {
-          if (key[i] != root->key[i])
+          if (key[match_length] != root->key[match_length])
             break;
 
-          i++;
+          match_length++;
         }
     }
 
 #ifdef RADIX_DBG
-  r_add_debug_info(dbg_list, root, NULL, i, 0, 0);
+  r_add_debug_info(dbg_list, root, NULL, match_length, 0, 0);
   dbg_entries = dbg_list->len;
 #endif
 
   msg_trace("Looking up node in the radix tree",
-            evt_tag_int("i", i),
+            evt_tag_int("match_length", match_length),
             evt_tag_int("nodelen", nodelen),
             evt_tag_int("keylen", keylen),
             evt_tag_str("root_key", root->key),
             evt_tag_str("key", key),
             NULL);
 
-  if (i == keylen && (i == nodelen || nodelen == -1))
+  if (match_length == keylen && (match_length == nodelen || nodelen == -1))
     {
       if (root->value)
         return root;
     }
-  else if ((nodelen < 1) || (i < keylen && i >= nodelen))
+  else if ((nodelen < 1) || (match_length < keylen && match_length >= nodelen))
     {
       ret = NULL;
-      node = r_find_child(root, key[i]);
+      node = r_find_child(root, key[match_length]);
 
       if (node)
         {
 #ifndef RADIX_DBG
-          ret = r_find_node(node, whole_key, key + i, keylen - i, matches);
+          ret = r_find_node(node, whole_key, key + match_length, keylen - match_length, matches);
 #else
-          ret = r_find_node_dbg(node, whole_key, key + i, keylen - i, matches, dbg_list);
+          ret = r_find_node_dbg(node, whole_key, key + match_length, keylen - match_length, matches, dbg_list);
 #endif
         }
 
@@ -150,8 +150,8 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
 #ifdef RADIX_DBG
               r_truncate_debug_info(dbg_list, dbg_entries);
 #endif
-              if (((parser_node->first <= key[i]) && (key[i] <= parser_node->last)) &&
-                  (parser_node->parse(key + i, &len, parser_node->param, parser_node->state, match)))
+              if (((parser_node->first <= key[match_length]) && (key[match_length] <= parser_node->last)) &&
+                  (parser_node->parse(key + match_length, &len, parser_node->param, parser_node->state, match)))
                 {
 
                   /* FIXME: we don't try to find the longest match in case
@@ -164,10 +164,10 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
                    * recognize if this happens in real life. */
 
 #ifndef RADIX_DBG
-                  ret = r_find_node(root->pchildren[j], whole_key, key + i + len, keylen - (i + len), matches);
+                  ret = r_find_node(root->pchildren[j], whole_key, key + match_length + len, keylen - (match_length + len), matches);
 #else
-                  r_add_debug_info(dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + i) - whole_key, ((gint16) match->len) + len);
-                  ret = r_find_node_dbg(root->pchildren[j], whole_key, key + i + len, keylen - (i + len), matches, dbg_list);
+                  r_add_debug_info(dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + match_length) - whole_key, ((gint16) match->len) + len);
+                  ret = r_find_node_dbg(root->pchildren[j], whole_key, key + match_length + len, keylen - (match_length + len), matches, dbg_list);
 #endif
                   if (matches)
                     {
@@ -185,7 +185,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
                                * result if the string is indeed modified
                                */
                               match->type = parser_node->type;
-                              match->ofs = match->ofs + (key + i) - whole_key;
+                              match->ofs = match->ofs + (key + match_length) - whole_key;
                               match->len = (gint16) match->len + len;
                               match->handle = parser_node->handle;
                             }
