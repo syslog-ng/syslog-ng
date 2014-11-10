@@ -60,7 +60,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
 {
   RNode *node, *ret;
   gint current_node_key_length = root->keylen;
-  gint j, m;
+  gint m;
   register gint match_length;
 #ifdef RADIX_DBG
   gint dbg_entries;
@@ -131,6 +131,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
           RParserNode *parser_node;
           gint match_ofs = 0;
           RParserMatch *match = NULL;
+          gint parser_ndx;
 
           if (matches)
             {
@@ -138,9 +139,9 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
 
               g_array_set_size(matches, match_ofs + 1);
             }
-          for (j = 0; j < root->num_pchildren; j++)
+          for (parser_ndx = 0; parser_ndx < root->num_pchildren; parser_ndx++)
             {
-              parser_node = root->pchildren[j]->parser;
+              parser_node = root->pchildren[parser_ndx]->parser;
 
               if (matches)
                 {
@@ -164,10 +165,10 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
                    * recognize if this happens in real life. */
 
 #ifndef RADIX_DBG
-                  ret = r_find_node(root->pchildren[j], whole_key, key + match_length + len, keylen - (match_length + len), matches);
+                  ret = r_find_node(root->pchildren[parser_ndx], whole_key, key + match_length + len, keylen - (match_length + len), matches);
 #else
                   r_add_debug_info(dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + match_length) - whole_key, ((gint16) match->len) + len);
-                  ret = r_find_node_dbg(root->pchildren[j], whole_key, key + match_length + len, keylen - (match_length + len), matches, dbg_list);
+                  ret = r_find_node_dbg(root->pchildren[parser_ndx], whole_key, key + match_length + len, keylen - (match_length + len), matches, dbg_list);
 #endif
                   if (matches)
                     {
