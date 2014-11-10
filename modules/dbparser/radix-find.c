@@ -44,9 +44,9 @@ r_add_debug_info(GArray *dbg_list, RNode *node, RParserNode *pnode, gint i, gint
 }
 
 static void
-r_add_literal_match_to_debug_info(GArray *dbg_list, RNode *node, gint literal_length)
+r_add_literal_match_to_debug_info(GArray *dbg_list, RNode *node, gint literal_prefix)
 {
-  r_add_debug_info(dbg_list, node, NULL, literal_length, 0, 0);
+  r_add_debug_info(dbg_list, node, NULL, literal_prefix, 0, 0);
 }
 
 static void
@@ -99,43 +99,43 @@ RNode *
 r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches, GArray *dbg_list)
 #endif
 {
-  RNode *node, *ret;
   gint current_node_key_length = root->keylen;
-  register gint literal_length;
+  register gint literal_prefix_len;
 #ifdef RADIX_DBG
   gint dbg_entries;
 #endif
 
-  literal_length = r_find_matching_literal_prefix(root, key, keylen);
+  literal_prefix_len = r_find_matching_literal_prefix(root, key, keylen);
 #ifdef RADIX_DBG
-  r_add_literal_match_to_debug_info(dbg_list, root, literal_length);
+  r_add_literal_match_to_debug_info(dbg_list, root, literal_prefix_len);
   dbg_entries = dbg_list->len;
 #endif
 
   msg_trace("Looking up node in the radix tree",
-            evt_tag_int("literal_length", literal_length),
+            evt_tag_int("literal_prefix_len", literal_prefix_len),
             evt_tag_int("current_node_key_length", current_node_key_length),
             evt_tag_int("keylen", keylen),
             evt_tag_str("root_key", root->key),
             evt_tag_str("key", key),
             NULL);
 
-  if (literal_length == keylen && (literal_length == current_node_key_length || current_node_key_length == -1))
+  if (literal_prefix_len == keylen && (literal_prefix_len == current_node_key_length || current_node_key_length == -1))
     {
       if (root->value)
         return root;
     }
-  else if ((current_node_key_length < 1) || (literal_length < keylen && literal_length >= current_node_key_length))
+  else if ((current_node_key_length < 1) || (literal_prefix_len < keylen && literal_prefix_len >= current_node_key_length))
     {
+      RNode *node, *ret;
       ret = NULL;
-      node = r_find_child_by_first_character(root, key[literal_length]);
+      node = r_find_child_by_first_character(root, key[literal_prefix_len]);
 
       if (node)
         {
 #ifndef RADIX_DBG
-          ret = r_find_node(node, whole_key, key + literal_length, keylen - literal_length, matches);
+          ret = r_find_node(node, whole_key, key + literal_prefix_len, keylen - literal_prefix_len, matches);
 #else
-          ret = r_find_node_dbg(node, whole_key, key + literal_length, keylen - literal_length, matches, dbg_list);
+          ret = r_find_node_dbg(node, whole_key, key + literal_prefix_len, keylen - literal_prefix_len, matches, dbg_list);
 #endif
         }
 
@@ -166,8 +166,8 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
 #ifdef RADIX_DBG
               r_truncate_debug_info(dbg_list, dbg_entries);
 #endif
-              if (((parser_node->first <= key[literal_length]) && (key[literal_length] <= parser_node->last)) &&
-                  (parser_node->parse(key + literal_length, &len, parser_node->param, parser_node->state, match)))
+              if (((parser_node->first <= key[literal_prefix_len]) && (key[literal_prefix_len] <= parser_node->last)) &&
+                  (parser_node->parse(key + literal_prefix_len, &len, parser_node->param, parser_node->state, match)))
                 {
 
                   /* FIXME: we don't try to find the longest match in case
@@ -180,10 +180,10 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
                    * recognize if this happens in real life. */
 
 #ifndef RADIX_DBG
-                  ret = r_find_node(root->pchildren[parser_ndx], whole_key, key + literal_length + len, keylen - (literal_length + len), matches);
+                  ret = r_find_node(root->pchildren[parser_ndx], whole_key, key + literal_prefix_len + len, keylen - (literal_prefix_len + len), matches);
 #else
-                  r_add_debug_info(dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + literal_length) - whole_key, ((gint16) match->len) + len);
-                  ret = r_find_node_dbg(root->pchildren[parser_ndx], whole_key, key + literal_length + len, keylen - (literal_length + len), matches, dbg_list);
+                  r_add_debug_info(dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + literal_prefix_len) - whole_key, ((gint16) match->len) + len);
+                  ret = r_find_node_dbg(root->pchildren[parser_ndx], whole_key, key + literal_prefix_len + len, keylen - (literal_prefix_len + len), matches, dbg_list);
 #endif
                   if (matches)
                     {
@@ -201,7 +201,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
                                * result if the string is indeed modified
                                */
                               match->type = parser_node->type;
-                              match->ofs = match->ofs + (key + literal_length) - whole_key;
+                              match->ofs = match->ofs + (key + literal_prefix_len) - whole_key;
                               match->len = (gint16) match->len + len;
                               match->handle = parser_node->handle;
                             }
