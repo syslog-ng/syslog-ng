@@ -59,20 +59,20 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
 #endif
 {
   RNode *node, *ret;
-  gint nodelen = root->keylen;
+  gint current_node_key_length = root->keylen;
   gint j, m;
   register gint match_length;
 #ifdef RADIX_DBG
   gint dbg_entries;
 #endif
 
-  if (nodelen < 1)
+  if (current_node_key_length < 1)
     match_length = 0;
-  else if (nodelen == 1)
+  else if (current_node_key_length == 1)
     match_length = 1;
   else
     {
-      m = MIN(keylen, nodelen);
+      m = MIN(keylen, current_node_key_length);
 
       /* this is a prefix match algorithm, we are interested how long the
        * common part between key and root->key is.  Currently this uses a
@@ -99,18 +99,18 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
 
   msg_trace("Looking up node in the radix tree",
             evt_tag_int("match_length", match_length),
-            evt_tag_int("nodelen", nodelen),
+            evt_tag_int("current_node_key_length", current_node_key_length),
             evt_tag_int("keylen", keylen),
             evt_tag_str("root_key", root->key),
             evt_tag_str("key", key),
             NULL);
 
-  if (match_length == keylen && (match_length == nodelen || nodelen == -1))
+  if (match_length == keylen && (match_length == current_node_key_length || current_node_key_length == -1))
     {
       if (root->value)
         return root;
     }
-  else if ((nodelen < 1) || (match_length < keylen && match_length >= nodelen))
+  else if ((current_node_key_length < 1) || (match_length < keylen && match_length >= current_node_key_length))
     {
       ret = NULL;
       node = r_find_child(root, key[match_length]);
