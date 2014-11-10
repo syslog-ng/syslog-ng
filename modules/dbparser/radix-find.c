@@ -128,7 +128,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
   else if ((current_node_key_length < 1) || (literal_length < keylen && literal_length >= current_node_key_length))
     {
       ret = NULL;
-      node = r_find_child(root, key[literal_length]);
+      node = r_find_child_by_first_character(root, key[literal_length]);
 
       if (node)
         {

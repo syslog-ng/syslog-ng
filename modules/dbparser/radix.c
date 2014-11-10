@@ -842,7 +842,7 @@ r_find_pchild(RNode *parent, RParserNode *parser_node)
 }
 
 RNode *
-r_find_child(RNode *root, char key)
+r_find_child_by_first_character(RNode *root, char key)
 {
   register gint l, u, idx;
   register char k = key;
@@ -880,7 +880,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
       if (keylen >= 2 && key[1] == '@')
         {
           /* we found and escape, so check if we already have a child with '@', or add a child like that */
-          node = r_find_child(root, key[1]);
+          node = r_find_child_by_first_character(root, key[1]);
 
           if (!node)
             {
@@ -983,7 +983,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
         {
           /*either at the root or we need to go down the tree on the right child */
 
-          node = r_find_child(root, key[i]);
+          node = r_find_child_by_first_character(root, key[i]);
 
           if (node)
             {
