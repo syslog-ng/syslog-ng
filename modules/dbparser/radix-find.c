@@ -116,19 +116,99 @@ r_find_child_by_remainding_key(RFindNodeState *state, RNode *root, guint8 *key, 
   return NULL;
 }
 
+static RNode *
+r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint keylen, gint literal_prefix_len)
+{
+  GArray *matches = state->matches;
+  gint dbg_entries = state->dbg_list ? state->dbg_list->len : 0;
+  gint len;
+  RParserNode *parser_node;
+  gint match_ofs = 0;
+  RParserMatch *match = NULL;
+  gint parser_ndx;
+  RNode *ret = NULL;
+
+  if (matches)
+    {
+      match_ofs = matches->len;
+
+      g_array_set_size(matches, match_ofs + 1);
+    }
+  for (parser_ndx = 0; parser_ndx < root->num_pchildren; parser_ndx++)
+    {
+      parser_node = root->pchildren[parser_ndx]->parser;
+
+      if (matches)
+        {
+          match = &g_array_index(matches, RParserMatch, match_ofs);
+          memset(match, 0, sizeof(*match));
+        }
+      r_truncate_debug_info(state->dbg_list, dbg_entries);
+      if (((parser_node->first <= key[literal_prefix_len]) && (key[literal_prefix_len] <= parser_node->last)) &&
+          (parser_node->parse(key + literal_prefix_len, &len, parser_node->param, parser_node->state, match)))
+        {
+
+          /* FIXME: we don't try to find the longest match in case
+           * the radix tree is split on a parser node. The correct
+           * approach would be to try all parsers and select the
+           * best match, however it is quite expensive and difficult
+           * to implement and we don't really expect this to be a
+           * realistic case. A log message is printed if such a
+           * collision occurs, so there's a slight chance we'll
+           * recognize if this happens in real life. */
+
+          ret = _r_find_node(state, root->pchildren[parser_ndx], key + literal_prefix_len + len, keylen - (literal_prefix_len + len));
+
+          r_add_debug_info(state->dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + literal_prefix_len) - state->whole_key, ((gint16) match->len) + len);
+          if (matches)
+            {
+              match = &g_array_index(matches, RParserMatch, match_ofs);
+
+              if (ret)
+                {
+                  if (!(match->match))
+                    {
+                      /* NOTE: we allow the parser to return relative
+                       * offset & length to the field parsed, this way
+                       * quote characters can still be returned as
+                       * REF_MATCH and we only need to duplicate the
+                       * result if the string is indeed modified
+                       */
+                      match->type = parser_node->type;
+                      match->ofs = match->ofs + (key + literal_prefix_len) - state->whole_key;
+                      match->len = (gint16) match->len + len;
+                      match->handle = parser_node->handle;
+                    }
+                  break;
+                }
+              else
+                {
+                  if (match->match)
+                    {
+                      /* free the stored match, if this was a dead-end */
+                      g_free(match->match);
+                      match->match = NULL;
+                    }
+                }
+            }
+        }
+    }
+  if (!ret && matches)
+    {
+      /* the values in the matches array has already been freed if we come here */
+      g_array_set_size(matches, match_ofs);
+    }
+  return ret;
+}
 
 static RNode *
 _r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
 {
   gint current_node_key_length = root->keylen;
   register gint literal_prefix_len;
-  GArray *matches = state->matches;
-  gint dbg_entries;
 
   literal_prefix_len = r_find_matching_literal_prefix(root, key, keylen);
-
   r_add_literal_match_to_debug_info(state->dbg_list, root, literal_prefix_len);
-  dbg_entries = state->dbg_list ? state->dbg_list->len : 0;
 
   msg_trace("Looking up node in the radix tree",
             evt_tag_int("literal_prefix_len", literal_prefix_len),
@@ -151,83 +231,7 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
       /* we only search if there is no match */
       if (!ret)
         {
-          gint len;
-          RParserNode *parser_node;
-          gint match_ofs = 0;
-          RParserMatch *match = NULL;
-          gint parser_ndx;
-
-          if (matches)
-            {
-              match_ofs = matches->len;
-
-              g_array_set_size(matches, match_ofs + 1);
-            }
-          for (parser_ndx = 0; parser_ndx < root->num_pchildren; parser_ndx++)
-            {
-              parser_node = root->pchildren[parser_ndx]->parser;
-
-              if (matches)
-                {
-                  match = &g_array_index(matches, RParserMatch, match_ofs);
-                  memset(match, 0, sizeof(*match));
-                }
-              r_truncate_debug_info(state->dbg_list, dbg_entries);
-              if (((parser_node->first <= key[literal_prefix_len]) && (key[literal_prefix_len] <= parser_node->last)) &&
-                  (parser_node->parse(key + literal_prefix_len, &len, parser_node->param, parser_node->state, match)))
-                {
-
-                  /* FIXME: we don't try to find the longest match in case
-                   * the radix tree is split on a parser node. The correct
-                   * approach would be to try all parsers and select the
-                   * best match, however it is quite expensive and difficult
-                   * to implement and we don't really expect this to be a
-                   * realistic case. A log message is printed if such a
-                   * collision occurs, so there's a slight chance we'll
-                   * recognize if this happens in real life. */
-
-                  ret = _r_find_node(state, root->pchildren[parser_ndx], key + literal_prefix_len + len, keylen - (literal_prefix_len + len));
-
-                  r_add_debug_info(state->dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + literal_prefix_len) - state->whole_key, ((gint16) match->len) + len);
-                  if (matches)
-                    {
-
-                      match = &g_array_index(matches, RParserMatch, match_ofs);
-
-                      if (ret)
-                        {
-                          if (!(match->match))
-                            {
-                              /* NOTE: we allow the parser to return relative
-                               * offset & length to the field parsed, this way
-                               * quote characters can still be returned as
-                               * REF_MATCH and we only need to duplicate the
-                               * result if the string is indeed modified
-                               */
-                              match->type = parser_node->type;
-                              match->ofs = match->ofs + (key + literal_prefix_len) - state->whole_key;
-                              match->len = (gint16) match->len + len;
-                              match->handle = parser_node->handle;
-                            }
-                          break;
-                        }
-                      else
-                        {
-                          if (match->match)
-                            {
-                              /* free the stored match, if this was a dead-end */
-                              g_free(match->match);
-                              match->match = NULL;
-                            }
-                        }
-                    }
-                }
-            }
-          if (!ret && matches)
-            {
-              /* the values in the matches array has already been freed if we come here */
-              g_array_set_size(matches, match_ofs);
-            }
+          ret = r_find_child_by_parser(state, root, key, keylen, literal_prefix_len);
         }
 
       if (ret)
