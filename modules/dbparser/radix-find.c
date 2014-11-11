@@ -150,6 +150,13 @@ r_clear_current_match(RFindNodeState *state, gint matches_stored_by_caller)
   return match;
 }
 
+
+static void
+_reset_matches_to_original_state(RFindNodeState *state, gint matches_base)
+{
+  g_array_set_size(state->stored_matches, matches_base);
+}
+
 static gboolean
 _is_pnode_matching_initial_character(RParserNode *parser_node, guint8 *key)
 {
@@ -166,6 +173,35 @@ _pnode_try_parse(RParserNode *parser_node, guint8 *key, gint *extracted_match_le
     return FALSE;
 
   return TRUE;
+}
+
+static void
+_fixup_match_offsets(RFindNodeState *state, RParserNode *parser_node, gint extracted_match_len, guint8 *remaining_key, RParserMatch *match)
+{
+  if (!(match->match))
+    {
+      /* NOTE: we allow the parser to return relative
+       * offset & length to the field parsed, this way
+       * quote characters can still be returned as
+       * REF_MATCH and we only need to duplicate the
+       * result if the string is indeed modified
+       */
+      match->type = parser_node->type;
+      match->ofs = match->ofs + remaining_key - state->whole_key;
+      match->len = (gint16) match->len + extracted_match_len;
+      match->handle = parser_node->handle;
+    }
+}
+
+static void
+_clear_match_content(RParserMatch *match)
+{
+  if (match->match)
+    {
+      /* free the stored match, if this was a dead-end */
+      g_free(match->match);
+      match->match = NULL;
+    }
 }
 
 static RNode *
@@ -202,35 +238,19 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
           ret = _r_find_node(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
 
           r_add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match->ofs) + remaining_key - state->whole_key, ((gint16) match->len) + extracted_match_len);
+
           if (stored_matches)
             {
               /* we have to look up "match" again as the GArray may have moved the data */
               match = r_get_current_match(state, matches_stored_by_caller);
               if (ret)
                 {
-                  if (!(match->match))
-                    {
-                      /* NOTE: we allow the parser to return relative
-                       * offset & length to the field parsed, this way
-                       * quote characters can still be returned as
-                       * REF_MATCH and we only need to duplicate the
-                       * result if the string is indeed modified
-                       */
-                      match->type = parser_node->type;
-                      match->ofs = match->ofs + remaining_key - state->whole_key;
-                      match->len = (gint16) match->len + extracted_match_len;
-                      match->handle = parser_node->handle;
-                    }
+                  _fixup_match_offsets(state, parser_node, extracted_match_len, remaining_key, match);
                   break;
                 }
               else
                 {
-                  if (match->match)
-                    {
-                      /* free the stored match, if this was a dead-end */
-                      g_free(match->match);
-                      match->match = NULL;
-                    }
+                  _clear_match_content(match);
                 }
             }
         }
@@ -238,7 +258,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
   if (!ret && stored_matches)
     {
       /* the values in the stored_matches array has already been freed if we come here */
-      g_array_set_size(stored_matches, matches_stored_by_caller);
+      _reset_matches_to_original_state(state, matches_base);
     }
   return ret;
 }
