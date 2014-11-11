@@ -117,33 +117,58 @@ r_find_child_by_remainding_key(RFindNodeState *state, RNode *root, guint8 *key, 
   return NULL;
 }
 
+static gint
+r_grow_stored_matches(RFindNodeState *state)
+{
+  gint matches_stored_by_caller;
+
+  if (state->stored_matches)
+    {
+      matches_stored_by_caller = state->stored_matches->len;
+
+      g_array_set_size(state->stored_matches, matches_stored_by_caller + 1);
+    }
+  return matches_stored_by_caller;
+}
+
+static RParserMatch *
+r_get_current_match(RFindNodeState *state, gint matches_stored_by_caller)
+{
+  return &g_array_index(state->stored_matches, RParserMatch, matches_stored_by_caller);
+}
+
+static RParserMatch *
+r_clear_current_match(RFindNodeState *state, gint matches_stored_by_caller)
+{
+  RParserMatch *match = NULL;
+
+  if (state->stored_matches)
+    {
+      match = r_get_current_match(state, matches_stored_by_caller);
+      memset(match, 0, sizeof(*match));
+    }
+  return match;
+}
+
 static RNode *
 r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint keylen, gint literal_prefix_len)
 {
   GArray *stored_matches = state->stored_matches;
   gint dbg_entries = state->dbg_list ? state->dbg_list->len : 0;
-  gint len;
-  RParserNode *parser_node;
-  gint match_ofs = 0;
+  gint matches_stored_by_caller = 0;
   RParserMatch *match = NULL;
   gint parser_ndx;
   RNode *ret = NULL;
 
-  if (stored_matches)
-    {
-      match_ofs = stored_matches->len;
-
-      g_array_set_size(stored_matches, match_ofs + 1);
-    }
+  matches_stored_by_caller = r_grow_stored_matches(state);
   for (parser_ndx = 0; parser_ndx < root->num_pchildren; parser_ndx++)
     {
+      RParserNode *parser_node;
+      gint len;
+
       parser_node = root->pchildren[parser_ndx]->parser;
 
-      if (stored_matches)
-        {
-          match = &g_array_index(stored_matches, RParserMatch, match_ofs);
-          memset(match, 0, sizeof(*match));
-        }
+      match = r_clear_current_match(state, matches_stored_by_caller);
       r_truncate_debug_info(state, dbg_entries);
 
       if (((parser_node->first <= key[literal_prefix_len]) && (key[literal_prefix_len] <= parser_node->last)) &&
@@ -165,7 +190,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint key
           if (stored_matches)
             {
               /* we have to look up "match" again as the GArray may have moved the data */
-              match = &g_array_index(stored_matches, RParserMatch, match_ofs);
+              match = r_get_current_match(state, matches_stored_by_caller);
               if (ret)
                 {
                   if (!(match->match))
@@ -198,7 +223,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint key
   if (!ret && stored_matches)
     {
       /* the values in the stored_matches array has already been freed if we come here */
-      g_array_set_size(stored_matches, match_ofs);
+      g_array_set_size(stored_matches, matches_stored_by_caller);
     }
   return ret;
 }
