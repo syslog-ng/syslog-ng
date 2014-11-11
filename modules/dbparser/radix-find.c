@@ -134,7 +134,9 @@ r_grow_stored_matches(RFindNodeState *state)
 static RParserMatch *
 r_get_current_match(RFindNodeState *state, gint matches_stored_by_caller)
 {
-  return &g_array_index(state->stored_matches, RParserMatch, matches_stored_by_caller);
+  if (state->stored_matches)
+    return &g_array_index(state->stored_matches, RParserMatch, matches_stored_by_caller);
+  return NULL;
 }
 
 static RParserMatch *
@@ -154,7 +156,8 @@ r_clear_current_match(RFindNodeState *state, gint matches_stored_by_caller)
 static void
 _reset_matches_to_original_state(RFindNodeState *state, gint matches_base)
 {
-  g_array_set_size(state->stored_matches, matches_base);
+  if (state->stored_matches)
+    g_array_set_size(state->stored_matches, matches_base);
 }
 
 static gboolean
@@ -239,10 +242,12 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
 
           r_add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match->ofs) + remaining_key - state->whole_key, ((gint16) match->len) + extracted_match_len);
 
-          if (stored_matches)
+
+          /* we have to look up "match" again as the GArray may have
+           * moved the data in case r_find_node() expanded it above */
+          match = r_get_current_match(state, matches_stored_by_caller);
+          if (match)
             {
-              /* we have to look up "match" again as the GArray may have moved the data */
-              match = r_get_current_match(state, matches_stored_by_caller);
               if (ret)
                 {
                   _fixup_match_offsets(state, parser_node, extracted_match_len, remaining_key, match);
@@ -258,7 +263,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
   if (!ret && stored_matches)
     {
       /* the values in the stored_matches array has already been freed if we come here */
-      _reset_matches_to_original_state(state, matches_base);
+      _reset_matches_to_original_state(state, matches_stored_by_caller);
     }
   return ret;
 }
