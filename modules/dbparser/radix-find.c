@@ -106,13 +106,13 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen);
 
 
 static RNode *
-r_find_child_by_remainding_key(RFindNodeState *state, RNode *root, guint8 *key, gint keylen, gint literal_prefix_len)
+r_find_child_by_remainding_key(RFindNodeState *state, RNode *root, guint8 *remainding_key, gint remainding_keylen)
 {
-  RNode *candidate = r_find_child_by_first_character(root, key[literal_prefix_len]);
+  RNode *candidate = r_find_child_by_first_character(root, remainding_key[0]);
 
   if (candidate)
     {
-      return _r_find_node(state, candidate, key + literal_prefix_len, keylen - literal_prefix_len);
+      return _r_find_node(state, candidate, remainding_key, remainding_keylen);
     }
   return NULL;
 }
@@ -151,7 +151,7 @@ r_clear_current_match(RFindNodeState *state, gint matches_stored_by_caller)
 }
 
 static RNode *
-r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint keylen, gint literal_prefix_len)
+r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key, gint remaining_keylen)
 {
   GArray *stored_matches = state->stored_matches;
   gint dbg_entries = state->dbg_list ? state->dbg_list->len : 0;
@@ -159,6 +159,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint key
   RParserMatch *match = NULL;
   gint parser_ndx;
   RNode *ret = NULL;
+  guint8 remaining_key_first_character = remaining_key[0];
 
   matches_stored_by_caller = r_grow_stored_matches(state);
   for (parser_ndx = 0; parser_ndx < root->num_pchildren; parser_ndx++)
@@ -171,8 +172,8 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint key
       match = r_clear_current_match(state, matches_stored_by_caller);
       r_truncate_debug_info(state, dbg_entries);
 
-      if (((parser_node->first <= key[literal_prefix_len]) && (key[literal_prefix_len] <= parser_node->last)) &&
-          (parser_node->parse(key + literal_prefix_len, &len, parser_node->param, parser_node->state, match)))
+      if (((parser_node->first <= remaining_key_first_character) && (remaining_key_first_character <= parser_node->last)) &&
+          (parser_node->parse(remaining_key, &len, parser_node->param, parser_node->state, match)))
         {
 
           /* FIXME: we don't try to find the longest match in case
@@ -184,9 +185,9 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint key
            * collision occurs, so there's a slight chance we'll
            * recognize if this happens in real life. */
 
-          ret = _r_find_node(state, root->pchildren[parser_ndx], key + literal_prefix_len + len, keylen - (literal_prefix_len + len));
+          ret = _r_find_node(state, root->pchildren[parser_ndx], remaining_key + len, remaining_keylen - len);
 
-          r_add_debug_info(state, root, parser_node, len, ((gint16) match->ofs) + (key + literal_prefix_len) - state->whole_key, ((gint16) match->len) + len);
+          r_add_debug_info(state, root, parser_node, len, ((gint16) match->ofs) + remaining_key - state->whole_key, ((gint16) match->len) + len);
           if (stored_matches)
             {
               /* we have to look up "match" again as the GArray may have moved the data */
@@ -202,7 +203,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *key, gint key
                        * result if the string is indeed modified
                        */
                       match->type = parser_node->type;
-                      match->ofs = match->ofs + (key + literal_prefix_len) - state->whole_key;
+                      match->ofs = match->ofs + remaining_key - state->whole_key;
                       match->len = (gint16) match->len + len;
                       match->handle = parser_node->handle;
                     }
@@ -253,12 +254,14 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
   else if ((current_node_key_length < 1) || (literal_prefix_len < keylen && literal_prefix_len >= current_node_key_length))
     {
       RNode *ret;
+      guint8 *remaining_key = key + literal_prefix_len;
+      gint remaining_keylen = keylen - literal_prefix_len;
 
-      ret = r_find_child_by_remainding_key(state, root, key, keylen, literal_prefix_len);
+      ret = r_find_child_by_remainding_key(state, root, remaining_key, remaining_keylen);
       /* we only search if there is no match */
       if (!ret)
         {
-          ret = r_find_child_by_parser(state, root, key, keylen, literal_prefix_len);
+          ret = r_find_child_by_parser(state, root, remaining_key, remaining_keylen);
         }
 
       if (ret)
