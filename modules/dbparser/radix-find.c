@@ -95,29 +95,30 @@ r_find_matching_literal_prefix(RNode *root, guint8 *key, gint keylen)
 
 typedef struct _RFindNodeState
 {
+  guint8 *whole_key;
   GArray *matches;
   GArray *dbg_list;
 } RFindNodeState;
 
 static RNode *
-_r_find_node(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key, gint keylen);
+_r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen);
 
 
 static RNode *
-r_find_child_by_remainding_key(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key, gint keylen, gint literal_prefix_len)
+r_find_child_by_remainding_key(RFindNodeState *state, RNode *root, guint8 *key, gint keylen, gint literal_prefix_len)
 {
   RNode *candidate = r_find_child_by_first_character(root, key[literal_prefix_len]);
 
   if (candidate)
     {
-      return _r_find_node(state, candidate, whole_key, key + literal_prefix_len, keylen - literal_prefix_len);
+      return _r_find_node(state, candidate, key + literal_prefix_len, keylen - literal_prefix_len);
     }
   return NULL;
 }
 
 
 static RNode *
-_r_find_node(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key, gint keylen)
+_r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
 {
   gint current_node_key_length = root->keylen;
   register gint literal_prefix_len;
@@ -146,7 +147,7 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key,
     {
       RNode *ret;
 
-      ret = r_find_child_by_remainding_key(state, root, whole_key, key, keylen, literal_prefix_len);
+      ret = r_find_child_by_remainding_key(state, root, key, keylen, literal_prefix_len);
       /* we only search if there is no match */
       if (!ret)
         {
@@ -185,9 +186,9 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key,
                    * collision occurs, so there's a slight chance we'll
                    * recognize if this happens in real life. */
 
-                  ret = _r_find_node(state, root->pchildren[parser_ndx], whole_key, key + literal_prefix_len + len, keylen - (literal_prefix_len + len));
+                  ret = _r_find_node(state, root->pchildren[parser_ndx], key + literal_prefix_len + len, keylen - (literal_prefix_len + len));
 
-                  r_add_debug_info(state->dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + literal_prefix_len) - whole_key, ((gint16) match->len) + len);
+                  r_add_debug_info(state->dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + literal_prefix_len) - state->whole_key, ((gint16) match->len) + len);
                   if (matches)
                     {
 
@@ -204,7 +205,7 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key,
                                * result if the string is indeed modified
                                */
                               match->type = parser_node->type;
-                              match->ofs = match->ofs + (key + literal_prefix_len) - whole_key;
+                              match->ofs = match->ofs + (key + literal_prefix_len) - state->whole_key;
                               match->len = (gint16) match->len + len;
                               match->handle = parser_node->handle;
                             }
@@ -243,19 +244,21 @@ RNode *
 r_find_node(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches)
 {
   RFindNodeState state = {
+    .whole_key = whole_key,
     .matches = matches,
   };
 
-  return _r_find_node(&state, root, whole_key, key, keylen);
+  return _r_find_node(&state, root, key, keylen);
 }
 
 RNode *
 r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches, GArray *dbg_list)
 {
   RFindNodeState state = {
+    .whole_key = whole_key,
     .matches = matches,
     .dbg_list = dbg_list,
   };
 
-  return _r_find_node(&state, root, whole_key, key, keylen);
+  return _r_find_node(&state, root, key, keylen);
 }
