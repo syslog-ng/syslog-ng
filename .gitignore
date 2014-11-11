@@ -52,3 +52,7 @@ tags
 typescript
 windows-tools
 windows-binaries
+b
+*.pyc
+compile
+test-driver

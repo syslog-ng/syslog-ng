@@ -20,6 +20,14 @@ set -e
  fi
  if [ ! -e "$pemodrepo" ]
  then
+     old_pwd=$PWD
+     cd "../syslog-ng-pe-modules"
+     pemodrepo=$PWD
+     cd $old_pwd
+     echo "PE module: $pemodrepo"
+ fi
+ if [ ! -e "$pemodrepo" ]
+ then
      echo "Unable to locate syslog-ng-pe-modules under $ZWA_ROOT/work :-(" >&2
      exit 1
  fi
