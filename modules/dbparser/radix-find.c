@@ -48,23 +48,12 @@ r_truncate_debug_info(GArray *dbg_list, gint truncated_size)
 {
   g_array_set_size(dbg_list, truncated_size);
 }
-#endif
 
-#ifndef RADIX_DBG
-RNode *
-r_find_node(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches)
-#else
-RNode *
-r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches, GArray *dbg_list)
-#endif
+static gint
+r_find_matching_prefix(RNode *root, guint8 *key, gint keylen)
 {
-  RNode *node, *ret;
   gint current_node_key_length = root->keylen;
-  gint m;
-  register gint match_length;
-#ifdef RADIX_DBG
-  gint dbg_entries;
-#endif
+  gint match_length;
 
   if (current_node_key_length < 1)
     match_length = 0;
@@ -72,7 +61,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
     match_length = 1;
   else
     {
-      m = MIN(keylen, current_node_key_length);
+      gint m = MIN(keylen, current_node_key_length);
 
       /* this is a prefix match algorithm, we are interested how long the
        * common part between key and root->key is.  Currently this uses a
@@ -91,7 +80,27 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
           match_length++;
         }
     }
+  return match_length;
+}
 
+#endif
+
+#ifndef RADIX_DBG
+RNode *
+r_find_node(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches)
+#else
+RNode *
+r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches, GArray *dbg_list)
+#endif
+{
+  RNode *node, *ret;
+  gint current_node_key_length = root->keylen;
+  gint match_length;
+#ifdef RADIX_DBG
+  gint dbg_entries;
+#endif
+
+  match_length = r_find_matching_prefix(root, key, keylen);
 #ifdef RADIX_DBG
   r_add_debug_info(dbg_list, root, NULL, match_length, 0, 0);
   dbg_entries = dbg_list->len;
