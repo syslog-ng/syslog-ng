@@ -271,7 +271,6 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
 static RNode *
 _r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
 {
-  gint current_node_key_length = root->keylen;
   register gint literal_prefix_len;
 
   literal_prefix_len = r_find_matching_literal_prefix(root, key, keylen);
@@ -279,18 +278,18 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
 
   msg_trace("Looking up node in the radix tree",
             evt_tag_int("literal_prefix_len", literal_prefix_len),
-            evt_tag_int("current_node_key_length", current_node_key_length),
+            evt_tag_int("root->keylen", root->keylen),
             evt_tag_int("keylen", keylen),
             evt_tag_str("root_key", root->key),
             evt_tag_str("key", key),
             NULL);
 
-  if (literal_prefix_len == keylen && (literal_prefix_len == current_node_key_length || current_node_key_length == -1))
+  if (literal_prefix_len == keylen && (literal_prefix_len == root->keylen || root->keylen == -1))
     {
       if (root->value)
         return root;
     }
-  else if ((current_node_key_length < 1) || (literal_prefix_len < keylen && literal_prefix_len >= current_node_key_length))
+  else if ((root->keylen < 1) || (literal_prefix_len < keylen && literal_prefix_len >= root->keylen))
     {
       RNode *ret;
       guint8 *remaining_key = key + literal_prefix_len;
