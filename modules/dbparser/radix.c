@@ -1060,9 +1060,6 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
     }
 }
 
-#define RADIX_DBG 1
-#include "radix-find.c"
-#undef RADIX_DBG
 #include "radix-find.c"
 
 /**
