@@ -770,11 +770,11 @@ r_add_child(RNode *parent, RNode *child)
 }
 
 static inline void
-r_add_child_check(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGetValueFunc value_func)
+r_add_child_check(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_func)
 {
   guint8 *at;
 
-  if (parser && ((at = strchr(key, '@')) != NULL))
+  if (((at = strchr(key, '@')) != NULL))
     {
       /* there is an @ somewhere in the string */
       if ((at - key) > 0)
@@ -787,12 +787,12 @@ r_add_child_check(RNode *root, guint8 *key, gpointer value, gboolean parser, RNo
 
           /* and insert the rest begining from @ under the newly created literal node */
           *at = '@';
-          r_insert_node(child, at, value, parser, value_func);
+          r_insert_node(child, at, value, value_func);
         }
       else
         {
           /* @ is the first so let's insert it simply and let insert_node handle @ */
-          r_insert_node(root, key, value, parser, value_func);
+          r_insert_node(root, key, value, value_func);
         }
     }
   else
@@ -866,14 +866,14 @@ r_find_child(RNode *root, char key)
 }
 
 void
-r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGetValueFunc value_func)
+r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_func)
 {
   RNode *node;
   gint keylen = strlen(key);
   gint nodelen = root->keylen;
   gint i = 0;
 
-  if (parser && key[0] == '@')
+  if (key[0] == '@')
     {
       guint8 *end;
 
@@ -906,7 +906,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
 
           /* go down building the tree if there is key left */
           if (keylen > 2)
-            r_insert_node(node, key + 2, value, parser, value_func);
+            r_insert_node(node, key + 2, value, value_func);
 
         }
       else if ((keylen >= 2) && (end = strchr((const gchar *)key + 1, '@')) != NULL)
@@ -936,7 +936,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
               if ((end - key) < (keylen - 1))
                 {
                   /* the key is not over so go on building the tree */
-                  r_insert_node(node, end + 1, value, parser, value_func);
+                  r_insert_node(node, end + 1, value, value_func);
                 }
               else
                 {
@@ -972,7 +972,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
       while (i < keylen && i < nodelen)
         {
           /* check if key is the same, or if it is a parser */
-          if ((key[i] != root->key[i]) || (parser && key[i] == '@'))
+          if ((key[i] != root->key[i]) || (key[i] == '@'))
             break;
 
           i++;
@@ -988,14 +988,14 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
           if (node)
             {
               /* @ is always a singel node, and we also have an @ so insert us under root */
-              if (parser && key[i] == '@')
-                r_insert_node(root, key + i, value, parser, value_func);
+              if (key[i] == '@')
+                r_insert_node(root, key + i, value, value_func);
               else
-                r_insert_node(node, key + i, value, parser, value_func);
+                r_insert_node(node, key + i, value, value_func);
             }
           else
             {
-              r_add_child_check(root, key + i, value, parser, value_func);
+              r_add_child_check(root, key + i, value, value_func);
             }
         }
       else if (i == keylen && i == nodelen)
@@ -1044,7 +1044,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
           if (i < keylen)
             {
               /* we add a new sub tree */
-              r_add_child_check(root, key + i, value, parser, value_func);
+              r_add_child_check(root, key + i, value, value_func);
             }
           else
             {
@@ -1055,7 +1055,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
       else
         {
           /* simply a new children */
-          r_add_child_check(root, key + i, value, parser, value_func);
+          r_add_child_check(root, key + i, value, value_func);
         }
     }
 }

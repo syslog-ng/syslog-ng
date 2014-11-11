@@ -1110,7 +1110,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           r_insert_node(program->rules,
                         program_pattern->pattern,
                         program_pattern->rule,
-                        TRUE, pdb_rule_get_name);
+                        pdb_rule_get_name);
           g_free(program_pattern->pattern);
         }
 
@@ -1238,7 +1238,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
                   r_insert_node(state->ruleset->programs,
                             txt,
                             state->current_program,
-                            TRUE, NULL);
+                            NULL);
                 }
               state->first_program = FALSE;
             }
@@ -1251,7 +1251,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
                   r_insert_node(state->ruleset->programs,
                             txt,
                             pdb_program_ref(state->current_program),
-                            TRUE, NULL);
+                            NULL);
                 }
             }
         }

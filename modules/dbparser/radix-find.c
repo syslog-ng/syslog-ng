@@ -50,7 +50,7 @@ r_truncate_debug_info(GArray *dbg_list, gint truncated_size)
 }
 
 static gint
-r_find_matching_prefix(RNode *root, guint8 *key, gint keylen)
+r_find_matching_literal_prefix(RNode *root, guint8 *key, gint keylen)
 {
   gint current_node_key_length = root->keylen;
   gint match_length;
@@ -100,7 +100,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
   gint dbg_entries;
 #endif
 
-  literal_length = r_find_matching_prefix(root, key, keylen);
+  literal_length = r_find_matching_literal_prefix(root, key, keylen);
 #ifdef RADIX_DBG
   r_add_debug_info(dbg_list, root, NULL, literal_length, 0, 0);
   dbg_entries = dbg_list->len;
