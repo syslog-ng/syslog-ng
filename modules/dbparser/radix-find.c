@@ -150,6 +150,24 @@ r_clear_current_match(RFindNodeState *state, gint matches_stored_by_caller)
   return match;
 }
 
+static gboolean
+_is_pnode_matching_initial_character(RParserNode *parser_node, guint8 *key)
+{
+  return (parser_node->first <= key[0]) && (key[0] <= parser_node->last);
+}
+
+static gboolean
+_pnode_try_parse(RParserNode *parser_node, guint8 *key, gint *extracted_match_len, RParserMatch *match)
+{
+  if (!_is_pnode_matching_initial_character(parser_node, key))
+    return FALSE;
+
+  if (!parser_node->parse(key, extracted_match_len, parser_node->param, parser_node->state, match))
+    return FALSE;
+
+  return TRUE;
+}
+
 static RNode *
 r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key, gint remaining_keylen)
 {
@@ -159,21 +177,17 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
   RParserMatch *match = NULL;
   gint parser_ndx;
   RNode *ret = NULL;
-  guint8 remaining_key_first_character = remaining_key[0];
 
   matches_stored_by_caller = r_grow_stored_matches(state);
   for (parser_ndx = 0; parser_ndx < root->num_pchildren; parser_ndx++)
     {
-      RParserNode *parser_node;
+      RParserNode *parser_node = root->pchildren[parser_ndx]->parser;
       gint extracted_match_len;
-
-      parser_node = root->pchildren[parser_ndx]->parser;
 
       match = r_clear_current_match(state, matches_stored_by_caller);
       r_truncate_debug_info(state, dbg_entries);
 
-      if (((parser_node->first <= remaining_key_first_character) && (remaining_key_first_character <= parser_node->last)) &&
-          (parser_node->parse(remaining_key, &extracted_match_len, parser_node->param, parser_node->state, match)))
+      if (_pnode_try_parse(parser_node, remaining_key, &extracted_match_len, match))
         {
 
           /* FIXME: we don't try to find the longest match in case
