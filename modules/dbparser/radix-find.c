@@ -93,15 +93,30 @@ r_find_matching_literal_prefix(RNode *root, guint8 *key, gint keylen)
   return match_length;
 }
 
-
 typedef struct _RFindNodeState
 {
   GArray *matches;
   GArray *dbg_list;
 } RFindNodeState;
 
+static RNode *
+_r_find_node(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key, gint keylen);
 
-RNode *
+
+static RNode *
+r_find_child_by_remainding_key(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key, gint keylen, gint literal_prefix_len)
+{
+  RNode *candidate = r_find_child_by_first_character(root, key[literal_prefix_len]);
+
+  if (candidate)
+    {
+      return _r_find_node(state, candidate, whole_key, key + literal_prefix_len, keylen - literal_prefix_len);
+    }
+  return NULL;
+}
+
+
+static RNode *
 _r_find_node(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key, gint keylen)
 {
   gint current_node_key_length = root->keylen;
@@ -129,19 +144,9 @@ _r_find_node(RFindNodeState *state, RNode *root, guint8 *whole_key, guint8 *key,
     }
   else if ((current_node_key_length < 1) || (literal_prefix_len < keylen && literal_prefix_len >= current_node_key_length))
     {
-      RNode *node, *ret;
-      ret = NULL;
-      node = r_find_child_by_first_character(root, key[literal_prefix_len]);
+      RNode *ret;
 
-      if (node)
-        {
-#ifndef RADIX_DBG
-          ret = r_find_node(node, whole_key, key + literal_prefix_len, keylen - literal_prefix_len, matches);
-#else
-          ret = r_find_node_dbg(node, whole_key, key + literal_prefix_len, keylen - literal_prefix_len, matches, dbg_list);
-#endif
-        }
-
+      ret = r_find_child_by_remainding_key(state, root, whole_key, key, keylen, literal_prefix_len);
       /* we only search if there is no match */
       if (!ret)
         {
