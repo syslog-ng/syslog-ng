@@ -204,62 +204,66 @@ _clear_match_content(RParserMatch *match)
 }
 
 static RNode *
+_try_parse_with_a_given_child(RFindNodeState *state, RNode *root, gint parser_ndx, gint matches_slot_index, guint8 *remaining_key, gint remaining_keylen)
+{
+  RNode *child_node = root->pchildren[parser_ndx];
+  RParserNode *parser_node = child_node->parser;
+  RParserMatch *match_slot = NULL;
+  gint extracted_match_len;
+  RNode *ret = NULL;
+
+  match_slot = _clear_match_slot(state, matches_slot_index);
+
+  if (_pnode_try_parse(parser_node, remaining_key, &extracted_match_len, match_slot))
+    {
+
+      /* FIXME: we don't try to find the longest match in case
+       * the radix tree is split on a parser node. The correct
+       * approach would be to try all parsers and select the
+       * best match, however it is quite expensive and difficult
+       * to implement and we don't really expect this to be a
+       * realistic case. A log message is printed if such a
+       * collision occurs, so there's a slight chance we'll
+       * recognize if this happens in real life. */
+
+      ret = _r_find_node(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
+
+      _add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match_slot->ofs) + remaining_key - state->whole_key, ((gint16) match_slot->len) + extracted_match_len);
+
+
+      /* we have to look up "match_slot" again as the GArray may have
+       * moved the data in case r_find_node() expanded it above */
+      match_slot = _get_match_slot(state, matches_slot_index);
+      if (match_slot)
+        {
+          if (ret)
+            _fixup_match_offsets(state, parser_node, extracted_match_len, remaining_key, match_slot);
+          else
+            _clear_match_content(match_slot);
+        }
+    }
+  return ret;
+
+}
+
+static RNode *
 _find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key, gint remaining_keylen)
 {
-  GArray *stored_matches = state->stored_matches;
   gint dbg_list_base = state->dbg_list ? state->dbg_list->len : 0;
-  gint matches_base = 0;
+  gint matches_slot_index = 0;
   gint parser_ndx;
   RNode *ret = NULL;
 
-  matches_base = _alloc_slot_in_matches(state);
-  for (parser_ndx = 0; parser_ndx < root->num_pchildren; parser_ndx++)
+  matches_slot_index = _alloc_slot_in_matches(state);
+  for (parser_ndx = 0; !ret && parser_ndx < root->num_pchildren; parser_ndx++)
     {
-      RParserNode *parser_node = root->pchildren[parser_ndx]->parser;
-      RParserMatch *match_slot = NULL;
-      gint extracted_match_len;
-
-      match_slot = _clear_match_slot(state, matches_base);
       _truncate_debug_info(state, dbg_list_base);
-
-      if (_pnode_try_parse(parser_node, remaining_key, &extracted_match_len, match_slot))
-        {
-
-          /* FIXME: we don't try to find the longest match in case
-           * the radix tree is split on a parser node. The correct
-           * approach would be to try all parsers and select the
-           * best match, however it is quite expensive and difficult
-           * to implement and we don't really expect this to be a
-           * realistic case. A log message is printed if such a
-           * collision occurs, so there's a slight chance we'll
-           * recognize if this happens in real life. */
-
-          ret = _r_find_node(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
-
-          _add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match_slot->ofs) + remaining_key - state->whole_key, ((gint16) match_slot->len) + extracted_match_len);
-
-
-          /* we have to look up "match" again as the GArray may have
-           * moved the data in case r_find_node() expanded it above */
-          match_slot = _get_match_slot(state, matches_base);
-          if (match_slot)
-            {
-              if (ret)
-                {
-                  _fixup_match_offsets(state, parser_node, extracted_match_len, remaining_key, match_slot);
-                  break;
-                }
-              else
-                {
-                  _clear_match_content(match_slot);
-                }
-            }
-        }
+      ret = _try_parse_with_a_given_child(state, root, parser_ndx, matches_slot_index, remaining_key, remaining_keylen);
     }
-  if (!ret && stored_matches)
+  if (!ret && state->stored_matches)
     {
       /* the values in the stored_matches array has already been freed if we come here */
-      _reset_matches_to_original_state(state, matches_base);
+      _reset_matches_to_original_state(state, matches_slot_index);
     }
   return ret;
 }
