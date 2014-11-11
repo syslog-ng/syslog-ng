@@ -44,6 +44,12 @@ r_add_debug_info(GArray *dbg_list, RNode *node, RParserNode *pnode, gint i, gint
 }
 
 static void
+r_add_literal_match_to_debug_info(GArray *dbg_list, RNode *node, gint literal_length)
+{
+  r_add_debug_info(dbg_list, node, NULL, literal_length, 0, 0);
+}
+
+static void
 r_truncate_debug_info(GArray *dbg_list, gint truncated_size)
 {
   g_array_set_size(dbg_list, truncated_size);
@@ -102,7 +108,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
 
   literal_length = r_find_matching_literal_prefix(root, key, keylen);
 #ifdef RADIX_DBG
-  r_add_debug_info(dbg_list, root, NULL, literal_length, 0, 0);
+  r_add_literal_match_to_debug_info(dbg_list, root, literal_length);
   dbg_entries = dbg_list->len;
 #endif
 
