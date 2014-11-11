@@ -165,7 +165,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
   for (parser_ndx = 0; parser_ndx < root->num_pchildren; parser_ndx++)
     {
       RParserNode *parser_node;
-      gint len;
+      gint extracted_match_len;
 
       parser_node = root->pchildren[parser_ndx]->parser;
 
@@ -173,7 +173,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
       r_truncate_debug_info(state, dbg_entries);
 
       if (((parser_node->first <= remaining_key_first_character) && (remaining_key_first_character <= parser_node->last)) &&
-          (parser_node->parse(remaining_key, &len, parser_node->param, parser_node->state, match)))
+          (parser_node->parse(remaining_key, &extracted_match_len, parser_node->param, parser_node->state, match)))
         {
 
           /* FIXME: we don't try to find the longest match in case
@@ -185,9 +185,9 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
            * collision occurs, so there's a slight chance we'll
            * recognize if this happens in real life. */
 
-          ret = _r_find_node(state, root->pchildren[parser_ndx], remaining_key + len, remaining_keylen - len);
+          ret = _r_find_node(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
 
-          r_add_debug_info(state, root, parser_node, len, ((gint16) match->ofs) + remaining_key - state->whole_key, ((gint16) match->len) + len);
+          r_add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match->ofs) + remaining_key - state->whole_key, ((gint16) match->len) + extracted_match_len);
           if (stored_matches)
             {
               /* we have to look up "match" again as the GArray may have moved the data */
@@ -204,7 +204,7 @@ r_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key
                        */
                       match->type = parser_node->type;
                       match->ofs = match->ofs + remaining_key - state->whole_key;
-                      match->len = (gint16) match->len + len;
+                      match->len = (gint16) match->len + extracted_match_len;
                       match->handle = parser_node->handle;
                     }
                   break;
