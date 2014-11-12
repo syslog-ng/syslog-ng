@@ -804,11 +804,9 @@ pdb_example_free(PDBExample *self)
   g_free(self);
 }
 
-static gchar *
-pdb_rule_get_name(gpointer s)
+gchar *
+pdb_rule_get_name(PDBRule *self)
 {
-  PDBRule *self = (PDBRule *) s;
-
   if (self)
     return self->rule_id;
   else
@@ -1110,7 +1108,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           r_insert_node(program->rules,
                         program_pattern->pattern,
                         program_pattern->rule,
-                        pdb_rule_get_name);
+                        (RNodeGetValueFunc) pdb_rule_get_name);
           g_free(program_pattern->pattern);
         }
 

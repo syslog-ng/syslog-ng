@@ -167,6 +167,7 @@ struct _PDBRule
   GPtrArray *actions;
 };
 
+gchar *pdb_rule_get_name(PDBRule *self);
 void pdb_rule_unref(PDBRule *self);
 
 /* this class encapsulates an example message in the pattern database
