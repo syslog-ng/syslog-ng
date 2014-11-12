@@ -150,6 +150,7 @@ void r_free_node(RNode *node, void (*free_fn)(gpointer data));
 void r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_func);
 RNode *r_find_node(RNode *root, guint8 *key, gint keylen, GArray *matches);
 RNode *r_find_node_dbg(RNode *root, guint8 *key, gint keylen, GArray *matches, GArray *dbg_list);
+gchar **r_find_all_applicable_nodes(RNode *root, guint8 *key, gint keylen, RNodeGetValueFunc value_func);
 
 #endif
 

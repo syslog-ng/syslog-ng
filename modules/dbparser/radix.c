@@ -1067,6 +1067,7 @@ typedef struct _RFindNodeState
   guint8 *whole_key;
   GArray *stored_matches;
   GArray *dbg_list;
+  GPtrArray *applicable_nodes;
 } RFindNodeState;
 
 static RNode *_find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint keylen);
@@ -1327,6 +1328,14 @@ _find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint key
   if (literal_prefix_len == keylen && (literal_prefix_len == root->keylen || root->keylen == -1))
     {
       /* key completely consumed by the literal */
+
+      if (state->applicable_nodes)
+        {
+          /* collect all matching nodes */
+          g_ptr_array_add(state->applicable_nodes, root);
+          return NULL;
+        }
+
       if (root->value)
         return root;
     }
@@ -1394,6 +1403,29 @@ r_find_node_dbg(RNode *root, guint8 *key, gint keylen, GArray *stored_matches, G
   };
 
   return _find_node_with_state(&state, root, key, keylen);
+}
+
+gchar **
+r_find_all_applicable_nodes(RNode *root, guint8 *key, gint keylen, RNodeGetValueFunc value_func)
+{
+  RFindNodeState state = {
+    .whole_key = key,
+  };
+  gint i;
+  GPtrArray *result;
+
+  state.applicable_nodes = g_ptr_array_new();
+  state.require_complete_match = TRUE;
+  _find_node_recursively(&state, root, key, keylen);
+
+  result = g_ptr_array_new();
+  for (i = 0; i < state.applicable_nodes->len; i++)
+    {
+      RNode *node = (RNode *) g_ptr_array_index(state.applicable_nodes, i);
+      g_ptr_array_add(result, g_strdup(value_func(node->value)));
+    }
+  g_ptr_array_add(result, NULL);
+  return (gchar **) g_ptr_array_free(result, FALSE);
 }
 
 /**
