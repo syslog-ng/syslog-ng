@@ -682,6 +682,42 @@ pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value)
   return ret;
 }
 
+static void
+pdbtool_test_find_conflicts(PatternDB *patterndb, LogMessage *msg)
+{
+  const gchar *program;
+  const gchar *message;
+  RNode *node;
+
+  program = log_msg_get_value(msg, LM_V_PROGRAM, NULL);
+  message = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+
+  node = r_find_node(patterndb->ruleset->programs, (gchar *) program, strlen(program), NULL);
+  if (node)
+    {
+      PDBProgram *program_rules = (PDBProgram *) node->value;
+      gchar **matching_ids;
+      gint matching_ids_len;
+
+      matching_ids = r_find_all_applicable_nodes(program_rules->rules, (guint8 *) message, strlen(message), (RNodeGetValueFunc) pdb_rule_get_name);
+      matching_ids_len = g_strv_length(matching_ids);
+
+      if (matching_ids_len > 1)
+        {
+          gint i;
+
+          printf(" Rule conflict! Multiple rules match this message, list of IDs follow\n");
+          for (i = 0; matching_ids[i]; i++)
+            {
+              printf("  %s\n", matching_ids[i]);
+            }
+        }
+
+
+      g_strfreev(matching_ids);
+    }
+}
+
 static gint
 pdbtool_test(int argc, char *argv[])
 {
@@ -756,6 +792,7 @@ pdbtool_test(int argc, char *argv[])
 
               printf("Testing message: program='%s' message='%s'\n", example->program, example->message);
 
+              pdbtool_test_find_conflicts(patterndb, msg);
               pattern_db_process(patterndb, msg);
 
               if (!pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id))
