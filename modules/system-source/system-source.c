@@ -100,10 +100,22 @@ static void
 system_sysblock_add_sun_streams(GString *sysblock, const gchar *path,
                                 const gchar *door)
 {
-  g_string_append_printf(sysblock, "sun-streams(\"%s\"", path);
+  GString *solaris_driver = g_string_sized_new(0);
+
+
+
+  g_string_append_printf(solaris_driver, "sun-streams(\"%s\"", path);
   if (door)
-    g_string_append_printf(sysblock, " door(\"%s\")", door);
-  g_string_append(sysblock, ");\n");
+    g_string_append_printf(solaris_driver, " door(\"%s\")", door);
+  g_string_append(solaris_driver, ");\n");
+
+
+  g_string_append_printf(sysblock,
+"channel {\n"
+"    source { %s };\n"
+"    parser { extract-solaris-msgid(); };\n"
+"};\n", solaris_driver->str);
+  g_string_free(solaris_driver, TRUE);
 }
 
 static void
