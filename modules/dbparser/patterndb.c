@@ -1227,7 +1227,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
 
           if (state->first_program)
             {
-              node = r_find_node(state->ruleset->programs, txt, txt, strlen(txt), NULL);
+              node = r_find_node(state->ruleset->programs, txt, strlen(txt), NULL);
 
               if (node && node->value && node != state->ruleset->programs)
                 state->current_program = node->value;
@@ -1244,7 +1244,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
             }
           else if (state->current_program)
             {
-              node = r_find_node(state->ruleset->programs, txt, txt, strlen(txt), NULL);
+              node = r_find_node(state->ruleset->programs, txt, strlen(txt), NULL);
 
               if (!node || !node->value || node == state->ruleset->programs)
                 {
@@ -1438,7 +1438,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
 
   program = log_msg_get_value(msg, lookup->program_handle, &program_len);
   prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
-  node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, prg_matches);
+  node = r_find_node(self->programs, (gchar *) program, program_len, prg_matches);
 
   if (node)
     {
@@ -1471,9 +1471,9 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
             }
 
           if (G_UNLIKELY(dbg_list))
-            msg_node = r_find_node_dbg(program->rules, (gchar *) message, (gchar *) message, message_len, matches, dbg_list);
+            msg_node = r_find_node_dbg(program->rules, (gchar *) message, message_len, matches, dbg_list);
           else
-            msg_node = r_find_node(program->rules, (gchar *) message, (gchar *) message, message_len, matches);
+            msg_node = r_find_node(program->rules, (gchar *) message, message_len, matches);
 
           if (msg_node)
             {

@@ -1349,10 +1349,10 @@ _find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint key
 
 
 RNode *
-r_find_node(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *stored_matches)
+r_find_node(RNode *root, guint8 *key, gint keylen, GArray *stored_matches)
 {
   RFindNodeState state = {
-    .whole_key = whole_key,
+    .whole_key = key,
     .stored_matches = stored_matches,
   };
 
@@ -1360,10 +1360,10 @@ r_find_node(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *st
 }
 
 RNode *
-r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *stored_matches, GArray *dbg_list)
+r_find_node_dbg(RNode *root, guint8 *key, gint keylen, GArray *stored_matches, GArray *dbg_list)
 {
   RFindNodeState state = {
-    .whole_key = whole_key,
+    .whole_key = key,
     .stored_matches = stored_matches,
     .dbg_list = dbg_list,
   };

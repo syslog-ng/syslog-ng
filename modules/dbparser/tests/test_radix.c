@@ -62,7 +62,7 @@ insert_node(RNode *root, gchar *key)
 void
 test_search_value(RNode *root, gchar *key, gchar *expected_value)
 {
-  RNode *ret = r_find_node(root, key, key, strlen(key), NULL);
+  RNode *ret = r_find_node(root, key, strlen(key), NULL);
 
   if (ret && expected_value)
     {
@@ -107,7 +107,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
   g_array_set_size(matches, 1);
   va_start(args, name1);
 
-  ret = r_find_node(root, key, key, strlen(key), matches);
+  ret = r_find_node(root, key, strlen(key), matches);
   if (ret && !name1)
     {
       printf("FAIL: found unexpected: '%s' => '%s' matches: ", key, (gchar *) ret->value);
