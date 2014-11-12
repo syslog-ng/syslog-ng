@@ -1062,6 +1062,8 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
 
 typedef struct _RFindNodeState
 {
+  gboolean require_complete_match;
+  gboolean partial_match_found;
   guint8 *whole_key;
   GArray *stored_matches;
   GArray *dbg_list;
@@ -1324,29 +1326,52 @@ _find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint key
 
   if (literal_prefix_len == keylen && (literal_prefix_len == root->keylen || root->keylen == -1))
     {
+      /* key completely consumed by the literal */
       if (root->value)
         return root;
     }
   else if ((root->keylen < 1) || (literal_prefix_len < keylen && literal_prefix_len >= root->keylen))
     {
+      /* we matched the key partially, go on with child nodes */
       RNode *ret;
       guint8 *remaining_key = key + literal_prefix_len;
       gint remaining_keylen = keylen - literal_prefix_len;
 
+      /* prefer a literal match over parsers */
       ret = _find_child_by_remaining_key(state, root, remaining_key, remaining_keylen);
-      /* we only search if there is no match */
+
+      /* then try parsers in order */
       if (!ret)
         ret = _find_child_by_parser(state, root, remaining_key, remaining_keylen);
 
-      if (ret)
-        return ret;
-      else if (root->value)
-        return root;
+      if (!ret && root->value)
+        {
+          if (!state->require_complete_match)
+            return root;
+          state->partial_match_found = TRUE;
+        }
+
+      return ret;
     }
 
   return NULL;
 }
 
+static RNode *
+_find_node_with_state(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
+{
+  RNode *ret;
+
+  state->require_complete_match = TRUE;
+  state->partial_match_found = FALSE;
+  ret = _find_node_recursively(state, root, key, keylen);
+  if (!ret && state->partial_match_found)
+    {
+      state->require_complete_match = FALSE;
+      ret = _find_node_recursively(state, root, key, keylen);
+    }
+  return ret;
+}
 
 RNode *
 r_find_node(RNode *root, guint8 *key, gint keylen, GArray *stored_matches)
@@ -1356,7 +1381,7 @@ r_find_node(RNode *root, guint8 *key, gint keylen, GArray *stored_matches)
     .stored_matches = stored_matches,
   };
 
-  return _find_node_recursively(&state, root, key, keylen);
+  return _find_node_with_state(&state, root, key, keylen);
 }
 
 RNode *
@@ -1368,7 +1393,7 @@ r_find_node_dbg(RNode *root, guint8 *key, gint keylen, GArray *stored_matches, G
     .dbg_list = dbg_list,
   };
 
-  return _find_node_recursively(&state, root, key, keylen);
+  return _find_node_with_state(&state, root, key, keylen);
 }
 
 /**

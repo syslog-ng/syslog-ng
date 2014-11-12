@@ -239,6 +239,79 @@ assert_msg_matches_and_output_message_has_tag(const gchar *pattern, gint ndx, co
   assert_msg_matches_and_output_message_has_tag_with_timeout(pattern, 0, ndx, tag, set);
 }
 
+gchar *pdb_conflicting_rules_with_different_parsers = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog1</pattern>\
+   <pattern>prog2</pattern>\
+  </patterns>\
+  <!-- different parsers at the same location -->\
+  <rule provider='test' id='11' class='short'>\
+   <patterns>\
+    <pattern>pattern @ESTRING:foo1: @</pattern>\
+   </patterns>\
+  </rule>\
+  <rule provider='test' id='12' class='long'>\
+   <patterns>\
+    <pattern>pattern @ESTRING:foo2: @tail</pattern>\
+   </patterns>\
+  </rule>\
+ </ruleset>\
+</patterndb>";
+
+static void
+test_conflicting_rules_with_different_parsers(void)
+{
+  _load_pattern_db_from_string(pdb_conflicting_rules_with_different_parsers);
+
+  /* the short rule matches completely, the other doesn't */
+  assert_msg_matches_and_nvpair_equals("pattern foobar ", ".classifier.rule_id", "11");
+
+  /* we have a longer rule, even though both rules would match */
+  assert_msg_matches_and_nvpair_equals("pattern foobar tail", ".classifier.rule_id", "12");
+
+  /* the longest rule didn't match, so use the shorter one as a partial match */
+  assert_msg_matches_and_nvpair_equals("pattern foobar something else", ".classifier.rule_id", "11");
+  _destroy_pattern_db();
+}
+
+gchar *pdb_conflicting_rules_with_the_same_parsers = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog1</pattern>\
+   <pattern>prog2</pattern>\
+  </patterns>\
+  <!-- different parsers at the same location -->\
+  <rule provider='test' id='11' class='short'>\
+   <patterns>\
+    <pattern>pattern @ESTRING:foo: @</pattern>\
+   </patterns>\
+  </rule>\
+  <rule provider='test' id='12' class='long'>\
+   <patterns>\
+    <pattern>pattern @ESTRING:foo: @tail</pattern>\
+   </patterns>\
+  </rule>\
+ </ruleset>\
+</patterndb>";
+
+static void
+test_conflicting_rules_with_the_same_parsers(void)
+{
+  _load_pattern_db_from_string(pdb_conflicting_rules_with_the_same_parsers);
+
+  /* the short rule matches completely, the other doesn't */
+  assert_msg_matches_and_nvpair_equals("pattern foobar ", ".classifier.rule_id", "11");
+
+  /* we have a longer rule, even though both rules would match */
+  assert_msg_matches_and_nvpair_equals("pattern foobar tail", ".classifier.rule_id", "12");
+
+  /* the longest rule didn't match, so use the shorter one as a partial match */
+  assert_msg_matches_and_nvpair_equals("pattern foobar something else", ".classifier.rule_id", "11");
+  _destroy_pattern_db();
+}
+
+
 /* pdb skeleton used to test patterndb rule actions. E.g. whenever a rule
  * matches, certain actions described in the rule need to be performed.
  * This tests those */
@@ -604,6 +677,8 @@ main(int argc, char *argv[])
 
   pattern_db_global_init();
 
+  test_conflicting_rules_with_different_parsers();
+  test_conflicting_rules_with_the_same_parsers();
   test_patterndb_rule();
   test_patterndb_parsers();
   test_patterndb_message_property_inheritance();
