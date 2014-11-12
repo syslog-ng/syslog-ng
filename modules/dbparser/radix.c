@@ -1067,7 +1067,7 @@ typedef struct _RFindNodeState
   GArray *dbg_list;
 } RFindNodeState;
 
-static RNode *_r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen);
+static RNode *_find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint keylen);
 
 static void
 _add_debug_info(RFindNodeState *state, RNode *node, RParserNode *pnode, gint i, gint match_off, gint match_len)
@@ -1140,7 +1140,7 @@ _find_child_by_remaining_key(RFindNodeState *state, RNode *root, guint8 *remaini
 
   if (candidate)
     {
-      return _r_find_node(state, candidate, remaining_key, remaining_keylen);
+      return _find_node_recursively(state, candidate, remaining_key, remaining_keylen);
     }
   return NULL;
 }
@@ -1258,7 +1258,7 @@ _try_parse_with_a_given_child(RFindNodeState *state, RNode *root, gint parser_nd
        * collision occurs, so there's a slight chance we'll
        * recognize if this happens in real life. */
 
-      ret = _r_find_node(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
+      ret = _find_node_recursively(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
 
       _add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match_slot->ofs) + remaining_key - state->whole_key, ((gint16) match_slot->len) + extracted_match_len);
 
@@ -1301,7 +1301,7 @@ _find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key,
 }
 
 static RNode *
-_r_find_node(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
+_find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
 {
   gint literal_prefix_len;
 
@@ -1350,7 +1350,7 @@ r_find_node(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *st
     .stored_matches = stored_matches,
   };
 
-  return _r_find_node(&state, root, key, keylen);
+  return _find_node_recursively(&state, root, key, keylen);
 }
 
 RNode *
@@ -1362,7 +1362,7 @@ r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray
     .dbg_list = dbg_list,
   };
 
-  return _r_find_node(&state, root, key, keylen);
+  return _find_node_recursively(&state, root, key, keylen);
 }
 
 /**
