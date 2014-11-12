@@ -1093,6 +1093,14 @@ _add_literal_match_to_debug_info(RFindNodeState *state, RNode *node, gint litera
 }
 
 static void
+_add_parser_match_debug_info(RFindNodeState *state, RNode *root, RParserNode *parser_node, guint8 *remaining_key, gint extracted_match_len, RParserMatch *match_slot)
+{
+  if (state->dbg_list && match_slot)
+    _add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match_slot->ofs) + remaining_key - state->whole_key, ((gint16) match_slot->len) + extracted_match_len);
+}
+
+
+static void
 _truncate_debug_info(RFindNodeState *state, gint truncated_size)
 {
   if (state->dbg_list)
@@ -1259,9 +1267,7 @@ _try_parse_with_a_given_child(RFindNodeState *state, RNode *root, gint parser_nd
        * recognize if this happens in real life. */
 
       ret = _find_node_recursively(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
-
-      _add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match_slot->ofs) + remaining_key - state->whole_key, ((gint16) match_slot->len) + extracted_match_len);
-
+      _add_parser_match_debug_info(state, root, parser_node, remaining_key, extracted_match_len, match_slot);
 
       /* we have to look up "match_slot" again as the GArray may have
        * moved the data in case r_find_node() expanded it above */
