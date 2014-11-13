@@ -1702,7 +1702,7 @@ pattern_db_get_ruleset_version(PatternDB *self)
 }
 
 static gboolean
-_pattern_db_process(PatternDB *self, PDBLookupParams *lookup)
+_pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 {
   PDBRule *rule;
   LogMessage *msg = lookup->msg;
@@ -1711,7 +1711,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup)
     return FALSE;
 
   g_static_rw_lock_reader_lock(&self->lock);
-  rule = pdb_rule_set_lookup(self->ruleset, lookup, NULL);
+  rule = pdb_rule_set_lookup(self->ruleset, lookup, dbg_list);
   g_static_rw_lock_reader_unlock(&self->lock);
   if (rule)
     {
@@ -1814,7 +1814,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
   PDBLookupParams lookup;
 
   pdb_lookup_state_init(&lookup, msg);
-  return _pattern_db_process(self, &lookup);
+  return _pattern_db_process(self, &lookup, NULL);
 }
 
 gboolean
@@ -1826,19 +1826,16 @@ pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const g
   lookup.message_handle = LM_V_NONE;
   lookup.message_string = message;
   lookup.message_len = message_len;
-  return _pattern_db_process(self, &lookup);
+  return _pattern_db_process(self, &lookup, NULL);
 }
 
 void
 pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
 {
   PDBLookupParams lookup;
-  PDBRule *rule;
 
   pdb_lookup_state_init(&lookup, msg);
-  rule = pdb_rule_set_lookup(self->ruleset, &lookup, dbg_list);
-  if (rule)
-    pdb_rule_unref(rule);
+  _pattern_db_process(self, &lookup, dbg_list);
 }
 
 PatternDB *
