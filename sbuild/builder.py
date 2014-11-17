@@ -1,9 +1,15 @@
 from AutotoolsBuilder import AutotoolsBuilder
 import os
 
+class SyslogNGCoreBuilder(AutotoolsBuilder):
+
+    def environment_override(self):
+        os.environ["PKG_CONFIG_PATH"] = "%s/lib/pkgconfig"%(self.install_dir)
+        os.environ["PATH"] += ":%s/bin"%(self.install_dir)
+        print "PATH = %s"%(os.environ["PATH"])
+
 def get_builder():
-    builder = AutotoolsBuilder(get_default_config_opts())
-    os.environ["PKG_CONFIG_PATH"] = "%s/lib/pkgconfig"%(builder.install_dir)
+    builder = SyslogNGCoreBuilder(get_default_config_opts())
     return builder
 
 
