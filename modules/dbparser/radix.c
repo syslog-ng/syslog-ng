@@ -770,11 +770,11 @@ r_add_child(RNode *parent, RNode *child)
 }
 
 static inline void
-r_add_child_check(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGetValueFunc value_func)
+r_add_child_check(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_func)
 {
   guint8 *at;
 
-  if (parser && ((at = strchr(key, '@')) != NULL))
+  if (((at = strchr(key, '@')) != NULL))
     {
       /* there is an @ somewhere in the string */
       if ((at - key) > 0)
@@ -787,12 +787,12 @@ r_add_child_check(RNode *root, guint8 *key, gpointer value, gboolean parser, RNo
 
           /* and insert the rest begining from @ under the newly created literal node */
           *at = '@';
-          r_insert_node(child, at, value, parser, value_func);
+          r_insert_node(child, at, value, value_func);
         }
       else
         {
           /* @ is the first so let's insert it simply and let insert_node handle @ */
-          r_insert_node(root, key, value, parser, value_func);
+          r_insert_node(root, key, value, value_func);
         }
     }
   else
@@ -842,7 +842,7 @@ r_find_pchild(RNode *parent, RParserNode *parser_node)
 }
 
 RNode *
-r_find_child(RNode *root, char key)
+r_find_child_by_first_character(RNode *root, char key)
 {
   register gint l, u, idx;
   register char k = key;
@@ -866,21 +866,21 @@ r_find_child(RNode *root, char key)
 }
 
 void
-r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGetValueFunc value_func)
+r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_func)
 {
   RNode *node;
   gint keylen = strlen(key);
   gint nodelen = root->keylen;
   gint i = 0;
 
-  if (parser && key[0] == '@')
+  if (key[0] == '@')
     {
       guint8 *end;
 
       if (keylen >= 2 && key[1] == '@')
         {
           /* we found and escape, so check if we already have a child with '@', or add a child like that */
-          node = r_find_child(root, key[1]);
+          node = r_find_child_by_first_character(root, key[1]);
 
           if (!node)
             {
@@ -906,7 +906,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
 
           /* go down building the tree if there is key left */
           if (keylen > 2)
-            r_insert_node(node, key + 2, value, parser, value_func);
+            r_insert_node(node, key + 2, value, value_func);
 
         }
       else if ((keylen >= 2) && (end = strchr((const gchar *)key + 1, '@')) != NULL)
@@ -936,7 +936,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
               if ((end - key) < (keylen - 1))
                 {
                   /* the key is not over so go on building the tree */
-                  r_insert_node(node, end + 1, value, parser, value_func);
+                  r_insert_node(node, end + 1, value, value_func);
                 }
               else
                 {
@@ -972,7 +972,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
       while (i < keylen && i < nodelen)
         {
           /* check if key is the same, or if it is a parser */
-          if ((key[i] != root->key[i]) || (parser && key[i] == '@'))
+          if ((key[i] != root->key[i]) || (key[i] == '@'))
             break;
 
           i++;
@@ -983,19 +983,19 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
         {
           /*either at the root or we need to go down the tree on the right child */
 
-          node = r_find_child(root, key[i]);
+          node = r_find_child_by_first_character(root, key[i]);
 
           if (node)
             {
               /* @ is always a singel node, and we also have an @ so insert us under root */
-              if (parser && key[i] == '@')
-                r_insert_node(root, key + i, value, parser, value_func);
+              if (key[i] == '@')
+                r_insert_node(root, key + i, value, value_func);
               else
-                r_insert_node(node, key + i, value, parser, value_func);
+                r_insert_node(node, key + i, value, value_func);
             }
           else
             {
-              r_add_child_check(root, key + i, value, parser, value_func);
+              r_add_child_check(root, key + i, value, value_func);
             }
         }
       else if (i == keylen && i == nodelen)
@@ -1044,7 +1044,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
           if (i < keylen)
             {
               /* we add a new sub tree */
-              r_add_child_check(root, key + i, value, parser, value_func);
+              r_add_child_check(root, key + i, value, value_func);
             }
           else
             {
@@ -1055,15 +1055,321 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, gboolean parser, RNodeGe
       else
         {
           /* simply a new children */
-          r_add_child_check(root, key + i, value, parser, value_func);
+          r_add_child_check(root, key + i, value, value_func);
         }
     }
 }
 
-#define RADIX_DBG 1
-#include "radix-find.c"
-#undef RADIX_DBG
-#include "radix-find.c"
+typedef struct _RFindNodeState
+{
+  guint8 *whole_key;
+  GArray *stored_matches;
+  GArray *dbg_list;
+} RFindNodeState;
+
+static RNode *_find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint keylen);
+
+static void
+_add_debug_info(RFindNodeState *state, RNode *node, RParserNode *pnode, gint i, gint match_off, gint match_len)
+{
+  RDebugInfo dbg_info;
+
+  if (state->dbg_list)
+    {
+      dbg_info.node = node;
+      dbg_info.pnode = pnode;
+      dbg_info.i = i;
+      dbg_info.match_off = match_off;
+      dbg_info.match_len = match_len;
+
+      g_array_append_val(state->dbg_list, dbg_info);
+    }
+}
+
+static void
+_add_literal_match_to_debug_info(RFindNodeState *state, RNode *node, gint literal_prefix)
+{
+  _add_debug_info(state, node, NULL, literal_prefix, 0, 0);
+}
+
+static void
+_add_parser_match_debug_info(RFindNodeState *state, RNode *root, RParserNode *parser_node, guint8 *remaining_key, gint extracted_match_len, RParserMatch *match_slot)
+{
+  if (state->dbg_list && match_slot)
+    _add_debug_info(state, root, parser_node, extracted_match_len, ((gint16) match_slot->ofs) + remaining_key - state->whole_key, ((gint16) match_slot->len) + extracted_match_len);
+}
+
+
+static void
+_truncate_debug_info(RFindNodeState *state, gint truncated_size)
+{
+  if (state->dbg_list)
+    g_array_set_size(state->dbg_list, truncated_size);
+}
+
+static gint
+_find_matching_literal_prefix(RNode *root, guint8 *key, gint keylen)
+{
+  gint current_node_key_length = root->keylen;
+  gint match_length;
+
+  if (current_node_key_length < 1)
+    match_length = 0;
+  else if (current_node_key_length == 1)
+    match_length = 1;
+  else
+    {
+      gint m = MIN(keylen, current_node_key_length);
+
+      /* this is a prefix match algorithm, we are interested how long the
+       * common part between key and root->key is.  Currently this uses a
+       * byte-by-byte comparison, using a 64/32/16 bit units would be
+       * better.  We had a PoC code to do that, and the performance
+       * difference wasn't big enough to offset the complexity so it was
+       * removed. We might want to rerun perf tests and see if we could
+       * speed things up, but db-parser() seems fast enough as it is.
+       */
+      match_length = 1;
+      while (match_length < m)
+        {
+          if (key[match_length] != root->key[match_length])
+            break;
+
+          match_length++;
+        }
+    }
+  return match_length;
+}
+
+static RNode *
+_find_child_by_remaining_key(RFindNodeState *state, RNode *root, guint8 *remaining_key, gint remaining_keylen)
+{
+  RNode *candidate = r_find_child_by_first_character(root, remaining_key[0]);
+
+  if (candidate)
+    {
+      return _find_node_recursively(state, candidate, remaining_key, remaining_keylen);
+    }
+  return NULL;
+}
+
+static gint
+_alloc_slot_in_matches(RFindNodeState *state)
+{
+  gint matches_base = 0;
+
+  if (state->stored_matches)
+    {
+      matches_base = state->stored_matches->len;
+
+      g_array_set_size(state->stored_matches, matches_base + 1);
+    }
+  return matches_base;
+}
+
+static RParserMatch *
+_get_match_slot(RFindNodeState *state, gint matches_base)
+{
+  if (state->stored_matches)
+    return &g_array_index(state->stored_matches, RParserMatch, matches_base);
+  return NULL;
+}
+
+static RParserMatch *
+_clear_match_slot(RFindNodeState *state, gint matches_base)
+{
+  RParserMatch *match = NULL;
+
+  if (state->stored_matches)
+    {
+      match = _get_match_slot(state, matches_base);
+      memset(match, 0, sizeof(*match));
+    }
+  return match;
+}
+
+
+static void
+_reset_matches_to_original_state(RFindNodeState *state, gint matches_base)
+{
+  if (state->stored_matches)
+    g_array_set_size(state->stored_matches, matches_base);
+}
+
+static gboolean
+_is_pnode_matching_initial_character(RParserNode *parser_node, guint8 *key)
+{
+  return (parser_node->first <= key[0]) && (key[0] <= parser_node->last);
+}
+
+static gboolean
+_pnode_try_parse(RParserNode *parser_node, guint8 *key, gint *extracted_match_len, RParserMatch *match)
+{
+  if (!_is_pnode_matching_initial_character(parser_node, key))
+    return FALSE;
+
+  if (!parser_node->parse(key, extracted_match_len, parser_node->param, parser_node->state, match))
+    return FALSE;
+
+  return TRUE;
+}
+
+static void
+_fixup_match_offsets(RFindNodeState *state, RParserNode *parser_node, gint extracted_match_len, guint8 *remaining_key, RParserMatch *match)
+{
+  if (!(match->match))
+    {
+      /* NOTE: we allow the parser to return relative
+       * offset & length to the field parsed, this way
+       * quote characters can still be returned as
+       * REF_MATCH and we only need to duplicate the
+       * result if the string is indeed modified
+       */
+      match->type = parser_node->type;
+      match->ofs = match->ofs + remaining_key - state->whole_key;
+      match->len = (gint16) match->len + extracted_match_len;
+      match->handle = parser_node->handle;
+    }
+}
+
+static void
+_clear_match_content(RParserMatch *match)
+{
+  if (match->match)
+    {
+      /* free the stored match, if this was a dead-end */
+      g_free(match->match);
+      match->match = NULL;
+    }
+}
+
+static RNode *
+_try_parse_with_a_given_child(RFindNodeState *state, RNode *root, gint parser_ndx, gint matches_slot_index, guint8 *remaining_key, gint remaining_keylen)
+{
+  RNode *child_node = root->pchildren[parser_ndx];
+  RParserNode *parser_node = child_node->parser;
+  RParserMatch *match_slot = NULL;
+  gint extracted_match_len;
+  RNode *ret = NULL;
+
+  match_slot = _clear_match_slot(state, matches_slot_index);
+
+  if (_pnode_try_parse(parser_node, remaining_key, &extracted_match_len, match_slot))
+    {
+
+      /* FIXME: we don't try to find the longest match in case
+       * the radix tree is split on a parser node. The correct
+       * approach would be to try all parsers and select the
+       * best match, however it is quite expensive and difficult
+       * to implement and we don't really expect this to be a
+       * realistic case. A log message is printed if such a
+       * collision occurs, so there's a slight chance we'll
+       * recognize if this happens in real life. */
+
+      ret = _find_node_recursively(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
+      _add_parser_match_debug_info(state, root, parser_node, remaining_key, extracted_match_len, match_slot);
+
+      /* we have to look up "match_slot" again as the GArray may have
+       * moved the data in case r_find_node() expanded it above */
+      match_slot = _get_match_slot(state, matches_slot_index);
+      if (match_slot)
+        {
+          if (ret)
+            _fixup_match_offsets(state, parser_node, extracted_match_len, remaining_key, match_slot);
+          else
+            _clear_match_content(match_slot);
+        }
+    }
+  return ret;
+
+}
+
+static RNode *
+_find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key, gint remaining_keylen)
+{
+  gint dbg_list_base = state->dbg_list ? state->dbg_list->len : 0;
+  gint matches_slot_index = 0;
+  gint parser_ndx;
+  RNode *ret = NULL;
+
+  matches_slot_index = _alloc_slot_in_matches(state);
+  for (parser_ndx = 0; !ret && parser_ndx < root->num_pchildren; parser_ndx++)
+    {
+      _truncate_debug_info(state, dbg_list_base);
+      ret = _try_parse_with_a_given_child(state, root, parser_ndx, matches_slot_index, remaining_key, remaining_keylen);
+    }
+  if (!ret && state->stored_matches)
+    {
+      /* the values in the stored_matches array has already been freed if we come here */
+      _reset_matches_to_original_state(state, matches_slot_index);
+    }
+  return ret;
+}
+
+static RNode *
+_find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
+{
+  gint literal_prefix_len;
+
+  literal_prefix_len = _find_matching_literal_prefix(root, key, keylen);
+  _add_literal_match_to_debug_info(state, root, literal_prefix_len);
+
+  msg_trace("Looking up node in the radix tree",
+            evt_tag_int("literal_prefix_len", literal_prefix_len),
+            evt_tag_int("root->keylen", root->keylen),
+            evt_tag_int("keylen", keylen),
+            evt_tag_str("root_key", root->key),
+            evt_tag_str("key", key),
+            NULL);
+
+  if (literal_prefix_len == keylen && (literal_prefix_len == root->keylen || root->keylen == -1))
+    {
+      if (root->value)
+        return root;
+    }
+  else if ((root->keylen < 1) || (literal_prefix_len < keylen && literal_prefix_len >= root->keylen))
+    {
+      RNode *ret;
+      guint8 *remaining_key = key + literal_prefix_len;
+      gint remaining_keylen = keylen - literal_prefix_len;
+
+      ret = _find_child_by_remaining_key(state, root, remaining_key, remaining_keylen);
+      /* we only search if there is no match */
+      if (!ret)
+        ret = _find_child_by_parser(state, root, remaining_key, remaining_keylen);
+
+      if (ret)
+        return ret;
+      else if (root->value)
+        return root;
+    }
+
+  return NULL;
+}
+
+
+RNode *
+r_find_node(RNode *root, guint8 *key, gint keylen, GArray *stored_matches)
+{
+  RFindNodeState state = {
+    .whole_key = key,
+    .stored_matches = stored_matches,
+  };
+
+  return _find_node_recursively(&state, root, key, keylen);
+}
+
+RNode *
+r_find_node_dbg(RNode *root, guint8 *key, gint keylen, GArray *stored_matches, GArray *dbg_list)
+{
+  RFindNodeState state = {
+    .whole_key = key,
+    .stored_matches = stored_matches,
+    .dbg_list = dbg_list,
+  };
+
+  return _find_node_recursively(&state, root, key, keylen);
+}
 
 /**
  * r_new_node:

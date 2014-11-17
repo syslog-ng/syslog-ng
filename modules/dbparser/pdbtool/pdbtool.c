@@ -862,7 +862,7 @@ pdbtool_dump(int argc, char *argv[])
     pdbtool_walk_tree(patterndb->ruleset->programs, 0, TRUE);
   else if (match_program)
     {
-      RNode *ruleset = r_find_node(patterndb->ruleset->programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
+      RNode *ruleset = r_find_node(patterndb->ruleset->programs, match_program, strlen(match_program), NULL);
       if (ruleset && ruleset->value)
         {
           RNode *root = ((PDBProgram *) ruleset->value)->rules;
@@ -963,7 +963,7 @@ pdbtool_dictionary(int argc, char *argv[])
 
   if (match_program)
     {
-      RNode *ruleset = r_find_node(rule_set.programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
+      RNode *ruleset = r_find_node(rule_set.programs, match_program, strlen(match_program), NULL);
       if (ruleset && ruleset->value)
         pdbtool_dictionary_walk(((PDBProgram *)ruleset->value)->rules, (gchar *)ruleset->key);
     }

@@ -51,7 +51,6 @@ BUILT_SOURCES						+=	\
 	modules/dbparser/dbparser-grammar.c			\
 	modules/dbparser/dbparser-grammar.h
 EXTRA_DIST						+=	\
-	modules/dbparser/radix-find.c				\
 	modules/dbparser/dbparser-grammar.ym
 
 modules/dbparser modules/dbparser/ mod-dbparser: modules/dbparser/libdbparser.la \
