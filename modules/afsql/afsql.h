@@ -109,9 +109,10 @@ typedef struct _AFSqlDestDriver
   /* used exclusively by the db thread */
   gint32 seq_num;
   dbi_conn dbi_ctx;
-  GHashTable *validated_tables;
+  GHashTable *syslogng_conform_tables;
   guint32 failed_message_counter;
   WorkerOptions worker_options;
+  gboolean transaction_active;
 } AFSqlDestDriver;
 
 
