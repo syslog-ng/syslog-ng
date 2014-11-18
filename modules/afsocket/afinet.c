@@ -814,8 +814,11 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 
       g_static_mutex_lock(&self->lnet_lock);
       if (!self->lnet_buffer)
-        self->lnet_buffer = g_string_sized_new(256);
+        self->lnet_buffer = g_string_sized_new(self->spoof_source_maxmsglen);
       log_writer_format_log((LogWriter *) self->super.writer, msg, self->lnet_buffer);
+
+      if (self->lnet_buffer->len > self->spoof_source_maxmsglen)
+        g_string_truncate(self->lnet_buffer, self->spoof_source_maxmsglen);
 
       switch (self->super.dest_addr->sa.sa_family)
         {
@@ -893,6 +896,7 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
 
 #if ENABLE_SPOOF_SOURCE
   g_static_mutex_init(&self->lnet_lock);
+  self->spoof_source_maxmsglen = 1024;
 #endif
   return &self->super.super.super;
 }

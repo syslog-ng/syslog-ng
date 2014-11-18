@@ -71,6 +71,7 @@ typedef struct _AFInetDestDriver
   libnet_t *lnet_ctx;
   GStaticMutex lnet_lock;
   GString *lnet_buffer;
+  gint spoof_source_maxmsglen;
 #endif
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
