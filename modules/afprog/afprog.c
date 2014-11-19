@@ -63,7 +63,11 @@ afprogram_popen(const gchar *cmdline, GIOCondition cond, pid_t *pid, gint *fd)
   if (*pid == 0)
     {
       /* child */
-      int devnull = open("/dev/null", O_WRONLY);
+      int devnull;
+
+      setpgid(0, 0);
+
+      devnull = open("/dev/null", O_WRONLY);
       
       if (devnull == -1)
         {
@@ -359,10 +363,18 @@ static gboolean
 afprogram_dd_deinit(LogPipe *s)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
+
   if (self->pid != -1)
     {
       child_manager_unregister(self->pid);
+      msg_verbose("Sending destination program a TERM signal",
+                  evt_tag_str("cmdline", self->cmdline->str),
+                  evt_tag_int("child_pid", self->pid),
+                  NULL);
+      killpg(getpgid(self->pid),SIGTERM);
+      self->pid = -1;
     }
+
   if (self->writer)
     {
       log_pipe_deinit(self->writer);
