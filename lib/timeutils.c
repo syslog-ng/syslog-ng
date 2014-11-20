@@ -935,4 +935,3 @@ time_zone_info_free(TimeZoneInfo *self)
   zone_info_free(self->zone64);
   g_free(self);
 }
-
