@@ -35,6 +35,7 @@
 #include "service-management.h"
 #include "persist-state.h"
 #include "run-id.h"
+#include "host-id.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -161,7 +162,7 @@ static GlobalConfig *main_loop_new_config;
 
 
 /* called when syslog-ng first starts up */
-static gboolean
+gboolean
 main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 {
   gboolean success;
@@ -171,6 +172,7 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
     return FALSE;
 
   run_id_init(cfg->state);
+  host_id_init(cfg->state);
   success = cfg_init(cfg);
 
   if (success)

@@ -147,7 +147,8 @@ pkginclude_HEADERS			+= \
 	lib/versioning.h		\
 	lib/bookmark.h			\
 	lib/ringbuffer.h		\
-	lib/ack_tracker.h
+	lib/ack_tracker.h		\
+	lib/host-id.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_la_SOURCES		= \
@@ -222,6 +223,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/tlscontext.c		\
 	lib/uuid.c			\
 	$(transport_crypto_sources)	\
+	lib/host-id.c			\
 					\
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\

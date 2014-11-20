@@ -29,6 +29,7 @@
 #include "messages.h"
 #include "str-format.h"
 #include "run-id.h"
+#include "host-id.h"
 #include "rcptid.h"
 #include "logmsg.h"
 #include "syslog-names.h"
@@ -163,6 +164,7 @@ LogMacroDef macros[] =
         { "_", M_CONTEXT_ID },
         { "RCPTID", M_RCPTID },
         { "RUNID", M_RUNID },
+        { "HOSTID", M_HOSTID },
 
         /* values that have specific behaviour with older syslog-ng config versions */
         { "MSG", M_MESSAGE },
@@ -383,6 +385,12 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
     case M_RUNID:
       {
         run_id_append_formatted_id(result);
+        break;
+      }
+
+    case M_HOSTID:
+      {
+        host_id_append_formatted_id(result, msg->host_id);
         break;
       }
 

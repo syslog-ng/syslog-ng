@@ -35,6 +35,7 @@
 #include "compat/string.h"
 #include "rcptid.h"
 #include "template/macros.h"
+#include "lib/host-id.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -171,6 +172,12 @@ static inline void
 log_msg_unset_flag(LogMessage *self, gint32 flag)
 {
   self->flags &= ~flag;
+}
+
+static inline void
+log_msg_set_host_id(LogMessage *msg)
+{
+  msg->host_id = host_id_get();
 }
 
 /* the index matches the value id */
@@ -995,6 +1002,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->flags |= LF_STATE_OWN_MASK;
 
   self->rcptid = rcptid_generate_id();
+  log_msg_set_host_id(self);
 }
 
 void
