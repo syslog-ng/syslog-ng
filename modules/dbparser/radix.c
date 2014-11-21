@@ -1062,9 +1062,12 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
 
 typedef struct _RFindNodeState
 {
+  gboolean require_complete_match;
+  gboolean partial_match_found;
   guint8 *whole_key;
   GArray *stored_matches;
   GArray *dbg_list;
+  GPtrArray *applicable_nodes;
 } RFindNodeState;
 
 static RNode *_find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint keylen);
@@ -1324,29 +1327,60 @@ _find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint key
 
   if (literal_prefix_len == keylen && (literal_prefix_len == root->keylen || root->keylen == -1))
     {
+      /* key completely consumed by the literal */
+
+      if (state->applicable_nodes)
+        {
+          /* collect all matching nodes */
+          g_ptr_array_add(state->applicable_nodes, root);
+          return NULL;
+        }
+
       if (root->value)
         return root;
     }
   else if ((root->keylen < 1) || (literal_prefix_len < keylen && literal_prefix_len >= root->keylen))
     {
+      /* we matched the key partially, go on with child nodes */
       RNode *ret;
       guint8 *remaining_key = key + literal_prefix_len;
       gint remaining_keylen = keylen - literal_prefix_len;
 
+      /* prefer a literal match over parsers */
       ret = _find_child_by_remaining_key(state, root, remaining_key, remaining_keylen);
-      /* we only search if there is no match */
+
+      /* then try parsers in order */
       if (!ret)
         ret = _find_child_by_parser(state, root, remaining_key, remaining_keylen);
 
-      if (ret)
-        return ret;
-      else if (root->value)
-        return root;
+      if (!ret && root->value)
+        {
+          if (!state->require_complete_match)
+            return root;
+          state->partial_match_found = TRUE;
+        }
+
+      return ret;
     }
 
   return NULL;
 }
 
+static RNode *
+_find_node_with_state(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
+{
+  RNode *ret;
+
+  state->require_complete_match = TRUE;
+  state->partial_match_found = FALSE;
+  ret = _find_node_recursively(state, root, key, keylen);
+  if (!ret && state->partial_match_found)
+    {
+      state->require_complete_match = FALSE;
+      ret = _find_node_recursively(state, root, key, keylen);
+    }
+  return ret;
+}
 
 RNode *
 r_find_node(RNode *root, guint8 *key, gint keylen, GArray *stored_matches)
@@ -1356,7 +1390,7 @@ r_find_node(RNode *root, guint8 *key, gint keylen, GArray *stored_matches)
     .stored_matches = stored_matches,
   };
 
-  return _find_node_recursively(&state, root, key, keylen);
+  return _find_node_with_state(&state, root, key, keylen);
 }
 
 RNode *
@@ -1368,7 +1402,30 @@ r_find_node_dbg(RNode *root, guint8 *key, gint keylen, GArray *stored_matches, G
     .dbg_list = dbg_list,
   };
 
-  return _find_node_recursively(&state, root, key, keylen);
+  return _find_node_with_state(&state, root, key, keylen);
+}
+
+gchar **
+r_find_all_applicable_nodes(RNode *root, guint8 *key, gint keylen, RNodeGetValueFunc value_func)
+{
+  RFindNodeState state = {
+    .whole_key = key,
+  };
+  gint i;
+  GPtrArray *result;
+
+  state.applicable_nodes = g_ptr_array_new();
+  state.require_complete_match = TRUE;
+  _find_node_recursively(&state, root, key, keylen);
+
+  result = g_ptr_array_new();
+  for (i = 0; i < state.applicable_nodes->len; i++)
+    {
+      RNode *node = (RNode *) g_ptr_array_index(state.applicable_nodes, i);
+      g_ptr_array_add(result, g_strdup(value_func(node->value)));
+    }
+  g_ptr_array_add(result, NULL);
+  return (gchar **) g_ptr_array_free(result, FALSE);
 }
 
 /**
