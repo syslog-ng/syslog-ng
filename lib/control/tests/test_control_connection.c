@@ -117,9 +117,10 @@ test_command(GString *command)
   return g_string_new("OK");
 }
 
-Commands commands[] = {
-  { "test", NULL, test_command },
-  { NULL, NULL, NULL },
+Commands command = {
+   .command = "test",
+   .description = NULL,
+   .func = test_command
 };
 
 void
@@ -171,6 +172,7 @@ test_control_connection(gsize transaction_size)
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
+  GList *commands = g_list_append(NULL, &command);
   moc_server.commands = commands;
   gsize  i = 0;
   
@@ -180,5 +182,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
       test_control_connection(i);
     }
   app_shutdown();
+  g_list_free(commands);
   return 0;
 }
