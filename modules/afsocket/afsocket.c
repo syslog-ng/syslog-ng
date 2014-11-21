@@ -624,6 +624,8 @@ gboolean
 afsocket_sd_init(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
+
   gint sock;
   gboolean res = FALSE;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -724,6 +726,9 @@ afsocket_sd_init(LogPipe *s)
     }
   else
     {
+      if (options->opts.prefix_pattern)
+        msg_warning("UDP protocol and multi-line-prefix option together are not supported",evt_tag_str("source", self->super.super.group) , NULL);
+
       if (!self->connections)
         {
           if (!afsocket_sd_acquire_socket(self, &sock))
