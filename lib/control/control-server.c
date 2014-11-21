@@ -31,6 +31,13 @@
 #endif
 
 void
+control_server_init_instance(ControlServer *self, const gchar *path, GList *commands)
+{
+  self->control_socket_name = g_strdup(path);
+  self->commands = commands;
+}
+
+void
 control_connection_free(ControlConnection *self)
 {
   if (self->free_fn)
@@ -92,9 +99,9 @@ control_connection_io_input(void *s)
   GString *command = NULL;
   GString *reply = NULL;
   gchar *nl;
-  gint cmd;
   gint rc;
   gint orig_len;
+  GList *iter;
 
   if (self->input_buffer->len > MAX_CONTROL_LINE_LENGTH)
     {
@@ -153,16 +160,17 @@ control_connection_io_input(void *s)
       control_connection_update_watches(self);
       return;
     }
-  for (cmd = 0; self->server->commands[cmd].func; cmd++)
+
+  for (iter = self->server->commands; iter != NULL; iter = iter->next)
     {
-      if (strncmp(self->server->commands[cmd].command, command->str, strlen(self->server->commands[cmd].command)) == 0)
+      if (strncmp(((Commands*)iter->data)->command, command->str, strlen(((Commands*)iter->data)->command)) == 0)
         {
-          reply = self->server->commands[cmd].func(command);
+          reply = ((Commands*)iter->data)->func(command);
           control_connection_send_reply(self, reply);
           break;
         }
     }
-  if (!self->server->commands[cmd].func)
+  if (iter == NULL)
     {
       msg_error("Unknown command read on control channel, closing control channel",
                 evt_tag_str("command", command->str), NULL);
@@ -186,13 +194,6 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   self->handle_input = control_connection_io_input;
   self->handle_output = control_connection_io_output;
   return;
-}
-
-void
-control_server_init_instance(ControlServer *self, const gchar *path, Commands *commands)
-{
-  self->control_socket_name = g_strdup(path);
-  self->commands = commands;
 }
 
 void

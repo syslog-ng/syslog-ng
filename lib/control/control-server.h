@@ -54,14 +54,16 @@ struct _ControlConnection
 struct _ControlServer
 {
   gchar *control_socket_name;
-  Commands *commands;
+  GList *commands;
   void (*free_fn)(ControlServer *self);
 };
 
-ControlServer *control_server_new(const gchar *path, Commands *commands);
+
+ControlServer *control_server_new(const gchar *path, GList *commands);
+
 void control_server_start(ControlServer *self);
 void control_server_free(ControlServer *self);
-void control_server_init_instance(ControlServer *self, const gchar *path, Commands *commands);
+void control_server_init_instance(ControlServer *self, const gchar *path, GList *commands);
 
 
 void control_connection_start_watches(ControlConnection *self);
