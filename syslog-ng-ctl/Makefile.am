@@ -10,5 +10,5 @@ syslog_ng_ctl_syslog_ng_ctl_SOURCES		= 	\
 EXTRA_DIST					+=	\
 	syslog-ng-ctl/control-client-unix.c
 
-syslog_ng_ctl_syslog_ng_ctl_LDADD		= lib/libsyslog-ng.la lib/libsyslog-ng-crypto.la @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@
+syslog_ng_ctl_syslog_ng_ctl_LDADD		= lib/libsyslog-ng.la $(CRYPTO_LIBS) @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@
 
