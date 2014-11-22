@@ -27,8 +27,7 @@ create_rewrite_rule(const char *raw_rewrite_rule)
   assert_true(cfg_init(configuration), ASSERTION_ERROR("Config initialization failed"));
 
   LogExprNode *expr_node = cfg_tree_get_object(&configuration->tree, ENC_REWRITE, "s_test");
-  LogPipe* pipe = (LogPipe*)expr_node->children->object;
-  return pipe;
+  return (LogRewrite *)expr_node->children->object;
 }
 
 LogMessage *
