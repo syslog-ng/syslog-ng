@@ -10,7 +10,7 @@ expect_config_parse_failure(const char *raw_rewrite_rule)
 {
   char raw_config[1024];
 
-  configuration = cfg_new(0x306);
+  configuration = cfg_new(VERSION_VALUE);
   snprintf(raw_config, sizeof(raw_config), "rewrite s_test{ %s };", raw_rewrite_rule);
   assert_false(parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL), ASSERTION_ERROR("Parsing the given configuration failed"));
   cfg_free(configuration);
@@ -21,7 +21,7 @@ create_rewrite_rule(const char *raw_rewrite_rule)
 {
   char raw_config[1024];
 
-  configuration = cfg_new(0x306);
+  configuration = cfg_new(VERSION_VALUE);
   snprintf(raw_config, sizeof(raw_config), "rewrite s_test{ %s }; log{ rewrite(s_test); };", raw_rewrite_rule);
   assert_true(parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL), ASSERTION_ERROR("Parsing the given configuration failed"));
   assert_true(cfg_init(configuration), ASSERTION_ERROR("Config initialization failed"));
