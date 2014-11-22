@@ -456,8 +456,8 @@ source_systemd_syslog_options
   ;
 
 
-source_systemd_syslog_option:
-  | source_reader_option
+source_systemd_syslog_option
+  : source_reader_option
   | socket_option
   ;
 
