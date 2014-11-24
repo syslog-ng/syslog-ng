@@ -99,12 +99,12 @@ _find_regexp(MultiLineRegexp *re, const guchar *str, gsize len, gint *matches, g
   if (!re)
     return -1;
 
-  rc = pcre_exec(re->pattern, re->extra, str, len, 0, 0, matches, matches_num * 3);
+  rc = pcre_exec(re->pattern, re->extra, (const gchar *) str, len, 0, 0, matches, matches_num * 3);
   return rc;
 }
 
 static gboolean
-_regexp_matches(MultiLineRegexp *re, const gchar *str, gsize len)
+_regexp_matches(MultiLineRegexp *re, const guchar *str, gsize len)
 {
   gint match[3];
   if (_find_regexp(re, str, len, match, 1) < 0)
@@ -154,7 +154,7 @@ _accumulate_continuation_line(LogProtoREMultiLineServer *self,
   gint offset_of_garbage = self->get_offset_of_garbage(self, line, line_len);
   if (offset_of_garbage >= 0)
     return LPT_CONSUME_PARTIALLY(line_len - offset_of_garbage) | LPT_EXTRACTED;
-  else if (_regexp_matches(self->prefix, (const gchar *) line, line_len))
+  else if (_regexp_matches(self->prefix, line, line_len))
     return LPT_REWIND_LINE | LPT_EXTRACTED;
   else
     return LPT_CONSUME_LINE | LPT_WAITING;
