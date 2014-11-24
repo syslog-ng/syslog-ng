@@ -61,9 +61,6 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   len = strlen(name);
   if (len == 0)
     {
-      msg_error("Name-value pairs cannot have a zero-length name",
-                evt_tag_str("value", name),
-                NULL);
       goto exit;
     }
   else if (len > 255)
