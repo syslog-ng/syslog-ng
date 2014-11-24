@@ -108,6 +108,21 @@ slng_stats(int argc, char *argv[], const gchar *mode)
 }
 
 static gint
+slng_license(int argc, char *argv[], const gchar *mode)
+{
+  GString *rsp = NULL;
+
+  if (!(slng_send_cmd("LICENSE\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+    return 1;
+
+  printf("%s\n", rsp->str);
+
+  g_string_free(rsp, TRUE);
+
+  return 0;
+}
+
+static gint
 slng_stop(int argc, char *argv[], const gchar *mode)
 {
   GString *rsp = NULL;
@@ -182,6 +197,7 @@ static struct
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
   { "stop", no_options, "Stop syslog-ng process", slng_stop },
   { "reload", no_options, "Reload syslog-ng", slng_reload },
+  { "show-license-info", no_options, "Reload syslog-ng", slng_license },
   { NULL, NULL },
 };
 
