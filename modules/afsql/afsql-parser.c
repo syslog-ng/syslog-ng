@@ -42,6 +42,7 @@ static CfgLexerKeyword afsql_keywords[] = {
   { "log_fifo_size",      KW_LOG_FIFO_SIZE },
   { "frac_digits",        KW_FRAC_DIGITS },
   { "session_statements", KW_SESSION_STATEMENTS, 0x0302 },
+  { "utf8_fallback",      KW_UTF8_FALLBACK },
   { "host",               KW_HOST },
   { "port",               KW_PORT },
   { "type",               KW_TYPE },

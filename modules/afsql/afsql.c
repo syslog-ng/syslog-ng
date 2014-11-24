@@ -83,6 +83,7 @@ typedef struct _AFSqlDestDriver
   gchar *password;
   gchar *database;
   gchar *encoding;
+  gchar *utf8_fallback;
   GList *columns;
   GList *values;
   GList *indexes;
@@ -299,6 +300,15 @@ afsql_dd_set_session_statements(LogDriver *s, GList *session_statements)
 
   self->session_statements = session_statements;
 }
+
+void
+afsql_dd_set_utf8_fallback(LogDriver *s, gchar *from_encoding)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  self->utf8_fallback = from_encoding;
+}
+
 
 void
 afsql_dd_set_flags(LogDriver *s, gint flags)
@@ -619,6 +629,71 @@ afsql_dd_disconnect(AFSqlDestDriver *self)
   g_hash_table_remove_all(self->validated_tables);
 }
 
+static gchar *
+afsql_dd_utf8_fallback(AFSqlDestDriver *self, const gchar *str)
+{
+  gchar *result = NULL;
+  gchar *converted_value = NULL;
+  gsize bytes_read;
+  gsize bytes_written;
+
+  /* Try to convert from the fallback encoding to utf8 */
+  converted_value = g_convert(str, -1, "UTF-8", self->utf8_fallback,
+      &bytes_read, &bytes_written, NULL);
+  if (!converted_value)
+    {
+      /* We're SooL, someone better tell the user. */
+      result = NULL;
+    }
+  else
+    {
+    /* Successfully converted the message, all is well */
+      result = converted_value;
+    }
+  return result;
+}
+/**
+ * afsql_dd_log_utf8_encoding_error:
+ *
+ * This function logs a message that was not valid, in its template formatted
+ * form. Each field is logged as a separate tag to provide more identifying
+ * information on where the message originated from. This, in order to allow
+ * the administrator reconfigure the correct source (remotely or locally) to
+ * use a supported encoding. This function does _not_ reencode malencoded
+ * fields, since it's only called as a last resort, when reencoding has failed.
+ */
+static void
+afsql_dd_log_utf8_encoding_error(AFSqlDestDriver *self, LogMessage *msg)
+{
+  EVTTAG *logtags[self->fields_len + 1];
+  logtags[self->fields_len] = NULL;
+  int i;
+  GString *value = g_string_sized_new(256);
+  for (i = 0; i < self->fields_len; i++)
+    {
+      if (self->fields[i].value != NULL)
+        {
+          log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, NULL, value);
+          const gchar *end_valid;
+          if (g_utf8_validate(value->str, -1, &end_valid))
+            {
+              logtags[i] = evt_tag_str(self->fields[i].name, value->str);
+            }
+          else
+            {
+              logtags[i] = evt_tag_str(self->fields[i].name, "<invalid encoding>");
+            }
+        }
+      else
+        {
+          logtags[i] = evt_tag_str(self->fields[i].name, "(NULL)");
+        }
+    }
+
+  msg_error_from_array("Invalid message encoding encountered.", logtags, self->fields_len + 1);
+  g_string_free(value, TRUE);
+}
+
 /**
  * afsql_dd_insert_db:
  *
@@ -771,7 +846,24 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
             }
           else
             {
-              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+              const gchar *end_valid;
+              if (self->utf8_fallback != NULL && !g_utf8_validate(value->str, -1, &end_valid))
+                {
+                  gchar *result;
+                  result = afsql_dd_utf8_fallback(self, value->str);
+                  if (!result)
+                    {
+                      afsql_dd_log_utf8_encoding_error(self, msg);
+                      goto error;
+                    }
+                  dbi_conn_quote_string_copy(self->dbi_ctx, result, &quoted);
+                  g_free(result);
+                }
+              else
+                {
+                  dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+                }
+
               if (quoted)
                 {
                   g_string_append(query_string, quoted);

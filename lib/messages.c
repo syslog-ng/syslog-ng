@@ -146,6 +146,21 @@ msg_send_internal_message(int prio, const char *msg)
 
 
 EVTREC *
+msg_event_create_from_array(gint prio, const gchar *desc, EVTTAG **tags, int ntags)
+{
+  EVTREC *e;
+  g_static_mutex_lock(&evtlog_lock);
+  e = evt_rec_init(evt_context, prio, desc);
+  int i;
+  for (i = 0; i < ntags; ++i) {
+	  if (tags[i])
+		  evt_rec_add_tag(e, tags[i]);
+  }
+  g_static_mutex_unlock(&evtlog_lock);
+  return e;
+}
+
+EVTREC *
 msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
 {
   EVTREC *e;
