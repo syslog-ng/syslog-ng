@@ -107,12 +107,26 @@ slng_stats(int argc, char *argv[], const gchar *mode)
   return 0;
 }
 
+static gboolean license_json = FALSE;
+
+static GOptionEntry license_options[] =
+{
+  { "json", 'J', 0, G_OPTION_ARG_NONE, &license_json, "enable json output", NULL },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
 static gint
 slng_license(int argc, char *argv[], const gchar *mode)
 {
   GString *rsp = NULL;
+  gchar buff[256];
 
-  if (!(slng_send_cmd("LICENSE\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  if (license_json)
+    snprintf(buff, 255, "LICENSE JSON\n");
+  else
+    snprintf(buff, 255, "LICENSE\n");
+
+  if (!(slng_send_cmd(buff) && ((rsp = control_client_read_reply(control_client)) != NULL)))
     return 1;
 
   printf("%s\n", rsp->str);
@@ -197,7 +211,7 @@ static struct
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
   { "stop", no_options, "Stop syslog-ng process", slng_stop },
   { "reload", no_options, "Reload syslog-ng", slng_reload },
-  { "show-license-info", no_options, "Reload syslog-ng", slng_license },
+  { "show-license-info", license_options, "Reload syslog-ng", slng_license },
   { NULL, NULL },
 };
 
