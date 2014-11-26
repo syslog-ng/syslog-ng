@@ -38,7 +38,7 @@ typedef struct _TransportMapperUnix
 static LogTransport *
 transport_mapper_unix_construct_log_transport(TransportMapper *s, gint fd)
 {
-  return log_transport_unix_socket_new(fd);
+    return log_transport_unix_dgram_socket_new(fd);
 }
 
 static TransportMapperUnix *
