@@ -202,9 +202,8 @@ _feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
 }
 
 static gssize
-log_transport_unix_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+_unix_socket_read(gint fd, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
-  LogTransportSocket *self = (LogTransportSocket *) s;
   gint rc;
   struct msghdr msg;
   struct iovec iov[1];
@@ -221,7 +220,7 @@ log_transport_unix_socket_read_method(LogTransport *s, gpointer buf, gsize bufle
   msg.msg_controllen = sizeof(ctlbuf);
   do
     {
-      rc = recvmsg(self->super.fd, &msg, 0);
+      rc = recvmsg(fd, &msg, 0);
     }
   while (rc == -1 && errno == EINTR);
 
@@ -233,6 +232,15 @@ log_transport_unix_socket_read_method(LogTransport *s, gpointer buf, gsize bufle
       _feed_aux_from_cmsg(aux, &msg);
     }
 
+  return rc;
+}
+
+static gssize
+log_transport_unix_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+{
+  gint rc;
+
+  rc = _unix_socket_read(s->fd, buf, buflen, aux);
   if (rc == 0)
     {
       /* DGRAM sockets should never return EOF, they just need to be read again */
@@ -243,12 +251,12 @@ log_transport_unix_socket_read_method(LogTransport *s, gpointer buf, gsize bufle
 }
 
 LogTransport *
-log_transport_unix_socket_new(gint fd)
+log_transport_unix_dgram_socket_new(gint fd)
 {
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
 
   log_transport_dgram_socket_init_instance(self, fd);
-  self->super.read = log_transport_unix_socket_read_method;
+  self->super.read = log_transport_unix_dgram_socket_read_method;
 
   socket_set_pass_credentials(fd);
 
