@@ -260,3 +260,22 @@ log_transport_unix_dgram_socket_new(gint fd)
 
   return &self->super;
 }
+
+static gssize
+log_transport_unix_stream_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+{
+  return _unix_socket_read(s->fd, buf, buflen, aux);
+}
+
+LogTransport *
+log_transport_unix_stream_socket_new(gint fd)
+{
+  LogTransportSocket *self = g_new0(LogTransportSocket, 1);
+
+  log_transport_stream_socket_init_instance(self, fd);
+  self->super.read = log_transport_unix_stream_socket_read_method;
+
+  socket_set_pass_credentials(fd);
+
+  return &self->super;
+}
