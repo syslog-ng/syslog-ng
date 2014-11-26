@@ -26,6 +26,7 @@
 #include "transport/logtransport.h"
 
 LogTransport *log_transport_unix_dgram_socket_new(gint fd);
+LogTransport *log_transport_unix_stream_socket_new(gint fd);
 
 
 #endif
