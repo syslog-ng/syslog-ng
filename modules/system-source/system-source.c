@@ -174,6 +174,16 @@ system_sysblock_add_systemd_source(GString *sysblock)
 }
 
 static void
+system_sysblock_add_systemd_journal_forward_drop(GString *sysblock)
+{
+  g_string_append(sysblock,
+                  "channel {\n"
+                  "    source { systemd-syslog(); };\n"
+                  "    destination { }; \n"
+                  "};\n");
+}
+
+static void
 system_sysblock_add_linux_kmsg(GString *sysblock)
 {
   gchar *kmsg = "/proc/kmsg";
@@ -232,7 +242,16 @@ static void
 system_sysblock_add_linux(GString *sysblock)
 {
   if (service_management_get_type() == SMT_SYSTEMD)
-    system_sysblock_add_systemd_source(sysblock);
+    {
+      system_sysblock_add_systemd_source(sysblock);
+      if (service_management_is_forwarding_active())
+        {
+          msg_warning("Running under systemd, but syslog forwarding is "
+                      "enabled. Consider disabling it to use the "
+                      "Journal source.", NULL);
+          system_sysblock_add_systemd_journal_forward_drop(sysblock);
+        }
+    }
   else
     {
       system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
