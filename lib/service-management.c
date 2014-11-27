@@ -42,6 +42,7 @@ struct _ServiceManagement
   void (*clear_status)();
   void (*indicate_readiness)();
   gboolean (*is_active)();
+  gboolean (*is_forwarding_active)();
 };
 
 ServiceManagement *current_service_mgmt = NULL;
@@ -88,6 +89,22 @@ service_management_systemd_is_active()
   }
 }
 
+static gboolean
+service_management_systemd_is_forwarding_active()
+{
+  struct stat st;
+
+  if (lstat("/run/systemd/journal/syslog", &st) < 0 || !S_ISSOCK(st.st_mode))
+    {
+      msg_debug("systemd Journal forwarding is not enabled", NULL);
+      return FALSE;
+    }
+  else
+    {
+      msg_debug("systemd Journal forwarding is enabled", NULL);
+      return TRUE;
+    }
+}
 #endif
 
 void
@@ -114,6 +131,12 @@ service_management_get_type(void)
   return current_service_mgmt->type;
 }
 
+gboolean
+service_management_is_forwarding_active(void)
+{
+  return current_service_mgmt->is_forwarding_active();
+}
+
 static inline void
 service_management_dummy_publish_status(const gchar *status)
 {
@@ -135,6 +158,13 @@ service_management_dummy_is_active()
   return TRUE;
 }
 
+static gboolean
+service_management_dummy_is_forwarding_active()
+{
+  return FALSE;
+}
+
+
 ServiceManagement service_managements[] = {
 #if ENABLE_SYSTEMD
   {
@@ -142,7 +172,8 @@ ServiceManagement service_managements[] = {
     .publish_status = service_management_systemd_publish_status,
     .clear_status = service_management_systemd_clear_status,
     .indicate_readiness = service_management_systemd_indicate_readiness,
-    .is_active = service_management_systemd_is_active
+    .is_active = service_management_systemd_is_active,
+    .is_forwarding_active = service_management_systemd_is_forwarding_active
   },
 #endif
   /* This type is always active, so it must be the last item */
@@ -151,7 +182,8 @@ ServiceManagement service_managements[] = {
     .publish_status = service_management_dummy_publish_status,
     .clear_status = service_management_dummy_clear_status,
     .indicate_readiness = service_management_dummy_indicate_readiness,
-    .is_active = service_management_dummy_is_active
+    .is_active = service_management_dummy_is_active,
+    .is_forwarding_active = service_management_dummy_is_forwarding_active
   }
 };
 

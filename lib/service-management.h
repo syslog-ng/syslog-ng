@@ -37,5 +37,6 @@ void service_management_clear_status(void);
 void service_management_indicate_readiness(void);
 ServiceManagementType service_management_get_type(void);
 void service_management_init(void);
+gboolean service_management_is_forwarding_active(void);
 
 #endif
