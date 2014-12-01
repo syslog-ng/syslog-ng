@@ -32,6 +32,7 @@ LMC_MIN_VERSION="0.1.8"
 LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.0.0"
 JOURNALD_MIN_VERSION="195"
+LIBSYSTEMD_MIN_VERSION="209"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -1128,9 +1129,17 @@ if test "x$enable_systemd" = "xauto"; then
 
 fi
 
+if test "x$enable_systemd" != "xyes"; then
+  if test "x$with_systemd_journal" = "xauto"; then
+    with_systemd_journal=no
+  fi
+fi
+
 if test "x$enable_systemd" = "xyes"; then
-	PKG_CHECK_MODULES(libsystemd_daemon, libsystemd-daemon >= 31,enable_systemd="yes",enable_systemd="no")
-	if test "x$with_systemdsystemunitdir" = "xyes"; then
+        PKG_CHECK_MODULES(libsystemd, libsystemd >= ${LIBSYSTEMD_MIN_VERSION},
+                          have_libsystemd="yes", have_libsystemd="no")
+
+        if test "x$with_systemdsystemunitdir" = "xyes"; then
 		# no arguments, just --with-systemdsystemunitdir
 		systemdsystemunitdir=`$PKG_CONFIG --variable=systemdsystemunitdir systemd`
 		if test "$systemdsystemunitdir" = ""; then
@@ -1142,22 +1151,25 @@ if test "x$enable_systemd" = "xyes"; then
 	else
 		systemdsystemunitdir="$with_systemdsystemunitdir"
 	fi
-fi
 
-dnl ***************************************************************************
-dnl libsystemd-journal headers/libraries
-dnl ***************************************************************************
-
-if test "x$enable_systemd" != "xyes"; then
-  if test "x$with_systemd_journal" = "xauto"; then
-    with_systemd_journal=no
-  fi
-fi
-
-if test "x$with_systemd_journal" = "xauto"; then
-  PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION, with_systemd_journal=system, with_systemd_journal=optional)
-elif test "x$with_systemd_journal" = "xsystem"; then
-  PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION,, AC_MSG_ERROR[Detecting system releted systemd-journal library failed])
+        if test "x$have_libsystemd" = "xno"; then
+	    PKG_CHECK_MODULES(libsystemd_daemon, libsystemd-daemon >= 31,enable_systemd="yes",enable_systemd="no")
+            if test "x$with_systemd_journal" = "xauto"; then
+                PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION,
+                                  with_systemd_journal=system, with_systemd_journal=optional)
+            elif test "x$with_systemd_journal" = "xsystem"; then
+                PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION,,
+                AC_MSG_ERROR[Detecting system releted systemd-journal library failed])
+            fi
+            libsystemd_CFLAGS="${LIBSYSTEMD_JOURNAL_CFLAGS} ${libsystemd_daemon_CFLAGS}"
+            libsystemd_LDFLAGS="${LIBSYSTEMD_JOURNAL_LIBS} ${libsystemd_daemon_LIBS}"
+            AC_SUBST(libsystemd_CFLAGS)
+            AC_SUBST(libsystemd_LIBS)
+        else
+            if test "x$with_systemd_journal" = "xauto"; then
+                with_systemd_journal="system"
+            fi
+        fi
 fi
 
 PKG_CHECK_MODULES(UUID, uuid, enable_libuuid="yes", enable_libuuid="no")

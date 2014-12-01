@@ -31,7 +31,7 @@ LSNG_REVISION		= 0
 LSNG_AGE		= 0
 
 lib_LTLIBRARIES				+= lib/libsyslog-ng.la
-lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
+lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_LIBS)
 lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release ${LSNG_RELEASE} \
 					  -version-info ${LSNG_CURRENT}:${LSNG_REVISION}:${LSNG_AGE}
 
@@ -239,12 +239,12 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(compat_sources)
 
 if WITH_EMBEDDED_CRYPTO
-lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_daemon_CFLAGS)
+lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
 lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@
 lib_libsyslog_ng_la_SOURCES		+= ${lib_libsyslog_ng_crypto_la_sources}
 else
 module_LTLIBRARIES			+= lib/libsyslog-ng-crypto.la
-lib_libsyslog_ng_crypto_la_CFLAGS	= @UUID_CFLAGS@ $(libsystemd_daemon_CFLAGS)
+lib_libsyslog_ng_crypto_la_CFLAGS	= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
 lib_libsyslog_ng_crypto_la_LIBADD	= @MODULE_DEPS_LIBS@ @OPENSSL_LIBS@ @UUID_LIBS@
 lib_libsyslog_ng_crypto_la_LDFLAGS	= -no-undefined -avoid-version
 lib_libsyslog_ng_crypto_la_DEPENDENCIES	= lib/libsyslog-ng.la
