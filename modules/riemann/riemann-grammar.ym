@@ -126,6 +126,10 @@ riemann_option
           {
             riemann_dd_set_field_attributes(last_driver, last_value_pairs);
           }
+        | KW_FLUSH_LINES '(' LL_NUMBER ')'
+          {
+            riemann_dd_set_flush_lines(last_driver,  $3);
+          }
         | dest_driver_option
         | threaded_dest_driver_option
         | { last_template_options = riemann_dd_get_template_options(last_driver); } template_option

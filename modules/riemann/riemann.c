@@ -54,6 +54,14 @@ typedef struct
   LogTemplateOptions template_options;
 
   riemann_client_t *client;
+
+  struct
+  {
+    riemann_event_t **list;
+    gint n;
+    gint batch_size_max;
+    GStaticMutex lock;
+  } event;
 } RiemannDestDriver;
 
 /*
@@ -141,6 +149,14 @@ riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp)
   if (self->fields.attributes)
     value_pairs_unref(self->fields.attributes);
   self->fields.attributes = vp;
+}
+
+void
+riemann_dd_set_flush_lines(LogDriver *d, gint lines)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->event.batch_size_max = lines;
 }
 
 gboolean
@@ -261,6 +277,11 @@ riemann_worker_init(LogPipe *s)
     }
 
   _value_pairs_always_exclude_properties(self);
+
+  if (self->event.batch_size_max <= 0)
+    self->event.batch_size_max = 1;
+  self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
+                                                 self->event.batch_size_max);
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("driver", self->super.super.super.id),
@@ -389,16 +410,23 @@ riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMes
   return FALSE;
 }
 
-static worker_insert_result_t
-riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
+static void
+_append_event(RiemannDestDriver *self, riemann_event_t *event)
 {
-  RiemannDestDriver *self = (RiemannDestDriver *)s;
+  g_static_mutex_lock(&self->event.lock);
+
+  self->event.list[self->event.n] = event;
+  self->event.n++;
+
+  g_static_mutex_unlock(&self->event.lock);
+}
+
+static worker_insert_result_t
+riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
+{
   riemann_event_t *event;
   gboolean success = TRUE, need_drop = FALSE;
   SBGString *str;
-
-  if (!riemann_dd_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_ERROR;
 
   event = riemann_event_new();
 
@@ -446,10 +474,7 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
                             msg, self->super.seq_num, LTZ_SEND,
                             &self->template_options, event);
 
-      if (riemann_client_send_message_oneshot
-          (self->client,
-           riemann_message_create_with_events(event, NULL)) != 0)
-        success = FALSE;
+      _append_event(self, event);
     }
 
   sb_gstring_release(str);
@@ -461,6 +486,63 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
     return WORKER_INSERT_RESULT_SUCCESS;
   else
     return WORKER_INSERT_RESULT_ERROR;
+}
+
+static worker_insert_result_t
+riemann_worker_batch_flush(RiemannDestDriver *self)
+{
+  riemann_message_t *message;
+  int r;
+
+  if (!riemann_dd_connect(self, TRUE))
+    return WORKER_INSERT_RESULT_ERROR;
+
+  message = riemann_message_new();
+
+  g_static_mutex_lock(&self->event.lock);
+
+  riemann_message_set_events_n(message, self->event.n, self->event.list);
+  r = riemann_client_send_message_oneshot(self->client, message);
+
+  /*
+   * riemann_client_send_message_oneshot() will free self->event.list,
+   * whether the send succeeds or fails. So we need to reallocate it,
+   * and save as many messages as possible.
+   */
+  self->event.n = 0;
+  self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
+                                                 self->event.batch_size_max);
+  g_static_mutex_unlock(&self->event.lock);
+
+  if (r != 0)
+    return WORKER_INSERT_RESULT_DROP;
+  else
+    return WORKER_INSERT_RESULT_SUCCESS;
+}
+
+static worker_insert_result_t
+riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
+  worker_insert_result_t result;
+
+  result = riemann_worker_insert_one(self, msg);
+
+  if (self->event.n < self->event.batch_size_max)
+    return result;
+
+  if (result != WORKER_INSERT_RESULT_SUCCESS)
+    return result;
+
+  return riemann_worker_batch_flush(self);
+}
+
+static void
+riemann_worker_thread_deinit(LogThrDestDriver *s)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
+
+  riemann_worker_batch_flush(self);
 }
 
 /*
@@ -503,6 +585,7 @@ riemann_dd_new(GlobalConfig *cfg)
 
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
+  self->super.worker.thread_deinit = riemann_worker_thread_deinit;
 
   self->super.format.stats_instance = riemann_dd_format_stats_instance;
   self->super.format.persist_name = riemann_dd_format_persist_name;
