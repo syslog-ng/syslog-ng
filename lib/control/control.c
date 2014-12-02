@@ -38,8 +38,6 @@
 static ControlServer *control_server;
 static GList *command_list = NULL;
 
-typedef GString* (*CommandFunction)(GString *);
-
 void
 control_register_command(gchar *command_name, gchar *description, CommandFunction function)
 {
