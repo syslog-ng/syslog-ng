@@ -211,7 +211,7 @@ static struct
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
   { "stop", no_options, "Stop syslog-ng process", slng_stop },
   { "reload", no_options, "Reload syslog-ng", slng_reload },
-  { "show-license-info", license_options, "Reload syslog-ng", slng_license },
+  { "show-license-info", license_options, "Show information about the license", slng_license },
   { NULL, NULL },
 };
 
@@ -223,7 +223,7 @@ usage(const gchar *bin_name)
   fprintf(stderr, "Syntax: %s <command> [options]\nPossible commands are:\n", bin_name);
   for (mode = 0; modes[mode].mode; mode++)
     {
-      fprintf(stderr, "    %-12s %s\n", modes[mode].mode, modes[mode].description);
+      fprintf(stderr, "    %-20s %s\n", modes[mode].mode, modes[mode].description);
     }
   exit(1);
 }
