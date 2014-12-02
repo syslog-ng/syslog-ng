@@ -265,6 +265,7 @@ extern struct _ValuePairsTransformSet *last_vp_transset;
 %token KW_MESSAGE                     10354
 %token KW_NETMASK                     10355
 %token KW_TAGS                        10356
+%token KW_NETMASK6                    10357
 
 /* parser items */
 

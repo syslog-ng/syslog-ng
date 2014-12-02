@@ -107,6 +107,7 @@ pkginclude_HEADERS = 		\
 	poll-events.h \
 	poll-fd-events.h \
 	parse-number.h \
+	filter-netmask6.h \
   service-management.h \
   $(template_headers)
 
@@ -208,6 +209,7 @@ libsyslog_ng_la_SOURCES = \
 	poll-events.c		\
 	poll-fd-events.c	\
 	parse-number.c		\
+	filter-netmask6.c	\
   service-management.c \
 	$(libsyslog_ng_crypto_la_SOURCES) \
   $(template_sources)

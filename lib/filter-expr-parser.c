@@ -56,6 +56,9 @@ static CfgLexerKeyword filter_expr_keywords[] = {
   { "netmask",		  KW_NETMASK },
   { "tags",		  KW_TAGS, VERSION_VALUE_3_1 },
   { "in_list",		  KW_IN_LIST },
+#if ENABLE_IPV6
+  { "netmask6",     KW_NETMASK6 },
+#endif
 
   { "type",               KW_TYPE, VERSION_VALUE_3_0 },
   { "value",              KW_VALUE, VERSION_VALUE_3_0 },
