@@ -7,6 +7,7 @@ filterinclude_HEADERS = 			\
 	lib/filter/filter-in-list.h		\
 	lib/filter/filter-tags.h		\
 	lib/filter/filter-netmask.h		\
+	lib/filter/filter-netmask6.h	\
 	lib/filter/filter-call.h		\
 	lib/filter/filter-re.h			\
 	lib/filter/filter-pri.h			\
@@ -20,6 +21,7 @@ filter_sources = 				\
 	lib/filter/filter-in-list.c		\
 	lib/filter/filter-tags.c		\
 	lib/filter/filter-netmask.c		\
+	lib/filter/filter-netmask6.c	\
 	lib/filter/filter-call.c		\
 	lib/filter/filter-re.c			\
 	lib/filter/filter-pri.c			\
