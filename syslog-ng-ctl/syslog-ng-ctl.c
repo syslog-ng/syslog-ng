@@ -107,6 +107,35 @@ slng_stats(int argc, char *argv[], const gchar *mode)
   return 0;
 }
 
+static gboolean license_json = FALSE;
+
+static GOptionEntry license_options[] =
+{
+  { "json", 'J', 0, G_OPTION_ARG_NONE, &license_json, "enable json output", NULL },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+static gint
+slng_license(int argc, char *argv[], const gchar *mode)
+{
+  GString *rsp = NULL;
+  gchar buff[256];
+
+  if (license_json)
+    snprintf(buff, 255, "LICENSE JSON\n");
+  else
+    snprintf(buff, 255, "LICENSE\n");
+
+  if (!(slng_send_cmd(buff) && ((rsp = control_client_read_reply(control_client)) != NULL)))
+    return 1;
+
+  printf("%s\n", rsp->str);
+
+  g_string_free(rsp, TRUE);
+
+  return 0;
+}
+
 static gint
 slng_stop(int argc, char *argv[], const gchar *mode)
 {
@@ -182,6 +211,7 @@ static struct
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
   { "stop", no_options, "Stop syslog-ng process", slng_stop },
   { "reload", no_options, "Reload syslog-ng", slng_reload },
+  { "show-license-info", license_options, "Show information about the license", slng_license },
   { NULL, NULL },
 };
 
@@ -193,7 +223,7 @@ usage(const gchar *bin_name)
   fprintf(stderr, "Syntax: %s <command> [options]\nPossible commands are:\n", bin_name);
   for (mode = 0; modes[mode].mode; mode++)
     {
-      fprintf(stderr, "    %-12s %s\n", modes[mode].mode, modes[mode].description);
+      fprintf(stderr, "    %-20s %s\n", modes[mode].mode, modes[mode].description);
     }
   exit(1);
 }

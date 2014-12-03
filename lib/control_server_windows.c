@@ -430,7 +430,7 @@ control_server_win32_free(ControlServer *s)
 }
 
 ControlServer *
-control_server_new(const gchar *name, Commands *commands)
+control_server_new(const gchar *name, GList *commands)
 {
   ControlServerWin32 *self = g_new0(ControlServerWin32, 1);
 

@@ -179,7 +179,7 @@ control_server_posix_free(ControlServer *s)
 }
 
 ControlServer *
-control_server_new(const gchar *path, Commands *commands)
+control_server_new(const gchar *path, GList *commands)
 {
   ControlServerPosix *self = g_new(ControlServerPosix,1);
 
