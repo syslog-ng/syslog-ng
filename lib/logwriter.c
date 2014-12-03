@@ -1453,8 +1453,8 @@ log_writer_free(LogPipe *s)
 
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
-  if (self->queue)
-    log_queue_unref(self->queue);
+
+  log_queue_unref(self->queue);
   if (self->last_msg)
     log_msg_unref(self->last_msg);
   g_free(self->stats_id);
@@ -1626,27 +1626,15 @@ log_writer_new(guint32 flags)
   return &self->super;
 }
 
-/* returns a reference */
-LogQueue *
-log_writer_get_queue(LogPipe *s)
-{
-  LogWriter *self = (LogWriter *) s;
-
-  return log_queue_ref(self->queue);
-}
-
 /* consumes the reference */
 void
 log_writer_set_queue(LogPipe *s, LogQueue *queue)
 {
   LogWriter *self = (LogWriter *)s;
 
-  if (self->queue)
-    log_queue_unref(self->queue);
-
-  self->queue = queue;
-  if (self->queue)
-    log_queue_set_use_backlog(self->queue, TRUE);
+  log_queue_unref(self->queue);
+  self->queue = log_queue_ref(queue);
+  log_queue_set_use_backlog(self->queue, TRUE);
 }
 
 void 

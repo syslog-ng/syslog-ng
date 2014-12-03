@@ -157,16 +157,23 @@ log_queue_ack_backlog(LogQueue *self, guint rewind_count)
 static inline LogQueue *
 log_queue_ref(LogQueue *self)
 {
-  self->ref_cnt++;
+  if (self)
+    {
+      g_assert(self->ref_cnt > 0);
+      ++self->ref_cnt;
+    }
   return self;
 }
 
 static inline void
 log_queue_unref(LogQueue *self)
 {
-  g_assert(self->ref_cnt > 0);
-  if (--self->ref_cnt == 0)
-    self->free_fn(self);
+  if (self)
+    {
+      g_assert(self->ref_cnt > 0);
+      if (--self->ref_cnt == 0)
+        self->free_fn(self);
+    }
 }
 
 static inline void
@@ -179,7 +186,8 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
 static inline void
 log_queue_set_use_backlog(LogQueue *self, gboolean use_backlog)
 {
-  self->use_backlog = use_backlog;
+  if (self)
+    self->use_backlog = use_backlog;
 }
 
 void log_queue_push_notify(LogQueue *self);

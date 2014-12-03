@@ -1028,7 +1028,7 @@ affile_dw_deinit(LogPipe *s)
     {
       log_pipe_deinit(self->writer);
     }
-  log_dest_driver_release_queue(&self->owner->super, log_writer_get_queue(self->writer));
+
   log_writer_set_queue(self->writer, NULL);
 
   if (iv_timer_registered(&self->reap_timer))
