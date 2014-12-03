@@ -1070,7 +1070,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           g_string_free(insert_command, TRUE);
           msg_set_context(NULL);
 
-          return FALSE;
+          success = FALSE;
         }
     }
 
