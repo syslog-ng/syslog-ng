@@ -289,6 +289,12 @@ test_log_msg_get_value_with_time_related_macro(void)
   log_msg_unref(msg);
 }
 
+static void
+test_misc_stuff(void)
+{
+  MSG_TESTCASE(test_log_msg_get_value_with_time_related_macro);
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -298,7 +304,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   test_log_message();
   test_log_message_merge();
-  test_log_msg_get_value_with_time_related_macro();
+  test_misc_stuff();
 
   app_shutdown();
   return 0;
