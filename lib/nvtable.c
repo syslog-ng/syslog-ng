@@ -453,7 +453,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
   if (new_entry)
     *new_entry = FALSE;
   ref_entry = nv_table_get_entry(self, ref_handle, &dyn_slot);
-  if (ref_entry && ref_entry->indirect)
+  if ((ref_entry && ref_entry->indirect) || handle == ref_handle)
     {
       const gchar *ref_value;
       gssize ref_length;
@@ -461,7 +461,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
       /* NOTE: uh-oh, the to-be-referenced value is already an indirect
        * reference, this is not supported, copy the stuff */
 
-      ref_value = nv_table_resolve_indirect(self, ref_entry, &ref_length);
+      ref_value = nv_table_resolve_entry(self, ref_entry, &ref_length);
 
       if (rofs > ref_length)
         {
