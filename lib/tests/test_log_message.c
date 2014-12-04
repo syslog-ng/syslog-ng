@@ -136,7 +136,7 @@ test_log_message(void)
   MSG_TESTCASE(test_rcptid_is_automatically_assigned_to_a_newly_created_log_message);
 }
 
-void
+static void
 test_log_msg_get_value_with_time_related_macro(void)
 {
   LogMessage *msg;
@@ -154,6 +154,19 @@ test_log_msg_get_value_with_time_related_macro(void)
   log_msg_unref(msg);
 }
 
+static void
+test_log_msg_set_value_indirect_with_self_referencing_handle_results_in_a_nonindirect_value(void)
+{
+  LogMessage *msg;
+  gssize value_len;
+  NVHandle handle;
+
+  msg = construct_log_message_with_all_bells_and_whistles();
+  log_msg_set_value_indirect(msg, nv_handle, nv_handle, 0, 0, 5);
+  assert_string(log_msg_get_value(msg, nv_handle, &value_len), "value", "indirect self-reference value doesn't match");
+  log_msg_unref(msg);
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -163,6 +176,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   test_log_message();
   test_log_msg_get_value_with_time_related_macro();
+  test_log_msg_set_value_indirect_with_self_referencing_handle_results_in_a_nonindirect_value();
 
   app_shutdown();
   return 0;
