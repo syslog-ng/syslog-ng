@@ -67,7 +67,10 @@ EVTTAG *evt_tag_socket_error(const char *name, int value);
     (lh)->prev = (lh); \
 } while (0)
 
+#ifndef S_IFMT
 #define S_IFMT  00170000
+#endif
+
 #define S_IFSOCK 0140000
 
 #define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)
