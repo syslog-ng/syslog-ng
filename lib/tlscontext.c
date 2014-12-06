@@ -61,7 +61,12 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
   gboolean match = FALSE;
   X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
 
-  if (!current_fingerprint || !cert)
+  if (!current_fingerprint)
+    {
+      return TRUE;
+    }
+
+  if (!cert)
     return match;
 
   hash = g_string_sized_new(EVP_MAX_MD_SIZE * 3);
@@ -133,10 +138,10 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
     return 1;
 
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
-  if (tls_session_verify_fingerprint(ctx))
+  if (ok && ctx->error_depth == 0 && !tls_session_verify_fingerprint(ctx))
     {
-      msg_notice("Certificate accepted because its fingerprint is listed", NULL);
-      return 1;
+      msg_notice("Certificate valid, but fingerprint constraints were not met, rejecting", NULL);
+      return 0;
     }
 
   if (ok && ctx->error_depth != 0 && (ctx->current_cert->ex_flags & EXFLAG_CA) == 0)
@@ -447,6 +452,8 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
 {
   gchar **pattern_parts, **hostname_parts;
   gboolean success = FALSE;
+  gchar *lower_pattern = NULL;
+  gchar *lower_hostname = NULL;
   gint i;
 
   pattern_parts = g_strsplit(pattern, ".", 0);
@@ -458,11 +465,17 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
           /* number of dot separated entries is not the same in the hostname and the pattern spec */
           goto exit;
         }
-      if (!g_pattern_match_simple(pattern_parts[i], hostname_parts[i]))
+
+      lower_pattern = g_ascii_strdown(pattern_parts[i],-1);
+      lower_hostname = g_ascii_strdown(hostname_parts[i],-1);
+
+      if (!g_pattern_match_simple(lower_pattern, lower_hostname))
         goto exit;
     }
   success = TRUE;
  exit:
+  g_free(lower_pattern);
+  g_free(lower_hostname);
   g_strfreev(pattern_parts);
   g_strfreev(hostname_parts);
   return success;
@@ -518,7 +531,7 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
 
                   g_strlcpy(pattern_buf, dotted_ip, sizeof(pattern_buf));
                   found = TRUE;
-                  result = strcmp(host_name, pattern_buf) == 0;
+                  result = strcasecmp(host_name, pattern_buf) == 0;
                 }
             }
           sk_GENERAL_NAME_free(alt_names);

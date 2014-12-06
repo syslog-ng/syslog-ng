@@ -135,8 +135,8 @@ detect_local_fqdn_hostname(void)
       hostname = get_local_fqdn_hostname_from_dns();
       if (!hostname)
         {
-          msg_warning("Unable to detect fully qualified hostname for localhost, use_fqdn() will use the short hostname",
-                     NULL);
+          msg_verbose("Unable to detect fully qualified hostname for localhost, use_fqdn() will use the short hostname",
+                      NULL);
           hostname = get_local_hostname_from_system();
         }
     }

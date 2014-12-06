@@ -121,6 +121,14 @@
         </varlistentry>
         <varlistentry>
           <term>
+            <command moreinfo="none">--permanent</command> or <command moreinfo="none">-T</command>
+          </term>
+          <listitem>
+            <para>Send logs without time limit.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
             <command moreinfo="none">--ipv6</command> or <command moreinfo="none">-6</command>
           </term>
           <listitem>

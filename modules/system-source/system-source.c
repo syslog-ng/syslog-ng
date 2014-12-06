@@ -335,8 +335,8 @@ system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
 
   if (!_is_json_parser_available(cfg))
     {
-      msg_warning_once("system(): json-parser() is missing, skipping the automatic JSON parsing of messages submitted via syslog(3), Please install the json module",
-                       NULL);
+      msg_debug("system(): json-parser() is missing, skipping the automatic JSON parsing of messages submitted via syslog(3), Please install the json module",
+                NULL);
       return;
     }
 

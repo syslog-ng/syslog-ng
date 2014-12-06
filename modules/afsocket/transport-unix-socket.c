@@ -144,6 +144,7 @@ _add_nv_pair_proc_readlink(LogTransportAuxData *aux, const gchar *name, pid_t pi
     log_transport_aux_data_add_nv_pair(aux, name, content);
 }
 
+#if defined (CRED_PASS_SUPPORTED)
 static void
 _feed_aux_from_ucred(LogTransportAuxData *aux, cred_t *uc)
 {
@@ -151,6 +152,7 @@ _feed_aux_from_ucred(LogTransportAuxData *aux, cred_t *uc)
   _add_nv_pair_int(aux, ".unix.uid", cred_get(uc, uid));
   _add_nv_pair_int(aux, ".unix.gid", cred_get(uc, gid));
 }
+#endif
 
 #if defined(__linux__) && defined(CRED_PASS_SUPPORTED)
 static void
