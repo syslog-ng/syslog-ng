@@ -230,6 +230,23 @@ AC_ARG_WITH(systemd-journal,
                                          Link against the system supplied or the wrapper library. (default: auto)]
               ,,with_systemd_journal="auto")
 
+AC_ARG_ENABLE(all-modules,
+              [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
+              ,,enable_all_modules="auto")
+
+if test "x$enable_all_modules" != "xauto"; then
+   state="$enable_all_modules"
+
+   MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
+            redis systemd geoip riemann ssl ipv6 smtp"
+   for mod in ${MODULES}; do
+       modstate=$(eval echo \$enable_${mod})
+       if test "x$modstate" = "xauto"; then
+          eval enable_${mod}=${state}
+       fi
+   done
+fi
+
 if test "x$wcmp_date" != "xno"; then
   wcmp_date="1"
 else
