@@ -26,6 +26,8 @@
 
 #include "filter.h"
 
+#if ENABLE_IPV6
 FilterExprNode *filter_netmask6_new(gchar *cidr);
+#endif
 
 #endif

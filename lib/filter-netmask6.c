@@ -28,8 +28,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if ENABLE_IPV6
+#ifndef _WIN32
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#else
+#include <winsock2.h>
+#endif
 
 typedef struct _FilterNetmask6
 {
@@ -150,3 +155,6 @@ filter_netmask6_new(gchar *cidr)
   self->super.eval = _eval;
   return &self->super;
 }
+
+#endif
+
