@@ -44,6 +44,7 @@ typedef struct _AFInetDestDriver
   struct libnet_context *lnet_ctx;
   GStaticMutex lnet_lock;
   GString *lnet_buffer;
+  gint spoof_source_maxmsglen;
 #endif
   gchar *hostname;
 
