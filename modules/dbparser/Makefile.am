@@ -21,9 +21,9 @@ modules_dbparser_libsyslog_ng_patterndb_la_CFLAGS	=	\
 	$(AM_CFLAGS) -fPIC @CFLAGS_NOWARN_POINTER_SIGN@
 modules_dbparser_libsyslog_ng_patterndb_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)					\
-	$(top_builddir)/lib/libsyslog-ng-crypto.la
+	$(CRYPTO_LIBS)
 modules_dbparser_libsyslog_ng_patterndb_la_DEPENDENCIES	=	\
-	$(MODULE_DEPS_LIBS) lib/libsyslog-ng-crypto.la
+	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS)
 
 module_LTLIBRARIES					+= modules/dbparser/libdbparser.la
 modules_dbparser_libdbparser_la_SOURCES			=	\
