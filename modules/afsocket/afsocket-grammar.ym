@@ -429,38 +429,34 @@ source_afsocket_transport
         ;
 
 source_systemd_syslog
-  : KW_SYSTEMD_SYSLOG '(' source_systemd_syslog_params ')'  { $$ = $3; }
-  ;
+	: KW_SYSTEMD_SYSLOG '(' source_systemd_syslog_params ')'  { $$ = $3; }
+	;
 
 source_systemd_syslog_params
-   :
-      {
+	: {
 #if ! ENABLE_SYSTEMD
-      msg_error("systemd-syslog() source cannot be enabled and it is not"
-                " functioning. Please compile your syslog-ng with --enable-systemd"
-                " flag",
-                NULL);
-      YYERROR;
+            msg_error("systemd-syslog() source cannot be enabled and it is not"
+                      " functioning. Please compile your syslog-ng with --enable-systemd"
+                      " flag",
+                      NULL);
+            YYERROR;
 #else
-     SystemDSyslogSourceDriver *d = systemd_syslog_sd_new(configuration, FALSE);
-     systemd_syslog_grammar_set_source_driver(d);
+            SystemDSyslogSourceDriver *d = systemd_syslog_sd_new(configuration, FALSE);
+            systemd_syslog_grammar_set_source_driver(d);
 #endif
-      }
-    source_systemd_syslog_options { $$ = last_driver; }
-      ;
-
+          }
+          source_systemd_syslog_options { $$ = last_driver; }
+        ;
 
 source_systemd_syslog_options
-  : source_systemd_syslog_option source_systemd_syslog_options
-  |
-  ;
+        : source_systemd_syslog_option source_systemd_syslog_options
+        |
+        ;
 
-
-source_systemd_syslog_option:
-  | source_reader_option
-  | socket_option
-  ;
-
+source_systemd_syslog_option
+        : source_reader_option
+        | socket_option
+        ;
         
 dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
