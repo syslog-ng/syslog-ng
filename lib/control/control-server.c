@@ -31,10 +31,10 @@
 #endif
 
 void
-control_server_init_instance(ControlServer *self, const gchar *path, GList *commands)
+control_server_init_instance(ControlServer *self, const gchar *path, GList *control_commands)
 {
   self->control_socket_name = g_strdup(path);
-  self->commands = commands;
+  self->control_commands = control_commands;
 }
 
 void
@@ -161,11 +161,11 @@ control_connection_io_input(void *s)
       return;
     }
 
-  for (iter = self->server->commands; iter != NULL; iter = iter->next)
+  for (iter = self->server->control_commands; iter != NULL; iter = iter->next)
     {
-      if (strncmp(((Commands*)iter->data)->command, command->str, strlen(((Commands*)iter->data)->command)) == 0)
+      if (strncmp(((ControlCommand*)iter->data)->command_name, command->str, strlen(((ControlCommand*)iter->data)->command_name)) == 0)
         {
-          reply = ((Commands*)iter->data)->func(command);
+          reply = ((ControlCommand*)iter->data)->func(command);
           control_connection_send_reply(self, reply);
           break;
         }
