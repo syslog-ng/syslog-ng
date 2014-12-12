@@ -24,16 +24,17 @@
 #define CONTROL_SERVER_H 1
 
 #include "syslog-ng.h"
+#include "control.h"
 #include <stdio.h>
 
 #define MAX_CONTROL_LINE_LENGTH 4096
 
-typedef struct _Commands
+typedef struct _ControlCommand
 {
-  const gchar *command;
+  const gchar *command_name;
   const gchar *description;
-  GString *(*func)(GString *command);
-} Commands;
+  CommandFunction func;
+} ControlCommand;
 
 typedef struct _ControlServer ControlServer;
 typedef struct _ControlConnection ControlConnection;
@@ -54,16 +55,16 @@ struct _ControlConnection
 struct _ControlServer
 {
   gchar *control_socket_name;
-  GList *commands;
+  GList *control_commands;
   void (*free_fn)(ControlServer *self);
 };
 
 
-ControlServer *control_server_new(const gchar *path, GList *commands);
+ControlServer *control_server_new(const gchar *path, GList *control_commands);
 
 void control_server_start(ControlServer *self);
 void control_server_free(ControlServer *self);
-void control_server_init_instance(ControlServer *self, const gchar *path, GList *commands);
+void control_server_init_instance(ControlServer *self, const gchar *path, GList *control_commands);
 
 
 void control_connection_start_watches(ControlConnection *self);

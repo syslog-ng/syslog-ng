@@ -117,8 +117,8 @@ test_command(GString *command)
   return g_string_new("OK");
 }
 
-Commands command = {
-   .command = "test",
+ControlCommand command = {
+   .command_name = "test",
    .description = NULL,
    .func = test_command
 };
@@ -173,7 +173,7 @@ int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   GList *commands = g_list_append(NULL, &command);
-  moc_server.commands = commands;
+  moc_server.control_commands = commands;
   gsize  i = 0;
   
   app_startup();
