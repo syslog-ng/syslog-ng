@@ -5,6 +5,7 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "filter-expr-grammar.h"
+#include "filter-netmask6.h"
 
 #include <time.h>
 #include <string.h>
