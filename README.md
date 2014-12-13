@@ -38,7 +38,7 @@ syslog-ng [tarball repository][balabit-download].
  [balabit]: http://www.balabit.com/
  [balabit-download]: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system/downloads/download/syslog-ng-ose/3.5
 
-To compile from source, the usuall drill applies (assuming you have
+To compile from source, the usual drill applies (assuming you have
 the required dependencies):
 
     $ ./configure && make && make install
