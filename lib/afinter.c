@@ -104,7 +104,6 @@ afinter_source_post(gpointer s)
 {
   AFInterSource *self = (AFInterSource *) s;
   LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   while (log_source_free_to_send(&self->super))
     {
@@ -115,7 +114,7 @@ afinter_source_post(gpointer s)
         break;
 
       stats_counter_dec(internal_queue_length);
-      log_pipe_queue(&self->super.super, msg, &path_options);
+      log_source_post(&self->super, msg);
     }
   afinter_source_update_watches(self);
 }

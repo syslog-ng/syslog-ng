@@ -303,7 +303,6 @@ static gboolean
 log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTransportAuxData *aux)
 {
   LogMessage *m;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   
   msg_debug("Incoming log entry", 
             evt_tag_printf("line", "%.*s", length, line),
@@ -317,7 +316,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
   
   log_transport_aux_data_foreach(aux, _add_aux_nvpair, m);
 
-  log_pipe_queue(&self->super.super, m, &path_options);
+  log_source_post(&self->super, m);
   log_msg_refcache_stop();
   return log_source_free_to_send(&self->super);
 }

@@ -210,13 +210,38 @@ log_source_deinit(LogPipe *s)
   return TRUE;
 }
 
+void
+log_source_post(LogSource *self, LogMessage *msg)
+{
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  gint old_window_size;
+
+  ack_tracker_track_msg(self->ack_tracker, msg);
+
+  /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
+  path_options.ack_needed = TRUE;
+  log_msg_ref(msg);
+  log_msg_add_ack(msg, &path_options);
+  msg->ack_func = log_source_msg_ack;
+
+  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
+
+  /*
+   * NOTE: this assertion validates that the source is not overflowing its
+   * own flow-control window size, decreased above, by the atomic statement.
+   *
+   * If the _old_ value is zero, that means that the decrement operation
+   * above has decreased the value to -1.
+   */
+
+  g_assert(old_window_size > 0);
+  log_pipe_queue(&self->super, msg, &path_options);
+}
 
 static void
 log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogSource *self = (LogSource *) s;
-  LogPathOptions local_options = *path_options;
-  gint old_window_size;
   gint i;
   
   msg_set_context(msg);
@@ -225,7 +250,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
     
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
-  ack_tracker_track_msg(self->ack_tracker, msg);
 
   /* $HOST setup */
   log_source_mangle_hostname(self, msg);
@@ -275,27 +299,10 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   /* message setup finished, send it out */
 
-  /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
-  local_options.ack_needed = TRUE;
-  log_msg_ref(msg);
-  log_msg_add_ack(msg, &local_options);
-  msg->ack_func = log_source_msg_ack;
-    
-  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
-
-  /*
-   * NOTE: this assertion validates that the source is not overflowing its
-   * own flow-control window size, decreased above, by the atomic statement.
-   *
-   * If the _old_ value is zero, that means that the decrement operation
-   * above has decreased the value to -1.
-   */
-
-  g_assert(old_window_size > 0);
 
   stats_counter_inc(self->recvd_messages);
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].tv_sec);
-  log_pipe_forward_msg(s, msg, &local_options);
+  log_pipe_forward_msg(s, msg, path_options);
 
   msg_set_context(NULL);
 
