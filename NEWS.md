@@ -1,3 +1,80 @@
+3.6.2
+=====
+
+<!-- Mon, 15 Dec 2014 15:40:03 +0100 -->
+
+This is the first maintenance release for 3.6.x series.
+
+
+Changes compared to 3.6.1:
+
+Features
+--------
+
+ * New parameter added to loggen: --permanent (-T) wich is for sending logs 
+   indefinitely.
+
+Fixes
+-----
+
+ * From now, syslog-ng won't crash when using a Riemann destination and
+   no attributes are set.
+
+ * In some cases program destination respawned during syslog-ng stop/restart.
+
+ * Max packet length for spoof source is set to 1024 (previously : 256).
+
+ * Removed syslog.socket from service file on systems using systemd.
+   Syslog-ng reads the messages directly from journal on systems with systemd.
+
+ * In some cases, localtime related macros had a wrong value(eg.:$YEAR).
+
+ * Transaction handling fixed in SQL destination. In some circumstances when
+   both select and insert commands were run within a single transaction and
+   the select failed (eg.: in case of mssql), the log messages related to
+   the insert commands, broken by the invalid transaction, were lost.
+
+ * Fixed a memleak in SQL destination driver.
+   The memleak occured during one of the transaction failures.
+
+ * A certificate which is not contained by the list of fingerprints is
+   rejected from now.
+
+ * Hostname check in tls certificate is case insensitive from now.
+
+ * Fix spinning on EOF for `unix-stream()` sockets. Root cause of the spinning
+   was that a unix-dgram socket was created even in case of unix-stream.
+
+
+Compatibility notes
+-------------------
+
+ * Prefer SYSLOG_IDENTIFIER over _COMM in systemd-journal.
+   In order to not break assumptions, prefer SYSLOG_IDENTIFIER over _COMM.
+   For example, postfix uses postfix/qmgr as SYSLOG_IDENTIFIER, but _COMM
+   is only "qmgr". The journal itself uses SYSLOG_IDENTIFIER when
+   reconstructing the syslog message, so we should not deviate from that
+   behaviour, either.
+
+   Similarly, rsyslog also prefers SYSLOG_IDENTIFIER, so for the sake of
+   compatibility, doing the same is preferable.
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessarily to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Alexander Görtz, Andras Mitzki, Balazs Scheidler, Fabien Wernli, Gergely Nagy,
+Jasper Lievisse Adriaanse, Laszlo Budai, Michael Sterrett, Peter Czanik, 
+Robert Fekete, Tibor Benke, Viktor Juhasz, Viktor Tusa, Zoltan Fried .
+
 3.6.1
 =====
 
