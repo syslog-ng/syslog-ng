@@ -8,7 +8,8 @@ templateinclude_HEADERS = \
 	lib/template/repr.h			\
 	lib/template/compiler.h			\
 	lib/template/user-function.h		\
-	lib/template/escaping.h
+	lib/template/escaping.h			\
+	lib/template/common-template-typedefs.h
 
 template_sources = \
 	lib/template/templates.c		\
