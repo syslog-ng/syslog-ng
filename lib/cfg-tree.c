@@ -385,6 +385,14 @@ cfg_tree_new_pipe(CfgTree *self, LogExprNode *related_expr)
   return pipe;
 }
 
+LogMultiplexer *
+cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr)
+{
+  LogMultiplexer *pipe = log_multiplexer_new(self->cfg);
+  g_ptr_array_add(self->initialized_pipes, pipe);
+  return pipe;
+}
+
 /*
  * Return the name of the rule that contains a LogExprNode. Generates
  * one automatically for anonymous log expressions.
@@ -536,8 +544,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
 
             if (!sub_pipe_tail->pipe_next)
               {
-                mpx = log_multiplexer_new(self->cfg);
-                g_ptr_array_add(self->initialized_pipes, &mpx->super);
+                mpx = cfg_tree_new_mpx(self, referenced_node);
                 log_pipe_append(sub_pipe_tail, &mpx->super);
               }
             else
@@ -577,8 +584,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
            our next chain
         */
 
-        mpx = log_multiplexer_new(self->cfg);
-        g_ptr_array_add(self->initialized_pipes, &mpx->super);
+        mpx = cfg_tree_new_mpx(self, node);
 
         if (sub_pipe_head)
           {
@@ -837,8 +843,7 @@ cfg_tree_compile_junction(CfgTree *self,
             }
           if (!fork_mpx)
             {
-              fork_mpx = log_multiplexer_new(self->cfg);
-              g_ptr_array_add(self->initialized_pipes, &fork_mpx->super);
+              fork_mpx = cfg_tree_new_mpx(self, node);
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);
         }
