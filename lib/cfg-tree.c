@@ -389,6 +389,7 @@ LogMultiplexer *
 cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr)
 {
   LogMultiplexer *pipe = log_multiplexer_new(self->cfg);
+  pipe->super.expr_node = related_expr;
   g_ptr_array_add(self->initialized_pipes, pipe);
   return pipe;
 }
