@@ -380,9 +380,11 @@ LogPipe *
 cfg_tree_new_pipe(CfgTree *self, LogExprNode *related_expr)
 {
   LogPipe *pipe = log_pipe_new(self->cfg);
+  pipe->expr_node = related_expr;
   g_ptr_array_add(self->initialized_pipes, pipe);
   return pipe;
 }
+
 /*
  * Return the name of the rule that contains a LogExprNode. Generates
  * one automatically for anonymous log expressions.
