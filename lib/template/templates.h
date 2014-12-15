@@ -26,6 +26,7 @@
 #define TEMPLATES_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "common-template-typedefs.h"
 #include "timeutils.h"
 #include "type-hinting.h"
 #include "plugin.h"
@@ -72,7 +73,7 @@ typedef struct _LogTemplate
  * is static throughout the runtime for a given configuration. There
  * are call-site specific options too, those are specified as
  * arguments to log_template_format() */
-typedef struct _LogTemplateOptions
+struct _LogTemplateOptions
 {
   gboolean initialized;
   /* timestamp format as specified by ts_format() */
@@ -86,7 +87,7 @@ typedef struct _LogTemplateOptions
 
   /* Template error handling settings */
   gint on_error;
-} LogTemplateOptions;
+};
 
 /* appends the formatted output into result */
 

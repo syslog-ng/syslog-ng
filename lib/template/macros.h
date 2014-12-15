@@ -26,8 +26,7 @@
 #define TEMPLATE_MACROS_H_INCLUDED
 
 #include "syslog-ng.h"
-
-typedef struct _LogTemplateOptions LogTemplateOptions;
+#include "common-template-typedefs.h"
 
 /* macro IDs */
 enum
