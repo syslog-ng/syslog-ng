@@ -199,7 +199,7 @@ control_server_unix_free(ControlServer *s)
 }
 
 ControlServer *
-control_server_new(const gchar *path, Commands *commands)
+control_server_new(const gchar *path, GList *commands)
 {
   ControlServerUnix *self = g_new(ControlServerUnix,1);
 
