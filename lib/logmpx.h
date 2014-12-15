@@ -43,7 +43,7 @@ typedef struct _LogMultiplexer
   gboolean fallback_exists;
 } LogMultiplexer;
 
-LogMultiplexer *log_multiplexer_new(guint32 flags, GlobalConfig *cfg);
+LogMultiplexer *log_multiplexer_new(GlobalConfig *cfg);
 void log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop);
 
 
