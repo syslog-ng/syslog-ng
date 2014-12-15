@@ -36,6 +36,17 @@
 #include <iv.h>
 
 static ControlServer *control_server;
+static GList *command_list = NULL;
+
+void
+control_register_command(gchar *command_name, gchar *description, CommandFunction function)
+{
+  ControlCommand *new_command = g_new0(ControlCommand, 1);
+  new_command->command_name = command_name;
+  new_command->description = description;
+  new_command->func = function;
+  command_list = g_list_append(command_list, new_command);
+};
 
 static GString *
 control_connection_send_stats(GString *command)
@@ -62,9 +73,9 @@ control_connection_message_log(GString *command)
 
   if (g_str_equal(cmds[1], "DEBUG"))
     type = &debug_flag;
-  else if (g_str_equal(cmds[1], "VERBOSE")) 
+  else if (g_str_equal(cmds[1], "VERBOSE"))
     type = &verbose_flag;
-  else if (g_str_equal(cmds[1], "TRACE")) 
+  else if (g_str_equal(cmds[1], "TRACE"))
     type = &trace_flag;
 
   if (type)
@@ -108,7 +119,7 @@ control_connection_reload(GString *command)
   return result;
 }
 
-Commands commands[] = {
+ControlCommand default_commands[] = {
   { "STATS", NULL, control_connection_send_stats },
   { "LOG", NULL, control_connection_message_log },
   { "STOP", NULL, control_connection_stop_process },
@@ -116,10 +127,20 @@ Commands commands[] = {
   { NULL, NULL, NULL },
 };
 
-void 
+static void
+register_default_commands()
+{
+  control_register_command("STATS", NULL, control_connection_send_stats);
+  control_register_command("LOG", NULL, control_connection_message_log);
+  control_register_command("STOP", NULL, control_connection_stop_process);
+  control_register_command("RELOAD", NULL, control_connection_reload);
+}
+
+void
 control_init(const gchar *control_name)
 {
-  control_server = control_server_new(control_name, commands);
+  register_default_commands();
+  control_server = control_server_new(control_name, command_list);
   control_server_start(control_server);
 }
 
