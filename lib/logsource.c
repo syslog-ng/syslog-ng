@@ -331,7 +331,7 @@ _create_ack_tracker_if_not_exists(LogSource *self, gboolean pos_tracked)
 }
 
 void
-log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked)
+log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node)
 {
   /* NOTE: we don't adjust window_size even in case it was changed in the
    * configuration and we received a SIGHUP.  This means that opened
@@ -350,6 +350,7 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
   self->pos_tracked = pos_tracked;
+  self->super.expr_node = expr_node;
   _create_ack_tracker_if_not_exists(self, pos_tracked);
 }
 
