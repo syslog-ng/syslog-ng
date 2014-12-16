@@ -464,18 +464,18 @@ _test_default_facility_test(TestCase *self, TestSource *src, LogMessage *msg)
 void
 _test_program_field_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader, JournalReaderOptions *options)
 {
-  MockEntry *entry = mock_entry_new("test _COMM first win");
-  mock_entry_add_data(entry, "_COMM=comm_program");
-  mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
-  journald_mock_add_entry(journal, entry);
-
-  entry = mock_entry_new("test _COMM second win");
+  MockEntry *entry = mock_entry_new("test SYSLOG_IDENTIFIER first win");
   mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
   mock_entry_add_data(entry, "_COMM=comm_program");
   journald_mock_add_entry(journal, entry);
 
-  entry = mock_entry_new("no _COMM");
+  entry = mock_entry_new("test SYSLOG_IDENTIFIER second win");
+  mock_entry_add_data(entry, "_COMM=comm_program");
   mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
+  journald_mock_add_entry(journal, entry);
+
+  entry = mock_entry_new("no SYSLOG_IDENTIFIER");
+  mock_entry_add_data(entry, "_COMM=comm_program");
   journald_mock_add_entry(journal, entry);
 
   self->user_data = journal;
@@ -487,14 +487,14 @@ _test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
   Journald *journal = self->user_data;
   gchar *cursor;
   journald_get_cursor(journal, &cursor);
-  if (strcmp(cursor, "no _COMM") != 0)
+  if (strcmp(cursor, "no SYSLOG_IDENTIFIER") != 0)
     {
-      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "comm_program", ASSERTION_ERROR("Bad program name"));
+      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", ASSERTION_ERROR("Bad program name"));
       g_free(cursor);
     }
   else
     {
-      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", ASSERTION_ERROR("Bad program name"));
+      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "comm_program", ASSERTION_ERROR("Bad program name"));
       g_free(cursor);
       test_source_finish_tc(src);
     }
