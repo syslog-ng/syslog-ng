@@ -681,7 +681,7 @@ static gboolean
 _table_create(AFSqlDestDriver *self, const gchar *table)
 {
   gint i;
-  GString *query_string = g_string_sized_new(32);
+  GString *query_string = NULL;
   gboolean success = FALSE;
   if (!afsql_dd_begin_new_transaction(self))
     {
@@ -691,6 +691,7 @@ _table_create(AFSqlDestDriver *self, const gchar *table)
       return FALSE;
     }
 
+  query_string = g_string_sized_new(32);
   g_string_printf(query_string, "CREATE TABLE %s (", table);
   for (i = 0; i < self->fields_len; i++)
     {
