@@ -104,6 +104,7 @@ void log_source_options_set_tags(LogSourceOptions *options, GList *tags);
 void log_source_free(LogPipe *s);
 void log_source_wakeup(LogSource *self);
 void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
+void log_source_flow_control_suspend(LogSource *self);
 
 void log_source_global_init(void);
 
