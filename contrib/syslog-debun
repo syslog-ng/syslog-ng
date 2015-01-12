@@ -1,0 +1,464 @@
+#!/bin/bash
+
+### syslog-debun: syslog debug bundle generator
+### Written/Copyright: Pásztor György <pasztor@linux.gyakg.u-szeged.hu>, (c) 2014-2015
+### This software may be used and distributed according to the terms of GNU GPLv2
+### http://www.gnu.org/licenses/gpl-2.0.html
+
+###
+### Global defaults
+### Do not overwrite them, parameters or distro / OS specific detections will do that if neccessary
+###
+
+default_debug_params="-Fedv --enable-core"
+default_ldebug_params="-Fev"
+default_pcap_params="port 514 or port 601 or port 53"
+extras=()
+debugpid=none
+debugtailpid=none
+pcappid=none
+ipconfig="ip addr"
+routeconfig="netstat -nr"
+netstatnlp="netstat -nlp"
+binprefix=/opt/syslog-ng
+workdir=/tmp
+lsof="lsof -p"
+pscmd="ps auxwwwwwf"
+dfk="df -k"
+dfh="df -h"
+duks="du -ks"
+mount=mount
+varlimit=1000
+#myplimit () { cat /proc/$1/limits ; }
+myplimit () { echo "yada-yada" ; }
+distpkgoffile () { echo "yada-yada" ; }
+distpkgstatus () { echo "yada-yada" ; }
+selftar="tar cf - ."
+showdep="dpkg -S"
+pcapifparm=-i
+w=w
+dmesg=dmesg
+tcpdump="tcpdump -p -s 1500 -w"
+getsyslogpids="pidof syslog-ng"
+
+###
+### Show Usage
+###
+debun_usage () {
+cat <<END
+Usage: syslog-debun [OPTIONS]
+
+General Options:
+  -h		Show this help page
+  -R [dir]	Syslog-ng-PE's alternate install dir, instead of /opt/syslog-ng
+  -W [dir]	Work dir, where debug bundle will be placed
+  -l		"light" collect: Don't get data, which may disturb your sense about
+		privacy, like process tree, fstab, etc. If you use with -d, then it
+		will also enlighten that's params: $default_ldebug_params
+
+Debug mode options:
+  -d		Debug with params: $default_debug_params
+		Warning! May increase disk io during the debug,
+		and dumps huge amount of data!
+  -D [params]	Debug with custom params
+  -w [sec]	Wait [sec] seconds before start syslog's debug mode, and
+		start realtime watching of it
+  -t [sec]	Timeout for noninteractive debug
+
+Packet capture options:
+  -i [iface]	Capture packets on specified interface
+  -p		Create packet capture with filter: $default_pcap_params
+  -P [params]	Create packet capture with custom filter
+  -t [sec]	Timeout for noninteractive debug
+END
+[ -n "$2" ] && echo -e "\nError: $2\n"
+exit ${1:-0}
+}
+
+###
+### Parsing optional parameters
+###
+
+while getopts "hldD:pP:w:i:W:t:" opt ; do
+	case $opt in
+		d)
+			[ -n "$debug_params" ] && debun_usage 2
+			debug_params="$default_debug_params"
+			debug_mode=1
+			;;
+		D)
+			[ -n "$debug_params" ] && debun_usage 2
+			debug_params="$OPTARG"
+			debug_mode=1
+			;;
+		i)
+			[ -n "$pcap_iface" ] && debun_usage 2
+			pcap_iface="$OPTARG"
+			;;
+		h)
+			debun_usage
+			;;
+		l)
+			privacy_mode=1
+			;;
+		p)
+			[ -n "$pcap_params" ] && debun_usage 2
+			pcap_params="$default_pcap_params"
+			debug_mode=1
+			;;
+		P)
+			[ -n "$pcap_params" ] && debun_usage 2
+			pcap_params="$OPTARG"
+			debug_mode=1
+			;;
+		R)
+			binprefix="$OPTARG"
+			;;
+		t)
+			timeout="$OPTARG"
+			;;
+		w)
+			waitforit="$OPTARG"
+			;;
+		W)
+			workdir="$OPTARG"
+			;;
+		*)
+			debun_usage 2
+			;;
+	esac
+done
+# Parameter consistency checks
+[ -n "$pcap_iface" -a -z "$pcap_params" ] && debun_usage 2 "Pcap interface without packet caputre params (-p|-P args)"
+[ -n "$waitforit" -a -z "$debug_params" ] && debun_usage 2 "Waiting without debug mode run (-d|-D args)"
+[ -n "$timeout" -a -z "$debug_mode" ] && debun_usage 2 "Timeout without debug mode or packet capture"
+[ -n "$privacy_mode" -a "x$debug_params" = "x$default_debug_params" ] && debug_params="$default_ldebug_params"
+#if [ -n "$pcap_params" ]; then
+#	hash tcpdump || debun_usage 2 "Packet capture requested, but no tcpdump in your PATH"
+#fi
+syslogbin=${binprefix}/sbin/syslog-ng
+syslogrealbin=${binprefix}/libexec/syslog-ng
+vardir=${binprefix}/var
+confdir=${binprefix}/etc
+
+debun_init () {
+	#Create temp dir, to place files into
+	host=$(uname -n)
+	date=$(date '+%Y-%m-%d_%H:%M')
+	if hash mktemp ; then
+		tmpdir=$(mktemp -d ${workdir}/syslog.debun.${host}.${date}.XXX)
+	else
+		tmpdir=${workdir}/syslog.debun.${host}.${date}.$$
+		mkdir $tmpdir
+	fi
+	chmod 700 $tmpdir
+
+	# Start redirections
+
+	#exec 3>&1 >${tmpdir}/syslog-ng.debun.txt 2>${tmpdir}/syslog-ng.debun.txt
+	exec 3>&1 >${tmpdir}/syslog-ng.debun.txt 2>&1
+	echo "Syslog-NG DEBUg buNdle generator"
+	tail -f ${tmpdir}/syslog-ng.debun.txt >&3 &
+	tailpid=$!
+	disown
+}
+
+debun_final() {
+	if [ -d /proc/${debugpid} ]; then
+		kill -INT $debugpid
+		[ -d /proc/${debugpid} ] && sleep 1
+		[ -d /proc/${debugpid} ] && kill -9 $debugpid
+		[ -d /proc/${debugpid} ] && sleep 1
+		[ -d /proc/${debugpid} ] && echo "I gave up... debugger shit doesn't die"
+		/etc/init.d/syslog-ng start
+	fi
+	if [ -d /proc/${debugtailpid} ]; then
+		kill $debugtailpid
+	fi
+	if [ -d /proc/${pcappid} ]; then
+		kill -INT $pcappid
+	fi
+	wait
+	echo -e "\nDebug Bundle generation: Done."
+	exec >&3 2>&1
+	cd $tmpdir
+	touch ${tmpdir}.tgz
+	chmod 600 ${tmpdir}.tgz
+	$selftar | gzip -9 >${tmpdir}.tgz
+	cd ..
+	rm -r "${tmpdir}"
+	kill $tailpid
+	echo "Your debug bundle wil be at ${tmpdir}.tgz"
+}
+
+add_extra () {
+	extras=( "${extras[@]}" "$@" )
+}
+
+### Here comes the general info acquiring parts
+acquire_general_info () {
+	echo -e "\nStart general info collection"
+	echo -n "System's full uname: "
+	uname -a | tee ${tmpdir}/sys.uname
+	[ -n "$privacy_mode" ] && return
+	echo -n "Getting network-interface information: "
+	if $ipconfig >${tmpdir}/net.ip ; then
+		echo "Success"
+	else
+		echo "Failed"
+	fi
+	echo -n "Getting network routes: "
+	if $routeconfig >${tmpdir}/net.route ; then
+		echo "Success"
+	else
+		echo "Failed"
+	fi
+	echo "Getting DNS resolution-related informations: "
+	[ -f /etc/nsswitch.conf ] && cp /etc/nsswitch.conf ${tmpdir}/sys.nsswitch.conf
+	[ -f /etc/resolv.conf ] && cp /etc/resolv.conf ${tmpdir}/sys.resolv.conf
+	[ -f /etc/hosts ] && cp /etc/hosts ${tmpdir}/sys.hosts
+	echo "Done."
+	echo "List all processes"
+	$pscmd >${tmpdir}/sys.ps
+	echo "Mount and disk free info collection"
+	$dfk >${tmpdir}/sys.df_k
+	$dfh >${tmpdir}/sys.df_h
+	$mount >${tmpdir}/sys.mount
+	$w >${tmpdir}/sys.w
+	$dmesg >${tmpdir}/sys.dmesg
+	$netstatnlp >${tmpdir}/sys.netstat
+}
+
+acquire_syslog_info() {
+	echo -e "\nStart Syslog-specific info collection"
+	echo "Copy configs from $confdir"
+	cd $confdir
+	mkdir  ${tmpdir}/config
+	find . | cpio -pd ${tmpdir}/config
+	echo "Syslog-ng's exact version: $syslogbin"
+	$syslogbin --version > ${tmpdir}/syslog.version
+	head -1 ${tmpdir}/syslog.version
+	${syslogbin}-ctl stats > ${tmpdir}/syslog.stats
+	echo ${syslogbin}-ctl stats
+	for i in $( $getsyslogpids ) ; do 
+		$lsof $i >${tmpdir}/syslog.$i.lsof
+		myplimit $i >${tmpdir}/syslog.$i.limits
+	done
+	$duks $vardir >${tmpdir}/syslog.duks.var
+	read vardu dir <${tmpdir}/syslog.duks.var
+	mkdir ${tmpdir}/var
+	cd "$vardir"
+	if [ "$vardu" -lt "$varlimit" ] ; then
+		find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
+	else
+		echo "Size of $vardir is larger than $varlimit kilobytes."
+		echo -n "Do you really want to copy it's contents? Type 'YES' with all capitals: "
+		read ans
+		[ "$ans" = "YES" ] && find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
+	fi
+	ldd $syslogrealbin >${tmpdir}/syslog.ldd
+	while read x ; do
+		x="${x#*=>}"
+		x="/${x#*/}"
+		x="${x%% (*}"
+		[ "${x:0:2}" != "/ " ] && echo "$x" >>${tmpdir}/syslog.ldfiles
+	done <${tmpdir}/syslog.ldd 
+	for i in $(cat ${tmpdir}/syslog.ldfiles ) ; do
+		distpkgoffile $i >>${tmpdir}/syslog.ldpkg
+	done
+	sort <${tmpdir}/syslog.ldpkg | uniq >${tmpdir}/syslog.ldpkg.u
+	mv ${tmpdir}/syslog.ldpkg.u ${tmpdir}/syslog.ldpkg
+	for i in $(cat ${tmpdir}/syslog.ldpkg ) ; do
+		distpkgstatus $i >>${tmpdir}/syslog.ldinfos
+	done
+}
+
+acquire_syslog_pe_info () {
+	acquire_syslog_info
+}
+
+acquire_syslog_ose_info () {
+	confdir=/etc/syslog-ng
+	vardir=/var/lib/syslog-ng
+	syslogbin=/usr/sbin/syslog-ng
+	syslogrealbin=/usr/sbin/syslog-ng
+	acquire_syslog_info
+}
+### Here comes the linux & distro specific parts
+
+debun_extra_debian () {
+	echo -e "\nDebian specific checks"
+	echo "Check package files integrity"
+	cd /
+	md5sum --quiet -c /var/lib/dpkg/info/syslog-ng*.md5sums && echo Package files are intact
+	echo "list syslog-related packages"
+	dpkg -l |grep syslog > ${tmpdir}/deb.packages
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		read x < <(dpkg -S $1)
+		echo "${x%: /*}"
+	}
+	distpkgstatus () {
+		echo "@@@Package info for: $1"
+		dpkg -s $1
+		echo ""
+	}
+	syslogrealbin=${binprefix}/sbin/syslog-ng
+}
+
+debun_extra_redhat () {
+	echo -e "\nRedhat specific checks"
+	echo "Check package files integrity"
+	rpm -V syslog-ng-pe && echo Package files are intact
+	echo "list syslog-related packages"
+	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		read x < <(rpm -qf $1)
+		echo "$x"
+	}
+	distpkgstatus () {
+		echo "@@@Package info for: $1"
+		rpm -qi $1
+		echo ""
+	}
+}
+
+debun_linux () {
+if  hash lsb_release ; then
+	lsb_release -a | tee ${tmpdir}/lsb.all
+	dist=$(lsb_release -si)
+	if [ "$dist" = "Debian" ]; then
+		add_extra debun_extra_debian 
+	elif [ "$dist" = "Ubuntu" ]; then
+		add_extra debun_extra_debian
+	elif [ "$dist" = "CentOS" ]; then
+		add_extra debun_extra_redhat
+	elif [ "$dist" = "RHEL" ]; then
+		add_extra debun_extra_redhat
+	else 
+		echo "Unknown Distro, perhaps unsupported"
+	fi
+else
+	echo "No lsb_release here. Is this system a supported one?"
+fi
+unset myplimit
+myplimit () { cat /proc/$1/limits ; }
+if hash getenforce; then
+	getenforce >${tmpdir}/sys.selinux
+else
+	echo "No getenforce in path." >${tmpdir}/sys.selinux
+fi
+}
+
+### Here comes solaris specific parts
+debun_solaris () {
+lsof=pfiles
+ipconfig="ifconfig -a"
+pscmd="ps -eaf"
+unset myplimit
+myplimit () { plimit $1 ; }
+tcpdump="snoop -P -q -o"
+pcapifparm="-d"
+mypidof () { ps -eao pid,comm | while read pid bin ; do [ \"$bin\" = \"$1\" ] && echo $pid ; done; }
+syslogrealbin=${binprefix}/sbin/syslog-ng
+getsyslogpids="mypidof ${syslogrealbin}"
+netstatnlp="netstat -na"
+}
+
+debun_hpux () {
+echo "yada-yada..."
+}
+
+detect_env () {
+###
+### Detecting syslog-ng ver: ose or pe
+###
+
+echo "Start environment detection"
+if [ -d /opt/syslog-ng ] ; then
+	syslogrel=pe
+	echo "Syslog-ng-pe detected"
+elif [ -d /etc/syslog-ng ]; then
+	syslogrel=ose
+	echo "Syslog-ng-ose detected"
+else
+	syslogrel=unknown
+	confdir=/nonexistent
+	echo "No syslog-ng detected"
+fi
+
+###
+### Decide OS (switch-like)
+###
+os=$(uname -s)
+echo -e "\nOperating System Name: $os"
+if [ "$os" = "Linux" ]; then
+	debun_linux
+elif [ "$os" = "SunOS" ]; then
+	debun_solaris
+else
+	echo "Unkonwn or unhandled (yet) system"
+fi
+
+}
+
+run_specific_extras () {
+for i in ${extras[@]}; do
+	$i
+done
+}
+
+run_debug () {
+echo -e "\nStart Debug collection"
+if [ -n "$pcap_params" ]; then
+	echo "Start packet dump in background with filters: $pcap_params"
+	$tcpdump ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} $pcap_params &
+	pcappid=$!
+fi
+if [ -n "$waitforit" ]; then
+	[ -n "$pcap_params" ] && sleep 1
+	echo "Waiting $waitforit secs before stop system's syslog-ng, and restart in debug mode."
+	pad=''
+	bs=''	
+	for i in $(seq 1 ${#waitforit}); do pad="${pad} " ; bs="\b$bs" ; done
+	echo -n "Start countdown: ${pad}" >&3
+	for i in $(seq $waitforit -1 1 ); do echo -en "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
+	echo "0">&3
+	touch ${tmpdir}/syslog.debug
+fi
+if [ -n "$debug_params" ]; then
+	/etc/init.d/syslog-ng stop
+	echo "Start syslog-ng debug with params: $debug_params"
+	$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
+	debugpid=$!
+fi
+[ -n "$timeout" ] || echo "When you want to stop collecting data, press ENTER" >&3
+if [ -n "$waitforit" ]; then
+	sleep 1						# Let's gave time the user, to read the message about stoping
+	tail -f ${tmpdir}/syslog.debug >&3 &
+	debugtailpid=$!
+	disown
+fi
+if [ -n "$timeout" ];
+then
+	sleep "$timeout"
+else
+	read line
+fi
+}
+
+###
+### Main program tasks
+###
+
+debun_init
+detect_env
+acquire_general_info
+run_specific_extras
+[ "$syslogrel" = "pe" ] && acquire_syslog_pe_info
+[ "$syslogrel" = "ose" ] && acquire_syslog_ose_info
+[ -n "$debug_mode" ] && run_debug
+debun_final
