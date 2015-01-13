@@ -29,14 +29,14 @@ dfh="df -h"
 duks="du -ks"
 mount=mount
 varlimit=1000
-#myplimit () { cat /proc/$1/limits ; }
-myplimit () { echo "yada-yada" ; }
-distpkgoffile () { echo "yada-yada" ; }
-distpkgstatus () { echo "yada-yada" ; }
+myplimit () { echo "Plimit query is not supported on this platform" >&2 ; }
+distpkgoffile () { echo "Package file search is not supported (yet) on this platform" >&2 ; }
+distpkgstatus () { echo "Package status query is not (yet) supported on this platform" >&2 ; }
 selftar="tar cf - ."
 showdep="dpkg -S"
 pcapifparm=-i
 w=w
+vmstat=vmstat
 dmesg=dmesg
 tcpdump="tcpdump -p -s 1500 -w"
 getsyslogpids="pidof syslog-ng"
@@ -79,7 +79,7 @@ exit ${1:-0}
 ### Parsing optional parameters
 ###
 
-while getopts "hldD:pP:w:i:W:t:" opt ; do
+while getopts "hldD:pP:w:i:W:R:t:" opt ; do
 	case $opt in
 		d)
 			[ -n "$debug_params" ] && debun_usage 2
@@ -163,7 +163,7 @@ debun_init () {
 	disown
 }
 
-debun_final() {
+debun_finish_debug () {
 	if [ -d /proc/${debugpid} ]; then
 		kill -INT $debugpid
 		[ -d /proc/${debugpid} ] && sleep 1
@@ -179,8 +179,9 @@ debun_final() {
 		kill -INT $pcappid
 	fi
 	wait
-	echo -e "\nDebug Bundle generation: Done."
-	exec >&3 2>&1
+}
+
+debun_do_tarball () {
 	cd $tmpdir
 	touch ${tmpdir}.tgz
 	chmod 600 ${tmpdir}.tgz
@@ -188,6 +189,13 @@ debun_final() {
 	cd ..
 	rm -r "${tmpdir}"
 	kill $tailpid
+}
+
+debun_final() {
+	debun_finish_debug
+	echo -e "\nDebug Bundle generation: Done."
+	exec >&3 2>&1
+	debun_do_tarball
 	echo "Your debug bundle wil be at ${tmpdir}.tgz"
 }
 
@@ -195,12 +203,12 @@ add_extra () {
 	extras=( "${extras[@]}" "$@" )
 }
 
-### Here comes the general info acquiring parts
-acquire_general_info () {
-	echo -e "\nStart general info collection"
+acquire_system_info () {
 	echo -n "System's full uname: "
 	uname -a | tee ${tmpdir}/sys.uname
-	[ -n "$privacy_mode" ] && return
+}
+
+acquire_network_info () {
 	echo -n "Getting network-interface information: "
 	if $ipconfig >${tmpdir}/net.ip ; then
 		echo "Success"
@@ -218,23 +226,47 @@ acquire_general_info () {
 	[ -f /etc/resolv.conf ] && cp /etc/resolv.conf ${tmpdir}/sys.resolv.conf
 	[ -f /etc/hosts ] && cp /etc/hosts ${tmpdir}/sys.hosts
 	echo "Done."
+}
+
+acquire_system_process_info () {
 	echo "List all processes"
 	$pscmd >${tmpdir}/sys.ps
+}
+
+acquire_filesystem_info () {
 	echo "Mount and disk free info collection"
 	$dfk >${tmpdir}/sys.df_k
 	$dfh >${tmpdir}/sys.df_h
 	$mount >${tmpdir}/sys.mount
+}
+
+acquire_system_other_info () {
 	$w >${tmpdir}/sys.w
 	$dmesg >${tmpdir}/sys.dmesg
 	$netstatnlp >${tmpdir}/sys.netstat
+	free >${tmpdir}/sys.free
+	vmstat >${tmpdir}/sys.vmstat
 }
 
-acquire_syslog_info() {
-	echo -e "\nStart Syslog-specific info collection"
+### Here comes the general info acquiring parts
+acquire_general_info () {
+	echo -e "\nStart general info collection"
+	acquire_system_info
+	[ -n "$privacy_mode" ] && return
+	acquire_network_info
+	acquire_system_process_info
+	acquire_filesystem_info
+	acquire_system_other_info
+}
+
+acquire_syslog_config () {
 	echo "Copy configs from $confdir"
 	cd $confdir
 	mkdir  ${tmpdir}/config
 	find . | cpio -pd ${tmpdir}/config
+}
+
+acquire_syslog_info () {
 	echo "Syslog-ng's exact version: $syslogbin"
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
@@ -244,6 +276,9 @@ acquire_syslog_info() {
 		$lsof $i >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
 	done
+}
+
+acquire_syslog_var () {
 	$duks $vardir >${tmpdir}/syslog.duks.var
 	read vardu dir <${tmpdir}/syslog.duks.var
 	mkdir ${tmpdir}/var
@@ -256,6 +291,9 @@ acquire_syslog_info() {
 		read ans
 		[ "$ans" = "YES" ] && find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
 	fi
+}
+
+acquire_syslog_ldinfo () {
 	ldd $syslogrealbin >${tmpdir}/syslog.ldd
 	while read x ; do
 		x="${x#*=>}"
@@ -273,16 +311,29 @@ acquire_syslog_info() {
 	done
 }
 
-acquire_syslog_pe_info () {
+acquire_syslog_all () {
+	echo -e "\nStart Syslog-specific info collection"
+	acquire_syslog_config
 	acquire_syslog_info
+	acquire_syslog_var
+	acquire_syslog_ldinfo
 }
 
-acquire_syslog_ose_info () {
+acquire_syslog_nprv () {
+	echo -e "\nStart Syslog-specific info collection (light)"
+	acquire_syslog_info
+	acquire_syslog_ldinfo
+}
+
+fhs_set_linux () {
 	confdir=/etc/syslog-ng
 	vardir=/var/lib/syslog-ng
 	syslogbin=/usr/sbin/syslog-ng
 	syslogrealbin=/usr/sbin/syslog-ng
-	acquire_syslog_info
+}
+
+fhs_set_unix () {
+	:
 }
 ### Here comes the linux & distro specific parts
 
@@ -365,11 +416,12 @@ pcapifparm="-d"
 mypidof () { ps -eao pid,comm | while read pid bin ; do [ \"$bin\" = \"$1\" ] && echo $pid ; done; }
 syslogrealbin=${binprefix}/sbin/syslog-ng
 getsyslogpids="mypidof ${syslogrealbin}"
+free () { prtconf |grep Mem ; echo -n Pagesize:\  ; pagesize -a ; }
 netstatnlp="netstat -na"
 }
 
 debun_hpux () {
-echo "yada-yada..."
+echo "Not (yet) supported platform" >&2
 }
 
 detect_env () {
@@ -379,13 +431,13 @@ detect_env () {
 
 echo "Start environment detection"
 if [ -d /opt/syslog-ng ] ; then
-	syslogrel=pe
-	echo "Syslog-ng-pe detected"
+	syslogfhs=unix
+	echo "Unix-like FHS detected"
 elif [ -d /etc/syslog-ng ]; then
-	syslogrel=ose
-	echo "Syslog-ng-ose detected"
+	syslogfhs=linux
+	echo "Linux-type FHS detected"
 else
-	syslogrel=unknown
+	syslogfhs=unknown
 	confdir=/nonexistent
 	echo "No syslog-ng detected"
 fi
@@ -458,7 +510,12 @@ debun_init
 detect_env
 acquire_general_info
 run_specific_extras
-[ "$syslogrel" = "pe" ] && acquire_syslog_pe_info
-[ "$syslogrel" = "ose" ] && acquire_syslog_ose_info
+[ "$syslogfhs" = "linux" ] && fhs_set_linux
+[ "$syslogfhs" = "unix" ] && fhs_set_unix
+if [ -n "$privacy_mode" ]; then
+	acquire_syslog_nprv
+else
+	acquire_syslog_all
+fi
 [ -n "$debug_mode" ] && run_debug
 debun_final
