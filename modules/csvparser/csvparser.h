@@ -41,6 +41,7 @@ void log_csv_parser_set_delimiters(LogColumnParser *s, const gchar *delimiters);
 void log_csv_parser_set_quotes(LogColumnParser *s, const gchar *quotes);
 void log_csv_parser_set_quote_pairs(LogColumnParser *s, const gchar *quote_pairs);
 void log_csv_parser_set_null_value(LogColumnParser *s, const gchar *null_value);
+void log_csv_parser_append_string_delimiter(LogColumnParser *s, const gchar *string_delimiter);
 LogColumnParser *log_csv_parser_new(GlobalConfig *cfg);
 guint32 log_csv_parser_lookup_flag(const gchar *flag);
 guint32 log_csv_parser_normalize_escape_flags(LogColumnParser *s, guint32 new_flag);

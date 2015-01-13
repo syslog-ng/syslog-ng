@@ -87,7 +87,16 @@ parser_csv_opt
         | KW_QUOTES '(' string ')'              { log_csv_parser_set_quotes((LogColumnParser *) last_parser, $3); free($3); }
         | KW_QUOTE_PAIRS '(' string ')'         { log_csv_parser_set_quote_pairs((LogColumnParser *) last_parser, $3); free($3); }
         | KW_NULL '(' string ')'                { log_csv_parser_set_null_value((LogColumnParser *) last_parser, $3); free($3); }
+        | KW_STRING_DELIMITERS '(' parser_csv_string_delimiters ')'
         | parser_column_opt
+        ;
+
+parser_csv_string_delimiters
+        : string parser_csv_string_delimiters
+          {
+            log_csv_parser_append_string_delimiter((LogColumnParser *) last_parser, $1);
+          }
+        | 
         ;
 
 parser_csv_flags

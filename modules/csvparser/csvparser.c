@@ -34,6 +34,7 @@ typedef struct _LogCSVParser
   gchar *quotes_end;
   gchar *null_value;
   guint32 flags;
+  GList *string_delimiters;
 } LogCSVParser;
 
 #define LOG_CSV_PARSER_SINGLE_CHAR_DELIM 0x0100
@@ -144,6 +145,46 @@ log_csv_parser_set_null_value(LogColumnParser *s, const gchar *null_value)
   self->null_value = g_strdup(null_value);
 }
 
+void
+log_csv_parser_append_string_delimiter(LogColumnParser *s, const gchar *string_delimiter)
+{
+  LogCSVParser *self = (LogCSVParser *) s;
+
+  self->string_delimiters = g_list_prepend(self->string_delimiters, (gpointer)string_delimiter);
+}
+
+typedef struct _StrLstPrivData {
+  char *first_occurence;
+  int delim_length;
+  const char *string;
+} StrLstPrivData;
+
+void
+_find_string(gpointer data, gpointer u_data)
+{
+  const char *item = (const char*) data;
+  StrLstPrivData *user_data = (StrLstPrivData*) u_data;
+
+  if (!user_data->first_occurence)
+  {
+    user_data->first_occurence = strstr(user_data->string, item);
+    user_data->delim_length = (user_data->first_occurence) ? strlen(item) : 0;
+  }
+}
+
+/* searches for str1 in list and returns the first occurence, otherwise NULL */
+guchar*
+strlst(const char * str1, GList *list, int *delim_length)
+{
+  StrLstPrivData user_data = {NULL, 0, str1};
+
+  g_list_foreach(list, _find_string, (gpointer) &user_data);
+
+  *delim_length = user_data.delim_length;
+
+  return (guchar*) user_data.first_occurence;
+}
+
 static gboolean
 log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
@@ -162,13 +203,17 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
       while (cur_column && *src)
         {
           const guchar *delim;
+          const guchar *delim_string=NULL, *delim_char=NULL;
           guchar *quote;
           guchar current_quote;
+          gint delim_len = 0;
 
           quote = (guchar *) strchr(self->quotes_start, *src);
+          // a jelenlegi karakter egy quote
           if (quote != NULL)
             {
               /* ok, quote character found */
+              // ez a bezaro quote
               current_quote = self->quotes_end[quote - (guchar *) self->quotes_start];
               src++;
             }
@@ -184,17 +229,20 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
                 src++;
             }
 
+          // var bezaro quote
           if (current_quote)
             {
               /* search for end of quote */
               delim = (guchar *) strchr(src, current_quote);
 
-              if (delim &&
-                  (((self->flags & LOG_CSV_PARSER_SINGLE_CHAR_DELIM) && *(delim + 1) == self->delimiters[0]) ||
-                     strchr(self->delimiters, *(delim + 1)) != NULL))
+              if (delim)
                 {
-                  /* closing quote, and then a delimiter, everything is nice */
-                  delim++;
+                  delim_string = strlst((const char *)delim, self->string_delimiters, &delim_len);
+                  if (delim_string == (delim + 1) || (strchr(self->delimiters, *(delim + 1)) != NULL ))
+                    {
+                      /* closing quote, and then a delimiter, everything is nice */
+                      delim++;
+                    }
                 }
               else if (!delim)
                 {
@@ -204,19 +252,30 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
             }
           else
             {
-              if (self->flags & LOG_CSV_PARSER_SINGLE_CHAR_DELIM)
+              if (self->string_delimiters)
                 {
-                  delim = (guchar *) strchr(src, self->delimiters[0]);
-                  if (!delim)
-                    delim = (guchar *) src + strlen(src);
+                  delim_string = strlst(src, self->string_delimiters, &delim_len);
+                }
+
+              delim_char = (guchar *) src + strcspn(src, self->delimiters);
+
+              // string delimeter legalabb a karakter delim helyen kezdodik
+              if (delim_string && delim_string <= delim_char)
+                {
+                  delim = delim_string;
+                }
+              else if (delim_char)
+                {
+                  delim = delim_char; 
                 }
               else
                 {
-                  delim = (guchar *) src + strcspn(src, self->delimiters);
+                  delim = (guchar *) src + strlen(src);
                 }
             }
 
 
+          // az oszlop hossza?
           len = delim - (guchar *) src;
           /* move in front of the terminating quote character */
           if (current_quote && len > 0 && src[len - 1] == current_quote)
@@ -232,7 +291,10 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
             log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, len);
 
           src = (gchar *) delim;
-          if (*src)
+
+          if (delim_len && delim == delim_string)
+            src += delim_len;
+          else if (*src)
             src++;
           cur_column = cur_column->next;
 
@@ -261,6 +323,7 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
       gchar current_quote = 0;
       GString *current_value;
       gboolean store_value = FALSE;
+      gint delim_len = 0;
       gchar *quote;
 
       current_value = g_string_sized_new(128);
@@ -315,6 +378,10 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
                       /* end of column */
                       current_quote = 0;
                       state = PS_DELIMITER;
+
+                      if (self->string_delimiters && strlst(src, self->string_delimiters, &delim_len) != ((guchar*)src + 1))
+                        delim_len = 0;
+
                       break;
                     }
                   g_string_append_c(current_value, *src);
@@ -322,7 +389,7 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
               else
                 {
                   /* unquoted value */
-                  if (strchr(self->delimiters, *src))
+                  if ((self->string_delimiters && strlst(src, self->string_delimiters, &delim_len) == (guchar*)src) || strchr(self->delimiters, *src) )
                     {
                       state = PS_DELIMITER;
                       continue;
@@ -351,6 +418,11 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
               cur_column = cur_column->next;
               state = PS_COLUMN_START;
               store_value = FALSE;
+
+              if (delim_len > 0)
+                src += delim_len - 1;
+
+              delim_len = 0;
 
               if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
                 {
@@ -384,12 +456,15 @@ log_csv_parser_clone(LogPipe *s)
   g_free(cloned->delimiters);
   g_free(cloned->quotes_start);
   g_free(cloned->quotes_end);
+  if (cloned->string_delimiters)
+    g_list_free_full(cloned->string_delimiters, g_free);
 
   cloned->delimiters = g_strdup(self->delimiters);
   cloned->quotes_start = g_strdup(self->quotes_start);
   cloned->quotes_end = g_strdup(self->quotes_end);
   cloned->null_value = self->null_value ? g_strdup(self->null_value) : NULL;
   cloned->flags = self->flags;
+  cloned->string_delimiters = self->string_delimiters;
 
   cloned->super.super.template = log_template_ref(self->super.super.template);
   for (l = self->super.columns; l; l = l->next)
@@ -412,6 +487,8 @@ log_csv_parser_free(LogPipe *s)
     g_free(self->null_value);
   if (self->delimiters)
     g_free(self->delimiters);
+  if (self->string_delimiters)
+    g_list_free_full(self->string_delimiters, g_free);
   log_column_parser_free_method(s);
 }
 

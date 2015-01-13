@@ -53,6 +53,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "delimiters",         KW_DELIMITERS, 0x0300 },
   { "quotes",             KW_QUOTES, 0x0300 },
   { "quote_pairs",        KW_QUOTE_PAIRS, 0x0300},
+  { "string_delimiters",  KW_STRING_DELIMITERS, 0x0300},
   { "null",               KW_NULL, 0x0300 },
 
   /* value pairs */
