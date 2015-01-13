@@ -191,6 +191,7 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_QUOTES                      10051
 %token KW_QUOTE_PAIRS                 10052
 %token KW_NULL                        10053
+%token KW_STRING_DELIMITERS           10054
 
 %token KW_SYSLOG                      10060
 
