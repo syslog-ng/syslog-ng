@@ -24,9 +24,16 @@
 package org.syslog_ng;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.lang.reflect.Method;
 
 
@@ -69,12 +76,52 @@ public class SyslogNgClassLoader {
 	return result;
   }
 
+  private List<String> resolveWildCardFileName(String path) {
+	  List<String> result = new ArrayList<String>();
+	  File f = new File(path);
+	  final String basename = f.getName();
+	  String dirname = f.getParent();
+	  File dir = new File(dirname);
+	  File[] files = dir.listFiles(new FilenameFilter() {
+
+		  public boolean accept(File dir, String name) {
+			  PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:"+basename);
+			  Path path = Paths.get(name);
+			  return matcher.matches(path);
+		  }
+	  });
+    if (files != null) {
+	    for (File found:files) {
+		    result.add(found.getAbsolutePath());
+	    }
+    }
+	  return result;
+  }
+
+  private String[] parsePathList(String pathList) {
+	  String[] pathes = pathList.split(":");
+	  List<String> result = new ArrayList<String>();
+
+	  for (String path:pathes) {
+		  if (path.indexOf('*') != -1) {
+			  result.addAll(resolveWildCardFileName(path));
+		  }
+		  else {
+			  result.add(path);
+		  }
+	  }
+
+	  return result.toArray(new String[result.size()]);
+  }
+
+
   private URL[] createUrls(String pathList) {
-    String[] pathes = pathList.split(":");
+    String[] pathes = parsePathList(pathList);
     URL[] urls = new URL[pathes.length];
     int i = 0;
     for (String path:pathes) {
       try {
+        System.out.println("Add path to classpath: " + path);
         urls[i++] = new File(path).toURI().toURL();
       }
       catch (MalformedURLException e) {
