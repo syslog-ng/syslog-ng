@@ -37,7 +37,8 @@ void java_dd_set_option(LogDriver *s, const gchar *key, const gchar *value)
   g_hash_table_insert(self->options, g_strdup(key), g_strdup(value));
 }
 
-JNIEXPORT jstring JNICALL Java_org_syslog_1ng_LogPipe_getOption(JNIEnv *env, jobject obj, jlong s, jstring key)
+JNIEXPORT jstring JNICALL
+Java_org_syslog_1ng_LogPipe_getOption(JNIEnv *env, jobject obj, jlong s, jstring key)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
   gchar *value;
@@ -61,7 +62,7 @@ JNIEXPORT jstring JNICALL Java_org_syslog_1ng_LogPipe_getOption(JNIEnv *env, job
 }
 
 JNIEXPORT jlong JNICALL
-Java_org_syslog_1ng_SyslogNgDestination_getConfigHandle(JNIEnv *env, jobject obj, jlong handle)
+Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong handle)
 {
   JavaDestDriver *self = (JavaDestDriver *)handle;
   return (jlong)log_pipe_get_config(&self->super.super.super);
