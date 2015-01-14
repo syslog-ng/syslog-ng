@@ -88,6 +88,8 @@ install-exec-local:
 uninstall-local:
 	rm -rf $(DESTDIR)$(moduledir)/SyslogNg.jar
 
+clean-local:
+	rm -rf org
 endif
 
 include $(top_srcdir)/build/lex-rules.am
