@@ -45,6 +45,8 @@ public abstract class LogPipe {
     }
   }
 
+  public abstract boolean init();
+  public abstract void deinit();
   private native String getOption(long ptr, String key);
   private native long getConfigHandle(long ptr);
 }
