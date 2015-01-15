@@ -37,8 +37,6 @@ typedef struct _LogCSVParser
   GList *string_delimiters;
 } LogCSVParser;
 
-#define LOG_CSV_PARSER_SINGLE_CHAR_DELIM 0x0100
-
 static inline gint
 _is_escape_flag(guint32 flag)
 {
@@ -93,10 +91,6 @@ log_csv_parser_set_delimiters(LogColumnParser *s, const gchar *delimiters)
   if (self->delimiters)
     g_free(self->delimiters);
   self->delimiters = g_strdup(delimiters);
-  if (strlen(delimiters) == 1)
-    self->flags |= LOG_CSV_PARSER_SINGLE_CHAR_DELIM;
-  else
-    self->flags &= ~LOG_CSV_PARSER_SINGLE_CHAR_DELIM;
 }
 
 void
