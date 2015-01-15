@@ -384,6 +384,7 @@ log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPat
 {
   INIT_IV_LIST_HEAD(&node->list);
   node->ack_needed = path_options->ack_needed;
+  node->flow_control_requested = path_options->flow_control_requested;
   node->msg = log_msg_ref(msg);
   msg->flags |= LF_STATE_REFERENCED;
 }

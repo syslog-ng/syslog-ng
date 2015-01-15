@@ -196,9 +196,13 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
           iv_list_del(&node->list);
           self->qoverflow_input[thread_id].len--;
           path_options.ack_needed = node->ack_needed;
+          path_options.flow_control_requested = node->flow_control_requested;
           stats_counter_inc(self->super.dropped_messages);
           log_msg_free_queue_node(node);
-          log_msg_drop(msg, &path_options, AT_PROCESSED);
+          if (path_options.flow_control_requested)
+            log_msg_drop(msg, &path_options, AT_SUSPENDED);
+          else
+            log_msg_drop(msg, &path_options, AT_PROCESSED);
         }
       msg_error("Destination queue full, dropping messages",
                 evt_tag_int("queue_len", queue_len),
@@ -310,7 +314,11 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
     {
       stats_counter_inc(self->super.dropped_messages);
       g_static_mutex_unlock(&self->super.lock);
-      log_msg_drop(msg, path_options, AT_PROCESSED);
+
+      if (path_options->flow_control_requested)
+        log_msg_drop(msg, path_options, AT_SUSPENDED);
+      else
+        log_msg_drop(msg, path_options, AT_PROCESSED);
 
       msg_debug("Destination queue full, dropping message",
                 evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
