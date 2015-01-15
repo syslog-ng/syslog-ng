@@ -1208,29 +1208,15 @@ log_msg_free(LogMessage *self)
  * log_msg_drop:
  * @msg: LogMessage instance
  * @path_options: path specific options
+ * @ack_type: type of ack
  *
  * This function is called whenever a destination driver feels that it is
  * unable to process this message. It acks and unrefs the message.
  **/
 void
-log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
+log_msg_drop(LogMessage *msg, const LogPathOptions *path_options, AckType ack_type)
 {
-  log_msg_ack(msg, path_options, AT_PROCESSED);
-  log_msg_unref(msg);
-}
-
-/**
- * log_msg_suspend_ack:
- * @msg: LogMessage instance
- * @path_options: path specific options
- *
- * This function is called whenever a destination driver feels that it is
- * unablee to process further messages. It acks(AT_SUSPENDED) and unrefs the message.
- **/
-void
-log_msg_suspend_ack(LogMessage *msg, const LogPathOptions *path_options)
-{
-  log_msg_ack(msg, path_options, AT_SUSPENDED);
+  log_msg_ack(msg, path_options, ack_type);
   log_msg_unref(msg);
 }
 

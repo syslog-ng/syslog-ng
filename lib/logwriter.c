@@ -763,7 +763,7 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions 
                     evt_tag_str("host", log_msg_get_value(lm, LM_V_HOST, NULL)),
                     evt_tag_str("msg", log_msg_get_value(lm, LM_V_MESSAGE, NULL)),
                     NULL);
-          log_msg_drop(lm, path_options);
+          log_msg_drop(lm, path_options, AT_PROCESSED);
           return TRUE;
         }
 
@@ -865,7 +865,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
   if (mark_mode != MM_INTERNAL && (lm->flags & LF_INTERNAL) && (lm->flags & LF_MARK))
     {
       /* skip the internal MARK messages */
-      log_msg_drop(lm, path_options);
+      log_msg_drop(lm, path_options, AT_PROCESSED);
       return;
     }
 
