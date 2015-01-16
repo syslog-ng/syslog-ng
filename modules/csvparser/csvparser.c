@@ -179,118 +179,254 @@ strlst(const char * str1, GList *list, int *delim_length)
   return (guchar*) user_data.first_occurence;
 }
 
-static gboolean
-log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+static inline gboolean
+_do_drop_invalid(GList *cur_column, const gchar *src, guint32 flags)
 {
-  LogCSVParser *self = (LogCSVParser *) s;
-  const gchar *src;
+  return (cur_column || (src && *src)) && (flags & LOG_CSV_PARSER_DROP_INVALID);
+}
+
+static gboolean
+log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
+{
   GList *cur_column = self->super.columns;
   gint len;
-  LogMessage *msg;
+  /* no escaping, no need to keep state, we split input and trim if necessary */
 
-  src = input;
-  msg = log_msg_make_writable(pmsg, path_options);
-  if ((self->flags & LOG_CSV_PARSER_ESCAPE_NONE) || ((self->flags & LOG_CSV_PARSER_ESCAPE_MASK) == 0))
+  while (cur_column && *src)
     {
-      /* no escaping, no need to keep state, we split input and trim if necessary */
+      const guchar *delim;
+      const guchar *delim_string=NULL, *delim_char=NULL;
+      guchar *quote;
+      guchar current_quote;
+      gint delim_len = 0;
 
-      while (cur_column && *src)
+      quote = (guchar *) strchr(self->quotes_start, *src);
+      // a jelenlegi karakter egy quote
+      if (quote != NULL)
         {
-          const guchar *delim;
-          const guchar *delim_string=NULL, *delim_char=NULL;
-          guchar *quote;
-          guchar current_quote;
-          gint delim_len = 0;
+          /* ok, quote character found */
+          // ez a bezaro quote
+          current_quote = self->quotes_end[quote - (guchar *) self->quotes_start];
+          src++;
+        }
+      else
+        {
+          /* we didn't start with a quote character, no need for escaping, delimiter terminates */
+          current_quote = 0;
+        }
 
-          quote = (guchar *) strchr(self->quotes_start, *src);
-          // a jelenlegi karakter egy quote
+      if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
+        {
+          while (*src == ' ' || *src == '\t')
+            src++;
+        }
+
+      // var bezaro quote
+      if (current_quote)
+        {
+          /* search for end of quote */
+          delim = (guchar *) strchr(src, current_quote);
+
+          if (delim)
+            {
+              delim_string = strlst((const char *)delim, self->string_delimiters, &delim_len);
+              if (delim_string == (delim + 1) || (strchr(self->delimiters, *(delim + 1)) != NULL ))
+                {
+                  /* closing quote, and then a delimiter, everything is nice */
+                  delim++;
+                }
+            }
+          else if (!delim)
+            {
+              /* complete remaining string */
+              delim = (guchar *) src + strlen(src);
+            }
+        }
+      else
+        {
+          if (self->string_delimiters)
+            {
+              delim_string = strlst(src, self->string_delimiters, &delim_len);
+            }
+
+          delim_char = (guchar *) src + strcspn(src, self->delimiters);
+
+          // string delimeter legalabb a karakter delim helyen kezdodik
+          if (delim_string && delim_string <= delim_char)
+            {
+              delim = delim_string;
+            }
+          else if (delim_char)
+            {
+              delim = delim_char; 
+            }
+          else
+            {
+              delim = (guchar *) src + strlen(src);
+            }
+        }
+
+
+      // az oszlop hossza?
+      len = delim - (guchar *) src;
+      /* move in front of the terminating quote character */
+      if (current_quote && len > 0 && src[len - 1] == current_quote)
+        len--;
+      if (len > 0 && self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
+        {
+          while (len > 0 && (src[len - 1] == ' ' || src[len - 1] == '\t'))
+            len--;
+        }
+      if (self->null_value && strncmp(src, self->null_value, len) == 0)
+        log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
+      else
+        log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, len);
+
+      src = (gchar *) delim;
+
+      if (delim_len && delim == delim_string)
+        src += delim_len;
+      else if (*src)
+        src++;
+      cur_column = cur_column->next;
+
+      if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
+        {
+          /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
+          log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, -1);
+          cur_column = NULL;
+          src = NULL;
+          break;
+        }
+    }
+
+  if (_do_drop_invalid(cur_column, src, self->flags))
+    {
+      /* there are unfilled variables, OR not all of the input was processed
+       * and "drop-invalid" flag is specified */
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
+log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
+{
+  GList *cur_column = self->super.columns;
+  gint len;
+  /* stateful parser */
+  gint state;
+  enum
+    {
+      PS_COLUMN_START,
+      PS_WHITESPACE,
+      PS_VALUE,
+      PS_DELIMITER,
+      PS_EOS
+    };
+  gchar current_quote = 0;
+  GString *current_value;
+  gboolean store_value = FALSE;
+  gint delim_len = 0;
+  gchar *quote;
+
+  current_value = g_string_sized_new(128);
+
+  state = PS_COLUMN_START;
+  while (cur_column && *src)
+    {
+      switch (state)
+        {
+        case PS_COLUMN_START:
+          /* check for quote character */
+          state = PS_WHITESPACE;
+          quote = strchr(self->quotes_start, *src);
           if (quote != NULL)
             {
               /* ok, quote character found */
-              // ez a bezaro quote
-              current_quote = self->quotes_end[quote - (guchar *) self->quotes_start];
-              src++;
+              current_quote = self->quotes_end[quote - self->quotes_start];
             }
           else
             {
               /* we didn't start with a quote character, no need for escaping, delimiter terminates */
               current_quote = 0;
+              /* don't skip to the next character */
+              continue;
             }
-
-          if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
+          break;
+        case PS_WHITESPACE:
+          if ((self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE) && (*src == ' ' || *src == '\t'))
             {
-              while (*src == ' ' || *src == '\t')
-                src++;
+              break;
             }
-
-          // var bezaro quote
+          state = PS_VALUE;
+          /* fallthrough */
+        case PS_VALUE:
           if (current_quote)
             {
-              /* search for end of quote */
-              delim = (guchar *) strchr(src, current_quote);
+              /* quoted value */
+              if ((self->flags & LOG_CSV_PARSER_ESCAPE_BACKSLASH) && *src == '\\' && *(src+1))
+                {
+                  src++;
+                  g_string_append_c(current_value, *src);
+                  break;
+                }
+              else if (self->flags & LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR && *src == current_quote && *(src+1) == current_quote)
+                {
+                  src++;
+                  g_string_append_c(current_value, *src);
+                  break;
+                }
+              if (*src == current_quote)
+                {
+                  /* end of column */
+                  current_quote = 0;
+                  state = PS_DELIMITER;
 
-              if (delim)
-                {
-                  delim_string = strlst((const char *)delim, self->string_delimiters, &delim_len);
-                  if (delim_string == (delim + 1) || (strchr(self->delimiters, *(delim + 1)) != NULL ))
-                    {
-                      /* closing quote, and then a delimiter, everything is nice */
-                      delim++;
-                    }
+                  if (self->string_delimiters && strlst(src, self->string_delimiters, &delim_len) != ((guchar*)src + 1))
+                    delim_len = 0;
+
+                  break;
                 }
-              else if (!delim)
-                {
-                  /* complete remaining string */
-                  delim = (guchar *) src + strlen(src);
-                }
+              g_string_append_c(current_value, *src);
             }
           else
             {
-              if (self->string_delimiters)
+              /* unquoted value */
+              if ((self->string_delimiters && strlst(src, self->string_delimiters, &delim_len) == (guchar*)src) || strchr(self->delimiters, *src) )
                 {
-                  delim_string = strlst(src, self->string_delimiters, &delim_len);
+                  state = PS_DELIMITER;
+                  continue;
                 }
-
-              delim_char = (guchar *) src + strcspn(src, self->delimiters);
-
-              // string delimeter legalabb a karakter delim helyen kezdodik
-              if (delim_string && delim_string <= delim_char)
-                {
-                  delim = delim_string;
-                }
-              else if (delim_char)
-                {
-                  delim = delim_char; 
-                }
-              else
-                {
-                  delim = (guchar *) src + strlen(src);
-                }
+              g_string_append_c(current_value, *src);
             }
-
-
-          // az oszlop hossza?
-          len = delim - (guchar *) src;
-          /* move in front of the terminating quote character */
-          if (current_quote && len > 0 && src[len - 1] == current_quote)
-            len--;
-          if (len > 0 && self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
+          break;
+        case PS_DELIMITER:
+          store_value = TRUE;
+          break;
+        }
+      src++;
+      if (*src == 0 || store_value)
+        {
+          len = current_value->len;
+          if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
             {
-              while (len > 0 && (src[len - 1] == ' ' || src[len - 1] == '\t'))
+              while (len > 0 && (current_value->str[len-1] == ' ' || current_value->str[len-1] == '\t'))
                 len--;
             }
-          if (self->null_value && strncmp(src, self->null_value, len) == 0)
+          if (self->null_value && strcmp(current_value->str, self->null_value) == 0)
             log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
           else
-            log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, len);
-
-          src = (gchar *) delim;
-
-          if (delim_len && delim == delim_string)
-            src += delim_len;
-          else if (*src)
-            src++;
+            log_msg_set_value_by_name(msg, (gchar *) cur_column->data, current_value->str, len);
+          g_string_truncate(current_value, 0);
           cur_column = cur_column->next;
+          state = PS_COLUMN_START;
+          store_value = FALSE;
+
+          if (delim_len > 0)
+            src += delim_len - 1;
+
+          delim_len = 0;
 
           if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
             {
@@ -302,141 +438,43 @@ log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pa
             }
         }
     }
-  else if (self->flags & (LOG_CSV_PARSER_ESCAPE_BACKSLASH+LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR))
-    {
-      /* stateful parser */
-      gint state;
-      enum
-        {
-          PS_COLUMN_START,
-          PS_WHITESPACE,
-          PS_VALUE,
-          PS_DELIMITER,
-          PS_EOS
-        };
-      gchar current_quote = 0;
-      GString *current_value;
-      gboolean store_value = FALSE;
-      gint delim_len = 0;
-      gchar *quote;
 
-      current_value = g_string_sized_new(128);
+  g_string_free(current_value, TRUE);
 
-      state = PS_COLUMN_START;
-      while (cur_column && *src)
-        {
-          switch (state)
-            {
-            case PS_COLUMN_START:
-              /* check for quote character */
-              state = PS_WHITESPACE;
-              quote = strchr(self->quotes_start, *src);
-              if (quote != NULL)
-                {
-                  /* ok, quote character found */
-                  current_quote = self->quotes_end[quote - self->quotes_start];
-                }
-              else
-                {
-                  /* we didn't start with a quote character, no need for escaping, delimiter terminates */
-                  current_quote = 0;
-                  /* don't skip to the next character */
-                  continue;
-                }
-              break;
-            case PS_WHITESPACE:
-              if ((self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE) && (*src == ' ' || *src == '\t'))
-                {
-                  break;
-                }
-              state = PS_VALUE;
-              /* fallthrough */
-            case PS_VALUE:
-              if (current_quote)
-                {
-                  /* quoted value */
-                  if ((self->flags & LOG_CSV_PARSER_ESCAPE_BACKSLASH) && *src == '\\' && *(src+1))
-                    {
-                      src++;
-                      g_string_append_c(current_value, *src);
-                      break;
-                    }
-                  else if (self->flags & LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR && *src == current_quote && *(src+1) == current_quote)
-                    {
-                      src++;
-                      g_string_append_c(current_value, *src);
-                      break;
-                    }
-                  if (*src == current_quote)
-                    {
-                      /* end of column */
-                      current_quote = 0;
-                      state = PS_DELIMITER;
-
-                      if (self->string_delimiters && strlst(src, self->string_delimiters, &delim_len) != ((guchar*)src + 1))
-                        delim_len = 0;
-
-                      break;
-                    }
-                  g_string_append_c(current_value, *src);
-                }
-              else
-                {
-                  /* unquoted value */
-                  if ((self->string_delimiters && strlst(src, self->string_delimiters, &delim_len) == (guchar*)src) || strchr(self->delimiters, *src) )
-                    {
-                      state = PS_DELIMITER;
-                      continue;
-                    }
-                  g_string_append_c(current_value, *src);
-                }
-              break;
-            case PS_DELIMITER:
-              store_value = TRUE;
-              break;
-            }
-          src++;
-          if (*src == 0 || store_value)
-            {
-              len = current_value->len;
-              if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
-                {
-                  while (len > 0 && (current_value->str[len-1] == ' ' || current_value->str[len-1] == '\t'))
-                    len--;
-                }
-              if (self->null_value && strcmp(current_value->str, self->null_value) == 0)
-                log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
-              else
-                log_msg_set_value_by_name(msg, (gchar *) cur_column->data, current_value->str, len);
-              g_string_truncate(current_value, 0);
-              cur_column = cur_column->next;
-              state = PS_COLUMN_START;
-              store_value = FALSE;
-
-              if (delim_len > 0)
-                src += delim_len - 1;
-
-              delim_len = 0;
-
-              if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
-                {
-                  /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
-                  log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, -1);
-                  cur_column = NULL;
-                  src = NULL;
-                  break;
-                }
-            }
-        }
-      g_string_free(current_value, TRUE);
-    }
-  if ((cur_column || (src && *src)) && (self->flags & LOG_CSV_PARSER_DROP_INVALID))
+  if (_do_drop_invalid(cur_column, src, self->flags))
     {
       /* there are unfilled variables, OR not all of the input was processed
        * and "drop-invalid" flag is specified */
       return FALSE;
     }
   return TRUE;
+}
+
+static inline gboolean
+_dont_escape(guint32 flags)
+{
+  return ((flags & LOG_CSV_PARSER_ESCAPE_NONE) ||
+         ((flags & LOG_CSV_PARSER_ESCAPE_MASK) == 0));
+}
+
+static inline gboolean
+_do_escape(guint32 flags)
+{
+  return flags & (LOG_CSV_PARSER_ESCAPE_BACKSLASH+LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR);
+}
+
+static gboolean
+log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+{
+  LogCSVParser *self = (LogCSVParser *) s;
+  LogMessage *msg = log_msg_make_writable(pmsg, path_options);
+  const gchar *src = input;
+
+  if (_dont_escape(self->flags))
+    return log_csv_parser_process_unescaped(self, msg, src);
+  else if (_do_escape(self->flags))
+    return log_csv_parser_process_escaped(self, msg, src);
+  return FALSE;
 }
 
 static LogPipe *
