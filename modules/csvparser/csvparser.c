@@ -276,6 +276,36 @@ _find_delim_unescaped_unquoted(LogCSVParser *self, UnescapedParserState *pstate,
   return delim;
 }
 
+static gint
+_get_column_length_unescaped(LogCSVParser *self, const guchar *delim, const gchar *src, guchar quote)
+{
+  gint len;
+
+  // az oszlop hossza?
+  len = delim - (guchar *) src;
+  /* move in front of the terminating quote character */
+  if (quote && len > 0 && src[len - 1] == quote)
+    len--;
+  if (len > 0 && self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
+    {
+      while (len > 0 && (_is_whitespace_char(src + len - 1)))
+        len--;
+    }
+
+  return len;
+}
+
+static inline void
+_move_to_next_column_unescaped(UnescapedParserState *pstate, const gchar** src)
+{
+  *src = (gchar *) pstate->delim;
+
+  if (pstate->delim_len && (pstate->delim == pstate->delim_string))
+    *src += pstate->delim_len;
+  else if (**src)
+    (*src)++;
+}
+
 static gboolean
 log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
@@ -321,26 +351,15 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
         }
 
       // az oszlop hossza?
-      len = delim - (guchar *) src;
-      /* move in front of the terminating quote character */
-      if (current_quote && len > 0 && src[len - 1] == current_quote)
-        len--;
-      if (len > 0 && self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
-        {
-          while (len > 0 && (_is_whitespace_char(src + len - 1)))
-            len--;
-        }
+      len = _get_column_length_unescaped(self, delim, src, current_quote);
+
       if (self->null_value && strncmp(src, self->null_value, len) == 0)
         log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
       else
         log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, len);
 
-      src = (gchar *) delim;
+      _move_to_next_column_unescaped(&pstate, &src);
 
-      if (pstate.delim_len && (delim == pstate.delim_string))
-        src += pstate.delim_len;
-      else if (*src)
-        src++;
       cur_column = cur_column->next;
 
       if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
