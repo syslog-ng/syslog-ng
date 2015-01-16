@@ -37,9 +37,7 @@
 
 #include <string.h>
 
-#if ENABLE_SSL
 #include <openssl/md5.h>
-#endif
 
 static gboolean dbi_initialized = FALSE;
 static const char *s_oracle = "oracle";
@@ -421,7 +419,6 @@ afsql_dd_create_index(AFSqlDestDriver *self, const gchar *table, const gchar *co
       if ((strlen(table) + strlen(column)) > 25)
         {
 
-#if ENABLE_SSL
           guchar hash[MD5_DIGEST_LENGTH];
           gchar hash_str[31];
           gchar *cat = g_strjoin("_", table, column, NULL);
@@ -433,12 +430,6 @@ afsql_dd_create_index(AFSqlDestDriver *self, const gchar *table, const gchar *co
           hash_str[0] = 'i';
           g_string_printf(query_string, "CREATE INDEX %s ON %s (%s)",
               hash_str, table, column);
-#else
-          msg_warning("The name of the index would be too long for Oracle to handle and OpenSSL was not detected which would be used to generate a shorter name. Please enable SSL support in order to use this combination.",
-                      evt_tag_str("table", table),
-                      evt_tag_str("column", column),
-                      NULL);
-#endif
         }
       else
         g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",

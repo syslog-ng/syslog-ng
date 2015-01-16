@@ -55,7 +55,6 @@ afinet_sd_set_localip(LogDriver *s, gchar *ip)
   self->bind_ip = g_strdup(ip);
 }
 
-#if BUILD_WITH_SSL
 void
 afinet_sd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
@@ -63,8 +62,6 @@ afinet_sd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 
   transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, NULL, NULL);
 }
-#endif
-
 
 static gboolean
 afinet_sd_setup_addresses(AFSocketSourceDriver *s)

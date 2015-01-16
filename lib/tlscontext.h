@@ -26,8 +26,6 @@
 
 #include "syslog-ng.h"
 
-#if ENABLE_SSL
-
 #include <openssl/ssl.h>
 
 typedef enum
@@ -88,13 +86,5 @@ void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);
 
 void tls_x509_format_dn(X509_NAME *name, GString *dn);
-#else
-
-typedef struct _TLSContext TLSContext;
-typedef struct _TLSSession TLSSession;
-
-#define tls_context_new(m)
-
-#endif
 
 #endif

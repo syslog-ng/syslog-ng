@@ -47,17 +47,13 @@
 #include "systemd-syslog-source.h"
 #include "afsocket-systemd-override.h"
 
-#if BUILD_WITH_SSL
 #include "tlscontext.h"
-#endif
 
 
 static SocketOptions *last_sock_options;
 static TransportMapper *last_transport_mapper;
 
-#if BUILD_WITH_SSL
 TLSContext *last_tls_context;
-#endif
 
 
 #if ! ENABLE_IPV6
@@ -342,15 +338,11 @@ source_afinet_tcp_option
         : source_afinet_option
 	| KW_TLS
 	  {
-#if BUILD_WITH_SSL
 	    last_tls_context = tls_context_new(TM_SERVER);
-#endif
 	  }
 	  '(' tls_options ')'
 	  {
-#if BUILD_WITH_SSL
 	    afinet_sd_set_tls_context(last_driver, last_tls_context);
-#endif
           }
 	| source_afsocket_stream_params		{}
 	;
@@ -416,15 +408,11 @@ source_afsocket_transport
 	: afsocket_transport
 	| KW_TLS
 	  {
-#if BUILD_WITH_SSL
 	    last_tls_context = tls_context_new(TM_SERVER);
-#endif
 	  }
 	  '(' tls_options ')'
 	  {
-#if BUILD_WITH_SSL
 	    afinet_sd_set_tls_context(last_driver, last_tls_context);
-#endif
           }
         ;
 
@@ -581,15 +569,11 @@ dest_afinet_tcp_option
 	: dest_afinet_option
 	| KW_TLS
 	  {
-#if BUILD_WITH_SSL
 	    last_tls_context = tls_context_new(TM_CLIENT);
-#endif
 	  }
 	  '(' tls_options ')'
 	  {
-#if BUILD_WITH_SSL
 	    afinet_dd_set_tls_context(last_driver, last_tls_context);
-#endif
           }
 	;
 
@@ -653,15 +637,11 @@ dest_afsocket_transport
 	| KW_SPOOF_SOURCE '(' yesno ')'		         { afinet_dd_set_spoof_source(last_driver, $3); }
 	| KW_TLS
 	  {
-  #if BUILD_WITH_SSL
             last_tls_context = tls_context_new(TM_CLIENT);
-  #endif
           }
           '(' tls_options ')'
           {
-  #if BUILD_WITH_SSL
             afinet_dd_set_tls_context(last_driver, last_tls_context);
-  #endif
           }
         ;
 
@@ -681,7 +661,6 @@ tls_options
 
 tls_option
         : KW_IFDEF {
-#if BUILD_WITH_SSL
 }
 
 	| KW_PEER_VERIFY '(' string ')'
@@ -723,7 +702,6 @@ tls_option
             free($3);
 	  }
         | KW_ENDIF {
-#endif
 }
         ;
 

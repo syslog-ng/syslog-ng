@@ -5,7 +5,6 @@
 void
 test_hash(void)
 {
-#if ENABLE_SSL
   assert_template_format("$(sha1 foo)", "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33");
   assert_template_format("$(sha1 bar)", "62cdb7020ff920e5aa642c3d4066950dd1f01f4d");
   assert_template_format("$(md5 foo)", "acbd18db4cc2f85cedef654fccc4a4d8");
@@ -22,7 +21,6 @@ test_hash(void)
   assert_template_format("$(sha1 foo bar)", "8843d7f92416211de9ebb963ff4ce28125932878");
   assert_template_format("$(sha1 \"foo bar\")", "3773dea65156909838fa6c22825cafe090ff8030");
   assert_template_format("$(md5 $(sha1 foo) bar)", "196894290a831b2d2755c8de22619a97");
-#endif
 }
 
 int

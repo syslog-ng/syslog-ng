@@ -16,13 +16,11 @@
 #include <glib.h>
 #include <signal.h>
 
-#if ENABLE_SSL
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#endif
 
 #include <unistd.h>
 
@@ -103,13 +101,11 @@ send_plain(void *user_data, void *buf, size_t length)
   return (cc);
 }
 
-#if ENABLE_SSL
 static ssize_t
 send_ssl(void *user_data, void *buf, size_t length)
 {
   return SSL_write((SSL *)user_data, buf, length);
 }
-#endif
 
 static unsigned long
 time_val_diff_in_usec(struct timeval *t1, struct timeval *t2)
@@ -507,7 +503,6 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
   return count;
 }
 
-#if ENABLE_SSL
 static guint64
 gen_messages_ssl(int sock, int id, FILE *readfrom)
 {
@@ -546,9 +541,6 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
 
   return ret;
 }
-#else
-#define gen_messages_ssl gen_messages_plain
-#endif
 
 static guint64
 gen_messages_plain(int sock, int id, FILE *readfrom)
@@ -681,9 +673,7 @@ static GOptionEntry loggen_options[] = {
   { "no-framing", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &framing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
   { "active-connections", 0, 0, G_OPTION_ARG_INT, &active_connections, "Number of active connections to the server (default = 1)", "<number>" },
   { "idle-connections", 0, 0, G_OPTION_ARG_INT, &idle_connections, "Number of inactive connections to the server (default = 0)", "<number>" },
-#if ENABLE_SSL
   { "use-ssl", 'U', 0, G_OPTION_ARG_NONE, &usessl, "Use ssl layer", NULL },
-#endif
   { "read-file", 'R', 0, G_OPTION_ARG_STRING, &read_file, "Read log messages from file", "<filename>" },
   { "loop-reading", 'l', 0, G_OPTION_ARG_NONE, &loop_reading, "Read the file specified in read-file option in loop (it will restart the reading if reached the end of the file)", NULL },
   { "skip-tokens", 0, 0, G_OPTION_ARG_INT, &skip_tokens, "Skip the given number of tokens (delimined by a space) at the beginning of each line (default value: 3)", "<number>" },

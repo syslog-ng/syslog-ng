@@ -40,8 +40,6 @@
 #define SYSLOG_TRANSPORT_TCP_PORT 601
 #define SYSLOG_TRANSPORT_TLS_PORT 6514
 
-#ifdef BUILD_WITH_SSL
-
 static inline gboolean
 _is_tls_required(TransportMapperInet *self)
 {
@@ -115,17 +113,6 @@ transport_mapper_inet_free_method(TransportMapper *s)
     tls_context_free(self->tls_context);
   transport_mapper_free_method(s);
 }
-
-
-#else
-
-#define transport_mapper_inet_apply_transport_method      transport_mapper_apply_transport_method
-#define transport_mapper_inet_validate_tls_options(self)  (TRUE)
-#define transport_mapper_inet_construct_log_transport     transport_mapper_construct_log_transport_method
-#define transport_mapper_inet_free_method                 transport_mapper_free_method
-
-#endif
-
 
 void
 transport_mapper_inet_init_instance(TransportMapperInet *self, const gchar *transport)
