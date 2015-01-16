@@ -324,6 +324,18 @@ _get_current_quote_unescaped(LogCSVParser *self, const gchar** src)
     }
 }
 
+static inline guchar*
+_find_delim_unescaped(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src, guchar quote)
+{
+  if (quote)
+    {
+      return _find_delim_unescaped_quoted(self, pstate, src, quote);
+    }
+  else
+    {
+      return _find_delim_unescaped_unquoted(self, pstate, src);
+    }
+}
 
 static gboolean
 log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
@@ -344,18 +356,9 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
         {
           _strip_whitespace_left(&src);
         }
+        
+      delim = _find_delim_unescaped(self, &pstate, src, current_quote);
 
-      // var bezaro quote
-      if (current_quote)
-        {
-          delim = _find_delim_unescaped_quoted(self, &pstate, src, current_quote);
-        }
-      else
-        {
-          delim = _find_delim_unescaped_unquoted(self, &pstate, src);
-        }
-
-      // az oszlop hossza?
       len = _get_column_length_unescaped(self, delim, src, current_quote);
 
       if (self->null_value && strncmp(src, self->null_value, len) == 0)
