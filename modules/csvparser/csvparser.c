@@ -306,6 +306,25 @@ _move_to_next_column_unescaped(UnescapedParserState *pstate, const gchar** src)
     (*src)++;
 }
 
+static guchar
+_get_current_quote_unescaped(LogCSVParser *self, const gchar** src)
+{
+  guchar *quote = (guchar *) strchr(self->quotes_start, **src);
+
+  if (quote != NULL)
+    {
+      /* ok, quote character found */
+      (*src)++;
+      return self->quotes_end[quote - (guchar *) self->quotes_start];
+    }
+  else
+    {
+      /* we didn't start with a quote character, no need for escaping, delimiter terminates */
+      return  0;
+    }
+}
+
+
 static gboolean
 log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
@@ -316,24 +335,10 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
   while (cur_column && *src)
     {
       UnescapedParserState pstate = {NULL, NULL, NULL}; 
-      guchar *quote;
       guchar current_quote;
       guchar *delim=NULL;
 
-      quote = (guchar *) strchr(self->quotes_start, *src);
-      // a jelenlegi karakter egy quote
-      if (quote != NULL)
-        {
-          /* ok, quote character found */
-          // ez a bezaro quote
-          current_quote = self->quotes_end[quote - (guchar *) self->quotes_start];
-          src++;
-        }
-      else
-        {
-          /* we didn't start with a quote character, no need for escaping, delimiter terminates */
-          current_quote = 0;
-        }
+      current_quote = _get_current_quote_unescaped(self, &src);
 
       if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
         {
