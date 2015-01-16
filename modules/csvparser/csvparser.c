@@ -185,6 +185,19 @@ _do_drop_invalid(GList *cur_column, const gchar *src, guint32 flags)
   return (cur_column || (src && *src)) && (flags & LOG_CSV_PARSER_DROP_INVALID);
 }
 
+static inline gboolean
+_is_whitespace_char(const gchar* str)
+{
+  return (*str == ' ' || *str == '\t') ? TRUE : FALSE;
+}
+
+static inline void
+_strip_whitespace_left(const gchar** src)
+{
+  while (_is_whitespace_char(*src))
+    (*src)++;
+}
+
 static gboolean
 log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
@@ -217,8 +230,7 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
 
       if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
         {
-          while (*src == ' ' || *src == '\t')
-            src++;
+          _strip_whitespace_left(&src);
         }
 
       // var bezaro quote
@@ -274,7 +286,7 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
         len--;
       if (len > 0 && self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
         {
-          while (len > 0 && (src[len - 1] == ' ' || src[len - 1] == '\t'))
+          while (len > 0 && (_is_whitespace_char(src + len - 1)))
             len--;
         }
       if (self->null_value && strncmp(src, self->null_value, len) == 0)
@@ -355,7 +367,7 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
             }
           break;
         case PS_WHITESPACE:
-          if ((self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE) && (*src == ' ' || *src == '\t'))
+          if ((self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE) && _is_whitespace_char(src))
             {
               break;
             }
