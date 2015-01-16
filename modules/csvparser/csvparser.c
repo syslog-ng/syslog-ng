@@ -198,6 +198,84 @@ _strip_whitespace_left(const gchar** src)
     (*src)++;
 }
 
+typedef struct _UnescapedParserState {
+  guchar *delim;
+  guchar *delim_string;
+  guchar *delim_char;
+  gint delim_len;
+} UnescapedParserState;
+
+static inline guchar*
+_find_delim_unescaped_quoted(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src, guchar quote)
+{
+  guchar *delim = NULL;
+  guchar *delim_string = NULL;
+  guchar *delim_char = NULL;
+  gint delim_len = 0;
+
+  /* search for end of quote */
+  delim = (guchar *) strchr(src, quote);
+
+  if (delim)
+    {
+      delim_string = strlst((const char *)delim, self->string_delimiters, &delim_len);
+      if (delim_string == (delim + 1) || (strchr(self->delimiters, *(delim + 1)) != NULL ))
+        {
+          /* closing quote, and then a delimiter, everything is nice */
+          delim++;
+        }
+    }
+  else if (!delim)
+    {
+      /* complete remaining string */
+      delim = (guchar *) src + strlen(src);
+    }
+
+  pstate->delim = delim;
+  pstate->delim_string = delim_string;
+  pstate->delim_char = delim_char;
+  pstate->delim_len = delim_len;
+
+  return delim;
+}
+
+static inline guchar*
+_find_delim_unescaped_unquoted(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src)
+{
+  guchar *delim = NULL;
+  guchar *delim_string = NULL;
+  guchar *delim_char = NULL;
+  gint delim_len = 0;
+
+  if (self->string_delimiters)
+    {
+      delim_string = strlst(src, self->string_delimiters, &delim_len);
+    }
+
+  delim_char = (guchar *) src + strcspn(src, self->delimiters);
+
+  // string delimeter legalabb a karakter delim helyen kezdodik
+  if (delim_string && delim_string <= delim_char)
+    {
+      delim = delim_string;
+    }
+  else if (delim_char)
+    {
+      delim = delim_char; 
+    }
+  else
+    {
+      delim = (guchar *) src + strlen(src);
+    }
+
+  pstate->delim = delim;
+  pstate->delim_string = delim_string;
+  pstate->delim_char = delim_char;
+  pstate->delim_len = delim_len;
+  
+  return delim;
+}
+
 static gboolean
 log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
@@ -207,11 +285,10 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
 
   while (cur_column && *src)
     {
-      const guchar *delim;
-      const guchar *delim_string=NULL, *delim_char=NULL;
+      UnescapedParserState pstate = {NULL, NULL, NULL}; 
       guchar *quote;
       guchar current_quote;
-      gint delim_len = 0;
+      guchar *delim=NULL;
 
       quote = (guchar *) strchr(self->quotes_start, *src);
       // a jelenlegi karakter egy quote
@@ -236,48 +313,12 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
       // var bezaro quote
       if (current_quote)
         {
-          /* search for end of quote */
-          delim = (guchar *) strchr(src, current_quote);
-
-          if (delim)
-            {
-              delim_string = strlst((const char *)delim, self->string_delimiters, &delim_len);
-              if (delim_string == (delim + 1) || (strchr(self->delimiters, *(delim + 1)) != NULL ))
-                {
-                  /* closing quote, and then a delimiter, everything is nice */
-                  delim++;
-                }
-            }
-          else if (!delim)
-            {
-              /* complete remaining string */
-              delim = (guchar *) src + strlen(src);
-            }
+          delim = _find_delim_unescaped_quoted(self, &pstate, src, current_quote);
         }
       else
         {
-          if (self->string_delimiters)
-            {
-              delim_string = strlst(src, self->string_delimiters, &delim_len);
-            }
-
-          delim_char = (guchar *) src + strcspn(src, self->delimiters);
-
-          // string delimeter legalabb a karakter delim helyen kezdodik
-          if (delim_string && delim_string <= delim_char)
-            {
-              delim = delim_string;
-            }
-          else if (delim_char)
-            {
-              delim = delim_char; 
-            }
-          else
-            {
-              delim = (guchar *) src + strlen(src);
-            }
+          delim = _find_delim_unescaped_unquoted(self, &pstate, src);
         }
-
 
       // az oszlop hossza?
       len = delim - (guchar *) src;
@@ -296,8 +337,8 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
 
       src = (gchar *) delim;
 
-      if (delim_len && delim == delim_string)
-        src += delim_len;
+      if (pstate.delim_len && (delim == pstate.delim_string))
+        src += pstate.delim_len;
       else if (*src)
         src++;
       cur_column = cur_column->next;
