@@ -406,13 +406,15 @@ _get_current_quote_escaped(LogCSVParser *self, const gchar *src)
     }
 }
 
-static gboolean
-log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
+typedef struct _EscapedParserState
 {
-  GList *cur_column = self->super.columns;
-  gint len;
-  /* stateful parser */
+  gchar *src;
   gint state;
+  GString *current_value;
+  gchar current_quote;
+  gint delim_len;
+} EscapedParserState;
+
   enum
     {
       PS_COLUMN_START,
@@ -421,6 +423,45 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
       PS_DELIMITER,
       PS_EOS
     };
+
+static inline void
+_process_escaped_VALUE_quoted(LogCSVParser *self, EscapedParserState *pstate)
+{
+  /* quoted value */
+  if ((self->flags & LOG_CSV_PARSER_ESCAPE_BACKSLASH) && *pstate->src == '\\' && *(pstate->src+1))
+    {
+      pstate->src++;
+      g_string_append_c(pstate->current_value, *pstate->src);
+      return;
+    }
+  else if (self->flags & LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR && *pstate->src == pstate->current_quote && *(pstate->src+1) == pstate->current_quote)
+    {
+      (pstate->src)++;
+      g_string_append_c(pstate->current_value, *pstate->src);
+      return;
+    }
+  if (*pstate->src == pstate->current_quote)
+    {
+      /* end of column */
+      pstate->current_quote = 0;
+      pstate->state = PS_DELIMITER;
+
+      if (self->string_delimiters && strlst(pstate->src, self->string_delimiters, &pstate->delim_len) != ((guchar*)pstate->src + 1))
+        pstate->delim_len = 0;
+
+      return;
+    }
+  g_string_append_c(pstate->current_value, *pstate->src);
+}
+
+static gboolean
+log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
+{
+  GList *cur_column = self->super.columns;
+  EscapedParserState pstate = {NULL, 0, 0, 0, 0};
+  gint len;
+  /* stateful parser */
+  gint state;
   gchar current_quote = 0;
   GString *current_value;
   gboolean store_value = FALSE;
@@ -449,33 +490,21 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
           state = PS_VALUE;
           /* fallthrough */
         case PS_VALUE:
+          pstate.state = state;
+          pstate.src = src;
+          pstate.current_quote = current_quote;
+          pstate.current_value = current_value;
+          pstate.delim_len = delim_len;
+
           if (current_quote)
             {
-              /* quoted value */
-              if ((self->flags & LOG_CSV_PARSER_ESCAPE_BACKSLASH) && *src == '\\' && *(src+1))
-                {
-                  src++;
-                  g_string_append_c(current_value, *src);
-                  break;
-                }
-              else if (self->flags & LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR && *src == current_quote && *(src+1) == current_quote)
-                {
-                  src++;
-                  g_string_append_c(current_value, *src);
-                  break;
-                }
-              if (*src == current_quote)
-                {
-                  /* end of column */
-                  current_quote = 0;
-                  state = PS_DELIMITER;
-
-                  if (self->string_delimiters && strlst(src, self->string_delimiters, &delim_len) != ((guchar*)src + 1))
-                    delim_len = 0;
-
-                  break;
-                }
-              g_string_append_c(current_value, *src);
+              _process_escaped_VALUE_quoted(self, &pstate);
+              state = pstate.state;
+              src = pstate.src;
+              current_value = pstate.current_value;
+              current_quote = pstate.current_quote;
+              delim_len = pstate.delim_len;
+              break;
             }
           else
             {
