@@ -206,7 +206,7 @@ typedef struct _UnescapedParserState {
 } UnescapedParserState;
 
 static inline guchar*
-_find_delim_unescaped_quoted(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src, guchar quote)
+_unescaped_find_delim_quoted(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src, guchar quote)
 {
   guchar *delim = NULL;
   guchar *delim_string = NULL;
@@ -240,7 +240,7 @@ _find_delim_unescaped_quoted(LogCSVParser *self, UnescapedParserState *pstate, c
 }
 
 static inline guchar*
-_find_delim_unescaped_unquoted(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src)
+_unescaped_find_delim_unquoted(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src)
 {
   guchar *delim = NULL;
   guchar *delim_string = NULL;
@@ -277,7 +277,7 @@ _find_delim_unescaped_unquoted(LogCSVParser *self, UnescapedParserState *pstate,
 }
 
 static gint
-_get_column_length_unescaped(LogCSVParser *self, const guchar *delim, const gchar *src, guchar quote)
+_unescaped_get_column_length(LogCSVParser *self, const guchar *delim, const gchar *src, guchar quote)
 {
   gint len;
 
@@ -296,7 +296,7 @@ _get_column_length_unescaped(LogCSVParser *self, const guchar *delim, const gcha
 }
 
 static inline void
-_move_to_next_column_unescaped(UnescapedParserState *pstate, const gchar** src)
+_unescaped_move_to_next_column(UnescapedParserState *pstate, const gchar** src)
 {
   *src = (gchar *) pstate->delim;
 
@@ -307,7 +307,7 @@ _move_to_next_column_unescaped(UnescapedParserState *pstate, const gchar** src)
 }
 
 static guchar
-_get_current_quote_unescaped(LogCSVParser *self, const gchar** src)
+_unescaped_get_current_quote(LogCSVParser *self, const gchar** src)
 {
   guchar *quote = (guchar *) strchr(self->quotes_start, **src);
 
@@ -325,15 +325,15 @@ _get_current_quote_unescaped(LogCSVParser *self, const gchar** src)
 }
 
 static inline guchar*
-_find_delim_unescaped(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src, guchar quote)
+_unescaped_find_delim(LogCSVParser *self, UnescapedParserState *pstate, const gchar* src, guchar quote)
 {
   if (quote)
     {
-      return _find_delim_unescaped_quoted(self, pstate, src, quote);
+      return _unescaped_find_delim_quoted(self, pstate, src, quote);
     }
   else
     {
-      return _find_delim_unescaped_unquoted(self, pstate, src);
+      return _unescaped_find_delim_unquoted(self, pstate, src);
     }
 }
 
@@ -364,23 +364,22 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
       guchar current_quote;
       guchar *delim=NULL;
 
-      current_quote = _get_current_quote_unescaped(self, &src);
+      current_quote = _unescaped_get_current_quote(self, &src);
 
       if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
         {
           _strip_whitespace_left(&src);
         }
         
-      delim = _find_delim_unescaped(self, &pstate, src, current_quote);
+      delim = _unescaped_find_delim(self, &pstate, src, current_quote);
 
-      len = _get_column_length_unescaped(self, delim, src, current_quote);
+      len = _unescaped_get_column_length(self, delim, src, current_quote);
 
       if (self->null_value && strncmp(src, self->null_value, len) == 0)
         log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
       else
         log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, len);
-
-      _move_to_next_column_unescaped(&pstate, &src);
+      _unescaped_move_to_next_column(&pstate, &src);
       cur_column = cur_column->next;
       _check_and_handle_greedy_mode(self, &cur_column, msg, &src);
     }
@@ -395,7 +394,7 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
 }
 
 static inline gchar
-_get_current_quote_escaped(LogCSVParser *self, const gchar *src)
+_escaped_get_current_quote(LogCSVParser *self, const gchar *src)
 {
   gchar *quote = strchr(self->quotes_start, *src);
 
@@ -446,7 +445,7 @@ _escaped_parser_state_init(EscapedParserState *self, LogMessage *msg, GList *cur
 }
 
 static inline void
-_process_escaped_VALUE_quoted(LogCSVParser *self, EscapedParserState *pstate)
+_escaped_process_value_quoted(LogCSVParser *self, EscapedParserState *pstate)
 {
   /* quoted value */
   if ((self->flags & LOG_CSV_PARSER_ESCAPE_BACKSLASH) && *pstate->src == '\\' && *(pstate->src+1))
@@ -476,13 +475,13 @@ _process_escaped_VALUE_quoted(LogCSVParser *self, EscapedParserState *pstate)
 }
 
 static gboolean
-_is_delimiter_escaped(LogCSVParser *self, EscapedParserState *pstate)
+_escaped_is_delimiter(LogCSVParser *self, EscapedParserState *pstate)
 {
   return (self->string_delimiters && strlst(pstate->src, self->string_delimiters, &pstate->delim_len) == (guchar*)pstate->src) || strchr(self->delimiters, *pstate->src);
 }
 
 static inline gint
-_get_column_length_escaped(LogCSVParser *self, GString *current_value)
+_escaped_get_column_length(LogCSVParser *self, GString *current_value)
 {
   gint len = current_value->len;
 
@@ -496,9 +495,9 @@ _get_column_length_escaped(LogCSVParser *self, GString *current_value)
 }
 
 static inline void
-_store_value_escaped(LogCSVParser *self, EscapedParserState *ps)
+_escaped_store_value(LogCSVParser *self, EscapedParserState *ps)
 {
-  gint len = _get_column_length_escaped(self, ps->current_value);
+  gint len = _escaped_get_column_length(self, ps->current_value);
   if (self->null_value && strcmp(ps->current_value->str, self->null_value) == 0)
     log_msg_set_value_by_name(ps->msg, (gchar *) ps->current_column->data, "", 0);
   else
@@ -506,7 +505,7 @@ _store_value_escaped(LogCSVParser *self, EscapedParserState *ps)
 }
 
 static inline void
-_reset_variables(LogCSVParser *self, EscapedParserState *ps)
+_escaped_reset_variables(LogCSVParser *self, EscapedParserState *ps)
 {
   g_string_truncate(ps->current_value, 0);
   ps->current_column = ps->current_column->next;
@@ -535,7 +534,7 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
         case PS_COLUMN_START:
           /* check for quote character */
           pstate.state = PS_WHITESPACE;
-          pstate.current_quote = _get_current_quote_escaped(self, pstate.src);
+          pstate.current_quote = _escaped_get_current_quote(self, pstate.src);
           if (!pstate.current_quote)
             continue;
 
@@ -550,13 +549,13 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
         case PS_VALUE:
           if (pstate.current_quote)
             {
-              _process_escaped_VALUE_quoted(self, &pstate);
+              _escaped_process_value_quoted(self, &pstate);
               break;
             }
           else
             {
               /* unquoted value */
-              if (_is_delimiter_escaped(self, &pstate))
+              if (_escaped_is_delimiter(self, &pstate))
                 {
                   pstate.state = PS_DELIMITER;
                   continue;
@@ -571,8 +570,8 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
       pstate.src++;
       if (*pstate.src == 0 || pstate.store_value)
         {
-          _store_value_escaped(self, &pstate);
-          _reset_variables(self, &pstate);
+          _escaped_store_value(self, &pstate);
+          _escaped_reset_variables(self, &pstate);
           _check_and_handle_greedy_mode(self, &pstate.current_column, pstate.msg, &pstate.src);
         }
     }
