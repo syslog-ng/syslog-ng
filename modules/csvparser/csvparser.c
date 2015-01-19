@@ -338,7 +338,7 @@ _find_delim_unescaped(LogCSVParser *self, UnescapedParserState *pstate, const gc
 }
 
 static inline gboolean
-_check_and_handle_geedy_mode(LogCSVParser *self, GList **cur_column, LogMessage *msg, const gchar **src)
+_check_and_handle_greedy_mode(LogCSVParser *self, GList **cur_column, LogMessage *msg, gchar **src)
 {
  if (*cur_column && (*cur_column)->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
    {
@@ -384,7 +384,7 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
 
       cur_column = cur_column->next;
       
-      _check_and_handle_geedy_mode(self, &cur_column, msg, &src);
+      _check_and_handle_greedy_mode(self, &cur_column, msg, &src);
     }
 
   if (_do_drop_invalid(cur_column, src, self->flags))
@@ -415,11 +415,14 @@ _get_current_quote_escaped(LogCSVParser *self, const gchar *src)
 
 typedef struct _EscapedParserState
 {
+  LogMessage *msg;
   gchar *src;
   gint state;
   GString *current_value;
+  GList *current_column;
   gchar current_quote;
   gint delim_len;
+  gboolean store_value;
 } EscapedParserState;
 
   enum
@@ -430,6 +433,19 @@ typedef struct _EscapedParserState
       PS_DELIMITER,
       PS_EOS
     };
+
+static inline void
+_escaped_parser_state_init(EscapedParserState *self, LogMessage *msg, GList *cur_column, const gchar *src)
+{
+  self->msg = msg;
+  self->src = src;
+  self->state = PS_COLUMN_START;
+  self->current_value = g_string_sized_new(128);
+  self->current_quote = 0;
+  self->current_column = cur_column;
+  self->delim_len = 0;
+  self->store_value = FALSE;
+}
 
 static inline void
 _process_escaped_VALUE_quoted(LogCSVParser *self, EscapedParserState *pstate)
@@ -492,7 +508,7 @@ _store_value_escaped(LogCSVParser *self, LogMessage *msg, GList *current_column,
 }
 
 static inline void
-_reset_variables(LogCSVParser *self, LogMessage *msg, GList **current_column, GString *current_value, gint *state, gboolean *store_value, const gchar **src, gint *delim_len)
+_reset_variables(LogCSVParser *self, LogMessage *msg, GList **current_column, GString *current_value, gint *state, gboolean *store_value, gchar **src, gint *delim_len)
 {
   g_string_truncate(current_value, 0);
   *current_column = (*current_column)->next;
@@ -505,55 +521,39 @@ _reset_variables(LogCSVParser *self, LogMessage *msg, GList **current_column, GS
   *delim_len = 0;
 }
 
+#define has_more_data(ps) (ps.current_column && *ps.src)
+
 static gboolean
 log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
-  GList *cur_column = self->super.columns;
-  EscapedParserState pstate = {NULL, 0, 0, 0, 0};
-  /* stateful parser */
-  gint state;
-  gchar current_quote = 0;
-  GString *current_value;
-  gboolean store_value = FALSE;
-  gint delim_len = 0;
+  EscapedParserState pstate;
 
-  current_value = g_string_sized_new(128);
+  _escaped_parser_state_init(&pstate, msg, self->super.columns, src);
 
-  state = PS_COLUMN_START;
-  while (cur_column && *src)
+  while (has_more_data(pstate))
     {
-      switch (state)
+      switch (pstate.state)
         {
         case PS_COLUMN_START:
           /* check for quote character */
-          state = PS_WHITESPACE;
-          current_quote = _get_current_quote_escaped(self, src);
-          if (!current_quote)
+          pstate.state = PS_WHITESPACE;
+          pstate.current_quote = _get_current_quote_escaped(self, pstate.src);
+          if (!pstate.current_quote)
             continue;
 
           break;
         case PS_WHITESPACE:
-          if ((self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE) && _is_whitespace_char(src))
+          if ((self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE) && _is_whitespace_char(pstate.src))
             {
               break;
             }
-          state = PS_VALUE;
+          pstate.state = PS_VALUE;
           /* fallthrough */
         case PS_VALUE:
-          pstate.state = state;
-          pstate.src = src;
-          pstate.current_quote = current_quote;
-          pstate.current_value = current_value;
-          pstate.delim_len = delim_len;
 
-          if (current_quote)
+          if (pstate.current_quote)
             {
               _process_escaped_VALUE_quoted(self, &pstate);
-              state = pstate.state;
-              src = pstate.src;
-              current_value = pstate.current_value;
-              current_quote = pstate.current_quote;
-              delim_len = pstate.delim_len;
               break;
             }
           else
@@ -561,28 +561,28 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
               /* unquoted value */
               if (_is_delimiter_escaped(self, &pstate))
                 {
-                  state = PS_DELIMITER;
+                  pstate.state = PS_DELIMITER;
                   continue;
                 }
-              g_string_append_c(current_value, *src);
+              g_string_append_c(pstate.current_value, *pstate.src);
             }
           break;
         case PS_DELIMITER:
-          store_value = TRUE;
+          pstate.store_value = TRUE;
           break;
         }
-      src++;
-      if (*src == 0 || store_value)
+      pstate.src++;
+      if (*pstate.src == 0 || pstate.store_value)
         {
-          _store_value_escaped(self, msg, cur_column, current_value);
-          _reset_variables(self, msg, &cur_column, current_value, &state, &store_value, &src, &delim_len);
-          _check_and_handle_geedy_mode(self, &cur_column, msg, &src);
+          _store_value_escaped(self, pstate.msg, pstate.current_column, pstate.current_value);
+          _reset_variables(self, pstate.msg, &pstate.current_column, pstate.current_value, &pstate.state, &pstate.store_value, &pstate.src, &pstate.delim_len);
+          _check_and_handle_greedy_mode(self, &pstate.current_column, pstate.msg, &pstate.src);
         }
     }
 
-  g_string_free(current_value, TRUE);
+  g_string_free(pstate.current_value, TRUE);
 
-  if (_do_drop_invalid(cur_column, src, self->flags))
+  if (_do_drop_invalid(pstate.current_column, pstate.src, self->flags))
     {
       /* there are unfilled variables, OR not all of the input was processed
        * and "drop-invalid" flag is specified */
