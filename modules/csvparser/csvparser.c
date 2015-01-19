@@ -337,6 +337,20 @@ _find_delim_unescaped(LogCSVParser *self, UnescapedParserState *pstate, const gc
     }
 }
 
+static inline gboolean
+_check_and_handle_geedy_mode(LogCSVParser *self, GList **cur_column, LogMessage *msg, const gchar **src)
+{
+ if (*cur_column && (*cur_column)->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
+   {
+     /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
+     log_msg_set_value_by_name(msg, (gchar *) (*cur_column)->data, *src, -1);
+     *cur_column = NULL;
+     *src = NULL;
+     return TRUE;
+   }
+  return FALSE;
+}
+
 static gboolean
 log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
@@ -369,15 +383,8 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
       _move_to_next_column_unescaped(&pstate, &src);
 
       cur_column = cur_column->next;
-
-      if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
-        {
-          /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
-          log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, -1);
-          cur_column = NULL;
-          src = NULL;
-          break;
-        }
+      
+      _check_and_handle_geedy_mode(self, &cur_column, msg, &src);
     }
 
   if (_do_drop_invalid(cur_column, src, self->flags))
@@ -559,14 +566,7 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
 
           delim_len = 0;
 
-          if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
-            {
-              /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
-              log_msg_set_value_by_name(msg, (gchar *) cur_column->data, src, -1);
-              cur_column = NULL;
-              src = NULL;
-              break;
-            }
+          _check_and_handle_geedy_mode(self, &cur_column, msg, &src);
         }
     }
 
