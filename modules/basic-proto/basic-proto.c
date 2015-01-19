@@ -459,7 +459,6 @@ log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
   self->sum_len += msg_len;
   *consumed = TRUE;
   result = LPS_SUCCESS;
-  log_proto_msg_ack(&self->super,1);
   if (self->buf_count == self->buf_size)
     {
       /* we have reached the max buffer size -> we need to write the messages */
@@ -469,6 +468,7 @@ log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
           *consumed = FALSE;
         }
     }
+  log_proto_msg_ack(&self->super,1);
   return result;
 
 write_error:
