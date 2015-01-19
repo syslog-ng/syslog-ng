@@ -338,7 +338,7 @@ _find_delim_unescaped(LogCSVParser *self, UnescapedParserState *pstate, const gc
 }
 
 static inline gboolean
-_check_and_handle_greedy_mode(LogCSVParser *self, GList **cur_column, LogMessage *msg, gchar **src)
+_check_and_handle_greedy_mode(LogCSVParser *self, GList **cur_column, LogMessage *msg, const gchar **src)
 {
  if (*cur_column && (*cur_column)->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
    {
@@ -411,10 +411,19 @@ _get_current_quote_escaped(LogCSVParser *self, const gchar *src)
     }
 }
 
+enum
+  {
+    PS_COLUMN_START,
+    PS_WHITESPACE,
+    PS_VALUE,
+    PS_DELIMITER,
+    PS_EOS
+  };
+
 typedef struct _EscapedParserState
 {
   LogMessage *msg;
-  gchar *src;
+  const gchar *src;
   gint state;
   GString *current_value;
   GList *current_column;
@@ -422,15 +431,6 @@ typedef struct _EscapedParserState
   gint delim_len;
   gboolean store_value;
 } EscapedParserState;
-
-  enum
-    {
-      PS_COLUMN_START,
-      PS_WHITESPACE,
-      PS_VALUE,
-      PS_DELIMITER,
-      PS_EOS
-    };
 
 static inline void
 _escaped_parser_state_init(EscapedParserState *self, LogMessage *msg, GList *cur_column, const gchar *src)
@@ -548,7 +548,6 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
           pstate.state = PS_VALUE;
           /* fallthrough */
         case PS_VALUE:
-
           if (pstate.current_quote)
             {
               _process_escaped_VALUE_quoted(self, &pstate);
