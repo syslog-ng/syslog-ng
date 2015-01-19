@@ -389,6 +389,23 @@ log_csv_parser_process_unescaped(LogCSVParser *self, LogMessage *msg, const gcha
   return TRUE;
 }
 
+static inline gchar
+_get_current_quote_escaped(LogCSVParser *self, const gchar *src)
+{
+  gchar *quote = strchr(self->quotes_start, *src);
+
+  if (quote != NULL)
+    {
+      /* ok, quote character found */
+      return self->quotes_end[quote - self->quotes_start];
+    }
+  else
+    {
+      /* we didn't start with a quote character, no need for escaping, delimiter terminates */
+      return 0;
+    }
+}
+
 static gboolean
 log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
@@ -408,7 +425,6 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
   GString *current_value;
   gboolean store_value = FALSE;
   gint delim_len = 0;
-  gchar *quote;
 
   current_value = g_string_sized_new(128);
 
@@ -420,19 +436,10 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
         case PS_COLUMN_START:
           /* check for quote character */
           state = PS_WHITESPACE;
-          quote = strchr(self->quotes_start, *src);
-          if (quote != NULL)
-            {
-              /* ok, quote character found */
-              current_quote = self->quotes_end[quote - self->quotes_start];
-            }
-          else
-            {
-              /* we didn't start with a quote character, no need for escaping, delimiter terminates */
-              current_quote = 0;
-              /* don't skip to the next character */
-              continue;
-            }
+          current_quote = _get_current_quote_escaped(self, src);
+          if (!current_quote)
+            continue;
+
           break;
         case PS_WHITESPACE:
           if ((self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE) && _is_whitespace_char(src))
