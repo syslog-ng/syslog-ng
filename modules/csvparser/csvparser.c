@@ -455,6 +455,12 @@ _process_escaped_VALUE_quoted(LogCSVParser *self, EscapedParserState *pstate)
 }
 
 static gboolean
+_is_delimiter_escaped(LogCSVParser *self, EscapedParserState *pstate)
+{
+  return (self->string_delimiters && strlst(pstate->src, self->string_delimiters, &pstate->delim_len) == (guchar*)pstate->src) || strchr(self->delimiters, *pstate->src);
+}
+
+static gboolean
 log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
   GList *cur_column = self->super.columns;
@@ -509,7 +515,7 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
           else
             {
               /* unquoted value */
-              if ((self->string_delimiters && strlst(src, self->string_delimiters, &delim_len) == (guchar*)src) || strchr(self->delimiters, *src) )
+              if (_is_delimiter_escaped(self, &pstate))
                 {
                   state = PS_DELIMITER;
                   continue;
