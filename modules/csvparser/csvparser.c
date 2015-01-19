@@ -460,6 +460,20 @@ _is_delimiter_escaped(LogCSVParser *self, EscapedParserState *pstate)
   return (self->string_delimiters && strlst(pstate->src, self->string_delimiters, &pstate->delim_len) == (guchar*)pstate->src) || strchr(self->delimiters, *pstate->src);
 }
 
+static inline gint
+_get_column_length_escaped(LogCSVParser *self, GString *current_value)
+{
+  gint len = current_value->len;
+
+  if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
+    {
+      while (len > 0 && _is_whitespace_char(current_value->str + len -1))
+        len--;
+    }
+
+  return len;
+}
+
 static gboolean
 log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
@@ -530,12 +544,7 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
       src++;
       if (*src == 0 || store_value)
         {
-          len = current_value->len;
-          if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
-            {
-              while (len > 0 && (current_value->str[len-1] == ' ' || current_value->str[len-1] == '\t'))
-                len--;
-            }
+          len = _get_column_length_escaped(self, current_value);
           if (self->null_value && strcmp(current_value->str, self->null_value) == 0)
             log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
           else
