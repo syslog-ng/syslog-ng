@@ -481,12 +481,35 @@ _get_column_length_escaped(LogCSVParser *self, GString *current_value)
   return len;
 }
 
+static inline void
+_store_value_escaped(LogCSVParser *self, LogMessage *msg, GList *current_column, GString *current_value)
+{
+  gint len = _get_column_length_escaped(self, current_value);
+  if (self->null_value && strcmp(current_value->str, self->null_value) == 0)
+    log_msg_set_value_by_name(msg, (gchar *) current_column->data, "", 0);
+  else
+    log_msg_set_value_by_name(msg, (gchar *) current_column->data, current_value->str, len);
+}
+
+static inline void
+_reset_variables(LogCSVParser *self, LogMessage *msg, GList **current_column, GString *current_value, gint *state, gboolean *store_value, const gchar **src, gint *delim_len)
+{
+  g_string_truncate(current_value, 0);
+  *current_column = (*current_column)->next;
+  *state = PS_COLUMN_START;
+  *store_value = FALSE;
+
+  if (*delim_len > 0)
+    *src += *delim_len - 1;
+
+  *delim_len = 0;
+}
+
 static gboolean
 log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar* src)
 {
   GList *cur_column = self->super.columns;
   EscapedParserState pstate = {NULL, 0, 0, 0, 0};
-  gint len;
   /* stateful parser */
   gint state;
   gchar current_quote = 0;
@@ -551,21 +574,8 @@ log_csv_parser_process_escaped(LogCSVParser *self, LogMessage *msg, const gchar*
       src++;
       if (*src == 0 || store_value)
         {
-          len = _get_column_length_escaped(self, current_value);
-          if (self->null_value && strcmp(current_value->str, self->null_value) == 0)
-            log_msg_set_value_by_name(msg, (gchar *) cur_column->data, "", 0);
-          else
-            log_msg_set_value_by_name(msg, (gchar *) cur_column->data, current_value->str, len);
-          g_string_truncate(current_value, 0);
-          cur_column = cur_column->next;
-          state = PS_COLUMN_START;
-          store_value = FALSE;
-
-          if (delim_len > 0)
-            src += delim_len - 1;
-
-          delim_len = 0;
-
+          _store_value_escaped(self, msg, cur_column, current_value);
+          _reset_variables(self, msg, &cur_column, current_value, &state, &store_value, &src, &delim_len);
           _check_and_handle_geedy_mode(self, &cur_column, msg, &src);
         }
     }
