@@ -575,7 +575,7 @@ tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
 
   if (ok)
     {
-      msg_debug("Certificate validation progress",
+      msg_info("Certificate validation progress",
                   evt_tag_str("subject", subject_name->str),
                   evt_tag_str("issuer", issuer_name->str),
                   NULL);
