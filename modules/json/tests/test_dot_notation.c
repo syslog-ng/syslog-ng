@@ -139,6 +139,18 @@ test_dot_notation_eval_object_subscript_extracts_the_child_object(void)
 }
 
 static void
+test_dot_notation_eval_object_succeeds_with_odd_or_invalid_js_identifier(void)
+{
+  assert_dot_notation_eval_equals("{'@foo': 'bar'}", "@foo", "'bar'");
+  assert_dot_notation_eval_equals("{'_foo': 'bar'}", "_foo", "'bar'");
+  assert_dot_notation_eval_equals("{'foo+4': 'bar'}", "foo+4", "'bar'");
+  assert_dot_notation_eval_equals("{'foo,bar': 'bar'}", "foo,bar", "'bar'");
+  assert_dot_notation_eval_equals("{'foo bar': 'bar'}", "foo bar", "'bar'");
+  assert_dot_notation_eval_equals("{'foo-bar': 'bar'}", "foo-bar", "'bar'");
+  assert_dot_notation_eval_equals("{'1': 'bar'}", "1", "'bar'");
+}
+
+static void
 test_dot_notation_eval_object_member_from_non_object_fails(void)
 {
   assert_dot_notation_eval_fails("[1, 2, 3]", "foo");
@@ -182,6 +194,7 @@ test_dot_notation_eval(void)
 {
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_empty_subscript_returns_the_object);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_object_subscript_extracts_the_child_object);
+  DOT_NOTATION_TESTCASE(test_dot_notation_eval_object_succeeds_with_odd_or_invalid_js_identifier);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_fails_with_an_identifier_that_doesnt_start_with_a_letter);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_fails_with_an_identifier_that_contains_a_non_alnum_character);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_fails_with_an_incorrect_array_reference);
