@@ -146,7 +146,7 @@ log_csv_parser_append_string_delimiter(LogColumnParser *s, const gchar *string_d
 {
   LogCSVParser *self = (LogCSVParser *) s;
 
-  self->string_delimiters = g_list_prepend(self->string_delimiters, (gpointer)string_delimiter);
+  self->string_delimiters = g_list_prepend(self->string_delimiters, (gpointer)g_strdup(string_delimiter));
 }
 
 static inline gboolean

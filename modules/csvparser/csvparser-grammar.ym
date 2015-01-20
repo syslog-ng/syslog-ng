@@ -84,18 +84,31 @@ parser_csv_opt
                                                   guint32 flags = log_csv_parser_normalize_escape_flags((LogColumnParser *) last_parser, $3);
                                                   log_csv_parser_set_flags((LogColumnParser *) last_parser, flags);
                                                 }
-        | KW_DELIMITERS '(' string ')'          { log_csv_parser_set_delimiters((LogColumnParser *) last_parser, $3); free($3); }
+        | KW_DELIMITERS '(' parser_csv_delimiters ')'
         | KW_QUOTES '(' string ')'              { log_csv_parser_set_quotes((LogColumnParser *) last_parser, $3); free($3); }
         | KW_QUOTE_PAIRS '(' string ')'         { log_csv_parser_set_quote_pairs((LogColumnParser *) last_parser, $3); free($3); }
         | KW_NULL '(' string ')'                { log_csv_parser_set_null_value((LogColumnParser *) last_parser, $3); free($3); }
-        | KW_STRING_DELIMITERS '(' parser_csv_string_delimiters ')'
         | parser_column_opt
         ;
 
-parser_csv_string_delimiters
-        : string parser_csv_string_delimiters
+parser_csv_delimiters
+  : parser_csv_delimiters_chars parser_csv_delimiter_strings
+  ;
+
+parser_csv_delimiters_chars
+  : KW_CHARS '(' string ')' { log_csv_parser_set_delimiters((LogColumnParser *) last_parser, $3); free($3); }
+  | string {  log_csv_parser_set_delimiters((LogColumnParser *) last_parser, $1); free($1);  }
+  |
+  ;
+
+parser_csv_delimiter_strings
+  : KW_STRINGS '('  parser_csv_delimiter_string  ')'
+  ;
+
+parser_csv_delimiter_string
+        : string parser_csv_delimiter_string
           {
-            log_csv_parser_append_string_delimiter((LogColumnParser *) last_parser, $1);
+            log_csv_parser_append_string_delimiter((LogColumnParser *) last_parser, $1); free($1);
           }
         | 
         ;
