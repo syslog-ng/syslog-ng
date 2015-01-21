@@ -24,9 +24,22 @@
 package org.syslog_ng;
 
 public abstract class LogDestination extends LogPipe {
+
   public LogDestination(long pipeHandle) {
 	  super(pipeHandle);
   }
+
+  public String getOption(String key) {
+    return getOption(getHandle(), key);
+  }
+
+  public abstract boolean open();
+
+  public abstract void close();
+
+  public abstract boolean isOpened();
+
+  private native String getOption(long ptr, String key);
 
   public boolean flush() {
 	  return true;

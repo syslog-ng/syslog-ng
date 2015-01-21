@@ -32,10 +32,6 @@ public abstract class LogPipe {
     configHandle = 0;
   }
 
-  public String getOption(String key) {
-    return getOption(pipeHandle, key);
-  }
-
   public long getConfigHandle() {
     if (configHandle != 0) {
       return configHandle;
@@ -47,6 +43,9 @@ public abstract class LogPipe {
 
   public abstract boolean init();
   public abstract void deinit();
-  private native String getOption(long ptr, String key);
+
+  public long getHandle() {
+    return pipeHandle;
+  }
   private native long getConfigHandle(long ptr);
 }

@@ -38,6 +38,9 @@ gboolean java_destination_proxy_init(JavaDestinationProxy *self, JNIEnv *env, vo
 void java_destination_proxy_deinit(JavaDestinationProxy *self, JNIEnv *env);
 gboolean java_destination_proxy_flush(JavaDestinationProxy *self, JNIEnv *env);
 gboolean java_destination_proxy_queue(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg);
+gboolean java_destination_proxy_open(JavaDestinationProxy *self, JNIEnv *env);
+void java_destination_proxy_close(JavaDestinationProxy *self, JNIEnv *env);
+gboolean java_destination_proxy_is_opened(JavaDestinationProxy *self, JNIEnv *env);
 
 void java_destination_proxy_free(JavaDestinationProxy *self);
 

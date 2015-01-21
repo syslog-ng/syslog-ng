@@ -24,6 +24,7 @@
 #include "java-logmsg-proxy.h"
 #include "java_machine.h"
 #include "messages.h"
+#include "logmsg.h"
 
 
 #define LOG_MESSAGE "org.syslog_ng.LogMessage"

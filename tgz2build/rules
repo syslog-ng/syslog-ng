@@ -14,7 +14,8 @@ CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-ssl --enable-dynamic-linking $
 	--with-pidfile-dir='$${prefix}/var/run' \
 	--with-module-dir='$${prefix}/lib/syslog-ng' \
 	--with-ivykis=system \
-	--with-libmongo-client=system
+	--with-libmongo-client=system \
+  --disable-java
 
 INSTALL:=./install-sh
 RPATH=-Wl,-R/opt/syslog-ng/lib
@@ -52,6 +53,7 @@ endif
 endif
 
 ifneq (,$(findstring linux-glibc2.11,$(ZBS_DIST)))
+  CONFIGURE_OPTS+= --enable-java
 ifneq (,$(findstring amd64,$(ZBS_ARCH)))
   CONFIGURE_OPTS+= --enable-systemd
 endif

@@ -37,6 +37,9 @@ typedef struct _JavaDestinationImpl
   jmethodID mi_deinit;
   jmethodID mi_queue;
   jmethodID mi_queue_msg;
+  jmethodID mi_open;
+  jmethodID mi_close;
+  jmethodID mi_is_opened;
   jmethodID mi_flush;
 } JavaDestinationImpl;
 
@@ -106,6 +109,31 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
       return FALSE;
     }
 
+  self->dest_impl.mi_open = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "open", "()Z");
+  if (!self->dest_impl.mi_open)
+    {
+      msg_error("Can't find method in class",
+                evt_tag_str("class_name", class_name),
+                evt_tag_str("method", "boolean open()"),
+                NULL);
+    }
+
+  self->dest_impl.mi_close = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "close", "()V");
+  if (!self->dest_impl.mi_open)
+    {
+      msg_error("Can't find method in class",
+                evt_tag_str("class_name", class_name),
+                evt_tag_str("method", "void close()"),
+                NULL);
+    }
+
+  self->dest_impl.mi_close = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "isOpened", "()Z");
+  if (!self->dest_impl.mi_open)
+    {
+      msg_error("Can't find method in class", evt_tag_str("class_name", class_name),
+          evt_tag_str("method", "boolean isOpened()"), NULL);
+    }
+
   self->dest_impl.dest_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->loaded_class, self->dest_impl.mi_constructor, impl);
   if (!self->dest_impl.dest_object)
     {
@@ -165,7 +193,7 @@ __queue_native_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
     {
       return FALSE;
     }
-  jobject obj = java_log_message_proxy_get_java_object(jmsg);
+
   jboolean res = CALL_JAVA_FUNCTION(env,
                                     CallBooleanMethod,
                                     self->dest_impl.dest_object,
@@ -226,4 +254,21 @@ java_destination_proxy_flush(JavaDestinationProxy *self, JNIEnv *env)
   return CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_flush);
 }
 
+gboolean
+java_destination_proxy_open(JavaDestinationProxy *self, JNIEnv *env)
+{
+  return CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_open);
+}
 
+gboolean
+java_destination_proxy_is_opened(JavaDestinationProxy *self, JNIEnv *env)
+{
+  return CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_is_opened);
+}
+
+
+void
+java_destination_proxy_close(JavaDestinationProxy *self, JNIEnv *env)
+{
+  CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_close);
+}

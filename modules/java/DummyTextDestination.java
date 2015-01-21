@@ -49,6 +49,20 @@ public class DummyTextDestination extends TextLogDestination {
 		return true;
 	}
 
+  public boolean open() {
+		System.out.println("open");
+    return true;
+  }
+
+  public boolean isOpened() {
+		System.out.println("isOpened");
+    return true;
+  }
+
+  public void close() {
+		System.out.println("close");
+  }
+
 	public boolean queue(String arg0) {
 		System.out.println("Incoming message: " + arg0);
 		return true;

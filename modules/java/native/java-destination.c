@@ -38,7 +38,7 @@ void java_dd_set_option(LogDriver *s, const gchar *key, const gchar *value)
 }
 
 JNIEXPORT jstring JNICALL
-Java_org_syslog_1ng_LogPipe_getOption(JNIEnv *env, jobject obj, jlong s, jstring key)
+Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, jstring key)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
   gchar *value;
@@ -253,6 +253,10 @@ java_dd_init_watches(JavaDestDriver *self)
   self->wake_up_event.handler = java_dd_update_watches;
   iv_event_register(&self->wake_up_event);
 
+  IV_TIMER_INIT(&self->suspend_timer);
+  self->suspend_timer.cookie = self;
+  self->suspend_timer.handler = java_dd_update_watches;
+
   main_loop_io_worker_job_init(&self->io_job);
   self->io_job.user_data = self;
   self->io_job.work = (void (*)(void *)) java_dd_work_perform;
@@ -277,6 +281,13 @@ java_dd_free(LogPipe *s)
   g_string_free(self->class_path, TRUE);
 }
 
+void
+java_dd_set_retries(LogDriver *s, guint retries)
+{
+  JavaDestDriver *self = (JavaDestDriver *)s;
+  self->retries = retries;
+}
+
 LogDriver *
 java_dd_new(GlobalConfig *cfg)
 {
@@ -296,6 +307,7 @@ java_dd_new(GlobalConfig *cfg)
   self->threaded = cfg->threaded;
   self->formatted_message = g_string_sized_new(1024);
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->retries = 3;
   java_dd_init_watches(self);
   return (LogDriver *)self;
 }
