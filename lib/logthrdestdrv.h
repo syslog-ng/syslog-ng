@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,6 +61,7 @@ struct _LogThrDestDriver
     gchar *(*persist_name) (LogThrDestDriver *s);
   } format;
   gint stats_source;
+  gint32 seq_num;
 
   void (*queue_method) (LogThrDestDriver *s);
   WorkerOptions worker_options;
@@ -78,5 +79,12 @@ void log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig
 void log_threaded_dest_driver_free(LogPipe *s);
 
 void log_threaded_dest_driver_suspend(LogThrDestDriver *self);
+
+void log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
+                                             LogMessage *msg,
+                                             LogPathOptions *path_options);
+void log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
+                                           LogMessage *msg,
+                                           LogPathOptions *path_options);
 
 #endif
