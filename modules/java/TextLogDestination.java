@@ -28,5 +28,5 @@ public abstract class TextLogDestination extends LogDestination {
 		super(handle);
 	}
 
-	public abstract boolean queue(String formattedMessage);
+	public abstract boolean send(String formattedMessage);
 }

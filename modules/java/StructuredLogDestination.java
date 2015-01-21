@@ -28,5 +28,5 @@ public abstract class StructuredLogDestination extends LogDestination {
 		super(handle);
 	}
 
-	public abstract boolean queue(LogMessage msg);
+	public abstract boolean send(LogMessage msg);
 }

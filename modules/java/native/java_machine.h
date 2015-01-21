@@ -34,9 +34,9 @@ typedef struct _JavaVMSingleton JavaVMSingleton;
 
 JavaVMSingleton *java_machine_ref();
 void java_machine_unref(JavaVMSingleton *self);
-gboolean java_machine_start(JavaVMSingleton* self, JNIEnv **env);
+gboolean java_machine_start(JavaVMSingleton* self);
 
-void java_machine_detach_thread(JavaVMSingleton* self);
+void java_machine_detach_thread();
 
 JNIEnv *java_machine_get_env(JavaVMSingleton *self, JNIEnv **penv);
 

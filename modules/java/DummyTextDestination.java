@@ -34,8 +34,8 @@ public class DummyTextDestination extends TextLogDestination {
 		System.out.println("Deinit");
 	}
 
-	public boolean flush() {
-		System.out.println("Flush");
+	public boolean onMessageQueueEmpty() {
+		System.out.println("onMessageQueueEmpty");
 		return true;
 	}
 
@@ -63,7 +63,7 @@ public class DummyTextDestination extends TextLogDestination {
 		System.out.println("close");
   }
 
-	public boolean queue(String arg0) {
+	public boolean send(String arg0) {
 		System.out.println("Incoming message: " + arg0);
 		return true;
 	}

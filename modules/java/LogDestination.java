@@ -41,7 +41,7 @@ public abstract class LogDestination extends LogPipe {
 
   private native String getOption(long ptr, String key);
 
-  public boolean flush() {
+  public boolean onMessageQueueEmpty() {
 	  return true;
   }
 }

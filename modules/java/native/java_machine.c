@@ -83,7 +83,7 @@ java_machine_unref(JavaVMSingleton *self)
 }
 
 gboolean
-java_machine_start(JavaVMSingleton* self, JNIEnv **env)
+java_machine_start(JavaVMSingleton* self)
 {
   g_assert(self == g_jvm_s);
   if (!self->jvm)
@@ -106,7 +106,6 @@ java_machine_start(JavaVMSingleton* self, JNIEnv **env)
           return FALSE;
       }
     }
-  *env = self->env;
   return TRUE;
 }
 
@@ -118,10 +117,9 @@ java_machine_attach_thread(JavaVMSingleton* self, JNIEnv **penv)
 }
 
 void
-java_machine_detach_thread(JavaVMSingleton* self)
+java_machine_detach_thread()
 {
-  g_assert(self == g_jvm_s);
-  (*(self->jvm))->DetachCurrentThread(self->jvm);
+  (*(g_jvm_s->jvm))->DetachCurrentThread(g_jvm_s->jvm);
 }
 
 
