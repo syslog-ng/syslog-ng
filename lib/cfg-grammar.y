@@ -33,6 +33,7 @@
 #include "cfg-lexer.h"
 #include "hostname.h"
 #include "type-hinting.h"
+#include "logthrdestdrv.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
@@ -310,6 +311,8 @@ extern struct _ValuePairsTransformSet *last_vp_transset;
 %token KW_REPLACE_PREFIX              10509
 
 %token KW_ON_ERROR                    10510
+
+%token KW_RETRIES                     10511
 
 /* END_DECLS */
 
@@ -920,6 +923,13 @@ source_reader_option_flags
         | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
 	|
 	;
+
+threaded_dest_driver_option
+ : KW_RETRIES '(' LL_NUMBER ')'
+        {
+          log_threaded_dest_driver_set_max_retries(last_driver, $3);
+        }
+
 
 dest_driver_option
         /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */

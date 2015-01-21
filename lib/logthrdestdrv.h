@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,8 +33,16 @@
 #include <iv.h>
 #include <iv_event.h>
 
-typedef struct _LogThrDestDriver LogThrDestDriver;
+typedef enum
+{
+  WORKER_INSERT_RESULT_DROP,
+  WORKER_INSERT_RESULT_ERROR,
+  WORKER_INSERT_RESULT_REWIND,
+  WORKER_INSERT_RESULT_SUCCESS,
+  WORKER_INSERT_RESULT_NOT_CONNECTED
+} worker_insert_result_t;
 
+typedef struct _LogThrDestDriver LogThrDestDriver;
 struct _LogThrDestDriver
 {
   LogDestDriver super;
@@ -42,6 +50,7 @@ struct _LogThrDestDriver
   StatsCounterItem *dropped_messages;
   StatsCounterItem *stored_messages;
 
+  gboolean suspended;
   time_t time_reopen;
 
   LogQueue *queue;
@@ -51,9 +60,14 @@ struct _LogThrDestDriver
   {
     void (*thread_init) (LogThrDestDriver *s);
     void (*thread_deinit) (LogThrDestDriver *s);
-    gboolean (*insert) (LogThrDestDriver *s);
+    worker_insert_result_t (*insert) (LogThrDestDriver *s, LogMessage *msg);
     void (*disconnect) (LogThrDestDriver *s);
   } worker;
+
+  struct
+  {
+    void (*retry_over) (LogThrDestDriver *s, LogMessage *msg);
+  } messages;
 
   struct
   {
@@ -61,6 +75,13 @@ struct _LogThrDestDriver
     gchar *(*persist_name) (LogThrDestDriver *s);
   } format;
   gint stats_source;
+  gint32 seq_num;
+
+  struct
+  {
+    gint counter;
+    gint max;
+  } retries;
 
   void (*queue_method) (LogThrDestDriver *s);
   WorkerOptions worker_options;
@@ -78,5 +99,14 @@ void log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig
 void log_threaded_dest_driver_free(LogPipe *s);
 
 void log_threaded_dest_driver_suspend(LogThrDestDriver *self);
+
+void log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
+                                             LogMessage *msg);
+void log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
+                                             LogMessage *msg);
+void log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
+                                             LogMessage *msg);
+
+void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
 
 #endif
