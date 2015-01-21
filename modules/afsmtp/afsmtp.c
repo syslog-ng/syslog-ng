@@ -503,7 +503,7 @@ afsmtp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 
   if (!success)
     {
-      return message_sent ? WORKER_INSERT_RESULT_ERROR : WORKER_INSERT_RESULT_REWIND;
+      return message_sent ? WORKER_INSERT_RESULT_ERROR : WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
   return WORKER_INSERT_RESULT_SUCCESS;
 }
@@ -514,7 +514,6 @@ afsmtp_worker_thread_init(LogThrDestDriver *d)
   AFSMTPDriver *self = (AFSMTPDriver *)d;
 
   self->str = g_string_sized_new(1024);
-  self->super.queue->use_backlog = TRUE;
 
   ignore_sigpipe();
 }

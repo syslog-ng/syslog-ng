@@ -473,7 +473,7 @@ afmongodb_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   gboolean success;
 
   if (!afmongodb_dd_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_ERROR;
+    return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
   bson_reset (self->bson);
 
@@ -507,6 +507,9 @@ afmongodb_worker_insert(LogThrDestDriver *s, LogMessage *msg)
         }
     }
 
+  if (!success && (errno == ENOTCONN))
+    return WORKER_INSERT_RESULT_NOT_CONNECTED;
+
   return success ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
 }
 
@@ -522,8 +525,6 @@ afmongodb_worker_thread_init(LogThrDestDriver *d)
   self->current_value = g_string_sized_new(256);
 
   self->bson = bson_new_sized(4096);
-
-  log_queue_set_use_backlog(self->super.queue, TRUE);
 }
 
 static void
