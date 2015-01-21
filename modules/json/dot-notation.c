@@ -80,11 +80,11 @@ static gboolean
 _compile_dot_notation_member_ref(const gchar *level, JSONDotNotationElem *elem)
 {
   const gchar *p = level;
-  
-  if (!g_ascii_isalnum(level[0]) && *p != '_')
+
+  if (!g_ascii_isprint(*p) || strchr(".[]", *p) != NULL)
     return FALSE;
 
-  while (g_ascii_isalnum(*p) || *p == '_')
+  while (g_ascii_isprint(*p) && strchr(".[]", *p) == NULL)
     p++;
 
   if (*p != 0)
