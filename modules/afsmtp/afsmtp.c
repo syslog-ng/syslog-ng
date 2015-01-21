@@ -479,15 +479,14 @@ __send_message(AFSMTPDriver *self, smtp_session_t session)
 static void
 __accept_message(AFSMTPDriver *self, LogMessage *msg)
 {
-  log_threaded_dest_driver_message_accept(&self->super, msg, NULL);
+  log_threaded_dest_driver_message_accept(&self->super, msg);
   self->failed_message_counter = 0;
 }
 
 void
 __rewind_message(AFSMTPDriver* self, LogMessage* msg)
 {
-  log_queue_rewind_backlog(self->super.queue, 1);
-  log_msg_unref(msg);
+  log_threaded_dest_driver_message_rewind(&self->super, msg);
 }
 
 void
@@ -497,7 +496,7 @@ __drop_message(AFSMTPDriver* self, LogMessage* msg)
             evt_tag_str("driver", self->super.super.super.id),
             evt_tag_int("attempts", self->num_retries),
             NULL);
-  log_threaded_dest_driver_message_drop(&self->super, msg, NULL);
+  log_threaded_dest_driver_message_drop(&self->super, msg);
   self->failed_message_counter = 0;
 }
 
