@@ -451,25 +451,10 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
   return FALSE;
 }
 
-static void
-afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg)
-{
-  log_threaded_dest_driver_message_drop(&self->super, msg);
-  self->failed_message_counter = 0;
-
-};
-
-static void
-afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg)
-{
-  log_threaded_dest_driver_message_accept(&self->super, msg);
-  self->failed_message_counter = 0;
-}
-
 static worker_insert_result_t
 afmongodb_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   gboolean success;
 
   if (!afmongodb_dd_connect(self, TRUE))
