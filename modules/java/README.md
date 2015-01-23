@@ -13,8 +13,8 @@ import org.syslog_ng.*;
 
 public class TestClass extends TextLogDestination {
 
-  public TestClass(long arg0) {
-    super(arg0);
+  public TestClass(long handle) {
+    super(handle);
   }
 
   public boolean init()

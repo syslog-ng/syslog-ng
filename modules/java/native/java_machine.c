@@ -58,27 +58,33 @@ java_machine_ref()
   return g_jvm_s;
 }
 
+static void inline
+__jvm_free(JavaVMSingleton *self)
+{
+  msg_debug("Java machine free", NULL);
+  g_string_free(self->class_path, TRUE);
+  if (self->jvm)
+    {
+      JavaVM jvm = *(self->jvm);
+      if (self->loader)
+        {
+          JNIEnv *env;
+          class_loader_free(self->loader, java_machine_get_env(self, &env));
+        }
+      jvm->DestroyJavaVM(self->jvm);
+
+    }
+  g_free(self);
+  g_jvm_s = NULL;
+}
+
 void
 java_machine_unref(JavaVMSingleton *self)
 {
   g_assert(self == g_jvm_s);
   if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
-      msg_debug("Java machine free", NULL);
-      g_string_free(self->class_path, TRUE);
-      if (self->jvm)
-        {
-          JavaVM jvm = *(self->jvm);
-          if (self->loader)
-            {
-              JNIEnv *env;
-              class_loader_free(self->loader, java_machine_get_env(self, &env));
-            }
-          jvm->DestroyJavaVM(self->jvm);
-
-        }
-      g_free(self);
-      g_jvm_s = NULL;
+      __jvm_free(self);
     }
 }
 

@@ -46,72 +46,71 @@ public class SyslogNgClassLoader {
   private ClassLoader classLoader;
 
   public SyslogNgClassLoader() {
-	  classLoader = ClassLoader.getSystemClassLoader();
+    classLoader = ClassLoader.getSystemClassLoader();
   }
 
   public Class loadClass(String className, String pathList) {
     Class result = null;
-	URL[] urls = createUrls(pathList);
-	if (pathList != null) {
-	  try {
-	    expandClassPath(urls);
-	  }
-	  catch (Exception e) {
-	    System.out.println("Error while expanding path list: " + e);
-	    e.printStackTrace(System.err);
-	  }
-	}
+    URL[] urls = createUrls(pathList);
 
-	try {
-	  result = Class.forName(className, true, classLoader);
-	}
-	catch (ClassNotFoundException e) {
-	  System.out.println("Exception: " + e.getMessage());
-	  e.printStackTrace(System.err);
-	}
-	catch (NoClassDefFoundError e) {
-	  System.out.println("Error: " + e.getMessage());
-	  e.printStackTrace(System.err);
-	}
-	return result;
+    try {
+      if (urls.length > 0) {
+        expandClassPath(urls);
+      }
+      result = Class.forName(className, true, classLoader);
+    }
+    catch (ClassNotFoundException e) {
+      System.out.println("Exception: " + e.getMessage());
+      e.printStackTrace(System.err);
+    }
+    catch (NoClassDefFoundError e) {
+      System.out.println("Error: " + e.getMessage());
+      e.printStackTrace(System.err);
+    }
+    catch (Exception e) {
+      System.out.println("Error while expanding path list: " + e);
+      e.printStackTrace(System.err);
+    }
+
+    return result;
   }
 
   private List<String> resolveWildCardFileName(String path) {
-	  List<String> result = new ArrayList<String>();
-	  File f = new File(path);
-	  final String basename = f.getName();
-	  String dirname = f.getParent();
-	  File dir = new File(dirname);
-	  File[] files = dir.listFiles(new FilenameFilter() {
+    List<String> result = new ArrayList<String>();
+    File f = new File(path);
+    final String basename = f.getName();
+    String dirname = f.getParent();
+    File dir = new File(dirname);
+    File[] files = dir.listFiles(new FilenameFilter() {
 
-		  public boolean accept(File dir, String name) {
-			  PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:"+basename);
-			  Path path = Paths.get(name);
-			  return matcher.matches(path);
-		  }
-	  });
+      public boolean accept(File dir, String name) {
+        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:"+basename);
+        Path path = Paths.get(name);
+        return matcher.matches(path);
+      }
+    });
     if (files != null) {
-	    for (File found:files) {
-		    result.add(found.getAbsolutePath());
-	    }
+      for (File found:files) {
+        result.add(found.getAbsolutePath());
+      }
     }
-	  return result;
+    return result;
   }
 
   private String[] parsePathList(String pathList) {
-	  String[] pathes = pathList.split(":");
-	  List<String> result = new ArrayList<String>();
+    String[] pathes = pathList.split(":");
+    List<String> result = new ArrayList<String>();
 
-	  for (String path:pathes) {
-		  if (path.indexOf('*') != -1) {
-			  result.addAll(resolveWildCardFileName(path));
-		  }
-		  else {
-			  result.add(path);
-		  }
-	  }
+    for (String path:pathes) {
+      if (path.indexOf('*') != -1) {
+        result.addAll(resolveWildCardFileName(path));
+      }
+      else {
+        result.add(path);
+      }
+    }
 
-	  return result.toArray(new String[result.size()]);
+    return result.toArray(new String[result.size()]);
   }
 
 

@@ -33,12 +33,10 @@ public abstract class LogPipe {
   }
 
   public long getConfigHandle() {
-    if (configHandle != 0) {
-      return configHandle;
+    if (configHandle == 0) {
+      configHandle = getConfigHandle(pipeHandle);
     }
-    else {
-      return getConfigHandle(pipeHandle);
-    }
+    return configHandle;
   }
 
   public abstract boolean init();
