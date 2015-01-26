@@ -32,6 +32,7 @@ JSON_GLIB_MIN_VERSION="0.12"
 PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="0.1.0"
 XML2_MIN_VERSION="2.9.0"
+JAVA_MIN_VERSION="1.7"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -194,6 +195,10 @@ AC_ARG_WITH(json,
 AC_ARG_ENABLE(json,
               [  --enable-json           Enable support for JSON template formatting (default: auto)]
               ,,enable_json="auto")
+
+AC_ARG_ENABLE(java,
+              [ --enable-java            Enable support for java plugins (default: auto)]
+              ,,enable_java="auto")
 
 if test $IS_WINDOWS -eq 0; then
 AC_ARG_WITH(libnet,
@@ -1061,6 +1066,18 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
 fi
 
 dnl ***************************************************************************
+dnl java headers/libraries
+dnl ***************************************************************************
+
+if test "x$enable_java" = "xauto" || test "x$enable_java" = "xyes"; then
+    if test "x$enable_java" = "xauto"; then
+      AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [enable_java=no])
+    else
+      AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [AC_MSG_ERROR([Java not found])])
+    fi
+fi
+
+dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
 AC_C_INLINE
@@ -1448,6 +1465,7 @@ AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
 AM_CONDITIONAL([ENABLE_INDEXER], [test "$enable_indexer" = "yes"])
 AM_CONDITIONAL([IS_WINDOWS], [test $IS_WINDOWS -eq 1])
 AM_CONDITIONAL([IS_I386], [test $IS_I386 -eq 1])
+AM_CONDITIONAL([ENABLE_JAVA], [test "$enable_java" = "yes"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1554,6 +1572,7 @@ AC_OUTPUT(dist.conf
           modules/eventlog/tests/Makefile
           modules/systemd-journal/Makefile
           modules/systemd-journal/tests/Makefile
+          modules/java/Makefile
 
 dnl PE modules
 	modules/license/Makefile
@@ -1644,6 +1663,7 @@ echo "  Indexer                     : ${enable_indexer: no}"
 echo " Shared Library extension     : $BB_SHREXT"
 echo "  JSON support (module)       : ${enable_json:=no} (using ${with_json})"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
+echo "  JAVA support (module)       : ${enable_java:=no}"
 echo "CORE_DEPSLIBS                 : $CORE_DEPS_LIBS"
 
 #vim: sw=4 ts=4 expandtab

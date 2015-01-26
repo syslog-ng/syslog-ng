@@ -235,6 +235,13 @@ log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
     return log_msg_get_macro_value(self, flags >> 8, value_len);
 }
 
+static inline const gchar *
+log_msg_get_value_by_name(LogMessage *self, const gchar *name, gssize *value_len)
+{
+  NVHandle handle = log_msg_get_value_handle(name);
+  return log_msg_get_value(self, handle, value_len);
+}
+
 typedef gboolean (*LogMessageTagsForeachFunc)(LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data);
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);

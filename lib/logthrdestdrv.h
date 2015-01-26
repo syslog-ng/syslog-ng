@@ -61,6 +61,7 @@ struct _LogThrDestDriver
     void (*thread_init) (LogThrDestDriver *s);
     void (*thread_deinit) (LogThrDestDriver *s);
     worker_insert_result_t (*insert) (LogThrDestDriver *s, LogMessage *msg);
+    void (*worker_message_queue_empty)(LogThrDestDriver *s);
     void (*disconnect) (LogThrDestDriver *s);
   } worker;
 
