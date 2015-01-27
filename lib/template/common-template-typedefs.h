@@ -22,7 +22,7 @@
  */
 
 #ifndef COMMON_TYPEDEFS_H_INCLUDED
-#define COMNON_TYPEDEFS_H_INCLUDED
+#define COMMON_TYPEDEFS_H_INCLUDED
 
 typedef struct _LogTemplateOptions LogTemplateOptions;
 
