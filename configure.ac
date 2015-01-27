@@ -116,9 +116,6 @@ AC_ARG_ENABLE(gprof,
 AC_ARG_ENABLE(memtrace,
               [  --enable-memtrace   Enable alternative leak debugging code.])
 
-AC_ARG_ENABLE(ssl,
-              [  --enable-ssl        Enable SSL support.],,enable_ssl="auto")
-
 AC_ARG_ENABLE(dynamic-linking,
               [  --enable-dynamic-linking        Link everything dynamically.],,enable_dynamic_linking="auto")
 
@@ -239,7 +236,7 @@ if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
-            redis systemd geoip riemann ssl ipv6 smtp"
+            redis systemd geoip riemann ipv6 smtp"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
        if test "x$modstate" = "xauto"; then
@@ -765,7 +762,9 @@ dnl ***************************************************************************
 #  * TLS support
 
 dnl check OpenSSL static linking
-PKG_CHECK_MODULES(OPENSSL, openssl >= $OPENSSL_MIN_VERSION,, OPENSSL_LIBS="")
+PKG_CHECK_MODULES(OPENSSL, 
+                  openssl >= $OPENSSL_MIN_VERSION,,
+                  AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
 
 if test -n "$OPENSSL_LIBS" -a "$linking_mode" != "dynamic"; then
         dnl required for openssl, but only when linking statically
@@ -780,17 +779,6 @@ if test -n "$OPENSSL_LIBS" -a "$linking_mode" != "dynamic"; then
 	LIBS=$old_LIBS
 fi
 
-if test "x$OPENSSL_LIBS" != "x"; then
-        if test "x$enable_ssl" = "xauto"; then
-	        enable_ssl="yes"
-        fi
-else
-        enable_ssl="no"
-fi
-
-if test "x$enable_ssl" = "xno"; then
-	OPENSSL_LIBS=""
-fi
 
 dnl
 dnl Right now, openssl is never linked statically as it is only used by the
@@ -1339,7 +1327,6 @@ AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 
 AC_DEFINE_UNQUOTED(WITH_COMPILE_DATE, $wcmp_date, [Include the compile date in the binary])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
-AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
 AC_DEFINE_UNQUOTED(ENABLE_LIBUUID, `enable_value $enable_libuuid`, [Enable libuuid support])
 AC_DEFINE_UNQUOTED(ENABLE_GPROF, `enable_value $enable_gprof`, [Enable gcc profiling])
 AC_DEFINE_UNQUOTED(ENABLE_MEMTRACE, `enable_value $enable_memtrace`, [Enable memtrace])
@@ -1355,7 +1342,6 @@ AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal suppo
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD_UNIT_INSTALL, [test "$systemdsystemunitdir" != ""])
-AM_CONDITIONAL(ENABLE_SSL, [test "$enable_ssl" = "yes"])
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
@@ -1465,7 +1451,6 @@ echo "  systemd-journal support     : ${with_systemd_journal:=no}"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
-echo "  SSL support (module)        : ${enable_ssl:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"

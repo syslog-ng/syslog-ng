@@ -43,7 +43,7 @@ else
 INSTALL_ARGS	+= lib_LTLIBRARIES= pkginclude_HEADERS= pkgconfig_DATA=
   ifneq (${self_sub},modules)
    ifeq (${self_sub},modules_afsocket)
-INSTALL_ARGS	+= module_LTLIBRARIES="modules/afsocket/libafsocket-notls.la modules/afsocket/libafsocket-tls.la"
+INSTALL_ARGS	+= module_LTLIBRARIES="modules/afsocket/libafsocket.la"
 INSTALL_ARGS	+= INSTALL_EXEC_HOOKS=afsocket-install-exec-hook
    else ifeq (${self_sub},modules_json)
 INSTALL_ARGS	+= module_LTLIBRARIES="modules/json/libjson-plugin.la"

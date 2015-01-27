@@ -27,10 +27,7 @@
 #include "uuid.h"
 #include "str-format.h"
 #include "plugin-types.h"
-
-#if ENABLE_SSL
 #include <openssl/evp.h>
-#endif
 
 static void
 tf_uuid(LogMessage *msg, gint argc, GString *argv[], GString *result)
@@ -43,7 +40,6 @@ tf_uuid(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_uuid);
 
-#if ENABLE_SSL
 /*
  * $($hash_method [opts] $arg1 $arg2 $arg3...)
  *
@@ -147,19 +143,16 @@ tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
 
 TEMPLATE_FUNCTION(TFHashState, tf_hash, tf_hash_prepare, tf_simple_func_eval, tf_hash_call, tf_simple_func_free_state, NULL);
 
-#endif
 
 static Plugin cryptofuncs_plugins[] =
 {
   TEMPLATE_FUNCTION_PLUGIN(tf_uuid, "uuid"),
-#if ENABLE_SSL
   TEMPLATE_FUNCTION_PLUGIN(tf_hash, "hash"),
   TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha1"),
   TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha256"),
   TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha512"),
   TEMPLATE_FUNCTION_PLUGIN(tf_hash, "md4"),
   TEMPLATE_FUNCTION_PLUGIN(tf_hash, "md5"),
-#endif
 };
 
 gboolean

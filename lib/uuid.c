@@ -24,7 +24,6 @@
 
 #include "uuid.h"
 
-#if ENABLE_SSL
 #include <openssl/rand.h>
 #include <arpa/inet.h>
 
@@ -59,33 +58,3 @@ uuid_gen_random(gchar *buf, gsize buflen)
                   uuid.node[3], uuid.node[4], uuid.node[5]);
 
 }
-#else
-
-#if ENABLE_LIBUUID
-#include <uuid/uuid.h>
-
-void
-uuid_gen_random(gchar *buf, gsize buflen)
-{
-  uuid_t uuid;
-  char out[37];
-
-  uuid_generate(uuid);
-  uuid_unparse(uuid, out);
-
-  g_strlcpy(buf, out, buflen);
-}
-
-#else /* Neither openssl, nor libuuid */
-
-#warning "Neither openssl, nor libuuid was found on your system, UUID generation will be disabled"
-
-void
-uuid_gen_random(gchar *buf, gsize buflen)
-{
-  static int counter = 1;
-
-  g_snprintf(buf, buflen, "unable-to-generate-uuid-without-random-source-%d", counter++);
-}
-#endif
-#endif

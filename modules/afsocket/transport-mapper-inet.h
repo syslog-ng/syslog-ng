@@ -34,11 +34,9 @@ typedef struct _TransportMapperInet
   const gchar *server_port_change_warning;
   gboolean require_tls;
   gboolean allow_tls;
-#if BUILD_WITH_SSL
   TLSContext *tls_context;
   TLSSessionVerifyFunc tls_verify_callback;
   gpointer tls_verify_data;
-#endif
 } TransportMapperInet;
 
 static inline gint
@@ -55,7 +53,6 @@ transport_mapper_inet_get_port_change_warning(TransportMapper *s)
   return self->server_port_change_warning;
 }
 
-#if BUILD_WITH_SSL
 static inline void
 transport_mapper_inet_set_tls_context(TransportMapperInet *self, TLSContext *tls_context, TLSSessionVerifyFunc tls_verify_callback, gpointer tls_verify_data)
 {
@@ -63,7 +60,6 @@ transport_mapper_inet_set_tls_context(TransportMapperInet *self, TLSContext *tls
   self->tls_verify_callback = tls_verify_callback;
   self->tls_verify_data = tls_verify_data;
 }
-#endif
 
 void transport_mapper_inet_init_instance(TransportMapperInet *self, const gchar *transport);
 TransportMapper *transport_mapper_tcp_new(void);

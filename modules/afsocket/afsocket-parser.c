@@ -41,7 +41,6 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "udp6",               KW_UDP6 },
   { "tcp6",               KW_TCP6 },
 #endif
-#if BUILD_WITH_SSL
   /* ssl */
   { "tls",                KW_TLS },
   { "peer_verify",        KW_PEER_VERIFY },
@@ -52,7 +51,6 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "trusted_keys",       KW_TRUSTED_KEYS },
   { "trusted_dn",         KW_TRUSTED_DN },
   { "cipher_suite",       KW_CIPHER_SUITE },
-#endif
 
   { "localip",            KW_LOCALIP },
   { "ip",                 KW_IP },

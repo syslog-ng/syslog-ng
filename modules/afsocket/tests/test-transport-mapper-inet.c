@@ -109,7 +109,6 @@ assert_create_socket_succeeds(void)
   close(sock);
 }
 
-#ifdef BUILD_WITH_SSL
 static TLSContext *
 create_dummy_tls_context(void)
 {
@@ -118,7 +117,6 @@ create_dummy_tls_context(void)
   tls_context = tls_context_new(TM_SERVER);
   return tls_context;
 }
-#endif
 
 /******************************************************************************
  * Tests start here
@@ -163,10 +161,8 @@ test_udp_apply_transport_sets_defaults(void)
 static void
 test_udp_apply_fails_when_tls_context_is_set(void)
 {
-#ifdef BUILD_WITH_SSL
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL, NULL);
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
-#endif
 }
 
 static void
@@ -196,10 +192,8 @@ test_network_transport_udp_apply_transport_sets_defaults(void)
 static void
 test_network_transport_udp_apply_fails_when_tls_context_is_set(void)
 {
-#ifdef BUILD_WITH_SSL
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL, NULL);
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
-#endif
 }
 
 static void
@@ -223,7 +217,6 @@ test_network_transport_tls_apply_fails_without_tls_context(void)
 static void
 test_network_transport_tls_apply_transport_sets_defaults(void)
 {
-#ifdef BUILD_WITH_SSL
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL, NULL);
   assert_transport_mapper_apply(transport_mapper, "tls");
   assert_transport_mapper_tcp_socket(transport_mapper);
@@ -232,7 +225,6 @@ test_network_transport_tls_apply_transport_sets_defaults(void)
   assert_transport_mapper_logproto(transport_mapper, "text");
   assert_transport_mapper_stats_source(transport_mapper, SCS_NETWORK);
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
-#endif
 }
 
 static void
@@ -262,10 +254,8 @@ test_syslog_transport_udp_apply_transport_sets_defaults(void)
 static void
 test_syslog_transport_udp_apply_fails_when_tls_context_is_set(void)
 {
-#ifdef BUILD_WITH_SSL
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL, NULL);
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
-#endif
 }
 
 static void
@@ -289,7 +279,6 @@ test_syslog_transport_tls_apply_fails_without_tls_context(void)
 static void
 test_syslog_transport_tls_apply_transport_sets_defaults(void)
 {
-#ifdef BUILD_WITH_SSL
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL, NULL);
   assert_transport_mapper_apply(transport_mapper, "tls");
   assert_transport_mapper_tcp_socket(transport_mapper);
@@ -298,7 +287,6 @@ test_syslog_transport_tls_apply_transport_sets_defaults(void)
   assert_transport_mapper_logproto(transport_mapper, "framed");
   assert_transport_mapper_stats_source(transport_mapper, SCS_SYSLOG);
   assert_transport_mapper_inet_server_port(transport_mapper, 6514);
-#endif
 }
 
 static void

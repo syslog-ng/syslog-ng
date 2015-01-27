@@ -92,8 +92,6 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
 #endif
 }
 
-#if BUILD_WITH_SSL
-
 static gint
 afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
 {
@@ -115,8 +113,6 @@ afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
   transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, afinet_dd_verify_callback, self);
 }
 
-#endif
-
 static LogWriter *
 afinet_dd_construct_writer(AFSocketDestDriver *s)
 {
@@ -125,7 +121,6 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
   TransportMapperInet *transport_mapper_inet G_GNUC_UNUSED = ((TransportMapperInet *) (self->super.transport_mapper));
 
   writer = afsocket_dd_construct_writer_method(s);
-#if BUILD_WITH_SSL
   /* SSL is duplex, so we can certainly expect input from the server, which
    * would cause the LogWriter to close this connection.  In a better world
    * LW_DETECT_EOF would be implemented by the LogProto class and would
@@ -135,7 +130,7 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
 
   if (((self->super.transport_mapper->sock_type == SOCK_STREAM) && transport_mapper_inet->tls_context))
     log_writer_set_flags(writer, log_writer_get_flags(writer) & ~LW_DETECT_EOF);
-#endif
+
   return writer;
 }
 

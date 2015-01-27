@@ -30,8 +30,6 @@
 #include "apphook.h"
 #include "thread-utils.h"
 
-#if ENABLE_SSL
-
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
 #include <stdio.h>
@@ -138,4 +136,3 @@ crypto_unload(void)
 
 /* the crypto options (seed) are handled in main.c */
 
-#endif
