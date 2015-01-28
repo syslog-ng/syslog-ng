@@ -358,9 +358,6 @@ log_threaded_dest_driver_free(LogPipe *s)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)s;
 
-  if (self->queue)
-    log_queue_unref(self->queue);
-
   log_dest_driver_free((LogPipe *)self);
 }
 
