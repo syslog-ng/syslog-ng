@@ -100,7 +100,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
                 NULL);
     }
 
-  self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "onMessageQueueEmpty", "()Z");
+  self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "onMessageQueueEmpty", "()V");
   if (!self->dest_impl.mi_on_message_queue_empty)
     {
       msg_error("Can't find method in class",
@@ -253,7 +253,7 @@ java_destination_proxy_deinit(JavaDestinationProxy *self)
   CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_deinit);
 }
 
-gboolean
+void
 java_destination_proxy_on_message_queue_empty(JavaDestinationProxy *self)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);

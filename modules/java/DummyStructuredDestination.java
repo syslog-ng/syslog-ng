@@ -34,9 +34,9 @@ public class DummyStructuredDestination extends StructuredLogDestination {
     System.out.println("Deinit");
   }
 
-  public boolean onMessageQueueEmpty() {
+  public void onMessageQueueEmpty() {
     System.out.println("onMessageQueueEmpty");
-    return true;
+    return;
   }
 
   public boolean init() {
