@@ -257,7 +257,7 @@ void
 java_destination_proxy_on_message_queue_empty(JavaDestinationProxy *self)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
-  return CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_on_message_queue_empty);
+  CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_on_message_queue_empty);
 }
 
 gboolean
