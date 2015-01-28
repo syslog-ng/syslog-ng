@@ -609,7 +609,7 @@ afsmtp_dd_init(LogPipe *s)
 
   if (!server_mode)
     {
-      msg_error("syslog-ng running in client/relay mode, MongoDB destination is unavailable", NULL);
+      msg_error("syslog-ng running in client/relay mode, SMTP destination is unavailable", NULL);
       return FALSE;
     }
 
