@@ -1,5 +1,7 @@
 export top_srcdir
 
+AUTOMAKE_OPTIONS = subdir-objects
+
 if ENABLE_JAVA
 
 module_LTLIBRARIES = libmod-java.la
@@ -72,7 +74,6 @@ JAVA_HEADER_FILES = \
    LogDestination.h \
    LogMessage.h \
    LogTemplate.h
-
 
 SyslogNg.jar: $(JAVA_CLASS_FILES) $(JAVA_HEADER_FILES)
 	$(AM_V_GEN) $(JAR) -cvf $@ -C ./ org
