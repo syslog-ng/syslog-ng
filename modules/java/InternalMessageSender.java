@@ -20,51 +20,41 @@
  * COPYING for details.
  *
  */
+
+
 package org.syslog_ng;
 
-public class DummyTextDestination extends TextLogDestination {
+class InternalMessageSender {
+  private static final int MsgFatal = 2;
+  private static final int MsgError = 3;
+  private static final int MsgWarning = 4;
+  private static final int MsgNotice = 5;
+  private static final int MsgInfo = 6;
+  private static final int MsgDebug = 7;
 
-  private String name;
-
-  public DummyTextDestination(long arg0) {
-    super(arg0);
+  public static void fatal(String message) {
+    createInternalMessage(MsgFatal, message);
   }
 
-  public void deinit() {
-    InternalMessageSender.debug("Deinit");
+  public static void error(String message) {
+    createInternalMessage(MsgError, message);
+  }
+  
+  public static void warning(String message) {
+    createInternalMessage(MsgWarning, message);
+  }
+  
+  public static void notice(String message) {
+    createInternalMessage(MsgNotice, message);
   }
 
-  public void onMessageQueueEmpty() {
-    InternalMessageSender.debug("onMessageQueueEmpty");
-    return;
+  public static void info(String message) {
+    createInternalMessage(MsgInfo, message);
   }
-
-  public boolean init() {
-    name = getOption("name");
-    if (name == null) {
-      InternalMessageSender.error("Name is a required option for this destination");
-      return false;
-    }
-    InternalMessageSender.debug("Init " + name);
-    return true;
+  
+  public static void debug(String message) {
+    createInternalMessage(MsgDebug, message);
   }
-
-  public boolean open() {
-    InternalMessageSender.debug("open");
-    return true;
-  }
-
-  public boolean isOpened() {
-    InternalMessageSender.debug("isOpened");
-    return true;
-  }
-
-  public void close() {
-    InternalMessageSender.debug("close");
-  }
-
-  public boolean send(String arg0) {
-    InternalMessageSender.debug("Incoming message: " + arg0);
-    return true;
-  }
-}
+  
+  private native static void createInternalMessage(int level, String message);
+};

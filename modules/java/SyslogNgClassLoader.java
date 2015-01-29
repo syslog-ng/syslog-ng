@@ -60,15 +60,15 @@ public class SyslogNgClassLoader {
       result = Class.forName(className, true, classLoader);
     }
     catch (ClassNotFoundException e) {
-      System.out.println("Exception: " + e.getMessage());
+      InternalMessageSender.error("Exception: " + e.getMessage());
       e.printStackTrace(System.err);
     }
     catch (NoClassDefFoundError e) {
-      System.out.println("Error: " + e.getMessage());
+      InternalMessageSender.error("Error: " + e.getMessage());
       e.printStackTrace(System.err);
     }
     catch (Exception e) {
-      System.out.println("Error while expanding path list: " + e);
+      InternalMessageSender.error("Error while expanding path list: " + e.getMessage());
       e.printStackTrace(System.err);
     }
 
@@ -120,7 +120,7 @@ public class SyslogNgClassLoader {
     int i = 0;
     for (String path:pathes) {
       try {
-        System.out.println("Add path to classpath: " + path);
+        InternalMessageSender.debug("Add path to classpath: " + path);
         urls[i++] = new File(path).toURI().toURL();
       }
       catch (MalformedURLException e) {

@@ -25,6 +25,7 @@ libmod_java_la_SOURCES = \
     proxies/java-logmsg-proxy.h \
     proxies/java-template-proxy.c \
     proxies/java-template-proxy.h \
+    proxies/internal-message-sender-proxy.c \
     native/java-class-loader.c \
     native/java-class-loader.h \
     native/java-parser.c \
@@ -49,6 +50,7 @@ JAVA_CLASS_PATH = $(JAVA_CLASS_DIR)
 JAVA_SRC_DIR = .
 
 JAVA_CLASS_FILES = \
+    $(JAVA_CLASS_PATH)/InternalMessageSender.class \
     $(JAVA_CLASS_PATH)/SyslogNgClassLoader.class \
     $(JAVA_CLASS_PATH)/LogMessage.class \
     $(JAVA_CLASS_PATH)/LogTemplate.class \
@@ -60,6 +62,7 @@ JAVA_CLASS_FILES = \
     $(JAVA_CLASS_PATH)/DummyStructuredDestination.class
 
 JAVA_FILES = \
+    $(JAVA_SRC_DIR)/InternalMessageSender.java \
     $(JAVA_SRC_DIR)/SyslogNgClassLoader.java \
     $(JAVA_SRC_DIR)/LogMessage.java \
     $(JAVA_SRC_DIR)/LogTemplate.java \
@@ -73,7 +76,8 @@ JAVA_FILES = \
 JAVA_HEADER_FILES = \
    LogDestination.h \
    LogMessage.h \
-   LogTemplate.h
+   LogTemplate.h \
+   InternalMessageSender.h
 
 SyslogNg.jar: $(JAVA_CLASS_FILES) $(JAVA_HEADER_FILES)
 	$(AM_V_GEN) $(JAR) -cvf $@ -C ./ org
