@@ -116,6 +116,7 @@ stomp_connect(stomp_connection **connection_ref, char *hostname, int port)
       return FALSE;
     }
 
+  g_sockaddr_set_port(conn->remote_sa, port);
   if (!g_connect(conn->socket, conn->remote_sa))
     {
       msg_error("Stomp connection failed",
