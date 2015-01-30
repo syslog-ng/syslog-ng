@@ -14,4 +14,4 @@ EXTRA_DIST		+= \
 debian/changelog: debian/changelog.in
 	$(top_builddir)/config.status --file $@:$<
 
-MAINTAINERCLEANFILES	= debian/control debian/rules debian/copyright debian/changelog
+MAINTAINERCLEANFILES	= debian/changelog
