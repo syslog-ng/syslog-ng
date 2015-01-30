@@ -2,29 +2,60 @@ Source: syslog-ng
 Section: admin
 Priority: extra
 Maintainer: SZALAY Attila <sasa@debian.org>
-Build-depends: debhelper (>= 5), libevtlog-dev, libnet1-dev, libglib2.0-dev (>= 2.4), pkg-config, libdbi0-dev, libssl-dev
-Standards-Version: 3.6.1
+Build-Depends: debhelper (>= 7.0.50~),
+               libevtlog-dev,
+               libnet1-dev,
+               libglib2.0-dev (>= 2.4),
+               pkg-config,
+               libdbi-dev | libdbi0-dev,
+               libssl-dev
+Standards-Version: 3.9.5
+Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
 
 Package: syslog-ng
 Architecture: any
-Depends: ${shlibs:Depends}, util-linux (>= 2.12-10)
+Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
 Provides: system-log-daemon, linux-kernel-log-daemon
 Conflicts: system-log-daemon, linux-kernel-log-daemon
-Description: Next generation logging daemon
- Syslog-ng tries to fill the gaps original syslogd's were lacking:
-   * powerful configurability
-   * filtering based on message content
-   * portability
-   * better network forwarding
+Description: Enhanced system logging daemon
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
 
 Package: syslog-ng-dev
 Architecture: any
-Depends: syslog-ng
+Depends: syslog-ng (= ${binary:Version}), ${misc:Depends},
+         libevtlog-dev,
+         libglib2.0-dev
 Section: libdevel
-Description: Next generation logging daemon dev package
- Syslog-ng tries to fill the gaps original syslogd's were lacking:
-   * powerful configurability
-   * filtering based on message content
-   * portability
-   * better network forwarding
+Description: Enhanced system logging daemon (dev package)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package contains the headers and tools needed to build
+ third-party plugins against syslog-ng, the next generation system
+ logging daemon.

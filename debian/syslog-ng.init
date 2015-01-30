@@ -1,22 +1,34 @@
 #! /bin/sh
-#
-# skeleton	example file to build /etc/init.d/ scripts.
-#		This file should be used to construct scripts for /etc/init.d.
-#
-#		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
-#		Modified for Debian GNU/Linux
-#		by Ian Murdock <imurdock@gnu.ai.mit.edu>.
-#
-# Version:	@(#)skeleton  1.8  03-Mar-1998  miquels@cistron.nl
-#
-# This file was customized by SZALAY Attila <sasa@debian.org>
+### BEGIN INIT INFO
+# Provides:          syslog-ng
+# Required-Start:    $local_fs $network $time $remote_fs
+# Required-Stop:     $local_fs $network $time $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starting system logging daemon
+# Description:       Starting syslog-NG, the next generation
+#  syslog daemon.
+### END INIT INFO#
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin
+set -e
+
 SYSLOGNG_OPTS=""
 
-test -f /sbin/syslog-ng || exit 0
 #we source /etc/default/syslog-ng if exists
 [ -r /etc/default/syslog-ng ] && . /etc/default/syslog-ng
+
+# stop syslog-ng before changing its PID file!
+PIDFILE="/var/run/syslog-ng.pid"
+
+SYSLOGNG="/usr/sbin/syslog-ng"
+NAME="syslog-ng"
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+test -f $SYSLOGNG || exit 0
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
 
 case "x$CONSOLE_LOG_LEVEL" in
   x[1-8])
@@ -25,53 +37,86 @@ case "x$CONSOLE_LOG_LEVEL" in
   x)
     ;;
   *)
-    echo "CONSOLE_LOG_LEVEL is of unaccepted value."
+    log_warning_msg "CONSOLE_LOG_LEVEL is of unaccepted value."
     ;;
 esac
 
-# stop syslog-ng before changing its PID file!
-PIDFILE="/var/run/syslog-ng/syslog-ng.pid"
-
-SYSLOGNG="/sbin/syslog-ng"
-NAME="syslog-ng"
-
 create_xconsole() {
-  if [ ! -e /dev/xconsole ]
-  then
-    mknod -m 640 /dev/xconsole p
-  fi
+    XCONSOLE=/dev/xconsole
+    if [ "$(uname -s)" = "GNU/kFreeBSD" ]; then
+        XCONSOLE=/var/run/xconsole
+        ln -sf $XCONSOLE /dev/xconsole
+    fi
+    if [ ! -e $XCONSOLE ]; then
+        mknod -m 640 $XCONSOLE p
+        chown root:adm $XCONSOLE
+        [ -x /sbin/restorecon ] && /sbin/restorecon $XCONSOLE
+    fi
 }
 
 create_pidfiledir() {
-  if [ ! -d /var/run/syslog-ng ]
-  then
-    mkdir -p /var/run/syslog-ng
-  fi
+    if [ ! -d /var/run/syslog-ng ]
+    then
+        mkdir -p /var/run/syslog-ng
+    fi
 }
-                                
+
+syslogng_wait() {
+    if [ "$2" -ne 0 ]; then
+        return 1
+    fi
+
+    if [ -n "$DPKG_MAINTSCRIPT_PACKAGE" ]; then
+        return 0
+    fi
+
+    RET=1
+    for i in $(seq 1 30); do
+        status=0
+        syslog-ng-ctl stats >/dev/null 2>&1 || status=$?
+        if [ "$status" != "$1" ]; then
+            RET=0
+            break
+        fi
+        sleep 1s
+    done
+    return $RET
+}
+
 syslogng_start() {
-    echo -n "Starting system logging: $NAME"
-    start-stop-daemon --start --quiet --exec "$SYSLOGNG" --pidfile "$PIDFILE" -- $SYSLOGNG_OPTS \
-      || { echo " start failed."; return 1; }
-    echo "."
-    return 0
+    log_daemon_msg "Starting system logging" "$NAME"
+    create_pidfiledir
+    create_xconsole
+    start-stop-daemon --start --oknodo --quiet --exec "$SYSLOGNG" \
+                      --pidfile "$PIDFILE" -- -p "$PIDFILE" $SYSLOGNG_OPTS
+    syslogng_wait 1 $?
+    RET="$?"
+    log_end_msg $RET
+    return $RET
 }
 
 syslogng_stop() {
-    echo -n "Stopping system logging: $NAME"
-    start-stop-daemon --stop --quiet --name "$NAME" --retry 3 --pidfile "$PIDFILE" || { echo " not running."; return 1; }
-    echo "."
-    rm -f "$PIDFILE"
-    return 0
+    log_daemon_msg "Stopping system logging" "$NAME"
+    start-stop-daemon --stop --oknodo --quiet --name "$NAME" --retry 3 \
+                      --pidfile "$PIDFILE"
+    syslogng_wait 0 $?
+    RET="$?"
+    log_end_msg $RET
+    return $RET
 }
 
 syslogng_reload() {
-    if /sbin/syslog-ng -s
+    log_daemon_msg "Reload system logging" "$NAME"
+    if $SYSLOGNG -s $SYSLOGNG_OPTS
     then
-      start-stop-daemon --stop --signal 1 --quiet --exec "$SYSLOGNG" --pidfile "$PIDFILE" || return 1
-      return 0
+      start-stop-daemon --stop --signal 1 --quiet --exec "$SYSLOGNG" \
+                        --pidfile "$PIDFILE"
+      syslogng_wait 1 $?
+      RET="$?"
+      log_end_msg $RET
+      return $RET
     else
-      echo "Cannot load /etc/syslog-ng/syslog-ng.conf"
+      log_end_msg 1
       return 1
     fi
 }
@@ -79,38 +124,23 @@ syslogng_reload() {
 
 case "$1" in
   start)
-    create_xconsole
-    create_pidfiledir
     syslogng_start || exit 1
     ;;
   stop)
     syslogng_stop || exit 1
-    ;;
-  reload-or-restart)
-    if [ -r "$PIDFILE" ]
-    then
-        PID=$(cat $PIDFILE)
-        EXE=$(readlink /proc/$PID/exe)
-        if [ "x$EXE" == "x/sbin/syslog-ng" ]
-        then
-            syslogng_reload || exit 1
-        else
-            syslogng_start || exit 1
-        fi
-    else
-        syslogng_start || exit 1
-    fi
     ;;
   reload|force-reload)
     syslogng_reload || exit 1
     ;;
   restart)
     syslogng_stop
-    sleep 1
     syslogng_start || exit 1
     ;;
+  status)
+    status_of_proc "$SYSLOGNG" "$NAME" && exit 0 || exit $?
+    ;;
   *)
-    echo "Usage: /etc/init.d/$NAME {start|stop|restart|reload|force-reload|reload-or-restart}" >&2
+    echo "Usage: /etc/init.d/$NAME {start|stop|restart|reload|force-reload|status}" >&2
     exit 1
     ;;
 esac
