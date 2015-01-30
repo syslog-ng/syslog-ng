@@ -288,7 +288,7 @@ gchar *
 format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len)
 {
   return format_hex_string_with_delimiter(data, data_len, result, result_len, 0);
-};
+}
 
 /* parse 32 bit ints */
 
