@@ -108,7 +108,7 @@ format_padded_int64(GString *result, gint field_len, gchar pad_char, gint sign, 
   else if (base == 8)
     len = format_uint64_base8_rev(num, sizeof(num), value);
   else
-    return 0;
+    g_assert_not_reached();
 
   if (field_len == 0 || field_len < len)
     field_len = len;
@@ -225,7 +225,7 @@ format_padded_int32(GString *result, gint field_len, gchar pad_char, gint sign, 
   else if (base == 8)
     len = format_uint32_base8_rev(num, sizeof(num), value);
   else
-    return 0;
+    g_assert_not_reached();
 
   if (field_len == 0 || field_len < len)
     field_len = len;
