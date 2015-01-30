@@ -18,3 +18,6 @@ override_dh_auto_configure:
 		--datadir=/usr/share/syslog-ng \
 		--localstatedir=/var/lib/syslog-ng \
 		$(EXTRA_CONFIGURE_OPTS)
+
+override_dh_strip:
+	dh_strip --dbg-package=syslog-ng-dbg
