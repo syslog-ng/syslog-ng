@@ -44,11 +44,11 @@ modules_afsocket_libafsocket_la_CPPFLAGS	=	\
 	-I${top_builddir}/modules/afsocket
 
 modules_afsocket_libafsocket_la_LIBADD	=	\
-	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) 		\
-	$(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS)	\
+	$(MODULE_DEPS_LIBS) $(OPENSSL_LIBS)	\
+	$(ZLIB_LIBS) $(LIBNET_LIBS)	\
 	$(LIBWRAP_LIBS) $(libsystemd_LIBS)
 modules_afsocket_libafsocket_la_DEPENDENCIES= 	\
-	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS)
+	$(MODULE_DEPS_LIBS)
 modules_afsocket_libafsocket_la_LDFLAGS	= 	\
 	$(MODULE_LDFLAGS)
 

@@ -13,7 +13,7 @@ syslog_ng_syslog_ng_SOURCES	= syslog-ng/main.c
 
 syslog_ng_syslog_ng_LDADD		= -L${top_builddir}/lib/.libs -lsyslog-ng @SYSLOGNG_DEPS_LIBS@
 syslog_ng_syslog_ng_LINK		=  @SYSLOGNG_LINK@
-syslog_ng_syslog_ng_DEPENDENCIES	= lib/libsyslog-ng.la lib/libsyslog-ng-crypto.la
+syslog_ng_syslog_ng_DEPENDENCIES	= lib/libsyslog-ng.la
 
 syslog_ng_syslog_ng_wrapper_SOURCES	= syslog-ng/wrapper.c
 

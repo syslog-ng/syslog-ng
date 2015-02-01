@@ -23,7 +23,7 @@ modules_dbparser_tests_test_patternize_CFLAGS	=	\
 	$(TEST_CFLAGS)					\
 	-I$(top_srcdir)/modules/dbparser
 modules_dbparser_tests_test_patternize_LDADD	=	\
-	$(TEST_LDADD) $(CRYPTO_LIBS)			\
+	$(TEST_LDADD)					\
 	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
 modules_dbparser_tests_test_patternize_LDFLAGS	=	\
 	$(PREOPEN_CORE)
