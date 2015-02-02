@@ -49,6 +49,10 @@ modules/rltp-proto
 modules/windows-resource
 modules/java/.gradle/
 modules/java/build/
+modules/java-modules/*/.gradle/
+modules/java-modules/*/build/
+modules/java-modules/.gradle/
+modules/java-modules/build/
 pe-tests
 tags
 typescript
