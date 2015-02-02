@@ -235,6 +235,7 @@ java_destination_proxy_init(JavaDestinationProxy *self)
 {
   gboolean result;
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  (*env)->ExceptionClear(env);
   result = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_init);
   if (!result)
     {
@@ -242,8 +243,11 @@ java_destination_proxy_init(JavaDestinationProxy *self)
     }
   return TRUE;
 error:
-   (*env)->ExceptionDescribe(env);
-   return FALSE;
+  if ((*env)->ExceptionCheck(env))
+    {
+      (*env)->ExceptionDescribe(env);
+    }
+  return FALSE;
 }
 
 void
