@@ -8,6 +8,12 @@ ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
 EXTRA_CONFIGURE_OPTS += --enable-debug
 endif
 
+# To better support the Incubator, and have looser dependencies, we
+# track the ABI version here. The aim is to produce a dependency of
+# syslog-ng (>= 3.5.5~), syslog-ng (<< 3.5.6~).
+ABI_VERSION_LOW    = $(shell dpkg-parsechangelog | sed -n '/^Version:/s/^Version: //p' | cut -d- -f1)
+ABI_VERSION_HIGH   = $(shell echo $$(echo ${ABI_VERSION_LOW} | rev | cut -d. -f2- | rev).$$(expr $$(echo ${ABI_VERSION_LOW} | rev | cut -d. -f1) + 1))
+
 %:
 	dh $@
 
@@ -21,3 +27,9 @@ override_dh_auto_configure:
 
 override_dh_strip:
 	dh_strip --dbg-package=syslog-ng-dbg
+
+ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
+override_dh_makeshlibs:
+	dh_makeshlibs -V "syslog-ng-core (>= ${ABI_VERSION_LOW}~), syslog-ng-core (<< ${ABI_VERSION_HIGH}~)" \
+		-n -Xusr/lib/syslog-ng
+endif
