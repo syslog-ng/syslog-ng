@@ -24,7 +24,7 @@
 
 package org.syslog_ng;
 
-class InternalMessageSender {
+public class InternalMessageSender {
   private static final int MsgFatal = 2;
   private static final int MsgError = 3;
   private static final int MsgWarning = 4;
