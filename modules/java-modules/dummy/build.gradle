@@ -1,0 +1,11 @@
+apply plugin: 'java'
+
+repositories {
+   flatDir {
+       dirs '../../../sbuild/build/modules/java'
+   }
+}
+
+dependencies {
+   compile name: 'SyslogNg'
+}
