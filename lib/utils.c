@@ -34,6 +34,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <glib.h>
 #include "utils.h"
 
 #ifndef HAVE_INET_ATON
@@ -45,5 +46,15 @@ int inet_aton(const char *cp, struct in_addr *addr)
 	return 1;
 }
 #endif
+
+#if !defined(g_list_free_full)
+void
+g_list_free_full(GList *list, void(*destroy_fun)(gpointer s))
+{
+  g_list_foreach(list, (GFunc) destroy_fun, NULL);
+  g_list_free(list);
+}
+#endif
+
 
 #endif

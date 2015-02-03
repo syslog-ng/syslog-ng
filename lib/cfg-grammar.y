@@ -158,6 +158,8 @@ extern struct _ValuePairsTransformSet *last_vp_transset;
 %token KW_QUOTES                      10051
 %token KW_QUOTE_PAIRS                 10052
 %token KW_NULL                        10053
+%token KW_CHARS                       10054
+%token KW_STRINGS                     10055
 
 %token KW_SYSLOG                      10060
 

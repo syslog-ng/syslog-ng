@@ -85,6 +85,7 @@ pkginclude_HEADERS = 		\
 	state.h			\
 	stats.h			\
 	str-format.h		\
+	stringutils.h   \
 	syslog-names.h		\
 	syslog-ng.h		\
 	tags.h			\
@@ -185,6 +186,7 @@ libsyslog_ng_la_SOURCES = \
 	sgroup.c		\
 	state.c			\
 	stats.c			\
+	stringutils.c \
 	str-format.c		\
 	syslog-names.c		\
 	tags.c			\

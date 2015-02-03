@@ -33,6 +33,10 @@
 int inet_aton(const char *cp, struct in_addr *addr);
 #endif
 
+#if !defined(g_list_free_full)
+void g_list_free_full(GList *list, void(*destroy_fun)(gpointer s));
+#endif
+
 #define get_flags(flags, mask, shift) ((flags & mask) >> shift)
 #define set_flags(flags, mask, shift, value) ((flags & ~mask) | value << shift)
 
