@@ -1,8 +1,10 @@
 apply plugin: 'java'
 
+project.buildDir = syslogBuildDir+'/dummy'
+
 repositories {
    flatDir {
-       dirs '../../../sbuild/build/modules/java'
+       dirs syslogDepsDir
    }
 }
 
