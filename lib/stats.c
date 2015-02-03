@@ -385,7 +385,8 @@ const gchar *source_names[SCS_MAX] =
   "sender",
   "snmp",
   "smtp",
-  "journald"
+  "journald",
+  "java"
 };
 
 
