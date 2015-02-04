@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/balabit/syslog-ng.png?label=ready&title=Ready)](https://waffle.io/balabit/syslog-ng)
 syslog-ng
 =========
 
