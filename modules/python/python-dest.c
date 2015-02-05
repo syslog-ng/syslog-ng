@@ -45,8 +45,6 @@ typedef struct
   LogTemplateOptions template_options;
   ValuePairs *vp;
 
-  gint32 seq_num;
-
   struct
   {
     PyObject *module;
@@ -272,7 +270,7 @@ _py_create_dict_from_message(PythonDestDriver *self, LogMessage *msg, PyObject *
   args[1] = dict;
 
   vp_ok = value_pairs_foreach(self->vp, python_worker_vp_add_one,
-                              msg, self->seq_num, LTZ_LOCAL, &self->template_options,
+                              msg, self->super.seq_num, LTZ_LOCAL, &self->template_options,
                               args);
   PyTuple_SetItem(*func_args, 0, dict);
 
@@ -542,8 +540,6 @@ python_dd_new(GlobalConfig *cfg)
   self->super.format.stats_instance = python_dd_format_stats_instance;
   self->super.format.persist_name = python_dd_format_persist_name;
   self->super.stats_source = SCS_PYTHON;
-
-  init_sequence_number(&self->seq_num);
 
   log_template_options_defaults(&self->template_options);
   python_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
