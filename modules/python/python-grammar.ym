@@ -1,0 +1,119 @@
+/*
+ * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "python-parser.h"
+#include "python-dest.h"
+#include "value-pairs.h"
+#include "vptransform.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "cfg-parser.h"
+#include "plugin.h"
+}
+
+%name-prefix "python_driver_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_PYTHON
+%token KW_SCRIPT
+%token KW_INIT_FUNC
+%token KW_QUEUE_FUNC
+%token KW_DEINIT_FUNC
+%token KW_IMPORTS
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_PYTHON
+          {
+            last_driver = *instance = python_dd_new(configuration);
+          }
+          '(' python_options ')'         { YYACCEPT; }
+        ;
+
+python_options
+        : python_option python_options
+        |
+        ;
+
+python_option
+        : KW_SCRIPT '(' string ')'
+          {
+            python_dd_set_filename(last_driver, $3);
+            free($3);
+          }
+        | KW_INIT_FUNC '(' string ')'
+          {
+            python_dd_set_init_func(last_driver, $3);
+            free($3);
+          }
+        | KW_QUEUE_FUNC '(' string ')'
+          {
+            python_dd_set_queue_func(last_driver, $3);
+            free($3);
+          }
+        | KW_DEINIT_FUNC '(' string ')'
+          {
+            python_dd_set_deinit_func(last_driver, $3);
+            free($3);
+          }
+        | KW_IMPORTS '(' string_list ')'
+          {
+            python_dd_set_imports(last_driver, $3);
+          }
+        | value_pair_option
+          {
+            python_dd_set_value_pairs(last_driver, $1);
+          }
+        | dest_driver_option
+        | { last_template_options = python_dd_get_template_options(last_driver); } template_option
+        ;
+
+python_globals
+        : python_global python_globals
+        |
+        ;
+
+python_global
+        : LL_IDENTIFIER '(' template_content ')'
+          {
+            value_pairs_add_pair(last_value_pairs, $1,  $3);
+            free($1);
+          }
+        | vp_option
+        ;
+
+/* INCLUDE_RULES */
+
+%%

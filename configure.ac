@@ -225,6 +225,9 @@ AC_ARG_WITH(systemd-journal,
                                          Link against the system supplied or the wrapper library. (default: auto)]
               ,,with_systemd_journal="auto")
 
+AC_ARG_WITH(python,
+              [  --with-python=VERSION    Build with a specific version of python])
+
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
               ,,enable_all_modules="auto")
@@ -1046,6 +1049,21 @@ if test "$enable_riemann" != "no"; then
 fi
 
 dnl ***************************************************************************
+dnl python checks
+dnl ***************************************************************************
+if test "x$with_python" != "xno"; then
+  case "$with_python" in
+    "yes"|"")
+        with_python="python"
+        ;;
+    [[0-9]]*)
+        with_python="python-${with_python}"
+        ;;
+  esac
+  PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, enable_python="yes", enable_python="no")
+fi
+
+dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
 
@@ -1349,6 +1367,7 @@ AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
+AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1450,3 +1469,4 @@ echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
+echo "  python                      : ${enable_python:-yes} (${with_python})"

@@ -24,6 +24,7 @@ include modules/pseudofile/Makefile.am
 include modules/graphite/Makefile.am
 include modules/riemann/Makefile.am
 include modules/systemd-journal/Makefile.am
+include modules/python/Makefile.am
 
 SYSLOG_NG_MODULES	=	\
 	mod-afsocket mod-afstreams mod-affile mod-afprog \
@@ -31,7 +32,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-syslogformat mod-linux-kmsg mod-pacctformat \
 	mod-confgen mod-system-source mod-csvparser mod-dbparser \
 	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
-	mod-redis mod-pseudofile mod-graphite mod-riemann
+	mod-redis mod-pseudofile mod-graphite mod-riemann mod-python
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
@@ -43,6 +44,6 @@ modules_test_subdirs	=	\
 	modules_pacctformat modules_confgen modules_system_source \
 	modules_csvparser modules_dbparser modules_basicfuncs \
 	modules_cryptofuncs modules_geoip modules_afstomp \
-	modules_graphite modules_riemann
+	modules_graphite modules_riemann modules_python
 
 .PHONY: modules modules/
