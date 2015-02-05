@@ -23,6 +23,7 @@
 
 #include "python-parser.h"
 #include "python-dest.h"
+#include "python-logmsg.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
@@ -50,6 +51,7 @@ python_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
       PyEval_InitThreads();
       PyEval_ReleaseLock();
     }
+  python_log_message_init();
   plugin_register(cfg, python_plugins, G_N_ELEMENTS(python_plugins));
   return TRUE;
 }

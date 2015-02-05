@@ -22,7 +22,9 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-dest.c		  \
 	modules/python/python-dest.h		  \
 	modules/python/python-parser.c		  \
-	modules/python/python-parser.h
+	modules/python/python-parser.h	          \
+	modules/python/python-logmsg.h		  \
+	modules/python/python-logmsg.c
 
 
 modules_python_libmod_python_la_LDFLAGS		 = \
