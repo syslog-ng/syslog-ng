@@ -25,13 +25,7 @@
 #ifndef __UTILS_H_INCLUDED
 #define __UTILS_H_INCLUDED
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#ifndef HAVE_INET_ATON
-int inet_aton(const char *cp, struct in_addr *addr);
-#endif
+#include "syslog-ng.h"
 
 #if !defined(g_list_free_full)
 void g_list_free_full(GList *list, void(*destroy_fun)(gpointer s));

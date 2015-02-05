@@ -23,29 +23,7 @@
  */
   
 #include "config.h"
-#ifndef _WIN32
-
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <glib.h>
 #include "utils.h"
-
-#ifndef HAVE_INET_ATON
-int inet_aton(const char *cp, struct in_addr *addr)
-{
-	addr->s_addr = inet_addr(cp);
-	if (addr->s_addr == -1) 
-		return 0;
-	return 1;
-}
-#endif
 
 #if !defined(g_list_free_full)
 void
@@ -54,7 +32,4 @@ g_list_free_full(GList *list, void(*destroy_fun)(gpointer s))
   g_list_foreach(list, (GFunc) destroy_fun, NULL);
   g_list_free(list);
 }
-#endif
-
-
 #endif
