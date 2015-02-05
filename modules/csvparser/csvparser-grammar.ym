@@ -102,6 +102,7 @@ parser_csv_delimiters_chars
 
 parser_csv_delimiter_strings
   : KW_STRINGS '('  parser_csv_delimiter_string  ')'
+  |
   ;
 
 parser_csv_delimiter_string
