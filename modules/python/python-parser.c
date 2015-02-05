@@ -26,7 +26,7 @@
 #include "python-grammar.h"
 
 extern int python_debug;
-int python_driver_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+int python_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword python_keywords[] = {
   { "python",                   KW_PYTHON },
@@ -45,8 +45,8 @@ CfgParser python_parser =
 #endif
   .name = "python",
   .keywords = python_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) python_driver_parse,
+  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) python_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(python_driver_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(python_, LogDriver **)

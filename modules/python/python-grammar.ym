@@ -37,7 +37,7 @@
 #include "plugin.h"
 }
 
-%name-prefix "python_driver_"
+%name-prefix "python_"
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}
