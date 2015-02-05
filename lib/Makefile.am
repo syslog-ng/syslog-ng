@@ -147,14 +147,8 @@ pkginclude_HEADERS			+= \
 	lib/versioning.h		\
 	lib/bookmark.h			\
 	lib/ringbuffer.h		\
-	lib/ack_tracker.h
-
-# this is intentionally formatted so conflicts are less likely to arise. one name in every line.
-lib_libsyslog_ng_crypto_la_sources	= \
-	lib/crypto.c			\
-	lib/tlscontext.c		\
-	lib/uuid.c			\
-	$(transport_crypto_sources)
+	lib/ack_tracker.h		\
+	lib/host-id.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_la_SOURCES		= \
@@ -225,6 +219,11 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/ringbuffer.c		\
 	lib/late_ack_tracker.c		\
 	lib/early_ack_tracker.c		\
+	lib/crypto.c			\
+	lib/tlscontext.c		\
+	lib/uuid.c			\
+	$(transport_crypto_sources)	\
+	lib/host-id.c			\
 					\
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\
@@ -240,18 +239,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(control_sources)		\
 	$(compat_sources)
 
-if WITH_EMBEDDED_CRYPTO
 lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
 lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@
-lib_libsyslog_ng_la_SOURCES		+= ${lib_libsyslog_ng_crypto_la_sources}
-else
-module_LTLIBRARIES			+= lib/libsyslog-ng-crypto.la
-lib_libsyslog_ng_crypto_la_CFLAGS	= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
-lib_libsyslog_ng_crypto_la_LIBADD	= @MODULE_DEPS_LIBS@ @OPENSSL_LIBS@ @UUID_LIBS@
-lib_libsyslog_ng_crypto_la_LDFLAGS	= -no-undefined -avoid-version
-lib_libsyslog_ng_crypto_la_DEPENDENCIES	= lib/libsyslog-ng.la
-lib_libsyslog_ng_crypto_la_SOURCES	= ${lib_libsyslog_ng_crypto_la_sources}
-endif
 
 # each line with closely related files (e.g. the ones generated from the same source)
 BUILT_SOURCES += lib/cfg-lex.c lib/cfg-lex.h						\
@@ -268,7 +257,7 @@ EXTRA_DIST += \
 
 lib/plugin-types.h: lib/cfg-grammar.h
 
-lib/ libsyslog-ng: lib/libsyslog-ng.la lib/libsyslog-ng-crypto.la
+lib/ libsyslog-ng: lib/libsyslog-ng.la
 if IVYKIS_INTERNAL
 lib/ivykis/ ivykis: lib/ivykis/src/libivykis.la
 endif

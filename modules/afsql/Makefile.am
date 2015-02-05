@@ -15,11 +15,11 @@ modules_afsql_libafsql_la_CPPFLAGS	=	\
 	-I$(top_builddir)/modules/afsql
 modules_afsql_libafsql_la_LIBADD	= 	\
 	$(MODULE_DEPS_LIBS) $(LIBDBI_LIBS)	\
-	$(CRYPTO_LIBS) $(OPENSSL_LIBS)
+	$(OPENSSL_LIBS)
 modules_afsql_libafsql_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_afsql_libafsql_la_DEPENDENCIES	=	\
-	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS)
+	$(MODULE_DEPS_LIBS)
 
 modules/afsql modules/afsql/ mod-afsql mod-sql:	\
 	modules/afsql/libafsql.la

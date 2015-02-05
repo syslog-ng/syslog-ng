@@ -122,9 +122,6 @@ AC_ARG_ENABLE(dynamic-linking,
 AC_ARG_ENABLE(mixed-linking,
               [  --enable-mixed-linking          Link 3rd party libraries statically, system libraries dynamically],,enable_mixed_linking="auto")
 
-AC_ARG_WITH([embedded-crypto],
-              [  --with-embedded-crypto          Do not create a separate libsyslog-ng-crypto library])
-
 AC_ARG_ENABLE(ipv6,
               [  --enable-ipv6           Enable support for IPv6.],,enable_ipv6="auto")
 
@@ -1291,12 +1288,6 @@ journald_mode()
   fi
 }
 
-if test "${with_embedded_crypto}" = "yes"; then
-   CRYPTO_LIBS=""
-else
-   CRYPTO_LIBS="\${top_builddir}/lib/libsyslog-ng-crypto.la"
-fi
-
 AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, [Test value])
 AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, [Test value])
 AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, [Test value])
@@ -1352,7 +1343,6 @@ AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
-AM_CONDITIONAL(WITH_EMBEDDED_CRYPTO, [test "$with_embedded_crypto" = "yes"])
 AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$IVYKIS_SUBDIRS" != "x"])
 AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
@@ -1403,7 +1393,6 @@ AC_SUBST(RESOLV_LIBS)
 AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
 AC_SUBST(UUID_CFLAGS)
 AC_SUBST(UUID_LIBS)
-AC_SUBST(CRYPTO_LIBS)
 
 AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)

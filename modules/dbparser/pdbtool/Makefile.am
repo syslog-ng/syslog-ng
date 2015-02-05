@@ -10,5 +10,4 @@ modules_dbparser_pdbtool_pdbtool_CPPFLAGS=	\
 modules_dbparser_pdbtool_pdbtool_LDADD	=	\
 	$(top_builddir)/lib/libsyslog-ng.la	\
 	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la \
-	$(CRYPTO_LIBS)				\
 	@TOOL_DEPS_LIBS@

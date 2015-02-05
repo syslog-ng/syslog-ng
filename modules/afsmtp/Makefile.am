@@ -12,11 +12,11 @@ modules_afsmtp_libafsmtp_la_SOURCES	=	\
 	modules/afsmtp/afsmtp-parser.c		\
 	modules/afsmtp/afsmtp-parser.h
 modules_afsmtp_libafsmtp_la_LIBADD	=	\
-	$(MODULE_DEPS_LIBS) $(LIBESMTP_LIBS) $(CRYPTO_LIBS)
+	$(MODULE_DEPS_LIBS) $(LIBESMTP_LIBS)
 modules_afsmtp_libafsmtp_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_afsmtp_libafsmtp_la_DEPENDENCIES=	\
-	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS)
+	$(MODULE_DEPS_LIBS)
 
 modules/afsmtp modules/afsmtp/ mod-afsmtp mod-smtp: \
 	modules/afsmtp/libafsmtp.la

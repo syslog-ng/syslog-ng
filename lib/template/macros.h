@@ -55,6 +55,7 @@ enum
   M_SYSUPTIME,
   M_RCPTID,
   M_RUNID,
+  M_HOSTID,
 
   /* only touch this section if you want to add three macros, one w/o
    * prefix, and a R_ and S_ prefixed macro that relates one of the

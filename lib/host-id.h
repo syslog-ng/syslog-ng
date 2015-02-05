@@ -21,9 +21,22 @@
  *
  */
 
-#ifndef COMMON_TYPEDEFS_H_INCLUDED
-#define COMMON_TYPEDEFS_H_INCLUDED
+#ifndef HOST_ID_H
+#define HOST_ID_H
+#include "persist-state.h"
+#include "persistable-state-header.h"
 
-typedef struct _LogTemplateOptions LogTemplateOptions;
+#define HOST_ID_PERSIST_KEY "host_id"
+
+typedef struct _HostIdState
+{
+  PersistableStateHeader header;
+  guint32 host_id;
+} HostIdState;
+
+void host_id_init(PersistState *state);
+void host_id_deinit(void);
+guint32 host_id_get(void);
+void host_id_append_formatted_id(GString* str, guint32 id);
 
 #endif
