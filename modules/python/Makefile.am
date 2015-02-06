@@ -20,6 +20,8 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-globals.h		  \
 	modules/python/python-plugin.c		  \
 	modules/python/python-grammar.y		  \
+	modules/python/python-value-pairs.c	  \
+	modules/python/python-value-pairs.h	  \
 	modules/python/python-dest.c		  \
 	modules/python/python-dest.h		  \
 	modules/python/python-parser.c		  \

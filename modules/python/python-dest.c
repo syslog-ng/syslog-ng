@@ -23,6 +23,7 @@
 
 #include "python-dest.h"
 #include "python-globals.h"
+#include "python-value-pairs.h"
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
 #include "misc.h"
@@ -211,71 +212,6 @@ _call_python_function_with_no_args_and_bool_return_value(PythonDestDriver *self,
   return success;
 }
 
-/** Value pairs **/
-
-static gboolean
-python_worker_vp_add_one(const gchar *name,
-                       TypeHint type, const gchar *value,
-                       gpointer user_data)
-{
-  PythonDestDriver *self = (PythonDestDriver *)((gpointer *)user_data)[0];
-  PyObject *dict = (PyObject *)((gpointer *)user_data)[1];
-  gboolean need_drop = FALSE;
-  gboolean fallback = self->template_options.on_error & ON_ERROR_FALLBACK_TO_STRING;
-
-  switch (type)
-    {
-    case TYPE_HINT_INT32:
-    case TYPE_HINT_INT64:
-      {
-        gint64 i;
-
-        if (type_cast_to_int64(value, &i, NULL))
-          PyDict_SetItemString(dict, name, PyLong_FromLong(i));
-        else
-          {
-            need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                              value, "int");
-
-            if (fallback)
-              PyDict_SetItemString(dict, name, PyUnicode_FromString(value));
-          }
-        break;
-      }
-    case TYPE_HINT_STRING:
-      PyDict_SetItemString(dict, name, PyUnicode_FromString(value));
-      break;
-    default:
-      need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                        value, "<unknown>");
-      break;
-    }
-  return need_drop;
-}
-
-/** Main code **/
-
-static gboolean
-_py_create_dict_from_message(PythonDestDriver *self, LogMessage *msg, PyObject **func_args)
-{
-  PyObject *dict;
-  gpointer args[2];
-  gboolean vp_ok;
-
-  *func_args = PyTuple_New(1);
-  dict = PyDict_New();
-
-  args[0] = self;
-  args[1] = dict;
-
-  vp_ok = value_pairs_foreach(self->vp, python_worker_vp_add_one,
-                              msg, self->super.seq_num, LTZ_LOCAL, &self->template_options,
-                              args);
-  PyTuple_SetItem(*func_args, 0, dict);
-
-  return vp_ok;
-}
-
 static gboolean
 _py_call_function_with_arguments(PythonDestDriver *self,
                                  const gchar *func_name, PyObject *func,
@@ -299,15 +235,20 @@ python_worker_eval(LogThrDestDriver *d, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
   gboolean success, vp_ok;
-  PyObject *func_args;
+  PyObject *func_args, *dict;
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
 
-  vp_ok = _py_create_dict_from_message(self, msg, &func_args);
+  func_args = PyTuple_New(1);
+  vp_ok = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, &dict);
+  PyTuple_SetItem(func_args, 0, dict);
 
   if (!vp_ok && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
-    goto exit;
+    {
+      Py_DECREF(func_args);
+      goto exit;
+    }
 
   success = _py_call_function_with_arguments(self,
                                              self->queue_func_name, self->py.queue,
