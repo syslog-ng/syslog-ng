@@ -152,6 +152,24 @@ python_dd_format_persist_name(LogThrDestDriver *d)
 }
 
 /** Python calling helpers **/
+static const gchar *
+_py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
+{
+  PyObject *name = PyObject_GetAttrString(callable, "__name__");
+
+  if (name)
+    {
+      g_strlcpy(buf, PyString_AsString(name), buf_len);
+    }
+  else
+    {
+      PyErr_Clear();
+      g_strlcpy(buf, "<unknown>", buf_len);
+    }
+  Py_XDECREF(name);
+  return buf;
+}
+
 static gboolean
 _py_function_return_value_as_bool(PythonDestDriver *self,
                                   const gchar *func_name,
@@ -234,13 +252,13 @@ _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
   ret = PyObject_CallFunctionObjArgs(self->py.queue, dict, NULL);
   if (!ret)
     {
-      gchar buf[256];
+      gchar buf1[256], buf2[256];
 
       msg_error("Exception while calling a Python function",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("script", self->filename),
-                evt_tag_str("function", self->queue_func_name),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
+                evt_tag_str("function", _py_get_callable_name(self->py.queue, buf1, sizeof(buf1))),
+                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))),
                 NULL);
       return FALSE;
     }
