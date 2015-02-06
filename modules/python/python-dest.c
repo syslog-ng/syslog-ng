@@ -263,7 +263,7 @@ _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
 }
 
 static worker_insert_result_t
-python_worker_eval(LogThrDestDriver *d, LogMessage *msg)
+python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
   gboolean success;
@@ -319,7 +319,7 @@ _py_do_import(gpointer data, gpointer user_data)
 }
 
 static gboolean
-python_worker_init(LogPipe *d)
+python_dd_init(LogPipe *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
   GlobalConfig *cfg = log_pipe_get_config(d);
@@ -430,7 +430,7 @@ python_worker_init(LogPipe *d)
 }
 
 static gboolean
-python_worker_deinit(LogPipe *d)
+python_dd_deinit(LogPipe *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
   PyGILState_STATE gstate;
@@ -478,12 +478,12 @@ python_dd_new(GlobalConfig *cfg)
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
-  self->super.super.super.super.init = python_worker_init;
-  self->super.super.super.super.deinit = python_worker_deinit;
+  self->super.super.super.super.init = python_dd_init;
+  self->super.super.super.super.deinit = python_dd_deinit;
   self->super.super.super.super.free_fn = python_dd_free;
 
   self->super.worker.disconnect = NULL;
-  self->super.worker.insert = python_worker_eval;
+  self->super.worker.insert = python_dd_insert;
 
   self->super.format.stats_instance = python_dd_format_stats_instance;
   self->super.format.persist_name = python_dd_format_persist_name;
