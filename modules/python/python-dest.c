@@ -22,11 +22,10 @@
  */
 
 #include "python-dest.h"
+#include "python-globals.h"
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
 #include "misc.h"
-
-#include <Python.h>
 
 #ifndef SCS_PYTHON
 #define SCS_PYTHON 0

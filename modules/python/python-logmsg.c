@@ -1,6 +1,5 @@
 #include "python-logmsg.h"
 #include "logmsg.h"
-#include <Python.h>
 
 typedef struct _PyLogMessage
 {

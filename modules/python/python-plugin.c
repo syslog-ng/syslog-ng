@@ -21,14 +21,13 @@
  *
  */
 
+#include "python-globals.h"
 #include "python-parser.h"
 #include "python-dest.h"
 #include "python-logmsg.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
-
-#include <Python.h>
 
 extern CfgParser python_parser;
 
