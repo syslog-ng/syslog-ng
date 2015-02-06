@@ -11,7 +11,7 @@
 #include "filter/filter-netmask6.h"
 
 gchar*
-calculate_network6(gchar* ipv6, int prefix, gchar *calculated_network)
+calculate_network6(const gchar* ipv6, int prefix, gchar *calculated_network)
 {
   struct in6_addr network;
   struct in6_addr address;
@@ -25,7 +25,7 @@ calculate_network6(gchar* ipv6, int prefix, gchar *calculated_network)
 }
 
 void
-assert_netmask6(gchar* ipv6, gint prefix, gchar* expected_network)
+assert_netmask6(const gchar* ipv6, gint prefix, gchar* expected_network)
 {
   char error_msg[64];
   sprintf(error_msg, "prefix: %d", prefix);
