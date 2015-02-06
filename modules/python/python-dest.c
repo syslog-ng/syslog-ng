@@ -303,8 +303,6 @@ python_worker_eval(LogThrDestDriver *d, LogMessage *msg)
   PyObject *func_args;
   PyGILState_STATE gstate;
 
-  msg_set_context(msg);
-
   gstate = PyGILState_Ensure();
 
   vp_ok = _py_create_dict_from_message(self, msg, &func_args);
@@ -327,8 +325,6 @@ python_worker_eval(LogThrDestDriver *d, LogMessage *msg)
  exit:
 
   PyGILState_Release(gstate);
-
-  msg_set_context(NULL);
 
   if (success && vp_ok)
     {
