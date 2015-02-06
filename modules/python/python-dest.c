@@ -212,19 +212,51 @@ _call_python_function_with_no_args_and_bool_return_value(PythonDestDriver *self,
   return success;
 }
 
+static const gchar *
+_py_format_exception_text(gchar *buf, gsize buf_len)
+{
+  PyObject *exc, *value, *tb, *str;
+
+  PyErr_Fetch(&exc, &value, &tb);
+  PyErr_NormalizeException(&exc, &value, &tb);
+
+  str = PyObject_Str(value);
+  if (str)
+    {
+      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, PyString_AsString(str));
+    }
+  else
+    {
+      g_strlcpy(buf, "<unknown>", buf_len);
+    }
+  Py_XDECREF(exc);
+  Py_XDECREF(value);
+  Py_XDECREF(tb);
+  Py_XDECREF(str);
+  return buf;
+}
+
 static gboolean
-_py_call_function_with_arguments(PythonDestDriver *self,
-                                 const gchar *func_name, PyObject *func,
-                                 PyObject *func_args)
+_py_invoke_queue(PythonDestDriver *self, PyObject *dict)
 {
   gboolean success;
   PyObject *ret;
 
-  ret = PyObject_CallObject(func, func_args);
-  success = _py_function_return_value_as_bool(self, func_name, ret);
+  ret = PyObject_CallFunctionObjArgs(self->py.queue, dict, NULL);
+  if (!ret)
+    {
+      gchar buf[256];
 
-  Py_DECREF(func_args);
-  if (ret != Py_None)
+      msg_error("Exception while calling a Python function",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("script", self->filename),
+                evt_tag_str("function", self->queue_func_name),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
+                NULL);
+    }
+  success = _py_function_return_value_as_bool(self, "queue", ret);
+
+  if (ret != NULL)
     Py_DECREF(ret);
 
   return success;
@@ -234,46 +266,26 @@ static worker_insert_result_t
 python_worker_eval(LogThrDestDriver *d, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  gboolean success, vp_ok;
-  PyObject *func_args, *dict;
+  gboolean success;
+  PyObject *dict;
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
 
-  func_args = PyTuple_New(1);
-  vp_ok = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, &dict);
-  PyTuple_SetItem(func_args, 0, dict);
-
-  if (!vp_ok && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
+  success = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, &dict);
+  if (!success && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
     {
-      Py_DECREF(func_args);
       goto exit;
     }
 
-  success = _py_call_function_with_arguments(self,
-                                             self->queue_func_name, self->py.queue,
-                                             func_args);
-  if (!success)
-    {
-      msg_error("Error while calling a Python function",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                evt_tag_str("function", self->queue_func_name),
-                NULL);
-    }
-
+  success = _py_invoke_queue(self, dict);
  exit:
 
   PyGILState_Release(gstate);
-
-  if (success && vp_ok)
-    {
-      return WORKER_INSERT_RESULT_SUCCESS;
-    }
+  if (success)
+    return WORKER_INSERT_RESULT_SUCCESS;
   else
-    {
-      return WORKER_INSERT_RESULT_DROP;
-    }
+    return WORKER_INSERT_RESULT_DROP;
 }
 
 static void
