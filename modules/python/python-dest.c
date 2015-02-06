@@ -194,7 +194,7 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
   return buf;
 }
 
-static gboolean
+static PyObject *
 _py_invoke_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
 {
   PyObject *ret;
@@ -210,8 +210,15 @@ _py_invoke_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
                 evt_tag_str("function", _py_get_callable_name(func, buf1, sizeof(buf1))),
                 evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))),
                 NULL);
-      return FALSE;
+      return NULL;
     }
+  return ret;
+}
+
+static gboolean
+_py_invoke_void_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
+{
+  PyObject *ret = _py_invoke_function(self, func, arg);
   Py_XDECREF(ret);
   return ret != NULL;
 }
@@ -264,7 +271,7 @@ _py_perform_imports(PythonDestDriver *self)
 static gboolean
 _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
 {
-  return _py_invoke_function(self, self->py.queue, dict);
+  return _py_invoke_void_function(self, self->py.queue, dict);
 }
 
 static gboolean
@@ -273,7 +280,7 @@ _py_invoke_init(PythonDestDriver *self)
   if (!self->py.init)
     return TRUE;
 
-  return _py_invoke_function(self, self->py.init, NULL);
+  return _py_invoke_void_function(self, self->py.init, NULL);
 }
 
 static gboolean
@@ -282,7 +289,7 @@ _py_invoke_deinit(PythonDestDriver *self)
   if (!self->py.deinit)
     return TRUE;
 
-  return _py_invoke_function(self, self->py.deinit, NULL);
+  return _py_invoke_void_function(self, self->py.deinit, NULL);
 }
 
 static PyObject *
