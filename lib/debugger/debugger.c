@@ -34,7 +34,7 @@ typedef struct _Debugger
 {
   Tracer *tracer;
   GlobalConfig *cfg;
-  gchar command_buffer[1024];
+  gchar *command_buffer;
   LogTemplate *display_template;
   LogMessage *current_msg;
   LogPipe *current_pipe;
@@ -132,8 +132,9 @@ _fetch_command(Debugger *self)
     }
   if (strlen(buf) > 0)
     {
-      strncpy(self->command_buffer, buf, sizeof(self->command_buffer));
-      self->command_buffer[sizeof(self->command_buffer) - 1] = 0;
+      if (self->command_buffer)
+        g_free(self->command_buffer);
+      self->command_buffer = g_strdup(buf);
     }
 }
 
@@ -237,7 +238,7 @@ _handle_command(Debugger *self)
   gboolean result = TRUE;
   DebuggerCommandFunc command = NULL;
 
-  if (!g_shell_parse_argv(self->command_buffer, &argc, &argv, &error))
+  if (!g_shell_parse_argv(self->command_buffer ? : "", &argc, &argv, &error))
     {
       printf("%s\n", error->message);
       g_clear_error(&error);
