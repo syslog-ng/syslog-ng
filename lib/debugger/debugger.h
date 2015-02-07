@@ -27,6 +27,10 @@
 #include "syslog-ng.h"
 #include "cfg.h"
 
+typedef gchar *(*FetchCommandFunc)(void);
+
+gchar *debugger_builtin_fetch_command(void);
+void debugger_register_command_fetcher(FetchCommandFunc fetcher);
 void debugger_start(GlobalConfig *cfg);
 
 #endif

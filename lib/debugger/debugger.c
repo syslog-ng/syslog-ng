@@ -112,31 +112,6 @@ _display_source_line(LogExprNode *expr_node)
   fflush(stdout);
 }
 
-static void
-_fetch_command(Debugger *self)
-{
-  gchar buf[1024];
-  gsize len;
-
-  printf("(syslog-ng) ");
-  fflush(stdout);
-
-  if (!fgets(buf, sizeof(buf), stdin))
-    return;
-
-  /* strip NL */
-  len = strlen(buf);
-  if (buf[len - 1] == '\n')
-    {
-      buf[len - 1] = 0;
-    }
-  if (strlen(buf) > 0)
-    {
-      if (self->command_buffer)
-        g_free(self->command_buffer);
-      self->command_buffer = g_strdup(buf);
-    }
-}
 
 static gboolean
 _cmd_help(Debugger *self, gint argc, gchar *argv[])
@@ -227,6 +202,55 @@ struct {
   { "q",        _cmd_quit },
   { NULL, NULL }
 };
+
+gchar *
+debugger_builtin_fetch_command(void)
+{
+  gchar buf[1024];
+  gsize len;
+
+  printf("(syslog-ng) ");
+  fflush(stdout);
+
+  if (!fgets(buf, sizeof(buf), stdin))
+    return NULL;
+
+  /* strip NL */
+  len = strlen(buf);
+  if (buf[len - 1] == '\n')
+    {
+      buf[len - 1] = 0;
+    }
+  return g_strdup(buf);
+}
+
+FetchCommandFunc fetch_command_func = debugger_builtin_fetch_command;
+
+void
+debugger_register_command_fetcher(FetchCommandFunc fetcher)
+{
+  fetch_command_func = fetcher;
+}
+
+static void
+_fetch_command(Debugger *self)
+{
+  gchar *command;
+
+  command = fetch_command_func();
+  if (command && strlen(command) > 0)
+    {
+      if (self->command_buffer)
+        g_free(self->command_buffer);
+      self->command_buffer = command;
+    }
+  else
+    {
+      if (command)
+        g_free(command);
+    }
+}
+
 
 static gboolean
 _handle_command(Debugger *self)
