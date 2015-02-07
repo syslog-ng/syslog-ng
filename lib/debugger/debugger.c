@@ -94,7 +94,7 @@ _display_source_line(LogExprNode *expr_node)
   gint lineno = 1;
   gchar buf[1024];
 
-  if (!expr_node->filename)
+  if (!expr_node || !expr_node->filename)
     return;
 
   f = fopen(expr_node->filename, "r");
