@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2014-2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014-2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,30 +21,24 @@
  * COPYING for details.
  *
  */
-  
-#ifndef LOGMPX_H_INCLUDED
-#define LOGMPX_H_INCLUDED
+#ifndef DEBUGGER_TRACER_H_INCLUDED
+#define DEBUGGER_TRACER_H_INCLUDED 1
 
-#include "logpipe.h"
+#include "syslog-ng.h"
 
-/**
- * This class encapsulates a fork of the message pipe-line. It receives
- * messages via its queue() method and forwards them to its list of
- * next_hops in addition to the standard pipe_next next-hop already provided
- * by LogPipe.
- *
- * This object is used for example for each source to send messages to all
- * log pipelines that refer to the source.
- **/
-typedef struct _LogMultiplexer
+typedef struct _Tracer
 {
-  LogPipe super;
-  GPtrArray *next_hops;
-  gboolean fallback_exists;
-} LogMultiplexer;
+  GMutex *breakpoint_mutex;
+  GCond *breakpoint_cond;
+  GCond *resume_cond;
+  gboolean breakpoint_hit;
+  gboolean resume_requested;
+} Tracer;
 
-LogMultiplexer *log_multiplexer_new(GlobalConfig *cfg);
-void log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop);
+void tracer_stop_on_breakpoint(Tracer *self);
+void tracer_wait_for_breakpoint(Tracer *self);
+void tracer_resume_after_breakpoint(Tracer *self);
 
+Tracer *tracer_new(GlobalConfig *cfg);
 
 #endif

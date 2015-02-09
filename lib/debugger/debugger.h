@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2014-2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014-2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,30 +21,12 @@
  * COPYING for details.
  *
  */
-  
-#ifndef LOGMPX_H_INCLUDED
-#define LOGMPX_H_INCLUDED
+#ifndef DEBUGGER_DEBUGGER_H_INCLUDED
+#define DEBUGGER_DEBUGGER_H_INCLUDED 1
 
-#include "logpipe.h"
+#include "syslog-ng.h"
+#include "cfg.h"
 
-/**
- * This class encapsulates a fork of the message pipe-line. It receives
- * messages via its queue() method and forwards them to its list of
- * next_hops in addition to the standard pipe_next next-hop already provided
- * by LogPipe.
- *
- * This object is used for example for each source to send messages to all
- * log pipelines that refer to the source.
- **/
-typedef struct _LogMultiplexer
-{
-  LogPipe super;
-  GPtrArray *next_hops;
-  gboolean fallback_exists;
-} LogMultiplexer;
-
-LogMultiplexer *log_multiplexer_new(GlobalConfig *cfg);
-void log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop);
-
+void debugger_start(GlobalConfig *cfg);
 
 #endif

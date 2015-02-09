@@ -297,6 +297,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
     log_pipe_unref(&self->owner->super.super.super);
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
+  self->super.expr_node = owner->super.super.super.expr_node;
 
   log_pipe_set_config(&self->super, cfg);
   if (self->writer)
@@ -325,18 +326,16 @@ affile_dw_free(LogPipe *s)
 }
 
 static AFFileDestWriter *
-affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
+affile_dw_new(const gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestWriter *self = g_new0(AFFileDestWriter, 1);
   
-  log_pipe_init_instance(&self->super, owner->super.super.super.cfg);
+  log_pipe_init_instance(&self->super, cfg);
 
   self->super.init = affile_dw_init;
   self->super.deinit = affile_dw_deinit;
   self->super.free_fn = affile_dw_free;  
   self->super.queue = affile_dw_queue;
-  log_pipe_ref(&owner->super.super.super);
-  self->owner = owner;
   self->time_reopen = 60;
 
   IV_TIMER_INIT(&self->reap_timer);
@@ -566,7 +565,8 @@ affile_dd_open_writer(gpointer args[])
     {
       if (!self->single_writer)
 	{
-	  next = affile_dw_new(self, self->filename_template->template);
+	  next = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
+	  affile_dw_set_owner(next, self);
           if (next && log_pipe_init(&next->super))
 	    {
 	      log_pipe_ref(&next->super);
@@ -602,7 +602,7 @@ affile_dd_open_writer(gpointer args[])
       next = g_hash_table_lookup(self->writer_hash, filename->str);
       if (!next)
 	{
-	  next = affile_dw_new(self, filename->str);
+	  next = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
           if (!log_pipe_init(&next->super))
 	    {
 	      log_pipe_unref(&next->super);

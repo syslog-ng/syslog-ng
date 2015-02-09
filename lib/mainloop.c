@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
@@ -36,6 +36,7 @@
 #include "persist-state.h"
 #include "run-id.h"
 #include "host-id.h"
+#include "debugger/debugger.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -97,6 +98,7 @@ static const gchar *ctlfilename;
 const gchar *module_path;
 static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
+gboolean interactive_mode = FALSE;
 
 /*
  * This variable is used to detect that syslog-ng is being terminated, in which
@@ -493,6 +495,10 @@ main_loop_run(void)
   /* main loop */
   service_management_indicate_readiness();
   service_management_clear_status();
+  if (interactive_mode)
+    {
+      debugger_start(current_configuration);
+    }
   iv_main();
   service_management_publish_status("Shutting down...");
 }
@@ -505,6 +511,7 @@ static GOptionEntry main_loop_options[] =
   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &syntax_only, "Only read and parse config file", NULL},
   { "control",           'c',         0, G_OPTION_ARG_STRING, &ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+  { "interactive",       'i',         0, G_OPTION_ARG_NONE, &interactive_mode, "Enable interactive mode" },
   { NULL },
 };
 

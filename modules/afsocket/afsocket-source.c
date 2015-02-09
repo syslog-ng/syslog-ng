@@ -152,6 +152,7 @@ afsocket_sc_set_owner(AFSocketSourceConnection *self, AFSocketSourceDriver *owne
 
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
+  self->super.expr_node = owner->super.super.super.expr_node;
 
   log_pipe_set_config(&self->super, cfg);
   if (self->reader)
@@ -174,18 +175,15 @@ afsocket_sc_free(LogPipe *s)
 }
 
 AFSocketSourceConnection *
-afsocket_sc_new(AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
+afsocket_sc_new(GSockAddr *peer_addr, int fd, GlobalConfig *cfg)
 {
   AFSocketSourceConnection *self = g_new0(AFSocketSourceConnection, 1);
 
-  log_pipe_init_instance(&self->super, owner->super.super.super.cfg);
+  log_pipe_init_instance(&self->super, cfg);
   self->super.init = afsocket_sc_init;
   self->super.deinit = afsocket_sc_deinit;
   self->super.notify = afsocket_sc_notify;
   self->super.free_fn = afsocket_sc_free;
-  log_pipe_ref(&owner->super.super.super);
-  self->owner = owner;
-
   self->peer_addr = g_sockaddr_ref(peer_addr);
   self->sock = fd;
   return self;
@@ -304,10 +302,11 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
     {
       AFSocketSourceConnection *conn;
 
-      conn = afsocket_sc_new(self, client_addr, fd);
+      conn = afsocket_sc_new(client_addr, fd, self->super.super.super.cfg);
+      afsocket_sc_set_owner(conn, self);
       if (log_pipe_init(&conn->super))
         {
-          afsocket_sd_add_connection(self,conn);
+          afsocket_sd_add_connection(self, conn);
           self->num_connections++;
           log_pipe_append(&conn->super, &self->super.super.super);
         }

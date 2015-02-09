@@ -1406,6 +1406,8 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
 
   self->stats_level = stats_level;
   self->stats_source = stats_source;
+  if (control)
+    self->super.expr_node = control->expr_node;
 
   if (self->stats_id)
     g_free(self->stats_id);

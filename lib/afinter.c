@@ -104,7 +104,6 @@ afinter_source_post(gpointer s)
 {
   AFInterSource *self = (AFInterSource *) s;
   LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   while (log_source_free_to_send(&self->super))
     {
@@ -115,7 +114,7 @@ afinter_source_post(gpointer s)
         break;
 
       stats_counter_dec(internal_queue_length);
-      log_pipe_queue(&self->super.super, msg, &path_options);
+      log_source_post(&self->super, msg);
     }
   afinter_source_update_watches(self);
 }
@@ -307,7 +306,7 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   AFInterSource *self = g_new0(AFInterSource, 1);
   
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
-  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE, FALSE);
+  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE, FALSE, owner->super.super.super.expr_node);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;

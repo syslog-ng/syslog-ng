@@ -228,7 +228,6 @@ static gboolean
 __handle_message(JournalReader *self)
 {
   LogMessage *msg = log_msg_new_empty();
-  LogPathOptions lpo = LOG_PATH_OPTIONS_INIT;
 
   msg->pri = self->options->default_pri;
 
@@ -237,7 +236,7 @@ __handle_message(JournalReader *self)
   journald_foreach_data(self->journal, __handle_data, args);
   __set_message_timestamp(self, msg);
 
-  log_pipe_queue(&self->super.super, msg, &lpo);
+  log_source_post(&self->super, msg);
   return log_source_free_to_send(&self->super);
 }
 
@@ -533,7 +532,7 @@ journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *o
 {
   JournalReader *self = (JournalReader *) s;
 
-  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & JR_THREADED), TRUE);
+  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & JR_THREADED), TRUE, control->expr_node);
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);

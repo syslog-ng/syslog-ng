@@ -230,6 +230,7 @@ struct _LogPipe
   void (*notify)(LogPipe *self, gint notify_code, gpointer user_data);
 };
 
+extern gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
 
 LogPipe *log_pipe_ref(LogPipe *self);
 void log_pipe_unref(LogPipe *self);
@@ -306,6 +307,15 @@ static inline void
 log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   g_assert((s->flags & PIF_INITIALIZED) != 0);
+
+  if (G_UNLIKELY(pipe_single_step_hook))
+    {
+      if (!pipe_single_step_hook(s, msg, path_options))
+        {
+          log_msg_drop(msg, path_options);
+          return;
+        }
+    }
 
   if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL)))
     {

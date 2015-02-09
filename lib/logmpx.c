@@ -128,7 +128,7 @@ log_multiplexer_free(LogPipe *s)
 }
 
 LogMultiplexer *
-log_multiplexer_new(guint32 flags, GlobalConfig *cfg)
+log_multiplexer_new(GlobalConfig *cfg)
 {
   LogMultiplexer *self = g_new0(LogMultiplexer, 1);
   
@@ -138,6 +138,5 @@ log_multiplexer_new(guint32 flags, GlobalConfig *cfg)
   self->super.queue = log_multiplexer_queue;
   self->super.free_fn = log_multiplexer_free;
   self->next_hops = g_ptr_array_new();
-  self->super.flags = flags;
   return self;
 }

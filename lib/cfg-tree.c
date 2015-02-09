@@ -376,6 +376,24 @@ log_expr_node_lookup_flag(const gchar *flag)
   return 0;
 }
 
+LogPipe *
+cfg_tree_new_pipe(CfgTree *self, LogExprNode *related_expr)
+{
+  LogPipe *pipe = log_pipe_new(self->cfg);
+  pipe->expr_node = related_expr;
+  g_ptr_array_add(self->initialized_pipes, pipe);
+  return pipe;
+}
+
+LogMultiplexer *
+cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr)
+{
+  LogMultiplexer *pipe = log_multiplexer_new(self->cfg);
+  pipe->super.expr_node = related_expr;
+  g_ptr_array_add(self->initialized_pipes, pipe);
+  return pipe;
+}
+
 /*
  * Return the name of the rule that contains a LogExprNode. Generates
  * one automatically for anonymous log expressions.
@@ -517,8 +535,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
             sub_pipe_tail = referenced_node->aux;
           }
 
-        attach_pipe = log_pipe_new(self->cfg);
-        g_ptr_array_add(self->initialized_pipes, attach_pipe);
+        attach_pipe = cfg_tree_new_pipe(self, node);
 
         if (sub_pipe_tail)
           {
@@ -528,8 +545,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
 
             if (!sub_pipe_tail->pipe_next)
               {
-                mpx = log_multiplexer_new(0, self->cfg);
-                g_ptr_array_add(self->initialized_pipes, &mpx->super);
+                mpx = cfg_tree_new_mpx(self, referenced_node);
                 log_pipe_append(sub_pipe_tail, &mpx->super);
               }
             else
@@ -569,8 +585,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
            our next chain
         */
 
-        mpx = log_multiplexer_new(0, self->cfg);
-        g_ptr_array_add(self->initialized_pipes, &mpx->super);
+        mpx = cfg_tree_new_mpx(self, node);
 
         if (sub_pipe_head)
           {
@@ -733,8 +748,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 
           if (!source_join_pipe)
             {
-              source_join_pipe = last_pipe = log_pipe_new(self->cfg);
-              g_ptr_array_add(self->initialized_pipes, source_join_pipe);
+              source_join_pipe = last_pipe = cfg_tree_new_pipe(self, node);
             }
           log_pipe_append(sub_pipe_tail, source_join_pipe);
         }
@@ -754,8 +768,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
   if (!first_pipe && !last_pipe)
     {
       /* this is an empty sequence, insert a do-nothing LogPipe */
-      first_pipe = last_pipe = log_pipe_new(self->cfg);
-      g_ptr_array_add(self->initialized_pipes, first_pipe);
+      first_pipe = last_pipe = cfg_tree_new_pipe(self, node);
     }
   
   if (!node_properties_propagated)
@@ -831,8 +844,7 @@ cfg_tree_compile_junction(CfgTree *self,
             }
           if (!fork_mpx)
             {
-              fork_mpx = log_multiplexer_new(0, self->cfg);
-              g_ptr_array_add(self->initialized_pipes, &fork_mpx->super);
+              fork_mpx = cfg_tree_new_mpx(self, node);
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);
         }
@@ -853,8 +865,7 @@ cfg_tree_compile_junction(CfgTree *self,
         {
           if (!join_pipe)
             {
-              join_pipe = log_pipe_new(self->cfg);
-              g_ptr_array_add(self->initialized_pipes, join_pipe);
+              join_pipe = cfg_tree_new_pipe(self, node);
             }
           log_pipe_append(sub_pipe_tail, join_pipe);
 
