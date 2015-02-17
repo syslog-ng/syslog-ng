@@ -313,7 +313,7 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
 
 
 static gboolean
-python_dd_init_module(PythonDestDriver *self)
+_py_init_bindings(PythonDestDriver *self)
 {
   PyObject *modname = PyUnicode_FromString(self->filename);
   if (!modname)
@@ -368,17 +368,13 @@ python_dd_init_module(PythonDestDriver *self)
   return TRUE;
 }
 
-
 static void
-python_dd_free_python_bindings(PythonDestDriver *self)
+_py_free_bindings(PythonDestDriver *self)
 {
-  PyGILState_STATE gstate;
-  gstate = PyGILState_Ensure();
   Py_CLEAR(self->py.module);
   Py_CLEAR(self->py.init);
   Py_CLEAR(self->py.queue);
   Py_CLEAR(self->py.deinit);
-  PyGILState_Release(gstate);
 }
 
 static gboolean
@@ -407,7 +403,7 @@ python_dd_init(LogPipe *d)
   gstate = PyGILState_Ensure();
 
   _py_perform_imports(self);
-  if (!python_dd_init_module(self) ||
+  if (!_py_init_bindings(self) ||
       !_py_invoke_init(self))
     goto fail;
 
@@ -442,10 +438,13 @@ static void
 python_dd_free(LogPipe *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
+  PyGILState_STATE gstate;
 
   log_template_options_destroy(&self->template_options);
 
-  python_dd_free_python_bindings(self);
+  gstate = PyGILState_Ensure();
+  _py_free_bindings(self);
+  PyGILState_Release(gstate);
 
   g_free(self->filename);
   g_free(self->init_func_name);
