@@ -1859,6 +1859,7 @@ pattern_db_free(PatternDB *self)
     g_hash_table_destroy(self->state);
   if (self->timer_wheel)
     timer_wheel_free(self->timer_wheel);
+  g_static_rw_lock_free(&self->lock);
   g_free(self);
 }
 
