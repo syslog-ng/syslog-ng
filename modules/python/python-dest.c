@@ -222,6 +222,24 @@ _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
   return _py_invoke_function(self, self->py.queue, dict);
 }
 
+static gboolean
+_py_invoke_init(PythonDestDriver *self)
+{
+  if (!self->py.init)
+    return TRUE;
+
+  return _py_invoke_function(self, self->py.init, NULL);
+}
+
+static gboolean
+_py_invoke_deinit(PythonDestDriver *self)
+{
+  if (!self->py.deinit)
+    return TRUE;
+
+  return _py_invoke_function(self, self->py.deinit, NULL);
+}
+
 static worker_insert_result_t
 python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
 {
@@ -340,23 +358,6 @@ python_dd_init_module(PythonDestDriver *self)
   return TRUE;
 }
 
-static gboolean
-python_dd_call_init_function(PythonDestDriver *self)
-{
-  if (!self->py.init)
-    return TRUE;
-
-  return _call_python_function_with_no_args_and_bool_return_value(self, self->init_func_name, self->py.init);
-}
-
-static gboolean
-python_dd_call_deinit_function(PythonDestDriver *self)
-{
-  if (!self->py.deinit)
-    return TRUE;
-
-  return _call_python_function_with_no_args_and_bool_return_value(self, self->deinit_func_name, self->py.deinit);
-}
 
 static void
 python_dd_free_python_bindings(PythonDestDriver *self)
@@ -397,7 +398,7 @@ python_dd_init(LogPipe *d)
 
   python_dd_perform_imports(self);
   if (!python_dd_init_module(self) ||
-      !python_dd_call_init_function(self))
+      !_py_invoke_init(self))
     goto fail;
 
   PyGILState_Release(gstate);
@@ -421,10 +422,7 @@ python_dd_deinit(LogPipe *d)
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-
-  python_dd_call_deinit_function(self);
-
-
+  _py_invoke_deinit(self);
   PyGILState_Release(gstate);
 
   return log_threaded_dest_driver_deinit_method(d);
