@@ -31,11 +31,13 @@
 
 extern CfgParser python_parser;
 
-static Plugin python_plugin =
+static Plugin python_plugins[] =
 {
-  .type = LL_CONTEXT_DESTINATION,
-  .name = "python",
-  .parser = &python_parser,
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "python",
+    .parser = &python_parser,
+  },
 };
 
 gboolean
@@ -48,8 +50,7 @@ python_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
       PyEval_InitThreads();
       PyEval_ReleaseLock();
     }
-
-  plugin_register(cfg, &python_plugin, 1);
+  plugin_register(cfg, python_plugins, G_N_ELEMENTS(python_plugins));
   return TRUE;
 }
 
@@ -59,6 +60,6 @@ const ModuleInfo module_info =
   .version = VERSION,
   .description = "The python module provides Python scripted destination support for syslog-ng.",
   .core_revision = VERSION_CURRENT_VER_ONLY,
-  .plugins = &python_plugin,
-  .plugins_len = 1,
+  .plugins = python_plugins,
+  .plugins_len = G_N_ELEMENTS(python_plugins),
 };
