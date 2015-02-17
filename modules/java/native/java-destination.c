@@ -172,13 +172,6 @@ java_worker_message_queue_empty(LogThrDestDriver *d)
 }
 
 static void
-java_worker_thread_init(LogThrDestDriver *d)
-{
-  JavaDestDriver *self = (JavaDestDriver *)d;
-  java_dd_open(self);
-}
-
-static void
 java_worker_thread_deinit(LogThrDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
@@ -229,7 +222,6 @@ java_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = java_dd_init;
   self->super.super.super.super.deinit = java_dd_deinit;
 
-  self->super.worker.thread_init = java_worker_thread_init;
   self->super.worker.thread_deinit = java_worker_thread_deinit;
   self->super.worker.insert = java_worker_insert;
   self->super.worker.worker_message_queue_empty = java_worker_message_queue_empty;
