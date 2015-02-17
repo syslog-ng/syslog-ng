@@ -216,6 +216,43 @@ _py_invoke_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
   return ret != NULL;
 }
 
+static void
+_py_do_import(gpointer data, gpointer user_data)
+{
+  gchar *modname = (gchar *)data;
+  PythonDestDriver *self = (PythonDestDriver *)user_data;
+  PyObject *module, *modobj;
+
+  module = PyUnicode_FromString(modname);
+  if (!module)
+    {
+      msg_error("Error allocating Python string",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("string", modname),
+                NULL);
+      return;
+    }
+
+  modobj = PyImport_Import(module);
+  Py_DECREF(module);
+  if (!modobj)
+    {
+      msg_error("Error loading Python module",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("module", modname),
+                NULL);
+      return;
+    }
+  Py_DECREF(modobj);
+}
+
+static void
+_py_perform_imports(PythonDestDriver *self)
+{
+  g_list_foreach(self->imports, _py_do_import, self);
+}
+
+
 static gboolean
 _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
 {
@@ -266,41 +303,6 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
     return WORKER_INSERT_RESULT_DROP;
 }
 
-static void
-_py_do_import(gpointer data, gpointer user_data)
-{
-  gchar *modname = (gchar *)data;
-  PythonDestDriver *self = (PythonDestDriver *)user_data;
-  PyObject *module, *modobj;
-
-  module = PyUnicode_FromString(modname);
-  if (!module)
-    {
-      msg_error("Error allocating Python string",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("string", modname),
-                NULL);
-      return;
-    }
-
-  modobj = PyImport_Import(module);
-  Py_DECREF(module);
-  if (!modobj)
-    {
-      msg_error("Error loading Python module",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("module", modname),
-                NULL);
-      return;
-    }
-  Py_DECREF(modobj);
-}
-
-static void
-python_dd_perform_imports(PythonDestDriver *self)
-{
-  g_list_foreach(self->imports, _py_do_import, self);
-}
 
 static gboolean
 python_dd_init_module(PythonDestDriver *self)
@@ -396,7 +398,7 @@ python_dd_init(LogPipe *d)
 
   gstate = PyGILState_Ensure();
 
-  python_dd_perform_imports(self);
+  _py_perform_imports(self);
   if (!python_dd_init_module(self) ||
       !_py_invoke_init(self))
     goto fail;
