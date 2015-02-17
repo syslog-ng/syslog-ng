@@ -157,16 +157,6 @@ _py_function_return_value_as_bool(PythonDestDriver *self,
                                   const gchar *func_name,
                                   PyObject *ret)
 {
-  if (!ret)
-    {
-      msg_error("Python function returned NULL",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                evt_tag_str("function", func_name),
-                NULL);
-      return FALSE;
-    }
-
   if (ret == Py_None)
     return TRUE;
 
@@ -239,7 +229,6 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
 static gboolean
 _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
 {
-  gboolean success;
   PyObject *ret;
 
   ret = PyObject_CallFunctionObjArgs(self->py.queue, dict, NULL);
@@ -253,13 +242,9 @@ _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
                 evt_tag_str("function", self->queue_func_name),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
                 NULL);
+      return FALSE;
     }
-  success = _py_function_return_value_as_bool(self, "queue", ret);
-
-  if (ret != NULL)
-    Py_DECREF(ret);
-
-  return success;
+  return _py_function_return_value_as_bool(self, "queue", ret);
 }
 
 static worker_insert_result_t
