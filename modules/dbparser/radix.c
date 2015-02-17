@@ -901,6 +901,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
                 msg_error("Duplicate key in parser radix tree",
                     evt_tag_str("key", "@"),
                     evt_tag_str("value", value_func ? value_func(value) : "unknown"),
+                    evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"),
                     NULL);
             }
 
@@ -953,6 +954,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
                                 evt_tag_int("type", node->parser->type),
                                 evt_tag_str("name", log_msg_get_value_name(node->parser->handle, NULL)),
                                 evt_tag_str("value", value_func ? value_func(value) : "unknown"),
+                                evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"),
                                 NULL);
                     }
                 }
