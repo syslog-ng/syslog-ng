@@ -285,32 +285,6 @@ _py_invoke_deinit(PythonDestDriver *self)
   return _py_invoke_function(self, self->py.deinit, NULL);
 }
 
-static worker_insert_result_t
-python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
-{
-  PythonDestDriver *self = (PythonDestDriver *)d;
-  gboolean success;
-  PyObject *dict;
-  PyGILState_STATE gstate;
-
-  gstate = PyGILState_Ensure();
-
-  success = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, &dict);
-  if (!success && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
-    {
-      goto exit;
-    }
-
-  success = _py_invoke_queue(self, dict);
- exit:
-
-  PyGILState_Release(gstate);
-  if (success)
-    return WORKER_INSERT_RESULT_SUCCESS;
-  else
-    return WORKER_INSERT_RESULT_DROP;
-}
-
 static PyObject *
 _py_get_attr_or_null(PyObject *o, const gchar *attr)
 {
@@ -351,6 +325,32 @@ _py_free_bindings(PythonDestDriver *self)
   Py_CLEAR(self->py.init);
   Py_CLEAR(self->py.queue);
   Py_CLEAR(self->py.deinit);
+}
+
+static worker_insert_result_t
+python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
+{
+  PythonDestDriver *self = (PythonDestDriver *)d;
+  gboolean success;
+  PyObject *dict;
+  PyGILState_STATE gstate;
+
+  gstate = PyGILState_Ensure();
+
+  success = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, &dict);
+  if (!success && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
+    {
+      goto exit;
+    }
+
+  success = _py_invoke_queue(self, dict);
+
+ exit:
+  PyGILState_Release(gstate);
+  if (success)
+    return WORKER_INSERT_RESULT_SUCCESS;
+  else
+    return WORKER_INSERT_RESULT_DROP;
 }
 
 static gboolean
