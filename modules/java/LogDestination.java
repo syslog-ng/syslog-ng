@@ -25,23 +25,61 @@ package org.syslog_ng;
 
 public abstract class LogDestination extends LogPipe {
 
-  public LogDestination(long pipeHandle) {
-	  super(pipeHandle);
-  }
+	public LogDestination(long pipeHandle) {
+		super(pipeHandle);
+	}
 
-  public String getOption(String key) {
-    return getOption(getHandle(), key);
-  }
+	public String getOption(String key) {
+		return getOption(getHandle(), key);
+	}
 
-  public abstract boolean open();
+	protected abstract boolean open();
 
-  public abstract void close();
+	protected abstract void close();
 
-  public abstract boolean isOpened();
+	protected abstract boolean isOpened();
 
-  private native String getOption(long ptr, String key);
+	private native String getOption(long ptr, String key);
 
-  public void onMessageQueueEmpty() {
-	  return;
-  }
+	protected void onMessageQueueEmpty() {
+		return;
+	}
+
+	public boolean openProxy() {
+		try {
+			return open();
+		}
+		catch (Exception e) {
+			sendExceptionMessage(e);
+			return false;
+		}
+	}
+
+	public void closeProxy() {
+		try {
+			close();
+		}
+		catch (Exception e) {
+			sendExceptionMessage(e);
+		}
+	}
+
+	public boolean isOpenedProxy() {
+		try {
+			return isOpened();
+		}
+		catch (Exception e) {
+			sendExceptionMessage(e);
+			return false;
+		}
+	}
+
+	public void onMessageQueueEmptyProxy() {
+		try {
+			onMessageQueueEmpty();
+		}
+		catch (Exception e) {
+			sendExceptionMessage(e);
+		}
+	}
 }
