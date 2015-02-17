@@ -170,56 +170,6 @@ _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
   return buf;
 }
 
-static gboolean
-_py_function_return_value_as_bool(PythonDestDriver *self,
-                                  const gchar *func_name,
-                                  PyObject *ret)
-{
-  if (ret == Py_None)
-    return TRUE;
-
-  if (!PyBool_Check(ret))
-    {
-      msg_error("Python function returned a non-bool value",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                evt_tag_str("function", func_name),
-                NULL);
-      Py_DECREF(ret);
-      return FALSE;
-    }
-
-  if (PyLong_AsLong(ret) != 1)
-    {
-      msg_error("Python function returned FALSE",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                evt_tag_str("function", func_name),
-                NULL);
-      Py_DECREF(ret);
-      return FALSE;
-    }
-
-  Py_DECREF(ret);
-  return TRUE;
-}
-
-static gboolean
-_call_python_function_with_no_args_and_bool_return_value(PythonDestDriver *self,
-                                                         const gchar *func_name,
-                                                         PyObject *func)
-{
-  PyObject *ret;
-  gboolean success;
-
-  if (!func)
-    return TRUE;
-
-  ret = PyObject_CallObject(func, NULL);
-  success = _py_function_return_value_as_bool(self, func_name, ret);
-  return success;
-}
-
 static const gchar *
 _py_format_exception_text(gchar *buf, gsize buf_len)
 {
@@ -245,11 +195,11 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
 }
 
 static gboolean
-_py_invoke_queue(PythonDestDriver *self, PyObject *dict)
+_py_invoke_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
 {
   PyObject *ret;
 
-  ret = PyObject_CallFunctionObjArgs(self->py.queue, dict, NULL);
+  ret = PyObject_CallFunctionObjArgs(func, arg, NULL);
   if (!ret)
     {
       gchar buf1[256], buf2[256];
@@ -257,12 +207,19 @@ _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
       msg_error("Exception while calling a Python function",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("script", self->filename),
-                evt_tag_str("function", _py_get_callable_name(self->py.queue, buf1, sizeof(buf1))),
+                evt_tag_str("function", _py_get_callable_name(func, buf1, sizeof(buf1))),
                 evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))),
                 NULL);
       return FALSE;
     }
-  return _py_function_return_value_as_bool(self, "queue", ret);
+  Py_XDECREF(ret);
+  return ret != NULL;
+}
+
+static gboolean
+_py_invoke_queue(PythonDestDriver *self, PyObject *dict)
+{
+  return _py_invoke_function(self, self->py.queue, dict);
 }
 
 static worker_insert_result_t
