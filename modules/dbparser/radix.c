@@ -1425,6 +1425,7 @@ r_find_all_applicable_nodes(RNode *root, guint8 *key, gint keylen, RNodeGetValue
       g_ptr_array_add(result, g_strdup(value_func(node->value)));
     }
   g_ptr_array_add(result, NULL);
+  g_ptr_array_free(state.applicable_nodes, TRUE);
   return (gchar **) g_ptr_array_free(result, FALSE);
 }
 
