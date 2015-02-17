@@ -29,11 +29,8 @@
 #include "value-pairs.h"
 
 LogDriver *python_dd_new(GlobalConfig *cfg);
-void python_dd_set_init_func(LogDriver *d, gchar *init_func_name);
-void python_dd_set_queue_func(LogDriver *d, gchar *queue_func_name);
-void python_dd_set_deinit_func(LogDriver *d, gchar *deinit_func_name);
 void python_dd_set_imports(LogDriver *d, GList *imports);
-void python_dd_set_filename(LogDriver *d, gchar *filename);
+void python_dd_set_class(LogDriver *d, gchar *class_name);
 void python_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 
 LogTemplateOptions *python_dd_get_template_options(LogDriver *d);

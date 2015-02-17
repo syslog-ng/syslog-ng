@@ -46,10 +46,7 @@
 /* INCLUDE_DECLS */
 
 %token KW_PYTHON
-%token KW_SCRIPT
-%token KW_INIT_FUNC
-%token KW_QUEUE_FUNC
-%token KW_DEINIT_FUNC
+%token KW_CLASS
 %token KW_IMPORTS
 
 %%
@@ -68,24 +65,9 @@ python_options
         ;
 
 python_option
-        : KW_SCRIPT '(' string ')'
+        : KW_CLASS '(' string ')'
           {
-            python_dd_set_filename(last_driver, $3);
-            free($3);
-          }
-        | KW_INIT_FUNC '(' string ')'
-          {
-            python_dd_set_init_func(last_driver, $3);
-            free($3);
-          }
-        | KW_QUEUE_FUNC '(' string ')'
-          {
-            python_dd_set_queue_func(last_driver, $3);
-            free($3);
-          }
-        | KW_DEINIT_FUNC '(' string ')'
-          {
-            python_dd_set_deinit_func(last_driver, $3);
+            python_dd_set_class(last_driver, $3);
             free($3);
           }
         | KW_IMPORTS '(' string_list ')'

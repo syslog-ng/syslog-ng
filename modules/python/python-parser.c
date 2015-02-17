@@ -29,11 +29,8 @@ extern int python_debug;
 int python_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword python_keywords[] = {
-  { "python",                   KW_PYTHON },
-  { "script",                   KW_SCRIPT },
-  { "init_func",                KW_INIT_FUNC },
-  { "queue_func",               KW_QUEUE_FUNC },
-  { "deinit_func",              KW_DEINIT_FUNC },
+  { "python",                   KW_PYTHON  },
+  { "class",                    KW_CLASS   },
   { "imports",                  KW_IMPORTS },
   { NULL }
 };
