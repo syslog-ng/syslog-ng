@@ -28,5 +28,14 @@ public abstract class TextLogDestination extends LogDestination {
 		super(handle);
 	}
 
-	public abstract boolean send(String formattedMessage);
+	protected abstract boolean send(String formattedMessage);
+	public boolean sendProxy(String formattedMessage) {
+		try {
+			return send(formattedMessage);
+		}
+		catch (Exception e) {
+			sendExceptionMessage(e);
+			return false;
+		}
+	}
 }

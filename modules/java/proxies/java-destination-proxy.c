@@ -52,7 +52,6 @@ struct _JavaDestinationProxy
   GString *formatted_message;
 };
 
-
 static gboolean
 __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, const gchar *class_path, gpointer handle)
 {
@@ -73,7 +72,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
       return FALSE;
   }
 
-  self->dest_impl.mi_init = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "init", "()Z");
+  self->dest_impl.mi_init = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "initProxy", "()Z");
   if (!self->dest_impl.mi_init) {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
@@ -81,7 +80,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
       return FALSE;
   }
 
-  self->dest_impl.mi_deinit = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "deinit", "()V");
+  self->dest_impl.mi_deinit = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "deinitProxy", "()V");
   if (!self->dest_impl.mi_deinit) {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
@@ -89,8 +88,8 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
       return FALSE;
   }
 
-  self->dest_impl.mi_send = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "send", "(Ljava/lang/String;)Z");
-  self->dest_impl.mi_send_msg = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "send", "(Lorg/syslog_ng/LogMessage;)Z");
+  self->dest_impl.mi_send = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy", "(Ljava/lang/String;)Z");
+  self->dest_impl.mi_send_msg = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy", "(Lorg/syslog_ng/LogMessage;)Z");
 
   if (!self->dest_impl.mi_send_msg && !self->dest_impl.mi_send)
     {
@@ -100,7 +99,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
                 NULL);
     }
 
-  self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "onMessageQueueEmpty", "()V");
+  self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "onMessageQueueEmptyProxy", "()V");
   if (!self->dest_impl.mi_on_message_queue_empty)
     {
       msg_error("Can't find method in class",
@@ -109,7 +108,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
       return FALSE;
     }
 
-  self->dest_impl.mi_open = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "open", "()Z");
+  self->dest_impl.mi_open = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "openProxy", "()Z");
   if (!self->dest_impl.mi_open)
     {
       msg_error("Can't find method in class",
@@ -118,7 +117,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
                 NULL);
     }
 
-  self->dest_impl.mi_close = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "close", "()V");
+  self->dest_impl.mi_close = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "closeProxy", "()V");
   if (!self->dest_impl.mi_close)
     {
       msg_error("Can't find method in class",
@@ -127,7 +126,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
                 NULL);
     }
 
-  self->dest_impl.mi_is_opened = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "isOpened", "()Z");
+  self->dest_impl.mi_is_opened = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "isOpenedProxy", "()Z");
   if (!self->dest_impl.mi_is_opened)
     {
       msg_error("Can't find method in class", evt_tag_str("class_name", class_name),
@@ -202,7 +201,9 @@ __queue_native_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
                                     self->dest_impl.dest_object,
                                     self->dest_impl.mi_send_msg,
                                     java_log_message_proxy_get_java_object(jmsg));
+
   java_log_message_proxy_free(jmsg);
+
   return !!(res);
 }
 
@@ -233,49 +234,50 @@ java_destination_proxy_send(JavaDestinationProxy *self, LogMessage *msg)
 gboolean
 java_destination_proxy_init(JavaDestinationProxy *self)
 {
-  gboolean result;
+  jboolean result;
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
-  (*env)->ExceptionClear(env);
+
   result = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_init);
-  if (!result)
-    {
-      goto error;
-    }
-  return TRUE;
-error:
-  if ((*env)->ExceptionCheck(env))
-    {
-      (*env)->ExceptionDescribe(env);
-    }
-  return FALSE;
+
+  return !!(result);
 }
 
 void
 java_destination_proxy_deinit(JavaDestinationProxy *self)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+
   CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_deinit);
+
 }
 
 void
 java_destination_proxy_on_message_queue_empty(JavaDestinationProxy *self)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+
   CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_on_message_queue_empty);
+
 }
 
 gboolean
 java_destination_proxy_open(JavaDestinationProxy *self)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
-  return CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_open);
+
+  jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_open);
+
+  return !!(res);
 }
 
 gboolean
 java_destination_proxy_is_opened(JavaDestinationProxy *self)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
-  return CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_is_opened);
+
+  jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_is_opened);
+
+  return !!(res);
 }
 
 
@@ -283,5 +285,7 @@ void
 java_destination_proxy_close(JavaDestinationProxy *self)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+
   CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_close);
+
 }

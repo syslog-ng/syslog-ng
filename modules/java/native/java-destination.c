@@ -172,20 +172,10 @@ java_worker_message_queue_empty(LogThrDestDriver *d)
 }
 
 static void
-java_worker_thread_init(LogThrDestDriver *d)
-{
-  JavaDestDriver *self = (JavaDestDriver *)d;
-  java_dd_open(self);
-}
-
-static void
 java_worker_thread_deinit(LogThrDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
-  if (java_destination_proxy_is_opened(self->proxy))
-    {
-      java_destination_proxy_close(self->proxy);
-    }
+  java_dd_close(self);
   java_machine_detach_thread();
 }
 
@@ -232,7 +222,6 @@ java_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = java_dd_init;
   self->super.super.super.super.deinit = java_dd_deinit;
 
-  self->super.worker.thread_init = java_worker_thread_init;
   self->super.worker.thread_deinit = java_worker_thread_deinit;
   self->super.worker.insert = java_worker_insert;
   self->super.worker.worker_message_queue_empty = java_worker_message_queue_empty;
@@ -245,7 +234,7 @@ java_dd_new(GlobalConfig *cfg)
   self->template = log_template_new(cfg, "java_dd_template");
   self->class_path = g_string_new(".");
 
-  java_dd_set_template_string(&self->super.super.super, "$ISODATE $HOST $MSGHDR$MSG");
+  java_dd_set_template_string(&self->super.super.super, "$ISODATE $HOST $MSGHDR$MSG\n");
 
   self->formatted_message = g_string_sized_new(1024);
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
