@@ -182,10 +182,7 @@ static void
 java_worker_thread_deinit(LogThrDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
-  if (java_destination_proxy_is_opened(self->proxy))
-    {
-      java_destination_proxy_close(self->proxy);
-    }
+  java_dd_close(self);
   java_machine_detach_thread();
 }
 
