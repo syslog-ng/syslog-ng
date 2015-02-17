@@ -321,12 +321,103 @@ _py_do_import(gpointer data, gpointer user_data)
   Py_DECREF(modobj);
 }
 
+static void
+python_dd_perform_imports(PythonDestDriver *self)
+{
+  g_list_foreach(self->imports, _py_do_import, self);
+}
+
+static gboolean
+python_dd_init_module(PythonDestDriver *self)
+{
+  PyObject *modname = PyUnicode_FromString(self->filename);
+  if (!modname)
+    {
+      msg_error("Unable to convert filename to Python string",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("script", self->filename),
+                NULL);
+      return FALSE;
+    }
+
+  self->py.module = PyImport_Import(modname);
+  Py_DECREF(modname);
+
+  if (!self->py.module)
+    {
+      msg_error("Unable to load Python script",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("script", self->filename),
+                NULL);
+      return FALSE;
+    }
+
+  self->py.queue = PyObject_GetAttrString(self->py.module,
+                                          self->queue_func_name);
+  if (!self->py.queue || !PyCallable_Check(self->py.queue))
+    {
+      msg_error("Python queue function is not callable!",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("script", self->filename),
+                evt_tag_str("queue-function", self->queue_func_name),
+                NULL);
+      return FALSE;
+    }
+
+  if (self->init_func_name)
+    self->py.init = PyObject_GetAttrString(self->py.module,
+                                           self->init_func_name);
+  if (self->py.init && !PyCallable_Check(self->py.init))
+    {
+      self->py.init = NULL;
+    }
+
+  if (self->deinit_func_name)
+    self->py.deinit = PyObject_GetAttrString(self->py.module,
+                                             self->deinit_func_name);
+  if (self->py.deinit && !PyCallable_Check(self->py.deinit))
+    {
+      self->py.deinit = NULL;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+python_dd_call_init_function(PythonDestDriver *self)
+{
+  if (!self->py.init)
+    return TRUE;
+
+  return _call_python_function_with_no_args_and_bool_return_value(self, self->init_func_name, self->py.init);
+}
+
+static gboolean
+python_dd_call_deinit_function(PythonDestDriver *self)
+{
+  if (!self->py.deinit)
+    return TRUE;
+
+  return _call_python_function_with_no_args_and_bool_return_value(self, self->deinit_func_name, self->py.deinit);
+}
+
+static void
+python_dd_free_python_bindings(PythonDestDriver *self)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  Py_CLEAR(self->py.module);
+  Py_CLEAR(self->py.init);
+  Py_CLEAR(self->py.queue);
+  Py_CLEAR(self->py.deinit);
+  PyGILState_Release(gstate);
+}
+
 static gboolean
 python_dd_init(LogPipe *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
   GlobalConfig *cfg = log_pipe_get_config(d);
-  PyObject *modname;
   PyGILState_STATE gstate;
 
   if (!self->filename)
@@ -347,80 +438,10 @@ python_dd_init(LogPipe *d)
 
   gstate = PyGILState_Ensure();
 
-  g_list_foreach(self->imports, _py_do_import, self);
-
-  modname = PyUnicode_FromString(self->filename);
-  if (!modname)
-    {
-      msg_error("Unable to convert filename to Python string",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                NULL);
-      PyGILState_Release(gstate);
-      return FALSE;
-    }
-
-  self->py.module = PyImport_Import(modname);
-  Py_DECREF(modname);
-
-  if (!self->py.module)
-    {
-      msg_error("Unable to load Python script",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                NULL);
-      PyGILState_Release(gstate);
-      return FALSE;
-    }
-
-  self->py.queue = PyObject_GetAttrString(self->py.module,
-                                          self->queue_func_name);
-  if (!self->py.queue || !PyCallable_Check(self->py.queue))
-    {
-      msg_error("Python queue function is not callable!",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                evt_tag_str("queue-function", self->queue_func_name),
-                NULL);
-      Py_DECREF(self->py.module);
-      PyGILState_Release(gstate);
-      return FALSE;
-    }
-
-  if (self->init_func_name)
-    self->py.init = PyObject_GetAttrString(self->py.module,
-                                           self->init_func_name);
-  if (self->py.init && !PyCallable_Check(self->py.init))
-    {
-      Py_DECREF(self->py.init);
-      self->py.init = NULL;
-    }
-
-  if (self->deinit_func_name)
-    self->py.deinit = PyObject_GetAttrString(self->py.module,
-                                             self->deinit_func_name);
-  if (self->py.deinit && !PyCallable_Check(self->py.deinit))
-    {
-      Py_DECREF(self->py.deinit);
-      self->py.deinit = NULL;
-    }
-
-  if (self->py.init)
-    {
-      if (!_call_python_function_with_no_args_and_bool_return_value(self,
-                                                                    self->init_func_name,
-                                                                    self->py.init))
-        {
-          if (self->py.init)
-            Py_DECREF(self->py.init);
-          if (self->py.deinit)
-            Py_DECREF(self->py.deinit);
-          Py_DECREF(self->py.queue);
-          Py_DECREF(self->py.module);
-          PyGILState_Release(gstate);
-          return FALSE;
-        }
-    }
+  python_dd_perform_imports(self);
+  if (!python_dd_init_module(self) ||
+      !python_dd_call_init_function(self))
+    goto fail;
 
   PyGILState_Release(gstate);
 
@@ -430,6 +451,10 @@ python_dd_init(LogPipe *d)
               NULL);
 
   return log_threaded_dest_driver_start(d);
+
+ fail:
+  PyGILState_Release(gstate);
+  return FALSE;
 }
 
 static gboolean
@@ -440,16 +465,8 @@ python_dd_deinit(LogPipe *d)
 
   gstate = PyGILState_Ensure();
 
-  if (self->py.deinit)
-    {
-      if (!_call_python_function_with_no_args_and_bool_return_value(self,
-                                                                    self->deinit_func_name,
-                                                                    self->py.deinit))
-        {
-          PyGILState_Release(gstate);
-          return FALSE;
-        }
-    }
+  python_dd_call_deinit_function(self);
+
 
   PyGILState_Release(gstate);
 
@@ -462,6 +479,8 @@ python_dd_free(LogPipe *d)
   PythonDestDriver *self = (PythonDestDriver *)d;
 
   log_template_options_destroy(&self->template_options);
+
+  python_dd_free_python_bindings(self);
 
   g_free(self->filename);
   g_free(self->init_func_name);
@@ -480,6 +499,7 @@ python_dd_new(GlobalConfig *cfg)
   PythonDestDriver *self = g_new0(PythonDestDriver, 1);
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
+  log_template_options_defaults(&self->template_options);
 
   self->super.super.super.super.init = python_dd_init;
   self->super.super.super.super.deinit = python_dd_deinit;
@@ -492,7 +512,6 @@ python_dd_new(GlobalConfig *cfg)
   self->super.format.persist_name = python_dd_format_persist_name;
   self->super.stats_source = SCS_PYTHON;
 
-  log_template_options_defaults(&self->template_options);
   python_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *)self;
