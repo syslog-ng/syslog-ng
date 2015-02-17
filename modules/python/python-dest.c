@@ -24,6 +24,7 @@
 #include "python-dest.h"
 #include "python-globals.h"
 #include "python-value-pairs.h"
+#include "python-logmsg.h"
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
 #include "misc.h"
@@ -444,7 +445,7 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
   gboolean success;
-  PyObject *dict;
+  PyObject *msg_object;
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
@@ -452,13 +453,20 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
     {
       return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
-  success = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, &dict);
-  if (!success && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
+  if (self->vp)
     {
-      goto exit;
+      success = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, &msg_object);
+      if (!success && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
+        {
+          goto exit;
+        }
+    }
+  else
+    {
+      msg_object = py_log_message_new(msg);
     }
 
-  success = _py_invoke_send(self, dict);
+  success = _py_invoke_send(self, msg_object);
 
  exit:
   PyGILState_Release(gstate);
@@ -610,8 +618,6 @@ python_dd_new(GlobalConfig *cfg)
   self->super.format.stats_instance = python_dd_format_stats_instance;
   self->super.format.persist_name = python_dd_format_persist_name;
   self->super.stats_source = SCS_PYTHON;
-
-  python_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *)self;
 }
