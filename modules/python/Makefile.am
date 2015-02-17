@@ -30,6 +30,8 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-value-pairs.h	  \
 	modules/python/python-dest.c		  \
 	modules/python/python-dest.h		  \
+	modules/python/python-tf.c		  \
+	modules/python/python-tf.h		  \
 	modules/python/python-parser.c		  \
 	modules/python/python-parser.h	          \
 	modules/python/python-logmsg.h		  \

@@ -24,6 +24,7 @@
 #include "python-module.h"
 #include "python-parser.h"
 #include "python-dest.h"
+#include "python-tf.h"
 #include "python-logmsg.h"
 
 #include "plugin.h"
@@ -43,6 +44,7 @@ static Plugin python_plugins[] =
     .name = "python",
     .parser = &python_parser,
   },
+  TEMPLATE_FUNCTION_PLUGIN(tf_python, "python"),
 };
 static gboolean interpreter_initialized = FALSE;
 
