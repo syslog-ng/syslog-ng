@@ -216,11 +216,9 @@ _py_invoke_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
   return ret != NULL;
 }
 
-static void
-_py_do_import(gpointer data, gpointer user_data)
+static PyObject *
+_py_do_import(PythonDestDriver *self, const gchar *modname)
 {
-  gchar *modname = (gchar *)data;
-  PythonDestDriver *self = (PythonDestDriver *)user_data;
   PyObject *module, *modobj;
 
   module = PyUnicode_FromString(modname);
@@ -230,7 +228,7 @@ _py_do_import(gpointer data, gpointer user_data)
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("string", modname),
                 NULL);
-      return;
+      return NULL;
     }
 
   modobj = PyImport_Import(module);
@@ -241,17 +239,27 @@ _py_do_import(gpointer data, gpointer user_data)
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("module", modname),
                 NULL);
-      return;
+      return NULL;
     }
-  Py_DECREF(modobj);
+  return modobj;
+}
+
+static void
+_foreach_import(gpointer data, gpointer user_data)
+{
+  PythonDestDriver *self = (PythonDestDriver *) user_data;
+  gchar *modname = (gchar *) data;
+  PyObject *mod;
+
+  mod = _py_do_import(self, modname);
+  Py_XDECREF(mod);
 }
 
 static void
 _py_perform_imports(PythonDestDriver *self)
 {
-  g_list_foreach(self->imports, _py_do_import, self);
+  g_list_foreach(self->imports, _foreach_import, self);
 }
-
 
 static gboolean
 _py_invoke_queue(PythonDestDriver *self, PyObject *dict)
