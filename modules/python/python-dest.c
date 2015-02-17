@@ -311,60 +311,36 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
     return WORKER_INSERT_RESULT_DROP;
 }
 
+static PyObject *
+_py_get_attr_or_null(PyObject *o, const gchar *attr)
+{
+  PyObject *result;
+
+  if (!attr)
+    return NULL;
+
+  result = PyObject_GetAttrString(o, attr);
+  if (!result)
+    {
+      PyErr_Clear();
+      return NULL;
+    }
+  return result;
+}
 
 static gboolean
 _py_init_bindings(PythonDestDriver *self)
 {
-  PyObject *modname = PyUnicode_FromString(self->filename);
-  if (!modname)
-    {
-      msg_error("Unable to convert filename to Python string",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                NULL);
-      return FALSE;
-    }
-
-  self->py.module = PyImport_Import(modname);
-  Py_DECREF(modname);
-
+  self->py.module = _py_do_import(self, self->filename);
   if (!self->py.module)
-    {
-      msg_error("Unable to load Python script",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                NULL);
-      return FALSE;
-    }
+    return FALSE;
 
-  self->py.queue = PyObject_GetAttrString(self->py.module,
-                                          self->queue_func_name);
-  if (!self->py.queue || !PyCallable_Check(self->py.queue))
-    {
-      msg_error("Python queue function is not callable!",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("script", self->filename),
-                evt_tag_str("queue-function", self->queue_func_name),
-                NULL);
-      return FALSE;
-    }
+  self->py.queue = _py_get_attr_or_null(self->py.module, self->queue_func_name);
+  if (!self->py.queue)
+    return FALSE;
 
-  if (self->init_func_name)
-    self->py.init = PyObject_GetAttrString(self->py.module,
-                                           self->init_func_name);
-  if (self->py.init && !PyCallable_Check(self->py.init))
-    {
-      self->py.init = NULL;
-    }
-
-  if (self->deinit_func_name)
-    self->py.deinit = PyObject_GetAttrString(self->py.module,
-                                             self->deinit_func_name);
-  if (self->py.deinit && !PyCallable_Check(self->py.deinit))
-    {
-      self->py.deinit = NULL;
-    }
-
+  self->py.init = _py_get_attr_or_null(self->py.module, self->init_func_name);
+  self->py.deinit = _py_get_attr_or_null(self->py.module, self->deinit_func_name);
   return TRUE;
 }
 
