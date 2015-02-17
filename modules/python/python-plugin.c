@@ -38,6 +38,11 @@ static Plugin python_plugins[] =
     .name = "python",
     .parser = &python_parser,
   },
+  {
+    .type = LL_CONTEXT_ROOT,
+    .name = "python",
+    .parser = &python_parser,
+  },
 };
 static gboolean interpreter_initialized = FALSE;
 

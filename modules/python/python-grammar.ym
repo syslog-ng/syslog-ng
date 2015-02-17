@@ -25,6 +25,7 @@
 
 #include "python-parser.h"
 #include "python-dest.h"
+#include "python-main.h"
 #include "value-pairs.h"
 #include "vptransform.h"
 
@@ -57,6 +58,16 @@ start
             last_driver = *instance = python_dd_new(configuration);
           }
           '(' python_options ')'         { YYACCEPT; }
+	| LL_CONTEXT_ROOT KW_PYTHON
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "Python code"); }
+          LL_BLOCK
+          { cfg_lexer_pop_context(lexer); }
+          {
+	    python_evaluate_global_code(configuration, $4);
+	    free($4);
+	    *instance = (void *) 1;
+	    YYACCEPT;
+          }
         ;
 
 python_options
