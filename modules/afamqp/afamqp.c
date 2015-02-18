@@ -343,7 +343,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
   if (self->declare)
     {
       amqp_exchange_declare(self->conn, 1, amqp_cstring_bytes(self->exchange),
-                            amqp_cstring_bytes(self->exchange_type), 0, 0,
+                            amqp_cstring_bytes(self->exchange_type), 0, 0, 0, 0,
                             amqp_empty_table);
       ret = amqp_get_rpc_reply(self->conn);
       if (!afamqp_is_ok(self, "Error during AMQP exchange declaration", ret))
