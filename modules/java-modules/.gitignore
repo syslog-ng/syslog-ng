@@ -1,0 +1,13 @@
+# Java class files
+*.class
+
+# generated files
+libs/
+tmp/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Eclipse project files
+.classpath
+.project

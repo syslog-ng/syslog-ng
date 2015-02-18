@@ -1,0 +1,13 @@
+apply plugin: 'java'
+
+project.buildDir = syslogBuildDir+'/dummy'
+
+repositories {
+   flatDir {
+       dirs syslogDepsDir
+   }
+}
+
+dependencies {
+   compile name: 'SyslogNg'
+}

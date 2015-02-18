@@ -6,6 +6,7 @@ opt/syslog-ng/lib/lib*.a
 opt/syslog-ng/lib/syslog-ng/lib*.s[o,l]*
 opt/syslog-ng/lib/syslog-ng/lib*.a
 opt/syslog-ng/lib/syslog-ng/SyslogNg.jar
+opt/syslog-ng/lib/syslog-ng/java-modules/*.jar
 opt/syslog-ng/libexec/*
 opt/syslog-ng/sbin/*
 opt/syslog-ng/share/*

@@ -316,7 +316,7 @@ main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc
   main_loop_worker_job_start();
   if (terminate_func)
     _register_exit_notification_callback(terminate_func, data);
-  h = g_thread_create_full(_worker_thread_func, p, 128 * 1024, FALSE, TRUE, G_THREAD_PRIORITY_NORMAL, NULL);
+  h = g_thread_create_full(_worker_thread_func, p, 1 * 1024 * 1024, FALSE, TRUE, G_THREAD_PRIORITY_NORMAL, NULL);
   g_assert(h != NULL);
 }
 

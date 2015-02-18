@@ -1,4 +1,4 @@
-SUBDIRS = affile afsocket syslogformat basicfuncs basic-proto confgen convertfuncs csvparser dbparser dummy afprog afsql afstreams afuser pacctformat json cryptofuncs java
+SUBDIRS = affile afsocket syslogformat basicfuncs basic-proto confgen convertfuncs csvparser dbparser dummy afprog afsql afstreams afuser pacctformat json cryptofuncs java java-modules
 
 # windows plugins
 SUBDIRS += agent-config eventlog windows-resource

@@ -1573,6 +1573,7 @@ AC_OUTPUT(dist.conf
           modules/systemd-journal/Makefile
           modules/systemd-journal/tests/Makefile
           modules/java/Makefile
+          modules/java-modules/Makefile
 
 dnl PE modules
 	modules/license/Makefile
