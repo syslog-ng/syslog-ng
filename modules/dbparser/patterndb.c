@@ -883,6 +883,7 @@ typedef struct _PDBLoader
   gchar *test_value_name;
   GlobalConfig *cfg;
   gint action_id;
+  GHashTable *ruleset_patterns;
   GArray *program_patterns;
 } PDBLoader;
 
@@ -1082,6 +1083,16 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     }
 }
 
+static void
+_populate_ruleset_radix(gpointer key, gpointer value, gpointer user_data)
+{
+  PDBLoader *state = (PDBLoader *) user_data;
+  gchar *pattern = key;
+  PDBProgram *program = (PDBProgram *) value;
+
+  r_insert_node(state->ruleset->programs, pattern, pdb_program_ref(program), NULL);
+}
+
 void
 pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, gpointer user_data, GError **error)
 {
@@ -1090,6 +1101,12 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
   PDBProgram *program;
   int i;
 
+
+  if (strcmp(element_name, "patterndb") == 0)
+    {
+      g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
+      g_hash_table_remove_all(state->ruleset_patterns);
+    }
   if (strcmp(element_name, "ruleset") == 0)
     {
       if (!state->in_ruleset)
@@ -1206,14 +1223,10 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
   LogTemplate *value;
   GError *err = NULL;
   PDBProgramPattern program_pattern;
-  RNode *node = NULL;
-  gchar *txt;
   gchar **nv;
 
   if (state->in_pattern)
     {
-      txt = g_strdup(text);
-
       if (state->in_rule)
         {
           program_pattern.pattern = g_strdup(text);
@@ -1222,38 +1235,34 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
         }
       else if (state->in_ruleset)
         {
-
           if (state->first_program)
             {
-              node = r_find_node(state->ruleset->programs, txt, strlen(txt), NULL);
-
-              if (node && node->value && node != state->ruleset->programs)
-                state->current_program = node->value;
-              else
+              state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
+              if (state->current_program == NULL)
                 {
+                  /* create new program specific radix */
                   state->current_program = pdb_program_new();
-
-                  r_insert_node(state->ruleset->programs,
-                            txt,
-                            state->current_program,
-                            NULL);
+                  g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
                 }
+
               state->first_program = FALSE;
             }
           else if (state->current_program)
             {
-              node = r_find_node(state->ruleset->programs, txt, strlen(txt), NULL);
+              /* secondary program names should point to the same MSG radix */
 
-              if (!node || !node->value || node == state->ruleset->programs)
+              PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
+              if (!program)
                 {
-                  r_insert_node(state->ruleset->programs,
-                            txt,
-                            pdb_program_ref(state->current_program),
-                            NULL);
+                  g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
+                }
+              else if (program != state->current_program)
+                {
+                  g_error_new(1, 0, "Joining rulesets with mismatching program name sets, program=%s", text);
+                  return;
                 }
             }
         }
-      g_free(txt);
     }
   else if (state->in_tag)
     {
@@ -1341,6 +1350,7 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
   state.ruleset = self;
   state.root_program = pdb_program_new();
   state.load_examples = !!examples;
+  state.ruleset_patterns = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) pdb_program_unref);
   state.cfg = cfg;
 
   self->programs = r_new_node("", state.root_program);
@@ -1380,6 +1390,7 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
     fclose(dbfile);
   if (parse_ctx)
     g_markup_parse_context_free(parse_ctx);
+  g_hash_table_unref(state.ruleset_patterns);
   return success;
 }
 
@@ -1859,6 +1870,7 @@ pattern_db_free(PatternDB *self)
     g_hash_table_destroy(self->state);
   if (self->timer_wheel)
     timer_wheel_free(self->timer_wheel);
+  g_static_rw_lock_free(&self->lock);
   g_free(self);
 }
 

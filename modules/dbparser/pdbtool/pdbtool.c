@@ -778,6 +778,7 @@ pdbtool_test(int argc, char *argv[])
                 {
                   if (strcmp(example->rule->rule_id, test_ruleid) != 0)
                     {
+                      pdb_example_free(example);
                       examples = g_list_delete_link(examples, examples);
                       continue;
                     }
@@ -825,6 +826,7 @@ pdbtool_test(int argc, char *argv[])
               printf("NOT Testing message as message is unset: program='%s'\n", example->program);
             }
 
+          pdb_example_free(example);
           examples = g_list_delete_link(examples, examples);
         }
 
