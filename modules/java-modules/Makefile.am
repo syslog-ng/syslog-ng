@@ -23,5 +23,7 @@ endif
 EXTRA_DIST = \
 	settings.gradle 	\
 	dummy/build.gradle	\
-	dummy/src/main/java/org/syslog_ng/DummyTextDestination.java 
+	dummy/src/main/java/org/syslog_ng/DummyTextDestination.java  \
+	hdfs/build.gradle	\
+	hdfs/src/main/java/org/syslog_ng/hdfs/HdfsDestination.java
 

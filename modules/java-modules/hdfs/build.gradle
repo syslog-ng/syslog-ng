@@ -1,0 +1,22 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+project.buildDir = syslogBuildDir+'/hdfs'
+
+repositories {
+    maven {
+       url "http://build.syslog-ng.balabit:8080/repository/syslog-ng-pe/"
+       credentials {
+                        username "syslog-ng"
+                        password "titkos12"
+       }
+    }
+   flatDir {
+       dirs syslogDepsDir
+   }
+}
+
+dependencies {
+    compile "org.syslog-ng:hdfs-destination-deps:5.3";
+    compile name: 'SyslogNg'
+}
