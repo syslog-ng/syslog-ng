@@ -603,6 +603,7 @@ affile_dd_open_writer(gpointer args[])
       if (!next)
 	{
 	  next = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
+          affile_dw_set_owner(next, self);
           if (!log_pipe_init(&next->super))
 	    {
 	      log_pipe_unref(&next->super);
