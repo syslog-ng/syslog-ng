@@ -142,6 +142,11 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
   PyObject *exc, *value, *tb, *str;
 
   PyErr_Fetch(&exc, &value, &tb);
+  if (!exc)
+    {
+      g_strlcpy(buf, "None", buf_len);
+      return buf;
+    }
   PyErr_NormalizeException(&exc, &value, &tb);
 
   str = PyObject_Str(value);
