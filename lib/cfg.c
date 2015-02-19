@@ -23,6 +23,7 @@
  */
   
 #include "cfg.h"
+#include "module-config.h"
 #include "cfg-tree.h"
 #include "messages.h"
 #include "template/templates.h"
@@ -185,6 +186,40 @@ cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode)
   self->mark_mode = cfg_lookup_mark_mode(mark_mode);
 }
 
+static void
+_invoke_module_init(gchar *key, ModuleConfig *mc, gpointer *args)
+{
+  GlobalConfig *cfg = (GlobalConfig *) args[0];
+  gboolean *result = (gboolean *) args[1];
+
+  if (!module_config_init(mc, cfg))
+    *result = FALSE;
+}
+
+static void
+_invoke_module_deinit(gchar *key, ModuleConfig *mc, gpointer user_data)
+{
+  GlobalConfig *cfg = (GlobalConfig *) user_data;
+
+  module_config_deinit(mc, cfg);
+}
+
+static gboolean
+cfg_init_modules(GlobalConfig *cfg)
+{
+  gboolean result = TRUE;
+  gpointer args[] = { cfg, &result };
+  g_hash_table_foreach(cfg->module_config, (GHFunc) _invoke_module_init, args);
+
+  return result;
+}
+
+static void
+cfg_deinit_modules(GlobalConfig *cfg)
+{
+  g_hash_table_foreach(cfg->module_config, (GHFunc) _invoke_module_deinit, cfg);
+}
+
 gboolean
 cfg_init(GlobalConfig *cfg)
 {
@@ -225,12 +260,15 @@ cfg_init(GlobalConfig *cfg)
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   hostname_reinit(cfg->custom_domain);
   host_resolve_options_init(&cfg->host_resolve_options, cfg);
+  if (!cfg_init_modules(cfg))
+    return FALSE;
   return cfg_tree_start(&cfg->tree);
 }
 
 gboolean
 cfg_deinit(GlobalConfig *cfg)
 {
+  cfg_deinit_modules(cfg);
   rcptid_deinit();
   return cfg_tree_stop(&cfg->tree);
 }
@@ -304,6 +342,7 @@ cfg_new(gint version)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
+  self->module_config = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) module_config_free);
   self->user_version = version;
 
   self->flush_lines = 100;
@@ -492,6 +531,7 @@ cfg_free(GlobalConfig *self)
   plugin_free_plugins(self);
   plugin_free_candidate_modules(self);
   cfg_tree_free_instance(&self->tree);
+  g_hash_table_unref(self->module_config);
   g_free(self);
 }
 
