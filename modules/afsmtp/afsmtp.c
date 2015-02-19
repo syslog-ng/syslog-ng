@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-asd
+
 #include "afsmtp.h"
 #include "afsmtp-parser.h"
 #include "plugin.h"
