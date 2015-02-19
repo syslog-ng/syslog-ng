@@ -225,9 +225,12 @@ _py_do_import(PythonDestDriver *self, const gchar *modname)
   Py_DECREF(module);
   if (!modobj)
     {
+      gchar buf[256];
+
       msg_error("Error loading Python module",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("module", modname),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
                 NULL);
       return NULL;
     }
