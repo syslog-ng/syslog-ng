@@ -16,6 +16,7 @@ EXTRA_DIST	+= \
 		tests/functional/test_filters.py \
 		tests/functional/test_input_drivers.py \
 		tests/functional/test_performance.py \
+		tests/functional/test_python.py \
 		tests/functional/test_sql.py
 
 func-test:

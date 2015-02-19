@@ -47,6 +47,6 @@ endif
 EXTRA_DIST					+= \
 	modules/python/python-grammar.ym	   \
 	modules/python/python-example.conf	   \
-	modules/python/python-example.py
+	modules/python/sngexample.py
 
 .PHONY: modules/python mod-python
