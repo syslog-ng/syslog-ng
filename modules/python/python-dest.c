@@ -475,6 +475,14 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
     }
 
   success = _py_invoke_send(self, msg_object);
+  if (!success)
+    {
+      msg_error("Python send() method returned failure, suspending destination for time_reopen()",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("class", self->class),
+                evt_tag_int("time_reopen", self->super.time_reopen),
+                NULL);
+    }
 
  exit:
   PyGILState_Release(gstate);
