@@ -63,8 +63,9 @@ import test_filters
 import test_input_drivers
 import test_performance
 import test_sql
+import test_python
 
-tests = (test_input_drivers, test_sql, test_file_source, test_filters, test_performance)
+tests = (test_input_drivers, test_sql, test_file_source, test_filters, test_performance, test_python)
 
 init_env()
 seed_rnd()
