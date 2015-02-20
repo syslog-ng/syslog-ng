@@ -46,7 +46,6 @@ typedef struct
 
   struct
   {
-    PyObject *module;
     PyObject *class;
     PyObject *instance;
     PyObject *is_opened;
@@ -260,32 +259,20 @@ _py_invoke_deinit(PythonDestDriver *self)
 }
 
 static gboolean
-_split_fully_qualified_name(const gchar *input, gchar **module, gchar **class)
+_py_init_bindings(PythonDestDriver *self)
 {
-  const gchar *p;
-
-  for (p = input + strlen(input) - 1; p > input && *p != '.'; p--)
-    ;
-
-  if (p > input)
-    {
-      *module = g_strndup(input, (p - input));
-      *class = g_strdup(p + 1);
-      return TRUE;
-    }
-  return FALSE;
-}
-
-static gboolean
-_py_init_bindings_from_module_and_class(PythonDestDriver *self, const gchar *module, const gchar *class)
-{
-  self->py.module = _py_do_import(module);
-  if (!self->py.module)
-    return FALSE;
-
-  self->py.class = _py_get_attr_or_null(self->py.module, class);
+  self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
-    return FALSE;
+    {
+      gchar buf[256];
+
+      msg_error("Error looking Python driver class",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("class", self->class),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
+                NULL);
+      return FALSE;
+    }
 
   self->py.instance = _py_invoke_function(self, self->py.class, NULL);
   if (!self->py.instance)
@@ -294,8 +281,7 @@ _py_init_bindings_from_module_and_class(PythonDestDriver *self, const gchar *mod
 
       msg_error("Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("module", module),
-                evt_tag_str("class", class),
+                evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
                 NULL);
       return FALSE;
@@ -308,32 +294,15 @@ _py_init_bindings_from_module_and_class(PythonDestDriver *self, const gchar *mod
     {
       msg_error("Error initializing Python destination, class does not have a send() method",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("module", module),
-                evt_tag_str("class", class),
+                evt_tag_str("class", self->class),
                 NULL);
     }
   return self->py.send != NULL;
 }
 
-static gboolean
-_py_init_bindings(PythonDestDriver *self)
-{
-  gchar *module, *class;
-  gboolean result;
-
-  if (!_split_fully_qualified_name(self->class, &module, &class))
-    return FALSE;
-
-  result = _py_init_bindings_from_module_and_class(self, module, class);
-  g_free(module);
-  g_free(class);
-  return result;
-}
-
 static void
 _py_free_bindings(PythonDestDriver *self)
 {
-  Py_CLEAR(self->py.module);
   Py_CLEAR(self->py.class);
   Py_CLEAR(self->py.instance);
   Py_CLEAR(self->py.is_opened);
