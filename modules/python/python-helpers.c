@@ -116,3 +116,45 @@ _py_do_import(const gchar *modname)
     }
   return modobj;
 }
+
+gboolean
+_split_fully_qualified_name(const gchar *input, gchar **module, gchar **class)
+{
+  const gchar *p;
+
+  for (p = input + strlen(input) - 1; p > input && *p != '.'; p--)
+    ;
+
+  if (p > input)
+    {
+      *module = g_strndup(input, (p - input));
+      *class = g_strdup(p + 1);
+      return TRUE;
+    }
+  return FALSE;
+}
+
+PyObject *
+_py_resolve_qualified_name(const gchar *name)
+{
+  PyObject *module, *value = NULL;
+  gchar *module_name, *attribute_name;
+
+  if (!_split_fully_qualified_name(name, &module_name, &attribute_name))
+    {
+      module_name = g_strdup("_syslogng");
+      attribute_name = g_strdup(name);
+    }
+
+  module = _py_do_import(module_name);
+  if (!module)
+    goto exit;
+
+  value = _py_get_attr_or_null(module, attribute_name);
+  Py_DECREF(module);
+
+ exit:
+  g_free(module_name);
+  g_free(attribute_name);
+  return value;
+}

@@ -30,5 +30,6 @@ const gchar *_py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len
 const gchar *_py_format_exception_text(gchar *buf, gsize buf_len);
 PyObject *_py_get_attr_or_null(PyObject *o, const gchar *attr);
 PyObject *_py_do_import(const gchar *modname);
+PyObject *_py_resolve_qualified_name(const gchar *name);
 
 #endif
