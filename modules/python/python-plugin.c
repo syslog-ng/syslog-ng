@@ -39,18 +39,27 @@ static Plugin python_plugins[] =
     .parser = &python_parser,
   },
 };
+static gboolean interpreter_initialized = FALSE;
+
+static void
+_py_init_interpreter(void)
+{
+  if (!interpreter_initialized)
+    {
+      Py_Initialize();
+
+      PyEval_InitThreads();
+      python_log_message_init();
+      PyEval_ReleaseLock();
+
+      interpreter_initialized = TRUE;
+    }
+}
 
 gboolean
 python_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
 {
-  Py_Initialize();
-
-  if (!PyEval_ThreadsInitialized())
-    {
-      PyEval_InitThreads();
-      PyEval_ReleaseLock();
-    }
-  python_log_message_init();
+  _py_init_interpreter();
   plugin_register(cfg, python_plugins, G_N_ELEMENTS(python_plugins));
   return TRUE;
 }
