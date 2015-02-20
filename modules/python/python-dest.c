@@ -25,6 +25,7 @@
 #include "python-globals.h"
 #include "python-value-pairs.h"
 #include "python-logmsg.h"
+#include "python-helpers.h"
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
 #include "misc.h"
@@ -117,53 +118,6 @@ python_dd_format_persist_name(LogThrDestDriver *d)
   return persist_name;
 }
 
-/** Python calling helpers **/
-static const gchar *
-_py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
-{
-  PyObject *name = PyObject_GetAttrString(callable, "__name__");
-
-  if (name)
-    {
-      g_strlcpy(buf, PyString_AsString(name), buf_len);
-    }
-  else
-    {
-      PyErr_Clear();
-      g_strlcpy(buf, "<unknown>", buf_len);
-    }
-  Py_XDECREF(name);
-  return buf;
-}
-
-static const gchar *
-_py_format_exception_text(gchar *buf, gsize buf_len)
-{
-  PyObject *exc, *value, *tb, *str;
-
-  PyErr_Fetch(&exc, &value, &tb);
-  if (!exc)
-    {
-      g_strlcpy(buf, "None", buf_len);
-      return buf;
-    }
-  PyErr_NormalizeException(&exc, &value, &tb);
-
-  str = PyObject_Str(value);
-  if (str)
-    {
-      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, PyString_AsString(str));
-    }
-  else
-    {
-      g_strlcpy(buf, "<unknown>", buf_len);
-    }
-  Py_XDECREF(exc);
-  Py_XDECREF(value);
-  Py_XDECREF(tb);
-  Py_XDECREF(str);
-  return buf;
-}
 
 static PyObject *
 _py_invoke_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
@@ -254,22 +208,6 @@ _py_perform_imports(PythonDestDriver *self)
   g_list_foreach(self->imports, _foreach_import, self);
 }
 
-static PyObject *
-_py_get_attr_or_null(PyObject *o, const gchar *attr)
-{
-  PyObject *result;
-
-  if (!attr)
-    return NULL;
-
-  result = PyObject_GetAttrString(o, attr);
-  if (!result)
-    {
-      PyErr_Clear();
-      return NULL;
-    }
-  return result;
-}
 
 static PyObject *
 _py_get_method(PythonDestDriver *self, PyObject *o, const gchar *method_name)

@@ -18,6 +18,8 @@ modules_python_libmod_python_la_LIBADD		= \
 
 modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-globals.h		  \
+	modules/python/python-helpers.h		  \
+	modules/python/python-helpers.c		  \
 	modules/python/python-plugin.c		  \
 	modules/python/python-grammar.y		  \
 	modules/python/python-value-pairs.c	  \
