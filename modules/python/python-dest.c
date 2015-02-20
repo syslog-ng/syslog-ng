@@ -160,45 +160,13 @@ _py_invoke_bool_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
   return result;
 }
 
-static PyObject *
-_py_do_import(PythonDestDriver *self, const gchar *modname)
-{
-  PyObject *module, *modobj;
-
-  module = PyUnicode_FromString(modname);
-  if (!module)
-    {
-      msg_error("Error allocating Python string",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("string", modname),
-                NULL);
-      return NULL;
-    }
-
-  modobj = PyImport_Import(module);
-  Py_DECREF(module);
-  if (!modobj)
-    {
-      gchar buf[256];
-
-      msg_error("Error loading Python module",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("module", modname),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
-                NULL);
-      return NULL;
-    }
-  return modobj;
-}
-
 static void
 _foreach_import(gpointer data, gpointer user_data)
 {
-  PythonDestDriver *self = (PythonDestDriver *) user_data;
   gchar *modname = (gchar *) data;
   PyObject *mod;
 
-  mod = _py_do_import(self, modname);
+  mod = _py_do_import(modname);
   Py_XDECREF(mod);
 }
 
@@ -311,7 +279,7 @@ _split_fully_qualified_name(const gchar *input, gchar **module, gchar **class)
 static gboolean
 _py_init_bindings_from_module_and_class(PythonDestDriver *self, const gchar *module, const gchar *class)
 {
-  self->py.module = _py_do_import(self, module);
+  self->py.module = _py_do_import(module);
   if (!self->py.module)
     return FALSE;
 

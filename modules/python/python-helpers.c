@@ -87,3 +87,32 @@ _py_get_attr_or_null(PyObject *o, const gchar *attr)
     }
   return result;
 }
+
+PyObject *
+_py_do_import(const gchar *modname)
+{
+  PyObject *module, *modobj;
+
+  module = PyUnicode_FromString(modname);
+  if (!module)
+    {
+      msg_error("Error allocating Python string",
+                evt_tag_str("string", modname),
+                NULL);
+      return NULL;
+    }
+
+  modobj = PyImport_Import(module);
+  Py_DECREF(module);
+  if (!modobj)
+    {
+      gchar buf[256];
+
+      msg_error("Error loading Python module",
+                evt_tag_str("module", modname),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
+                NULL);
+      return NULL;
+    }
+  return modobj;
+}
