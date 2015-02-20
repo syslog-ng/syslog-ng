@@ -21,7 +21,7 @@
  *
  */
 
-#include "python-globals.h"
+#include "python-module.h"
 #include "python-parser.h"
 #include "python-dest.h"
 #include "python-logmsg.h"
