@@ -483,6 +483,7 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
                 evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
     }
+  Py_DECREF(msg_object);
 
  exit:
   PyGILState_Release(gstate);
