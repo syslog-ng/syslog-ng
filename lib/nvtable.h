@@ -63,6 +63,7 @@ void nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias
 NVHandle nv_registry_get_handle(NVRegistry *self, const gchar *name);
 NVHandle nv_registry_alloc_handle(NVRegistry *self, const gchar *name);
 void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags);
+void nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data);
 NVRegistry *nv_registry_new(const gchar **static_names);
 void nv_registry_free(NVRegistry *self);
 

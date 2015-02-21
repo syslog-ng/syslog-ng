@@ -115,6 +115,12 @@ nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags)
   stored->flags = flags;
 }
 
+void
+nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data)
+{
+  g_hash_table_foreach(self->name_map, callback, user_data);
+}
+
 NVRegistry *
 nv_registry_new(const gchar **static_names)
 {
