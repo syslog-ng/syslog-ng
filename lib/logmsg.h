@@ -299,5 +299,6 @@ void log_msg_registry_init();
 void log_msg_registry_deinit();
 void log_msg_global_init();
 void log_msg_global_deinit(void);
+void log_msg_registry_foreach(GHFunc func, gpointer user_data);
 
 #endif

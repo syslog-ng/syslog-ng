@@ -1645,6 +1645,12 @@ log_msg_registry_deinit(void)
 }
 
 void
+log_msg_registry_foreach(GHFunc func, gpointer user_data)
+{
+  nv_registry_foreach(logmsg_registry, func, user_data);
+}
+
+void
 log_msg_global_init(void)
 {
   log_msg_registry_init();
