@@ -240,11 +240,11 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
 
   log_queue_set_use_backlog(self->queue, TRUE);
 
-  if (self->worker.thread_init)
-    self->worker.thread_init(self);
-
   log_threaded_dest_driver_init_watches(self);
   log_threaded_dest_driver_start_watches(self);
+
+  if (self->worker.thread_init)
+    self->worker.thread_init(self);
 
   iv_main();
 
