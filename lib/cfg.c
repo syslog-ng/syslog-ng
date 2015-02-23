@@ -225,7 +225,6 @@ cfg_init(GlobalConfig *cfg)
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   hostname_reinit(cfg->custom_domain);
   host_resolve_options_init(&cfg->host_resolve_options, cfg);
-  log_proto_register_builtin_plugins(cfg);
   return cfg_tree_start(&cfg->tree);
 }
 
@@ -294,6 +293,12 @@ cfg_allow_config_dups(GlobalConfig *self)
     }
 }
 
+static void
+cfg_register_builtin_plugins(GlobalConfig *self)
+{
+  log_proto_register_builtin_plugins(self);
+}
+
 GlobalConfig *
 cfg_new(gint version)
 {
@@ -341,6 +346,7 @@ cfg_new(gint version)
   stats_options_defaults(&self->stats_options);
 
   cfg_tree_init_instance(&self->tree, self);
+  cfg_register_builtin_plugins(self);
   return self;
 }
 
