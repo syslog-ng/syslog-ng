@@ -68,11 +68,20 @@ class_loader_new(JNIEnv *java_env)
   self->mi_loadclass = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "loadClass", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Class;");
   if (!self->mi_loadclass)
     {
-      msg_error("Can't find static method in class",
+      msg_error("Can't find method in class",
                 evt_tag_str("class_name", SYSLOG_NG_CLASS_LOADER),
                 evt_tag_str("method", "Class loadClass(String className)"),
                 NULL);
       goto error;
+    }
+
+  self->mi_init_current_thread = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "initCurrentThread", "()V");
+  if (!self->mi_init_current_thread)
+    {
+      msg_error("Can't find method in class",
+                evt_tag_str("class_name", SYSLOG_NG_CLASS_LOADER),
+                evt_tag_str("method", "void initCurrentThread()"),
+                NULL);
     }
 
 
@@ -121,3 +130,8 @@ class_loader_load_class(ClassLoader *self, JNIEnv *java_env, const gchar *class_
   return result;
 }
 
+void
+class_loader_init_current_thread(ClassLoader *self, JNIEnv *java_env)
+{
+  CALL_JAVA_FUNCTION(java_env, CallVoidMethod, self->loader_object, self->mi_init_current_thread);
+}

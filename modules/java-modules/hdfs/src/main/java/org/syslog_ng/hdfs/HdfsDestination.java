@@ -85,25 +85,12 @@ public class HdfsDestination extends TextLogDestination {
         }
         getNonRequiredOptions();
 
-        loadRequiredModulesFromMainThread();
         return true;
     }
 
     private void disableLog4jWarningMessages() {
         // Disable annoying warning messages of the hdfs external dependency
         Logger.getRootLogger().setLevel(Level.OFF);
-    }
-
-    private void loadRequiredModulesFromMainThread() {
-        // This is just a temporary workaround because syslog-ng loads the
-        // classes in wrong order in worker thread. This is why we call this
-        // function from main thread to force loading the required modules
-        try {
-            FileSystem.get(new URI(hdfsUri), new Configuration());
-        } catch (IOException | URISyntaxException ignoredHere) {
-            // Silently ignore it, just load the modules. Validity will be
-            // checked later.
-        }
     }
 
     @Override
