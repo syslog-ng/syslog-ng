@@ -18,6 +18,9 @@ install-exec-local:
 uninstall-local:
 	rm -f $(JAVA_MOD_DST_DIR)/*.jar
 
+eclipse:
+	gradle -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java eclipse
+
 endif
 
 EXTRA_DIST = \
