@@ -33,12 +33,14 @@ typedef struct _ClassLoader {
   jobject loader_object;
   jmethodID loader_constructor;
   jmethodID mi_loadclass;
+  jmethodID mi_init_current_thread;
 } ClassLoader;
 
 
 ClassLoader *class_loader_new(JNIEnv *java_env);
 void class_loader_free(ClassLoader *self, JNIEnv *java_env);
 jclass class_loader_load_class(ClassLoader *self, JNIEnv *java_env, const gchar *class_name, const gchar *class_path);
+void class_loader_init_current_thread(ClassLoader *self, JNIEnv *env);
 
 
 #endif /* JAVA_CLASS_LOADER_H_ */

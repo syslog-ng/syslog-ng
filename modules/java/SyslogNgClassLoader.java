@@ -49,6 +49,12 @@ public class SyslogNgClassLoader {
     classLoader = ClassLoader.getSystemClassLoader();
   }
 
+  public void initCurrentThread() {
+    java.lang.Thread.currentThread().setContextClassLoader(
+      java.lang.ClassLoader.getSystemClassLoader()
+    );
+  }
+
   public Class loadClass(String className, String pathList) {
     Class result = null;
     URL[] urls = createUrls(pathList);

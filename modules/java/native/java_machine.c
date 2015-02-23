@@ -115,21 +115,7 @@ java_machine_start(JavaVMSingleton* self)
   return TRUE;
 }
 
-void
-java_machine_attach_thread(JavaVMSingleton* self, JNIEnv **penv)
-{
-  g_assert(self == g_jvm_s);
-  (*(self->jvm))->AttachCurrentThread(self->jvm, (void **)penv, &self->vm_args);
-}
-
-void
-java_machine_detach_thread()
-{
-  (*(g_jvm_s->jvm))->DetachCurrentThread(g_jvm_s->jvm);
-}
-
-
-ClassLoader *
+static ClassLoader *
 java_machine_get_class_loader(JavaVMSingleton *self)
 {
   if (self->loader)
@@ -139,6 +125,22 @@ java_machine_get_class_loader(JavaVMSingleton *self)
   self->loader = class_loader_new(env);
   g_assert(self->loader);
   return self->loader;
+}
+
+void
+java_machine_attach_thread(JavaVMSingleton* self, JNIEnv **penv)
+{
+  g_assert(self == g_jvm_s);
+  if ((*(self->jvm))->AttachCurrentThread(self->jvm, (void **)penv, &self->vm_args) == JNI_OK)
+    {
+      class_loader_init_current_thread(java_machine_get_class_loader(self), *penv);
+    }
+}
+
+void
+java_machine_detach_thread()
+{
+  (*(g_jvm_s->jvm))->DetachCurrentThread(g_jvm_s->jvm);
 }
 
 
