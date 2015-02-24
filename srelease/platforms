@@ -7,9 +7,6 @@ linux-glibc2.3.6/i386
 solaris-10/amd64
 solaris-10/sparc
 solaris-10/sparc64
-solaris-9/i386
-solaris-9/sparc
-solaris-9/sparc64
 linux-glibc2.3.6/amd64
 linux-glibc2.3.6/i386
 windows-2012/amd64
