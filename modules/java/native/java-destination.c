@@ -26,6 +26,7 @@
 #include "stats.h"
 #include "logqueue.h"
 #include "driver.h"
+#include "misc.h"
 
 #include <stdio.h>
 
@@ -39,9 +40,11 @@ Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, 
     {
       return NULL;
     }
-
-  value = g_hash_table_lookup(self->options, key_str);
+  gchar *normalized_key = g_strdup(key_str);
+  normalized_key = replace_char(normalized_key, '-', '_', TRUE);
+  value = g_hash_table_lookup(self->options, normalized_key);
   (*env)->ReleaseStringUTFChars(env, key, key_str);  // release resources
+  g_free(normalized_key);
 
   if (value)
     {
@@ -63,7 +66,9 @@ Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong hand
 void java_dd_set_option(LogDriver *s, const gchar *key, const gchar *value)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
-  g_hash_table_insert(self->options, g_strdup(key), g_strdup(value));
+  gchar *normalized_key = g_strdup(key);
+  normalized_key = replace_char(normalized_key, '-', '_', TRUE);
+  g_hash_table_insert(self->options, g_strdup(normalized_key), g_strdup(value));
 }
 
 
