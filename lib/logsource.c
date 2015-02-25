@@ -141,6 +141,13 @@ log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment)
 }
 
 void
+log_source_flow_control_suspend(LogSource *self)
+{
+  g_atomic_counter_set(&self->window_size, 0);
+  _flow_control_rate_adjust(self);
+}
+
+void
 log_source_mangle_hostname(LogSource *self, LogMessage *msg)
 {
   gchar resolved_name[256];

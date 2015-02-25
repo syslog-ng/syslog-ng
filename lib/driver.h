@@ -181,7 +181,6 @@ log_dest_driver_acquire_queue(LogDestDriver *self, gchar *persist_name)
   q = self->acquire_queue(self, persist_name, self->acquire_queue_data);
   if (q)
     {
-      log_queue_ref(q);
       self->queues = g_list_prepend(self->queues, q);
     }
   return q;

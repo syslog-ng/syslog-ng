@@ -1028,7 +1028,7 @@ affile_dw_deinit(LogPipe *s)
     {
       log_pipe_deinit(self->writer);
     }
-  log_dest_driver_release_queue(&self->owner->super, log_writer_get_queue(self->writer));
+
   log_writer_set_queue(self->writer, NULL);
 
   if (iv_timer_registered(&self->reap_timer))
@@ -1049,7 +1049,7 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, 
   if (!server_mode && lm->saddr && lm->saddr->sa.sa_family != AF_UNIX)
     {
       msg_error("syslog-ng running in client/relay mode, network messages cannot be written to files", NULL);
-      log_msg_drop(lm, path_options);
+      log_msg_drop(lm, path_options, AT_PROCESSED);
       return;
     }
 
@@ -1589,7 +1589,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
       log_pipe_unref(&next->super);
     }
   else
-    log_msg_drop(msg, path_options);
+    log_msg_drop(msg, path_options, AT_PROCESSED);
 }
 
 static void

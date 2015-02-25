@@ -712,7 +712,7 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
     {
       if (path_options->matched)
         (*path_options->matched) = FALSE;
-      log_msg_drop(msg, path_options);
+      log_msg_drop(msg, path_options, AT_PROCESSED);
     }
 }
 

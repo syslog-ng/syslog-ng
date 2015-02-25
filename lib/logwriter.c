@@ -763,7 +763,7 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions 
                     evt_tag_str("host", log_msg_get_value(lm, LM_V_HOST, NULL)),
                     evt_tag_str("msg", log_msg_get_value(lm, LM_V_MESSAGE, NULL)),
                     NULL);
-          log_msg_drop(lm, path_options);
+          log_msg_drop(lm, path_options, AT_PROCESSED);
           return TRUE;
         }
 
@@ -865,7 +865,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
   if (mark_mode != MM_INTERNAL && (lm->flags & LF_INTERNAL) && (lm->flags & LF_MARK))
     {
       /* skip the internal MARK messages */
-      log_msg_drop(lm, path_options);
+      log_msg_drop(lm, path_options, AT_PROCESSED);
       return;
     }
 
@@ -1453,8 +1453,8 @@ log_writer_free(LogPipe *s)
 
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
-  if (self->queue)
-    log_queue_unref(self->queue);
+
+  log_queue_unref(self->queue);
   if (self->last_msg)
     log_msg_unref(self->last_msg);
   g_free(self->stats_id);
@@ -1626,27 +1626,15 @@ log_writer_new(guint32 flags)
   return &self->super;
 }
 
-/* returns a reference */
-LogQueue *
-log_writer_get_queue(LogPipe *s)
-{
-  LogWriter *self = (LogWriter *) s;
-
-  return log_queue_ref(self->queue);
-}
-
 /* consumes the reference */
 void
 log_writer_set_queue(LogPipe *s, LogQueue *queue)
 {
   LogWriter *self = (LogWriter *)s;
 
-  if (self->queue)
-    log_queue_unref(self->queue);
-
-  self->queue = queue;
-  if (self->queue)
-    log_queue_set_use_backlog(self->queue, TRUE);
+  log_queue_unref(self->queue);
+  self->queue = log_queue_ref(queue);
+  log_queue_set_use_backlog(self->queue, TRUE);
 }
 
 void 

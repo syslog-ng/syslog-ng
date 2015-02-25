@@ -1070,7 +1070,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           g_string_free(insert_command, TRUE);
           msg_set_context(NULL);
 
-          return FALSE;
+          success = FALSE;
         }
     }
 
@@ -1106,7 +1106,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                     evt_tag_int("attempts", self->num_retries),
                     NULL);
           stats_counter_inc(self->dropped_messages);
-          log_msg_drop(msg, &path_options);
+          log_msg_drop(msg, &path_options, AT_PROCESSED);
           self->failed_message_counter = 0;
           success = TRUE;
         }
@@ -1481,8 +1481,6 @@ afsql_dd_free(LogPipe *s)
   gint i;
 
   log_template_options_destroy(&self->template_options);
-  if (self->queue)
-    log_queue_unref(self->queue);
   for (i = 0; i < self->fields_len; i++)
     {
       g_free(self->fields[i].name);

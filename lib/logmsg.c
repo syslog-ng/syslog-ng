@@ -32,6 +32,7 @@
 #include "stats.h"
 #include "template/templates.h"
 #include "tls-support.h"
+#include "ack_tracker.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -123,6 +124,8 @@ TLS_BLOCK_START
   gint logmsg_cached_acks;
   /* abort flag in the current thread for acks */
   gboolean logmsg_cached_abort;
+  /* suspend flag in the current thread for acks */
+  gboolean logmsg_cached_suspend;
 }
 TLS_BLOCK_END;
 
@@ -131,7 +134,10 @@ TLS_BLOCK_END;
 #define logmsg_cached_acks          __tls_deref(logmsg_cached_acks)
 #define logmsg_cached_ack_needed    __tls_deref(logmsg_cached_ack_needed)
 #define logmsg_cached_abort         __tls_deref(logmsg_cached_abort)
+#define logmsg_cached_suspend       __tls_deref(logmsg_cached_suspend)
 
+#define LOGMSG_REFCACHE_SUSPEND_SHIFT                 31 /* number of bits to shift to get the SUSPEND flag */
+#define LOGMSG_REFCACHE_SUSPEND_MASK          0x80000000 /* bit mask to extract the SUSPEND flag */
 #define LOGMSG_REFCACHE_ABORT_SHIFT                   30 /* number of bits to shift to get the ABORT flag */
 #define LOGMSG_REFCACHE_ABORT_MASK            0x40000000 /* bit mask to extract the ABORT flag */
 #define LOGMSG_REFCACHE_ACK_SHIFT                     15 /* number of bits to shift to get the ACK counter */
@@ -143,10 +149,12 @@ TLS_BLOCK_END;
 #define LOGMSG_REFCACHE_REF_TO_VALUE(x)    (((x) << LOGMSG_REFCACHE_REF_SHIFT)   & LOGMSG_REFCACHE_REF_MASK)
 #define LOGMSG_REFCACHE_ACK_TO_VALUE(x)    (((x) << LOGMSG_REFCACHE_ACK_SHIFT)   & LOGMSG_REFCACHE_ACK_MASK)
 #define LOGMSG_REFCACHE_ABORT_TO_VALUE(x)  (((x) << LOGMSG_REFCACHE_ABORT_SHIFT) & LOGMSG_REFCACHE_ABORT_MASK)
+#define LOGMSG_REFCACHE_SUSPEND_TO_VALUE(x)  (((x) << LOGMSG_REFCACHE_SUSPEND_SHIFT) & LOGMSG_REFCACHE_SUSPEND_MASK)
 
 #define LOGMSG_REFCACHE_VALUE_TO_REF(x)    (((x) & LOGMSG_REFCACHE_REF_MASK)   >> LOGMSG_REFCACHE_REF_SHIFT)
 #define LOGMSG_REFCACHE_VALUE_TO_ACK(x)    (((x) & LOGMSG_REFCACHE_ACK_MASK)   >> LOGMSG_REFCACHE_ACK_SHIFT)
 #define LOGMSG_REFCACHE_VALUE_TO_ABORT(x)  (((x) & LOGMSG_REFCACHE_ABORT_MASK) >> LOGMSG_REFCACHE_ABORT_SHIFT)
+#define LOGMSG_REFCACHE_VALUE_TO_SUSPEND(x)  (((x) & LOGMSG_REFCACHE_SUSPEND_MASK) >> LOGMSG_REFCACHE_SUSPEND_SHIFT)
 
 /**********************************************************************
  * LogMessage
@@ -376,6 +384,7 @@ log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPat
 {
   INIT_IV_LIST_HEAD(&node->list);
   node->ack_needed = path_options->ack_needed;
+  node->flow_control_requested = path_options->flow_control_requested;
   node->msg = log_msg_ref(msg);
   msg->flags |= LF_STATE_REFERENCED;
 }
@@ -950,7 +959,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   GTimeVal tv;
   /* ref is set to 1, ack is set to 0 */
-  self->ack_and_ref_and_abort = LOGMSG_REFCACHE_REF_TO_VALUE(1);
+  self->ack_and_ref_and_abort_and_suspended = LOGMSG_REFCACHE_REF_TO_VALUE(1);
   cached_g_current_time(&tv);
   self->timestamps[LM_TS_RECVD].tv_sec = tv.tv_sec;
   self->timestamps[LM_TS_RECVD].tv_usec = tv.tv_usec;
@@ -1108,7 +1117,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 
   /* reference the original message */
   self->original = log_msg_ref(msg);
-  self->ack_and_ref_and_abort = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(0) + LOGMSG_REFCACHE_ABORT_TO_VALUE(0);
+  self->ack_and_ref_and_abort_and_suspended = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(0) + LOGMSG_REFCACHE_ABORT_TO_VALUE(0);
   self->cur_node = 0;
 
   log_msg_add_ack(self, path_options);
@@ -1200,15 +1209,29 @@ log_msg_free(LogMessage *self)
  * log_msg_drop:
  * @msg: LogMessage instance
  * @path_options: path specific options
+ * @ack_type: type of ack
  *
  * This function is called whenever a destination driver feels that it is
  * unable to process this message. It acks and unrefs the message.
  **/
 void
-log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
+log_msg_drop(LogMessage *msg, const LogPathOptions *path_options, AckType ack_type)
 {
-  log_msg_ack(msg, path_options, AT_PROCESSED);
+  log_msg_ack(msg, path_options, ack_type);
   log_msg_unref(msg);
+}
+
+static AckType
+_ack_and_ref_and_abort_and_suspend_to_acktype(gint value)
+{
+  AckType type = AT_PROCESSED;
+
+  if (IS_SUSPENDFLAG_ON(LOGMSG_REFCACHE_VALUE_TO_SUSPEND(value)))
+    type = AT_SUSPENDED;
+  else if (IS_ABORTFLAG_ON(LOGMSG_REFCACHE_VALUE_TO_ABORT(value)))
+    type = AT_ABORTED;
+
+  return type;
 }
 
 
@@ -1219,18 +1242,20 @@ log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
 
 /* Function to update the combined ACK (with the abort flag) and REF counter. */
 static inline gint
-log_msg_update_ack_and_ref_and_abort(LogMessage *self, gint add_ref, gint add_ack, gint add_abort)
+log_msg_update_ack_and_ref_and_abort_and_suspended(LogMessage *self, gint add_ref, gint add_ack, gint add_abort, gint add_suspend)
 {
   gint old_value, new_value;
 
   do
     {
-      new_value = old_value = (volatile gint) self->ack_and_ref_and_abort;
+      new_value = old_value = (volatile gint) self->ack_and_ref_and_abort_and_suspended;
       new_value = (new_value & ~LOGMSG_REFCACHE_REF_MASK)   + LOGMSG_REFCACHE_REF_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_REF(old_value)   + add_ref));
       new_value = (new_value & ~LOGMSG_REFCACHE_ACK_MASK)   + LOGMSG_REFCACHE_ACK_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value)   + add_ack));
       new_value = (new_value & ~LOGMSG_REFCACHE_ABORT_MASK) + LOGMSG_REFCACHE_ABORT_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value) | add_abort));
+      new_value = (new_value & ~LOGMSG_REFCACHE_SUSPEND_MASK) + LOGMSG_REFCACHE_SUSPEND_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_SUSPEND(old_value) | add_suspend));
     }
-  while (!g_atomic_int_compare_and_exchange(&self->ack_and_ref_and_abort, old_value, new_value));
+  while (!g_atomic_int_compare_and_exchange(&self->ack_and_ref_and_abort_and_suspended, old_value, new_value));
+
   return old_value;
 }
 
@@ -1238,7 +1263,7 @@ log_msg_update_ack_and_ref_and_abort(LogMessage *self, gint add_ref, gint add_ac
 static inline gint
 log_msg_update_ack_and_ref(LogMessage *self, gint add_ref, gint add_ack)
 {
-  return log_msg_update_ack_and_ref_and_abort(self, add_ref, add_ack, 0);
+  return log_msg_update_ack_and_ref_and_abort_and_suspended(self, add_ref, add_ack, 0, 0);
 }
 
 /**
@@ -1320,6 +1345,7 @@ log_msg_add_ack(LogMessage *self, const LogPathOptions *path_options)
     }
 }
 
+
 /**
  * log_msg_ack:
  * @msg: LogMessage instance
@@ -1341,17 +1367,19 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options, AckType ack_ty
            * delayed until log_msg_refcache_stop() is called */
 
           logmsg_cached_acks--;
-          logmsg_cached_abort |= (ACKTYPE_TO_ABORTFLAG(ack_type) == AT_ABORTED ? TRUE : FALSE);
+          logmsg_cached_abort |= IS_ACK_ABORTED(ack_type);
+          logmsg_cached_suspend |= IS_ACK_SUSPENDED(ack_type);
           return;
         }
-
-      old_value = log_msg_update_ack_and_ref_and_abort(self, 0, -1, ACKTYPE_TO_ABORTFLAG(ack_type));
+      old_value = log_msg_update_ack_and_ref_and_abort_and_suspended(self, 0, -1, IS_ACK_ABORTED(ack_type), IS_ACK_SUSPENDED(ack_type));
       if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == 1)
         {
-          if (ack_type == AT_ABORTED)
+          if (ack_type == AT_SUSPENDED)
+            self->ack_func(self, AT_SUSPENDED);
+          else if (ack_type == AT_ABORTED)
             self->ack_func(self, AT_ABORTED);
           else
-            self->ack_func(self, ABORTFLAG_TO_ACKTYPE(LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value)));
+            self->ack_func(self, _ack_and_ref_and_abort_and_suspend_to_acktype(old_value));
         }
     }
 }
@@ -1404,12 +1432,13 @@ log_msg_refcache_start_producer(LogMessage *self)
 
   /* we don't need to be thread-safe here, as a producer has just created this message and no parallel access is yet possible */
 
-  self->ack_and_ref_and_abort = (self->ack_and_ref_and_abort & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort) + LOGMSG_REFCACHE_BIAS));
-  self->ack_and_ref_and_abort = (self->ack_and_ref_and_abort & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort) + LOGMSG_REFCACHE_BIAS));
+  self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort_and_suspended) + LOGMSG_REFCACHE_BIAS));
+  self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort_and_suspended) + LOGMSG_REFCACHE_BIAS));
 
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_abort = FALSE;
+  logmsg_cached_suspend = FALSE;
   logmsg_cached_ack_needed = TRUE;
 }
 
@@ -1435,8 +1464,8 @@ log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_opt
   logmsg_cached_refs = 0;
   logmsg_cached_acks = 0;
   logmsg_cached_abort = FALSE;
+  logmsg_cached_suspend = FALSE;
 }
-
 
 /*
  * Stop caching ref/unref/ack/add-ack operations in the current thread for
@@ -1450,6 +1479,7 @@ log_msg_refcache_stop(void)
   gint old_value;
   gint current_cached_acks;
   gboolean current_cached_abort;
+  gboolean current_cached_suspend;
 
   g_assert(logmsg_current != NULL);
 
@@ -1508,13 +1538,23 @@ log_msg_refcache_stop(void)
   current_cached_abort = logmsg_cached_abort;
   logmsg_cached_abort = FALSE;
 
-  old_value = log_msg_update_ack_and_ref_and_abort(logmsg_current, 0, current_cached_acks, current_cached_abort);
+  current_cached_suspend = logmsg_cached_suspend;
+  logmsg_cached_suspend = FALSE;
 
+  old_value = log_msg_update_ack_and_ref_and_abort_and_suspended(logmsg_current, 0, current_cached_acks, current_cached_abort, current_cached_suspend);
+  
   if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -current_cached_acks) && logmsg_cached_ack_needed)
     {
+      AckType ack_type_cumulated = _ack_and_ref_and_abort_and_suspend_to_acktype(old_value);
+      
+      if (current_cached_suspend)
+        ack_type_cumulated = AT_SUSPENDED;
+      else if (current_cached_abort)
+        ack_type_cumulated = AT_ABORTED;
+      
       /* 3) call the ack handler */
-      AckType ack_type_cummulated = ABORTFLAG_TO_ACKTYPE(LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value));
-      logmsg_current->ack_func(logmsg_current, ack_type_cummulated);
+      
+      logmsg_current->ack_func(logmsg_current, ack_type_cumulated);
 
       /* the ack callback may not change the ack counters, it already
        * dropped to zero atomically, changing that again is an error */

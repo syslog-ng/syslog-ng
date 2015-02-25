@@ -56,10 +56,16 @@ typedef enum
   AT_UNDEFINED,
   AT_PROCESSED,
   AT_ABORTED,
+  AT_SUSPENDED
 } AckType;
 
-#define ACKTYPE_TO_ABORTFLAG(x) (x == AT_ABORTED ? 1 : 0)
-#define ABORTFLAG_TO_ACKTYPE(x) (x == 0 ? AT_PROCESSED : AT_ABORTED)
+#define IS_ACK_ABORTED(x) ((x) == AT_ABORTED ? 1 : 0)
+
+#define IS_ABORTFLAG_ON(x) ((x) == 1 ? TRUE : FALSE)
+
+#define IS_ACK_SUSPENDED(x) ((x) == AT_SUSPENDED ? 1 : 0)
+
+#define IS_SUSPENDFLAG_ON(x) ((x) == 1 ? TRUE : FALSE)
 
 typedef struct _LogPathOptions LogPathOptions;
 
@@ -139,7 +145,7 @@ typedef struct _LogMessageQueueNode
 {
   struct iv_list_head list;
   LogMessage *msg;
-  gboolean ack_needed:1, embedded:1;
+  gboolean ack_needed:1, embedded:1, flow_control_requested:1;
 } LogMessageQueueNode;
 
 
@@ -151,7 +157,7 @@ struct _LogMessage
   /* if you change any of the fields here, be sure to adjust
    * log_msg_clone_cow() as well to initialize fields properly */
 
-  /* ack_and_ref_and_abort is a 32 bit integer that is accessed in an atomic way.
+  /* ack_and_ref_and_abort_and_suspended is a 32 bit integer that is accessed in an atomic way.
    * The upper half contains the ACK count (and the abort flag), the lower half
    * the REF count.  It is not a GAtomicCounter as due to ref/ack caching it has
    * a lot of magic behind its implementation.  See the logmsg.c file, around
@@ -162,7 +168,7 @@ struct _LogMessage
    * it smaller (it is possible to create a 7 byte contiguos block but 8
    * byte alignment is needed. Let's check this with the inline-tags stuff */
 
-  gint ack_and_ref_and_abort;
+  gint ack_and_ref_and_abort_and_suspended;
 
   AckRecord *ack_record;
   LMAckFunc ack_func;
@@ -277,7 +283,7 @@ LogMessage *log_msg_new_empty(void);
 
 void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options, AckType ack_type);
-void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options);
+void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options, AckType ack_type);
 const LogPathOptions *log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOptions *local_options);
 
 void log_msg_refcache_start_producer(LogMessage *self);

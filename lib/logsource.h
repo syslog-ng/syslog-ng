@@ -107,6 +107,7 @@ void log_source_free(LogPipe *s);
 void log_source_wakeup(LogSource *self);
 void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
 void log_source_global_init(void);
+void log_source_flow_control_suspend(LogSource *self);
 
 static inline gint
 log_source_get_init_window_size(LogSource *self)
