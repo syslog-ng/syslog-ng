@@ -36,8 +36,13 @@
 #include <string.h>
 #include <time.h>
 
-#if ENABLE_IPV6 && __FreeBSD__
+#if ENABLE_IPV6 && __FreeBSD__ && (__FreeBSD__ < 10)
 #include <lwres/net.h>
+#endif
+
+#if ENABLE_IPV6 && __FreeBSD__ && (__FreeBSD__ >= 10)
+#include <sys/socket.h>
+#include <netinet/in.h>
 #endif
 
 typedef struct _DNSCacheEntry DNSCacheEntry;
