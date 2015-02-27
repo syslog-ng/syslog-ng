@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014-2015 BalaBit
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,9 +23,10 @@
  */
 
 #include "python-dest.h"
-#include "python-globals.h"
+#include "python-module.h"
 #include "python-value-pairs.h"
 #include "python-logmsg.h"
+#include "python-helpers.h"
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
 #include "misc.h"
@@ -45,7 +47,6 @@ typedef struct
 
   struct
   {
-    PyObject *module;
     PyObject *class;
     PyObject *instance;
     PyObject *is_opened;
@@ -117,53 +118,6 @@ python_dd_format_persist_name(LogThrDestDriver *d)
   return persist_name;
 }
 
-/** Python calling helpers **/
-static const gchar *
-_py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
-{
-  PyObject *name = PyObject_GetAttrString(callable, "__name__");
-
-  if (name)
-    {
-      g_strlcpy(buf, PyString_AsString(name), buf_len);
-    }
-  else
-    {
-      PyErr_Clear();
-      g_strlcpy(buf, "<unknown>", buf_len);
-    }
-  Py_XDECREF(name);
-  return buf;
-}
-
-static const gchar *
-_py_format_exception_text(gchar *buf, gsize buf_len)
-{
-  PyObject *exc, *value, *tb, *str;
-
-  PyErr_Fetch(&exc, &value, &tb);
-  if (!exc)
-    {
-      g_strlcpy(buf, "None", buf_len);
-      return buf;
-    }
-  PyErr_NormalizeException(&exc, &value, &tb);
-
-  str = PyObject_Str(value);
-  if (str)
-    {
-      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, PyString_AsString(str));
-    }
-  else
-    {
-      g_strlcpy(buf, "<unknown>", buf_len);
-    }
-  Py_XDECREF(exc);
-  Py_XDECREF(value);
-  Py_XDECREF(tb);
-  Py_XDECREF(str);
-  return buf;
-}
 
 static PyObject *
 _py_invoke_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
@@ -206,45 +160,13 @@ _py_invoke_bool_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
   return result;
 }
 
-static PyObject *
-_py_do_import(PythonDestDriver *self, const gchar *modname)
-{
-  PyObject *module, *modobj;
-
-  module = PyUnicode_FromString(modname);
-  if (!module)
-    {
-      msg_error("Error allocating Python string",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("string", modname),
-                NULL);
-      return NULL;
-    }
-
-  modobj = PyImport_Import(module);
-  Py_DECREF(module);
-  if (!modobj)
-    {
-      gchar buf[256];
-
-      msg_error("Error loading Python module",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("module", modname),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
-                NULL);
-      return NULL;
-    }
-  return modobj;
-}
-
 static void
 _foreach_import(gpointer data, gpointer user_data)
 {
-  PythonDestDriver *self = (PythonDestDriver *) user_data;
   gchar *modname = (gchar *) data;
   PyObject *mod;
 
-  mod = _py_do_import(self, modname);
+  mod = _py_do_import(modname);
   Py_XDECREF(mod);
 }
 
@@ -254,22 +176,6 @@ _py_perform_imports(PythonDestDriver *self)
   g_list_foreach(self->imports, _foreach_import, self);
 }
 
-static PyObject *
-_py_get_attr_or_null(PyObject *o, const gchar *attr)
-{
-  PyObject *result;
-
-  if (!attr)
-    return NULL;
-
-  result = PyObject_GetAttrString(o, attr);
-  if (!result)
-    {
-      PyErr_Clear();
-      return NULL;
-    }
-  return result;
-}
 
 static PyObject *
 _py_get_method(PythonDestDriver *self, PyObject *o, const gchar *method_name)
@@ -354,32 +260,20 @@ _py_invoke_deinit(PythonDestDriver *self)
 }
 
 static gboolean
-_split_fully_qualified_name(const gchar *input, gchar **module, gchar **class)
+_py_init_bindings(PythonDestDriver *self)
 {
-  const gchar *p;
-
-  for (p = input + strlen(input) - 1; p > input && *p != '.'; p--)
-    ;
-
-  if (p > input)
-    {
-      *module = g_strndup(input, (p - input));
-      *class = g_strdup(p + 1);
-      return TRUE;
-    }
-  return FALSE;
-}
-
-static gboolean
-_py_init_bindings_from_module_and_class(PythonDestDriver *self, const gchar *module, const gchar *class)
-{
-  self->py.module = _py_do_import(self, module);
-  if (!self->py.module)
-    return FALSE;
-
-  self->py.class = _py_get_attr_or_null(self->py.module, class);
+  self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
-    return FALSE;
+    {
+      gchar buf[256];
+
+      msg_error("Error looking Python driver class",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("class", self->class),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
+                NULL);
+      return FALSE;
+    }
 
   self->py.instance = _py_invoke_function(self, self->py.class, NULL);
   if (!self->py.instance)
@@ -388,8 +282,7 @@ _py_init_bindings_from_module_and_class(PythonDestDriver *self, const gchar *mod
 
       msg_error("Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("module", module),
-                evt_tag_str("class", class),
+                evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
                 NULL);
       return FALSE;
@@ -402,32 +295,15 @@ _py_init_bindings_from_module_and_class(PythonDestDriver *self, const gchar *mod
     {
       msg_error("Error initializing Python destination, class does not have a send() method",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("module", module),
-                evt_tag_str("class", class),
+                evt_tag_str("class", self->class),
                 NULL);
     }
   return self->py.send != NULL;
 }
 
-static gboolean
-_py_init_bindings(PythonDestDriver *self)
-{
-  gchar *module, *class;
-  gboolean result;
-
-  if (!_split_fully_qualified_name(self->class, &module, &class))
-    return FALSE;
-
-  result = _py_init_bindings_from_module_and_class(self, module, class);
-  g_free(module);
-  g_free(class);
-  return result;
-}
-
 static void
 _py_free_bindings(PythonDestDriver *self)
 {
-  Py_CLEAR(self->py.module);
   Py_CLEAR(self->py.class);
   Py_CLEAR(self->py.instance);
   Py_CLEAR(self->py.is_opened);
@@ -483,6 +359,7 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
                 evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
     }
+  Py_DECREF(msg_object);
 
  exit:
   PyGILState_Release(gstate);

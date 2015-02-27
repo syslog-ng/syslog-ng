@@ -116,6 +116,7 @@ struct _GlobalConfig
   
   PersistConfig *persist;
   PersistState *state;
+  GHashTable *module_config;
   
   CfgTree tree;
 

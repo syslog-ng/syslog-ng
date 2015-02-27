@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit
- * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2015 BalaBit
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,13 +20,18 @@
  * COPYING for details.
  *
  */
-
-#ifndef PYTHON_VALUE_PAIRS_H_INCLUDED
-#define PYTHON_VALUE_PAIRS_H_INCLUDED 1
+#ifndef PYTHON_GLOBALS_H_INCLUDED
+#define PYTHON_GLOBALS_H_INCLUDED 1
 
 #include "python-module.h"
-#include "value-pairs.h"
+#include "module-config.h"
 
-gboolean py_value_pairs_apply(ValuePairs *vp, const LogTemplateOptions *template_options, guint32 seq_num, LogMessage *msg, PyObject **result);
+typedef struct _PythonConfig
+{
+  ModuleConfig super;
+  PyObject *main_module;
+} PythonConfig;
+
+PythonConfig *python_config_get(GlobalConfig *cfg);
 
 #endif

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015 BalaBit
- * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,13 +21,28 @@
  * COPYING for details.
  *
  */
+#ifndef MODULE_CONFIG_H_INCLUDED
+#define MODULE_CONFIG_H_INCLUDED 1
 
-#ifndef _SNG_PYTHON_LOGMSG_H
-#define _SNG_PYTHON_LOGMSG_H
+#include "syslog-ng.h"
 
-#include "python-module.h"
+typedef struct _ModuleConfig ModuleConfig;
 
-PyObject *py_log_message_new(LogMessage *msg);
-void python_log_message_init(void);
+/* This class encapsulates global (e.g. GlobalConfig) level settings for
+ * modules.  It can be used to store state that is not related to a specific
+ * LogPipe instance.  Such an example is the python block embedded in the
+ * configuration used by the Python module.  */
+struct _ModuleConfig
+{
+  /* init/deinit is hooked into configuration init/deinit */
+  gboolean (*init)(ModuleConfig *s, GlobalConfig *cfg);
+  void (*deinit)(ModuleConfig *s, GlobalConfig *cfg);
+  void (*free_fn)(ModuleConfig *s);
+};
+
+gboolean module_config_init(ModuleConfig *s, GlobalConfig *cfg);
+void module_config_deinit(ModuleConfig *s, GlobalConfig *cfg);
+void module_config_free_method(ModuleConfig *s);
+void module_config_free(ModuleConfig *s);
 
 #endif

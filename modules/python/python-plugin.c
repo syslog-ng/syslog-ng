@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014-2015 BalaBit
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,9 +22,10 @@
  *
  */
 
-#include "python-globals.h"
+#include "python-module.h"
 #include "python-parser.h"
 #include "python-dest.h"
+#include "python-tf.h"
 #include "python-logmsg.h"
 
 #include "plugin.h"
@@ -38,19 +40,34 @@ static Plugin python_plugins[] =
     .name = "python",
     .parser = &python_parser,
   },
+  {
+    .type = LL_CONTEXT_ROOT,
+    .name = "python",
+    .parser = &python_parser,
+  },
+  TEMPLATE_FUNCTION_PLUGIN(tf_python, "python"),
 };
+static gboolean interpreter_initialized = FALSE;
+
+static void
+_py_init_interpreter(void)
+{
+  if (!interpreter_initialized)
+    {
+      Py_Initialize();
+
+      PyEval_InitThreads();
+      python_log_message_init();
+      PyEval_ReleaseLock();
+
+      interpreter_initialized = TRUE;
+    }
+}
 
 gboolean
 python_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
 {
-  Py_Initialize();
-
-  if (!PyEval_ThreadsInitialized())
-    {
-      PyEval_InitThreads();
-      PyEval_ReleaseLock();
-    }
-  python_log_message_init();
+  _py_init_interpreter();
   plugin_register(cfg, python_plugins, G_N_ELEMENTS(python_plugins));
   return TRUE;
 }

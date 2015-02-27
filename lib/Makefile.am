@@ -1,3 +1,4 @@
+
 DIST_SUBDIRS				= lib/ivykis
 
 include lib/transport/Makefile.am
@@ -109,6 +110,7 @@ pkginclude_HEADERS			+= \
 	lib/mainloop-call.h		\
 	lib/mainloop-worker.h		\
 	lib/mainloop-io-worker.h	\
+	lib/module-config.h		\
 	lib/memtrace.h			\
 	lib/messages.h			\
 	lib/misc.h			\
@@ -189,6 +191,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/mainloop-call.c		\
 	lib/mainloop-worker.c		\
 	lib/mainloop-io-worker.c	\
+	lib/module-config.c		\
 	lib/memtrace.c			\
 	lib/messages.c			\
 	lib/misc.c			\

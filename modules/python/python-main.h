@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit
- * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2015 BalaBit
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,13 +20,15 @@
  * COPYING for details.
  *
  */
+#ifndef PYTHON_MAIN_H_INCLUDED
+#define PYTHON_MAIN_H_INCLUDED 1
 
-#ifndef PYTHON_VALUE_PAIRS_H_INCLUDED
-#define PYTHON_VALUE_PAIRS_H_INCLUDED 1
+#include "python-config.h"
 
-#include "python-module.h"
-#include "value-pairs.h"
+PyObject *_py_get_current_main_module(void);
+PyObject *_py_get_main_module(PythonConfig *pc);
+void _py_switch_main_module(PythonConfig *pc);
+gboolean python_evaluate_global_code(GlobalConfig *cfg, const gchar *code);
 
-gboolean py_value_pairs_apply(ValuePairs *vp, const LogTemplateOptions *template_options, guint32 seq_num, LogMessage *msg, PyObject **result);
 
 #endif
