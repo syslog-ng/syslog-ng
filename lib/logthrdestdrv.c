@@ -164,6 +164,13 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
       msg_set_context(NULL);
       log_msg_refcache_stop();
     }
+  if (!self->suspended)
+    {
+      if (self->worker.worker_message_queue_empty)
+        {
+          self->worker.worker_message_queue_empty(self);
+        }
+    }
 }
 
 static void
