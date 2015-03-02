@@ -100,7 +100,7 @@ struct _GlobalConfig
   gint dir_gid;
   gint dir_perm;
 
-  gboolean use_rcptid;
+  gboolean use_uniqid;
 
   gboolean keep_timestamp;  
 
@@ -165,6 +165,12 @@ cfg_is_config_version_older(GlobalConfig *cfg, gint req)
   if (version_convert_from_user(cfg->user_version) >= req)
     return FALSE;
   return TRUE;
+}
+
+static inline void
+cfg_set_use_uniqid(gboolean flag)
+{
+  configuration->use_uniqid = !!flag;
 }
 
 #endif
