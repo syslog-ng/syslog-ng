@@ -165,6 +165,7 @@ LogMacroDef macros[] =
         { "RCPTID", M_RCPTID },
         { "RUNID", M_RUNID },
         { "HOSTID", M_HOSTID },
+        { "UNIQID", M_UNIQID },
 
         /* values that have specific behaviour with older syslog-ng config versions */
         { "MSG", M_MESSAGE },
@@ -391,6 +392,18 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
     case M_HOSTID:
       {
         host_id_append_formatted_id(result, msg->host_id);
+        break;
+      }
+
+    case M_UNIQID:
+      {
+        if (msg->rcptid)
+          {
+            host_id_append_formatted_id(result, msg->host_id);
+            g_string_append(result, "@");
+            format_uint64_padded(result, 16, '0', 16, msg->rcptid);
+            break;
+          }
         break;
       }
 
