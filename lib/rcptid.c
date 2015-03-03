@@ -144,8 +144,8 @@ rcptid_generate_id(void)
   data = rcptid_map_state();
 
   new_id = data->g_rcptid++;
-  if (!(data->g_rcptid &= 0xFFFFFFFFFFFF))
-    ++data->g_rcptid;
+  if (data->g_rcptid == 0)
+    data->g_rcptid = 1;
 
   rcptid_unmap_state();
 
