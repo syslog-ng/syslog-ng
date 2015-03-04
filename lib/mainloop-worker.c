@@ -28,7 +28,7 @@
 
 #include <iv.h>
 
-typedef enum { GENERAL_THREAD = 0, OUTPUT_THREAD, MAIN_LOOP_WORKER_TYPE_MAX} MainLoopWorkerType;
+typedef enum { GENERAL_THREAD = 0, OUTPUT_THREAD, EXTERNAL_INPUT_THREAD, MAIN_LOOP_WORKER_TYPE_MAX} MainLoopWorkerType;
 
 TLS_BLOCK_START
 {
@@ -77,15 +77,19 @@ _allocate_thread_id(void)
    * more threads than that, we can generalize this algorithm further. */
 
   main_loop_worker_id = 0;
-  for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
-    {
-      if ((main_loop_workers_idmap[main_loop_worker_type] & (1 << id)) == 0)
-        {
-          /* id not yet used */
 
-          main_loop_worker_id = (id + 1)  + (main_loop_worker_type * MAIN_LOOP_MAX_WORKER_THREADS);
-          main_loop_workers_idmap[main_loop_worker_type] |= (1 << id);
-          break;
+  if(main_loop_worker_type != EXTERNAL_INPUT_THREAD)
+    {
+      for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
+        {
+          if ((main_loop_workers_idmap[main_loop_worker_type] & (1 << id)) == 0)
+            {
+              /* id not yet used */
+
+              main_loop_worker_id = (id + 1)  + (main_loop_worker_type * MAIN_LOOP_MAX_WORKER_THREADS);
+              main_loop_workers_idmap[main_loop_worker_type] |= (1 << id);
+              break;
+            }
         }
     }
   g_static_mutex_unlock(&main_loop_workers_idmap_lock);
@@ -162,6 +166,10 @@ main_loop_worker_thread_start(void *cookie)
   if (worker_options && worker_options->is_output_thread)
     {
       main_loop_worker_type = OUTPUT_THREAD;
+    }
+  else if(worker_options && worker_options->is_external_input)
+    {
+      main_loop_worker_type = EXTERNAL_INPUT_THREAD;
     }
 
   _allocate_thread_id();
