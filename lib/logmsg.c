@@ -1348,6 +1348,7 @@ log_msg_add_ack(LogMessage *self, const LogPathOptions *path_options)
            * delayed until log_msg_refcache_stop() is called */
 
           logmsg_cached_acks++;
+          logmsg_cached_ack_needed = TRUE;
           return;
         }
       log_msg_update_ack_and_ref(self, 0, 1);
@@ -1445,7 +1446,7 @@ log_msg_refcache_start_producer(LogMessage *self)
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_abort = FALSE;
-  logmsg_cached_ack_needed = TRUE;
+  logmsg_cached_ack_needed = FALSE;
 }
 
 /*
