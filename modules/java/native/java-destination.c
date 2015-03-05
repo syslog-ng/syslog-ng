@@ -187,6 +187,13 @@ java_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 }
 
 static void
+java_worker_message_queue_empty(LogThrDestDriver *d)
+{
+  JavaDestDriver *self = (JavaDestDriver *)d;
+  java_destination_proxy_on_message_queue_empty(self->proxy);
+}
+
+static void
 java_worker_thread_deinit(LogThrDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
@@ -239,6 +246,7 @@ java_dd_new(GlobalConfig *cfg)
 
   self->super.worker.thread_deinit = java_worker_thread_deinit;
   self->super.worker.insert = java_worker_insert;
+  self->super.worker.worker_message_queue_empty = java_worker_message_queue_empty;
 
   self->super.format.stats_instance = java_dd_format_stats_instance;
   self->super.format.persist_name = java_dd_format_stats_instance;

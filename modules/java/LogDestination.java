@@ -41,6 +41,10 @@ public abstract class LogDestination extends LogPipe {
 
 	private native String getOption(long ptr, String key);
 
+	protected void onMessageQueueEmpty() {
+		return;
+	}
+
 	public boolean openProxy() {
 		try {
 			return open();
@@ -67,6 +71,15 @@ public abstract class LogDestination extends LogPipe {
 		catch (Exception e) {
 			sendExceptionMessage(e);
 			return false;
+		}
+	}
+
+	public void onMessageQueueEmptyProxy() {
+		try {
+			onMessageQueueEmpty();
+		}
+		catch (Exception e) {
+			sendExceptionMessage(e);
 		}
 	}
 }

@@ -40,6 +40,7 @@ typedef struct _JavaDestinationImpl
   jmethodID mi_open;
   jmethodID mi_close;
   jmethodID mi_is_opened;
+  jmethodID mi_on_message_queue_empty;
 } JavaDestinationImpl;
 
 struct _JavaDestinationProxy
@@ -96,6 +97,15 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
                 evt_tag_str("class_name", class_name),
                 evt_tag_str("method", "boolean send(String) or boolean send(LogMessage)"),
                 NULL);
+    }
+
+  self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "onMessageQueueEmptyProxy", "()V");
+  if (!self->dest_impl.mi_on_message_queue_empty)
+    {
+      msg_error("Can't find method in class",
+                evt_tag_str("class_name", class_name),
+                evt_tag_str("method", "void onMessageQueueEmpty()"), NULL);
+      return FALSE;
     }
 
   self->dest_impl.mi_open = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "openProxy", "()Z");
@@ -238,6 +248,15 @@ java_destination_proxy_deinit(JavaDestinationProxy *self)
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
 
   CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_deinit);
+
+}
+
+void
+java_destination_proxy_on_message_queue_empty(JavaDestinationProxy *self)
+{
+  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+
+  CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_on_message_queue_empty);
 
 }
 
