@@ -1,6 +1,8 @@
 EXTRA_DIST += \
 	modules/python/pylib/syslogng/__init__.py				\
 	modules/python/pylib/syslogng/debuggercli/__init__.py			\
+	modules/python/pylib/syslogng/debuggercli/completer.py			\
+	modules/python/pylib/syslogng/debuggercli/tests/test_completer.py    	\
 	modules/python/pylib/setup.py
 
 PYLIB_PATH = modules/python/pylib
