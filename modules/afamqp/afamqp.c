@@ -326,7 +326,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
     {
         msg_error("Error allocating AMQP connection.",
                   NULL);
-        goto exception_amqp_dd_connect_failed;
+        goto exception_amqp_dd_connect_failed_init;
     }
 
   sockfd = amqp_open_socket(self->host, self->port);
@@ -339,7 +339,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
                 evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
       g_free(errstr);
-      goto exception_amqp_dd_connect_failed;
+      goto exception_amqp_dd_connect_failed_init;
     }
   amqp_set_sockfd(self->conn, sockfd);
 
@@ -347,14 +347,14 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
                    AMQP_SASL_METHOD_PLAIN, self->user, self->password);
   if (!afamqp_is_ok(self, "Error during AMQP login", ret))
     {
-      goto exception_amqp_dd_connect_failed;
+      goto exception_amqp_dd_connect_failed_init;
     }
 
   amqp_channel_open(self->conn, 1);
   ret = amqp_get_rpc_reply(self->conn);
   if (!afamqp_is_ok(self, "Error during AMQP channel open", ret))
     {
-      goto exception_amqp_dd_connect_failed;
+      goto exception_amqp_dd_connect_failed_channel;
     }
 
   if (self->declare)
@@ -365,7 +365,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
       ret = amqp_get_rpc_reply(self->conn);
       if (!afamqp_is_ok(self, "Error during AMQP exchange declaration", ret))
         {
-          goto exception_amqp_dd_connect_failed;
+          goto exception_amqp_dd_connect_failed_exchange;
         }
     }
 
@@ -376,7 +376,13 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
   return TRUE;
 
   /* Exceptions */
-  exception_amqp_dd_connect_failed:
+  exception_amqp_dd_connect_failed_exchange:
+    amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
+  exception_amqp_dd_connect_failed_channel:
+
+  exception_amqp_dd_connect_failed_login:
+    amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
+  exception_amqp_dd_connect_failed_init:
     amqp_destroy_connection(self->conn);
     self->conn = NULL;
     return FALSE;
