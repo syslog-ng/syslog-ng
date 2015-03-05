@@ -4,11 +4,13 @@ EXTRA_DIST += \
 	modules/python/pylib/syslogng/debuggercli/choicecompleter.py		\
 	modules/python/pylib/syslogng/debuggercli/commandlinelexer.py		\
 	modules/python/pylib/syslogng/debuggercli/completer.py			\
+	modules/python/pylib/syslogng/debuggercli/getoptlexer.py		\
 	modules/python/pylib/syslogng/debuggercli/lexer.py			\
 	modules/python/pylib/syslogng/debuggercli/lexertoken.py			\
 	modules/python/pylib/syslogng/debuggercli/tests/test_completer.py    	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_commandlinelexer.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_choicecompleter.py	\
+	modules/python/pylib/syslogng/debuggercli/tests/test_getoptlexer.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_lexer.py		\
 	modules/python/pylib/setup.py
 
