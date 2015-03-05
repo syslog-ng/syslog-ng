@@ -92,8 +92,9 @@ _get_module_name(gint source)
     "stomp",
     "redis",
     "snmp",
-    "riemann"
-    "journald"
+    "riemann",
+    "journald",
+    "java"
   };
   return module_names[source & SCS_SOURCE_MASK];
 }
