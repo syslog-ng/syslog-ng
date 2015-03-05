@@ -52,6 +52,7 @@ typedef struct _WorkerBatchCallback
 typedef struct _WorkerOptions
 {
   gboolean is_output_thread;
+  gboolean is_external_input;
 } WorkerOptions;
 
 static inline void
