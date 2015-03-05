@@ -5,6 +5,7 @@ EXTRA_DIST += \
 	modules/python/pylib/syslogng/debuggercli/commandlinelexer.py		\
 	modules/python/pylib/syslogng/debuggercli/completer.py			\
 	modules/python/pylib/syslogng/debuggercli/completerlang.py		\
+	modules/python/pylib/syslogng/debuggercli/debuglang.py			\
 	modules/python/pylib/syslogng/debuggercli/getoptlexer.py		\
 	modules/python/pylib/syslogng/debuggercli/lexer.py			\
 	modules/python/pylib/syslogng/debuggercli/lexertoken.py			\
