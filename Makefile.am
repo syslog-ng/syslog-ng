@@ -33,7 +33,7 @@ export top_srcdir
 
 CLEAN_SUBDIRS		=
 
-clean-local:
+clean-local: ${CLEAN_HOOKS}
 	${AM_v_at}for dir in ${CLEAN_SUBDIRS}; do \
 		[ -f $${dir}/Makefile ] && ${MAKE} -C $${dir} clean || true; \
 	done
@@ -64,6 +64,7 @@ man_MANS		=
 
 INSTALL_EXEC_HOOKS	=
 UNINSTALL_HOOKS		=
+CLEAN_HOOKS =
 
 AUTOMAKE_OPTIONS	= subdir-objects
 

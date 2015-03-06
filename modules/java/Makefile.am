@@ -93,8 +93,12 @@ java-install-exec-hook:
 java-uninstall-exec-hook:
 	rm -rf $(DESTDIR)$(moduledir)/SyslogNg.jar
 
+java-clean-hook:
+	rm -rf org
+
 INSTALL_EXEC_HOOKS += java-install-exec-hook
 UNINSTALL_HOOKS += java-uninstall-exec-hook
+CLEAN_HOOKS += java-clean-hook
 
 endif
 

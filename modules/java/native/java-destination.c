@@ -29,10 +29,6 @@
 
 #include <stdio.h>
 
-#ifndef SCS_JAVA
-#define SCS_JAVA 0
-#endif
-
 gchar *
 replace_char(gchar *buffer,gchar from,gchar to)
 {
