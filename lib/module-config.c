@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015 BalaBit
- * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,13 +21,32 @@
  * COPYING for details.
  *
  */
+#include "module-config.h"
 
-#ifndef _SNG_PYTHON_LOGMSG_H
-#define _SNG_PYTHON_LOGMSG_H
+gboolean
+module_config_init(ModuleConfig *s, GlobalConfig *cfg)
+{
+  if (s->init)
+    return s->init(s, cfg);
+  return TRUE;
+}
 
-#include "python-module.h"
+void
+module_config_deinit(ModuleConfig *s, GlobalConfig *cfg)
+{
+  if (s->deinit)
+    s->deinit(s, cfg);
+}
 
-PyObject *py_log_message_new(LogMessage *msg);
-void python_log_message_init(void);
+void
+module_config_free_method(ModuleConfig *s)
+{
+}
 
-#endif
+void
+module_config_free(ModuleConfig *s)
+{
+  if (s->free_fn)
+    s->free_fn(s);
+  g_free(s);
+}

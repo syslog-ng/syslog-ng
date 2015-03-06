@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit
- * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2015 BalaBit
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -22,12 +21,11 @@
  *
  */
 
-#ifndef PYTHON_VALUE_PAIRS_H_INCLUDED
-#define PYTHON_VALUE_PAIRS_H_INCLUDED 1
+#ifndef _SNG_PYTHON_TF_H
+#define _SNG_PYTHON_TF_H
 
-#include "python-module.h"
-#include "value-pairs.h"
+#include "lib/template/function.h"
 
-gboolean py_value_pairs_apply(ValuePairs *vp, const LogTemplateOptions *template_options, guint32 seq_num, LogMessage *msg, PyObject **result);
+TEMPLATE_FUNCTION_PROTOTYPE(tf_python);
 
 #endif
