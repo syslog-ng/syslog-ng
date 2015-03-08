@@ -46,6 +46,7 @@ typedef struct
   gchar *phrase;
   gchar *address;
   afsmtp_rcpt_type_t type;
+  LogTemplate *rcpt_tmpl;
 } AFSMTPRecipient;
 
 typedef struct
@@ -226,9 +227,12 @@ afsmtp_dd_format_persist_name(LogThrDestDriver *d)
  * Worker thread
  */
 static void
-afsmtp_dd_msg_add_recipient(AFSMTPRecipient *rcpt, smtp_message_t message)
+afsmtp_dd_msg_add_recipient(AFSMTPRecipient *rcpt, gpointer user_data)
 {
   gchar *hdr;
+  AFSMTPDriver *self = ((gpointer *)user_data)[0];
+  LogMessage *msg = ((gpointer *)user_data)[1];
+  smtp_message_t message = ((gpointer *)user_data)[2];
 
   smtp_add_recipient(message, rcpt->address);
 
@@ -246,7 +250,11 @@ afsmtp_dd_msg_add_recipient(AFSMTPRecipient *rcpt, smtp_message_t message)
     default:
       return;
     }
-  smtp_set_header(message, hdr, rcpt->phrase, rcpt->address);
+
+  log_template_format(rcpt->rcpt_tmpl, msg, &self->template_options, LTZ_LOCAL,
+                      self->super.seq_num, NULL, self->str);
+
+  smtp_set_header(message, hdr, afsmtp_wash_string(self->str->str), rcpt->address);
   smtp_set_header_option(message, hdr, Hdr_OVERRIDE, 1);
 }
 
@@ -394,12 +402,13 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
   smtp_set_header_option(message, "Subject", Hdr_OVERRIDE, 1);
 
   /* Add recipients */
-  g_list_foreach(self->rcpt_tos, (GFunc) afsmtp_dd_msg_add_recipient, message);
+  args[1] = msg;
+  args[2] = message;
+  g_list_foreach(self->rcpt_tos, (GFunc) afsmtp_dd_msg_add_recipient, args);
 
   /* Add custom header (overrides anything set before, or in the
    body). */
-  args[1] = msg;
-  args[2] = message;
+
   g_list_foreach(self->headers, (GFunc) afsmtp_dd_msg_add_header, args);
 
   /* Set the body.
@@ -546,6 +555,31 @@ afsmtp_dd_init_header(AFSMTPHeader *hdr, GlobalConfig *cfg)
     }
 }
 
+static void
+afsmtp_dd_init_rcpt(AFSMTPRecipient *rcpt, GlobalConfig *cfg)
+{
+    if(!rcpt->rcpt_tmpl)
+    {
+		gchar* hdr;
+		switch (rcpt->type)
+			{
+			case AFSMTP_RCPT_TYPE_TO:
+			  hdr = "To";
+			  break;
+			case AFSMTP_RCPT_TYPE_CC:
+			  hdr = "Cc";
+			  break;
+			case AFSMTP_RCPT_TYPE_REPLY_TO:
+			  hdr = "Reply-To";
+			  break;
+			default:
+			  return;
+		}
+        rcpt->rcpt_tmpl = log_template_new(cfg, hdr);
+        log_template_compile(rcpt->rcpt_tmpl, rcpt->phrase, NULL);
+    }
+}
+
 static gboolean
 __check_rcpt_tos(AFSMTPDriver *self)
 {
@@ -625,6 +659,7 @@ afsmtp_dd_init(LogPipe *s)
   if (!__check_required_options(self))
     return FALSE;
 
+  g_list_foreach(self->rcpt_tos, (GFunc)afsmtp_dd_init_rcpt, cfg);
   g_list_foreach(self->headers, (GFunc)afsmtp_dd_init_header, cfg);
   if (!self->subject_tmpl)
     {
@@ -661,6 +696,7 @@ afsmtp_dd_free(LogPipe *d)
       AFSMTPRecipient *rcpt = (AFSMTPRecipient *)l->data;
       g_free(rcpt->address);
       g_free(rcpt->phrase);
+      log_template_unref(rcpt->rcpt_tmpl);
       g_free(rcpt);
       l = g_list_delete_link(l, l);
     }
