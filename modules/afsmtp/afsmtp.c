@@ -558,25 +558,25 @@ afsmtp_dd_init_header(AFSMTPHeader *hdr, GlobalConfig *cfg)
 static void
 afsmtp_dd_init_rcpt(AFSMTPRecipient *rcpt, GlobalConfig *cfg)
 {
-    if(!rcpt->rcpt_tmpl)
+  if (!rcpt->rcpt_tmpl)
     {
-		gchar* hdr;
-		switch (rcpt->type)
-			{
-			case AFSMTP_RCPT_TYPE_TO:
-			  hdr = "To";
-			  break;
-			case AFSMTP_RCPT_TYPE_CC:
-			  hdr = "Cc";
-			  break;
-			case AFSMTP_RCPT_TYPE_REPLY_TO:
-			  hdr = "Reply-To";
-			  break;
-			default:
-			  return;
-		}
-        rcpt->rcpt_tmpl = log_template_new(cfg, hdr);
-        log_template_compile(rcpt->rcpt_tmpl, rcpt->phrase, NULL);
+      gchar* hdr;
+      switch (rcpt->type)
+            {
+            case AFSMTP_RCPT_TYPE_TO:
+                hdr = "To";
+                break;
+            case AFSMTP_RCPT_TYPE_CC:
+                hdr = "Cc";
+                break;
+            case AFSMTP_RCPT_TYPE_REPLY_TO:
+                hdr = "Reply-To";
+                break;
+            default:
+                return;
+            }
+      rcpt->rcpt_tmpl = log_template_new(cfg, hdr);
+      log_template_compile(rcpt->rcpt_tmpl, rcpt->phrase, NULL);
     }
 }
 
