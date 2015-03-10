@@ -58,8 +58,8 @@ class_loader_new(JNIEnv *java_env)
                 NULL);
       goto error;
     }
-  self->loader_constructor = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "<init>", "()V");
-  if (!self->loader_constructor)
+  self->mi_constructor = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "<init>", "()V");
+  if (!self->mi_constructor)
     {
       msg_error("Can't find constructor for SyslogNgClassLoader", NULL);
       goto error;
@@ -85,7 +85,7 @@ class_loader_new(JNIEnv *java_env)
     }
 
 
-  self->loader_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->syslogng_class_loader, self->loader_constructor);
+  self->loader_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->syslogng_class_loader, self->mi_constructor);
   if (!self->loader_object)
     {
       msg_error("Can't create SyslogNgClassLoader", NULL);
