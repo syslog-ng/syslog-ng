@@ -33,7 +33,7 @@ LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.0.0"
 JOURNALD_MIN_VERSION="195"
 LIBSYSTEMD_MIN_VERSION="209"
-JAVA_MIN_VERSION="1.7"
+JAVA_MIN_VERSION="1.6"
 
 dnl ***************************************************************************
 dnl Initial setup
