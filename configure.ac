@@ -33,6 +33,7 @@ LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.0.0"
 JOURNALD_MIN_VERSION="195"
 LIBSYSTEMD_MIN_VERSION="209"
+JAVA_MIN_VERSION="1.7"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -227,6 +228,8 @@ AC_ARG_WITH(systemd-journal,
 
 AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python])
+
+AC_ARG_ENABLE(java, [ --enable-java  Enable java destination (default: auto)],, enable_java="auto")
 
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
@@ -1064,6 +1067,18 @@ if test "x$with_python" != "xno"; then
 fi
 
 dnl ***************************************************************************
+dnl java headers/libraries
+dnl ***************************************************************************
+
+if test "x$enable_java" = "xauto" || test "x$enable_java" = "xyes"; then
+    if test "x$enable_java" = "xauto"; then
+      AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [enable_java=no])
+    else
+      AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [AC_MSG_ERROR([Java not found])])
+    fi
+fi
+
+dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
 
@@ -1368,6 +1383,7 @@ AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
+AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1470,3 +1486,4 @@ echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
 echo "  python                      : ${enable_python:-yes} (${with_python})"
+echo "  java                        : ${enable_java:=no}"
