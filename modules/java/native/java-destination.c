@@ -30,17 +30,20 @@
 #include <stdio.h>
 
 gchar *
-replace_char(gchar *buffer,gchar from,gchar to)
+__normalize_key(const gchar *buffer)
 {
+  const gchar from = '-';
+  const gchar to = '_';
   gchar *p;
-  p = buffer;
+  gchar *normalized_key = g_strdup(buffer);
+  p = normalized_key;
   while (*p)
     {
       if (*p == from)
         *p = to;
       p++;
     }
-  return buffer;
+  return normalized_key;
 }
 
 JNIEXPORT jstring JNICALL
@@ -53,8 +56,8 @@ Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, 
     {
       return NULL;
     }
-  gchar *normalized_key = g_strdup(key_str);
-  normalized_key = replace_char(normalized_key, '-', '_');
+
+  gchar *normalized_key = __normalize_key(key_str);
   value = g_hash_table_lookup(self->options, normalized_key);
   (*env)->ReleaseStringUTFChars(env, key, key_str);  // release resources
   g_free(normalized_key);
@@ -79,9 +82,8 @@ Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong hand
 void java_dd_set_option(LogDriver *s, const gchar *key, const gchar *value)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
-  gchar *normalized_key = g_strdup(key);
-  normalized_key = replace_char(normalized_key, '-', '_');
-  g_hash_table_insert(self->options, g_strdup(normalized_key), g_strdup(value));
+  gchar *normalized_key = __normalize_key(key);
+  g_hash_table_insert(self->options, normalized_key, g_strdup(value));
 }
 
 
