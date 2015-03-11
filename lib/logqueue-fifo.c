@@ -183,7 +183,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
           log_msg_free_queue_node(node);
           log_msg_drop(msg, &path_options);
         }
-      msg_error("Destination queue full, dropping messages",
+      msg_debug("Destination queue full, dropping messages",
                 evt_tag_int("queue_len", queue_len),
                 evt_tag_int("log_fifo_size", self->qoverflow_size),
                 evt_tag_int("count", n),
