@@ -62,6 +62,7 @@ typedef struct
 
   /* Writer-only stuff */
   amqp_connection_state_t conn;
+  amqp_socket_t* sockfd;
   amqp_table_entry_t *entries;
   gint32 max_entries;
 } AMQPDestDriver;
@@ -215,15 +216,30 @@ afamqp_dd_format_persist_name(LogThrDestDriver *s)
   return persist_name;
 }
 
+static inline void
+_amqp_connection_deinit(AMQPDestDriver* self)
+{
+    amqp_destroy_connection(self->conn);
+    self->conn = NULL;
+}
+
+static void
+_amqp_connection_disconnect(AMQPDestDriver* self)
+{
+  amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
+  amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
+  _amqp_connection_deinit(self);
+}
+
 static void
 afamqp_dd_disconnect(LogThrDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
 
-  amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
-  amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
-  amqp_destroy_connection(self->conn);
-  self->conn = NULL;
+  if (self->conn != NULL)
+    {
+      _amqp_connection_disconnect(self);
+    }
 }
 
 static gboolean
@@ -245,13 +261,12 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
 
     case AMQP_RESPONSE_LIBRARY_EXCEPTION:
       {
-        gchar *errstr = amqp_error_string(ret.library_error);
+        gchar *errstr = amqp_error_string2(ret.library_error);
         msg_error(context,
                   evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_str("error", errstr),
                   evt_tag_int("time_reopen", self->super.time_reopen),
                   NULL);
-        g_free (errstr);
         log_threaded_dest_driver_suspend(&self->super);
         return FALSE;
       }
@@ -305,40 +320,64 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
 static gboolean
 afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 {
-  int sockfd;
+  int sockfd_ret;
   amqp_rpc_reply_t ret;
 
   if (reconnect && self->conn)
     {
       ret = amqp_get_rpc_reply(self->conn);
       if (ret.reply_type == AMQP_RESPONSE_NORMAL)
-        return TRUE;
+        {
+          return TRUE;
+        }
+      else
+        {
+            _amqp_connection_disconnect(self);
+        }
     }
 
   self->conn = amqp_new_connection();
-  sockfd = amqp_open_socket(self->host, self->port);
-  if (sockfd < 0)
+
+  if (self->conn == NULL)
     {
-      gchar *errstr = amqp_error_string(-sockfd);
+        msg_error("Error allocating AMQP connection.",
+                  NULL);
+        goto exception_amqp_dd_connect_failed_init;
+    }
+
+  self->sockfd = amqp_tcp_socket_new(self->conn);
+  struct timeval delay;
+  delay.tv_sec = 1;
+  delay.tv_usec = 0;
+  sockfd_ret = amqp_socket_open_noblock(self->sockfd, self->host, self->port, &delay);
+
+  if (sockfd_ret != AMQP_STATUS_OK)
+    {
+      gchar *errstr = amqp_error_string2(-sockfd_ret);
       msg_error("Error connecting to AMQP server",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", errstr),
                 evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
-      g_free(errstr);
-      return FALSE;
+
+      goto exception_amqp_dd_connect_failed_init;
     }
-  amqp_set_sockfd(self->conn, sockfd);
+
+  amqp_tcp_socket_set_sockfd(self->sockfd, sockfd_ret);
 
   ret = amqp_login(self->conn, self->vhost, 0, 131072, 0,
                    AMQP_SASL_METHOD_PLAIN, self->user, self->password);
   if (!afamqp_is_ok(self, "Error during AMQP login", ret))
-    return FALSE;
+    {
+      goto exception_amqp_dd_connect_failed_init;
+    }
 
   amqp_channel_open(self->conn, 1);
   ret = amqp_get_rpc_reply(self->conn);
   if (!afamqp_is_ok(self, "Error during AMQP channel open", ret))
-    return FALSE;
+    {
+      goto exception_amqp_dd_connect_failed_channel;
+    }
 
   if (self->declare)
     {
@@ -347,7 +386,9 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
                             amqp_empty_table);
       ret = amqp_get_rpc_reply(self->conn);
       if (!afamqp_is_ok(self, "Error during AMQP exchange declaration", ret))
-        return FALSE;
+        {
+          goto exception_amqp_dd_connect_failed_exchange;
+        }
     }
 
   msg_debug ("Connecting to AMQP succeeded",
@@ -355,6 +396,17 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
              NULL);
 
   return TRUE;
+
+  /* Exceptions */
+  exception_amqp_dd_connect_failed_exchange:
+    amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
+  exception_amqp_dd_connect_failed_channel:
+
+  exception_amqp_dd_connect_failed_login:
+    amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
+  exception_amqp_dd_connect_failed_init:
+    _amqp_connection_deinit(self);
+    return FALSE;
 }
 
 /*
