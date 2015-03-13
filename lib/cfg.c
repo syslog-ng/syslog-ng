@@ -251,7 +251,7 @@ cfg_init(GlobalConfig *cfg)
         }
     }
 
-  if (!rcptid_init(cfg->state, cfg->use_rcptid))
+  if (!rcptid_init(cfg->state, cfg->use_uniqid))
     return FALSE;
 
   stats_reinit(&cfg->stats_options);
@@ -381,6 +381,8 @@ cfg_new(gint version)
 
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
+
+  self->use_uniqid = FALSE;
   
   stats_options_defaults(&self->stats_options);
 

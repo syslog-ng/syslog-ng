@@ -54,10 +54,10 @@ test_rcptid_is_persistent_across_persist_backend_reinits(void)
 
   setup_persist_id_test();
 
-  rcptid_set_id(0x0000FFFFFFFFFFFE);
+  rcptid_set_id(0xFFFFFFFFFFFFFFFE);
   rcptid = rcptid_generate_id();
 
-  assert_guint64(rcptid, 0x0000FFFFFFFFFFFE, "Rcptid initialization to specific value failed!");
+  assert_guint64(rcptid, 0xFFFFFFFFFFFFFFFE, "Rcptid initialization to specific value failed!");
   
   state = restart_persist_state(state);
 
@@ -66,19 +66,19 @@ test_rcptid_is_persistent_across_persist_backend_reinits(void)
 
   rcptid = rcptid_generate_id();
 
-  assert_guint64(rcptid, 0x0000FFFFFFFFFFFF, "Rcptid did not persisted across persist backend reinit!");
+  assert_guint64(rcptid, 0xFFFFFFFFFFFFFFFF, "Rcptid did not persisted across persist backend reinit!");
 
   teardown_persist_id_test();
 }
 
 static void
-test_rcptid_overflows_at_48bits_and_is_reset_to_one(void)
+test_rcptid_overflows_at_64bits_and_is_reset_to_one(void)
 {
   guint64 rcptid;
   
   setup_persist_id_test();
 
-  rcptid_set_id(0x0000FFFFFFFFFFFF);
+  rcptid_set_id(0xFFFFFFFFFFFFFFFF);
   rcptid = rcptid_generate_id();
   rcptid = rcptid_generate_id();
 
@@ -118,7 +118,7 @@ static void
 rcptid_test_case()
 {
   test_rcptid_is_persistent_across_persist_backend_reinits();
-  test_rcptid_overflows_at_48bits_and_is_reset_to_one();
+  test_rcptid_overflows_at_64bits_and_is_reset_to_one();
   test_rcptid_is_formatted_as_a_number_when_nonzero();
   test_rcptid_is_an_empty_string_when_zero();
 }
