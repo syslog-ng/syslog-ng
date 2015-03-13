@@ -41,13 +41,13 @@ LogDriver *afsmtp_dd_new(GlobalConfig *cfg);
 void afsmtp_dd_set_host(LogDriver *d, const gchar *host);
 void afsmtp_dd_set_port(LogDriver *d, gint port);
 
-void afsmtp_dd_set_subject(LogDriver *d, const gchar *subject);
-void afsmtp_dd_set_from(LogDriver *d, const gchar *phrase, const gchar *mbox);
+void afsmtp_dd_set_subject(LogDriver *d, LogTemplate *subject);
+void afsmtp_dd_set_from(LogDriver *d, LogTemplate *phrase, LogTemplate *mbox);
 void afsmtp_dd_add_rcpt(LogDriver *d, afsmtp_rcpt_type_t type,
-                        const gchar *phrase, const gchar *mbox);
-void afsmtp_dd_set_body(LogDriver *d, const gchar *body);
+                        LogTemplate *phrase, LogTemplate *mbox);
+void afsmtp_dd_set_body(LogDriver *d, LogTemplate *body);
 gboolean afsmtp_dd_add_header(LogDriver *d, const gchar *header,
-                              const gchar *value);
+                              LogTemplate *value);
 LogTemplateOptions *afsmtp_dd_get_template_options(LogDriver *d);
 
 #endif
