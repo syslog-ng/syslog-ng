@@ -31,6 +31,6 @@ typedef GString* (*CommandFunction)(GString *);
 
 void  control_init(const gchar *control_name);
 void control_destroy(void);
-void control_register_command(gchar *command_name, gchar *description, CommandFunction function);
+void control_register_command(const gchar *command_name, const gchar *description, CommandFunction function);
 
 #endif
