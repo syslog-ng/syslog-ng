@@ -27,6 +27,7 @@
 #include "gsocket.h"
 #include "messages.h"
 #include "stats/stats-csv.h"
+#include "stats/stats-counter.h"
 #include "misc.h"
 #include "mainloop.h"
 
@@ -54,6 +55,14 @@ control_connection_send_stats(GString *command)
   gchar *stats = stats_generate_csv();
   GString *result = g_string_new(stats);
   g_free(stats);
+  return result;
+}
+
+static GString *
+control_connection_reset_stats(GString *command)
+{
+  GString *result = g_string_new("The statistics of syslog-ng have been reset to 0.");
+  stats_reset_counters();
   return result;
 }
 
@@ -121,6 +130,7 @@ control_connection_reload(GString *command)
 
 ControlCommand default_commands[] = {
   { "STATS", NULL, control_connection_send_stats },
+  { "RESET_STATS", NULL, control_connection_reset_stats },
   { "LOG", NULL, control_connection_message_log },
   { "STOP", NULL, control_connection_stop_process },
   { "RELOAD", NULL, control_connection_reload },

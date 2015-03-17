@@ -72,4 +72,6 @@ stats_counter_get(StatsCounterItem *counter)
   return result;
 }
 
+void stats_reset_counters(void);
+
 #endif
