@@ -7,3 +7,5 @@ debuggerinclude_HEADERS = \
 debugger_sources = \
 	lib/debugger/debugger.c		\
 	lib/debugger/tracer.c
+
+include lib/debugger/tests/Makefile.am
