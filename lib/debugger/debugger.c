@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-typedef struct _Debugger
+struct _Debugger
 {
   Tracer *tracer;
   GlobalConfig *cfg;
@@ -39,7 +39,7 @@ typedef struct _Debugger
   LogMessage *current_msg;
   LogPipe *current_pipe;
   gboolean drop_current_message;
-} Debugger;
+};
 
 
 static gboolean
@@ -332,6 +332,14 @@ debugger_new(GlobalConfig *cfg)
   self->command_buffer = g_strdup("help");
   log_template_compile(self->display_template, "$DATE $HOST $MSGHDR$MSG", NULL);
   return self;
+}
+
+void
+debugger_free(Debugger *self)
+{
+  log_template_unref(self->display_template);
+  tracer_free(self->tracer);
+  g_free(self);
 }
 
 static Debugger *current_debugger;
