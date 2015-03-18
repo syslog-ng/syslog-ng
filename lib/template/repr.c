@@ -47,11 +47,13 @@ log_template_elem_free(LogTemplateElem *e)
 }
 
 void
-log_template_elem_free_list(GList *el)
+log_template_elem_free_list(GList *l)
 {
+  GList *el = l;
+
   for (; el; el = el->next)
     {
       log_template_elem_free((LogTemplateElem *) el->data);
     }
-  g_list_free(el);
+  g_list_free(l);
 }
