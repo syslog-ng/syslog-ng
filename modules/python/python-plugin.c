@@ -27,6 +27,7 @@
 #include "python-dest.h"
 #include "python-tf.h"
 #include "python-logmsg.h"
+#include "python-debugger.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
@@ -68,6 +69,7 @@ gboolean
 python_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
 {
   _py_init_interpreter();
+  python_debugger_init();
   plugin_register(cfg, python_plugins, G_N_ELEMENTS(python_plugins));
   return TRUE;
 }

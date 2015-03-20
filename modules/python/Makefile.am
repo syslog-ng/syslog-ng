@@ -35,7 +35,9 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-parser.c		  \
 	modules/python/python-parser.h	          \
 	modules/python/python-logmsg.h		  \
-	modules/python/python-logmsg.c
+	modules/python/python-logmsg.c	          \
+	modules/python/python-debugger.c	  \
+	modules/python/python-debugger.h
 
 
 modules_python_libmod_python_la_LDFLAGS		 = \
@@ -58,3 +60,5 @@ EXTRA_DIST					+= \
 	modules/python/sngexample.py
 
 .PHONY: modules/python mod-python
+
+include modules/python/pylib/Makefile.am
