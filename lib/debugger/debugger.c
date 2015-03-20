@@ -41,7 +41,6 @@ struct _Debugger
   gboolean drop_current_message;
 };
 
-
 static gboolean
 _format_nvpair(NVHandle handle, const gchar *name, const gchar *value, gssize length, gpointer user_data)
 {
@@ -250,7 +249,6 @@ _fetch_command(Debugger *self)
         g_free(command);
     }
 }
-
 
 static gboolean
 _handle_command(Debugger *self)
