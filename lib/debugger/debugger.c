@@ -305,6 +305,7 @@ debugger_new(GlobalConfig *cfg)
   self->tracer = tracer_new(cfg);
   self->cfg = cfg;
   self->display_template = log_template_new(cfg, NULL);
+  self->command_buffer = g_strdup("help");
   log_template_compile(self->display_template, "$DATE $HOST $MSGHDR$MSG", NULL);
   return self;
 }
