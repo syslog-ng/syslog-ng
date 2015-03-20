@@ -403,7 +403,7 @@ __check_value_len(NVHandle handle, const gchar *name, const gchar *value, gssize
 void
 _test_field_size_test(TestCase *self, TestSource *src, LogMessage *msg)
 {
-  log_msg_nv_table_foreach(msg->payload, __check_value_len, self);
+  log_msg_values_foreach(msg, __check_value_len, self);
   test_source_finish_tc(src);
 }
 

@@ -247,6 +247,7 @@ typedef gboolean (*LogMessageTagsForeachFunc)(LogMessage *self, LogTagId tag_id,
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
 void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
+gboolean log_msg_values_foreach(LogMessage *self, NVTableForeachFunc func, gpointer user_data);
 void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len);
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
 void log_msg_clear_matches(LogMessage *self);
@@ -298,7 +299,5 @@ void log_msg_registry_init();
 void log_msg_registry_deinit();
 void log_msg_global_init();
 void log_msg_global_deinit(void);
-
-gboolean log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
 
 #endif
