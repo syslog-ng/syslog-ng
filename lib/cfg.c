@@ -603,3 +603,21 @@ cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name)
   return res;
 }
 
+gint
+cfg_get_user_version(const GlobalConfig *cfg)
+{
+  return cfg->user_version;
+}
+
+gint
+cfg_get_parsed_version(const GlobalConfig *cfg)
+{
+  return cfg->parsed_version;
+}
+
+const gchar*
+cfg_get_filename(const GlobalConfig *cfg)
+{
+  return cfg->filename;
+}
+
