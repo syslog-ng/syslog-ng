@@ -319,6 +319,26 @@ _interactive_console_thread_func(Debugger *self)
   return NULL;
 }
 
+void
+debugger_start_console(Debugger *self)
+{
+  g_thread_create((GThreadFunc) _interactive_console_thread_func, self, FALSE, NULL);
+}
+
+gboolean
+debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe, LogMessage *msg)
+{
+  self->drop_current_message = FALSE;
+  self->current_msg = log_msg_ref(msg);
+  self->current_pipe = log_pipe_ref(pipe);
+  tracer_stop_on_breakpoint(self->tracer);
+  log_msg_unref(self->current_msg);
+  log_pipe_unref(self->current_pipe);
+  self->current_msg = NULL;
+  self->current_pipe = NULL;
+  return !self->drop_current_message;
+}
+
 Debugger *
 debugger_new(GlobalConfig *cfg)
 {
@@ -338,32 +358,4 @@ debugger_free(Debugger *self)
   log_template_unref(self->display_template);
   tracer_free(self->tracer);
   g_free(self);
-}
-
-static Debugger *current_debugger;
-
-static gboolean
-_pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  Debugger *self = current_debugger;
-
-  self->drop_current_message = FALSE;
-  self->current_msg = log_msg_ref(msg);
-  self->current_pipe = log_pipe_ref(s);
-  tracer_stop_on_breakpoint(self->tracer);
-  log_msg_unref(self->current_msg);
-  log_pipe_unref(self->current_pipe);
-  self->current_msg = NULL;
-  self->current_pipe = NULL;
-  return !self->drop_current_message;
-}
-
-void
-debugger_start(GlobalConfig *cfg)
-{
-  /* we don't support threaded mode (yet), force it to non-threaded */
-  cfg->threaded = FALSE;
-  current_debugger = debugger_new(cfg);
-  pipe_single_step_hook = _pipe_hook;
-  g_thread_create((GThreadFunc) _interactive_console_thread_func, current_debugger, FALSE, NULL);
 }

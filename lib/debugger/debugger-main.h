@@ -21,22 +21,12 @@
  * COPYING for details.
  *
  */
-#ifndef DEBUGGER_DEBUGGER_H_INCLUDED
-#define DEBUGGER_DEBUGGER_H_INCLUDED 1
+#ifndef DEBUGGER_DEBUGGER_MAIN_H_INCLUDED
+#define DEBUGGER_DEBUGGER_MAIN_H_INCLUDED 1
 
-#include "syslog-ng.h"
+#include "debugger/debugger.h"
 #include "cfg.h"
 
-typedef struct _Debugger Debugger;
-
-typedef gchar *(*FetchCommandFunc)(void);
-
-Debugger *debugger_new(GlobalConfig *cfg);
-void debugger_free(Debugger *self);
-
-gchar *debugger_builtin_fetch_command(void);
-void debugger_register_command_fetcher(FetchCommandFunc fetcher);
-void debugger_start_console(Debugger *self);
-gboolean debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe, LogMessage *msg);
+void debugger_start(GlobalConfig *cfg);
 
 #endif
