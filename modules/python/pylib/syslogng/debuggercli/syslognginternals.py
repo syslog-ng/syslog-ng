@@ -22,6 +22,44 @@ def get_debugger_commands():
     )
 
 
+def get_template_functions():
+    return (
+        "geoip",
+        "python",
+        "graphite-output",
+        "uuid",
+        "hash",
+        "sha1",
+        "sha256",
+        "sha512",
+        "md4",
+        "md5",
+        "format-json",
+        "grep",
+        "if",
+        "or",
+        "echo",
+        "length",
+        "substr",
+        "strip",
+        "sanitize",
+        "lowercase",
+        "uppercase",
+        "replace-delimiter",
+        "padding",
+        "+",
+        "-",
+        "*",
+        "/",
+        "%",
+        "ipv4-to-int",
+        "indent-multi-line",
+        "context-length",
+        "env",
+        "template"
+    )
+
+
 # override implementations from the module supplied by the C implementation.
 try:
     from _syslogngdbg import *
