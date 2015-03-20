@@ -11,6 +11,17 @@ def get_nv_registry():
     return ('0', '1', '2', '3', '4', "DATE", "HOST", "MSGHDR", "PROGRAM", "PID", "MSG", '.unix.uid', '.unix.gid')
 
 
+def get_debugger_commands():
+    return (
+        "help",
+        "continue",
+        "print",
+        "display",
+        "drop",
+        "quit"
+    )
+
+
 # override implementations from the module supplied by the C implementation.
 try:
     from _syslogngdbg import *
