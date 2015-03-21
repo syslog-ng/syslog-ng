@@ -214,6 +214,12 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
   return e;
 }
 
+EVTREC*
+msg_event_create_from_desc(gint prio, const char *desc)
+{
+  return msg_event_create(prio, desc, NULL);
+}
+
 void
 msg_event_free(EVTREC *e)
 {

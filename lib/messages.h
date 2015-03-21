@@ -37,6 +37,7 @@ typedef void (*MsgPostFunc)(LogMessage *msg);
 
 void msg_set_context(LogMessage *msg);
 EVTREC *msg_event_create(gint prio, const char *desc, EVTTAG *tag1, ...);
+EVTREC *msg_event_create_from_desc(gint prio, const char *desc);
 void msg_event_free(EVTREC *e);
 void msg_event_send(EVTREC *e);
 void msg_event_suppress_recursions_and_send(EVTREC *e);
