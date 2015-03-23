@@ -875,7 +875,7 @@ enable_json="no"
 if test "x$with_jsonc" = "xsystem" -o "x$with_jsonc" = "xauto"; then
    enable_json="yes"
    PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
-    PKG_CHECK_EXISTS(json, json_module_name="json"))
+   PKG_CHECK_EXISTS(json, json_module_name="json"))
    PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="system"], [JSON_LIBS=""; enable_json="no"])
    if test "x$with_jsonc" = "xsystem" -a "x$enable_json" = "xno"; then
      AC_MSG_ERROR([json-c library development files cannot be not found on system!])
