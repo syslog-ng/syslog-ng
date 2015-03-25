@@ -229,6 +229,15 @@ AC_ARG_WITH(systemd-journal,
 AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python])
 
+AC_ARG_WITH(docbook,
+            AC_HELP_STRING([--with-docbook-dir=DIR],
+                           [compiling manpages using docbook in the specified path, if not set online version will be used from http://docbook.sourceforge.net]),
+            [ XSL_STYLESHEET=$with_docbook ],
+            [ XSL_STYLESHEET=http://docbook.sourceforge.net/release/xsl/current/ ]
+            )
+
+AC_ARG_ENABLE(manpages, AC_HELP_STRING([ --enable-manpages], [ Enable generation of manpages (default: no)]), ,[ XSL_STYLESHEET=""])
+
 AC_ARG_ENABLE(java, [ --enable-java  Enable java destination (default: auto)],, enable_java="auto")
 
 AC_ARG_ENABLE(all-modules,
@@ -1437,6 +1446,8 @@ AC_SUBST(with_ivykis)
 AC_SUBST(INTERNAL_IVYKIS_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
+AC_SUBST(XSL_STYLESHEET)
+
 
 AC_OUTPUT(dist.conf
           Makefile
