@@ -55,6 +55,15 @@ slng_send_cmd(gchar *cmd)
   return TRUE;
 }
 
+static GString *
+slng_run_command(const gchar *command)
+{
+  if (!slng_send_cmd(command))
+    return NULL;
+
+  return control_client_read_reply(control_client);
+}
+
 static gchar *verbose_set = NULL;
 
 static gint
@@ -72,7 +81,8 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
 
   g_strup(buff);
 
-  if (!(slng_send_cmd(buff) && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  rsp = slng_run_command(buff);
+  if (rsp == NULL)
     return 1;
 
   if (!verbose_set)
@@ -95,9 +105,9 @@ static GOptionEntry verbose_options[] =
 static gint
 slng_stats(int argc, char *argv[], const gchar *mode)
 {
-  GString *rsp = NULL;
+  GString *rsp = slng_run_command("STATS\n");
 
-  if (!(slng_send_cmd("STATS\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  if (rsp == NULL)
     return 1;
 
   printf("%s\n", rsp->str);
@@ -110,9 +120,9 @@ slng_stats(int argc, char *argv[], const gchar *mode)
 static gint
 slng_stop(int argc, char *argv[], const gchar *mode)
 {
-  GString *rsp = NULL;
+  GString *rsp = slng_run_command("STOP\n");
 
-  if (!(slng_send_cmd("STOP\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  if (rsp == NULL)
     return 1;
 
   printf("%s\n", rsp->str);
@@ -125,9 +135,9 @@ slng_stop(int argc, char *argv[], const gchar *mode)
 static gint
 slng_reload(int argc, char *argv[], const gchar *mode)
 {
-  GString *rsp = NULL;
+  GString *rsp = slng_run_command("RELOAD\n");
 
-  if (!(slng_send_cmd("RELOAD\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  if (rsp == NULL)
     return 1;
 
   printf("%s\n", rsp->str);
