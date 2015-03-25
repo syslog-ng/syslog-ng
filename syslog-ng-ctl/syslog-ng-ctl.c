@@ -55,6 +55,15 @@ slng_send_cmd(gchar *cmd)
   return TRUE;
 }
 
+static GString *
+slng_run_command(const gchar *command)
+{
+  if (!slng_send_cmd(command))
+    return NULL;
+
+  return control_client_read_reply(control_client);
+}
+
 static gchar *verbose_set = NULL;
 
 static gint
@@ -72,7 +81,8 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
 
   g_strup(buff);
 
-  if (!(slng_send_cmd(buff) && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  rsp = slng_run_command(buff);
+  if (rsp == NULL)
     return 1;
 
   if (!verbose_set)
@@ -85,6 +95,14 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
   return ret;
 }
 
+static gboolean stats_options_reset_is_set = FALSE;
+
+static GOptionEntry stats_options[] =
+{
+  { "reset", 'r', 0, G_OPTION_ARG_NONE, &stats_options_reset_is_set, "reset counters", NULL },
+  { NULL,    0,   0, G_OPTION_ARG_NONE, NULL,                        NULL,             NULL }
+};
+
 static GOptionEntry verbose_options[] =
 {
   { "set", 's', 0, G_OPTION_ARG_STRING, &verbose_set,
@@ -92,12 +110,19 @@ static GOptionEntry verbose_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
+
+static const gchar *
+_stats_command_builder()
+{
+  return stats_options_reset_is_set ? "RESET_STATS\n" : "STATS\n";
+}
+
 static gint
 slng_stats(int argc, char *argv[], const gchar *mode)
 {
-  GString *rsp = NULL;
+  GString *rsp = slng_run_command(_stats_command_builder());
 
-  if (!(slng_send_cmd("STATS\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  if (rsp == NULL)
     return 1;
 
   printf("%s\n", rsp->str);
@@ -110,9 +135,9 @@ slng_stats(int argc, char *argv[], const gchar *mode)
 static gint
 slng_stop(int argc, char *argv[], const gchar *mode)
 {
-  GString *rsp = NULL;
+  GString *rsp = slng_run_command("STOP\n");
 
-  if (!(slng_send_cmd("STOP\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  if (rsp == NULL)
     return 1;
 
   printf("%s\n", rsp->str);
@@ -125,9 +150,9 @@ slng_stop(int argc, char *argv[], const gchar *mode)
 static gint
 slng_reload(int argc, char *argv[], const gchar *mode)
 {
-  GString *rsp = NULL;
+  GString *rsp = slng_run_command("RELOAD\n");
 
-  if (!(slng_send_cmd("RELOAD\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+  if (rsp == NULL)
     return 1;
 
   printf("%s\n", rsp->str);
@@ -176,7 +201,7 @@ static struct
   gint (*main)(gint argc, gchar *argv[], const gchar *mode);
 } modes[] =
 {
-  { "stats", no_options, "Dump syslog-ng statistics", slng_stats },
+  { "stats", stats_options, "Query/reset syslog-ng statistics", slng_stats },
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },

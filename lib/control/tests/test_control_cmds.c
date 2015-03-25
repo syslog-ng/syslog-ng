@@ -86,12 +86,41 @@ test_stats()
   return;
 }
 
+void
+test_reset_stats()
+{
+  GString *reply = NULL;
+  GString *command = g_string_sized_new(128);
+  StatsCounterItem *counter = NULL;
+
+  stats_init();
+  stats_lock();
+  stats_register_counter(0, SCS_CENTER, "id", "received", SC_TYPE_PROCESSED, &counter);
+  stats_counter_set(counter, 666);
+  stats_unlock();
+
+  g_string_assign(command, "RESET_STATS");
+  reply = control_connection_reset_stats(command);
+  assert_string(reply->str, "The statistics of syslog-ng have been reset to 0.", "Bad reply");
+  g_string_free(reply, TRUE);
+
+  g_string_assign(command, "STATS");
+  reply = control_connection_send_stats(command);
+  assert_string(reply->str, "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n", "Bad reply");
+  g_string_free(reply, TRUE);
+
+  stats_destroy();
+  g_string_free(command, TRUE);
+  return;
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
   test_log();
   test_stats();
+  test_reset_stats();
   app_shutdown();
   return 0;
 }
