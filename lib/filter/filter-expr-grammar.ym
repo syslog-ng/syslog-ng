@@ -152,7 +152,7 @@ filter_plugin
             FilterExprNode *node;
 
             p = plugin_find(configuration, context, $1);
-            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found OR you may not used double quotes in your filter expression", cfg_lexer_lookup_context_name_by_type(context), $1);
 
             node = (FilterExprNode *) plugin_parse_config(p, configuration, &@1, NULL);
             free($1);
@@ -165,7 +165,7 @@ filter_plugin
 	;
 
 filter_comparison
-	: string operator string
+	: LL_STRING operator LL_STRING
           {
             LogTemplate *left, *right;
             GError *error = NULL;
