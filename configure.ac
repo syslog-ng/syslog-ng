@@ -288,6 +288,7 @@ AM_PROG_LEX
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 LT_INIT([dlopen disable-static])
+AC_PATH_PROG(PYTHON, python)
 
 dnl ***************************************************************************
 dnl Validate yacc
@@ -883,7 +884,7 @@ enable_json="no"
 if test "x$with_jsonc" = "xsystem" -o "x$with_jsonc" = "xauto"; then
    enable_json="yes"
    PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
-    PKG_CHECK_EXISTS(json, json_module_name="json"))
+   PKG_CHECK_EXISTS(json, json_module_name="json"))
    PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="system"], [JSON_LIBS=""; enable_json="no"])
    if test "x$with_jsonc" = "xsystem" -a "x$enable_json" = "xno"; then
      AC_MSG_ERROR([json-c library development files cannot be not found on system!])
@@ -1005,11 +1006,10 @@ dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
 
 if test "x$with_librabbitmq_client" = "xinternal"; then
-    AC_CHECK_PROG(HAVE_PYTHON, python, 1, 0)
     PYTHON_VERSION=`python -V 2>&1 | cut -d ' ' -f 2`
     PYTHON_MAJOR=`echo $PYTHON_VERSION | cut -d '.' -f 1`
     PYTHON_MINOR=`echo $PYTHON_VERSION | cut -d '.' -f 2`
-    if test ${HAVE_PYTHON} = 0 || test $PYTHON_MAJOR -eq 2 && test $PYTHON_MINOR -lt 5; then
+    if test ${PYTHON} = "" || test $PYTHON_MAJOR -eq 2 && test $PYTHON_MINOR -lt 5; then
         AC_MSG_WARN([Was about to execute rabbitmq configure script, but that requires Python >= 2.5, which you don't seem to have, disabling rabbitmq])
         with_librabbitmq_client=no
     fi

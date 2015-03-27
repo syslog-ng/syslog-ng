@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2014-2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014-2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,39 +21,12 @@
  * COPYING for details.
  *
  */
+#ifndef DEBUGGER_DEBUGGER_MAIN_H_INCLUDED
+#define DEBUGGER_DEBUGGER_MAIN_H_INCLUDED 1
 
-#include "template/repr.h"
+#include "debugger/debugger.h"
+#include "cfg.h"
 
-void
-log_template_elem_free(LogTemplateElem *e)
-{
-  switch (e->type)
-    {
-    case LTE_FUNC:
-      if (e->func.state)
-        {
-          e->func.ops->free_state(e->func.state);
-          g_free(e->func.state);
-        }
-      if (e->func.ops && e->func.ops->free_fn)
-        e->func.ops->free_fn(e->func.ops);
-      break;
-    }
-  if (e->default_value)
-    g_free(e->default_value);
-  if (e->text)
-    g_free(e->text);
-  g_free(e);
-}
+void debugger_start(GlobalConfig *cfg);
 
-void
-log_template_elem_free_list(GList *l)
-{
-  GList *el = l;
-
-  for (; el; el = el->next)
-    {
-      log_template_elem_free((LogTemplateElem *) el->data);
-    }
-  g_list_free(l);
-}
+#endif

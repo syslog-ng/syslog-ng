@@ -69,3 +69,12 @@ tracer_new(GlobalConfig *cfg)
 
   return self;
 }
+
+void
+tracer_free(Tracer *self)
+{
+  g_mutex_free(self->breakpoint_mutex);
+  g_cond_free(self->breakpoint_cond);
+  g_cond_free(self->resume_cond);
+  g_free(self);
+}

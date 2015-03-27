@@ -30,17 +30,16 @@
 #include <stdio.h>
 #include <unistd.h>
 
-typedef struct _Debugger
+struct _Debugger
 {
   Tracer *tracer;
   GlobalConfig *cfg;
-  gchar command_buffer[1024];
+  gchar *command_buffer;
   LogTemplate *display_template;
   LogMessage *current_msg;
   LogPipe *current_pipe;
   gboolean drop_current_message;
-} Debugger;
-
+};
 
 static gboolean
 _format_nvpair(NVHandle handle, const gchar *name, const gchar *value, gssize length, gpointer user_data)
@@ -94,7 +93,7 @@ _display_source_line(LogExprNode *expr_node)
   gint lineno = 1;
   gchar buf[1024];
 
-  if (!expr_node->filename)
+  if (!expr_node || !expr_node->filename)
     return;
 
   f = fopen(expr_node->filename, "r");
@@ -112,30 +111,6 @@ _display_source_line(LogExprNode *expr_node)
   fflush(stdout);
 }
 
-static void
-_fetch_command(Debugger *self)
-{
-  gchar buf[1024];
-  gsize len;
-
-  printf("(syslog-ng) ");
-  fflush(stdout);
-
-  if (!fgets(buf, sizeof(buf), stdin))
-    return;
-
-  /* strip NL */
-  len = strlen(buf);
-  if (buf[len - 1] == '\n')
-    {
-      buf[len - 1] = 0;
-    }
-  if (strlen(buf) > 0)
-    {
-      strncpy(self->command_buffer, buf, sizeof(self->command_buffer));
-      self->command_buffer[sizeof(self->command_buffer) - 1] = 0;
-    }
-}
 
 static gboolean
 _cmd_help(Debugger *self, gint argc, gchar *argv[])
@@ -227,6 +202,54 @@ struct {
   { NULL, NULL }
 };
 
+gchar *
+debugger_builtin_fetch_command(void)
+{
+  gchar buf[1024];
+  gsize len;
+
+  printf("(syslog-ng) ");
+  fflush(stdout);
+
+  if (!fgets(buf, sizeof(buf), stdin))
+    return NULL;
+
+  /* strip NL */
+  len = strlen(buf);
+  if (buf[len - 1] == '\n')
+    {
+      buf[len - 1] = 0;
+    }
+  return g_strdup(buf);
+}
+
+FetchCommandFunc fetch_command_func = debugger_builtin_fetch_command;
+
+void
+debugger_register_command_fetcher(FetchCommandFunc fetcher)
+{
+  fetch_command_func = fetcher;
+}
+
+static void
+_fetch_command(Debugger *self)
+{
+  gchar *command;
+
+  command = fetch_command_func();
+  if (command && strlen(command) > 0)
+    {
+      if (self->command_buffer)
+        g_free(self->command_buffer);
+      self->command_buffer = command;
+    }
+  else
+    {
+      if (command)
+        g_free(command);
+    }
+}
+
 static gboolean
 _handle_command(Debugger *self)
 {
@@ -237,7 +260,7 @@ _handle_command(Debugger *self)
   gboolean result = TRUE;
   DebuggerCommandFunc command = NULL;
 
-  if (!g_shell_parse_argv(self->command_buffer, &argc, &argv, &error))
+  if (!g_shell_parse_argv(self->command_buffer ? : "", &argc, &argv, &error))
     {
       printf("%s\n", error->message);
       g_clear_error(&error);
@@ -296,28 +319,18 @@ _interactive_console_thread_func(Debugger *self)
   return NULL;
 }
 
-Debugger *
-debugger_new(GlobalConfig *cfg)
+void
+debugger_start_console(Debugger *self)
 {
-  Debugger *self = g_new0(Debugger, 1);
-
-  self->tracer = tracer_new(cfg);
-  self->cfg = cfg;
-  self->display_template = log_template_new(cfg, NULL);
-  log_template_compile(self->display_template, "$DATE $HOST $MSGHDR$MSG", NULL);
-  return self;
+  g_thread_create((GThreadFunc) _interactive_console_thread_func, self, FALSE, NULL);
 }
 
-static Debugger *current_debugger;
-
-static gboolean
-_pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+gboolean
+debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe, LogMessage *msg)
 {
-  Debugger *self = current_debugger;
-
   self->drop_current_message = FALSE;
   self->current_msg = log_msg_ref(msg);
-  self->current_pipe = log_pipe_ref(s);
+  self->current_pipe = log_pipe_ref(pipe);
   tracer_stop_on_breakpoint(self->tracer);
   log_msg_unref(self->current_msg);
   log_pipe_unref(self->current_pipe);
@@ -326,12 +339,23 @@ _pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   return !self->drop_current_message;
 }
 
-void
-debugger_start(GlobalConfig *cfg)
+Debugger *
+debugger_new(GlobalConfig *cfg)
 {
-  /* we don't support threaded mode (yet), force it to non-threaded */
-  cfg->threaded = FALSE;
-  current_debugger = debugger_new(cfg);
-  pipe_single_step_hook = _pipe_hook;
-  g_thread_create((GThreadFunc) _interactive_console_thread_func, current_debugger, FALSE, NULL);
+  Debugger *self = g_new0(Debugger, 1);
+
+  self->tracer = tracer_new(cfg);
+  self->cfg = cfg;
+  self->display_template = log_template_new(cfg, NULL);
+  self->command_buffer = g_strdup("help");
+  log_template_compile(self->display_template, "$DATE $HOST $MSGHDR$MSG", NULL);
+  return self;
+}
+
+void
+debugger_free(Debugger *self)
+{
+  log_template_unref(self->display_template);
+  tracer_free(self->tracer);
+  g_free(self);
 }

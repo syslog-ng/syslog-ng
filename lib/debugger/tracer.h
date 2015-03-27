@@ -40,5 +40,6 @@ void tracer_wait_for_breakpoint(Tracer *self);
 void tracer_resume_after_breakpoint(Tracer *self);
 
 Tracer *tracer_new(GlobalConfig *cfg);
+void tracer_free(Tracer *self);
 
 #endif
