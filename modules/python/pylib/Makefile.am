@@ -11,6 +11,7 @@ EXTRA_DIST += \
 	modules/python/pylib/syslogng/debuggercli/lexer.py			\
 	modules/python/pylib/syslogng/debuggercli/lexertoken.py			\
 	modules/python/pylib/syslogng/debuggercli/tablexer.py			\
+,	modules/python/pylib/syslogng/debuggercli/templatelexer.py		\
 	modules/python/pylib/syslogng/debuggercli/tests/test_completer.py    	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_commandlinelexer.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_completerlang.py	\
@@ -18,6 +19,7 @@ EXTRA_DIST += \
 	modules/python/pylib/syslogng/debuggercli/tests/test_getoptlexer.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_lexer.py		\
 	modules/python/pylib/syslogng/debuggercli/tests/test_tablexer.py	\
+	modules/python/pylib/syslogng/debuggercli/tests/test_templatelexer.py	\
 	modules/python/pylib/setup.py
 
 PYLIB_PATH = modules/python/pylib
