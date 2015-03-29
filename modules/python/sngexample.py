@@ -1,15 +1,15 @@
 class LogDestination(object):
 
     def open(self):
-	"""Open a connection to the target service"""
+        """Open a connection to the target service"""
         return True
 
     def close(self):
-	"""Close the connection to the target service"""
+        """Close the connection to the target service"""
         pass
 
     def is_opened(self):
-	"""Check if the connection to the target is able to receive messages"""
+        """Check if the connection to the target is able to receive messages"""
         return True
 
     def init(self):
@@ -26,6 +26,7 @@ class LogDestination(object):
         It should return True to indicate success, False will suspend the
         destination for a period specified by the time-reopen() option."""
         pass
+
 
 class DummyPythonDest(LogDestination):
     def send(self, msg):
