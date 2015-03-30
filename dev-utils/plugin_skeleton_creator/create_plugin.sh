@@ -25,7 +25,7 @@ file_list="plugin_template_grammar.ym
            plugin_template_parser.h
            plugin_template_plugin.c"
 
-while getopts "k:n:t:h" opt; do
+while getopts "k:n:t:d:h" opt; do
   case ${opt} in
     h)
       help=1
