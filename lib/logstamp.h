@@ -43,7 +43,7 @@ typedef struct _LogStamp
 } LogStamp;
 
 void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);
-void log_stamp_append_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);
+void log_stamp_append_format(const LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);
 
 
 #endif

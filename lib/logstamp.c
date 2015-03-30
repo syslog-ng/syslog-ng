@@ -28,7 +28,7 @@
 #include "str-format.h"
 
 static void
-log_stamp_append_frac_digits(LogStamp *stamp, GString *target, gint frac_digits)
+log_stamp_append_frac_digits(const LogStamp *stamp, GString *target, gint frac_digits)
 {
   glong usecs;
 
@@ -59,7 +59,7 @@ log_stamp_append_frac_digits(LogStamp *stamp, GString *target, gint frac_digits)
  * @ts_format and @tz_convert. 
  **/
 void
-log_stamp_append_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
+log_stamp_append_format(const LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
 {
   glong target_zone_offset = 0;
   struct tm *tm, tm_storage;

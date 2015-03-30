@@ -157,7 +157,7 @@ TLS_BLOCK_END;
  **********************************************************************/
 
 static inline gboolean
-log_msg_chk_flag(LogMessage *self, gint32 flag)
+log_msg_chk_flag(const LogMessage *self, gint32 flag)
 {
   return self->flags & flag;
 }
@@ -206,7 +206,7 @@ static StatsCounterItem *count_sdata_updates;
 static GStaticPrivate priv_macro_value = G_STATIC_PRIVATE_INIT;
 
 static inline gboolean
-log_msg_is_write_protected(LogMessage *self)
+log_msg_is_write_protected(const LogMessage *self)
 {
   return self->protect_cnt > 0;
 }
@@ -382,7 +382,7 @@ __free_macro_value(void *val)
 }
 
 const gchar *
-log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len)
+log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len)
 {
   GString *value;
 
@@ -630,7 +630,7 @@ log_msg_clear_matches(LogMessage *self)
 #endif
 
 static inline void
-log_msg_tags_foreach_item(LogMessage *self, gint base, gulong item, LogMessageTagsForeachFunc callback, gpointer user_data)
+log_msg_tags_foreach_item(const LogMessage *self, gint base, gulong item, LogMessageTagsForeachFunc callback, gpointer user_data)
 {
   gint i;
 
@@ -650,7 +650,7 @@ log_msg_tags_foreach_item(LogMessage *self, gint base, gulong item, LogMessageTa
 
 
 void
-log_msg_tags_foreach(LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data)
+log_msg_tags_foreach(const LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data)
 {
   guint i;
 
@@ -808,7 +808,7 @@ log_msg_sdata_append_escaped(GString *result, const gchar *sstr, gssize len)
 }
 
 void
-log_msg_append_format_sdata(LogMessage *self, GString *result,  guint32 seq_num)
+log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 seq_num)
 {
   const gchar *value;
   const gchar *sdata_name, *sdata_elem, *sdata_param, *cur_elem = NULL, *dot;
@@ -942,14 +942,14 @@ log_msg_append_format_sdata(LogMessage *self, GString *result,  guint32 seq_num)
 }
 
 void
-log_msg_format_sdata(LogMessage *self, GString *result,  guint32 seq_num)
+log_msg_format_sdata(const LogMessage *self, GString *result,  guint32 seq_num)
 {
   g_string_truncate(result, 0);
   log_msg_append_format_sdata(self, result, seq_num);
 }
 
 gboolean
-log_msg_append_tags_callback(LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data)
+log_msg_append_tags_callback(const LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data)
 {
   GString *result = (GString *) ((gpointer *) user_data)[0];
   gint original_length = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
@@ -964,7 +964,7 @@ log_msg_append_tags_callback(LogMessage *self, LogTagId tag_id, const gchar *nam
 }
 
 void
-log_msg_print_tags(LogMessage *self, GString *result)
+log_msg_print_tags(const LogMessage *self, GString *result)
 {
   gpointer args[] = { result, GUINT_TO_POINTER(result->len) };
 
@@ -1670,9 +1670,9 @@ log_msg_global_deinit(void)
 }
 
 static const gchar *
-__log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
+__log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
 __attribute__((alias("log_msg_get_value")));
 
 static const gchar *
-__log_msg_get_value_by_name(LogMessage *self, const gchar *name, gssize *value_len)
+__log_msg_get_value_by_name(const LogMessage *self, const gchar *name, gssize *value_len)
 __attribute__((alias("log_msg_get_value_by_name")));

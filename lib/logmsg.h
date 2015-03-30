@@ -222,10 +222,10 @@ log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
   return (handle >= LM_V_MAX);
 }
 
-const gchar *log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len);
+const gchar *log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len);
 
 static inline const gchar *
-log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
+log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
 {
   guint16 flags;
 
@@ -237,13 +237,13 @@ log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
 }
 
 static inline const gchar *
-log_msg_get_value_by_name(LogMessage *self, const gchar *name, gssize *value_len)
+log_msg_get_value_by_name(const LogMessage *self, const gchar *name, gssize *value_len)
 {
   NVHandle handle = log_msg_get_value_handle(name);
   return log_msg_get_value(self, handle, value_len);
 }
 
-typedef gboolean (*LogMessageTagsForeachFunc)(LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data);
+typedef gboolean (*LogMessageTagsForeachFunc)(const LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data);
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
 void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
@@ -258,8 +258,8 @@ log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *valu
   log_msg_set_value(self, handle, value, length);
 }
 
-void log_msg_append_format_sdata(LogMessage *self, GString *result, guint32 seq_num);
-void log_msg_format_sdata(LogMessage *self, GString *result, guint32 seq_num);
+void log_msg_append_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
+void log_msg_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
 
 void log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on);
 void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);
@@ -268,8 +268,8 @@ void log_msg_clear_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_is_tag_by_id(LogMessage *self, LogTagId id);
 gboolean log_msg_is_tag_by_name(LogMessage *self, const gchar *name);
-void log_msg_tags_foreach(LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data);
-void log_msg_print_tags(LogMessage *self, GString *result);
+void log_msg_tags_foreach(const LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data);
+void log_msg_print_tags(const LogMessage *self, GString *result);
 
 LogMessageQueueNode *log_msg_alloc_queue_node(LogMessage *msg, const LogPathOptions *path_options);
 LogMessageQueueNode *log_msg_alloc_dynamic_queue_node(LogMessage *msg, const LogPathOptions *path_options);
