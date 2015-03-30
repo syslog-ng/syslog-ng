@@ -6,6 +6,7 @@ EXTRA_DIST += \
 	modules/python/pylib/syslogng/debuggercli/completer.py			\
 	modules/python/pylib/syslogng/debuggercli/completerlang.py		\
 	modules/python/pylib/syslogng/debuggercli/debuglang.py			\
+	modules/python/pylib/syslogng/debuggercli/debuggercli.py		\
 	modules/python/pylib/syslogng/debuggercli/getoptlexer.py		\
 	modules/python/pylib/syslogng/debuggercli/langcompleter.py		\
 	modules/python/pylib/syslogng/debuggercli/lexer.py			\
@@ -18,6 +19,7 @@ EXTRA_DIST += \
 	modules/python/pylib/syslogng/debuggercli/tests/test_commandlinelexer.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_completerlang.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_choicecompleter.py	\
+	modules/python/pylib/syslogng/debuggercli/tests/test_debuggercli.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_getoptlexer.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_lexer.py		\
 	modules/python/pylib/syslogng/debuggercli/tests/test_tablexer.py	\
