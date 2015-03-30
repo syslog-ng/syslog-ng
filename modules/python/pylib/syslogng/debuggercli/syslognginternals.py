@@ -60,6 +60,23 @@ def get_template_functions():
     )
 
 
+def get_value_pairs_scopes():
+    return (
+        "nv-pairs",
+        "dot-nv-pairs",
+        "all-nv-pairs",
+        "rfc3164",
+        "core",
+        "base",
+        "rfc5424",
+        "syslog-proto",
+        "all-macros",
+        "selected-macros",
+        "sdata",
+        "everything",
+    )
+
+
 # override implementations from the module supplied by the C implementation.
 try:
     from _syslogngdbg import *
