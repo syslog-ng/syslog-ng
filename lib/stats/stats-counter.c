@@ -30,11 +30,20 @@ _reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer 
   stats_counter_set(counter, 0);
 }
 
+static inline void
+_reset_non_stored_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+{
+  if (type != SC_TYPE_STORED)
+    {
+      _reset_counter(sc, type, counter, user_data);
+    }
+}
+
 void
-stats_reset_counters(void)
+stats_reset_non_stored_counters(void)
 {
   stats_lock();
-  stats_foreach_counter(_reset_counter, NULL);
+  stats_foreach_counter(_reset_non_stored_counter, NULL);
   stats_unlock();
 }
 
