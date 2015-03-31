@@ -36,6 +36,7 @@
 
 #include <amqp.h>
 #include <amqp_framing.h>
+#include <amqp_tcp_socket.h>
 
 typedef struct
 {
@@ -261,7 +262,7 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
 
     case AMQP_RESPONSE_LIBRARY_EXCEPTION:
       {
-        gchar *errstr = amqp_error_string2(ret.library_error);
+        const gchar *errstr = amqp_error_string2(ret.library_error);
         msg_error(context,
                   evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_str("error", errstr),
@@ -353,7 +354,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 
   if (sockfd_ret != AMQP_STATUS_OK)
     {
-      gchar *errstr = amqp_error_string2(-sockfd_ret);
+      const gchar *errstr = amqp_error_string2(-sockfd_ret);
       msg_error("Error connecting to AMQP server",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", errstr),
@@ -402,7 +403,6 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
     amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
   exception_amqp_dd_connect_failed_channel:
 
-  exception_amqp_dd_connect_failed_login:
     amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
   exception_amqp_dd_connect_failed_init:
     _amqp_connection_deinit(self);
