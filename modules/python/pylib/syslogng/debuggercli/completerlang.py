@@ -15,7 +15,7 @@ class CompleterLang(object):
 
     def __init__(self):
         self._initialize_rules()
-        self._parser = yacc.yacc(module=self, write_tables=False)
+        self._parser = yacc.yacc(module=self, write_tables=False, debug=False, errorlog=yacc.NullLogger())
         self._lexer = TabLexer(self._construct_lexer())
         self._expected_tokens = []
         self._token_position = -1
