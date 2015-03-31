@@ -11,20 +11,28 @@ EXTRA_DIST += \
 	modules/python/pylib/syslogng/debuggercli/langcompleter.py		\
 	modules/python/pylib/syslogng/debuggercli/lexer.py			\
 	modules/python/pylib/syslogng/debuggercli/lexertoken.py			\
+	modules/python/pylib/syslogng/debuggercli/macrocompleter.py		\
 	modules/python/pylib/syslogng/debuggercli/readline.py			\
+	modules/python/pylib/syslogng/debuggercli/syslognginternals.py		\
 	modules/python/pylib/syslogng/debuggercli/tablexer.py			\
 	modules/python/pylib/syslogng/debuggercli/templatelang.py		\
-,	modules/python/pylib/syslogng/debuggercli/templatelexer.py		\
+	modules/python/pylib/syslogng/debuggercli/templatelexer.py		\
 	modules/python/pylib/syslogng/debuggercli/tflang.py			\
+	modules/python/pylib/syslogng/debuggercli/tests/__init__.py		\
 	modules/python/pylib/syslogng/debuggercli/tests/test_completer.py    	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_commandlinelexer.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_completerlang.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_choicecompleter.py	\
+	modules/python/pylib/syslogng/debuggercli/tests/test_debuglang.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_debuggercli.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_getoptlexer.py	\
+	modules/python/pylib/syslogng/debuggercli/tests/test_langcompleter.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_lexer.py		\
+	modules/python/pylib/syslogng/debuggercli/tests/test_macrocompleter.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_tablexer.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_templatelexer.py	\
+	modules/python/pylib/syslogng/debuggercli/tests/test_templatelang.py	\
+	modules/python/pylib/syslogng/debuggercli/tests/test_tflang.py		\
 	modules/python/pylib/setup.py						\
 	modules/python/pylib/pylintrc
 
