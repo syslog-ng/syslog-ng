@@ -30,8 +30,5 @@ class ChoiceCompleter(Completer):
     def _chop_prefixes(self, entire_input, word_to_be_completed):
         if word_to_be_completed == entire_input:
             word_to_be_completed = word_to_be_completed[len(self._prefix):]
-            self._completing_at_the_beginning_of_the_grammar = True
-        else:
-            self._completing_at_the_beginning_of_the_grammar = False
         entire_input = entire_input[len(self._prefix):]
         return entire_input, word_to_be_completed

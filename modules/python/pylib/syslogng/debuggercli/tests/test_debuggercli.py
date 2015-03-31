@@ -4,8 +4,8 @@ from ..debuggercli import DebuggerCLI
 
 
 class TestDebuggerCLI(CompleterTestCase):
-    def setUp(self):
-        self._completer = DebuggerCLI().get_root_completer()
+    def _construct_completer(self):
+        return DebuggerCLI().get_root_completer()
 
     def test_no_text_offers_the_potential_prefixes_of_a_template_expr(self):
         self._assert_completions_offered(entire_input="print ", word="", expected_completions=['$', '$(', '${'])

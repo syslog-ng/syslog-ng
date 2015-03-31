@@ -10,9 +10,10 @@ class TabLexer(Lexer):
         self._replaced_token = None
         self._buffered_tokens = None
         self._buffer_count = 0
+        self._is_last_token = False
 
-    def input(self, input):
-        self._lexer.input(input)
+    def input(self, text):
+        self._lexer.input(text)
         self._end_of_tokens = False
         self._buffered_tokens = None
         self._replaced_token = None

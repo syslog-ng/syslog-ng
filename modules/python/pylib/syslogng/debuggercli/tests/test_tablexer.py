@@ -24,7 +24,7 @@ class GenNumbersLexer(Lexer):
                               lexpos=lexpos)
         return None
 
-    def input(self, input):
+    def input(self, text):
         self._current_position = 0
         self._token_count = 0
 
@@ -36,13 +36,15 @@ class TestTabLexer(TestLexer):
     def setUp(self):
         self._lexer = self._construct_lexer()
 
+    # pylint: disable=arguments-differ
     def _construct_lexer(self, num_tokens=5, mark_last_partial=False):
         lexer = TabLexer(GenNumbersLexer(num_tokens, mark_last_partial=mark_last_partial))
         self._consume_all_tokens(lexer)
         lexer.input('')
         return lexer
 
-    def _consume_all_tokens(self, lexer):
+    @staticmethod
+    def _consume_all_tokens(lexer):
         while lexer.token() is not None:
             pass
 

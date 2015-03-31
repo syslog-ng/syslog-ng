@@ -5,6 +5,7 @@ from .getoptlexer import GetoptLexer
 
 
 class TemplateFunctionLang(CompleterLang):
+    tokens = []
     tokens_base = [
         "COMMAND", "ARG", "OPT"
     ]
@@ -98,7 +99,8 @@ class TemplateFunctionLang(CompleterLang):
                            known_commands=self.known_commands,
                            known_options=self.known_options)
 
-    def _tokenize_argument(self, arg):
+    @staticmethod
+    def _tokenize_argument(arg):
         return arg.upper().replace('-', '_')
 
     def _convert_known_commands_to_tokens(self, tokens):

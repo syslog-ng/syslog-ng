@@ -13,6 +13,7 @@ class TestGetoptLexer(TestLexer):
         }
         self._lexer = self._construct_lexer()
 
+    # pylint: disable=arguments-differ
     def _construct_lexer(self, known_commands=None, known_options=None, aliases=None):
         return GetoptLexer(CommandLineLexer(),
                            known_commands=known_commands or self._known_commands,

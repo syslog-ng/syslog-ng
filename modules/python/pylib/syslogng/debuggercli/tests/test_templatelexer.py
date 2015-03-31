@@ -6,7 +6,7 @@ from .test_lexer import TestLexer
 class TestTemplateLexer(TestLexer):
 
     def _construct_lexer(self):
-        return templatelexer.construct_lexer()
+        return templatelexer.TemplateLexer()
 
     def test_template_literals_are_returned_as_literal_tokens(self):
         self._lexer.input("foobar barfoo")

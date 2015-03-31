@@ -8,5 +8,4 @@ setup(name='syslogng',
       author='Balazs Scheidler',
       author_email='balazs.scheidler@balabit.com',
       url='https://www.syslog-ng.org',
-      packages=['syslogng', 'syslogng.debuggercli'],
-     )
+      packages=['syslogng', 'syslogng.debuggercli'])

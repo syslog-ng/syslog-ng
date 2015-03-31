@@ -37,9 +37,10 @@ class MacroCompleter(Completer):
         return False
 
     def _is_valid_macro(self, macro):
-        return all(map(self._is_valid_macro_char, macro))
+        return all(self._is_valid_macro_char(c) for c in macro)
 
-    def _is_valid_macro_char(self, macro_char):
+    @staticmethod
+    def _is_valid_macro_char(macro_char):
         if macro_char >= 'A' and macro_char <= 'Z':
             return True
         if macro_char >= 'a' and macro_char <= 'z':
@@ -85,21 +86,25 @@ class MacroCompleter(Completer):
         return self._completions
 
     def _is_word_a_date_prefix(self, word):
-        return word[:3] in map(lambda x: '$' + x, self._date_wildcards.keys())
+        return word[:3] in ['$' + x for x in self._date_wildcards.keys()]
 
-    def _is_word_a_numbered_match_prefix(self, word):
+    @staticmethod
+    def _is_word_a_numbered_match_prefix(word):
         return word[0] == '$' and word[1:2].isdigit()
 
-    def _is_word_a_nonbraced_prefix(self, word):
+    @staticmethod
+    def _is_word_a_nonbraced_prefix(word):
         return word[0] == '$' and word[1] != '{'
 
-    def _is_word_a_numbered_match_prefix_with_brace(self, word):
+    @staticmethod
+    def _is_word_a_numbered_match_prefix_with_brace(word):
         return word[0:2] == '${' and word[2:3].isdigit()
 
     def _is_word_a_date_prefix_with_brace(self, word):
-        return word[:4] in map(lambda x: '${' + x, self._date_wildcards.keys())
+        return word[:4] in ['${' + x for x in self._date_wildcards.keys()]
 
-    def _is_word_a_braced_prefix(self, word):
+    @staticmethod
+    def _is_word_a_braced_prefix(word):
         return word[0:2] == '${'
 
     @staticmethod
@@ -124,10 +129,10 @@ class MacroCompleter(Completer):
     def _is_macro_a_small_numbered_match(cls, macro):
         return cls._is_macro_a_numbered_match(macro) and int(macro) < 10
 
-    def _collect_macros_generic(self, predicate, format):
+    def _collect_macros_generic(self, predicate, template):
         for macro in self._macros or get_nv_registry():
             if predicate(macro):
-                yield format.format(macro)
+                yield template.format(macro)
 
     def _collect_macros(self, predicate):
         return self._collect_macros_generic(predicate, '${}')

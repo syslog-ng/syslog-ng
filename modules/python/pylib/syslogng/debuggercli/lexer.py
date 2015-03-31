@@ -10,7 +10,7 @@ class Lexer(object):
         raise NotImplementedError
 
     @abstractmethod
-    def input(self, input):
+    def input(self, text):
         raise NotImplementedError
 
     @abstractmethod

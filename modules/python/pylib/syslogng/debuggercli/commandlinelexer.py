@@ -11,10 +11,15 @@ class CommandLineLexer(Lexer):
     """This an inperfect lexer for both the debug language and template functions"""
     def __init__(self):
         self._tokens = []
+        self._input = ''
         self._current_token = 0
+        self._current_state = CLL_NORMAL
+        self._paren_balance = 0
+        self._current_position = 0
+        self._quote_open_character = ''
 
-    def input(self, input):
-        self._input = input
+    def input(self, text):
+        self._input = text
         self._current_position = 0
         self._current_state = CLL_NORMAL
         self._paren_balance = 0

@@ -7,7 +7,7 @@ class TestLexer(unittest.TestCase):
         self._lexer = self._construct_lexer()
         self._current_token = None
 
-    def _construct_lexer(self):
+    def _construct_lexer(self, *args, **kwargs):
         raise NotImplementedError
 
     def _next_token(self):

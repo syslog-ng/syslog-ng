@@ -4,6 +4,7 @@ from ..choicecompleter import ChoiceCompleter
 
 
 class TestChoiceCompleter(CompleterTestCase):
+    # pylint: disable=arguments-differ
     def _construct_completer(self, choices=None, prefix=None, suffix=None):
         return ChoiceCompleter(choices or ['foo', 'bar', 'baz'],
                                prefix=prefix,

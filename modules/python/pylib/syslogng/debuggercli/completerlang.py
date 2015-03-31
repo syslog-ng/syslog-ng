@@ -27,9 +27,9 @@ class CompleterLang(object):
     def _initialize_rules(self):
         pass
 
-    def get_expected_tokens(self, input, drop_last_token):
+    def get_expected_tokens(self, text, drop_last_token):
         self._lexer.set_drop_last_token(drop_last_token)
-        self._parser.parse(input, lexer=self._lexer)
+        self._parser.parse(text, lexer=self._lexer)
         return self._expected_tokens, self._lexer.get_replaced_token(), self._token_position
 
     def p_error(self, p):
@@ -47,6 +47,7 @@ class CompleterLang(object):
             # this is the very function that is close enough to the caller, moving this information
             # deeper would probably improve readability at the cost of increasing fragility.
 
+            # pylint: disable=protected-access
             parser_state = sys._getframe(1).f_locals['state']
 
             # now handle the error that the TAB token caused
@@ -78,7 +79,7 @@ class CompleterLang(object):
                 self._collect_expected_productions(next_state)
 
     def _collect_expected_productions(self, state):
-        for token, next_state in self._iter_parser_actions(state):
+        for _, next_state in self._iter_parser_actions(state):
             if next_state < 0:
                 # production shift, we care about production shifts which would translate the
                 # next_state token
@@ -89,7 +90,8 @@ class CompleterLang(object):
     def _iter_parser_actions(self, parser_state):
         return self._parser.action[parser_state].items()
 
-    def _are_we_shifting_a_production(self, state):
+    @staticmethod
+    def _are_we_shifting_a_production(state):
         return state < 0
 
     def _shift_production(self, production, token):

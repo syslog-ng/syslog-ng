@@ -10,8 +10,8 @@ class GetoptLexer(Lexer):
         self._known_options = known_options or {}
         self._aliases = aliases or {}
 
-    def input(self, input):
-        self._lexer.input(input)
+    def input(self, text):
+        self._lexer.input(text)
         self._current_token = 0
 
     def token(self):

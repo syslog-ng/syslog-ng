@@ -7,6 +7,7 @@ from ..lexertoken import LexerToken
 
 
 class DummyLang(CompleterLang):
+    # pylint: disable=super-init-not-called
     def __init__(self, expected_tokens, replaced_token=None, replaced_token_pos=-1):
         self._expected_tokens = expected_tokens
         self._replaced_token = replaced_token
@@ -15,7 +16,7 @@ class DummyLang(CompleterLang):
     def _construct_lexer(self):
         pass
 
-    def get_expected_tokens(self, input, drop_last_token):
+    def get_expected_tokens(self, text, drop_last_token):
         if self._replaced_token is not None:
             replaced_token = LexerToken(type=self._expected_tokens,
                                         value=self._replaced_token,
@@ -34,6 +35,7 @@ class TestLangCompleter(CompleterTestCase):
         'PARTIAL_TOKEN': ChoiceCompleter(("tokenP-a", "tokenP-b"), prefix='@', suffix='')
     }
 
+    # pylint: disable=arguments-differ,too-many-arguments
     def _construct_completer(self, expected_token=None, expected_tokens=None,
                              replaced_token=None, replaced_token_pos=-1,
                              completers=None, prefix="<!--"):

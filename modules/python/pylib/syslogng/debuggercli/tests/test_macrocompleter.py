@@ -3,6 +3,7 @@ from ..macrocompleter import MacroCompleter
 
 
 class TestMacroCompleter(CompleterTestCase):
+    # pylint: disable=arguments-differ
     def _construct_completer(self, macros=None):
         return MacroCompleter(macros=macros or ['MSG', 'MSGHDR', 'HOST',
                                                 '.unix.uid', '.unix.gid',

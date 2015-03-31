@@ -8,17 +8,21 @@ class LexBasedLexer(Lexer):
     def __init__(self):
         self._lexer = lex.lex(object=self)
         self._lexer.current_token = ''
+        self._lexer.current_token_pos = -1
 
     def token(self):
         token = self._lexer.token()
         if token is None and self._lexer.lexstate != 'INITIAL':
-            return LexerToken('LITERAL', value=self._lexer.current_token, partial=True, lexpos=self._lexer.current_token_pos)
+            return LexerToken('LITERAL',
+                              value=self._lexer.current_token,
+                              partial=True,
+                              lexpos=self._lexer.current_token_pos)
         return token
 
-    def input(self, input):
+    def input(self, text):
         while len(self._lexer.lexstatestack) > 0:
             self._lexer.pop_state()
-        return self._lexer.input(input)
+        return self._lexer.input(text)
 
     def get_position(self):
         return self._lexer.lexpos
@@ -29,7 +33,7 @@ class TemplateLexerError(Exception):
 
 
 class TemplateLexer(LexBasedLexer):
-
+    # pylint: disable=no-self-use,invalid-name
     tokens = (
         'LITERAL', 'MACRO', "TEMPLATE_FUNC"
     )
@@ -88,11 +92,6 @@ class TemplateLexer(LexBasedLexer):
         t.lexer.paren_count = 1
         t.lexer.current_token = '$('
         t.lexer.current_token_pos = t.lexpos - 1
-
-        #t.partial = True
-        #t.type = 'TEMPLATE_FUNC'
-        #t.value = '$('
-        #return t
 
     def t_dollarparen_PAREN_OPEN(self, t):
         r'\('

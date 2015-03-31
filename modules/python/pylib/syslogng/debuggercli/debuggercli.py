@@ -18,7 +18,8 @@ class DebuggerCLI(object):
         self.tflang_completers['name_value_name'] = ChoiceCompleter(get_nv_registry())
         self.tflang_completers['value_pairs_scope'] = ChoiceCompleter(get_value_pairs_scopes())
         self.tflang_completers['OPT'] = ChoiceCompleter(TemplateFunctionLang.known_options)
-        self.tflang_completers['template'] = LangBasedCompleter(parser=TemplateLang(), completers=self.template_completers)
+        self.tflang_completers['template'] = LangBasedCompleter(parser=TemplateLang(),
+                                                                completers=self.template_completers)
 
     def _setup_template_completers(self):
         self.template_completers['MACRO'] = MacroCompleter()
