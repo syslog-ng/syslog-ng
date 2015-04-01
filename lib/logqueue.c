@@ -188,6 +188,7 @@ log_queue_init_instance(LogQueue *self, const gchar *persist_name)
 void
 log_queue_free_method(LogQueue *self)
 {
+  g_static_mutex_free(&self->lock);
   g_free(self->persist_name);
   g_free(self);
 }
