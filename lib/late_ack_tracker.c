@@ -200,6 +200,8 @@ late_ack_tracker_free(AckTracker *s)
   LateAckTracker *self = (LateAckTracker *)s;
   guint32 count = ring_buffer_count(&self->ack_record_storage);
 
+  g_static_mutex_free(&self->storage_mutex);
+
   _drop_range(self, count);
 
   ring_buffer_free(&self->ack_record_storage);

@@ -319,6 +319,8 @@ affile_dw_free(LogPipe *s)
   AFFileDestWriter *self = (AFFileDestWriter *) s;
   
   log_pipe_unref((LogPipe *) self->writer);
+
+  g_static_mutex_free(&self->lock);
   self->writer = NULL;
   g_free(self->filename);
   log_pipe_unref(&self->owner->super.super.super);
@@ -703,6 +705,8 @@ static void
 affile_dd_free(LogPipe *s)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  g_static_mutex_free(&self->lock);
   
   /* NOTE: this must be NULL as deinit has freed it, otherwise we'd have circular references */
   g_assert(self->single_writer == NULL && self->writer_hash == NULL);
