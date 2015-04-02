@@ -3,7 +3,7 @@
 top_srcdir="$(git rev-parse --show-toplevel)"
 
 function print_help {
-  echo "This script help to create new plugin with creating skeleton"
+  echo "This script helps to create new plugin by creating a skeleton"
   echo "Parameters:"
   echo -e "\t-n\tName of the plugin (required)"
   echo -e "\t-k\tThe keyword in config file (default: name of the plugin)"
