@@ -40,7 +40,7 @@ static const gchar *control_name;
 static ControlClient *control_client;
 
 static gboolean
-slng_send_cmd(gchar *cmd)
+slng_send_cmd(const gchar *cmd)
 {
   if (!control_client_connect(control_client))
     {

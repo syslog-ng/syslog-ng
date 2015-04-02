@@ -581,7 +581,11 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
     log_msg_update_sdata(self, handle, name, name_len);
 }
 
-
+gboolean
+log_msg_values_foreach(LogMessage *self, NVTableForeachFunc func, gpointer user_data)
+{
+  return nv_table_foreach(self->payload, logmsg_registry, func, user_data);
+}
 
 void
 log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len)
@@ -1095,7 +1099,7 @@ log_msg_merge_context(LogMessage *self, LogMessage **context, gsize context_len)
     {
       LogMessage *msg_to_be_merged = context[i];
 
-      log_msg_nv_table_foreach(msg_to_be_merged->payload, _merge_value, self);
+      log_msg_values_foreach(msg_to_be_merged, _merge_value, self);
     }
 }
 
@@ -1641,6 +1645,12 @@ log_msg_registry_deinit(void)
 }
 
 void
+log_msg_registry_foreach(GHFunc func, gpointer user_data)
+{
+  nv_registry_foreach(logmsg_registry, func, user_data);
+}
+
+void
 log_msg_global_init(void)
 {
   log_msg_registry_init();
@@ -1655,12 +1665,6 @@ const gchar *
 log_msg_get_handle_name(NVHandle handle, gssize *length)
 {
   return nv_registry_get_handle_name(logmsg_registry, handle, length);
-}
-
-gboolean
-log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data)
-{
-  return nv_table_foreach(self, logmsg_registry, func, user_data);
 }
 
 void

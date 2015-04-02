@@ -26,6 +26,42 @@
 #include "python-helpers.h"
 #include "messages.h"
 #include "debugger/debugger.h"
+#include "logmsg.h"
+
+static void
+_add_nv_keys_to_list(gpointer key, gpointer value, gpointer user_data)
+{
+  PyObject *list = (PyObject *) user_data;
+  const gchar *name = (const gchar *) key;
+
+  PyList_Append(list, PyString_FromString(name));
+}
+
+static PyObject *
+_py_get_nv_registry(PyObject *s, PyObject *args)
+{
+  PyObject *list;
+
+  if (!PyArg_ParseTuple(args, ""))
+    return NULL;
+
+  list = PyList_New(0);
+  log_msg_registry_foreach(_add_nv_keys_to_list, list);
+  return list;
+}
+
+static PyMethodDef _syslogngdbg_functions[] =
+{
+  { "get_nv_registry",  _py_get_nv_registry, METH_VARARGS, "Get the list of registered name-value pairs in syslog-ng" },
+  { NULL,            NULL, 0, NULL }   /* sentinel*/
+};
+
+
+static void
+python_debugger_export_internals(void)
+{
+  Py_InitModule("_syslogngdbg", _syslogngdbg_functions);
+}
 
 #define DEBUGGER_FETCH_COMMAND "syslogng.debuggercli.fetch_command"
 
@@ -75,5 +111,6 @@ python_fetch_debugger_command(void)
 void
 python_debugger_init(void)
 {
+  python_debugger_export_internals();
   debugger_register_command_fetcher(python_fetch_debugger_command);
 }

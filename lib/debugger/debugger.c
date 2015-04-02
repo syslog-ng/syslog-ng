@@ -53,7 +53,7 @@ _display_msg_details(Debugger *self, LogMessage *msg)
 {
   GString *output = g_string_sized_new(128);
 
-  log_msg_nv_table_foreach(msg->payload, _format_nvpair, NULL);
+  log_msg_values_foreach(msg, _format_nvpair, NULL);
   g_string_truncate(output, 0);
   log_msg_print_tags(msg, output);
   printf("TAGS=%s\n", output->str);
