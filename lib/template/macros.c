@@ -183,7 +183,7 @@ static GHashTable *macro_hash;
 static LogTemplateOptions template_options_for_macro_expand;
 
 static void
-_result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean escape)
+_result_append_value(GString *result, const LogMessage *lm, NVHandle handle, gboolean escape)
 {
   const gchar *str;
   gssize len = 0;
@@ -193,7 +193,7 @@ _result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean 
 }
 
 gboolean
-log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg)
+log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, const LogMessage *msg)
 {
   switch (id)
     {
@@ -430,7 +430,8 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
         gchar buf[64];
         gint length;
         time_t t;
-        LogStamp *stamp, sstamp;
+        const LogStamp *stamp;
+        LogStamp sstamp;
         glong zone_ofs;
         guint tmp_hour;
 
@@ -570,7 +571,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
 }
 
 gboolean
-log_macro_expand_simple(GString *result, gint id, LogMessage *msg)
+log_macro_expand_simple(GString *result, gint id, const LogMessage *msg)
 {
   return log_macro_expand(result, id, FALSE, &template_options_for_macro_expand, LTZ_LOCAL, 0, NULL, msg);
 }

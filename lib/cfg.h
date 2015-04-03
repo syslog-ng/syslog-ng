@@ -173,4 +173,8 @@ cfg_set_use_uniqid(gboolean flag)
   configuration->use_uniqid = !!flag;
 }
 
+gint cfg_get_user_version(const GlobalConfig *cfg);
+gint cfg_get_parsed_version(const GlobalConfig *cfg);
+const gchar* cfg_get_filename(const GlobalConfig *cfg);
+
 #endif
