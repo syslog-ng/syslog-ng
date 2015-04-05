@@ -1,6 +1,6 @@
 language: c
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./.bootstrap/travis_install_ubuntu.sh; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash .bootstrap/travis_install_ubuntu.sh; fi
 before_script:
   - ./autogen.sh
 script:
