@@ -100,8 +100,8 @@ file { "$VAGRANT_HOME/project":
 }
 
 $shell_profile_files = [
-  "$PROJECT_HOME/.bash_profile",
-  "$PROJECT_HOME/.zprofile"
+  "$VAGRANT_HOME/.bash_profile",
+  "$VAGRANT_HOME/.zprofile"
 ]
 
 file { $shell_profile_files :
