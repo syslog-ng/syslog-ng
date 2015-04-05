@@ -977,7 +977,36 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           *p = ' ';
           p++;
         }
+    } else if (self->options->options & LWO_MULTI_LINE_TO_CR)
+    {
+      gchar *p;
 
+      p = result->str;
+      /* NOTE: the size is calculated to leave trailing new line */
+      while ((p = find_cr_or_lf(p, result->str + result->len - p - 1)))
+        {
+          if (*(p-1) != '\r') {
+              *p = '\r';
+          } else {
+              *p = ' ';
+          }
+          p++;
+        }
+    } else if (self->options->options & LWO_MULTI_LINE_TO_LF)
+    {
+      gchar *p;
+
+      p = result->str;
+      /* NOTE: the size is calculated to leave trailing new line */
+      while ((p = find_cr_or_lf(p, result->str + result->len - p - 1)))
+        {
+          if (*(p-1) != '\n') {
+              *p = '\n';
+          } else {
+              *p = ' ';
+          }
+          p++;
+        }
     }
 }
 
@@ -1560,6 +1589,10 @@ log_writer_options_lookup_flag(const gchar *flag)
     return LWO_THREADED;
   if (strcmp(flag, "ignore-errors") == 0 || strcmp(flag, "ignore_errors") == 0)
     return LWO_IGNORE_ERRORS;
+  if (strcmp(flag, "multi-line-to-cr") == 0 || strcmp(flag, "multi_line_to_cr") == 0)
+    return LWO_MULTI_LINE_TO_CR;
+  if (strcmp(flag, "multi-line-to-lf") == 0 || strcmp(flag, "multi_line_to_lf") == 0)
+    return LWO_MULTI_LINE_TO_LF;
   msg_error("Unknown dest writer flag", evt_tag_str("flag", flag), NULL);
   return 0;
 }
