@@ -28,7 +28,7 @@ ubuntu_install()
 
 python_install()
 {
-  sudo pip install nose ply pep8 pylint
+  sudo pip install -r requirements.txt
 }
 
 devenv_setup()
