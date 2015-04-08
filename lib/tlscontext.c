@@ -280,6 +280,7 @@ tls_context_setup_session(TLSContext *self)
   SSL *ssl;
   TLSSession *session;
   gint ssl_error;
+  long ssl_options;
 
   if (!self->ssl_ctx)
     {
@@ -334,7 +335,23 @@ tls_context_setup_session(TLSContext *self)
         }
 
       SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
-      SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_SSLv2);
+      if (self->ssl_options != TSO_NONE)
+        {
+          ssl_options=0;
+          if(self->ssl_options & TSO_NOSSLv2)
+            ssl_options |= SSL_OP_NO_SSLv2;
+          if(self->ssl_options & TSO_NOSSLv3)
+            ssl_options |= SSL_OP_NO_SSLv3;
+          if(self->ssl_options & TSO_NOTLSv1)
+            ssl_options |= SSL_OP_NO_TLSv1;
+          if(self->ssl_options & TSO_NOTLSv11)
+            ssl_options |= SSL_OP_NO_TLSv1_1;
+          if(self->ssl_options & TSO_NOTLSv12)
+            ssl_options |= SSL_OP_NO_TLSv1_2;
+          SSL_CTX_set_options(self->ssl_ctx, ssl_options);
+        }
+      else
+	msg_debug("empty ssl options",NULL);
       if (self->cipher_suite)
         {
           if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
@@ -374,6 +391,7 @@ tls_context_new(TLSMode mode)
 
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
+  self->ssl_options = TSO_NOSSLv2;
   return self;
 }
 
@@ -406,6 +424,35 @@ tls_lookup_verify_mode(const gchar *mode_str)
     return TVM_REQUIRED | TVM_UNTRUSTED;
 
   return TVM_REQUIRED | TVM_TRUSTED;
+}
+
+TLSSslOptions
+tls_lookup_options(GList *options)
+{
+  TLSSslOptions ret=TSO_NONE;
+  GList *l;
+  for(l=options; l != NULL ; l=l->next)
+    {
+      msg_debug("ssl-option",evt_tag_str("opt",l->data),NULL);
+      if(strcasecmp(l->data,"none") == 0)
+        ret|=TSO_NONE;
+      else if (strcasecmp(l->data,"no-sslv2") == 0 || strcasecmp(l->data,"no_sslv2") == 0)
+        ret|=TSO_NOSSLv2;
+      else if (strcasecmp(l->data,"no-sslv3") == 0 || strcasecmp(l->data,"no_sslv3") == 0)
+        ret|=TSO_NOSSLv3;
+      else if (strcasecmp(l->data,"no-tlsv1") == 0 || strcasecmp(l->data,"no_tlsv1") == 0)
+        ret|=TSO_NOTLSv1;
+      else if (strcasecmp(l->data,"no-tlsv11") == 0 || strcasecmp(l->data,"no_tlsv11") == 0)
+        ret|=TSO_NOTLSv11;
+      else if (strcasecmp(l->data,"no-tlsv12") == 0 || strcasecmp(l->data,"no_tlsv12") == 0)
+        ret|=TSO_NOTLSv12;
+      else
+        msg_error("Unknown ssl-option",evt_tag_str("option",l->data),NULL);
+/* FIXME: If none of above, than we should handle the illegal options string somehow!!!
+*/
+    }
+  msg_debug("ssl-options parsed",evt_tag_printf("parsed value","%d" ,ret),NULL);
+  return ret;
 }
 
 void
