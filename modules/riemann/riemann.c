@@ -242,7 +242,7 @@ static void
 _value_pairs_always_exclude_properties(RiemannDestDriver *self)
 {
   static const gchar *properties[] = {"host", "service", "description", "state",
-                                      "ttl", "metric", NULL};
+                                      "ttl", "metric", "tags", NULL};
   gint i;
 
   if (!self->fields.attributes)
