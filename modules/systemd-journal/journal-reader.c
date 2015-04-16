@@ -158,6 +158,11 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
   JournalReaderOptions *options = args[1];
   gssize value_len = MIN(strlen(value), options->max_field_size);
 
+  if (key == NULL)
+    {
+      return;
+    }
+
   if (strcmp(key, "MESSAGE") == 0)
     {
       log_msg_set_value(msg, LM_V_MESSAGE, value, value_len);
