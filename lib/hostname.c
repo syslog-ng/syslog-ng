@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2002-2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -138,6 +138,12 @@ detect_local_fqdn_hostname(void)
           msg_verbose("Unable to detect fully qualified hostname for localhost, use_fqdn() will use the short hostname",
                       NULL);
           hostname = get_local_hostname_from_system();
+          if (!hostname[0])
+            {
+              msg_error("Could not resolve local hostname either from the DNS nor gethostname(), assuming localhost",
+                        NULL);
+              hostname = g_strdup("localhost");
+            }
         }
     }
 
