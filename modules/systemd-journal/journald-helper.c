@@ -42,7 +42,7 @@ __parse_data(gchar *data, size_t length, gchar **key, gchar **value)
   else
     {
       *key = NULL;
-      *value = g_strndup(data, length);
+      *value = NULL;
     }
 }
 
@@ -50,13 +50,18 @@ void journald_foreach_data(Journald *self, FOREACH_DATA_CALLBACK func, gpointer 
 {
   const void *data;
   size_t l = 0;
+
   JOURNALD_FOREACH_DATA(self, data, l)
   {
     gchar *key;
     gchar *value;
+
     __parse_data((gchar *)data, l, &key, &value);
-    func(key, value, user_data);
-    g_free(key);
-    g_free(value);
+    if (key && value)
+      {
+        func(key, value, user_data);
+        g_free(key);
+        g_free(value);
+      }
   }
 }
