@@ -26,8 +26,7 @@
 #define TEMPLATE_COMPILER_H_INCLUDED
 
 #include "syslog-ng.h"
-
-typedef struct _LogTemplate LogTemplate;
+#include "templates.h"
 
 typedef struct
 {
