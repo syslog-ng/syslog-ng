@@ -29,6 +29,7 @@
 #include "dnscache.h"
 
 #include <arpa/inet.h>
+#include <string.h>
 
 static gchar local_hostname_fqdn[256];
 static gchar local_hostname_short[256];
