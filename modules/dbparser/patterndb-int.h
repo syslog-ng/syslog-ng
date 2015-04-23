@@ -210,14 +210,14 @@ PDBRule *pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *input, GArray *d
 PDBRuleSet *pdb_rule_set_new(void);
 void pdb_rule_set_free(PDBRuleSet *self);
 
-typedef struct _PDBLookupParams
+struct _PDBLookupParams
 {
   LogMessage *msg;
   NVHandle program_handle;
   NVHandle message_handle;
   const gchar *message_string;
   gssize message_len;
-} PDBLookupParams;
+};
 
 struct _PatternDB
 {
