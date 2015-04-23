@@ -24,7 +24,9 @@
 
 #include "control-client.h"
 #include "gsocket.h"
-#include "stdio.h"
+
+#include <stdio.h>
+#include <string.h>
 
 struct _ControlClient
 {
