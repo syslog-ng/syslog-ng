@@ -27,6 +27,7 @@
 
 #include "compat/compat.h"
 #include <inttypes.h>
+#include <time.h>
 
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
