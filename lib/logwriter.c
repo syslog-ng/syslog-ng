@@ -168,12 +168,9 @@ log_writer_set_queue(LogWriter *s, LogQueue *queue)
 {
   LogWriter *self = (LogWriter *)s;
 
-  if (self->queue)
-    log_queue_unref(self->queue);
-
-  self->queue = queue;
-  if (self->queue)
-    log_queue_set_use_backlog(self->queue, TRUE);
+  log_queue_unref(self->queue);
+  self->queue = log_queue_ref(queue);
+  log_queue_set_use_backlog(self->queue, TRUE);
 }
 
 static void
@@ -1263,8 +1260,8 @@ log_writer_free(LogPipe *s)
 
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
-  if (self->queue)
-    log_queue_unref(self->queue);
+
+  log_queue_unref(self->queue);
   if (self->last_msg)
     log_msg_unref(self->last_msg);
   g_free(self->stats_id);
