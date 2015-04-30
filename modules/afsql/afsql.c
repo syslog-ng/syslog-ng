@@ -1375,8 +1375,6 @@ afsql_dd_free(LogPipe *s)
   gint i;
 
   log_template_options_destroy(&self->template_options);
-  if (self->queue)
-    log_queue_unref(self->queue);
   for (i = 0; i < self->fields_len; i++)
     {
       g_free(self->fields[i].name);
