@@ -10,3 +10,9 @@
 [submodule "modules/afamqp/rabbitmq-c"]
 	path = modules/afamqp/rabbitmq-c
 	url = https://github.com/alanxz/rabbitmq-c.git
+[submodule ".bootstrap/puppet/modules/python"]
+	path = .bootstrap/puppet/modules/python
+	url = https://github.com/stankevich/puppet-python.git
+[submodule ".bootstrap/puppet/modules/stdlib"]
+	path = .bootstrap/puppet/modules/stdlib
+	url = https://github.com/puppetlabs/puppetlabs-stdlib.git
