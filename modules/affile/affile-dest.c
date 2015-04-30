@@ -35,6 +35,7 @@
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
 #include "compat/lfs.h"
+#include "logwriter.h"
 
 #include <iv.h>
 #include <sys/types.h>
@@ -249,7 +250,7 @@ affile_dw_deinit(LogPipe *s)
     {
       log_pipe_deinit((LogPipe *) self->writer);
     }
-  log_dest_driver_release_queue(&self->owner->super, log_writer_get_queue(self->writer));
+
   log_writer_set_queue(self->writer, NULL);
 
   if (iv_timer_registered(&self->reap_timer))
@@ -386,6 +387,8 @@ affile_dd_format_persist_name(AFFileDestDriver *self)
 static void
 affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
 {
+  LogWriter *writer = (LogWriter *)dw->writer;
+
   main_loop_assert_main_thread();
 
   if (self->filename_is_a_template)
@@ -403,6 +406,7 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
       g_static_mutex_unlock(&self->lock);
     }
 
+  log_dest_driver_release_queue(&self->super, log_writer_get_queue(writer));
   log_pipe_deinit(&dw->super);
   log_pipe_unref(&dw->super);
 }
