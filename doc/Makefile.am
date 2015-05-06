@@ -29,7 +29,6 @@ xsd_DATA	= \
 # NOTE: this uses a hard-coded path for the XSL stylesheets, but the
 # end-result is also included in the tarball. If so need be, this can
 # be overridden from the make command line or via the environment.
-XSL_STYLESHEET = /usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
 
 sysconfdir_e = $(shell echo "${sysconfdir}" | sed -e "s,-,\\\\\\\\-,g")
 prefix_e = $(shell echo "${prefix}" | sed -e "s,-,\\\\\\\\-,g")

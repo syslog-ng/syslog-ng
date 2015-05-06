@@ -230,6 +230,15 @@ AC_ARG_WITH(systemd-journal,
                                          Link against the system supplied or the wrapper library. (default: auto)]
               ,,with_systemd_journal="auto")
 
+AC_ARG_WITH(docbook,
+            AC_HELP_STRING([--with-docbook-dir=DIR],
+                           [compiling manpages using docbook in the specified path, if not set online version will be used from http://docbook.sourceforge.net]),
+            [ XSL_STYLESHEET=$with_docbook ],
+            [ XSL_STYLESHEET=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl ]
+            )
+
+AC_ARG_ENABLE(manpages, AC_HELP_STRING([ --enable-manpages], [ Enable generation of manpages (default: no)]), , [enable_manpages="no"; XSL_STYLESHEET=""])
+
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
               ,,enable_all_modules="auto")
@@ -1361,6 +1370,7 @@ AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
+AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1415,6 +1425,8 @@ AC_SUBST(with_ivykis)
 AC_SUBST(INTERNAL_IVYKIS_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
+AC_SUBST(XSL_STYLESHEET)
+
 
 AC_OUTPUT(dist.conf
           Makefile
