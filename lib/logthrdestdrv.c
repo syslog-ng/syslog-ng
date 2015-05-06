@@ -164,6 +164,13 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
       msg_set_context(NULL);
       log_msg_refcache_stop();
     }
+  if (!self->suspended)
+    {
+      if (self->worker.worker_message_queue_empty)
+        {
+          self->worker.worker_message_queue_empty(self);
+        }
+    }
 }
 
 static void
@@ -232,11 +239,13 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
 
   log_queue_set_use_backlog(self->queue, TRUE);
 
-  if (self->worker.thread_init)
-    self->worker.thread_init(self);
   log_threaded_dest_driver_init_watches(self);
 
   log_threaded_dest_driver_start_watches(self);
+
+  if (self->worker.thread_init)
+    self->worker.thread_init(self);
+
   iv_main();
 
   if (self->worker.disconnect)
@@ -274,7 +283,7 @@ log_threaded_dest_driver_start(LogPipe *s)
   LogThrDestDriver *self = (LogThrDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (cfg)
+  if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
   self->queue = log_dest_driver_acquire_queue(&self->super,
@@ -383,6 +392,7 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
+  self->time_reopen = -1;
 
   self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
 }

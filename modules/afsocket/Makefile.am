@@ -40,12 +40,12 @@ modules_afsocket_libafsocket_notls_la_SOURCES	=	\
 	modules/afsocket/afsocket-systemd-override.h
 
 modules_afsocket_libafsocket_notls_la_CPPFLAGS	=	\
-	$(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)	\
+	$(AM_CPPFLAGS) $(libsystemd_CFLAGS)	\
 	-I${top_srcdir}/modules/afsocket		\
 	-I${top_builddir}/modules/afsocket
 modules_afsocket_libafsocket_notls_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS) $(LIBNET_LIBS)		\
-	$(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
+	$(LIBWRAP_LIBS) $(libsystemd_LIBS)
 modules_afsocket_libafsocket_notls_la_LDFLAGS	  =	\
 	$(MODULE_LDFLAGS)
 modules_afsocket_libafsocket_notls_la_DEPENDENCIES=	\
@@ -56,7 +56,7 @@ module_LTLIBRARIES				+= modules/afsocket/libafsocket-tls.la
 modules_afsocket_libafsocket_tls_la_SOURCES	=	\
 	$(modules_afsocket_libafsocket_notls_la_SOURCES)
 modules_afsocket_libafsocket_tls_la_CPPFLAGS	=	\
-	$(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)	\
+	$(AM_CPPFLAGS) $(libsystemd_CFLAGS)	\
 	-I${top_srcdir}/modules/afsocket		\
 	-I${top_builddir}/modules/afsocket		\
 	-DBUILD_WITH_SSL=1
@@ -64,7 +64,7 @@ modules_afsocket_libafsocket_tls_la_CPPFLAGS	=	\
 modules_afsocket_libafsocket_tls_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) 		\
 	$(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS)	\
-	$(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
+	$(LIBWRAP_LIBS) $(libsystemd_LIBS)
 modules_afsocket_libafsocket_tls_la_DEPENDENCIES= 	\
 	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS)
 modules_afsocket_libafsocket_tls_la_LDFLAGS	= 	\
