@@ -27,9 +27,7 @@
 
 #include "syslog-ng.h"
 #include "plugin-types.h"
-
-typedef struct _LogTemplateOptions LogTemplateOptions;
-typedef struct _LogTemplate LogTemplate;
+#include "common-template-typedefs.h"
 
 /* This structure contains the arguments for template-function
  * expansion. It is defined in a struct because otherwise a large

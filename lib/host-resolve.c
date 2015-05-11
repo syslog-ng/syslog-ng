@@ -30,6 +30,7 @@
 
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <string.h>
 
 #if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO)
 G_LOCK_DEFINE_STATIC(resolv_lock);
