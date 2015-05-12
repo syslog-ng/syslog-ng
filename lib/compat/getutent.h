@@ -25,8 +25,9 @@
 #ifndef COMPAT_GETUTENT_H_INCLUDED
 #define COMPAT_GETUTENT_H_INCLUDED
 
-#include <inttypes.h>
 #include "compat/compat.h"
+#include <inttypes.h>
+#include <time.h>
 
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
