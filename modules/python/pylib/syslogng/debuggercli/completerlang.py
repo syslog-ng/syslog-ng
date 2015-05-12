@@ -48,7 +48,12 @@ class CompleterLang(object):
             # deeper would probably improve readability at the cost of increasing fragility.
 
             # pylint: disable=protected-access
-            parser_state = sys._getframe(1).f_locals['state']
+            if 'state' in sys._getframe(1).f_locals:
+                parser_state = sys._getframe(1).f_locals['state']
+            elif 'state' in sys._getframe(2).f_locals:
+                parser_state = sys._getframe(2).f_locals['state']
+            else:
+                return None
 
             # now handle the error that the TAB token caused
             self._token_position = p.lexpos
