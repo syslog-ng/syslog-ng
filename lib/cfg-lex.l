@@ -154,7 +154,7 @@ xdigit	[0-9a-fA-F]
 odigit  [0-7]
 alpha		[a-zA-Z]
 alphanum	[a-zA-Z0-9]
-word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
+word	[^ \#'"\(\)\{\}\\;\r\n\t,|\.@:]
 
 /* block related states must be last, as we use this fact in YY_INPUT */
 %x string
