@@ -176,7 +176,7 @@ affile_dw_reopen(AFFileDestWriter *self)
     iv_timer_unregister(&self->reap_timer);
 
   self->last_open_stamp = self->last_msg_stamp;
-  if (self->owner->overwrite_if_older > 0 && 
+  if (self->owner->overwrite_if_older > 0 &&
       stat(self->filename, &st) == 0 &&
       st.st_mtime < time(NULL) - self->owner->overwrite_if_older)
     {
@@ -327,7 +327,7 @@ static void
 affile_dw_free(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
-  
+
   log_pipe_unref((LogPipe *) self->writer);
   self->writer = NULL;
   g_free(self->filename);
@@ -339,12 +339,12 @@ static AFFileDestWriter *
 affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
 {
   AFFileDestWriter *self = g_new0(AFFileDestWriter, 1);
-  
+
   log_pipe_init_instance(&self->super, owner->super.super.super.cfg);
 
   self->super.init = affile_dw_init;
   self->super.deinit = affile_dw_deinit;
-  self->super.free_fn = affile_dw_free;  
+  self->super.free_fn = affile_dw_free;
   self->super.queue = affile_dw_queue;
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
@@ -354,30 +354,30 @@ affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
   self->reap_timer.cookie = self;
   self->reap_timer.handler = affile_dw_reopen;
 
-  /* we have to take care about freeing filename later. 
+  /* we have to take care about freeing filename later.
      This avoids a move of the filename. */
   self->filename = g_strdup(filename);
   g_static_mutex_init(&self->lock);
   return self;
 }
 
-void 
+void
 affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
+
   self->file_open_options.create_dirs = create_dirs;
 }
 
-void 
+void
 affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
+
   self->overwrite_if_older = overwrite_if_older;
 }
 
-void 
+void
 affile_dd_set_fsync(LogDriver *s, gboolean fsync)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
@@ -400,7 +400,7 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
   LogWriter *writer = (LogWriter *)dw->writer;
 
   main_loop_assert_main_thread();
-  
+
   if (self->filename_is_a_template)
     {
       g_static_mutex_lock(&self->lock);
@@ -429,14 +429,14 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
  * owner of each writer, previously connected to an AFileDestDriver instance
  * in an earlier configuration. This way AFFileDestWriter instances are
  * remembered accross reloads.
- * 
+ *
  **/
 static void
 affile_dd_reuse_writer(gpointer key, gpointer value, gpointer user_data)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) user_data;
   AFFileDestWriter *writer = (AFFileDestWriter *) value;
-  
+
   affile_dw_set_owner(writer, self);
   if (!log_pipe_init(&writer->super))
     {
@@ -460,10 +460,10 @@ affile_dd_init(LogPipe *s)
     self->file_open_options.create_dirs = TRUE;
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
-  
+
   file_perm_options_init(&self->file_perm_options, cfg);
   log_writer_options_init(&self->writer_options, cfg, 0);
-              
+
   if (self->filename_is_a_template)
     {
       self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
@@ -523,7 +523,7 @@ static void
 affile_dd_destroy_writer_hash(gpointer value)
 {
   GHashTable *writer_hash = (GHashTable *) value;
-  
+
   g_hash_table_foreach_remove(writer_hash, affile_dd_destroy_writer_hr, NULL);
   g_hash_table_destroy(writer_hash);
 }
@@ -552,7 +552,7 @@ affile_dd_deinit(LogPipe *s)
   else if (self->writer_hash)
     {
       g_assert(self->single_writer == NULL);
-      
+
       g_hash_table_foreach(self->writer_hash, affile_dd_deinit_writer, NULL);
       cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash, FALSE);
       self->writer_hash = NULL;
@@ -716,7 +716,7 @@ static void
 affile_dd_free(LogPipe *s)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
+
   /* NOTE: this must be NULL as deinit has freed it, otherwise we'd have circular references */
   g_assert(self->single_writer == NULL && self->writer_hash == NULL);
 
