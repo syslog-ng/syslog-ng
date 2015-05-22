@@ -97,7 +97,7 @@ struct _AFFileDestWriter
   time_t last_msg_stamp;
   time_t last_open_stamp;
   time_t time_reopen;
-  struct iv_timer reap_timer;
+  struct iv_timer retry_timer;
   gboolean reopen_pending, queue_pending;
 };
 
@@ -119,19 +119,21 @@ affile_dw_arm_reaper(AFFileDestWriter *self)
 {
   /* not yet reaped, set up the next callback */
   iv_validate_now();
-  self->reap_timer.expires = iv_now;
-  timespec_add_msec(&self->reap_timer.expires, self->owner->time_reap * 1000 / 2);
-  iv_timer_register(&self->reap_timer);
+  self->retry_timer.expires = iv_now;
+  timespec_add_msec(&self->retry_timer.expires, self->owner->time_reap * 1000 / 2);
+  iv_timer_register(&self->retry_timer);
 }
 
 static void
 affile_dw_arm_reopen(AFFileDestWriter *self)
 {
+  if (iv_timer_registered(&self->retry_timer))
+    iv_timer_unregister(&self->retry_timer);
   /* not yet opened, set up the next callback */
   iv_validate_now();
-  self->reap_timer.expires = iv_now;
-  timespec_add_msec(&self->reap_timer.expires, self->time_reopen * 1000);
-  iv_timer_register(&self->reap_timer);
+  self->retry_timer.expires = iv_now;
+  timespec_add_msec(&self->retry_timer.expires, self->time_reopen * 1000);
+  iv_timer_register(&self->retry_timer);
 }
 
 static void
@@ -172,9 +174,6 @@ affile_dw_reopen(AFFileDestWriter *self)
   int fd;
   struct stat st;
 
-  if (iv_timer_registered(&self->reap_timer))
-    iv_timer_unregister(&self->reap_timer);
-
   self->last_open_stamp = self->last_msg_stamp;
   if (self->owner->overwrite_if_older > 0 &&
       stat(self->filename, &st) == 0 &&
@@ -195,7 +194,7 @@ affile_dw_reopen(AFFileDestWriter *self)
                         : log_proto_file_writer_new(log_transport_file_new(fd), &self->owner->writer_options.proto_options.super,
                                                     self->owner->writer_options.flush_lines,
                                                     self->owner->use_fsync));
-      self->reap_timer.handler = affile_dw_reap;
+      self->retry_timer.handler = affile_dw_reap;
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
   else
@@ -267,8 +266,8 @@ affile_dw_deinit(LogPipe *s)
 
   log_writer_set_queue(self->writer, NULL);
 
-  if (iv_timer_registered(&self->reap_timer))
-    iv_timer_unregister(&self->reap_timer);
+  if (iv_timer_registered(&self->retry_timer))
+    iv_timer_unregister(&self->retry_timer);
   return TRUE;
 }
 
@@ -288,7 +287,7 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, 
     self->last_open_stamp = self->last_msg_stamp;
 
   if (!log_writer_opened(self->writer) &&
-      !iv_timer_registered(&self->reap_timer) &&
+      !iv_timer_registered(&self->retry_timer) &&
       (self->last_open_stamp < self->last_msg_stamp - self->time_reopen))
     {
       /* if the file couldn't be opened, try it again every time_reopen seconds */
@@ -350,9 +349,9 @@ affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
   self->owner = owner;
   self->time_reopen = 60;
 
-  IV_TIMER_INIT(&self->reap_timer);
-  self->reap_timer.cookie = self;
-  self->reap_timer.handler = affile_dw_reopen;
+  IV_TIMER_INIT(&self->retry_timer);
+  self->retry_timer.cookie = self;
+  self->retry_timer.handler = affile_dw_reopen;
 
   /* we have to take care about freeing filename later.
      This avoids a move of the filename. */
