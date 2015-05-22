@@ -125,6 +125,16 @@ affile_dw_arm_reaper(AFFileDestWriter *self)
 }
 
 static void
+affile_dw_arm_reopen(AFFileDestWriter *self)
+{
+  /* not yet opened, set up the next callback */
+  iv_validate_now();
+  self->reap_timer.expires = iv_now;
+  timespec_add_msec(&self->reap_timer.expires, self->time_reopen * 1000);
+  iv_timer_register(&self->reap_timer);
+}
+
+static void
 affile_dw_reap(gpointer s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
@@ -162,6 +172,9 @@ affile_dw_reopen(AFFileDestWriter *self)
   int fd;
   struct stat st;
 
+  if (iv_timer_registered(&self->reap_timer))
+    iv_timer_unregister(&self->reap_timer);
+
   self->last_open_stamp = self->last_msg_stamp;
   if (self->owner->overwrite_if_older > 0 && 
       stat(self->filename, &st) == 0 &&
@@ -182,7 +195,7 @@ affile_dw_reopen(AFFileDestWriter *self)
                         : log_proto_file_writer_new(log_transport_file_new(fd), &self->owner->writer_options.proto_options.super,
                                                     self->owner->writer_options.flush_lines,
                                                     self->owner->use_fsync));
-
+      self->reap_timer.handler = affile_dw_reap;
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
   else
@@ -191,6 +204,7 @@ affile_dw_reopen(AFFileDestWriter *self)
                 evt_tag_str("filename", self->filename),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
+      main_loop_call((void * (*)(void *)) affile_dw_arm_reopen, self, TRUE);
       return self->owner->super.super.optional;
     }
   return TRUE;
@@ -274,15 +288,11 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, 
     self->last_open_stamp = self->last_msg_stamp;
 
   if (!log_writer_opened(self->writer) &&
-      !self->reopen_pending &&
+      !iv_timer_registered(&self->reap_timer) &&
       (self->last_open_stamp < self->last_msg_stamp - self->time_reopen))
     {
-      self->reopen_pending = TRUE;
       /* if the file couldn't be opened, try it again every time_reopen seconds */
-      g_static_mutex_unlock(&self->lock);
       affile_dw_reopen(self);
-      g_static_mutex_lock(&self->lock);
-      self->reopen_pending = FALSE;
     }
   g_static_mutex_unlock(&self->lock);
 
@@ -342,7 +352,7 @@ affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
 
   IV_TIMER_INIT(&self->reap_timer);
   self->reap_timer.cookie = self;
-  self->reap_timer.handler = affile_dw_reap;
+  self->reap_timer.handler = affile_dw_reopen;
 
   /* we have to take care about freeing filename later. 
      This avoids a move of the filename. */
