@@ -1010,7 +1010,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     }
   else
     {
-      if (self->failed_message_counter < self->num_retries - 1)
+      if (self->failed_message_counter < self->num_retries)
         {
           if (!afsql_dd_handle_insert_row_error_depending_on_connection_availability(self, msg, &path_options))
             return FALSE;
