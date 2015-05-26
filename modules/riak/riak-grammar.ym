@@ -1,0 +1,101 @@
+%code requires {
+
+#include "riak-parser.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "plugin.h"
+}
+
+%name-prefix "riak_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_RIAK
+%token KW_HOST
+%token KW_PORT
+%token KW_BUCKET
+%token KW_KEY
+%token KW_VALUE
+%token KW_MODE
+%token KW_TYPE
+
+
+
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_RIAK
+          {
+            last_driver = *instance = riak_dd_new(configuration);
+          }
+          '(' riak_options ')' { YYACCEPT; }
+        ;
+
+riak_options
+        : riak_option riak_options
+        |
+        ;
+
+riak_option
+        : KW_HOST '(' string ')'
+          {
+            riak_dd_set_host(last_driver, $3);
+            free($3);
+          }
+        | KW_PORT '(' LL_NUMBER ')'
+          {
+            riak_dd_set_port(last_driver, $3);
+          }
+        | KW_BUCKET '(' template_content  riak_bucket_options ')' 
+          {
+            riak_dd_set_bucket(last_driver, $3);
+          }
+        
+        | KW_KEY '(' template_content ')'
+          {
+            riak_dd_set_key(last_driver, $3);
+          }
+          
+        | KW_VALUE '(' template_content ')'
+          {
+            riak_dd_set_value(last_driver, $3);
+          }
+        
+        | dest_driver_option
+        | threaded_dest_driver_option
+        | { last_template_options = riak_dd_get_template_options(last_driver); } template_option
+        ;
+        
+riak_bucket_option
+        : riak_bucket_option riak_bucket_options
+        |
+        ;
+        
+riak_bucket_options
+        : KW_MODE '(' string ')' 
+          {
+            riak_dd_set_mode(last_driver, $3);
+            free($3);
+          }
+        | KW_TYPE '(' string ')' 
+          {
+          riak_dd_set_type(last_driver, $3);
+          free($3);
+          }
+        ;
+        
+        
+
+
+/* INCLUDE_RULES */
+
+%%
