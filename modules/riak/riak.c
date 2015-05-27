@@ -78,6 +78,8 @@ riak_dd_set_type(LogDriver *d, char *type)
   RiakDestDriver *self = (RiakDestDriver *)d;
   free(self->bucket_type);
   self->bucket_type = strdup(type);
+  
+}
 
 void
 riak_dd_set_key(LogDriver *d, LogTemplate *key)
