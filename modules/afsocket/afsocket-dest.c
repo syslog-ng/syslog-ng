@@ -65,6 +65,8 @@ afsocket_dd_stats_instance(AFSocketDestDriver *self)
 
 static gboolean afsocket_dd_connected(AFSocketDestDriver *self);
 static void afsocket_dd_reconnect(AFSocketDestDriver *self);
+static void afsocket_dd_try_connect(AFSocketDestDriver *self);
+static gboolean afsocket_dd_setup_connection(AFSocketDestDriver *self);
 
 static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
@@ -75,7 +77,10 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
 
   IV_TIMER_INIT(&self->reconnect_timer);
   self->reconnect_timer.cookie = self;
-  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
+  /* Using reinit as a handler before establishing the first successful connection.
+   * We'll change this to afsocket_dd_reconnect when the initialization of the
+   * connection succeeds.*/
+  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_try_connect;
 }
 
 static void
@@ -244,6 +249,21 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
     }
 }
 
+static void
+afsocket_dd_try_connect(AFSocketDestDriver *self)
+{
+  if (!afsocket_dd_setup_addresses(self) ||
+      !afsocket_dd_setup_connection(self))
+    {
+      msg_error("Initiating connection failed, reconnecting",
+                evt_tag_int("time_reopen", self->time_reopen),
+                NULL);
+      afsocket_dd_start_reconnect_timer(self);
+      return;
+    }
+  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
+}
+
 static gboolean
 afsocket_dd_setup_proto_factory(AFSocketDestDriver *self)
 {
@@ -353,6 +373,8 @@ afsocket_dd_setup_connection(AFSocketDestDriver *self)
 
   if (!log_writer_opened(self->writer))
     afsocket_dd_reconnect(self);
+
+  self->connection_initialized = TRUE;
   return TRUE;
 }
 
@@ -361,10 +383,14 @@ afsocket_dd_init(LogPipe *s)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
-  return log_dest_driver_init_method(s) &&
-         afsocket_dd_setup_transport(self) &&
-         afsocket_dd_setup_addresses(self) &&
-         afsocket_dd_setup_connection(self);
+  if (!log_dest_driver_init_method(s) ||
+      !afsocket_dd_setup_transport(self))
+    {
+      return FALSE;
+    }
+
+  afsocket_dd_try_connect(self);
+  return TRUE;
 }
 
 static void
@@ -393,7 +419,11 @@ afsocket_dd_deinit(LogPipe *s)
 
   afsocket_dd_stop_watches(self);
   afsocket_dd_stop_writer(self);
-  afsocket_dd_save_connection(self);
+
+  if (self->connection_initialized)
+    {
+      afsocket_dd_save_connection(self);
+    }
 
   return log_dest_driver_deinit_method(s);
 }
@@ -454,6 +484,8 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->transport_mapper = transport_mapper;
   self->socket_options = socket_options;
   self->connections_kept_alive_accross_reloads = TRUE;
+  self->time_reopen = cfg->time_reopen;
+  self->connection_initialized = FALSE;
 
 
   self->writer_options.mark_mode = MM_GLOBAL;
