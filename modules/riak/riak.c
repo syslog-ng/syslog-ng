@@ -177,7 +177,7 @@ riak_dd_disconnect(LogThrDestDriver *s)
  * Main thread
  */
 
-static gboolean riak_dd_init(LogPipe *s) // Initializes the destination driver
+static boolean riak_dd_init(LogPipe *s) // Initializes the destination driver
 {
   RiakDestDriver *self = (RiakDestDriver *)s;
   GlobalConfig *cfg    = log_pipe_get_config(s);
@@ -215,7 +215,7 @@ static void riak_dd_free(LogPipe *d) // frees up the structure allocated during 
 LogDriver *
 riak_dd_new(GlobalConfig *cfg)
 {
-  RiakDestDriver *self = g_new0(RiakDestDriver, 1);
+  RiakDestDriver *self = calloc(RiakDestDriver, 1);
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init    = riak_dd_init;
@@ -244,7 +244,7 @@ static Plugin riak_plugin = {
     .type = LL_CONTEXT_DESTINATION, .name = "riak", .parser = &riak_parser,
 };
 
-gboolean
+boolean
 riak_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, &riak_plugin, 1);
