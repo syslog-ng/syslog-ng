@@ -254,6 +254,7 @@ extern CfgParser riak_dd_parser;
 static Plugin riak_plugin =
 {
   .type = LL_CONTEXT_DESTINATION,
+  .name = "riak",
   .parser = &riak_parser,
 };
 
