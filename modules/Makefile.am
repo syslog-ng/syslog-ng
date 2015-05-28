@@ -23,6 +23,7 @@ include modules/redis/Makefile.am
 include modules/pseudofile/Makefile.am
 include modules/graphite/Makefile.am
 include modules/riemann/Makefile.am
+include modules/riak/Makefile.am
 include modules/systemd-journal/Makefile.am
 include modules/python/Makefile.am
 include modules/java/Makefile.am
@@ -39,7 +40,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
 	mod-redis mod-pseudofile mod-graphite mod-riemann \
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
-	mod-native
+	mod-native mod-riak
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
@@ -52,6 +53,7 @@ modules_test_subdirs	=	\
 	modules_csvparser modules_dbparser modules_basicfuncs \
 	modules_cryptofuncs modules_geoip modules_afstomp \
 	modules_graphite modules_riemann modules_python \
-	modules_systemd_journal modules_kvformat modules_date
+	modules_systemd_journal modules_kvformat modules_date \
+	modules_riak
 
 .PHONY: modules modules/
