@@ -220,6 +220,9 @@ riemann_dd_disconnect(LogThrDestDriver *s)
 static gboolean
 riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
 {
+  int fd;
+  struct timeval timeout;
+
   if (reconnect && self->client)
     return TRUE;
 
@@ -231,6 +234,12 @@ riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
                 NULL);
       return FALSE;
     }
+
+  fd = riemann_client_get_fd(self->client);
+  timeout.tv_sec = 5;
+  timeout.tv_usec = 0;
+  setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof (timeout));
+  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout));
 
   return TRUE;
 }
