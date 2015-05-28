@@ -8,6 +8,7 @@
 #include "driver.h"
 #include "plugin-types.h"
 #include "logthrdestdrv.h"
+#include <stdlib.h>
 
 typedef enum
 {
@@ -29,7 +30,7 @@ typedef struct
 
   RiakBucketMode mode;
 
-  riak_client_t *client;
+ // riak_client_t *client;
 } RiakDestDriver;
 
 /*
@@ -37,7 +38,7 @@ typedef struct
  */
 
 void
-riak_dd_set_host(LogDriver *d, char *host)
+riak_dd_set_host(LogDriver *d, const char *host)
 {
   RiakDestDriver *self = (RiakDestDriver *)d;
 
@@ -118,8 +119,8 @@ riak_dd_format_stats_instance(LogThrDestDriver *d)
   RiakDestDriver *self = (RiakDestDriver *)d;
   static char persist_name[1024];
 
-  sprintf(persist_name, "riak,%s,%u,%s,%s,%s,%s,%s", self->host, self->port, self->mode,
-            self->bucket_type, self->bucket, self->key );
+  sprintf(persist_name, "riak,%s,%u,%u,%s", self->host, self->port, self->mode,
+            self->bucket_type );
   return persist_name;
 }
 
@@ -129,13 +130,14 @@ riak_dd_format_persist_name(LogThrDestDriver *d)
   RiakDestDriver *self = (RiakDestDriver *)d;
   static char persist_name[1024];
 
-  sprintf(persist_name, "riak(%s,%u,%s,%s,%s,%s,%s)", self->host, self->port, self->mode,
-            self->bucket_type, self->bucket, self->key );
+  sprintf(persist_name, "riak(%s,%u,%u,%s)", self->host, self->port, self->mode,
+            self->bucket_type);
   return persist_name;
 }
 
-static boolean
-riak_dd_connect(RiakDestDriver *self, boolean reconnect)
+/*
+static gboolean
+riak_dd_connect(RiakDestDriver *self, gboolean reconnect)
 {
   if (reconnect && (self->client != NULL))
     {
@@ -174,7 +176,7 @@ riak_dd_disconnect(LogThrDestDriver *s)
     riakFree(self->client);
   self->client = NULL;
 }
-
+*/
 /*
  * Worker thread
  */
@@ -185,7 +187,7 @@ riak_dd_disconnect(LogThrDestDriver *s)
  * Main thread
  */
 
-static boolean
+static gboolean
 riak_dd_init(LogPipe *s)                           //Initializes the destination driver
 {
   RiakDestDriver *self = (RiakDestDriver *)s;
@@ -213,7 +215,7 @@ riak_dd_free(LogPipe *d)                   //frees up the structure allocated du
   log_template_options_destroy(&self->template_options);
 
   free(self->host);
-  free(self->type);
+  free(self->bucket_type);
   log_template_unref(self->key);
   log_template_unref(self->value);
   log_template_unref(self->bucket);
@@ -228,20 +230,20 @@ riak_dd_free(LogPipe *d)                   //frees up the structure allocated du
 LogDriver *
 riak_dd_new(GlobalConfig *cfg)
 {
-  RiakDestDriver *self = calloc(RiakDestDriver, 1);
+  RiakDestDriver *self = (RiakDestDriver*)calloc(1, sizeof(RiakDestDriver));
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = riak_dd_init;
   self->super.super.super.super.free_fn = riak_dd_free;
 
-  self->super.worker.thread_init = riak_worker_thread_init;
-  self->super.worker.thread_deinit = riak_worker_thread_deinit;
-  self->super.worker.disconnect = riak_dd_disconnect;
-  self->super.worker.insert = riak_worker_insert;
+  //self->super.worker.thread_init = riak_worker_thread_init;
+  //self->super.worker.thread_deinit = riak_worker_thread_deinit;
+//  self->super.worker.disconnect = riak_dd_disconnect;
+ // self->super.worker.insert = riak_worker_insert;
 
   self->super.format.stats_instance = riak_dd_format_stats_instance;
   self->super.format.persist_name = riak_dd_format_persist_name;
-  self->super.stats_source = SCS_RIAK;
+ // self->super.stats_source = SCS_RIAK;
 
   riak_dd_set_host((LogDriver *)self, "127.0.0.1");
   riak_dd_set_port((LogDriver *)self, 8087);
@@ -260,7 +262,8 @@ static Plugin riak_plugin =
   .parser = &riak_parser,
 };
 
-boolean
+gboolean
+//static added due to compile error shown
 riak_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, &riak_plugin, 1);
