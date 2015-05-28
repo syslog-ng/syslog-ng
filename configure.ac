@@ -221,6 +221,14 @@ AC_ARG_ENABLE(riemann,
               [  --disable-riemann       Disable riemann destination]
               ,,enable_riemann="auto")
 
+AC_ARG_ENABLE(riak,
+              [  --disable-riak          Disable the Riak destination]
+              ,,enable_riak="auto")
+              
+AC_ARG_WITH(libriack,
+             AC_HELP_STRING([--with-libriack=DIR],
+                            [use libriack library from (prefix) directory DIR]),,)
+
 AC_ARG_WITH(compile-date,
 	      [  --without-compile-date  Do not include the compile date in the binary]
 	      ,wcmp_date="${withval}", wcmp_date="yes")
@@ -256,12 +264,13 @@ AC_ARG_ENABLE(native,
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
               ,,enable_all_modules="auto")
+              
 
 if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
-            redis systemd geoip riemann ipv6 smtp"
+            redis systemd geoip riemann riak ipv6 smtp"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
        if test "x$modstate" = "xauto"; then
@@ -1019,6 +1028,35 @@ if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
        enable_redis=$hiredis
 fi
 
+
+dnl ***************************************************************************
+dnl libriack headers/libraries
+dnl ***************************************************************************
+if test "x$enable_riak" != "xno" && test "x$with_riak" != "no"; then
+       riack="yes"
+       if test "x$with_libriack" != "yes" && test "x$with_libriack" != "x"; then
+               CFLAGS_SAVE="$CFLAGS"
+               LDFLAGS_SAVE="$LDFLAGS"
+               CFLAGS="$CFLAGS -I$with_libriack/include"
+               LDFLAGS="$LDFLAGS -L$with_libriack/lib"
+               AC_CHECK_HEADER(riack/riack.h, [RIACK_CFLAGS="-I$with_libriack/include"
+                                               RIACK_LIBS="-L$with_libriack/lib -lriack"], [riack=no])
+               CFLAGS="$CFLAGS_SAVE"
+               LDFLAGS="$LDFLAGS_SAVE"
+       else
+               riack="yes"
+               PKG_CHECK_MODULES(RIACK, riack, ,
+                                 [PKG_CHECK_MODULES(RIACK, libriack,,
+                                  [AC_CHECK_HEADER(riack/riack.h, [RIACK_LIBS="-lriack"], [riack=no])])])
+       fi
+
+       if test "x$enable_riak" = "xyes" && test "x$riack" = "xno"; then
+               AC_MSG_ERROR(libRIACK not found)
+       fi
+
+       enable_riak=$riack
+fi
+
 dnl ***************************************************************************
 dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
@@ -1079,6 +1117,22 @@ if test "$enable_riemann" != "no"; then
    enable_riemann="no";
  else
    enable_riemann="yes";
+ fi
+fi
+
+dnl ***************************************************************************
+dnl riak headers/libraries
+dnl ***************************************************************************
+if test "$enable_riak" != "no"; then
+ dnl PKG_CHECK_MODULES(RIAK_CLIENT, riak-client >= 0.0.0,,riak_found="no")
+ riak_found="yes"
+ if test "$riak_found" = "no" && test "$enable_riak" = "yes"; then
+   AC_MSG_ERROR([Dependency for Riak not found!])
+ fi
+ if test "$riak_found" = "no"; then
+   enable_riak="no";
+ else
+   enable_riak="yes";
  fi
 fi
 
@@ -1431,6 +1485,7 @@ AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
+AM_CONDITIONAL(ENABLE_RIAK, [test "$enable_riak" = "yes"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
@@ -1542,5 +1597,6 @@ echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
+echo "  Riak destination (module)   : ${enable_riak:=no}"
 echo "  java                        : ${enable_java:=no}"
 echo "  native bindings             : ${enable_native:=no}"
