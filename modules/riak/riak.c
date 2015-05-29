@@ -185,20 +185,20 @@ riak_dd_disconnect(LogThrDestDriver *s)
 static worker_insert_result_t
 riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
-  RiakDestDriver *self = (RiakDestDriver *)s;
+  //RiakDestDriver *self = (RiakDestDriver *)s;
   
 
-  if (!riak_dd_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_NOT_CONNECTED;
+ // if (!riak_dd_connect(self, TRUE))
+   // return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
   //if (self->client->err)
     //return WORKER_INSERT_RESULT_ERROR;
-
+  printf("riak_worker_insert method is being used\n" ); //for debugging
 
   return WORKER_INSERT_RESULT_SUCCESS;
 }
 
-static gboolean
+static void
 riak_worker_thread_init(LogThrDestDriver *d)
 {
   RiakDestDriver *self = (RiakDestDriver *)d;
@@ -214,10 +214,8 @@ riak_worker_thread_init(LogThrDestDriver *d)
                 //evt_tag_str("error", self->client->errstr),
                 evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
-    return FALSE;
    }
-   riak_dd_connect(self, FALSE);
-   return TRUE;
+//   riak_dd_connect(self, FALSE);
 }
 
 static void
