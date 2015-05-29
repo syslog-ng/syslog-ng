@@ -180,9 +180,60 @@ riak_dd_disconnect(LogThrDestDriver *s)
 /*
  * Worker thread
  */
-
-
  
+
+static worker_insert_result_t
+riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
+{
+  RiakDestDriver *self = (RiakDestDriver *)s;
+  
+
+  if (!riak_dd_connect(self, TRUE))
+    return WORKER_INSERT_RESULT_NOT_CONNECTED;
+
+  //if (self->client->err)
+    //return WORKER_INSERT_RESULT_ERROR;
+
+
+  return WORKER_INSERT_RESULT_SUCCESS;
+}
+
+static gboolean
+riak_worker_thread_init(LogThrDestDriver *d)
+{
+  RiakDestDriver *self = (RiakDestDriver *)d;
+
+  msg_debug("Worker thread started",
+            evt_tag_str("driver", self->super.super.super.id),
+            NULL);
+
+  if (self->bucket == NULL || self->key == NULL || self->value == NULL)
+  {
+    msg_error("Riak worker init error, LogTemplate values NULL, suspending",
+                evt_tag_str("driver", self->super.super.super.id),
+                //evt_tag_str("error", self->client->errstr),
+                evt_tag_int("time_reopen", self->super.time_reopen),
+                NULL);
+    return FALSE;
+   }
+   riak_dd_connect(self, FALSE);
+   return TRUE;
+}
+
+static void
+riak_worker_thread_deinit(LogThrDestDriver *d)
+{
+  RiakDestDriver *self = (RiakDestDriver *)d;
+
+  log_template_unref(self->bucket);
+  log_template_unref(self->key);
+  log_template_unref(self->value);
+  free(self->host);
+  free(self->bucket_type);
+}
+
+
+
 /*
  * Main thread
  */
@@ -236,10 +287,10 @@ riak_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = riak_dd_init;
   self->super.super.super.super.free_fn = riak_dd_free;
 
-  //self->super.worker.thread_init = riak_worker_thread_init;
-  //self->super.worker.thread_deinit = riak_worker_thread_deinit;
+  self->super.worker.thread_init = riak_worker_thread_init;
+  self->super.worker.thread_deinit = riak_worker_thread_deinit;
 //  self->super.worker.disconnect = riak_dd_disconnect;
- // self->super.worker.insert = riak_worker_insert;
+  self->super.worker.insert = riak_worker_insert;
 
   self->super.format.stats_instance = riak_dd_format_stats_instance;
   self->super.format.persist_name = riak_dd_format_persist_name;
