@@ -1,10 +1,8 @@
-export top_srcdir
-
 if ENABLE_JAVA
 
-module_LTLIBRARIES += libmod-java.la
+module_LTLIBRARIES += modules/java/libmod-java.la
 
-libmod_java_la_CFLAGS = \
+modules_java_libmod_java_la_CFLAGS = \
     $(JNI_CFLAGS)  \
     $(INCUBATOR_CFLAGS) \
     -I$(top_srcdir)/modules/java    \
@@ -12,7 +10,7 @@ libmod_java_la_CFLAGS = \
     -I$(top_srcdir)/modules/java/native \
     -I$(top_builddir)/modules/java/native
 
-libmod_java_la_SOURCES = \
+modules_java_libmod_java_la_SOURCES = \
     modules/java/native/java-grammar.y \
     modules/java/native/java-plugin.c \
     modules/java/native/java-destination.c \
@@ -31,13 +29,13 @@ libmod_java_la_SOURCES = \
     modules/java/native/java_machine.c \
     modules/java/native/java_machine.h
 
-libmod_java_la_LIBADD = \
+modules_java_libmod_java_la_LIBADD = \
     $(JNI_LIBS) $(INCUBATOR_LIBS)
 
-libmod_java_la_LDFLAGS = \
+modules_java_libmod_java_la_LDFLAGS = \
     -avoid-version -module -no-undefined
 
-libmod_java_la_DEPENDENCIES  = \
+modules_java_libmod_java_la_DEPENDENCIES  = \
         $(MODULE_DEPS_LIBS)
 
 JAVA_PKG_NAME = org.syslog_ng
@@ -83,8 +81,35 @@ modules/java/SyslogNg.jar: $(JAVA_CLASS_FILES) $(JAVA_HEADER_FILES)
 $(JAVA_HEADER_FILES): $(JAVA_CLASS_FILES)
 	$(AM_V_GEN) $(JAVAH) -cp ./ -o $@ $(JAVA_PKG_NAME).$(notdir $(basename $@))
 
-$(JAVA_CLASS_PATH)/%.class: $(top_srcdir)/modules/java/%.java $(JAVA_FILES)
-	$(AM_V_GEN) $(JAVAC) -d ./ -cp ./ $<
+$(JAVA_CLASS_PATH)/InternalMessageSender.class: $(JAVA_SRC_DIR)/InternalMessageSender.java
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/SyslogNgClassLoader.class: $(JAVA_SRC_DIR)/SyslogNgClassLoader.java $(JAVA_CLASS_PATH)/InternalMessageSender.class
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/LogMessage.class: $(JAVA_SRC_DIR)/LogMessage.java
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/LogTemplate.class: $(JAVA_SRC_DIR)/LogTemplate.java
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/LogPipe.class: $(JAVA_SRC_DIR)/LogPipe.java $(JAVA_CLASS_PATH)/InternalMessageSender.class
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/LogDestination.class: $(JAVA_SRC_DIR)/LogDestination.java $(JAVA_CLASS_PATH)/LogPipe.class
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/TextLogDestination.class: $(JAVA_SRC_DIR)/TextLogDestination.java $(JAVA_CLASS_PATH)/LogDestination.class
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/StructuredLogDestination.class: $(JAVA_SRC_DIR)/StructuredLogDestination.java $(JAVA_CLASS_PATH)/LogDestination.class
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/DummyStructuredDestination.class: $(JAVA_SRC_DIR)/DummyStructuredDestination.java $(JAVA_CLASS_PATH)/StructuredLogDestination.class
+	$(JAVAC) -d ./ -cp ./ $<
+
+$(JAVA_CLASS_PATH)/DummyTextDestination.class: $(JAVA_SRC_DIR)/DummyTextDestination.java $(JAVA_CLASS_PATH)/TextLogDestination.class
+	$(JAVAC) -d ./ -cp ./ $<
 
 java-install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(moduledir)
