@@ -39,6 +39,7 @@ typedef struct
   gchar *server;
   gint port;
   riemann_client_type_t type;
+  guint timeout;
 
   struct
   {
@@ -174,6 +175,13 @@ riemann_dd_set_connection_type(LogDriver *d, const gchar *type)
   return TRUE;
 }
 
+void
+riemann_dd_set_timeout(LogDriver *d, guint timeout)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+  self->timeout = timeout;
+}
+
 LogTemplateOptions *
 riemann_dd_get_template_options(LogDriver *d)
 {
@@ -217,12 +225,24 @@ riemann_dd_disconnect(LogThrDestDriver *s)
   self->client = NULL;
 }
 
-static gboolean
-riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
+static void
+_set_timeout_on_connection(RiemannDestDriver *self)
 {
   int fd;
   struct timeval timeout;
+  if (self->timeout >= 1)
+    {
+      fd = riemann_client_get_fd(self->client);
+      timeout.tv_sec = self->timeout;
+      timeout.tv_usec = 0;
+      setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof (timeout));
+      setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout));
+    }
+}
 
+static gboolean
+riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
+{
   if (reconnect && self->client)
     return TRUE;
 
@@ -235,11 +255,7 @@ riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
       return FALSE;
     }
 
-  fd = riemann_client_get_fd(self->client);
-  timeout.tv_sec = 5;
-  timeout.tv_usec = 0;
-  setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof (timeout));
-  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout));
+  _set_timeout_on_connection(self);
 
   return TRUE;
 }

@@ -43,5 +43,6 @@ void riemann_dd_set_field_tags(LogDriver *d, GList *taglist);
 void riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp);
 gboolean riemann_dd_set_connection_type(LogDriver *d, const gchar *type);
 void riemann_dd_set_flush_lines(LogDriver *d, gint lines);
+void riemann_dd_set_timeout(LogDriver *d, guint timeout);
 
 #endif

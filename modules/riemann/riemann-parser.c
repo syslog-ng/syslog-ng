@@ -32,7 +32,7 @@ static CfgLexerKeyword riemann_keywords[] = {
   { "riemann",                  KW_RIEMANN },
   { "server",                   KW_SERVER },
   { "port",                     KW_PORT },
-
+  { "timeout",                  KW_TIMEOUT },
   { "host",                     KW_HOST },
   { "service",                  KW_SERVICE },
   { "state",                    KW_STATE },
