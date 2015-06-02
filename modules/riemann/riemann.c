@@ -324,7 +324,7 @@ riemann_dd_field_add_tag(gpointer data, gpointer user_data)
 }
 
 static gboolean
-riemann_dd_field_add_msg_tag(LogMessage *msg,
+riemann_dd_field_add_msg_tag(const LogMessage *msg,
                              LogTagId tag_id, const gchar *tag_name,
                              gpointer user_data)
 {
