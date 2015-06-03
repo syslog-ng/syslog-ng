@@ -39,6 +39,7 @@ typedef struct
   gchar *server;
   gint port;
   riemann_client_type_t type;
+  guint timeout;
 
   struct
   {
@@ -174,6 +175,13 @@ riemann_dd_set_connection_type(LogDriver *d, const gchar *type)
   return TRUE;
 }
 
+void
+riemann_dd_set_timeout(LogDriver *d, guint timeout)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+  self->timeout = timeout;
+}
+
 LogTemplateOptions *
 riemann_dd_get_template_options(LogDriver *d)
 {
@@ -217,6 +225,21 @@ riemann_dd_disconnect(LogThrDestDriver *s)
   self->client = NULL;
 }
 
+static void
+_set_timeout_on_connection(RiemannDestDriver *self)
+{
+  int fd;
+  struct timeval timeout;
+  if (self->timeout >= 1)
+    {
+      fd = riemann_client_get_fd(self->client);
+      timeout.tv_sec = self->timeout;
+      timeout.tv_usec = 0;
+      setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof (timeout));
+      setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout));
+    }
+}
+
 static gboolean
 riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
 {
@@ -231,6 +254,8 @@ riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
                 NULL);
       return FALSE;
     }
+
+  _set_timeout_on_connection(self);
 
   return TRUE;
 }
@@ -324,7 +349,7 @@ riemann_dd_field_add_tag(gpointer data, gpointer user_data)
 }
 
 static gboolean
-riemann_dd_field_add_msg_tag(LogMessage *msg,
+riemann_dd_field_add_msg_tag(const LogMessage *msg,
                              LogTagId tag_id, const gchar *tag_name,
                              gpointer user_data)
 {
