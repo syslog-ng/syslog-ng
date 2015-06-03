@@ -27,6 +27,8 @@ typedef struct
   char *bucket_type;
   LogTemplate *key;
   LogTemplate *value;
+  char *ctype;
+  char *charset;
 
   RiakBucketMode mode;
 
@@ -98,6 +100,22 @@ riak_dd_set_value(LogDriver *d, LogTemplate *value)
   self->value = log_template_ref(value);
 }
 
+void
+riak_dd_set_charset(LogDriver *d, char *charset)
+{
+  RiakDestDriver *self = (RiakDestDriver *)d;
+  free(self->charset);
+  self->charset = strdup(charset);
+}
+
+void
+riak_dd_set_ctype(LogDriver *d, char *ctype)
+{
+  RiakDestDriver *self = (RiakDestDriver *)d;
+  free(self->ctype);
+  self->ctype = strdup(ctype);
+}
+
 LogTemplateOptions *
 riak_dd_get_template_options(LogDriver *d)
 {
@@ -115,7 +133,8 @@ riak_dd_format_stats_instance(LogThrDestDriver *d)
   RiakDestDriver *self = (RiakDestDriver *)d;
   static char persist_name[1024];
 
-  sprintf(persist_name, "riak,%s,%u,%u,%s", self->host, self->port, self->mode, self->bucket_type);
+  sprintf(persist_name, "riak,%s,%u,%u,%s,%s,%s", self->host, self->port, self->mode,
+          self->bucket_type, self->charset, self->ctype);
   return persist_name;
 }
 
@@ -125,7 +144,8 @@ riak_dd_format_persist_name(LogThrDestDriver *d)
   RiakDestDriver *self = (RiakDestDriver *)d;
   static char persist_name[1024];
 
-  sprintf(persist_name, "riak(%s,%u,%u,%s)", self->host, self->port, self->mode, self->bucket_type);
+  sprintf(persist_name, "riak(%s,%u,%u,%s,%s,%s)", self->host, self->port, self->mode,
+          self->bucket_type, self->charset, self->ctype);
   return persist_name;
 }
 
@@ -215,6 +235,8 @@ riak_worker_thread_deinit(LogThrDestDriver *d)
   log_template_unref(self->value);
   free(self->host);
   free(self->bucket_type);
+  free(self->charset);
+  free(self->ctype);
 }
 
 /*
@@ -245,6 +267,8 @@ static void riak_dd_free(LogPipe *d) // frees up the structure allocated during 
 
   free(self->host);
   free(self->bucket_type);
+  free(self->charset);
+  free(self->ctype);
   log_template_unref(self->key);
   log_template_unref(self->value);
   log_template_unref(self->bucket);

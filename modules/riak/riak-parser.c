@@ -5,10 +5,17 @@
 extern int riak_debug;
 int riak_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword riak_keywords[] = {
-    {"riak", KW_RIAK},     {"host", KW_HOST}, {"port", KW_PORT},
-    {"bucket", KW_BUCKET}, {"key", KW_KEY},   {"value", KW_VALUE},
-    {"mode", KW_MODE},     {"type", KW_TYPE}, {NULL}};
+static CfgLexerKeyword riak_keywords[] = {{"riak", KW_RIAK},
+                                          {"host", KW_HOST},
+                                          {"port", KW_PORT},
+                                          {"bucket", KW_BUCKET},
+                                          {"key", KW_KEY},
+                                          {"value", KW_VALUE},
+                                          {"mode", KW_MODE},
+                                          {"type", KW_TYPE},
+                                          {"charset", KW_CHARSET},
+                                          {"ctype", KW_CTYPE},
+                                          {NULL}};
 
 CfgParser riak_parser = {
 #if ENABLE_DEBUG
