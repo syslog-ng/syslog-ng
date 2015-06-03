@@ -1,5 +1,7 @@
 if ENABLE_JAVA
 
+modules/java mod-java: modules/java/libmod-java.la
+
 module_LTLIBRARIES += modules/java/libmod-java.la
 
 modules_java_libmod_java_la_CFLAGS = \
@@ -124,6 +126,10 @@ java-clean-hook:
 INSTALL_EXEC_HOOKS += java-install-exec-hook
 UNINSTALL_HOOKS += java-uninstall-exec-hook
 CLEAN_HOOKS += java-clean-hook
+
+else
+# when Java is disabled
+modules/java mod-java:
 
 endif
 
