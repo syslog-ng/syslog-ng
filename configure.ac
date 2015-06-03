@@ -226,6 +226,10 @@ AC_ARG_WITH(systemd-journal,
                                          Link against the system supplied or the wrapper library. (default: auto)]
               ,,with_systemd_journal="auto")
 
+AC_ARG_ENABLE(python,
+              [  --disable-python       Disable python destination]
+              ,,enable_python="auto")
+
 AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python])
 
@@ -1063,16 +1067,25 @@ fi
 dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
-if test "x$with_python" != "xno"; then
-  case "$with_python" in
-    "yes"|"")
-        with_python="python"
-        ;;
-    [[0-9]]*)
-        with_python="python-${with_python}"
-        ;;
-  esac
-  PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, enable_python="yes", enable_python="no")
+if test "x$enable_python" != "xno"; then
+  if test "x$with_python" != "xno"; then
+    case "$with_python" in
+      "yes"|"")
+          with_python="python"
+          ;;
+      [[0-9]]*)
+          with_python="python-${with_python}"
+          ;;
+    esac
+    PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, enable_python="yes", enable_python="no")
+    if test "x$enable_python" = "xno"; then
+      AC_MSG_ERROR([Did not find the requested Python development libraries])
+    fi
+  else
+    with_python="no"
+  fi
+else
+  with_python=""
 fi
 
 dnl ***************************************************************************
@@ -1497,5 +1510,5 @@ echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
-echo "  python                      : ${enable_python:-yes} (${with_python})"
+echo "  python                      : ${enable_python:no} (${with_python:-none})"
 echo "  java                        : ${enable_java:=no}"

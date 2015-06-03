@@ -50,6 +50,7 @@ BUILT_SOURCES					+= \
 	modules/python/python-grammar.h
 
 modules/python mod-python: modules/python/libmod-python.la
+include modules/python/pylib/Makefile.am
 else
 modules/python mod-python:
 endif
@@ -61,4 +62,3 @@ EXTRA_DIST					+= \
 
 .PHONY: modules/python mod-python
 
-include modules/python/pylib/Makefile.am
