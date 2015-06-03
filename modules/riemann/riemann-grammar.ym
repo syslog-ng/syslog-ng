@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2014, 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014, 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -53,6 +53,9 @@
 %token KW_TTL
 %token KW_ATTRIBUTES
 %token KW_TIMEOUT
+%token KW_CACERT
+%token KW_CERT
+%token KW_KEY
 
 %%
 
@@ -107,13 +110,13 @@ riemann_option
           {
             riemann_dd_set_field_tags(last_driver, $3);
           }
-        | KW_TYPE '(' LL_IDENTIFIER ')'
+        | KW_TYPE '(' LL_IDENTIFIER riemann_type_options ')'
           {
             CHECK_ERROR(riemann_dd_set_connection_type(last_driver, $3), @3,
                         "Unknown Riemann connection type: %s", $3);
             free($3);
           }
-        | KW_TYPE '(' LL_STRING ')'
+        | KW_TYPE '(' LL_STRING riemann_type_options ')'
           {
             CHECK_ERROR(riemann_dd_set_connection_type(last_driver, $3), @3,
                         "Unknown Riemann connection type: %s", $3);
@@ -152,6 +155,17 @@ attribute_option
             free($1);
           }
         | vp_option
+        ;
+
+riemann_type_options
+        : riemann_type_option riemann_type_options
+        |
+        ;
+
+riemann_type_option
+        : KW_CACERT '(' string ')' { riemann_dd_set_tls_cacert(last_driver, $3); free($3); }
+        | KW_CERT '(' string ')' { riemann_dd_set_tls_cert(last_driver, $3); free($3); }
+        | KW_KEY '(' string ')' { riemann_dd_set_tls_key(last_driver, $3); free($3); }
         ;
 
 /* INCLUDE_RULES */

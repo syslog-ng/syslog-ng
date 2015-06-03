@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2014, 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014, 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -53,6 +53,13 @@ typedef struct
     ValuePairs *attributes;
   } fields;
   LogTemplateOptions template_options;
+
+  struct
+  {
+    gchar *cacert;
+    gchar *cert;
+    gchar *key;
+  } tls;
 
   riemann_client_t *client;
 
@@ -169,6 +176,8 @@ riemann_dd_set_connection_type(LogDriver *d, const gchar *type)
     self->type = RIEMANN_CLIENT_TCP;
   else if (strcmp(type, "udp") == 0)
     self->type = RIEMANN_CLIENT_UDP;
+  else if (strcmp(type, "tls") == 0)
+    self->type = RIEMANN_CLIENT_TLS;
   else
     return FALSE;
 
@@ -180,6 +189,33 @@ riemann_dd_set_timeout(LogDriver *d, guint timeout)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
   self->timeout = timeout;
+}
+
+void
+riemann_dd_set_tls_cacert(LogDriver *d, const gchar *path)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  g_free(self->tls.cacert);
+  self->tls.cacert = g_strdup(path);
+}
+
+void
+riemann_dd_set_tls_cert(LogDriver *d, const gchar *path)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  g_free(self->tls.cert);
+  self->tls.cert = g_strdup(path);
+}
+
+void
+riemann_dd_set_tls_key(LogDriver *d, const gchar *path)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  g_free(self->tls.key);
+  self->tls.key = g_strdup(path);
 }
 
 LogTemplateOptions *
@@ -246,7 +282,11 @@ riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
   if (reconnect && self->client)
     return TRUE;
 
-  self->client = riemann_client_create(self->type, self->server, self->port);
+  self->client = riemann_client_create(self->type, self->server, self->port,
+                                       RIEMANN_CLIENT_OPTION_TLS_CA_FILE, self->tls.cacert,
+                                       RIEMANN_CLIENT_OPTION_TLS_CERT_FILE, self->tls.cert,
+                                       RIEMANN_CLIENT_OPTION_TLS_KEY_FILE, self->tls.key,
+                                       RIEMANN_CLIENT_OPTION_NONE);
   if (!self->client)
     {
       msg_error("Error connecting to Riemann",
@@ -585,6 +625,9 @@ riemann_dd_free(LogPipe *d)
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
   g_free(self->server);
+  g_free(self->tls.cacert);
+  g_free(self->tls.cert);
+  g_free(self->tls.key);
 
   log_template_options_destroy(&self->template_options);
 
