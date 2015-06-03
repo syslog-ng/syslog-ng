@@ -14,6 +14,8 @@ static CfgLexerKeyword riak_keywords[] = {
   { "value",		KW_VALUE },
   { "mode",			KW_MODE },
   { "type",		    KW_TYPE },
+  { "charset",      KW_CHARSET },
+  { "ctype",        KW_CTYPE },
   { NULL }
 };
 
