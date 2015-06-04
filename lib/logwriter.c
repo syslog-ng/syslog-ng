@@ -83,6 +83,7 @@ struct _LogWriter
   GStaticMutex suppress_lock;
   MlBatchedTimer suppress_timer;
   MlBatchedTimer mark_timer;
+  struct iv_timer reopen_timer;
   gboolean work_result;
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
@@ -504,6 +505,8 @@ log_writer_stop_watches(LogWriter *self)
 {
   if (self->watches_running)
     {
+      if (iv_timer_registered(&self->reopen_timer))
+        iv_timer_unregister(&self->reopen_timer);
       if (iv_timer_registered(&self->suspend_timer))
         iv_timer_unregister(&self->suspend_timer);
       if (iv_fd_registered(&self->fd_watch))
@@ -1144,6 +1147,14 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 }
 
 static void
+log_writer_reopen_timeout(void *cookie)
+{
+  LogWriter *self = (LogWriter *)cookie;
+
+  log_pipe_notify(self->control, NC_REOPEN_REQUIRED, self);
+}
+
+static void
 log_writer_init_watches(LogWriter *self)
 {
   IV_FD_INIT(&self->fd_watch);
@@ -1167,6 +1178,10 @@ log_writer_init_watches(LogWriter *self)
   self->mark_timer.handler = (void (*)(void *)) log_writer_mark_timeout;
   self->mark_timer.ref_cookie = (gpointer (*)(gpointer)) log_pipe_ref;
   self->mark_timer.unref_cookie = (void (*)(gpointer)) log_pipe_unref;
+
+  IV_TIMER_INIT(&self->reopen_timer);
+  self->reopen_timer.cookie = self;
+  self->reopen_timer.handler = (void (*)(void *)) log_writer_reopen_timeout;
 
   IV_EVENT_INIT(&self->queue_filled);
   self->queue_filled.cookie = self;
@@ -1239,6 +1254,7 @@ log_writer_deinit(LogPipe *s)
 
   ml_batched_timer_unregister(&self->suppress_timer);
   ml_batched_timer_unregister(&self->mark_timer);
+
   log_queue_set_counters(self->queue, NULL, NULL);
 
   stats_lock();
@@ -1331,6 +1347,19 @@ log_writer_reopen_deferred(gpointer s)
   gpointer *args = (gpointer *) s;
   LogWriter *self = args[0];
   LogProtoClient *proto = args[1];
+
+  if (!proto)
+    {
+      iv_validate_now();
+
+      self->reopen_timer.expires = iv_now;
+      self->reopen_timer.expires.tv_sec += self->options->time_reopen;
+
+      if (iv_timer_registered(&self->reopen_timer))
+          iv_timer_unregister(&self->reopen_timer);
+
+      iv_timer_register(&self->reopen_timer);
+    }
 
   init_sequence_number(&self->seq_num);
 
