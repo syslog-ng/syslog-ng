@@ -161,6 +161,17 @@ affile_dw_reopen(AFFileDestWriter *self)
 {
   int fd;
   struct stat st;
+  GlobalConfig *cfg;
+  LogProtoClient *proto = NULL;
+
+  cfg = log_pipe_get_config(&self->super);
+  if (cfg)
+    self->time_reopen = cfg->time_reopen;
+
+   msg_verbose("Initializing destination file writer",
+              evt_tag_str("template", self->owner->filename_template->template),
+              evt_tag_str("filename", self->filename),
+              NULL);
 
   self->last_open_stamp = self->last_msg_stamp;
   if (self->owner->overwrite_if_older > 0 && 
@@ -176,12 +187,11 @@ affile_dw_reopen(AFFileDestWriter *self)
 
   if (_affile_dw_reopen_file(self, self->filename, &fd))
     {
-      log_writer_reopen(self->writer,
-                        self->owner->file_open_options.is_pipe
-                        ? log_proto_text_client_new(log_transport_pipe_new(fd), &self->owner->writer_options.proto_options.super)
-                        : log_proto_file_writer_new(log_transport_file_new(fd), &self->owner->writer_options.proto_options.super,
-                                                    self->owner->writer_options.flush_lines,
-                                                    self->owner->use_fsync));
+      proto =  self->owner->file_open_options.is_pipe
+                           ? log_proto_text_client_new(log_transport_pipe_new(fd), &self->owner->writer_options.proto_options.super)
+                           : log_proto_file_writer_new(log_transport_file_new(fd), &self->owner->writer_options.proto_options.super,
+                                                       self->owner->writer_options.flush_lines,
+                                                       self->owner->use_fsync);
 
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
@@ -191,8 +201,10 @@ affile_dw_reopen(AFFileDestWriter *self)
                 evt_tag_str("filename", self->filename),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
-      return self->owner->super.super.optional;
     }
+
+  log_writer_reopen(self->writer, proto);
+
   return TRUE;
 }
 
@@ -201,14 +213,6 @@ affile_dw_init(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-
-  if (cfg)
-    self->time_reopen = cfg->time_reopen;
-
-  msg_verbose("Initializing destination file writer",
-              evt_tag_str("template", self->owner->filename_template->template),
-              evt_tag_str("filename", self->filename),
-              NULL);
 
   if (!self->writer)
     {
@@ -325,6 +329,19 @@ affile_dw_free(LogPipe *s)
   log_pipe_free_method(s);
 }
 
+static void
+affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
+{
+  switch(notify_code)
+    {
+      case NC_REOPEN_REQUIRED:
+          affile_dw_reopen((AFFileDestWriter *)s);
+          break;
+      default:
+          break;
+    }
+}
+
 static AFFileDestWriter *
 affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
 {
@@ -336,6 +353,7 @@ affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
   self->super.deinit = affile_dw_deinit;
   self->super.free_fn = affile_dw_free;  
   self->super.queue = affile_dw_queue;
+  self->super.notify = affile_dw_notify;
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
   self->time_reopen = 60;
