@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -40,6 +40,10 @@ static CfgLexerKeyword riemann_keywords[] = {
   { "metric",                   KW_METRIC },
   { "ttl",                      KW_TTL },
   { "attributes",               KW_ATTRIBUTES },
+
+  { "cacert",                   KW_CACERT },
+  { "cert",                     KW_CERT },
+  { "key",                      KW_KEY },
 
   { NULL }
 };

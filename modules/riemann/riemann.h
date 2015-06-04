@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2013, 2014, 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -42,6 +42,9 @@ void riemann_dd_set_field_ttl(LogDriver *d, LogTemplate *value);
 void riemann_dd_set_field_tags(LogDriver *d, GList *taglist);
 void riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp);
 gboolean riemann_dd_set_connection_type(LogDriver *d, const gchar *type);
+void riemann_dd_set_tls_cacert(LogDriver *d, const gchar *path);
+void riemann_dd_set_tls_cert(LogDriver *d, const gchar *path);
+void riemann_dd_set_tls_key(LogDriver *d, const gchar *path);
 void riemann_dd_set_flush_lines(LogDriver *d, gint lines);
 void riemann_dd_set_timeout(LogDriver *d, guint timeout);
 
