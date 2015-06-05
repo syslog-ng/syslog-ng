@@ -1185,7 +1185,7 @@ if test "x$enable_systemd" = "xyes"; then
                                   with_systemd_journal=system, with_systemd_journal=optional)
             elif test "x$with_systemd_journal" = "xsystem"; then
                 PKG_CHECK_MODULES(LIBSYSTEMD_JOURNAL, libsystemd-journal >= $JOURNALD_MIN_VERSION,,
-                AC_MSG_ERROR[Detecting system releted systemd-journal library failed])
+                AC_MSG_ERROR([Detecting system releted systemd-journal library failed]))
             fi
             libsystemd_CFLAGS="${LIBSYSTEMD_JOURNAL_CFLAGS} ${libsystemd_daemon_CFLAGS}"
             libsystemd_LDFLAGS="${LIBSYSTEMD_JOURNAL_LIBS} ${libsystemd_daemon_LIBS}"
