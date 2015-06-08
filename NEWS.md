@@ -1,3 +1,90 @@
+3.6.3
+=====
+
+<!-- Mon, 08 Jun 2015 10:37:31 +0200 -->
+
+This is the third maintanance release for 3.6.x series.
+
+Changes compared to 3.6.2:
+
+Core fixes
+----------
+
+  * Inaccurate timestamps fixed on Linux for messages read from /dev/kmsg.
+    For those messages syslog-ng uses keep-timestamp(no).
+
+  * Added DOS/Windows line ending support in config.
+
+  * In some cases, not all the existing plugins were loaded by default.
+
+  * In some cases, syslog-ng crashed during stop phase when user wanted
+    syslog-ng to stop immediately after start.
+
+  * Some memory leak around reload and internal queueing mechanism has been fixed.
+
+Build related fixes
+-------------------
+
+  * Manpage build issue fixed by adding `--enable-manpages` and `--with-docbook`
+    configure option. `--with-docbook=PATH` gives the user the opportunity to
+    specify the path for the user's own installed docbook.
+
+  * Fixed parallel build by adding correct dependencies to 
+    syslog-ng-ctl/Makefile.am.
+
+Module fixes
+------------
+
+  * When a not writeable file becomes writeable later, syslog-ng recognize it
+    (with the help of reopen-timer) and delivers messages to the file without
+    dropping those which were received during the file was not available.
+
+  * Fixed a crash at the first message delivery when templates are used in
+    a filename.
+
+  * Fixed a memory leak around file destination driver.
+
+  * In some circumstances, during reload, syslog-ng crashed when 
+    high internal message rate occured.
+
+  * When the configured host was not available during the initialization of
+    `afsocket` destination syslog-ng just didn't start. From now, syslog-ng
+    starts in that case and will retry connecting to the host periodically.
+
+  * Retries fixed in SQL destination. In some circumstances when
+    `retry_sql_inserts` was set to 1, after an insertion failure all incoming
+    messages were dropped.
+
+  * Connection process fixed in `amqp` destination and RabbitMQ module is
+    set to upstream.
+
+  * Monolithic libsystemd library support added.
+    In systemd 209, the various small libsystemd-* libraries were merged
+    into a single libsystemd. From now, syslog-ng detects and
+    uses the merged library when present, while still supports the split
+    ones too. If the merged library is found, that will be preferred.
+
+  * Destination port fixed in `afstomp`.
+
+  * A memory leak fixed around ping functionality in `redis`.
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessarily to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Adam Mozes, Andras Mitzki, Balazs Scheidler, Ben Kibbey, Fabien Wernli,
+Gergely Nagy, Gergo Nagy, Henrik Grindal Bakken, Laszlo Budai, Peter Czanik,
+Pradeep Sanders, Robert Fekete, Tibor Benke, Tomáš Novosad, Toralf Förster,
+Viktor Juhasz, Viktor Tusa, Zoltan Pallagi .
+
 3.6.2
 =====
 
