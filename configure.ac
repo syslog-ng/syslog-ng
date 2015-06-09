@@ -1188,7 +1188,7 @@ if test "x$enable_systemd" = "xyes"; then
                 AC_MSG_ERROR[Detecting system releted systemd-journal library failed])
             fi
             libsystemd_CFLAGS="${LIBSYSTEMD_JOURNAL_CFLAGS} ${libsystemd_daemon_CFLAGS}"
-            libsystemd_LDFLAGS="${LIBSYSTEMD_JOURNAL_LIBS} ${libsystemd_daemon_LIBS}"
+            libsystemd_LIBS="${LIBSYSTEMD_JOURNAL_LIBS} ${libsystemd_daemon_LIBS}"
             AC_SUBST(libsystemd_CFLAGS)
             AC_SUBST(libsystemd_LIBS)
         else
