@@ -335,6 +335,7 @@ tls_context_setup_session(TLSContext *self)
         }
 
       SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
+
       if (self->ssl_options != TSO_NONE)
         {
           ssl_options=0;
@@ -433,25 +434,25 @@ tls_lookup_options(GList *options)
 {
   TLSSslOptions ret=TSO_NONE;
   GList *l;
-  for(l=options; l != NULL ; l=l->next)
+  for (l=options; l != NULL; l=l->next)
     {
-      msg_debug("ssl-option",evt_tag_str("opt",l->data),NULL);
-      if (strcasecmp(l->data,"no-sslv2") == 0 || strcasecmp(l->data,"no_sslv2") == 0)
+      msg_debug("ssl-option", evt_tag_str("opt", l->data), NULL);
+      if (strcasecmp(l->data, "no-sslv2") == 0 || strcasecmp(l->data, "no_sslv2") == 0)
         ret|=TSO_NOSSLv2;
-      else if (strcasecmp(l->data,"no-sslv3") == 0 || strcasecmp(l->data,"no_sslv3") == 0)
+      else if (strcasecmp(l->data, "no-sslv3") == 0 || strcasecmp(l->data, "no_sslv3") == 0)
         ret|=TSO_NOSSLv3;
-      else if (strcasecmp(l->data,"no-tlsv1") == 0 || strcasecmp(l->data,"no_tlsv1") == 0)
+      else if (strcasecmp(l->data, "no-tlsv1") == 0 || strcasecmp(l->data, "no_tlsv1") == 0)
         ret|=TSO_NOTLSv1;
 #ifdef SSL_OP_NO_TLSv1_2
-      else if (strcasecmp(l->data,"no-tlsv11") == 0 || strcasecmp(l->data,"no_tlsv11") == 0)
+      else if (strcasecmp(l->data, "no-tlsv11") == 0 || strcasecmp(l->data, "no_tlsv11") == 0)
         ret|=TSO_NOTLSv11;
-      else if (strcasecmp(l->data,"no-tlsv12") == 0 || strcasecmp(l->data,"no_tlsv12") == 0)
+      else if (strcasecmp(l->data, "no-tlsv12") == 0 || strcasecmp(l->data, "no_tlsv12") == 0)
         ret|=TSO_NOTLSv12;
 #endif
       else
-        msg_error("Unknown ssl-option",evt_tag_str("option",l->data),NULL);
+        msg_error("Unknown ssl-option", evt_tag_str("option", l->data), NULL);
     }
-  msg_debug("ssl-options parsed",evt_tag_printf("parsed value","%d" ,ret),NULL);
+  msg_debug("ssl-options parsed", evt_tag_printf("parsed value", "%d", ret), NULL);
   return ret;
 }
 
