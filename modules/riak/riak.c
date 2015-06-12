@@ -9,6 +9,7 @@
 #include "plugin-types.h"
 #include "logthrdestdrv.h"
 #include <stdlib.h>
+#include <riack/riack.h>
 
 typedef enum
 {
@@ -32,7 +33,7 @@ typedef struct
 
   RiakBucketMode mode;
 
- // riak_client_t *client;
+  riak_client_t *client;
 } RiakDestDriver;
 
 /*
@@ -153,23 +154,27 @@ riak_dd_format_persist_name(LogThrDestDriver *d)
   return persist_name;
 }
 
-/*
+
 static gboolean
 riak_dd_connect(RiakDestDriver *self, gboolean reconnect)
 {
+  int check;
+  if (!self->client)
+    self->client = riack_client_new();
   if (reconnect && (self->client != NULL))
     {
-      riakCommand(self->client, "ping");
-
-      if (!self->client->err)
-        return TRUE;
-      else
-        self->client = riakConnect(self->host, self->port);
+     
+      check = riack_client_connect(self->client, RIACK_CONNECT_OPTION_HOST,
+                                self->host, RIACK_CONNECT_OPTION_PORT, self->port,
+                                    RIACK_CONNECT_OPTION_NONE);
     }
+    
+  if (check == 0)
+    return TRUE;
   else
-    self->client = riakConnect(self->host, self->port);
-
-  if (self->client->err)
+    return FALSE;
+    
+  /*if (self->client->err)
     {
       msg_error("RIAK server error, suspending",
                 evt_tag_str("driver", self->super.super.super.id),
@@ -182,19 +187,22 @@ riak_dd_connect(RiakDestDriver *self, gboolean reconnect)
     msg_debug("Connecting to RIAK succeeded",
               evt_tag_str("driver", self->super.super.super.id), NULL);
 
-  return TRUE;
+  return TRUE;*/
 }
 
 static void
 riak_dd_disconnect(LogThrDestDriver *s)
 {
-  RiakDriver *self = (RiakDriver *)s;
+  RiakDestDriver *self = (RiakDestDriver *)s;
 
   if (self->client)
-    riakFree(self->client);
+    {
+    riak_client_disconnect(self->client);
+    riack_client_free(self->client);
+    }
   self->client = NULL;
 }
-*/
+
 /*
  * Worker thread
  */
@@ -203,14 +211,22 @@ riak_dd_disconnect(LogThrDestDriver *s)
 static worker_insert_result_t
 riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
-  //RiakDestDriver *self = (RiakDestDriver *)s;
+  RiakDestDriver *self = (RiakDestDriver *)s;
   
 
- // if (!riak_dd_connect(self, TRUE))
-   // return WORKER_INSERT_RESULT_NOT_CONNECTED;
+  if (!riak_dd_connect(self, TRUE))
+    return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
-  //if (self->client->err)
-    //return WORKER_INSERT_RESULT_ERROR;
+  if (self->client->conn == 0)
+    return WORKER_INSERT_RESULT_ERROR;
+    
+    
+  log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, self->key);
+  log_template_format(self->value, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, self->message);
+  log_template_format(self->bucket, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, self->bucket);
   printf("riak_worker_insert method is being used\n" ); //for debugging
 
   return WORKER_INSERT_RESULT_SUCCESS;
@@ -309,7 +325,7 @@ riak_dd_new(GlobalConfig *cfg)
 
   self->super.worker.thread_init = riak_worker_thread_init;
   self->super.worker.thread_deinit = riak_worker_thread_deinit;
-//  self->super.worker.disconnect = riak_dd_disconnect;
+  self->super.worker.disconnect = riak_dd_disconnect;
   self->super.worker.insert = riak_worker_insert;
 
   self->super.format.stats_instance = riak_dd_format_stats_instance;
