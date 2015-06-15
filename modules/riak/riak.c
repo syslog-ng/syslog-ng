@@ -33,7 +33,7 @@ typedef struct
 
   RiakBucketMode mode;
 
-  riak_client_t *client;
+  riack_client_t *client;
 } RiakDestDriver;
 
 /*
@@ -214,7 +214,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND, self->super.seq_num, NULL,
                       self->key);
   log_template_format(self->value, msg, &self->template_options, LTZ_SEND, self->super.seq_num,
-                      NULL, self->message);
+                      NULL, self->value);
   log_template_format(self->bucket, msg, &self->template_options, LTZ_SEND, self->super.seq_num,
                       NULL, self->bucket);
   printf("riak_worker_insert method is being used\n"); // for debugging
