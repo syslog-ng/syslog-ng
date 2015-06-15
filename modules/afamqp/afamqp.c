@@ -24,6 +24,7 @@
 
 #include "afamqp.h"
 #include "afamqp-parser.h"
+#include "amqp_tcp_socket.h"
 #include "plugin.h"
 #include "messages.h"
 #include "misc.h"
@@ -261,7 +262,7 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
 
     case AMQP_RESPONSE_LIBRARY_EXCEPTION:
       {
-        gchar *errstr = amqp_error_string2(ret.library_error);
+        const gchar *errstr = amqp_error_string2(ret.library_error);
         msg_error(context,
                   evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_str("error", errstr),
@@ -353,7 +354,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 
   if (sockfd_ret != AMQP_STATUS_OK)
     {
-      gchar *errstr = amqp_error_string2(-sockfd_ret);
+      const gchar *errstr = amqp_error_string2(-sockfd_ret);
       msg_error("Error connecting to AMQP server",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", errstr),
