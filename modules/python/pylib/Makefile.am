@@ -1,3 +1,5 @@
+if ENABLE_PYTHON
+
 EXTRA_DIST += \
 	modules/python/pylib/syslogng/__init__.py				\
 	modules/python/pylib/syslogng/debuggercli/__init__.py			\
@@ -46,24 +48,18 @@ INSTALL_EXEC_HOOKS += install-pylib
 UNINSTALL_HOOKS += uninstall-pylib
 CLEAN_HOOKS += clean-pylib
 
-.PHONY: install-pylib
 install-pylib:
 	(cd $(PYLIB_SRCDIR) && $(PYTHON) setup.py \
 		build --build-base="$(PYLIB_BUILDDIR)/build" \
 		install --record=$(SETUPPY_MANIFEST) --root="$(PYTHON_ROOT)" --prefix="$(prefix)")
 
-.PHONY: uninstall-pylib
 uninstall-pylib:
 	sed -e 's,^,$(PYTHON_ROOT),g' $(SETUPPY_MANIFEST) | tr '\n' '\0' | xargs -0 rm -f
 
-
-.PHONY: clean-pylib
 clean-pylib:
 	rm -rf "$(PYLIB_BUILDDIR)/build"
 	rm -rf "$(SETUPPY_MANIFEST)"
 
-
-.PHONY: python-checks python-unit python-pep8 python-pylint
 python-checks: python-unit python-pep8 python-pylint
 
 python-unit:
@@ -85,3 +81,10 @@ modules/python/pylib/test_pylib$(EXEEXT): Makefile
 	chmod +x "$@"
 
 modules_python_pylib_test_pylib_SOURCES = modules/python/pylib/test_pylib$(EXEEXT)
+
+endif
+
+.PHONY: install-pylib
+.PHONY: uninstall-pylib
+.PHONY: clean-pylib
+.PHONY: python-checks python-unit python-pep8 python-pylint
