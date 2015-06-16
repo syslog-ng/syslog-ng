@@ -311,6 +311,9 @@ log_threaded_dest_driver_start(LogPipe *s)
   stats_register_counter(0, self->stats_source | SCS_DESTINATION, self->super.super.id,
                          self->format.stats_instance(self),
                          SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_register_counter(0, self->stats_source | SCS_DESTINATION, self->super.super.id,
+                         self->format.stats_instance(self),
+                         SC_TYPE_PROCESSED, &self->processed_messages);
   stats_unlock();
 
   log_queue_set_counters(self->queue, self->stored_messages,
@@ -345,6 +348,9 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->super.super.id,
                            self->format.stats_instance(self),
                            SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->super.super.id,
+                           self->format.stats_instance(self),
+                           SC_TYPE_PROCESSED, &self->processed_messages);
   stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))
@@ -377,6 +383,8 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 
   log_msg_add_ack(msg, path_options);
   log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
+
+  stats_counter_inc(self->processed_messages);
 
   log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
