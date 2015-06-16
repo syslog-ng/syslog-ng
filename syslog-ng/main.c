@@ -228,6 +228,16 @@ main(int argc, char *argv[])
       return 0;
     }
 
+  if(startup_debug_flag && debug_flag)
+    {
+      startup_debug_flag = FALSE;
+    }
+
+  if(startup_debug_flag)
+    {
+      debug_flag = TRUE;
+    }
+
   if (debug_flag)
     {
       log_stderr = TRUE;
@@ -264,7 +274,13 @@ main(int argc, char *argv[])
 
   app_post_daemonized();
   app_post_config_loaded();
-  
+
+  if(startup_debug_flag)
+    {
+      debug_flag = FALSE;
+      log_stderr = FALSE;
+    }
+
   /* from now on internal messages are written to the system log as well */
   
   main_loop_run();
