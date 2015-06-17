@@ -76,25 +76,3 @@ tf_geoip(LogMessage *msg, gint argc, GString *argv[], GString *result)
   return TRUE;
 }
 TEMPLATE_FUNCTION_SIMPLE(tf_geoip);
-
-static Plugin tfgeoip_plugins[] =
-  {
-    TEMPLATE_FUNCTION_PLUGIN(tf_geoip, "geoip"),
-  };
-
-gboolean
-tfgeoip_module_init(GlobalConfig *cfg, CfgArgs *args)
-{
-  plugin_register(cfg, tfgeoip_plugins, G_N_ELEMENTS(tfgeoip_plugins));
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "tfgeoip",
-  .version = VERSION,
-  .description = "The tfgeoip module provides a template function to get GeoIP info from an IPv4 address.",
-  .core_revision = SOURCE_REVISION,
-  .plugins = tfgeoip_plugins,
-  .plugins_len = G_N_ELEMENTS(tfgeoip_plugins),
-};
