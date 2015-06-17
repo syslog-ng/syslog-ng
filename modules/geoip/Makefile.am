@@ -2,7 +2,16 @@ if ENABLE_GEOIP
 module_LTLIBRARIES				+= modules/geoip/libgeoip-plugin.la
 
 modules_geoip_libgeoip_plugin_la_SOURCES=	\
-	modules/geoip/tfgeoip.c
+	modules/geoip/geoip-parser.c		\
+	modules/geoip/geoip-parser.h		\
+	modules/geoip/geoip-parser-grammar.y	\
+	modules/geoip/geoip-parser-parser.c	\
+	modules/geoip/geoip-parser-parser.h	\
+	modules/geoip/geoip-plugin.c
+modules_geoip_libgeoip_plugin_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS)					\
+	-I$(top_srcdir)/modules/geoip			\
+	-I$(top_builddir)/modules/geoip
 modules_geoip_libgeoip_plugin_la_CFLAGS		=	\
 	$(GEOIP_CFLAGS)
 modules_geoip_libgeoip_plugin_la_LIBADD		=	\
@@ -17,5 +26,13 @@ modules/geoip modules/geoip/ mod-geoip:	\
 else
 modules/geoip modules/geoip/ mod-geoip:
 endif
+
+BUILT_SOURCES					+=	\
+	modules/geoip/geoip-parser-grammar.y		\
+	modules/geoip/geoip-parser-grammar.c		\
+	modules/geoip/geoip-parser-grammar.h
+EXTRA_DIST					+=	\
+	modules/geoip/geoip-parser-grammar.ym		\
+	modules/geoip/tfgeoip.c
 
 .PHONY: modules/geoip/ mod-geoip
