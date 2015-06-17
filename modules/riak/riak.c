@@ -197,7 +197,7 @@ riak_dd_disconnect(LogThrDestDriver *s)
 
   if (self->client)
     {
-    riak_client_disconnect(self->client);
+    riack_client_disconnect(self->client);
     riack_client_free(self->client);
     }
   self->client = NULL;
