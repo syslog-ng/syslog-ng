@@ -13,7 +13,7 @@ modules_riak_libriak_la_SOURCES		=	\
 	modules/riak/riak-parser.c		\
 	modules/riak/riak-parser.h
 modules_riak_libriak_la_LIBADD	=	\
-	$(MODULE_DEPS_LIBS)
+	$(MODULE_DEPS_LIBS) $(RIACK_LIBS)
 modules_riak_libriak_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_riak_libriak_la_DEPENDENCIES	=	\
