@@ -6,9 +6,56 @@
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include "filter/filter-netmask6.h"
 
 #include "testutils.h"
-#include "filter/filter-netmask6.h"
+#include "apphook.h"
+#include "plugin.h"
+
+GSockAddr *sender_saddr;
+MsgFormatOptions parse_options;
+
+void
+testcase(gchar *msg,
+         FilterExprNode *f,
+         gboolean expected_result)
+{
+  LogMessage *logmsg;
+  gboolean res;
+  static gint testno = 0;
+
+  testno++;
+
+  if (!f && !expected_result)
+    return;
+
+  logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
+  logmsg->saddr = g_sockaddr_ref(sender_saddr);
+
+  if (!f)
+    {
+      fprintf(stderr, "Filter test failed; num='%d', msg='%s', expected_result='%d', res='%d'\n", testno, msg, expected_result, 0);
+      exit(1);
+    }
+
+  res = filter_expr_eval(f, logmsg);
+  if (res != expected_result)
+    {
+      fprintf(stderr, "Filter test failed; num='%d', msg='%s', expected_result='%d', res='%d'\n", testno, msg, expected_result, res);
+      exit(1);
+    }
+
+  f->comp = 1;
+  res = filter_expr_eval(f, logmsg);
+  if (res != !expected_result)
+    {
+      fprintf(stderr, "Filter test failed (negated); num='%d', msg='%s'\n", testno, msg);
+      exit(1);
+    }
+
+  log_msg_unref(logmsg);
+  filter_expr_unref(f);
+}
 
 gchar*
 calculate_network6(const gchar* ipv6, int prefix, gchar *calculated_network)
@@ -39,8 +86,14 @@ assert_netmask6(const gchar* ipv6, gint prefix, gchar* expected_network)
 int
 main()
 {
-  const gchar* ipv6 = "2001:db80:85a3:8d30:1319:8a2e:3700:7348";
+  app_startup();
 
+  configuration = cfg_new(0x0302);
+  plugin_load_module("syslogformat", configuration, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, configuration);
+
+  const gchar* ipv6 = "2001:db80:85a3:8d30:1319:8a2e:3700:7348";
   assert_netmask6(ipv6, 1,   "::");
   assert_netmask6(ipv6, 3,   "2000::");
   assert_netmask6(ipv6, 16,  "2001::");
@@ -87,6 +140,44 @@ main()
   assert_netmask6(ipv6, 120, "2001:db80:85a3:8d30:1319:8a2e:3700:7300");
   assert_netmask6(ipv6, 122, "2001:db80:85a3:8d30:1319:8a2e:3700:7340");
   assert_netmask6(ipv6, 125, "2001:db80:85a3:8d30:1319:8a2e:3700:7348");
+
+  sender_saddr = g_sockaddr_inet6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348", 5000);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='2001:db80:85a3:8d30:1319:8a2e:3700:7348/60'", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348/60"), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='2001:db80:85a3:8d30:1319:8a2e:3700:7348:1234:1/60'", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348:1234:1/60"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='2001:db80:85a3:8d30:1319:8a2e:3700:7348:1234:1234/60'", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348:1234:1234/60"), 0);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='2001:db80:85a3:8d30:1319:8a2e:3700::/114'", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700::/114"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='2001:db80:85a3:8d30:1319:8a2e:3700::/-114'", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700::/-114"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='2001:db80:85a3:8d30:1319:8a2e:3700:7348/-114'", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348/-114"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='2001:db80:85a3:8d30:1319:8a2e:3700::/1114'", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700::/1114"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::85a3:8d30:1319:8a2e:3700::/114'", filter_netmask6_new("::85a3:8d30:1319:8a2e:3700::/114"), 0);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='aaaaaa/32'", filter_netmask6_new("aaaaaa/32"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='/8'", filter_netmask6_new("/8"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::'", filter_netmask6_new("::"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter=''", filter_netmask6_new(""), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::1/8'", filter_netmask6_new("::1/8"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::1/128'", filter_netmask6_new("::1/128"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::2/32'", filter_netmask6_new("::2/32"), 0);
+
+  g_sockaddr_unref(sender_saddr);
+
+  sender_saddr = NULL;
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='2001:/60'", filter_netmask6_new("2001:/60"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='aaaaaa/32'", filter_netmask6_new("aaaaaa/32"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='/8'", filter_netmask6_new("/8"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter=''", filter_netmask6_new(""), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::1'", filter_netmask6_new("::1"), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::/32'", filter_netmask6_new("::/32"), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::1/8'", filter_netmask6_new("::1/8"), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::1/128'", filter_netmask6_new("::1/128"), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::/16'", filter_netmask6_new("::/16"), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::/599'", filter_netmask6_new("::/599"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support filter='::/aaa'", filter_netmask6_new("::/aaa"), 0);
+
+  app_shutdown();
+
   return 0;
 }
 
