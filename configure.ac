@@ -231,7 +231,8 @@ AC_ARG_ENABLE(python,
               ,,enable_python="auto")
 
 AC_ARG_WITH(python,
-              [  --with-python=VERSION    Build with a specific version of python])
+              [  --with-python=VERSION    Build with a specific version of python]
+              ,,with_python="auto")
 
 AC_ARG_WITH(docbook,
             AC_HELP_STRING([--with-docbook-dir=DIR],
@@ -1070,19 +1071,23 @@ dnl ***************************************************************************
 if test "x$enable_python" != "xno"; then
   if test "x$with_python" != "xno"; then
     case "$with_python" in
-      "yes"|"")
+      auto)
           with_python="python"
           ;;
-      [[0-9]]*)
+      [[0-9]])
+          with_python="python${with_python}"
+          ;;
+      [[0-9]].[[0-9]])
           with_python="python-${with_python}"
           ;;
     esac
     PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, enable_python="yes", enable_python="no")
     if test "x$enable_python" = "xno"; then
-      AC_MSG_ERROR([Did not find the requested Python development libraries])
+      AC_MSG_ERROR([Could not find the requested Python development libraries])
     fi
   else
-    with_python="no"
+    enable_python="no"
+    with_python=""
   fi
 else
   with_python=""
@@ -1510,5 +1515,5 @@ echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
-echo "  python                      : ${enable_python:no} (${with_python:-none})"
+echo "  python                      : ${enable_python:no} (pkg-config package: ${with_python:-none})"
 echo "  java                        : ${enable_java:=no}"
