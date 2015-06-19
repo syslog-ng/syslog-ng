@@ -1,3 +1,38 @@
+3.6.4
+=====
+
+<!-- Fri, 19 Jun 2015 12:51:59 +0200 -->
+
+This is the fourth maintenance (extra) release for 3.6.x series
+and fixes some critical issues.
+
+Fixes
+-----
+
+  * systemd support fixed on those platforms which has systemd < 209
+    (with modular libraries)
+
+  * on some platforms(eg.: RHEL6) there was a configure error around 
+    libsystemd-journal
+ 
+  * AMQP segfaulted right after starting on some platforms
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessarily to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Andras Mitzki, Balazs Scheidler, Laszlo Budai, Peter Czanik, Tibor Benke,
+Viktor Juhasz .
+
+
 3.6.3
 =====
 
