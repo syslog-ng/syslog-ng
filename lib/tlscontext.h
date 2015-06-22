@@ -44,7 +44,7 @@ typedef enum
   TVM_REQUIRED=0x0020,
 } TLSVerifyMode;
 
-typedef enum
+enum
 {
   TSO_NONE,
   TSO_NOSSLv2=0x0001,
@@ -92,7 +92,7 @@ TLSContext *tls_context_new(TLSMode mode);
 void tls_context_free(TLSContext *s);
 
 TLSVerifyMode tls_lookup_verify_mode(const gchar *mode_str);
-TLSSslOptions tls_lookup_options(GList *options);
+gint tls_lookup_options(GList *options);
 
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);
