@@ -212,8 +212,9 @@ static worker_insert_result_t
 riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
   RiakDestDriver *self = (RiakDestDriver *)s;
+  GString *result = g_string_sized_new(1024);
   
-
+  
   if (!riak_dd_connect(self, TRUE))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
@@ -222,13 +223,28 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
     
     
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, self->key);
+                      self->super.seq_num, NULL, result);
+                      
+  msg_debug("RIAK key sent",
+         evt_tag_str("driver", self->super.super.super.id),
+         evt_tag_str("key", result->str),
+          NULL);
   log_template_format(self->value, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, self->value);
+                      self->super.seq_num, NULL, result);
+                      
+  msg_debug("RIAK value sent",
+         evt_tag_str("driver", self->super.super.super.id),
+         evt_tag_str("value", result->str),
+          NULL);
   log_template_format(self->bucket, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, self->bucket);
+                      self->super.seq_num, NULL, result);
+  msg_debug("RIAK bucket sent",
+         evt_tag_str("driver", self->super.super.super.id),
+         evt_tag_str("bucket", result->str),
+          NULL);
+          
   printf("riak_worker_insert method is being used\n" ); //for debugging
-
+  g_string_free(result, TRUE);
   return WORKER_INSERT_RESULT_SUCCESS;
 }
 
