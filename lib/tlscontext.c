@@ -431,10 +431,10 @@ tls_lookup_verify_mode(const gchar *mode_str)
   return TVM_REQUIRED | TVM_TRUSTED;
 }
 
-TLSSslOptions
+gint
 tls_lookup_options(GList *options)
 {
-  TLSSslOptions ret=TSO_NONE;
+  gint ret=TSO_NONE;
   GList *l;
   for (l=options; l != NULL; l=l->next)
     {
