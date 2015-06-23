@@ -153,6 +153,14 @@ test_str_funcs(void)
   assert_template_format("$(padding foo 10)", "       foo");
   assert_template_format("$(padding foo 10 x)", "xxxxxxxfoo");
   assert_template_format("$(padding foo 10 abc)", "abcabcafoo");
+
+  assert_template_failure("$(binary)", "Incorrect parameters");
+  assert_template_failure("$(binary abc)", "unable to parse abc");
+  assert_template_failure("$(binary 256)", "256 is above 255");
+  assert_template_format("$(binary 1)", "\1");
+  assert_template_format("$(binary 1 0x1)", "\1\1");
+  assert_template_format("$(binary 0xFF 255 0377)", "\xFF\xFF\xFF");
+  assert_template_format_with_len("$(binary 0xFF 0x00 0x40)", "\xFF\000@", 3);
 }
 
 void
