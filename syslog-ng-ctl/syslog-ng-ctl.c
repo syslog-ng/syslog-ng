@@ -96,9 +96,13 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
 }
 
 static gboolean stats_options_reset_is_set = FALSE;
+static gboolean stats_options_json_format_is_set = FALSE;
+static gboolean stats_options_csv_format_is_set = FALSE;
 
 static GOptionEntry stats_options[] =
 {
+  { "json", 'j', 0, G_OPTION_ARG_NONE, &stats_options_json_format_is_set, "print stats in json format", NULL },
+  { "csv", 'c', 0, G_OPTION_ARG_NONE, &stats_options_csv_format_is_set, "print stats in csv format", NULL },
   { "reset", 'r', 0, G_OPTION_ARG_NONE, &stats_options_reset_is_set, "reset counters", NULL },
   { NULL,    0,   0, G_OPTION_ARG_NONE, NULL,                        NULL,             NULL }
 };
@@ -114,7 +118,10 @@ static GOptionEntry verbose_options[] =
 static const gchar *
 _stats_command_builder()
 {
-  return stats_options_reset_is_set ? "RESET_STATS\n" : "STATS\n";
+  if (stats_options_reset_is_set) return "RESET_STATS\n";
+  if (stats_options_csv_format_is_set) return "CSV_STATS\n";
+  if (stats_options_json_format_is_set) return "JSON_STATS\n";
+  return "CSV_STATS\n";
 }
 
 static gint
