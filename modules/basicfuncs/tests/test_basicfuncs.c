@@ -93,6 +93,10 @@ test_str_funcs(void)
   assert_template_format("$(padding foo 10)", "       foo");
   assert_template_format("$(padding foo 10 x)", "xxxxxxxfoo");
   assert_template_format("$(padding foo 10 abc)", "abcabcafoo");
+
+  assert_template_format("$(literal \"1 0x1\")", "\1\1");
+  assert_template_format("$(literal \"0xFF 255 0377\")", "\xFF\xFF\xFF");
+  assert_template_format_len("$(literal \"0xFF 0x00 0x30\")", "\xFF\0000", 3);
 }
 
 void
