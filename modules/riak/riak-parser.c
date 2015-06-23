@@ -14,7 +14,7 @@ static CfgLexerKeyword riak_keywords[] = {{"riak", KW_RIAK},
                                           {"mode", KW_MODE},
                                           {"type", KW_TYPE},
                                           {"charset", KW_CHARSET},
-                                          {"ctype", KW_CTYPE},
+                                          {"content_type", KW_CONTENT_TYPE},
                                           {NULL}};
 
 CfgParser riak_parser = {

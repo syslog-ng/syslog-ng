@@ -28,7 +28,7 @@ typedef struct
   char *bucket_type;
   LogTemplate *key;
   LogTemplate *value;
-  char *ctype;
+  char *content_type;
   char *charset;
 
   RiakBucketMode mode;
@@ -110,11 +110,11 @@ riak_dd_set_charset(LogDriver *d, char *charset)
 }
 
 void
-riak_dd_set_ctype(LogDriver *d, char *ctype)
+riak_dd_set_content_type(LogDriver *d, char *content_type)
 {
   RiakDestDriver *self = (RiakDestDriver *)d;
-  free(self->ctype);
-  self->ctype = strdup(ctype);
+  free(self->content_type);
+  self->content_type = strdup(content_type);
 }
 
 LogTemplateOptions *
@@ -135,7 +135,7 @@ riak_dd_format_stats_instance(LogThrDestDriver *d)
   static char persist_name[1024];
 
   sprintf(persist_name, "riak,%s,%u,%u,%s,%s,%s", self->host, self->port, self->mode,
-          self->bucket_type, self->charset, self->ctype);
+          self->bucket_type, self->charset, self->content_type);
   return persist_name;
 }
 
@@ -146,7 +146,7 @@ riak_dd_format_persist_name(LogThrDestDriver *d)
   static char persist_name[1024];
 
   sprintf(persist_name, "riak(%s,%u,%u,%s,%s,%s)", self->host, self->port, self->mode,
-          self->bucket_type, self->charset, self->ctype);
+          self->bucket_type, self->charset, self->content_type);
   return persist_name;
 }
 
@@ -229,7 +229,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 
   content = riack_content_new( );
   riack_content_set(content, RIACK_CONTENT_FIELD_VALUE, value_res->str, -1,
-                    RIACK_CONTENT_FIELD_CONTENT_TYPE, self->ctype, -1,
+                    RIACK_CONTENT_FIELD_CONTENT_TYPE, self->content_type, -1,
                     RIACK_CONTENT_FIELD_CONTENT_ENCODING, "none", -1, RIACK_CONTENT_FIELD_CHARSET,
                     self->charset, -1, RIACK_CONTENT_FIELD_NONE);
 
@@ -247,7 +247,8 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
           msg_debug("RIAK bucket sent", evt_tag_str("driver", self->super.super.super.id),
                     evt_tag_str("bucket", bucket_res->str),
                     evt_tag_str("bucket_type", self->bucket_type), evt_tag_str("key", key_res->str),
-                    evt_tag_str("value", value_res->str), evt_tag_str("ctype", self->ctype),
+                    evt_tag_str("value", value_res->str),
+                    evt_tag_str("content_type", self->content_type),
                     evt_tag_str("charset", self->charset), NULL);
           printf("Above data sent to riak successfully\n");
           g_string_free(value_res, TRUE);
@@ -295,7 +296,7 @@ riak_worker_thread_deinit(LogThrDestDriver *d)
   free(self->host);
   free(self->bucket_type);
   free(self->charset);
-  free(self->ctype);
+  free(self->content_type);
 }
 
 /*
@@ -327,7 +328,7 @@ static void riak_dd_free(LogPipe *d) // frees up the structure allocated during 
   free(self->host);
   free(self->bucket_type);
   free(self->charset);
-  free(self->ctype);
+  free(self->content_type);
   log_template_unref(self->key);
   log_template_unref(self->value);
   log_template_unref(self->bucket);
