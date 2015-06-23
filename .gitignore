@@ -1,3 +1,35 @@
+## Generated grammar files
+*-grammar.*
+cfg-lex.*
+
+## Configuration files
+config.guess
+config.sub
+config.cache
+config.h
+config.log
+config.status
+dist.conf
+
+## File extensions
+*.lo
+*.la
+*.o
+.*.swp
+*.pyc
+
+## Directories
+.deps
+.dirstamp
+.libs
+.project
+.cproject
+.settings
+Debug
+/compile
+/test-driver
+
+## Others
 {arch}
 .arch-ids
 .arch-inventory
@@ -5,6 +37,7 @@
 autom4te.cache
 *~
 Makefile.in
+Makefile
 aclocal.m4
 config.h.in
 configure
@@ -14,26 +47,31 @@ missing
 mkinstalldirs
 cscope.out
 ._*
-config.guess
-config.sub
-config.cache
 stamp-h.in
 stamp-h
 ylwrap
-.*.swp
-*.pyc
 ltmain.sh
-.project
-.cproject
-.settings
-Debug
 m4/libtool.m4
 m4/lt~obsolete.m4
 m4/ltoptions.m4
 m4/ltsugar.m4
 m4/ltversion.m4
 m4/pkg.m4
-/compile
-/test-driver
-.deps
-/lib/cfg-grammar.h
+lib/tests/test_host_resolve
+libtest/libsyslog-ng-test.a
+libtest/syslog-ng-test.pc
+libtool
+modules/afamqp/dummy.c
+modules/afmongodb/dummy.c
+modules/dbparser/pdbtool/pdbtool
+modules/python/pylib/install-manifest.txt
+scripts/update-patterndb
+stamp-h1
+tests/loggen/loggen
+
+## Exectuables
+syslog-ng-ctl/syslog-ng-ctl
+syslog-ng.pc
+syslog-ng.spec
+syslog-ng/syslog-ng
+
