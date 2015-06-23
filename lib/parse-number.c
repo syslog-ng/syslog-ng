@@ -149,7 +149,7 @@ _parse_number(const gchar *s, gchar **endptr, gint64 *d)
   gint64 val;
 
   errno = 0;
-  val = strtoll(s, endptr, 10);
+  val = strtoll(s, endptr, 0);
 
   if (errno == ERANGE || errno == EINVAL)
     return FALSE;

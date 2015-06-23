@@ -82,6 +82,15 @@ test_simple_numbers_are_parsed_properly(void)
 }
 
 static void
+test_c_like_prefixes_select_base(void)
+{
+  assert_parse("0x20", 32);
+  assert_parse("020", 16);
+  assert_parse("20", 20);
+  assert_parse_with_suffix("0x20kiB", 32 * 1024);
+}
+
+static void
 test_exponent_suffix_is_parsed_properly(void)
 {
   assert_parse_with_suffix("1K", 1000);
@@ -137,6 +146,7 @@ main(int argc, char *argv[])
   test_byte_units_are_accepted();
   test_base2_is_selected_by_an_i_modifier();
   test_invalid_formats_are_not_accepted();
+  test_c_like_prefixes_select_base();
 
   return 0;
 }
