@@ -27,7 +27,7 @@
 %token KW_MODE
 %token KW_TYPE
 %token KW_CHARSET
-%token KW_CTYPE
+%token KW_CONTENT_TYPE
 
 
 
@@ -107,9 +107,9 @@ riak_value_option
             riak_dd_set_charset(last_driver, $3);
             free($3);
           }
-        | KW_CTYPE '(' string ')'
+        | KW_CONTENT_TYPE '(' string ')'
           {
-            riak_dd_set_ctype(last_driver, $3);
+            riak_dd_set_content_type(last_driver, $3);
             free($3);
           }
         ;
