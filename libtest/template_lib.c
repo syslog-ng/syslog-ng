@@ -94,15 +94,8 @@ compile_template(const gchar *template, gboolean escaping)
   return templ;
 }
 
-void
-assert_template_format(const gchar *template, const gchar *expected)
-{
-  assert_template_format_with_escaping(template, FALSE, expected);
-}
-
-void
-assert_template_format_with_escaping(const gchar *template, gboolean escaping,
-                                     const gchar *expected)
+static void
+assert_template_format_without_context(const gchar *template, gboolean escaping, const gchar *expected, size_t expected_len)
 {
   LogMessage *msg;
   LogTemplate *templ;
@@ -113,10 +106,29 @@ assert_template_format_with_escaping(const gchar *template, gboolean escaping,
 
   templ = compile_template(template, escaping);
   log_template_format(templ, msg, NULL, LTZ_LOCAL, 999, context_id, res);
-  assert_nstring(res->str, res->len, expected, strlen(expected), "template test failed, template=%s", template);
+  assert_nstring(res->str, res->len, expected, expected_len, "template test failed, template=%s", template);
   log_template_unref(templ);
   g_string_free(res, TRUE);
   log_msg_unref(msg);
+}
+
+void
+assert_template_format_len(const gchar *template, const gchar *expected, size_t expected_len)
+{
+  assert_template_format_without_context(template, FALSE, expected, expected_len);
+}
+
+void
+assert_template_format(const gchar *template, const gchar *expected)
+{
+  assert_template_format_without_context(template, FALSE, expected, strlen(expected));
+}
+
+void
+assert_template_format_with_escaping(const gchar *template, gboolean escaping,
+                                     const gchar *expected)
+{
+  assert_template_format_without_context(template, escaping, expected, strlen(expected));
 }
 
 void
@@ -139,6 +151,7 @@ assert_template_format_with_context(const gchar *template, const gchar *expected
   g_string_free(res, TRUE);
   log_msg_unref(msg);
 }
+
 
 void
 assert_template_failure(const gchar *template, const gchar *expected_error)
