@@ -146,22 +146,9 @@ compile_template(const gchar *template, gboolean escaping)
 }
 
 void
-assert_template_format(const gchar *template, const gchar *expected)
-{
-  assert_template_format_with_escaping(template, FALSE, expected);
-}
-
-void
-assert_template_format_msg(const gchar *template, const gchar *expected,
-                           LogMessage *msg)
-{
-  assert_template_format_with_escaping_msg(template, FALSE, expected, msg);
-}
-
-
-void
-assert_template_format_with_escaping_msg(const gchar *template, gboolean escaping,
-                                         const gchar *expected, LogMessage *msg)
+assert_template_format_with_escaping_and_context_msgs(const gchar *template, gboolean escaping,
+                                                      const gchar *expected, gssize expected_len,
+                                                      LogMessage **msgs, gint num_messages)
 {
   LogTemplate *templ = compile_template(template, escaping);
   if (!templ)
@@ -170,22 +157,49 @@ assert_template_format_with_escaping_msg(const gchar *template, gboolean escapin
   GString *res = g_string_sized_new(128);
   const gchar *context_id = "test-context-id";
 
-  log_template_format(templ, msg, NULL, LTZ_LOCAL, 999, context_id, res);
-  expect_nstring(res->str, res->len, expected, strlen(expected),
-                 "template test failed, template=%s", template);
+  log_template_format_with_context(templ, msgs, num_messages, NULL, LTZ_LOCAL, 999, context_id, res);
+  expect_nstring(res->str, res->len,
+                 expected, expected_len >= 0 ? expected_len : strlen(expected),
+                 "context template test failed, template=%s", template);
   log_template_unref(templ);
   g_string_free(res, TRUE);
 }
 
 void
-assert_template_format_with_escaping(const gchar *template, gboolean escaping,
-                                     const gchar *expected)
+assert_template_format_with_context_msgs(const gchar *template, const gchar *expected, LogMessage **msgs,
+                                         gint num_messages)
+{
+  assert_template_format_with_escaping_and_context_msgs(template, FALSE, expected, -1, msgs, num_messages);
+}
+
+
+void
+assert_template_format_with_escaping_msg(const gchar *template, gboolean escaping,
+                                         const gchar *expected,
+                                         LogMessage *msg)
+{
+  assert_template_format_with_escaping_and_context_msgs(template, escaping, expected, -1, &msg, 1);
+}
+
+void
+assert_template_format_with_escaping(const gchar *template, gboolean escaping, const gchar *expected)
 {
   LogMessage *msg = create_sample_message();
 
   assert_template_format_with_escaping_msg(template, escaping, expected, msg);
-
   log_msg_unref(msg);
+}
+
+void
+assert_template_format_msg(const gchar *template, const gchar *expected, LogMessage *msg)
+{
+  assert_template_format_with_escaping_msg(template, FALSE, expected, msg);
+}
+
+void
+assert_template_format(const gchar *template, const gchar *expected)
+{
+  assert_template_format_with_escaping(template, FALSE, expected);
 }
 
 void
@@ -203,20 +217,12 @@ assert_template_format_with_context(const gchar *template, const gchar *expected
 }
 
 void
-assert_template_format_with_context_msgs(const gchar *template, const gchar *expected,
-                                         LogMessage **msgs, gint num_messages)
+assert_template_format_with_len(const gchar *template, const gchar *expected, gssize expected_len)
 {
-  LogTemplate *templ = compile_template(template, FALSE);
-  if (!templ)
-    return;
+  LogMessage *msg = create_sample_message();
 
-  GString *res = g_string_sized_new(128);
-  const gchar *context_id = "test-context-id";
-
-  log_template_format_with_context(templ, msgs, num_messages, NULL, LTZ_LOCAL, 999, context_id, res);
-  expect_nstring(res->str, res->len, expected, strlen(expected), "context template test failed, template=%s", template);
-  log_template_unref(templ);
-  g_string_free(res, TRUE);
+  assert_template_format_with_escaping_and_context_msgs(template, FALSE, expected, expected_len, &msg, 1);
+  log_msg_unref(msg);
 }
 
 void

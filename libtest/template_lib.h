@@ -37,6 +37,10 @@ void assert_template_format_with_escaping_msg(const gchar *template, gboolean es
                                      const gchar *expected, LogMessage *msg);
 void assert_template_format_with_context(const gchar *template, const gchar *expected);
 void assert_template_format_with_context_msgs(const gchar *template, const gchar *expected, LogMessage **msgs, gint num_messages);
+void assert_template_format_with_len(const gchar *template, const gchar *expected, gssize expected_len);
+void assert_template_format_with_escaping_and_context_msgs(const gchar *template, gboolean escaping,
+                                                           const gchar *expected, gssize expected_len,
+                                                           LogMessage **msgs, gint num_messages);
 void assert_template_failure(const gchar *template, const gchar *expected_failure);
 void perftest_template(gchar *template);
 
