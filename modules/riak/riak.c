@@ -212,8 +212,13 @@ static worker_insert_result_t
 riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
   RiakDestDriver *self = (RiakDestDriver *)s;
-  GString *result = g_string_sized_new(1024);
-  
+  GString *key_res = g_string_sized_new(1024);
+  GString *bucket_res = g_string_sized_new(1024);
+  GString *value_res = g_string_sized_new(1024);
+  riack_put_req_t *putreq;
+  riack_content_t *content;
+  riack_message_t *message;
+  int scheck;
   
   if (!riak_dd_connect(self, TRUE))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
@@ -223,29 +228,60 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
     
     
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, result);
-                      
-  msg_debug("RIAK key sent",
-         evt_tag_str("driver", self->super.super.super.id),
-         evt_tag_str("key", result->str),
-          NULL);
+                      self->super.seq_num, NULL, key_res);
+  
   log_template_format(self->value, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, result);
+                      self->super.seq_num, NULL, value_res);
                       
-  msg_debug("RIAK value sent",
-         evt_tag_str("driver", self->super.super.super.id),
-         evt_tag_str("value", result->str),
-          NULL);
   log_template_format(self->bucket, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, result);
-  msg_debug("RIAK bucket sent",
-         evt_tag_str("driver", self->super.super.super.id),
-         evt_tag_str("bucket", result->str),
+                      self->super.seq_num, NULL, bucket_res);
+  
+  content = riack_content_new ();
+  riack_content_set (content,
+                        RIACK_CONTENT_FIELD_VALUE, value_res->str, -1,
+                        RIACK_CONTENT_FIELD_CONTENT_TYPE, self->ctype, -1,
+                        RIACK_CONTENT_FIELD_CONTENT_ENCODING, "none", -1,
+                        RIACK_CONTENT_FIELD_CHARSET, self->charset, -1,
+                        RIACK_CONTENT_FIELD_NONE);
+                        
+  putreq = riack_req_put_new ();
+  riack_req_put_set (putreq,
+                         RIACK_REQ_PUT_FIELD_BUCKET, bucket_res->str,
+                         RIACK_REQ_PUT_FIELD_BUCKET_TYPE, self->bucket_type,
+                         RIACK_REQ_PUT_FIELD_KEY, key_res->str,
+                         RIACK_REQ_PUT_FIELD_CONTENT, content,
+                         RIACK_REQ_PUT_FIELD_NONE);
+                         
+  message = riack_putreq_serialize(putreq);
+                         
+  if ((scheck = riack_client_send(self->client, message)) == 0) {
+    if ((scheck = riack_client_recv(self->client)) == 0) {
+            msg_debug("RIAK bucket sent",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("bucket", bucket_res->str),
+                evt_tag_str("bucket_type", self->bucket_type),
+                evt_tag_str("key", key_res->str),
+                evt_tag_str("value", value_res->str),
+                evt_tag_str("ctype", self->ctype),
+                evt_tag_str("charset", self->charset),
           NULL);
+          printf("Above data sent to riak successfully\n");
+          g_string_free(value_res, TRUE);
+          g_string_free(bucket_res, TRUE);
+          g_string_free(key_res, TRUE);
+          return WORKER_INSERT_RESULT_SUCCESS;
+        }
+    else 
+      printf("Error in receiving response from riak\n");
+    }
+  else
+    printf("Error in sending message to riak\n");
+       
           
-  printf("riak_worker_insert method is being used\n" ); //for debugging
-  g_string_free(result, TRUE);
-  return WORKER_INSERT_RESULT_SUCCESS;
+  g_string_free(value_res, TRUE);
+  g_string_free(bucket_res, TRUE);
+  g_string_free(key_res, TRUE);
+  return WORKER_INSERT_RESULT_ERROR;
 }
 
 static void
