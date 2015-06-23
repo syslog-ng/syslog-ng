@@ -1,6 +1,6 @@
 if ENABLE_JAVA
 
-modules/java mod-java: modules/java/libmod-java.la
+modules/java mod-java: modules/java/libmod-java.la modules/java/SyslogNg.jar
 
 module_LTLIBRARIES += modules/java/libmod-java.la
 
@@ -29,7 +29,8 @@ modules_java_libmod_java_la_SOURCES = \
     modules/java/native/java-parser.c \
     modules/java/native/java-parser.h \
     modules/java/native/java_machine.c \
-    modules/java/native/java_machine.h
+    modules/java/native/java_machine.h \
+    $(JAVA_HEADER_FILES)
 
 modules_java_libmod_java_la_LIBADD = \
     $(JNI_LIBS) $(INCUBATOR_LIBS)
@@ -77,6 +78,8 @@ JAVA_HEADER_FILES = \
    modules/java/LogTemplate.h \
    modules/java/InternalMessageSender.h
 
+all-local: modules/java/SyslogNg.jar
+
 modules/java/SyslogNg.jar: $(JAVA_CLASS_FILES) $(JAVA_HEADER_FILES)
 	$(AM_V_GEN) $(JAR) -cvf $@ -C ./ org
 
@@ -122,6 +125,7 @@ java-uninstall-exec-hook:
 
 java-clean-hook:
 	rm -rf org
+	rm -rf modules/java/SyslogNg.jar
 
 INSTALL_EXEC_HOOKS += java-install-exec-hook
 UNINSTALL_HOOKS += java-uninstall-exec-hook
@@ -139,12 +143,12 @@ BUILT_SOURCES += \
     modules/java/native/java-grammar.h
 
 if ENABLE_JAVA
-BUILT_SOURCES += $(JAVA_HEADER_FILES) \
-                 modules/java/SyslogNg.jar
 
 CLEANFILES += $(JAVA_CLASS_FILES) \
-             $(JAVA_HEADER_FILES) \
-             modules/java/SyslogNg.jar
+             $(JAVA_HEADER_FILES)
+
+BUILT_SOURCES += $(JAVA_HEADER_FILES)
+
 endif
 
 EXTRA_DIST += \
