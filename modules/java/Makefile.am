@@ -29,8 +29,7 @@ modules_java_libmod_java_la_SOURCES = \
     modules/java/native/java-parser.c \
     modules/java/native/java-parser.h \
     modules/java/native/java_machine.c \
-    modules/java/native/java_machine.h \
-    $(JAVA_HEADER_FILES)
+    modules/java/native/java_machine.h
 
 modules_java_libmod_java_la_LIBADD = \
     $(JNI_LIBS) $(INCUBATOR_LIBS)
