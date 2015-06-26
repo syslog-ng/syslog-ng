@@ -1,3 +1,97 @@
+3.7.0beta2
+===========
+
+<!-- Fri, 26 Jun 2015 12:55:29 +0200 -->
+
+This is the second beta release of the upcoming syslog-ng OSE 3.7
+branch.
+
+Changes compared to the previous alpha release:
+
+Features
+--------
+
+ * Added a geoip parser.
+
+ * ssl_options inside tls() extended with the following set:
+   no-sslv2, no-sslv3, no-tlsv1, no-tlsv11, no-tlsv12
+
+ * minimal libriemann-client version bumped from 1.0.0 to 1.6.0
+
+ * TLS support added to Riemann destination
+ 
+ * timeout() option added to Riemann destination
+
+
+Fixes
+-----
+
+  * SyslogNg.jar removed from the release tarball.
+
+  * When the configured host was not available during the initialization of
+    `afsocket` destination syslog-ng just didn't start. From now, syslog-ng
+    starts in that case and will retry connecting to the host periodically.
+
+  * When a not writeable file becomes writeable later, syslog-ng recognize it
+    (with the help of reopen-timer) and delivers messages to the file without
+    dropping those which were received during the file was not available.
+
+  * Fixed a configure error around libsystemd-journal.
+
+  * `--disable-python` option and other Python related fixes addded to 
+    configure
+
+  * Retries fixed in SQL destination. In some circumstances when
+    `retry_sql_inserts` was set to 1, after an insertion failure all incoming
+    messages were dropped.
+
+  * Added DOS/Windows line ending support in config.
+  
+  * Parallel build is supported for Python and Java destination drivers.
+
+  * Fixed compilation failure on OpenBSD
+
+  * Memory leak around reload and internal queueing mechanism has been fixed.
+
+  * AMQP connection process fixed.
+
+  * Fixed a potential abort when the localhost name cannot be detected.
+
+  * Security issue fixed around $HOST.
+    Tech details:
+    When the name of the host is too long, the buffer we use to format the
+    chained hostname is truncated. However snprintf() returns the length the
+    result would be if no truncation happened, thus we will read uninitialized
+    bytes off the stack when we use that pointer to set $HOST
+    with log_msg_set_value().    
+    There can be some security implications, like reading values from the stack
+    that can help to craft further exploits, especially in the presense of
+    address space randomization. It can also cause a DoS if the hostname length
+    is soo large that we would read over the top-of-the-stack, which is probably
+    not mmapped causing a SIGSEGV.
+
+  * Journal entries containing name-value pairs without '=' caused syslog-ng
+    to crash. Instead of crashing, syslog-ng just drop these nv pairs.
+
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessarily to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Alex Badics, Andras Mitzki, Balazs Scheidler, Bence Tamas Gedai,
+Fabien Wernli, Gergely Nagy, Gergo Nagy, Gyorgy Pasztor, Istvan Adam Mozes,
+Laszlo Budai, Peter Czanik, Robert Fekete, Tibor Benke, Viktor Juhasz,
+Zoltan Pallagi.
+
+
 3.7.0beta1
 ===========
 
