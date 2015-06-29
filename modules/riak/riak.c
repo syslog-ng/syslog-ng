@@ -262,6 +262,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   riack_req_dt_update_set (dtupdatereq,
                         RIACK_REQ_DT_UPDATE_FIELD_BUCKET, bucket_res, 
                         RIACK_REQ_DT_UPDATE_FIELD_BUCKET_TYPE, "sets", 
+                        RIACK_REQ_DT_UPDATE_FIELD_KEY, key_res,
                         RIACK_REQ_DT_UPDATE_FIELD_DT_OP, dtop,
                         RIACK_REQ_DT_UPDATE_FIELD_NONE);
      
@@ -273,7 +274,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("bucket", bucket_res->str),
                 evt_tag_str("bucket_type", self->bucket_type),
-                //evt_tag_str("key", key_res->str),
+                evt_tag_str("key", key_res->str),
                 evt_tag_str("value", value_res->str),
                 
           NULL);
