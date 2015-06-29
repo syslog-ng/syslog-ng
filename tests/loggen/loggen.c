@@ -321,6 +321,18 @@ connect_server(void)
   return sock;
 }
 
+static void
+format_timezone_offset_with_colon(char *timestamp, int timestamp_size, struct tm *tm) {
+  char offset[7];
+  int len = strftime(offset, sizeof(offset), "%z", tm);
+  offset[len + 1] = '\0';
+  offset[len] = offset[len - 1];
+  offset[len - 1] = offset[len - 2];
+  offset[len - 2] = ':';
+
+  strncat(timestamp, offset, sizeof(offset));
+}
+
 static guint64
 gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *readfrom)
 {
@@ -450,8 +462,14 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
 
               localtime_r(&now.tv_sec, &tm);
               len = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", &tm);
-              memcpy(&linebuf[pos_timestamp1], stamp, len);
               memcpy(&linebuf[pos_timestamp2], stamp, len);
+
+              if (syslog_proto)
+                {
+                  format_timezone_offset_with_colon(stamp, sizeof(stamp), &tm);
+                }
+
+              memcpy(&linebuf[pos_timestamp1], stamp, strlen(stamp));
             }
 
           diff_usec = time_val_diff_in_usec(&now, &last_ts_format);
