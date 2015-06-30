@@ -12,7 +12,7 @@ class LogDestination(object):
         """Check if the connection to the target is able to receive messages"""
         return True
 
-    def init(self):
+    def init(self, args):
         """This method is called at initialization time"""
         return True
 

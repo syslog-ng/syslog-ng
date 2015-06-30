@@ -43,6 +43,7 @@ typedef struct
   GList *imports;
 
   LogTemplateOptions template_options;
+  GHashTable *options;
   ValuePairs *vp;
 
   struct
@@ -66,6 +67,14 @@ python_dd_set_class(LogDriver *d, gchar *filename)
 }
 
 void
+python_dd_set_option(LogDriver *d, gchar *key, gchar *value)
+{
+  PythonDestDriver *self = (PythonDestDriver *)d;
+  gchar* normalized_key = __normalize_key(key);
+  g_hash_table_insert(self->options, normalized_key, g_strdup(value));
+}
+
+void
 python_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
@@ -82,6 +91,22 @@ python_dd_set_imports(LogDriver *d, GList *imports)
 
   string_list_free(self->imports);
   self->imports = imports;
+}
+
+void
+python_dd_insert_to_dict(gpointer key, gpointer value, gpointer dict)
+{
+  PyObject *key_pyobj = PyString_FromStringAndSize((gchar*) key, strlen((gchar*) key));
+  PyObject *value_pyobj = PyString_FromStringAndSize((gchar*) value, strlen((gchar*) value));
+  PyDict_SetItem( (PyObject*) dict, key_pyobj, value_pyobj);
+}
+
+PyObject*
+python_dd_create_arg_dict(PythonDestDriver *self)
+{
+  PyObject *arg_dict = PyDict_New();
+  g_hash_table_foreach(self->options, python_dd_insert_to_dict, arg_dict);
+  return arg_dict;
 }
 
 LogTemplateOptions *
@@ -207,17 +232,22 @@ _py_invoke_void_method_by_name(PythonDestDriver *self, PyObject *instance, const
 }
 
 static gboolean
-_py_invoke_bool_method_by_name(PythonDestDriver *self, PyObject *instance, const gchar *method_name)
+_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, PyObject *instance, const gchar *method_name, PyObject* args)
 {
   gboolean result = FALSE;
   PyObject *method = _py_get_method(self, instance, method_name);
 
   if (method)
     {
-      result = _py_invoke_bool_function(self, method, NULL);
+      result = _py_invoke_bool_function(self, method, args);
       Py_DECREF(method);
     }
   return result;
+}
+static gboolean
+_py_invoke_bool_method_by_name(PythonDestDriver *self, PyObject *instance, const gchar *method_name)
+{
+  return _py_invoke_bool_method_by_name_with_args(self, instance, method_name, NULL);
 }
 
 static gboolean
@@ -250,7 +280,8 @@ _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 static gboolean
 _py_invoke_init(PythonDestDriver *self)
 {
-  return _py_invoke_bool_method_by_name(self, self->py.instance, "init");
+  PyObject* args = python_dd_create_arg_dict(self);
+  return _py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init", args);
 }
 
 static void
@@ -488,6 +519,9 @@ python_dd_free(LogPipe *d)
   if (self->vp)
     value_pairs_free(self->vp);
 
+  if (self->options)
+    g_hash_table_unref(self->options);
+
   log_threaded_dest_driver_free(d);
 }
 
@@ -511,6 +545,8 @@ python_dd_new(GlobalConfig *cfg)
   self->super.format.stats_instance = python_dd_format_stats_instance;
   self->super.format.persist_name = python_dd_format_persist_name;
   self->super.stats_source = SCS_PYTHON;
+
+  self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
   return (LogDriver *)self;
 }
