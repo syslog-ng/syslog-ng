@@ -28,6 +28,7 @@
 #include "syslog-ng.h"
 #include <evtlog.h>
 
+extern int startup_debug_flag;
 extern int debug_flag;
 extern int verbose_flag;
 extern int trace_flag;
@@ -80,7 +81,7 @@ void msg_add_option_group(GOptionContext *ctx);
 
 #define msg_debug(desc, tag1, tags...) 						  \
 	do { 									  \
-	  if (G_UNLIKELY(debug_flag))             				  \
+	  if (G_UNLIKELY(debug_flag))                                             \
 	    msg_event_suppress_recursions_and_send(                               \
 	          msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags ));          \
 	} while (0)

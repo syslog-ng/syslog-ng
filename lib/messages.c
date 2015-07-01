@@ -51,6 +51,7 @@ typedef struct _MsgContext
   gchar recurse_trigger[128];
 } MsgContext;
 
+gboolean startup_debug_flag = 0;
 gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
 gboolean trace_flag = 0;
@@ -288,6 +289,7 @@ msg_deinit(void)
 
 static GOptionEntry msg_option_entries[] =
 {
+  { "startup-debug",     'r',         0, G_OPTION_ARG_NONE, &startup_debug_flag, "Enable debug logging during startup", NULL},
   { "verbose",           'v',         0, G_OPTION_ARG_NONE, &verbose_flag, "Be a bit more verbose", NULL },
   { "debug",             'd',         0, G_OPTION_ARG_NONE, &debug_flag, "Enable debug messages", NULL},
   { "trace",             't',         0, G_OPTION_ARG_NONE, &trace_flag, "Enable trace messages", NULL },
