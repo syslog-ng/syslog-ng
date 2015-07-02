@@ -16,6 +16,7 @@ static CfgLexerKeyword riak_keywords[] = {
   { "type",		    KW_TYPE },
   { "charset",      KW_CHARSET },
   { "content_type",        KW_CONTENT_TYPE },
+  { "flush_lines",      KW_FLUSH_LINES },
   { NULL }
 };
 

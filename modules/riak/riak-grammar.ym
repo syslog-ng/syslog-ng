@@ -71,6 +71,11 @@ riak_option
           {
             riak_dd_set_value(last_driver, $3);
           }
+          
+        | KW_FLUSH_LINES '(' LL_NUMBER ')'
+          {
+            riak_dd_set_flush_lines(last_driver, $3);
+          }
         
         | dest_driver_option
         | threaded_dest_driver_option

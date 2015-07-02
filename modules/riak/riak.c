@@ -30,6 +30,7 @@ typedef struct
   LogTemplate *value;
   char *content_type;
   char *charset;
+  int flush_lines;
 
   RiakBucketMode mode;
 
@@ -118,6 +119,12 @@ riak_dd_set_content_type(LogDriver *d, char *content_type)
   RiakDestDriver *self =(RiakDestDriver *)d;
   free(self->content_type);
   self->content_type = strdup(content_type);
+}
+void
+riak_dd_set_flush_lines(LogDriver *d, int flush_lines)
+{
+  RiakDestDriver *self =(RiakDestDriver *)d;
+  self->flush_lines = flush_lines;
 }
 
 
@@ -245,15 +252,27 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   riack_dt_update_req_t *dtupdatereq;
   riack_dt_op_t *dtop;
   riack_setop_t *setop;
+  int idx;
   
   dtupdatereq = riack_req_dt_update_new ();
   dtop = riack_dt_op_new();
   setop = riack_setop_new();
   
-     
-  riack_setop_set (setop,
+  if (self->flush_lines) {
+  for (idx=0;idx<self->flush_lines;idx++) {
+    riack_setop_set (setop,
+                  RIACK_SETOP_FIELD_BULK_ADD,
+                  idx,
+                  value_res,
+                  RIACK_SETOP_FIELD_NONE);
+    }
+    }
+  else {
+    riack_setop_set (setop,
                   RIACK_SETOP_FIELD_ADD, value_res,
                   RIACK_SETOP_FIELD_NONE);
+                  
+         }
                   
   riack_dt_op_set (dtop,
                 RIACK_DT_OP_FIELD_SETOP, setop,
@@ -371,6 +390,10 @@ riak_worker_thread_init(LogThrDestDriver *d)
                 evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
    }
+   if (self->flush_lines && self->mode == RIAK_BUCKET_MODE_STORE) {
+     printf("riak cannot use flush lines in bucket store mode, change to set mode");
+     
+     }
 //   riak_dd_connect(self, FALSE);
 }
 

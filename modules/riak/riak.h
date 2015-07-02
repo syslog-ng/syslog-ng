@@ -14,6 +14,7 @@ void riak_dd_set_key(LogDriver *d, LogTemplate *key);
 void riak_dd_set_value(LogDriver *d, LogTemplate *value);
 void riak_dd_set_charset(LogDriver *d, char *charset);
 void riak_dd_set_content_type(LogDriver *d, char *content_type);
+void riak_dd_set_flush_lines(LogDriver *d, int flush_lines);
 
 #endif
 
