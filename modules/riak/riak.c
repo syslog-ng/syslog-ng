@@ -30,6 +30,7 @@ typedef struct
   LogTemplate *value;
   char *content_type;
   char *charset;
+  int flush_lines;
 
   RiakBucketMode mode;
 
@@ -115,6 +116,12 @@ riak_dd_set_content_type(LogDriver *d, char *content_type)
   RiakDestDriver *self = (RiakDestDriver *)d;
   free(self->content_type);
   self->content_type = strdup(content_type);
+}
+void
+riak_dd_set_flush_lines(LogDriver *d, int flush_lines)
+{
+  RiakDestDriver *self = (RiakDestDriver *)d;
+  self->flush_lines    = flush_lines;
 }
 
 LogTemplateOptions *
@@ -233,12 +240,24 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
       riack_dt_update_req_t *dtupdatereq;
       riack_dt_op_t *dtop;
       riack_setop_t *setop;
+      int idx;
 
       dtupdatereq = riack_req_dt_update_new( );
       dtop        = riack_dt_op_new( );
       setop       = riack_setop_new( );
 
-      riack_setop_set(setop, RIACK_SETOP_FIELD_ADD, value_res, RIACK_SETOP_FIELD_NONE);
+      if (self->flush_lines)
+        {
+          for (idx = 0; idx < self->flush_lines; idx++)
+            {
+              riack_setop_set(setop, RIACK_SETOP_FIELD_BULK_ADD, idx, value_res,
+                              RIACK_SETOP_FIELD_NONE);
+            }
+        }
+      else
+        {
+          riack_setop_set(setop, RIACK_SETOP_FIELD_ADD, value_res, RIACK_SETOP_FIELD_NONE);
+        }
 
       riack_dt_op_set(dtop, RIACK_DT_OP_FIELD_SETOP, setop, RIACK_DT_OP_FIELD_NONE);
 
@@ -265,7 +284,45 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
               g_string_free(bucket_res, TRUE);
               g_string_free(key_res, TRUE);
               riack_req_dt_update_free(dtupdatereq);
-              return WORKER_INSERT_RESULT_SUCCESS;
+              return WORKER_INSERT_RESULT_ERROR;
+
+              riack_req_dt_update_free(dtupdatereq);
+            }
+          content = riack_content_new( );
+          riack_content_set(content, RIACK_CONTENT_FIELD_VALUE, value_res->str, -1,
+                            RIACK_CONTENT_FIELD_CONTENT_TYPE, self->content_type, -1,
+                            RIACK_CONTENT_FIELD_CONTENT_ENCODING, "none", -1,
+                            RIACK_CONTENT_FIELD_CHARSET, self->charset, -1,
+                            RIACK_CONTENT_FIELD_NONE);
+
+          putreq = riack_req_put_new( );
+          riack_req_put_set(putreq, RIACK_REQ_PUT_FIELD_BUCKET, bucket_res->str,
+                            RIACK_REQ_PUT_FIELD_BUCKET_TYPE, self->bucket_type,
+                            RIACK_REQ_PUT_FIELD_KEY, key_res->str, RIACK_REQ_PUT_FIELD_CONTENT,
+                            content, RIACK_REQ_PUT_FIELD_NONE);
+
+          message = riack_putreq_serialize(putreq);
+
+          if ((scheck = riack_client_send(self->client, message)) == 0)
+            {
+              if ((scheck = riack_client_recv(self->client)) == 0)
+                {
+                  msg_debug("RIAK bucket sent in store mode",
+                            evt_tag_str("driver", self->super.super.super.id),
+                            evt_tag_str("bucket", bucket_res->str),
+                            evt_tag_str("bucket_type", self->bucket_type),
+                            evt_tag_str("key", key_res->str), evt_tag_str("value", value_res->str),
+                            evt_tag_str("content_type", self->content_type),
+                            evt_tag_str("charset", self->charset), NULL);
+                  printf("Above data sent to riak in store mode successfully\n");
+                  g_string_free(value_res, TRUE);
+                  g_string_free(bucket_res, TRUE);
+                  g_string_free(key_res, TRUE);
+                  riack_req_put_free(putreq);
+                  return WORKER_INSERT_RESULT_SUCCESS;
+                }
+              else
+                printf("Error in receiving response from riak\n");
             }
           else
             printf("Error in sending message to riak\n");
@@ -273,171 +330,137 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
           g_string_free(value_res, TRUE);
           g_string_free(bucket_res, TRUE);
           g_string_free(key_res, TRUE);
-          riack_req_dt_update_free(dtupdatereq);
+          riack_req_put_free(putreq);
           return WORKER_INSERT_RESULT_ERROR;
-
-          riack_req_dt_update_free(dtupdatereq);
         }
-      content = riack_content_new( );
-      riack_content_set(content, RIACK_CONTENT_FIELD_VALUE, value_res->str, -1,
-                        RIACK_CONTENT_FIELD_CONTENT_TYPE, self->content_type, -1,
-                        RIACK_CONTENT_FIELD_CONTENT_ENCODING, "none", -1,
-                        RIACK_CONTENT_FIELD_CHARSET, self->charset, -1, RIACK_CONTENT_FIELD_NONE);
 
-      putreq = riack_req_put_new( );
-      riack_req_put_set(putreq, RIACK_REQ_PUT_FIELD_BUCKET, bucket_res->str,
-                        RIACK_REQ_PUT_FIELD_BUCKET_TYPE, self->bucket_type, RIACK_REQ_PUT_FIELD_KEY,
-                        key_res->str, RIACK_REQ_PUT_FIELD_CONTENT, content,
-                        RIACK_REQ_PUT_FIELD_NONE);
-
-      message = riack_putreq_serialize(putreq);
-
-      if ((scheck = riack_client_send(self->client, message)) == 0)
-        {
-          if ((scheck = riack_client_recv(self->client)) == 0)
-            {
-              msg_debug("RIAK bucket sent in store mode",
-                        evt_tag_str("driver", self->super.super.super.id),
-                        evt_tag_str("bucket", bucket_res->str),
-                        evt_tag_str("bucket_type", self->bucket_type),
-                        evt_tag_str("key", key_res->str), evt_tag_str("value", value_res->str),
-                        evt_tag_str("content_type", self->content_type),
-                        evt_tag_str("charset", self->charset), NULL);
-              printf("Above data sent to riak in store mode successfully\n");
-              g_string_free(value_res, TRUE);
-              g_string_free(bucket_res, TRUE);
-              g_string_free(key_res, TRUE);
-              riack_req_put_free(putreq);
-              return WORKER_INSERT_RESULT_SUCCESS;
-            }
-          else
-            printf("Error in receiving response from riak\n");
-        }
-      else
-        printf("Error in sending message to riak\n");
-
-      g_string_free(value_res, TRUE);
-      g_string_free(bucket_res, TRUE);
-      g_string_free(key_res, TRUE);
-      riack_req_put_free(putreq);
-      return WORKER_INSERT_RESULT_ERROR;
-    }
-
-  static void riak_worker_thread_init(LogThrDestDriver * d)
-  {
-    RiakDestDriver *self = (RiakDestDriver *)d;
-
-    msg_debug("Worker thread started", evt_tag_str("driver", self->super.super.super.id), NULL);
-
-    if (self->bucket == NULL || self->key == NULL || self->value == NULL)
+      static void riak_worker_thread_init(LogThrDestDriver * d)
       {
         msg_error("Riak worker init error, LogTemplate values NULL, suspending",
                   evt_tag_str("driver", self->super.super.super.id),
                   // evt_tag_str("error", self->client->errstr),
                   evt_tag_int("time_reopen", self->super.time_reopen), NULL);
       }
-    //   riak_dd_connect(self, FALSE);
-  }
+      if (self->flush_lines && self->mode == RIAK_BUCKET_MODE_STORE)
+        {
+          printf("riak cannot use flush lines in bucket store mode, change to set mode");
+        }
+      //   riak_dd_connect(self, FALSE);
+    }
 
-  static void riak_worker_thread_deinit(LogThrDestDriver * d)
-  {
-    RiakDestDriver *self = (RiakDestDriver *)d;
+  msg_debug("Worker thread started", evt_tag_str("driver", self->super.super.super.id), NULL);
 
-    log_template_unref(self->bucket);
-    log_template_unref(self->key);
-    log_template_unref(self->value);
-    free(self->host);
-    free(self->bucket_type);
-    free(self->charset);
-    free(self->content_type);
-  }
+  if (self->bucket == NULL || self->key == NULL || self->value == NULL)
+    {
+      msg_error("Riak worker init error, LogTemplate values NULL, suspending",
+                evt_tag_str("driver", self->super.super.super.id),
+                // evt_tag_str("error", self->client->errstr),
+                evt_tag_int("time_reopen", self->super.time_reopen), NULL);
+    }
+  //   riak_dd_connect(self, FALSE);
+}
 
-  /*
-   * Main thread
-   */
+static void
+riak_worker_thread_deinit(LogThrDestDriver *d)
+{
+  RiakDestDriver *self = (RiakDestDriver *)d;
 
-  static gboolean riak_dd_init(LogPipe * s) // Initializes the destination driver
-  {
-    RiakDestDriver *self = (RiakDestDriver *)s;
-    GlobalConfig *cfg    = log_pipe_get_config(s);
+  log_template_unref(self->bucket);
+  log_template_unref(self->key);
+  log_template_unref(self->value);
+  free(self->host);
+  free(self->bucket_type);
+  free(self->charset);
+  free(self->content_type);
+}
 
-    if (!log_dest_driver_init_method(s))
-      return FALSE;
+/*
+ * Main thread
+ */
 
-    log_template_options_init(&self->template_options, cfg);
+static gboolean riak_dd_init(LogPipe *s) // Initializes the destination driver
+{
+  RiakDestDriver *self = (RiakDestDriver *)s;
+  GlobalConfig *cfg    = log_pipe_get_config(s);
 
-    msg_verbose("Initializing Riak destination", evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("host", self->host), evt_tag_int("port", self->port), NULL);
+  if (!log_dest_driver_init_method(s))
+    return FALSE;
 
-    return log_threaded_dest_driver_start(s);
-  }
+  log_template_options_init(&self->template_options, cfg);
 
-  static void riak_dd_free(LogPipe * d) // frees up the structure allocated during config parsing
-  {
-    RiakDestDriver *self = (RiakDestDriver *)d;
+  msg_verbose("Initializing Riak destination", evt_tag_str("driver", self->super.super.super.id),
+              evt_tag_str("host", self->host), evt_tag_int("port", self->port), NULL);
 
-    log_template_options_destroy(&self->template_options);
+  return log_threaded_dest_driver_start(s);
+}
 
-    free(self->host);
-    free(self->bucket_type);
-    free(self->charset);
-    free(self->content_type);
-    log_template_unref(self->key);
-    log_template_unref(self->value);
-    log_template_unref(self->bucket);
+static void riak_dd_free(LogPipe *d) // frees up the structure allocated during config parsing
+{
+  RiakDestDriver *self = (RiakDestDriver *)d;
 
-    log_threaded_dest_driver_free(d);
-  }
+  log_template_options_destroy(&self->template_options);
 
-  /*
-   * Plugin glue.
-   */
+  free(self->host);
+  free(self->bucket_type);
+  free(self->charset);
+  free(self->content_type);
+  log_template_unref(self->key);
+  log_template_unref(self->value);
+  log_template_unref(self->bucket);
 
-  LogDriver *riak_dd_new(GlobalConfig * cfg)
-  {
-    RiakDestDriver *self = (RiakDestDriver *)calloc(1, sizeof(RiakDestDriver));
+  log_threaded_dest_driver_free(d);
+}
 
-    log_threaded_dest_driver_init_instance(&self->super, cfg);
-    self->super.super.super.super.init    = riak_dd_init;
-    self->super.super.super.super.free_fn = riak_dd_free;
+/*
+ * Plugin glue.
+ */
 
-    self->super.worker.thread_init   = riak_worker_thread_init;
-    self->super.worker.thread_deinit = riak_worker_thread_deinit;
-    self->super.worker.disconnect    = riak_dd_disconnect;
-    self->super.worker.insert        = riak_worker_insert;
+LogDriver *
+riak_dd_new(GlobalConfig *cfg)
+{
+  RiakDestDriver *self = (RiakDestDriver *)calloc(1, sizeof(RiakDestDriver));
 
-    self->super.format.stats_instance = riak_dd_format_stats_instance;
-    self->super.format.persist_name   = riak_dd_format_persist_name;
-    // self->super.stats_source = SCS_RIAK;
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
+  self->super.super.super.super.init    = riak_dd_init;
+  self->super.super.super.super.free_fn = riak_dd_free;
 
-    riak_dd_set_host((LogDriver *)self, "127.0.0.1");
-    riak_dd_set_port((LogDriver *)self, 8087);
+  self->super.worker.thread_init   = riak_worker_thread_init;
+  self->super.worker.thread_deinit = riak_worker_thread_deinit;
+  self->super.worker.disconnect    = riak_dd_disconnect;
+  self->super.worker.insert        = riak_worker_insert;
 
-    log_template_options_defaults(&self->template_options);
+  self->super.format.stats_instance = riak_dd_format_stats_instance;
+  self->super.format.persist_name   = riak_dd_format_persist_name;
+  // self->super.stats_source = SCS_RIAK;
 
-    return (LogDriver *)self;
-  }
+  riak_dd_set_host((LogDriver *)self, "127.0.0.1");
+  riak_dd_set_port((LogDriver *)self, 8087);
 
-  extern CfgParser riak_dd_parser;
+  log_template_options_defaults(&self->template_options);
 
-  static Plugin riak_plugin = {
-      .type = LL_CONTEXT_DESTINATION, .name = "riak", .parser = &riak_parser,
-  };
+  return (LogDriver *)self;
+}
 
-  gboolean
-      // static added due to compile error shown
-      riak_module_init(GlobalConfig * cfg, CfgArgs * args)
-  {
-    plugin_register(cfg, &riak_plugin, 1);
+extern CfgParser riak_dd_parser;
 
-    return TRUE;
-  }
+static Plugin riak_plugin = {
+    .type = LL_CONTEXT_DESTINATION, .name = "riak", .parser = &riak_parser,
+};
 
-  const ModuleInfo module_info = {
-      .canonical_name          = "riak",
-      .version                 = SYSLOG_NG_VERSION,
-      .description             = "The riak module provides Riak destination support for syslog-ng.",
-      .core_revision           = SYSLOG_NG_SOURCE_REVISION,
-      .plugins                 = &riak_plugin,
-      .plugins_len             = 1,
-  };
+gboolean
+    // static added due to compile error shown
+    riak_module_init(GlobalConfig *cfg, CfgArgs *args)
+{
+  plugin_register(cfg, &riak_plugin, 1);
+
+  return TRUE;
+}
+
+const ModuleInfo module_info = {
+    .canonical_name          = "riak",
+    .version                 = SYSLOG_NG_VERSION,
+    .description             = "The riak module provides Riak destination support for syslog-ng.",
+    .core_revision           = SYSLOG_NG_SOURCE_REVISION,
+    .plugins                 = &riak_plugin,
+    .plugins_len             = 1,
+};
