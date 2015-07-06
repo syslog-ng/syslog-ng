@@ -14,9 +14,11 @@ default_debug_params="-Fedv --enable-core"
 default_ldebug_params="-Fev"
 default_pcap_params="port 514 or port 601 or port 53"
 extras=()
+sngallpids=()
 debugpid=none
 debugtailpid=none
 pcappid=none
+tracepids=()
 ipconfig="ip addr"
 routeconfig="netstat -nr"
 netstatnlp="netstat -nlp"
@@ -40,6 +42,7 @@ vmstat=vmstat
 dmesg=dmesg
 tcpdump="tcpdump -p -s 1500 -w"
 getsyslogpids="pidof syslog-ng"
+trace="strace -f"
 
 ###
 ### Show Usage
@@ -70,6 +73,10 @@ Packet capture options:
   -p		Create packet capture with filter: $default_pcap_params
   -P [params]	Create packet capture with custom filter
   -t [sec]	Timeout for noninteractive debug
+
+Syscall tracing options:
+  -s		Trace syslog
+  -t [sec]	Timeout for noninteractive debug
 END
 [ -n "$2" ] && echo -e "\nError: $2\n"
 exit ${1:-0}
@@ -79,7 +86,7 @@ exit ${1:-0}
 ### Parsing optional parameters
 ###
 
-while getopts "hldD:pP:w:i:W:R:t:" opt ; do
+while getopts "hldD:pP:w:i:W:R:t:s" opt ; do
 	case $opt in
 		d)
 			[ -n "$debug_params" ] && debun_usage 2
@@ -122,6 +129,10 @@ while getopts "hldD:pP:w:i:W:R:t:" opt ; do
 			;;
 		W)
 			workdir="$OPTARG"
+			;;
+		s)
+			tracing=1
+			debug_mode=1
 			;;
 		*)
 			debun_usage 2
@@ -178,6 +189,15 @@ debun_finish_debug () {
 	if [ -d /proc/${pcappid} ]; then
 		kill -INT $pcappid
 	fi
+	if [ -n "$tracing" -a -z "$debug_params" ]; then
+		for i in ${tracepids[*]} ; do
+			kill -INT $i
+		done
+		sleep 2
+		for i in ${tracepids[*]} ; do
+			[ -d /proc/${i} ] && kill -9 $i 2>/dev/null
+		done
+	fi
 	wait
 }
 
@@ -201,6 +221,42 @@ debun_final() {
 
 add_extra () {
 	extras=( "${extras[@]}" "$@" )
+}
+
+###
+###PROCESS HANDLING FUNCTIONS
+###
+getparent () {
+	local self
+	local parent
+	local ret
+	while read self parent ; do
+		[ "$1" == "$self" ] || continue
+		ret=$parent
+	done < <( ps -eao pid,ppid )
+	echo $ret
+}
+
+getchilds () {
+	local -a childs
+	local dummy
+	local child
+	while read dummy child ; do
+		[ "$1" == "$dummy" ] || continue
+		childs=( ${childs[*]} $child )
+	done < <( ps -eao ppid,pid )
+	echo ${childs[*]}
+}
+
+getallchilds () {
+	local -a childs
+	local -a subchilds
+	childs=( $(getchilds $1) )
+	local i
+	for i in ${childs[*]} ; do
+		subchilds=( ${subchilds[*]} $(getallchilds $i) )
+	done
+	echo ${childs[*]} ${subchilds[*]}
 }
 
 acquire_system_info () {
@@ -266,16 +322,33 @@ acquire_syslog_config () {
 	find . | cpio -pd ${tmpdir}/config
 }
 
+acquire_syslog_pids () {
+	echo 'Old "getsyslogpids":' >${tmpdir}/syslog.pids
+	$getsyslogpids >>${tmpdir}/syslog.pids
+	sngpid=$(cat ${vardir}/run/syslog-ng.pid)
+	ppid=$(getparent $sngpid)
+	sngallpids=( $(getallchilds $sngpid) )
+	echo "SVpid: $ppid SNGpid: $sngpid Chpids: ${sngallpids[*]}" >>${tmpdir}/syslog.pids
+	tail -1 ${tmpdir}/syslog.pids
+	if [ -n "$ppid" ]; then
+		sngallpids=( $ppid $sngpid ${sngallpids[*]} )
+	else
+		sngallpids=( $( $getsyslogpids ) )
+	fi
+	ps -l -f -p "${sngallpids[*]}" >>${tmpdir}/syslog.pids
+}
+
 acquire_syslog_info () {
 	echo "Syslog-ng's exact version: $syslogbin"
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
 	${syslogbin}-ctl stats > ${tmpdir}/syslog.stats
 	echo ${syslogbin}-ctl stats
-	for i in $( $getsyslogpids ) ; do 
+	for i in ${sngallpids[*]} ; do 
 		$lsof $i >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
 	done
+	$syslogbin -s --preprocess-into ${tmpdir}/syslog.pp.conf
 }
 
 acquire_syslog_var () {
@@ -314,6 +387,7 @@ acquire_syslog_ldinfo () {
 acquire_syslog_all () {
 	echo -e "\nStart Syslog-specific info collection"
 	acquire_syslog_config
+	acquire_syslog_pids
 	acquire_syslog_info
 	acquire_syslog_var
 	acquire_syslog_ldinfo
@@ -321,6 +395,7 @@ acquire_syslog_all () {
 
 acquire_syslog_nprv () {
 	echo -e "\nStart Syslog-specific info collection (light)"
+	acquire_syslog_pids
 	acquire_syslog_info
 	acquire_syslog_ldinfo
 }
@@ -377,47 +452,76 @@ debun_extra_redhat () {
 	}
 }
 
-debun_linux () {
-if  hash lsb_release ; then
-	lsb_release -a | tee ${tmpdir}/lsb.all
-	dist=$(lsb_release -si)
-	if [ "$dist" = "Debian" ]; then
-		add_extra debun_extra_debian 
-	elif [ "$dist" = "Ubuntu" ]; then
-		add_extra debun_extra_debian
-	elif [ "$dist" = "CentOS" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "RHEL" ]; then
-		add_extra debun_extra_redhat
-	else 
-		echo "Unknown Distro, perhaps unsupported"
+debun_extra_genlinux () {
+	if hash getenforce; then
+		getenforce >${tmpdir}/sys.selinux
+	else
+		echo "No getenforce in path." >${tmpdir}/sys.selinux
 	fi
-else
-	echo "No lsb_release here. Is this system a supported one?"
-fi
-unset myplimit
-myplimit () { cat /proc/$1/limits ; }
-if hash getenforce; then
-	getenforce >${tmpdir}/sys.selinux
-else
-	echo "No getenforce in path." >${tmpdir}/sys.selinux
-fi
+	sysctl -a >${tmpdir}/sys.sysctl.a
+}
+
+debun_linux () {
+	add_extra debun_extra_genlinux
+	if  hash lsb_release ; then
+		lsb_release -a | tee ${tmpdir}/lsb.all
+		dist=$(lsb_release -si)
+		if [ "$dist" = "Debian" ]; then
+			add_extra debun_extra_debian 
+		elif [ "$dist" = "Ubuntu" ]; then
+			add_extra debun_extra_debian
+		elif [ "$dist" = "CentOS" ]; then
+			add_extra debun_extra_redhat
+		elif [ "$dist" = "RHEL" ]; then
+			add_extra debun_extra_redhat
+		else 
+			echo "Unknown Distro, perhaps unsupported"
+		fi
+	elif [ -r /etc/debian_version ]; then
+		add_extra debun_extra_debian
+	elif [ -r /etc/redhat-release ]; then
+		add_extra debun_extra_redhat
+	fi
+	unset myplimit
+	myplimit () { cat /proc/$1/limits ; }
+}
+
+debun_extra_gensolaris () {
+	sysdef >${tmpdir}/sys.sysdef
+	kstat >${tmpdir}/sys.kstat
+	cp /etc/release ${tmpdir}/sys.release
+	if hash showrev ; then
+		showrev >${tmpdir}/sys.showrev
+	fi
 }
 
 ### Here comes solaris specific parts
 debun_solaris () {
-lsof=pfiles
-ipconfig="ifconfig -a"
-pscmd="ps -eaf"
-unset myplimit
-myplimit () { plimit $1 ; }
-tcpdump="snoop -P -q -o"
-pcapifparm="-d"
-mypidof () { ps -eao pid,comm | while read pid bin ; do [ \"$bin\" = \"$1\" ] && echo $pid ; done; }
-syslogrealbin=${binprefix}/sbin/syslog-ng
-getsyslogpids="mypidof ${syslogrealbin}"
-free () { prtconf |grep Mem ; echo -n Pagesize:\  ; pagesize -a ; }
-netstatnlp="netstat -na"
+	add_extra debun_extra_gensolaris
+	lsof=pfiles
+	ipconfig="ifconfig -a"
+	pscmd="ps -eaf"
+	unset myplimit
+	myplimit () { plimit $1 ; }
+	tcpdump="snoop -P -q -o"
+	pcapifparm="-d"
+	mypidof () { ps -eao pid,comm | while read pid bin ; do [ \"$bin\" = \"$1\" ] && echo $pid ; done; }
+	syslogrealbin=${binprefix}/sbin/syslog-ng
+	getsyslogpids="mypidof ${syslogrealbin}"
+	free () { prtconf |grep Mem ; echo -n Pagesize:\  ; pagesize -a ; }
+	netstatnlp="netstat -na"
+	pkginfo |grep -i syslog > ${tmpdir}/pkg.packages
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		pkgchk -l -p $1 | \
+		perl -n -e 'if ( /^Referenced by the/ ) { $p=1; } elsif (/:/ or /^$/ ) { $p=0; } elsif ($p) { s/^\s+//; print ; } else { print "FAIL:".$_; }'
+	}
+	distpkgstatus () {
+		echo "@@@Package info for: $1"
+		pkginfo -l $1
+		echo ""
+	}
 }
 
 debun_hpux () {
@@ -426,7 +530,7 @@ echo "Not (yet) supported platform" >&2
 
 detect_env () {
 ###
-### Detecting syslog-ng ver: ose or pe
+### Detecting syslog-ng ver: ose or pe vs /opt or linux-fhs
 ###
 
 echo "Start environment detection"
@@ -455,6 +559,10 @@ else
 	echo "Unkonwn or unhandled (yet) system"
 fi
 
+### Check if truss is available
+if hash truss ; then
+	trace="truss -f"
+fi
 }
 
 run_specific_extras () {
@@ -470,6 +578,12 @@ if [ -n "$pcap_params" ]; then
 	$tcpdump ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} $pcap_params &
 	pcappid=$!
 fi
+if [ -n "$tracing" -a -z "$debug_params" ]; then
+	for i in ${sngallpids[*]}; do
+		$trace -o ${tmpdir}/trace.${i}.txt -p $i &
+		tracepids=( ${tracepids[*]} $! )
+	done
+fi
 if [ -n "$waitforit" ]; then
 	[ -n "$pcap_params" ] && sleep 1
 	echo "Waiting $waitforit secs before stop system's syslog-ng, and restart in debug mode."
@@ -484,8 +598,13 @@ fi
 if [ -n "$debug_params" ]; then
 	/etc/init.d/syslog-ng stop
 	echo "Start syslog-ng debug with params: $debug_params"
-	$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
-	debugpid=$!
+	if [ -n "$tracing" ]; then
+		$trace -o ${tmpdir}/trace.${i}.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
+		debugpid=$!
+	else
+		$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
+		debugpid=$!
+	fi
 fi
 [ -n "$timeout" ] || echo "When you want to stop collecting data, press ENTER" >&3
 if [ -n "$waitforit" ]; then

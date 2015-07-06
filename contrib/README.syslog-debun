@@ -53,3 +53,6 @@ usage examples:
 	Collect debug info, but the temporary files, and the result will be
 	in /var/tmp instead of /tmp and don't try to search syslog-ng in
 	/opt/syslog-ng, it will search in /usr/local
+
+# syslog-debun -s -t 10
+	Collect debug info, start tracing, and exit tracing after 10 seconds
