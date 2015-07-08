@@ -1673,10 +1673,15 @@ log_msg_global_deinit(void)
   log_msg_registry_deinit();
 }
 
-static const gchar *
+const gchar *
 __log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
 __attribute__((alias("log_msg_get_value")));
 
-static const gchar *
+const gchar *
 __log_msg_get_value_by_name(const LogMessage *self, const gchar *name, gssize *value_len)
 __attribute__((alias("log_msg_get_value_by_name")));
+
+void
+__log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
+__attribute__((alias("log_msg_set_value_by_name")));
+
