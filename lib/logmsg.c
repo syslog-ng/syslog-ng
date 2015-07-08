@@ -1680,3 +1680,8 @@ __attribute__((alias("log_msg_get_value")));
 const gchar *
 __log_msg_get_value_by_name(const LogMessage *self, const gchar *name, gssize *value_len)
 __attribute__((alias("log_msg_get_value_by_name")));
+
+void
+__log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
+__attribute__((alias("log_msg_set_value_by_name")));
+
