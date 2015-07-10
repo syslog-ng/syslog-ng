@@ -605,6 +605,7 @@ if [ -n "$debug_params" ]; then
 	echo "Start syslog-ng debug with params: $debug_params"
 	if [ -n "$tracing" ]; then
 		$trace -o ${tmpdir}/trace.${i}.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
+		debugpid=$!
 	else
 		$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
 		debugpid=$!
