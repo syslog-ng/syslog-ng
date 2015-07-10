@@ -224,6 +224,37 @@ __is_iso_stamp(const gchar *stamp, gint length)
          );
 }
 
+static guint32
+__parse_usec(const guchar **data, gint *length)
+{
+  guint32 usec = 0;
+  const guchar *src = *data;
+  if (*length > 0 && *src == '.')
+    {
+      gulong frac = 0;
+      gint div = 1;
+      /* process second fractions */
+
+      src++;
+      (*length)--;
+      while (*length > 0 && div < 10e5 && isdigit(*src))
+        {
+          frac = 10 * frac + (*src) - '0';
+          div = div * 10;
+          src++;
+          (*length)--;
+        }
+      while (isdigit(*src))
+        {
+          src++;
+          (*length)--;
+        }
+      usec = frac * (1000000 / div);
+    }
+  *data = src;
+  return usec;
+}
+
 static gboolean
 __has_iso_timezone(const guchar *src, gint length)
 {
@@ -303,30 +334,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           goto error;
         }
 
-      self->timestamps[LM_TS_STAMP].tv_usec = 0;
-      if (left > 0 && *src == '.')
-        {
-          gulong frac = 0;
-          gint div = 1;
-          /* process second fractions */
-
-          src++;
-          left--;
-          while (left > 0 && div < 10e5 && isdigit(*src))
-            {
-              frac = 10 * frac + (*src) - '0';
-              div = div * 10;
-              src++;
-              left--;
-            }
-          while (isdigit(*src))
-            {
-              src++;
-              left--;
-            }
-          self->timestamps[LM_TS_STAMP].tv_usec = frac * (1000000 / div);
-        }
-
+      self->timestamps[LM_TS_STAMP].tv_usec = __parse_usec(&src, &left);
       if (left > 0 && *src == 'Z')
         {
           /* Z is special, it means UTC */
@@ -403,27 +411,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           if (!scan_bsd_timestamp((const gchar **) &src, &left, &tm))
             goto error;
 
-          if (left > 0 && src[0] == '.')
-            {
-              gulong frac = 0;
-              gint div = 1;
-              gint i = 1;
-
-              /* gee, funny Cisco extension, BSD timestamp with fraction of second support */
-
-              while (i < left && div < 10e5 && isdigit(src[i]))
-                {
-                  frac = 10 * frac + (src[i]) - '0';
-                  div = div * 10;
-                  i++;
-                }
-              while (i < left && isdigit(src[i]))
-                i++;
-
-              usec = frac * (1000000 / div);
-              left -= i;
-              src += i;
-            }
+          usec = __parse_usec(&src, &left);
 
           /* detect if the message is coming from last year. If current
            * month is January, and the message comes from December, the 
