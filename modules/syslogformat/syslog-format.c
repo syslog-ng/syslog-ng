@@ -212,6 +212,18 @@ log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
   return TRUE;
 }
 
+static gboolean
+__is_iso_stamp(const gchar *stamp, gint length)
+{
+  return (length >= 19
+          && stamp[4] == '-'
+          && stamp[7] == '-'
+          && stamp[10] == 'T'
+          && stamp[13] == ':'
+          && stamp[16] == ':'
+         );
+}
+
 /* FIXME: this function should really be exploded to a lot of smaller functions... (Bazsi) */
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
@@ -242,7 +254,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
         }
     }
   /* If the next chars look like a date, then read them as a date. */
-  if (left >= 19 && src[4] == '-' && src[7] == '-' && src[10] == 'T' && src[13] == ':' && src[16] == ':')
+  if (__is_iso_stamp((const gchar *)src, left))
     {
       /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
       gint hours, mins;
