@@ -225,6 +225,19 @@ __is_iso_stamp(const gchar *stamp, gint length)
 }
 
 static gboolean
+__has_iso_timezone(const guchar *src, gint length)
+{
+  return (length >= 5) &&
+         (*src == '+' || *src == '-') &&
+         isdigit(*(src+1)) &&
+         isdigit(*(src+2)) &&
+         *(src+3) == ':' &&
+         isdigit(*(src+4)) &&
+         isdigit(*(src+5)) &&
+         !isdigit(*(src+6));
+}
+
+static gboolean
 __is_bsd_pix_or_asa(const guchar *src, guint32 left)
 {
   return (left >= 21
@@ -321,8 +334,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           src++;
           left--;
         }
-      else if (left >= 5 && (*src == '+' || *src == '-') &&
-          isdigit(*(src+1)) && isdigit(*(src+2)) && *(src+3) == ':' && isdigit(*(src+4)) && isdigit(*(src+5)) && !isdigit(*(src+6)))
+      else if (__has_iso_timezone(src, left))
         {
           /* timezone offset */
           gint sign = *src == '-' ? -1 : 1;
