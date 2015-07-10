@@ -223,23 +223,21 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 
   cached_g_current_time(&now);
 
-  if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
+  /* Cisco timestamp extensions, the first '*' indicates that the clock is
+   * unsynced, '.' if it is known to be synced */
+  if (G_UNLIKELY(src[0] == '*'))
     {
-      /* Cisco timestamp extensions, the first '*' indicates that the clock is
-       * unsynced, '.' if it is known to be synced */
-      if (G_UNLIKELY(src[0] == '*'))
-        {
-          log_msg_set_value(self, is_synced, "0", 1);
-          src++;
-          left--;
-        }
-      else if (G_UNLIKELY(src[0] == '.'))
-        {
-          log_msg_set_value(self, is_synced, "1", 1);
-          src++;
-          left--;
-        }
+      log_msg_set_value(self, is_synced, "0", 1);
+      src++;
+      left--;
     }
+  else if (G_UNLIKELY(src[0] == '.'))
+    {
+      log_msg_set_value(self, is_synced, "1", 1);
+      src++;
+      left--;
+    }
+
   /* If the next chars look like a date, then read them as a date. */
   if (left >= 19 && src[4] == '-' && src[7] == '-' && src[10] == 'T' && src[13] == ':' && src[16] == ':')
     {
