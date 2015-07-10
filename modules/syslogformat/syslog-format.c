@@ -224,6 +224,23 @@ __is_iso_stamp(const gchar *stamp, gint length)
          );
 }
 
+static gboolean
+__is_bsd_pix_or_asa(const guchar *src, guint32 left)
+{
+  return (left >= 21
+          && src[3] == ' '
+          && src[6] == ' '
+          && src[11] == ' '
+          && src[14] == ':'
+          && src[17] == ':'
+          && (src[20] == ':' || src[20] == ' ')
+          && isdigit(src[7])
+          && isdigit(src[8])
+          && isdigit(src[9])
+          && isdigit(src[10])
+         );
+}
+
 /* FIXME: this function should really be exploded to a lot of smaller functions... (Bazsi) */
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
@@ -324,8 +341,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
-      if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[11] == ' ' && src[14] == ':' && src[17] == ':' && (src[20] == ':' || src[20] == ' ') &&
-          (isdigit(src[7]) && isdigit(src[8]) && isdigit(src[9]) && isdigit(src[10])))
+      if (__is_bsd_pix_or_asa(src, left))
         {
           /* PIX timestamp, expected format: MMM DD YYYY HH:MM:SS: */
           /* ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
