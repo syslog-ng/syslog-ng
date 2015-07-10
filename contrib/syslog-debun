@@ -325,7 +325,12 @@ acquire_syslog_config () {
 acquire_syslog_pids () {
 	echo 'Old "getsyslogpids":' >${tmpdir}/syslog.pids
 	$getsyslogpids >>${tmpdir}/syslog.pids
-	sngpid=$(cat ${vardir}/run/syslog-ng.pid)
+	if [ -r "${vardir}/run/syslog-ng.pid" ]; then
+		sngpid=$(cat ${vardir}/run/syslog-ng.pid)
+	else
+		# Handle when fhs is "linux"-like
+		sngpid=$(cat ${vardir}/syslog-ng.pid)
+	fi
 	ppid=$(getparent $sngpid)
 	sngallpids=( $(getallchilds $sngpid) )
 	echo "SVpid: $ppid SNGpid: $sngpid Chpids: ${sngallpids[*]}" >>${tmpdir}/syslog.pids
@@ -530,7 +535,7 @@ echo "Not (yet) supported platform" >&2
 
 detect_env () {
 ###
-### Detecting syslog-ng ver: ose or pe vs /opt or linux-fhs
+### Detecting syslog-ng ver: ose or pe
 ###
 
 echo "Start environment detection"
@@ -600,7 +605,6 @@ if [ -n "$debug_params" ]; then
 	echo "Start syslog-ng debug with params: $debug_params"
 	if [ -n "$tracing" ]; then
 		$trace -o ${tmpdir}/trace.${i}.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
-		debugpid=$!
 	else
 		$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
 		debugpid=$!
