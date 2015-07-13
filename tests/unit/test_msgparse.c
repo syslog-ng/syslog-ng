@@ -39,11 +39,7 @@ get_bsd_year_utc(int ts_month)
   time(&t);
   tm = localtime(&t);
 
-  if (ts_month == 11 &&  tm->tm_mon == 0)                                                                 
-    tm->tm_year--;                                                                                            
-  else if (ts_month == 0 && tm->tm_mon == 11)                                                             
-    tm->tm_year++;                                                                                            
-
+  tm->tm_year = determine_year_for_month(ts_month, tm);
 
   tm->tm_hour = 0;
   tm->tm_min = 0;
