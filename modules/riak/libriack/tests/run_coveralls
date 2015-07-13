@@ -1,0 +1,7 @@
+if [ "${TRAVIS_BRANCH}" != "master" ]; then
+   exit 0
+   fi
+
+   cp lib/riack/.libs/* lib/riack/
+   coveralls -e tests -x .c -b 
+

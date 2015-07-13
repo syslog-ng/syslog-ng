@@ -1,0 +1,35 @@
+RIACK_LOCAL {
+local:
+        *;
+};
+
+RIACK_1.0 {
+	riack_version;
+	riack_version_string;
+
+        riack_client_new;
+        riack_client_free;
+        riack_client_send;
+        riack_client_recv;
+        riack_putreq_serialize;
+        riack_client_connect;
+        riack_client_disconnect;
+
+        riack_content_new;
+        riack_content_free;
+        riack_content_set;
+        riack_req_put_new;
+        riack_req_put_set;
+        riack_req_put_free;
+        riack_req_dt_update_new;
+        riack_req_dt_update_free;
+        riack_req_dt_update_set;
+        riack_dt_op_new;
+        riack_dt_op_free;
+        riack_dt_op_set;
+        riack_setop_new;
+        riack_setop_free;
+        riack_setop_set;
+        riack_dtupdatereq_serialize;
+        riack_req_dt_update_set_bulk;
+} RIACK_LOCAL;
