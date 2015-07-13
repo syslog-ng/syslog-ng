@@ -226,8 +226,10 @@ AC_ARG_ENABLE(riak,
               ,,enable_riak="auto")
               
 AC_ARG_WITH(libriack,
-             AC_HELP_STRING([--with-libriack=DIR],
-                            [use libriack library from (prefix) directory DIR]),,)
+              [  --with-libriack=[system/internal]
+                                         Link against the system supplied or the built-in libriack library.]
+              ,,with_libriack="internal")
+
 
 AC_ARG_WITH(compile-date,
 	      [  --without-compile-date  Do not include the compile date in the binary]
@@ -1032,30 +1034,30 @@ fi
 dnl ***************************************************************************
 dnl libriack headers/libraries
 dnl ***************************************************************************
-if test "x$enable_riak" != "xno" && test "x$with_riak" != "no"; then
-       riack="yes"
-       if test "x$with_libriack" != "yes" && test "x$with_libriack" != "x"; then
-               CFLAGS_SAVE="$CFLAGS"
-               LDFLAGS_SAVE="$LDFLAGS"
-               CFLAGS="$CFLAGS -I$with_libriack/include"
-               LDFLAGS="$LDFLAGS -L$with_libriack/lib"
-               AC_CHECK_HEADER(riack/riack.h, [RIACK_CFLAGS="-I$with_libriack/include"
-                                               RIACK_LIBS="-L$with_libriack/lib -lriack"], [riack=no])
-               CFLAGS="$CFLAGS_SAVE"
-               LDFLAGS="$LDFLAGS_SAVE"
-       else
-               riack="yes"
-               PKG_CHECK_MODULES(RIACK, riack, ,
-                                 [PKG_CHECK_MODULES(RIACK, libriack,,
-                                  [AC_CHECK_HEADER(riack/riack.h, [RIACK_LIBS="-lriack"], [riack=no])])])
-       fi
-
-       if test "x$enable_riak" = "xyes" && test "x$riack" = "xno"; then
-               AC_MSG_ERROR(libRIACK not found)
-       fi
-
-       enable_riak=$riack
+if test "x$with_libriack" = "xauto"; then
+  with_libriack="system"
+ 
 fi
+
+if test "x$with_libriack" = "xinternal" || test "x$with_libriack" = "xauto-internal"; then
+        with_libriack="internal"
+	if test -f "$srcdir/modules/riak/libriack/lib/riack/client.c"; then
+		AC_CONFIG_SUBDIRS([modules/riak/libriack])
+
+		# these can only be used in modules/ as it assumes
+		# the current directory just one below lib
+
+		
+	fi
+fi
+
+if test "x$with_libriack" = "xno"; then
+   if test "x$enable_libriack" = "xyes"; then
+      AC_MSG_ERROR([Could not find libriack, and Riak support was explicitly enabled.])
+   fi
+   enable_libriack="no"
+fi
+
 
 dnl ***************************************************************************
 dnl rabbitmq-c headers/libraries
