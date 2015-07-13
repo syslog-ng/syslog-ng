@@ -485,6 +485,8 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
         return FALSE;
     }
 
+  unnormalized_hour = tm.tm_hour;
+  self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
   __set_zone_offset(&(self->timestamps[LM_TS_STAMP]), assume_timezone);
   self->timestamps[LM_TS_STAMP].tv_sec = __get_normalized_time(self->timestamps[LM_TS_STAMP], tm.tm_hour, unnormalized_hour);
 
