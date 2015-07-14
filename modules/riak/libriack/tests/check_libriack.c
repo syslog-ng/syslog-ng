@@ -8,7 +8,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "riack/platform.h"
 #include "tests.h"
 
 static int
@@ -48,7 +47,6 @@ network_tests_enabled (void)
   return 1;
 }
 
-#include "check_library.c"
 #include "check_client.c"
 #include "check_content.c"
 #include "check_putreq.c"
@@ -66,7 +64,6 @@ main (void)
 
   suite = suite_create ("Riack tests");
 
-  suite_add_tcase (suite, test_riack_library ());
   suite_add_tcase (suite, test_riack_client ());
   suite_add_tcase (suite, test_riack_content ());
   suite_add_tcase (suite, test_riack_putreq ());
