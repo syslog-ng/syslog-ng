@@ -1,4 +1,4 @@
-
+if ENABLE_STOMP
 modules_afstomp_tests_test_stomp_proto_CFLAGS = \
     $(TEST_CFLAGS) \
     -I$(top_srcdir)/modules/afstomp
@@ -14,3 +14,4 @@ modules_afstomp_tests_TESTS =   \
 
 check_PROGRAMS +=   \
     $(modules_afstomp_tests_TESTS)
+endif
