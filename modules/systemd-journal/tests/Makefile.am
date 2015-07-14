@@ -1,3 +1,4 @@
+if ENABLE_JOURNALD
 modules_systemd_journal_tests_TESTS	= modules/systemd-journal/tests/test_systemd_journal
 
 check_PROGRAMS					+= ${modules_systemd_journal_tests_TESTS}
@@ -11,4 +12,4 @@ modules_systemd_journal_tests_test_systemd_journal_SOURCES = \
 
 modules_systemd_journal_tests_test_systemd_journal_CFLAGS = $(TEST_CFLAGS) -I$(top_srcdir)/modules/systemd-journal
 modules_systemd_journal_tests_test_systemd_journal_LDADD = $(TEST_LDADD)
-
+endif

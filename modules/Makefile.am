@@ -45,6 +45,7 @@ modules_test_subdirs	=	\
 	modules_pacctformat modules_confgen modules_system_source \
 	modules_csvparser modules_dbparser modules_basicfuncs \
 	modules_cryptofuncs modules_geoip modules_afstomp \
-	modules_graphite modules_riemann modules_python
+	modules_graphite modules_riemann modules_python \
+	modules_systemd_journal
 
 .PHONY: modules modules/
