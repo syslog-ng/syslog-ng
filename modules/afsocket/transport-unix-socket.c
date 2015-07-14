@@ -258,8 +258,6 @@ log_transport_unix_dgram_socket_new(gint fd)
   log_transport_dgram_socket_init_instance(self, fd);
   self->super.read = log_transport_unix_dgram_socket_read_method;
 
-  socket_set_pass_credentials(fd);
-
   return &self->super;
 }
 
@@ -276,8 +274,6 @@ log_transport_unix_stream_socket_new(gint fd)
 
   log_transport_stream_socket_init_instance(self, fd);
   self->super.read = log_transport_unix_stream_socket_read_method;
-
-  socket_set_pass_credentials(fd);
 
   return &self->super;
 }
