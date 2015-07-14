@@ -1,7 +1,4 @@
-DIST_SUBDIRS 					+= modules/riak/libriack
-
-modules/riak/libriack/lib/libriack.la:
-	${MAKE} -C modules/riak/libriack
+include modules/riak/libriack/Makefile.am
 
 
 if ENABLE_RIAK

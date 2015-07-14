@@ -283,6 +283,45 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
               g_string_free(value_res, TRUE);
               g_string_free(bucket_res, TRUE);
               g_string_free(key_res, TRUE);
+              riack_req_dt_update_free(dtupdatereq);
+              return WORKER_INSERT_RESULT_SUCCESS;
+            }
+          else
+            printf("Error in receiving response from riak\n");
+        }
+      else
+        printf("Error in sending message to riak\n");
+
+      g_string_free(value_res, TRUE);
+      g_string_free(bucket_res, TRUE);
+      g_string_free(key_res, TRUE);
+      riack_req_dt_update_free(dtupdatereq);
+      return WORKER_INSERT_RESULT_ERROR;
+
+      riack_dt_op_set(dtop, RIACK_DT_OP_FIELD_SETOP, setop, RIACK_DT_OP_FIELD_NONE);
+
+      riack_req_dt_update_set(
+          dtupdatereq, RIACK_REQ_DT_UPDATE_FIELD_BUCKET, bucket_res,
+          RIACK_REQ_DT_UPDATE_FIELD_BUCKET_TYPE, "sets", RIACK_REQ_DT_UPDATE_FIELD_KEY, key_res,
+          RIACK_REQ_DT_UPDATE_FIELD_DT_OP, dtop, RIACK_REQ_DT_UPDATE_FIELD_NONE);
+
+      message = riack_dtupdatereq_serialize(dtupdatereq);
+
+      if ((scheck = riack_client_send(self->client, message)) == 0)
+        {
+          if ((scheck = riack_client_recv(self->client)) == 0)
+            {
+              msg_debug("RIAK bucket sent in set mode",
+                        evt_tag_str("driver", self->super.super.super.id),
+                        evt_tag_str("bucket", bucket_res->str),
+                        evt_tag_str("bucket_type", self->bucket_type),
+                        evt_tag_str("key", key_res->str), evt_tag_str("value", value_res->str),
+
+                        NULL);
+              printf("Above data sent to riak in set mode successfully\n");
+              g_string_free(value_res, TRUE);
+              g_string_free(bucket_res, TRUE);
+              g_string_free(key_res, TRUE);
               // riack_req_dt_update_free (dtupdatereq);
               return WORKER_INSERT_RESULT_SUCCESS;
             }
