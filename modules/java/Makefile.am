@@ -1,6 +1,38 @@
+
 if ENABLE_JAVA
 
-modules/java mod-java: modules/java/libmod-java.la modules/java/SyslogNg.jar
+JAVA_DST_DIR=$(DESTDIR)/$(moduledir)
+JARS=$(shell find $(abs_top_builddir)/modules/java -name '*.jar')
+
+java-binaries:
+	$(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java build > "$(top_builddir)/modules/java/gradle-java-binaries.log"
+
+java-headers:
+	$(AM_V_GEN) $(GRADLE) -q -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java nativeHeaders > "$(top_builddir)/modules/java/gradle-java-headers.log"
+
+all-local: java-binaries
+
+
+java-install-exec-hook:
+	$(mkinstalldirs) $(JAVA_DST_DIR)
+	cp $(JARS) $(JAVA_DST_DIR)
+
+java-clean-hook:
+	$(GRADLE) -q -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java clean
+	rm -f "$(top_builddir)/modules/java/*.log"
+
+java-uninstall-exec-hook:
+	rm -f $(JAVA_DST_DIR)/*.jar
+
+eclipse:
+	$(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java eclipse > "$(top_builddir)/modules/java/gradle-eclipse.log"
+
+
+INSTALL_EXEC_HOOKS += java-install-exec-hook
+UNINSTALL_HOOKS += java-uninstall-exec-hook
+CLEAN_HOOKS += java-clean-hook
+
+
 
 module_LTLIBRARIES += modules/java/libmod-java.la
 
@@ -10,12 +42,18 @@ modules_java_libmod_java_la_CFLAGS = \
     -I$(top_srcdir)/modules/java    \
     -I$(top_builddir)/modules/java	\
     -I$(top_srcdir)/modules/java/native \
-    -I$(top_builddir)/modules/java/native
+    -I$(top_builddir)/modules/java/native 
 
 modules_java_libmod_java_la_SOURCES = \
     modules/java/native/java-grammar.y \
     modules/java/native/java-plugin.c \
     modules/java/native/java-destination.c \
+    modules/java/native/java-class-loader.c \
+    modules/java/native/java-class-loader.h \
+    modules/java/native/java-parser.c \
+    modules/java/native/java-parser.h \
+    modules/java/native/java_machine.c \
+    modules/java/native/java_machine.h \
     modules/java/native/java-destination.h \
     modules/java/proxies/java-destination-proxy.c \
     modules/java/proxies/java-destination-proxy.h \
@@ -23,16 +61,8 @@ modules_java_libmod_java_la_SOURCES = \
     modules/java/proxies/java-logmsg-proxy.h \
     modules/java/proxies/java-template-proxy.c \
     modules/java/proxies/java-template-proxy.h \
-    modules/java/proxies/internal-message-sender-proxy.c \
-    modules/java/native/java-class-loader.c \
-    modules/java/native/java-class-loader.h \
-    modules/java/native/java-parser.c \
-    modules/java/native/java-parser.h \
-    modules/java/native/java_machine.c \
-    modules/java/native/java_machine.h
+    modules/java/proxies/internal-message-sender-proxy.c
 
-modules_java_libmod_java_la_LIBADD = \
-    $(JNI_LIBS) $(INCUBATOR_LIBS)
 
 modules_java_libmod_java_la_LDFLAGS = \
     -avoid-version -module -no-undefined
@@ -40,24 +70,7 @@ modules_java_libmod_java_la_LDFLAGS = \
 modules_java_libmod_java_la_DEPENDENCIES  = \
         $(MODULE_DEPS_LIBS)
 
-JAVA_PKG_NAME = org.syslog_ng
-
-JAVA_CLASS_DIR = modules/java/org/syslog_ng
-
-JAVA_CLASS_PATH = $(JAVA_CLASS_DIR)
-JAVA_SRC_DIR = modules/java
-
-JAVA_CLASS_FILES = \
-    $(JAVA_CLASS_PATH)/InternalMessageSender.class \
-    $(JAVA_CLASS_PATH)/SyslogNgClassLoader.class \
-    $(JAVA_CLASS_PATH)/LogMessage.class \
-    $(JAVA_CLASS_PATH)/LogTemplate.class \
-    $(JAVA_CLASS_PATH)/LogPipe.class \
-    $(JAVA_CLASS_PATH)/LogDestination.class \
-    $(JAVA_CLASS_PATH)/TextLogDestination.class \
-    $(JAVA_CLASS_PATH)/StructuredLogDestination.class \
-    $(JAVA_CLASS_PATH)/DummyTextDestination.class \
-    $(JAVA_CLASS_PATH)/DummyStructuredDestination.class
+JAVA_SRC_DIR = src/main/java/org/syslog_ng
 
 JAVA_FILES = \
     $(JAVA_SRC_DIR)/InternalMessageSender.java \
@@ -72,67 +85,12 @@ JAVA_FILES = \
     $(JAVA_SRC_DIR)/DummyStructuredDestination.java
 
 JAVA_HEADER_FILES = \
-   modules/java/LogDestination.h \
-   modules/java/LogMessage.h \
-   modules/java/LogTemplate.h \
-   modules/java/InternalMessageSender.h
+   $(top_builddir)/modules/java/org_syslog_ng_LogDestination.h \
+   $(top_builddir)/modules/java/org_syslog_ng_LogMessage.h \
+   $(top_builddir)/modules/java/org_syslog_ng_LogTemplate.h \
+   $(top_builddir)/modules/java/org_syslog_ng_InternalMessageSender.h
 
-all-local: modules/java/SyslogNg.jar
-
-modules/java/SyslogNg.jar: $(JAVA_CLASS_FILES) $(JAVA_HEADER_FILES)
-	$(AM_V_GEN) $(JAR) -cvf $@ -C ./ org
-
-$(JAVA_HEADER_FILES): $(JAVA_CLASS_FILES)
-	$(AM_V_GEN) $(JAVAH) -cp ./ -o $@ $(JAVA_PKG_NAME).$(notdir $(basename $@))
-
-$(JAVA_CLASS_PATH)/InternalMessageSender.class: $(JAVA_SRC_DIR)/InternalMessageSender.java
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/SyslogNgClassLoader.class: $(JAVA_SRC_DIR)/SyslogNgClassLoader.java $(JAVA_CLASS_PATH)/InternalMessageSender.class
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/LogMessage.class: $(JAVA_SRC_DIR)/LogMessage.java
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/LogTemplate.class: $(JAVA_SRC_DIR)/LogTemplate.java
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/LogPipe.class: $(JAVA_SRC_DIR)/LogPipe.java $(JAVA_CLASS_PATH)/InternalMessageSender.class
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/LogDestination.class: $(JAVA_SRC_DIR)/LogDestination.java $(JAVA_CLASS_PATH)/LogPipe.class
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/TextLogDestination.class: $(JAVA_SRC_DIR)/TextLogDestination.java $(JAVA_CLASS_PATH)/LogDestination.class
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/StructuredLogDestination.class: $(JAVA_SRC_DIR)/StructuredLogDestination.java $(JAVA_CLASS_PATH)/LogDestination.class
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/DummyStructuredDestination.class: $(JAVA_SRC_DIR)/DummyStructuredDestination.java $(JAVA_CLASS_PATH)/StructuredLogDestination.class
-	$(JAVAC) -d ./ -cp ./ $<
-
-$(JAVA_CLASS_PATH)/DummyTextDestination.class: $(JAVA_SRC_DIR)/DummyTextDestination.java $(JAVA_CLASS_PATH)/TextLogDestination.class
-	$(JAVAC) -d ./ -cp ./ $<
-
-java-install-exec-hook:
-	$(mkinstalldirs) $(DESTDIR)$(moduledir)
-	cp modules/java/SyslogNg.jar $(DESTDIR)$(moduledir)/
-
-java-uninstall-exec-hook:
-	rm -rf $(DESTDIR)$(moduledir)/SyslogNg.jar
-
-java-clean-hook:
-	rm -rf org
-	rm -rf modules/java/SyslogNg.jar
-
-INSTALL_EXEC_HOOKS += java-install-exec-hook
-UNINSTALL_HOOKS += java-uninstall-exec-hook
-CLEAN_HOOKS += java-clean-hook
-
-else
-# when Java is disabled
-modules/java mod-java:
+$(JAVA_HEADER_FILES): java-headers
 
 endif
 
@@ -142,14 +100,12 @@ BUILT_SOURCES += \
     modules/java/native/java-grammar.h
 
 if ENABLE_JAVA
-
-CLEANFILES += $(JAVA_CLASS_FILES) \
-             $(JAVA_HEADER_FILES)
-
 BUILT_SOURCES += $(JAVA_HEADER_FILES)
+
+CLEANFILES = $(JAVA_HEADER_FILES)
 
 endif
 
-EXTRA_DIST += \
-    modules/java/native/java-grammar.ym \
+EXTRA_DIST = \
+    native/java-grammar.ym \
     $(JAVA_FILES)

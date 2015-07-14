@@ -33,13 +33,21 @@ public abstract class LogDestination extends LogPipe {
 		return getOption(getHandle(), key);
 	}
 
+	public long getTemplateOptionsHandle() {
+		return getTemplateOptionsHandle(getHandle());
+	}
+
 	protected abstract boolean open();
 
 	protected abstract void close();
 
 	protected abstract boolean isOpened();
 
+	protected abstract String getNameByUniqOptions();
+
 	private native String getOption(long ptr, String key);
+
+	private native long getTemplateOptionsHandle(long ptr);
 
 	protected void onMessageQueueEmpty() {
 		return;
@@ -82,4 +90,15 @@ public abstract class LogDestination extends LogPipe {
 			sendExceptionMessage(e);
 		}
 	}
+
+	public String getNameByUniqOptionsProxy() {
+		try {
+			return getNameByUniqOptions();
+		}
+		catch (Exception e) {
+			sendExceptionMessage(e);
+			return null;
+		}
+	}
+
 }

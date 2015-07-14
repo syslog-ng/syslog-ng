@@ -20,32 +20,56 @@
  * COPYING for details.
  *
  */
-
 package org.syslog_ng;
 
-public class LogTemplate {
-  private long handle;
-  private long configHandle;
+public class DummyStructuredDestination extends StructuredLogDestination {
 
-  public LogTemplate(long configHandle) {
-    this.configHandle = configHandle;
-    handle = create_new_template_instance(configHandle);
+  private String name;
+
+  public DummyStructuredDestination(long arg0) {
+    super(arg0);
   }
 
-  public boolean compile(String template) {
-    return compile(handle, template);
+  public void deinit() {
+    System.out.println("Deinit");
   }
 
-  public String format(LogMessage msg) {
-    return format(handle, msg.getHandle());
+  public void onMessageQueueEmpty() {
+    System.out.println("onMessageQueueEmpty");
+    return;
   }
 
-  public void release() {
-    unref(handle);
+  public boolean init() {
+    name = getOption("name");
+    if (name == null) {
+      System.err.println("Name is a required option for this destination");
+      return false;
+    }
+    System.out.println("Init " + name);
+    return true;
   }
 
-  private native long create_new_template_instance(long configHandle);
-  private native boolean compile(long handle, String template);
-  private native String format(long handle, long msg_handle);
-  private native void unref(long handle);
+  public boolean open() {
+    return true;
+  }
+
+  public boolean isOpened() {
+    return true;
+  }
+
+  public void close() {
+    System.out.println("close");
+  }
+
+  public boolean send(LogMessage arg0) {
+    arg0.release();
+    return true;
+  }
+
+  @Override
+  public String getNameByUniqOptions() {
+    InternalMessageSender.debug("getNameByUniqOptions");
+    return "DummyStructuredDestination";
+  }
+
 }

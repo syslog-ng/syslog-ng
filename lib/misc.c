@@ -319,3 +319,26 @@ utf8_escape_string(const gchar *str, gssize len)
 
   return res;
 }
+
+gchar *
+replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place)
+{
+  gchar *convert;
+  gchar *p;
+  if (in_place)
+    {
+      convert = buffer;
+    }
+  else
+    {
+      convert = g_strdup(buffer);
+    }
+  p = convert;
+  while (*p)
+    {
+      if (*p == from)
+        *p = to;
+      p++;
+    }
+  return convert;
+}

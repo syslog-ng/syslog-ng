@@ -1,5 +1,36 @@
 AU_ALIAS([AC_CHECK_JAVA_VERSION], [AX_CHECK_JAVA_VERSION])
+AU_ALIAS([AC_CHECK_GRADLE_VERSION], [AX_CHECK_GRADLE_VERSION])
 
+AC_DEFUN([AX_CHECK_GRADLE_VERSION],
+[AC_MSG_CHECKING([for GRADLE_VERSION])
+  EXPECTED_GRADLE_VERSION=[$1]
+  GRADLE_BIN=`which gradle`
+  if test "x$GRADLE_BIN" != "x"; then
+    GRADLE_BIN=`readlink -f $GRADLE_BIN`
+    GRADLE_VERSION=`gradle -version 2>&1 | grep Gradle |sed "s/.*\ \(.*\)/\1/"`
+    SHORT_VERSION=${GRADLE_VERSION%.*}
+    MAJOR_VERSION=${SHORT_VERSION%.*}
+    MINOR_VERSION=${SHORT_VERSION##*.}                                                                                                                                           
+    EXPECTED_MAJOR_VERSION=${EXPECTED_GRADLE_VERSION%.*}
+    EXPECTED_MINOR_VERSION=${EXPECTED_GRADLE_VERSION##*.}                                                                                                                        
+    if test "$MAJOR_VERSION" -lt "$EXPECTED_MAJOR_VERSION";
+    then
+      AC_MSG_ERROR([Too old gradle version required: $GRADLE_VERSION found: $SHORT_VERSION])
+    elif test "$MAJOR_VERSION" -eq "$EXPECTED_MAJOR_VERSION";
+    then
+      if test "$MINOR_VERSION" -lt "$EXPECTED_MINOR_VERSION";
+      then
+        AC_MSG_ERROR([Too old gradle version required: $GRADLE_VERSION found: $SHORT_VERSION])
+      fi
+    fi
+    AC_SUBST(GRADLE, "$GRADLE_BIN")
+    $2
+    AC_MSG_RESULT([$SHORT_VERSION])
+  else
+    $3
+    AC_MSG_RESULT([no])
+  fi
+])
 AC_DEFUN([AX_CHECK_JAVA_VERSION],
 [AC_MSG_CHECKING([for JAVA_VERSION])
   JAVA_VERSION=[$1]

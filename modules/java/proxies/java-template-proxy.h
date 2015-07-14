@@ -25,7 +25,7 @@
 #ifndef JAVA_TEMPLATE_PROXY_H_
 #define JAVA_TEMPLATE_PROXY_H_
 
-#include "LogTemplate.h"
+#include "org_syslog_ng_LogTemplate.h"
 #include "template/templates.h"
 
 

@@ -22,7 +22,7 @@
  */
 
 #include "messages.h"
-#include "InternalMessageSender.h"
+#include "org_syslog_ng_InternalMessageSender.h"
 
 JNIEXPORT void JNICALL
 Java_org_syslog_1ng_InternalMessageSender_createInternalMessage(JNIEnv *env, jclass cls, jint pri, jstring message)
@@ -31,6 +31,7 @@ Java_org_syslog_1ng_InternalMessageSender_createInternalMessage(JNIEnv *env, jcl
     {
       const char *c_str = (*env)->GetStringUTFChars(env, message, 0);
       msg_event_suppress_recursions_and_send(msg_event_create(pri, c_str, NULL));
+
       (*env)->ReleaseStringUTFChars(env, message, c_str);
     }
 }
