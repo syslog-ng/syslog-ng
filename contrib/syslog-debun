@@ -180,7 +180,7 @@ debun_finish_debug () {
 		[ -d /proc/${debugpid} ] && sleep 1
 		[ -d /proc/${debugpid} ] && kill -9 $debugpid
 		[ -d /proc/${debugpid} ] && sleep 1
-		[ -d /proc/${debugpid} ] && echo "I gave up... debugger shit doesn't die"
+		[ -d /proc/${debugpid} ] && echo "I gave up... debugger pid doesn't die"
 		/etc/init.d/syslog-ng start
 	fi
 	if [ -d /proc/${debugtailpid} ]; then
