@@ -301,7 +301,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
           g_string_free(value_res, TRUE);
           g_string_free(bucket_res, TRUE);
           g_string_free(key_res, TRUE);
-          //riack_req_dt_update_free (dtupdatereq);
+          riack_req_dt_update_free (dtupdatereq);
           return WORKER_INSERT_RESULT_SUCCESS;
         }
     else 
@@ -314,7 +314,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   g_string_free(value_res, TRUE);
   g_string_free(bucket_res, TRUE);
   g_string_free(key_res, TRUE);
-  //riack_req_dt_update_free (dtupdatereq);
+  riack_req_dt_update_free (dtupdatereq);
   return WORKER_INSERT_RESULT_ERROR;
   
    
