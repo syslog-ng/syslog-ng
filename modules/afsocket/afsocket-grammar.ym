@@ -146,6 +146,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TCP_KEEPALIVE_PROBES
 %token KW_TCP_KEEPALIVE_INTVL
 %token KW_SPOOF_SOURCE
+%token KW_PASS_UNIX_CREDENTIALS
 
 %token KW_KEEP_ALIVE
 %token KW_MAX_CONNECTIONS
@@ -263,6 +264,11 @@ source_afunix_option
 	| source_reader_option			{}
 	| socket_option				{}
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
+	| KW_PASS_UNIX_CREDENTIALS '(' yesno ')'
+	  {
+	    AFUnixSourceDriver *self = (AFUnixSourceDriver*) last_driver;
+	    afunix_sd_set_pass_unix_credentials(self, $3);
+	  }
 	;
 
 source_afinet
