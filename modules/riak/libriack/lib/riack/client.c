@@ -16,7 +16,8 @@
  * License along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "riack/platform.h"
+#include "config.h"
+
 #include <riack/client.h>
 #include <stdio.h>
 #include <stdlib.h>

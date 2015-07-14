@@ -1030,35 +1030,6 @@ if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
        enable_redis=$hiredis
 fi
 
-
-dnl ***************************************************************************
-dnl libriack headers/libraries
-dnl ***************************************************************************
-if test "x$with_libriack" = "xauto"; then
-  with_libriack="system"
- 
-fi
-
-if test "x$with_libriack" = "xinternal" || test "x$with_libriack" = "xauto-internal"; then
-        with_libriack="internal"
-	if test -f "$srcdir/modules/riak/libriack/lib/riack/client.c"; then
-		AC_CONFIG_SUBDIRS([modules/riak/libriack])
-
-		# these can only be used in modules/ as it assumes
-		# the current directory just one below lib
-
-		
-	fi
-fi
-
-if test "x$with_libriack" = "xno"; then
-   if test "x$enable_libriack" = "xyes"; then
-      AC_MSG_ERROR([Could not find libriack, and Riak support was explicitly enabled.])
-   fi
-   enable_libriack="no"
-fi
-
-
 dnl ***************************************************************************
 dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
@@ -1311,6 +1282,32 @@ if test "x$enable_systemd" = "xyes"; then
 fi
 
 PKG_CHECK_MODULES(UUID, uuid, enable_libuuid="yes", enable_libuuid="no")
+
+dnl ***************************************************************************
+dnl Check support check
+dnl ***************************************************************************
+
+HAVE_CHECK=yes
+PKG_CHECK_MODULES(CHECK, check,,[HAVE_CHECK="no"])
+AM_CONDITIONAL([HAVE_CHECK], [test x$HAVE_CHECK != xno])
+
+dnl ***************************************************************************
+dnl Check for protobuf-c
+dnl ***************************************************************************
+PKG_CHECK_MODULES(PROTOBUF_C, libprotobuf-c,,
+ [dnl No libprotobuf-c found with pkg-config.
+  dnl Fall back to manually trying to find it.
+  ac_save_LIBS=$LIBS
+  ac_save_CFLAGS=$CFLAGS
+
+  LIBS="$PROTOBUF_C_LIBS $LIBS"
+  CFLAGS="$PROTOBUF_C_CFLAGS $CFLAGS"
+  AC_CHECK_LIB(protobuf-c, protobuf_c_message_pack,
+    [PROTOBUF_C_LIBS="${PROTOBUF_C_LIBS:--lprotobuf-c}"],
+    [AC_MSG_ERROR([Can't link against protobuf-c lib, please set PROTOBUF_C_CFLAGS/PROTOBUF_C_LIBS before calling configure])])
+
+  LIBS=$ac_save_LIBS
+  CFLAGS=$ac_save_CFLAGS])
 
 dnl ***************************************************************************
 dnl default modules to be loaded
