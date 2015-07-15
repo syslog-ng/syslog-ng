@@ -52,7 +52,10 @@ control_register_command(const gchar *command_name, const gchar *description, Co
 static GString *
 control_connection_send_stats(GString *command)
 {
-  gchar *stats = stats_generate_csv();
+  gchar *stats;
+  if (strcmp(command->str, "CSV_STATS") == 0) stats = stats_generate_csv();
+  if (strcmp(command->str, "JSON_STATS") == 0) stats = stats_generate_json();
+
   GString *result = g_string_new(stats);
   g_free(stats);
   return result;
@@ -129,7 +132,8 @@ control_connection_reload(GString *command)
 }
 
 ControlCommand default_commands[] = {
-  { "STATS", NULL, control_connection_send_stats },
+  { "CSV_STATS", NULL, control_connection_send_stats },
+  { "JSON_STATS", NULL, control_connection_send_stats },
   { "RESET_STATS", NULL, control_connection_reset_stats },
   { "LOG", NULL, control_connection_message_log },
   { "STOP", NULL, control_connection_stop_process },
