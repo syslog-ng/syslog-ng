@@ -43,6 +43,10 @@ dmesg=dmesg
 tcpdump="tcpdump -p -s 1500 -w"
 getsyslogpids="pidof syslog-ng"
 trace="strace -f"
+service_stop="/etc/init.d/syslog-ng stop"
+service_start="/etc/init.d/syslog-ng start"
+service_status="/etc/init.d/syslog-ng status"
+checkpid () { [ -d /proc/"$1" ]; }
 
 ###
 ### Show Usage
@@ -140,10 +144,10 @@ while getopts "hldD:pP:w:i:W:R:t:s" opt ; do
 	esac
 done
 # Parameter consistency checks
-[ -n "$pcap_iface" -a -z "$pcap_params" ] && debun_usage 2 "Pcap interface without packet caputre params (-p|-P args)"
-[ -n "$waitforit" -a -z "$debug_params" ] && debun_usage 2 "Waiting without debug mode run (-d|-D args)"
-[ -n "$timeout" -a -z "$debug_mode" ] && debun_usage 2 "Timeout without debug mode or packet capture"
-[ -n "$privacy_mode" -a "x$debug_params" = "x$default_debug_params" ] && debug_params="$default_ldebug_params"
+[ -n "$pcap_iface" ] && [ -z "$pcap_params" ] && debun_usage 2 "Pcap interface without packet caputre params (-p|-P args)"
+[ -n "$waitforit" ] && [ -z "$debug_params" ] && debun_usage 2 "Waiting without debug mode run (-d|-D args)"
+[ -n "$timeout" ] && [ -z "$debug_mode" ] && debun_usage 2 "Timeout without debug mode or packet capture"
+[ -n "$privacy_mode" ] && [ "x$debug_params" = "x$default_debug_params" ] && debug_params="$default_ldebug_params"
 #if [ -n "$pcap_params" ]; then
 #	hash tcpdump || debun_usage 2 "Packet capture requested, but no tcpdump in your PATH"
 #fi
@@ -175,27 +179,29 @@ debun_init () {
 }
 
 debun_finish_debug () {
-	if [ -d /proc/${debugpid} ]; then
+	if checkpid ${debugpid} ; then
 		kill -INT $debugpid
-		[ -d /proc/${debugpid} ] && sleep 1
-		[ -d /proc/${debugpid} ] && kill -9 $debugpid
-		[ -d /proc/${debugpid} ] && sleep 1
-		[ -d /proc/${debugpid} ] && echo "I gave up... debugger pid doesn't die"
-		/etc/init.d/syslog-ng start
+		checkpid ${debugpid} && sleep 1
+		checkpid ${debugpid} && kill -9 $debugpid
+		checkpid ${debugpid} && sleep 1
+		checkpid ${debugpid} && echo "I gave up... debugger pid doesn't die"
 	fi
-	if [ -d /proc/${debugtailpid} ]; then
+	if [ -n "${debugpid}" ]; then
+		$service_start
+	fi
+	if checkpid ${debugtailpid} ; then
 		kill $debugtailpid
 	fi
-	if [ -d /proc/${pcappid} ]; then
+	if checkpid ${pcappid} ; then
 		kill -INT $pcappid
 	fi
-	if [ -n "$tracing" -a -z "$debug_params" ]; then
+	if [ -n "$tracing" ]; then
 		for i in ${tracepids[*]} ; do
-			kill -INT $i
+			checkpid $i && kill -INT $i
 		done
 		sleep 2
 		for i in ${tracepids[*]} ; do
-			[ -d /proc/${i} ] && kill -9 $i 2>/dev/null
+			checkpid $1 && kill -9 $i 2>/dev/null
 		done
 	fi
 	wait
@@ -213,6 +219,7 @@ debun_do_tarball () {
 
 debun_final() {
 	debun_finish_debug
+	$service_status >${tmpdir}/svc.post
 	echo -e "\nDebug Bundle generation: Done."
 	exec >&3 2>&1
 	debun_do_tarball
@@ -341,6 +348,7 @@ acquire_syslog_pids () {
 		sngallpids=( $( $getsyslogpids ) )
 	fi
 	ps -l -f -p "${sngallpids[*]}" >>${tmpdir}/syslog.pids
+	$service_status >${tmpdir}/svc.pre
 }
 
 acquire_syslog_info () {
@@ -527,6 +535,11 @@ debun_solaris () {
 		pkginfo -l $1
 		echo ""
 	}
+	if hash svcadm ; then
+		service_stop="svcadm disable syslog-ng"
+		service_start="svcadm enable syslog-ng"
+		service_status="svcs syslog-ng"
+	fi
 }
 
 debun_hpux () {
@@ -583,7 +596,7 @@ if [ -n "$pcap_params" ]; then
 	$tcpdump ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} $pcap_params &
 	pcappid=$!
 fi
-if [ -n "$tracing" -a -z "$debug_params" ]; then
+if [ -n "$tracing" ] && [ -z "$debug_params" ]; then
 	for i in ${sngallpids[*]}; do
 		$trace -o ${tmpdir}/trace.${i}.txt -p $i &
 		tracepids=( ${tracepids[*]} $! )
@@ -601,11 +614,16 @@ if [ -n "$waitforit" ]; then
 	touch ${tmpdir}/syslog.debug
 fi
 if [ -n "$debug_params" ]; then
-	/etc/init.d/syslog-ng stop
+	$service_stop
+	# We should implement a better waiting for the system service's shutdown, sleep 1 works for now
+	sleep 1
 	echo "Start syslog-ng debug with params: $debug_params"
 	if [ -n "$tracing" ]; then
-		$trace -o ${tmpdir}/trace.${i}.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
-		debugpid=$!
+		$trace -o ${tmpdir}/trace.dbg.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
+		i=$!
+		tracepids=( $i )
+		debugpid="$(getchilds $i)"
+		echo "Trace: $i Debug: $debugpid"
 	else
 		$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
 		debugpid=$!
