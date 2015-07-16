@@ -70,9 +70,10 @@ riack_setop_set (riack_setop_t *setop, ...)
             //free(setop->adds[idx].data);
         
         if(idx == 0)
-           setop->adds = malloc(sizeof(char *));
+          setop->adds = malloc(sizeof(ProtobufCBinaryData));
         else
-          setop->adds = realloc(setop->adds, sizeof(char *) * (idx+1));
+          setop->adds = realloc(setop->adds, sizeof(ProtobufCBinaryData) *
+          (idx+1));
 
         setop->n_adds = idx  + 1;
         adds = (char *)va_arg(args, char *);
