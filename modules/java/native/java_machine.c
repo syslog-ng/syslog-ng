@@ -53,7 +53,7 @@ java_machine_ref()
       g_atomic_counter_set(&g_jvm_s->ref_cnt, 1);
 
       g_jvm_s->class_path = g_string_new(module_path);
-      g_string_append(g_jvm_s->class_path, "/SyslogNg.jar");
+      g_string_append(g_jvm_s->class_path, "/syslog-ng-core.jar");
     }
   return g_jvm_s;
 }

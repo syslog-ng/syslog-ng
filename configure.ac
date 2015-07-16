@@ -34,6 +34,7 @@ LRC_MIN_VERSION="1.6.0"
 JOURNALD_MIN_VERSION="195"
 LIBSYSTEMD_MIN_VERSION="209"
 JAVA_MIN_VERSION="1.7"
+GRADLE_MIN_VERSION="2.2"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -1100,8 +1101,10 @@ dnl ***************************************************************************
 if test "x$enable_java" = "xauto" || test "x$enable_java" = "xyes"; then
     if test "x$enable_java" = "xauto"; then
       AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [enable_java=no])
+      AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java=yes], [enable_java=no])
     else
       AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [AC_MSG_ERROR([Java not found])])
+      AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java=yes], [AC_MSG_ERROR([Java not found])])
     fi
 fi
 

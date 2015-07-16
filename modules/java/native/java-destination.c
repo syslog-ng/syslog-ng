@@ -26,25 +26,9 @@
 #include "stats/stats.h"
 #include "logqueue.h"
 #include "driver.h"
+#include "misc.h"
 
 #include <stdio.h>
-
-gchar *
-__normalize_key(const gchar *buffer)
-{
-  const gchar from = '-';
-  const gchar to = '_';
-  gchar *p;
-  gchar *normalized_key = g_strdup(buffer);
-  p = normalized_key;
-  while (*p)
-    {
-      if (*p == from)
-        *p = to;
-      p++;
-    }
-  return normalized_key;
-}
 
 JNIEXPORT jstring JNICALL
 Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, jstring key)
@@ -56,8 +40,8 @@ Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, 
     {
       return NULL;
     }
-
-  gchar *normalized_key = __normalize_key(key_str);
+  gchar *normalized_key = g_strdup(key_str);
+  normalized_key = replace_char(normalized_key, '-', '_', TRUE);
   value = g_hash_table_lookup(self->options, normalized_key);
   (*env)->ReleaseStringUTFChars(env, key, key_str);  // release resources
   g_free(normalized_key);
@@ -73,6 +57,13 @@ Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, 
 }
 
 JNIEXPORT jlong JNICALL
+Java_org_syslog_1ng_LogDestination_getTemplateOptionsHandle(JNIEnv *env, jobject obj, jlong handle)
+{
+  JavaDestDriver *self = (JavaDestDriver *)handle;
+  return (jlong)(&self->template_options);
+}
+
+JNIEXPORT jlong JNICALL
 Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong handle)
 {
   JavaDestDriver *self = (JavaDestDriver *)handle;
@@ -82,8 +73,9 @@ Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong hand
 void java_dd_set_option(LogDriver *s, const gchar *key, const gchar *value)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
-  gchar *normalized_key = __normalize_key(key);
-  g_hash_table_insert(self->options, normalized_key, g_strdup(value));
+  gchar *normalized_key = g_strdup(key);
+  normalized_key = replace_char(normalized_key, '-', '_', TRUE);
+  g_hash_table_insert(self->options, g_strdup(normalized_key), g_strdup(value));
 }
 
 
@@ -114,10 +106,13 @@ gboolean
 java_dd_init(LogPipe *s)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
   GError *error = NULL;
 
   if (!log_dest_driver_init_method(s))
     return FALSE;
+
+  log_template_options_init(&self->template_options, cfg);
 
   if (!log_template_compile(self->template, self->template_string, &error))
     {
@@ -154,8 +149,9 @@ java_dd_send_to_object(JavaDestDriver *self, LogMessage *msg)
 }
 
 gboolean
-java_dd_open(JavaDestDriver *self)
+java_dd_open(LogThrDestDriver *s)
 {
+  JavaDestDriver *self = (JavaDestDriver *)s;
   if (!java_destination_proxy_is_opened(self->proxy))
     {
       return java_destination_proxy_open(self->proxy);
@@ -164,8 +160,9 @@ java_dd_open(JavaDestDriver *self)
 }
 
 void
-java_dd_close(JavaDestDriver *self)
+java_dd_close(LogThrDestDriver *s)
 {
+  JavaDestDriver *self = (JavaDestDriver *)s;
   if (java_destination_proxy_is_opened(self->proxy))
     {
       java_destination_proxy_close(self->proxy);
@@ -176,10 +173,12 @@ static worker_insert_result_t
 java_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
-  if (!java_dd_open(self))
+
+  if (!java_dd_open(s))
     {
       return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
+
   gboolean sent = java_dd_send_to_object(self, msg);
   return sent ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
 }
@@ -194,8 +193,7 @@ java_worker_message_queue_empty(LogThrDestDriver *d)
 static void
 java_worker_thread_deinit(LogThrDestDriver *d)
 {
-  JavaDestDriver *self = (JavaDestDriver *)d;
-  java_dd_close(self);
+  java_dd_close(d);
   java_machine_detach_thread();
 }
 
@@ -205,9 +203,8 @@ java_dd_format_stats_instance(LogThrDestDriver *d)
   JavaDestDriver *self = (JavaDestDriver *)d;
   static gchar persist_name[1024];
 
-
   g_snprintf(persist_name, sizeof(persist_name),
-               "java,%s", self->class_name);
+            "java_dst(%s)", java_destination_proxy_get_name_by_uniq_options(self->proxy));
   return persist_name;
 }
 
@@ -221,6 +218,8 @@ java_dd_free(LogPipe *s)
 
   g_free(self->class_name);
   g_hash_table_unref(self->options);
+
+  log_template_options_destroy(&self->template_options);
   g_string_free(self->class_path, TRUE);
 }
 
@@ -230,6 +229,14 @@ __retry_over_message(LogThrDestDriver *s, LogMessage *msg)
   msg_error("Multiple failures while inserting this record to the java destination, message dropped",
             evt_tag_int("number_of_retries", s->retries.max),
             NULL);
+}
+
+LogTemplateOptions *
+java_dd_get_template_options(LogDriver *s)
+{
+  JavaDestDriver *self = (JavaDestDriver *) s;
+
+  return &self->template_options;
 }
 
 LogDriver *
@@ -258,6 +265,8 @@ java_dd_new(GlobalConfig *cfg)
 
   self->formatted_message = g_string_sized_new(1024);
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+
+  log_template_options_defaults(&self->template_options);
 
   return (LogDriver *)self;
 }

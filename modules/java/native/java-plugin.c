@@ -32,6 +32,7 @@
 #include "driver.h"
 #include "plugin-types.h"
 
+
 extern CfgParser java_parser;
 
 static Plugin java_plugins[] =
