@@ -31,6 +31,7 @@ endif
 
 EXTRA_DIST += \
         modules/java-modules/common/build.gradle  \
+	modules/java-modules/hdfs/build.gradle    \
         modules/java-modules/dummy/build.gradle   \
         modules/java-modules/settings.gradle \
         modules/java-modules/common/src/main/java/org/syslog_ng/logging/SyslogNgInternalLogger.java \
@@ -55,5 +56,6 @@ EXTRA_DIST += \
         modules/java-modules/common/src/test/java/org/syslog_ng/options/test/TestOption.java \
         modules/java-modules/common/src/test/java/org/syslog_ng/options/test/TestIntegerOptionDecorator.java \
         modules/java-modules/common/src/test/java/org/syslog_ng/logging/test/MockLogDestination.java \
+        modules/java-modules/hdfs/src/main/java/org/syslog_ng/hdfs/HdfsDestination.java \
         modules/java-modules/dummy/src/main/java/org/syslog_ng/DummyTextDestination.java 
 
