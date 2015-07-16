@@ -1,0 +1,21 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+project.buildDir = syslogBuildDir + '/kafka/gradle'
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs syslogDepsDir
+        dirs syslogBuildDir + '/common/gradle/libs'
+    }
+}
+
+dependencies {
+  compile 'org.apache.kafka:kafka_2.10:0.8.2.1'
+  compile name: 'syslog-ng-common'
+  compile name: 'syslog-ng-core'
+  testCompile 'junit:junit:4.12'
+  testCompile 'org.hamcrest:hamcrest-core:1.3'
+  compile 'log4j:log4j:1.2.17'
+}

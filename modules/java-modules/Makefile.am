@@ -31,9 +31,13 @@ endif
 
 EXTRA_DIST += \
         modules/java-modules/common/build.gradle  \
+        modules/java-modules/kafka/build.gradle \
 	modules/java-modules/hdfs/build.gradle    \
         modules/java-modules/dummy/build.gradle   \
         modules/java-modules/settings.gradle \
+        modules/java-modules/kafka/src/main/java/org/syslog_ng/KafkaDestination.java \
+        modules/java-modules/kafka/src/main/java/org/syslog_ng/KafkaDestinationOptions.java \
+        modules/java-modules/kafka/src/main/java/org/syslog_ng/KafkaDestinationProperties.java \
         modules/java-modules/common/src/main/java/org/syslog_ng/logging/SyslogNgInternalLogger.java \
         modules/java-modules/common/src/main/java/org/syslog_ng/options/InvalidOptionException.java \
         modules/java-modules/common/src/main/java/org/syslog_ng/options/RequiredOptionDecorator.java \
