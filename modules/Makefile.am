@@ -26,6 +26,7 @@ include modules/riemann/Makefile.am
 include modules/systemd-journal/Makefile.am
 include modules/python/Makefile.am
 include modules/java/Makefile.am
+include modules/java-modules/Makefile.am
 
 SYSLOG_NG_MODULES	=	\
 	mod-afsocket mod-afstreams mod-affile mod-afprog \
@@ -33,7 +34,8 @@ SYSLOG_NG_MODULES	=	\
 	mod-syslogformat mod-linux-kmsg mod-pacctformat \
 	mod-confgen mod-system-source mod-csvparser mod-dbparser \
 	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
-	mod-redis mod-pseudofile mod-graphite mod-riemann mod-python mod-java
+	mod-redis mod-pseudofile mod-graphite mod-riemann \
+	mod-python mod-java mod-java-modules
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
