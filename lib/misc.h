@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef MISC_H_INCLUDED
 #define MISC_H_INCLUDED
 
@@ -53,7 +53,7 @@ init_sequence_number(gint32 *seqnum)
   *seqnum = 1;
 }
 
-static inline void 
+static inline void
 step_sequence_number(gint32 *seqnum)
 {
   (*seqnum)++;
