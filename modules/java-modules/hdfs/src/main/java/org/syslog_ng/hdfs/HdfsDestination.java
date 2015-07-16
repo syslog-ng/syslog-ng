@@ -49,8 +49,8 @@ public class HdfsDestination extends TextLogDestination {
     public boolean init() {
         try {
           options.init();
-          logger.debug("Initialize hdfs destination");
         } catch(InvalidOptionException e) {
+          logger.error(e.getMessage());
           return false;
         }
         return true;
