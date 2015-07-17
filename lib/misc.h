@@ -83,7 +83,7 @@ void string_list_free(GList *l);
     dest = __buf; \
   } while (0)
 
-gchar *utf8_escape_string(const gchar *str, gssize len);
 gchar *__normalize_key(const gchar* buffer);
+gchar *replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place);
 
 #endif
