@@ -28,6 +28,7 @@
 #include "misc.h"
 #include "cfg.h"
 #include "str-format.h"
+#include "utf8utils.h"
 
 #include <regex.h>
 #include <ctype.h>
@@ -943,9 +944,33 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
       self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
     }
 
-  log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
-  if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
-    self->flags |= LF_UTF8;
+  if (parse_options->flags & LP_SANITIZE_UTF8 && !g_utf8_validate((gchar *) src, left, NULL))
+    {
+      GString sanitized_message;
+      gchar buf[left * 6 + 1];
+
+      /* avoid GString allocation */
+      sanitized_message.str = buf;
+      sanitized_message.len = 0;
+      sanitized_message.allocated_len = sizeof(buf);
+
+      append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) src, NULL);
+
+      /* MUST NEVER BE REALLOCATED */
+      g_assert(sanitized_message.str == buf);
+      log_msg_set_value(self, LM_V_MESSAGE, sanitized_message.str, sanitized_message.len);
+      self->flags |= LF_UTF8;
+    }
+  else
+    {
+      log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
+
+      /* we don't need revalidation if sanitize already said it was valid utf8 */
+      if ((parse_options->flags & LP_VALIDATE_UTF8) &&
+          ((parse_options->flags & LP_SANITIZE_UTF8) == 0) &&
+          g_utf8_validate((gchar *) src, left, NULL))
+        self->flags |= LF_UTF8;
+    }
 
   return TRUE;
 }
