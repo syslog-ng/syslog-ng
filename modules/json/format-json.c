@@ -30,6 +30,7 @@
 #include "value-pairs.h"
 #include "vptransform.h"
 #include "syslog-ng.h"
+#include "utf8utils.h"
 
 typedef struct _TFJsonState
 {
@@ -67,61 +68,7 @@ typedef struct
 static inline void
 g_string_append_escaped(GString *dest, const char *str)
 {
-  /* Assumes ASCII!  Keep in sync with the switch! */
-  static const unsigned char json_exceptions[UCHAR_MAX + 1] =
-    {
-      [0x01] = 1, [0x02] = 1, [0x03] = 1, [0x04] = 1, [0x05] = 1, [0x06] = 1,
-      [0x07] = 1, [0x08] = 1, [0x09] = 1, [0x0a] = 1, [0x0b] = 1, [0x0c] = 1,
-      [0x0d] = 1, [0x0e] = 1, [0x0f] = 1, [0x10] = 1, [0x11] = 1, [0x12] = 1,
-      [0x13] = 1, [0x14] = 1, [0x15] = 1, [0x16] = 1, [0x17] = 1, [0x18] = 1,
-      [0x19] = 1, [0x1a] = 1, [0x1b] = 1, [0x1c] = 1, [0x1d] = 1, [0x1e] = 1,
-      [0x1f] = 1, ['\\'] = 1, ['"'] = 1
-    };
-
-  const unsigned char *p;
-
-  p = (unsigned char *)str;
-
-  while (*p)
-    {
-      if (json_exceptions[*p] == 0)
-        g_string_append_c(dest, *p);
-      else
-        {
-          /* Keep in sync with json_exceptions! */
-          switch (*p)
-            {
-            case '\b':
-              g_string_append(dest, "\\b");
-              break;
-            case '\n':
-              g_string_append(dest, "\\n");
-              break;
-            case '\r':
-              g_string_append(dest, "\\r");
-              break;
-            case '\t':
-              g_string_append(dest, "\\t");
-              break;
-            case '\\':
-              g_string_append(dest, "\\\\");
-              break;
-            case '"':
-              g_string_append(dest, "\\\"");
-              break;
-            default:
-              {
-                static const char json_hex_chars[16] = "0123456789abcdef";
-
-                g_string_append(dest, "\\u00");
-                g_string_append_c(dest, json_hex_chars[(*p) >> 4]);
-                g_string_append_c(dest, json_hex_chars[(*p) & 0xf]);
-                break;
-              }
-            }
-        }
-      p++;
-    }
+  append_unsafe_utf8_as_escaped_text(dest, str, "\"");
 }
 
 static gboolean

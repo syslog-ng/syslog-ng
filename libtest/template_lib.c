@@ -62,6 +62,7 @@ create_sample_message(void)
   log_msg_set_value_by_name(msg, ".json.foo", "bar", -1);
   log_msg_set_value_by_name(msg, ".json.sub.value1", "subvalue1", -1);
   log_msg_set_value_by_name(msg, ".json.sub.value2", "subvalue2", -1);
+  log_msg_set_value_by_name(msg, "escaping", "binary stuff follows \"\xad árvíztűrőtükörfúrógép", -1);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
   log_msg_set_tag_by_name(msg, "alma");
