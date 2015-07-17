@@ -11,7 +11,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_lexer        \
 	lib/tests/test_str_format   \
 	lib/tests/test_runid        \
-	lib/tests/test_pathutils
+	lib/tests/test_pathutils	\
+	lib/tests/test_utf8utils
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
@@ -85,6 +86,11 @@ lib_tests_test_str_format_LDADD	=	\
 lib_tests_test_pathutils_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_pathutils_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_utf8utils_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_utf8utils_LDADD	=	\
 	$(TEST_LDADD)
 
 CLEANFILES				+= \
