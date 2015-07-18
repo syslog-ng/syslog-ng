@@ -1,5 +1,6 @@
 modules_welf_tests_TESTS		= \
-	modules/welf/tests/test_format_welf
+	modules/welf/tests/test_format_welf	\
+	modules/welf/tests/test_kv_scanner
 
 check_PROGRAMS				+= ${modules_welf_tests_TESTS}
 
@@ -9,3 +10,8 @@ modules_welf_tests_test_format_welf_LDFLAGS	= \
 	$(PREOPEN_SYSLOGFORMAT)		  \
 	-dlpreopen $(top_builddir)/modules/welf/libwelf.la
 modules_welf_tests_test_format_welf_DEPENDENCIES = $(top_builddir)/modules/welf/libwelf.la
+modules_welf_tests_test_kv_scanner_CFLAGS	= $(TEST_CFLAGS) -I$(top_srcdir)/modules/welf
+modules_welf_tests_test_kv_scanner_LDADD	= $(TEST_LDADD)
+modules_welf_tests_test_kv_scanner_LDFLAGS	= \
+	-dlpreopen $(top_builddir)/modules/welf/libwelf.la
+modules_welf_tests_test_kv_scanner_DEPENDENCIES = $(top_builddir)/modules/welf/libwelf.la

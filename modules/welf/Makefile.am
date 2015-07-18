@@ -3,6 +3,8 @@ module_LTLIBRARIES				+= modules/welf/libwelf.la
 modules_welf_libwelf_la_SOURCES=	\
 	modules/welf/format-welf.c		\
 	modules/welf/format-welf.h		\
+	modules/welf/kv-scanner.c		\
+	modules/welf/kv-scanner.h		\
 	modules/welf/welf-plugin.c
 
 modules_welf_libwelf_la_CPPFLAGS	=	\
