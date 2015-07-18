@@ -17,38 +17,32 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
 
-#include "plugin.h"
-#include "plugin-types.h"
-#include "format-welf.h"
+#include "kv-parser.h"
+#include "cfg-parser.h"
+#include "kv-parser-grammar.h"
 
-extern CfgParser kv_parser_parser;
+extern int kv_parser_debug;
 
-static Plugin welf_plugins[] =
+int kv_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
+
+static CfgLexerKeyword kv_parser_keywords[] =
 {
-  {
-    .type = LL_CONTEXT_PARSER,
-    .name = "kv-parser",
-    .parser = &kv_parser_parser,
-  },
-  TEMPLATE_FUNCTION_PLUGIN(tf_format_welf, "format-welf"),
+  { "kv_parser",          KW_KV_PARSER,  },
+  { "prefix",             KW_PREFIX,  },
+  { NULL }
 };
 
-gboolean
-welf_module_init(GlobalConfig *cfg, CfgArgs *args)
+CfgParser kv_parser_parser =
 {
-  plugin_register(cfg, welf_plugins, G_N_ELEMENTS(welf_plugins));
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "welf",
-  .version = VERSION,
-  .description = "The welf module provides WebTrends Enhanced Log Format support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
-  .plugins = welf_plugins,
-  .plugins_len = G_N_ELEMENTS(welf_plugins),
+#if ENABLE_DEBUG
+  .debug_flag = &kv_parser_debug,
+#endif
+  .name = "kv-parser",
+  .keywords = kv_parser_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) kv_parser_parse,
+  .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
+
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(kv_parser_, LogParser **)

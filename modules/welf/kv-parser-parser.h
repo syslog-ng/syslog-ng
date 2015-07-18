@@ -17,38 +17,17 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
 
-#include "plugin.h"
-#include "plugin-types.h"
-#include "format-welf.h"
+#ifndef KVPARSER_PARSER_H_INCLUDED
+#define KVPARSER_PARSER_H_INCLUDED
+
+#include "cfg-parser.h"
+#include "cfg-lexer.h"
+#include "parser/parser-expr.h"
 
 extern CfgParser kv_parser_parser;
 
-static Plugin welf_plugins[] =
-{
-  {
-    .type = LL_CONTEXT_PARSER,
-    .name = "kv-parser",
-    .parser = &kv_parser_parser,
-  },
-  TEMPLATE_FUNCTION_PLUGIN(tf_format_welf, "format-welf"),
-};
+CFG_PARSER_DECLARE_LEXER_BINDING(kv_parser_, LogParser **)
 
-gboolean
-welf_module_init(GlobalConfig *cfg, CfgArgs *args)
-{
-  plugin_register(cfg, welf_plugins, G_N_ELEMENTS(welf_plugins));
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "welf",
-  .version = VERSION,
-  .description = "The welf module provides WebTrends Enhanced Log Format support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
-  .plugins = welf_plugins,
-  .plugins_len = G_N_ELEMENTS(welf_plugins),
-};
+#endif
