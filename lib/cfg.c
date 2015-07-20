@@ -367,6 +367,7 @@ cfg_new(gint version)
   self->dns_cache_expire = 3600;
   self->dns_cache_expire_failed = 60;
   self->threaded = TRUE;
+  self->pass_unix_credentials = TRUE;
   
   log_template_options_defaults(&self->template_options);
   self->template_options.ts_format = TS_FMT_BSD;

@@ -116,9 +116,19 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
   self->filename = g_strdup(filename);
   file_perm_options_defaults(&self->file_perm_options);
   self->file_perm_options.file_perm = 0666;
+  self->pass_unix_credentials = cfg->pass_unix_credentials;
+  afunix_sd_set_pass_unix_credentials(self, self->pass_unix_credentials);
 
   afunix_sd_adjust_reader_options(self, cfg);
   return self;
+}
+
+void
+afunix_sd_set_pass_unix_credentials(AFUnixSourceDriver *self, gboolean pass)
+{
+  self->pass_unix_credentials = pass;
+
+  transport_mapper_unix_set_pass_unix_credentials(self->super.transport_mapper, pass);
 }
 
 AFUnixSourceDriver *

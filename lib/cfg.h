@@ -74,6 +74,7 @@ struct _GlobalConfig
   gint mark_mode;
   gint flush_timeout;
   gboolean threaded;
+  gboolean pass_unix_credentials;
   gboolean chain_hostnames;
   gboolean keep_hostname;
   gboolean check_hostname;

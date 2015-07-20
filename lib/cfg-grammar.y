@@ -245,6 +245,7 @@ extern struct _StatsOptions *last_stats_options;
 
 %token KW_THROTTLE                    10170
 %token KW_THREADED                    10171
+%token KW_PASS_UNIX_CREDENTIALS       10231
 
 /* log statement options */
 %token KW_FLAGS                       10190
@@ -916,6 +917,7 @@ options_item
 	| KW_TIME_SLEEP '(' LL_NUMBER ')'	{}
 	| KW_SUPPRESS '(' LL_NUMBER ')'		{ configuration->suppress = $3; }
 	| KW_THREADED '(' yesno ')'		{ configuration->threaded = $3; }
+	| KW_PASS_UNIX_CREDENTIALS '(' yesno ')' { configuration->pass_unix_credentials = $3; }
 	| KW_USE_RCPTID '(' yesno ')'		{ cfg_set_use_uniqid($3); }
 	| KW_USE_UNIQID '(' yesno ')'		{ cfg_set_use_uniqid($3); }
 	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ configuration->log_fifo_size = $3; }

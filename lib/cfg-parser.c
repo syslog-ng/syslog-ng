@@ -147,6 +147,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "dns_cache_size",     KW_DNS_CACHE_SIZE },
   { "dns_cache_expire",   KW_DNS_CACHE_EXPIRE },
   { "dns_cache_expire_failed", KW_DNS_CACHE_EXPIRE_FAILED },
+  { "pass_unix_credentials", KW_PASS_UNIX_CREDENTIALS },
 
   { "retries",            KW_RETRIES, 0x0303 },
 
