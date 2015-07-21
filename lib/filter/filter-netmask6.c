@@ -61,8 +61,8 @@ filter_netmask6_calc_network_address(unsigned char *ipv6, int prefix, struct in6
 {
   struct ipv6_parts
   {
-    uint64_t lo;
     uint64_t hi;
+    uint64_t lo;
   } ipv6_parts;
 
   int length;
@@ -70,12 +70,12 @@ filter_netmask6_calc_network_address(unsigned char *ipv6, int prefix, struct in6
   memcpy(&ipv6_parts, ipv6, sizeof(ipv6_parts));
   if (prefix <= 64)
     {
-      ipv6_parts.lo = _mask(ipv6_parts.lo, _calculate_mask_by_prefix(prefix));
+      ipv6_parts.hi = _mask(ipv6_parts.hi, _calculate_mask_by_prefix(prefix));
       length = sizeof(uint64_t);
     }
   else
     {
-      ipv6_parts.hi = _mask(ipv6_parts.hi, _calculate_mask_by_prefix(prefix - 64));
+      ipv6_parts.lo = _mask(ipv6_parts.lo, _calculate_mask_by_prefix(prefix - 64));
       length = 2 * sizeof(uint64_t);
     }
 
