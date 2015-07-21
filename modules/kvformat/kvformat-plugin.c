@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2015 BalaBit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,30 +19,36 @@
  * COPYING for details.
  *
  */
-#include "template_lib.h"
-#include "apphook.h"
+
 #include "plugin.h"
-#include "cfg.h"
+#include "plugin-types.h"
+#include "format-welf.h"
 
-void
-test_format_welf(void)
+extern CfgParser kv_parser_parser;
+
+static Plugin kvformat_plugins[] =
 {
-  assert_template_format("$(format-welf MSG=$MSG)", "MSG=árvíztűrőtükörfúrógép");
-  assert_template_format("$(format-welf MSG=$escaping)", "MSG=\"binary stuff follows \\\"\\xad árvíztűrőtükörfúrógép\"");
-  assert_template_format_with_context("$(format-welf MSG=$MSG)", "MSG=árvíztűrőtükörfúrógép MSG=árvíztűrőtükörfúrógép");
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "kv-parser",
+    .parser = &kv_parser_parser,
+  },
+  TEMPLATE_FUNCTION_PLUGIN(tf_format_welf, "format-welf"),
+};
+
+gboolean
+kvformat_module_init(GlobalConfig *cfg, CfgArgs *args)
+{
+  plugin_register(cfg, kvformat_plugins, G_N_ELEMENTS(kvformat_plugins));
+  return TRUE;
 }
 
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
+const ModuleInfo module_info =
 {
-  app_startup();
-  putenv("TZ=UTC");
-  tzset();
-  init_template_tests();
-  plugin_load_module("welf", configuration, NULL);
-
-  test_format_welf();
-
-  deinit_template_tests();
-  app_shutdown();
-}
+  .canonical_name = "kvformat",
+  .version = VERSION,
+  .description = "The kvformat module provides key-value format (such as WELF) support for syslog-ng.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = kvformat_plugins,
+  .plugins_len = G_N_ELEMENTS(kvformat_plugins),
+};
