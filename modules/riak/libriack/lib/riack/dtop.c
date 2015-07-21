@@ -50,17 +50,19 @@ riack_dt_op_set (riack_dt_op_t *dtop, ...)
   
   va_start(args, dtop);
   while ((flag = va_arg(args, int)) != 0)
-  {
-    
-    switch (flag) {
-      case(-1) :
-        break;
-    case (RIACK_DT_OP_FIELD_SETOP):
-      setop = (riack_setop_t*)va_arg(args, riack_setop_t *);
-      dtop->set_op =setop;
-      break; 
+    {
+      switch (flag)
+        {
+          case(-1):
+            break;
+            
+          case (RIACK_DT_OP_FIELD_SETOP):
+            setop = (riack_setop_t*)va_arg(args, riack_setop_t *);
+            dtop->set_op =setop;
+            break; 
+        }
     }
-  }
+  
   if(flag == RIACK_DT_OP_FIELD_NONE)
     return 0;
   

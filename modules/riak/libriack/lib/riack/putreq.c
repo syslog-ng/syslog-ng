@@ -33,7 +33,6 @@ riack_req_put_new (void)
   riack_put_req_t *putreq = (riack_put_req_t*)malloc(sizeof(riack_put_req_t));
   rpb_put_req__init(putreq);
   
-  
   return putreq;
 }
 
@@ -42,8 +41,6 @@ riack_req_put_free (riack_put_req_t *putreq)
 {
   
   rpb_put_req__free_unpacked(putreq,NULL);
-  
-  
 }
 
 int
@@ -55,7 +52,6 @@ riack_req_put_set (riack_put_req_t *putreq, riack_req_put_field_t bflag, ...)
   int flag; 
   char *bucket;
   char *bucket_type;
-  
   char *key;
   riack_content_t *content;
   
@@ -63,39 +59,40 @@ riack_req_put_set (riack_put_req_t *putreq, riack_req_put_field_t bflag, ...)
   bucket = (char *)va_arg(args, char *);
   if (bucket == NULL)
     return -EINVAL;
-  else {
-    if (putreq->bucket.data)
-      free(putreq->bucket.data);
-    putreq->bucket.data = (unsigned char *)strdup(bucket);
-    putreq->bucket.len = strlen(bucket);
+  else
+    {
+      if (putreq->bucket.data)
+        free(putreq->bucket.data);
+      putreq->bucket.data = (unsigned char *)strdup(bucket);
+      putreq->bucket.len = strlen(bucket);
     }
   while ((flag = va_arg(args, int)) != 0)
-  {
-    
-    switch (flag) {
-      case (RIACK_REQ_PUT_FIELD_BUCKET_TYPE):
-        bucket_type  = (char *)va_arg(args, char *);
-        if (putreq->type.data)
-          free(putreq->type.data);
-        putreq->type.data = (unsigned char *)strdup(bucket_type);
-        putreq->type.len = strlen(bucket_type);
-        
-        break;
-      case (RIACK_REQ_PUT_FIELD_KEY):
-        key = (char *)va_arg(args, char *);
-        if(putreq->key.data)
-          free(putreq->key.data);
-        putreq->key.data = (unsigned char *)strdup(key);
-        putreq->key.len = strlen(key);
-        break;
-      case (RIACK_REQ_PUT_FIELD_CONTENT):
-        content = (riack_content_t *)va_arg(args, riack_content_t *);
-        putreq->content = content;
-        
-        break;
-        
-     }
-  }
+    {
+      switch (flag)
+        {
+          case (RIACK_REQ_PUT_FIELD_BUCKET_TYPE):
+            bucket_type  = (char *)va_arg(args, char *);
+            if (putreq->type.data)
+              free(putreq->type.data);
+            putreq->type.data = (unsigned char *)strdup(bucket_type);
+            putreq->type.len = strlen(bucket_type);
+            break;
+            
+          case (RIACK_REQ_PUT_FIELD_KEY):
+            key = (char *)va_arg(args, char *);
+            if(putreq->key.data)
+              free(putreq->key.data);
+            putreq->key.data = (unsigned char *)strdup(key);
+            putreq->key.len = strlen(key);
+            break;
+            
+          case (RIACK_REQ_PUT_FIELD_CONTENT):
+            content = (riack_content_t *)va_arg(args, riack_content_t *);
+            putreq->content = content;
+            break;
+        }
+    }
+  
   if(flag == RIACK_REQ_PUT_FIELD_NONE)
     return 0;
      
@@ -115,4 +112,3 @@ riack_putreq_serialize(riack_put_req_t *putreq)
   rpb_put_req__pack(putreq, object->data);
   return object;
 }
-

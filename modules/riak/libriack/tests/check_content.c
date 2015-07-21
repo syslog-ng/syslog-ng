@@ -28,8 +28,7 @@ START_TEST (test_riack_content_set)
                         RIACK_CONTENT_FIELD_CONTENT_ENCODING, "none", -1,
                         RIACK_CONTENT_FIELD_CHARSET, "utf8", -1,
                         RIACK_CONTENT_FIELD_NONE),
-     0);
-
+                        0);
   
   ck_assert_str_eq (content->value.data, "some-value");
   ck_assert_str_eq (content->content_type.data, "text/plain");
@@ -43,7 +42,7 @@ START_TEST (test_riack_content_set)
                         RIACK_CONTENT_FIELD_CONTENT_ENCODING, "yes", -1,
                         RIACK_CONTENT_FIELD_CHARSET, "utf32", -1,
                         RIACK_CONTENT_FIELD_NONE),
-     0);
+                        0);
      
   ck_assert_str_eq (content->value.data, "diff-value");
   ck_assert_str_eq (content->content_type.data, "text/json");
@@ -54,7 +53,7 @@ START_TEST (test_riack_content_set)
     (riack_content_set (content,
                         RIACK_CONTENT_FIELD_VALUE, NULL, -1,
                         RIACK_CONTENT_FIELD_NONE),
-     0);
+                        0);
 
   ck_assert (content->value.data == NULL);
   ck_assert_int_eq (content->value.len, 0);
@@ -63,12 +62,10 @@ START_TEST (test_riack_content_set)
     (riack_content_set (content,
                         RIACK_CONTENT_FIELD_VALUE, "hello world!", 3,
                         RIACK_CONTENT_FIELD_NONE),
-     0);
+                        0);
+                        
   ck_assert_str_eq (content->value.data, "hel");
-
   riack_content_free (content);
-  
-  
 }
 END_TEST
 

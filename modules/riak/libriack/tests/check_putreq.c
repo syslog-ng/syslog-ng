@@ -24,23 +24,22 @@ START_TEST (test_riack_putreq_set)
      EINVAL);
 
   ck_assert_errno
-    (riack_content_set (content,
+    (riack_content_set(content,
                         RIACK_CONTENT_FIELD_VALUE, "some-value", -1,
                         RIACK_CONTENT_FIELD_CONTENT_TYPE, "text/plain", -1,
                         RIACK_CONTENT_FIELD_CONTENT_ENCODING, "none", -1,
                         RIACK_CONTENT_FIELD_CHARSET, "utf8", -1,
                         RIACK_CONTENT_FIELD_NONE),
-     0);
+                        0);
      
-   ck_assert_errno
-     (riack_req_put_set (putreq,
+  ck_assert_errno
+     (riack_req_put_set(putreq,
                          RIACK_REQ_PUT_FIELD_BUCKET, "new-bucket",
                          RIACK_REQ_PUT_FIELD_BUCKET_TYPE, "set",
                          RIACK_REQ_PUT_FIELD_KEY, "030620151900",
                          RIACK_REQ_PUT_FIELD_CONTENT, content,
                          RIACK_REQ_PUT_FIELD_NONE),
                          0);
-
   
   ck_assert_str_eq (putreq->bucket.data, "new-bucket");
   ck_assert_str_eq (putreq->type.data , "set");
@@ -50,12 +49,7 @@ START_TEST (test_riack_putreq_set)
   ck_assert_str_eq (putreq->content->content_encoding.data, "none");
   ck_assert_str_eq (putreq->content->charset.data, "utf8");
   
- 
-
-  
   riack_req_put_free (putreq);
-  
-  
 }
 END_TEST
 
