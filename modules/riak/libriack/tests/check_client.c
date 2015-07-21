@@ -286,7 +286,7 @@ START_TEST (test_riack_client_send_dtupdatereq_bulk)
                         
       
  
-      //riack_req_dt_update_free (dtupdatereq);
+      riack_req_dt_update_free (dtupdatereq);
   
       riack_client_disconnect (client);
 
@@ -309,7 +309,7 @@ test_riack_client (void)
   tcase_add_test (test_client, test_riack_client_connect_and_disconnect);
   tcase_add_test (test_client, test_riack_client_send_putreq);
   tcase_add_test (test_client, test_riack_client_send_dtupdatereq);
-  //tcase_add_test (test_client, test_riack_client_send_dtupdatereq_bulk);
+  tcase_add_test (test_client, test_riack_client_send_dtupdatereq_bulk);
 
   return test_client;
 }

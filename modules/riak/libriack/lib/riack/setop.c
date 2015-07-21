@@ -101,7 +101,7 @@ riack_setop_set (riack_setop_t *setop, ...)
         adds = (char *)va_arg(args, char *);
         if (adds) {
           setop->n_adds = 1;
-          setop->adds = malloc(sizeof(adds));
+          setop->adds = malloc(sizeof(ProtobufCBinaryData));
           setop->adds[0].data = (unsigned char *)strdup(adds);
           setop->adds[0].len = strlen(adds);
           }
@@ -115,7 +115,7 @@ riack_setop_set (riack_setop_t *setop, ...)
         removes = (char *)va_arg(args, char *);
         if (removes) {
           setop->n_removes = 1;
-          setop->removes = malloc(sizeof(adds));
+          setop->removes = malloc(sizeof(ProtobufCBinaryData));
           setop->removes[0].data = (unsigned char *)strdup(removes);
           setop->removes[0].len = strlen(removes);
           }
