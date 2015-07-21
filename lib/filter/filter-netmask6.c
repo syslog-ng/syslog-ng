@@ -83,7 +83,7 @@ filter_netmask6_calc_network_address(unsigned char *ipv6, int prefix, struct in6
 }
 
 static inline gboolean
-_in6_addr_compare(const struct in6_addr* address1, const struct in6_addr* address2)
+_in6_addr_equals(const struct in6_addr* address1, const struct in6_addr* address2)
 {
   return memcmp(address1, address2, sizeof(struct in6_addr)) == 0;
 }
@@ -115,7 +115,7 @@ _eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 
   memset(&network_address, 0, sizeof(struct in6_addr));
   filter_netmask6_calc_network_address((unsigned char *) &address, self->prefix, &network_address);
-  result = _in6_addr_compare(&network_address, &self->address);
+  result = _in6_addr_equals(&network_address, &self->address);
 
   return result ^ s->comp;
 }
