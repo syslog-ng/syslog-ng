@@ -123,7 +123,7 @@ START_TEST (test_riack_req_dt_update_set_bulk)
  
 
   
-  //riack_req_dt_update_free (dtupdatereq);
+  riack_req_dt_update_free (dtupdatereq);
   
   
   
@@ -138,7 +138,7 @@ test_riack_dtupdatereq (void)
   test_dtupdatereq = tcase_create ("dtupdate");
   tcase_add_test (test_dtupdatereq, test_riack_dtupdatereq_new_and_free);
   tcase_add_test (test_dtupdatereq, test_riack_req_dt_update_set);
-  //tcase_add_test (test_dtupdatereq, test_riack_req_dt_update_set_bulk);
+  tcase_add_test (test_dtupdatereq, test_riack_req_dt_update_set_bulk);
 
   return test_dtupdatereq;
 }
