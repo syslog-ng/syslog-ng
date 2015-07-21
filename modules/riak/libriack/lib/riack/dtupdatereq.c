@@ -39,8 +39,6 @@ riack_req_dt_update_free (riack_dt_update_req_t *dtupdatereq)
   dt_update_req__free_unpacked (dtupdatereq, NULL);
 }
 
-
-
 int 
 riack_req_dt_update_set (riack_dt_update_req_t *dtupdatereq, ...)
 {
@@ -53,59 +51,52 @@ riack_req_dt_update_set (riack_dt_update_req_t *dtupdatereq, ...)
   riack_dt_op_t *dtop;
   char *key;
 
-  
-  
   va_start(args, dtupdatereq);
   
-
-    
-    
-  
   while ((flag = va_arg(args, int)) != RIACK_REQ_DT_UPDATE_FIELD_NONE)
-  {
-    
-    switch (flag) {
-      case (RIACK_REQ_DT_UPDATE_FIELD_BUCKET):
-        bucket = (char *)va_arg(args, char *);
-        if (dtupdatereq->bucket.data)
-            free(dtupdatereq->bucket.data);
-        dtupdatereq->bucket.data = (unsigned char *)strdup(bucket);
-        dtupdatereq->bucket.len = strlen(bucket);
-        break;
-      case (RIACK_REQ_DT_UPDATE_FIELD_BUCKET_TYPE):
-        bucket_type  = (char *)va_arg(args, char *);
-        if (dtupdatereq->type.data)
-          free(dtupdatereq->type.data);
-        dtupdatereq->type.data = (unsigned char *)strdup(bucket_type);
-        dtupdatereq->type.len = strlen(bucket_type);
+    {
+      switch (flag)
+        {
+          case (RIACK_REQ_DT_UPDATE_FIELD_BUCKET):
+            bucket = (char *)va_arg(args, char *);
+            if (dtupdatereq->bucket.data)
+              free(dtupdatereq->bucket.data);
+            dtupdatereq->bucket.data = (unsigned char *)strdup(bucket);
+            dtupdatereq->bucket.len = strlen(bucket);
+            break;
+            
+          case (RIACK_REQ_DT_UPDATE_FIELD_BUCKET_TYPE):
+            bucket_type  = (char *)va_arg(args, char *);
+            if (dtupdatereq->type.data)
+              free(dtupdatereq->type.data);
+            dtupdatereq->type.data = (unsigned char *)strdup(bucket_type);
+            dtupdatereq->type.len = strlen(bucket_type);
+            break;
+            
+          case (RIACK_REQ_DT_UPDATE_FIELD_KEY):
+            key = (char *)va_arg(args, char *);
+            if(dtupdatereq->key.data)
+              free(dtupdatereq->key.data);
+            if (key)
+              {
+                dtupdatereq->key.data = (unsigned char *)strdup(key);
+                dtupdatereq->key.len = strlen(key);
+              }
+            break;
+            
+          case (RIACK_REQ_DT_UPDATE_FIELD_DT_OP):
+            dtop = (riack_dt_op_t *)va_arg(args, riack_dt_op_t *);
+            dtupdatereq->op = dtop;      
+          break;
         
-        break;
-      case (RIACK_REQ_DT_UPDATE_FIELD_KEY):
-        key = (char *)va_arg(args, char *);
-        if(dtupdatereq->key.data)
-          free(dtupdatereq->key.data);
-        if (key) {
-          
-          dtupdatereq->key.data = (unsigned char *)strdup(key);
-          dtupdatereq->key.len = strlen(key);
         }
-        
-        break;
-      case (RIACK_REQ_DT_UPDATE_FIELD_DT_OP):
-        dtop = (riack_dt_op_t *)va_arg(args, riack_dt_op_t *);
-        dtupdatereq->op = dtop;      
-        
-        break;
-        
-     }
-  }
+    }
+  
   if(flag == RIACK_REQ_DT_UPDATE_FIELD_NONE)
     return 0;
   
   return -errno;
 }
-
-                           
 
 riack_message_t * 
 riack_dtupdatereq_serialize(riack_dt_update_req_t *dtupdatereq)
@@ -121,5 +112,3 @@ riack_dtupdatereq_serialize(riack_dt_update_req_t *dtupdatereq)
   return object;
 
 }
-
-
