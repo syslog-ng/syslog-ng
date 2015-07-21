@@ -320,25 +320,23 @@ utf8_escape_string(const gchar *str, gssize len)
   return res;
 }
 
-gchar *
-replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place)
+static gchar *
+str_replace_char(const gchar* str, const gchar from, const gchar to)
 {
-  gchar *convert;
   gchar *p;
-  if (in_place)
-    {
-      convert = buffer;
-    }
-  else
-    {
-      convert = g_strdup(buffer);
-    }
-  p = convert;
+  gchar *ret = g_strdup(str);
+  p = ret;
   while (*p)
     {
       if (*p == from)
         *p = to;
       p++;
     }
-  return convert;
+  return ret;
+}
+
+gchar *
+__normalize_key(const gchar* buffer)
+{
+  return str_replace_char(buffer, '-', '_');
 }
