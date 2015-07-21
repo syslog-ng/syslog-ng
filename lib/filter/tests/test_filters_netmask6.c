@@ -66,7 +66,7 @@ calculate_network6(const gchar* ipv6, int prefix, gchar *calculated_network)
   memset(&network, 0, sizeof(struct in6_addr));
 
   inet_pton(AF_INET6, ipv6, &address);
-  get_network_address((unsigned char *)&address, prefix, &network);
+  filter_netmask6_calc_network_address((unsigned char *)&address, prefix, &network);
   inet_ntop(AF_INET6, &network, calculated_network, INET6_ADDRSTRLEN);
   return calculated_network;
 }

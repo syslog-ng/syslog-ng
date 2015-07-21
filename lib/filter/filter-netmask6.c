@@ -57,7 +57,7 @@ _mask(uint64_t base, uint64_t mask)
 }
 
 void
-get_network_address(unsigned char *ipv6, int prefix, struct in6_addr *network)
+filter_netmask6_calc_network_address(unsigned char *ipv6, int prefix, struct in6_addr *network)
 {
   struct ipv6_parts
   {
@@ -114,7 +114,7 @@ _eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
     }
 
   memset(&network_address, 0, sizeof(struct in6_addr));
-  get_network_address((unsigned char *) &address, self->prefix, &network_address);
+  filter_netmask6_calc_network_address((unsigned char *) &address, self->prefix, &network_address);
   result = _in6_addr_compare(&network_address, &self->address);
 
   return result ^ s->comp;
@@ -145,7 +145,7 @@ filter_netmask6_new(gchar *cidr)
 
   self->is_valid = ((strlen(address) > 0) && inet_pton(AF_INET6, address, &packet_addr) == 1);
   if (self->is_valid)
-    get_network_address((unsigned char *) &packet_addr, self->prefix, &self->address);
+    filter_netmask6_calc_network_address((unsigned char *) &packet_addr, self->prefix, &self->address);
   else
     self->address = in6addr_loopback;
 
