@@ -185,7 +185,7 @@ log_template_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions 
 }
 
 LogTemplate *
-log_template_new(GlobalConfig *cfg, gchar *name)
+log_template_new(GlobalConfig *cfg, const gchar *name)
 {
   LogTemplate *self = g_new0(LogTemplate, 1);
 
