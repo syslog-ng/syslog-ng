@@ -30,6 +30,7 @@ typedef struct
   char *content_type;
   char *charset;
   int flush_lines;
+  riack_setop_t *setop;
   int flush_index;
   RiakBucketMode mode;
   riack_client_t *client;
@@ -220,28 +221,24 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
     {
       if (self->flush_lines)
         {
-          if (!self->flush_index)
-            { 
-              self->flush_index = 0;
-              printf("%d\n", self->flush_index);
-              dtupdatereq = riack_req_dt_update_new ();
-              dtop = riack_dt_op_new();
-              setop = riack_setop_new();
-            }
-          riack_setop_set(setop,
+          
+          if (self->flush_index == 0)
+            self->setop = riack_setop_new();
+
+          riack_setop_set(self->setop,
                     RIACK_SETOP_FIELD_BULK_ADD,
                     self->flush_index,
                     value_res,
                     RIACK_SETOP_FIELD_NONE);
           self->flush_index += 1;
-          printf("saving in buffer\n");
-          printf("%d\n",self->flush_index);
-            
               
           if (self->flush_lines == self->flush_index)
             {
+              dtupdatereq = riack_req_dt_update_new ();
+              dtop = riack_dt_op_new();
+              self->flush_index=0;
               riack_dt_op_set(dtop,
-                  RIACK_DT_OP_FIELD_SETOP, setop,
+                  RIACK_DT_OP_FIELD_SETOP, self->setop,
                   RIACK_DT_OP_FIELD_NONE);
 
               riack_req_dt_update_set(dtupdatereq,
