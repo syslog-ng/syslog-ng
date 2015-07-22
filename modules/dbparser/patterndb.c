@@ -1258,7 +1258,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
                 }
               else if (program != state->current_program)
                 {
-                  g_error_new(1, 0, "Joining rulesets with mismatching program name sets, program=%s", text);
+                  *error = g_error_new(1, 0, "Joining rulesets with mismatching program name sets, program=%s", text);
                   return;
                 }
             }
