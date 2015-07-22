@@ -287,7 +287,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
             }
               
         }
-      else
+      else if (!self->flush_lines)
         {
           dtupdatereq = riack_req_dt_update_new ();
           dtop = riack_dt_op_new();
@@ -394,7 +394,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
       riack_req_put_free(putreq);
       return WORKER_INSERT_RESULT_ERROR;
     }
-  return WORKER_INSERT_RESULT_ERROR;
+  return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 static void
