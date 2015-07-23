@@ -221,6 +221,9 @@ json_dot_notation_eval(JSONDotNotation *self, struct json_object *jso)
   JSONDotNotationElem *compiled;
   gint i;
 
+  if (!jso)
+    goto error;
+
   compiled = self->compiled_elems;
   for (i = 0; compiled && compiled[i].used; i++)
     {
