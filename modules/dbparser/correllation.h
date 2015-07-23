@@ -29,12 +29,11 @@
 typedef struct _CorrellationState
 {
   GHashTable *state;
-  GDestroyNotify state_entry_free;
 } CorrellationState;
 
-void correllation_state_init_instance(CorrellationState *self, GDestroyNotify state_entry_free);
+void correllation_state_init_instance(CorrellationState *self);
 void correllation_state_deinit_instance(CorrellationState *self);
-CorrellationState *correllation_state_new(GDestroyNotify state_entry_free);
+CorrellationState *correllation_state_new(void);
 void correllation_state_free(CorrellationState *self);
 
 #endif

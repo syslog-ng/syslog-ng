@@ -22,12 +22,12 @@
  */
 #include "correllation.h"
 #include "correllation-key.h"
+#include "correllation-context.h"
 
 void
-correllation_state_init_instance(CorrellationState *self, GDestroyNotify state_entry_free)
+correllation_state_init_instance(CorrellationState *self)
 {
-  self->state_entry_free = state_entry_free;
-  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, state_entry_free);
+  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) correllation_context_unref);
 }
 
 void
@@ -38,11 +38,11 @@ correllation_state_deinit_instance(CorrellationState *self)
 }
 
 CorrellationState *
-correllation_state_new(GDestroyNotify state_entry_free)
+correllation_state_new(void)
 {
   CorrellationState *self = g_new0(CorrellationState, 1);
 
-  correllation_state_init_instance(self, state_entry_free);
+  correllation_state_init_instance(self);
   return self;
 }
 

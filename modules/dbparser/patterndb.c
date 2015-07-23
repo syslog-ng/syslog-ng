@@ -586,7 +586,7 @@ pattern_db_forget_state(PatternDB *self)
   g_hash_table_destroy(self->rate_limits);
   self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
   correllation_state_deinit_instance(&self->correllation);
-  correllation_state_init_instance(&self->correllation, (GDestroyNotify) correllation_context_unref);
+  correllation_state_init_instance(&self->correllation);
   self->timer_wheel = timer_wheel_new();
   g_static_rw_lock_writer_unlock(&self->lock);
 }
@@ -768,7 +768,7 @@ pattern_db_new(void)
 
   self->ruleset = pdb_rule_set_new();
   self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
-  correllation_state_init_instance(&self->correllation, (GDestroyNotify) correllation_context_unref);
+  correllation_state_init_instance(&self->correllation);
   self->timer_wheel = timer_wheel_new();
   cached_g_current_time(&self->last_tick);
   g_static_rw_lock_init(&self->lock);
