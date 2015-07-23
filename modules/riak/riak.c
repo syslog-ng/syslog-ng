@@ -136,8 +136,7 @@ riak_dd_format_stats_instance(LogThrDestDriver *d)
 {
   RiakDestDriver *self = (RiakDestDriver *)d;
   static char persist_name[1024];
-  sprintf(persist_name, "riak,%s,%u,%u,%s,%s,%s", self->host, self->port, self->mode,
-            self->bucket_type, self->charset, self->content_type );
+  g_snprintf(persist_name, sizeof(persist_name), "riak,%s,%u", self->host, self->port);
   return persist_name;
 }
 
@@ -146,8 +145,7 @@ riak_dd_format_persist_name(LogThrDestDriver *d)
 {
   RiakDestDriver *self = (RiakDestDriver *)d;
   static char persist_name[1024];
-  sprintf(persist_name, "riak(%s,%u,%u,%s,%s,%s)", self->host, self->port, self->mode,
-            self->bucket_type, self->charset, self->content_type);
+  g_snprintf(persist_name, sizeof(persist_name), "riak(%s,%u)", self->host, self->port);
   return persist_name;
 }
 
@@ -191,9 +189,9 @@ static worker_insert_result_t
 riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
   RiakDestDriver *self = (RiakDestDriver *)s;
-  GString *key_res = g_string_sized_new(1024);
-  GString *bucket_res = g_string_sized_new(1024);
-  GString *value_res = g_string_sized_new(1024);
+  GString *key_res;
+  GString *bucket_res;
+  GString *value_res;
   riack_put_req_t *putreq;
   riack_content_t *content;
   riack_message_t *message;
@@ -207,21 +205,16 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 
   if (self->client->conn == 0)
     return WORKER_INSERT_RESULT_ERROR;
-  
-  log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, key_res);
-  
-  log_template_format(self->value, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, value_res);
-                      
-  log_template_format(self->bucket, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, bucket_res);
+
   
   if (self->mode == RIAK_BUCKET_MODE_SET)
     {
       if (self->flush_lines)
         {
-          
+          value_res = g_string_sized_new(1024);
+          log_template_format(self->value, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, value_res);
+                      
           if (self->flush_index == 0)
             self->setop = riack_setop_new();
 
@@ -231,12 +224,21 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
                     value_res,
                     RIACK_SETOP_FIELD_NONE);
           self->flush_index += 1;
-              
+          g_string_free(value_res, TRUE);  
           if (self->flush_lines == self->flush_index)
             {
+              key_res = g_string_sized_new(1024);
+              bucket_res = g_string_sized_new(1024);
               dtupdatereq = riack_req_dt_update_new ();
               dtop = riack_dt_op_new();
               self->flush_index=0;
+              
+              log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
+                                  self->super.seq_num, NULL, key_res);
+              log_template_format(self->bucket, msg, &self->template_options, LTZ_SEND,
+                                  self->super.seq_num, NULL, bucket_res);
+                                 
+                      
               riack_dt_op_set(dtop,
                   RIACK_DT_OP_FIELD_SETOP, self->setop,
                   RIACK_DT_OP_FIELD_NONE);
@@ -259,11 +261,9 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
                       evt_tag_str("bucket", bucket_res->str),
                       evt_tag_str("bucket_type", self->bucket_type),
                       evt_tag_str("key", key_res->str),
-                      evt_tag_str("value", value_res->str),
                       NULL);
           
                       printf("Above data sent to riak in set mode successfully\n");
-                      g_string_free(value_res, TRUE);
                       g_string_free(bucket_res, TRUE);
                       g_string_free(key_res, TRUE);
                       riack_req_dt_update_free (dtupdatereq);
@@ -286,9 +286,19 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
         }
       else if (!self->flush_lines)
         {
+          key_res = g_string_sized_new(1024);
+          bucket_res = g_string_sized_new(1024);
+          value_res = g_string_sized_new(1024);
           dtupdatereq = riack_req_dt_update_new ();
           dtop = riack_dt_op_new();
           setop = riack_setop_new();
+          
+          log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, key_res);
+          log_template_format(self->value, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, value_res);
+          log_template_format(self->bucket, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, bucket_res);
 
           riack_setop_set(setop,
                   RIACK_SETOP_FIELD_ADD, value_res,
@@ -343,6 +353,17 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
    }
   else if (self->mode == RIAK_BUCKET_MODE_STORE)
     {
+      key_res = g_string_sized_new(1024);
+      bucket_res = g_string_sized_new(1024);
+      value_res = g_string_sized_new(1024);
+            
+      log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, key_res);
+      log_template_format(self->value, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, value_res);
+      log_template_format(self->bucket, msg, &self->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, bucket_res);
+                      
       content = riack_content_new ();
       riack_content_set(content,
                     RIACK_CONTENT_FIELD_VALUE, value_res->str, -1,
@@ -420,9 +441,9 @@ riak_worker_thread_deinit(LogThrDestDriver *d)
 {
   RiakDestDriver *self = (RiakDestDriver *)d;
 
-  log_template_unref(self->bucket);
-  log_template_unref(self->key);
-  log_template_unref(self->value);
+  //log_template_unref(self->bucket);
+  //log_template_unref(self->key);
+  //log_template_unref(self->value);
   free(self->host);
   free(self->bucket_type);
   free(self->charset);
@@ -462,10 +483,10 @@ riak_dd_free(LogPipe *d)                   //frees up the structure allocated du
 
   log_template_options_destroy(&self->template_options);
 
-  free(self->host);
-  free(self->bucket_type);
-  free(self->charset);
-  free(self->content_type);
+  //free(self->host);
+  //free(self->bucket_type);
+  //free(self->charset);
+  //free(self->content_type);
   log_template_unref(self->key);
   log_template_unref(self->value);
   log_template_unref(self->bucket);
