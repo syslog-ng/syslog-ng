@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "misc.h"
 #include "dnscache.h"
 #include "messages.h"
@@ -97,7 +97,7 @@ g_fd_set_cloexec(int fd, gboolean enable)
   return TRUE;
 }
 
-gboolean 
+gboolean
 resolve_user(const char *user, gint *uid)
 {
   struct passwd *pw;
@@ -119,7 +119,7 @@ resolve_user(const char *user, gint *uid)
   return TRUE;
 }
 
-gboolean 
+gboolean
 resolve_group(const char *group, gint *gid)
 {
   struct group *gr;
@@ -128,7 +128,7 @@ resolve_group(const char *group, gint *gid)
   *gid = 0;
   if (!(*group))
     return FALSE;
-    
+
   *gid = strtol(group, &endptr, 0);
   if (*endptr)
     {
@@ -141,7 +141,7 @@ resolve_group(const char *group, gint *gid)
   return TRUE;
 }
 
-gboolean 
+gboolean
 resolve_user_group(char *arg, gint *uid, gint *gid)
 {
   char *user, *group;
@@ -149,7 +149,7 @@ resolve_user_group(char *arg, gint *uid, gint *gid)
   *uid = 0;
   user = strtok(arg, ":.");
   group = strtok(NULL, "");
-  
+
   if (user && !resolve_user(user, uid))
     return FALSE;
   if (group && !resolve_group(group, gid))
@@ -208,30 +208,30 @@ find_cr_or_lf(gchar *s, gsize n)
       else if (*char_ptr == 0)
         return NULL;
     }
-    
+
   longword_ptr = (gulong *) char_ptr;
 
 #if GLIB_SIZEOF_LONG == 8
   magic_bits = 0x7efefefefefefeffL;
 #elif GLIB_SIZEOF_LONG == 4
-  magic_bits = 0x7efefeffL; 
+  magic_bits = 0x7efefeffL;
 #else
   #error "unknown architecture"
 #endif
   memset(&cr_charmask, CR, sizeof(cr_charmask));
   memset(&lf_charmask, LF, sizeof(lf_charmask));
-    
+
   while (n > sizeof(longword))
     {
       longword = *longword_ptr++;
       if ((((longword + magic_bits) ^ ~longword) & ~magic_bits) != 0 ||
-          ((((longword ^ cr_charmask) + magic_bits) ^ ~(longword ^ cr_charmask)) & ~magic_bits) != 0 || 
+          ((((longword ^ cr_charmask) + magic_bits) ^ ~(longword ^ cr_charmask)) & ~magic_bits) != 0 ||
           ((((longword ^ lf_charmask) + magic_bits) ^ ~(longword ^ lf_charmask)) & ~magic_bits) != 0)
         {
           gint i;
 
           char_ptr = (gchar *) (longword_ptr - 1);
-          
+
           for (i = 0; i < sizeof(longword); i++)
             {
               if (*char_ptr == CR || *char_ptr == LF)
@@ -263,12 +263,12 @@ string_array_to_list(const gchar *strlist[])
 {
   gint i;
   GList *l = NULL;
-  
+
   for (i = 0; strlist[i]; i++)
     {
       l = g_list_prepend(l, g_strdup(strlist[i]));
     }
-  
+
   return g_list_reverse(l);
 }
 
@@ -320,25 +320,23 @@ utf8_escape_string(const gchar *str, gssize len)
   return res;
 }
 
-gchar *
-replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place)
+static gchar *
+str_replace_char(const gchar* str, const gchar from, const gchar to)
 {
-  gchar *convert;
   gchar *p;
-  if (in_place)
-    {
-      convert = buffer;
-    }
-  else
-    {
-      convert = g_strdup(buffer);
-    }
-  p = convert;
+  gchar *ret = g_strdup(str);
+  p = ret;
   while (*p)
     {
       if (*p == from)
         *p = to;
       p++;
     }
-  return convert;
+  return ret;
+}
+
+gchar *
+__normalize_key(const gchar* buffer)
+{
+  return str_replace_char(buffer, '-', '_');
 }
