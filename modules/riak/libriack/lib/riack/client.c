@@ -89,6 +89,8 @@ riack_client_connect (riack_client_t *client, ...)
             if ((err_check = getaddrinfo(hostname, "8087", &server, &serverinfo)) != 0)
               {
                 fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err_check));
+                freeaddrinfo(serverinfo);
+                freeaddrinfo(&server); // all done with this structure
                 return -EINVAL;
               }
         }
@@ -98,6 +100,8 @@ riack_client_connect (riack_client_t *client, ...)
           if ((err_check = getaddrinfo("127.0.0.1", port, &server, &serverinfo)) != 0)
             {
               fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err_check));
+              freeaddrinfo(serverinfo);
+              freeaddrinfo(&server); // all done with this structure
               return -EINVAL;
             }
         }
@@ -107,6 +111,8 @@ riack_client_connect (riack_client_t *client, ...)
       if ((err_check = getaddrinfo("127.0.0.1", "8087", &server, &serverinfo)) != 0)
         {
           fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err_check));
+          freeaddrinfo(serverinfo);
+          freeaddrinfo(&server); // all done with this structure
           return -errno;
         }
     }
@@ -133,11 +139,16 @@ riack_client_connect (riack_client_t *client, ...)
     {
     // looped off the end of the list with no connection
       fprintf(stderr, "failed to connect\n");
+      freeaddrinfo(serverinfo); // all done with this structure
+      freeaddrinfo(p);
+      freeaddrinfo(&server);
       return -errno;
     }
-  return 0;
-  freeaddrinfo(serverinfo); // all done with this structure
   
+  freeaddrinfo(serverinfo); // all done with this structure
+  freeaddrinfo(p);
+  freeaddrinfo(&server);
+  return 0;
 }
 
 
