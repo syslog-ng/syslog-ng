@@ -74,8 +74,8 @@ riack_client_connect (riack_client_t *client, ...)
 {
   int err_check, flag;
   va_list args;
-  char *hostname;
-  char port[5];
+  char *hostname = "127.0.0.1\0";
+  char port[5] = "8087\0";
   struct addrinfo server, *serverinfo, *p;
   memset(&server, 0, sizeof(server));
   server.ai_family = AF_UNSPEC;
@@ -84,31 +84,16 @@ riack_client_connect (riack_client_t *client, ...)
   while ((flag = va_arg(args, int)) != 0)
     {
       if (flag == RIACK_CONNECT_OPTION_HOST)
-        {
-          hostname = (char *)va_arg(args, char *);
-            if ((err_check = getaddrinfo(hostname, "8087", &server, &serverinfo)) != 0)
-              {
-                fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err_check));
-                freeaddrinfo(serverinfo);
-                freeaddrinfo(&server); // all done with this structure
-                return -EINVAL;
-              }
-        }
+        hostname = (char *)va_arg(args, char *);
+        
       else if (flag == RIACK_CONNECT_OPTION_PORT)
-        {
-          sprintf(port, "%d", va_arg(args, int));
-          if ((err_check = getaddrinfo("127.0.0.1", port, &server, &serverinfo)) != 0)
-            {
-              fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err_check));
-              freeaddrinfo(serverinfo);
-              freeaddrinfo(&server); // all done with this structure
-              return -EINVAL;
-            }
-        }
+         sprintf(port, "%d", va_arg(args, int));
+         
+         
     }
   if (flag == RIACK_CONNECT_OPTION_NONE)
     {
-      if ((err_check = getaddrinfo("127.0.0.1", "8087", &server, &serverinfo)) != 0)
+      if ((err_check = getaddrinfo(hostname, port, &server, &serverinfo)) != 0)
         {
           fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err_check));
           freeaddrinfo(serverinfo);
