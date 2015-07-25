@@ -100,7 +100,6 @@ extern "C" {
 typedef struct _riack_client_t
 {
 int fd;
-int conn;
 } riack_client_t;
 
 
@@ -176,6 +175,8 @@ int riack_client_send (riack_client_t *client, riack_message_t *message);
 int riack_client_recv(riack_client_t *client);
 //receive data from riak
 
+int riack_client_is_connected(riack_client_t *client);
+//check if the client is connected or not
 
 #ifdef __cplusplus
 } /* extern "C" */

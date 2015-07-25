@@ -200,11 +200,13 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   riack_setop_t *setop;
   int scheck;
   
-  if (!riak_dd_connect(self, TRUE))
+  //if (!riak_dd_connect(self, TRUE))
+    //return WORKER_INSERT_RESULT_NOT_CONNECTED;
+  if (!riack_client_is_connected(self->client))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
-  if (self->client->conn == 0)
-    return WORKER_INSERT_RESULT_ERROR;
+  //if (self->client->conn == 0)
+    //return WORKER_INSERT_RESULT_ERROR;
 
   
   if (self->mode == RIAK_BUCKET_MODE_SET)
@@ -423,7 +425,7 @@ riak_worker_thread_init(LogThrDestDriver *d)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.super.id),
             NULL);
-
+  riak_dd_connect(self, TRUE);
   if (self->bucket == NULL || self->key == NULL || self->value == NULL)
   {
     msg_error("Riak worker init error, LogTemplate values NULL, suspending",
