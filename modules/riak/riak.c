@@ -198,11 +198,13 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   riack_setop_t *setop;
   int scheck;
 
-  if (!riak_dd_connect(self, TRUE))
+  // if (!riak_dd_connect(self, TRUE))
+  // return WORKER_INSERT_RESULT_NOT_CONNECTED;
+  if (!riack_client_is_connected(self->client))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
-  if (self->client->conn == 0)
-    return WORKER_INSERT_RESULT_ERROR;
+  // if (self->client->conn == 0)
+  // return WORKER_INSERT_RESULT_ERROR;
 
   if (self->mode == RIAK_BUCKET_MODE_SET)
     {
@@ -390,28 +392,17 @@ static void
 riak_worker_thread_init(LogThrDestDriver *d)
 {
   msg_error("Riak worker init error, LogTemplate values NULL, suspending",
-            evt_tag_str("driver", self->super.super.super.id),
-            // evt_tag_str("error", self->client->errstr),
-            evt_tag_int("time_reopen", self->super.time_reopen), NULL);
-}
-if (self->flush_lines && self->mode == RIAK_BUCKET_MODE_STORE)
-  {
+            evt_tag_str("driver", self->super.super.super.id), NULL);
+  riak_dd_connect(self, TRUE);
+  if (self->bucket == NULL || self->key == NULL || self->value == NULL)
+    {
+      msg_error("Riak worker init error, LogTemplate values NULL, suspending",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_int("time_reopen", self->super.time_reopen), NULL);
+    }
+
+  if (self->flush_lines && self->mode == RIAK_BUCKET_MODE_STORE)
     printf("riak cannot use flush lines in bucket store mode, change to set mode");
-  }
-//   riak_dd_connect(self, FALSE);
-}
-
-msg_debug("Worker thread started", evt_tag_str("driver", self->super.super.super.id), NULL);
-
-if (self->bucket == NULL || self->key == NULL || self->value == NULL)
-  {
-    msg_error("Riak worker init error, LogTemplate values NULL, suspending",
-              evt_tag_str("driver", self->super.super.super.id),
-              evt_tag_int("time_reopen", self->super.time_reopen), NULL);
-  }
-
-if (self->flush_lines && self->mode == RIAK_BUCKET_MODE_STORE)
-  printf("riak cannot use flush lines in bucket store mode, change to set mode");
 }
 
 static void
