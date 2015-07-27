@@ -56,38 +56,6 @@ typedef struct _PDBRateLimit
   guint64 last_check;
 } PDBRateLimit;
 
-/* rule action triggers */
-typedef enum
- {
-  RAT_MATCH = 1,
-  RAT_TIMEOUT
-} PDBActionTrigger;
-
-/* action content*/
-typedef enum
-{
-  RAC_NONE,
-  RAC_MESSAGE
-} PDBActionContentType;
-
-/* a rule may contain one or more actions to be performed */
-typedef struct _PDBAction
-{
-  FilterExprNode *condition;
-  PDBActionTrigger trigger;
-  PDBActionContentType content_type;
-  guint32 rate_quantum;
-  guint16 rate;
-  guint8 id;
-  union
-  {
-    struct {
-      PDBMessage message;
-      PDBActionMessageInheritMode inherit_mode;
-    };
-  } content;
-} PDBAction;
-
 /* this class encapsulates a the verdict of a rule in the pattern
  * database and is stored as the "value" member in the RADIX tree
  * node. It contains a reference the the original rule in the rule
