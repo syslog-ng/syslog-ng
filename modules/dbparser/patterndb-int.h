@@ -107,18 +107,6 @@ struct _PDBRule
 gchar *pdb_rule_get_name(PDBRule *self);
 void pdb_rule_unref(PDBRule *self);
 
-/*
- * This class encapsulates a set of program related rules in the
- * pattern database. Its instances are stored as "value" in the
- * program name RADIX tree. It basically contains another RADIX for
- * the per-program patterns.
- */
-typedef struct _PDBProgram
-{
-  guint ref_cnt;
-  RNode *rules;
-} PDBProgram;
-
 /* rules loaded from a pdb file */
 typedef struct _PDBRuleSet
 {

@@ -30,6 +30,7 @@
 #include "logpipe.h"
 #include "patterndb-int.h"
 #include "pdb-example.h"
+#include "pdb-program.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -471,47 +472,6 @@ pdb_rule_get_name(PDBRule *self)
     return self->rule_id;
   else
     return NULL;
-}
-
-/*********************************************************
- * PDBProgram
- *********************************************************/
-
-/*
- * Database based parser. The patterns are stored in an XML database.
- * Data structure is:
- *   - Parser -> programs -> rules -> patterns
- */
-
-PDBProgram *
-pdb_program_new(void)
-{
-  PDBProgram *self = g_new0(PDBProgram, 1);
-
-  self->rules = r_new_node("", NULL);
-  self->ref_cnt = 1;
-  return self;
-}
-
-static PDBProgram *
-pdb_program_ref(PDBProgram *self)
-{
-  self->ref_cnt++;
-  return self;
-}
-
-static void
-pdb_program_unref(PDBProgram *s)
-{
-  PDBProgram *self = (PDBProgram *) s;
-
-  if (--self->ref_cnt == 0)
-    {
-      if (self->rules)
-        r_free_node(self->rules, (void (*)(void *)) pdb_rule_unref);
-
-      g_free(self);
-    }
 }
 
 /*********************************************************
