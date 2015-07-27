@@ -1395,6 +1395,18 @@ pattern_db_get_ruleset_version(PatternDB *self)
   return self->ruleset->version;
 }
 
+PDBRuleSet *
+pattern_db_get_ruleset(PatternDB *self)
+{
+  return self->ruleset;
+}
+
+TimerWheel *
+pattern_db_get_timer_wheel(PatternDB *self)
+{
+  return self->timer_wheel;
+}
+
 static gboolean
 _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 {
