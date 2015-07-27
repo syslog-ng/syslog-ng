@@ -34,6 +34,7 @@
 #include "filter/filter-expr-parser.h"
 #include "patternize.h"
 #include "patterndb-int.h"
+#include "pdb-example.h"
 #include "apphook.h"
 #include "transport/transport-file.h"
 #include "logproto/logproto-text-server.h"

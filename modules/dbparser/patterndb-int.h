@@ -107,20 +107,6 @@ struct _PDBRule
 gchar *pdb_rule_get_name(PDBRule *self);
 void pdb_rule_unref(PDBRule *self);
 
-/* this class encapsulates an example message in the pattern database
- * used for testing rules and patterns. It contains the message with the
- * program field and the expected rule_id with the expected name/value
- * pairs. */
-typedef struct _PDBExample
-{
-  PDBRule *rule;
-  gchar *message;
-  gchar *program;
-  GPtrArray *values;
-} PDBExample;
-
-void pdb_example_free(PDBExample *s);
-
 /*
  * This class encapsulates a set of program related rules in the
  * pattern database. Its instances are stored as "value" in the

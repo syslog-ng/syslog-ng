@@ -6,6 +6,8 @@ modules_dbparser_libsyslog_ng_patterndb_la_SOURCES	=	\
 	modules/dbparser/patterndb.c				\
 	modules/dbparser/patterndb.h				\
 	modules/dbparser/patterndb-int.h			\
+	modules/dbparser/pdb-example.c				\
+	modules/dbparser/pdb-example.h				\
 	modules/dbparser/correllation.c				\
 	modules/dbparser/correllation.h				\
 	modules/dbparser/correllation-key.c			\

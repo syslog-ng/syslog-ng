@@ -29,6 +29,7 @@
 #include "filter/filter-expr-parser.h"
 #include "logpipe.h"
 #include "patterndb-int.h"
+#include "pdb-example.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -461,42 +462,6 @@ pdb_rule_unref(PDBRule *self)
       synthetic_message_deinit(&self->msg);
       g_free(self);
     }
-}
-
-/*********************************************************
- * PDBExample
- *********************************************************/
-
-
-void
-pdb_example_free(PDBExample *self)
-{
-  gint i;
-
-  if (self->rule)
-    pdb_rule_unref(self->rule);
-
-  if (self->message)
-    g_free(self->message);
-
-  if (self->program)
-    g_free(self->program);
-
-  if (self->values)
-    {
-      for (i = 0; i < self->values->len; i++)
-        {
-          gchar **nv = g_ptr_array_index(self->values, i);
-
-          g_free(nv[0]);
-          g_free(nv[1]);
-          g_free(nv);
-        }
-
-      g_ptr_array_free(self->values, TRUE);
-    }
-
-  g_free(self);
 }
 
 gchar *
