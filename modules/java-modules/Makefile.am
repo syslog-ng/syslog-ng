@@ -1,7 +1,7 @@
 if ENABLE_JAVA
 
 JAVA_MOD_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
-JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
+MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
 
 java-modules:
 	 $(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs build > "$(top_builddir)/modules/java-modules/gradle-java-modules.log"
@@ -10,7 +10,7 @@ all-local: java-modules
 
 java-modules-install-exec-hook:
 	$(mkinstalldirs) $(JAVA_MOD_DST_DIR)
-	cp $(JARS) $(JAVA_MOD_DST_DIR)
+	cp $(MOD_JARS) $(JAVA_MOD_DST_DIR)
 
 java-modules-uninstall-exec-hook:
 	rm -f $(JAVA_MOD_DST_DIR)/*.jar
