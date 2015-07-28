@@ -108,4 +108,5 @@ endif
 
 EXTRA_DIST += \
     modules/java/native/java-grammar.ym \
+    modules/java/build.gradle \
     $(JAVA_FILES)
