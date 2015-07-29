@@ -904,6 +904,7 @@ options_item
         | KW_MARK_MODE '(' string ')'
           {
             CHECK_ERROR(cfg_lookup_mark_mode($3) > 0 && cfg_lookup_mark_mode($3) != MM_GLOBAL, @3, "illegal global mark-mode");
+            cfg_set_mark_mode(configuration, $3);
             free($3);
           }
 	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ configuration->flush_timeout = $3; }
