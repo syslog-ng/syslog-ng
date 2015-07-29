@@ -5,7 +5,6 @@ modules_dbparser_libsyslog_ng_patterndb_la_SOURCES	=	\
 	modules/dbparser/radix.h				\
 	modules/dbparser/patterndb.c				\
 	modules/dbparser/patterndb.h				\
-	modules/dbparser/patterndb-int.h			\
 	modules/dbparser/pdb-load.c				\
 	modules/dbparser/pdb-load.h				\
 	modules/dbparser/pdb-rule.c				\

@@ -22,17 +22,18 @@
  */
 
 #include "patterndb.h"
+#include "pdb-action.h"
+#include "pdb-rule.h"
+#include "pdb-program.h"
+#include "pdb-ruleset.h"
+#include "pdb-load.h"
+#include "correllation.h"
 #include "logmsg.h"
 #include "tags.h"
 #include "template/templates.h"
 #include "misc.h"
 #include "filter/filter-expr-parser.h"
 #include "logpipe.h"
-#include "patterndb-int.h"
-#include "pdb-example.h"
-#include "pdb-program.h"
-#include "pdb-action.h"
-#include "pdb-load.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -44,6 +45,53 @@ static NVHandle rule_id_handle = 0;
 static NVHandle context_id_handle = 0;
 static LogTagId system_tag;
 static LogTagId unknown_tag;
+
+typedef struct _PDBLookupParams PDBLookupParams;
+struct _PDBLookupParams
+{
+  LogMessage *msg;
+  NVHandle program_handle;
+  NVHandle message_handle;
+  const gchar *message_string;
+  gssize message_len;
+};
+
+struct _PatternDB
+{
+  GStaticRWLock lock;
+  PDBRuleSet *ruleset;
+  CorrellationState correllation;
+  GHashTable *rate_limits;
+  TimerWheel *timer_wheel;
+  GTimeVal last_tick;
+  PatternDBEmitFunc emit;
+  gpointer emit_data;
+};
+
+
+
+/* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
+typedef struct _PDBContext
+{
+  CorrellationContext super;
+  /* back reference to the PatternDB */
+  PatternDB *db;
+  /* back reference to the last rule touching this context */
+  PDBRule *rule;
+  /* timeout timer */
+  TWEntry *timer;
+} PDBContext;
+
+/* This class encapsulates a rate-limit state stored in
+   db->state. */
+typedef struct _PDBRateLimit
+{
+  /* key in the hashtable. NOTE: host/program/pid/session_id are allocated, thus they need to be freed when the structure is freed. */
+  CorrellationKey key;
+  gint buckets;
+  guint64 last_check;
+} PDBRateLimit;
+
 
 /*
  * Timing
@@ -322,7 +370,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
 
   program = log_msg_get_value(msg, lookup->program_handle, &program_len);
   prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
-  node = r_find_node(self->programs, (gchar *) program, program_len, prg_matches);
+  node = r_find_node(self->programs, (guint8 *) program, program_len, prg_matches);
 
   if (node)
     {
@@ -355,9 +403,9 @@ pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
             }
 
           if (G_UNLIKELY(dbg_list))
-            msg_node = r_find_node_dbg(program->rules, (gchar *) message, message_len, matches, dbg_list);
+            msg_node = r_find_node_dbg(program->rules, (guint8 *) message, message_len, matches, dbg_list);
           else
-            msg_node = r_find_node(program->rules, (gchar *) message, message_len, matches);
+            msg_node = r_find_node(program->rules, (guint8 *) message, message_len, matches);
 
           if (msg_node)
             {

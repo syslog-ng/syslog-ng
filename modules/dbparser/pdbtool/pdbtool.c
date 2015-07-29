@@ -33,7 +33,6 @@
 #include "plugin.h"
 #include "filter/filter-expr-parser.h"
 #include "patternize.h"
-#include "patterndb-int.h"
 #include "pdb-example.h"
 #include "pdb-program.h"
 #include "pdb-load.h"

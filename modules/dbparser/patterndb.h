@@ -24,11 +24,9 @@
 #ifndef PATTERNDB_H_INCLUDED
 #define PATTERNDB_H_INCLUDED
 
+#include "syslog-ng.h"
 #include "pdb-ruleset.h"
-#include "radix.h"
-#include "template/templates.h"
 #include "timerwheel.h"
-#include "filter/filter-expr.h"
 
 typedef struct _PatternDB PatternDB;
 
