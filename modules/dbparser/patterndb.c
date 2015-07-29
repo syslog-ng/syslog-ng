@@ -184,7 +184,7 @@ pdb_state_key_hash(gconstpointer k)
   PDBStateKey *key = (PDBStateKey *) k;
   guint hash;
 
-  hash = (key->scope << 30) + (key->type << 29);
+  hash = (key->scope << 30);
   switch (key->scope)
     {
     case RCS_PROCESS:
@@ -208,7 +208,7 @@ pdb_state_key_equal(gconstpointer k1, gconstpointer k2)
   PDBStateKey *key1 = (PDBStateKey *) k1;
   PDBStateKey *key2 = (PDBStateKey *) k2;
 
-  if (key1->scope != key2->scope || key1->type != key2->type)
+  if (key1->scope != key2->scope)
     return FALSE;
 
   switch (key1->scope)
@@ -235,11 +235,10 @@ pdb_state_key_equal(gconstpointer k1, gconstpointer k2)
 
 /* fills a PDBStateKey structure with borrowed values */
 static void
-pdb_state_key_setup(PDBStateKey *self, PDBStateKeyType type, PDBRule *rule, LogMessage *msg, gchar *session_id)
+pdb_state_key_setup(PDBStateKey *self, PDBRule *rule, LogMessage *msg, gchar *session_id)
 {
   memset(self, 0, sizeof(*self));
   self->scope = rule->context_scope;
-  self->type = type;
   self->session_id = session_id;
 
   /* NVTable ensures that builtin name-value pairs are always NUL terminated */
@@ -257,21 +256,6 @@ pdb_state_key_setup(PDBStateKey *self, PDBStateKeyType type, PDBRule *rule, LogM
       g_assert_not_reached();
       break;
     }
-}
-
-/*********************************************************
- * PDBStateEntry, is the value in the state hash table
- *********************************************************/
-
-static void
-pdb_state_entry_free(gpointer s)
-{
-  PDBStateEntry *self = (PDBStateEntry *) s;
-
-  if (self->key.type == PSK_CONTEXT)
-    pdb_context_unref(&self->context);
-  else if (self->key.type == PSK_RATE_LIMIT)
-    pdb_rate_limit_free(&self->rate_limit);
 }
 
 /*********************************************************
@@ -422,13 +406,13 @@ pdb_action_check_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
     return TRUE;
 
   g_string_printf(buffer, "%s:%d", rule->rule_id, self->id);
-  pdb_state_key_setup(&key, PSK_RATE_LIMIT, rule, msg, buffer->str);
+  pdb_state_key_setup(&key, rule, msg, buffer->str);
 
-  rl = g_hash_table_lookup(db->state, &key);
+  rl = g_hash_table_lookup(db->rate_limits, &key);
   if (!rl)
     {
       rl = pdb_rate_limit_new(&key);
-      g_hash_table_insert(db->state, &rl->key, rl);
+      g_hash_table_insert(db->rate_limits, &rl->key, rl);
       g_string_steal(buffer);
     }
   now = timer_wheel_get_time(db->timer_wheel);
@@ -1686,7 +1670,9 @@ pattern_db_forget_state(PatternDB *self)
 
   if (self->state)
     g_hash_table_destroy(self->state);
-  self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_state_entry_free);
+  g_hash_table_destroy(self->rate_limits);
+  self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_context_unref);
+  self->rate_limits = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
   self->timer_wheel = timer_wheel_new();
   g_static_rw_lock_writer_unlock(&self->lock);
 }
@@ -1736,7 +1722,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
           log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
           log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
-          pdb_state_key_setup(&key, PSK_CONTEXT, rule, msg, buffer->str);
+          pdb_state_key_setup(&key, rule, msg, buffer->str);
           context = g_hash_table_lookup(self->state, &key);
           if (!context)
             {
@@ -1853,7 +1839,8 @@ pattern_db_new(void)
   PatternDB *self = g_new0(PatternDB, 1);
 
   self->ruleset = pdb_rule_set_new();
-  self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_state_entry_free);
+  self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_context_unref);
+  self->rate_limits = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
   self->timer_wheel = timer_wheel_new();
   cached_g_current_time(&self->last_tick);
   g_static_rw_lock_init(&self->lock);
@@ -1868,6 +1855,7 @@ pattern_db_free(PatternDB *self)
 
   if (self->state)
     g_hash_table_destroy(self->state);
+  g_hash_table_destroy(self->rate_limits);
   if (self->timer_wheel)
     timer_wheel_free(self->timer_wheel);
   g_static_rw_lock_free(&self->lock);

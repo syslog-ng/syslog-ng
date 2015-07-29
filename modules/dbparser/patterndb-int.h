@@ -44,15 +44,6 @@ typedef enum
   RCS_PROCESS,
 } PDBCorrellationScope;
 
-/* type field for state key */
-typedef enum
-{
-  /* state entry contains a context */
-  PSK_CONTEXT,
-  /* state entry contains a ratelimit state */
-  PSK_RATE_LIMIT,
-} PDBStateKeyType;
-
 /* Our state hash contains a mixed set of values, they are either
  * correllation contexts or the state entry required by rate limiting. The
  * keys of these distinct structures are differentied by their key->type
@@ -67,7 +58,6 @@ typedef struct _PDBStateKey
   /* we use guint8 to limit the size of this structure, we can have 10s of
    * thousands of this structure present in memory */
   guint8 /* PDBCorrellationScope */ scope;
-  guint8 /* PDBStateKeyType */ type;
 } PDBStateKey;
 
 /* This class encapsulates a correllation context, keyed by PDBStateKey, type == PSK_RULE. */
@@ -95,16 +85,6 @@ typedef struct _PDBRateLimit
   gint buckets;
   guint64 last_check;
 } PDBRateLimit;
-
-typedef struct _PDBStateEntry
-{
-  union
-  {
-    PDBStateKey key;
-    PDBContext context;
-    PDBRateLimit rate_limit;
-  };
-} PDBStateEntry;
 
 typedef struct _PDBMessage
 {
@@ -224,6 +204,7 @@ struct _PatternDB
   GStaticRWLock lock;
   PDBRuleSet *ruleset;
   GHashTable *state;
+  GHashTable *rate_limits;
   TimerWheel *timer_wheel;
   GTimeVal last_tick;
   PatternDBEmitFunc emit;
