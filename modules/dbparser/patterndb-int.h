@@ -27,8 +27,8 @@
 #define PATTERNDB_INT_H_INCLUDED
 
 #include "patterndb.h"
-#include "correllation-key.h"
 #include "correllation.h"
+#include "correllation-context.h"
 
 typedef struct _PDBLookupParams PDBLookupParams;
 typedef struct _PDBRule PDBRule;
@@ -36,17 +36,13 @@ typedef struct _PDBRule PDBRule;
 /* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
 typedef struct _PDBContext
 {
-  /* key in the hashtable. NOTE: host/program/pid/session_id are borrowed pointers from the first message in the state */
-  CorrellationKey key;
+  CorrellationContext super;
   /* back reference to the PatternDB */
   PatternDB *db;
   /* back reference to the last rule touching this context */
   PDBRule *rule;
   /* timeout timer */
   TWEntry *timer;
-  /* messages belonging to this context */
-  GPtrArray *messages;
-  gint ref_cnt;
 } PDBContext;
 
 /* This class encapsulates a rate-limit state stored in

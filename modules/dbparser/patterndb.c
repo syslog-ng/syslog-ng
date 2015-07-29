@@ -80,65 +80,25 @@ static LogTagId unknown_tag;
  * marked with PSK_CONTEXT in the hash table key
  **************************************************************************/
 
-static LogMessage *
-pdb_context_get_last_message(PDBContext *self)
+static void
+pdb_context_free(CorrellationContext *s)
 {
-  return (LogMessage *) g_ptr_array_index(self->messages, self->messages->len - 1);
+  PDBContext *self = (PDBContext *) s;
+
+  if (self->rule)
+    pdb_rule_unref(self->rule);
+  correllation_context_free_method(s);
 }
 
-/*
- * NOTE: borrows "db" and consumes "key" contents.
- */
 PDBContext *
 pdb_context_new(PatternDB *db, CorrellationKey *key)
 {
   PDBContext *self = g_new0(PDBContext, 1);
 
-  self->messages = g_ptr_array_new();
+  correllation_context_init(&self->super, key);
+  self->super.free_fn = pdb_context_free;
   self->db = db;
-  memcpy(&self->key, key, sizeof(self->key));
-
-  if (self->key.pid)
-    self->key.pid = g_strdup(self->key.pid);
-  if (self->key.program)
-    self->key.program = g_strdup(self->key.program);
-  if (self->key.host)
-    self->key.host = g_strdup(self->key.host);
-  self->ref_cnt = 1;
   return self;
-}
-
-PDBContext *
-pdb_context_ref(PDBContext *self)
-{
-  self->ref_cnt++;
-  return self;
-}
-
-void
-pdb_context_unref(PDBContext *self)
-{
-  gint i;
-
-  if (--self->ref_cnt == 0)
-    {
-      for (i = 0; i < self->messages->len; i++)
-        {
-          log_msg_unref((LogMessage *) g_ptr_array_index(self->messages, i));
-        }
-      g_ptr_array_free(self->messages, TRUE);
-      if (self->rule)
-        pdb_rule_unref(self->rule);
-
-      if (self->key.host)
-        g_free((gchar *) self->key.host);
-      if (self->key.program)
-        g_free((gchar *) self->key.program);
-      if (self->key.pid)
-        g_free((gchar *) self->key.pid);
-      g_free(self->key.session_id);
-      g_free(self);
-    }
 }
 
 /***************************************************************************
@@ -205,9 +165,9 @@ pdb_message_apply(PDBMessage *self, PDBContext *context, LogMessage *msg, GStrin
       for (i = 0; i < self->values->len; i++)
         {
           log_template_format_with_context(g_ptr_array_index(self->values, i),
-                                           context ? (LogMessage **) context->messages->pdata : &msg,
-                                           context ? context->messages->len : 1,
-                                           NULL, LTZ_LOCAL, 0, context ? context->key.session_id : NULL, buffer);
+                                           context ? (LogMessage **) context->super.messages->pdata : &msg,
+                                           context ? context->super.messages->len : 1,
+                                           NULL, LTZ_LOCAL, 0, context ? context->super.key.session_id : NULL, buffer);
           log_msg_set_value_by_name(msg,
                                     ((LogTemplate *) g_ptr_array_index(self->values, i))->name,
                                     buffer->str,
@@ -368,7 +328,7 @@ pdb_action_is_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, PDBAction
 
   if (self->condition)
     {
-      if (context && !filter_expr_eval_with_context(self->condition, (LogMessage **) context->messages->pdata, context->messages->len))
+      if (context && !filter_expr_eval_with_context(self->condition, (LogMessage **) context->super.messages->pdata, context->super.messages->len))
         return FALSE;
       if (!context && !filter_expr_eval(self->condition, msg))
         return FALSE;
@@ -403,9 +363,9 @@ pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(LogStam
 LogMessage *
 pdb_action_generate_message_inheriting_properties_from_the_entire_context(PDBContext *context)
 {
-  LogMessage *genmsg = pdb_action_generate_message_inheriting_properties_from_the_last_message(pdb_context_get_last_message(context));
+  LogMessage *genmsg = pdb_action_generate_message_inheriting_properties_from_the_last_message(correllation_context_get_last_message(&context->super));
 
-  log_msg_merge_context(genmsg, (LogMessage **) context->messages->pdata, context->messages->len);
+  log_msg_merge_context(genmsg, (LogMessage **) context->super.messages->pdata, context->super.messages->len);
   return genmsg;
 }
 
@@ -427,7 +387,7 @@ pdb_action_generate_default_message(PDBAction *self, LogMessage *msg)
 LogMessage *
 pdb_action_generate_default_message_from_context(PDBAction *action, PDBContext *context)
 {
-  LogMessage *msg = pdb_context_get_last_message(context);
+  LogMessage *msg = correllation_context_get_last_message(&context->super);
 
   if (action->content.inherit_mode != RAC_MSG_INHERIT_CONTEXT)
     return pdb_action_generate_default_message(action, msg);
@@ -441,23 +401,23 @@ pdb_action_generate_message_with_context(PDBAction *self, PDBContext *context, G
   LogMessage *genmsg;
 
   genmsg = pdb_action_generate_default_message_from_context(self, context);
-  switch (context->key.scope)
+  switch (context->super.key.scope)
     {
       case RCS_PROCESS:
-        log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
+        log_msg_set_value(genmsg, LM_V_PID, context->super.key.pid, -1);
       case RCS_PROGRAM:
-        log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
+        log_msg_set_value(genmsg, LM_V_PROGRAM, context->super.key.program, -1);
       case RCS_HOST:
-        log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
+        log_msg_set_value(genmsg, LM_V_HOST, context->super.key.host, -1);
       case RCS_GLOBAL:
         break;
       default:
         g_assert_not_reached();
       break;
     }
-  g_ptr_array_add(context->messages, genmsg);
+  g_ptr_array_add(context->super.messages, genmsg);
   pdb_message_apply(&self->content.message, context, genmsg, buffer);
-  g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+  g_ptr_array_remove_index_fast(context->super.messages, context->super.messages->len - 1);
   return genmsg;
 }
 
@@ -478,7 +438,7 @@ pdb_action_generate_message_without_context(PDBAction *self, LogMessage *msg, GS
    */
   LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
   GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
-  PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
+  PDBContext dummy_context = { .super = { .messages = &dummy_ptr_array, 0 } };
 
   pdb_message_apply(&self->content.message, &dummy_context, genmsg, buffer);
   return genmsg;
@@ -1466,7 +1426,7 @@ pattern_db_expire_entry(guint64 now, gpointer user_data)
   PDBContext *context = user_data;
   PatternDB *pdb = context->db;
   GString *buffer = g_string_sized_new(256);
-  LogMessage *msg = pdb_context_get_last_message(context);
+  LogMessage *msg = correllation_context_get_last_message(&context->super);
 
   msg_debug("Expiring patterndb correllation context",
             evt_tag_str("last_rule", context->rule->rule_id),
@@ -1474,7 +1434,7 @@ pattern_db_expire_entry(guint64 now, gpointer user_data)
             NULL);
   if (pdb->emit)
     pdb_rule_run_actions(context->rule, context->db, RAT_TIMEOUT, context, msg, buffer);
-  g_hash_table_remove(context->db->correllation.state, &context->key);
+  g_hash_table_remove(context->db->correllation.state, &context->super.key);
   g_string_free(buffer, TRUE);
 
   /* pdb_context_free is automatically called when returning from
@@ -1587,7 +1547,7 @@ pattern_db_forget_state(PatternDB *self)
   g_hash_table_destroy(self->rate_limits);
   self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
   correllation_state_deinit_instance(&self->correllation);
-  correllation_state_init_instance(&self->correllation, (GDestroyNotify) pdb_context_unref);
+  correllation_state_init_instance(&self->correllation, (GDestroyNotify) correllation_context_unref);
   self->timer_wheel = timer_wheel_new();
   g_static_rw_lock_writer_unlock(&self->lock);
 }
@@ -1648,7 +1608,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
                         evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
                         NULL);
               context = pdb_context_new(self, &key);
-              g_hash_table_insert(self->correllation.state, &context->key, context);
+              g_hash_table_insert(self->correllation.state, &context->super.key, context);
               g_string_steal(buffer);
             }
           else
@@ -1658,11 +1618,11 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
                         evt_tag_str("context", buffer->str),
                         evt_tag_int("context_timeout", rule->context_timeout),
                         evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
-                        evt_tag_int("num_messages", context->messages->len),
+                        evt_tag_int("num_messages", context->super.messages->len),
                         NULL);
             }
 
-          g_ptr_array_add(context->messages, log_msg_ref(msg));
+          g_ptr_array_add(context->super.messages, log_msg_ref(msg));
 
           if (context->timer)
             {
@@ -1670,7 +1630,9 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
             }
           else
             {
-              context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry, pdb_context_ref(context), (GDestroyNotify) pdb_context_unref);
+              context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry,
+                                                     correllation_context_ref(&context->super),
+                                                     (GDestroyNotify) correllation_context_unref);
             }
           if (context->rule != rule)
             {
@@ -1755,7 +1717,7 @@ pattern_db_new(void)
 
   self->ruleset = pdb_rule_set_new();
   self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
-  correllation_state_init_instance(&self->correllation, (GDestroyNotify) pdb_context_unref);
+  correllation_state_init_instance(&self->correllation, (GDestroyNotify) correllation_context_unref);
   self->timer_wheel = timer_wheel_new();
   cached_g_current_time(&self->last_tick);
   g_static_rw_lock_init(&self->lock);
