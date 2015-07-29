@@ -5,10 +5,10 @@ JAVA_DST_DIR=$(DESTDIR)/$(moduledir)
 JARS=$(shell find $(abs_top_builddir)/modules/java -name '*.jar')
 
 java-binaries:
-	$(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java build > "$(top_builddir)/modules/java/gradle-java-binaries.log"
+	$(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java build > "$(top_srcdir)/modules/java/gradle-java-binaries.log"
 
 java-headers:
-	$(AM_V_GEN) $(GRADLE) -q -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java nativeHeaders > "$(top_builddir)/modules/java/gradle-java-headers.log"
+	$(AM_V_GEN) $(GRADLE) -q -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java nativeHeaders > "$(top_srcdir)/modules/java/gradle-java-headers.log"
 
 all-local: java-binaries
 
@@ -25,7 +25,7 @@ java-uninstall-exec-hook:
 	rm -f $(JAVA_DST_DIR)/*.jar
 
 eclipse:
-	$(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java eclipse > "$(top_builddir)/modules/java/gradle-eclipse.log"
+	$(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java eclipse > "$(top_srcdir)/modules/java/gradle-eclipse.log"
 
 
 INSTALL_EXEC_HOOKS += java-install-exec-hook
@@ -102,10 +102,11 @@ BUILT_SOURCES += \
 if ENABLE_JAVA
 BUILT_SOURCES += $(JAVA_HEADER_FILES)
 
-CLEANFILES = $(JAVA_HEADER_FILES)
+CLEANFILES += $(JAVA_HEADER_FILES)
 
 endif
 
 EXTRA_DIST += \
     modules/java/native/java-grammar.ym \
+    modules/java/build.gradle \
     $(JAVA_FILES)

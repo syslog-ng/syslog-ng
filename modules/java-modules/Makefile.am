@@ -1,16 +1,16 @@
 if ENABLE_JAVA
 
 JAVA_MOD_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
-JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
+MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
 
 java-modules:
-	 $(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs build > "$(top_builddir)/modules/java-modules/gradle-java-modules.log"
+	 $(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs build > "$(top_srcdir)/modules/java-modules/gradle-java-modules.log"
 
 all-local: java-modules
 
 java-modules-install-exec-hook:
 	$(mkinstalldirs) $(JAVA_MOD_DST_DIR)
-	cp $(JARS) $(JAVA_MOD_DST_DIR)
+	cp $(MOD_JARS) $(JAVA_MOD_DST_DIR)
 
 java-modules-uninstall-exec-hook:
 	rm -f $(JAVA_MOD_DST_DIR)/*.jar
@@ -20,7 +20,7 @@ java-modules-clean-hook:
 	$(GRADLE) -q -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs clean
 
 eclipse:
-	$(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs eclipse > "$(top_builddir)/modules/java-modules/gradle-eclipse.log"
+	$(AM_V_GEN) $(GRADLE) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs eclipse > "$(top_srcdir)/modules/java-modules/gradle-eclipse.log"
 
 
 INSTALL_EXEC_HOOKS += java-modules-install-exec-hook
@@ -74,5 +74,6 @@ EXTRA_DIST += \
         modules/java-modules/common/src/test/java/org/syslog_ng/options/test/TestIntegerOptionDecorator.java \
         modules/java-modules/common/src/test/java/org/syslog_ng/logging/test/MockLogDestination.java \
         modules/java-modules/hdfs/src/main/java/org/syslog_ng/hdfs/HdfsDestination.java \
+        modules/java-modules/hdfs/src/main/java/org/syslog_ng/hdfs/HdfsOptions.java \
         modules/java-modules/dummy/src/main/java/org/syslog_ng/DummyTextDestination.java 
 
