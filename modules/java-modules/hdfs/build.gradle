@@ -4,20 +4,20 @@ apply plugin: 'eclipse'
 project.buildDir = syslogBuildDir+'/hdfs/gradle'
 
 repositories {
-   mavenCentral()
    flatDir {
        dirs syslogDepsDir
        dirs syslogBuildDir + '/common/gradle/libs'
+       dirs '/usr/lib/syslog-ng-java-module-dependency-jars/jars'
    }
+  mavenCentral()
 }
 
 dependencies {
-    compile "org.apache.hadoop:hadoop-hdfs:2.7.1"
+    compile fileTree(dir: "/usr/lib/syslog-ng-java-module-dependency-jars/jars", includes: ['*.jar'])
+    compile 'org.apache.hadoop:hadoop-hdfs:2.7.1'
     compile 'org.apache.hadoop:hadoop-common:2.7.1'
-    compile 'org.apache.hadoop:hadoop-core:1.2.1'
     compile name: 'syslog-ng-common'
     compile name: 'syslog-ng-core'
     compile 'log4j:log4j:1.2.17'
-
-
 }
+

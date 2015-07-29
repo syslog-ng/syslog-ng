@@ -6,10 +6,12 @@ project.buildDir = syslogBuildDir + '/common/gradle'
 jar.baseName = 'syslog-ng-common'
 
 repositories {
-  mavenCentral()
   flatDir {
     dirs syslogDepsDir
+    dirs '/usr/lib/syslog-ng-java-module-dependency-jars/jars'
   }
+  mavenCentral()
+
 }
 
 dependencies {
@@ -18,3 +20,4 @@ dependencies {
   testCompile 'junit:junit:4.12'
   testCompile 'org.hamcrest:hamcrest-core:1.3'
 }
+
