@@ -27,44 +27,16 @@
 #define PATTERNDB_INT_H_INCLUDED
 
 #include "patterndb.h"
+#include "correllation-key.h"
 
 typedef struct _PDBLookupParams PDBLookupParams;
 typedef struct _PDBRule PDBRule;
 
-/* rule context scope */
-typedef enum
-{
-  /* correllation happens globally, e.g. log messages even on different hosts are considered */
-  RCS_GLOBAL,
-  /* correllation happens inside the same host only, e.g. messages from other hosts are not considered */
-  RCS_HOST,
-  /* correllation happens for the same program only, e.g. messages from other programs are not considered */
-  RCS_PROGRAM,
-  /* correllation happens for the same process only, e.g. messages from a different program/pid are not considered */
-  RCS_PROCESS,
-} PDBCorrellationScope;
-
-/* Our state hash contains a mixed set of values, they are either
- * correllation contexts or the state entry required by rate limiting. The
- * keys of these distinct structures are differentied by their key->type
- * value, which has one of values of the PSK_* enums above.  */
-typedef struct _PDBStateKey
-{
-  const gchar *host;
-  const gchar *program;
-  const gchar *pid;
-  gchar *session_id;
-
-  /* we use guint8 to limit the size of this structure, we can have 10s of
-   * thousands of this structure present in memory */
-  guint8 /* PDBCorrellationScope */ scope;
-} PDBStateKey;
-
-/* This class encapsulates a correllation context, keyed by PDBStateKey, type == PSK_RULE. */
+/* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
 typedef struct _PDBContext
 {
   /* key in the hashtable. NOTE: host/program/pid/session_id are borrowed pointers from the first message in the state */
-  PDBStateKey key;
+  CorrellationKey key;
   /* back reference to the PatternDB */
   PatternDB *db;
   /* back reference to the last rule touching this context */
@@ -81,7 +53,7 @@ typedef struct _PDBContext
 typedef struct _PDBRateLimit
 {
   /* key in the hashtable. NOTE: host/program/pid/session_id are allocated, thus they need to be freed when the structure is freed. */
-  PDBStateKey key;
+  CorrellationKey key;
   gint buckets;
   guint64 last_check;
 } PDBRateLimit;

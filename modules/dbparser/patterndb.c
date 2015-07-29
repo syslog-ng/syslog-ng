@@ -90,7 +90,7 @@ pdb_context_get_last_message(PDBContext *self)
  * NOTE: borrows "db" and consumes "key" contents.
  */
 PDBContext *
-pdb_context_new(PatternDB *db, PDBStateKey *key)
+pdb_context_new(PatternDB *db, CorrellationKey *key)
 {
   PDBContext *self = g_new0(PDBContext, 1);
 
@@ -147,7 +147,7 @@ pdb_context_unref(PDBContext *self)
  ***************************************************************************/
 
 PDBRateLimit *
-pdb_rate_limit_new(PDBStateKey *key)
+pdb_rate_limit_new(CorrellationKey *key)
 {
   PDBRateLimit *self = g_new0(PDBRateLimit, 1);
 
@@ -172,90 +172,6 @@ pdb_rate_limit_free(PDBRateLimit *self)
     g_free((gchar *) self->key.pid);
   g_free(self->key.session_id);
   g_free(self);
-}
-
-/*********************************************************
- * PDBStateKey, is the key in the state hash table
- *********************************************************/
-
-static guint
-pdb_state_key_hash(gconstpointer k)
-{
-  PDBStateKey *key = (PDBStateKey *) k;
-  guint hash;
-
-  hash = (key->scope << 30);
-  switch (key->scope)
-    {
-    case RCS_PROCESS:
-      hash += g_str_hash(key->pid);
-    case RCS_PROGRAM:
-      hash += g_str_hash(key->program);
-    case RCS_HOST:
-      hash += g_str_hash(key->host);
-    case RCS_GLOBAL:
-      break;
-    default:
-      g_assert_not_reached();
-      break;
-    }
-  return hash + g_str_hash(key->session_id);
-}
-
-static gboolean
-pdb_state_key_equal(gconstpointer k1, gconstpointer k2)
-{
-  PDBStateKey *key1 = (PDBStateKey *) k1;
-  PDBStateKey *key2 = (PDBStateKey *) k2;
-
-  if (key1->scope != key2->scope)
-    return FALSE;
-
-  switch (key1->scope)
-    {
-    case RCS_PROCESS:
-      if (strcmp(key1->pid, key2->pid) != 0)
-        return FALSE;
-    case RCS_PROGRAM:
-      if (strcmp(key1->program, key2->program) != 0)
-        return FALSE;
-    case RCS_HOST:
-      if (strcmp(key1->host, key2->host) != 0)
-        return FALSE;
-    case RCS_GLOBAL:
-      break;
-    default:
-      g_assert_not_reached();
-      break;
-    }
-  if (strcmp(key1->session_id, key2->session_id) != 0)
-    return FALSE;
-  return TRUE;
-}
-
-/* fills a PDBStateKey structure with borrowed values */
-static void
-pdb_state_key_setup(PDBStateKey *self, PDBRule *rule, LogMessage *msg, gchar *session_id)
-{
-  memset(self, 0, sizeof(*self));
-  self->scope = rule->context_scope;
-  self->session_id = session_id;
-
-  /* NVTable ensures that builtin name-value pairs are always NUL terminated */
-  switch (rule->context_scope)
-    {
-    case RCS_PROCESS:
-      self->pid = log_msg_get_value(msg, LM_V_PID, NULL);
-    case RCS_PROGRAM:
-      self->program = log_msg_get_value(msg, LM_V_PROGRAM, NULL);
-    case RCS_HOST:
-      self->host = log_msg_get_value(msg, LM_V_HOST, NULL);
-    case RCS_GLOBAL:
-      break;
-    default:
-      g_assert_not_reached();
-      break;
-    }
 }
 
 /*********************************************************
@@ -398,7 +314,7 @@ pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_propert
 static inline gboolean
 pdb_action_check_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMessage *msg, GString *buffer)
 {
-  PDBStateKey key;
+  CorrellationKey key;
   PDBRateLimit *rl;
   guint64 now;
 
@@ -406,7 +322,7 @@ pdb_action_check_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
     return TRUE;
 
   g_string_printf(buffer, "%s:%d", rule->rule_id, self->id);
-  pdb_state_key_setup(&key, rule, msg, buffer->str);
+  correllation_key_setup(&key, rule->context_scope, msg, buffer->str);
 
   rl = g_hash_table_lookup(db->rate_limits, &key);
   if (!rl)
@@ -1671,8 +1587,8 @@ pattern_db_forget_state(PatternDB *self)
   if (self->state)
     g_hash_table_destroy(self->state);
   g_hash_table_destroy(self->rate_limits);
-  self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_context_unref);
-  self->rate_limits = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
+  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_context_unref);
+  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
   self->timer_wheel = timer_wheel_new();
   g_static_rw_lock_writer_unlock(&self->lock);
 }
@@ -1717,12 +1633,12 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
       pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
       if (rule->context_id_template)
         {
-          PDBStateKey key;
+          CorrellationKey key;
 
           log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
           log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
-          pdb_state_key_setup(&key, rule, msg, buffer->str);
+          correllation_key_setup(&key, rule->context_scope, msg, buffer->str);
           context = g_hash_table_lookup(self->state, &key);
           if (!context)
             {
@@ -1839,8 +1755,8 @@ pattern_db_new(void)
   PatternDB *self = g_new0(PatternDB, 1);
 
   self->ruleset = pdb_rule_set_new();
-  self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_context_unref);
-  self->rate_limits = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
+  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_context_unref);
+  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
   self->timer_wheel = timer_wheel_new();
   cached_g_current_time(&self->last_tick);
   g_static_rw_lock_init(&self->lock);
