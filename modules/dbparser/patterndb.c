@@ -1474,7 +1474,7 @@ pattern_db_expire_entry(guint64 now, gpointer user_data)
             NULL);
   if (pdb->emit)
     pdb_rule_run_actions(context->rule, context->db, RAT_TIMEOUT, context, msg, buffer);
-  g_hash_table_remove(context->db->state, &context->key);
+  g_hash_table_remove(context->db->correllation.state, &context->key);
   g_string_free(buffer, TRUE);
 
   /* pdb_context_free is automatically called when returning from
@@ -1584,11 +1584,10 @@ pattern_db_forget_state(PatternDB *self)
   if (self->timer_wheel)
     timer_wheel_free(self->timer_wheel);
 
-  if (self->state)
-    g_hash_table_destroy(self->state);
   g_hash_table_destroy(self->rate_limits);
-  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_context_unref);
   self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
+  correllation_state_deinit_instance(&self->correllation);
+  correllation_state_init_instance(&self->correllation, (GDestroyNotify) pdb_context_unref);
   self->timer_wheel = timer_wheel_new();
   g_static_rw_lock_writer_unlock(&self->lock);
 }
@@ -1639,7 +1638,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
           log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
           correllation_key_setup(&key, rule->context_scope, msg, buffer->str);
-          context = g_hash_table_lookup(self->state, &key);
+          context = g_hash_table_lookup(self->correllation.state, &key);
           if (!context)
             {
               msg_debug("Correllation context lookup failure, starting a new context",
@@ -1649,7 +1648,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
                         evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
                         NULL);
               context = pdb_context_new(self, &key);
-              g_hash_table_insert(self->state, &context->key, context);
+              g_hash_table_insert(self->correllation.state, &context->key, context);
               g_string_steal(buffer);
             }
           else
@@ -1755,8 +1754,8 @@ pattern_db_new(void)
   PatternDB *self = g_new0(PatternDB, 1);
 
   self->ruleset = pdb_rule_set_new();
-  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_context_unref);
   self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
+  correllation_state_init_instance(&self->correllation, (GDestroyNotify) pdb_context_unref);
   self->timer_wheel = timer_wheel_new();
   cached_g_current_time(&self->last_tick);
   g_static_rw_lock_init(&self->lock);
@@ -1769,9 +1768,8 @@ pattern_db_free(PatternDB *self)
   if (self->ruleset)
     pdb_rule_set_free(self->ruleset);
 
-  if (self->state)
-    g_hash_table_destroy(self->state);
   g_hash_table_destroy(self->rate_limits);
+  correllation_state_deinit_instance(&self->correllation);
   if (self->timer_wheel)
     timer_wheel_free(self->timer_wheel);
   g_static_rw_lock_free(&self->lock);

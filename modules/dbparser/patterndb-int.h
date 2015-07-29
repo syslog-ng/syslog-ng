@@ -28,6 +28,7 @@
 
 #include "patterndb.h"
 #include "correllation-key.h"
+#include "correllation.h"
 
 typedef struct _PDBLookupParams PDBLookupParams;
 typedef struct _PDBRule PDBRule;
@@ -175,7 +176,7 @@ struct _PatternDB
 {
   GStaticRWLock lock;
   PDBRuleSet *ruleset;
-  GHashTable *state;
+  CorrellationState correllation;
   GHashTable *rate_limits;
   TimerWheel *timer_wheel;
   GTimeVal last_tick;
