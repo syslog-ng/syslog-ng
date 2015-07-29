@@ -36,6 +36,7 @@
 #include "patterndb-int.h"
 #include "pdb-example.h"
 #include "pdb-program.h"
+#include "pdb-load.h"
 #include "apphook.h"
 #include "transport/transport-file.h"
 #include "logproto/logproto-text-server.h"

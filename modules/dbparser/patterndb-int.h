@@ -56,8 +56,6 @@ typedef struct _PDBRateLimit
   guint64 last_check;
 } PDBRateLimit;
 
-gboolean pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GList **examples);
-
 struct _PDBLookupParams
 {
   LogMessage *msg;
