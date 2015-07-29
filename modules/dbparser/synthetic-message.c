@@ -6,7 +6,7 @@
 #include "logpipe.h"
 
 void
-pdb_message_add_tag(PDBMessage *self, const gchar *text)
+synthetic_message_add_tag(PDBMessage *self, const gchar *text)
 {
   LogTagId tag;
 
@@ -16,8 +16,27 @@ pdb_message_add_tag(PDBMessage *self, const gchar *text)
   g_array_append_val(self->tags, tag);
 }
 
+gboolean
+synthetic_message_add_value_template(PDBMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
+{
+  LogTemplate *value_template;
+
+  if (!self->values)
+    self->values = g_ptr_array_new();
+
+  value_template = log_template_new(cfg, name);
+  if (!log_template_compile(value_template, value, error))
+    {
+      log_template_unref(value_template);
+      return FALSE;
+    }
+  else
+    g_ptr_array_add(self->values, value_template);
+  return TRUE;
+}
+
 void
-pdb_message_apply(PDBMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer)
+synthetic_message_apply(PDBMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer)
 {
   gint i;
 
@@ -100,7 +119,7 @@ _generate_default_message_from_context(gint inherit_mode, CorrellationContext *c
 }
 
 LogMessage *
-pdb_message_generate_message_with_context(PDBMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer)
+synthetic_message_generate_with_context(PDBMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer)
 {
   LogMessage *genmsg;
 
@@ -120,13 +139,13 @@ pdb_message_generate_message_with_context(PDBMessage *self, gint inherit_mode, C
       break;
     }
   g_ptr_array_add(context->messages, genmsg);
-  pdb_message_apply(self, context, genmsg, buffer);
+  synthetic_message_apply(self, context, genmsg, buffer);
   g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
   return genmsg;
 }
 
 LogMessage *
-pdb_message_generate_message_without_context(PDBMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer)
+synthetic_message_generate_without_context(PDBMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer)
 {
   LogMessage *genmsg;
 
@@ -144,12 +163,12 @@ pdb_message_generate_message_without_context(PDBMessage *self, gint inherit_mode
   GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
   CorrellationContext dummy_context = { .messages = &dummy_ptr_array, 0 };
 
-  pdb_message_apply(self, &dummy_context, genmsg, buffer);
+  synthetic_message_apply(self, &dummy_context, genmsg, buffer);
   return genmsg;
 }
 
 void
-pdb_message_clean(PDBMessage *self)
+synthetic_message_deinit(PDBMessage *self)
 {
   gint i;
 
@@ -166,8 +185,8 @@ pdb_message_clean(PDBMessage *self)
 }
 
 void
-pdb_message_free(PDBMessage *self)
+synthetic_message_free(PDBMessage *self)
 {
-  pdb_message_clean(self);
+  synthetic_message_deinit(self);
   g_free(self);
 }

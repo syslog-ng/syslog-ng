@@ -277,9 +277,9 @@ LogMessage *
 pdb_action_generate_message(PDBAction *self, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   if (context)
-    return pdb_message_generate_message_with_context(&self->content.message, self->content.inherit_mode, &context->super, buffer);
+    return synthetic_message_generate_with_context(&self->content.message, self->content.inherit_mode, &context->super, buffer);
   else
-    return pdb_message_generate_message_without_context(&self->content.message, self->content.inherit_mode, msg, buffer);
+    return synthetic_message_generate_without_context(&self->content.message, self->content.inherit_mode, msg, buffer);
 }
 
 void
@@ -334,7 +334,7 @@ pdb_action_free(PDBAction *self)
   if (self->condition)
     filter_expr_unref(self->condition);
   if (self->content_type == RAC_MESSAGE)
-    pdb_message_clean(&self->content.message);
+    synthetic_message_deinit(&self->content.message);
   g_free(self);
 }
 
@@ -355,7 +355,7 @@ pdb_rule_set_class(PDBRule *self, const gchar *class)
   else
     {
       g_snprintf(class_tag_text, sizeof(class_tag_text), ".classifier.%s", class);
-      pdb_message_add_tag(&self->msg, class_tag_text);
+      synthetic_message_add_tag(&self->msg, class_tag_text);
     }
   self->class = class ? g_strdup(class) : NULL;
 
@@ -458,7 +458,7 @@ pdb_rule_unref(PDBRule *self)
       if (self->class)
         g_free(self->class);
 
-      pdb_message_clean(&self->msg);
+      synthetic_message_deinit(&self->msg);
       g_free(self);
     }
 }
@@ -917,7 +917,6 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
   PDBLoader *state = (PDBLoader *) user_data;
   GError *err = NULL;
   PDBProgramPattern program_pattern;
-  LogTemplate *value;
   gchar **nv;
 
   if (state->in_pattern)
@@ -966,7 +965,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
           *error = g_error_new(1, 0, "Unexpected <tag> element, must be within a rule");
           return;
         }
-      pdb_message_add_tag(state->current_message, text);
+      synthetic_message_add_tag(state->current_message, text);
     }
   else if (state->value_name)
     {
@@ -975,22 +974,12 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
           *error = g_error_new(1, 0, "Unexpected <value> element, must be within a rule");
           return;
         }
-      if (!state->current_message->values)
-        state->current_message->values = g_ptr_array_new();
-
-      value = log_template_new(state->cfg, state->value_name);
-      if (!log_template_compile(value, text, &err))
+      if (!synthetic_message_add_value_template(state->current_message, state->cfg, state->value_name, text, &err))
         {
-          msg_error("Error compiling value template",
-            evt_tag_str("name", state->value_name),
-            evt_tag_str("value", text),
-            evt_tag_str("error", err->message), NULL);
-          log_template_unref(value);
-          g_propagate_error(error, err);
+          *error = g_error_new(1, 0, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
+                               state->current_rule->rule_id, state->value_name, text, err->message);
           return;
         }
-      else
-        g_ptr_array_add(state->current_message->values, value);
     }
   else if (state->in_test_msg)
     {
@@ -1481,7 +1470,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
           context = NULL;
         }
 
-      pdb_message_apply(&rule->msg, &context->super, msg, buffer);
+      synthetic_message_apply(&rule->msg, &context->super, msg, buffer);
       if (self->emit)
         {
           self->emit(msg, FALSE, self->emit_data);

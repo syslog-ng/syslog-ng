@@ -17,13 +17,14 @@ typedef struct _PDBMessage
   GPtrArray *values;
 } PDBMessage;
 
-LogMessage *pdb_message_generate_message_without_context(PDBMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer);
-LogMessage *pdb_message_generate_message_with_context(PDBMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer);
+LogMessage *synthetic_message_generate_without_context(PDBMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer);
+LogMessage *synthetic_message_generate_with_context(PDBMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer);
 
 
-void pdb_message_apply(PDBMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer);
-void pdb_message_add_tag(PDBMessage *self, const gchar *text);
-void pdb_message_clean(PDBMessage *self);
-void pdb_message_free(PDBMessage *self);
+void synthetic_message_apply(PDBMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer);
+gboolean synthetic_message_add_value_template(PDBMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error);
+void synthetic_message_add_tag(PDBMessage *self, const gchar *text);
+void synthetic_message_deinit(PDBMessage *self);
+void synthetic_message_free(PDBMessage *self);
 
 #endif
