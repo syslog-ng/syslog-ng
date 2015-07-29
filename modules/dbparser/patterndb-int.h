@@ -56,19 +56,7 @@ typedef struct _PDBRateLimit
   guint64 last_check;
 } PDBRateLimit;
 
-/* rules loaded from a pdb file */
-typedef struct _PDBRuleSet
-{
-  RNode *programs;
-  gchar *version;
-  gchar *pub_date;
-} PDBRuleSet;
-
 gboolean pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GList **examples);
-PDBRule *pdb_rule_set_lookup(PDBRuleSet *self, PDBLookupParams *input, GArray *dbg_list);
-
-PDBRuleSet *pdb_rule_set_new(void);
-void pdb_rule_set_free(PDBRuleSet *self);
 
 struct _PDBLookupParams
 {
