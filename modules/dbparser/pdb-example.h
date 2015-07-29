@@ -2,7 +2,7 @@
 #define PATTERNDB_PDB_EXAMPLE_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "patterndb-int.h"
+#include "pdb-rule.h"
 
 /* this class encapsulates an example message in the pattern database
  * used for testing rules and patterns. It contains the message with the

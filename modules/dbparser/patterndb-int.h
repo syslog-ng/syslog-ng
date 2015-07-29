@@ -56,25 +56,6 @@ typedef struct _PDBRateLimit
   guint64 last_check;
 } PDBRateLimit;
 
-/* this class encapsulates a the verdict of a rule in the pattern
- * database and is stored as the "value" member in the RADIX tree
- * node. It contains a reference the the original rule in the rule
- * database. */
-struct _PDBRule
-{
-  GAtomicCounter ref_cnt;
-  gchar *class;
-  gchar *rule_id;
-  PDBMessage msg;
-  gint context_timeout;
-  PDBCorrellationScope context_scope;
-  LogTemplate *context_id_template;
-  GPtrArray *actions;
-};
-
-gchar *pdb_rule_get_name(PDBRule *self);
-void pdb_rule_unref(PDBRule *self);
-
 /* rules loaded from a pdb file */
 typedef struct _PDBRuleSet
 {

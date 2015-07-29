@@ -1,5 +1,5 @@
 #include "pdb-program.h"
-#include "patterndb-int.h"
+#include "pdb-rule.h"
 
 /*
  * Database based parser. The patterns are stored in an XML database.
