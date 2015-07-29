@@ -29,6 +29,7 @@
 #include "patterndb.h"
 #include "correllation.h"
 #include "correllation-context.h"
+#include "synthetic-message.h"
 
 typedef struct _PDBLookupParams PDBLookupParams;
 typedef struct _PDBRule PDBRule;
@@ -55,12 +56,6 @@ typedef struct _PDBRateLimit
   guint64 last_check;
 } PDBRateLimit;
 
-typedef struct _PDBMessage
-{
-  GArray *tags;
-  GPtrArray *values;
-} PDBMessage;
-
 /* rule action triggers */
 typedef enum
  {
@@ -74,13 +69,6 @@ typedef enum
   RAC_NONE,
   RAC_MESSAGE
 } PDBActionContentType;
-
-typedef enum
-{
-  RAC_MSG_INHERIT_NONE,
-  RAC_MSG_INHERIT_LAST_MESSAGE,
-  RAC_MSG_INHERIT_CONTEXT
-} PDBActionMessageInheritMode;
 
 /* a rule may contain one or more actions to be performed */
 typedef struct _PDBAction

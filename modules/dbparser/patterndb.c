@@ -135,73 +135,6 @@ pdb_rate_limit_free(PDBRateLimit *self)
 }
 
 /*********************************************************
- * PDBMessage
- *********************************************************/
-
-void
-pdb_message_add_tag(PDBMessage *self, const gchar *text)
-{
-  LogTagId tag;
-
-  if (!self->tags)
-    self->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
-  tag = log_tags_get_by_name(text);
-  g_array_append_val(self->tags, tag);
-}
-
-static void
-pdb_message_apply(PDBMessage *self, PDBContext *context, LogMessage *msg, GString *buffer)
-{
-  gint i;
-
-  if (self->tags)
-    {
-      for (i = 0; i < self->tags->len; i++)
-        log_msg_set_tag_by_id(msg, g_array_index(self->tags, LogTagId, i));
-    }
-
-  if (self->values)
-    {
-      for (i = 0; i < self->values->len; i++)
-        {
-          log_template_format_with_context(g_ptr_array_index(self->values, i),
-                                           context ? (LogMessage **) context->super.messages->pdata : &msg,
-                                           context ? context->super.messages->len : 1,
-                                           NULL, LTZ_LOCAL, 0, context ? context->super.key.session_id : NULL, buffer);
-          log_msg_set_value_by_name(msg,
-                                    ((LogTemplate *) g_ptr_array_index(self->values, i))->name,
-                                    buffer->str,
-                                    buffer->len);
-        }
-    }
-
-}
-
-void
-pdb_message_clean(PDBMessage *self)
-{
-  gint i;
-
-  if (self->tags)
-    g_array_free(self->tags, TRUE);
-
-  if (self->values)
-    {
-      for (i = 0; i < self->values->len; i++)
-        log_template_unref(g_ptr_array_index(self->values, i));
-
-      g_ptr_array_free(self->values, TRUE);
-    }
-}
-
-void
-pdb_message_free(PDBMessage *self)
-{
-  pdb_message_clean(self);
-  g_free(self);
-}
-
-/*********************************************************
  * PDBAction
  *********************************************************/
 
@@ -341,107 +274,12 @@ pdb_action_is_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, PDBAction
 }
 
 LogMessage *
-pdb_action_generate_message_inheriting_properties_from_the_last_message(LogMessage *msg)
+pdb_action_generate_message(PDBAction *self, PDBContext *context, LogMessage *msg, GString *buffer)
 {
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-  path_options.ack_needed = FALSE;
-  return log_msg_clone_cow(msg, &path_options);
-}
-
-LogMessage *
-pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(LogStamp *msgstamp)
-{
-  LogMessage *genmsg;
-
-  genmsg = log_msg_new_empty();
-  genmsg->flags |= LF_LOCAL;
-  genmsg->timestamps[LM_TS_STAMP] = *msgstamp;
-  return genmsg;
-}
-
-LogMessage *
-pdb_action_generate_message_inheriting_properties_from_the_entire_context(PDBContext *context)
-{
-  LogMessage *genmsg = pdb_action_generate_message_inheriting_properties_from_the_last_message(correllation_context_get_last_message(&context->super));
-
-  log_msg_merge_context(genmsg, (LogMessage **) context->super.messages->pdata, context->super.messages->len);
-  return genmsg;
-}
-
-LogMessage *
-pdb_action_generate_default_message(PDBAction *self, LogMessage *msg)
-{
-  switch (self->content.inherit_mode)
-    {
-    case RAC_MSG_INHERIT_LAST_MESSAGE:
-    case RAC_MSG_INHERIT_CONTEXT:
-      return pdb_action_generate_message_inheriting_properties_from_the_last_message(msg);
-    case RAC_MSG_INHERIT_NONE:
-      return pdb_action_generate_new_message_with_timestamp_of_the_triggering_message(&msg->timestamps[LM_TS_STAMP]);
-    default:
-      g_assert_not_reached();
-    }
-}
-
-LogMessage *
-pdb_action_generate_default_message_from_context(PDBAction *action, PDBContext *context)
-{
-  LogMessage *msg = correllation_context_get_last_message(&context->super);
-
-  if (action->content.inherit_mode != RAC_MSG_INHERIT_CONTEXT)
-    return pdb_action_generate_default_message(action, msg);
-
-  return pdb_action_generate_message_inheriting_properties_from_the_entire_context(context);
-}
-
-LogMessage *
-pdb_action_generate_message_with_context(PDBAction *self, PDBContext *context, GString *buffer)
-{
-  LogMessage *genmsg;
-
-  genmsg = pdb_action_generate_default_message_from_context(self, context);
-  switch (context->super.key.scope)
-    {
-      case RCS_PROCESS:
-        log_msg_set_value(genmsg, LM_V_PID, context->super.key.pid, -1);
-      case RCS_PROGRAM:
-        log_msg_set_value(genmsg, LM_V_PROGRAM, context->super.key.program, -1);
-      case RCS_HOST:
-        log_msg_set_value(genmsg, LM_V_HOST, context->super.key.host, -1);
-      case RCS_GLOBAL:
-        break;
-      default:
-        g_assert_not_reached();
-      break;
-    }
-  g_ptr_array_add(context->super.messages, genmsg);
-  pdb_message_apply(&self->content.message, context, genmsg, buffer);
-  g_ptr_array_remove_index_fast(context->super.messages, context->super.messages->len - 1);
-  return genmsg;
-}
-
-LogMessage *
-pdb_action_generate_message_without_context(PDBAction *self, LogMessage *msg, GString *buffer)
-{
-  LogMessage *genmsg;
-
-  genmsg = pdb_action_generate_default_message(self, msg);
-
-  /* no context, which means no correllation. The action
-   * rule contains the generated message at @0 and the one
-   * which triggered the rule in @1.
-   *
-   * We emulate a context having only these two
-   * messages, but without allocating a full-blown
-   * structure.
-   */
-  LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
-  GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
-  PDBContext dummy_context = { .super = { .messages = &dummy_ptr_array, 0 } };
-
-  pdb_message_apply(&self->content.message, &dummy_context, genmsg, buffer);
-  return genmsg;
+  if (context)
+    return pdb_message_generate_message_with_context(&self->content.message, self->content.inherit_mode, &context->super, buffer);
+  else
+    return pdb_message_generate_message_without_context(&self->content.message, self->content.inherit_mode, msg, buffer);
 }
 
 void
@@ -449,10 +287,7 @@ pdb_action_execute_message(PDBAction *self, PatternDB *db, PDBContext *context, 
 {
   LogMessage *genmsg;
 
-  if (context)
-    genmsg = pdb_action_generate_message_with_context(self, context, buffer);
-  else
-    genmsg = pdb_action_generate_message_without_context(self, msg, buffer);
+  genmsg = pdb_action_generate_message(self, context, msg, buffer);
   db->emit(genmsg, TRUE, db->emit_data);
   log_msg_unref(genmsg);
 }
@@ -1080,9 +915,9 @@ void
 pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data, GError **error)
 {
   PDBLoader *state = (PDBLoader *) user_data;
-  LogTemplate *value;
   GError *err = NULL;
   PDBProgramPattern program_pattern;
+  LogTemplate *value;
   gchar **nv;
 
   if (state->in_pattern)
@@ -1646,7 +1481,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
           context = NULL;
         }
 
-      pdb_message_apply(&rule->msg, context, msg, buffer);
+      pdb_message_apply(&rule->msg, &context->super, msg, buffer);
       if (self->emit)
         {
           self->emit(msg, FALSE, self->emit_data);
