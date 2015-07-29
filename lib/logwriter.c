@@ -738,7 +738,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
       return;
     }
 
-  if (mark_mode == MM_DST_IDLE || (mark_mode == MM_HOST_IDLE && (lm->flags & LF_LOCAL)))
+  if (mark_mode == MM_DST_IDLE || (mark_mode == MM_HOST_IDLE && !(lm->flags & LF_LOCAL)))
     {
       /* in dst-idle and host-idle most, messages postpone the MARK itself */
       log_writer_postpone_mark_timer(self);
