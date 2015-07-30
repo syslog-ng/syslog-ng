@@ -1045,7 +1045,8 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   LogTemplate *template;
 
   vp_cmdline_parse_rekey_finish (data);
-  if (!g_strstr_len (value, strlen (value), "="))
+
+  if (strchr(value, '=') == NULL)
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
 		   "Error parsing value-pairs: expected an equal sign in key=value pair");
@@ -1069,6 +1070,16 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   g_strfreev(kv);
 
   return res;
+}
+
+static gboolean
+vp_cmdline_parse_pair_or_key (const gchar *option_name, const gchar *value,
+		              gpointer data, GError **error)
+{
+  if (strchr(value, '=') == NULL)
+    return vp_cmdline_parse_key(option_name, value, data, error);
+  else
+    return vp_cmdline_parse_pair(option_name, value, data, error);
 }
 
 static ValuePairsTransformSet *
@@ -1194,7 +1205,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL },
     { "replace", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_CALLBACK,
       vp_cmdline_parse_rekey_replace_prefix, NULL, NULL },
-    { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair,
+    { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair_or_key,
       NULL, NULL },
     { NULL }
   };
