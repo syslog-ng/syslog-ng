@@ -70,17 +70,6 @@ struct _PatternDB
 
 
 
-/* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
-typedef struct _PDBContext
-{
-  CorrellationContext super;
-  /* back reference to the PatternDB */
-  PatternDB *db;
-  /* back reference to the last rule touching this context */
-  PDBRule *rule;
-  /* timeout timer */
-  TWEntry *timer;
-} PDBContext;
 
 /* This class encapsulates a rate-limit state stored in
    db->state. */
@@ -131,6 +120,18 @@ typedef struct _PDBRateLimit
  * PDBContext, represents a correllation state in the state hash table, is
  * marked with PSK_CONTEXT in the hash table key
  **************************************************************************/
+
+/* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
+typedef struct _PDBContext
+{
+  CorrellationContext super;
+  /* back reference to the PatternDB */
+  PatternDB *db;
+  /* back reference to the last rule touching this context */
+  PDBRule *rule;
+  /* timeout timer */
+  TWEntry *timer;
+} PDBContext;
 
 static void
 pdb_context_free(CorrellationContext *s)
