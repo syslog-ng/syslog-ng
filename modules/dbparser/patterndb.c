@@ -68,20 +68,6 @@ struct _PatternDB
   gpointer emit_data;
 };
 
-
-
-
-/* This class encapsulates a rate-limit state stored in
-   db->state. */
-typedef struct _PDBRateLimit
-{
-  /* key in the hashtable. NOTE: host/program/pid/session_id are allocated, thus they need to be freed when the structure is freed. */
-  CorrellationKey key;
-  gint buckets;
-  guint64 last_check;
-} PDBRateLimit;
-
-
 /*
  * Timing
  * ======
@@ -155,9 +141,18 @@ pdb_context_new(PatternDB *db, CorrellationKey *key)
 }
 
 /***************************************************************************
- * PDBRateLimit, represents a rate-limit state in the state hash table, is
- * marked with PSK_RATE_LIMIT in the hash table key
+ * PDBRateLimit
  ***************************************************************************/
+
+/* This class encapsulates a rate-limit state stored in
+   db->state. */
+typedef struct _PDBRateLimit
+{
+  /* key in the hashtable. NOTE: host/program/pid/session_id are allocated, thus they need to be freed when the structure is freed. */
+  CorrellationKey key;
+  gint buckets;
+  guint64 last_check;
+} PDBRateLimit;
 
 PDBRateLimit *
 pdb_rate_limit_new(CorrellationKey *key)
