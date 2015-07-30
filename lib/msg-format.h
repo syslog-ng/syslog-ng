@@ -43,14 +43,16 @@ enum
   LP_ASSUME_UTF8     = 0x0008,
   /* validate that all characters are indeed UTF-8 and mark the message as valid when relaying */
   LP_VALIDATE_UTF8   = 0x0010,
+  /* sanitize input and force it to be valid UTF-8 by escaping */
+  LP_SANITIZE_UTF8   = 0x0020,
   /* the message may not contain NL characters, strip them if it does */
-  LP_NO_MULTI_LINE   = 0x0020,
+  LP_NO_MULTI_LINE   = 0x0040,
   /* don't store MSGHDR in the LEGACY_MSGHDR macro */
-  LP_STORE_LEGACY_MSGHDR = 0x0040,
+  LP_STORE_LEGACY_MSGHDR = 0x0080,
   /* expect a hostname field in the message */
-  LP_EXPECT_HOSTNAME = 0x0080,
+  LP_EXPECT_HOSTNAME = 0x0100,
   /* message is locally generated and should be marked with LF_LOCAL */
-  LP_LOCAL = 0x0100,
+  LP_LOCAL = 0x0200,
 };
 
 typedef struct _MsgFormatHandler MsgFormatHandler;

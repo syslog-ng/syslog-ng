@@ -23,20 +23,16 @@
  */
 #include "stats/stats-csv.h"
 #include "stats/stats-registry.h"
-#include "misc.h"
+#include "utf8utils.h"
 
 #include <string.h>
 
 static gboolean
 has_csv_special_character(const gchar *var)
 {
-  gchar *p1 = strchr(var, ';');
-  if (p1)
+  if (strchr(var, ';'))
     return TRUE;
-  p1 = strchr(var, '\n');
-  if (p1)
-    return TRUE;
-  if (var[0] == '"')
+  if (strchr(var, '\"'))
     return TRUE;
   return FALSE;
 }
@@ -44,36 +40,19 @@ has_csv_special_character(const gchar *var)
 static gchar *
 stats_format_csv_escapevar(const gchar *var)
 {
-  guint32 index;
-  guint32 e_index;
-  guint32 varlen = strlen(var);
-  gchar *result, *escaped_result;
+  gchar *escaped_result;
 
-  if (varlen != 0 && has_csv_special_character(var))
+  if (var[0] && has_csv_special_character(var))
     {
-      result = g_malloc(varlen*2);
-
-      result[0] = '"';
-      e_index = 1;
-      for (index = 0; index < varlen; index++)
-        {
-          if (var[index] == '"')
-            {
-              result[e_index] = '\\';
-              e_index++;
-            }
-          result[e_index] = var[index];
-          e_index++;
-        }
-      result[e_index] = '"';
-      result[e_index + 1] = 0;
-
-      escaped_result = utf8_escape_string(result, e_index + 2);
+      gchar *result;
+      /* quote */
+      result = convert_unsafe_utf8_to_escaped_binary(var, "\"");
+      escaped_result = g_strdup_printf("\"%s\"", result);
       g_free(result);
     }
   else
     {
-      escaped_result = utf8_escape_string(var, strlen(var));
+      escaped_result = convert_unsafe_utf8_to_escaped_binary(var, NULL);
     }
   return escaped_result;
 }
