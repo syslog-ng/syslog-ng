@@ -63,7 +63,7 @@ public abstract class ESClient {
 				throw new ElasticsearchException("Can't connect to cluster: " + clusterName);
 			}
 		}
-		logger.info("conneted to cluster, cluster_name='" + clusterName + "'");
+		logger.info("connected to cluster, cluster_name='" + clusterName + "'");
 	}
 
 	public final boolean open() {
