@@ -1,7 +1,7 @@
 
 if ENABLE_JAVA
 
-JAVA_DST_DIR=$(DESTDIR)/$(moduledir)
+JAVA_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 JARS=$(shell find $(abs_top_builddir)/modules/java -name '*.jar')
 
 java-binaries:
