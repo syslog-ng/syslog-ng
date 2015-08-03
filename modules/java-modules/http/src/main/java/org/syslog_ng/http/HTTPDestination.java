@@ -9,8 +9,11 @@ import org.syslog_ng.logging.SyslogNgInternalLogger;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import java.lang.SecurityException;
+import java.lang.IllegalStateException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 
 
