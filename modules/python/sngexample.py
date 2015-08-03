@@ -29,6 +29,7 @@ class LogDestination(object):
 
 
 class DummyPythonDest(LogDestination):
+
     def send(self, msg):
         print('queue', msg)
         return True
