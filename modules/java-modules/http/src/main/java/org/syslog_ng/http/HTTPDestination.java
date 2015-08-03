@@ -13,7 +13,6 @@ import java.lang.SecurityException;
 import java.lang.IllegalStateException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 
 
@@ -78,7 +77,7 @@ public class HTTPDestination extends TextLogDestination {
 		return false;
             }
             responseCode = connection.getResponseCode();
-        } catch (ProtocolException | SecurityException | IllegalStateException e) {
+        } catch (IOException | SecurityException | IllegalStateException e) {
             logger.debug("error in writing message." +
                     (responseCode != 0 ? "Response code is " + responseCode : ""));
             return false;
