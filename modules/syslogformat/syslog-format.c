@@ -303,6 +303,28 @@ __is_bsd_pix_or_asa(const guchar *src, guint32 left)
          );
 }
 
+static inline void
+__set_zone_offset(LogStamp * const timestamp, glong const assumed_timezone)
+{
+  if(timestamp->zone_offset == -1)
+    {
+      timestamp->zone_offset = assumed_timezone;
+    }
+  if (timestamp->zone_offset == -1)
+    {
+      timestamp->zone_offset = get_local_timezone_ofs(timestamp->tv_sec);
+    }
+}
+
+static inline time_t
+__get_normalized_time(LogStamp const timestamp, gint const normalized_hour, gint const unnormalized_hour)
+{
+  return timestamp.tv_sec
+         + get_local_timezone_ofs(timestamp.tv_sec)
+         - (normalized_hour - unnormalized_hour) * 3600
+         - timestamp.zone_offset;
+}
+
 /* FIXME: this function should really be exploded to a lot of smaller functions... (Bazsi) */
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
@@ -459,26 +481,8 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
         return FALSE;
     }
 
-  /* NOTE: mktime() returns the time assuming that the timestamp we
-   * received was in local time. This is not true, as there's a
-   * zone_offset in the timestamp as well. We need to adjust this offset
-   * by adding the local timezone offset at the specific time to get UTC,
-   * which means that tv_sec becomes as if tm was in the 00:00 timezone.
-   * Also we have to take into account that at the zone barriers an hour
-   * might be skipped or played twice this is what the
-   * (tm.tm_hour - * unnormalized_hour) part fixes up. */
-
-  if (self->timestamps[LM_TS_STAMP].zone_offset == -1)
-    {
-      self->timestamps[LM_TS_STAMP].zone_offset = assume_timezone;
-    }
-  if (self->timestamps[LM_TS_STAMP].zone_offset == -1)
-    {
-      self->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].tv_sec);
-    }
-  self->timestamps[LM_TS_STAMP].tv_sec = self->timestamps[LM_TS_STAMP].tv_sec +
-                                              get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].tv_sec) -
-                                              (tm.tm_hour - unnormalized_hour) * 3600 - self->timestamps[LM_TS_STAMP].zone_offset;
+  __set_zone_offset(&(self->timestamps[LM_TS_STAMP]), assume_timezone);
+  self->timestamps[LM_TS_STAMP].tv_sec = __get_normalized_time(self->timestamps[LM_TS_STAMP], tm.tm_hour, unnormalized_hour);
 
   *data = src;
   *length = left;
