@@ -9,6 +9,8 @@ import org.syslog_ng.logging.SyslogNgInternalLogger;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import java.lang.SecurityException;
+import java.lang.IllegalStateException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -75,7 +77,7 @@ public class HTTPDestination extends TextLogDestination {
 		return false;
             }
             responseCode = connection.getResponseCode();
-        } catch (ProtocolException | SecurityException | IllegalStateException e) {
+        } catch (IOException | SecurityException | IllegalStateException e) {
             logger.debug("error in writing message." +
                     (responseCode != 0 ? "Response code is " + responseCode : ""));
             return false;
