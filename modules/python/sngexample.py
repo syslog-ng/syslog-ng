@@ -5,11 +5,14 @@ class LogDestination(object):
         return True
 
     def open(self):
-        """Open a connection to the target service"""
+        """Open a connection to the target service.
+        Mind that this function is called after every time-reopen() if
+        the destination is suspended."""
         return True
 
     def is_opened(self):
-        """Check if the connection to the target is able to receive messages"""
+        """Check if the connection to the target is able to receive messages
+        Mind that this function is called before every `send(self, msg)`!"""
         return True
 
     def send(self, msg):
@@ -20,7 +23,9 @@ class LogDestination(object):
         pass
 
     def close(self):
-        """Close the connection to the target service"""
+        """Close the connection to the target service.
+        Mint that this function is called if the destination is idle
+        for longer than the time specified in time-reap()."""
         pass
 
     def deinit(self):
