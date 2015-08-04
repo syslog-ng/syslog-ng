@@ -7,7 +7,7 @@ project.buildDir = syslogBuildDir+'/http/gradle'
 repositories {
     flatDir {
        dirs syslogDepsDir
-       dirs syslogBuildDir + '/common/http/libs'
+       dirs syslogBuildDir + '/common/gradle/libs'
        dirs '/usr/lib/syslog-ng-java-module-dependency-jars/jars'
     }
   mavenCentral()
