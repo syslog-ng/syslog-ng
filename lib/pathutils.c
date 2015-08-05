@@ -24,6 +24,7 @@
  */
 
 #include "pathutils.h"
+#include <sys/stat.h>
 
 gboolean
 is_file_directory(const char *filename)
@@ -36,3 +37,14 @@ is_file_regular(const char *filename)
 {
   return g_file_test(filename, G_FILE_TEST_EXISTS) && g_file_test(filename, G_FILE_TEST_IS_REGULAR);
 };
+
+gboolean
+is_file_device(const gchar *name)
+{
+  struct stat st;
+
+  if (stat(name, &st) >= 0)
+    return S_ISCHR(st.st_mode) || S_ISBLK(st.st_mode);
+  else
+    return FALSE;
+}
