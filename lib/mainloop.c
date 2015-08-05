@@ -497,6 +497,7 @@ main_loop_run(void)
   service_management_clear_status();
   if (interactive_mode)
     {
+      plugin_load_module("python", current_configuration, NULL);
       debugger_start(current_configuration);
     }
   iv_main();
