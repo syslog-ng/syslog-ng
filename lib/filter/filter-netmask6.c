@@ -153,6 +153,8 @@ _parse_prefix(gchar *cidr, gint *prefix)
 
   if (!_get_slash_position(cidr, &slash_position))
     {
+      msg_warning("Prefix is empty. Setting to default (128)",
+                  NULL);
       *prefix = default_prefix;
       return TRUE;
     }
@@ -215,14 +217,25 @@ filter_netmask6_new(gchar *cidr)
 
   if (strlen(cidr) == 0)
     {
+      msg_error("IPV6 input of a netmask6 filter is empty",
+                NULL);
       goto filter_netmask6_invalid_error;
     }
 
   switch (_parse(cidr, address, &prefix))
     {
       case NMF6_ADDRESS_ERROR:
+        msg_error("IPV6 address of a netmask6 filter is invalid",
+                  evt_tag_str("filter", cidr),
+                  evt_tag_str("calculated_address", address),
+                  NULL);
         goto filter_netmask6_invalid_error;
       case NMF6_PREFIX_ERROR:
+        msg_error("IPV6 prefix of a netmask6 filter is invalid",
+                  evt_tag_str("filter", cidr),
+                  evt_tag_str("calculated_address", address),
+                  evt_tag_int("calculated_prefix", prefix),
+                  NULL);
         goto filter_netmask6_invalid_error;
     }
 
@@ -230,9 +243,18 @@ filter_netmask6_new(gchar *cidr)
   self->prefix = prefix;
 
   if (inet_pton(AF_INET6, address, &packet_addr) == 1)
-    filter_netmask6_calc_network_address((unsigned char *) &packet_addr, self->prefix, &self->address);
+    {
+      filter_netmask6_calc_network_address((unsigned char *) &packet_addr, self->prefix, &self->address);
+    }
   else
-    goto filter_netmask6_invalid_error;
+    {
+      msg_error("IPV6 address of a netmask6 filter is invalid",
+                evt_tag_str("filter", cidr),
+                evt_tag_str("calculated_address", address),
+                evt_tag_int("calculated_prefix", prefix),
+                NULL);
+      goto filter_netmask6_invalid_error;
+    }
 
   self->super.eval = _eval;
   return &self->super;
