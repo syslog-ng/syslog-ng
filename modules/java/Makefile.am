@@ -62,6 +62,7 @@ modules_java_libmod_java_la_SOURCES = \
     modules/java/proxies/java-template-proxy.h \
     modules/java/proxies/internal-message-sender-proxy.c
 
+modules_java_libmod_java_la_LIBADD =  $(JNI_LIBS)
 
 modules_java_libmod_java_la_LDFLAGS = \
     -avoid-version -module -no-undefined
