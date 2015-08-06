@@ -5,11 +5,14 @@ MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
 GRADLE_WORKDIR=$(abs_top_builddir)/modules/java/.gradle
 
 java-modules:
-	 $(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs build
+	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs build
 
 all-local: java-modules
 
-java-modules-install-exec-hook:
+log4j-copy-jar:
+	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs -PjarDestDir=$(JAVA_MOD_DST_DIR) copyLog4j
+
+java-modules-install-exec-hook: log4j-copy-jar
 	$(mkinstalldirs) $(JAVA_MOD_DST_DIR)
 	cp $(MOD_JARS) $(JAVA_MOD_DST_DIR)
 

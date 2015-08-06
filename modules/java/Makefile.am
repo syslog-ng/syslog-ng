@@ -2,7 +2,7 @@
 if ENABLE_JAVA
 
 JAVA_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
-JARS=$(shell find $(abs_top_builddir)/modules/java -name '*.jar')
+JARS=$(shell find $(abs_top_builddir)/modules/java/syslog-ng-core -name '*.jar')
 GRADLE_WORKDIR=$(abs_top_builddir)/modules/java/.gradle
 
 java-binaries:
