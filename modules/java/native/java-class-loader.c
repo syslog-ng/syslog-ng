@@ -27,13 +27,12 @@
 #include "messages.h"
 
 #define SYSLOG_NG_CLASS_LOADER  "org/syslog_ng/SyslogNgClassLoader"
-//#define SYSLOG_NG_CLASS_LOADER  "org.syslog_ng.SyslogNgClassLoader"
 #define SYSLOG_NG_JAR           "syslog-ng-core.jar"
 
 jstring
 __create_class_path(ClassLoader *self, JNIEnv *java_env, const gchar *class_path)
 {
-  GString *g_class_path = g_string_new(module_path);
+  GString *g_class_path = g_string_new(java_module_path);
   jstring str_class_path = NULL;
   g_string_append(g_class_path, "/" SYSLOG_NG_JAR);
   if (class_path && (strlen(class_path) > 0))
