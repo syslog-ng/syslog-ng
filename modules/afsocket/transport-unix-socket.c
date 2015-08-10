@@ -207,8 +207,14 @@ _unix_socket_read(gint fd, gpointer buf, gsize buflen, LogTransportAuxData *aux)
   gint rc;
   struct msghdr msg;
   struct iovec iov[1];
-  gchar ctlbuf[32];
   struct sockaddr_storage ss;
+#if defined(HAVE_CTRLBUF_IN_MSGHDR)
+  gchar ctlbuf[32];
+  msg.msg_control = *ctlbuf;
+  msg.msg_controllen = sizeof(ctlbuf);
+#endif
+
+
 
   msg.msg_name = (struct sockaddr *) &ss;
   msg.msg_namelen = sizeof(ss);
@@ -216,8 +222,6 @@ _unix_socket_read(gint fd, gpointer buf, gsize buflen, LogTransportAuxData *aux)
   msg.msg_iov = iov;
   iov[0].iov_base = buf;
   iov[0].iov_len = buflen;
-  msg.msg_control = ctlbuf;
-  msg.msg_controllen = sizeof(ctlbuf);
   do
     {
       rc = recvmsg(fd, &msg, 0);

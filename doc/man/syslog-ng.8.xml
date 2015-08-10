@@ -157,6 +157,15 @@
         </varlistentry>
         <varlistentry>
           <term>
+            <command moreinfo="none">--control &lt;ctlpath&gt;</command> or <command moreinfo="none">-c
+              &lt;ctlpath&gt;</command>
+          </term>
+          <listitem>
+            <para>Set syslog-ng control socket, default=/var/run/syslog-ng.ctl.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
             <command moreinfo="none">--preprocess-into &lt;output-file&gt;</command>
           </term>
           <listitem>

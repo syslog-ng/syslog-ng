@@ -502,6 +502,10 @@ AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whethe
 #include <time.h>
 #endif])
 
+AC_CHECK_MEMBER(struct msghdr.msg_control,AC_DEFINE(HAVE_CTRLBUF_IN_MSGHDR,1,[Whether you have msg_control field in msghdr in socket.h]),,[
+#include <sys/socket.h>
+])
+
 AC_CACHE_CHECK(for I_CONSLOG, blb_cv_c_i_conslog,
   [AC_EGREP_CPP(I_CONSLOG,
 [
