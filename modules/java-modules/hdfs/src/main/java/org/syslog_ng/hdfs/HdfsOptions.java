@@ -86,9 +86,9 @@ public class HdfsOptions {
   private void fillStringOptions() {
 		options.put(new RequiredOptionDecorator(new StringOption(owner, URI)));
 		options.put(new RequiredOptionDecorator(new StringOption(owner, FILE)));
-		options.put(new RequiredOptionDecorator(new StringOption(owner, ARCHIVE_DIR)));
-		options.put(new RequiredOptionDecorator(new StringOption(owner, RESOURCES)));
-		options.put(new RequiredOptionDecorator(new StringOption(owner, MAX_FILENAME_LENGTH, MAX_FILENAME_LENGTH_DEFAULT)));
+		options.put(new StringOption(owner, ARCHIVE_DIR));
+		options.put(new StringOption(owner, RESOURCES));
+		options.put(new StringOption(owner, MAX_FILENAME_LENGTH, MAX_FILENAME_LENGTH_DEFAULT));
   }
 
 }
