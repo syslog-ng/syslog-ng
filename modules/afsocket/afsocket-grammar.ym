@@ -269,6 +269,11 @@ source_afunix_option
 	    AFUnixSourceDriver *self = (AFUnixSourceDriver*) last_driver;
 	    afunix_sd_set_pass_unix_credentials(self, $3);
 	  }
+	| KW_CREATE_DIRS '(' yesno ')'
+	  {
+	    AFUnixSourceDriver *self = (AFUnixSourceDriver*) last_driver;
+	    afunix_sd_set_create_dirs(self, $3);
+	  }
 	;
 
 source_afinet
