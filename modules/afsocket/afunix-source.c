@@ -43,6 +43,12 @@ afunix_sd_setup_addresses(AFSocketSourceDriver *s)
   if (!afsocket_sd_setup_addresses_method(s))
     return FALSE;
 
+  if (self->create_dirs)
+    {
+      if (!file_perm_options_create_containing_directory(&self->file_perm_options, self->filename))
+        return FALSE;
+    }
+
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(self->filename);
 
