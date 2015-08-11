@@ -210,7 +210,7 @@ _unix_socket_read(gint fd, gpointer buf, gsize buflen, LogTransportAuxData *aux)
   struct sockaddr_storage ss;
 #if defined(HAVE_CTRLBUF_IN_MSGHDR)
   gchar ctlbuf[32];
-  msg.msg_control = *ctlbuf;
+  msg.msg_control = ctlbuf;
   msg.msg_controllen = sizeof(ctlbuf);
 #endif
 
