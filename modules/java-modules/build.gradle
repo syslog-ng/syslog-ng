@@ -10,5 +10,10 @@ allprojects {
         }
       mavenCentral()
     }
+
+    compileJava {
+        sourceCompatibility "1.7"
+        targetCompatibility "1.7"
+    }
 }
 
