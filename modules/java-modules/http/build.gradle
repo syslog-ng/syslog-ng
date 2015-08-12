@@ -1,17 +1,4 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-
 project.buildDir = syslogBuildDir+'/http/gradle'
-
-
-repositories {
-    flatDir {
-       dirs syslogDepsDir
-       dirs syslogBuildDir + '/common/gradle/libs'
-       dirs '/usr/lib/syslog-ng-java-module-dependency-jars/jars'
-    }
-  mavenCentral()
-}
 
 dependencies {
     compile fileTree(dir: "/usr/lib/syslog-ng-java-module-dependency-jars/jars", includes: ['*.jar'])
