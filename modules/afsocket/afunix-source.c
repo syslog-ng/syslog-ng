@@ -43,6 +43,12 @@ afunix_sd_setup_addresses(AFSocketSourceDriver *s)
   if (!afsocket_sd_setup_addresses_method(s))
     return FALSE;
 
+  if (self->create_dirs)
+    {
+      if (!file_perm_options_create_containing_directory(&self->file_perm_options, self->filename))
+        return FALSE;
+    }
+
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(self->filename);
 
@@ -117,6 +123,7 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
   file_perm_options_defaults(&self->file_perm_options);
   self->file_perm_options.file_perm = 0666;
   self->pass_unix_credentials = cfg->pass_unix_credentials;
+  self->create_dirs = cfg->create_dirs;
   afunix_sd_set_pass_unix_credentials(self, self->pass_unix_credentials);
 
   afunix_sd_adjust_reader_options(self, cfg);
@@ -129,6 +136,12 @@ afunix_sd_set_pass_unix_credentials(AFUnixSourceDriver *self, gboolean pass)
   self->pass_unix_credentials = pass;
 
   transport_mapper_unix_set_pass_unix_credentials(self->super.transport_mapper, pass);
+}
+
+void
+afunix_sd_set_create_dirs(AFUnixSourceDriver *self, gboolean create_dirs)
+{
+  self->create_dirs = create_dirs;
 }
 
 AFUnixSourceDriver *
