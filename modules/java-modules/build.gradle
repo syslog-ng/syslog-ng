@@ -1,3 +1,5 @@
+project.buildDir = syslogBuildDir
+
 allprojects {
     apply plugin: 'java'
     apply plugin: 'eclipse'
