@@ -59,9 +59,11 @@ struct _LogThrDestDriver
   /* Worker stuff */
   struct
   {
+    gboolean connected;
     void (*thread_init) (LogThrDestDriver *s);
     void (*thread_deinit) (LogThrDestDriver *s);
     worker_insert_result_t (*insert) (LogThrDestDriver *s, LogMessage *msg);
+    gboolean (*connect) (LogThrDestDriver *s);
     void (*worker_message_queue_empty)(LogThrDestDriver *s);
     void (*disconnect) (LogThrDestDriver *s);
   } worker;

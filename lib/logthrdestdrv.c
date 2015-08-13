@@ -96,12 +96,44 @@ log_threaded_dest_driver_shutdown(gpointer data)
   iv_quit();
 }
 
+
+static void
+__connect(LogThrDestDriver *self)
+{
+  self->worker.connected = TRUE;
+  if (self->worker.connect)
+    {
+      self->worker.connected = self->worker.connect(self);
+    }
+
+  if (!self->worker.connected)
+    {
+      log_queue_reset_parallel_push(self->queue);
+      log_threaded_dest_driver_suspend(self);
+    }
+  else
+    {
+      log_threaded_dest_driver_start_watches(self);
+    }
+}
+
+static void
+__disconnect(LogThrDestDriver *self)
+{
+  if (self->worker.disconnect)
+    {
+      self->worker.disconnect(self);
+    }
+  self->worker.connected = FALSE;
+}
+
+
+
 static void
 _disconnect_and_suspend(LogThrDestDriver *self)
 {
   self->suspended = TRUE;
-  if (self->worker.disconnect)
-    self->worker.disconnect(self);
+  __disconnect(self);
   log_queue_reset_parallel_push(self->queue);
   log_threaded_dest_driver_suspend(self);
 }
@@ -182,7 +214,12 @@ log_threaded_dest_driver_do_work(gpointer data)
   self->suspended = FALSE;
   log_threaded_dest_driver_stop_watches(self);
 
-  if (log_queue_check_items(self->queue, &timeout_msec,
+  if (!self->worker.connected)
+    {
+      __connect(self);
+    }
+
+  else if (log_queue_check_items(self->queue, &timeout_msec,
                                         log_threaded_dest_driver_message_became_available_in_the_queue,
                                         self, NULL))
     {
@@ -248,9 +285,7 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
 
   iv_main();
 
-  if (self->worker.disconnect)
-    self->worker.disconnect(self);
-
+  __disconnect(self);
   if (self->worker.thread_deinit)
     self->worker.thread_deinit(self);
 
