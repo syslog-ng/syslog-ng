@@ -25,7 +25,7 @@ java-modules-clean-hook:
 	rm -rf $(abs_top_builddir)/modules/java/.gradle
 
 eclipse:
-	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs eclipse > "$(abs_top_scrdir)/modules/java-modules/gradle-eclipse.log"
+	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs eclipse
 
 
 INSTALL_EXEC_HOOKS += java-modules-install-exec-hook
@@ -42,6 +42,7 @@ EXTRA_DIST += \
 	modules/java-modules/dummy/build.gradle   \
 	modules/java-modules/http/build.gradle   \
 	modules/java-modules/settings.gradle \
+	modules/java-modules/build.gradle \
 	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/ESMessageProcessor.java \
 	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/DummyProcessor.java \
 	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/ESBulkMessageProcessor.java \

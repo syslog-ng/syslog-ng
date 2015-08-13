@@ -1,18 +1,6 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-
 project.buildDir = syslogBuildDir + '/common/gradle'
 
 jar.baseName = 'syslog-ng-common'
-
-repositories {
-  flatDir {
-    dirs syslogDepsDir
-    dirs '/usr/lib/syslog-ng-java-module-dependency-jars/jars'
-  }
-  mavenCentral()
-
-}
 
 dependencies {
   compile name: 'syslog-ng-core'

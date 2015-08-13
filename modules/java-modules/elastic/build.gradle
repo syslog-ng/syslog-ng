@@ -1,17 +1,4 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-
 project.buildDir = syslogBuildDir+'/elastic/gradle'
-
-
-repositories {
-    flatDir {
-       dirs syslogDepsDir
-       dirs syslogBuildDir + '/common/gradle/libs'
-       dirs '/usr/lib/syslog-ng-java-module-dependency-jars/jars'
-    }
-  mavenCentral()
-}
 
 dependencies {
     compile 'org.elasticsearch:elasticsearch:1.6.0'
