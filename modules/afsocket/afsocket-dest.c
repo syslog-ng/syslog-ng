@@ -33,6 +33,48 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+typedef struct _ReloadStoreItem
+{
+  LogProtoClientFactory *proto_factory;
+  LogWriter *writer;
+} ReloadStoreItem;
+
+static ReloadStoreItem*
+_reload_store_item_new(AFSocketDestDriver *afsocket_dd)
+{
+  ReloadStoreItem *item = g_new(ReloadStoreItem, 1);
+  item->proto_factory = afsocket_dd->proto_factory;
+  item->writer = afsocket_dd->writer;
+  return item;
+}
+
+static void
+_reload_store_item_free(ReloadStoreItem *self)
+{
+  if (!self)
+    return;
+
+  if (self->writer)
+    log_pipe_unref((LogPipe *) self->writer);
+
+  g_free(self);
+}
+
+static LogWriter*
+_reload_store_item_release_writer(ReloadStoreItem *self)
+{
+  LogWriter *writer = self->writer;
+  self->writer = NULL;
+
+  return writer;
+}
+
+static inline gboolean
+_is_protocol_type_changed_during_reload(AFSocketDestDriver *self, ReloadStoreItem *item)
+{
+  return (self->proto_factory->construct != item->proto_factory->construct);
+}
+
 void
 afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
 {
@@ -40,7 +82,6 @@ afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
 
   self->connections_kept_alive_accross_reloads = enable;
 }
-
 
 static gchar *
 afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
@@ -315,10 +356,13 @@ static void
 afsocket_dd_restore_connection(AFSocketDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+  ReloadStoreItem *item = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
 
-  self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
+  if (item && !_is_protocol_type_changed_during_reload(self, item))
+    self->writer = _reload_store_item_release_writer(item);
+
+  _reload_store_item_free(item);
 }
-
 
 LogWriter *
 afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
@@ -407,7 +451,8 @@ afsocket_dd_save_connection(AFSocketDestDriver *self)
 
   if (self->connections_kept_alive_accross_reloads)
     {
-      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, FALSE), self->writer, (GDestroyNotify) log_pipe_unref, FALSE);
+      ReloadStoreItem *item = _reload_store_item_new(self);
+      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, FALSE), item, (GDestroyNotify) _reload_store_item_free, FALSE);
       self->writer = NULL;
     }
 }
