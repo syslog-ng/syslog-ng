@@ -24,13 +24,24 @@
 #ifndef STATEFUL_PARSER_H_INCLUDED
 #define STATEFUL_PARSER_H_INCLUDED 1
 
-#include "syslog-ng.h"
+#include "parser/parser-expr.h"
 
 typedef enum
 {
   LDBP_IM_PASSTHROUGH = 0,
   LDBP_IM_INTERNAL = 1,
 } LogDBParserInjectMode;
+
+typedef struct _StatefulParser
+{
+  LogParser super;
+  LogDBParserInjectMode inject_mode;
+} StatefulParser;
+
+void stateful_parser_set_inject_mode(StatefulParser *self, const gchar *inject_mode);
+void stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg);
+void stateful_parser_init_instance(StatefulParser *self, GlobalConfig *cfg);
+void stateful_parser_free_method(LogPipe *s);
 
 int stateful_parser_lookup_inject_mode(const gchar *inject_mode);
 
