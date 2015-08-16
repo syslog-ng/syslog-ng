@@ -190,6 +190,12 @@ synthetic_message_generate_without_context(SyntheticMessage *self, gint inherit_
 }
 
 void
+synthetic_message_init(SyntheticMessage *self)
+{
+  memset(self, 0, sizeof(*self));
+}
+
+void
 synthetic_message_deinit(SyntheticMessage *self)
 {
   gint i;
@@ -204,6 +210,14 @@ synthetic_message_deinit(SyntheticMessage *self)
 
       g_ptr_array_free(self->values, TRUE);
     }
+}
+
+SyntheticMessage *
+synthetic_message_new(void)
+{
+  SyntheticMessage *self = g_new0(SyntheticMessage, 1);
+
+  return self;
 }
 
 void

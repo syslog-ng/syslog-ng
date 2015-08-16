@@ -46,7 +46,9 @@ LogMessage *synthetic_message_generate_with_context(SyntheticMessage *self, gint
 void synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer);
 gboolean synthetic_message_add_value_template(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error);
 void synthetic_message_add_tag(SyntheticMessage *self, const gchar *text);
+void synthetic_message_init(SyntheticMessage *self);
 void synthetic_message_deinit(SyntheticMessage *self);
+SyntheticMessage *synthetic_message_new(void);
 void synthetic_message_free(SyntheticMessage *self);
 
 #endif
