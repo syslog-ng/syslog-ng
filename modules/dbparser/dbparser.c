@@ -26,16 +26,12 @@
 #include "radix.h"
 #include "apphook.h"
 #include "reloc.h"
+#include "stateful-parser.h"
 
 #include <sys/stat.h>
 #include <iv.h>
 #include <string.h>
 
-typedef enum
-{
-  LDBP_IM_PASSTHROUGH = 0,
-  LDBP_IM_INTERNAL = 1,
-} LogDBParserInjectMode;
 
 struct _LogDBParser
 {
@@ -241,15 +237,8 @@ log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file)
 void
 log_db_parser_set_inject_mode(LogDBParser *self, const gchar *inject_mode)
 {
-  if (strcmp(inject_mode, "internal") == 0)
-    {
-      self->inject_mode = LDBP_IM_INTERNAL;
-    }
-  else if (strcmp(inject_mode, "pass-through") == 0 || strcmp(inject_mode, "pass_through") == 0)
-    {
-      self->inject_mode = LDBP_IM_PASSTHROUGH;
-    }
-  else
+  self->inject_mode = stateful_parser_lookup_inject_mode(inject_mode);
+  if (self->inject_mode < 0)
     {
       msg_warning("Unknown inject-mode specified for db-parser",
                   evt_tag_str("inject-mode", inject_mode),
