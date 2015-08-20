@@ -453,7 +453,7 @@ pdb_lookup_ruleset(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
  */
 
 static void
-pattern_db_expire_entry(guint64 now, gpointer user_data)
+pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 {
   PDBContext *context = user_data;
   PatternDB *pdb = context->db;

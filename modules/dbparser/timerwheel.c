@@ -136,6 +136,8 @@ struct _TimerWheel
   guint64 now;
   guint64 base;
   gint num_timers;
+  gpointer assoc_data;
+  GDestroyNotify assoc_data_free;
 };
 
 void
@@ -317,7 +319,7 @@ timer_wheel_set_time(TimerWheel *self, guint64 new_now)
         {
           next = entry->next;
 
-          entry->callback(self->now, entry->user_data);
+          entry->callback(self, self->now, entry->user_data);
           tw_entry_free(entry);
           self->num_timers--;
         }
@@ -351,6 +353,28 @@ timer_wheel_expire_all(TimerWheel *self)
   self->now = now;
 }
 
+static void
+_free_assoc_data(TimerWheel *self)
+{
+  if (self->assoc_data && self->assoc_data_free)
+    self->assoc_data_free(self->assoc_data);
+  self->assoc_data = NULL;
+}
+
+void
+timer_wheel_set_associated_data(TimerWheel *self, gpointer assoc_data, GDestroyNotify assoc_data_free)
+{
+  _free_assoc_data(self);
+  self->assoc_data = assoc_data;
+  self->assoc_data_free = assoc_data_free;
+}
+
+gpointer
+timer_wheel_get_associated_data(TimerWheel *self)
+{
+  return self->assoc_data;
+}
+
 TimerWheel *
 timer_wheel_new(void)
 {
@@ -374,5 +398,6 @@ timer_wheel_free(TimerWheel *self)
   gint i;
   for (i = 0; i < G_N_ELEMENTS(self->levels); i++)
     tw_level_free(self->levels[i]);
+  _free_assoc_data(self);
   g_free(self);
 }
