@@ -115,8 +115,6 @@ typedef struct _PDBContext
   PatternDB *db;
   /* back reference to the last rule touching this context */
   PDBRule *rule;
-  /* timeout timer */
-  TWEntry *timer;
 } PDBContext;
 
 static void
@@ -670,13 +668,13 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 
           g_ptr_array_add(context->super.messages, log_msg_ref(msg));
 
-          if (context->timer)
+          if (context->super.timer)
             {
-              timer_wheel_mod_timer(self->timer_wheel, context->timer, rule->context_timeout);
+              timer_wheel_mod_timer(self->timer_wheel, context->super.timer, rule->context_timeout);
             }
           else
             {
-              context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry,
+              context->super.timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry,
                                                      correllation_context_ref(&context->super),
                                                      (GDestroyNotify) correllation_context_unref);
             }
