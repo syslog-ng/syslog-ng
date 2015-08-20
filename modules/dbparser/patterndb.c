@@ -558,29 +558,6 @@ pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_f
     }
 }
 
-void
-pattern_db_expire_state(PatternDB *self)
-{
-  g_static_rw_lock_writer_lock(&self->lock);
-  timer_wheel_expire_all(self->timer_wheel);
-  g_static_rw_lock_writer_unlock(&self->lock);
-}
-
-void
-pattern_db_forget_state(PatternDB *self)
-{
-  g_static_rw_lock_writer_lock(&self->lock);
-  if (self->timer_wheel)
-    timer_wheel_free(self->timer_wheel);
-
-  g_hash_table_destroy(self->rate_limits);
-  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
-  correllation_state_deinit_instance(&self->correllation);
-  correllation_state_init_instance(&self->correllation);
-  self->timer_wheel = timer_wheel_new();
-  timer_wheel_set_associated_data(self->timer_wheel, self, NULL);
-  g_static_rw_lock_writer_unlock(&self->lock);
-}
 
 void
 pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit, gpointer emit_data)
@@ -752,16 +729,49 @@ pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
   _pattern_db_process(self, &lookup, dbg_list);
 }
 
+void
+pattern_db_expire_state(PatternDB *self)
+{
+  g_static_rw_lock_writer_lock(&self->lock);
+  timer_wheel_expire_all(self->timer_wheel);
+  g_static_rw_lock_writer_unlock(&self->lock);
+}
+
+static void
+_init_state(PatternDB *self)
+{
+  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
+  correllation_state_init_instance(&self->correllation);
+  self->timer_wheel = timer_wheel_new();
+  timer_wheel_set_associated_data(self->timer_wheel, self, NULL);
+}
+
+static void
+_destroy_state(PatternDB *self)
+{
+  if (self->timer_wheel)
+    timer_wheel_free(self->timer_wheel);
+
+  g_hash_table_destroy(self->rate_limits);
+  correllation_state_deinit_instance(&self->correllation);
+}
+
+void
+pattern_db_forget_state(PatternDB *self)
+{
+  g_static_rw_lock_writer_lock(&self->lock);
+  _destroy_state(self);
+  _init_state(self);
+  g_static_rw_lock_writer_unlock(&self->lock);
+}
+
 PatternDB *
 pattern_db_new(void)
 {
   PatternDB *self = g_new0(PatternDB, 1);
 
   self->ruleset = pdb_rule_set_new();
-  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
-  correllation_state_init_instance(&self->correllation);
-  self->timer_wheel = timer_wheel_new();
-  timer_wheel_set_associated_data(self->timer_wheel, self, NULL);
+  _init_state(self);
   cached_g_current_time(&self->last_tick);
   g_static_rw_lock_init(&self->lock);
   return self;
@@ -772,11 +782,7 @@ pattern_db_free(PatternDB *self)
 {
   if (self->ruleset)
     pdb_rule_set_free(self->ruleset);
-
-  g_hash_table_destroy(self->rate_limits);
-  correllation_state_deinit_instance(&self->correllation);
-  if (self->timer_wheel)
-    timer_wheel_free(self->timer_wheel);
+  _destroy_state(self);
   g_static_rw_lock_free(&self->lock);
   g_free(self);
 }
