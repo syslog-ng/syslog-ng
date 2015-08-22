@@ -625,15 +625,11 @@ g_process_change_limits(void)
   struct rlimit limit;
 
   getrlimit(RLIMIT_NOFILE, &limit);
-#ifdef __CYGWIN__
-  limit.rlim_cur = limit.rlim_max = 256;
-#else
   limit.rlim_cur = limit.rlim_max;
   if (process_opts.fd_limit_min)
     {
       limit.rlim_cur = limit.rlim_max = process_opts.fd_limit_min;
     }
-#endif
   
   if (setrlimit(RLIMIT_NOFILE, &limit) < 0)
     g_process_message("Error setting file number limit; limit='%d'; error='%s'", process_opts.fd_limit_min, g_strerror(errno));
