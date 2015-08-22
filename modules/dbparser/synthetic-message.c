@@ -39,7 +39,7 @@ synthetic_message_add_tag(SyntheticMessage *self, const gchar *text)
 }
 
 gboolean
-synthetic_message_add_value_template(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
+synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
 {
   LogTemplate *value_template;
 
