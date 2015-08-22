@@ -25,6 +25,7 @@
 
 #include "syslog-ng.h"
 #include "correllation-context.h"
+#include "template/templates.h"
 
 typedef enum
 {
@@ -45,6 +46,7 @@ LogMessage *synthetic_message_generate_with_context(SyntheticMessage *self, gint
 
 void synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer);
 gboolean synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error);
+void synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, LogTemplate *value);
 void synthetic_message_add_tag(SyntheticMessage *self, const gchar *text);
 void synthetic_message_init(SyntheticMessage *self);
 void synthetic_message_deinit(SyntheticMessage *self);

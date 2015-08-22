@@ -42,19 +42,28 @@ gboolean
 synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
 {
   LogTemplate *value_template;
+  gboolean result = FALSE;
 
+  /* NOTE: we shouldn't use the name property for LogTemplate structs, see the comment at log_template_set_name() */
+  value_template = log_template_new(cfg, name);
+  if (log_template_compile(value_template, value, error))
+    {
+      synthetic_message_add_value_template(self, name, value_template);
+      result = TRUE;
+    }
+  log_template_unref(value_template);
+  return result;
+}
+
+void
+synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, LogTemplate *value)
+{
   if (!self->values)
     self->values = g_ptr_array_new();
 
-  value_template = log_template_new(cfg, name);
-  if (!log_template_compile(value_template, value, error))
-    {
-      log_template_unref(value_template);
-      return FALSE;
-    }
-  else
-    g_ptr_array_add(self->values, value_template);
-  return TRUE;
+  /* NOTE: we shouldn't use the name property for LogTemplate structs, see the comment at log_template_set_name() */
+  log_template_set_name(value, name);
+  g_ptr_array_add(self->values, log_template_ref(value));
 }
 
 void
