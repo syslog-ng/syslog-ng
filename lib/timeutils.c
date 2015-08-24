@@ -212,7 +212,7 @@ cached_gmtime(time_t *when, struct tm *tm)
   guchar i = 0;
 
   i = *when & 0x3F;
-  if (G_LIKELY(*when == gm_time_cache[i].when))
+  if (G_LIKELY(*when == gm_time_cache[i].when && *when != 0))
     {
       *tm = gm_time_cache[i].tm;
       return;
