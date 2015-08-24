@@ -30,12 +30,12 @@
 #include <sys/un.h>
 
 
-typedef struct _TransportMapperUnix
+struct _TransportMapperUnix
 {
   TransportMapper super;
   gchar *filename;
   gboolean pass_unix_credentials;
-} TransportMapperUnix;
+};
 
 static LogTransport*
 _create_log_transport(TransportMapper *s, gint fd)
