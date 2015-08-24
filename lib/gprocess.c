@@ -133,11 +133,7 @@ static struct
   .argv = NULL,
   .argv_start = NULL,
   .argv_env_len = 0,
-#ifdef __CYGWIN__
-  .fd_limit_min = 256,
-#else
-  .fd_limit_min = 4096,
-#endif
+  .fd_limit_min = 0,
   .check_period = -1,
   .check_fn = NULL,
   .uid = -1,
@@ -628,7 +624,12 @@ g_process_change_limits(void)
 {
   struct rlimit limit;
 
-  limit.rlim_cur = limit.rlim_max = process_opts.fd_limit_min;
+  getrlimit(RLIMIT_NOFILE, &limit);
+  limit.rlim_cur = limit.rlim_max;
+  if (process_opts.fd_limit_min)
+    {
+      limit.rlim_cur = limit.rlim_max = process_opts.fd_limit_min;
+    }
   
   if (setrlimit(RLIMIT_NOFILE, &limit) < 0)
     g_process_message("Error setting file number limit; limit='%d'; error='%s'", process_opts.fd_limit_min, g_strerror(errno));
