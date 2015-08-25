@@ -5,7 +5,26 @@ modules_dbparser_libsyslog_ng_patterndb_la_SOURCES	=	\
 	modules/dbparser/radix.h				\
 	modules/dbparser/patterndb.c				\
 	modules/dbparser/patterndb.h				\
-	modules/dbparser/patterndb-int.h			\
+	modules/dbparser/pdb-load.c				\
+	modules/dbparser/pdb-load.h				\
+	modules/dbparser/pdb-rule.c				\
+	modules/dbparser/pdb-rule.h				\
+	modules/dbparser/pdb-action.c				\
+	modules/dbparser/pdb-action.h				\
+	modules/dbparser/pdb-program.c				\
+	modules/dbparser/pdb-program.h				\
+	modules/dbparser/pdb-example.c				\
+	modules/dbparser/pdb-example.h				\
+	modules/dbparser/pdb-ruleset.c				\
+	modules/dbparser/pdb-ruleset.h				\
+	modules/dbparser/correllation.c				\
+	modules/dbparser/correllation.h				\
+	modules/dbparser/correllation-key.c			\
+	modules/dbparser/correllation-key.h			\
+	modules/dbparser/correllation-context.c			\
+	modules/dbparser/correllation-context.h			\
+	modules/dbparser/synthetic-message.c			\
+	modules/dbparser/synthetic-message.h			\
 	modules/dbparser/timerwheel.c				\
 	modules/dbparser/timerwheel.h				\
 	modules/dbparser/patternize.c				\

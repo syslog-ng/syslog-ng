@@ -24,17 +24,17 @@
 #ifndef PATTERNDB_H_INCLUDED
 #define PATTERNDB_H_INCLUDED
 
-#include "radix.h"
-#include "template/templates.h"
+#include "syslog-ng.h"
+#include "pdb-ruleset.h"
 #include "timerwheel.h"
-#include "filter/filter-expr.h"
 
 typedef struct _PatternDB PatternDB;
-
 
 typedef void (*PatternDBEmitFunc)(LogMessage *msg, gboolean synthetic, gpointer user_data);
 void pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit_func, gpointer emit_data);
 
+PDBRuleSet *pattern_db_get_ruleset(PatternDB *self);
+TimerWheel *pattern_db_get_timer_wheel(PatternDB *self);
 const gchar *pattern_db_get_ruleset_version(PatternDB *self);
 const gchar *pattern_db_get_ruleset_pub_date(PatternDB *self);
 gboolean pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_file);

@@ -6,7 +6,7 @@
 #include "patterndb.h"
 #include "plugin.h"
 #include "cfg.h"
-#include "patterndb-int.h"
+#include "timerwheel.h"
 #include "libtest/msg_parse_lib.h"
 
 #include <stdio.h>
@@ -91,7 +91,7 @@ static void
 _advance_time(gint timeout)
 {
   if (timeout)
-    timer_wheel_set_time(patterndb->timer_wheel, timer_wheel_get_time(patterndb->timer_wheel) + timeout + 1);
+    timer_wheel_set_time(pattern_db_get_timer_wheel(patterndb), timer_wheel_get_time(pattern_db_get_timer_wheel(patterndb)) + timeout + 1);
 }
 
 static LogMessage *

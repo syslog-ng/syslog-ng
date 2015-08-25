@@ -33,7 +33,9 @@
 #include "plugin.h"
 #include "filter/filter-expr-parser.h"
 #include "patternize.h"
-#include "patterndb-int.h"
+#include "pdb-example.h"
+#include "pdb-program.h"
+#include "pdb-load.h"
 #include "apphook.h"
 #include "transport/transport-file.h"
 #include "logproto/logproto-text-server.h"
@@ -692,7 +694,7 @@ pdbtool_test_find_conflicts(PatternDB *patterndb, LogMessage *msg)
   program = log_msg_get_value(msg, LM_V_PROGRAM, NULL);
   message = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
 
-  node = r_find_node(patterndb->ruleset->programs, (gchar *) program, strlen(program), NULL);
+  node = r_find_node(pattern_db_get_ruleset(patterndb)->programs, (gchar *) program, strlen(program), NULL);
   if (node)
     {
       PDBProgram *program_rules = (PDBProgram *) node->value;
@@ -762,7 +764,7 @@ pdbtool_test(int argc, char *argv[])
         }
 
       patterndb = pattern_db_new();
-      if (!pdb_rule_set_load(patterndb->ruleset, configuration, argv[arg_pos], &examples))
+      if (!pdb_rule_set_load(pattern_db_get_ruleset(patterndb), configuration, argv[arg_pos], &examples))
         {
           failed_to_load = TRUE;
           continue;
@@ -898,10 +900,10 @@ pdbtool_dump(int argc, char *argv[])
     return 1;
 
   if (dump_program_tree)
-    pdbtool_walk_tree(patterndb->ruleset->programs, 0, TRUE);
+    pdbtool_walk_tree(pattern_db_get_ruleset(patterndb)->programs, 0, TRUE);
   else if (match_program)
     {
-      RNode *ruleset = r_find_node(patterndb->ruleset->programs, match_program, strlen(match_program), NULL);
+      RNode *ruleset = r_find_node(pattern_db_get_ruleset(patterndb)->programs, match_program, strlen(match_program), NULL);
       if (ruleset && ruleset->value)
         {
           RNode *root = ((PDBProgram *) ruleset->value)->rules;
