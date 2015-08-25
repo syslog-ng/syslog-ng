@@ -564,7 +564,8 @@ cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyN
               msg_error("Internal error, duplicate configuration elements refer to the same persistent config", 
                         evt_tag_str("name", name),
                         NULL);
-              destroy(value);
+              if (destroy)
+                destroy(value);
               return;
             }
         }
