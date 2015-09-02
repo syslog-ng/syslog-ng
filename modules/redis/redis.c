@@ -132,9 +132,14 @@ redis_dd_format_persist_name(LogThrDestDriver *d)
 static gboolean
 redis_dd_connect(RedisDriver *self, gboolean reconnect)
 {
+  redisReply *reply;
+  
   if (reconnect && (self->c != NULL))
     {
-      redisCommand(self->c, "ping");
+      reply = redisCommand(self->c, "ping");
+
+      if (reply)
+        freeReplyObject(reply);
 
       if (!self->c->err)
         return TRUE;
