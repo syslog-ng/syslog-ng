@@ -218,7 +218,8 @@ r_parser_email(guint8 *str, gint *len, const gchar *param, gpointer state, RPars
     while (strchr(param, str[*len]))
       (*len)++;
 
-  match->ofs = *len;
+  if (match)
+      match->ofs = *len;
 
   /* first character of e-mail can not be a period */
   if (str[*len] == '.')
