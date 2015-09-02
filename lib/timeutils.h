@@ -48,6 +48,7 @@ glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);
 void timespec_add_msec(struct timespec *ts, glong msec);
 glong timespec_diff_msec(struct timespec *t1, struct timespec *t2);
 glong timespec_diff_nsec(struct timespec *t1, struct timespec *t2);
+gint determine_year_for_month(gint month, const struct tm *now);
 
 typedef struct _ZoneInfo ZoneInfo;
 typedef struct _TimeZoneInfo TimeZoneInfo;
