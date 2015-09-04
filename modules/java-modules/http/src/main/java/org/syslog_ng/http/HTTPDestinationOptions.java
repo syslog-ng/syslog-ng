@@ -32,6 +32,10 @@ import org.syslog_ng.options.*;
 public class HTTPDestinationOptions {
 
   public static String URL = "url";
+  public static String METHOD  = "method";
+  public static String METHOD_DEFAULT  = "PUT";
+
+  public static HashSet<String> HTTP_METHODS = new HashSet<String>(Arrays.asList("POST", "PUT", "HEAD", "OPTIONS", "DELETE", "TRACE", "GET"));
 
   private LogDestination owner;
   private Options options;
@@ -58,12 +62,17 @@ public class HTTPDestinationOptions {
     return options.get(URL).getValue();
   }
 
+  public String getMethod() {
+     return options.get(METHOD).getValue();
+  }
+
   private void fillOptions() {
     fillStringOptions();
   }
 
   private void fillStringOptions() {
 		options.put(new RequiredOptionDecorator(new StringOption(owner, URL)));
+		options.put(new EnumOptionDecorator(new StringOption(owner, METHOD, METHOD_DEFAULT), HTTP_METHODS));
   }
 
 }
