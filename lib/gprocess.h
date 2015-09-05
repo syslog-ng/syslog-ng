@@ -50,9 +50,29 @@ typedef struct _Capability
   cap_t (*g_process_cap_save)(void);
   void (*g_process_cap_restore)(cap_t r);
 } Capability;
-gboolean g_process_cap_modify(int capability, int onoff);
-cap_t g_process_cap_save(void);
-void g_process_cap_restore(cap_t r);
+
+Capability *g_process_capability;
+
+static inline gboolean
+g_process_cap_modify(int capability, int onoff)
+{
+  return g_process_capability->g_process_cap_modify(capability, onoff);
+}
+
+static inline cap_t
+g_process_cap_save(void)
+{
+  return g_process_capability->g_process_cap_save();
+}
+
+static inline void
+g_process_cap_restore(cap_t r)
+{
+  g_process_capability->g_process_cap_restore(r);
+}
+
+void g_process_capability_init();
+void g_process_capability_deinit();
 
 #ifndef CAP_SYSLOG
 #define CAP_SYSLOG -1

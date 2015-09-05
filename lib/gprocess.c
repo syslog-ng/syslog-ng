@@ -99,9 +99,6 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
-#if ENABLE_LINUX_CAPS
-static int have_capsyslog = FALSE;
-#endif
 
 /* global variables */
 static struct
@@ -208,8 +205,8 @@ inherit_systemd_activation(void)
  *
  * Returns: whether the operation was successful.
  **/
-gboolean 
-g_process_cap_modify(int capability, int onoff)
+static gboolean
+_g_process_cap_modify(int capability, int onoff)
 {
   cap_t caps;
 
@@ -261,8 +258,8 @@ g_process_cap_modify(int capability, int onoff)
  *
  * Returns: the current set of capabilities
  **/
-cap_t 
-g_process_cap_save(void)
+static cap_t
+_g_process_cap_save(void)
 {
   if (!process_opts.caps)
     return NULL;
@@ -278,8 +275,8 @@ g_process_cap_save(void)
  *
  * Returns: whether the operation was successful.
  **/
-void
-g_process_cap_restore(cap_t r)
+static void
+_g_process_cap_restore(cap_t r)
 {
   gboolean rc;
 
@@ -317,7 +314,7 @@ g_process_check_cap_syslog(void)
 {
   int ret;
 
-  if (have_capsyslog)
+  if (g_process_capability->have_capsyslog)
     return TRUE;
 
   if (CAP_SYSLOG == -1)
@@ -335,7 +332,7 @@ g_process_check_cap_syslog(void)
       return FALSE;
     }
 
-  have_capsyslog = TRUE;
+  g_process_capability->have_capsyslog = TRUE;
   return TRUE;
 }
 
@@ -881,6 +878,25 @@ g_process_change_caps(void)
         }
     }
   return TRUE;
+}
+
+void
+g_process_capability_init()
+{
+  if (!g_process_capability)
+    g_process_capability = g_new(Capability, 1);
+
+  g_process_capability->g_process_cap_modify = _g_process_cap_modify;
+  g_process_capability->g_process_cap_save = _g_process_cap_save;
+  g_process_capability->g_process_cap_restore = _g_process_cap_restore;
+  g_process_capability->have_capsyslog = FALSE;
+}
+
+void
+g_process_capability_deinit()
+{
+  g_free(g_process_capability);
+  g_process_capability = NULL;
 }
 
 #else
