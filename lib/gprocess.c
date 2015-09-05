@@ -195,6 +195,19 @@ inherit_systemd_activation(void)
 
 #if ENABLE_LINUX_CAPS
 
+/*
+ * if libcap or kernel doesn't support cap_syslog, then resort to
+ * cap_sys_admin
+ */
+int
+when_cap_syslog_is_not_supported_resort_to_cap_sys_admin(int capability)
+{
+  if (capability == CAP_SYSLOG && (!g_process_capability->have_capsyslog || CAP_SYSLOG == -1))
+    capability = CAP_SYS_ADMIN;
+
+  return capability;
+}
+
 /**
  * g_process_cap_modify:
  * @capability: capability to turn off or on
@@ -213,12 +226,7 @@ _g_process_cap_modify(int capability, int onoff)
   if (!process_opts.caps)
     return TRUE;
 
-  /*
-   * if libcap or kernel doesn't support cap_syslog, then resort to
-   * cap_sys_admin
-   */
-  if (capability == CAP_SYSLOG && (!have_capsyslog || CAP_SYSLOG == -1))
-    capability = CAP_SYS_ADMIN;
+  capability = when_cap_syslog_is_not_supported_resort_to_cap_sys_admin(capability);
 
   caps = cap_get_proc();
   if (!caps)

@@ -105,6 +105,7 @@ void g_process_set_use_fdlimit(gboolean use);
 void g_process_set_check(gint check_period, gboolean (*check_fn)(void));
 
 gboolean g_process_check_cap_syslog(void);
+int when_cap_syslog_is_not_supported_resort_to_cap_sys_admin(int capability);
 
 void g_process_start(void);
 void g_process_startup_failed(guint ret_num, gboolean may_exit);
