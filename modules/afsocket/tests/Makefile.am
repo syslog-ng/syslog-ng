@@ -9,6 +9,7 @@ modules_afsocket_tests_TESTS			=		\
 	modules/afsocket/tests/test-transport-mapper-inet	\
 	modules/afsocket/tests/test-transport-mapper-unix
 
+if ENABLE_LINUX_CAPS
   modules_afsocket_tests_TESTS += modules/afsocket/tests/test_afsocket_capability
 
   PREOPEN_AFSOCKET    = -dlpreopen $(top_builddir)/modules/afsocket/libafsocket.la
@@ -17,6 +18,7 @@ modules_afsocket_tests_TESTS			=		\
   modules_afsocket_tests_test_afsocket_capability_LDADD   = $(TEST_LDADD) $(PREOPEN_AFSOCKET)
   modules_afsocket_tests_test_afsocket_capability_LDFLAGS = $(PREOPEN_CORE)
   modules_afsocket_tests_test_afsocket_capability_SOURCES = modules/afsocket/tests/test_afsocket_capability.c
+endif
 
 check_PROGRAMS					+=	\
 	$(modules_afsocket_tests_TESTS)

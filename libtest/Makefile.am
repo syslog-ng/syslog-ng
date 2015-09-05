@@ -34,5 +34,7 @@ libtestinclude_HEADERS		    =	\
 pkgconfig_DATA			   +=	\
 	libtest/syslog-ng-test.pc
 
+if ENABLE_LINUX_CAPS
   libtest_libsyslog_ng_test_a_SOURCES += libtest/capability_lib.c
   libtestinclude_HEADERS              += libtest/capability_lib.h
+endif

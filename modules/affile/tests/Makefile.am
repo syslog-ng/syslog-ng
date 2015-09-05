@@ -1,6 +1,7 @@
 modules_affile_tests_TESTS				= \
 	modules/affile/tests/test_affile_open_file
 
+if ENABLE_LINUX_CAPS
   modules_affile_tests_TESTS += modules/affile/tests/test_affile_capability
 
   PREOPEN_AFFILE   = -dlpreopen $(top_builddir)/modules/affile/libaffile.la
@@ -10,6 +11,7 @@ modules_affile_tests_TESTS				= \
   modules_affile_tests_test_affile_capability_LDADD   = $(TEST_LDADD) $(PREOPEN_AFFILE) $(PREOPEN_AFSOCKET)
   modules_affile_tests_test_affile_capability_LDFLAGS = $(PREOPEN_CORE)
   modules_affile_tests_test_affile_capability_SOURCES = modules/affile/tests/test_affile_capability.c
+endif
 
 check_PROGRAMS            += \
   ${modules_affile_tests_TESTS}

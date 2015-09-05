@@ -117,7 +117,9 @@ test_file_flags()
 
 int main(int argc, char **argv)
 {
+#if ENABLE_LINUX_CAPS
   g_process_capability_init();
+#endif
   setup();
 
   AFFILE_TESTCASE(test_open_regular_file);
