@@ -165,6 +165,8 @@ setup_caps (void)
   static gchar *capsstr_syslog = BASE_CAPS "cap_syslog=ep";
   static gchar *capsstr_sys_admin = BASE_CAPS "cap_sys_admin=ep";
 
+  g_process_capability_init();
+
   /* Set up the minimal privilege we'll need
    *
    * NOTE: polling /proc/kmsg requires cap_sys_admin, otherwise it'll always
