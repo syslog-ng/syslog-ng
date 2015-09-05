@@ -42,4 +42,5 @@ AFUnixSourceDriver *afunix_sd_new_dgram(gchar *filename, GlobalConfig *cfg);
 void afunix_sd_set_pass_unix_credentials(AFUnixSourceDriver *self, gboolean pass);
 void afunix_sd_set_create_dirs(AFUnixSourceDriver *self, gboolean create_dirs);
 
+gboolean afunix_sd_apply_perms_to_socket(AFUnixSourceDriver *self);
 #endif
