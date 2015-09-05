@@ -42,6 +42,14 @@ typedef enum
 
 #if ENABLE_LINUX_CAPS
 
+typedef struct _Capability
+{
+  int have_capsyslog;
+
+  gboolean (*g_process_cap_modify)(int capability, int onoff);
+  cap_t (*g_process_cap_save)(void);
+  void (*g_process_cap_restore)(cap_t r);
+} Capability;
 gboolean g_process_cap_modify(int capability, int onoff);
 cap_t g_process_cap_save(void);
 void g_process_cap_restore(cap_t r);
