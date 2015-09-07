@@ -141,7 +141,12 @@ _add_nv_pair_proc_readlink(LogTransportAuxData *aux, const gchar *name, pid_t pi
   _format_proc_file_name(filename, sizeof(filename), pid, proc_file);
   content_len = readlink(filename, content, sizeof(content));
   if (content_len > 0)
-    log_transport_aux_data_add_nv_pair(aux, name, content);
+    {
+      if (content_len == sizeof(content))
+        content_len--;
+      content[content_len] = 0;
+      log_transport_aux_data_add_nv_pair(aux, name, content);
+    }
 }
 
 #if defined (CRED_PASS_SUPPORTED)
