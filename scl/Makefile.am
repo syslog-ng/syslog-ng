@@ -1,5 +1,9 @@
-SCL_SUBDIRS	= system pacct syslogconf rewrite nodejs graphite cim solaris
+SCL_SUBDIRS	= system pacct syslogconf rewrite nodejs graphite solaris
 SCL_CONFIGS	= scl.conf syslog-ng.conf
+
+if ENABLE_JSON
+  SCL_SUBDIRS += cim
+endif
 
 EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS))
 
