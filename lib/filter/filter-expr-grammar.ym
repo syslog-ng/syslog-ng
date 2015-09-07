@@ -32,7 +32,9 @@
 
 #include "filter/filter-expr-grammar.h"
 #include "filter/filter-netmask.h"
+#ifdef ENABLE_IPV6
 #include "filter/filter-netmask6.h"
+#endif
 #include "filter/filter-op.h"
 #include "filter/filter-cmp.h"
 #include "filter/filter-in-list.h"
