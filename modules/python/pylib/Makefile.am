@@ -48,10 +48,12 @@ INSTALL_EXEC_HOOKS += install-pylib
 UNINSTALL_HOOKS += uninstall-pylib
 CLEAN_HOOKS += clean-pylib
 
+PYSETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --prefix="$(prefix)"
+
 install-pylib:
 	(cd $(PYLIB_SRCDIR) && $(PYTHON) setup.py \
 		build --build-base="$(PYLIB_BUILDDIR)/build" \
-		install --record=$(SETUPPY_MANIFEST) --root="$(PYTHON_ROOT)" --prefix="$(prefix)")
+		install --record=$(SETUPPY_MANIFEST) ${PYSETUP_OPTIONS})
 
 uninstall-pylib:
 	sed -e 's,^,$(PYTHON_ROOT),g' $(SETUPPY_MANIFEST) | tr '\n' '\0' | xargs -0 rm -f
