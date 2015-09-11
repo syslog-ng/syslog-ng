@@ -106,9 +106,7 @@ include syslog-ng/Makefile.am
 include syslog-ng-ctl/Makefile.am
 include scripts/Makefile.am
 include tests/Makefile.am
-if ENABLE_MANPAGES
 include doc/Makefile.am
-endif
 include contrib/Makefile.am
 include scl/Makefile.am
 include debian/Makefile.am
