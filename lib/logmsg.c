@@ -582,7 +582,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
 }
 
 gboolean
-log_msg_values_foreach(LogMessage *self, NVTableForeachFunc func, gpointer user_data)
+log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data)
 {
   return nv_table_foreach(self->payload, logmsg_registry, func, user_data);
 }
