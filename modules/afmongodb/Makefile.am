@@ -1,6 +1,5 @@
-DIST_SUBDIRS 					+= modules/afmongodb/libmongo-client
-
 if LIBMONGO_INTERNAL
+DIST_SUBDIRS 					+= modules/afmongodb/libmongo-client
 CLEAN_SUBDIRS					+= @LIBMONGO_SUBDIRS@
 lmc_EXTRA_DEPS					= modules/afmongodb/libmongo-client/src/libmongo-client.la
 
