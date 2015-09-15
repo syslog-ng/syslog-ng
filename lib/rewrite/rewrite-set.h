@@ -29,5 +29,6 @@
 
 /* LogRewriteSet */
 LogRewrite *log_rewrite_set_new(LogTemplate *new_value, GlobalConfig *cfg);
+LogTemplateOptions *log_rewrite_set_get_value_template_options(LogRewrite *s);
 
 #endif
