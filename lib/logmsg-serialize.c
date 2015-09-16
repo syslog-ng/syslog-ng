@@ -458,19 +458,23 @@ gboolean
 log_msg_read_matches_details(LogMessage *self, SerializeArchive *sa)
 {
   gint i;
+  guint8 type;
+  guint16 ofs;
+  guint16 len;
+  guint8 builtin_value;
+  guint8 LM_F_MAX;
+  guint8 stored_flags;
+  gchar *match;
+  gsize match_size;
+
   for (i = 0; i < self->num_matches; i++)
     {
-      guint8 stored_flags;
       if (!serialize_read_uint8(sa, &stored_flags))
         return FALSE;
       // the old LMM_REF_MATCH value
       if (stored_flags & 0x0001)
         {
-          guint8 type;
-          guint16 ofs;
-          guint16 len;
-          guint8 builtin_value;
-          guint8 LM_F_MAX = 8;
+          LM_F_MAX = 8;
           if (!serialize_read_uint8(sa, &type) ||
               !serialize_read_uint8(sa, &builtin_value) ||
               builtin_value >= LM_F_MAX ||
@@ -481,8 +485,7 @@ log_msg_read_matches_details(LogMessage *self, SerializeArchive *sa)
         }
       else
         {
-          gchar *match = NULL;
-          gsize match_size;
+          match = NULL;
           if (!serialize_read_cstring(sa, &match, &match_size))
             return FALSE;
           log_msg_set_match(self, i, match, match_size);
@@ -496,7 +499,9 @@ static void
 log_msg_get_legacy_program_name(LogMessage *self, const guchar **data, gint *length)
 {
   /* the data pointer will not change */
-  const guchar *src, *prog_start;
+  const guchar *src;
+  const guchar *prog_start;
+  const guchar *pid_start;
   gint left;
 
   src = *data;
@@ -510,7 +515,7 @@ log_msg_get_legacy_program_name(LogMessage *self, const guchar **data, gint *len
   log_msg_set_value(self, LM_V_PROGRAM, (gchar *) prog_start, src - prog_start);
   if (left > 0 && *src == '[')
     {
-      const guchar *pid_start = src + 1;
+      pid_start = src + 1;
       while (left && *src != ' ' && *src != ']' && *src != ':')
         {
           src++;
@@ -551,6 +556,8 @@ log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
   guint8 stored_pri;
   gchar *source;
   gssize message_len;
+  gchar *match;
+  gsize match_size;
   gint delete_chars;
   const guchar *p;
   gint p_len;
@@ -604,8 +611,7 @@ log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
 
   for (i = 0; i < self->num_matches; i++)
     {
-      gchar *match = NULL;
-      gsize match_size;
+      match = NULL;
       if (!serialize_read_cstring(sa, &match, &match_size))
         return FALSE;
       log_msg_set_match(self, i, match, match_size);
@@ -683,6 +689,7 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
 {
   guint8 bf = 0;
   gint i = 0;
+  guint16 old_handle;
 
   /*read $RCTPID from version 23 or latter*/
   if ((version > 22) && (!serialize_read_uint64(sa, &self->rcptid)))
@@ -744,7 +751,6 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
           else
             {
               /* guint16 NVHandle*/
-              guint16 old_handle;
               if (!serialize_read_uint16(sa, &old_handle))
                 return FALSE;
               self->sdata[i] = old_handle;
