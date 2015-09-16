@@ -27,7 +27,20 @@
 #include "messages.h"
 #include "gsockaddr.h"
 
-/* Serialization functions */
+
+/**
+ * log_msg_serialize:
+ *
+
+ * Serializes a log message to the target archive. Useful when the contents
+ * of the log message with all associated metainformation needs to be stored
+ * on a persistent storage device.
+ *
+ * Format the on-disk format starts with a 'version' field that makes it
+ * possible to change the format in a compatible way. Currently we only
+ * generate and support version 0.
+ **/
+
 static gboolean
 log_msg_write_sockaddr(SerializeArchive *sa, GSockAddr *addr)
 {
@@ -335,19 +348,6 @@ log_msg_write_tags(const LogMessage *self, SerializeArchive *sa)
   log_msg_tags_foreach(self, log_msg_write_tags_callback, (gpointer)sa);
   serialize_write_cstring(sa, "", 0);
 }
-
-/**
- * log_msg_serialize:
- *
-
- * Serializes a log message to the target archive. Useful when the contents
- * of the log message with all associated metainformation needs to be stored
- * on a persistent storage device.
- *
- * Format the on-disk format starts with a 'version' field that makes it
- * possible to change the format in a compatible way. Currently we only
- * generate and support version 0.
- **/
 
 gboolean
 log_msg_write(LogMessage *self, SerializeArchive *sa)
@@ -750,13 +750,13 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
         {
           if (version >= 26)
             {
-              /* guint32 NVHandle*/
+              /* guint32 NVHandle */
               if (!serialize_read_uint32(sa, (guint32 *)(&self->sdata[i])))
                 return FALSE;
             }
           else
             {
-              /* guint16 NVHandle*/
+              /* guint16 NVHandle */
               if (!serialize_read_uint16(sa, &old_handle))
                 return FALSE;
               self->sdata[i] = old_handle;
@@ -769,10 +769,12 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
   if(!self->payload)
     return FALSE;
 
-  //Update the NVTable
-  //First upgrade the indirect entries and their handles
+  /* Update the NVTable,
+   * first upgrade the indirect entries and their handles
+  */
   nv_table_update_ids(self->payload,logmsg_registry, self->sdata, self->num_sdata);
-  //upgrade sd_data
+
+  /* upgrade sd_data */
   if (self->sdata)
     nv_table_foreach(self->payload, logmsg_registry, upgrade_sd_entries, self);
   return TRUE;
@@ -798,8 +800,5 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
     return log_msg_read_version_1x(self, sa, version);
   else if (version <= 26)
     return log_msg_read_version_2x(self, sa, version);
-  /****************************************************
-   * Should never reach THIS!!!!
-   ****************************************************/
   return FALSE;
 }
