@@ -65,16 +65,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
 
   if (rc < 0)
     {
-      if (errno != EINTR)
-        {
-          msg_error("I/O error occurred while writing",
-                    evt_tag_int("fd", self->super.transport->fd),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    NULL);
-          return LPS_ERROR;
-        }
-
-      return LPS_SUCCESS;
+      goto write_error;
     }
   else if (rc != self->sum_len)
     {
@@ -112,6 +103,19 @@ log_proto_file_writer_flush(LogProtoClient *s)
   self->sum_len = 0;
 
   return LPS_SUCCESS;
+
+ write_error:
+  if (errno != EINTR && errno != EAGAIN)
+    {
+      msg_error("I/O error occurred while writing",
+                evt_tag_int("fd", self->super.transport->fd),
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                NULL);
+      return LPS_ERROR;
+    }
+
+  return LPS_SUCCESS;
+
 }
 
 /*
