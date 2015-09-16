@@ -57,7 +57,7 @@ cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context)
 {
   gpointer validate_params[] = { defs, NULL, NULL };
 
-  g_hash_table_foreach(self->args, cfg_args_validate_callback, validate_params);
+  cfg_args_foreach(self, cfg_args_validate_callback, validate_params);
 
   if (validate_params[1])
     {
