@@ -723,19 +723,20 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
 
   if (!serialize_read_uint8(sa, &version))
     return FALSE;
-  if ((version > 1 && version < 10) || version > 26)
-    {
-      msg_error("Error deserializing log message, unsupported version",
-                evt_tag_int("version", version),
-                NULL);
-      return FALSE;
-    }
-  if (version < 10)
+
+  if (version == 0 || version == 1)
     return __read_version_0_1(self, sa, version);
-  else if (version < 20)
+
+  if (version >= 10 && version <= 12)
     return __read_version_1x(self, sa, version);
-  else if (version <= 26)
+
+  if (version >=20 && version <= 26)
     return __read_version_2x(self, sa, version);
+
+  msg_error("Error deserializing log message, unsupported version",
+            evt_tag_int("version", version),
+            NULL);
+
   return FALSE;
 }
 
