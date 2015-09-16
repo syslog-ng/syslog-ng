@@ -593,9 +593,6 @@ __read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
 static gboolean
 __read_version_1x(LogMessage *self, SerializeArchive *sa, guint8 version)
 {
-  gsize stored_len;
-  gchar *source, *pid;
-  gchar *msgid;
   if(version == 10)
     {
       guint16 stored_flags16;
@@ -609,40 +606,26 @@ __read_version_1x(LogMessage *self, SerializeArchive *sa, guint8 version)
         return FALSE;
     }
   self->flags |= LF_STATE_MASK;
-  if (!serialize_read_uint16(sa, &self->pri))
-    return FALSE;
 
-  if (!serialize_read_cstring(sa, &source, &stored_len))
-    return FALSE;
-  log_msg_set_value(self, LM_V_SOURCE, source, stored_len);
-  g_free(source);
-  if (!__read_sockaddr(sa, &self->saddr) ||
+  if (!serialize_read_uint16(sa, &self->pri) ||
+      !__read_value(self, sa, LM_V_SOURCE) ||
+      !__read_sockaddr(sa, &self->saddr) ||
       !__read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], TRUE) ||
       !__read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], TRUE))
     return FALSE;
-  if(version == 12)
-    {
-      if (!__read_tags(self, sa))
-        return FALSE;
-    }
-  if(!__read_common_values(self, sa))
-     return FALSE;
-  if (!serialize_read_cstring(sa, &pid, &stored_len))
-    return FALSE;
-  log_msg_set_value(self, LM_V_PID, pid, stored_len);
-  g_free(pid);
 
-  if (!serialize_read_cstring(sa, &msgid, &stored_len))
+  if ((version == 12) && (!__read_tags(self, sa)))
     return FALSE;
-  log_msg_set_value(self, LM_V_MSGID, msgid, stored_len);
-  g_free(msgid);
-  if (!serialize_read_uint8(sa, &self->num_matches))
-    return FALSE;
-  if(!__read_matches_details(self,sa))
-    return FALSE;
-  if (!__read_values(self, sa) ||
+
+  if (!__read_common_values(self, sa) ||
+      !__read_value(self, sa, LM_V_PID) ||
+      !__read_value(self, sa, LM_V_MSGID) ||
+      !serialize_read_uint8(sa, &self->num_matches) ||
+      !__read_matches_details(self,sa) ||
+      !__read_values(self, sa) ||
       !__read_sd_data(self, sa))
     return FALSE;
+
   return TRUE;
 }
 
@@ -680,26 +663,18 @@ __read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
       self->timestamps[LM_TS_PROCESSED] = self->timestamps[LM_TS_RECVD];
     }
 
-  if (version >= 25)
-    {
-      if (!serialize_read_uint32(sa, &self->host_id))
-        return FALSE;
-    }
-
-  if (!__read_tags(self, sa))
+  if ((version >= 25) && (!serialize_read_uint32(sa, &self->host_id)))
     return FALSE;
 
-  if (!serialize_read_uint8(sa, &bf))
+  if (!__read_tags(self, sa) ||
+      !serialize_read_uint8(sa, &bf))
     return FALSE;
+
   self->initial_parse=bf;
 
-  if (!serialize_read_uint8(sa, &self->num_matches))
-    return FALSE;
-
-  if (!serialize_read_uint8(sa, &self->num_sdata))
-    return FALSE;
-
-  if (!serialize_read_uint8(sa, &self->alloc_sdata))
+  if (!serialize_read_uint8(sa, &self->num_matches) ||
+      !serialize_read_uint8(sa, &self->num_sdata) ||
+      !serialize_read_uint8(sa, &self->alloc_sdata))
     return FALSE;
 
   self->sdata = (NVHandle*)g_malloc(sizeof(NVHandle)*self->alloc_sdata);
