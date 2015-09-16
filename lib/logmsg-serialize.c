@@ -42,7 +42,7 @@
  **/
 
 static gboolean
-log_msg_write_sockaddr(SerializeArchive *sa, GSockAddr *addr)
+__write_sockaddr(SerializeArchive *sa, GSockAddr *addr)
 {
   if (!addr)
     {
@@ -80,7 +80,7 @@ log_msg_write_sockaddr(SerializeArchive *sa, GSockAddr *addr)
 }
 
 static gboolean
-log_msg_read_sockaddr(SerializeArchive *sa, GSockAddr **addr)
+__read_sockaddr(SerializeArchive *sa, GSockAddr **addr)
 {
   guint16 family;
 
@@ -127,7 +127,7 @@ log_msg_read_sockaddr(SerializeArchive *sa, GSockAddr **addr)
 }
 
 static gboolean
-log_msg_read_sd_param(SerializeArchive *sa, gchar *sd_element_name, LogMessage *self, gboolean *has_more)
+__read_sd_param(SerializeArchive *sa, gchar *sd_element_name, LogMessage *self, gboolean *has_more)
 {
   gchar *name = NULL, *value = NULL;
   gsize name_len, value_len;
@@ -158,7 +158,7 @@ log_msg_read_sd_param(SerializeArchive *sa, gchar *sd_element_name, LogMessage *
 }
 
 static gboolean
-log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, LogMessage *self, gboolean *has_more)
+__read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, LogMessage *self, gboolean *has_more)
 {
   gchar *name, *value;
   gsize name_len, value_len;
@@ -188,7 +188,7 @@ log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, LogMes
 }
 
 static gboolean
-log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_more)
+__read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_more)
 {
   gchar *sd_id = NULL;
   gsize sd_id_len;
@@ -209,12 +209,12 @@ log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_mo
   sd_element_root[logmsg_sd_prefix_len + sd_id_len]='.';
 
 
-  if (!log_msg_read_sd_param_first(sa, sd_element_root, self, &has_more_param))
+  if (!__read_sd_param_first(sa, sd_element_root, self, &has_more_param))
     goto error;
 
   while (has_more_param)
     {
-      if (!log_msg_read_sd_param(sa, sd_element_root, self, &has_more_param))
+      if (!__read_sd_param(sa, sd_element_root, self, &has_more_param))
         goto error;
     }
   g_free(sd_id);
@@ -228,16 +228,16 @@ log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_mo
 }
 
 static gboolean
-log_msg_read_sd_data(LogMessage *self, SerializeArchive *sa)
+__read_sd_data(LogMessage *self, SerializeArchive *sa)
 {
   gboolean has_more_element = TRUE;
-  if (!log_msg_read_sd_element(sa, self, &has_more_element))
+  if (!__read_sd_element(sa, self, &has_more_element))
     goto error;
 
 
   while (has_more_element)
     {
-      if (!log_msg_read_sd_element(sa, self, &has_more_element))
+      if (!__read_sd_element(sa, self, &has_more_element))
         goto error;
     }
   return TRUE;
@@ -247,7 +247,7 @@ log_msg_read_sd_data(LogMessage *self, SerializeArchive *sa)
 }
 
 static gboolean
-log_msg_write_log_stamp(SerializeArchive *sa, LogStamp *stamp)
+__write_log_stamp(SerializeArchive *sa, LogStamp *stamp)
 {
   return serialize_write_uint64(sa, stamp->tv_sec) &&
          serialize_write_uint32(sa, stamp->tv_usec) &&
@@ -255,7 +255,7 @@ log_msg_write_log_stamp(SerializeArchive *sa, LogStamp *stamp)
 }
 
 static gboolean
-log_msg_read_log_stamp(SerializeArchive *sa, LogStamp *stamp, gboolean is64bit)
+__read_log_stamp(SerializeArchive *sa, LogStamp *stamp, gboolean is64bit)
 {
   guint32 value32;
   guint64 value64;
@@ -285,7 +285,7 @@ log_msg_read_log_stamp(SerializeArchive *sa, LogStamp *stamp, gboolean is64bit)
 }
 
 static gboolean
-log_msg_read_values(LogMessage *self, SerializeArchive *sa)
+__read_values(LogMessage *self, SerializeArchive *sa)
 {
   gchar *name = NULL, *value = NULL;
   gboolean success = FALSE;
@@ -295,7 +295,7 @@ log_msg_read_values(LogMessage *self, SerializeArchive *sa)
     goto error;
   while (name[0])
     {
-      log_msg_set_value(self,log_msg_get_value_handle(name),value,-1);
+      log_msg_set_value(self, log_msg_get_value_handle(name), value, -1);
       name = value = NULL;
       if (!serialize_read_cstring(sa, &name, NULL) ||
           !serialize_read_cstring(sa, &value, NULL))
@@ -310,7 +310,7 @@ log_msg_read_values(LogMessage *self, SerializeArchive *sa)
 }
 
 static gboolean
-log_msg_read_tags(LogMessage *self, SerializeArchive *sa)
+__read_tags(LogMessage *self, SerializeArchive *sa)
 {
   gchar *buf;
   gsize len;
@@ -334,8 +334,8 @@ log_msg_read_tags(LogMessage *self, SerializeArchive *sa)
   return TRUE;
 }
 
-gboolean
-log_msg_write_tags_callback(const LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data)
+static gboolean
+__write_tags_callback(const LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data)
 {
   SerializeArchive *sa = ( SerializeArchive *)user_data;
   serialize_write_cstring(sa, name, strlen(name));
@@ -343,9 +343,9 @@ log_msg_write_tags_callback(const LogMessage *self, LogTagId tag_id, const gchar
 }
 
 static void
-log_msg_write_tags(const LogMessage *self, SerializeArchive *sa)
+__write_tags(const LogMessage *self, SerializeArchive *sa)
 {
-  log_msg_tags_foreach(self, log_msg_write_tags_callback, (gpointer)sa);
+  log_msg_tags_foreach(self, __write_tags_callback, (gpointer)sa);
   serialize_write_cstring(sa, "", 0);
 }
 
@@ -380,12 +380,12 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
   g_assert(sizeof(self->flags) == 4);
   serialize_write_uint32(sa, self->flags & ~LF_STATE_MASK);
   serialize_write_uint16(sa, self->pri);
-  log_msg_write_sockaddr(sa, self->saddr);
-  log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_STAMP]);
-  log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_RECVD]);
-  log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED]);
+  __write_sockaddr(sa, self->saddr);
+  __write_log_stamp(sa, &self->timestamps[LM_TS_STAMP]);
+  __write_log_stamp(sa, &self->timestamps[LM_TS_RECVD]);
+  __write_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED]);
   serialize_write_uint32(sa, self->host_id);
-  log_msg_write_tags(self, sa);
+  __write_tags(self, sa);
   serialize_write_uint8(sa, self->initial_parse);
   serialize_write_uint8(sa, self->num_matches);
   serialize_write_uint8(sa, self->num_sdata);
@@ -396,8 +396,8 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
   return TRUE;
 }
 
-gboolean
-upgrade_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data)
+static gboolean
+__upgrade_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data)
 {
   LogMessage *lm = (LogMessage *)user_data;
   if (G_LIKELY(lm->sdata))
@@ -439,8 +439,8 @@ __read_value(LogMessage *self, SerializeArchive *sa, gint value_type)
     Read the most common values (HOST, HOST_FROM, PROGRAM, MESSAGE)
     same for all version < 20
 */
-gboolean
-log_msg_read_common_values(LogMessage *self, SerializeArchive *sa)
+static gboolean
+__read_common_values(LogMessage *self, SerializeArchive *sa)
 {
   if (!__read_value(self, sa, LM_V_HOST) ||
       !__read_value(self, sa, LM_V_HOST_FROM) ||
@@ -454,8 +454,8 @@ log_msg_read_common_values(LogMessage *self, SerializeArchive *sa)
     After the matches are read the details of those have to been read
     this process is same for version < 20
 */
-gboolean
-log_msg_read_matches_details(LogMessage *self, SerializeArchive *sa)
+static gboolean
+__read_matches_details(LogMessage *self, SerializeArchive *sa)
 {
   gint i;
   guint8 type;
@@ -496,7 +496,7 @@ log_msg_read_matches_details(LogMessage *self, SerializeArchive *sa)
 }
 
 static void
-log_msg_get_legacy_program_name(LogMessage *self, const guchar **data, gint *length)
+__get_legacy_program_name(LogMessage *self, const guchar **data, gint *length)
 {
   /* the data pointer will not change */
   const guchar *src;
@@ -564,8 +564,8 @@ __remove_progpid_from_begin_of_message(LogMessage *self, gchar *message, gssize 
 /*
     Read the oldest version logmessage
 */
-gboolean
-log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
+static gboolean
+__read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
 {
   gint i;
   guint8 stored_flags8;
@@ -587,9 +587,10 @@ log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
   if (!serialize_read_cstring(sa, &source, &stored_len))
     return FALSE;
   log_msg_set_value(self, LM_V_SOURCE, source, stored_len);
-  if (!log_msg_read_sockaddr(sa, &self->saddr) ||
-      !log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], FALSE) ||
-      !log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], FALSE))
+
+  if (!__read_sockaddr(sa, &self->saddr) ||
+      !__read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], FALSE) ||
+      !__read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], FALSE))
     return FALSE;
   if (version < 1)
     {
@@ -601,7 +602,8 @@ log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
 
       g_free(dummy);
     }
-  if(!log_msg_read_common_values(self, sa))
+
+  if(!__read_common_values(self, sa))
      return FALSE;
 
   message = strdup(log_msg_get_value(self, LM_V_MESSAGE, &message_len));
@@ -623,7 +625,7 @@ log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
       log_msg_set_match(self, i, match, match_size);
       g_free(match);
     }
-  if(!log_msg_read_matches_details(self,sa))
+  if(!__read_matches_details(self,sa))
     return FALSE;
   return TRUE;
 }
@@ -631,8 +633,8 @@ log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
 /*
     Read the version 10-11-12 logmessage
 */
-gboolean
-log_msg_read_version_1x(LogMessage *self, SerializeArchive *sa, guint8 version)
+static gboolean
+__read_version_1x(LogMessage *self, SerializeArchive *sa, guint8 version)
 {
   gsize stored_len;
   gchar *source, *pid;
@@ -657,16 +659,16 @@ log_msg_read_version_1x(LogMessage *self, SerializeArchive *sa, guint8 version)
     return FALSE;
   log_msg_set_value(self, LM_V_SOURCE, source, stored_len);
   g_free(source);
-  if (!log_msg_read_sockaddr(sa, &self->saddr) ||
-      !log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], TRUE) ||
-      !log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], TRUE))
+  if (!__read_sockaddr(sa, &self->saddr) ||
+      !__read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], TRUE) ||
+      !__read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], TRUE))
     return FALSE;
   if(version == 12)
     {
-      if (!log_msg_read_tags(self, sa))
+      if (!__read_tags(self, sa))
         return FALSE;
     }
-  if(!log_msg_read_common_values(self, sa))
+  if(!__read_common_values(self, sa))
      return FALSE;
   if (!serialize_read_cstring(sa, &pid, &stored_len))
     return FALSE;
@@ -679,10 +681,10 @@ log_msg_read_version_1x(LogMessage *self, SerializeArchive *sa, guint8 version)
   g_free(msgid);
   if (!serialize_read_uint8(sa, &self->num_matches))
     return FALSE;
-  if(!log_msg_read_matches_details(self,sa))
+  if(!__read_matches_details(self,sa))
     return FALSE;
-  if (!log_msg_read_values(self, sa) ||
-      !log_msg_read_sd_data(self, sa))
+  if (!__read_values(self, sa) ||
+      !__read_sd_data(self, sa))
     return FALSE;
   return TRUE;
 }
@@ -690,8 +692,8 @@ log_msg_read_version_1x(LogMessage *self, SerializeArchive *sa, guint8 version)
 /*
     Read the version 20-21 logmessage
 */
-gboolean
-log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
+static gboolean
+__read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
 {
   guint8 bf = 0;
   gint i = 0;
@@ -703,15 +705,15 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
   if (!serialize_read_uint32(sa, &self->flags))
      return FALSE;
   self->flags |= LF_STATE_MASK;
-  if (!serialize_read_uint16(sa, &self->pri))
-     return FALSE;
-  if (!log_msg_read_sockaddr(sa, &self->saddr) ||
-      !log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], TRUE) ||
-      !log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], TRUE))
+
+  if (!serialize_read_uint16(sa, &self->pri) ||
+      !__read_sockaddr(sa, &self->saddr) ||
+      !__read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], TRUE) ||
+      !__read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], TRUE))
     return FALSE;
   if (version >= 24)
     {
-      if (!log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED], TRUE))
+      if (!__read_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED], TRUE))
         return FALSE;
     }
   else
@@ -725,7 +727,7 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
         return FALSE;
     }
 
-  if (!log_msg_read_tags(self, sa))
+  if (!__read_tags(self, sa))
     return FALSE;
 
   if (!serialize_read_uint8(sa, &bf))
@@ -776,7 +778,7 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
 
   /* upgrade sd_data */
   if (self->sdata)
-    nv_table_foreach(self->payload, logmsg_registry, upgrade_sd_entries, self);
+    nv_table_foreach(self->payload, logmsg_registry, __upgrade_sd_entries, self);
   return TRUE;
 }
 
@@ -795,10 +797,10 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
       return FALSE;
     }
   if (version < 10)
-    return log_msg_read_version_0_1(self, sa, version);
+    return __read_version_0_1(self, sa, version);
   else if (version < 20)
-    return log_msg_read_version_1x(self, sa, version);
+    return __read_version_1x(self, sa, version);
   else if (version <= 26)
-    return log_msg_read_version_2x(self, sa, version);
+    return __read_version_2x(self, sa, version);
   return FALSE;
 }
