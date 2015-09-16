@@ -244,30 +244,30 @@ log_msg_write_log_stamp(SerializeArchive *sa, LogStamp *stamp)
 static gboolean
 log_msg_read_log_stamp(SerializeArchive *sa, LogStamp *stamp, gboolean is64bit)
 {
-  guint32 val;
+  guint32 value32;
+  guint64 value64;
 
-  if (!is64bit)
+  if (is64bit)
     {
-      if (!serialize_read_uint32(sa, &val))
+      if (!serialize_read_uint64(sa, &value64))
         return FALSE;
-      stamp->tv_sec = (gint32) val;
+      stamp->tv_sec = (gint64) value64;
     }
   else
     {
-      guint64 val64;
-
-      if (!serialize_read_uint64(sa, &val64))
+      if (!serialize_read_uint32(sa, &value32))
         return FALSE;
-      stamp->tv_sec = (gint64) val64;
+      stamp->tv_sec = (gint32) value32;
     }
 
-  if (!serialize_read_uint32(sa, &val))
+  if (!serialize_read_uint32(sa, &value32))
     return FALSE;
-  stamp->tv_usec = val;
+  stamp->tv_usec = value32;
 
-  if (!serialize_read_uint32(sa, &val))
+  if (!serialize_read_uint32(sa, &value32))
     return FALSE;
-  stamp->zone_offset = (gint) val;
+  stamp->zone_offset = (gint) value32;
+
   return TRUE;
 }
 
