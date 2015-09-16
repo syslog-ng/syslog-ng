@@ -98,6 +98,7 @@ pkginclude_HEADERS			+= \
 	lib/logmatcher.h		\
 	lib/logmpx.h			\
 	lib/logmsg.h			\
+	lib/logmsg-serialize.h			\
 	lib/logpipe.h			\
 	lib/logqueue-fifo.h		\
 	lib/logqueue.h			\
@@ -117,6 +118,9 @@ pkginclude_HEADERS			+= \
 	lib/ml-batched-timer.h		\
 	lib/msg-format.h		\
 	lib/nvtable.h			\
+	lib/nvtable-serialize.h \
+	lib/nvtable-serialize-legacy.h \
+	lib/nvtable-serialize-endianutils.h \
 	lib/parse-number.h		\
 	lib/pathutils.h         \
 	lib/persist-state.h		\
@@ -180,6 +184,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/logmatcher.c		\
 	lib/logmpx.c			\
 	lib/logmsg.c			\
+	lib/logmsg-serialize.c			\
 	lib/logpipe.c			\
 	lib/logqueue.c			\
 	lib/logqueue-fifo.c		\
@@ -199,6 +204,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/ml-batched-timer.c		\
 	lib/msg-format.c		\
 	lib/nvtable.c			\
+	lib/nvtable-serialize.c \
+	lib/nvtable-serialize-legacy.c \
 	lib/parse-number.c		\
 	lib/pathutils.c         \
 	lib/persist-state.c		\
