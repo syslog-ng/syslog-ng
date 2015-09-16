@@ -544,24 +544,38 @@ log_msg_get_legacy_program_name(LogMessage *self, const guchar **data, gint *len
   *data = src;
   *length = left;
 }
+
+static void
+__remove_progpid_from_begin_of_message(LogMessage *self, gchar *message, gssize *message_len)
+{
+  const guchar *p;
+  gint p_len;
+  gint delete_chars;
+
+  p = (guchar *) message;
+  p_len = *message_len;
+
+  __get_legacy_program_name(self, &p, &p_len);
+  delete_chars = (gchar *) p - (gchar *) message;
+  memmove(message, message + delete_chars, *message_len - delete_chars + 1);
+  *message_len -= delete_chars;
+}
+
 /*
     Read the oldest version logmessage
 */
 gboolean
 log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
 {
+  gint i;
   guint8 stored_flags8;
   gsize stored_len;
-  gint i;
   guint8 stored_pri;
   gchar *source;
-  gssize message_len;
   gchar *match;
   gsize match_size;
-  gint delete_chars;
-  const guchar *p;
-  gint p_len;
   gchar *message;
+  gssize message_len;
 
   if (!serialize_read_uint8(sa, &stored_flags8))
         return FALSE;
@@ -590,16 +604,8 @@ log_msg_read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
   if(!log_msg_read_common_values(self, sa))
      return FALSE;
 
-  /* remove prog[pid] from the beginning of message */
   message = strdup(log_msg_get_value(self, LM_V_MESSAGE, &message_len));
-  p = (guchar *) message;
-  p_len = message_len;
-
-  log_msg_get_legacy_program_name(self, &p, &p_len);
-  delete_chars = (gchar *) p - (gchar *) message;
-  memmove(message, message + delete_chars, message_len - delete_chars + 1);
-  message_len -= delete_chars;
-
+  __remove_progpid_from_begin_of_message(self, message, &message_len);
   log_msg_set_value(self, LM_V_MESSAGE, message, message_len);
 
   log_msg_set_value(self, LM_V_PID, null_string, -1);
