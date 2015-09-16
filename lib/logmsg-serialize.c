@@ -534,18 +534,22 @@ __read_version_0_1(LogMessage *self, SerializeArchive *sa, guint8 version)
         return FALSE;
   /* the LF_UNPARSED flag was removed in version 10, LF_UTF8 took its place, but 2.1 logmsg is never marked as UTF8 */
   self->flags = (stored_flags8 & ~LF_OLD_UNPARSED) | LF_STATE_MASK;
+
   if (!serialize_read_uint8(sa, &stored_pri))
     return FALSE;
   self->pri = stored_pri;
+
   if (!serialize_read_cstring(sa, &source, &stored_len))
     return FALSE;
+
   log_msg_set_value(self, LM_V_SOURCE, source, stored_len);
 
   if (!__read_sockaddr(sa, &self->saddr) ||
       !__read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], FALSE) ||
       !__read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], FALSE))
     return FALSE;
-  if (version < 1)
+
+  if (version == 0)
     {
       gchar *dummy;
 
@@ -655,6 +659,7 @@ __read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
   /*read $RCTPID from version 23 or latter*/
   if ((version > 22) && (!serialize_read_uint64(sa, &self->rcptid)))
      return FALSE;
+
   if (!serialize_read_uint32(sa, &self->flags))
      return FALSE;
   self->flags |= LF_STATE_MASK;
@@ -664,6 +669,7 @@ __read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
       !__read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], TRUE) ||
       !__read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], TRUE))
     return FALSE;
+
   if (version >= 24)
     {
       if (!__read_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED], TRUE))
