@@ -58,7 +58,8 @@ typedef void (*LMAckFunc)(LogMessage *lm, AckType ack_type);
 
 #define LM_TS_STAMP 0
 #define LM_TS_RECVD 1
-#define LM_TS_MAX   2
+#define LM_TS_PROCESSED 2
+#define LM_TS_MAX   3
 
 /* builtin values */
 enum
