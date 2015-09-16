@@ -422,6 +422,19 @@ upgrade_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssiz
   return FALSE;
 }
 
+static gboolean
+__read_value(LogMessage *self, SerializeArchive *sa, gint value_type)
+{
+  gchar *value = NULL;
+  gsize stored_len=0;
+
+  if (!serialize_read_cstring(sa, &value, &stored_len))
+     return FALSE;
+  log_msg_set_value(self, value_type, value, stored_len);
+  g_free(value);
+  return TRUE;
+}
+
 /*
     Read the most common values (HOST, HOST_FROM, PROGRAM, MESSAGE)
     same for all version < 20
@@ -429,30 +442,11 @@ upgrade_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssiz
 gboolean
 log_msg_read_common_values(LogMessage *self, SerializeArchive *sa)
 {
-  gchar *host = NULL;
-  gchar *host_from = NULL;
-  gchar *program = NULL;
-  gchar *message = NULL;
-  gsize stored_len=0;
-  if (!serialize_read_cstring(sa, &host, &stored_len))
-     return FALSE;
-  log_msg_set_value(self, LM_V_HOST, host, stored_len);
-  g_free(host);
-
-  if (!serialize_read_cstring(sa, &host_from, &stored_len))
+  if (!__read_value(self, sa, LM_V_HOST) ||
+      !__read_value(self, sa, LM_V_HOST_FROM) ||
+      !__read_value(self, sa, LM_V_PROGRAM) ||
+      !__read_value(self, sa, LM_V_MESSAGE))
     return FALSE;
-  log_msg_set_value(self, LM_V_HOST_FROM, host_from, stored_len);
-  g_free(host_from);
-
-  if (!serialize_read_cstring(sa, &program, &stored_len))
-    return FALSE;
-  log_msg_set_value(self, LM_V_PROGRAM, program, stored_len);
-  g_free(program);
-
-  if (!serialize_read_cstring(sa, &message, &stored_len))
-    return FALSE;
-  log_msg_set_value(self, LM_V_MESSAGE, message, stored_len);
-  g_free(message);
   return TRUE;
 }
 
