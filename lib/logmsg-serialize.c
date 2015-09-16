@@ -349,53 +349,6 @@ __write_tags(const LogMessage *self, SerializeArchive *sa)
   serialize_write_cstring(sa, "", 0);
 }
 
-gboolean
-log_msg_write(LogMessage *self, SerializeArchive *sa)
-{
-  guint8 version = 26;
-  gint i = 0;
-  /*
-   * version   info
-   *   0       first introduced in syslog-ng-2.1
-   *   1       dropped self->date
-   *   10      added support for values,
-   *           sd data,
-   *           syslog-protocol fields,
-   *           timestamps became 64 bits,
-   *           removed source group string
-   *           flags & pri became 16 bits
-   *   11      flags became 32 bits
-   *   12      store tags
-   *   20      usage of the nvtable
-   *   21      sdata serialization
-   *   22      corrected nvtable serialization
-   *   23      new RCTPID field (64 bits)
-   *   24      new processed timestamp
-   *   25      added host_id
-   *   26      use 32 bit values nvtable
-   */
-
-  serialize_write_uint8(sa, version);
-  serialize_write_uint64(sa, self->rcptid);
-  g_assert(sizeof(self->flags) == 4);
-  serialize_write_uint32(sa, self->flags & ~LF_STATE_MASK);
-  serialize_write_uint16(sa, self->pri);
-  __write_sockaddr(sa, self->saddr);
-  __write_log_stamp(sa, &self->timestamps[LM_TS_STAMP]);
-  __write_log_stamp(sa, &self->timestamps[LM_TS_RECVD]);
-  __write_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED]);
-  serialize_write_uint32(sa, self->host_id);
-  __write_tags(self, sa);
-  serialize_write_uint8(sa, self->initial_parse);
-  serialize_write_uint8(sa, self->num_matches);
-  serialize_write_uint8(sa, self->num_sdata);
-  serialize_write_uint8(sa, self->alloc_sdata);
-  for(i = 0; i < self->num_sdata; i++)
-    serialize_write_uint32(sa, self->sdata[i]);
-  nv_table_serialize(sa, self->payload);
-  return TRUE;
-}
-
 static gboolean
 __upgrade_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data)
 {
@@ -803,4 +756,51 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
   else if (version <= 26)
     return __read_version_2x(self, sa, version);
   return FALSE;
+}
+
+gboolean
+log_msg_write(LogMessage *self, SerializeArchive *sa)
+{
+  guint8 version = 26;
+  gint i = 0;
+  /*
+   * version   info
+   *   0       first introduced in syslog-ng-2.1
+   *   1       dropped self->date
+   *   10      added support for values,
+   *           sd data,
+   *           syslog-protocol fields,
+   *           timestamps became 64 bits,
+   *           removed source group string
+   *           flags & pri became 16 bits
+   *   11      flags became 32 bits
+   *   12      store tags
+   *   20      usage of the nvtable
+   *   21      sdata serialization
+   *   22      corrected nvtable serialization
+   *   23      new RCTPID field (64 bits)
+   *   24      new processed timestamp
+   *   25      added host_id
+   *   26      use 32 bit values nvtable
+   */
+
+  serialize_write_uint8(sa, version);
+  serialize_write_uint64(sa, self->rcptid);
+  g_assert(sizeof(self->flags) == 4);
+  serialize_write_uint32(sa, self->flags & ~LF_STATE_MASK);
+  serialize_write_uint16(sa, self->pri);
+  __write_sockaddr(sa, self->saddr);
+  __write_log_stamp(sa, &self->timestamps[LM_TS_STAMP]);
+  __write_log_stamp(sa, &self->timestamps[LM_TS_RECVD]);
+  __write_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED]);
+  serialize_write_uint32(sa, self->host_id);
+  __write_tags(self, sa);
+  serialize_write_uint8(sa, self->initial_parse);
+  serialize_write_uint8(sa, self->num_matches);
+  serialize_write_uint8(sa, self->num_sdata);
+  serialize_write_uint8(sa, self->alloc_sdata);
+  for(i = 0; i < self->num_sdata; i++)
+    serialize_write_uint32(sa, self->sdata[i]);
+  nv_table_serialize(sa, self->payload);
+  return TRUE;
 }
