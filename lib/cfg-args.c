@@ -46,6 +46,12 @@ cfg_args_validate_callback(gpointer k, gpointer v, gpointer user_data)
     }
 }
 
+void
+cfg_args_foreach(CfgArgs *self, GHFunc func, gpointer user_data)
+{
+  g_hash_table_foreach(self->args, func, user_data);
+}
+
 gboolean
 cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context)
 {
