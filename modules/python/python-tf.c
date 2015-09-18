@@ -81,7 +81,7 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
 static gboolean
 _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GString *result)
 {
-  if (!PyString_Check(ret))
+  if (!PyBytes_Check(ret))
     {
       msg_error("$(python): The return value is not a string",
                 evt_tag_str("function", function_name),

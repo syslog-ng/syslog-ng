@@ -90,7 +90,7 @@ python_fetch_debugger_command(void)
                 NULL);
       goto exit;
     }
-  if (!PyString_Check(ret))
+  if (!PyBytes_Check(ret))
     {
       msg_error("Return value from debugger fetch_command is not a string",
                 evt_tag_str("function", DEBUGGER_FETCH_COMMAND),
