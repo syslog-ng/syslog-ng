@@ -96,8 +96,8 @@ python_dd_set_imports(LogDriver *d, GList *imports)
 void
 python_dd_insert_to_dict(gpointer key, gpointer value, gpointer dict)
 {
-  PyObject *key_pyobj = PyString_FromStringAndSize((gchar*) key, strlen((gchar*) key));
-  PyObject *value_pyobj = PyString_FromStringAndSize((gchar*) value, strlen((gchar*) value));
+  PyObject *key_pyobj = PyBytes_FromStringAndSize((gchar*) key, strlen((gchar*) key));
+  PyObject *value_pyobj = PyBytes_FromStringAndSize((gchar*) value, strlen((gchar*) value));
   PyDict_SetItem( (PyObject*) dict, key_pyobj, value_pyobj);
 }
 
