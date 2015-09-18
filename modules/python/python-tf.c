@@ -90,7 +90,7 @@ _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GS
       Py_DECREF(ret);
       return FALSE;
     }
-  g_string_append(result, PyString_AS_STRING(ret));
+  g_string_append(result, PyBytes_AS_STRING(ret));
   Py_DECREF(ret);
   return TRUE;
 }
