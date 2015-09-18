@@ -45,7 +45,7 @@ py_log_message_getattr(PyLogMessage *self, gchar *name)
       PyErr_SetString(PyExc_AttributeError, "No such attribute");
       return NULL;
     }
-  return PyString_FromString(value);
+  return PyBytes_FromString(value);
 }
 
 static void

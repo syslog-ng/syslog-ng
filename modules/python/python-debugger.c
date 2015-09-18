@@ -34,7 +34,7 @@ _add_nv_keys_to_list(gpointer key, gpointer value, gpointer user_data)
   PyObject *list = (PyObject *) user_data;
   const gchar *name = (const gchar *) key;
 
-  PyList_Append(list, PyString_FromString(name));
+  PyList_Append(list, PyBytes_FromString(name));
 }
 
 static PyObject *
