@@ -89,6 +89,10 @@ afsocket_sc_init(LogPipe *s)
   if (!self->reader)
     {
       transport = afsocket_sc_construct_transport(self, self->sock);
+      /* transport_mapper_inet_construct_log_transport() can return NULL on TLS errors */
+      if (!transport)
+        return FALSE;
+
       proto = log_proto_server_factory_construct(self->owner->proto_factory, transport, &self->owner->reader_options.proto_options.super);
       self->reader = log_reader_new(s->cfg);
       log_reader_reopen(self->reader, proto, poll_fd_events_new(self->sock));
