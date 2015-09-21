@@ -98,6 +98,7 @@ void log_template_format(LogTemplate *self, LogMessage *lm, const LogTemplateOpt
 void log_template_append_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
+void log_template_set_name(LogTemplate *self, const gchar *name);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, const gchar *name);
 LogTemplate *log_template_ref(LogTemplate *s);
