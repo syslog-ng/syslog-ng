@@ -1127,6 +1127,29 @@ struct _CfgBlock
   CfgArgs *arg_defs;
 };
 
+static void
+_resolve_unknown_blockargs_as_varargs(gpointer key, gpointer value, gpointer user_data)
+{
+  CfgArgs *defs = ((gpointer *) user_data)[0];
+  GString *varargs = ((gpointer *) user_data)[1];
+
+  if (cfg_args_get(defs, key) == NULL)
+    {
+      g_string_append_printf(varargs, "%s(%s) ", (gchar *)key, (gchar *)value);
+    }
+}
+
+static void
+_fill_varargs(CfgBlock *block, CfgArgs *args)
+{
+  GString *varargs = g_string_new("");
+  gpointer user_data[] = { block->arg_defs, varargs };
+
+  cfg_args_foreach(args, _resolve_unknown_blockargs_as_varargs, user_data);
+  cfg_args_set(args, "__VARARGS__", varargs->str);
+  g_string_free(varargs, TRUE);
+}
+
 /*
  * cfg_block_generate:
  *
@@ -1145,10 +1168,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
   gboolean result;
 
   g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(context), name);
-  if (!cfg_args_validate(args, block->arg_defs, buf))
-    {
-      return FALSE;
-    }
+  _fill_varargs(block, args);
 
   value = cfg_lexer_subst_args(lexer->globals, block->arg_defs, args, block->content, -1, &length, &error);
 
