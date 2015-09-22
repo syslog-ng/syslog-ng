@@ -778,6 +778,8 @@ template_stmt
         | template_fn
           {
             user_template_function_register(configuration, last_template->name, last_template);
+            log_template_unref(last_template);
+            last_template = NULL;
           }
         ;
 
