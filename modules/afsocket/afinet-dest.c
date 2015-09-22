@@ -134,6 +134,19 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
   return writer;
 }
 
+static const gint
+_determine_port(AFInetDestDriver *self)
+{
+  gint port = 0;
+
+  if (!self->dest_port)
+    port = transport_mapper_inet_get_server_port(self->super.transport_mapper);
+  else
+    port = afinet_lookup_service(self->super.transport_mapper, self->dest_port);
+
+  return port;
+}
+
 static gboolean
 afinet_dd_setup_addresses(AFSocketDestDriver *s)
 {
@@ -164,10 +177,9 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
                       evt_tag_str("id", self->super.super.super.id),
                       NULL);
         }
-      g_sockaddr_set_port(self->super.dest_addr, transport_mapper_inet_get_server_port(self->super.transport_mapper));
     }
-  else
-    g_sockaddr_set_port(self->super.dest_addr, afinet_lookup_service(self->super.transport_mapper, self->dest_port));
+
+  g_sockaddr_set_port(self->super.dest_addr, _determine_port(self));
 
   return TRUE;
 }
@@ -179,9 +191,9 @@ afinet_dd_get_dest_name(AFSocketDestDriver *s)
   static gchar buf[256];
 
   if (strchr(self->hostname, ':') != NULL)
-    g_snprintf(buf, sizeof(buf), "[%s]:%d", self->hostname, g_sockaddr_get_port(s->dest_addr));
+    g_snprintf(buf, sizeof(buf), "[%s]:%d", self->hostname, _determine_port(self));
   else
-    g_snprintf(buf, sizeof(buf), "%s:%d", self->hostname, g_sockaddr_get_port(s->dest_addr));
+    g_snprintf(buf, sizeof(buf), "%s:%d", self->hostname, _determine_port(self));
   return buf;
 }
 
