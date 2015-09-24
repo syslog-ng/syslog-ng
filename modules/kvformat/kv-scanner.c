@@ -86,6 +86,7 @@ _kv_scanner_extract_value(KVScanner *self)
 
   g_string_truncate(self->value, 0);
   self->quote_state = KV_QUOTE_INITIAL;
+  self->value_was_quoted = FALSE;
   cur = &self->input[self->input_pos];
   while (*cur && self->quote_state != KV_QUOTE_FINISH)
     {
@@ -101,6 +102,8 @@ _kv_scanner_extract_value(KVScanner *self)
             {
               self->quote_state = KV_QUOTE_STRING;
               self->quote_char = *cur;
+              if (self->value->len == 0)
+                self->value_was_quoted = TRUE;
               break;
             }
           g_string_append_c(self->value, *cur);

@@ -233,6 +233,21 @@ test_kv_scanner_transforms_values_if_parse_value_is_set(void)
 }
 
 static void
+test_kv_scanner_quotation_is_stored_in_the_was_quoted_value_member(void)
+{
+  kv_scanner_input(kv_scanner, "foo=\"bar\"");
+  assert_next_kv_is("foo", "bar");
+  assert_true(kv_scanner->value_was_quoted, "expected value_was_quoted to be TRUE");
+  assert_no_more_tokens();
+
+  kv_scanner_input(kv_scanner, "foo=bar");
+  assert_next_kv_is("foo", "bar");
+  assert_false(kv_scanner->value_was_quoted, "expected value_was_quoted to be FALSE");
+  assert_no_more_tokens();
+}
+
+
+static void
 test_kv_scanner(void)
 {
   KV_SCANNER_TESTCASE(test_kv_scanner_incomplete_string_returns_no_pairs);
@@ -243,6 +258,7 @@ test_kv_scanner(void)
   KV_SCANNER_TESTCASE(test_kv_scanner_with_comma_separated_values);
   KV_SCANNER_TESTCASE(test_kv_scanner_quoted_values_are_unquoted_like_c_strings);
   KV_SCANNER_TESTCASE(test_kv_scanner_transforms_values_if_parse_value_is_set);
+  KV_SCANNER_TESTCASE(test_kv_scanner_quotation_is_stored_in_the_was_quoted_value_member);
 }
 
 int main(int argc, char *argv[])
