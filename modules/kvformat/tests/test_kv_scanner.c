@@ -212,6 +212,26 @@ test_kv_scanner_quoted_values_are_unquoted_like_c_strings(void)
   assert_no_more_tokens();
 }
 
+static gboolean
+_parse_value_by_incrementing_all_bytes(KVScanner *self)
+{
+  gint i;
+
+  g_string_assign(self->decoded_value, self->value->str);
+  for (i = 0; i < self->decoded_value->len; i++)
+    self->decoded_value->str[i]++;
+  return TRUE;
+}
+
+static void
+test_kv_scanner_transforms_values_if_parse_value_is_set(void)
+{
+  kv_scanner->parse_value = _parse_value_by_incrementing_all_bytes;
+  kv_scanner_input(kv_scanner, "foo=\"bar\"");
+  assert_next_kv_is("foo", "cbs");
+  assert_no_more_tokens();
+}
+
 static void
 test_kv_scanner(void)
 {
@@ -222,6 +242,7 @@ test_kv_scanner(void)
   KV_SCANNER_TESTCASE(test_kv_scanner_spaces_between_values_are_ignored);
   KV_SCANNER_TESTCASE(test_kv_scanner_with_comma_separated_values);
   KV_SCANNER_TESTCASE(test_kv_scanner_quoted_values_are_unquoted_like_c_strings);
+  KV_SCANNER_TESTCASE(test_kv_scanner_transforms_values_if_parse_value_is_set);
 }
 
 int main(int argc, char *argv[])

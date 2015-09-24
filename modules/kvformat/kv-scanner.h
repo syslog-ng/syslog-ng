@@ -32,9 +32,11 @@ struct _KVScanner
   gsize input_len;
   GString *key;
   GString *value;
+  GString *decoded_value;
   gchar quote_char;
   gint quote_state;
   gint next_quote_state;
+  gboolean (*parse_value)(KVScanner *self);
   void (*free_fn)(KVScanner *self);
 };
 

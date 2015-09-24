@@ -155,12 +155,25 @@ _kv_scanner_extract_value(KVScanner *self)
   return TRUE;
 }
 
+static gboolean
+_kv_scanner_decode_value(KVScanner *self)
+{
+  if (self->parse_value)
+    {
+      g_string_truncate(self->decoded_value, 0);
+      if (self->parse_value(self))
+        g_string_assign_len(self->value, self->decoded_value->str, self->decoded_value->len);
+    }
+  return TRUE;
+}
+
 gboolean
 kv_scanner_scan_next(KVScanner *self)
 {
   _kv_scanner_skip_space(self);
   if (!_kv_scanner_extract_key(self) ||
-      !_kv_scanner_extract_value(self))
+      !_kv_scanner_extract_value(self) ||
+      !_kv_scanner_decode_value(self))
     return FALSE;
 
   return TRUE;
@@ -183,6 +196,7 @@ kv_scanner_free_method(KVScanner *self)
 {
   g_string_free(self->key, TRUE);
   g_string_free(self->value, TRUE);
+  g_string_free(self->decoded_value, TRUE);
 }
 
 /* NOTE: this is a very limited clone operation that doesn't allow
@@ -191,6 +205,7 @@ KVScanner *
 kv_scanner_clone(KVScanner *self)
 {
   KVScanner *clone = kv_scanner_new();
+  clone->parse_value = self->parse_value;
   return clone;
 }
 
@@ -200,6 +215,7 @@ kv_scanner_init(KVScanner *self)
   memset(self, 0, sizeof(*self));
   self->key = g_string_sized_new(32);
   self->value = g_string_sized_new(64);
+  self->decoded_value = g_string_sized_new(64);
   self->free_fn = kv_scanner_free_method;
 }
 
