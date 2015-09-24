@@ -24,7 +24,8 @@
 
 #include "syslog-ng.h"
 
-typedef struct _KVScannerState
+typedef struct _KVScanner KVScanner;
+struct _KVScanner
 {
   const gchar *input;
   gsize input_pos;
@@ -34,13 +35,18 @@ typedef struct _KVScannerState
   gchar quote_char;
   gint quote_state;
   gint next_quote_state;
-} KVScannerState;
+  void (*free_fn)(KVScanner *self);
+};
 
-void kv_scanner_init(KVScannerState *self);
-void kv_scanner_destroy(KVScannerState *self);
-void kv_scanner_input(KVScannerState *self, const gchar *input);
-gboolean kv_scanner_scan_next(KVScannerState *self);
-const gchar *kv_scanner_get_current_key(KVScannerState *self);
-const gchar *kv_scanner_get_current_value(KVScannerState *self);
+void kv_scanner_input(KVScanner *self, const gchar *input);
+gboolean kv_scanner_scan_next(KVScanner *self);
+const gchar *kv_scanner_get_current_key(KVScanner *self);
+const gchar *kv_scanner_get_current_value(KVScanner *self);
+KVScanner *kv_scanner_clone(KVScanner *self);
+void kv_scanner_free_method(KVScanner *self);
+void kv_scanner_init(KVScanner *self);
+
+KVScanner *kv_scanner_new(void);
+void kv_scanner_free(KVScanner *self);
 
 #endif

@@ -21,6 +21,8 @@
  */
 #include "kv-scanner.h"
 #include "misc.h"
+#include "utf8utils.h"
+
 #include <string.h>
 
 enum {
@@ -31,7 +33,7 @@ enum {
 };
 
 void
-kv_scanner_input(KVScannerState *self, const gchar *input)
+kv_scanner_input(KVScanner *self, const gchar *input)
 {
   self->input = input;
   self->input_len = strlen(input);
@@ -39,7 +41,7 @@ kv_scanner_input(KVScannerState *self, const gchar *input)
 }
 
 static gboolean
-_kv_scanner_skip_space(KVScannerState *self)
+_kv_scanner_skip_space(KVScanner *self)
 {
   while (self->input[self->input_pos] == ' ')
     self->input_pos++;
@@ -57,7 +59,7 @@ _is_valid_key_character(int c)
 }
 
 static gboolean
-_kv_scanner_extract_key(KVScannerState *self)
+_kv_scanner_extract_key(KVScanner *self)
 {
   const gchar *input_ptr = &self->input[self->input_pos];
   const gchar *start_of_key;
@@ -77,7 +79,7 @@ _kv_scanner_extract_key(KVScannerState *self)
 }
 
 static gboolean
-_kv_scanner_extract_value(KVScannerState *self)
+_kv_scanner_extract_value(KVScanner *self)
 {
   const gchar *cur;
   gchar control;
@@ -154,7 +156,7 @@ _kv_scanner_extract_value(KVScannerState *self)
 }
 
 gboolean
-kv_scanner_scan_next(KVScannerState *self)
+kv_scanner_scan_next(KVScanner *self)
 {
   _kv_scanner_skip_space(self);
   if (!_kv_scanner_extract_key(self) ||
@@ -165,28 +167,55 @@ kv_scanner_scan_next(KVScannerState *self)
 }
 
 const gchar *
-kv_scanner_get_current_key(KVScannerState *self)
+kv_scanner_get_current_key(KVScanner *self)
 {
   return self->key->str;
 }
 
 const gchar *
-kv_scanner_get_current_value(KVScannerState *self)
+kv_scanner_get_current_value(KVScanner *self)
 {
   return self->value->str;
 }
 
 void
-kv_scanner_init(KVScannerState *self)
+kv_scanner_free_method(KVScanner *self)
+{
+  g_string_free(self->key, TRUE);
+  g_string_free(self->value, TRUE);
+}
+
+/* NOTE: this is a very limited clone operation that doesn't allow
+ * descendant types (e.g.  linux-audit scanner to have their own state */
+KVScanner *
+kv_scanner_clone(KVScanner *self)
+{
+  KVScanner *clone = kv_scanner_new();
+  return clone;
+}
+
+void
+kv_scanner_init(KVScanner *self)
 {
   memset(self, 0, sizeof(*self));
   self->key = g_string_sized_new(32);
   self->value = g_string_sized_new(64);
+  self->free_fn = kv_scanner_free_method;
+}
+
+KVScanner *
+kv_scanner_new(void)
+{
+  KVScanner *self = g_new0(KVScanner, 1);
+
+  kv_scanner_init(self);
+  return self;
 }
 
 void
-kv_scanner_destroy(KVScannerState *self)
+kv_scanner_free(KVScanner *self)
 {
-  g_string_free(self->key, TRUE);
-  g_string_free(self->value, TRUE);
+  if (self->free_fn)
+    self->free_fn(self);
+  g_free(self);
 }

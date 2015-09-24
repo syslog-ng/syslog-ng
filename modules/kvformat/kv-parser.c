@@ -28,7 +28,7 @@ typedef struct _KVParser
   gchar *prefix;
   gsize prefix_len;
   GString *formatted_key;
-  KVScannerState kv_scanner;
+  KVScanner *kv_scanner;
 } KVParser;
 
 void
@@ -67,14 +67,14 @@ kv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_op
 
   log_msg_make_writable(pmsg, path_options);
   /* FIXME: input length */
-  kv_scanner_input(&self->kv_scanner, input);
-  while (kv_scanner_scan_next(&self->kv_scanner))
+  kv_scanner_input(self->kv_scanner, input);
+  while (kv_scanner_scan_next(self->kv_scanner))
     {
 
       /* FIXME: value length */
       log_msg_set_value_by_name(*pmsg,
-                                _get_formatted_key(self, kv_scanner_get_current_key(&self->kv_scanner)),
-                                kv_scanner_get_current_value(&self->kv_scanner), -1);
+                                _get_formatted_key(self, kv_scanner_get_current_key(self->kv_scanner)),
+                                kv_scanner_get_current_value(self->kv_scanner), -1);
     }
   return TRUE;
 }
@@ -85,7 +85,7 @@ kv_parser_clone(LogPipe *s)
   KVParser *self = (KVParser *) s;
   LogParser *cloned;
 
-  cloned = kv_parser_new(s->cfg);
+  cloned = kv_parser_new(s->cfg, kv_scanner_clone(self->kv_scanner));
   kv_parser_set_prefix(cloned, self->prefix);
 
   return &cloned->super;
@@ -96,14 +96,14 @@ kv_parser_free(LogPipe *s)
 {
   KVParser *self = (KVParser *)s;
 
-  kv_scanner_destroy(&self->kv_scanner);
+  kv_scanner_free(self->kv_scanner);
   g_string_free(self->formatted_key, TRUE);
   g_free(self->prefix);
   log_parser_free_method(s);
 }
 
 LogParser *
-kv_parser_new(GlobalConfig *cfg)
+kv_parser_new(GlobalConfig *cfg, KVScanner *kv_scanner)
 {
   KVParser *self = g_new0(KVParser, 1);
 
@@ -112,7 +112,7 @@ kv_parser_new(GlobalConfig *cfg)
   self->super.super.clone = kv_parser_clone;
   self->super.process = kv_parser_process;
 
-  kv_scanner_init(&self->kv_scanner);
+  self->kv_scanner = kv_scanner;
   self->formatted_key = g_string_sized_new(32);
   return &self->super;
 }

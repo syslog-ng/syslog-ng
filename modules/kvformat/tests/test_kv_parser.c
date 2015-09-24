@@ -27,7 +27,7 @@
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      kv_parser = kv_parser_new(NULL);                      \
+      kv_parser = kv_parser_new(NULL, kv_scanner_new());        \
     }                                                           \
   while (0)
 
