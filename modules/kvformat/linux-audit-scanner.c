@@ -90,7 +90,7 @@ _parse_linux_audit_hexstring(GString *decoded_value, const gchar *value, gsize l
         kernel_would_have_encoded_this_as_hex = TRUE;
 
       if (v == 0)
-        v = 9;
+        v = '\t';
 
       g_string_append_c(decoded_value, v);
     }
