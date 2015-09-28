@@ -780,7 +780,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
             }
           else if (token->type == LL_IDENTIFIER || token->type == LL_STRING)
             {
-              yylval->cptr = strdup(token->cptr);
+              yylval->cptr = token->cptr;
             }
 
           goto exit;
