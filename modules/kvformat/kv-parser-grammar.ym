@@ -28,6 +28,7 @@
 %code {
 
 #include "kv-parser.h"
+#include "linux-audit-scanner.h"
 #include "cfg-parser.h"
 #include "kv-parser-grammar.h"
 
@@ -48,6 +49,7 @@ extern LogParser *last_parser;
 /* INCLUDE_DECLS */
 
 %token KW_KV_PARSER
+%token KW_LINUX_AUDIT_PARSER
 %token KW_PREFIX
 
 %type	<ptr> parser_expr_kv
@@ -63,6 +65,12 @@ parser_expr_kv
 	: KW_KV_PARSER '('
 	  {
 	    last_parser = *instance = (LogParser *) kv_parser_new(configuration, kv_scanner_new());
+	  }
+	  parser_kv_opts
+	  ')'					{ $$ = last_parser; }
+	| KW_LINUX_AUDIT_PARSER '('
+	  {
+	    last_parser = *instance = (LogParser *) kv_parser_new(configuration, linux_audit_scanner_new());
 	  }
 	  parser_kv_opts
 	  ')'					{ $$ = last_parser; }
