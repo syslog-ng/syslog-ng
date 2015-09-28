@@ -100,9 +100,6 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
-#if ENABLE_LINUX_CAPS
-static int have_capsyslog = FALSE;
-#endif
 
 /* global variables */
 static struct
@@ -194,116 +191,6 @@ inherit_systemd_activation(void)
 #else
 
 #define inherit_systemd_activation()
-
-#endif
-
-#if ENABLE_LINUX_CAPS
-
-/**
- * g_process_cap_modify:
- * @capability: capability to turn off or on
- * @onoff: specifies whether the capability should be enabled or disabled
- *
- * This function modifies the current permitted set of capabilities by
- * enabling or disabling the capability specified in @capability.
- *
- * Returns: whether the operation was successful.
- **/
-gboolean 
-g_process_cap_modify(int capability, int onoff)
-{
-  cap_t caps;
-
-  if (!process_opts.caps)
-    return TRUE;
-
-  /*
-   * if libcap or kernel doesn't support cap_syslog, then resort to
-   * cap_sys_admin
-   */
-  if (capability == CAP_SYSLOG && (!have_capsyslog || CAP_SYSLOG == -1))
-    capability = CAP_SYS_ADMIN;
-
-  caps = cap_get_proc();
-  if (!caps)
-    return FALSE;
-
-  if (cap_set_flag(caps, CAP_EFFECTIVE, 1, &capability, onoff) == -1)
-    {
-      msg_error("Error managing capability set, cap_set_flag returned an error",
-                evt_tag_errno("error", errno),
-                NULL);
-      cap_free(caps);
-      return FALSE;
-    }
-
-  if (cap_set_proc(caps) == -1)
-    {
-      gchar *cap_text;
-
-      cap_text = cap_to_text(caps, NULL);
-      msg_error("Error managing capability set, cap_set_proc returned an error",
-                evt_tag_str("caps", cap_text),
-                evt_tag_errno("error", errno),
-                NULL);
-      cap_free(cap_text);
-      cap_free(caps);
-      return FALSE;
-    }
-  cap_free(caps);
-  return TRUE;
-}
-
-/**
- * g_process_cap_save:
- *
- * Save the set of current capabilities and return it. The caller might
- * restore the saved set of capabilities by using cap_restore().
- *
- * Returns: the current set of capabilities
- **/
-cap_t 
-g_process_cap_save(void)
-{
-  if (!process_opts.caps)
-    return NULL;
-
-  return cap_get_proc();
-}
-
-/**
- * cap_restore:
- * @r: capability set saved by cap_save()
- *
- * Restore the set of current capabilities specified by @r.
- *
- * Returns: whether the operation was successful.
- **/
-void
-g_process_cap_restore(cap_t r)
-{
-  gboolean rc;
-
-  if (!process_opts.caps)
-    return;
-
-  rc = cap_set_proc(r) != -1;
-  cap_free(r);
-  if (!rc)
-    {
-      gchar *cap_text;
-
-      cap_text = cap_to_text(r, NULL);
-      msg_error("Error managing capability set, cap_set_proc returned an error",
-                evt_tag_str("caps", cap_text),
-                evt_tag_errno("error", errno),
-                NULL);
-      cap_free(cap_text);
-      return;
-    }
-  
-  return;
-}
 
 #endif
 

@@ -40,22 +40,6 @@ typedef enum
   G_PM_SAFE_BACKGROUND,
 } GProcessMode;
 
-#if ENABLE_LINUX_CAPS
-
-gboolean g_process_cap_modify(int capability, int onoff);
-cap_t g_process_cap_save(void);
-void g_process_cap_restore(cap_t r);
-
-#else
-
-typedef gpointer cap_t;
-
-#define g_process_cap_modify(cap, onoff)
-#define g_process_cap_save() NULL
-#define g_process_cap_restore(cap) cap = cap
-
-#endif
-
 void g_process_message(const gchar *fmt, ...);
 
 void g_process_set_mode(GProcessMode mode);
