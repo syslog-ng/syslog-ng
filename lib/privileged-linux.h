@@ -24,8 +24,17 @@
 #ifndef PRIVILEGED_H_INCLUDED
 #define PRIVILEGED_H_INCLUDED
 
+#include "file-perms.h"
+#include "affile/affile-common.h"
+
+#include <sys/stat.h>
 #include <glib.h>
 #include <sys/capability.h>
+#include "gsockaddr.h"
+
+#if ENABLE_SPOOF_SOURCE
+#include <libnet.h>
+#endif
 
 #define BASE_CAPS "cap_net_bind_service,cap_net_broadcast,cap_net_raw," \
   "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner,"
@@ -54,5 +63,15 @@ gboolean setup_permitted_caps(const gchar *caps);
 gint restore_caps(cap_t caps);
 gint raise_caps(const gchar* new_caps, cap_t *old_caps);
 const gchar* get_open_file_caps(const FileOpenOptions *open_opts);
+
+#define PRIVILEGED_CALL(caps, function, result, ...)  \
+do {                                                  \
+  cap_t saved_caps;                                   \
+  gint raised_caps_result;                            \
+  raised_caps_result = raise_caps(caps, &saved_caps); \
+  result = function(__VA_ARGS__);                     \
+  if (raised_caps_result != -1)                       \
+    restore_caps(saved_caps);                         \
+} while(0)
 
 #endif

@@ -24,11 +24,21 @@
 #include "privileged-linux.h"
 #include "gprocess.h"
 #include "messages.h"
+#include "file-perms.h"
+#include "affile/affile-common.h"
 
 #include <errno.h>
 #include <sys/capability.h>
 #include <sys/prctl.h>
 #include <glib.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "gsockaddr.h"
+#include "gsocket.h"
+
+#if ENABLE_SPOOF_SOURCE
+#include <libnet.h>
+#endif
 
 #ifndef PR_CAPBSET_READ
 
