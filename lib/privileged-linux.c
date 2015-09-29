@@ -23,6 +23,7 @@
 
 #include "privileged-linux.h"
 #include "gprocess.h"
+#include "messages.h"
 
 #include <errno.h>
 #include <sys/capability.h>
@@ -84,4 +85,21 @@ check_syslog_cap()
 
   have_capsyslog = TRUE;
   return TRUE;
+}
+
+static gint
+__set_caps(cap_t caps, gchar *error_message)
+{
+  gchar *cap_text;
+  gint rc;
+
+  rc = cap_set_proc(caps);
+  if (rc == -1)
+    {
+      cap_text = cap_to_text(caps, NULL);
+      g_process_message(error_message, "caps", cap_text, "errno", errno);
+      cap_free(cap_text);
+    }
+
+  return rc;
 }
