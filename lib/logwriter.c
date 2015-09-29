@@ -1253,7 +1253,7 @@ log_writer_deinit(LogPipe *s)
   iv_event_unregister(&self->queue_filled);
 
   ml_batched_timer_unregister(&self->suppress_timer);
-  ml_batched_timer_cancel(&self->mark_timer);
+  ml_batched_timer_unregister(&self->mark_timer);
 
   log_queue_set_counters(self->queue, NULL, NULL);
 
