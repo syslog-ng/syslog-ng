@@ -141,8 +141,12 @@ ml_batched_timer_cancel(MlBatchedTimer *self)
 void
 ml_batched_timer_unregister(MlBatchedTimer *self)
 {
+  main_loop_assert_main_thread();
+
   if (iv_timer_registered(&self->timer))
     iv_timer_unregister(&self->timer);
+  self->expires.tv_sec = 0;
+  self->expires.tv_nsec = 0;
 }
 
 /* one-time initialization of the MlBatchedTimer structure */
