@@ -167,39 +167,11 @@ file_perm_options_apply_fd(const FilePermOptions *self, gint fd)
 #endif
 }
 
-/**
- *
- * This function receives a complete path (directory + filename) and creates
- * the directory portion if it does not exist. The point is that the caller
- * wants to ensure that the given filename can be opened after this function
- * returns. (at least it won't fail because of missing directories).
- **/
 gboolean
 file_perm_options_create_containing_directory(const FilePermOptions *self, gchar *name)
 {
-  gchar *dirname;
   struct stat st;
-  gint rc;
-  gchar *p;
-
-  /* check that the directory exists */
-  dirname = g_path_get_dirname(name);
-  rc = stat(dirname, &st);
-  g_free(dirname);
-
-  if (rc == 0)
-    {
-      /* directory already exists */
-      return TRUE;
-    }
-  else if (rc < 0 && errno != ENOENT)
-    {
-      /* some real error occurred */
-      return FALSE;
-    }
-
-  /* directory does not exist */
-  p = name + 1;
+  gchar *p = name + 1;
 
   p = strchr(p, '/');
   while (p)
@@ -219,5 +191,6 @@ file_perm_options_create_containing_directory(const FilePermOptions *self, gchar
       *p = '/';
       p = strchr(p + 1, '/');
     }
+
   return TRUE;
 }
