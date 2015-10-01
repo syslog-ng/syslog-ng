@@ -72,6 +72,7 @@ void g_process_set_pidfile(const gchar *pidfile);
 void g_process_set_pidfile_dir(const gchar *pidfile_dir);
 void g_process_set_working_dir(const gchar *cwd);
 void g_process_set_caps(const gchar *caps);
+const gchar* g_process_get_caps();
 void g_process_set_argv_space(gint argc, gchar **argv);
 void g_process_set_use_fdlimit(gboolean use);
 void g_process_set_check(gint check_period, gboolean (*check_fn)(void));

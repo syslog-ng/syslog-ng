@@ -448,6 +448,17 @@ g_process_set_caps(const gchar *caps)
 }
 
 /**
+ * g_process_get_caps:
+ * Return the all permitted capbilities
+ **/
+
+const gchar *
+g_process_get_caps()
+{
+  return process_opts.caps;
+}
+
+/**
  * g_process_set_argv_space:
  * @argc: Original argc, as received by the main function in it's first parameter
  * @argv: Original argv, as received by the main function in it's second parameter
