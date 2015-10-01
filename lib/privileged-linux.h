@@ -53,5 +53,6 @@ gboolean setup_permitted_caps(const gchar *caps);
 
 gint restore_caps(cap_t caps);
 gint raise_caps(const gchar* new_caps, cap_t *old_caps);
+const gchar* get_open_file_caps(const FileOpenOptions *open_opts);
 
 #endif

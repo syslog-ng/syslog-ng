@@ -167,3 +167,43 @@ raise_caps(const gchar* new_caps, cap_t *old_caps)
   *old_caps = cap_get_proc();
   return __set_caps(cap_from_text(str), "Error managing capability set, raise a new capability sets returned an error");
 }
+
+static inline const gchar *
+__get_privileged_caps()
+{
+  if (check_syslog_cap())
+    return SYSLOG_CAPS;
+  else
+    return SYSADMIN_CAPS;
+}
+
+static inline const gchar *
+__get_ro_file_caps(const FileOpenOptions *open_opts)
+{
+  if (open_opts->needs_privileges)
+    return __get_privileged_caps();
+  else
+    return OPEN_AS_READ_CAPS;
+}
+
+static inline const gchar *
+__get_rw_file_caps(const FileOpenOptions *open_opts)
+{
+  return OPEN_AS_READ_AND_WRITE_CAPS;
+}
+
+const gchar *
+get_open_file_caps(const FileOpenOptions *open_opts)
+{
+  if (!g_process_get_caps())
+    return NULL;
+
+  if ((open_opts->open_flags & O_WRONLY) == O_WRONLY ||
+      (open_opts->open_flags & O_RDWR) == O_RDWR)
+    return __get_rw_file_caps(open_opts);
+
+  if ((open_opts->open_flags & O_RDONLY) == O_RDONLY)
+    return __get_ro_file_caps(open_opts);
+
+  return NULL;
+}
