@@ -136,3 +136,25 @@ setup_permitted_caps(const gchar *caps)
     }
   return TRUE;
 }
+
+gint
+restore_caps(cap_t caps)
+{
+  if (!g_process_get_caps())
+    return 0;
+
+  return __set_caps(caps, "Error managing capability set, restore original capabilities returned an error");
+}
+
+gint
+raise_caps(const gchar* new_caps, cap_t *old_caps)
+{
+  if (!g_process_get_caps())
+    return 0;
+
+  gchar str[1024];
+  g_snprintf(str, sizeof(str), "%s%s", g_process_get_caps(), new_caps);
+
+  *old_caps = cap_get_proc();
+  return __set_caps(cap_from_text(str), "Error managing capability set, raise a new capability sets returned an error");
+}

@@ -25,10 +25,14 @@
 #define PRIVILEGED_H_INCLUDED
 
 #include <glib.h>
+#include <sys/capability.h>
 
 void set_process_dumpable();
 void set_keep_caps_flag(const gchar *caps);
 gboolean check_syslog_cap();
 gboolean setup_permitted_caps(const gchar *caps);
+
+gint restore_caps(cap_t caps);
+gint raise_caps(const gchar* new_caps, cap_t *old_caps);
 
 #endif
