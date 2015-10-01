@@ -142,6 +142,35 @@ _validate_file_type(const gchar *name, FileOpenOptions *open_opts)
 }
 
 gboolean
+__create_containing_directory_and_set_perm_options(FilePermOptions *perm_opts, gchar *name)
+{
+  gchar *dirname;
+  gint rc;
+  struct stat st;
+  gboolean result;
+
+  /* check that the directory exists */
+  dirname = g_path_get_dirname(name);
+  PRIVILEGED_CALL(STAT_CAPS, stat, rc, dirname, &st);
+  g_free(dirname);
+
+  if (rc == 0)
+    {
+      /* directory already exists */
+      return TRUE;
+    }
+  else if (rc < 0 && errno != ENOENT)
+    {
+      /* some real error occurred */
+      return FALSE;
+    }
+
+  /* directory does not exist */
+  PRIVILEGED_CALL(MKDIR_AND_PERM_RIGHTS_CAPS, file_perm_options_create_containing_directory, result, perm_opts, name);
+  return result;
+}
+
+gboolean
 affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd)
 {
   cap_t saved_caps;
