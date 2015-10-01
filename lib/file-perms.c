@@ -181,7 +181,6 @@ file_perm_options_create_containing_directory(const FilePermOptions *self, gchar
   struct stat st;
   gint rc;
   gchar *p;
-  cap_t saved_caps;
 
   /* check that the directory exists */
   dirname = g_path_get_dirname(name);
@@ -215,11 +214,7 @@ file_perm_options_create_containing_directory(const FilePermOptions *self, gchar
         {
           if (mkdir(name, self->dir_perm < 0 ? 0700 : (mode_t) self->dir_perm) == -1)
             return FALSE;
-          saved_caps = g_process_cap_save();
-          g_process_cap_modify(CAP_CHOWN, TRUE);
-          g_process_cap_modify(CAP_FOWNER, TRUE);
           file_perm_options_apply_dir(self, name);
-          g_process_cap_restore(saved_caps);
         }
       *p = '/';
       p = strchr(p + 1, '/');
