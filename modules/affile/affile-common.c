@@ -101,13 +101,17 @@ _open_fd(const gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_op
   int fd;
   int mode = (perm_opts && (perm_opts->file_perm >= 0))
     ? perm_opts->file_perm : 0600;
+  int mkfifo_result;
 
-  fd = open(name, open_opts->open_flags, mode);
+  PRIVILEGED_CALL(OPEN_CAPS(open_opts), open, fd, name, open_opts->open_flags, mode);
 
   if (open_opts->is_pipe && fd < 0 && errno == ENOENT)
     {
-      if (mkfifo(name, mode) >= 0)
-        fd = open(name, open_opts->open_flags, mode);
+      PRIVILEGED_CALL(MKFIFO_CAPS, mkfifo, mkfifo_result ,name, mode);
+      if (mkfifo_result >= 0)
+        {
+          PRIVILEGED_CALL(OPEN_CAPS(open_opts), open, fd, name, open_opts->open_flags, mode);
+        }
     }
 
   return fd;
