@@ -28,21 +28,14 @@
 #include "messages.h"
 #include "misc.h"
 #include "transport/transport-socket.h"
+#include "privileged-linux.h"
 
 static gboolean
 transport_mapper_privileged_bind(gint sock, GSockAddr *bind_addr)
 {
-  cap_t saved_caps;
-  GIOStatus status;
-
-  saved_caps = g_process_cap_save();
-  g_process_cap_modify(CAP_NET_BIND_SERVICE, TRUE);
-  g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
-
-  status = g_bind(sock, bind_addr);
-
-  g_process_cap_restore(saved_caps);
-  return status == G_IO_STATUS_NORMAL;
+  GIOStatus result;
+  PRIVILEGED_CALL(STAT_CAPS, g_bind, result, sock, bind_addr);
+  return result == G_IO_STATUS_NORMAL;
 }
 
 gboolean
