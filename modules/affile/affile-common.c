@@ -117,8 +117,10 @@ static inline void
 _validate_file_type(const gchar *name, FileOpenOptions *open_opts)
 {
   struct stat st;
+  gint stat_result;
 
-  if (stat(name, &st) >= 0)
+  PRIVILEGED_CALL(STAT_CAPS, stat, stat_result, name, &st);
+  if (stat_result >= 0)
     {
       if (open_opts->is_pipe && !S_ISFIFO(st.st_mode))
         {
