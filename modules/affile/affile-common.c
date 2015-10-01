@@ -57,28 +57,6 @@ _path_is_spurious(const gchar *name, const gchar *spurious_paths[])
   return _string_contains_fragment(name, spurious_paths);
 }
 
-static inline gboolean
-_obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, cap_t *act_caps)
-{
-  if (open_opts->needs_privileges)
-    {
-      g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
-      g_process_cap_modify(CAP_SYSLOG, TRUE);
-    }
-  else
-    {
-      g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
-    }
-
-  if (open_opts->create_dirs && perm_opts &&
-      !file_perm_options_create_containing_directory(perm_opts, name))
-    {
-      return FALSE;
-    }
-
-  return TRUE;
-}
-
 static inline void
 _set_fd_permission(FilePermOptions *perm_opts, int fd)
 {
@@ -173,8 +151,6 @@ __create_containing_directory_and_set_perm_options(FilePermOptions *perm_opts, g
 gboolean
 affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd)
 {
-  cap_t saved_caps;
-
   if (_path_is_spurious(name, spurious_paths))
     {
       msg_error("Spurious path, logfile not created",
@@ -183,21 +159,11 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
       return FALSE;
     }
 
-  saved_caps = g_process_cap_save();
-
-  if (!_obtain_capabilities(name, open_opts, perm_opts, &saved_caps))
-    {
-      g_process_cap_restore(saved_caps);
-      return FALSE;
-    }
-
   _validate_file_type(name, open_opts);
 
   *fd = _open_fd(name, open_opts, perm_opts);
 
   _set_fd_permission(perm_opts, *fd);
-
-  g_process_cap_restore(saved_caps);
 
   msg_trace("affile_open_file",
             evt_tag_str("path", name),
