@@ -24,6 +24,7 @@
 #include "messages.h"
 #include "gprocess.h"
 #include "misc.h"
+#include "privileged-linux.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -81,15 +82,16 @@ _obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *p
 static inline void
 _set_fd_permission(FilePermOptions *perm_opts, int fd)
 {
+  gboolean result G_GNUC_UNUSED;
+
   if (fd != -1)
     {
       g_fd_set_cloexec(fd, TRUE);
 
-      g_process_cap_modify(CAP_CHOWN, TRUE);
-      g_process_cap_modify(CAP_FOWNER, TRUE);
-
       if (perm_opts)
-        file_perm_options_apply_fd(perm_opts, fd);
+        {
+          PRIVILEGED_CALL(CHANGE_FILE_RIGHTS_CAPS, file_perm_options_apply_fd, result, perm_opts, fd);
+        }
     }
 }
 
