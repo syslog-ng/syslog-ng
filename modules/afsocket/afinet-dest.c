@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "misc.h"
 #include "gprocess.h"
+#include "privileged-linux.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -203,17 +204,13 @@ afinet_dd_init(LogPipe *s)
     {
       if (self->spoof_source && !self->lnet_ctx)
         {
-          gchar error[LIBNET_ERRBUF_SIZE];
-          cap_t saved_caps;
+          gint injection_type;
 
-          saved_caps = g_process_cap_save();
-          g_process_cap_modify(CAP_NET_RAW, TRUE);
-          self->lnet_ctx = libnet_init(self->super.bind_addr->sa.sa_family == AF_INET ? LIBNET_RAW4 : LIBNET_RAW6, NULL, error);
-          g_process_cap_restore(saved_caps);
+          injection_type = self->super.bind_addr->sa.sa_family == AF_INET ? LIBNET_RAW4 : LIBNET_RAW6;
+          PRIVILEGED_CALL(STAT_CAPS, libnet_init, self->lnet_ctx, injection_type, NULL, NULL);
           if (!self->lnet_ctx)
             {
               msg_error("Error initializing raw socket, spoof-source support disabled",
-                        evt_tag_str("error", NULL),
                         NULL);
             }
         }
