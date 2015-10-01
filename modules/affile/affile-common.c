@@ -161,6 +161,11 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
 
   _validate_file_type(name, open_opts);
 
+  if (open_opts->create_dirs &&
+      perm_opts &&
+      !__create_containing_directory_and_set_perm_options(perm_opts, name))
+    return FALSE;
+
   *fd = _open_fd(name, open_opts, perm_opts);
 
   _set_fd_permission(perm_opts, *fd);
