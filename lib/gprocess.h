@@ -46,10 +46,6 @@ gboolean g_process_cap_modify(int capability, int onoff);
 cap_t g_process_cap_save(void);
 void g_process_cap_restore(cap_t r);
 
-#ifndef CAP_SYSLOG
-#define CAP_SYSLOG -1
-#endif
-
 #else
 
 typedef gpointer cap_t;

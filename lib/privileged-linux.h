@@ -54,6 +54,10 @@
 #define OPEN_AS_READ_AND_WRITE_CAPS "cap_dac_override+e"
 #define OPEN_CAPS(x) get_open_file_caps(x)
 
+#ifndef CAP_SYSLOG
+#define CAP_SYSLOG -1
+#endif
+
 void setup_caps();
 void set_process_dumpable();
 void set_keep_caps_flag(const gchar *caps);
