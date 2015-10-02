@@ -36,6 +36,7 @@
 #include <libnet.h>
 #endif
 
+#if ENABLE_LINUX_CAPS
 #define BASE_CAPS "cap_net_bind_service,cap_net_broadcast,cap_net_raw," \
   "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner,"
 
@@ -77,5 +78,22 @@ do {                                                  \
   if (raised_caps_result != -1)                       \
     restore_caps(saved_caps);                         \
 } while(0)
+
+#else
+
+#define setup_caps()
+#define set_process_dumpable()
+#define set_keep_caps_flag(caps)
+#define check_syslog_cap() FALSE
+#define setup_permitted_caps(caps) TRUE
+#define restore_caps(caps) 0
+#define raise_caps(new_caps, old_caps) 0
+#define get_open_file_caps(open_opts) NULL
+#define PRIVILEGED_CALL(caps, function, result, ...)  \
+do {                                                  \
+  result = function(__VA_ARGS__);                     \
+} while(0)
+
+#endif
 
 #endif

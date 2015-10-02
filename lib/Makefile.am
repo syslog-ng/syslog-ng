@@ -208,7 +208,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/poll-fd-events.c		\
 	lib/pragma-parser.c		\
 	lib/persistable-state-presenter.c		\
-	lib/privileged-linux.c \
 	lib/rcptid.c			\
 	lib/reloc.c			\
 	lib/run-id.c			\
@@ -247,6 +246,10 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(control_sources)		\
 	$(debugger_sources)		\
 	$(compat_sources)
+
+if ENABLE_LINUX_CAPS
+lib_libsyslog_ng_la_SOURCES += lib/privileged-linux.c
+endif
 
 lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
 lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@ $(LIBNET_LIBS)
