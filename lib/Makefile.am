@@ -128,6 +128,7 @@ pkginclude_HEADERS			+= \
 	lib/poll-fd-events.h		\
 	lib/pragma-parser.h		\
 	lib/presented-persistable-state.h			\
+	lib/privileged-linux.h \
 	lib/reloc.h			\
 	lib/rcptid.h			\
 	lib/run-id.h			\
@@ -207,6 +208,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/poll-fd-events.c		\
 	lib/pragma-parser.c		\
 	lib/persistable-state-presenter.c		\
+	lib/privileged-linux.c \
 	lib/rcptid.c			\
 	lib/reloc.c			\
 	lib/run-id.c			\

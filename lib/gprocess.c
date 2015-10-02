@@ -26,6 +26,7 @@
 #include "misc.h"
 #include "messages.h"
 #include "reloc.h"
+#include "privileged-linux.h"
  
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -678,18 +679,7 @@ g_process_enable_core(void)
 
   if (process_opts.core)
     {
-#if ENABLE_LINUX_CAPS
-      if (!prctl(PR_GET_DUMPABLE, 0, 0, 0, 0))
-        {
-          gint rc;
-
-          rc = prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
-
-          if (rc < 0)
-            g_process_message("Cannot set process to be dumpable; error='%s'", g_strerror(errno));
-        }
-#endif
-
+      set_process_dumpable();
       limit.rlim_cur = limit.rlim_max = RLIM_INFINITY;
       if (setrlimit(RLIMIT_CORE, &limit) < 0)
         g_process_message("Error setting core limit to infinity; error='%s'", g_strerror(errno));
