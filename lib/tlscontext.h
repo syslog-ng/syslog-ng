@@ -46,6 +46,16 @@ typedef enum
   TVM_REQUIRED=0x0020,
 } TLSVerifyMode;
 
+enum
+{
+  TSO_NONE,
+  TSO_NOSSLv2=0x0001,
+  TSO_NOSSLv3=0x0002,
+  TSO_NOTLSv1=0x0004,
+  TSO_NOTLSv11=0x0008,
+  TSO_NOTLSv12=0x0010,
+} TLSSslOptions;
+
 typedef gint (*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
 typedef struct _TLSContext TLSContext;
 
@@ -73,6 +83,7 @@ struct _TLSContext
   SSL_CTX *ssl_ctx;
   GList *trusted_fingerpint_list;
   GList *trusted_dn_list;
+  gint ssl_options;
 };
 
 
@@ -83,6 +94,7 @@ TLSContext *tls_context_new(TLSMode mode);
 void tls_context_free(TLSContext *s);
 
 TLSVerifyMode tls_lookup_verify_mode(const gchar *mode_str);
+gint tls_lookup_options(GList *options);
 
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);
