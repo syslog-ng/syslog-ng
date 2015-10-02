@@ -441,11 +441,10 @@ g_process_set_working_dir(const gchar *cwd)
  * capability set. The process will change its capabilities to this value
  * during startup, provided it has enough permissions to do so.
  **/
-void 
+void
 g_process_set_caps(const gchar *caps)
 {
-  if (!process_opts.caps)
-    process_opts.caps = caps;
+  process_opts.caps = caps;
 }
 
 /**
