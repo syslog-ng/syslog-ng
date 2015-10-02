@@ -33,6 +33,18 @@
 #define BASE_CAPS_WITH_SYSLOG_CAP BASE_CAPS"cap_syslog=p "
 #define BASE_CAPS_WITH_SYS_ADMIN_CAP BASE_CAPS"cap_sys_admin=p "
 
+#define STAT_CAPS "cap_dac_read_search+e"
+#define MKFIFO_CAPS "cap_dac_override+e"
+#define CHANGE_FILE_RIGHTS_CAPS "cap_chown,cap_fowner+e"
+#define INIT_RAW_NET_CAPS "cap_net_raw+e"
+#define BIND_SERVICE_CAPS "cap_net_bind_service+e"
+#define MKDIR_AND_PERM_RIGHTS_CAPS "cap_chown,cap_fowner,cap_dac_override+e"
+#define SYSLOG_CAPS "cap_syslog+e"
+#define SYSADMIN_CAPS "cap_sys_admin+e"
+#define OPEN_AS_READ_CAPS "cap_dac_read_search+e"
+#define OPEN_AS_READ_AND_WRITE_CAPS "cap_dac_override+e"
+#define OPEN_CAPS(x) get_open_file_caps(x)
+
 void setup_caps();
 void set_process_dumpable();
 void set_keep_caps_flag(const gchar *caps);
