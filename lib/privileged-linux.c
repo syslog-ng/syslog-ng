@@ -29,6 +29,16 @@
 #include <sys/prctl.h>
 #include <glib.h>
 
+#ifndef PR_CAPBSET_READ
+
+/* old glibc versions don't have PR_CAPBSET_READ, we define it to the
+ * value as defined in newer versions. */
+
+#define PR_CAPBSET_READ 23
+#endif
+
+static gboolean have_capsyslog = FALSE;
+
 void
 set_process_dumpable()
 {
@@ -47,4 +57,31 @@ set_keep_caps_flag(const gchar *caps)
 {
   if (caps)
     prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
+}
+
+gboolean
+check_syslog_cap()
+{
+  int ret;
+
+  if (have_capsyslog)
+    return TRUE;
+
+  if (CAP_SYSLOG == -1)
+    return FALSE;
+
+  ret = prctl(PR_CAPBSET_READ, CAP_SYSLOG);
+  if (ret == -1)
+    return FALSE;
+
+  ret = cap_from_name("cap_syslog", NULL);
+  if (ret == -1)
+    {
+      g_process_message("CAP_SYSLOG seems to be supported by the system, but "
+         "libcap can't parse it. Falling back to CAP_SYS_ADMIN!");
+      return FALSE;
+    }
+
+  have_capsyslog = TRUE;
+  return TRUE;
 }

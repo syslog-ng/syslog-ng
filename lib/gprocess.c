@@ -305,41 +305,6 @@ g_process_cap_restore(cap_t r)
   return;
 }
 
-#ifndef PR_CAPBSET_READ
-
-/* old glibc versions don't have PR_CAPBSET_READ, we define it to the
- * value as defined in newer versions. */
-
-#define PR_CAPBSET_READ 23
-#endif
-
-gboolean
-g_process_check_cap_syslog(void)
-{
-  int ret;
-
-  if (have_capsyslog)
-    return TRUE;
-
-  if (CAP_SYSLOG == -1)
-    return FALSE;
-
-  ret = prctl(PR_CAPBSET_READ, CAP_SYSLOG);
-  if (ret == -1)
-    return FALSE;
-
-  ret = cap_from_name("cap_syslog", NULL);
-  if (ret == -1)
-    {
-      fprintf (stderr, "CAP_SYSLOG seems to be supported by the system, but "
-	       "libcap can't parse it. Falling back to CAP_SYS_ADMIN!\n");
-      return FALSE;
-    }
-
-  have_capsyslog = TRUE;
-  return TRUE;
-}
-
 #endif
 
 /**

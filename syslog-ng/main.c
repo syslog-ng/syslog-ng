@@ -39,6 +39,7 @@
 #include "mainloop.h"
 #include "plugin.h"
 #include "reloc.h"
+#include "privileged-linux.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -171,7 +172,7 @@ setup_caps (void)
    * indicate readability. Enabling/disabling cap_sys_admin on every poll
    * invocation seems to be too expensive. So I enable it for now.
    */
-  if (g_process_check_cap_syslog())
+  if (check_syslog_cap())
     g_process_set_caps(capsstr_syslog);
   else
     g_process_set_caps(capsstr_sys_admin);

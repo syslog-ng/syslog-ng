@@ -28,5 +28,6 @@
 
 void set_process_dumpable();
 void set_keep_caps_flag(const gchar *caps);
+gboolean check_syslog_cap();
 
 #endif
