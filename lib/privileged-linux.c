@@ -103,3 +103,36 @@ __set_caps(cap_t caps, gchar *error_message)
 
   return rc;
 }
+
+/**
+ * Change the current capset to the value specified by the user.  causes the
+ * startup process to fail if this function returns FALSE, but we only do
+ * this if the capset cannot be parsed, otherwise a failure changing the
+ * capabilities will not result in failure
+ *
+ * Returns: TRUE to indicate success
+ **/
+gboolean
+setup_permitted_caps(const gchar *caps)
+{
+  cap_t cap;
+
+  if (caps)
+    {
+      cap = cap_from_text(caps);
+      if (!cap)
+        {
+          g_process_message("Error parsing capabilities: %s", caps);
+          return FALSE;
+        }
+
+      if (cap_set_proc(cap) == -1)
+        {
+          g_process_message("Error setting permitted capabilities, capability management is disabled");
+          g_process_set_caps(NULL);
+        }
+
+      cap_free(cap);
+    }
+  return TRUE;
+}

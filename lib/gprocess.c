@@ -796,54 +796,6 @@ g_process_change_user(void)
   return TRUE;
 }
 
-#if ENABLE_LINUX_CAPS
-/**
- * g_process_change_caps:
- *
- * Change the current capset to the value specified by the user.  causes the
- * startup process to fail if this function returns FALSE, but we only do
- * this if the capset cannot be parsed, otherwise a failure changing the
- * capabilities will not result in failure
- *
- * Returns: TRUE to indicate success
- **/
-static gboolean
-g_process_change_caps(void)
-{
-  if (process_opts.caps)
-    {
-      cap_t cap = cap_from_text(process_opts.caps);
-
-      if (cap == NULL)
-        {
-          g_process_message("Error parsing capabilities: %s", process_opts.caps);
-          process_opts.caps = NULL;
-          return FALSE;
-        }
-      else
-        {
-          if (cap_set_proc(cap) == -1)
-            {
-              g_process_message("Error setting capabilities, capability management disabled; error='%s'", g_strerror(errno));
-              process_opts.caps = NULL;
-
-            }
-          cap_free(cap);
-        }
-    }
-  return TRUE;
-}
-
-#else
-
-static gboolean
-g_process_change_caps(void)
-{
-  return TRUE;
-}
-
-#endif
-
 static void
 g_process_resolve_names(void)
 {
@@ -1327,7 +1279,7 @@ g_process_start(void)
 
   if (!g_process_change_root() ||
       !g_process_change_user() ||
-      !g_process_change_caps())
+      !setup_permitted_caps(process_opts.caps))
     {
       g_process_startup_failed(1, TRUE);
     }
