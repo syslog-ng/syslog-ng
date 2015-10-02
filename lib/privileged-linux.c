@@ -87,6 +87,15 @@ check_syslog_cap()
   return TRUE;
 }
 
+void
+setup_caps()
+{
+  if (check_syslog_cap())
+    g_process_set_caps(BASE_CAPS_WITH_SYSLOG_CAP);
+  else
+    g_process_set_caps(BASE_CAPS_WITH_SYS_ADMIN_CAP);
+}
+
 static gint
 __set_caps(cap_t caps, gchar *error_message)
 {

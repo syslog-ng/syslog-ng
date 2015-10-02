@@ -27,6 +27,13 @@
 #include <glib.h>
 #include <sys/capability.h>
 
+#define BASE_CAPS "cap_net_bind_service,cap_net_broadcast,cap_net_raw," \
+  "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner,"
+
+#define BASE_CAPS_WITH_SYSLOG_CAP BASE_CAPS"cap_syslog=p "
+#define BASE_CAPS_WITH_SYS_ADMIN_CAP BASE_CAPS"cap_sys_admin=p "
+
+void setup_caps();
 void set_process_dumpable();
 void set_keep_caps_flag(const gchar *caps);
 gboolean check_syslog_cap();
