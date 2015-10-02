@@ -17,33 +17,13 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
+ *
  */
+#ifndef LINUX_AUDIT_SCANNER_H_INCLUDED
+#define LINUX_AUDIT_SCANNER_H_INCLUDED
 
-#include "kv-parser.h"
-#include "cfg-parser.h"
-#include "kv-parser-grammar.h"
+#include "kv-scanner.h"
 
-extern int kv_parser_debug;
+KVScanner *linux_audit_scanner_new(void);
 
-int kv_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
-
-static CfgLexerKeyword kv_parser_keywords[] =
-{
-  { "kv_parser",          KW_KV_PARSER,  },
-  { "linux_audit_parser", KW_LINUX_AUDIT_PARSER,  },
-  { "prefix",             KW_PREFIX,  },
-  { NULL }
-};
-
-CfgParser kv_parser_parser =
-{
-#if ENABLE_DEBUG
-  .debug_flag = &kv_parser_debug,
 #endif
-  .name = "kv-parser",
-  .keywords = kv_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) kv_parser_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(kv_parser_, LogParser **)

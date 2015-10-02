@@ -33,6 +33,11 @@ static Plugin kvformat_plugins[] =
     .name = "kv-parser",
     .parser = &kv_parser_parser,
   },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "linux-audit-parser",
+    .parser = &kv_parser_parser,
+  },
   TEMPLATE_FUNCTION_PLUGIN(tf_format_welf, "format-welf"),
 };
 
