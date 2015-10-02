@@ -41,3 +41,10 @@ set_process_dumpable()
         g_process_message("Cannot set process to be dumpable; error='%s'", g_strerror(errno));
     }
 }
+
+void
+set_keep_caps_flag(const gchar *caps)
+{
+  if (caps)
+    prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
+}

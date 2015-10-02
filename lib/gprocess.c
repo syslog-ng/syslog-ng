@@ -801,10 +801,7 @@ g_process_change_root(void)
 static gboolean
 g_process_change_user(void)
 {
-#if ENABLE_LINUX_CAPS
-  if (process_opts.caps)
-    prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
-#endif
+  set_keep_caps_flag(process_opts.caps);
 
   if (process_opts.gid >= 0)
     {
