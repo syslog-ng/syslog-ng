@@ -747,6 +747,7 @@ test_logstamp(void)
 
   stamp.tv_sec = 1129319257;
   stamp.tv_usec = 123456;
+  stamp.zone_offset = 0;
 
   /* formats */
   log_stamp_format(&stamp, target, TS_FMT_BSD, 3600, 3);
