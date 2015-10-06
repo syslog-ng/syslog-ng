@@ -54,6 +54,7 @@ typedef struct
      written */
   gchar *db;
   gchar *coll;
+  gchar *replica_set;
 
   GList *servers;
   gchar *address;
@@ -139,6 +140,15 @@ afmongodb_dd_set_path(LogDriver *d, const gchar *path)
   g_free(self->address);
   self->address = g_strdup(path);
   self->port = MONGO_CONN_LOCAL;
+}
+
+void
+afmongodb_dd_set_replica_set(LogDriver *d, const gchar *replica_set)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  g_free(self->replica_set);
+  self->replica_set = g_strdup(replica_set);
 }
 
 LogTemplateOptions *
@@ -682,6 +692,7 @@ afmongodb_dd_free(LogPipe *d)
 
   g_free(self->db);
   g_free(self->coll);
+  g_free(self->replica_set);
   g_free(self->user);
   g_free(self->password);
   g_free(self->address);
@@ -732,6 +743,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
   afmongodb_dd_set_safe_mode((LogDriver *)self, TRUE);
 
+  self->replica_set = NULL;
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
 

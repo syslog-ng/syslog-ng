@@ -49,6 +49,7 @@
 %token KW_SERVERS
 %token KW_SAFE_MODE
 %token KW_PATH
+%token KW_REPLICA_SET
 
 %%
 
@@ -90,6 +91,7 @@ afmongodb_option
           }
 	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database(last_driver, $3); free($3); }
 	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection(last_driver, $3); free($3); }
+	| KW_REPLICA_SET '(' string ')'		{ afmongodb_dd_set_replica_set(last_driver, $3); free($3); }
 	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user(last_driver, $3); free($3); }
 	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password(last_driver, $3); free($3); }
 	| KW_SAFE_MODE '(' yesno ')'		{ afmongodb_dd_set_safe_mode(last_driver, $3); }
