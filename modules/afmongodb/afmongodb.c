@@ -90,6 +90,7 @@ afmongodb_dd_parse_addr (const char *str, char **host, gint *port)
   free(protoStr);
   if (!uri)
     return FALSE;
+
   const mongoc_host_list_t *hosts = mongoc_uri_get_hosts (uri);
   if (!hosts || hosts->next)
     {
@@ -696,7 +697,7 @@ afmongodb_dd_init(LogPipe *s)
           for (l=self->servers; l; l = g_list_next(l))
             {
               gchar *host = NULL;
-              gint port = 27017;
+              gint port = MONGOC_DEFAULT_PORT;
 
               if (!afmongodb_dd_parse_addr(l->data, &host, &port))
                 {
@@ -717,12 +718,15 @@ afmongodb_dd_init(LogPipe *s)
         }
       else
         {
-          afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
-          afmongodb_dd_append_host (&self->recovery_cache, "127.0.0.1", 27017);
+          gchar *port = g_strdup_printf ("%d", MONGOC_DEFAULT_PORT);
+          gchar *localhost = g_strconcat ("127.0.0.1", port, NULL);
+          g_free(port);
+          afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, localhost));
+          afmongodb_dd_append_host (&self->recovery_cache, "127.0.0.1", MONGOC_DEFAULT_PORT);
         }
 
       self->address = NULL;
-      self->port = 27017;
+      self->port = MONGOC_DEFAULT_PORT;
       if (!afmongodb_dd_parse_addr(g_list_nth_data(self->servers, 0),
                                  &self->address,
                                  &self->port))
