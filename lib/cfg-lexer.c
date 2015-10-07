@@ -43,7 +43,7 @@
 struct _CfgTokenBlock
 {
   gint pos;
-  GArray *tokens;
+  GPtrArray *tokens;
 };
 
 /**
@@ -752,7 +752,7 @@ cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
   CfgTokenBlock *block;
 
   block = cfg_token_block_new();
-  cfg_token_block_add_token(block, yylval);
+  cfg_token_block_add_token(block, cfg_lexer_clone_token(yylval));
   cfg_lexer_inject_token_block(self, block);
 }
 
@@ -766,6 +766,8 @@ cfg_lexer_free_token(YYSTYPE *token)
 {
   if (token->type == LL_STRING || token->type == LL_IDENTIFIER || token->type == LL_BLOCK)
     free(token->cptr);
+
+  free(token);
 }
 
 static int
@@ -1098,7 +1100,7 @@ void
 cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token)
 {
   g_assert(self->pos == 0);
-  g_array_append_val(self->tokens, *token);
+  g_ptr_array_add(self->tokens, token);
 }
 
 YYSTYPE *
@@ -1108,7 +1110,7 @@ cfg_token_block_get_token(CfgTokenBlock *self)
     {
       YYSTYPE *result;
 
-      result = &g_array_index(self->tokens, YYSTYPE, self->pos);
+      result = g_ptr_array_index(self->tokens, self->pos);
       self->pos++;
       return result;
     }
@@ -1120,7 +1122,7 @@ cfg_token_block_new()
 {
   CfgTokenBlock *self = g_new0(CfgTokenBlock, 1);
 
-  self->tokens = g_array_new(FALSE, TRUE, sizeof(YYSTYPE));
+  self->tokens = g_ptr_array_new();
   return self;
 }
 
@@ -1131,11 +1133,11 @@ cfg_token_block_free(CfgTokenBlock *self)
 
   for (i = 0; i < self->tokens->len; i++)
     {
-      YYSTYPE *token = &g_array_index(self->tokens, YYSTYPE, i);
+      YYSTYPE *token = g_ptr_array_index(self->tokens, i);
 
       cfg_lexer_free_token(token);
     }
-  g_array_free(self->tokens, TRUE);
+  g_ptr_array_free(self->tokens, TRUE);
   g_free(self);
 }
 
