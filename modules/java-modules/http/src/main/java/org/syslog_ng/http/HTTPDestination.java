@@ -66,7 +66,7 @@ public class HTTPDestination extends TextLogDestination {
         int responseCode = 0;
         try {
             HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
-            connection.setRequestMethod("PUT");
+            connection.setRequestMethod(options.getMethod());
             connection.setRequestProperty("content-length", Integer.toString(message.length()));
             connection.setDoOutput(true);
             try (OutputStreamWriter osw = new OutputStreamWriter(connection.getOutputStream())) {
