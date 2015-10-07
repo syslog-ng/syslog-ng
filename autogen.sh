@@ -44,6 +44,9 @@ autogen_submodules()
 
                 CONFIGURE_OPTS="--disable-shared --enable-static --with-pic"
 
+		# kludge needed by make distcheck in mongo-c-driver
+		CONFIGURE_OPTS="$CONFIGURE_OPTS --enable-man-pages"
+
                 cat >configure.gnu <<EOF
 #!/bin/sh
 
