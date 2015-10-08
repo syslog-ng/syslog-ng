@@ -131,7 +131,7 @@ log_queue_rewind_backlog(LogQueue *self, guint rewind_count)
   if (!self->use_backlog)
     return;
 
-  return self->rewind_backlog(self, rewind_count);
+  self->rewind_backlog(self, rewind_count);
 }
 
 static inline void
@@ -140,7 +140,7 @@ log_queue_rewind_backlog_all(LogQueue *self)
   if (!self->use_backlog)
     return;
 
-  return self->rewind_backlog_all(self);
+  self->rewind_backlog_all(self);
 }
 
 static inline void
@@ -149,7 +149,7 @@ log_queue_ack_backlog(LogQueue *self, guint rewind_count)
   if (!self->use_backlog)
     return;
 
-  return self->ack_backlog(self, rewind_count);
+  self->ack_backlog(self, rewind_count);
 }
 
 static inline LogQueue *
