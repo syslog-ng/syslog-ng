@@ -770,6 +770,12 @@ cfg_lexer_free_token(YYSTYPE *token)
   free(token);
 }
 
+YYSTYPE*
+cfg_lexer_new_token()
+{
+  return (YYSTYPE*) calloc(1, sizeof(YYSTYPE));
+}
+
 static int
 _invoke__cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {

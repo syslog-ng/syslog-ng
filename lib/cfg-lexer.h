@@ -183,6 +183,7 @@ gboolean cfg_lexer_register_block_generator(CfgLexer *self, gint context, const 
 
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 YYSTYPE* cfg_lexer_clone_token(const YYSTYPE *original);
+YYSTYPE* cfg_lexer_new_token();
 void cfg_lexer_free_token(YYSTYPE *token);
 
 CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename, GString *preprocess_output);
