@@ -193,10 +193,8 @@ plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer a
   /* make sure '_' and '-' are handled equally in plugin name */
   if (!self->setup_context)
     {
-      CfgTokenBlock *block;
+      CfgTokenBlock *block = cfg_token_block_new();
       YYSTYPE *token = cfg_lexer_new_token();
-
-      block = cfg_token_block_new();
 
       token->type = LL_TOKEN;
       token->token = self->type;
