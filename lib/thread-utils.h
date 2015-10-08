@@ -32,7 +32,7 @@ typedef pthread_t ThreadId;
 #endif
 
 static inline ThreadId
-get_thread_id()
+get_thread_id(void)
 {
 #ifndef _WIN32
   return pthread_self();

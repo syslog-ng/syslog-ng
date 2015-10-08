@@ -274,7 +274,7 @@ get_local_timezone_ofs(time_t when)
 
 
 void
-clean_time_cache()
+clean_time_cache(void)
 {
   memset(&gm_time_cache, 0, sizeof(gm_time_cache));
   memset(&local_time_cache, 0, sizeof(local_time_cache));

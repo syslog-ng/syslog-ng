@@ -1213,7 +1213,7 @@ cfg_block_free(CfgBlock *self)
 }
 
 GQuark
-cfg_lexer_error_quark()
+cfg_lexer_error_quark(void)
 {
   return g_quark_from_static_string("cfg-lexer-error-quark");
 }

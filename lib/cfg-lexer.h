@@ -207,7 +207,7 @@ void cfg_block_free(CfgBlock *self);
 
 #define CFG_LEXER_ERROR cfg_lexer_error_quark()
 
-GQuark cfg_lexer_error_quark();
+GQuark cfg_lexer_error_quark(void);
 
 enum CfgLexerError
 {
