@@ -78,21 +78,22 @@ _extract_string_literal(const gchar *value)
 {
   CfgLexer *lexer;
   gint token, look_ahead_token;
-  YYSTYPE yylval, look_ahead_yylval;
+  YYSTYPE *yylval = cfg_lexer_new_token();
+  YYSTYPE *look_ahead_yylval = cfg_lexer_new_token();
   YYLTYPE yylloc, look_ahead_yylloc;
   gchar *result = NULL;
 
   lexer = cfg_lexer_new_buffer(value, strlen(value));
-  token = cfg_lexer_lex(lexer, &yylval, &yylloc);
+  token = cfg_lexer_lex(lexer, yylval, &yylloc);
   if (token == LL_STRING)
     {
-      look_ahead_token = cfg_lexer_lex(lexer, &look_ahead_yylval, &look_ahead_yylloc);
+      look_ahead_token = cfg_lexer_lex(lexer, look_ahead_yylval, &look_ahead_yylloc);
       if (!look_ahead_token)
-        result = g_strdup(yylval.cptr);
+        result = g_strdup(yylval->cptr);
 
-      cfg_lexer_free_token(&look_ahead_yylval);
+      cfg_lexer_free_token(look_ahead_yylval);
     }
-  cfg_lexer_free_token(&yylval);
+  cfg_lexer_free_token(yylval);
 
   cfg_lexer_free(lexer);
   return result;
