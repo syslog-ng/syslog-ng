@@ -27,4 +27,10 @@
 #include "syslog-ng.h"
 #include <Python.h>
 
+/* Support for Python 2.5 and earlier */
+#ifndef PyVarObject_HEAD_INIT
+    #define PyVarObject_HEAD_INIT(type, size) \
+        PyObject_HEAD_INIT(type) size,
+#endif
+
 #endif

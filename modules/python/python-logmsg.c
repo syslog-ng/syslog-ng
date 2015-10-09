@@ -70,9 +70,8 @@ py_log_message_new(LogMessage *msg)
 
 static PyTypeObject py_log_message_type =
 {
-  PyObject_HEAD_INIT(&PyType_Type)
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
 
-  .ob_size = 0,
   .tp_name = "LogMessage",
   .tp_basicsize = sizeof(PyLogMessage),
   .tp_itemsize = 0,
