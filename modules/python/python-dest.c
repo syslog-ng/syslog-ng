@@ -359,6 +359,7 @@ static worker_insert_result_t
 python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
+  worker_insert_result_t result = WORKER_INSERT_RESULT_ERROR;
   gboolean success;
   PyObject *msg_object;
   PyGILState_STATE gstate;
@@ -366,7 +367,8 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
   gstate = PyGILState_Ensure();
   if (!_py_invoke_is_opened(self))
     {
-      return WORKER_INSERT_RESULT_NOT_CONNECTED;
+      result = WORKER_INSERT_RESULT_NOT_CONNECTED;
+      goto exit;
     }
   if (self->vp)
     {
@@ -382,7 +384,11 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
     }
 
   success = _py_invoke_send(self, msg_object);
-  if (!success)
+  if (success)
+    {
+      result = WORKER_INSERT_RESULT_SUCCESS;
+    }
+  else
     {
       msg_error("Python send() method returned failure, suspending destination for time_reopen()",
                 evt_tag_str("driver", self->super.super.super.id),
@@ -394,10 +400,7 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
 
  exit:
   PyGILState_Release(gstate);
-  if (success)
-    return WORKER_INSERT_RESULT_SUCCESS;
-  else
-    return WORKER_INSERT_RESULT_ERROR;
+  return result;
 }
 
 static void
