@@ -79,7 +79,11 @@ static PyTypeObject py_log_message_type =
   .tp_print = NULL,
   .tp_getattr = (getattrfunc) py_log_message_getattr,
   .tp_setattr = (setattrfunc) NULL,
+#if PY_MAJOR_VERSION >= 3
+  .tp_reserved = NULL,
+#else
   .tp_compare = NULL,
+#endif
   .tp_repr = NULL,
   .tp_as_number = NULL,
   .tp_as_sequence = NULL,
