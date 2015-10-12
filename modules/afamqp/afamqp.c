@@ -588,6 +588,7 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = afamqp_dd_init;
   self->super.super.super.super.free_fn = afamqp_dd_free;
+  self->super.super.super.super.generate_persist_id = afamqp_dd_format_persist_name;
 
   self->super.worker.thread_init = afamqp_worker_thread_init;
   self->super.worker.disconnect = afamqp_dd_disconnect;
