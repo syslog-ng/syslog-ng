@@ -748,6 +748,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.deinit = affile_dd_deinit;
   self->super.super.super.queue = affile_dd_queue;
   self->super.super.super.free_fn = affile_dd_free;
+  self->super.super.super.generate_persist_id = affile_dd_format_persist_name;
   self->filename_template = log_template_new(cfg, NULL);
   log_template_compile(self->filename_template, filename, NULL);
   log_writer_options_defaults(&self->writer_options);
