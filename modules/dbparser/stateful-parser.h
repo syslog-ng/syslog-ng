@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2011 Balázs Scheidler
+ * Copyright (c) 2002-2013, 2015 BalaBit
+ * Copyright (c) 1998-2013, 2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,20 +21,28 @@
  *
  */
 
-#ifndef DBPARSER_H_INCLUDED
-#define DBPARSER_H_INCLUDED
+#ifndef STATEFUL_PARSER_H_INCLUDED
+#define STATEFUL_PARSER_H_INCLUDED 1
 
-#include "stateful-parser.h"
-#include "patterndb.h"
+#include "parser/parser-expr.h"
 
-#define PATH_PATTERNDB_FILE     PATH_LOCALSTATEDIR "/patterndb.xml"
-#define PATH_XSDDIR             PATH_DATADIR "/xsd"
+typedef enum
+{
+  LDBP_IM_PASSTHROUGH = 0,
+  LDBP_IM_INTERNAL = 1,
+} LogDBParserInjectMode;
 
-typedef struct _LogDBParser LogDBParser;
+typedef struct _StatefulParser
+{
+  LogParser super;
+  LogDBParserInjectMode inject_mode;
+} StatefulParser;
 
-void log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file);
-LogParser *log_db_parser_new(GlobalConfig *cfg);
+void stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inject_mode);
+void stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg);
+void stateful_parser_init_instance(StatefulParser *self, GlobalConfig *cfg);
+void stateful_parser_free_method(LogPipe *s);
 
-void log_pattern_database_init(void);
+int stateful_parser_lookup_inject_mode(const gchar *inject_mode);
 
 #endif

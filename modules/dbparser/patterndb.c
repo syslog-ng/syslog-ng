@@ -111,12 +111,8 @@ struct _PatternDB
 typedef struct _PDBContext
 {
   CorrellationContext super;
-  /* back reference to the PatternDB */
-  PatternDB *db;
   /* back reference to the last rule touching this context */
   PDBRule *rule;
-  /* timeout timer */
-  TWEntry *timer;
 } PDBContext;
 
 static void
@@ -130,13 +126,12 @@ pdb_context_free(CorrellationContext *s)
 }
 
 PDBContext *
-pdb_context_new(PatternDB *db, CorrellationKey *key)
+pdb_context_new(CorrellationKey *key)
 {
   PDBContext *self = g_new0(PDBContext, 1);
 
   correllation_context_init(&self->super, key);
   self->super.free_fn = pdb_context_free;
-  self->db = db;
   return self;
 }
 
@@ -455,20 +450,20 @@ pdb_lookup_ruleset(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
  */
 
 static void
-pattern_db_expire_entry(guint64 now, gpointer user_data)
+pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 {
   PDBContext *context = user_data;
-  PatternDB *pdb = context->db;
+  PatternDB *pdb = (PatternDB *) timer_wheel_get_associated_data(wheel);
   GString *buffer = g_string_sized_new(256);
   LogMessage *msg = correllation_context_get_last_message(&context->super);
 
   msg_debug("Expiring patterndb correllation context",
             evt_tag_str("last_rule", context->rule->rule_id),
-            evt_tag_long("utc", timer_wheel_get_time(context->db->timer_wheel)),
+            evt_tag_long("utc", timer_wheel_get_time(pdb->timer_wheel)),
             NULL);
   if (pdb->emit)
-    pdb_run_rule_actions(context->rule, context->db, RAT_TIMEOUT, context, msg, buffer);
-  g_hash_table_remove(context->db->correllation.state, &context->super.key);
+    pdb_run_rule_actions(context->rule, pdb, RAT_TIMEOUT, context, msg, buffer);
+  g_hash_table_remove(pdb->correllation.state, &context->super.key);
   g_string_free(buffer, TRUE);
 
   /* pdb_context_free is automatically called when returning from
@@ -563,28 +558,6 @@ pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_f
     }
 }
 
-void
-pattern_db_expire_state(PatternDB *self)
-{
-  g_static_rw_lock_writer_lock(&self->lock);
-  timer_wheel_expire_all(self->timer_wheel);
-  g_static_rw_lock_writer_unlock(&self->lock);
-}
-
-void
-pattern_db_forget_state(PatternDB *self)
-{
-  g_static_rw_lock_writer_lock(&self->lock);
-  if (self->timer_wheel)
-    timer_wheel_free(self->timer_wheel);
-
-  g_hash_table_destroy(self->rate_limits);
-  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
-  correllation_state_deinit_instance(&self->correllation);
-  correllation_state_init_instance(&self->correllation);
-  self->timer_wheel = timer_wheel_new();
-  g_static_rw_lock_writer_unlock(&self->lock);
-}
 
 void
 pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit, gpointer emit_data)
@@ -653,7 +626,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
                         evt_tag_int("context_timeout", rule->context_timeout),
                         evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
                         NULL);
-              context = pdb_context_new(self, &key);
+              context = pdb_context_new(&key);
               g_hash_table_insert(self->correllation.state, &context->super.key, context);
               g_string_steal(buffer);
             }
@@ -670,13 +643,13 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 
           g_ptr_array_add(context->super.messages, log_msg_ref(msg));
 
-          if (context->timer)
+          if (context->super.timer)
             {
-              timer_wheel_mod_timer(self->timer_wheel, context->timer, rule->context_timeout);
+              timer_wheel_mod_timer(self->timer_wheel, context->super.timer, rule->context_timeout);
             }
           else
             {
-              context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry,
+              context->super.timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry,
                                                      correllation_context_ref(&context->super),
                                                      (GDestroyNotify) correllation_context_unref);
             }
@@ -756,15 +729,49 @@ pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
   _pattern_db_process(self, &lookup, dbg_list);
 }
 
+void
+pattern_db_expire_state(PatternDB *self)
+{
+  g_static_rw_lock_writer_lock(&self->lock);
+  timer_wheel_expire_all(self->timer_wheel);
+  g_static_rw_lock_writer_unlock(&self->lock);
+}
+
+static void
+_init_state(PatternDB *self)
+{
+  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
+  correllation_state_init_instance(&self->correllation);
+  self->timer_wheel = timer_wheel_new();
+  timer_wheel_set_associated_data(self->timer_wheel, self, NULL);
+}
+
+static void
+_destroy_state(PatternDB *self)
+{
+  if (self->timer_wheel)
+    timer_wheel_free(self->timer_wheel);
+
+  g_hash_table_destroy(self->rate_limits);
+  correllation_state_deinit_instance(&self->correllation);
+}
+
+void
+pattern_db_forget_state(PatternDB *self)
+{
+  g_static_rw_lock_writer_lock(&self->lock);
+  _destroy_state(self);
+  _init_state(self);
+  g_static_rw_lock_writer_unlock(&self->lock);
+}
+
 PatternDB *
 pattern_db_new(void)
 {
   PatternDB *self = g_new0(PatternDB, 1);
 
   self->ruleset = pdb_rule_set_new();
-  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
-  correllation_state_init_instance(&self->correllation);
-  self->timer_wheel = timer_wheel_new();
+  _init_state(self);
   cached_g_current_time(&self->last_tick);
   g_static_rw_lock_init(&self->lock);
   return self;
@@ -775,11 +782,7 @@ pattern_db_free(PatternDB *self)
 {
   if (self->ruleset)
     pdb_rule_set_free(self->ruleset);
-
-  g_hash_table_destroy(self->rate_limits);
-  correllation_state_deinit_instance(&self->correllation);
-  if (self->timer_wheel)
-    timer_wheel_free(self->timer_wheel);
+  _destroy_state(self);
   g_static_rw_lock_free(&self->lock);
   g_free(self);
 }

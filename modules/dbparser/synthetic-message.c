@@ -28,7 +28,7 @@
 #include "logpipe.h"
 
 void
-synthetic_message_add_tag(PDBMessage *self, const gchar *text)
+synthetic_message_add_tag(SyntheticMessage *self, const gchar *text)
 {
   LogTagId tag;
 
@@ -39,7 +39,7 @@ synthetic_message_add_tag(PDBMessage *self, const gchar *text)
 }
 
 gboolean
-synthetic_message_add_value_template(PDBMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
+synthetic_message_add_value_template(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
 {
   LogTemplate *value_template;
 
@@ -58,7 +58,7 @@ synthetic_message_add_value_template(PDBMessage *self, GlobalConfig *cfg, const 
 }
 
 void
-synthetic_message_apply(PDBMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer)
+synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer)
 {
   gint i;
 
@@ -141,7 +141,7 @@ _generate_default_message_from_context(gint inherit_mode, CorrellationContext *c
 }
 
 LogMessage *
-synthetic_message_generate_with_context(PDBMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer)
+synthetic_message_generate_with_context(SyntheticMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer)
 {
   LogMessage *genmsg;
 
@@ -167,7 +167,7 @@ synthetic_message_generate_with_context(PDBMessage *self, gint inherit_mode, Cor
 }
 
 LogMessage *
-synthetic_message_generate_without_context(PDBMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer)
+synthetic_message_generate_without_context(SyntheticMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer)
 {
   LogMessage *genmsg;
 
@@ -190,7 +190,13 @@ synthetic_message_generate_without_context(PDBMessage *self, gint inherit_mode, 
 }
 
 void
-synthetic_message_deinit(PDBMessage *self)
+synthetic_message_init(SyntheticMessage *self)
+{
+  memset(self, 0, sizeof(*self));
+}
+
+void
+synthetic_message_deinit(SyntheticMessage *self)
 {
   gint i;
 
@@ -206,8 +212,16 @@ synthetic_message_deinit(PDBMessage *self)
     }
 }
 
+SyntheticMessage *
+synthetic_message_new(void)
+{
+  SyntheticMessage *self = g_new0(SyntheticMessage, 1);
+
+  return self;
+}
+
 void
-synthetic_message_free(PDBMessage *self)
+synthetic_message_free(SyntheticMessage *self)
 {
   synthetic_message_deinit(self);
   g_free(self);

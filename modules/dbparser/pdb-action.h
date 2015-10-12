@@ -53,7 +53,7 @@ typedef struct _PDBAction
   union
   {
     struct {
-      PDBMessage message;
+      SyntheticMessage message;
       PDBActionMessageInheritMode inherit_mode;
     };
   } content;

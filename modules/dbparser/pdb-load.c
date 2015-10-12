@@ -39,7 +39,7 @@ typedef struct _PDBLoader
   PDBRule *current_rule;
   PDBAction *current_action;
   PDBExample *current_example;
-  PDBMessage *current_message;
+  SyntheticMessage *current_message;
   gboolean first_program;
   gboolean in_pattern;
   gboolean in_ruleset;

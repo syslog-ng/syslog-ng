@@ -45,6 +45,8 @@ modules_dbparser_libsyslog_ng_patterndb_la_DEPENDENCIES	=	\
 
 module_LTLIBRARIES					+= modules/dbparser/libdbparser.la
 modules_dbparser_libdbparser_la_SOURCES			=	\
+	modules/dbparser/stateful-parser.c			\
+	modules/dbparser/stateful-parser.h			\
 	modules/dbparser/dbparser.c				\
 	modules/dbparser/dbparser.h				\
 	modules/dbparser/dbparser-grammar.y			\

@@ -36,7 +36,7 @@ struct _PDBRule
   GAtomicCounter ref_cnt;
   gchar *class;
   gchar *rule_id;
-  PDBMessage msg;
+  SyntheticMessage msg;
   gint context_timeout;
   PDBCorrellationScope context_scope;
   LogTemplate *context_id_template;
