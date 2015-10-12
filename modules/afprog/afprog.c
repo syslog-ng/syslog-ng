@@ -414,6 +414,7 @@ afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg)
   self->super.super.super.deinit = afprogram_dd_deinit;
   self->super.super.super.free_fn = afprogram_dd_free;
   self->super.super.super.notify = afprogram_dd_notify;
+  self->super.super.super.generate_persist_id = afprogram_dd_format_persist_name;
   self->cmdline = g_string_new(cmdline);
   self->pid = -1;
   log_writer_options_defaults(&self->writer_options);
