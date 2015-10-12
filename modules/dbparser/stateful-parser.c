@@ -3,15 +3,9 @@
 
 
 void
-stateful_parser_set_inject_mode(StatefulParser *self, const gchar *inject_mode)
+stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inject_mode)
 {
-  self->inject_mode = stateful_parser_lookup_inject_mode(inject_mode);
-  if (self->inject_mode < 0)
-    {
-      msg_warning("Unknown inject-mode specified",
-                  evt_tag_str("inject-mode", inject_mode),
-                  NULL);
-    }
+  self->inject_mode = inject_mode;
 }
 
 void

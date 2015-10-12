@@ -54,7 +54,7 @@ extern LogParser *last_parser;
 %token KW_DB_PARSER
 %token KW_INJECT_MODE
 
-%type <cptr> stateful_parser_inject_mode
+%type <num> stateful_parser_inject_mode
 
 %%
 
@@ -83,13 +83,18 @@ parser_db_opt
         ;
 
 stateful_parser_opt
-	: KW_INJECT_MODE '(' stateful_parser_inject_mode ')'	{ stateful_parser_set_inject_mode(((StatefulParser *) last_parser), $3); free($3); }
+	: KW_INJECT_MODE '(' stateful_parser_inject_mode ')'	{ stateful_parser_set_inject_mode(((StatefulParser *) last_parser), $3); }
 	| parser_opt
 	;
 
 stateful_parser_inject_mode
-	: string				{ $$ = $1; }
-	| KW_INTERNAL				{ $$ = strdup("internal"); }
+	: string
+	  {
+            $$ = stateful_parser_lookup_inject_mode($1);
+            CHECK_ERROR($$ != -1, @1, "Unknown inject-mode %s", $1);
+            free($1);
+          }
+	| KW_INTERNAL				{ $$ = stateful_parser_lookup_inject_mode("internal"); }
 	;
 
 /* INCLUDE_RULES */
