@@ -1066,6 +1066,38 @@ cfg_tree_compile(CfgTree *self)
   return TRUE;
 }
 
+static gboolean
+verify_unique_persist_ids_among_pipes(const GPtrArray *initialized_pipes)
+{
+  GHashTable *pipe_persist_ids = g_hash_table_new(g_str_hash, g_str_equal);
+  gboolean result = TRUE;
+
+  for (gint i = 0; i < initialized_pipes->len; ++i)
+    {
+      LogPipe *current_pipe = g_ptr_array_index(initialized_pipes, i);
+      const gchar *current_pipe_name = log_pipe_get_persist_id(current_pipe);
+
+      if (current_pipe_name != NULL)
+        {
+          if (g_hash_table_contains(pipe_persist_ids, current_pipe_name))
+            {
+              msg_error("Error checking the uniqueness of the persist ids, please override it with persist-id option. Shutting down.",
+                        evt_tag_str("persist_id", current_pipe_name),
+                        NULL);
+              result = FALSE;
+            }
+          else
+            {
+              g_hash_table_add(pipe_persist_ids, current_pipe_name);
+            }
+        }
+    }
+
+  g_hash_table_destroy(pipe_persist_ids);
+
+  return result;
+}
+
 gboolean
 cfg_tree_start(CfgTree *self)
 {
@@ -1091,7 +1123,8 @@ cfg_tree_start(CfgTree *self)
           return FALSE;
         }
     }
-  return TRUE;
+
+  return verify_unique_persist_ids_among_pipes(self->initialized_pipes);
 }
 
 gboolean
