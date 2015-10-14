@@ -150,7 +150,9 @@ afmongodb_dd_set_host(LogDriver *d, const gchar *host)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  msg_warning_once("WARNING: Using host() option is deprecated in mongodb driver, please use servers() instead", NULL);
+  msg_warning_once("WARNING: Using host() option is deprecated in mongodb"
+                   " driver, please use servers() instead",
+                   NULL);
 
   g_free(self->address);
   self->address = g_strdup(host);
@@ -161,7 +163,9 @@ afmongodb_dd_set_port(LogDriver *d, gint port)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  msg_warning_once("WARNING: Using port() option is deprecated in mongodb driver, please use servers() instead", NULL);
+  msg_warning_once("WARNING: Using port() option is deprecated in mongodb"
+                   " driver, please use servers() instead",
+                   NULL);
 
   self->port = port;
 }
@@ -324,7 +328,8 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
   GList *iterator = self->recovery_cache;
   if (!iterator)
     {
-      msg_error ("Error in host server list", evt_tag_str ("driver", self->super.super.super.id), NULL);
+      msg_error("Error in host server list",
+                evt_tag_str ("driver", self->super.super.super.id), NULL);
       return FALSE;
     }
   MongoDBHostPort *hp = iterator->data;
