@@ -308,6 +308,22 @@ afmongodb_dd_disconnect(LogThrDestDriver *s)
   self->client = NULL;
 }
 
+static void
+afmongodb_dd_append_servers(bson_string_t *uri_str,
+                            const GList *recovery_cache)
+{
+  const GList *iterator = recovery_cache;
+  do
+    {
+      const MongoDBHostPort *hp = (const MongoDBHostPort *) iterator->data;
+      bson_string_append_printf (uri_str, "%s:%hu", hp->host, hp->port);
+      iterator = iterator->next;
+      if (iterator)
+        bson_string_append_printf (uri_str, ",");
+    }
+  while (iterator);
+}
+
 static gboolean
 afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 {
@@ -325,21 +341,14 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
       bson_string_append_printf (uri_str, "%s:%s", self->user, self->password);
     }
 
-  GList *iterator = self->recovery_cache;
-  if (!iterator)
+  if (!self->recovery_cache)
     {
       msg_error("Error in host server list",
                 evt_tag_str ("driver", self->super.super.super.id), NULL);
       return FALSE;
     }
-  MongoDBHostPort *hp = iterator->data;
-  bson_string_append_printf (uri_str, "%s:%hu", hp->host, hp->port);
-  while (iterator->next)
-    {
-      iterator = iterator->next;
-      hp = iterator->data;
-      bson_string_append_printf (uri_str, ",%s:%hu", hp->host, hp->port);
-    }
+
+  afmongodb_dd_append_servers(uri_str, self->recovery_cache);
 
   bson_string_append_printf (uri_str, "/%s", self->db);
 
