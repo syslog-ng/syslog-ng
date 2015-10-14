@@ -785,18 +785,12 @@ afmongodb_dd_init(LogPipe *s)
 }
 
 static void
-afmongodb_dd_free_host_list (GList **list)
+afmongodb_dd_free_host_port (gpointer data)
 {
-  GList *it = *list;
-  while (it)
-    {
-      MongoDBHostPort *hp = it->data;
-      g_free(hp->host);
-      it = it->next;
-    }
-  g_list_foreach(*list, (GFunc)g_free, NULL);
-  g_list_free (*list);
-  *list = NULL;
+  MongoDBHostPort *hp = (MongoDBHostPort *) data;
+  g_free (hp->host);
+  hp->host = NULL;
+  g_free (hp);
 }
 
 static void
@@ -816,7 +810,9 @@ afmongodb_dd_free(LogPipe *d)
   if (self->vp)
     value_pairs_unref(self->vp);
 
-  afmongodb_dd_free_host_list(&self->recovery_cache);
+  g_list_free_full (self->recovery_cache,
+                    (GDestroyNotify) & afmongodb_dd_free_host_port);
+  self->recovery_cache = NULL;
   mongoc_cleanup ();
   log_threaded_dest_driver_free(d);
 }
