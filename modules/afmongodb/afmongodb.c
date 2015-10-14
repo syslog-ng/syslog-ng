@@ -845,7 +845,6 @@ afmongodb_dd_new(GlobalConfig *cfg)
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
   afmongodb_dd_set_safe_mode((LogDriver *)self, TRUE);
 
-  self->replica_set = NULL;
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
 
