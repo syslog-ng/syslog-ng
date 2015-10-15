@@ -271,10 +271,15 @@ __seek_to_head(JournalReader *self)
   gint rc = journald_seek_head(self->journal);
   if (rc != 0)
     {
-      msg_error("Failed to seek to head of journal",
-          evt_tag_errno("error", errno),
-          NULL);
+      msg_error("Failed to seek to the start position of the journal",
+                evt_tag_errno("error", errno),
+                NULL);
       return FALSE;
+    }
+  else
+    {
+      msg_debug("Seeking the journal to the start position",
+                NULL);
     }
   return TRUE;
 }
@@ -287,11 +292,17 @@ __seek_to_saved_state(JournalReader *self)
   persist_state_unmap_entry(self->persist_state, self->persist_handle);
   if (rc != 0)
     {
-      msg_warning("Failed to seek to the cursor",
-          evt_tag_str("cursor", state->cursor),
-          evt_tag_errno("error", errno),
-          NULL);
+      msg_warning("Failed to seek journal to the saved cursor position",
+                  evt_tag_str("cursor", state->cursor),
+                  evt_tag_errno("error", errno),
+                  NULL);
       return __seek_to_head(self);
+    }
+  else
+    {
+      msg_debug("Seeking the journal to the last cursor position",
+                evt_tag_str("cursor", state->cursor),
+                NULL);
     }
   journald_next(self->journal);
   return TRUE;
@@ -368,8 +379,8 @@ __fetch_log(JournalReader *self)
           if (rc < 0)
             {
               msg_error("Error occurred while getting next message from journal",
-                  evt_tag_errno("error", errno),
-                  NULL);
+                        evt_tag_errno("error", errno),
+                        NULL);
               result = NC_READ_ERROR;
             }
           break;
@@ -451,9 +462,9 @@ __add_poll_events(JournalReader *self)
   gint fd = journald_get_fd(self->journal);
   if (fd < 0)
     {
-      msg_error("Can't get fd from journal",
-          evt_tag_errno("error", errno),
-          NULL);
+      msg_error("Error setting up journal polling, journald_get_fd() returned failure",
+                evt_tag_errno("error", errno),
+                NULL);
       journald_close(self->journal);
       return FALSE;
     }
@@ -470,7 +481,7 @@ __init(LogPipe *s)
 
   if (journal_reader_initialized)
     {
-      msg_error("The configuration must not contain more than one systemd-journal source",
+      msg_error("The configuration must not contain more than one systemd-journal() source",
           NULL);
       return FALSE;
     }
@@ -481,15 +492,14 @@ __init(LogPipe *s)
   gint res = journald_open(self->journal, SD_JOURNAL_LOCAL_ONLY);
   if (res < 0)
     {
-      msg_error("Can't open journal",
-          evt_tag_errno("error", errno),
-          NULL);
+      msg_error("Error opening the journal",
+                evt_tag_errno("error", errno),
+                NULL);
       return FALSE;
     }
 
   if (!__set_starting_position(self))
     {
-      msg_error("Can't set starting position to the journal", NULL);
       journald_close(self->journal);
       return FALSE;
     }
