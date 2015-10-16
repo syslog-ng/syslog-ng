@@ -77,14 +77,13 @@ public class ESBulkMessageProcessor extends ESMessageProcessor {
 
 	@Override
 	public void init() {
-
 		bulkProcessor = BulkProcessor.builder(
 				client.getClient(),
 				new BulkProcessorListener()
 			)
 			.setBulkActions(options.getFlushLimit())
 			.setFlushInterval(new TimeValue(1000))
-			.setConcurrentRequests(0)
+			.setConcurrentRequests(options.getConcurrentRequests())
 			.build();
 	}
 
