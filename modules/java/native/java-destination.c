@@ -46,7 +46,7 @@ Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, 
   (*env)->ReleaseStringUTFChars(env, key, key_str);  // release resources
   g_free(normalized_key);
 
-  if (value)
+  if (value && value[0] != '\0')
     {
       return (*env)->NewStringUTF(env, value);
     }
