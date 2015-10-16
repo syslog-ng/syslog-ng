@@ -38,8 +38,6 @@
 #include "mongoc.h"
 #include <time.h>
 
-#define SOCKET_TIMEOUT_FOR_MONGO_CONNECTION_IN_MILLISECS 60000
-
 typedef struct
 {
   gchar *name;
@@ -52,151 +50,28 @@ typedef struct
 
   /* Shared between main/writer; only read by the writer, never
      written */
-  gchar *db;
   gchar *coll;
-  gchar *replica_set;
+  gchar *uri;
 
-  GList *servers;
-  gchar *address;
-  gint port;
-
-  gboolean safe_mode;
   LogTemplateOptions template_options;
-
-  gchar *user;
-  gchar *password;
 
   time_t last_msg_stamp;
 
   ValuePairs *vp;
 
   /* Writer-only stuff */
-  GList *recovery_cache;
+  mongoc_uri_t *uri_obj;
+  gchar *db;
   mongoc_client_t *client;
-
-  gchar *ns;
+  mongoc_collection_t *coll_obj;
 
   GString *current_value;
   bson_t *bson;
 } MongoDBDestDriver;
 
-static gboolean
-afmongodb_dd_parse_addr (const char *str, char **host, gint *port)
-{
-  if (!host || !port)
-    return FALSE;
-  char *protoStr = bson_strdup_printf("mongodb://%s", str);
-  mongoc_uri_t *uri = mongoc_uri_new (protoStr);
-  free(protoStr);
-  if (!uri)
-    return FALSE;
-
-  const mongoc_host_list_t *hosts = mongoc_uri_get_hosts (uri);
-  if (!hosts || hosts->next)
-    {
-      mongoc_uri_destroy (uri);
-      return FALSE;
-    }
-  *port = hosts->port;
-  *host = g_strdup (hosts->host);
-  mongoc_uri_destroy (uri);
-  if (!*host)
-    return FALSE;
-  return TRUE;
-}
-
-typedef struct
-{
-  char *host;
-  gint port;
-} MongoDBHostPort;
-
-static gboolean
-afmongodb_dd_append_host (GList **list, const char *host, gint port)
-{
-  if (!list)
-    return FALSE;
-  MongoDBHostPort *hp = g_new0(MongoDBHostPort, 1);
-  hp->host = g_strdup(host);
-  hp->port = port;
-  *list = g_list_prepend(*list, hp);
-  return TRUE;
-}
-
 /*
  * Configuration
  */
-
-void
-afmongodb_dd_set_user(LogDriver *d, const gchar *user)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  g_free(self->user);
-  self->user = g_strdup(user);
-}
-
-void
-afmongodb_dd_set_password(LogDriver *d, const gchar *password)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  g_free(self->password);
-  self->password = g_strdup(password);
-}
-
-void
-afmongodb_dd_set_host(LogDriver *d, const gchar *host)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  msg_warning_once("WARNING: Using host() option is deprecated in mongodb"
-                   " driver, please use servers() instead",
-                   NULL);
-
-  g_free(self->address);
-  self->address = g_strdup(host);
-}
-
-void
-afmongodb_dd_set_port(LogDriver *d, gint port)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  msg_warning_once("WARNING: Using port() option is deprecated in mongodb"
-                   " driver, please use servers() instead",
-                   NULL);
-
-  self->port = port;
-}
-
-void
-afmongodb_dd_set_servers(LogDriver *d, GList *servers)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  string_list_free(self->servers);
-  self->servers = servers;
-}
-
-void
-afmongodb_dd_set_path(LogDriver *d, const gchar *path)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  g_free(self->address);
-  self->address = g_strdup(path);
-  self->port = MONGOC_DEFAULT_PORT;
-}
-
-void
-afmongodb_dd_set_replica_set(LogDriver *d, const gchar *replica_set)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  g_free(self->replica_set);
-  self->replica_set = g_strdup(replica_set);
-}
 
 LogTemplateOptions *
 afmongodb_dd_get_template_options(LogDriver *s)
@@ -206,36 +81,13 @@ afmongodb_dd_get_template_options(LogDriver *s)
   return &self->template_options;
 }
 
-gboolean
-afmongodb_dd_check_address(LogDriver *d, gboolean local)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  if (local)
-    {
-      if ((self->port != 0 ||
-           self->port != MONGOC_DEFAULT_PORT) &&
-          self->address != NULL)
-        return FALSE;
-      if (self->servers)
-        return FALSE;
-    }
-  else
-    {
-      if (self->port == MONGOC_DEFAULT_PORT &&
-          self->address != NULL)
-        return FALSE;
-    }
-  return TRUE;
-}
-
 void
-afmongodb_dd_set_database(LogDriver *d, const gchar *database)
+afmongodb_dd_set_uri(LogDriver *d, const gchar *uri)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  g_free(self->db);
-  self->db = g_strdup(database);
+  g_free(self->uri);
+  self->uri = g_strdup(uri);
 }
 
 void
@@ -257,14 +109,6 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
   self->vp = vp;
 }
 
-void
-afmongodb_dd_set_safe_mode(LogDriver *d, gboolean state)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  self->safe_mode = state;
-}
-
 /*
  * Utilities
  */
@@ -275,12 +119,7 @@ afmongodb_dd_format_stats_instance(LogThrDestDriver *d)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   static gchar persist_name[1024];
 
-  if (self->port == MONGOC_DEFAULT_PORT)
-    g_snprintf(persist_name, sizeof(persist_name),
-               "mongodb,%s,%s,%s", self->address, self->db, self->coll);
-  else
-    g_snprintf(persist_name, sizeof(persist_name),
-               "mongodb,%s,%u,%s,%s", self->address, self->port, self->db, self->coll);
+  g_snprintf (persist_name, sizeof(persist_name), "mongodb,%s,%s", self->uri, self->coll);
   return persist_name;
 }
 
@@ -290,12 +129,7 @@ afmongodb_dd_format_persist_name(LogThrDestDriver *d)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   static gchar persist_name[1024];
 
-  if (self->port == MONGOC_DEFAULT_PORT)
-    g_snprintf(persist_name, sizeof(persist_name),
-               "afmongodb(%s,%s,%s)", self->address, self->db, self->coll);
-  else
-    g_snprintf(persist_name, sizeof(persist_name),
-               "afmongodb(%s,%u,%s,%s)", self->address, self->port, self->db, self->coll);
+  g_snprintf (persist_name, sizeof(persist_name), "afmongodb(%s,%s)", self->uri, self->coll);
   return persist_name;
 }
 
@@ -308,65 +142,26 @@ afmongodb_dd_disconnect(LogThrDestDriver *s)
   self->client = NULL;
 }
 
-static void
-afmongodb_dd_append_servers(bson_string_t *uri_str,
-                            const GList *recovery_cache)
-{
-  const GList *iterator = recovery_cache;
-  do
-    {
-      const MongoDBHostPort *hp = (const MongoDBHostPort *) iterator->data;
-      bson_string_append_printf (uri_str, "%s:%hu", hp->host, hp->port);
-      iterator = iterator->next;
-      if (iterator)
-        bson_string_append_printf (uri_str, ",");
-    }
-  while (iterator);
-}
-
 static gboolean
 afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 {
-  bson_string_t *uri_str;
-
   if (reconnect && self->client)
     return TRUE;
 
-  uri_str = bson_string_new ("mongodb://");
-  if (NULL == uri_str)
-    return FALSE;
-
-  if (self->user || self->password)
+  self->client = mongoc_client_new_from_uri (self->uri_obj);
+  if (!self->client)
     {
-      bson_string_append_printf (uri_str, "%s:%s", self->user, self->password);
-    }
-
-  if (!self->recovery_cache)
-    {
-      msg_error("Error in host server list",
+      msg_error("Error connecting to MongoDB",
                 evt_tag_str ("driver", self->super.super.super.id), NULL);
       return FALSE;
     }
 
-  afmongodb_dd_append_servers(uri_str, self->recovery_cache);
-
-  bson_string_append_printf (uri_str, "/%s", self->db);
-
-  bson_string_append_printf (uri_str, "?slaveOk=true&sockettimeoutms=%d",
-                             SOCKET_TIMEOUT_FOR_MONGO_CONNECTION_IN_MILLISECS);
-
-  if (self->replica_set)
-    bson_string_append_printf (uri_str, "&replicaSet=%s", self->replica_set);
-
-  msg_debug(uri_str->str, evt_tag_str ("driver", self->super.super.super.id),
-            NULL);
-
-  self->client = mongoc_client_new (uri_str->str);
-  bson_string_free (uri_str, TRUE);
-
-  if (!self->client)
+  self->coll_obj = mongoc_client_get_collection (self->client, self->db,
+                                                 self->coll);
+  if (!self->coll_obj)
     {
-      msg_error("Error connecting to MongoDB",
+      msg_error("Error getting specified MongoDB collection",
+                evt_tag_str ("collection", self->coll),
                 evt_tag_str ("driver", self->super.super.super.id), NULL);
       return FALSE;
     }
@@ -594,17 +389,11 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
                                     LTZ_SEND, &self->template_options),
                 evt_tag_str("driver", self->super.super.super.id),
                 NULL);
-      mongoc_collection_t *collection = mongoc_client_get_collection (
-          self->client, self->db, self->coll);
-      success = NULL != collection;
-      if (success)
-        {
-          success = mongoc_collection_insert (collection, MONGOC_INSERT_NONE,
-                                              (const bson_t *) self->bson,
-                                              NULL,
-                                              &error);
-          mongoc_collection_destroy (collection);
-        }
+
+      success = mongoc_collection_insert (self->coll_obj, MONGOC_INSERT_NONE,
+                                          (const bson_t *) self->bson,
+                                          NULL,
+                                          &error);
 
       if (!success)
         {
@@ -632,8 +421,6 @@ afmongodb_worker_thread_init(LogThrDestDriver *d)
 
   afmongodb_dd_connect(self, FALSE);
 
-  self->ns = g_strconcat (self->db, ".", self->coll, NULL);
-
   self->current_value = g_string_sized_new(256);
 
   self->bson = bson_sized_new(4096);
@@ -644,7 +431,6 @@ afmongodb_worker_thread_deinit(LogThrDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  g_free (self->ns);
   g_string_free (self->current_value, TRUE);
 
   bson_free (self->bson);
@@ -653,20 +439,6 @@ afmongodb_worker_thread_deinit(LogThrDestDriver *d)
 /*
  * Main thread
  */
-
-static gboolean
-afmongodb_dd_check_auth_options(MongoDBDestDriver *self)
-{
-  if (self->user || self->password)
-    {
-      if (!self->user || !self->password)
-        {
-          msg_error("Neither the username, nor the password can be empty", NULL);
-          return FALSE;
-        }
-    }
-  return TRUE;
-}
 
 static void
 afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(MongoDBDestDriver *self)
@@ -690,107 +462,36 @@ afmongodb_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
 
-  if (!afmongodb_dd_check_auth_options(self))
-    return FALSE;
-
   afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(self);
-  if (self->port != MONGOC_DEFAULT_PORT)
+
+  self->uri_obj = mongoc_uri_new (self->uri);
+  if (!self->uri_obj)
     {
-      if (self->address)
-        {
-          gchar *srv = g_strdup_printf ("%s:%d", self->address,
-                                        (self->port) ? self->port : MONGOC_DEFAULT_PORT);
-          self->servers = g_list_prepend (self->servers, srv);
-          g_free (self->address);
-        }
-
-      if (self->servers)
-        {
-          GList *l;
-
-          for (l=self->servers; l; l = g_list_next(l))
-            {
-              gchar *host = NULL;
-              gint port = MONGOC_DEFAULT_PORT;
-
-              if (!afmongodb_dd_parse_addr(l->data, &host, &port))
-                {
-                  msg_warning("Cannot parse MongoDB server address, ignoring",
-                              evt_tag_str("address", l->data),
-                              evt_tag_str("driver", self->super.super.super.id),
-                              NULL);
-                  continue;
-                }
-              afmongodb_dd_append_host (&self->recovery_cache, host, port);
-              msg_verbose("Added MongoDB server seed",
-                          evt_tag_str("host", host),
-                          evt_tag_int("port", port),
-                          evt_tag_str("driver", self->super.super.super.id),
-                          NULL);
-              g_free(host);
-            }
-        }
-      else
-        {
-          gchar *port = g_strdup_printf ("%d", MONGOC_DEFAULT_PORT);
-          gchar *localhost = g_strconcat ("127.0.0.1", port, NULL);
-          g_free(port);
-          afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, localhost));
-          afmongodb_dd_append_host (&self->recovery_cache, "127.0.0.1", MONGOC_DEFAULT_PORT);
-        }
-
-      self->address = NULL;
-      self->port = MONGOC_DEFAULT_PORT;
-      if (!afmongodb_dd_parse_addr(g_list_nth_data(self->servers, 0),
-                                 &self->address,
-                                 &self->port))
-        {
-          msg_error("Cannot parse the primary host",
-                    evt_tag_str("primary", g_list_nth_data(self->servers, 0)),
-                    evt_tag_str("driver", self->super.super.super.id),
-                    NULL);
-          return FALSE;
-        }
-    }
-  else
-    {
-      if (!self->address)
-        {
-          msg_error("Cannot parse address",
-                    evt_tag_str ("primary", g_list_nth_data (self->servers, 0)),
-                    evt_tag_str ("driver", self->super.super.super.id), NULL);
-          return FALSE;
-        }
-      afmongodb_dd_append_host (&self->recovery_cache, self->address,
-                                self->port);
+      msg_error("Error parsing MongoDB URI",
+                evt_tag_str ("uri", self->uri),
+                evt_tag_str ("driver", self->super.super.super.id),
+                NULL);
+      return FALSE;
     }
 
-  if (self->port == MONGOC_DEFAULT_PORT)
-    msg_verbose("Initializing MongoDB destination",
-                evt_tag_str("address", self->address),
-                evt_tag_str("database", self->db),
-                evt_tag_str("collection", self->coll),
-                evt_tag_str("driver", self->super.super.super.id),
+  self->db = mongoc_uri_get_database (self->uri_obj);
+  if (!self->db || !strlen (self->db))
+    {
+      msg_error("Missing DB name from MongoDB URI",
+                evt_tag_str ("uri", self->uri),
+                evt_tag_str ("driver", self->super.super.super.id),
                 NULL);
-  else
-    msg_verbose("Initializing MongoDB destination",
-                evt_tag_str("address", self->address),
-                evt_tag_int("port", self->port),
-                evt_tag_str("database", self->db),
-                evt_tag_str("collection", self->coll),
-                evt_tag_str("driver", self->super.super.super.id),
-                NULL);
+      return FALSE;
+    }
+
+  msg_verbose("Initializing MongoDB destination",
+              evt_tag_str ("uri", self->uri),
+              evt_tag_str ("db", self->db),
+              evt_tag_str ("collection", self->coll),
+              evt_tag_str ("driver", self->super.super.super.id),
+              NULL);
 
   return log_threaded_dest_driver_start(s);
-}
-
-static void
-afmongodb_dd_free_host_port (gpointer data)
-{
-  MongoDBHostPort *hp = (MongoDBHostPort *) data;
-  g_free (hp->host);
-  hp->host = NULL;
-  g_free (hp);
 }
 
 static void
@@ -800,19 +501,12 @@ afmongodb_dd_free(LogPipe *d)
 
   log_template_options_destroy(&self->template_options);
 
-  g_free(self->db);
   g_free(self->coll);
-  g_free(self->replica_set);
-  g_free(self->user);
-  g_free(self->password);
-  g_free(self->address);
-  string_list_free(self->servers);
   if (self->vp)
     value_pairs_unref(self->vp);
 
-  g_list_free_full (self->recovery_cache,
-                    (GDestroyNotify) & afmongodb_dd_free_host_port);
-  self->recovery_cache = NULL;
+  mongoc_uri_destroy(self->uri_obj);
+  mongoc_collection_destroy (self->coll_obj);
   mongoc_cleanup ();
   log_threaded_dest_driver_free(d);
 }
@@ -851,14 +545,10 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.stats_source = SCS_MONGODB;
   self->super.messages.retry_over = afmongodb_worker_retry_over_message;
 
-  afmongodb_dd_set_database((LogDriver *)self, "syslog");
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
-  afmongodb_dd_set_safe_mode((LogDriver *)self, TRUE);
 
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
-
-  self->recovery_cache = NULL;
 
   return (LogDriver *)self;
 }
