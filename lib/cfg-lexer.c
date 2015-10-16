@@ -43,7 +43,7 @@
 struct _CfgTokenBlock
 {
   gint pos;
-  GArray *tokens;
+  GPtrArray *tokens;
 };
 
 /**
@@ -178,6 +178,7 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
             {
               if (strcmp(keywords[i].kw_name, CFG_KEYWORD_STOP) == 0)
                 {
+                  yylval->type = LL_IDENTIFIER;
                   yylval->cptr = strdup(token);
                   return LL_IDENTIFIER;
                 }
@@ -226,6 +227,7 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
         }
       l = l->next;
     }
+  yylval->type = LL_IDENTIFIER;
   yylval->cptr = strdup(token);
   return LL_IDENTIFIER;
 }
@@ -714,13 +716,43 @@ cfg_lexer_generate_block(CfgLexer *self, gint context, const gchar *name, CfgBlo
   return gen->generator(self, context, name, args, gen->generator_data);
 }
 
+YYSTYPE*
+cfg_lexer_clone_token(const YYSTYPE *original)
+{
+  YYSTYPE *cloned = (YYSTYPE*) malloc(sizeof(YYSTYPE));
+
+  int type = original->type;
+  cloned->type = type;
+
+  if (type == LL_TOKEN)
+    {
+      cloned->token = original->token;
+    }
+  else if (type == LL_IDENTIFIER ||
+          type == LL_STRING ||
+          type == LL_BLOCK)
+    {
+      cloned->cptr = strdup(original->cptr);
+    }
+  else if (type == LL_NUMBER)
+    {
+      cloned->num = original->num;
+    }
+  else if (type == LL_FLOAT)
+    {
+      cloned->fnum = original->fnum;
+    }
+
+  return cloned;
+}
+
 void
 cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
 {
   CfgTokenBlock *block;
 
   block = cfg_token_block_new();
-  cfg_token_block_add_token(block, yylval);
+  cfg_token_block_add_token(block, cfg_lexer_clone_token(yylval));
   cfg_lexer_inject_token_block(self, block);
 }
 
@@ -734,6 +766,14 @@ cfg_lexer_free_token(YYSTYPE *token)
 {
   if (token->type == LL_STRING || token->type == LL_IDENTIFIER || token->type == LL_BLOCK)
     free(token->cptr);
+
+  free(token);
+}
+
+YYSTYPE*
+cfg_lexer_new_token()
+{
+  return (YYSTYPE*) calloc(1, sizeof(YYSTYPE));
 }
 
 static int
@@ -778,7 +818,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
             }
           else if (token->type == LL_IDENTIFIER || token->type == LL_STRING)
             {
-              yylval->cptr = strdup(token->cptr);
+              yylval->cptr = token->cptr;
             }
 
           goto exit;
@@ -1066,7 +1106,7 @@ void
 cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token)
 {
   g_assert(self->pos == 0);
-  g_array_append_val(self->tokens, *token);
+  g_ptr_array_add(self->tokens, token);
 }
 
 YYSTYPE *
@@ -1076,7 +1116,7 @@ cfg_token_block_get_token(CfgTokenBlock *self)
     {
       YYSTYPE *result;
 
-      result = &g_array_index(self->tokens, YYSTYPE, self->pos);
+      result = g_ptr_array_index(self->tokens, self->pos);
       self->pos++;
       return result;
     }
@@ -1088,7 +1128,7 @@ cfg_token_block_new()
 {
   CfgTokenBlock *self = g_new0(CfgTokenBlock, 1);
 
-  self->tokens = g_array_new(FALSE, TRUE, sizeof(YYSTYPE));
+  self->tokens = g_ptr_array_new();
   return self;
 }
 
@@ -1099,11 +1139,11 @@ cfg_token_block_free(CfgTokenBlock *self)
 
   for (i = 0; i < self->tokens->len; i++)
     {
-      YYSTYPE *token = &g_array_index(self->tokens, YYSTYPE, i);
+      YYSTYPE *token = g_ptr_array_index(self->tokens, i);
 
       cfg_lexer_free_token(token);
     }
-  g_array_free(self->tokens, TRUE);
+  g_ptr_array_free(self->tokens, TRUE);
   g_free(self);
 }
 
