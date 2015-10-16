@@ -577,7 +577,7 @@ afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(MongoDBDestDriver
   vpts = value_pairs_transform_set_new(".*");
   value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
   value_pairs_add_transforms(self->vp, vpts);
-};
+}
 
 static gboolean
 afmongodb_dd_init(LogPipe *s)

@@ -78,11 +78,11 @@ typedef struct YYSTYPE
 /* used to describe a syslog-ng keyword */
 typedef struct _CfgLexerKeyword
 {
-  gchar	*kw_name;
+  const gchar *kw_name;
   gint  kw_token;
   gint  kw_req_version;
   gint  kw_status;
-  gchar *kw_explain;
+  const gchar *kw_explain;
 } CfgLexerKeyword;
 
 #define CFG_KEYWORD_STOP "@!#?"
@@ -207,7 +207,7 @@ void cfg_block_free(CfgBlock *self);
 
 #define CFG_LEXER_ERROR cfg_lexer_error_quark()
 
-GQuark cfg_lexer_error_quark();
+GQuark cfg_lexer_error_quark(void);
 
 enum CfgLexerError
 {
