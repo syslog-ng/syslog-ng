@@ -80,20 +80,28 @@ csv_parser_normalize_escape_flags(LogParser *s, guint32 new_flag)
 }
 
 void
+csv_parser_set_flags(LogParser *s, guint32 flags)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  self->flags = flags;
+}
+
+guint32
+csv_parser_get_flags(LogParser *s)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  return self->flags;
+}
+
+void
 csv_parser_set_columns(LogParser *s, GList *columns)
 {
   CSVParser *self = (CSVParser *) s;
 
   string_list_free(self->columns);
   self->columns = columns;
-}
-
-void
-csv_parser_set_flags(LogParser *s, guint32 flags)
-{
-  CSVParser *self = (CSVParser *) s;
-
-  self->flags = flags;
 }
 
 void
@@ -697,12 +705,4 @@ csv_parser_lookup_flag(const gchar *flag)
     return CSV_PARSER_DROP_INVALID;
   msg_error("Unknown CSV parser flag", evt_tag_str("flag", flag), NULL);
   return 0;
-}
-
-guint32
-csv_parser_get_flags(LogParser *s)
-{
-  CSVParser *self = (CSVParser *) s;
-
-  return self->flags;
 }
