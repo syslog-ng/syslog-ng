@@ -640,7 +640,7 @@ csv_parser_clone(LogPipe *s)
   cloned->quotes_end = g_strdup(self->quotes_end);
   cloned->null_value = self->null_value ? g_strdup(self->null_value) : NULL;
   cloned->flags = self->flags;
-  cloned->string_delimiters = self->string_delimiters;
+  cloned->string_delimiters = string_list_clone(self->string_delimiters);
 
   cloned->super.template = log_template_ref(self->super.template);
   cloned->columns = string_list_clone(self->columns);
