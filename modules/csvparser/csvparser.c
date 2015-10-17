@@ -24,12 +24,14 @@
 #include "csvparser.h"
 #include "parser/parser-expr.h"
 #include "stringutils.h"
+#include "misc.h"
 
 #include <string.h>
 
 typedef struct _CSVParser
 {
-  LogColumnParser super;
+  LogParser super;
+  GList *columns;
   gchar *delimiters;
   gchar *quotes_start;
   gchar *quotes_end;
@@ -63,10 +65,11 @@ _remove_escape_flags(guint32 flags)
 }
 
 guint32
-csv_parser_normalize_escape_flags(LogColumnParser *s, guint32 new_flag)
+csv_parser_normalize_escape_flags(LogParser *s, guint32 new_flag)
 {
   CSVParser *self = (CSVParser *) s;
   guint32 current_flags = self->flags;
+
   if (_is_escape_flag(new_flag))
     return (_remove_escape_flags(current_flags) | new_flag);
 
@@ -77,7 +80,16 @@ csv_parser_normalize_escape_flags(LogColumnParser *s, guint32 new_flag)
 }
 
 void
-csv_parser_set_flags(LogColumnParser *s, guint32 flags)
+csv_parser_set_columns(LogParser *s, GList *columns)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  string_list_free(self->columns);
+  self->columns = columns;
+}
+
+void
+csv_parser_set_flags(LogParser *s, guint32 flags)
 {
   CSVParser *self = (CSVParser *) s;
 
@@ -85,7 +97,7 @@ csv_parser_set_flags(LogColumnParser *s, guint32 flags)
 }
 
 void
-csv_parser_set_delimiters(LogColumnParser *s, const gchar *delimiters)
+csv_parser_set_delimiters(LogParser *s, const gchar *delimiters)
 {
   CSVParser *self = (CSVParser *) s;
 
@@ -95,7 +107,7 @@ csv_parser_set_delimiters(LogColumnParser *s, const gchar *delimiters)
 }
 
 void
-csv_parser_set_quotes(LogColumnParser *s, const gchar *quotes)
+csv_parser_set_quotes(LogParser *s, const gchar *quotes)
 {
   CSVParser *self = (CSVParser *) s;
 
@@ -108,7 +120,7 @@ csv_parser_set_quotes(LogColumnParser *s, const gchar *quotes)
 }
 
 void
-csv_parser_set_quote_pairs(LogColumnParser *s, const gchar *quote_pairs)
+csv_parser_set_quote_pairs(LogParser *s, const gchar *quote_pairs)
 {
   CSVParser *self = (CSVParser *) s;
   gint i;
@@ -131,7 +143,7 @@ csv_parser_set_quote_pairs(LogColumnParser *s, const gchar *quote_pairs)
 }
 
 void
-csv_parser_set_null_value(LogColumnParser *s, const gchar *null_value)
+csv_parser_set_null_value(LogParser *s, const gchar *null_value)
 {
   CSVParser *self = (CSVParser *) s;
 
@@ -141,7 +153,7 @@ csv_parser_set_null_value(LogColumnParser *s, const gchar *null_value)
 }
 
 void
-csv_parser_append_string_delimiter(LogColumnParser *s, const gchar *string_delimiter)
+csv_parser_append_string_delimiter(LogParser *s, const gchar *string_delimiter)
 {
   CSVParser *self = (CSVParser *) s;
 
@@ -337,7 +349,8 @@ csv_parser_process_unescaped(CSVParser *self, LogMessage *msg, const gchar* src)
 {
   gint len;
   UnescapedParserState pstate;
-  unescaped_parser_state_init(&pstate, self->super.columns);
+
+  unescaped_parser_state_init(&pstate, self->columns);
   /* no escaping, no need to keep state, we split input and trim if necessary */
 
   while (pstate.cur_column && *src)
@@ -507,7 +520,7 @@ csv_parser_process_escaped(CSVParser *self, LogMessage *msg, const gchar* src)
 {
   EscapedParserState pstate;
 
-  _escaped_parser_state_init(&pstate, msg, self->super.columns, src);
+  _escaped_parser_state_init(&pstate, msg, self->columns, src);
 
   while (has_more_data(pstate))
     {
@@ -622,12 +635,12 @@ csv_parser_clone(LogPipe *s)
   cloned->flags = self->flags;
   cloned->string_delimiters = self->string_delimiters;
 
-  cloned->super.super.template = log_template_ref(self->super.super.template);
-  for (l = self->super.columns; l; l = l->next)
+  cloned->super.template = log_template_ref(self->super.template);
+  for (l = self->columns; l; l = l->next)
     {
-      cloned->super.columns = g_list_append(cloned->super.columns, g_strdup(l->data));
+      cloned->columns = g_list_append(cloned->columns, g_strdup(l->data));
     }
-  return &cloned->super.super.super;
+  return &cloned->super.super;
 }
 
 static void
@@ -645,21 +658,22 @@ csv_parser_free(LogPipe *s)
     g_free(self->delimiters);
   if (self->string_delimiters)
     g_list_free_full(self->string_delimiters, g_free);
-  log_column_parser_free_method(s);
+  string_list_free(self->columns);
+  log_parser_free_method(s);
 }
 
 /*
  * Parse comma-separated values from a log message.
  */
-LogColumnParser *
+LogParser *
 csv_parser_new(GlobalConfig *cfg)
 {
   CSVParser *self = g_new0(CSVParser, 1);
 
-  log_column_parser_init_instance(&self->super, cfg);
-  self->super.super.super.free_fn = csv_parser_free;
-  self->super.super.super.clone = csv_parser_clone;
-  self->super.super.process = csv_parser_process;
+  log_parser_init_instance(&self->super, cfg);
+  self->super.super.free_fn = csv_parser_free;
+  self->super.super.clone = csv_parser_clone;
+  self->super.process = csv_parser_process;
   csv_parser_set_delimiters(&self->super, " ");
   csv_parser_set_quote_pairs(&self->super, "\"\"''");
   self->flags = CSV_PARSER_FLAGS_DEFAULT;
@@ -686,7 +700,7 @@ csv_parser_lookup_flag(const gchar *flag)
 }
 
 guint32
-csv_parser_get_flags(LogColumnParser *s)
+csv_parser_get_flags(LogParser *s)
 {
   CSVParser *self = (CSVParser *) s;
 

@@ -32,7 +32,6 @@
 #include <string.h>
 
 typedef struct _LogParser LogParser;
-typedef struct _LogColumnParser LogColumnParser;
 
 struct _LogParser
 {
@@ -53,15 +52,5 @@ log_parser_process(LogParser *self, LogMessage **pmsg, const LogPathOptions *pat
     input_len = strlen(input);
   return self->process(self, pmsg, path_options, input, input_len);
 }
-
-struct _LogColumnParser
-{
-  LogParser super;
-  GList *columns;
-};
-
-void log_column_parser_set_columns(LogColumnParser *s, GList *fields);
-void log_column_parser_init_instance(LogColumnParser *self, GlobalConfig *cfg);
-void log_column_parser_free_method(LogPipe *s);
 
 #endif

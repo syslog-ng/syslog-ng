@@ -116,32 +116,3 @@ log_parser_init_instance(LogParser *self, GlobalConfig *cfg)
   self->super.free_fn = log_parser_free_method;
   self->super.queue = log_parser_queue;
 }
-
-/*
- * Abstract class that has a column list to parse fields into.
- */
-
-void
-log_column_parser_set_columns(LogColumnParser *s, GList *columns)
-{
-  LogColumnParser *self = (LogColumnParser *) s;
-
-  string_list_free(self->columns);
-  self->columns = columns;
-}
-
-void
-log_column_parser_free_method(LogPipe *s)
-{
-  LogColumnParser *self = (LogColumnParser *) s;
-
-  string_list_free(self->columns);
-  log_parser_free_method(s);
-}
-
-void
-log_column_parser_init_instance(LogColumnParser *self, GlobalConfig *cfg)
-{
-  log_parser_init_instance(&self->super, cfg);
-  self->super.super.free_fn = log_column_parser_free_method;
-}
