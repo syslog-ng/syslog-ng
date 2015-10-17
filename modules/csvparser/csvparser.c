@@ -627,7 +627,6 @@ csv_parser_clone(LogPipe *s)
 {
   CSVParser *self = (CSVParser *) s;
   CSVParser *cloned;
-  GList *l;
 
   cloned = (CSVParser *) csv_parser_new(s->cfg);
   g_free(cloned->delimiters);
@@ -644,10 +643,7 @@ csv_parser_clone(LogPipe *s)
   cloned->string_delimiters = self->string_delimiters;
 
   cloned->super.template = log_template_ref(self->super.template);
-  for (l = self->columns; l; l = l->next)
-    {
-      cloned->columns = g_list_append(cloned->columns, g_strdup(l->data));
-    }
+  cloned->columns = string_list_clone(self->columns);
   return &cloned->super.super;
 }
 

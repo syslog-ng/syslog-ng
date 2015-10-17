@@ -258,6 +258,23 @@ find_cr_or_lf(gchar *s, gsize n)
   return NULL;
 }
 
+/*
+ * NOTE: pointer values below 0x1000 (4096) are taken as special values used
+ * by the application code and are not duplicated, but assumed to be literal
+ * tokens.
+ */
+GList *
+string_list_clone(GList *string_list)
+{
+  GList *cloned = NULL;
+  GList *l;
+
+  for (l = string_list; l; l = l->next)
+    cloned = g_list_append(cloned, GPOINTER_TO_UINT(l->data) > 4096 ? g_strdup(l->data) : l->data);
+
+  return cloned;
+}
+
 GList *
 string_array_to_list(const gchar *strlist[])
 {
