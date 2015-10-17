@@ -633,7 +633,7 @@ csv_parser_clone(LogPipe *s)
   g_free(cloned->quotes_start);
   g_free(cloned->quotes_end);
   if (cloned->string_delimiters)
-    g_list_free_full(cloned->string_delimiters, g_free);
+    string_list_free(cloned->string_delimiters);
 
   cloned->delimiters = g_strdup(self->delimiters);
   cloned->quotes_start = g_strdup(self->quotes_start);
