@@ -93,12 +93,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
     csv_parser_set_null_value(p, null_value);
 
   if (string_delims)
-    {
-      for (i = 0; string_delims[i] != NULL; i++)
-        {
-          csv_parser_append_string_delimiter(p, strdup(string_delims[i]));
-        }
-    }
+    csv_parser_set_string_delimiters(p, string_array_to_list(string_delims));
 
   pclone = (LogParser *) log_pipe_clone(&p->super);
   log_pipe_unref(&p->super);

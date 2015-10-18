@@ -115,6 +115,16 @@ csv_parser_set_delimiters(LogParser *s, const gchar *delimiters)
 }
 
 void
+csv_parser_set_string_delimiters(LogParser *s, GList *string_delimiters)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  if (self->string_delimiters)
+    string_list_free(self->string_delimiters);
+  self->string_delimiters = string_delimiters;
+}
+
+void
 csv_parser_set_quotes(LogParser *s, const gchar *quotes)
 {
   CSVParser *self = (CSVParser *) s;
@@ -158,14 +168,6 @@ csv_parser_set_null_value(LogParser *s, const gchar *null_value)
   if (self->null_value)
     g_free(self->null_value);
   self->null_value = g_strdup(null_value);
-}
-
-void
-csv_parser_append_string_delimiter(LogParser *s, const gchar *string_delimiter)
-{
-  CSVParser *self = (CSVParser *) s;
-
-  self->string_delimiters = g_list_prepend(self->string_delimiters, (gpointer)g_strdup(string_delimiter));
 }
 
 static inline gboolean

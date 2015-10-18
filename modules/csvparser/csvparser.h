@@ -39,10 +39,10 @@
 void csv_parser_set_columns(LogParser *s, GList *fields);
 void csv_parser_set_flags(LogParser *s, guint32 flags);
 void csv_parser_set_delimiters(LogParser *s, const gchar *delimiters);
+void csv_parser_set_string_delimiters(LogParser *s, GList *string_delimiters);
 void csv_parser_set_quotes(LogParser *s, const gchar *quotes);
 void csv_parser_set_quote_pairs(LogParser *s, const gchar *quote_pairs);
 void csv_parser_set_null_value(LogParser *s, const gchar *null_value);
-void csv_parser_append_string_delimiter(LogParser *s, const gchar *string_delimiter);
 LogParser *csv_parser_new(GlobalConfig *cfg);
 guint32 csv_parser_lookup_flag(const gchar *flag);
 guint32 csv_parser_normalize_escape_flags(LogParser *s, guint32 new_flag);
