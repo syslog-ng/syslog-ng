@@ -701,6 +701,5 @@ csv_parser_lookup_flag(const gchar *flag)
     return CSV_PARSER_GREEDY;
   else if (strcmp(flag, "drop-invalid") == 0)
     return CSV_PARSER_DROP_INVALID;
-  msg_error("Unknown CSV parser flag", evt_tag_str("flag", flag), NULL);
   return 0;
 }

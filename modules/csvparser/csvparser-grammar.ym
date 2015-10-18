@@ -107,7 +107,13 @@ parser_csv_delimiters_opt
         ;
 
 parser_csv_flags
-        : string parser_csv_flags               { $$ = csv_parser_lookup_flag($1) | $2; free($1); }
+        : string parser_csv_flags
+          {
+            guint32 flag = csv_parser_lookup_flag($1);
+            CHECK_ERROR(flag != 0, @1, "unknown csv-parser() flag %s", $1);
+            $$ = flag | $2;
+            free($1);
+          }
         |					{ $$ = 0; }
         ;
 
