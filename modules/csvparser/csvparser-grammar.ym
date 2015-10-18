@@ -92,19 +92,19 @@ parser_csv_opt
         ;
 
 parser_csv_delimiters
-  : parser_csv_delimiters_chars parser_csv_delimiter_strings
-  ;
+        : string                                {  csv_parser_set_delimiters(last_parser, $1); free($1);  }
+        | parser_csv_delimiters_opts
+        ;
 
-parser_csv_delimiters_chars
-  : KW_CHARS '(' string ')' { csv_parser_set_delimiters(last_parser, $3); free($3); }
-  | string {  csv_parser_set_delimiters(last_parser, $1); free($1);  }
-  |
-  ;
+parser_csv_delimiters_opts
+        : parser_csv_delimiters_opt parser_csv_delimiters_opts
+        |
+        ;
 
-parser_csv_delimiter_strings
-  : KW_STRINGS '('  string_list  ')'		{ csv_parser_set_string_delimiters(last_parser, $3); }
-  |
-  ;
+parser_csv_delimiters_opt
+        : KW_CHARS '(' string ')'               { csv_parser_set_delimiters(last_parser, $3); free($3); }
+        | KW_STRINGS '('  string_list  ')'	{ csv_parser_set_string_delimiters(last_parser, $3); }
+        ;
 
 parser_csv_flags
         : string parser_csv_flags               { $$ = csv_parser_lookup_flag($1) | $2; free($1); }
