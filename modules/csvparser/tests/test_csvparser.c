@@ -30,7 +30,7 @@ int
 testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *delimiters, gchar *quotes, gchar *null_value, const gchar *string_delims[], gchar *first_value, ...)
 {
   LogMessage *logmsg;
-  LogParser *p;
+  LogParser *p, *pclone;
   gchar *expected_value;
   gint i;
   va_list va;
@@ -100,8 +100,11 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
         }
     }
 
+  pclone = (LogParser *) log_pipe_clone(&p->super);
+  log_pipe_unref(&p->super);
+
   nvtable = nv_table_ref(logmsg->payload);
-  success = log_parser_process(p, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
+  success = log_parser_process(pclone, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
   nv_table_unref(nvtable);
 
   if (success && !first_value)
@@ -114,7 +117,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
       fprintf(stderr, "unexpected non-match; msg=%s\n", msg);
       exit(1);
     }
-  log_pipe_unref(&p->super);
+  log_pipe_unref(&pclone->super);
 
   va_start(va, first_value);
   expected_value = first_value;
