@@ -177,6 +177,8 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
                   host[255] = 0;
                 }
 	    }
+          if (host_len >= sizeof(host))
+            host_len = sizeof(host) - 1;
           log_msg_set_value(msg, LM_V_HOST, host, host_len);
 	}
       else
