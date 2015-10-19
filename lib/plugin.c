@@ -201,11 +201,11 @@ plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer a
       memset(&token, 0, sizeof(token));
       token.type = LL_TOKEN;
       token.token = self->type;
-      cfg_token_block_add_token(block, &token);
+      cfg_token_block_add_and_consume_token(block, &token);
       cfg_lexer_push_context(cfg->lexer, self->parser->context, self->parser->keywords, self->parser->name);
       cfg_lexer_lookup_keyword(cfg->lexer, &token, yylloc, self->name);
       cfg_lexer_pop_context(cfg->lexer);
-      cfg_token_block_add_token(block, &token);
+      cfg_token_block_add_and_consume_token(block, &token);
 
       cfg_lexer_inject_token_block(cfg->lexer, block);
     }
