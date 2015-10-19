@@ -45,7 +45,7 @@ py_log_message_getattr(PyLogMessage *self, gchar *name)
       PyErr_SetString(PyExc_AttributeError, "No such attribute");
       return NULL;
     }
-  return PyString_FromString(value);
+  return PyBytes_FromString(value);
 }
 
 static void
@@ -70,9 +70,8 @@ py_log_message_new(LogMessage *msg)
 
 static PyTypeObject py_log_message_type =
 {
-  PyObject_HEAD_INIT(&PyType_Type)
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
 
-  .ob_size = 0,
   .tp_name = "LogMessage",
   .tp_basicsize = sizeof(PyLogMessage),
   .tp_itemsize = 0,
@@ -80,7 +79,11 @@ static PyTypeObject py_log_message_type =
   .tp_print = NULL,
   .tp_getattr = (getattrfunc) py_log_message_getattr,
   .tp_setattr = (setattrfunc) NULL,
+#if PY_MAJOR_VERSION >= 3
+  .tp_reserved = NULL,
+#else
   .tp_compare = NULL,
+#endif
   .tp_repr = NULL,
   .tp_as_number = NULL,
   .tp_as_sequence = NULL,
