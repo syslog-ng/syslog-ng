@@ -362,7 +362,7 @@ if test "x$ac_compiler_gnu" = "xyes"; then
                 CFLAGS="${CFLAGS} -pg"
         fi
         if test "x$enable_gcov" = "xyes"; then
-                CFLAGS="${CFLAGS} -fprofile-arcs -ftest-coverage"
+                CFLAGS="${CFLAGS} --coverage"
         fi
 fi
 CFLAGS="${CFLAGS} -pthread"
