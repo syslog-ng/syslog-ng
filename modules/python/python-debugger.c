@@ -60,7 +60,12 @@ static PyMethodDef _syslogngdbg_functions[] =
 static void
 python_debugger_export_internals(void)
 {
+  PyGILState_STATE gstate;
+
+  gstate = PyGILState_Ensure();
   Py_InitModule("_syslogngdbg", _syslogngdbg_functions);
+
+  PyGILState_Release(gstate);
 }
 
 #define DEBUGGER_FETCH_COMMAND "syslogng.debuggercli.fetch_command"
