@@ -34,7 +34,7 @@ _add_nv_keys_to_list(gpointer key, gpointer value, gpointer user_data)
   PyObject *list = (PyObject *) user_data;
   const gchar *name = (const gchar *) key;
 
-  PyList_Append(list, PyString_FromString(name));
+  PyList_Append(list, PyBytes_FromString(name));
 }
 
 static PyObject *
@@ -90,7 +90,7 @@ python_fetch_debugger_command(void)
                 NULL);
       goto exit;
     }
-  if (!PyString_Check(ret))
+  if (!PyBytes_Check(ret))
     {
       msg_error("Return value from debugger fetch_command is not a string",
                 evt_tag_str("function", DEBUGGER_FETCH_COMMAND),
@@ -99,7 +99,7 @@ python_fetch_debugger_command(void)
       Py_DECREF(ret);
       goto exit;
     }
-  command = g_strdup(PyString_AsString(ret));
+  command = g_strdup(PyBytes_AsString(ret));
   Py_DECREF(ret);
  exit:
   PyGILState_Release(gstate);

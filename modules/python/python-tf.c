@@ -39,7 +39,7 @@ _py_construct_args_tuple(LogMessage *msg, gint argc, GString *argv[])
   PyTuple_SetItem(args, 0, py_log_message_new(msg));
   for (i = 1; i < argc; i++)
     {
-      PyTuple_SetItem(args, i, PyString_FromString(argv[i]->str));
+      PyTuple_SetItem(args, i, PyBytes_FromString(argv[i]->str));
     }
   return args;
 }
@@ -81,7 +81,7 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
 static gboolean
 _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GString *result)
 {
-  if (!PyString_Check(ret))
+  if (!PyBytes_Check(ret))
     {
       msg_error("$(python): The return value is not a string",
                 evt_tag_str("function", function_name),
@@ -90,7 +90,7 @@ _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GS
       Py_DECREF(ret);
       return FALSE;
     }
-  g_string_append(result, PyString_AS_STRING(ret));
+  g_string_append(result, PyBytes_AS_STRING(ret));
   Py_DECREF(ret);
   return TRUE;
 }

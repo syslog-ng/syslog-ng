@@ -31,7 +31,7 @@ _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
 
   if (name)
     {
-      g_strlcpy(buf, PyString_AsString(name), buf_len);
+      g_strlcpy(buf, PyBytes_AsString(name), buf_len);
     }
   else
     {
@@ -58,7 +58,7 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
   str = PyObject_Str(value);
   if (str)
     {
-      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, PyString_AsString(str));
+      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, PyBytes_AsString(str));
     }
   else
     {
