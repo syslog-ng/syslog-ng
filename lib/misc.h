@@ -61,6 +61,7 @@ step_sequence_number(gint32 *seqnum)
     *seqnum = 1;
 }
 
+GList *string_list_clone(GList *string_list);
 GList *string_array_to_list(const gchar *strlist[]);
 void string_list_free(GList *l);
 

@@ -1035,11 +1035,6 @@ parser_opt
                                                 }
         ;
 
-parser_column_opt
-        : parser_opt
-        | KW_COLUMNS '(' string_list ')'        { log_column_parser_set_columns((LogColumnParser *) last_parser, $3); }
-        ;
-
 /* LogSource related options */
 source_option
         /* NOTE: plugins need to set "last_source_options" in order to incorporate this rule in their grammar */

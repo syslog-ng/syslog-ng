@@ -26,26 +26,27 @@
 
 #include "parser/parser-expr.h"
 
-#define LOG_CSV_PARSER_ESCAPE_NONE        0x0001
-#define LOG_CSV_PARSER_ESCAPE_BACKSLASH   0x0002
-#define LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR 0x0004
-#define LOG_CSV_PARSER_ESCAPE_MASK        0x0007
-#define LOG_CSV_PARSER_STRIP_WHITESPACE   0x0008
-#define LOG_CSV_PARSER_GREEDY             0x0010
-#define LOG_CSV_PARSER_DROP_INVALID       0x0020
+#define CSV_PARSER_ESCAPE_NONE        0x0001
+#define CSV_PARSER_ESCAPE_BACKSLASH   0x0002
+#define CSV_PARSER_ESCAPE_DOUBLE_CHAR 0x0004
+#define CSV_PARSER_ESCAPE_MASK        0x0007
+#define CSV_PARSER_STRIP_WHITESPACE   0x0008
+#define CSV_PARSER_GREEDY             0x0010
+#define CSV_PARSER_DROP_INVALID       0x0020
 
-#define LOG_CSV_PARSER_FLAGS_DEFAULT  ((LOG_CSV_PARSER_STRIP_WHITESPACE) | (LOG_CSV_PARSER_ESCAPE_NONE))
+#define CSV_PARSER_FLAGS_DEFAULT  ((CSV_PARSER_STRIP_WHITESPACE) | (CSV_PARSER_ESCAPE_NONE))
 
-void log_csv_parser_set_flags(LogColumnParser *s, guint32 flags);
-void log_csv_parser_set_delimiters(LogColumnParser *s, const gchar *delimiters);
-void log_csv_parser_set_quotes(LogColumnParser *s, const gchar *quotes);
-void log_csv_parser_set_quote_pairs(LogColumnParser *s, const gchar *quote_pairs);
-void log_csv_parser_set_null_value(LogColumnParser *s, const gchar *null_value);
-void log_csv_parser_append_string_delimiter(LogColumnParser *s, const gchar *string_delimiter);
-LogColumnParser *log_csv_parser_new(GlobalConfig *cfg);
-guint32 log_csv_parser_lookup_flag(const gchar *flag);
-guint32 log_csv_parser_normalize_escape_flags(LogColumnParser *s, guint32 new_flag);
+void csv_parser_set_columns(LogParser *s, GList *fields);
+void csv_parser_set_flags(LogParser *s, guint32 flags);
+void csv_parser_set_delimiters(LogParser *s, const gchar *delimiters);
+void csv_parser_set_string_delimiters(LogParser *s, GList *string_delimiters);
+void csv_parser_set_quotes(LogParser *s, const gchar *quotes);
+void csv_parser_set_quote_pairs(LogParser *s, const gchar *quote_pairs);
+void csv_parser_set_null_value(LogParser *s, const gchar *null_value);
+LogParser *csv_parser_new(GlobalConfig *cfg);
+guint32 csv_parser_lookup_flag(const gchar *flag);
+guint32 csv_parser_normalize_escape_flags(LogParser *s, guint32 new_flag);
 
-guint32 log_csv_parser_get_flags(LogColumnParser *s);
+guint32 csv_parser_get_flags(LogParser *s);
 
 #endif
