@@ -56,16 +56,41 @@ static PyMethodDef _syslogngdbg_functions[] =
   { NULL,            NULL, 0, NULL }   /* sentinel*/
 };
 
+#if PY_MAJOR_VERSION >= 3
+
+static struct PyModuleDef syslogngdbgmodule = {
+  .m_base    = PyModuleDef_HEAD_INIT,
+  .m_name    = "syslogngdbg",
+  .m_size    = -1,
+  .m_methods = _syslogngdbg_functions
+};
+
+static PyObject *
+PyInit_syslogngdbg(void)
+{
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyObject *module = PyModule_Create(&syslogngdbgmodule);
+  PyGILState_Release(gstate);
+
+  return module;
+}
+
+#else
 
 static void
-python_debugger_export_internals(void)
+PyInit_syslogngdbg(void)
 {
-  PyGILState_STATE gstate;
-
-  gstate = PyGILState_Ensure();
-  Py_InitModule("_syslogngdbg", _syslogngdbg_functions);
-
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  Py_InitModule("syslogngdbg", _syslogngdbg_functions);
   PyGILState_Release(gstate);
+}
+
+#endif
+
+void
+python_debugger_append_inittab(void)
+{
+  PyImport_AppendInittab("syslogngdbg", &PyInit_syslogngdbg);
 }
 
 #define DEBUGGER_FETCH_COMMAND "syslogng.debuggercli.fetch_command"
@@ -116,6 +141,5 @@ python_fetch_debugger_command(void)
 void
 python_debugger_init(void)
 {
-  python_debugger_export_internals();
   debugger_register_command_fetcher(python_fetch_debugger_command);
 }
