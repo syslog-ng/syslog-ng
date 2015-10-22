@@ -25,5 +25,6 @@
 #define PYTHON_DEBUGGER_H_INCLUDED 1
 
 void python_debugger_init(void);
+void python_debugger_append_inittab(void);
 
 #endif

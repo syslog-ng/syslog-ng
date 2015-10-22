@@ -55,11 +55,13 @@ _py_init_interpreter(void)
 {
   if (!interpreter_initialized)
     {
+      python_debugger_append_inittab();
+
       Py_Initialize();
 
       PyEval_InitThreads();
       python_log_message_init();
-      PyEval_ReleaseLock();
+      PyEval_SaveThread();
 
       interpreter_initialized = TRUE;
     }
