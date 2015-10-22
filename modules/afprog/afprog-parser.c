@@ -31,6 +31,7 @@ int afprog_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afprog_keywords[] = {
   { "program",            KW_PROGRAM },
+  { "keep_alive",         KW_KEEP_ALIVE },
   { NULL }
 };
 
