@@ -366,6 +366,23 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
 }
 
 static gboolean
+afprogram_dd_restore_reload_store_item(AFProgramDestDriver *self, GlobalConfig *cfg)
+{
+  AFProgramReloadStoreItem *restored_info = (AFProgramReloadStoreItem *)cfg_persist_config_fetch(cfg, afprogram_dd_format_persist_name(self));
+
+  if (restored_info)
+    {
+      self->pid = restored_info->pid;
+      self->writer = restored_info->writer;
+
+      child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify)log_pipe_unref);
+      g_free(restored_info);
+    }
+
+  return !!(self->writer);
+}
+
+static gboolean
 afprogram_dd_init(LogPipe *s)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
@@ -375,6 +392,8 @@ afprogram_dd_init(LogPipe *s)
     return FALSE;
 
   log_writer_options_init(&self->writer_options, cfg, 0);
+
+  const gboolean restore_successful = afprogram_dd_restore_reload_store_item(self, cfg);
 
   if (!self->writer)
     self->writer = log_writer_new(LW_FORMAT_FILE, s->cfg);
@@ -395,7 +414,7 @@ afprogram_dd_init(LogPipe *s)
     }
   log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
 
-  return afprogram_dd_reopen(self);
+  return restore_successful ? TRUE : afprogram_dd_reopen(self);
 }
 
 static gboolean
