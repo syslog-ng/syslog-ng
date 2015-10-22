@@ -325,22 +325,36 @@ afprogram_dd_kill_child(AFProgramDestDriver *self)
     }
 }
 
+static inline gboolean
+afprogram_dd_open_program(AFProgramDestDriver *self, int *fd)
+{
+  if (self->pid == -1)
+    {
+      msg_verbose("Starting destination program",
+                  evt_tag_str("cmdline", self->cmdline->str),
+                  NULL);
+
+      if (!afprogram_popen(self->cmdline->str, G_IO_OUT, &self->pid, fd))
+        return FALSE;
+
+      g_fd_set_nonblock(*fd, TRUE);
+    }
+
+  child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify)log_pipe_unref);
+
+  return TRUE;
+}
+
 static gboolean
 afprogram_dd_reopen(AFProgramDestDriver *self)
 {
   int fd;
 
   afprogram_dd_kill_child(self);
-  msg_verbose("Starting destination program",
-              evt_tag_str("cmdline", self->cmdline->str),
-              NULL);
 
-  if (!afprogram_popen(self->cmdline->str, G_IO_OUT, &self->pid, &fd))
+  if (!afprogram_dd_open_program(self, &fd))
     return FALSE;
 
-  child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify) log_pipe_unref);
-
-  g_fd_set_nonblock(fd, TRUE);
   log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_pipe_new(fd), &self->writer_options.proto_options.super));
   return TRUE;
 }
