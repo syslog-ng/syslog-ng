@@ -366,10 +366,12 @@ afprogram_dd_deinit(LogPipe *s)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
 
+  if (self->writer)
+    log_pipe_deinit((LogPipe *) self->writer);
+
   afprogram_dd_kill_child(self);
   if (self->writer)
     {
-      log_pipe_deinit((LogPipe *) self->writer);
       log_pipe_unref((LogPipe *) self->writer);
       self->writer = NULL;
     }
