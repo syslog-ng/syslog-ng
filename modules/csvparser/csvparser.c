@@ -35,12 +35,46 @@ typedef struct _CSVParser
   CSVScanner scanner;
 } CSVParser;
 
+#define _ESCAPE_MODE_SHIFT 16
+#define _ESCAPE_MODE_MASK  0xFFFF0000
+
+#define _ESCAPE_MODE_NONE          (1 << _ESCAPE_MODE_SHIFT)
+#define _ESCAPE_MODE_BACKSLASH     (2 << _ESCAPE_MODE_SHIFT)
+#define _ESCAPE_MODE_DOUBLE_CHAR   (4 << _ESCAPE_MODE_SHIFT)
+
 CSVScannerOptions *
 csv_parser_get_scanner_options(LogParser *s)
 {
   CSVParser *self = (CSVParser *) s;
 
   return &self->options;
+}
+
+gboolean
+csv_parser_set_flags(LogParser *s, guint32 flags)
+{
+  CSVParser *self = (CSVParser *) s;
+  guint32 dialect = (flags & _ESCAPE_MODE_MASK);
+  guint32 scanner_flags = flags & 0xFFFF;
+
+  csv_scanner_options_set_flags(&self->options, scanner_flags);
+  switch (dialect)
+    {
+    case 0:
+      break;
+    case _ESCAPE_MODE_NONE:
+      csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
+      break;
+    case _ESCAPE_MODE_BACKSLASH:
+      csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_BACKSLASH);
+      break;
+    case _ESCAPE_MODE_DOUBLE_CHAR:
+      csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
+      break;
+    default:
+      return FALSE;
+    }
+  return TRUE;
 }
 
 static gboolean
@@ -98,7 +132,8 @@ csv_parser_new(GlobalConfig *cfg)
   self->super.process = csv_parser_process;
   csv_scanner_options_set_delimiters(&self->options, " ");
   csv_scanner_options_set_quote_pairs(&self->options, "\"\"''");
-  self->options.flags = CSV_PARSER_FLAGS_DEFAULT;
+  csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
+  csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
   csv_scanner_state_init(&self->scanner, &self->options);
   return &self->super;
 }
@@ -107,16 +142,16 @@ guint32
 csv_parser_lookup_flag(const gchar *flag)
 {
   if (strcmp(flag, "escape-none") == 0)
-    return CSV_PARSER_ESCAPE_NONE;
+    return _ESCAPE_MODE_NONE;
   else if (strcmp(flag, "escape-backslash") == 0)
-    return CSV_PARSER_ESCAPE_BACKSLASH;
+    return _ESCAPE_MODE_BACKSLASH;
   else if (strcmp(flag, "escape-double-char") == 0)
-    return CSV_PARSER_ESCAPE_DOUBLE_CHAR;
+    return _ESCAPE_MODE_DOUBLE_CHAR;
   else if (strcmp(flag, "strip-whitespace") == 0)
-    return CSV_PARSER_STRIP_WHITESPACE;
+    return CSV_SCANNER_STRIP_WHITESPACE;
   else if (strcmp(flag, "greedy") == 0)
-    return CSV_PARSER_GREEDY;
+    return CSV_SCANNER_GREEDY;
   else if (strcmp(flag, "drop-invalid") == 0)
-    return CSV_PARSER_DROP_INVALID;
+    return CSV_SCANNER_DROP_INVALID;
   return 0;
 }

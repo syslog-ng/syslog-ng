@@ -29,54 +29,16 @@
  * CSVScannerOptions
  ************************************************************************/
 
-static gint
-_is_escape_flag(guint32 flag)
-{
-  return ((flag & CSV_PARSER_ESCAPE_MASK) == flag);
-}
-
-static gint
-_contains_escape_flag(guint32 flag)
-{
-  return (flag & CSV_PARSER_ESCAPE_MASK);
-}
-
-static guint32
-_get_escape_flags(guint32 flags)
-{
-  return (flags & CSV_PARSER_ESCAPE_MASK);
-}
-
-static guint32
-_remove_escape_flags(guint32 flags)
-{
-  return (flags & (~CSV_PARSER_ESCAPE_MASK));
-}
-
-guint32
-csv_scanner_options_normalize_escape_flags(CSVScannerOptions *options, guint32 new_flag)
-{
-  guint32 current_flags = options->flags;
-
-  if (_is_escape_flag(new_flag))
-    return (_remove_escape_flags(current_flags) | new_flag);
-
-  if (!_contains_escape_flag(new_flag))
-    return (_get_escape_flags(current_flags) | new_flag);
-
-  return new_flag;
-}
-
 void
 csv_scanner_options_set_flags(CSVScannerOptions *options, guint32 flags)
 {
   options->flags = flags;
 }
 
-guint32
-csv_scanner_options_get_flags(CSVScannerOptions *options)
+void
+csv_scanner_options_set_dialect(CSVScannerOptions *options, CSVScannerDialect dialect)
 {
-  return options->flags;
+  options->dialect = dialect;
 }
 
 void
@@ -151,6 +113,7 @@ csv_scanner_options_copy(CSVScannerOptions *dst, CSVScannerOptions *src)
   csv_scanner_options_set_null_value(dst, src->null_value);
   csv_scanner_options_set_string_delimiters(dst, string_list_clone(src->string_delimiters));
   csv_scanner_options_set_columns(dst, string_list_clone(src->columns));
+  dst->dialect = src->dialect;
   dst->flags = src->flags;
 }
 
@@ -225,7 +188,7 @@ _parse_opening_quote_character(CSVScanner *self)
 static void
 _parse_left_whitespace(CSVScanner *self)
 {
-  if ((self->options->flags & CSV_PARSER_STRIP_WHITESPACE) == 0)
+  if ((self->options->flags & CSV_SCANNER_STRIP_WHITESPACE) == 0)
     return;
 
   _skip_whitespace(&self->src);
@@ -235,13 +198,13 @@ static void
 _parse_character_with_quotation(CSVScanner *self)
 {
   /* quoted character */
-  if (_is_parser_flag_set(self, CSV_PARSER_ESCAPE_BACKSLASH) &&
+  if (self->options->dialect == CSV_SCANNER_ESCAPE_BACKSLASH &&
       *self->src == '\\' &&
       *(self->src + 1))
     {
       self->src++;
     }
-  else if (_is_parser_flag_set(self, CSV_PARSER_ESCAPE_DOUBLE_CHAR) &&
+  else if (self->options->dialect == CSV_SCANNER_ESCAPE_DOUBLE_CHAR &&
            *self->src == self->current_quote &&
            *(self->src+1) == self->current_quote)
     {
@@ -358,7 +321,7 @@ _get_value_length_without_right_whitespace(CSVScanner *self)
 static void
 _translate_rstrip_whitespace(CSVScanner *self)
 {
-  if (self->options->flags & CSV_PARSER_STRIP_WHITESPACE)
+  if (self->options->flags & CSV_SCANNER_STRIP_WHITESPACE)
     g_string_truncate(self->current_value, _get_value_length_without_right_whitespace(self));
 }
 
@@ -385,7 +348,7 @@ csv_scanner_scan_next(CSVScanner *self)
   if (!self->src || !self->current_column)
     return FALSE;
 
-  if (_is_last_column(self) && (self->options->flags & CSV_PARSER_GREEDY))
+  if (_is_last_column(self) && (self->options->flags & CSV_SCANNER_GREEDY))
     {
       g_string_assign(self->current_value, self->src);
       self->src = NULL;
@@ -427,7 +390,7 @@ csv_scanner_get_current_value_len(CSVScanner *self)
 gboolean
 csv_scanner_is_scan_finished(CSVScanner *self)
 {
-  if ((self->options->flags & CSV_PARSER_DROP_INVALID) &&
+  if ((self->options->flags & CSV_SCANNER_DROP_INVALID) &&
       (!_is_at_the_end_of_columns(self) || (self->src && *self->src)))
     {
       /* there are unfilled variables, OR not all of the input was processed

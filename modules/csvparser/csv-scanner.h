@@ -27,13 +27,16 @@
 
 #include "syslog-ng.h"
 
-#define CSV_PARSER_ESCAPE_NONE        0x0001
-#define CSV_PARSER_ESCAPE_BACKSLASH   0x0002
-#define CSV_PARSER_ESCAPE_DOUBLE_CHAR 0x0004
-#define CSV_PARSER_ESCAPE_MASK        0x0007
-#define CSV_PARSER_STRIP_WHITESPACE   0x0008
-#define CSV_PARSER_GREEDY             0x0010
-#define CSV_PARSER_DROP_INVALID       0x0020
+typedef enum
+{
+  CSV_SCANNER_ESCAPE_NONE,
+  CSV_SCANNER_ESCAPE_BACKSLASH,
+  CSV_SCANNER_ESCAPE_DOUBLE_CHAR
+} CSVScannerDialect;
+
+#define CSV_SCANNER_STRIP_WHITESPACE   0x0001
+#define CSV_SCANNER_GREEDY             0x0002
+#define CSV_SCANNER_DROP_INVALID       0x0004
 
 typedef struct _CSVScannerOptions
 {
@@ -43,15 +46,15 @@ typedef struct _CSVScannerOptions
   gchar *quotes_end;
   gchar *null_value;
   GList *string_delimiters;
+  CSVScannerDialect dialect;
   guint32 flags;
 } CSVScannerOptions;
 
 void csv_scanner_options_clean(CSVScannerOptions *options);
 void csv_scanner_options_copy(CSVScannerOptions *dst, CSVScannerOptions *src);
 
-guint32 csv_scanner_options_normalize_escape_flags(CSVScannerOptions *options, guint32 new_flag);
+void csv_scanner_options_set_dialect(CSVScannerOptions *options, CSVScannerDialect dialect);
 void csv_scanner_options_set_flags(CSVScannerOptions *options, guint32 flags);
-guint32 csv_scanner_options_get_flags(CSVScannerOptions *options);
 void csv_scanner_options_set_columns(CSVScannerOptions *options, GList *columns);
 void csv_scanner_options_set_delimiters(CSVScannerOptions *options, const gchar *delimiters);
 void csv_scanner_options_set_string_delimiters(CSVScannerOptions *options, GList *string_delimiters);
