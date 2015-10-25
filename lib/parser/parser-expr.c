@@ -93,7 +93,7 @@ log_parser_init_method(LogPipe *s)
   LogParser *self = (LogParser *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!self->name)
+  if (!self->name && s->expr_node)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_PARSER, s->expr_node);
   return TRUE;
 }
