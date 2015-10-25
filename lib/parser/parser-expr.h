@@ -42,6 +42,7 @@ struct _LogParser
 };
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);
+gboolean log_parser_init_method(LogPipe *s);
 void log_parser_init_instance(LogParser *self, GlobalConfig *cfg);
 void log_parser_free_method(LogPipe *self);
 

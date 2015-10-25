@@ -157,7 +157,9 @@ log_db_parser_init(LogPipe *s)
   self->tick.expires.tv_sec++;
   self->tick.expires.tv_nsec = 0;
   iv_timer_register(&self->tick);
-  return self->db != NULL;
+  if (!self->db)
+    return FALSE;
+  return log_parser_init_method(s);
 }
 
 static gboolean

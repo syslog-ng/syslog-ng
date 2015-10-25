@@ -87,8 +87,8 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     }
 }
 
-static gboolean
-log_parser_init(LogPipe *s)
+gboolean
+log_parser_init_method(LogPipe *s)
 {
   LogParser *self = (LogParser *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -112,7 +112,7 @@ void
 log_parser_init_instance(LogParser *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
-  self->super.init = log_parser_init;
+  self->super.init = log_parser_init_method;
   self->super.free_fn = log_parser_free_method;
   self->super.queue = log_parser_queue;
 }
