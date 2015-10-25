@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef SNG_TRIGGER_SOURCE_PARSER_H_INCLUDED
-#define SNG_TRIGGER_SOURCE_PARSER_H_INCLUDED
+#ifndef DATE_PARSER_PARSER_H_INCLUDED
+#define DATE_PARSER_PARSER_H_INCLUDED
 
 #include "date-parser.h"
 #include "cfg-parser.h"
