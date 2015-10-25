@@ -134,7 +134,6 @@ pkginclude_HEADERS			+= \
 	lib/scratch-buffers.h		\
 	lib/serialize.h			\
 	lib/service-management.h	\
-	lib/stringutils.h	\
 	lib/str-format.h		\
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
@@ -213,7 +212,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/scratch-buffers.c		\
 	lib/serialize.c			\
 	lib/service-management.c	\
-	lib/stringutils.c	\
 	lib/str-format.c		\
 	lib/syslog-names.c		\
 	lib/tags.c			\
