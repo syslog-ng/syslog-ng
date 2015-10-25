@@ -23,7 +23,7 @@
 
 #include "date-parser.h"
 #include "cfg-parser.h"
-#include "date-parser-grammar.h"
+#include "date-grammar.h"
 #include "date-parser-parser.h"
 
 extern int date_debug;
