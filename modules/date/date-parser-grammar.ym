@@ -1,0 +1,82 @@
+/*
+ * Copyright (c) 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2015 Vincent Bernat <Vincent.Bernat@exoscale.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "date-parser-parser.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "cfg-parser.h"
+#include "plugin.h"
+#include "parser/parser-expr.h"
+#include "date-parser.h"
+
+LogParser *last_parser;
+}
+
+%name-prefix "date_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogParser **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_DATE
+%token KW_DATE_OFFSET
+%token KW_DATE_FORMAT
+%token KW_TIME_ZONE
+
+%%
+
+start
+        : LL_CONTEXT_PARSER date_parser { YYACCEPT; }
+        ;
+
+date_parser
+        : KW_DATE '('
+          {
+            last_parser = *instance = date_parser_new (configuration);
+          }
+          date_parser_options ')'
+        ;
+
+date_parser_options
+        : date_parser_option date_parser_options
+        |
+        ;
+
+date_parser_option
+	: KW_DATE_OFFSET '(' LL_NUMBER ')' { date_parser_set_offset(last_parser, $3); }
+        | KW_DATE_FORMAT '(' string ')' { date_parser_set_format(last_parser, $3); free($3); }
+        | KW_TIME_ZONE '(' string ')' { date_parser_set_timezone(last_parser, $3); free($3); }
+        | parser_opt
+        ;
+
+/* INCLUDE_RULES */
+
+%%

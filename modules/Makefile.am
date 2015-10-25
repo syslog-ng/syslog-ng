@@ -28,6 +28,7 @@ include modules/python/Makefile.am
 include modules/java/Makefile.am
 include modules/java-modules/Makefile.am
 include modules/kvformat/Makefile.am
+include modules/date/Makefile.am
 
 SYSLOG_NG_MODULES	=	\
 	mod-afsocket mod-afstreams mod-affile mod-afprog \
@@ -36,7 +37,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-confgen mod-system-source mod-csvparser mod-dbparser \
 	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
 	mod-redis mod-pseudofile mod-graphite mod-riemann \
-	mod-python mod-java mod-java-modules mod-kvformat
+	mod-python mod-java mod-java-modules mod-kvformat mod-date
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
@@ -49,6 +50,6 @@ modules_test_subdirs	=	\
 	modules_csvparser modules_dbparser modules_basicfuncs \
 	modules_cryptofuncs modules_geoip modules_afstomp \
 	modules_graphite modules_riemann modules_python \
-	modules_systemd_journal modules_kvformat
+	modules_systemd_journal modules_kvformat modules_date
 
 .PHONY: modules modules/
