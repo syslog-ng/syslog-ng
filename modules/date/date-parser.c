@@ -50,18 +50,17 @@ date_parser_set_timezone(LogParser *s, gchar *tz)
     g_free (self->date_tz);
 
   self->date_tz = g_strdup (tz);
-  if (self->date_tz_info)
-    time_zone_info_free (self->date_tz_info);
-  self->date_tz_info = time_zone_info_new (self->date_tz);
 }
 
 static gboolean
-date_parser_init(LogPipe *parser)
+date_parser_init(LogPipe *s)
 {
-  DateParser *self = (DateParser *)parser;
-  GlobalConfig *cfg = log_pipe_get_config (&self->super.super);
+  DateParser *self = (DateParser *) s;
 
-  return TRUE;
+  if (self->date_tz_info)
+    time_zone_info_free(self->date_tz_info);
+  self->date_tz_info = self->date_tz ? time_zone_info_new(self->date_tz) : NULL;
+  return log_parser_init_method(s);
 }
 
 static gboolean
