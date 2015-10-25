@@ -28,7 +28,8 @@
 
 LogParser *date_parser_new(GlobalConfig *cfg);
 
-void date_parser_set_offset (LogParser *s, goffset offset);
-void date_parser_set_format (LogParser *s, gchar *format);
-void date_parser_set_timezone (LogParser *s, gchar *tz);
+void date_parser_set_offset(LogParser *s, goffset offset);
+void date_parser_set_format(LogParser *s, gchar *format);
+void date_parser_set_timezone(LogParser *s, gchar *tz);
+
 #endif

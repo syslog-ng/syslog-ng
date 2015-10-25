@@ -36,13 +36,14 @@ typedef struct _DateParser
 } DateParser;
 
 void
-date_parser_set_offset (LogParser *s, goffset offset)
+date_parser_set_offset(LogParser *s, goffset offset)
 {
   DateParser *self = (DateParser *)s;
   self->date_offset = offset;
 }
 
-void date_parser_set_format (LogParser *s, gchar *format)
+void
+date_parser_set_format(LogParser *s, gchar *format)
 {
   DateParser *self = (DateParser *)s;
   if (self->date_format)
@@ -51,7 +52,8 @@ void date_parser_set_format (LogParser *s, gchar *format)
   self->date_format = g_strdup (format);
 }
 
-void date_parser_set_timezone (LogParser *s, gchar *tz)
+void
+date_parser_set_timezone(LogParser *s, gchar *tz)
 {
   DateParser *self = (DateParser *)s;
   if (self->date_tz)
@@ -64,20 +66,20 @@ void date_parser_set_timezone (LogParser *s, gchar *tz)
 }
 
 static gboolean
-date_parser_init (LogPipe *parser)
+date_parser_init(LogPipe *parser)
 {
   DateParser *self = (DateParser *)parser;
   GlobalConfig *cfg = log_pipe_get_config (&self->super.super);
 
   return TRUE;
-};
+}
 
 static gboolean
-date_parser_process (LogParser *s,
-                     LogMessage **pmsg,
-                     const LogPathOptions *path_options,
-                     const gchar *input,
-                     gsize input_len)
+date_parser_process(LogParser *s,
+                    LogMessage **pmsg,
+                    const LogPathOptions *path_options,
+                    const gchar *input,
+                    gsize input_len)
 {
   const gchar *src = input;
   char *cloned_input;
@@ -139,10 +141,10 @@ date_parser_process (LogParser *s,
     }
 
   return TRUE;
-};
+}
 
 static LogPipe *
-date_parser_clone (LogPipe *s)
+date_parser_clone(LogPipe *s)
 {
   DateParser *self = (DateParser *) s;
 
@@ -158,31 +160,32 @@ date_parser_clone (LogPipe *s)
   cloned->super.template = log_template_ref (self->super.template);
 
   return &cloned->super.super;
-};
+}
 
 static void
-date_parser_free (LogPipe *s)
+date_parser_free(LogPipe *s)
 {
   DateParser *self = (DateParser *)s;
 
-  g_free (self->date_format);
-  g_free (self->date_tz);
+  g_free(self->date_format);
+  g_free(self->date_tz);
   if (self->date_tz_info)
-    time_zone_info_free (self->date_tz_info);
+    time_zone_info_free(self->date_tz_info);
 
-  log_parser_free_method (s);
-};
+  log_parser_free_method(s);
+}
 
-LogParser *date_parser_new (GlobalConfig *cfg)
+LogParser *
+date_parser_new(GlobalConfig *cfg)
 {
-  DateParser *self = g_new0 (DateParser, 1);
-  log_parser_init_instance (&self->super, cfg);
+  DateParser *self = g_new0(DateParser, 1);
+  log_parser_init_instance(&self->super, cfg);
   self->super.super.init = date_parser_init;
   self->super.process = date_parser_process;
   self->super.super.clone = date_parser_clone;
   self->super.super.free_fn = date_parser_free;
 
-  self->date_format = g_strdup ("%FT%T%z");
+  self->date_format = g_strdup("%FT%T%z");
 
   return &self->super;
-};
+}
