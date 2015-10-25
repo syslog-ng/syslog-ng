@@ -1,11 +1,11 @@
-module_LTLIBRARIES += modules/date/libdate-parser.la
+module_LTLIBRARIES += modules/date/libdate.la
 
-modules_date_libdate_parser_la_CPPFLAGS	 = \
+modules_date_libdate_la_CPPFLAGS	 = \
 	$(AM_CPPFLAGS)				   \
 	-I$(top_srcdir)/modules/date		   \
 	-I$(top_builddir)/modules/date
 
-modules_date_libdate_parser_la_SOURCES	 = \
+modules_date_libdate_la_SOURCES	 = \
 	modules/date/date-parser-grammar.y	   \
 	modules/date/date-parser.c		   \
 	modules/date/date-parser.h		   \
@@ -13,9 +13,9 @@ modules_date_libdate_parser_la_SOURCES	 = \
 	modules/date/date-parser-parser.h	   \
 	modules/date/date-parser-plugin.c
 
-modules_date_libdate_parser_la_LDFLAGS	 = \
+modules_date_libdate_la_LDFLAGS	 = \
 	$(MODULE_LDFLAGS)
-modules_date_libdate_parser_la_DEPENDENCIES	=  \
+modules_date_libdate_la_DEPENDENCIES	=  \
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES				+= \
@@ -25,7 +25,7 @@ BUILT_SOURCES				+= \
 
 include modules/date/tests/Makefile.am
 
-modules/date mod-date: modules/date/libdate-parser.la
+modules/date mod-date: modules/date/libdate.la
 
 EXTRA_DIST += \
 	modules/date/date-parser-grammar.ym
