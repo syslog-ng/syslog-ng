@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2015 BalaBit
  * Copyright (c) 2015 Vincent Bernat <Vincent.Bernat@exoscale.ch>
  *
  * This program is free software; you can redistribute it and/or modify it
