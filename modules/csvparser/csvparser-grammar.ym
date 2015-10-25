@@ -80,19 +80,19 @@ parser_csv_opts
 
 parser_csv_opt
         : KW_FLAGS '(' parser_csv_flags ')'     {
-                                                  guint32 flags = csv_parser_normalize_escape_flags(last_parser, $3);
-                                                  csv_parser_set_flags(last_parser, flags);
+                                                  guint32 flags = csv_scanner_options_normalize_escape_flags(csv_parser_get_scanner_options(last_parser), $3);
+                                                  csv_scanner_options_set_flags(csv_parser_get_scanner_options(last_parser), flags);
                                                 }
         | KW_DELIMITERS '(' parser_csv_delimiters ')'
-        | KW_QUOTES '(' string ')'              { csv_parser_set_quotes(last_parser, $3); free($3); }
-        | KW_QUOTE_PAIRS '(' string ')'         { csv_parser_set_quote_pairs(last_parser, $3); free($3); }
-        | KW_NULL '(' string ')'                { csv_parser_set_null_value(last_parser, $3); free($3); }
-        | KW_COLUMNS '(' string_list ')'        { csv_parser_set_columns(last_parser, $3); }
+        | KW_QUOTES '(' string ')'              { csv_scanner_options_set_quotes(csv_parser_get_scanner_options(last_parser), $3); free($3); }
+        | KW_QUOTE_PAIRS '(' string ')'         { csv_scanner_options_set_quote_pairs(csv_parser_get_scanner_options(last_parser), $3); free($3); }
+        | KW_NULL '(' string ')'                { csv_scanner_options_set_null_value(csv_parser_get_scanner_options(last_parser), $3); free($3); }
+        | KW_COLUMNS '(' string_list ')'        { csv_scanner_options_set_columns(csv_parser_get_scanner_options(last_parser), $3); }
         | parser_opt
         ;
 
 parser_csv_delimiters
-        : string                                {  csv_parser_set_delimiters(last_parser, $1); free($1);  }
+        : string                                {  csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(last_parser), $1); free($1);  }
         | parser_csv_delimiters_opts
         ;
 
@@ -102,8 +102,8 @@ parser_csv_delimiters_opts
         ;
 
 parser_csv_delimiters_opt
-        : KW_CHARS '(' string ')'               { csv_parser_set_delimiters(last_parser, $3); free($3); }
-        | KW_STRINGS '('  string_list  ')'	{ csv_parser_set_string_delimiters(last_parser, $3); }
+        : KW_CHARS '(' string ')'               { csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(last_parser), $3); free($3); }
+        | KW_STRINGS '('  string_list  ')'	{ csv_scanner_options_set_string_delimiters(csv_parser_get_scanner_options(last_parser), $3); }
         ;
 
 parser_csv_flags

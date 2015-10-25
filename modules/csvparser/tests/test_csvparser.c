@@ -83,17 +83,17 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
   logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
 
   p = csv_parser_new(NULL);
-  csv_parser_set_flags(p, flags);
-  csv_parser_set_columns(p, string_array_to_list(column_array));
+  csv_scanner_options_set_flags(csv_parser_get_scanner_options(p), flags);
+  csv_scanner_options_set_columns(csv_parser_get_scanner_options(p), string_array_to_list(column_array));
   if (delimiters)
-    csv_parser_set_delimiters(p, delimiters);
+    csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(p), delimiters);
   if (quotes)
-    csv_parser_set_quote_pairs(p, quotes);
+    csv_scanner_options_set_quote_pairs(csv_parser_get_scanner_options(p), quotes);
   if (null_value)
-    csv_parser_set_null_value(p, null_value);
+    csv_scanner_options_set_null_value(csv_parser_get_scanner_options(p), null_value);
 
   if (string_delims)
-    csv_parser_set_string_delimiters(p, string_array_to_list(string_delims));
+    csv_scanner_options_set_string_delimiters(csv_parser_get_scanner_options(p), string_array_to_list(string_delims));
 
   pclone = (LogParser *) log_pipe_clone(&p->super);
   log_pipe_unref(&p->super);
@@ -206,6 +206,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, -1, CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
+
+  //  testcase("<15> openvpn[2499]: \"PTHREAD\"+\"support\" \"initialized\"", 0, -1, CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL, NULL,
+  //           "PTHREAD\"+\"support", "initialized", NULL);
 
   testcase("<15> openvpn[2499]: \"  PTHREAD  \" \" support\" \"initialized \"", 0, -1, CSV_PARSER_ESCAPE_NONE + CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
