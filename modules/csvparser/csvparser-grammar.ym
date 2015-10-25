@@ -51,10 +51,11 @@
 /* INCLUDE_DECLS */
 
 %token KW_CSV_PARSER
+%token KW_DIALECT
 
 %type	<ptr> parser_expr_csv
 %type   <num> parser_csv_flags
-
+%type   <num> parser_csv_dialect
 
 %%
 
@@ -79,7 +80,8 @@ parser_csv_opts
         ;
 
 parser_csv_opt
-        : KW_FLAGS '(' parser_csv_flags ')'     { CHECK_ERROR(csv_parser_set_flags(last_parser, $3), @3, "You can only use one escape style in the flags argument"); }
+        : KW_FLAGS '(' parser_csv_flags ')'     { CHECK_ERROR(csv_parser_set_flags(last_parser, $3), @3, "only one escape style can be used in the flags argument"); }
+        | KW_DIALECT '(' parser_csv_dialect ')' { csv_scanner_options_set_dialect(csv_parser_get_scanner_options(last_parser), $3); }
         | KW_DELIMITERS '(' parser_csv_delimiters ')'
         | KW_QUOTES '(' string ')'              { csv_scanner_options_set_quotes(csv_parser_get_scanner_options(last_parser), $3); free($3); }
         | KW_QUOTE_PAIRS '(' string ')'         { csv_scanner_options_set_quote_pairs(csv_parser_get_scanner_options(last_parser), $3); free($3); }
@@ -113,6 +115,13 @@ parser_csv_flags
           }
         |					{ $$ = 0; }
         ;
+
+parser_csv_dialect
+        : string                                {
+                                                  gint mode = csv_parser_lookup_dialect($1);
+                                                  CHECK_ERROR(mode >= 0, @1, "unknown dialect() argument for csv-parser()");
+                                                  free($1);
+                                                }
 
 /* INCLUDE_RULES */
 

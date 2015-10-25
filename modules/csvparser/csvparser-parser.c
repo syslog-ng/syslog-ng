@@ -31,7 +31,8 @@ int csvparser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword csvparser_keywords[] =
 {
-  { "csv_parser",          KW_CSV_PARSER, 0x0300 },
+  { "csv_parser",  KW_CSV_PARSER, 0x0300 },
+  { "dialect",     KW_DIALECT, 0x0307 },
   { NULL }
 };
 

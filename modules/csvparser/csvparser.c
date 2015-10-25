@@ -155,3 +155,15 @@ csv_parser_lookup_flag(const gchar *flag)
     return CSV_SCANNER_DROP_INVALID;
   return 0;
 }
+
+gint
+csv_parser_lookup_dialect(const gchar *flag)
+{
+  if (strcmp(flag, "escape-none") == 0)
+    return CSV_SCANNER_ESCAPE_NONE;
+  else if (strcmp(flag, "escape-backslash") == 0)
+    return CSV_SCANNER_ESCAPE_BACKSLASH;
+  else if (strcmp(flag, "escape-double-char") == 0)
+    return CSV_SCANNER_ESCAPE_DOUBLE_CHAR;
+  return -1;
+}
