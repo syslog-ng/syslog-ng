@@ -451,8 +451,6 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
       if (!__parse_iso_stamp(&now, self, &tm, &src, &left))
         goto error;
       tm.tm_isdst = -1;
-      unnormalized_hour = tm.tm_hour;
-      self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
