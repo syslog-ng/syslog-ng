@@ -22,6 +22,7 @@
  */
 
 #include "date-parser.h"
+#include "misc.h"
 
 typedef struct _DateParser
 {
@@ -61,28 +62,21 @@ date_parser_init(LogPipe *s)
 }
 
 static gboolean
-date_parser_process(LogParser *s,
-                    LogMessage **pmsg,
-                    const LogPathOptions *path_options,
-                    const gchar *input,
-                    gsize input_len)
+_parse_timestamp(DateParser *self, const gchar *input, struct tm *tm)
 {
-  const gchar *src = input;
-  char *cloned_input;
-  char *remaining;
-  DateParser *self = (DateParser *)s;
-  LogMessage *msg = log_msg_make_writable (pmsg, path_options);
+  memset(tm, 0, sizeof(struct tm));
+  if (!strptime(input, self->date_format, tm))
+    return FALSE;
+  return TRUE;
+}
+
+static gboolean
+_(DateParser *self, LogMessage *msg, const gchar *input)
+{
   struct tm tm;
-  memset(&tm, 0, sizeof(struct tm));
 
-
-  /* Parse date */
-  cloned_input = g_strndup(input, input_len);
-  if (!cloned_input) return FALSE;
-  remaining = strptime(cloned_input, self->date_format, &tm);
-  g_free(cloned_input);
-
-  if (remaining == NULL) return FALSE;
+  if (!_parse_timestamp(self, input, &tm))
+    return FALSE;
 
   /* The date may be missing. Try to use the current date as we can't
    * do anything better... Don't try to be too smart with new year
@@ -124,6 +118,21 @@ date_parser_process(LogParser *s,
     }
 
   return TRUE;
+}
+
+static gboolean
+date_parser_process(LogParser *s,
+                    LogMessage **pmsg,
+                    const LogPathOptions *path_options,
+                    const gchar *input,
+                    gsize input_len)
+{
+  DateParser *self = (DateParser *) s;
+  LogMessage *msg = log_msg_make_writable (pmsg, path_options);
+  gchar *input_with_nul;
+
+  APPEND_ZERO(input_with_nul, input, input_len);
+  return _(self, msg, input_with_nul);
 }
 
 static LogPipe *
