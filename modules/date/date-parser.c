@@ -22,7 +22,6 @@
  */
 
 #include "date-parser.h"
-#include "scratch-buffers.h"
 
 typedef struct _DateParser
 {
