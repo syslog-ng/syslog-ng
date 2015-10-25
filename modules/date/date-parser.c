@@ -35,21 +35,19 @@ typedef struct _DateParser
 void
 date_parser_set_format(LogParser *s, gchar *format)
 {
-  DateParser *self = (DateParser *)s;
-  if (self->date_format)
-    g_free (self->date_format);
+  DateParser *self = (DateParser *) s;
 
-  self->date_format = g_strdup (format);
+  g_free(self->date_format);
+  self->date_format = g_strdup(format);
 }
 
 void
 date_parser_set_timezone(LogParser *s, gchar *tz)
 {
-  DateParser *self = (DateParser *)s;
-  if (self->date_tz)
-    g_free (self->date_tz);
+  DateParser *self = (DateParser *) s;
 
-  self->date_tz = g_strdup (tz);
+  g_free(self->date_tz);
+  self->date_tz = g_strdup(tz);
 }
 
 static gboolean
