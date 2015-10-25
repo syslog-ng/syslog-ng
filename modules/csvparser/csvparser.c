@@ -33,6 +33,9 @@ typedef struct _CSVParser
   LogParser super;
   CSVScannerOptions options;
   CSVScanner scanner;
+  GString *formatted_key;
+  gchar *prefix;
+  gint prefix_len;
 } CSVParser;
 
 #define _ESCAPE_MODE_SHIFT 16
@@ -77,6 +80,35 @@ csv_parser_set_flags(LogParser *s, guint32 flags)
   return TRUE;
 }
 
+void
+csv_parser_set_prefix(LogParser *s, const gchar *prefix)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  g_free(self->prefix);
+  if (prefix)
+    {
+      self->prefix = g_strdup(prefix);
+      self->prefix_len = strlen(prefix);
+    }
+  else
+    {
+      self->prefix = NULL;
+      self->prefix_len = 0;
+    }
+}
+
+static const gchar *
+_get_formatted_key(CSVParser *self, const gchar *key)
+{
+  if (self->formatted_key->len > 0)
+    g_string_truncate(self->formatted_key, self->prefix_len);
+  else
+    g_string_assign(self->formatted_key, self->prefix);
+  g_string_append(self->formatted_key, key);
+  return self->formatted_key->str;
+}
+
 static gboolean
 csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
@@ -88,7 +120,7 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
     {
 
       log_msg_set_value_by_name(msg,
-                                csv_scanner_get_current_name(&self->scanner),
+                                _get_formatted_key(self, csv_scanner_get_current_name(&self->scanner)),
                                 csv_scanner_get_current_value(&self->scanner),
                                 csv_scanner_get_current_value_len(&self->scanner));
     }
@@ -105,6 +137,7 @@ csv_parser_clone(LogPipe *s)
   cloned = (CSVParser *) csv_parser_new(s->cfg);
   csv_scanner_options_copy(&cloned->options, &self->options);
   cloned->super.template = log_template_ref(self->super.template);
+  csv_parser_set_prefix(&cloned->super, self->prefix);
   return &cloned->super.super;
 }
 
@@ -115,6 +148,8 @@ csv_parser_free(LogPipe *s)
 
   csv_scanner_options_clean(&self->options);
   csv_scanner_state_clean(&self->scanner);
+  g_string_free(self->formatted_key, TRUE);
+  g_free(self->prefix);
   log_parser_free_method(s);
 }
 
@@ -130,6 +165,7 @@ csv_parser_new(GlobalConfig *cfg)
   self->super.super.free_fn = csv_parser_free;
   self->super.super.clone = csv_parser_clone;
   self->super.process = csv_parser_process;
+  self->formatted_key = g_string_sized_new(32);
   csv_scanner_options_set_delimiters(&self->options, " ");
   csv_scanner_options_set_quote_pairs(&self->options, "\"\"''");
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);

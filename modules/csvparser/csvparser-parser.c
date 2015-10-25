@@ -33,6 +33,7 @@ static CfgLexerKeyword csvparser_keywords[] =
 {
   { "csv_parser",  KW_CSV_PARSER, 0x0300 },
   { "dialect",     KW_DIALECT, 0x0307 },
+  { "prefix",      KW_PREFIX, 0x0307 },
   { NULL }
 };
 

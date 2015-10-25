@@ -52,6 +52,7 @@
 
 %token KW_CSV_PARSER
 %token KW_DIALECT
+%token KW_PREFIX
 
 %type	<ptr> parser_expr_csv
 %type   <num> parser_csv_flags
@@ -80,7 +81,10 @@ parser_csv_opts
         ;
 
 parser_csv_opt
+        /* CSVParser related options */
         : KW_FLAGS '(' parser_csv_flags ')'     { CHECK_ERROR(csv_parser_set_flags(last_parser, $3), @3, "only one escape style can be used in the flags argument"); }
+        | KW_PREFIX '(' string ')'              { csv_parser_set_prefix(last_parser, $3); free($3); }
+        /* CSVScanner related options */
         | KW_DIALECT '(' parser_csv_dialect ')' { csv_scanner_options_set_dialect(csv_parser_get_scanner_options(last_parser), $3); }
         | KW_DELIMITERS '(' parser_csv_delimiters ')'
         | KW_QUOTES '(' string ')'              { csv_scanner_options_set_quotes(csv_parser_get_scanner_options(last_parser), $3); free($3); }
