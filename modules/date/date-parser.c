@@ -131,18 +131,14 @@ static LogPipe *
 date_parser_clone(LogPipe *s)
 {
   DateParser *self = (DateParser *) s;
+  LogParser *cloned;
 
-  DateParser *cloned = (DateParser *) date_parser_new (log_pipe_get_config (&self->super.super));
-  g_free (cloned->date_format);
-  g_free (self->date_tz);
-  if (self->date_tz_info)
-    time_zone_info_free (self->date_tz_info);
-  cloned->date_format = g_strdup (self->date_format);
-  cloned->date_tz = g_strdup (self->date_tz);
-  cloned->date_tz_info = time_zone_info_new (cloned->date_tz);
-  cloned->super.template = log_template_ref (self->super.template);
+  cloned = date_parser_new(log_pipe_get_config(&self->super.super));
+  date_parser_set_format(cloned, self->date_format);
+  date_parser_set_timezone(cloned, self->date_tz);
+  log_parser_set_template(cloned, log_template_ref(self->super.template));
 
-  return &cloned->super.super;
+  return &cloned->super;
 }
 
 static void
