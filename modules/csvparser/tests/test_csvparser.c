@@ -207,9 +207,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, -1, CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD\"+\"support\" \"initialized\"", 0, -1, CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL, NULL,
-           "PTHREAD", "+\"support\"", "initialized", NULL);
-
   testcase("<15> openvpn[2499]: \"  PTHREAD  \" \" support\" \"initialized \"", 0, -1, CSV_PARSER_ESCAPE_NONE + CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
