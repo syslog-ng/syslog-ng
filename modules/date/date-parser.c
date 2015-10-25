@@ -24,23 +24,13 @@
 #include "date-parser.h"
 #include "scratch-buffers.h"
 
-#define KEY_BUFFER_LENGTH 1024
-
 typedef struct _DateParser
 {
   LogParser super;
-  goffset date_offset;
   gchar *date_format;
   gchar *date_tz;
   TimeZoneInfo *date_tz_info;
 } DateParser;
-
-void
-date_parser_set_offset(LogParser *s, goffset offset)
-{
-  DateParser *self = (DateParser *)s;
-  self->date_offset = offset;
-}
 
 void
 date_parser_set_format(LogParser *s, gchar *format)
@@ -89,9 +79,6 @@ date_parser_process(LogParser *s,
   struct tm tm;
   memset(&tm, 0, sizeof(struct tm));
 
-  if (self->date_offset > input_len) return FALSE;
-  input += self->date_offset;
-  input_len -= self->date_offset;
 
   /* Parse date */
   cloned_input = g_strndup(input, input_len);
@@ -153,7 +140,6 @@ date_parser_clone(LogPipe *s)
   g_free (self->date_tz);
   if (self->date_tz_info)
     time_zone_info_free (self->date_tz_info);
-  cloned->date_offset = self->date_offset;
   cloned->date_format = g_strdup (self->date_format);
   cloned->date_tz = g_strdup (self->date_tz);
   cloned->date_tz_info = time_zone_info_new (cloned->date_tz);

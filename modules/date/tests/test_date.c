@@ -7,7 +7,7 @@
 MsgFormatOptions parse_options;
 
 static void
-testcase(gchar *msg, goffset offset, gchar *timezone, gchar *format, gchar *expected)
+testcase(gchar *msg, gchar *timezone, gchar *format, gchar *expected)
 {
   LogTemplate *templ;
   LogMessage *logmsg;
@@ -18,7 +18,6 @@ testcase(gchar *msg, goffset offset, gchar *timezone, gchar *format, gchar *expe
   const gchar *context_id = "test-context-id";
   GString *res = g_string_sized_new(128);
 
-  date_parser_set_offset(parser, offset);
   if (format != NULL) date_parser_set_format(parser, format);
   if (timezone != NULL) date_parser_set_timezone(parser, timezone);
 
@@ -32,7 +31,7 @@ testcase(gchar *msg, goffset offset, gchar *timezone, gchar *format, gchar *expe
 
   if (!success)
     {
-      fprintf(stderr, "unable to parse offset=%d format=%s msg=%s\n", offset, format, msg);
+      fprintf(stderr, "unable to parse format=%s msg=%s\n", format, msg);
       exit(1);
     }
 
@@ -40,8 +39,8 @@ testcase(gchar *msg, goffset offset, gchar *timezone, gchar *format, gchar *expe
   templ = compile_template("${ISODATE}", FALSE);
   log_template_format(templ, logmsg, NULL, LTZ_LOCAL, 999, context_id, res);
   assert_nstring(res->str, res->len, expected, strlen(expected),
-                 "incorrect date parsed msg=%s offset=%d format=%s",
-                 msg, offset, format);
+                 "incorrect date parsed msg=%s format=%s",
+                 msg, format);
   log_template_unref(templ);
   g_string_free(res, TRUE);
 
@@ -64,34 +63,31 @@ int main()
   msg_format_options_init(&parse_options, configuration);
 
   /* Various ISO8601 formats */
-  testcase("2015-01-26T16:14:49+03:00", 0, NULL, NULL, "2015-01-26T16:14:49+03:00");
-  // testcase("2015-01-26T16:14:49+03:30", 0, NULL, NULL, "2015-01-26T16:14:49+03:30");
-  testcase("2015-01-26T16:14:49+0200", 0, NULL, NULL, "2015-01-26T16:14:49+02:00");
-  // testcase("2015-01-26T16:14:49Z", 0, NULL, NULL, "2015-01-26T16:14:49+00:00");
+  testcase("2015-01-26T16:14:49+03:00", NULL, NULL, "2015-01-26T16:14:49+03:00");
+  // testcase("2015-01-26T16:14:49+03:30", NULL, NULL, "2015-01-26T16:14:49+03:30");
+  testcase("2015-01-26T16:14:49+0200", NULL, NULL, "2015-01-26T16:14:49+02:00");
+  // testcase("2015-01-26T16:14:49Z", NULL, NULL, "2015-01-26T16:14:49+00:00");
 
   /* RFC 2822 */
-  testcase("Tue, 27 Jan 2015 11:48:46 +0200", 0, NULL, "%a, %d %b %Y %T %z", "2015-01-27T11:48:46+02:00");
+  testcase("Tue, 27 Jan 2015 11:48:46 +0200", NULL, "%a, %d %b %Y %T %z", "2015-01-27T11:48:46+02:00");
 
   /* Apache-like */
-  testcase("21/Jan/2015:14:40:07 +0500", 0, NULL, "%d/%b/%Y:%T %z", "2015-01-21T14:40:07+05:00");
+  testcase("21/Jan/2015:14:40:07 +0500", NULL, "%d/%b/%Y:%T %z", "2015-01-21T14:40:07+05:00");
 
   /* Try with additional text at the end */
-  testcase("2015-01-26T16:14:49+03:00 Disappointing log file", 0, NULL, NULL, "2015-01-26T16:14:49+03:00");
-
-  /* Try with offset */
-  testcase("<34> 2015-01-26T16:14:49+03:00 Disappointing log file", 5, NULL, NULL, "2015-01-26T16:14:49+03:00");
+  testcase("2015-01-26T16:14:49+03:00 Disappointing log file", NULL, NULL, "2015-01-26T16:14:49+03:00");
 
   /* Dates without timezones. America/Phoenix has no DST */
-  testcase("Tue, 27 Jan 2015 11:48:46", 0, NULL, "%a, %d %b %Y %T", "2015-01-27T11:48:46+00:00");
-  testcase("Tue, 27 Jan 2015 11:48:46", 0, "America/Phoenix", "%a, %d %b %Y %T", "2015-01-27T11:48:46-07:00");
-  testcase("Tue, 27 Jan 2015 11:48:46", 0, "+05:00", "%a, %d %b %Y %T", "2015-01-27T11:48:46+05:00");
+  testcase("Tue, 27 Jan 2015 11:48:46", NULL, "%a, %d %b %Y %T", "2015-01-27T11:48:46+00:00");
+  testcase("Tue, 27 Jan 2015 11:48:46", "America/Phoenix", "%a, %d %b %Y %T", "2015-01-27T11:48:46-07:00");
+  testcase("Tue, 27 Jan 2015 11:48:46", "+05:00", "%a, %d %b %Y %T", "2015-01-27T11:48:46+05:00");
 
   /* Try without the year. */
-  testcase("01/Jul:00:40:07 +0500", 0, NULL, "%d/%b:%T %z", "2015-07-01T00:40:07+05:00");
-  testcase("01/Aug:00:40:07 +0500", 0, NULL, "%d/%b:%T %z", "2015-08-01T00:40:07+05:00");
-  testcase("01/Sep:00:40:07 +0500", 0, NULL, "%d/%b:%T %z", "2015-09-01T00:40:07+05:00");
-  testcase("01/Oct:00:40:07 +0500", 0, NULL, "%d/%b:%T %z", "2014-10-01T00:40:07+05:00");
-  testcase("01/Nov:00:40:07 +0500", 0, NULL, "%d/%b:%T %z", "2014-11-01T00:40:07+05:00");
+  testcase("01/Jul:00:40:07 +0500", NULL, "%d/%b:%T %z", "2015-07-01T00:40:07+05:00");
+  testcase("01/Aug:00:40:07 +0500", NULL, "%d/%b:%T %z", "2015-08-01T00:40:07+05:00");
+  testcase("01/Sep:00:40:07 +0500", NULL, "%d/%b:%T %z", "2015-09-01T00:40:07+05:00");
+  testcase("01/Oct:00:40:07 +0500", NULL, "%d/%b:%T %z", "2014-10-01T00:40:07+05:00");
+  testcase("01/Nov:00:40:07 +0500", NULL, "%d/%b:%T %z", "2014-11-01T00:40:07+05:00");
 
   app_shutdown();
   return 0;
