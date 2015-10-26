@@ -1,3 +1,118 @@
+3.7.2
+=====
+
+<!-- Mon, 26 Oct 2015 11:18:07 +0100 -->
+
+This is the first maintenance release for the 3.7.x series.
+
+Changes compared to 3.7.1:
+
+Improvements
+------------
+
+ * Added mbox() source.
+   This source can be used to fetch emails from local mbox files:
+   source { mbox("/var/spool/mail/root"); };
+   This will fetch root emails and parse them into a multiline $MSG.
+   Original implementation by Fabien Wernli, I only converted it into
+   an SCL.
+
+ * It is possible to append dynamically options into SCL blocks from now.
+
+ * `concurrent_request` option added to ElasticSearch with default value 1.
+
+ * In elasticsearch destinaton, message_template() argument renamed to 
+   template().
+
+ * SCL added to every Java module (ElasticSearch, Kafka, HDFS).
+
+ * Linux Audit Parser added for parsing key-value pairs produced by 
+   the Linux Audit subsystem.
+
+ * HTTP destination is now able to receive HTTP method as an option.
+   All the supported methods are available
+   (POST, PUT, HEAD, OPTIONS, DELETE, TRACE, GET). 
+
+
+Fixes
+-----
+
+ * In some circumstances syslog-ng mod-journal re-read every already
+   processed messages.
+
+ * When syslog-ng got a reload and the reload process done within 1 second then
+   mafter the reload, syslog-ng stop generating mark-messages.
+
+ * When initialization of a network destination in syslog-ng failed (eg. due to
+   DNS resolution failure) we didn't create a queue which caused message loss.
+
+ * syslog-ng segfaulted on TLS errors when wrong certs was provided
+  (eg.: CA cert with the cert-file directive instead of the server cert).
+
+ * Fixed a continuous spinning case in the file driver, when the
+   destination file is a device (e.g. /dev/stdout).
+
+ * A memory leak in around template functions in grammar fixed.
+
+ * Fixed Python3 support.
+
+ * Fixed Python GIL issue in python destination.
+
+ * From now, instead of skipping doc/ alltogether when ENABLE_MANPAGES is
+   not set, only skip the actual man pages, but handle the rest properly.
+
+ *  Allow overriding the python setup.py options.
+
+    When installing the python modules, allow overriding the options. This
+    is useful for distributions that want to pass extra options. For
+    example, on Debian, we want --install-layout="deb" instead of the
+    --prefix and --root options.
+
+    With this change, the previous behaviour remains the default, but one
+    can supply PYSETUP_OPTIONS on the make command-line to override it.
+
+ * The systemd service file read /etc/default/syslog-ng and /etc/sysconfig/syslog-ng,
+   but didn't do anything with their contents. $SYSLOGNG_OPTS added to ExecStart, so 
+   that the EnvironmentFiles have an effect (at least on Debian).
+
+ * Java support checking fixed (not only jdk is required but also gradle).
+
+ * Memory leak around ping() in Redis fixed.
+
+ * A crash in pdbtool fixed around r_parser_email().
+
+ * Removed cygwin fdlimit statement.
+   Make the default for RLIMIT_NOFILE equal to the current system limits.
+   --fd-limit can still override this, but the default will be configured 
+   based on existing system limits.
+
+ * Fixed BSD year inference.
+   Fixed logic and made clearer the inference of year from bsd-style
+   rfc3164 syslog-messages, which do not include a year.
+
+ * Handle correctly the epoch 0 timestamp.
+   (Previously, syslog-ng cached the zero timestamp and treated 1970 as it was
+    1900.)
+ 
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessarily to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+Adam Arsenault, Adam Istvan Mozes, Andras Mitzki, Avleen Vig,
+Balazs Scheidler, Fabien Wernli, Gergely Czuczy, Gergely Nagy, Gergo Nagy,
+Laszlo Budai, Peter Czanik, Robert Fekete, Saurabh Shukla, Tamas Nagy,
+Tibor Benke, Viktor Juhasz, Vincent Bernat, Wang Long, Zdenek Styblik,
+Zoltan Pallagi.
+
+
 3.7.1
 =====
 
