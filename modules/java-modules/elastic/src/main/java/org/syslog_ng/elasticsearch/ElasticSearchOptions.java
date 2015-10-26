@@ -46,13 +46,13 @@ public class ElasticSearchOptions {
 	public static String SERVER_DEFAULT = "localhost";
 	public static String PORT_DEFAULT = "9300";
 	public static String MESSAGE_TEMPLATE_DEFAULT = "$(format-json --scope rfc5424 --exclude DATE --key ISODATE)";
-	public static String FLUSH_LIMIT_DEFAULT = "1";
+	public static String FLUSH_LIMIT_DEFAULT = "5000";
 	public static String CLIENT_MODE_TRANSPORT = "transport";
 	public static String CLIENT_MODE_NODE = "node";
 	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE));
 
 	public static String CLIENT_MODE_DEFAULT = CLIENT_MODE_TRANSPORT;
-	public static String CONCURRENT_REQUESTS_DEFAULT = "0";
+	public static String CONCURRENT_REQUESTS_DEFAULT = "1";
 
 	private LogDestination owner;
 	private Options options;
