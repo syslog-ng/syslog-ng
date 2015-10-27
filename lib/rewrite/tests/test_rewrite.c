@@ -171,6 +171,15 @@ void test_set_field_exist_and_group_set_literal_string()
   rewrite_teardown(msg);
 }
 
+void test_set_field_honors_time_zone()
+{
+  LogRewrite *test_rewrite = create_rewrite_rule("set('${ISODATE}' value('UTCDATE') time-zone('Asia/Tokyo'));");
+  LogMessage *msg = create_message_with_fields("field1", "a123b", NULL);
+  invoke_rewrite_rule(test_rewrite, msg);
+  assert_msg_field_equals(msg, "UTCDATE", "1970-01-01T08:59:59+09:00", -1, ASSERTION_ERROR("Couldn't use time-zone option in rewrite-set"));
+  rewrite_teardown(msg);
+}
+
 void test_set_field_exist_and_group_set_multiple_fields_with_glob_pattern_literal_string()
 {
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field.*\") );");
@@ -269,6 +278,7 @@ main(int argc, char **argv)
   test_subst_field_exist_and_substring_substituted_only_once_without_global();
   test_subst_field_exist_and_substring_substituted_every_occurence_with_global();
   test_subst_field_exist_and_substring_substituted_when_regexp_matched();
+  test_set_field_honors_time_zone();
   test_set_field_exist_and_group_set_literal_string();
   test_set_field_exist_and_group_set_multiple_fields_with_glob_pattern_literal_string();
   test_set_field_exist_and_group_set_multiple_fields_with_glob_question_mark_pattern_literal_string();
