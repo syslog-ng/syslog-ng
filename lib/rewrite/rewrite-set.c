@@ -34,7 +34,15 @@ struct _LogRewriteSet
 {
   LogRewrite super;
   LogTemplate *value_template;
+  LogTemplateOptions value_template_options;
 };
+
+LogTemplateOptions*
+log_rewrite_set_get_value_template_options(LogRewrite *s)
+{
+  LogRewriteSet *self = (LogRewriteSet*) s;
+  return &self->value_template_options;
+}
 
 static void
 log_rewrite_set_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
@@ -43,7 +51,7 @@ log_rewrite_set_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *
   GString *result;
 
   result = g_string_sized_new(64);
-  log_template_format(self->value_template, *pmsg, NULL, LTZ_LOCAL, 0, NULL, result);
+  log_template_format(self->value_template, *pmsg, &self->value_template_options, LTZ_SEND, 0, NULL, result);
 
   log_msg_make_writable(pmsg, path_options);
   log_msg_set_value(*pmsg, self->super.value_handle, result->str, result->len);
@@ -70,8 +78,20 @@ log_rewrite_set_free(LogPipe *s)
 {
   LogRewriteSet *self = (LogRewriteSet *) s;
 
+  log_template_options_destroy(&self->value_template_options);
   log_template_unref(self->value_template);
   log_rewrite_free_method(s);
+}
+
+gboolean
+log_rewrite_set_init_method(LogPipe *s)
+{
+  LogRewriteSet *self = (LogRewriteSet *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  log_rewrite_init_method(s);
+
+  log_template_options_init(&self->value_template_options, cfg);
+  return TRUE;
 }
 
 LogRewrite *
@@ -82,8 +102,10 @@ log_rewrite_set_new(LogTemplate *new_value, GlobalConfig *cfg)
   log_rewrite_init_instance(&self->super, cfg);
   self->super.super.free_fn = log_rewrite_set_free;
   self->super.super.clone = log_rewrite_set_clone;
+  self->super.super.init = log_rewrite_set_init_method;
   self->super.process = log_rewrite_set_process;
   self->value_template = log_template_ref(new_value);
+  log_template_options_defaults(&self->value_template_options);
 
   return &self->super;
 }
