@@ -88,10 +88,13 @@ log_rewrite_set_init_method(LogPipe *s)
 {
   LogRewriteSet *self = (LogRewriteSet *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  log_rewrite_init_method(s);
-
-  log_template_options_init(&self->value_template_options, cfg);
-  return TRUE;
+  if (log_rewrite_init_method(s))
+    {
+      log_template_options_init(&self->template_options, cfg);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 LogRewrite *
