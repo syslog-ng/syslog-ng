@@ -103,7 +103,7 @@ rewrite_expr
         | KW_SET '(' rewrite_template_content
           {
             last_rewrite = log_rewrite_set_new($3, configuration);
-            last_template_options = log_rewrite_set_get_value_template_options(last_rewrite);
+            last_template_options = log_rewrite_set_get_template_options(last_rewrite);
             log_template_unref($3);
           }
           rewrite_expr_opts ')'                 { $$ = last_rewrite; }
