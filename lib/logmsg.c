@@ -1413,7 +1413,7 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options, AckType ack_ty
            * delayed until log_msg_refcache_stop() is called */
 
           logmsg_cached_acks--;
-          logmsg_cached_abort |= (ACKTYPE_TO_ABORTFLAG(ack_type) == AT_ABORTED ? TRUE : FALSE);
+          logmsg_cached_abort |= ACKTYPE_TO_ABORTFLAG(ack_type);
           return;
         }
 
