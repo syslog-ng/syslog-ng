@@ -26,21 +26,28 @@ testcase(gchar *msg, gchar *timezone, gchar *format, gchar *expected)
   log_msg_set_value(logmsg, log_msg_get_value_handle("MESSAGE"), msg, -1);
   success = log_parser_process(parser, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
 
-  if (!success)
+  if (!success && expected)
     {
       fprintf(stderr, "unable to parse format=%s msg=%s\n", format, msg);
       exit(1);
     }
+  else if (success && !expected)
+    {
+      fprintf(stderr, "successfully parsed but expected failure, format=%s msg=%s\n", format, msg);
+      exit(1);
+    }
+  else if (expected)
+    {
+      /* Convert to ISODATE */
+      templ = compile_template("${ISODATE}", FALSE);
+      log_template_format(templ, logmsg, NULL, LTZ_LOCAL, -1, NULL, res);
+      assert_nstring(res->str, res->len, expected, strlen(expected),
+                     "incorrect date parsed msg=%s format=%s",
+                     msg, format);
+      log_template_unref(templ);
+    }
 
-  /* Convert to ISODATE */
-  templ = compile_template("${ISODATE}", FALSE);
-  log_template_format(templ, logmsg, NULL, LTZ_LOCAL, -1, NULL, res);
-  assert_nstring(res->str, res->len, expected, strlen(expected),
-                 "incorrect date parsed msg=%s format=%s",
-                 msg, format);
-  log_template_unref(templ);
   g_string_free(res, TRUE);
-
   log_pipe_unref(&parser->super);
   log_msg_unref(logmsg);
   return;
