@@ -22,6 +22,7 @@
  */
 
 #include "date-parser.h"
+#include "strptime-tz.h"
 #include "misc.h"
 
 typedef struct _DateParser
@@ -67,13 +68,14 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, glong
 {
   gint current_year;
   struct tm nowtm = *tm;
+  long tm_gmtoff;
+  const gchar *tm_zone = NULL;
   const gchar *remainder;
 
   current_year = tm->tm_year;
   tm->tm_year = 0;
-  tm->tm_gmtoff = 0;
-
-  remainder = strptime(input, self->date_format, tm);
+  tm_gmtoff = -1;
+  remainder = strptime_with_tz(input, self->date_format, tm, &tm_gmtoff, &tm_zone);
   if (!remainder || remainder[0])
     return FALSE;
 
@@ -88,17 +90,8 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, glong
       tm->tm_year = determine_year_for_month(tm->tm_mon, &nowtm);
     }
 
-  /* tm->tm_gmtoff is unfortunately not standard and is not available
-   * on all platforms that we use. For those platforms we should
-   * probably create our own strptime replacement, which returns the
-   * zone offset somewhere.
-   *
-   * On Linux, %z returns the zone offset in tm->tm_gmtoff, '%Z' does
-   * nothing on ancient glibc versions and just skips the value on
-   * 2.21 without doing any conversions.
-   */
-  if (tm->tm_gmtoff)
-    *tm_zone_offset = tm->tm_gmtoff;
+  if (tm_gmtoff != -1)
+    *tm_zone_offset = tm_gmtoff;
   else
     *tm_zone_offset = -1;
 
