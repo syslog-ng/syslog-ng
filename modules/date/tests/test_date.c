@@ -1,35 +1,30 @@
-#include "modules/date/date-parser.h"
-#include <apphook.h>
-#include <libtest/testutils.h>
-#include <libtest/template_lib.h>
-#include <locale.h>
+#include "date-parser.h"
+#include "apphook.h"
+#include "testutils.h"
+#include "template_lib.h"
 
-MsgFormatOptions parse_options;
+#include <locale.h>
+#include <stdlib.h>
 
 static void
 testcase(gchar *msg, gchar *timezone, gchar *format, gchar *expected)
 {
   LogTemplate *templ;
   LogMessage *logmsg;
-  NVTable *nvtable;
-  GlobalConfig *cfg = cfg_new (0x302);
-  LogParser *parser = date_parser_new (cfg);
+  LogParser *parser;
   gboolean success;
-  const gchar *context_id = "test-context-id";
   GString *res = g_string_sized_new(128);
 
+  parser = date_parser_new (configuration);
   if (format != NULL) date_parser_set_format(parser, format);
   if (timezone != NULL) date_parser_set_timezone(parser, timezone);
 
   log_pipe_init(&parser->super);
 
-  parse_options.flags = 0;
   logmsg = log_msg_new_empty();
   logmsg->timestamps[LM_TS_RECVD].tv_sec = 1438793384; /* Wed Aug  5 2015 */
   log_msg_set_value(logmsg, log_msg_get_value_handle("MESSAGE"), msg, -1);
-  nvtable = nv_table_ref(logmsg->payload);
   success = log_parser_process(parser, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
-  nv_table_unref(nvtable);
 
   if (!success)
     {
@@ -39,7 +34,7 @@ testcase(gchar *msg, gchar *timezone, gchar *format, gchar *expected)
 
   /* Convert to ISODATE */
   templ = compile_template("${ISODATE}", FALSE);
-  log_template_format(templ, logmsg, NULL, LTZ_LOCAL, 999, context_id, res);
+  log_template_format(templ, logmsg, NULL, LTZ_LOCAL, -1, NULL, res);
   assert_nstring(res->str, res->len, expected, strlen(expected),
                  "incorrect date parsed msg=%s format=%s",
                  msg, format);
@@ -61,8 +56,6 @@ int main()
   tzset();
 
   configuration = cfg_new(0x0302);
-  msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
 
   /* Various ISO8601 formats */
   testcase("2015-01-26T16:14:49+03:00", NULL, NULL, "2015-01-26T16:14:49+03:00");
