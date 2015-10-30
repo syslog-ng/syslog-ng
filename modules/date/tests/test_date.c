@@ -65,7 +65,7 @@ int main()
   configuration = cfg_new(0x0302);
 
   /* Various ISO8601 formats */
-  testcase("2015-01-26T16:14:49+03:00", NULL, NULL, "2015-01-26T16:14:49+03:00");
+  testcase("2015-01-26T16:14:49+0300", NULL, NULL, "2015-01-26T16:14:49+03:00");
   // testcase("2015-01-26T16:14:49+03:30", NULL, NULL, "2015-01-26T16:14:49+03:30");
   testcase("2015-01-26T16:14:49+0200", NULL, NULL, "2015-01-26T16:14:49+02:00");
   // testcase("2015-01-26T16:14:49Z", NULL, NULL, "2015-01-26T16:14:49+00:00");
@@ -76,8 +76,8 @@ int main()
   /* Apache-like */
   testcase("21/Jan/2015:14:40:07 +0500", NULL, "%d/%b/%Y:%T %z", "2015-01-21T14:40:07+05:00");
 
-  /* Try with additional text at the end */
-  testcase("2015-01-26T16:14:49+03:00 Disappointing log file", NULL, NULL, "2015-01-26T16:14:49+03:00");
+  /* Try with additional text at the end, should fail */
+  testcase("2015-01-26T16:14:49+0300 Disappointing log file", NULL, NULL, NULL);
 
   /* Dates without timezones. America/Phoenix has no DST */
   testcase("Tue, 27 Jan 2015 11:48:46", NULL, "%a, %d %b %Y %T", "2015-01-27T11:48:46+01:00");

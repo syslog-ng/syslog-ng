@@ -67,12 +67,14 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, glong
 {
   gint current_year;
   struct tm nowtm = *tm;
+  const gchar *remainder;
 
   current_year = tm->tm_year;
   tm->tm_year = 0;
   tm->tm_gmtoff = 0;
 
-  if (!strptime(input, self->date_format, tm))
+  remainder = strptime(input, self->date_format, tm);
+  if (!remainder || remainder[0])
     return FALSE;
 
   /* hopefully _parse_timestamp will fill the year information, if
