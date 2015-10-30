@@ -30,8 +30,8 @@ extern int date_debug;
 int date_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword date_keywords[] = {
-  { "date_parser", KW_DATE },
-  { "format",      KW_DATE_FORMAT },
+  { "date_parser", KW_DATE_PARSER },
+  { "format",      KW_FORMAT },
   { NULL }
 };
 
