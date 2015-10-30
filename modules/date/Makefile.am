@@ -11,7 +11,9 @@ modules_date_libdate_la_SOURCES	 = \
 	modules/date/date-parser.h		   \
 	modules/date/date-parser-parser.c	   \
 	modules/date/date-parser-parser.h	   \
-	modules/date/date-parser-plugin.c
+	modules/date/date-parser-plugin.c	   \
+	modules/date/strptime-tz.c	           \
+	modules/date/strptime-tz.h
 
 modules_date_libdate_la_LDFLAGS	 = \
 	$(MODULE_LDFLAGS)

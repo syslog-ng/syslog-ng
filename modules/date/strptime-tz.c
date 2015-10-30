@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2015 Balazs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
 /*	$NetBSD: strptime.c,v 1.49 2015/10/09 17:21:45 christos Exp $	*/
 
 /*-
@@ -29,33 +51,94 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-#if defined(LIBC_SCCS) && !defined(lint)
-__RCSID("$NetBSD: strptime.c,v 1.49 2015/10/09 17:21:45 christos Exp $");
-#endif
-
-#include "namespace.h"
-#include <sys/localedef.h>
-#include <sys/types.h>
-#include <ctype.h>
-#include <locale.h>
-#include <string.h>
+#include "strptime-tz.h"
+#include "timeutils.h"
 #include <time.h>
-#include <tzfile.h>
-#include "private.h"
-#include "setlocale_local.h"
+#include <ctype.h>
+#include <string.h>
+#include <stdint.h>
 
-#ifdef __weak_alias
-__weak_alias(strptime,_strptime)
-__weak_alias(strptime_l, _strptime_l)
-#endif
+typedef unsigned char u_char;
+typedef unsigned int uint;
+
+#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+
+#define TM_YEAR_BASE 1900
+#define TM_SUNDAY	0
+#define TM_MONDAY	1
+#define TM_TUESDAY	2
+#define TM_WEDNESDAY	3
+#define TM_THURSDAY	4
+#define TM_FRIDAY	5
+#define TM_SATURDAY	6
+
+#define TM_JANUARY	0
+#define TM_FEBRUARY	1
+#define TM_MARCH	2
+#define TM_APRIL	3
+#define TM_MAY		4
+#define TM_JUNE		5
+#define TM_JULY		6
+#define TM_AUGUST	7
+#define TM_SEPTEMBER	8
+#define TM_OCTOBER	9
+#define TM_NOVEMBER	10
+#define TM_DECEMBER	11
+
+#define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
+#define isleap_sum(a, b)	isleap((a) % 400 + (b) % 400)
+
+
+typedef struct {
+        const char *abday[7];
+        const char *day[7];
+        const char *abmon[12];
+        const char *mon[12];
+        const char *am_pm[2];
+        const char *d_t_fmt;
+        const char *d_fmt;
+        const char *t_fmt;
+        const char *t_fmt_ampm;
+} _TimeLocale;
+
+static const _TimeLocale _DefaultTimeLocale =
+{
+        /* abbreviated day */
+        {
+                "Sun","Mon","Tue","Wed","Thu","Fri","Sat",
+        },
+	/* days */
+        {
+                "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+                "Friday", "Saturday"
+        },
+	/* abbreviated month */
+        {
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        },
+	/* month */
+        {
+                "January", "February", "March", "April", "May", "June", "July",
+                "August", "September", "October", "November", "December"
+        },
+	/* ampm */
+        {
+                "AM", "PM"
+        },
+        "%a %b %e %H:%M:%S %Y",
+        "%m/%d/%y",
+        "%H:%M:%S",
+        "%I:%M:%S %p"
+};
+
+#define _TIME_LOCALE(loc) \
+	(&_DefaultTimeLocale)
 
 static const u_char *conv_num(const unsigned char *, int *, uint, uint);
 static const u_char *find_string(const u_char *, int *, const char * const *,
 	const char * const *, int);
 
-#define _TIME_LOCALE(loc) \
-    ((_TimeLocale *)((loc)->part_impl[(size_t)LC_TIME]))
 
 /*
  * We do not implement alternate representations. However, we always
@@ -114,14 +197,12 @@ first_wday_of(int yr)
 	    (isleap(yr) ? 6 : 0) + 1) % 7;
 }
 
+/* standard strptime() doesn't support %z / %Z properly on all
+ * platforms, especially those that don't have tm_gmtoff/tm_zone in
+ * their struct tm. This is a slightly modified NetBSD strptime() with
+ * some modifications and explicit zone related parameters. */
 char *
-strptime(const char *buf, const char *fmt, struct tm *tm)
-{
-	return strptime_l(buf, fmt, tm, _current_locale());
-}
-
-char *
-strptime_l(const char *buf, const char *fmt, struct tm *tm, locale_t loc)
+strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtoff, const char **tm_zone)
 {
 	unsigned char c;
 	const unsigned char *bp, *ep;
@@ -212,8 +293,8 @@ literal:
 			new_fmt = _TIME_LOCALE(loc)->d_fmt;
 			state |= S_MON | S_MDAY | S_YEAR;
 		    recurse:
-			bp = (const u_char *)strptime((const char *)bp,
-							    new_fmt, tm);
+			bp = (const u_char *)strptime_with_tz((const char *)bp,
+							      new_fmt, tm, tm_gmtoff, tm_zone);
 			LEGAL_ALT(ALT_E);
 			continue;
 
@@ -338,11 +419,9 @@ literal:
 					continue;
 				}
 
-				if (localtime_r(&sse, tm) == NULL)
-					bp = NULL;
-				else
-					state |= S_YDAY | S_WDAY |
-					    S_MON | S_MDAY | S_YEAR;
+				cached_localtime(&sse, tm);
+				state |= S_YDAY | S_WDAY |
+					S_MON | S_MDAY | S_YEAR;
 			}
 			continue;
 
@@ -425,25 +504,17 @@ literal:
 			if (strncmp((const char *)bp, gmt, 3) == 0 ||
 			    strncmp((const char *)bp, utc, 3) == 0) {
 				tm->tm_isdst = 0;
-#ifdef TM_GMTOFF
-				tm->TM_GMTOFF = 0;
-#endif
-#ifdef TM_ZONE
-				tm->TM_ZONE = gmt;
-#endif
+				*tm_gmtoff = 0;
+				*tm_zone = gmt;
 				bp += 3;
 			} else {
 				ep = find_string(bp, &i,
-					       	 (const char * const *)tzname,
-					       	  NULL, 2);
-				if (ep != NULL) {
+                                                 (const char * const *)tzname,
+                                                 NULL, 2);
+                                if (ep != NULL) {
 					tm->tm_isdst = i;
-#ifdef TM_GMTOFF
-					tm->TM_GMTOFF = -(timezone);
-#endif
-#ifdef TM_ZONE
-					tm->TM_ZONE = tzname[i];
-#endif
+					*tm_gmtoff = -(timezone);
+					*tm_zone = tzname[i];
 				}
 				bp = ep;
 			}
@@ -481,12 +552,8 @@ literal:
 				/*FALLTHROUGH*/
 			case 'Z':
 				tm->tm_isdst = 0;
-#ifdef TM_GMTOFF
-				tm->TM_GMTOFF = 0;
-#endif
-#ifdef TM_ZONE
-				tm->TM_ZONE = utc;
-#endif
+				*tm_gmtoff = 0;
+				*tm_zone = utc;
 				continue;
 			case '+':
 				neg = 0;
@@ -498,43 +565,31 @@ literal:
 				--bp;
 				ep = find_string(bp, &i, nast, NULL, 4);
 				if (ep != NULL) {
-#ifdef TM_GMTOFF
-					tm->TM_GMTOFF = -5 - i;
-#endif
-#ifdef TM_ZONE
-					tm->TM_ZONE = __UNCONST(nast[i]);
-#endif
+					*tm_gmtoff = (-5 - i) * 3600;
+					*tm_zone = __UNCONST(nast[i]);
 					bp = ep;
 					continue;
 				}
 				ep = find_string(bp, &i, nadt, NULL, 4);
 				if (ep != NULL) {
 					tm->tm_isdst = 1;
-#ifdef TM_GMTOFF
-					tm->TM_GMTOFF = -4 - i;
-#endif
-#ifdef TM_ZONE
-					tm->TM_ZONE = __UNCONST(nadt[i]);
-#endif
+					*tm_gmtoff = (-4 - i) * 3600;
+					*tm_zone = __UNCONST(nadt[i]);
 					bp = ep;
 					continue;
 				}
 
 				if ((*bp >= 'A' && *bp <= 'I') ||
 				    (*bp >= 'L' && *bp <= 'Y')) {
-#ifdef TM_GMTOFF
 					/* Argh! No 'J'! */
 					if (*bp >= 'A' && *bp <= 'I')
-						tm->TM_GMTOFF =
-						    ('A' - 1) - (int)*bp;
+						*tm_gmtoff =
+							(('A' - 1) - (int)*bp) * 3600;
 					else if (*bp >= 'L' && *bp <= 'M')
-						tm->TM_GMTOFF = 'A' - (int)*bp;
+						*tm_gmtoff = ('A' - (int)*bp) * 3600;
 					else if (*bp >= 'N' && *bp <= 'Y')
-						tm->TM_GMTOFF = (int)*bp - 'M';
-#endif
-#ifdef TM_ZONE
-					tm->TM_ZONE = utc; /* XXX */
-#endif
+						*tm_gmtoff = ((int)*bp - 'M') * 3600;
+					*tm_zone = utc; /* XXX */
 					bp++;
 					continue;
 				}
@@ -570,12 +625,8 @@ literal:
 			if (neg)
 				offs = -offs;
 			tm->tm_isdst = 0;	/* XXX */
-#ifdef TM_GMTOFF
-			tm->TM_GMTOFF = offs;
-#endif
-#ifdef TM_ZONE
-			tm->TM_ZONE = utc;	/* XXX */
-#endif
+			*tm_gmtoff = (offs * 3600) / 100;
+			*tm_zone = utc;	/* XXX */
 			continue;
 
 		/*
