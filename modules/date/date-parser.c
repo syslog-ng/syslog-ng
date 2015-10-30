@@ -61,61 +61,108 @@ date_parser_init(LogPipe *s)
   return log_parser_init_method(s);
 }
 
+/* NOTE: tm is initialized with the current time and date */
 static gboolean
-_parse_timestamp(DateParser *self, const gchar *input, struct tm *tm)
+_parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, glong *tm_zone_offset, const gchar *input)
 {
-  memset(tm, 0, sizeof(struct tm));
+  gint current_year;
+  struct tm nowtm = *tm;
+
+  current_year = tm->tm_year;
+  tm->tm_year = 0;
+  tm->tm_gmtoff = 0;
+
   if (!strptime(input, self->date_format, tm))
     return FALSE;
+
+  /* hopefully _parse_timestamp will fill the year information, if
+   * not, we are going to need the received year to find it out
+   * heuristically */
+
+  if (tm->tm_year == 0)
+    {
+      /* no year information in the timestamp, deduce it from the current year */
+      tm->tm_year = current_year;
+      tm->tm_year = determine_year_for_month(tm->tm_mon, &nowtm);
+    }
+
+  /* tm->tm_gmtoff is unfortunately not standard and is not available
+   * on all platforms that we use. For those platforms we should
+   * probably create our own strptime replacement, which returns the
+   * zone offset somewhere.
+   *
+   * On Linux, %z returns the zone offset in tm->tm_gmtoff, '%Z' does
+   * nothing on ancient glibc versions and just skips the value on
+   * 2.21 without doing any conversions.
+   */
+  if (tm->tm_gmtoff)
+    *tm_zone_offset = tm->tm_gmtoff;
+  else
+    *tm_zone_offset = -1;
+
+  return TRUE;
+}
+
+static void
+_adjust_tvsec_to_move_it_into_given_timezone(LogStamp *timestamp, gint normalized_hour, gint unnormalized_hour)
+{
+  timestamp->tv_sec = timestamp->tv_sec
+    + get_local_timezone_ofs(timestamp->tv_sec)
+    - (normalized_hour - unnormalized_hour) * 3600
+    - timestamp->zone_offset;
+}
+
+static glong
+_get_target_zone_offset(DateParser *self, glong tm_zone_offset, time_t now)
+{
+  if (tm_zone_offset != -1)
+    return tm_zone_offset;
+  else if (self->date_tz_info)
+    return time_zone_info_get_offset(self->date_tz_info, now);
+  else
+    return get_local_timezone_ofs(now);
+}
+
+static gboolean
+_convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, glong tm_zone_offset, LogStamp *target)
+{
+  gint unnormalized_hour;
+
+  target->zone_offset = _get_target_zone_offset(self, tm_zone_offset, now);
+
+  /* NOTE: mktime changes struct tm in the call below! For instance it
+   * changes the hour value. (in daylight saving changes, and when it
+   * is out of range).
+   *
+   * We save the hour prior to this conversion, as it is needed when
+   * converting the timestamp from our local timezone to the specified
+   * one. */
+
+  /* FIRST: We convert the timestamp as it was in our local time zone. */
+  unnormalized_hour = tm->tm_hour;
+  target->tv_sec = cached_mktime(tm);
+
+  /* SECOND: adjust tv_sec as if we converted it according to our timezone. */
+  _adjust_tvsec_to_move_it_into_given_timezone(target, tm->tm_hour, unnormalized_hour);
   return TRUE;
 }
 
 static gboolean
-_(DateParser *self, LogMessage *msg, const gchar *input)
+_convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, const gchar *input)
 {
   struct tm tm;
+  glong tm_zone_offset;
 
-  if (!_parse_timestamp(self, input, &tm))
+  /* initialize tm with current date, this fills in dst and other
+   * fields (even non-standard ones) */
+
+  cached_localtime(&now, &tm);
+
+  if (!_parse_timestamp_and_deduce_missing_parts(self, &tm, &tm_zone_offset, input))
     return FALSE;
 
-  /* The date may be missing. Try to use the current date as we can't
-   * do anything better... Don't try to be too smart with new year
-   * eve. */
-  if (tm.tm_year == 0)
-    {
-      /* Grab the year from the received timestamp */
-      struct tm nowtm;
-      LogStamp received = msg->timestamps[LM_TS_RECVD];
-      cached_gmtime(&received.tv_sec, &nowtm);
-      tm.tm_year = nowtm.tm_year;
-
-      /* Adjust the year if needed. Therefore, we don't need to care
-       * too much about timezones. */
-      if (tm.tm_mon > nowtm.tm_mon + 1)
-        tm.tm_year--;
-    }
-
-  /* mktime handles timezones horribly. It considers the time to be
-     local and also alter the parsed timezone. Try to fix all that. */
-  msg->timestamps[LM_TS_STAMP].tv_usec = 0;
-  if (!self->date_tz_info)
-    {
-      msg->timestamps[LM_TS_STAMP].zone_offset = tm.tm_gmtoff;
-      msg->timestamps[LM_TS_STAMP].tv_sec = mktime (&tm) - msg->timestamps[LM_TS_STAMP].zone_offset - timezone;
-    }
-  else
-    {
-      msg->timestamps[LM_TS_STAMP].tv_sec = mktime (&tm) - timezone;
-      msg->timestamps[LM_TS_STAMP].zone_offset =
-        time_zone_info_get_offset(self->date_tz_info,
-                                  msg->timestamps[LM_TS_STAMP].tv_sec);
-      if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
-        {
-          msg->timestamps[LM_TS_STAMP].zone_offset =
-            get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
-        }
-      msg->timestamps[LM_TS_STAMP].tv_sec -= msg->timestamps[LM_TS_STAMP].zone_offset;
-    }
+  if (!_convert_struct_tm_to_logstamp(self, now, &tm, tm_zone_offset, target))
+    return FALSE;
 
   return TRUE;
 }
@@ -128,11 +175,17 @@ date_parser_process(LogParser *s,
                     gsize input_len)
 {
   DateParser *self = (DateParser *) s;
-  LogMessage *msg = log_msg_make_writable (pmsg, path_options);
-  gchar *input_with_nul;
+  LogMessage *msg = log_msg_make_writable(pmsg, path_options);
 
-  APPEND_ZERO(input_with_nul, input, input_len);
-  return _(self, msg, input_with_nul);
+  /* this macro ensures zero termination by copying input to a
+   * g_alloca()-d buffer if necessary. In most cases it's not though.
+   */
+
+  APPEND_ZERO(input, input, input_len);
+  return _convert_timestamp_to_logstamp(self,
+                                        msg->timestamps[LM_TS_RECVD].tv_sec,
+                                        &msg->timestamps[LM_TS_STAMP],
+                                        input);
 }
 
 static LogPipe *
@@ -166,13 +219,13 @@ LogParser *
 date_parser_new(GlobalConfig *cfg)
 {
   DateParser *self = g_new0(DateParser, 1);
+
   log_parser_init_instance(&self->super, cfg);
   self->super.super.init = date_parser_init;
   self->super.process = date_parser_process;
   self->super.super.clone = date_parser_clone;
   self->super.super.free_fn = date_parser_free;
 
-  self->date_format = g_strdup("%FT%T%z");
-
+  date_parser_set_format(&self->super, "%FT%T%z");
   return &self->super;
 }
