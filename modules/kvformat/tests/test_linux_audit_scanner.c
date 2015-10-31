@@ -112,6 +112,10 @@ test_linux_audit_scanner_audit_style_hex_dump_is_decoded(void)
   kv_scanner_input(kv_scanner, "proctitle=2F62696E2F7368002D65002F6574632F696E69742E642F706F737466697800737461747573");
   assert_next_kv_is("proctitle", "/bin/sh\t-e\t/etc/init.d/postfix\tstatus");
   assert_no_more_tokens();
+
+  kv_scanner_input(kv_scanner, "a1=2F62696E2F7368202D6C");
+  assert_next_kv_is("a1", "/bin/sh -l");
+  assert_no_more_tokens();
 }
 
 static void

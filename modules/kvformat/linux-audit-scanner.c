@@ -104,6 +104,9 @@ _is_field_hex_encoded(const gchar *field)
 {
   gint i;
 
+  if (field[0] == 'a' && isdigit(field[1]))
+    return TRUE;
+
   for (i = 0; hexcoded_fields[i]; i++)
     {
       if (strcmp(hexcoded_fields[i], field) == 0)
