@@ -124,7 +124,7 @@ _generate_message_inheriting_properties_from_the_entire_context(CorrellationCont
 }
 
 static LogMessage *
-_generate_default_message(gint inherit_mode, LogMessage *triggering_msg)
+_generate_default_message(SyntheticMessageInheritMode inherit_mode, LogMessage *triggering_msg)
 {
   switch (inherit_mode)
     {
@@ -139,7 +139,7 @@ _generate_default_message(gint inherit_mode, LogMessage *triggering_msg)
 }
 
 static LogMessage *
-_generate_default_message_from_context(gint inherit_mode, CorrellationContext *context)
+_generate_default_message_from_context(SyntheticMessageInheritMode inherit_mode, CorrellationContext *context)
 {
   LogMessage *triggering_msg = correllation_context_get_last_message(context);
 
@@ -150,7 +150,7 @@ _generate_default_message_from_context(gint inherit_mode, CorrellationContext *c
 }
 
 LogMessage *
-synthetic_message_generate_with_context(SyntheticMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer)
+synthetic_message_generate_with_context(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode, CorrellationContext *context, GString *buffer)
 {
   LogMessage *genmsg;
 
@@ -176,7 +176,7 @@ synthetic_message_generate_with_context(SyntheticMessage *self, gint inherit_mod
 }
 
 LogMessage *
-synthetic_message_generate_without_context(SyntheticMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer)
+synthetic_message_generate_without_context(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode, LogMessage *msg, GString *buffer)
 {
   LogMessage *genmsg;
 

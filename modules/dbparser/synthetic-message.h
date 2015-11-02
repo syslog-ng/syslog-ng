@@ -32,7 +32,7 @@ typedef enum
   RAC_MSG_INHERIT_NONE,
   RAC_MSG_INHERIT_LAST_MESSAGE,
   RAC_MSG_INHERIT_CONTEXT
-} PDBActionMessageInheritMode;
+} SyntheticMessageInheritMode;
 
 typedef struct _SyntheticMessage
 {
@@ -40,8 +40,8 @@ typedef struct _SyntheticMessage
   GPtrArray *values;
 } SyntheticMessage;
 
-LogMessage *synthetic_message_generate_without_context(SyntheticMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer);
-LogMessage *synthetic_message_generate_with_context(SyntheticMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer);
+LogMessage *synthetic_message_generate_without_context(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode, LogMessage *msg, GString *buffer);
+LogMessage *synthetic_message_generate_with_context(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode, CorrellationContext *context, GString *buffer);
 
 
 void synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer);
