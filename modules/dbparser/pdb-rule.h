@@ -38,7 +38,7 @@ struct _PDBRule
   gchar *rule_id;
   SyntheticMessage msg;
   gint context_timeout;
-  PDBCorrellationScope context_scope;
+  CorrellationScope context_scope;
   LogTemplate *context_id_template;
   GPtrArray *actions;
 };

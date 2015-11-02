@@ -36,7 +36,7 @@ typedef enum
   RCS_PROGRAM,
   /* correllation happens for the same process only, e.g. messages from a different program/pid are not considered */
   RCS_PROCESS,
-} PDBCorrellationScope;
+} CorrellationScope;
 
 
 /* Our state hash contains a mixed set of values, they are either
@@ -51,12 +51,12 @@ typedef struct _CorrellationKey
 
   /* we use guint8 to limit the size of this structure, we can have 10s of
    * thousands of this structure present in memory */
-  guint8 /* PDBCorrellationScope */ scope;
+  guint8 /* CorrellationScope */ scope;
 } CorrellationKey;
 
 
 guint correllation_key_hash(gconstpointer k);
 gboolean correllation_key_equal(gconstpointer k1, gconstpointer k2);
-void correllation_key_setup(CorrellationKey *self, PDBCorrellationScope scope, LogMessage *msg, gchar *session_id);
+void correllation_key_setup(CorrellationKey *self, CorrellationScope scope, LogMessage *msg, gchar *session_id);
 
 #endif
