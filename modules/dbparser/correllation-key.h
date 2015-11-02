@@ -38,6 +38,7 @@ typedef enum
   RCS_PROCESS,
 } CorrellationScope;
 
+gint correllation_key_lookup_scope(const gchar *scope);
 
 /* Our state hash contains a mixed set of values, they are either
  * correllation contexts or the state entry required by rate limiting.

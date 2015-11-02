@@ -108,3 +108,17 @@ correllation_key_setup(CorrellationKey *self, CorrellationScope scope, LogMessag
       break;
     }
 }
+
+gint
+correllation_key_lookup_scope(const gchar *scope)
+{
+  if (strcasecmp(scope, "global") ==  0)
+    return RCS_GLOBAL;
+  else if (strcasecmp(scope, "host") == 0)
+    return RCS_HOST;
+  else if (strcasecmp(scope, "program") == 0)
+    return RCS_PROGRAM;
+  else if (strcasecmp(scope, "process") == 0)
+    return RCS_PROCESS;
+  return -1;
+}
