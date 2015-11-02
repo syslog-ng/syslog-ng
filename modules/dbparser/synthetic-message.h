@@ -53,4 +53,6 @@ void synthetic_message_deinit(SyntheticMessage *self);
 SyntheticMessage *synthetic_message_new(void);
 void synthetic_message_free(SyntheticMessage *self);
 
+gint synthetic_message_lookup_inherit_mode(const gchar *inherit_mode);
+
 #endif

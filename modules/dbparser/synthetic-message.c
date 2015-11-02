@@ -235,3 +235,15 @@ synthetic_message_free(SyntheticMessage *self)
   synthetic_message_deinit(self);
   g_free(self);
 }
+
+gint
+synthetic_message_lookup_inherit_mode(const gchar *inherit_mode)
+{
+  if (strcasecmp(inherit_mode, "none") == 0)
+    return RAC_MSG_INHERIT_NONE;
+  else if (strcasecmp(inherit_mode, "last-message") == 0)
+    return RAC_MSG_INHERIT_LAST_MESSAGE;
+  else if (strcasecmp(inherit_mode, "context") == 0)
+    return RAC_MSG_INHERIT_CONTEXT;
+  return -1;
+}
