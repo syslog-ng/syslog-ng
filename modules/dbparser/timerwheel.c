@@ -34,9 +34,9 @@ struct _TWEntry
 };
 
 void
-tw_entry_prepend(struct iv_list_head *head, TWEntry *new)
+tw_entry_add(struct iv_list_head *head, TWEntry *new)
 {
-  iv_list_add(&new->list, head);
+  iv_list_add_tail(&new->list, head);
 }
 
 void
@@ -166,13 +166,13 @@ timer_wheel_add_timer_entry(TimerWheel *self, TWEntry *entry)
         }
 
       slot = (entry->target & level->mask) >> level->shift;
-      tw_entry_prepend(&level->slots[slot], entry);
+      tw_entry_add(&level->slots[slot], entry);
       tw_entry_list_validate(&level->slots[slot]);
       break;
     }
   if (level_ndx >= G_N_ELEMENTS(self->levels))
     {
-      tw_entry_prepend(&self->future, entry);
+      tw_entry_add(&self->future, entry);
       tw_entry_list_validate(&self->future);
     }
 
@@ -248,7 +248,7 @@ timer_wheel_cascade(TimerWheel *self)
 
           tw_entry_unlink(entry);
           tw_entry_list_validate(source_head);
-          tw_entry_prepend(target_head, entry);
+          tw_entry_add(target_head, entry);
           tw_entry_list_validate(target_head);
         }
 
@@ -274,7 +274,7 @@ timer_wheel_cascade(TimerWheel *self)
               /* unlink current entry */
               tw_entry_unlink(entry);
               tw_entry_list_validate(source_head);
-              tw_entry_prepend(target_head, entry);
+              tw_entry_add(target_head, entry);
               tw_entry_list_validate(target_head);
             }
         }
