@@ -374,9 +374,7 @@ afprogram_dd_deinit(LogPipe *s)
       self->writer = NULL;
     }
 
-  if (!log_dest_driver_deinit_method(s))
-    return FALSE;
-  return TRUE;
+  return log_dest_driver_deinit_method(s);
 }
 
 static void
