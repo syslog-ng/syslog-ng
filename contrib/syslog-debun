@@ -13,27 +13,29 @@
 default_debug_params="-Fedv --enable-core"
 default_ldebug_params="-Fev"
 default_pcap_params="port 514 or port 601 or port 53"
-extras=()
-sngallpids=()
+extras=""
+sngallpids=""
 debugpid=none
 debugtailpid=none
 pcappid=none
-tracepids=()
+tracepids=""
 ipconfig="ip addr"
 routeconfig="netstat -nr"
 netstatnlp="netstat -nlp"
+netstatsu="netstat -su"
 binprefix=/opt/syslog-ng
 workdir=/tmp
 lsof="lsof -p"
 pscmd="ps auxwwwwwf"
+pseao="ps -eao"
 dfk="df -k"
 dfh="df -h"
 duks="du -ks"
 mount=mount
 varlimit=1000
-myplimit () { echo "Plimit query is not supported on this platform" >&2 ; }
-distpkgoffile () { echo "Package file search is not supported (yet) on this platform" >&2 ; }
-distpkgstatus () { echo "Package status query is not (yet) supported on this platform" >&2 ; }
+myplimit () { echo "Plimit query is not supported on this platform" >&3 ; }
+distpkgoffile () { echo "Package file search is not supported (yet) on this platform" >&3 ; }
+distpkgstatus () { echo "Package status query is not (yet) supported on this platform" >&3 ; }
 selftar="tar cf - ."
 showdep="dpkg -S"
 pcapifparm=-i
@@ -47,6 +49,7 @@ service_stop="/etc/init.d/syslog-ng stop"
 service_start="/etc/init.d/syslog-ng start"
 service_status="/etc/init.d/syslog-ng status"
 checkpid () { [ -d /proc/"$1" ]; }
+mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "\<$tailpid\>" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
 
 ###
 ### Show Usage
@@ -82,7 +85,7 @@ Syscall tracing options:
   -s		Trace syslog
   -t [sec]	Timeout for noninteractive debug
 END
-[ -n "$2" ] && echo -e "\nError: $2\n"
+[ -n "$2" ] && printf "\nError: %s\n\n" "$2"
 exit ${1:-0}
 }
 
@@ -158,24 +161,24 @@ confdir=${binprefix}/etc
 
 debun_init () {
 	#Create temp dir, to place files into
-	host=$(uname -n)
-	date=$(date '+%Y-%m-%d_%H:%M')
-	if hash mktemp ; then
-		tmpdir=$(mktemp -d ${workdir}/syslog.debun.${host}.${date}.XXX)
-	else
-		tmpdir=${workdir}/syslog.debun.${host}.${date}.$$
-		mkdir $tmpdir
-	fi
-	chmod 700 $tmpdir
+	host=`uname -n`
+	date=`date '+%Y-%m-%d_%H:%M'`
+	tmpdir=${workdir}/syslog.debun.${host}.${date}.$$
+	( umask 077 ; mkdir ${tmpdir} )
+	[ -d "$tmpdir" ] || { printf "Could not create a temp directory\n" >&2 ; exit 1 ; }
+	[ -z "$tmpdir" ] && { printf "Could not create a temp directory\n" >&2 ; exit 1 ; }
 
 	# Start redirections
 
 	#exec 3>&1 >${tmpdir}/syslog-ng.debun.txt 2>${tmpdir}/syslog-ng.debun.txt
 	exec 3>&1 >${tmpdir}/syslog-ng.debun.txt 2>&1
 	echo "Syslog-NG DEBUg buNdle generator"
+	sync
+	while [ ! -f ${tmpdir}/syslog-ng.debun.txt ] ; do sleep 1 ; done
+	#nohup tail -f ${tmpdir}/syslog-ng.debun.txt >&3 &
 	tail -f ${tmpdir}/syslog-ng.debun.txt >&3 &
 	tailpid=$!
-	disown
+	#disown
 }
 
 debun_finish_debug () {
@@ -186,7 +189,8 @@ debun_finish_debug () {
 		checkpid ${debugpid} && sleep 1
 		checkpid ${debugpid} && echo "I gave up... debugger pid doesn't die"
 	fi
-	if [ -n "${debugpid}" ]; then
+	if [ "${debugpid}" != "none" ]; then
+		printf 'Debugpid: "%s"\n' "${debugpid}"
 		$service_start
 	fi
 	if checkpid ${debugtailpid} ; then
@@ -196,15 +200,15 @@ debun_finish_debug () {
 		kill -INT $pcappid
 	fi
 	if [ -n "$tracing" ]; then
-		for i in ${tracepids[*]} ; do
+		for i in ${tracepids} ; do
 			checkpid $i && kill -INT $i
 		done
 		sleep 2
-		for i in ${tracepids[*]} ; do
+		for i in ${tracepids} ; do
 			checkpid $1 && kill -9 $i 2>/dev/null
 		done
 	fi
-	wait
+	mywait
 }
 
 debun_do_tarball () {
@@ -214,20 +218,24 @@ debun_do_tarball () {
 	$selftar | gzip -9 >${tmpdir}.tgz
 	cd ..
 	rm -r "${tmpdir}"
+	printf "Terminating live message watcher: "
+	sync
 	kill $tailpid
+	sync
+	sleep 0.1
 }
 
 debun_final() {
 	debun_finish_debug
 	$service_status >${tmpdir}/svc.post
-	echo -e "\nDebug Bundle generation: Done."
+	printf "\nDebug Bundle generation: Done.\n"
 	exec >&3 2>&1
 	debun_do_tarball
-	echo "Your debug bundle wil be at ${tmpdir}.tgz"
+	printf "\n\nYour debug bundle wil be at %s.tgz\n" "$tmpdir"
 }
 
 add_extra () {
-	extras=( "${extras[@]}" "$@" )
+	extras="${extras}${extras:+ }$@"
 }
 
 ###
@@ -237,48 +245,60 @@ getparent () {
 	local self
 	local parent
 	local ret
+	local tmpfile=${tmpdir}/getparent.$$.txt
+	$pseao pid,ppid >$tmpfile
+	# Default value, learned after getchilds()'s forkbomb case
+	unset ret
 	while read self parent ; do
-		[ "$1" == "$self" ] || continue
+		[ "$1" = "$self" ] || continue
 		ret=$parent
-	done < <( ps -eao pid,ppid )
+	done < $tmpfile
+	rm $tmpfile
 	echo $ret
 }
 
 getchilds () {
-	local -a childs
+	local childs
 	local dummy
 	local child
+	local tmpfile=${tmpdir}/getchilds.$$.txt
+	$pseao ppid,pid >$tmpfile
+	# Need to initialize it with a default value, since dash allows to inherit the caller's value, even if it's a local variable
+	unset childs
 	while read dummy child ; do
-		[ "$1" == "$dummy" ] || continue
-		childs=( ${childs[*]} $child )
-	done < <( ps -eao ppid,pid )
-	echo ${childs[*]}
+		[ "$1" = "$dummy" ] || continue
+		childs="${childs}${childs:+ }$child"
+	done < $tmpfile
+	rm $tmpfile
+	echo ${childs}
 }
 
 getallchilds () {
-	local -a childs
-	local -a subchilds
-	childs=( $(getchilds $1) )
+	local childs
+	local subchilds
+	childs="`getchilds $1`"
 	local i
-	for i in ${childs[*]} ; do
-		subchilds=( ${subchilds[*]} $(getallchilds $i) )
+	# Default value, learned after getchilds()'s forkbomb case
+	unset subchilds
+	for i in ${childs} ; do
+		subchilds="${subchilds}${subchilds:+ }`getallchilds $i`"
 	done
-	echo ${childs[*]} ${subchilds[*]}
+	echo ${childs} ${subchilds}
 }
 
 acquire_system_info () {
-	echo -n "System's full uname: "
+	printf "System's full uname: "
 	uname -a | tee ${tmpdir}/sys.uname
 }
 
 acquire_network_info () {
-	echo -n "Getting network-interface information: "
+	printf "Getting network-interface information: "
 	if $ipconfig >${tmpdir}/net.ip ; then
 		echo "Success"
 	else
 		echo "Failed"
 	fi
-	echo -n "Getting network routes: "
+	printf "Getting network routes: "
 	if $routeconfig >${tmpdir}/net.route ; then
 		echo "Success"
 	else
@@ -313,7 +333,7 @@ acquire_system_other_info () {
 
 ### Here comes the general info acquiring parts
 acquire_general_info () {
-	echo -e "\nStart general info collection"
+	printf "\nStart general info collection\n"
 	acquire_system_info
 	[ -n "$privacy_mode" ] && return
 	acquire_network_info
@@ -333,21 +353,24 @@ acquire_syslog_pids () {
 	echo 'Old "getsyslogpids":' >${tmpdir}/syslog.pids
 	$getsyslogpids >>${tmpdir}/syslog.pids
 	if [ -r "${vardir}/run/syslog-ng.pid" ]; then
-		sngpid=$(cat ${vardir}/run/syslog-ng.pid)
+		sngpid=`cat ${vardir}/run/syslog-ng.pid`
 	else
 		# Handle when fhs is "linux"-like
-		sngpid=$(cat ${vardir}/syslog-ng.pid)
+		sngpid=`cat ${vardir}/syslog-ng.pid`
 	fi
-	ppid=$(getparent $sngpid)
-	sngallpids=( $(getallchilds $sngpid) )
-	echo "SVpid: $ppid SNGpid: $sngpid Chpids: ${sngallpids[*]}" >>${tmpdir}/syslog.pids
+	ppid=`getparent $sngpid`
+	sngallpids="`getallchilds $sngpid`"
+	echo "SVpid: $ppid SNGpid: $sngpid Chpids: ${sngallpids}" >>${tmpdir}/syslog.pids
 	tail -1 ${tmpdir}/syslog.pids
 	if [ -n "$ppid" ]; then
-		sngallpids=( $ppid $sngpid ${sngallpids[*]} )
+		sngallpids="$ppid $sngpid ${sngallpids}"
 	else
-		sngallpids=( $( $getsyslogpids ) )
+		sngallpids="` $getsyslogpids `"
 	fi
-	ps -l -f -p "${sngallpids[*]}" >>${tmpdir}/syslog.pids
+	# drop out the unneeded white spaces, since that disturb the ps command
+	sngallpids=`echo ${sngallpids}`
+	printf 'ps -l -f -p "%s"\n' "${sngallpids}" >>${tmpdir}/syslog.pids
+	ps -l -f -p "${sngallpids}" >>${tmpdir}/syslog.pids
 	$service_status >${tmpdir}/svc.pre
 }
 
@@ -357,7 +380,7 @@ acquire_syslog_info () {
 	head -1 ${tmpdir}/syslog.version
 	${syslogbin}-ctl stats > ${tmpdir}/syslog.stats
 	echo ${syslogbin}-ctl stats
-	for i in ${sngallpids[*]} ; do 
+	for i in ${sngallpids} ; do 
 		$lsof $i >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
 	done
@@ -372,8 +395,8 @@ acquire_syslog_var () {
 	if [ "$vardu" -lt "$varlimit" ] ; then
 		find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
 	else
-		echo "Size of $vardir is larger than $varlimit kilobytes."
-		echo -n "Do you really want to copy it's contents? Type 'YES' with all capitals: "
+		printf "Size of $vardir is larger than $varlimit kilobytes.\n"
+		printf "Do you really want to copy it's contents? Type 'YES' with all capitals: "
 		read ans
 		[ "$ans" = "YES" ] && find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
 	fi
@@ -385,20 +408,21 @@ acquire_syslog_ldinfo () {
 		x="${x#*=>}"
 		x="/${x#*/}"
 		x="${x%% (*}"
-		[ "${x:0:2}" != "/ " ] && echo "$x" >>${tmpdir}/syslog.ldfiles
+		#[ "${x:0:2}" != "/ " ] && echo "$x" >>${tmpdir}/syslog.ldfiles
+		[ "${x}" != "/ " ] && echo "$x" >>${tmpdir}/syslog.ldfiles
 	done <${tmpdir}/syslog.ldd 
-	for i in $(cat ${tmpdir}/syslog.ldfiles ) ; do
+	for i in `cat ${tmpdir}/syslog.ldfiles ` ; do
 		distpkgoffile $i >>${tmpdir}/syslog.ldpkg
 	done
 	sort <${tmpdir}/syslog.ldpkg | uniq >${tmpdir}/syslog.ldpkg.u
 	mv ${tmpdir}/syslog.ldpkg.u ${tmpdir}/syslog.ldpkg
-	for i in $(cat ${tmpdir}/syslog.ldpkg ) ; do
+	for i in `cat ${tmpdir}/syslog.ldpkg ` ; do
 		distpkgstatus $i >>${tmpdir}/syslog.ldinfos
 	done
 }
 
 acquire_syslog_all () {
-	echo -e "\nStart Syslog-specific info collection"
+	printf "\nStart Syslog-specific info collection\n"
 	acquire_syslog_config
 	acquire_syslog_pids
 	acquire_syslog_info
@@ -407,7 +431,7 @@ acquire_syslog_all () {
 }
 
 acquire_syslog_nprv () {
-	echo -e "\nStart Syslog-specific info collection (light)"
+	printf "\nStart Syslog-specific info collection (light)\n"
 	acquire_syslog_pids
 	acquire_syslog_info
 	acquire_syslog_ldinfo
@@ -426,8 +450,8 @@ fhs_set_unix () {
 ### Here comes the linux & distro specific parts
 
 debun_extra_debian () {
-	echo -e "\nDebian specific checks"
-	echo "Check package files integrity"
+	printf "\nDebian specific checks\n"
+	printf "Check package files integrity\n"
 	cd /
 	md5sum --quiet -c /var/lib/dpkg/info/syslog-ng*.md5sums && echo Package files are intact
 	echo "list syslog-related packages"
@@ -435,19 +459,22 @@ debun_extra_debian () {
 	unset distpkgoffile
 	unset distpkgstatus
 	distpkgoffile () {
-		read x < <(dpkg -S $1)
+		local tmpfile=${tmpdir}/distpkgoffile.$$.tmp
+		dpkg -S $1 >$tmpfile
+		read x < $tmpfile
+		rm $tmpfile
 		echo "${x%: /*}"
 	}
 	distpkgstatus () {
-		echo "@@@Package info for: $1"
+		printf "@@@Package info for: %s\n" "$1"
 		dpkg -s $1
-		echo ""
+		printf "\n"
 	}
-	syslogrealbin=${binprefix}/sbin/syslog-ng
+	#syslogrealbin=${binprefix}/sbin/syslog-ng
 }
 
 debun_extra_redhat () {
-	echo -e "\nRedhat specific checks"
+	printf "\nRedhat specific checks\n"
 	echo "Check package files integrity"
 	rpm -V syslog-ng-pe && echo Package files are intact
 	echo "list syslog-related packages"
@@ -455,13 +482,16 @@ debun_extra_redhat () {
 	unset distpkgoffile
 	unset distpkgstatus
 	distpkgoffile () {
-		read x < <(rpm -qf $1)
+		local tmpfile=${tmpdir}/distpkgoffile.$$.tmp
+		rpm -qf $1 >$tmpfile
+		read x < $tmpfile
+		rm $tmpfile
 		echo "$x"
 	}
 	distpkgstatus () {
-		echo "@@@Package info for: $1"
+		printf "@@@Package info for: %s\n" "$1"
 		rpm -qi $1
-		echo ""
+		printf "\n"
 	}
 }
 
@@ -478,7 +508,7 @@ debun_linux () {
 	add_extra debun_extra_genlinux
 	if  hash lsb_release ; then
 		lsb_release -a | tee ${tmpdir}/lsb.all
-		dist=$(lsb_release -si)
+		dist=`lsb_release -si`
 		if [ "$dist" = "Debian" ]; then
 			add_extra debun_extra_debian 
 		elif [ "$dist" = "Ubuntu" ]; then
@@ -518,10 +548,10 @@ debun_solaris () {
 	myplimit () { plimit $1 ; }
 	tcpdump="snoop -P -q -o"
 	pcapifparm="-d"
-	mypidof () { ps -eao pid,comm | while read pid bin ; do [ \"$bin\" = \"$1\" ] && echo $pid ; done; }
+	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done; }
 	syslogrealbin=${binprefix}/sbin/syslog-ng
 	getsyslogpids="mypidof ${syslogrealbin}"
-	free () { prtconf |grep Mem ; echo -n Pagesize:\  ; pagesize -a ; }
+	free () { prtconf |grep Mem ; printf Pagesize:\  ; pagesize -a ; }
 	netstatnlp="netstat -na"
 	pkginfo |grep -i syslog > ${tmpdir}/pkg.packages
 	unset distpkgoffile
@@ -531,9 +561,9 @@ debun_solaris () {
 		perl -n -e 'if ( /^Referenced by the/ ) { $p=1; } elsif (/:/ or /^$/ ) { $p=0; } elsif ($p) { s/^\s+//; print ; } else { print "FAIL:".$_; }'
 	}
 	distpkgstatus () {
-		echo "@@@Package info for: $1"
+		printf "@@@Package info for: %s\n" "$1"
 		pkginfo -l $1
-		echo ""
+		printf "\n"
 	}
 	if hash svcadm ; then
 		service_stop="svcadm disable syslog-ng"
@@ -542,8 +572,74 @@ debun_solaris () {
 	fi
 }
 
+debun_extra_freebsd() {
+	:
+}
+
+debun_freebsd() {
+	add_extra debun_extra_freebsd
+	netstatnlp="sockstat"
+	ipconfig="ifconfig -a"
+	pseao="ps xao"
+	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done; }
+	getsyslogpids="mypidof syslog-ng"
+	service_stop="/etc/rc.d/syslog-ng stop"
+	service_start="/etc/rc.d/syslog-ng start"
+	service_status="/etc/rc.d/syslog-ng status"
+	distpkgoffile () { : ; }
+	distpkgstatus () { : ; }
+}
+
+debun_extra_hpux () {
+	sysdef >${tmpdir}/sys.sysdef
+	swlist >${tmpdir}/sys.swlist
+}
+
 debun_hpux () {
-echo "Not (yet) supported platform" >&2
+	add_extra debun_extra_hpux
+	netstatsu="netstat -s"
+	netstatnlp="netstat -na"
+	ipconfig="netstat -ni"
+	dfh="df"
+	service_stop="/sbin/init.d/syslog-ng stop"
+	service_start="/sbin/init.d/syslog-ng start"
+	service_status="/sbin/init.d/syslog-ng status"
+	mypidof () { ps -ef | while read user pid ppid c stimem stimed tty time cmd ; do
+		if [ "${stimem%:*}" = "${stimem}" ]
+		then
+			[ "${comm%% *}" = "$1" ] && echo $pid
+		else
+			[ "${time}" = "$1" ] && echo $pid
+		fi ; done ; }
+	getsyslogpids="mypidof ${syslogrealbin}"
+	unset -f getparent
+	getparent () {
+		local self
+		local parent
+		local ret
+		local tmpfile=${tmpdir}/getparent.$$.txt
+		ps -ef  >$tmpfile
+		while read user pid ppid dummy ; do
+			[ "$1" = "$pid" ] || continue
+			ret=$ppid
+		done < $tmpfile
+		rm $tmpfile
+		echo $ret
+	}
+	unset -f getchilds
+	getchilds () {
+		local childs
+		local dummy
+		local child
+		local tmpfile=${tmpdir}/getchilds.$$.txt
+		ps -ef >$tmpfile
+		while read user pid ppid dummy ; do
+			[ "$1" = "$ppid" ] || continue
+			childs="${childs}${childs:+ }$pid"
+		done < $tmpfile
+		rm $tmpfile
+		echo ${childs}
+	}
 }
 
 detect_env () {
@@ -567,12 +663,16 @@ fi
 ###
 ### Decide OS (switch-like)
 ###
-os=$(uname -s)
-echo -e "\nOperating System Name: $os"
+os=`uname -s`
+printf "\nOperating System Name: %s\n" "$os"
 if [ "$os" = "Linux" ]; then
 	debun_linux
 elif [ "$os" = "SunOS" ]; then
 	debun_solaris
+elif [ "$os" = "FreeBSD" ]; then
+	debun_freebsd
+elif [ "$os" = "HP-UX" ]; then
+	debun_hpux
 else
 	echo "Unkonwn or unhandled (yet) system"
 fi
@@ -584,22 +684,22 @@ fi
 }
 
 run_specific_extras () {
-for i in ${extras[@]}; do
+for i in ${extras}; do
 	$i
 done
 }
 
 run_debug () {
-echo -e "\nStart Debug collection"
+printf "\nStart Debug collection\n"
 if [ -n "$pcap_params" ]; then
 	echo "Start packet dump in background with filters: $pcap_params"
 	$tcpdump ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} $pcap_params &
 	pcappid=$!
 fi
 if [ -n "$tracing" ] && [ -z "$debug_params" ]; then
-	for i in ${sngallpids[*]}; do
+	for i in ${sngallpids}; do
 		$trace -o ${tmpdir}/trace.${i}.txt -p $i &
-		tracepids=( ${tracepids[*]} $! )
+		tracepids="${tracepids}${tracepids:+ }$!"
 	done
 fi
 if [ -n "$waitforit" ]; then
@@ -607,9 +707,9 @@ if [ -n "$waitforit" ]; then
 	echo "Waiting $waitforit secs before stop system's syslog-ng, and restart in debug mode."
 	pad=''
 	bs=''	
-	for i in $(seq 1 ${#waitforit}); do pad="${pad} " ; bs="\b$bs" ; done
-	echo -n "Start countdown: ${pad}" >&3
-	for i in $(seq $waitforit -1 1 ); do echo -en "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
+	for i in `seq 1 ${#waitforit}`; do pad="${pad} " ; bs="\b$bs" ; done
+	printf "Start countdown: ${pad}" >&3
+	for i in `seq $waitforit -1 1 `; do printf "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
 	echo "0">&3
 	touch ${tmpdir}/syslog.debug
 fi
@@ -621,8 +721,8 @@ if [ -n "$debug_params" ]; then
 	if [ -n "$tracing" ]; then
 		$trace -o ${tmpdir}/trace.dbg.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
 		i=$!
-		tracepids=( $i )
-		debugpid="$(getchilds $i)"
+		tracepids="$i"
+		debugpid="`getchilds $i`"
 		echo "Trace: $i Debug: $debugpid"
 	else
 		$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
@@ -634,7 +734,7 @@ if [ -n "$waitforit" ]; then
 	sleep 1						# Let's gave time the user, to read the message about stoping
 	tail -f ${tmpdir}/syslog.debug >&3 &
 	debugtailpid=$!
-	disown
+	#disown
 fi
 if [ -n "$timeout" ];
 then
