@@ -38,6 +38,18 @@
 #include <unistd.h>
 #include <signal.h>
 
+static inline void
+_terminate_process_group_by_pid(const pid_t pid)
+{
+  msg_verbose("Sending TERM signal to the process group",
+              evt_tag_int("pid", pid),
+              NULL);
+
+  pid_t pgid = getpgid(pid);
+  if (pgid != -1)
+    killpg(pgid, SIGTERM);
+}
+
 static gboolean
 afprogram_popen(const gchar *cmdline, GIOCondition cond, pid_t *pid, gint *fd)
 {
@@ -121,7 +133,7 @@ afprogram_sd_kill_child(AFProgramSourceDriver *self)
                   evt_tag_str("cmdline", self->cmdline->str),
                   evt_tag_int("child_pid", self->pid),
                   NULL);
-      kill(-self->pid, SIGTERM);
+      _terminate_process_group_by_pid(self->pid);
       self->pid = -1;
     }
 }
@@ -282,9 +294,7 @@ afprogram_dd_kill_child(AFProgramDestDriver *self)
                   evt_tag_str("cmdline", self->cmdline->str),
                   evt_tag_int("child_pid", self->pid),
                   NULL);
-      pgid = getpgid(self->pid);
-      if (pgid != -1)
-        killpg(pgid, SIGTERM);
+      _terminate_process_group_by_pid(self->pid);
       self->pid = -1;
     }
 }
