@@ -30,13 +30,16 @@
 %code {
 
 #include "dbparser.h"
+#include "cfg-grammar.h"
+#include "groupingby.h"
 #include "cfg-parser.h"
 #include "dbparser-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
+#include "filter/filter-expr.h"
 #include <string.h>
-extern LogParser *last_parser;
 
+SyntheticMessage *last_message;
 }
 
 %name-prefix "dbparser_"
@@ -52,9 +55,21 @@ extern LogParser *last_parser;
 /* INCLUDE_DECLS */
 
 %token KW_DB_PARSER
+%token KW_GROUPING_BY
 %token KW_INJECT_MODE
+%token KW_KEY
+%token KW_SCOPE
+%token KW_INHERIT_MODE
+%token KW_TIMEOUT
+%token KW_TRIGGER
+%token KW_WHERE
+%token KW_HAVING
+%token KW_AGGREGATE
 
 %type <num> stateful_parser_inject_mode
+%type <ptr> synthetic_message
+%type <num> inherit_mode
+%type <num> context_scope
 
 %%
 
@@ -69,6 +84,11 @@ parser_expr_db
           }
           parser_db_opts
           ')'
+	| KW_GROUPING_BY '('
+	  {
+	    last_parser = *instance = grouping_by_new(configuration);
+	  }
+          grouping_by_opts ')'
         ;
 
 parser_db_opts
@@ -96,6 +116,80 @@ stateful_parser_inject_mode
           }
 	| KW_INTERNAL				{ $$ = stateful_parser_lookup_inject_mode("internal"); }
 	;
+
+grouping_by_opts
+	: grouping_by_opt grouping_by_opts
+	|
+	;
+
+grouping_by_opt
+	: KW_KEY '(' template_content ')'                       { grouping_by_set_key_template(last_parser, $3); log_template_unref($3); }
+        | KW_SCOPE '(' context_scope ')'                        { grouping_by_set_scope(last_parser, $3); }
+        | KW_WHERE '('
+          {
+            FilterExprNode *filter_expr;
+
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
+            grouping_by_set_where_condition(last_parser, filter_expr);
+          } ')'
+        | KW_HAVING '('
+          {
+            FilterExprNode *filter_expr;
+
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
+            grouping_by_set_having_condition(last_parser, filter_expr);
+          } ')'
+	| KW_TIMEOUT '(' LL_NUMBER ')'				{ grouping_by_set_timeout(last_parser, $3); }
+	| KW_AGGREGATE '(' synthetic_message ')'		{ grouping_by_set_synthetic_message(last_parser, $3); }
+	| KW_TRIGGER '('
+          {
+            FilterExprNode *filter_expr;
+
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
+            grouping_by_set_trigger_condition(last_parser, filter_expr);
+          } ')'
+	| stateful_parser_opt
+	;
+
+synthetic_message
+	: { last_message = synthetic_message_new(); } synthetic_message_opts { $$ = last_message; }
+	;
+
+
+synthetic_message_opts
+	: synthetic_message_opt synthetic_message_opts
+	|
+	;
+
+synthetic_message_opt
+	: KW_INHERIT_MODE '(' inherit_mode ')'                  { grouping_by_set_inherit_properties(last_parser, $3); }
+	| KW_VALUE '(' string template_content ')'
+	  {
+	    synthetic_message_add_value_template(last_message, $3, $4);
+	    free($3);
+            log_template_unref($4);
+	  }
+	| KW_TAGS '(' string ')'				{ synthetic_message_add_tag(last_message, $3); free($3); }
+	;
+
+inherit_mode
+        : string
+          {
+            $$ = synthetic_message_lookup_inherit_mode($1);
+            free($1);
+            CHECK_ERROR($$ >= 0, @1, "unknown inherit-mode()");
+          }
+        ;
+
+context_scope
+        : string
+          {
+            $$ = correllation_key_lookup_scope($1);
+            free($1);
+            CHECK_ERROR($$ >= 0, @1, "unknown context-scope()");
+          }
+        ;
+
 
 /* INCLUDE_RULES */
 
