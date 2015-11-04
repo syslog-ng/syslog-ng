@@ -316,7 +316,6 @@ afprogram_dd_kill_child(AFProgramDestDriver *self)
   if (self->pid != -1)
     {
       pid_t pgid;
-      child_manager_unregister(self->pid);
       msg_verbose("Sending destination program a TERM signal",
                   evt_tag_str("cmdline", self->cmdline->str),
                   evt_tag_int("child_pid", self->pid),
@@ -436,6 +435,8 @@ afprogram_dd_deinit(LogPipe *s)
 
   if (self->writer)
     log_pipe_deinit((LogPipe *) self->writer);
+
+  child_manager_unregister(self->pid);
 
   if (self->keep_alive)
     {
