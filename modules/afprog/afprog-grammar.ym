@@ -53,6 +53,7 @@
 /* INCLUDE_DECLS */
 
 %token KW_PROGRAM
+%token KW_KEEP_ALIVE
 
 %type   <ptr> source_afprogram
 %type   <ptr> source_afprogram_params
@@ -112,6 +113,7 @@ dest_afprogram_options
 dest_afprogram_option
 	: dest_writer_option
 	| dest_driver_option
+	| KW_KEEP_ALIVE '(' yesno ')' { afprogram_dd_set_keep_alive((AFProgramDestDriver *)last_driver, $3); }
 	;
 
 /* INCLUDE_RULES */
