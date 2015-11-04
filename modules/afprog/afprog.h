@@ -43,10 +43,16 @@ typedef struct _AFProgramDestDriver
   GString *cmdline;
   LogWriter *writer;
   pid_t pid;
+  gboolean keep_alive;
   LogWriterOptions writer_options;
 } AFProgramDestDriver;
 
 LogDriver *afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg);
 LogDriver *afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg);
+
+inline void
+afprogram_dd_set_keep_alive(AFProgramDestDriver *self, gboolean keep_alive) {
+  self->keep_alive = keep_alive;
+}
 
 #endif
