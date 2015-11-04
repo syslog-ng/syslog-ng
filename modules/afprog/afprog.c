@@ -38,6 +38,12 @@
 #include <unistd.h>
 #include <signal.h>
 
+typedef struct _AFProgramReloadStoreItem
+{
+  LogWriter *writer;
+  pid_t pid;
+} AFProgramReloadStoreItem;
+
 static inline void
 _terminate_process_group_by_pid(const pid_t pid)
 {
@@ -48,6 +54,27 @@ _terminate_process_group_by_pid(const pid_t pid)
   pid_t pgid = getpgid(pid);
   if (pgid != -1)
     killpg(pgid, SIGTERM);
+}
+
+static inline void
+afprogram_reload_store_item_deinit(AFProgramReloadStoreItem *reload_info)
+{
+  child_manager_unregister(reload_info->pid);
+  _terminate_process_group_by_pid(reload_info->pid);
+}
+
+static inline void
+afprogram_reload_store_item_free(AFProgramReloadStoreItem *reload_info)
+{
+  log_pipe_unref(reload_info->writer);
+  g_free(reload_info);
+}
+
+static inline void
+afprogram_reload_store_item_destroy_notify(AFProgramReloadStoreItem *reload_info)
+{
+  afprogram_reload_store_item_deinit(reload_info);
+  afprogram_reload_store_item_free(reload_info);
 }
 
 static gboolean
