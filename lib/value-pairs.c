@@ -617,7 +617,7 @@ static GPtrArray *
 vp_walker_name_value_split(const gchar *name)
 {
   int i, current_name_start_idx = 0, name_len = strlen(name);
-  GPtrArray *array = g_ptr_array_new();
+  GPtrArray *array = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
 
   for (i = 0; i < name_len; i++)
     {
