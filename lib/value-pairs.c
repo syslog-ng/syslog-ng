@@ -467,24 +467,21 @@ typedef struct
   VPWalkValueCallbackFunc process_value;
 
   gpointer user_data;
-  vp_stack_t *stack;
+  vp_stack_t stack;
 } vp_walk_state_t;
 
-static vp_stack_t *
-vp_stack_create()
+static void
+vp_stack_init(vp_stack_t *stack)
 {
-  vp_stack_t *stack = g_new(vp_stack_t, 1);
   stack->buffer = g_new(vp_walk_stack_data_t *, VP_STACK_INITIAL_SIZE);
   stack->buffer_size = VP_STACK_INITIAL_SIZE;
   stack->count = 0;
-  return stack;
 }
 
 static void
 vp_stack_destroy(vp_stack_t *stack)
 {
   g_free(stack->buffer);
-  g_free(stack);
 }
 
 static void
@@ -713,9 +710,9 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
   gchar *key;
   gboolean result;
 
-  vp_walker_stack_unwind_until (state->stack, state, name);
-  key = vp_walker_name_split (state->stack, state, name);
-  data = vp_stack_peek (state->stack);
+  vp_walker_stack_unwind_until (&state->stack, state, name);
+  key = vp_walker_name_split (&state->stack, state, name);
+  data = vp_stack_peek (&state->stack);
 
   if (data != NULL)
     result = state->process_value(key, data->prefix,
@@ -755,15 +752,15 @@ value_pairs_walk(ValuePairs *vp,
   state.obj_start = obj_start_func;
   state.obj_end = obj_end_func;
   state.process_value = process_value_func;
-  state.stack = vp_stack_create();
+  vp_stack_init(&state.stack);
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
                                       (GCompareDataFunc)vp_walk_cmp, msg,
                                       seq_num, time_zone_mode, template_options, &state);
-  vp_walker_stack_unwind_all(state.stack, &state);
+  vp_walker_stack_unwind_all(&state.stack, &state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
-  vp_stack_destroy(state.stack);
+  vp_stack_destroy(&state.stack);
 
   return result;
 }
