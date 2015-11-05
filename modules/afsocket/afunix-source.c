@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "gprocess.h"
 #include "transport-mapper-unix.h"
+#include "privileged-linux.h"
 
 #include <string.h>
 #include <sys/types.h>
@@ -76,14 +77,8 @@ afunix_sd_adjust_reader_options(AFUnixSourceDriver *self, GlobalConfig *cfg)
 static gboolean
 afunix_sd_apply_perms_to_socket(AFUnixSourceDriver *self)
 {
-  cap_t saved_caps;
-
-  saved_caps = g_process_cap_save();
-  g_process_cap_modify(CAP_CHOWN, TRUE);
-  g_process_cap_modify(CAP_FOWNER, TRUE);
-  g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
-  file_perm_options_apply_file(&self->file_perm_options, self->filename);
-  g_process_cap_restore(saved_caps);
+  gboolean result G_GNUC_UNUSED;
+  PRIVILEGED_CALL(CHANGE_FILE_RIGHTS_CAPS, file_perm_options_apply_file, result, &self->file_perm_options, self->filename);
   return TRUE;
 }
 

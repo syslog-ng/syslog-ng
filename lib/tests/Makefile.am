@@ -15,6 +15,10 @@ lib_tests_TESTS		= \
 	lib/tests/test_pathutils	\
 	lib/tests/test_utf8utils
 
+if ENABLE_LINUX_CAPS
+lib_tests_TESTS += lib/tests/test_cap
+endif
+
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
 noinst_PROGRAMS 	= \
@@ -92,6 +96,11 @@ lib_tests_test_string_list_LDADD	=	\
 lib_tests_test_pathutils_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_pathutils_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_cap_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_cap_LDADD	=	\
 	$(TEST_LDADD)
 
 lib_tests_test_utf8utils_CFLAGS	=	\

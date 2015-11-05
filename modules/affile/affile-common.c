@@ -24,6 +24,7 @@
 #include "messages.h"
 #include "gprocess.h"
 #include "misc.h"
+#include "privileged-linux.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -56,40 +57,19 @@ _path_is_spurious(const gchar *name, const gchar *spurious_paths[])
   return _string_contains_fragment(name, spurious_paths);
 }
 
-static inline gboolean
-_obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, cap_t *act_caps)
-{
-  if (open_opts->needs_privileges)
-    {
-      g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
-      g_process_cap_modify(CAP_SYSLOG, TRUE);
-    }
-  else
-    {
-      g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
-    }
-
-  if (open_opts->create_dirs && perm_opts &&
-      !file_perm_options_create_containing_directory(perm_opts, name))
-    {
-      return FALSE;
-    }
-
-  return TRUE;
-}
-
 static inline void
 _set_fd_permission(FilePermOptions *perm_opts, int fd)
 {
+  gboolean result G_GNUC_UNUSED;
+
   if (fd != -1)
     {
       g_fd_set_cloexec(fd, TRUE);
 
-      g_process_cap_modify(CAP_CHOWN, TRUE);
-      g_process_cap_modify(CAP_FOWNER, TRUE);
-
       if (perm_opts)
-        file_perm_options_apply_fd(perm_opts, fd);
+        {
+          PRIVILEGED_CALL(CHANGE_FILE_RIGHTS_CAPS, file_perm_options_apply_fd, result, perm_opts, fd);
+        }
     }
 }
 
@@ -99,13 +79,17 @@ _open_fd(const gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_op
   int fd;
   int mode = (perm_opts && (perm_opts->file_perm >= 0))
     ? perm_opts->file_perm : 0600;
+  int mkfifo_result;
 
-  fd = open(name, open_opts->open_flags, mode);
+  PRIVILEGED_CALL(OPEN_CAPS(open_opts), open, fd, name, open_opts->open_flags, mode);
 
   if (open_opts->is_pipe && fd < 0 && errno == ENOENT)
     {
-      if (mkfifo(name, mode) >= 0)
-        fd = open(name, open_opts->open_flags, mode);
+      PRIVILEGED_CALL(MKFIFO_CAPS, mkfifo, mkfifo_result ,name, mode);
+      if (mkfifo_result >= 0)
+        {
+          PRIVILEGED_CALL(OPEN_CAPS(open_opts), open, fd, name, open_opts->open_flags, mode);
+        }
     }
 
   return fd;
@@ -115,8 +99,10 @@ static inline void
 _validate_file_type(const gchar *name, FileOpenOptions *open_opts)
 {
   struct stat st;
+  gint stat_result;
 
-  if (stat(name, &st) >= 0)
+  PRIVILEGED_CALL(STAT_CAPS, stat, stat_result, name, &st);
+  if (stat_result >= 0)
     {
       if (open_opts->is_pipe && !S_ISFIFO(st.st_mode))
         {
@@ -134,10 +120,37 @@ _validate_file_type(const gchar *name, FileOpenOptions *open_opts)
 }
 
 gboolean
+__create_containing_directory_and_set_perm_options(FilePermOptions *perm_opts, gchar *name)
+{
+  gchar *dirname;
+  gint rc;
+  struct stat st;
+  gboolean result;
+
+  /* check that the directory exists */
+  dirname = g_path_get_dirname(name);
+  PRIVILEGED_CALL(STAT_CAPS, stat, rc, dirname, &st);
+  g_free(dirname);
+
+  if (rc == 0)
+    {
+      /* directory already exists */
+      return TRUE;
+    }
+  else if (rc < 0 && errno != ENOENT)
+    {
+      /* some real error occurred */
+      return FALSE;
+    }
+
+  /* directory does not exist */
+  PRIVILEGED_CALL(MKDIR_AND_PERM_RIGHTS_CAPS, file_perm_options_create_containing_directory, result, perm_opts, name);
+  return result;
+}
+
+gboolean
 affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd)
 {
-  cap_t saved_caps;
-
   if (_path_is_spurious(name, spurious_paths))
     {
       msg_error("Spurious path, logfile not created",
@@ -146,21 +159,16 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
       return FALSE;
     }
 
-  saved_caps = g_process_cap_save();
-
-  if (!_obtain_capabilities(name, open_opts, perm_opts, &saved_caps))
-    {
-      g_process_cap_restore(saved_caps);
-      return FALSE;
-    }
-
   _validate_file_type(name, open_opts);
+
+  if (open_opts->create_dirs &&
+      perm_opts &&
+      !__create_containing_directory_and_set_perm_options(perm_opts, name))
+    return FALSE;
 
   *fd = _open_fd(name, open_opts, perm_opts);
 
   _set_fd_permission(perm_opts, *fd);
-
-  g_process_cap_restore(saved_caps);
 
   msg_trace("affile_open_file",
             evt_tag_str("path", name),

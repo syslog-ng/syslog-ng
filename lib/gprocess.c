@@ -26,6 +26,7 @@
 #include "misc.h"
 #include "messages.h"
 #include "reloc.h"
+#include "privileged-linux.h"
  
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -99,9 +100,6 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
-#if ENABLE_LINUX_CAPS
-static int have_capsyslog = FALSE;
-#endif
 
 /* global variables */
 static struct
@@ -193,151 +191,6 @@ inherit_systemd_activation(void)
 #else
 
 #define inherit_systemd_activation()
-
-#endif
-
-#if ENABLE_LINUX_CAPS
-
-/**
- * g_process_cap_modify:
- * @capability: capability to turn off or on
- * @onoff: specifies whether the capability should be enabled or disabled
- *
- * This function modifies the current permitted set of capabilities by
- * enabling or disabling the capability specified in @capability.
- *
- * Returns: whether the operation was successful.
- **/
-gboolean 
-g_process_cap_modify(int capability, int onoff)
-{
-  cap_t caps;
-
-  if (!process_opts.caps)
-    return TRUE;
-
-  /*
-   * if libcap or kernel doesn't support cap_syslog, then resort to
-   * cap_sys_admin
-   */
-  if (capability == CAP_SYSLOG && (!have_capsyslog || CAP_SYSLOG == -1))
-    capability = CAP_SYS_ADMIN;
-
-  caps = cap_get_proc();
-  if (!caps)
-    return FALSE;
-
-  if (cap_set_flag(caps, CAP_EFFECTIVE, 1, &capability, onoff) == -1)
-    {
-      msg_error("Error managing capability set, cap_set_flag returned an error",
-                evt_tag_errno("error", errno),
-                NULL);
-      cap_free(caps);
-      return FALSE;
-    }
-
-  if (cap_set_proc(caps) == -1)
-    {
-      gchar *cap_text;
-
-      cap_text = cap_to_text(caps, NULL);
-      msg_error("Error managing capability set, cap_set_proc returned an error",
-                evt_tag_str("caps", cap_text),
-                evt_tag_errno("error", errno),
-                NULL);
-      cap_free(cap_text);
-      cap_free(caps);
-      return FALSE;
-    }
-  cap_free(caps);
-  return TRUE;
-}
-
-/**
- * g_process_cap_save:
- *
- * Save the set of current capabilities and return it. The caller might
- * restore the saved set of capabilities by using cap_restore().
- *
- * Returns: the current set of capabilities
- **/
-cap_t 
-g_process_cap_save(void)
-{
-  if (!process_opts.caps)
-    return NULL;
-
-  return cap_get_proc();
-}
-
-/**
- * cap_restore:
- * @r: capability set saved by cap_save()
- *
- * Restore the set of current capabilities specified by @r.
- *
- * Returns: whether the operation was successful.
- **/
-void
-g_process_cap_restore(cap_t r)
-{
-  gboolean rc;
-
-  if (!process_opts.caps)
-    return;
-
-  rc = cap_set_proc(r) != -1;
-  cap_free(r);
-  if (!rc)
-    {
-      gchar *cap_text;
-
-      cap_text = cap_to_text(r, NULL);
-      msg_error("Error managing capability set, cap_set_proc returned an error",
-                evt_tag_str("caps", cap_text),
-                evt_tag_errno("error", errno),
-                NULL);
-      cap_free(cap_text);
-      return;
-    }
-  
-  return;
-}
-
-#ifndef PR_CAPBSET_READ
-
-/* old glibc versions don't have PR_CAPBSET_READ, we define it to the
- * value as defined in newer versions. */
-
-#define PR_CAPBSET_READ 23
-#endif
-
-gboolean
-g_process_check_cap_syslog(void)
-{
-  int ret;
-
-  if (have_capsyslog)
-    return TRUE;
-
-  if (CAP_SYSLOG == -1)
-    return FALSE;
-
-  ret = prctl(PR_CAPBSET_READ, CAP_SYSLOG);
-  if (ret == -1)
-    return FALSE;
-
-  ret = cap_from_name("cap_syslog", NULL);
-  if (ret == -1)
-    {
-      fprintf (stderr, "CAP_SYSLOG seems to be supported by the system, but "
-	       "libcap can't parse it. Falling back to CAP_SYS_ADMIN!\n");
-      return FALSE;
-    }
-
-  have_capsyslog = TRUE;
-  return TRUE;
-}
 
 #endif
 
@@ -475,11 +328,21 @@ g_process_set_working_dir(const gchar *cwd)
  * capability set. The process will change its capabilities to this value
  * during startup, provided it has enough permissions to do so.
  **/
-void 
+void
 g_process_set_caps(const gchar *caps)
 {
-  if (!process_opts.caps)
-    process_opts.caps = caps;
+  process_opts.caps = caps;
+}
+
+/**
+ * g_process_get_caps:
+ * Return the all permitted capbilities
+ **/
+
+const gchar *
+g_process_get_caps()
+{
+  return process_opts.caps;
 }
 
 /**
@@ -678,18 +541,7 @@ g_process_enable_core(void)
 
   if (process_opts.core)
     {
-#if ENABLE_LINUX_CAPS
-      if (!prctl(PR_GET_DUMPABLE, 0, 0, 0, 0))
-        {
-          gint rc;
-
-          rc = prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
-
-          if (rc < 0)
-            g_process_message("Cannot set process to be dumpable; error='%s'", g_strerror(errno));
-        }
-#endif
-
+      set_process_dumpable();
       limit.rlim_cur = limit.rlim_max = RLIM_INFINITY;
       if (setrlimit(RLIMIT_CORE, &limit) < 0)
         g_process_message("Error setting core limit to infinity; error='%s'", g_strerror(errno));
@@ -811,10 +663,7 @@ g_process_change_root(void)
 static gboolean
 g_process_change_user(void)
 {
-#if ENABLE_LINUX_CAPS
-  if (process_opts.caps)
-    prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
-#endif
+  set_keep_caps_flag(process_opts.caps);
 
   if (process_opts.gid >= 0)
     {
@@ -844,54 +693,6 @@ g_process_change_user(void)
   
   return TRUE;
 }
-
-#if ENABLE_LINUX_CAPS
-/**
- * g_process_change_caps:
- *
- * Change the current capset to the value specified by the user.  causes the
- * startup process to fail if this function returns FALSE, but we only do
- * this if the capset cannot be parsed, otherwise a failure changing the
- * capabilities will not result in failure
- *
- * Returns: TRUE to indicate success
- **/
-static gboolean
-g_process_change_caps(void)
-{
-  if (process_opts.caps)
-    {
-      cap_t cap = cap_from_text(process_opts.caps);
-
-      if (cap == NULL)
-        {
-          g_process_message("Error parsing capabilities: %s", process_opts.caps);
-          process_opts.caps = NULL;
-          return FALSE;
-        }
-      else
-        {
-          if (cap_set_proc(cap) == -1)
-            {
-              g_process_message("Error setting capabilities, capability management disabled; error='%s'", g_strerror(errno));
-              process_opts.caps = NULL;
-
-            }
-          cap_free(cap);
-        }
-    }
-  return TRUE;
-}
-
-#else
-
-static gboolean
-g_process_change_caps(void)
-{
-  return TRUE;
-}
-
-#endif
 
 static void
 g_process_resolve_names(void)
@@ -1376,7 +1177,7 @@ g_process_start(void)
 
   if (!g_process_change_root() ||
       !g_process_change_user() ||
-      !g_process_change_caps())
+      !setup_permitted_caps(process_opts.caps))
     {
       g_process_startup_failed(1, TRUE);
     }

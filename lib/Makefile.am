@@ -128,6 +128,7 @@ pkginclude_HEADERS			+= \
 	lib/poll-fd-events.h		\
 	lib/pragma-parser.h		\
 	lib/presented-persistable-state.h			\
+	lib/privileged-linux.h \
 	lib/reloc.h			\
 	lib/rcptid.h			\
 	lib/run-id.h			\
@@ -246,8 +247,12 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(debugger_sources)		\
 	$(compat_sources)
 
+if ENABLE_LINUX_CAPS
+lib_libsyslog_ng_la_SOURCES += lib/privileged-linux.c
+endif
+
 lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
-lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@
+lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@ $(LIBNET_LIBS)
 
 # each line with closely related files (e.g. the ones generated from the same source)
 BUILT_SOURCES += lib/cfg-lex.c lib/cfg-lex.h						\
