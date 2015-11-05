@@ -425,8 +425,6 @@ affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
-  gboolean file_opened, open_deferred = FALSE;
 
   if (!log_src_driver_init_method(s))
     return FALSE;
@@ -436,66 +434,7 @@ affile_sd_init(LogPipe *s)
   if (!_check_multiline_options(self))
     return FALSE;
 
-  file_opened = affile_sd_open_file(self, self->filename->str, &fd);
-  if (!file_opened && self->follow_freq > 0)
-    {
-      msg_info("Follow-mode file source not found, deferring open",
-               evt_tag_str("filename", self->filename->str),
-               NULL);
-      open_deferred = TRUE;
-      fd = -1;
-    }
-
-  if (file_opened || open_deferred)
-    {
-      LogProtoServer *proto;
-      PollEvents *poll_events;
-
-      poll_events = affile_sd_construct_poll_events(self, fd);
-      if (!poll_events)
-        {
-          close(fd);
-          return FALSE;
-        }
-
-      proto = affile_sd_construct_proto(self, fd);
-      self->reader = log_reader_new(self->super.super.super.cfg);
-      log_reader_reopen(self->reader, proto, poll_events);
-
-      log_reader_set_options(self->reader,
-                             s,
-                             &self->reader_options,
-                             STATS_LEVEL1,
-                             SCS_FILE,
-                             self->super.super.id,
-                             self->filename->str);
-      /* NOTE: if the file could not be opened, we ignore the last
-       * remembered file position, if the file is created in the future
-       * we're going to read from the start. */
-      
-      log_pipe_append((LogPipe *) self->reader, s);
-      if (!log_pipe_init((LogPipe *) self->reader))
-        {
-          msg_error("Error initializing log_reader, closing fd",
-                    evt_tag_int("fd", fd),
-                    NULL);
-          log_pipe_unref((LogPipe *) self->reader);
-          self->reader = NULL;
-          close(fd);
-          return FALSE;
-        }
-      affile_sd_recover_state(s, cfg, proto);
-    }
-  else
-    {
-      msg_error("Error opening file for reading",
-                evt_tag_str("filename", self->filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
-      return self->super.super.optional;
-    }
-  return TRUE;
-
+  return _open_file(s, cfg);
 }
 
 static gboolean
