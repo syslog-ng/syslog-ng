@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 typedef struct
 {
@@ -602,36 +603,42 @@ vp_walker_stack_push (vp_stack_t *stack,
 }
 
 static void
-vp_walker_name_value_split_add_name_token(GPtrArray *array, const gchar *name,
-                                          int *current_name_start_idx,
-                                          int *index)
+_extract_name_token(GPtrArray *array, const gchar *name, gsize len)
 {
-  gchar *token;
-
-  token = g_strndup(name + *current_name_start_idx, *index - *current_name_start_idx);
-  *current_name_start_idx = ++(*index);
-  g_ptr_array_add(array, (gpointer) token);
+  g_ptr_array_add(array, g_strndup(name, len));
 }
 
 static GPtrArray *
 vp_walker_name_value_split(const gchar *name)
 {
-  int i, current_name_start_idx = 0, name_len = strlen(name);
+  gint pos, token_start = 0, name_len = strlen(name);
   GPtrArray *array = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
 
-  for (i = 0; i < name_len; i++)
+  pos = 0;
+  do
     {
-      if (name[i] == '@')
+      pos += strcspn(&name[pos], "@.");
+      if (name[pos] == '@')
         {
-          i++;
-          while (g_ascii_isdigit(name[i]) || (name[i] == '.' && g_ascii_isdigit(name[i + 1])))
-            i++;
+          /* parse .SDATA.foo@1234.56.678 format, and assume that any
+             numbers + dots form part of the "foo@1234.56.678" key,
+             even if they contain dots */
+          do
+            {
+              /* skip @ or . */
+              pos++;
+              pos += strspn(&name[pos], "0123456789");
+            }
+          while (name[pos] == '.' && isdigit(name[pos + 1]));
         }
-      if (name[i] == '.')
-        vp_walker_name_value_split_add_name_token(array, name, &current_name_start_idx, &i);
+      if (name[pos] == '.' || pos == name_len)
+        {
+          _extract_name_token(array, &name[token_start], pos - token_start);
+          pos++;
+          token_start = pos;
+        }
     }
-  if (current_name_start_idx <= i - 1)
-    vp_walker_name_value_split_add_name_token(array, name, &current_name_start_idx, &i);
+  while (pos < name_len);
 
   if (array->len == 0)
     {
