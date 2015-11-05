@@ -253,6 +253,14 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
     }
 }
 
+static void
+affile_sd_reset_file_state(PersistState *state, const gchar *old_persist_name)
+{
+  gchar *new_persist_name = g_strdup_printf("%s_DELETED",old_persist_name);
+  persist_state_rename_entry(state,old_persist_name,new_persist_name);
+  g_free(new_persist_name);
+}
+
 static inline gboolean
 _setting_logpipe(LogPipe *s)
 {
@@ -301,7 +309,8 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
         log_pipe_deinit((LogPipe *) self->reader);
         log_pipe_unref((LogPipe *) self->reader);
         self->reader = NULL;
-        
+        affile_sd_reset_file_state(cfg->state, affile_sd_format_persist_name(self));
+
         if (affile_sd_open_file(self, self->filename->str, &fd))
           {
             LogProtoServer *proto;
@@ -347,6 +356,23 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
 
   log_src_driver_queue_method(s, msg, path_options, user_data);
+}
+
+static gboolean
+_configure_loaded_logreader_from_persist_file(LogPipe *s, GlobalConfig *cfg)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  _setting_general_logreader_options(s);
+
+  if (!_setting_logpipe(s))
+    {
+      self->reader = NULL;
+      return FALSE;
+    }
+
+  log_pipe_set_config((LogPipe *) self->reader, cfg);
+  return TRUE;
 }
 
 static gboolean
@@ -434,18 +460,31 @@ affile_sd_init(LogPipe *s)
   if (!_check_multiline_options(self))
     return FALSE;
 
+  self->reader = cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self));
+  if (self->reader)
+    return _configure_loaded_logreader_from_persist_file(s, cfg);
+
   return _open_file(s, cfg);
+}
+
+static void
+affile_sd_destroy_reader(gpointer user_data)
+{
+  LogPipe *reader = (LogPipe *) user_data;
+
+  log_pipe_unref(reader);
 }
 
 static gboolean
 affile_sd_deinit(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (self->reader)
     {
       log_pipe_deinit((LogPipe *) self->reader);
-      log_pipe_unref((LogPipe *) self->reader);
+      cfg_persist_config_add(cfg, affile_sd_format_persist_name(self), self->reader, affile_sd_destroy_reader, FALSE);
       self->reader = NULL;
     }
 
