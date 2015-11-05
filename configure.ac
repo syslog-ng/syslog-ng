@@ -75,6 +75,8 @@ moduledir='${exec_prefix}/lib/syslog-ng'
 
 AC_CONFIG_HEADERS(config.h)
 
+
+
 dnl ***************************************************************************
 dnl Arguments
 
@@ -1476,6 +1478,7 @@ AC_SUBST(LIBSYSTEMD_JOURNAL_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
 AC_SUBST(XSL_STYLESHEET)
 
+AX_PREFIX_CONFIG_H
 
 AC_OUTPUT(dist.conf
           Makefile
