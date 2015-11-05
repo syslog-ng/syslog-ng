@@ -634,7 +634,10 @@ vp_walker_name_value_split(const gchar *name)
     vp_walker_name_value_split_add_name_token(array, name, &current_name_start_idx, &i);
 
   if (array->len == 0)
-    return NULL;
+    {
+      g_ptr_array_free(array, TRUE);
+      return NULL;
+    }
 
   return array;
 }
