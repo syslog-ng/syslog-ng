@@ -360,6 +360,67 @@ _check_multiline_options(AFFileSourceDriver *self)
   return TRUE;
 }
 
+static gboolean
+_reopen_log_reader(LogPipe *s, GlobalConfig *cfg, gint fd)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  LogProtoServer *proto;
+  PollEvents *poll_events;
+
+  poll_events = affile_sd_construct_poll_events(self, fd);
+  if (!poll_events)
+    {
+      close(fd);
+      return FALSE;
+    }
+
+  proto = affile_sd_construct_proto(self, fd);
+  self->reader = log_reader_new(self->super.super.super.cfg);
+  log_reader_reopen(self->reader, proto, poll_events);
+  _setting_general_logreader_options(s);
+
+  if (!_setting_logpipe(s))
+    {
+      msg_error("Error initializing log_reader, closing fd",
+                evt_tag_int("fd", fd),
+                NULL);
+      self->reader = NULL;
+      close(fd);
+      return FALSE;
+    }
+
+  affile_sd_recover_state(s, cfg, proto);
+
+  return TRUE;
+}
+
+static gboolean
+_open_file(LogPipe *s, GlobalConfig *cfg)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  gint fd;
+
+  if (!affile_sd_open_file(self, self->filename->str, &fd))
+    {
+      if (self->follow_freq == 0)
+        {
+          msg_error("Error opening file for reading",
+                    evt_tag_str("filename", self->filename->str),
+                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    NULL);
+          return self->super.super.optional;
+        }
+
+      msg_info("Follow-mode file source not found, deferring open",
+               evt_tag_str("filename", self->filename->str),
+               NULL);
+      fd = -1;
+    }
+
+  return _reopen_log_reader(s, cfg, fd);
+}
+
+static gboolean
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
