@@ -350,6 +350,16 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 }
 
 static gboolean
+_check_multiline_options(AFFileSourceDriver *self)
+{
+  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
+    {
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly", NULL);
+      return FALSE;
+    }
+  return TRUE;
+}
+
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
@@ -362,11 +372,8 @@ affile_sd_init(LogPipe *s)
 
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
-    {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly", NULL);
-      return FALSE;
-    }
+  if (!_check_multiline_options(self))
+    return FALSE;
 
   file_opened = affile_sd_open_file(self, self->filename->str, &fd);
   if (!file_opened && self->follow_freq > 0)
