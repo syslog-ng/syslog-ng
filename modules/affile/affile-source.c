@@ -253,14 +253,6 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
     }
 }
 
-static void
-affile_sd_reset_file_state(PersistState *state, const gchar *old_persist_name)
-{
-  gchar *new_persist_name = g_strdup_printf("%s_DELETED",old_persist_name);
-  persist_state_rename_entry(state,old_persist_name,new_persist_name);
-  g_free(new_persist_name);
-}
-
 static inline gboolean
 _setting_logpipe(LogPipe *s)
 {
@@ -309,7 +301,6 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
         log_pipe_deinit((LogPipe *) self->reader);
         log_pipe_unref((LogPipe *) self->reader);
         self->reader = NULL;
-        affile_sd_reset_file_state(cfg->state, affile_sd_format_persist_name(self));
 
         if (affile_sd_open_file(self, self->filename->str, &fd))
           {
