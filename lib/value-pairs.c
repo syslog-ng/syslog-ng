@@ -683,9 +683,12 @@ vp_walker_name_split(vp_walk_state_t *state,
   start = vp_stack_height(&state->stack);
   for (i = start; i < tokens->len - 1; i++)
     {
-      vp_walk_stack_data_t *p = vp_stack_peek(&state->stack);
-      vp_walk_stack_data_t *nt = vp_walker_stack_push(&state->stack, g_strdup(g_ptr_array_index(tokens, i)),
-                                 vp_walker_name_combine_prefix(tokens, i));
+      vp_walk_stack_data_t *p, *nt;
+
+      p = vp_stack_peek(&state->stack);
+      nt = vp_walker_stack_push(&state->stack,
+                                g_strdup(g_ptr_array_index(tokens, i)),
+                                vp_walker_name_combine_prefix(tokens, i));
 
       if (p)
         state->obj_start(nt->key, nt->prefix, &nt->data,
