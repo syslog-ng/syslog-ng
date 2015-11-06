@@ -253,20 +253,6 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
     }
 }
 
-static inline void
-_setting_general_logreader_options(LogPipe *s)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  log_reader_set_options(self->reader,
-                         s,
-                         &self->reader_options,
-                         STATS_LEVEL1,
-                         SCS_FILE,
-                         self->super.super.id,
-                         self->filename->str);
-}
-
 /* NOTE: runs in the main thread */
 static void
 affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
@@ -300,7 +286,15 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 
             self->reader = log_reader_new(self->super.super.super.cfg);
             log_reader_reopen(self->reader, proto, poll_events);
-            _setting_general_logreader_options(s);
+
+            log_reader_set_options(self->reader,
+                                   s,
+                                   &self->reader_options,
+                                   STATS_LEVEL1,
+                                   SCS_FILE,
+                                   self->super.super.id,
+                                   self->filename->str);
+
             log_reader_set_immediate_check(self->reader);
 
             log_pipe_append((LogPipe *) self->reader, s);
@@ -341,7 +335,13 @@ _configure_loaded_logreader_from_persist_file(LogPipe *s, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  _setting_general_logreader_options(s);
+  log_reader_set_options(self->reader,
+                         s,
+                         &self->reader_options,
+                         STATS_LEVEL1,
+                         SCS_FILE,
+                         self->super.super.id,
+                         self->filename->str);
 
   log_pipe_append((LogPipe *) self->reader, s);
   if (!log_pipe_init((LogPipe *) self->reader))
@@ -383,7 +383,14 @@ _reopen_log_reader(LogPipe *s, GlobalConfig *cfg, gint fd)
   proto = affile_sd_construct_proto(self, fd);
   self->reader = log_reader_new(self->super.super.super.cfg);
   log_reader_reopen(self->reader, proto, poll_events);
-  _setting_general_logreader_options(s);
+
+  log_reader_set_options(self->reader,
+                         s,
+                         &self->reader_options,
+                         STATS_LEVEL1,
+                         SCS_FILE,
+                         self->super.super.id,
+                         self->filename->str);
 
   log_pipe_append((LogPipe *) self->reader, s);
   if (!log_pipe_init((LogPipe *) self->reader))
