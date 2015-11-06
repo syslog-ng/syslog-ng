@@ -253,19 +253,6 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
     }
 }
 
-static inline gboolean
-_setting_logpipe(LogPipe *s)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  if (!log_pipe_init((LogPipe *) self->reader))
-    {
-      log_pipe_unref((LogPipe *) self->reader);
-      return FALSE;
-    }
-  return TRUE;
-}
-
 static inline void
 _setting_general_logreader_options(LogPipe *s)
 {
@@ -317,11 +304,12 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
             log_reader_set_immediate_check(self->reader);
 
             log_pipe_append((LogPipe *) self->reader, s);
-            if (!_setting_logpipe(s))
+            if (!log_pipe_init((LogPipe *) self->reader))
               {
                 msg_error("Error initializing log_reader, closing fd",
                           evt_tag_int("fd", fd),
                           NULL);
+                log_pipe_unref((LogPipe *) self->reader);
                 self->reader = NULL;
                 close(fd);
               }
@@ -356,8 +344,9 @@ _configure_loaded_logreader_from_persist_file(LogPipe *s, GlobalConfig *cfg)
   _setting_general_logreader_options(s);
 
   log_pipe_append((LogPipe *) self->reader, s);
-  if (!_setting_logpipe(s))
+  if (!log_pipe_init((LogPipe *) self->reader))
     {
+      log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
       return FALSE;
     }
@@ -397,11 +386,12 @@ _reopen_log_reader(LogPipe *s, GlobalConfig *cfg, gint fd)
   _setting_general_logreader_options(s);
 
   log_pipe_append((LogPipe *) self->reader, s);
-  if (!_setting_logpipe(s))
+  if (!log_pipe_init((LogPipe *) self->reader))
     {
       msg_error("Error initializing log_reader, closing fd",
                 evt_tag_int("fd", fd),
                 NULL);
+      log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
       close(fd);
       return FALSE;
