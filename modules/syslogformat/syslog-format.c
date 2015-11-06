@@ -34,16 +34,6 @@
 #include <ctype.h>
 #include <string.h>
 
-/*
- * Used in log_msg_parse_date(). Need to differentiate because Tru64's strptime
- * works differently than the rest of the supported systems.
- */
-#if defined(__digital__) && defined(__osf__)
-#define STRPTIME_ISOFORMAT "%Y-%m-%dT%H:%M:%S"
-#else
-#define STRPTIME_ISOFORMAT "%Y-%m-%d T%H:%M:%S"
-#endif
-
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
 static NVHandle is_synced;
@@ -461,8 +451,6 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
       if (!__parse_iso_stamp(&now, self, &tm, &src, &left))
         goto error;
       tm.tm_isdst = -1;
-      unnormalized_hour = tm.tm_hour;
-      self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
