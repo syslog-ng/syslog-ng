@@ -219,6 +219,7 @@ test_literals(void)
   insert_node(root, "korozott");
   insert_node(root, "al");
   insert_node(root, "all");
+  insert_node(root, "uj\nsor");
 
   test_search(root, "alma", TRUE);
   test_search(root, "korte", TRUE);
@@ -235,6 +236,9 @@ test_literals(void)
   test_search(root, "korozott", TRUE);
   test_search(root, "al", TRUE);
   test_search(root, "all", TRUE);
+  test_search(root, "uj", FALSE);
+  test_search(root, "uj\nsor", TRUE);
+  test_search_value(root, "uj\r\nsor", "uj\nsor");
 
   test_search(root, "mmm", FALSE);
   test_search_value(root, "kor", "ko");
@@ -303,6 +307,7 @@ test_parsers(void)
   printf("We excpect an error message\n");
   insert_node(root, "AAA@SET:set@AAA");
   insert_node(root, "AAA@MACADDR@AAA");
+  insert_node(root, "newline@NUMBER@\n2ndline\n");
 
   printf("We excpect an error message\n");
   insert_node(root, "AAA@PCRE:set@AAA");
@@ -315,6 +320,9 @@ test_parsers(void)
   test_search_value(root, "a@ax", NULL);
 
   test_search_value(root, "a@15555", "a@@@NUMBER:szam0@");
+
+  /* CRLF sequence immediately after a parser, e.g. in the initial position */
+  test_search_value(root, "newline123\r\n2ndline\n", "newline@NUMBER@\n2ndline\n");
 
   /* FIXME: this one fails, because the shorter match is returned. The
    * current radix implementation does not ensure the longest match when the
