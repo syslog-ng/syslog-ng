@@ -76,7 +76,8 @@ system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
 static void
 system_sysblock_add_file(GString *sysblock, const gchar *path,
                          gint follow_freq, const gchar *prg_override,
-                         const gchar *flags, const gchar *format)
+                         const gchar *flags, const gchar *format,
+                         gboolean ignore_timestamp)
 {
   g_string_append_printf(sysblock, "file(\"%s\"", path);
   if (follow_freq >= 0)
@@ -87,6 +88,8 @@ system_sysblock_add_file(GString *sysblock, const gchar *path,
     g_string_append_printf(sysblock, " flags(%s)", flags);
   if (format)
     g_string_append_printf(sysblock, " format(%s)", format);
+  if (ignore_timestamp)
+    g_string_append_printf(sysblock, " keep-timestamp(no)");
   g_string_append(sysblock, ");\n");
 }
 
@@ -157,9 +160,9 @@ system_sysblock_add_freebsd_klog(GString *sysblock, const gchar *release)
   if (strncmp(release, "7.", 2) == 0 ||
       strncmp(release, "8.", 2) == 0 ||
       strncmp(release, "9.0", 3) == 0)
-    system_sysblock_add_file(sysblock, "/dev/klog", 1, "kernel", "no-parse", NULL);
+    system_sysblock_add_file(sysblock, "/dev/klog", 1, "kernel", "no-parse", NULL, FALSE);
   else
-    system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse", NULL);
+    system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse", NULL, FALSE);
 }
 
 static gboolean
@@ -212,7 +215,7 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
     }
   else
     system_sysblock_add_file(sysblock, kmsg, -1,
-                             "kernel", "kernel", format);
+                             "kernel", "kernel", format, TRUE);
 }
 
 static gboolean
