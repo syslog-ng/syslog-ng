@@ -2,6 +2,8 @@ module_LTLIBRARIES				+= modules/csvparser/libcsvparser.la
 modules_csvparser_libcsvparser_la_SOURCES	=	\
 	modules/csvparser/csvparser.c			\
 	modules/csvparser/csvparser.h			\
+	modules/csvparser/csv-scanner.c			\
+	modules/csvparser/csv-scanner.h			\
 	modules/csvparser/csvparser-grammar.y		\
 	modules/csvparser/csvparser-parser.c		\
 	modules/csvparser/csvparser-parser.h		\
