@@ -29,5 +29,6 @@
 
 gboolean is_file_regular(const char *filename);
 gboolean is_file_directory(const char *filename);
+gboolean is_file_device(const gchar *name);
 
 #endif
