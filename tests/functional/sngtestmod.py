@@ -1,6 +1,6 @@
 class DestTest(object):
 
-    def init(self):
+    def init(self, options):
         return True
 
     def deinit(self):
