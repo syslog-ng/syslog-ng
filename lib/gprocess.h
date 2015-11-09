@@ -42,9 +42,37 @@ typedef enum
 
 #if ENABLE_LINUX_CAPS
 
-gboolean g_process_cap_modify(int capability, int onoff);
-cap_t g_process_cap_save(void);
-void g_process_cap_restore(cap_t r);
+typedef struct _Capability
+{
+  int have_capsyslog;
+
+  gboolean (*g_process_cap_modify)(int capability, int onoff);
+  cap_t (*g_process_cap_save)(void);
+  void (*g_process_cap_restore)(cap_t r);
+} Capability;
+
+Capability *g_process_capability;
+
+static inline gboolean
+g_process_cap_modify(int capability, int onoff)
+{
+  return g_process_capability->g_process_cap_modify(capability, onoff);
+}
+
+static inline cap_t
+g_process_cap_save(void)
+{
+  return g_process_capability->g_process_cap_save();
+}
+
+static inline void
+g_process_cap_restore(cap_t r)
+{
+  g_process_capability->g_process_cap_restore(r);
+}
+
+void g_process_capability_init();
+void g_process_capability_deinit();
 
 #ifndef CAP_SYSLOG
 #define CAP_SYSLOG -1
@@ -77,6 +105,7 @@ void g_process_set_use_fdlimit(gboolean use);
 void g_process_set_check(gint check_period, gboolean (*check_fn)(void));
 
 gboolean g_process_check_cap_syslog(void);
+int when_cap_syslog_is_not_supported_resort_to_cap_sys_admin(int capability);
 
 void g_process_start(void);
 void g_process_startup_failed(guint ret_num, gboolean may_exit);

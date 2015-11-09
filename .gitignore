@@ -37,3 +37,13 @@ m4/pkg.m4
 /test-driver
 .deps
 /lib/cfg-grammar.h
+*.o
+*.lo
+*.la
+*-grammar.c
+*-grammar.h
+*-grammar.y
+modules/*/.libs/*
+.dirstamp
+*.lai
+*.so*

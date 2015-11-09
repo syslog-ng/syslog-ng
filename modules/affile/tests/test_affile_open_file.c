@@ -1,6 +1,7 @@
 #include "testutils.h"
 #include "affile/affile-common.h"
 #include "lib/messages.h"
+#include "gprocess.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -116,6 +117,9 @@ test_file_flags()
 
 int main(int argc, char **argv)
 {
+#if ENABLE_LINUX_CAPS
+  g_process_capability_init();
+#endif
   setup();
 
   AFFILE_TESTCASE(test_open_regular_file);

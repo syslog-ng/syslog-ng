@@ -73,7 +73,7 @@ afunix_sd_adjust_reader_options(AFUnixSourceDriver *self, GlobalConfig *cfg)
   return TRUE;
 }
 
-static gboolean
+gboolean
 afunix_sd_apply_perms_to_socket(AFUnixSourceDriver *self)
 {
   cap_t saved_caps;

@@ -39,6 +39,7 @@
 #include "scratch-buffers.h"
 #include "mainloop-call.h"
 #include "service-management.h"
+#include "gprocess.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -132,6 +133,9 @@ app_startup(void)
   log_source_global_init();
   log_template_global_init();
   service_management_init();
+#if ENABLE_LINUX_CAPS
+  g_process_capability_init();
+#endif
 }
 
 void
@@ -169,8 +173,9 @@ app_shutdown(void)
   dns_cache_global_deinit();
   hostname_global_deinit();
   msg_deinit();
-
-  
+#if ENABLE_LINUX_CAPS
+  g_process_capability_deinit();
+#endif
   /* NOTE: the iv_deinit() call should come here, but there's some exit
    * synchronization issue in libivykis that causes use-after-free with the
    * thread-local-state for the main thread and iv_work_pool worker threads. 
