@@ -126,7 +126,7 @@ tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_uint32_padded(result, 0, ' ', 10, n % m);
+  format_uint64_padded(result, 0, ' ', 10, n % m);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);
