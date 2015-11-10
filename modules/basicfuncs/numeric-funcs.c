@@ -110,7 +110,7 @@ tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int32_padded(result, 0, ' ', 10, n / m);
+  format_int64_padded(result, 0, ' ', 10, n / m);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_div);
