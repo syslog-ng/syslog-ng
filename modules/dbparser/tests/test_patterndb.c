@@ -337,7 +337,7 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <value name='context-id'>${CONTEXT_ID}</value>\
    </values>\
    <actions>\
-     <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='match'>\
+     <action rate='1/60' condition='\"${n11-1}\" eq \"v11-1\"' trigger='match'>\
        <message>\
          <value name='MESSAGE'>rule11 matched</value>\
          <value name='context-id'>${CONTEXT_ID}</value>\
@@ -346,7 +346,7 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
          </tags>\
        </message>\
      </action>\
-     <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='timeout'>\
+     <action rate='1/60' condition='\"${n11-1}\" eq \"v11-1\"' trigger='timeout'>\
        <message>\
          <value name='MESSAGE'>rule11 timed out</value>\
          <value name='context-id'>${CONTEXT_ID}</value>\
@@ -368,12 +368,12 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <pattern>contextlesstest @STRING:field:@</pattern>\
    </patterns>\
    <actions>\
-     <action condition='\"${field}\" == \"value1\"'>\
+     <action condition='\"${field}\" eq \"value1\"'>\
        <message>\
          <value name='MESSAGE'>message1</value>\
        </message>\
      </action>\
-     <action condition='\"${field}\" == \"value2\"'>\
+     <action condition='\"${field}\" eq \"value2\"'>\
        <message>\
          <value name='MESSAGE'>message2</value>\
        </message>\
@@ -584,7 +584,7 @@ gchar *pdb_msg_count_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <value name='n13-1'>v13-1</value>\
    </values>\
    <actions>\
-    <action condition='\"${n13-1}\" == \"v13-1\"' trigger='match'>\
+    <action condition='\"${n13-1}\" eq \"v13-1\"' trigger='match'>\
      <message inherit-properties='TRUE'>\
       <value name='CONTEXT_LENGTH'>$(context-length)</value>\
      </message>\
@@ -597,7 +597,7 @@ gchar *pdb_msg_count_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <pattern>pattern14</pattern>\
    </patterns>\
    <actions>\
-    <action condition='\"$(context-length)\" == \"1\"' trigger='match'>\
+    <action condition='\"$(context-length)\" eq \"1\"' trigger='match'>\
      <message inherit-properties='TRUE'>\
       <value name='CONTEXT_LENGTH'>$(context-length)</value>\
      </message>\
@@ -610,7 +610,7 @@ gchar *pdb_msg_count_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <pattern>pattern15@ANYSTRING:p15@</pattern>\
    </patterns>\
    <actions>\
-    <action condition='\"$(context-length)\" == \"2\"' trigger='match'>\
+    <action condition='\"$(context-length)\" eq \"2\"' trigger='match'>\
      <message inherit-properties='FALSE'>\
       <value name='fired'>true</value>\
      </message>\
