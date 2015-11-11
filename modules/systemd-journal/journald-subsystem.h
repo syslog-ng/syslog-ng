@@ -27,7 +27,7 @@
 
 #include <stdlib.h>
 #include <glib.h>
-#include "config.h"
+#include "syslog-ng-config.h"
 
 #if SYSTEMD_JOURNAL_MODE == JOURNALD_SYSTEM
 #include <systemd/sd-journal.h>

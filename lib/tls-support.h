@@ -26,7 +26,7 @@
 
 /* this header is about Thread Local Storage and not about Transport Layer Security */
 
-#include <config.h>
+#include <syslog-ng-config.h>
 
 #ifndef SYSLOG_NG_HAVE_THREAD_KEYWORD
 

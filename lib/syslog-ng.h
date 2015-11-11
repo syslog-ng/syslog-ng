@@ -25,7 +25,7 @@
 #ifndef SYSLOG_NG_H_INCLUDED
 #define SYSLOG_NG_H_INCLUDED
 
-#include <config.h>
+#include <syslog-ng-config.h>
 
 #if SYSLOG_NG_ENABLE_DEBUG
 #undef YYDEBUG

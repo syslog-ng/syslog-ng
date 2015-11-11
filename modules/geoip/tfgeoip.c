@@ -27,7 +27,7 @@
 #include "cfg.h"
 #include "tls-support.h"
 
-#include "config.h"
+#include "syslog-ng-config.h"
 
 #include <GeoIP.h>
 

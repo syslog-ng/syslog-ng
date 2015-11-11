@@ -1,6 +1,6 @@
 #include "syslog-ng.h"
 
-#include <config.h>
+#include <syslog-ng-config.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
