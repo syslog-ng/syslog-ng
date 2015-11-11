@@ -44,8 +44,6 @@
 #endif
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
 
-#define SAFE_STRING(x) ((x) ? (x) : "NULL")
-
 typedef struct _LogPipe LogPipe;
 typedef struct _LogMessage LogMessage;
 typedef struct _GlobalConfig GlobalConfig;

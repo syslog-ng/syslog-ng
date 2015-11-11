@@ -90,6 +90,7 @@ typedef enum
   G_PK_DAEMON,
 } GProcessKind;
 
+#define SAFE_STRING(x) ((x) ? (x) : "NULL")
 #define G_PROCESS_FD_LIMIT_RESERVE 64
 #define G_PROCESS_FAILURE_NOTIFICATION PATH_PREFIX "/sbin/syslog-ng-failure"
 
