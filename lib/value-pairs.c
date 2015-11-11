@@ -887,6 +887,17 @@ value_pairs_new(void)
   return vp;
 }
 
+ValuePairs *
+value_pairs_new_default(GlobalConfig *cfg)
+{
+  ValuePairs *vp = value_pairs_new();
+
+  value_pairs_add_scope(vp, "selected-macros");
+  value_pairs_add_scope(vp, "nv-pairs");
+  value_pairs_add_scope(vp, "sdata");
+  return vp;
+}
+
 void
 value_pairs_free (ValuePairs *vp)
 {
@@ -1260,16 +1271,5 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       vp = NULL;
     }
 
-  return vp;
-}
-
-ValuePairs *
-value_pairs_new_default(GlobalConfig *cfg)
-{
-  ValuePairs *vp = value_pairs_new();
-
-  value_pairs_add_scope(vp, "selected-macros");
-  value_pairs_add_scope(vp, "nv-pairs");
-  value_pairs_add_scope(vp, "sdata");
   return vp;
 }
