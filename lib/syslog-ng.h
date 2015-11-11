@@ -37,8 +37,8 @@
 
 #define PATH_SYSLOG_NG_CONF     SYSLOG_NG_PATH_SYSCONFDIR "/syslog-ng.conf"
 #define PATH_INSTALL_DAT	SYSLOG_NG_PATH_SYSCONFDIR "/install.dat"
-#define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"
-#define PATH_CONTROL_SOCKET     PATH_PIDFILEDIR "/syslog-ng.ctl"
+#define PATH_PIDFILE            SYSLOG_NG_PATH_PIDFILEDIR "/syslog-ng.pid"
+#define PATH_CONTROL_SOCKET     SYSLOG_NG_PATH_PIDFILEDIR "/syslog-ng.ctl"
 #if SYSLOG_NG_ENABLE_ENV_WRAPPER
 #define PATH_SYSLOGNG           PATH_LIBEXECDIR "/syslog-ng"
 #endif
