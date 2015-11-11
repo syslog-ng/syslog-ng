@@ -51,7 +51,7 @@ afprog_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "afprog",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afprog module provides program source & destination drivers for syslog-ng.",
   .core_revision = SOURCE_REVISION,
   .plugins = afprog_plugins,

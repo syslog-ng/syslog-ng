@@ -90,9 +90,9 @@ basicfuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "basicfuncs",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The basicfuncs module provides various template functions for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = basicfuncs_plugins,
   .plugins_len = G_N_ELEMENTS(basicfuncs_plugins),
 };

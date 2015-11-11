@@ -312,7 +312,7 @@ main_loop_exit_initiate(void)
     return;
 
   msg_notice("syslog-ng shutting down",
-             evt_tag_str("version", VERSION),
+             evt_tag_str("version", SYSLOG_NG_VERSION),
              NULL);
 
   IV_TIMER_INIT(&main_loop_exit_timer);
@@ -490,7 +490,7 @@ void
 main_loop_run(void)
 {
   msg_notice("syslog-ng starting up",
-             evt_tag_str("version", VERSION),
+             evt_tag_str("version", SYSLOG_NG_VERSION),
              NULL);
 
   /* main loop */

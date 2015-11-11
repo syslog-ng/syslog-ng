@@ -126,7 +126,7 @@ afsocket_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "afsocket",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .preference = 100,
   .description = "The afsocket module provides socket based transports for syslog-ng, such as the udp(), tcp() and syslog() drivers. This module is compiled with SSL support.",
   .core_revision = SOURCE_REVISION,

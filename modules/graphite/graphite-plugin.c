@@ -40,7 +40,7 @@ graphite_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "graphite",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The graphite module provides graphite output for syslog-ng.",
   .core_revision = SOURCE_REVISION,
   .plugins = graphite_plugins,

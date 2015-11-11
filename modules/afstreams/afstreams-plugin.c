@@ -46,7 +46,7 @@ afstreams_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "afstreams",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afstreams module provides Solaris STREAMS logging device support for syslog-ng",
   .core_revision = SOURCE_REVISION,
   .plugins = afstreams_plugins,

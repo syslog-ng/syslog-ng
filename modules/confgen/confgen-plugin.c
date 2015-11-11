@@ -118,7 +118,7 @@ confgen_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "confgen",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The confgen module provides support for dynamically generated configuration file snippets for syslog-ng, used for the SCL system() driver for example",
   .core_revision = SOURCE_REVISION,
   .plugins = NULL,

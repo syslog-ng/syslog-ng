@@ -50,7 +50,7 @@ linux_kmsg_format_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "linux-kmsg-format",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The linux-kmsg-format module provides support for parsing linux 3.5+ /dev/kmsg-format messages.",
   .core_revision = SOURCE_REVISION,
   .plugins = &linux_kmsg_format_plugin,

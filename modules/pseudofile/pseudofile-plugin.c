@@ -46,7 +46,7 @@ pseudofile_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "pseudofile",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The pseudofile module provides the pseudofile() destination for syslog-ng",
   .core_revision = SOURCE_REVISION,
   .plugins = pseudofile_plugins,

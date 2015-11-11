@@ -63,7 +63,7 @@ syslogformat_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "syslogformat",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The syslogformat module provides support for parsing RFC3164 and RFC5424 format syslog messages.",
   .core_revision = SOURCE_REVISION,
   .plugins = syslog_format_plugins,

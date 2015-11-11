@@ -165,7 +165,7 @@ cryptofuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "cryptofuncs",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The cryptofuncs module provides cryptographic template functions.",
   .core_revision = SOURCE_REVISION,
   .plugins = cryptofuncs_plugins,

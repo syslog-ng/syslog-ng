@@ -427,7 +427,7 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
    * We add a header to the body, otherwise libesmtp will not
    * recognise headers, and will append them to the end of the body.
    */
-  g_string_assign(self->str, "X-Mailer: syslog-ng " VERSION "\r\n\r\n");
+  g_string_assign(self->str, "X-Mailer: syslog-ng " SYSLOG_NG_VERSION "\r\n\r\n");
   log_template_append_format(self->body_template, msg, &self->template_options,
                              LTZ_SEND, self->super.seq_num,
                              NULL, self->str);
@@ -728,7 +728,7 @@ afsmtp_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "afsmtp",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afsmtp module provides SMTP destination support for syslog-ng.",
   .core_revision = SOURCE_REVISION,
   .plugins = &afsmtp_plugin,

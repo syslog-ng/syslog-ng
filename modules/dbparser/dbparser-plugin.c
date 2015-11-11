@@ -48,7 +48,7 @@ dbparser_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "dbparser",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The db-parser() module implements sample database based parsing for syslog-ng.",
   .core_revision = SOURCE_REVISION,
   .plugins = dbparser_plugins,

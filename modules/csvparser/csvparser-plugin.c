@@ -47,7 +47,7 @@ csvparser_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "csvparser",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The csvparser module provides parsing support for CSV and other separated value formats for syslog-ng.",
   .core_revision = SOURCE_REVISION,
   .plugins = csvparser_plugins,

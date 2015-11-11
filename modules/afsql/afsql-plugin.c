@@ -46,7 +46,7 @@ afsql_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "afsql",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afsql module provides SQL destination support for syslog-ng",
   .core_revision = SOURCE_REVISION,
   .plugins = afsql_plugins,

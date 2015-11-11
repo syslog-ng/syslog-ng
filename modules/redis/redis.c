@@ -371,7 +371,7 @@ redis_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "redis",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afredis module provides Redis destination support for syslog-ng.",
   .core_revision = SOURCE_REVISION,
   .plugins = &redis_plugin,

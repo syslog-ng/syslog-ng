@@ -636,7 +636,7 @@ afamqp_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "afamqp",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afamqp module provides AMQP destination support for syslog-ng.",
   .core_revision = SOURCE_REVISION, .plugins = &afamqp_plugin,
   .plugins_len = 1,

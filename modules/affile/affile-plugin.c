@@ -61,7 +61,7 @@ affile_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "affile",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The affile module provides file source & destination support for syslog-ng.",
   .core_revision = SOURCE_REVISION,
   .plugins = affile_plugins,

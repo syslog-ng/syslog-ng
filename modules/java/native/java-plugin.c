@@ -54,7 +54,7 @@ java_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "java",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The java module provides Java destination support for syslog-ng.",
   .core_revision = "Dummy Revision",
   .plugins = java_plugins,
