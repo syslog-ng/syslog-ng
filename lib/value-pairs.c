@@ -558,6 +558,14 @@ vp_walker_stack_push (vp_stack_t *stack,
 }
 
 static void
+vp_walker_free_stack_data(vp_walk_stack_data_t *t)
+{
+  g_free(t->key);
+  g_free(t->prefix);
+  g_free(t);
+}
+
+static void
 vp_walker_stack_unwind_until (vp_walk_state_t *state,
                               const gchar *name)
 {
@@ -584,9 +592,7 @@ vp_walker_stack_unwind_until (vp_walk_state_t *state,
         state->obj_end(t->key, t->prefix, &t->data,
                        NULL, NULL,
                        state->user_data);
-      g_free(t->key);
-      g_free(t->prefix);
-      g_free(t);
+      vp_walker_free_stack_data(t);
     }
 }
 
