@@ -29,7 +29,7 @@
 #include <glib.h>
 #include "syslog-ng-config.h"
 
-#if SYSTEMD_JOURNAL_MODE == JOURNALD_SYSTEM
+#if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM
 #include <systemd/sd-journal.h>
 #else
 /* Open flags */
