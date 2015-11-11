@@ -63,7 +63,7 @@ static const gchar *time_zone_path_list[] =
 #ifdef PATH_TIMEZONEDIR
   PATH_TIMEZONEDIR,               /* search the user specified dir */
 #endif
-  PATH_PREFIX "/share/zoneinfo/", /* then local installation first */
+  SYSLOG_NG_PATH_PREFIX "/share/zoneinfo/", /* then local installation first */
   "/usr/share/zoneinfo/",         /* linux */
   "/usr/share/lib/zoneinfo/",     /* solaris, AIX */
   NULL,

@@ -167,7 +167,7 @@ lookup_sysprefix(void)
   v = getenv("SYSLOGNG_PREFIX");
   if (v)
     return v;
-  return PATH_PREFIX;
+  return SYSLOG_NG_PATH_PREFIX;
 }
 
 const gchar *
