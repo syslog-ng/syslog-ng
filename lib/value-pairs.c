@@ -443,6 +443,11 @@ evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq
    return result;
 };
 
+/*******************************************************************************
+ * vp_stack (represented by vp_stack_t)
+ *
+ * A not very generic stack implementation used by vp_walker.
+ *******************************************************************************/
 typedef struct
 {
   gchar *key;
@@ -530,6 +535,12 @@ vp_stack_height(vp_stack_t *stack)
   return stack->count;
 }
 
+/*******************************************************************************
+ * vp_walker (represented by vp_walk_state_t),
+ *
+ * The stuff that translates name-value pairs to a tree with SAX like
+ * callbacks. (start/value/end)
+ *******************************************************************************/
 static void
 vp_walker_stack_unwind_until (vp_walk_state_t *state,
                               const gchar *name)
@@ -745,6 +756,10 @@ vp_walk_cmp(const gchar *s1, const gchar *s2)
   return strcmp(s2, s1);
 }
 
+/*******************************************************************************
+ * Public API
+ *******************************************************************************/
+
 gboolean
 value_pairs_walk(ValuePairs *vp,
                  VPWalkCallbackFunc obj_start_func,
@@ -906,6 +921,10 @@ value_pairs_add_transforms(ValuePairs *vp, gpointer vpts)
 {
   vp->transforms = g_list_append(vp->transforms, vpts);
 }
+
+/*******************************************************************************
+ * Command line parser
+ *******************************************************************************/
 
 static void
 vp_cmdline_parse_rekey_finish (gpointer data)
