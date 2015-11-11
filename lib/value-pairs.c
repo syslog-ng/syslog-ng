@@ -530,26 +530,23 @@ vp_stack_height(vp_stack_t *stack)
 }
 
 static void
-vp_walker_stack_unwind_until (vp_stack_t *stack, vp_walk_state_t *state,
+vp_walker_stack_unwind_until (vp_walk_state_t *state,
                               const gchar *name)
 {
   vp_walk_stack_data_t *t;
 
-  if (!stack)
-    return;
-
-  while ((t = vp_stack_pop(stack)) != NULL)
+  while ((t = vp_stack_pop(&state->stack)) != NULL)
     {
       vp_walk_stack_data_t *p;
 
       if (strncmp(name, t->prefix, t->prefix_len) == 0)
         {
           /* This one matched, put it back, PUT IT BACK! */
-          vp_stack_push(stack, t);
+          vp_stack_push(&state->stack, t);
           break;
         }
 
-      p = vp_stack_peek(stack);
+      p = vp_stack_peek(&state->stack);
 
       if (p)
         state->obj_end(t->key, t->prefix, &t->data,
@@ -566,14 +563,13 @@ vp_walker_stack_unwind_until (vp_stack_t *stack, vp_walk_state_t *state,
 }
 
 static void
-vp_walker_stack_unwind_all(vp_stack_t *stack,
-                           vp_walk_state_t *state)
+vp_walker_stack_unwind_all(vp_walk_state_t *state)
 {
   vp_walk_stack_data_t *t;
 
-  while ((t = vp_stack_pop(stack)) != NULL)
+  while ((t = vp_stack_pop(&state->stack)) != NULL)
     {
-      vp_walk_stack_data_t *p = vp_stack_peek(stack);
+      vp_walk_stack_data_t *p = vp_stack_peek(&state->stack);
 
       if (p)
         state->obj_end(t->key, t->prefix, &t->data,
@@ -665,7 +661,7 @@ vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
 }
 
 static gchar *
-vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
+vp_walker_name_split(vp_walk_state_t *state,
                      const gchar *name)
 {
   GPtrArray *tokens;
@@ -674,11 +670,11 @@ vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
 
   tokens = vp_walker_name_value_split(name);
 
-  start = vp_stack_height(stack);
+  start = vp_stack_height(&state->stack);
   for (i = start; i < tokens->len - 1; i++)
     {
-      vp_walk_stack_data_t *p = vp_stack_peek(stack);
-      vp_walk_stack_data_t *nt = vp_walker_stack_push(stack, g_strdup(g_ptr_array_index(tokens, i)),
+      vp_walk_stack_data_t *p = vp_stack_peek(&state->stack);
+      vp_walk_stack_data_t *nt = vp_walker_stack_push(&state->stack, g_strdup(g_ptr_array_index(tokens, i)),
                                  vp_walker_name_combine_prefix(tokens, i));
 
       if (p)
@@ -710,8 +706,8 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
   gchar *key;
   gboolean result;
 
-  vp_walker_stack_unwind_until (&state->stack, state, name);
-  key = vp_walker_name_split (&state->stack, state, name);
+  vp_walker_stack_unwind_until (state, name);
+  key = vp_walker_name_split (state, name);
   data = vp_stack_peek (&state->stack);
 
   if (data != NULL)
@@ -758,7 +754,7 @@ value_pairs_walk(ValuePairs *vp,
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
                                       (GCompareDataFunc)vp_walk_cmp, msg,
                                       seq_num, time_zone_mode, template_options, &state);
-  vp_walker_stack_unwind_all(&state.stack, &state);
+  vp_walker_stack_unwind_all(&state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
   vp_stack_destroy(&state.stack);
 
