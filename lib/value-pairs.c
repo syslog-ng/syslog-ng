@@ -603,13 +603,13 @@ vp_walker_stack_push (vp_stack_t *stack,
 }
 
 static void
-_extract_name_token(GPtrArray *array, const gchar *name, gsize len)
+vp_walker_extract_name_token(GPtrArray *array, const gchar *name, gsize len)
 {
   g_ptr_array_add(array, g_strndup(name, len));
 }
 
 static GPtrArray *
-vp_walker_name_value_split(const gchar *name)
+vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 {
   gint pos, token_start = 0, name_len = strlen(name);
   GPtrArray *array = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
@@ -633,7 +633,7 @@ vp_walker_name_value_split(const gchar *name)
         }
       if (name[pos] == '.' || pos == name_len)
         {
-          _extract_name_token(array, &name[token_start], pos - token_start);
+          vp_walker_extract_name_token(array, &name[token_start], pos - token_start);
           pos++;
           token_start = pos;
         }
@@ -678,7 +678,7 @@ vp_walker_name_split(vp_walk_state_t *state,
   gchar *key = NULL;
   guint i, start;
 
-  tokens = vp_walker_name_value_split(name);
+  tokens = vp_walker_split_name_to_tokens(state, name);
 
   start = vp_stack_height(&state->stack);
   for (i = start; i < tokens->len - 1; i++)
