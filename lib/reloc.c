@@ -54,7 +54,7 @@ path_resolver_populate_configure_variables(PathResolver *self, const gchar *sysp
 {
   path_resolver_add_configure_variable(&self->super, "${prefix}", sysprefix);
   path_resolver_add_configure_variable(&self->super, "${exec_prefix}", SYSLOG_NG_PATH_EXECPREFIX);
-  path_resolver_add_configure_variable(&self->super, "${libexecdir}", PATH_LIBEXECDIR);
+  path_resolver_add_configure_variable(&self->super, "${libexecdir}", SYSLOG_NG_PATH_LIBEXECDIR);
   path_resolver_add_configure_variable(&self->super, "${datarootdir}", PATH_DATAROOTDIR);
   path_resolver_add_configure_variable(&self->super, "${datadir}", SYSLOG_NG_PATH_DATADIR);
   path_resolver_add_configure_variable(&self->super, "${localstatedir}", SYSLOG_NG_PATH_LOCALSTATEDIR);

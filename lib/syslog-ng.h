@@ -40,7 +40,7 @@
 #define PATH_PIDFILE            SYSLOG_NG_PATH_PIDFILEDIR "/syslog-ng.pid"
 #define PATH_CONTROL_SOCKET     SYSLOG_NG_PATH_PIDFILEDIR "/syslog-ng.ctl"
 #if SYSLOG_NG_ENABLE_ENV_WRAPPER
-#define PATH_SYSLOGNG           PATH_LIBEXECDIR "/syslog-ng"
+#define PATH_SYSLOGNG           SYSLOG_NG_PATH_LIBEXECDIR "/syslog-ng"
 #endif
 #define PATH_PERSIST_CONFIG     SYSLOG_NG_PATH_LOCALSTATEDIR "/syslog-ng.persist"
 
