@@ -448,14 +448,6 @@ evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq
  *
  * A not very generic stack implementation used by vp_walker.
  *******************************************************************************/
-typedef struct
-{
-  gchar *key;
-  gchar *prefix;
-  gint prefix_len;
-
-  gpointer data;
-} vp_walk_stack_data_t;
 
 #define VP_STACK_INITIAL_SIZE 16
 
@@ -482,7 +474,7 @@ vp_stack_push(vp_stack_t *stack, gpointer data)
   g_ptr_array_add(stack->elems, data);
 }
 
-static vp_walk_stack_data_t *
+static gpointer
 vp_stack_peek(vp_stack_t *stack)
 {
   if (stack->elems->len == 0)
@@ -491,10 +483,10 @@ vp_stack_peek(vp_stack_t *stack)
   return g_ptr_array_index(stack->elems, stack->elems->len - 1);
 }
 
-static vp_walk_stack_data_t *
+static gpointer
 vp_stack_pop(vp_stack_t *stack)
 {
-  vp_walk_stack_data_t *data = NULL;
+  gpointer data = NULL;
 
   data = vp_stack_peek(stack);
   if (data)
@@ -514,6 +506,15 @@ vp_stack_height(vp_stack_t *stack)
  * The stuff that translates name-value pairs to a tree with SAX like
  * callbacks. (start/value/end)
  *******************************************************************************/
+
+typedef struct
+{
+  gchar *key;
+  gchar *prefix;
+  gint prefix_len;
+
+  gpointer data;
+} vp_walk_stack_data_t;
 
 typedef struct
 {
@@ -540,6 +541,18 @@ vp_walker_stack_push (vp_stack_t *stack,
   return nt;
 }
 
+static vp_walk_stack_data_t *
+vp_walker_stack_peek(vp_stack_t *stack)
+{
+  return (vp_walk_stack_data_t *) vp_stack_peek(stack);
+}
+
+static vp_walk_stack_data_t *
+vp_walker_stack_pop(vp_stack_t *stack)
+{
+  return (vp_walk_stack_data_t *) vp_stack_pop(stack);
+}
+
 static void
 vp_walker_free_stack_data(vp_walk_stack_data_t *t)
 {
@@ -554,7 +567,7 @@ vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
 {
   vp_walk_stack_data_t *t;
 
-  while ((t = vp_stack_pop(&state->stack)) != NULL)
+  while ((t = vp_walker_stack_pop(&state->stack)) != NULL)
     {
       vp_walk_stack_data_t *p;
 
@@ -565,7 +578,7 @@ vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
           break;
         }
 
-      p = vp_stack_peek(&state->stack);
+      p = vp_walker_stack_peek(&state->stack);
 
       if (p)
         state->obj_end(t->key, t->prefix, &t->data,
@@ -668,7 +681,7 @@ vp_walker_start_containers_for_name(vp_walk_state_t *state,
     {
       vp_walk_stack_data_t *p, *nt;
 
-      p = vp_stack_peek(&state->stack);
+      p = vp_walker_stack_peek(&state->stack);
       nt = vp_walker_stack_push(&state->stack,
                                 g_strdup(g_ptr_array_index(tokens, i)),
                                 vp_walker_name_combine_prefix(tokens, i));
@@ -704,7 +717,7 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
 
   vp_walker_stack_unwind_containers_until(state, name);
   key = vp_walker_start_containers_for_name(state, name);
-  data = vp_stack_peek(&state->stack);
+  data = vp_walker_stack_peek(&state->stack);
 
   if (data != NULL)
     result = state->process_value(key, data->prefix,
