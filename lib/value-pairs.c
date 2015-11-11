@@ -566,8 +566,8 @@ vp_walker_free_stack_data(vp_walk_stack_data_t *t)
 }
 
 static void
-vp_walker_stack_unwind_until (vp_walk_state_t *state,
-                              const gchar *name)
+vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
+                                        const gchar *name)
 {
   vp_walk_stack_data_t *t;
 
@@ -597,9 +597,9 @@ vp_walker_stack_unwind_until (vp_walk_state_t *state,
 }
 
 static void
-vp_walker_stack_unwind_all(vp_walk_state_t *state)
+vp_walker_stack_unwind_all_containers(vp_walk_state_t *state)
 {
-  vp_walker_stack_unwind_until(state, NULL);
+  vp_walker_stack_unwind_containers_until(state, NULL);
 }
 
 static void
@@ -671,8 +671,8 @@ vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
 }
 
 static gchar *
-vp_walker_name_split(vp_walk_state_t *state,
-                     const gchar *name)
+vp_walker_start_containers_for_name(vp_walk_state_t *state,
+                                    const gchar *name)
 {
   GPtrArray *tokens;
   gchar *key = NULL;
@@ -719,9 +719,9 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
   gchar *key;
   gboolean result;
 
-  vp_walker_stack_unwind_until (state, name);
-  key = vp_walker_name_split (state, name);
-  data = vp_stack_peek (&state->stack);
+  vp_walker_stack_unwind_containers_until(state, name);
+  key = vp_walker_start_containers_for_name(state, name);
+  data = vp_stack_peek(&state->stack);
 
   if (data != NULL)
     result = state->process_value(key, data->prefix,
@@ -771,7 +771,7 @@ value_pairs_walk(ValuePairs *vp,
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
                                       (GCompareDataFunc)vp_walk_cmp, msg,
                                       seq_num, time_zone_mode, template_options, &state);
-  vp_walker_stack_unwind_all(&state);
+  vp_walker_stack_unwind_all_containers(&state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
   vp_stack_destroy(&state.stack);
 
