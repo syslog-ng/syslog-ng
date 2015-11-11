@@ -42,7 +42,7 @@
 #if SYSLOG_NG_ENABLE_ENV_WRAPPER
 #define PATH_SYSLOGNG           PATH_LIBEXECDIR "/syslog-ng"
 #endif
-#define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
+#define PATH_PERSIST_CONFIG     SYSLOG_NG_PATH_LOCALSTATEDIR "/syslog-ng.persist"
 
 typedef struct _LogPipe LogPipe;
 typedef struct _LogMessage LogMessage;

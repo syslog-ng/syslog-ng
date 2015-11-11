@@ -27,7 +27,7 @@
 #include "stateful-parser.h"
 #include "patterndb.h"
 
-#define PATH_PATTERNDB_FILE     PATH_LOCALSTATEDIR "/patterndb.xml"
+#define PATH_PATTERNDB_FILE     SYSLOG_NG_PATH_LOCALSTATEDIR "/patterndb.xml"
 #define PATH_XSDDIR             SYSLOG_NG_PATH_DATADIR "/xsd"
 
 typedef struct _LogDBParser LogDBParser;
