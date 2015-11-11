@@ -466,16 +466,6 @@ typedef struct
   guint count;
 } vp_stack_t;
 
-typedef struct
-{
-  VPWalkCallbackFunc obj_start;
-  VPWalkCallbackFunc obj_end;
-  VPWalkValueCallbackFunc process_value;
-
-  gpointer user_data;
-  vp_stack_t stack;
-} vp_walk_state_t;
-
 static void
 vp_stack_init(vp_stack_t *stack)
 {
@@ -541,6 +531,16 @@ vp_stack_height(vp_stack_t *stack)
  * The stuff that translates name-value pairs to a tree with SAX like
  * callbacks. (start/value/end)
  *******************************************************************************/
+
+typedef struct
+{
+  VPWalkCallbackFunc obj_start;
+  VPWalkCallbackFunc obj_end;
+  VPWalkValueCallbackFunc process_value;
+
+  gpointer user_data;
+  vp_stack_t stack;
+} vp_walk_state_t;
 static void
 vp_walker_stack_unwind_until (vp_walk_state_t *state,
                               const gchar *name)
