@@ -66,7 +66,7 @@ afprogram_reload_store_item_deinit(AFProgramReloadStoreItem *reload_info)
 static inline void
 afprogram_reload_store_item_free(AFProgramReloadStoreItem *reload_info)
 {
-  log_pipe_unref(reload_info->writer);
+  log_pipe_unref((LogPipe *)reload_info->writer);
   g_free(reload_info);
 }
 
@@ -448,7 +448,7 @@ afprogram_dd_store_reload_store_item(AFProgramDestDriver *self, GlobalConfig *cf
   reload_info->pid = self->pid;
   reload_info->writer = self->writer;
 
-  cfg_persist_config_add(cfg, afprogram_dd_format_persist_name(self), reload_info, afprogram_reload_store_item_destroy_notify, FALSE);
+  cfg_persist_config_add(cfg, afprogram_dd_format_persist_name(self), reload_info, (GDestroyNotify)afprogram_reload_store_item_destroy_notify, FALSE);
 }
 
 static gboolean
