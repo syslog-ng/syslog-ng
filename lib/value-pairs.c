@@ -575,7 +575,7 @@ vp_walker_stack_unwind_until (vp_walk_state_t *state,
     {
       vp_walk_stack_data_t *p;
 
-      if (strncmp(name, t->prefix, t->prefix_len) == 0)
+      if (name && strncmp(name, t->prefix, t->prefix_len) == 0)
         {
           /* This one matched, put it back, PUT IT BACK! */
           vp_stack_push(&state->stack, t);
@@ -599,25 +599,7 @@ vp_walker_stack_unwind_until (vp_walk_state_t *state,
 static void
 vp_walker_stack_unwind_all(vp_walk_state_t *state)
 {
-  vp_walk_stack_data_t *t;
-
-  while ((t = vp_stack_pop(&state->stack)) != NULL)
-    {
-      vp_walk_stack_data_t *p = vp_stack_peek(&state->stack);
-
-      if (p)
-        state->obj_end(t->key, t->prefix, &t->data,
-                       p->prefix, &p->data,
-                       state->user_data);
-      else
-        state->obj_end(t->key, t->prefix, &t->data,
-                       NULL, NULL,
-                       state->user_data);
-
-      g_free(t->key);
-      g_free(t->prefix);
-      g_free(t);
-    }
+  vp_walker_stack_unwind_until(state, NULL);
 }
 
 static void
