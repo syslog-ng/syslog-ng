@@ -461,49 +461,34 @@ typedef struct
 
 typedef struct
 {
-  vp_walk_stack_data_t **buffer;
-  guint buffer_size;
-  guint count;
+  GPtrArray *elems;
 } vp_stack_t;
 
 static void
 vp_stack_init(vp_stack_t *stack)
 {
-  stack->buffer = g_new(vp_walk_stack_data_t *, VP_STACK_INITIAL_SIZE);
-  stack->buffer_size = VP_STACK_INITIAL_SIZE;
-  stack->count = 0;
+  stack->elems = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
 }
 
 static void
 vp_stack_destroy(vp_stack_t *stack)
 {
-  g_free(stack->buffer);
+  g_ptr_array_free(stack->elems, TRUE);
 }
 
 static void
-vp_stack_realloc(vp_stack_t *stack, guint new_size)
+vp_stack_push(vp_stack_t *stack, gpointer data)
 {
-  g_assert(new_size > stack->buffer_size);
-  stack->buffer = g_renew(vp_walk_stack_data_t *, stack->buffer, new_size);
-  stack->buffer_size = new_size;
-}
-
-static void
-vp_stack_push(vp_stack_t *stack, vp_walk_stack_data_t *data)
-{
-  if (stack->count >= stack->buffer_size)
-    vp_stack_realloc(stack, stack->buffer_size * 2);
-
-  stack->buffer[stack->count++] = data;
+  g_ptr_array_add(stack->elems, data);
 }
 
 static vp_walk_stack_data_t *
 vp_stack_peek(vp_stack_t *stack)
 {
-  if (stack->count == 0)
+  if (stack->elems->len == 0)
     return NULL;
 
-  return stack->buffer[stack->count-1];
+  return g_ptr_array_index(stack->elems, stack->elems->len - 1);
 }
 
 static vp_walk_stack_data_t *
@@ -511,18 +496,16 @@ vp_stack_pop(vp_stack_t *stack)
 {
   vp_walk_stack_data_t *data = NULL;
 
-  if (stack->count == 0)
-    return NULL;
-
-  data = stack->buffer[stack->count-1];
-  stack->count--;
+  data = vp_stack_peek(stack);
+  if (data)
+    g_ptr_array_remove_index(stack->elems, stack->elems->len - 1);
   return data;
 }
 
 static guint
 vp_stack_height(vp_stack_t *stack)
 {
-  return stack->count;
+  return stack->elems->len;
 }
 
 /*******************************************************************************
