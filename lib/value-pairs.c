@@ -541,6 +541,22 @@ typedef struct
   gpointer user_data;
   vp_stack_t stack;
 } vp_walk_state_t;
+
+static vp_walk_stack_data_t *
+vp_walker_stack_push (vp_stack_t *stack,
+                      gchar *key, gchar *prefix)
+{
+  vp_walk_stack_data_t *nt = g_new(vp_walk_stack_data_t, 1);
+
+  nt->key = key;
+  nt->prefix = prefix;
+  nt->prefix_len = strlen(nt->prefix);
+  nt->data = NULL;
+
+  vp_stack_push(stack, nt);
+  return nt;
+}
+
 static void
 vp_walker_stack_unwind_until (vp_walk_state_t *state,
                               const gchar *name)
@@ -596,21 +612,6 @@ vp_walker_stack_unwind_all(vp_walk_state_t *state)
       g_free(t->prefix);
       g_free(t);
     }
-}
-
-static vp_walk_stack_data_t *
-vp_walker_stack_push (vp_stack_t *stack,
-                      gchar *key, gchar *prefix)
-{
-  vp_walk_stack_data_t *nt = g_new(vp_walk_stack_data_t, 1);
-
-  nt->key = key;
-  nt->prefix = prefix;
-  nt->prefix_len = strlen(nt->prefix);
-  nt->data = NULL;
-
-  vp_stack_push(stack, nt);
-  return nt;
 }
 
 static void
