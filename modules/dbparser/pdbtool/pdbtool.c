@@ -1124,7 +1124,7 @@ static GOptionEntry pdbtool_options[] =
   { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>" },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path,
-    "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
+    "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -1200,7 +1200,7 @@ main(int argc, char *argv[])
   log_tags_global_init();
   pattern_db_global_init();
 
-  module_path = get_installation_path_for(MODULE_PATH);
+  module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
 
   configuration = cfg_new(VERSION_VALUE);
 
