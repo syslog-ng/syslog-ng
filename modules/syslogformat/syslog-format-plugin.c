@@ -65,7 +65,7 @@ const ModuleInfo module_info =
   .canonical_name = "syslogformat",
   .version = SYSLOG_NG_VERSION,
   .description = "The syslogformat module provides support for parsing RFC3164 and RFC5424 format syslog messages.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = syslog_format_plugins,
   .plugins_len = G_N_ELEMENTS(syslog_format_plugins),
 };

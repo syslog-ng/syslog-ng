@@ -63,7 +63,7 @@ const ModuleInfo module_info =
   .canonical_name = "affile",
   .version = SYSLOG_NG_VERSION,
   .description = "The affile module provides file source & destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = affile_plugins,
   .plugins_len = G_N_ELEMENTS(affile_plugins),
 };

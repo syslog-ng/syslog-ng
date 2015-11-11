@@ -730,7 +730,7 @@ const ModuleInfo module_info =
   .canonical_name = "afsmtp",
   .version = SYSLOG_NG_VERSION,
   .description = "The afsmtp module provides SMTP destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &afsmtp_plugin,
   .plugins_len = 1,
 };

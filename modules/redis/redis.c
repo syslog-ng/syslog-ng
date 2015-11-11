@@ -373,7 +373,7 @@ const ModuleInfo module_info =
   .canonical_name = "redis",
   .version = SYSLOG_NG_VERSION,
   .description = "The afredis module provides Redis destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &redis_plugin,
   .plugins_len = 1,
 };

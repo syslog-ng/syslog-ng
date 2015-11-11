@@ -129,7 +129,7 @@ const ModuleInfo module_info =
   .version = SYSLOG_NG_VERSION,
   .preference = 100,
   .description = "The afsocket module provides socket based transports for syslog-ng, such as the udp(), tcp() and syslog() drivers. This module is compiled with SSL support.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = afsocket_plugins,
   .plugins_len = G_N_ELEMENTS(afsocket_plugins),
 };

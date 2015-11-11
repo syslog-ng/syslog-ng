@@ -763,7 +763,7 @@ const ModuleInfo module_info =
   .canonical_name = "afmongodb",
   .version = SYSLOG_NG_VERSION,
   .description = "The afmongodb module provides MongoDB destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &afmongodb_plugin,
   .plugins_len = 1,
 };

@@ -49,7 +49,7 @@ const ModuleInfo module_info =
   .canonical_name = "csvparser",
   .version = SYSLOG_NG_VERSION,
   .description = "The csvparser module provides parsing support for CSV and other separated value formats for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = csvparser_plugins,
   .plugins_len = G_N_ELEMENTS(csvparser_plugins),
 };

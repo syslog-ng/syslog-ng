@@ -48,7 +48,7 @@ const ModuleInfo module_info =
   .canonical_name = "pseudofile",
   .version = SYSLOG_NG_VERSION,
   .description = "The pseudofile module provides the pseudofile() destination for syslog-ng",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = pseudofile_plugins,
   .plugins_len = G_N_ELEMENTS(pseudofile_plugins),
 };

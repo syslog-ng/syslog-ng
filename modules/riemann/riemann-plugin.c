@@ -48,7 +48,7 @@ const ModuleInfo module_info =
   .canonical_name = "riemann",
   .version = SYSLOG_NG_VERSION,
   .description = "The riemann module provides Riemann destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &riemann_plugin,
   .plugins_len = 1,
 };

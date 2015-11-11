@@ -129,7 +129,7 @@ version(void)
     }
   printf(PACKAGE " " SYSLOG_NG_VERSION "\n"
          "Installer-Version: %s\n"
-         "Revision: " SOURCE_REVISION "\n"
+         "Revision: " SYSLOG_NG_SOURCE_REVISION "\n"
 #if WITH_COMPILE_DATE
          "Compile-Date: " __DATE__ " " __TIME__ "\n"
 #endif

@@ -167,7 +167,7 @@ const ModuleInfo module_info =
   .canonical_name = "cryptofuncs",
   .version = SYSLOG_NG_VERSION,
   .description = "The cryptofuncs module provides cryptographic template functions.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = cryptofuncs_plugins,
   .plugins_len = G_N_ELEMENTS(cryptofuncs_plugins),
 };
