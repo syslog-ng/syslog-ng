@@ -28,7 +28,7 @@
 #include "afsocket-dest.h"
 #include "tlscontext.h"
 
-#if ENABLE_SPOOF_SOURCE
+#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
 
 /* this forward declaration avoids having to include libnet, which requires
  * ugly playing with macros, see that for yourself in the implementation
@@ -39,7 +39,7 @@ struct libnet_context;
 typedef struct _AFInetDestDriver
 {
   AFSocketDestDriver super;
-#if ENABLE_SPOOF_SOURCE
+#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
   struct libnet_context *lnet_ctx;
   GStaticMutex lnet_lock;

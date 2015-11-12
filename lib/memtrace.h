@@ -29,7 +29,7 @@ void z_mem_trace_init(gchar *memtrace_file);
 void z_mem_trace_stats(void);
 void z_mem_trace_dump(void);
 
-#if ENABLE_MEMTRACE
+#if SYSLOG_NG_ENABLE_MEMTRACE
 
 #include <stdlib.h>
 

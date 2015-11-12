@@ -37,7 +37,7 @@ static CfgLexerKeyword syslog_parser_keywords[] =
 
 CfgParser syslog_parser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &syslog_parser_debug,
 #endif
   .name = "syslog_parser",

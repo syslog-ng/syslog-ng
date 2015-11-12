@@ -58,7 +58,7 @@ tw_entry_free(TWEntry *entry)
   g_free(entry);
 }
 
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
 static void
 tw_entry_list_validate(TWEntry **head)
 {

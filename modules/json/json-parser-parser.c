@@ -39,7 +39,7 @@ static CfgLexerKeyword json_parser_keywords[] =
 
 CfgParser json_parser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &json_parser_debug,
 #endif
   .name = "json-parser",

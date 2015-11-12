@@ -44,7 +44,7 @@ static CfgLexerKeyword rewrite_expr_keywords[] = {
 
 CfgParser rewrite_expr_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &rewrite_expr_debug,
 #endif
   .name = "rewrite expression",

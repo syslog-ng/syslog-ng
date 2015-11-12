@@ -38,7 +38,7 @@ static CfgLexerKeyword geoip_parser_keywords[] =
 
 CfgParser geoip_parser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &geoip_parser_debug,
 #endif
   .name = "geoip-parser",

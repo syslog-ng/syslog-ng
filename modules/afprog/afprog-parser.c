@@ -37,7 +37,7 @@ static CfgLexerKeyword afprog_keywords[] = {
 
 CfgParser afprog_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afprog_debug,
 #endif
   .name = "afprog",

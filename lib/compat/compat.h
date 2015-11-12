@@ -70,6 +70,6 @@
 #ifndef COMPAT_COMPAT_H_INCLUDED
 #define COMPAT_COMPAT_H_INCLUDED
 
-#include <config.h>
+#include <syslog-ng-config.h>
 
 #endif

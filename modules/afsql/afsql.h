@@ -116,7 +116,7 @@ typedef struct _AFSqlDestDriver
 } AFSqlDestDriver;
 
 
-#if ENABLE_SQL
+#if SYSLOG_NG_ENABLE_SQL
 
 void afsql_dd_set_type(LogDriver *s, const gchar *type);
 void afsql_dd_set_host(LogDriver *s, const gchar *host);

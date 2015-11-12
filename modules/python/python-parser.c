@@ -39,7 +39,7 @@ static CfgLexerKeyword python_keywords[] = {
 
 CfgParser python_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &python_debug,
 #endif
   .name = "python",

@@ -471,7 +471,7 @@ __glob_pattern_p (const char *pattern)
   return 0;
 }
 #else
-#define HAVE_GLOB_NOMAGIC 1
+#define SYSLOG_NG_HAVE_GLOB_NOMAGIC 1
 #endif
 
 static gboolean
@@ -507,7 +507,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
       globfree(&globbuf);
       if (r == GLOB_NOMATCH)
         {
-#ifndef HAVE_GLOB_NOMAGIC
+#ifndef SYSLOG_NG_HAVE_GLOB_NOMAGIC
           if (!__glob_pattern_p (pattern))
             {
               self->include_depth++;

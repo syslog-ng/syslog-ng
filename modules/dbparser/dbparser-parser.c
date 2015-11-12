@@ -38,7 +38,7 @@ static CfgLexerKeyword dbparser_keywords[] =
 
 CfgParser dbparser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &dbparser_debug,
 #endif
   .name = "dbparser",

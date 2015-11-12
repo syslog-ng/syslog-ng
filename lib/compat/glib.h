@@ -29,7 +29,7 @@
 
 #include <glib.h>
 
-#if !HAVE_G_MAPPED_FILE_UNREF
+#if !SYSLOG_NG_HAVE_G_MAPPED_FILE_UNREF
 #define g_mapped_file_unref g_mapped_file_free
 #endif
 

@@ -24,10 +24,10 @@
    
 #include "syslog-ng.h"
 
-#if ENABLE_MEMTRACE
+#if SYSLOG_NG_ENABLE_MEMTRACE
 
 #define REALLY_TRACE_MALLOC 1
-#define ENABLE_HEAP_TRACE 1
+#define SYSLOG_NG_ENABLE_HEAP_TRACE 1
 
 #include <dlfcn.h>
 #include <assert.h>

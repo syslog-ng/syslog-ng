@@ -28,7 +28,7 @@
 
 #include <config.h>
 
-#ifndef HAVE_THREAD_KEYWORD
+#ifndef SYSLOG_NG_HAVE_THREAD_KEYWORD
 
 #include <stdlib.h>
 #include <pthread.h>
@@ -71,7 +71,7 @@ static inline struct __tls_variables *__tls_deref_helper(pthread_key_t key, size
 
 #define __thread #
 
-#else  /* HAVE_TLS */
+#else  /* SYSLOG_NG_HAVE_TLS */
 
 #define TLS_BLOCK_START                         \
   struct __tls_variables

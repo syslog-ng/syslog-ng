@@ -37,7 +37,7 @@ static CfgLexerKeyword kv_parser_keywords[] =
 
 CfgParser kv_parser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &kv_parser_debug,
 #endif
   .name = "kv-parser",

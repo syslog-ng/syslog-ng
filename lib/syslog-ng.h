@@ -27,7 +27,7 @@
 
 #include <config.h>
 
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
 #undef YYDEBUG
 #define YYDEBUG 1
 #endif
@@ -39,7 +39,7 @@
 #define PATH_INSTALL_DAT	PATH_SYSCONFDIR "/install.dat"
 #define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"
 #define PATH_CONTROL_SOCKET     PATH_PIDFILEDIR "/syslog-ng.ctl"
-#if ENABLE_ENV_WRAPPER
+#if SYSLOG_NG_ENABLE_ENV_WRAPPER
 #define PATH_SYSLOGNG           PATH_LIBEXECDIR "/syslog-ng"
 #endif
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"

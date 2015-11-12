@@ -52,7 +52,7 @@
 
 #include <grp.h>
 
-#if HAVE_GETOPT_H
+#if SYSLOG_NG_HAVE_GETOPT_H
 #include <getopt.h>
 #endif
 
@@ -145,17 +145,17 @@ version(void)
          "Enable-Spoof-Source: %s\n"
          "Enable-TCP-Wrapper: %s\n"
          "Enable-Linux-Caps: %s\n",
-         ON_OFF_STR(ENABLE_DEBUG),
-         ON_OFF_STR(ENABLE_GPROF),
-         ON_OFF_STR(ENABLE_MEMTRACE),
-         ON_OFF_STR(ENABLE_IPV6),
-         ON_OFF_STR(ENABLE_SPOOF_SOURCE),
-         ON_OFF_STR(ENABLE_TCP_WRAPPER),
-         ON_OFF_STR(ENABLE_LINUX_CAPS));
+         ON_OFF_STR(SYSLOG_NG_ENABLE_DEBUG),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_GPROF),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_MEMTRACE),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_IPV6),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_SPOOF_SOURCE),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_TCP_WRAPPER),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_LINUX_CAPS));
 
 }
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 #define BASE_CAPS "cap_net_bind_service,cap_net_broadcast,cap_net_raw," \
   "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner=p "
 

@@ -38,7 +38,7 @@ static CfgLexerKeyword pragma_keywords[] = {
 
 CfgParser pragma_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &pragma_debug,
 #endif
   .name = "pragma",

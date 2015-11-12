@@ -36,7 +36,7 @@ CfgLexerKeyword *block_def_keywords = block_ref_keywords;
 
 CfgParser block_ref_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &block_ref_debug,
 #endif
   .name = "block reference",

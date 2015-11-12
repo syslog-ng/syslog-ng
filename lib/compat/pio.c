@@ -24,7 +24,7 @@
 
 #include "compat/pio.h"
 
-#if !HAVE_PREAD || HAVE_BROKEN_PREAD
+#if !SYSLOG_NG_HAVE_PREAD || SYSLOG_NG_HAVE_BROKEN_PREAD
 
 #include <sys/types.h>
 #include <unistd.h>

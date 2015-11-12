@@ -806,7 +806,7 @@ main(int argc, char *argv[])
 
       if (1)
         {
-#if HAVE_GETADDRINFO
+#if SYSLOG_NG_HAVE_GETADDRINFO
           struct addrinfo hints;
           struct addrinfo *res;
 

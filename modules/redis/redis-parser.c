@@ -38,7 +38,7 @@ static CfgLexerKeyword redis_keywords[] = {
 
 CfgParser redis_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &redis_debug,
 #endif
   .name = "redis",

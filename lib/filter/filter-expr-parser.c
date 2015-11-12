@@ -56,7 +56,7 @@ static CfgLexerKeyword filter_expr_keywords[] = {
   { "netmask",		  KW_NETMASK },
   { "tags",		  KW_TAGS, 0x0301 },
   { "in_list",            KW_IN_LIST, 0x0305 },
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   { "netmask6",     KW_NETMASK6 },
 #endif
 
@@ -69,7 +69,7 @@ static CfgLexerKeyword filter_expr_keywords[] = {
 
 CfgParser filter_expr_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &filter_expr_debug,
 #endif
   .name = "filter expression",

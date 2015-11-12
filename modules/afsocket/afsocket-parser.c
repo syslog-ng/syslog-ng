@@ -37,7 +37,7 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "tcp",                KW_TCP },
   { "syslog",             KW_SYSLOG },
   { "network",            KW_NETWORK, 0x0304 },
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   { "udp6",               KW_UDP6 },
   { "tcp6",               KW_TCP6 },
 #endif
@@ -80,7 +80,7 @@ static CfgLexerKeyword afsocket_keywords[] = {
 
 CfgParser afsocket_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afsocket_debug,
 #endif
   .name = "afsocket",

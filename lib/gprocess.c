@@ -47,7 +47,7 @@
 #include <pwd.h>
 #include <grp.h>
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 #  include <sys/capability.h>
 #  include <sys/prctl.h>
 #endif
@@ -99,7 +99,7 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 static int have_capsyslog = FALSE;
 #endif
 
@@ -140,7 +140,7 @@ static struct
   .gid = -1
 };
 
-#if ENABLE_SYSTEMD
+#if SYSLOG_NG_ENABLE_SYSTEMD
 /**
  * Inherits systemd socket activation from parent process updating the pid
  * in LISTEN_PID to the pid of the child process.
@@ -196,7 +196,7 @@ inherit_systemd_activation(void)
 
 #endif
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 
 /**
  * g_process_cap_modify:
@@ -493,7 +493,7 @@ g_process_set_caps(const gchar *caps)
 void
 g_process_set_argv_space(gint argc, gchar **argv)
 {
-#ifdef HAVE_ENVIRON
+#ifdef SYSLOG_NG_HAVE_ENVIRON
   extern char **environ;
   gchar *lastargv = NULL;
   gchar **envp    = environ;
@@ -678,7 +678,7 @@ g_process_enable_core(void)
 
   if (process_opts.core)
     {
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
       if (!prctl(PR_GET_DUMPABLE, 0, 0, 0, 0))
         {
           gint rc;
@@ -811,7 +811,7 @@ g_process_change_root(void)
 static gboolean
 g_process_change_user(void)
 {
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
   if (process_opts.caps)
     prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
 #endif
@@ -845,7 +845,7 @@ g_process_change_user(void)
   return TRUE;
 }
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 /**
  * g_process_change_caps:
  *
@@ -1044,7 +1044,7 @@ g_process_perform_startup(void)
 static void
 g_process_setproctitle(const gchar* proc_title)
 {
-#ifdef HAVE_ENVIRON
+#ifdef SYSLOG_NG_HAVE_ENVIRON
   size_t len;
 
   g_assert(process_opts.argv_start != NULL);

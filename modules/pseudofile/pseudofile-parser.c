@@ -37,7 +37,7 @@ static CfgLexerKeyword pseudofile_keywords[] = {
 
 CfgParser pseudofile_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &pseudofile_debug,
 #endif
   .name = "pseudofile",

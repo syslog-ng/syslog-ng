@@ -46,7 +46,7 @@ struct _DNSCacheKey
   union
   {
     struct in_addr ip;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
     struct in6_addr ip6;
 #endif
   } addr;
@@ -97,7 +97,7 @@ dns_cache_key_equal(DNSCacheKey *e1, DNSCacheKey *e2)
     {
       if ((e1->family == AF_INET && memcmp(&e1->addr.ip, &e2->addr.ip, sizeof(e1->addr.ip)) == 0))
         return TRUE;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
       if ((e1->family == AF_INET6 && memcmp(&e1->addr.ip6, &e2->addr.ip6, sizeof(e1->addr.ip6)) == 0))
         return TRUE;
 #endif
@@ -112,7 +112,7 @@ dns_cache_key_hash(DNSCacheKey *e)
     {
       return ntohl(e->addr.ip.s_addr);
     }
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   else if (e->family == AF_INET6)
     {
       guint32 *a32 = (guint32 *) &e->addr.ip6.s6_addr;
@@ -154,7 +154,7 @@ dns_cache_fill_key(DNSCacheKey *key, gint family, void *addr)
     case AF_INET:
       key->addr.ip = *(struct in_addr *) addr;
       break;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
     case AF_INET6:
       key->addr.ip6 = *(struct in6_addr *) addr;
       break;
@@ -210,7 +210,7 @@ dns_cache_check_hosts(glong t)
               union 
               {
                 struct in_addr ip4;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
                 struct in6_addr ip6;
 #endif
               } ia;
@@ -227,7 +227,7 @@ dns_cache_check_hosts(glong t)
                 continue;
               ip = p;
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
               if (strchr(ip, ':') != NULL)
                 family = AF_INET6;
               else

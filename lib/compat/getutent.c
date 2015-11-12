@@ -29,7 +29,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT) && defined(HAVE_UTMP_H)
+#if !defined(SYSLOG_NG_HAVE_GETUTENT) && !defined(SYSLOG_NG_HAVE_GETUTXENT) && defined(SYSLOG_NG_HAVE_UTMP_H)
 
 static int utent_fd = -1;
 

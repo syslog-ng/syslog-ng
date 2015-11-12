@@ -24,7 +24,7 @@
 
 #include "compat/string.h"
 
-#ifndef HAVE_STRCASESTR
+#ifndef SYSLOG_NG_HAVE_STRCASESTR
 
 #include <ctype.h>
 #include <string.h>
