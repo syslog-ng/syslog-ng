@@ -86,7 +86,7 @@ _read_text_file_content(const gchar *filename, gchar *buf, gsize buflen)
 static gssize
 _read_text_file_content_without_trailing_newline(const gchar *filename, gchar *buf, gsize buflen)
 {
-  gsize content_len;
+  gssize content_len;
   
   content_len = _read_text_file_content(filename, buf, buflen);
   if (content_len <= 0)
