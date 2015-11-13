@@ -27,6 +27,5 @@
 #include "filter-expr.h"
 
 FilterExprNode *filter_netmask6_new(gchar *cidr);
-void get_network_address(unsigned char *ipv6, int prefix, struct in6_addr *network);
-
+void filter_netmask6_calc_network_address(unsigned char *ipv6, int prefix, struct in6_addr *network);
 #endif
