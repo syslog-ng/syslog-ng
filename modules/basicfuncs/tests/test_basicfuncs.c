@@ -18,10 +18,10 @@ test_cond_funcs(void)
   assert_template_format_with_context("$(grep -m 1 'facility(local3)' $PID)", "23323");
   assert_template_format_with_context("$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng,23323,syslog-ng");
   assert_template_format_with_context("$(grep 'facility(local4)' $PID)", "");
-  assert_template_format_with_context("$(grep ('$FACILITY' == 'local4') $PID)", "");
-  assert_template_format_with_context("$(grep ('$FACILITY(' == 'local3(') $PID)", "23323,23323");
-  assert_template_format_with_context("$(grep ('$FACILITY(' == 'local4)') $PID)", "");
-  assert_template_format_with_context("$(grep \\'$FACILITY\\'\\ ==\\ \\'local4\\' $PID)", "");
+  assert_template_format_with_context("$(grep ('$FACILITY' eq 'local4') $PID)", "");
+  assert_template_format_with_context("$(grep ('$FACILITY(' eq 'local3(') $PID)", "23323,23323");
+  assert_template_format_with_context("$(grep ('$FACILITY(' eq 'local4)') $PID)", "");
+  assert_template_format_with_context("$(grep \\'$FACILITY\\'\\ eq\\ \\'local4\\' $PID)", "");
 
   assert_template_format_with_context("$(if 'facility(local4)' alma korte)", "korte");
   assert_template_format_with_context("$(if 'facility(local3)' alma korte)", "alma");
@@ -39,8 +39,8 @@ test_cond_funcs(void)
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" != \"19\"' alma korte)", "korte");
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" > \"19\"' alma korte)", "korte");
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\"' alma korte)", "alma");
-  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" == \"nagy\"' alma korte)", "korte");
-  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" == \"nagy\"' alma korte)", "alma");
+  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" eq \"nagy\"' alma korte)", "korte");
+  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" eq \"nagy\"' alma korte)", "alma");
 
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@0", "23323");
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@1", "23323");

@@ -217,7 +217,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   app_startup();
 
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE);
   plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
@@ -354,6 +354,18 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_and_new(create_posix_regexp_match("^PTHREAD$", 0), create_posix_regexp_match(" PTHREAD ", 0)), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_and_new(create_posix_regexp_match(" PAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 0);
 
+  /* LEVEL_NUM is 7 */
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("7"), KW_NUM_EQ), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("5"), KW_NUM_NE), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("8"), KW_NUM_LT), 1);
+
+  /* 7 < 10 is TRUE */
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("10"), KW_NUM_LT), 1);
+  /* 7 lt 10 is FALSE as 10 orders lower when interpreted as a string */
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("10"), KW_LT), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("5"), KW_NUM_GT), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("7"), KW_NUM_GE), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("7"), KW_NUM_LE), 1);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("alma"), create_template("korte"), KW_LT), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("alma"), create_template("korte"), KW_LE), 1);
