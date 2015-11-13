@@ -134,6 +134,29 @@ static CfgFlagHandler value_pair_scope[] =
   { NULL,                 0,       0,                            0},
 };
 
+static gboolean
+vp_pattern_spec_eval(VPPatternSpec *self, const gchar *input)
+{
+  return g_pattern_match_string(self->pattern, input);
+}
+
+static void
+vp_pattern_spec_free(VPPatternSpec *self)
+{
+  g_pattern_spec_free(self->pattern);
+  g_free(self);
+}
+
+static VPPatternSpec *
+vp_pattern_spec_new(const gchar *pattern, gboolean include)
+{
+  VPPatternSpec *self = g_new0(VPPatternSpec, 1);
+
+  self->pattern = g_pattern_spec_new(pattern);
+  self->include = include;
+  return self;
+}
+
 gboolean
 value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 {
@@ -145,16 +168,10 @@ value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
                              gboolean include)
 {
   gint i;
-  VPPatternSpec *p;
 
   i = vp->patterns_size++;
   vp->patterns = g_renew(VPPatternSpec *, vp->patterns, vp->patterns_size);
-
-  p = g_new(VPPatternSpec, 1);
-  p->pattern = g_pattern_spec_new(pattern);
-  p->include = include;
-
-  vp->patterns[i] = p;
+  vp->patterns[i] = vp_pattern_spec_new(pattern, include);;
 }
 
 void
@@ -251,7 +268,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 
   for (j = 0; j < vp->patterns_size; j++)
     {
-      if (g_pattern_match_string(vp->patterns[j]->pattern, name))
+      if (vp_pattern_spec_eval(vp->patterns[j], name))
         inc = vp->patterns[j]->include;
     }
 
@@ -275,7 +292,7 @@ vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
 
   for (j = 0; j < vp->patterns_size; j++)
     {
-      if (g_pattern_match_string(vp->patterns[j]->pattern, name))
+      if (vp_pattern_spec_eval(vp->patterns[j], name))
         included = vp->patterns[j]->include;
     }
 
@@ -896,8 +913,7 @@ value_pairs_free (ValuePairs *vp)
 
   for (i = 0; i < vp->patterns_size; i++)
     {
-      g_pattern_spec_free(vp->patterns[i]->pattern);
-      g_free(vp->patterns[i]);
+      vp_pattern_spec_free(vp->patterns[i]);
     }
   g_free(vp->patterns);
 
