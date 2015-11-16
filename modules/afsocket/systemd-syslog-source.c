@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include "misc.h"
 
-#if ENABLE_SYSTEMD
+#if SYSLOG_NG_ENABLE_SYSTEMD
 
 #include <systemd/sd-daemon.h>
 

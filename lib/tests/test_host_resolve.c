@@ -87,7 +87,7 @@ assert_ip_to_fqdn_hostname(const gchar *ip, const gchar *expected)
   assert_sockaddr_to_hostname(g_sockaddr_inet_new(ip, 0), expected);
 }
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
 static void
 assert_ip6_to_short_hostname(const gchar *ip, const gchar *expected)
 {
@@ -247,7 +247,7 @@ test_resolvable_hostname_results_in_sockaddr(void)
 {
   assert_hostname_to_sockaddr(AF_INET, "a.root-servers.net", "198.41.0.4");
   assert_hostname_to_sockaddr(AF_INET, "", "0.0.0.0");
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   assert_hostname_to_sockaddr(AF_INET6, "a.root-servers.net", "2001:503:ba3e::2:30");
   assert_hostname_to_sockaddr(AF_INET6, "", "::");
 #endif

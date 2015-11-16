@@ -24,7 +24,7 @@
 #include "service-management.h"
 #include "messages.h"
 
-#if ENABLE_SYSTEMD
+#if SYSLOG_NG_ENABLE_SYSTEMD
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,7 +46,7 @@ struct _ServiceManagement
 
 ServiceManagement *current_service_mgmt = NULL;
 
-#if ENABLE_SYSTEMD
+#if SYSLOG_NG_ENABLE_SYSTEMD
 
 static inline void
 service_management_systemd_publish_status(const gchar *status)
@@ -136,7 +136,7 @@ service_management_dummy_is_active()
 }
 
 ServiceManagement service_managements[] = {
-#if ENABLE_SYSTEMD
+#if SYSLOG_NG_ENABLE_SYSTEMD
   {
     .type = SMT_SYSTEMD,
     .publish_status = service_management_systemd_publish_status,

@@ -22,7 +22,7 @@
  */
 #include "compat/socket.h"
 
-#ifndef HAVE_INET_ATON
+#ifndef SYSLOG_NG_HAVE_INET_ATON
 int
 inet_aton(const char *cp, struct in_addr *dst)
 {

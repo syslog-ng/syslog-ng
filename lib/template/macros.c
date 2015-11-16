@@ -341,7 +341,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
         gchar *ip;
 
         if (msg->saddr && (g_sockaddr_inet_check(msg->saddr) ||
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
             g_sockaddr_inet6_check(msg->saddr))
 #else
             0)

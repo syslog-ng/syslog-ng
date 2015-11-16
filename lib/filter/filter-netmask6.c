@@ -32,7 +32,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
 typedef struct _FilterNetmask6
 {
   FilterExprNode super;

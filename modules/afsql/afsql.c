@@ -23,7 +23,7 @@
 
 #include "afsql.h"
 
-#if ENABLE_SQL
+#if SYSLOG_NG_ENABLE_SQL
 
 #include "logqueue.h"
 #include "template/templates.h"

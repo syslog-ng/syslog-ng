@@ -47,7 +47,7 @@ static CfgLexerKeyword affile_keywords[] = {
 
 CfgParser affile_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &affile_debug,
 #endif
   .name = "affile",

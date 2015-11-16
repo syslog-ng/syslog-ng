@@ -300,7 +300,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   TEST_ASSERT(create_posix_regexp_match("((", 0) == NULL);
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   sender_saddr = g_sockaddr_inet6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348", 5000);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::/1"), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e::/95"), 1);

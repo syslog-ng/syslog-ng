@@ -45,7 +45,7 @@ static CfgLexerKeyword afstomp_keywords[] = {
 
 CfgParser afstomp_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afstomp_debug,
 #endif
   .name = "afstomp",

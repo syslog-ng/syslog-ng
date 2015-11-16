@@ -49,9 +49,9 @@ pacctformat_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "pacctformat",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The pacctformat module provides support for parsing BSD Process Accounting files",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &pacct_format_plugin,
   .plugins_len = 1,
 };

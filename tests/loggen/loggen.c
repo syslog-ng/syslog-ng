@@ -1,6 +1,6 @@
 #include "syslog-ng.h"
 
-#include <config.h>
+#include <syslog-ng-config.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -698,7 +698,7 @@ static GOptionEntry loggen_options[] = {
   { "csv", 'C', 0, G_OPTION_ARG_NONE, &csv, "Produce CSV output", NULL },
   { "number", 'n', 0, G_OPTION_ARG_INT, &number_of_messages, "Number of messages to generate", "<number>" },
   { "quiet", 'Q', 0, G_OPTION_ARG_NONE, &quiet, "Don't print the msg/sec data", NULL },
-  { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
+  { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE " " SYSLOG_NG_VERSION ")", NULL },
   { NULL }
 };
 
@@ -714,7 +714,7 @@ static GOptionEntry file_option_entries[] =
 void
 version(void)
 {
-  printf(PACKAGE " " VERSION "\n");
+  printf(SYSLOG_NG_PACKAGE " " SYSLOG_NG_VERSION "\n");
 }
 
 int
@@ -806,7 +806,7 @@ main(int argc, char *argv[])
 
       if (1)
         {
-#if HAVE_GETADDRINFO
+#if SYSLOG_NG_HAVE_GETADDRINFO
           struct addrinfo hints;
           struct addrinfo *res;
 

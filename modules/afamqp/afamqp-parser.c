@@ -48,7 +48,7 @@ static CfgLexerKeyword afamqp_keywords[] = {
 
 CfgParser afamqp_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afamqp_debug,
 #endif
   .name = "afamqp",

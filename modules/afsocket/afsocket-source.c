@@ -33,7 +33,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#if ENABLE_TCP_WRAPPER
+#if SYSLOG_NG_ENABLE_TCP_WRAPPER
 #include <tcpd.h>
 int allow_severity = 0;
 int deny_severity = 0;
@@ -269,9 +269,9 @@ static gboolean
 afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_addr, GSockAddr *local_addr, gint fd)
 {
   gchar buf[MAX_SOCKADDR_STRING], buf2[MAX_SOCKADDR_STRING];
-#if ENABLE_TCP_WRAPPER
+#if SYSLOG_NG_ENABLE_TCP_WRAPPER
   if (client_addr && (client_addr->sa.sa_family == AF_INET
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
                    || client_addr->sa.sa_family == AF_INET6
 #endif
      ))

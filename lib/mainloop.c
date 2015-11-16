@@ -312,7 +312,7 @@ main_loop_exit_initiate(void)
     return;
 
   msg_notice("syslog-ng shutting down",
-             evt_tag_str("version", VERSION),
+             evt_tag_str("version", SYSLOG_NG_VERSION),
              NULL);
 
   IV_TIMER_INIT(&main_loop_exit_timer);
@@ -490,7 +490,7 @@ void
 main_loop_run(void)
 {
   msg_notice("syslog-ng starting up",
-             evt_tag_str("version", VERSION),
+             evt_tag_str("version", SYSLOG_NG_VERSION),
              NULL);
 
   /* main loop */
@@ -531,7 +531,7 @@ main_loop_global_init(void)
   cfgfilename = get_installation_path_for(PATH_SYSLOG_NG_CONF);
   persist_file = get_installation_path_for(PATH_PERSIST_CONFIG);
   ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);
-  module_path = get_installation_path_for(MODULE_PATH);
-  java_module_path = get_installation_path_for(JAVA_MODULE_PATH);
+  module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
+  java_module_path = get_installation_path_for(SYSLOG_NG_JAVA_MODULE_PATH);
 }
 

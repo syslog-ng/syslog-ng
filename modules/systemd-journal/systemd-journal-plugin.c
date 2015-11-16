@@ -54,9 +54,9 @@ systemd_journal_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "systemd-journal",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The systemd-journal module provides systemd journal source drivers for syslog-ng where it is available.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = systemd_journal_plugins,
   .plugins_len = G_N_ELEMENTS(systemd_journal_plugins),
 };

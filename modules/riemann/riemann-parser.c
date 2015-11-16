@@ -50,7 +50,7 @@ static CfgLexerKeyword riemann_keywords[] = {
 
 CfgParser riemann_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &riemann_debug,
 #endif
   .name = "riemann",

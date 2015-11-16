@@ -402,9 +402,9 @@ system_source_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "system-source",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The system-source module provides support for determining the system log sources at run time.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = NULL,
   .plugins_len = 0,
 };

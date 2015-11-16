@@ -37,7 +37,7 @@ typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 static inline void
 main_loop_assert_main_thread(void)
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   g_assert(threads_equal(main_thread_handle, get_thread_id()));
 #endif
 }

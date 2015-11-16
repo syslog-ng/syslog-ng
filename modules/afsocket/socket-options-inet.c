@@ -104,7 +104,7 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
 
         break;
       }
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
     case AF_INET6:
       {
         struct ipv6_mreq mreq6;

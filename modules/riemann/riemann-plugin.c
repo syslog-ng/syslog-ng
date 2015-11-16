@@ -46,9 +46,9 @@ riemann_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
 const ModuleInfo module_info =
 {
   .canonical_name = "riemann",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The riemann module provides Riemann destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &riemann_plugin,
   .plugins_len = 1,
 };

@@ -213,7 +213,7 @@ _unix_socket_read(gint fd, gpointer buf, gsize buflen, LogTransportAuxData *aux)
   struct msghdr msg;
   struct iovec iov[1];
   struct sockaddr_storage ss;
-#if defined(HAVE_CTRLBUF_IN_MSGHDR)
+#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
   gchar ctlbuf[32];
   msg.msg_control = ctlbuf;
   msg.msg_controllen = sizeof(ctlbuf);

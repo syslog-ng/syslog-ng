@@ -59,7 +59,7 @@ g_sockaddr_new(struct sockaddr *sa, int salen)
   
   switch (sa->sa_family)
     {
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
     case AF_INET6:
       if (salen >= sizeof(struct sockaddr_in6))
         addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) sa);
@@ -310,7 +310,7 @@ g_sockaddr_inet_new2(struct sockaddr_in *sin)
   return (GSockAddr *) addr;
 }
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
 /* AF_INET6 socket address */
 /*+
 
@@ -606,7 +606,7 @@ g_sockaddr_len(GSockAddr *a)
 
   if (a->sa_funcs == &inet_sockaddr_funcs)
     len = sizeof(GSockAddrInet);
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   else if (a->sa_funcs == &inet6_sockaddr_funcs)
     len = sizeof(GSockAddrInet6);
 #endif

@@ -30,7 +30,7 @@ extern int afstreams_debug;
 int afstreams_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afstreams_keywords[] = {
-#if ENABLE_SUN_STREAMS
+#if SYSLOG_NG_ENABLE_SUN_STREAMS
   { "sun_stream",         KW_SUN_STREAMS },
   { "sun_streams",        KW_SUN_STREAMS },
 #endif
@@ -40,7 +40,7 @@ static CfgLexerKeyword afstreams_keywords[] = {
 
 CfgParser afstreams_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afstreams_debug,
 #endif
   .name = "afstreams",

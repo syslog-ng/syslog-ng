@@ -61,7 +61,7 @@ static CfgLexerKeyword afsql_keywords[] = {
 
 CfgParser afsql_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afsql_debug,
 #endif
   .name = "afsql",

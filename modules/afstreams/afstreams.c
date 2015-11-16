@@ -41,7 +41,7 @@ typedef struct _AFStreamsSourceDriver
 } AFStreamsSourceDriver;
 
 
-#if ENABLE_SUN_STREAMS
+#if SYSLOG_NG_ENABLE_SUN_STREAMS
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -50,7 +50,7 @@ typedef struct _AFStreamsSourceDriver
 #include <fcntl.h>
 #include <string.h>
 
-#if HAVE_DOOR_H
+#if SYSLOG_NG_HAVE_DOOR_H
 #include <door.h>
 #endif
 

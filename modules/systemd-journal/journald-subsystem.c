@@ -26,7 +26,7 @@
 #include <glib.h>
 #include <gmodule.h>
 
-#if SYSTEMD_JOURNAL_MODE == JOURNALD_SYSTEM
+#if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM
 
 struct _Journald
 {

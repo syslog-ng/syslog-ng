@@ -44,7 +44,7 @@ static CfgLexerKeyword afmongodb_keywords[] = {
 
 CfgParser afmongodb_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afmongodb_debug,
 #endif
   .name = "afmongodb",

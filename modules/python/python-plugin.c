@@ -79,7 +79,7 @@ python_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
 const ModuleInfo module_info =
 {
   .canonical_name = "python",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The python module provides Python scripted destination support for syslog-ng.",
   .core_revision = VERSION_CURRENT_VER_ONLY,
   .plugins = python_plugins,

@@ -56,7 +56,7 @@ static TransportMapper *last_transport_mapper;
 TLSContext *last_tls_context;
 
 
-#if ! ENABLE_IPV6
+#if ! SYSLOG_NG_ENABLE_IPV6
 #undef AF_INET6
 #define AF_INET6 0; g_assert_not_reached()
 
@@ -434,7 +434,7 @@ source_systemd_syslog
 
 source_systemd_syslog_params
 	: {
-#if ! ENABLE_SYSTEMD
+#if ! SYSLOG_NG_ENABLE_SYSTEMD
             msg_error("systemd-syslog() source cannot be enabled and it is not"
                       " functioning. Please compile your syslog-ng with --enable-systemd"
                       " flag",
