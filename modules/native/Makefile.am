@@ -11,6 +11,8 @@ modules_native_libsyslog_ng_native_connector_a_SOURCES = \
   modules/native/parser.c				\
   modules/native/parser.h
 
+pkgconfig_DATA += syslog-ng-native-connector.pc
+
 modules_native_libsyslog_ng_native_connector_a_CPPFLAGS = \
   $(AM_CPPFLAGS)	-fPIC	\
   -fvisibility=hidden	\

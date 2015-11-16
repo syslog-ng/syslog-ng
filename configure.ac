@@ -1062,6 +1062,10 @@ if test "x$enable_amqp" = "xno"; then
    LIBRABBITMQ_SUBDIRS=""
 fi
 
+if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
+    AC_CONFIG_FILES([syslog-ng-native-connector.pc])
+fi
+
 dnl ***************************************************************************
 dnl riemann-client headers/libraries
 dnl ***************************************************************************
