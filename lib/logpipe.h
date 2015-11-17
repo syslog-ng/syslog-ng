@@ -222,6 +222,8 @@ struct _LogPipe
   gboolean (*init)(LogPipe *self);
   gboolean (*deinit)(LogPipe *self);
 
+  const gchar *(*generate_persist_id)(const LogPipe *self);
+
   /* clone this pipe when used in multiple locations in the processing
    * pipe-line. If it contains state, it should behave as if it was
    * the same instance, otherwise it can be a copy.
