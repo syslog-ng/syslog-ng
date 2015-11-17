@@ -599,9 +599,16 @@ log_writer_suppress_timeout(gpointer pt)
 
   main_loop_assert_main_thread();
 
-  g_static_mutex_lock(&self->suppress_lock);
+  /* NOTE: this will probably do nothing as we are the timer callback, but
+   * we may not do it with the suppress_lock held */
   ml_batched_timer_cancel(&self->suppress_timer);
-  log_writer_emit_suppress_summary(self);
+  g_static_mutex_lock(&self->suppress_lock);
+
+  /* NOTE: we may be waken up an extra time if the suppress_timer setup race
+   * is lost, see the comment at log_writer_is_msg_suppressed() for an
+   * explanation */
+  if (self->last_msg_count > 0)
+    log_writer_emit_suppress_summary(self);
   g_static_mutex_unlock(&self->suppress_lock);
 
   return FALSE;
@@ -612,11 +619,59 @@ log_writer_suppress_timeout(gpointer pt)
  *
  * This function is called to suppress duplicate messages from a given host.
  *
+ * Locking notes:
+ *
+ * There's a strict ordering requirement between suppress_lock and
+ * interacting with the main loop (which ml_batched_timer beind
+ * suppress_timer is doing).
+ *
+ * The reason is that the main thread (running
+ * the main loop) sometimes acquires suppress_lock (at suppress timer
+ * expiration) and while blocking on suppress_lock it cannot service
+ * main_loop_calls()
+ *
+ * This function makes it sure that ml_batched_timer_update/cancel calls are
+ * only done with the suppress lock released.
+ *
+ * If we do this, we might have a few unfortunate side effects due to races
+ * that we also try to handle:
+ *
+ * Two messages race, one of these matches the recorded last message,
+ * the other doesn't. In this case, moving the update on the suppress_timer
+ * outside of the lock region might cause two different races:
+ *
+ * 1) matching message comes first, then non-matching
+ *
+ * This case the suppress_lock protected region decides that the suppress
+ * timer needs to fire (#1) and then the other decides that it needs to
+ * be cancelled. (#2)
+ *
+ * If these are processed in order, then we are the same as if the two was
+ * also protected by the mutex (which is ok)
+ *
+ * If they are reversed, e.g. we first cancels the timer and the second arms it,
+ * then we might have a timer wakeup which will find no suppressed messages
+ * to report (as the non-matching message will set last_msg_count to zero). This
+ * spurious wakeup should be handled by the expiration callback.
+ *
+ * 1) non-matching message comes first, then matching
+ *
+ * This is simply a message reordering case, e.g. we don't
+ * want any suppressions to be emitted.
+ *
+ * In this case the locked regions finds that neither messages matched
+ * the recorded one, thus both times they decide to cancel the timer, which
+ * is ok. Timer cancellation can be reordered as they will have the same
+ * effect anyway.
+ *
  * Returns TRUE to indicate that the message is to be suppressed.
  **/
 static gboolean
 log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
 {
+  gboolean need_to_arm_suppress_timer;
+  gboolean need_to_cancel_suppress_timer = FALSE;
+
   if (self->options->suppress <= 0)
     return FALSE;
 
@@ -630,16 +685,17 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
           strcmp(log_msg_get_value(self->last_msg, LM_V_PID, NULL), log_msg_get_value(lm, LM_V_PID, NULL)) == 0 &&
           strcmp(log_msg_get_value(lm, LM_V_MESSAGE, NULL), "-- MARK --") != 0)
         {
+
           stats_counter_inc(self->suppressed_messages);
           self->last_msg_count++;
           
-          if (self->last_msg_count == 1)
-            {
-              /* we only create the timer if this is the first suppressed message, otherwise it is already running. */
-
-              log_writer_arm_suppress_timer(self);
-            }
+          /* we only create the timer if this is the first suppressed message, otherwise it is already running. */
+          need_to_arm_suppress_timer = self->last_msg_count == 1;
           g_static_mutex_unlock(&self->suppress_lock);
+
+          /* this has to be outside of suppress_lock */
+          if (need_to_arm_suppress_timer)
+            log_writer_arm_suppress_timer(self);
 
           msg_debug("Suppressing duplicate message",
                     evt_tag_str("host", log_msg_get_value(lm, LM_V_HOST, NULL)),
@@ -649,19 +705,16 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
         }
 
       if (self->last_msg_count)
-        {
-          ml_batched_timer_cancel(&self->suppress_timer);
-          log_writer_emit_suppress_summary(self);
-        }
+        log_writer_emit_suppress_summary(self);
       else
-        {
-          ml_batched_timer_cancel(&self->suppress_timer);
-          log_writer_release_last_message(self);
-        }
+        log_writer_release_last_message(self);
+      need_to_cancel_suppress_timer = TRUE;
     }
 
   log_writer_record_last_message(self, lm);
   g_static_mutex_unlock(&self->suppress_lock);
+  if (need_to_cancel_suppress_timer)
+    ml_batched_timer_cancel(&self->suppress_timer);
   return FALSE;
 }
 
