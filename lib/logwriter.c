@@ -614,6 +614,27 @@ log_writer_suppress_timeout(gpointer pt)
   return FALSE;
 }
 
+static gboolean
+_is_message_a_mark(LogMessage *msg)
+{
+  return strcmp(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "-- MARK --") == 0;
+}
+
+static gboolean
+_is_message_a_repetition(LogMessage *msg, LogMessage *last)
+{
+  return strcmp(log_msg_get_value(last, LM_V_MESSAGE, NULL), log_msg_get_value(msg, LM_V_MESSAGE, NULL)) == 0 &&
+         strcmp(log_msg_get_value(last, LM_V_HOST, NULL), log_msg_get_value(msg, LM_V_HOST, NULL)) == 0 &&
+         strcmp(log_msg_get_value(last, LM_V_PROGRAM, NULL), log_msg_get_value(msg, LM_V_PROGRAM, NULL)) == 0 &&
+         strcmp(log_msg_get_value(last, LM_V_PID, NULL), log_msg_get_value(msg, LM_V_PID, NULL)) == 0;
+}
+
+static gboolean
+_is_time_within_the_suppress_timeout(LogWriter *self, LogMessage *msg)
+{
+  return self->last_msg->timestamps[LM_TS_RECVD].tv_sec >= msg->timestamps[LM_TS_RECVD].tv_sec - self->options->suppress;
+}
+
 /**
  * log_writer_is_msg_suppressed:
  *
@@ -678,12 +699,9 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
   g_static_mutex_lock(&self->suppress_lock);
   if (self->last_msg)
     {
-      if (self->last_msg->timestamps[LM_TS_RECVD].tv_sec >= lm->timestamps[LM_TS_RECVD].tv_sec - self->options->suppress &&
-          strcmp(log_msg_get_value(self->last_msg, LM_V_MESSAGE, NULL), log_msg_get_value(lm, LM_V_MESSAGE, NULL)) == 0 &&
-          strcmp(log_msg_get_value(self->last_msg, LM_V_HOST, NULL), log_msg_get_value(lm, LM_V_HOST, NULL)) == 0 &&
-          strcmp(log_msg_get_value(self->last_msg, LM_V_PROGRAM, NULL), log_msg_get_value(lm, LM_V_PROGRAM, NULL)) == 0 &&
-          strcmp(log_msg_get_value(self->last_msg, LM_V_PID, NULL), log_msg_get_value(lm, LM_V_PID, NULL)) == 0 &&
-          strcmp(log_msg_get_value(lm, LM_V_MESSAGE, NULL), "-- MARK --") != 0)
+      if (_is_time_within_the_suppress_timeout(self, lm) &&
+          _is_message_a_repetition(lm, self->last_msg) &&
+          !_is_message_a_mark(lm))
         {
 
           stats_counter_inc(self->suppressed_messages);
