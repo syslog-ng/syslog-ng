@@ -193,7 +193,6 @@ const gchar *cfg_lexer_lookup_context_name_by_type(gint id);
 
 /* token block objects */
 
-void cfg_token_block_add_and_consume_token(CfgTokenBlock *self, YYSTYPE *token);
 void cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token);
 YYSTYPE *cfg_token_block_get_token(CfgTokenBlock *self);
 

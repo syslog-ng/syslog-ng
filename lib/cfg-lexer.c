@@ -1063,17 +1063,10 @@ cfg_lexer_lookup_context_name_by_type(gint type)
 /* token blocks */
 
 void
-cfg_token_block_add_and_consume_token(CfgTokenBlock *self, YYSTYPE *token)
+cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token)
 {
   g_assert(self->pos == 0);
   g_array_append_val(self->tokens, *token);
-}
-
-void
-cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token)
-{
-  YYSTYPE copied_token = cfg_lexer_copy_token(token);
-  cfg_token_block_add_and_consume_token(self, &copied_token);
 }
 
 YYSTYPE *
