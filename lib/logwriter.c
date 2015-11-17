@@ -548,7 +548,6 @@ log_writer_record_last_message(LogWriter *self, LogMessage *lm)
 static void
 log_writer_release_last_message(LogWriter *self)
 {
-  ml_batched_timer_cancel(&self->suppress_timer);
   if (self->last_msg)
     log_msg_unref(self->last_msg);
 
@@ -601,6 +600,7 @@ log_writer_suppress_timeout(gpointer pt)
   main_loop_assert_main_thread();
 
   g_static_mutex_lock(&self->suppress_lock);
+  ml_batched_timer_cancel(&self->suppress_timer);
   log_writer_emit_suppress_summary(self);
   g_static_mutex_unlock(&self->suppress_lock);
 
@@ -649,9 +649,15 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
         }
 
       if (self->last_msg_count)
-        log_writer_emit_suppress_summary(self);
+        {
+          ml_batched_timer_cancel(&self->suppress_timer);
+          log_writer_emit_suppress_summary(self);
+        }
       else
-        log_writer_release_last_message(self);
+        {
+          ml_batched_timer_cancel(&self->suppress_timer);
+          log_writer_release_last_message(self);
+        }
     }
 
   log_writer_record_last_message(self, lm);
