@@ -332,8 +332,6 @@ extern struct _StatsOptions *last_stats_options;
 %token LL_EOL                         10428
 %token LL_ERROR                       10429
 
-%destructor { free($$); } <cptr>
-
 /* value pairs */
 %token KW_VALUE_PAIRS                 10500
 %token KW_SELECT                      10501

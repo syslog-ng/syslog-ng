@@ -178,7 +178,6 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
             {
               if (strcmp(keywords[i].kw_name, CFG_KEYWORD_STOP) == 0)
                 {
-                  yylval->type = LL_IDENTIFIER;
                   yylval->cptr = strdup(token);
                   return LL_IDENTIFIER;
                 }
@@ -227,7 +226,6 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
         }
       l = l->next;
     }
-  yylval->type = LL_IDENTIFIER;
   yylval->cptr = strdup(token);
   return LL_IDENTIFIER;
 }
@@ -716,35 +714,6 @@ cfg_lexer_generate_block(CfgLexer *self, gint context, const gchar *name, CfgBlo
   return gen->generator(self, context, name, args, gen->generator_data);
 }
 
-static YYSTYPE
-cfg_lexer_copy_token(const YYSTYPE *original)
-{
-  YYSTYPE dest;
-  int type = original->type;
-  dest.type = type;
-
-  if (type == LL_TOKEN)
-    {
-      dest.token = original->token;
-    }
-  else if (type == LL_IDENTIFIER ||
-          type == LL_STRING ||
-          type == LL_BLOCK)
-    {
-      dest.cptr = strdup(original->cptr);
-    }
-  else if (type == LL_NUMBER)
-    {
-      dest.num = original->num;
-    }
-  else if (type == LL_FLOAT)
-    {
-      dest.fnum = original->fnum;
-    }
-
-  return dest;
-}
-
 void
 cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
 {
@@ -806,6 +775,10 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
             {
               tok = token->token;
               injected = TRUE;
+            }
+          else if (token->type == LL_IDENTIFIER || token->type == LL_STRING)
+            {
+              yylval->cptr = strdup(token->cptr);
             }
 
           goto exit;
@@ -1090,17 +1063,10 @@ cfg_lexer_lookup_context_name_by_type(gint type)
 /* token blocks */
 
 void
-cfg_token_block_add_and_consume_token(CfgTokenBlock *self, YYSTYPE *token)
+cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token)
 {
   g_assert(self->pos == 0);
   g_array_append_val(self->tokens, *token);
-}
-
-void
-cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token)
-{
-  YYSTYPE copied_token = cfg_lexer_copy_token(token);
-  cfg_token_block_add_and_consume_token(self, &copied_token);
 }
 
 YYSTYPE *
