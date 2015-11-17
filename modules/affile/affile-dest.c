@@ -394,12 +394,17 @@ affile_dd_set_fsync(LogDriver *s, gboolean fsync)
   self->use_fsync = fsync;
 }
 
-static inline gchar *
-affile_dd_format_persist_name(AFFileDestDriver *self)
+static inline const gchar *
+affile_dd_format_persist_name(const LogPipe *s)
 {
+  const AFFileDestDriver * self = (const AFFileDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "affile_dd_writers(%s)", self->filename_template->template);
+  if (s->persist_id)
+    g_snprintf(persist_name, sizeof(persist_name), "affile_dd.%s.writers", s->persist_id);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "affile_dd.(%s).writers", self->filename_template->template);
+
   return persist_name;
 }
 
@@ -748,6 +753,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.deinit = affile_dd_deinit;
   self->super.super.super.queue = affile_dd_queue;
   self->super.super.super.free_fn = affile_dd_free;
+  self->super.super.super.generate_persist_id = affile_dd_format_persist_name;
   self->filename_template = log_template_new(cfg, NULL);
   log_template_compile(self->filename_template, filename, NULL);
   log_writer_options_defaults(&self->writer_options);
