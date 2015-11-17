@@ -83,16 +83,58 @@ afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
   self->connections_kept_alive_accross_reloads = enable;
 }
 
-static gchar *
-afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
+static const gchar *
+afsocket_dd_format_name(const AFSocketDestDriver* self)
 {
-  static gchar persist_name[256];
+  static gchar persist_name[1024];
+
+  if (self->super.super.super.persist_id)
+    {
+      g_snprintf(persist_name, sizeof(persist_name),
+                 "afsocket_dd.%s",
+                 self->super.super.super.persist_id);
+    }
+  else
+    {
+      gchar buf[MAX_SOCKADDR_STRING];
+
+      g_snprintf(persist_name, sizeof(persist_name),
+                 "afsocket_dd.(%s,%s)",
+                 (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
+                 afsocket_dd_get_dest_name(self));
+    }
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_dd_format_qfile_name(const AFSocketDestDriver *self)
+{
+  static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
-             qfile ? "afsocket_dd_qfile(%s,%s)" : "afsocket_dd_connection(%s,%s)",
-             (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
-             afsocket_dd_get_dest_name(self));
+             "%s.qfile",
+             afsocket_dd_format_name(self));
+
   return persist_name;
+}
+
+static const gchar *
+afsocket_dd_format_connections_name(const AFSocketDestDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "%s.connections",
+             afsocket_dd_format_name(self));
+
+  return persist_name;
+}
+
+static inline const gchar *
+afsocket_dd_format_persist_name(const AFSocketDestDriver *self, gboolean qfile)
+{
+  return qfile ? afsocket_dd_format_qfile_name(self) : afsocket_dd_format_connections_name(self);
 }
 
 static gchar *
@@ -530,6 +572,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->super.super.super.queue = NULL;
   self->super.super.super.free_fn = afsocket_dd_free;
   self->super.super.super.notify = afsocket_dd_notify;
+  self->super.super.super.generate_persist_id = afsocket_dd_format_name;
   self->setup_addresses = afsocket_dd_setup_addresses;
   self->construct_writer = afsocket_dd_construct_writer_method;
   self->transport_mapper = transport_mapper;
