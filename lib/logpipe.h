@@ -369,6 +369,9 @@ log_pipe_append(LogPipe *s, LogPipe *next)
 void
 log_pipe_set_persist_id(LogPipe *self, const gchar *persist_id);
 
+const gchar *
+log_pipe_get_persist_id(const LogPipe *self);
+
 void log_pipe_free_method(LogPipe *s);
 
 #endif

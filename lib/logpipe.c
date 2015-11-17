@@ -104,3 +104,12 @@ log_pipe_set_persist_id(LogPipe *self, const gchar *persist_id)
 
   self->persist_id = persist_id;
 }
+
+const gchar *
+log_pipe_get_persist_id(const LogPipe *self)
+{
+  if (self->generate_persist_id != NULL)
+    return self->generate_persist_id(self);
+  else
+    return self->persist_id;
+}
