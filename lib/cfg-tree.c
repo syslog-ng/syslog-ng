@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "afinter.h"
 #include "logmpx.h"
+#include "logpipe.h"
 
 #include <string.h>
 

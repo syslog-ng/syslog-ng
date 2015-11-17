@@ -247,6 +247,8 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_THREADED                    10171
 %token KW_PASS_UNIX_CREDENTIALS       10231
 
+%token KW_PERSIST_ID                  10302
+
 /* log statement options */
 %token KW_FLAGS                       10190
 
@@ -360,6 +362,7 @@ extern struct _StatsOptions *last_stats_options;
 #include "template/templates.h"
 #include "template/user-function.h"
 #include "logreader.h"
+#include "logpipe.h"
 #include "parser/parser-expr.h"
 #include "rewrite/rewrite-expr.h"
 #include "rewrite/rewrite-expr-parser.h"
@@ -1049,6 +1052,7 @@ source_option
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_source_options->keep_timestamp = $3; }
         | KW_TAGS '(' string_list ')'		{ log_source_options_set_tags(last_source_options, $3); }
         | { last_host_resolve_options = &last_source_options->host_resolve_options; } host_resolve_option
+        | driver_option
         ;
 
 source_proto_option
@@ -1103,6 +1107,10 @@ source_reader_option_flags
 	|
 	;
 
+driver_option
+    : KW_PERSIST_ID '(' string ')' { log_pipe_set_persist_id(&last_driver->super, g_strdup($3)); free($3); }
+    ;
+
 threaded_dest_driver_option
 	: KW_RETRIES '(' LL_NUMBER ')'
         {
@@ -1132,6 +1140,7 @@ dest_driver_option
               }
             log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
           }
+    | driver_option
         ;
 
 dest_writer_options
