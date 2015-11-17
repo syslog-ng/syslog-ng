@@ -714,35 +714,6 @@ cfg_lexer_generate_block(CfgLexer *self, gint context, const gchar *name, CfgBlo
   return gen->generator(self, context, name, args, gen->generator_data);
 }
 
-static YYSTYPE
-cfg_lexer_copy_token(const YYSTYPE *original)
-{
-  YYSTYPE dest;
-  int type = original->type;
-  dest.type = type;
-
-  if (type == LL_TOKEN)
-    {
-      dest.token = original->token;
-    }
-  else if (type == LL_IDENTIFIER ||
-          type == LL_STRING ||
-          type == LL_BLOCK)
-    {
-      dest.cptr = strdup(original->cptr);
-    }
-  else if (type == LL_NUMBER)
-    {
-      dest.num = original->num;
-    }
-  else if (type == LL_FLOAT)
-    {
-      dest.fnum = original->fnum;
-    }
-
-  return dest;
-}
-
 void
 cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
 {
