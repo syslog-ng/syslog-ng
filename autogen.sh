@@ -68,3 +68,14 @@ sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' acloc
 autoheader
 automake --foreign --add-missing --copy
 autoconf
+
+if grep AX_PREFIX_CONFIG_H configure > /dev/null; then
+	cat <<EOF
+
+You need autoconf-archive http://savannah.gnu.org/projects/autoconf-archive/
+installed in order to generate the configure script, e.g:
+apt-get install autoconf-archive
+
+EOF
+	exit 1
+fi
