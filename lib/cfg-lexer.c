@@ -805,6 +805,10 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
               tok = token->token;
               injected = TRUE;
             }
+          else if (token->type == LL_IDENTIFIER || token->type == LL_STRING)
+            {
+              yylval->cptr = strdup(token->cptr);
+            }
 
           goto exit;
         }
