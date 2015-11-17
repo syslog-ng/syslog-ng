@@ -721,12 +721,14 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
                     NULL);
           return TRUE;
         }
-
-      if (self->last_msg_count)
-        log_writer_emit_suppress_summary(self);
       else
-        log_writer_release_last_message(self);
-      need_to_cancel_suppress_timer = TRUE;
+        {
+          if (self->last_msg_count)
+            log_writer_emit_suppress_summary(self);
+          else
+            log_writer_release_last_message(self);
+          need_to_cancel_suppress_timer = TRUE;
+        }
     }
 
   log_writer_record_last_message(self, lm);
