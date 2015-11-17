@@ -178,7 +178,6 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
             {
               if (strcmp(keywords[i].kw_name, CFG_KEYWORD_STOP) == 0)
                 {
-                  yylval->type = LL_IDENTIFIER;
                   yylval->cptr = strdup(token);
                   return LL_IDENTIFIER;
                 }
