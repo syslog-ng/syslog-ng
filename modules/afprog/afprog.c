@@ -66,13 +66,15 @@ afprogram_reload_store_item_deinit(AFProgramReloadStoreItem *reload_info)
 static inline void
 afprogram_reload_store_item_free(AFProgramReloadStoreItem *reload_info)
 {
-  log_pipe_unref(reload_info->writer);
+  log_pipe_unref((LogPipe *)reload_info->writer);
   g_free(reload_info);
 }
 
 static inline void
-afprogram_reload_store_item_destroy_notify(AFProgramReloadStoreItem *reload_info)
+afprogram_reload_store_item_destroy_notify(gpointer data)
 {
+  AFProgramReloadStoreItem *reload_info = (AFProgramReloadStoreItem *)data;
+
   afprogram_reload_store_item_deinit(reload_info);
   afprogram_reload_store_item_free(reload_info);
 }
