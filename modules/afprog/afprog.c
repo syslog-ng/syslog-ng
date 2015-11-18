@@ -66,13 +66,15 @@ afprogram_reload_store_item_deinit(AFProgramReloadStoreItem *reload_info)
 static inline void
 afprogram_reload_store_item_free(AFProgramReloadStoreItem *reload_info)
 {
-  log_pipe_unref(reload_info->writer);
+  log_pipe_unref((LogPipe *)reload_info->writer);
   g_free(reload_info);
 }
 
 static inline void
-afprogram_reload_store_item_destroy_notify(AFProgramReloadStoreItem *reload_info)
+afprogram_reload_store_item_destroy_notify(gpointer data)
 {
+  AFProgramReloadStoreItem *reload_info = (AFProgramReloadStoreItem *)data;
+
   afprogram_reload_store_item_deinit(reload_info);
   afprogram_reload_store_item_free(reload_info);
 }
@@ -326,7 +328,6 @@ afprogram_dd_kill_child(AFProgramDestDriver *self)
 {
   if (self->pid != -1)
     {
-      pid_t pgid;
       msg_verbose("Sending destination program a TERM signal",
                   evt_tag_str("cmdline", self->cmdline->str),
                   evt_tag_int("child_pid", self->pid),
