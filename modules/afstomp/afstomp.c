@@ -159,13 +159,17 @@ afstomp_dd_get_template_options(LogDriver *s)
  */
 
 static gchar *
-afstomp_dd_format_stats_instance(LogThrDestDriver *s)
+afstomp_dd_format_stats_instance(const LogPipe *s)
 {
-  STOMPDestDriver *self = (STOMPDestDriver *) s;
+  const STOMPDestDriver *self = (const STOMPDestDriver *) s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "afstomp,%s,%u,%s",
-             self->host, self->port, self->destination);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afstomp.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "afstomp,%s,%u,%s",
+               self->host, self->port, self->destination);
+
   return persist_name;
 }
 
@@ -382,6 +386,7 @@ afstomp_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = afstomp_dd_init;
   self->super.super.super.super.free_fn = afstomp_dd_free;
+  self->super.super.super.super.generate_persist_name = afstomp_dd_format_persist_name;
 
   self->super.worker.thread_init = afstomp_worker_thread_init;
   self->super.worker.disconnect = afstomp_dd_disconnect;
