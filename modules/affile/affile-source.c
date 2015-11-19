@@ -134,12 +134,17 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
   return affile_open_file(name, &self->file_open_options, &self->file_perm_options, fd);
 }
 
-static inline gchar *
-affile_sd_format_persist_name(AFFileSourceDriver *self)
+static inline const gchar *
+affile_sd_format_persist_name(const LogPipe *s)
 {
+  const AFFileSourceDriver *self = (const AFFileSourceDriver *)s;
   static gchar persist_name[1024];
-  
-  g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.curpos", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.(%s).curpos", self->filename->str);
+
   return persist_name;
 }
  
@@ -456,6 +461,7 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.deinit = affile_sd_deinit;
   self->super.super.super.notify = affile_sd_notify;
   self->super.super.super.free_fn = affile_sd_free;
+  self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
   log_reader_options_defaults(&self->reader_options);
   file_perm_options_defaults(&self->file_perm_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
