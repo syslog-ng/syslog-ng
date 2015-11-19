@@ -205,15 +205,19 @@ afamqp_dd_format_stats_instance(LogThrDestDriver *s)
   return persist_name;
 }
 
-static gchar *
-afamqp_dd_format_persist_name(LogThrDestDriver *s)
+static const gchar *
+afamqp_dd_format_persist_name(const LogPipe *s)
 {
-  AMQPDestDriver *self = (AMQPDestDriver *) s;
+  const AMQPDestDriver *self = (const AMQPDestDriver *) s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "afamqp(%s,%s,%u,%s,%s)",
-             self->vhost, self->host, self->port, self->exchange,
-             self->exchange_type);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afamqp.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "afamqp(%s,%s,%u,%s,%s)",
+               self->vhost, self->host, self->port, self->exchange,
+               self->exchange_type);
+
   return persist_name;
 }
 
@@ -588,6 +592,7 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = afamqp_dd_init;
   self->super.super.super.super.free_fn = afamqp_dd_free;
+  self->super.super.super.super.generate_persist_name = afamqp_dd_format_persist_name;
 
   self->super.worker.thread_init = afamqp_worker_thread_init;
   self->super.worker.disconnect = afamqp_dd_disconnect;
