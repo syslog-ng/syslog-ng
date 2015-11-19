@@ -312,13 +312,17 @@ afprogram_dd_format_queue_persist_name(AFProgramDestDriver *self)
   return persist_name;
 }
 
-static gchar *
-afprogram_dd_format_persist_name(AFProgramDestDriver *self)
+static const gchar *
+afprogram_dd_format_persist_name(const LogPipe *s)
 {
+  const AFProgramDestDriver *self = (const AFProgramDestDriver *)s;
   static gchar persist_name[256];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "afprogram_dd_name(%s,%s)", self->cmdline->str, self->super.super.id);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afprogram_dd_name.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name),
+               "afprogram_dd_name(%s,%s)", self->cmdline->str, self->super.super.id);
 
   return persist_name;
 }
@@ -519,6 +523,7 @@ afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg)
   self->super.super.super.deinit = afprogram_dd_deinit;
   self->super.super.super.free_fn = afprogram_dd_free;
   self->super.super.super.notify = afprogram_dd_notify;
+  self->super.super.super.generate_persist_name = afprogram_dd_format_persist_name;
   self->cmdline = g_string_new(cmdline);
   self->pid = -1;
   log_writer_options_defaults(&self->writer_options);
