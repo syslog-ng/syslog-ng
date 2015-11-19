@@ -227,18 +227,20 @@ afmongodb_dd_format_stats_instance(LogThrDestDriver *d)
   return persist_name;
 }
 
-static gchar *
-afmongodb_dd_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+afmongodb_dd_format_persist_name(const LogPipe * s)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+  const MongoDBDestDriver *self = (const MongoDBDestDriver *)s;
   static gchar persist_name[1024];
 
-  if (self->port == MONGO_CONN_LOCAL)
-    g_snprintf(persist_name, sizeof(persist_name),
-               "afmongodb(%s,%s,%s)", self->address, self->db, self->coll);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afmongodb.%s", s->persist_name);
+  else if (self->port == MONGO_CONN_LOCAL)
+    g_snprintf(persist_name, sizeof(persist_name), "afmongodb(%s,%s,%s)", self->address, self->db, self->coll);
   else
-    g_snprintf(persist_name, sizeof(persist_name),
-               "afmongodb(%s,%u,%s,%s)", self->address, self->port, self->db, self->coll);
+    g_snprintf(persist_name, sizeof(persist_name), "afmongodb(%s,%u,%s,%s)", self->address,
+               self->port, self->db, self->coll);
+
   return persist_name;
 }
 
@@ -717,6 +719,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = afmongodb_dd_init;
   self->super.super.super.super.free_fn = afmongodb_dd_free;
+  self->super.super.super.super.generate_persist_name = afmongodb_dd_format_persist_name;
   self->super.queue_method = afmongodb_dd_queue_method;
 
   self->super.worker.thread_init = afmongodb_worker_thread_init;
