@@ -132,14 +132,16 @@ python_dd_format_stats_instance(LogThrDestDriver *d)
 }
 
 static gchar *
-python_dd_format_persist_name(LogThrDestDriver *d)
+python_dd_format_persist_name(const LogPipe *s)
 {
-  PythonDestDriver *self = (PythonDestDriver *)d;
+  const PythonDestDriver *self = (const PythonDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "python(%s)",
-             self->class);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "python.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "python(%s)", self->class);
+
   return persist_name;
 }
 
@@ -539,6 +541,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = python_dd_init;
   self->super.super.super.super.deinit = python_dd_deinit;
   self->super.super.super.super.free_fn = python_dd_free;
+  self->super.super.super.super.generate_persist_name = python_dd_format_persist_name;
 
   self->super.worker.thread_init = python_dd_worker_init;
   self->super.worker.thread_deinit = python_dd_worker_deinit;
