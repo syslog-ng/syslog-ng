@@ -252,17 +252,58 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
   self->max_connections = max_connections;
 }
 
-static inline gchar *
-afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_name)
+static const gchar *
+afsocket_sd_format_name(const AFSocketSourceDriver *self)
 {
-  static gchar persist_name[128];
-  gchar buf[64];
+  static gchar persist_name[1024];
+
+  if (self->super.super.super.persist_name)
+    {
+      g_snprintf(persist_name, sizeof(persist_name),
+                 "afsocket_sd.%s",
+                 self->super.super.super.persist_name);
+    }
+  else
+    {
+      gchar buf[64];
+
+      g_snprintf(persist_name, sizeof(persist_name),
+                 "afsocket_sd.(%s,%s)",
+                 (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
+                 g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
+    }
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_sd_format_listener_name(const AFSocketSourceDriver *self)
+{
+  static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
-             listener_name ? "afsocket_sd_listen_fd(%s,%s)" : "afsocket_sd_connections(%s,%s)",
-             (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
-             g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
+             "%s.listen_fd",
+             afsocket_sd_format_name(self));
+
   return persist_name;
+}
+
+static const gchar *
+afsocket_sd_format_connections_name(const AFSocketSourceDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "%s.connections",
+             afsocket_sd_format_name(self));
+
+  return persist_name;
+}
+
+static inline gchar *
+afsocket_sd_format_persist_name(const AFSocketSourceDriver *self, gboolean listener_name)
+{
+  return listener_name ? afsocket_sd_format_listener_name(self) : afsocket_sd_format_connections_name(self);
 }
 
 static gboolean
@@ -688,6 +729,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->super.super.super.deinit = afsocket_sd_deinit_method;
   self->super.super.super.free_fn = afsocket_sd_free_method;
   self->super.super.super.notify = afsocket_sd_notify;
+  self->super.super.super.generate_persist_name = afsocket_sd_format_name;
   self->setup_addresses = afsocket_sd_setup_addresses_method;
   self->socket_options = socket_options;
   self->transport_mapper = transport_mapper;
