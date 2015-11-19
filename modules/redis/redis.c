@@ -118,14 +118,17 @@ redis_dd_format_stats_instance(LogThrDestDriver *d)
   return persist_name;
 }
 
-static gchar *
-redis_dd_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+redis_dd_format_persist_name(const LogPipe *s)
 {
-  RedisDriver *self = (RedisDriver *)d;
+  const RedisDriver *self = (const RedisDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "redis(%s,%u)", self->host, self->port);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "redis.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "redis(%s,%u)", self->host, self->port);
+
   return persist_name;
 }
 
@@ -331,6 +334,7 @@ redis_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = redis_dd_init;
   self->super.super.super.super.free_fn = redis_dd_free;
+  self->super.super.super.super.generate_persist_name = redis_dd_format_persist_name;
 
   self->super.worker.thread_init = redis_worker_thread_init;
   self->super.worker.thread_deinit = redis_worker_thread_deinit;
