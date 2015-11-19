@@ -210,14 +210,17 @@ afsmtp_dd_format_stats_instance(LogThrDestDriver *d)
   return persist_name;
 }
 
-static gchar *
-afsmtp_dd_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+afsmtp_dd_format_persist_name(const LogPipe *s)
 {
-  AFSMTPDriver *self = (AFSMTPDriver *)d;
+  const AFSMTPDriver *self = (const AFSMTPDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "smtp(%s,%u)", self->host, self->port);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "smtp.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "smtp(%s,%u)", self->host, self->port);
+
   return persist_name;
 }
 
@@ -688,6 +691,7 @@ afsmtp_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = afsmtp_dd_init;
   self->super.super.super.super.free_fn = afsmtp_dd_free;
+  self->super.super.super.super.generate_persist_name = afsmtp_dd_format_persist_name;
 
   self->super.worker.thread_init = afsmtp_worker_thread_init;
   self->super.worker.thread_deinit = afsmtp_worker_thread_deinit;
