@@ -1673,6 +1673,16 @@ log_msg_global_deinit(void)
   log_msg_registry_deinit();
 }
 
+gint
+log_msg_lookup_time_stamp_name(const gchar *name)
+{
+  if (strcmp(name, "stamp") == 0)
+    return LM_TS_STAMP;
+  else if (strcmp(name, "recvd") == 0)
+    return LM_TS_RECVD;
+  return -1;
+}
+
 const gchar *
 __log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
 __attribute__((alias("log_msg_get_value")));
