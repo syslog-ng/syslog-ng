@@ -23,8 +23,6 @@
 
 #include "afsql.h"
 
-#if SYSLOG_NG_ENABLE_SQL
-
 #include "logqueue.h"
 #include "template/templates.h"
 #include "messages.h"
@@ -1463,5 +1461,3 @@ afsql_dd_lookup_flag(const gchar *flag)
                 NULL);
   return 0;
 }
-
-#endif
