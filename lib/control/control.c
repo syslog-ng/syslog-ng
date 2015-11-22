@@ -106,7 +106,7 @@ control_connection_message_log(GString *command)
         }
     }
   else
-    return g_string_new("Invalid arguments received");
+    g_string_assign(result, "Invalid arguments received");
 exit:
   g_strfreev(cmds);
   return result;
