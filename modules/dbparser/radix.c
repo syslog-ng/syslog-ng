@@ -91,6 +91,23 @@ r_parser_estring_c(guint8 *str, gint *len, const gchar *param, gpointer state, R
 }
 
 gboolean
+r_parser_nlstring(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  guint8 *end;
+
+  if ((end = strchr(str, '\n')) != NULL)
+    {
+      /* drop CR before to LF */
+      if (end - str >= 1 && *(end - 1) == '\r')
+        end--;
+      *len = (end - str);
+      return TRUE;
+    }
+  else
+    return FALSE;
+}
+
+gboolean
 r_parser_estring(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   guint8 *end;
@@ -617,6 +634,21 @@ r_new_pnode(guint8 *key)
           parser_node = NULL;
         }
 
+    }
+  else if (strcmp(params[0], "NLSTRING") == 0)
+    {
+      if (params_len <= 2)
+        {
+          parser_node->parse = r_parser_nlstring;
+          parser_node->type = RPT_NLSTRING;
+        }
+      else
+        {
+          g_free(parser_node);
+          msg_error("Too many arguments to NLSTRING, no 3rd parameter supported",
+                    NULL);
+          parser_node = NULL;
+        }
     }
   else if (strcmp(params[0], "PCRE") == 0)
     {

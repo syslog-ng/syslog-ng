@@ -47,6 +47,7 @@ enum
   RPT_EMAIL,
   RPT_HOSTNAME,
   RPT_LLADDR,
+  RPT_NLSTRING,
 };
 
 typedef struct _RParserMatch

@@ -363,6 +363,8 @@ test_matches(void)
   insert_node(root, "jjj @PCRE:regexp:[abc]+@");
   insert_node(root, "jjjj @PCRE:regexp:[abc]+@d foobar");
 
+  insert_node(root, "mmm @NLSTRING:nlstring@\n");
+
   test_search_matches(root, "aaa 12345 hihihi",
                       "number", "12345",
                       NULL);
@@ -645,6 +647,11 @@ test_matches(void)
 
   test_search_matches(root, "lll 83:63:25:93:eb:51:aa:bb.iii", "lladdr6", "83:63:25:93:eb:51", NULL);
   test_search_matches(root, "lll 83:63:25:93:EB:51:aa:bb.iii", "lladdr6", "83:63:25:93:EB:51", NULL);
+
+  test_search_matches(root, "mmm foobar\r\nbaz", "nlstring", "foobar", NULL);
+  test_search_matches(root, "mmm foobar\nbaz", "nlstring", "foobar", NULL);
+  test_search_matches(root, "mmm \nbaz", "nlstring", "", NULL);
+  test_search_matches(root, "mmm \r\nbaz", "nlstring", "", NULL);
 
   test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
 
