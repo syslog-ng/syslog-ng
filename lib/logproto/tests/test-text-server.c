@@ -105,6 +105,7 @@ test_log_proto_text_server_eol_before_eof(void)
   assert_proto_server_fetch(proto, "567", -1);
   assert_proto_server_fetch(proto, "890", -1);
   assert_proto_server_fetch_failure(proto, LPS_ERROR, NULL);
+  log_proto_server_free(proto);
 }
 
 static void
