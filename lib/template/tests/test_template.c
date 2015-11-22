@@ -264,9 +264,13 @@ test_escaping(void)
 static void
 test_user_template_function(void)
 {
-  user_template_function_register(configuration, "dummy", compile_template("this is a user-defined template function $DATE", FALSE));
+  LogTemplate *template;
+
+  template = compile_template("this is a user-defined template function $DATE", FALSE);
+  user_template_function_register(configuration, "dummy", template);
   assert_template_format("$(dummy)", "this is a user-defined template function Feb 11 10:34:56.000");
   assert_template_failure("$(dummy arg)", "User defined template function $(dummy) cannot have arguments");
+  log_template_unref(template);
 }
 
 int
