@@ -3,4 +3,7 @@
 
 #include "syslog-ng.h"
 
+void crypto_init(void);
+void crypto_deinit(void);
+
 #endif
