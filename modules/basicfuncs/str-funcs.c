@@ -235,7 +235,6 @@ tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, 
     {
       g_option_context_free(ctx);
       goto exit;
-      g_free(argv);
     }
   g_option_context_free(ctx);
 
