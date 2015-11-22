@@ -216,8 +216,8 @@ tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, 
 {
   TFSanitizeState *state = (TFSanitizeState *) s;
   gboolean ctrl_chars = TRUE;
-  gchar *invalid_chars = "/";
-  gchar *replacement = "_";
+  gchar *invalid_chars = NULL;
+  gchar *replacement = NULL;
   GOptionContext *ctx;
   GOptionEntry stize_options[] = {
     { "ctrl-chars", 'c', 0, G_OPTION_ARG_NONE, &ctrl_chars, NULL, NULL },
@@ -226,6 +226,7 @@ tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, 
     { "replacement", 'r', 0, G_OPTION_ARG_STRING, &replacement, NULL, NULL },
     { NULL }
   };
+  gboolean result = FALSE;
 
   ctx = g_option_context_new("sanitize-file");
   g_option_context_add_main_entries(ctx, stize_options, NULL);
@@ -233,20 +234,29 @@ tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, 
   if (!g_option_context_parse(ctx, &argc, &argv, error))
     {
       g_option_context_free(ctx);
+      goto exit;
       g_free(argv);
-      return FALSE;
     }
   g_option_context_free(ctx);
+
+  invalid_chars = invalid_chars ? : g_strdup("/");
+  replacement = replacement ? : g_strdup("_");
 
   if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
     {
       g_free(state);
-      return FALSE;
+      goto exit;
     }
   state->ctrl_chars = ctrl_chars;
   state->invalid_chars = g_strdup(invalid_chars);
   state->replacement = replacement[0];
-  return TRUE;
+  result = TRUE;
+
+ exit:
+  /* glib supplies us with duplicated strings that we are responsible for! */
+  g_free(invalid_chars);
+  g_free(replacement);
+  return result;
 }
 
 static void
