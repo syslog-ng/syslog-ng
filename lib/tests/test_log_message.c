@@ -277,7 +277,6 @@ test_log_msg_set_value_indirect_with_self_referencing_handle_results_in_a_nonind
 {
   LogMessage *msg;
   gssize value_len;
-  NVHandle handle;
 
   msg = construct_log_message_with_all_bells_and_whistles();
   log_msg_set_value_indirect(msg, nv_handle, nv_handle, 0, 0, 5);
