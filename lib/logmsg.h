@@ -58,7 +58,8 @@ typedef void (*LMAckFunc)(LogMessage *lm, AckType ack_type);
 
 #define LM_TS_STAMP 0
 #define LM_TS_RECVD 1
-#define LM_TS_MAX   2
+#define LM_TS_PROCESSED 2
+#define LM_TS_MAX   3
 
 /* builtin values */
 enum
@@ -203,9 +204,6 @@ void log_msg_write_protect(LogMessage *m);
 void log_msg_write_unprotect(LogMessage *m);
 LogMessage *log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options);
 LogMessage *log_msg_make_writable(LogMessage **pmsg, const LogPathOptions *path_options);
-
-gboolean log_msg_write(LogMessage *self, SerializeArchive *sa);
-gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);

@@ -207,35 +207,6 @@ g_sockaddr_inet_format(GSockAddr *addr, gchar *text, gulong n, gint format)
   return text;
 }
 
-/**
- * g_sockaddr_inet_get_port:
- * @s: GSockAddrInet instance
- *
- * This GSockAddrInet specific function returns the port part of the
- * address.
- *
- * Returns: the port in host byte order
- *
- **/
-static guint16
-g_sockaddr_inet_get_port(GSockAddr *s)
-{
-  return ntohs(g_sockaddr_inet_get_sa(s)->sin_port);
-}
-
-/**
- * g_sockaddr_inet_set_port:
- * @s: GSockAddrInet instance
- * @port: new port in host byte order
- *
- *
- **/
-static void
-g_sockaddr_inet_set_port(GSockAddr *s, guint16 port)
-{
-  g_sockaddr_inet_get_sa(s)->sin_port = htons(port);
-}
-
 static GSockAddrFuncs inet_sockaddr_funcs = 
 {
   .bind_prepare = g_sockaddr_inet_bind_prepare,
@@ -348,35 +319,6 @@ g_sockaddr_inet6_format(GSockAddr *addr, gchar *text, gulong n, gint format)
   else
     g_assert_not_reached();
   return text;
-}
-
-/**
- * g_sockaddr_inet6_get_port:
- * @s: GSockAddrInet instance
- *
- * This GSockAddrInet specific function returns the port part of the
- * address.
- *
- * Returns: the port in host byte order
- *
- **/
-static guint16
-g_sockaddr_inet6_get_port(GSockAddr *s)
-{
-  return ntohs(g_sockaddr_inet6_get_sa(s)->sin6_port);
-}
-
-/**
- * g_sockaddr_inet6_set_port:
- * @s: GSockAddrInet instance
- * @port: new port in host byte order
- *
- *
- **/
-static void
-g_sockaddr_inet6_set_port(GSockAddr *s, guint16 port)
-{
-  g_sockaddr_inet6_get_sa(s)->sin6_port = htons(port);
 }
 
 static GSockAddrFuncs inet6_sockaddr_funcs = 
