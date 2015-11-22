@@ -858,6 +858,8 @@ log_proto_buffered_server_free_method(LogProtoServer *s)
     {
       g_free(self->state1);
     }
+  if (self->convert != (GIConv) -1)
+    g_iconv_close(self->convert);
   log_proto_server_free_method(s);
 }
 
@@ -876,5 +878,7 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   self->io_status = G_IO_STATUS_NORMAL;
   if (options->encoding)
     self->convert = g_iconv_open("utf-8", options->encoding);
+  else
+    self->convert = (GIConv) -1;
   self->stream_based = TRUE;
 }
