@@ -256,7 +256,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
   GModule *mod;
   gint i;
 
-  module_path_dirs = g_strsplit(module_path, G_SEARCHPATH_SEPARATOR_S, 0);
+  module_path_dirs = g_strsplit(module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   i = 0;
   while (module_path_dirs && module_path_dirs[i])
     {
@@ -400,7 +400,7 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
   gchar **mod_paths;
   gint i, j;
 
-  mod_paths = g_strsplit(module_path, ":", 0);
+  mod_paths = g_strsplit(module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
     {
       GDir *dir;
