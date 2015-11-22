@@ -100,6 +100,12 @@ find_eom(const guchar *s, gsize n)
   return NULL;
 }
 
+gboolean
+log_proto_server_validate_options_method(LogProtoServer *s)
+{
+  return TRUE;
+}
+
 void
 log_proto_server_free_method(LogProtoServer *s)
 {
@@ -117,6 +123,7 @@ log_proto_server_free(LogProtoServer *s)
 void
 log_proto_server_init(LogProtoServer *self, LogTransport *transport, const LogProtoServerOptions *options)
 {
+  self->validate_options = log_proto_server_validate_options_method;
   self->free_fn = log_proto_server_free_method;
   self->options = options;
   self->transport = transport;
@@ -135,20 +142,6 @@ log_proto_server_options_set_encoding(LogProtoServerOptions *self, const gchar *
   if (convert == (GIConv) -1)
     return FALSE;
   g_iconv_close(convert);
-  return TRUE;
-}
-
-gboolean
-log_proto_server_options_validate(const LogProtoServerOptions *options)
-{
-  /* check for new data */
-  if (options->encoding && options->convert == (GIConv) -1)
-    {
-      msg_error("Unknown character set name specified",
-                evt_tag_str("encoding", options->encoding),
-                NULL);
-      return FALSE;
-    }
   return TRUE;
 }
 

@@ -46,7 +46,7 @@ log_proto_record_server_validate_options(LogProtoServer *s)
                 NULL);
       return FALSE;
     }
-  return log_proto_server_options_validate(s->options);
+  return log_proto_buffered_server_validate_options_method(s);
 }
 
 static gint

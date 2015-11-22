@@ -135,6 +135,7 @@ test_log_proto_text_server_partial_chars_before_eof(void)
               "\xc3", -1,
               LTM_EOF));
 
+  assert_true(log_proto_server_validate_options(proto), "validate_options() returned failure but it should have succeeded");
   assert_proto_server_fetch_failure(proto, LPS_EOF, "EOF read on a channel with leftovers from previous character conversion, dropping input");
   log_proto_server_free(proto);
 }
@@ -152,6 +153,7 @@ test_log_proto_text_server_not_fixed_encoding(void)
               /* utf8 */
               "árvíztűrőtükörfúrógép\n", -1,
               LTM_EOF));
+  assert_true(log_proto_server_validate_options(proto), "validate_options() returned failure but it should have succeeded");
   assert_proto_server_fetch(proto, "árvíztűrőtükörfúrógép", -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
   log_proto_server_free(proto);
@@ -174,6 +176,7 @@ test_log_proto_text_server_ucs4(void)
               "\x00\x00\x00\x70\x00\x00\x00\x0a", 88,                                 /* |...p....|         */
               LTM_EOF));
 
+  assert_true(log_proto_server_validate_options(proto), "validate_options() returned failure but it should have succeeded");
   assert_proto_server_fetch(proto, "árvíztűrőtükörfúrógép", -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
   log_proto_server_free(proto);
@@ -192,8 +195,28 @@ test_log_proto_text_server_iso8859_2(void)
               "\x72\xf3\x67\xe9\x70\n", -1,                                           /*  |rógép|            */
               LTM_EOF));
 
+  assert_true(log_proto_server_validate_options(proto), "validate_options() returned failure but it should have succeeded");
   assert_proto_server_fetch(proto, "árvíztűrőtükörfúrógép", -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_server_free(proto);
+}
+
+static void
+test_log_proto_text_server_invalid_encoding(void)
+{
+  LogProtoServer *proto;
+  gboolean success;
+
+  log_proto_server_options_set_encoding(&proto_server_options, "never-ever-is-going-to-be-such-an-encoding");
+  proto = construct_test_proto(
+            log_transport_mock_stream_new(
+              "", -1,
+              LTM_EOF));
+
+  start_grabbing_messages();
+  success = log_proto_server_validate_options(proto);
+  assert_grabbed_messages_contain("Unknown character set name specified; encoding='never-ever-is-going-to-be-such-an-encoding'", "message about unknown charset missing");
+  assert_false(success, "validate_options() returned success but it should have failed");
   log_proto_server_free(proto);
 }
 
@@ -488,6 +511,7 @@ test_log_proto_text_server(void)
   PROTO_TESTCASE(test_log_proto_text_server_not_fixed_encoding);
   PROTO_TESTCASE(test_log_proto_text_server_ucs4);
   PROTO_TESTCASE(test_log_proto_text_server_iso8859_2);
+  PROTO_TESTCASE(test_log_proto_text_server_invalid_encoding);
   PROTO_TESTCASE(test_log_proto_text_server_multi_read);
   PROTO_TESTCASE(test_log_proto_text_server_multi_read_not_allowed);
   PROTO_TESTCASE(test_log_proto_text_server_is_not_fetching_input_as_long_as_there_is_an_eol_in_buffer);

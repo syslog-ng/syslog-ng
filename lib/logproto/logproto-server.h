@@ -77,10 +77,7 @@ struct _LogProtoServer
 static inline gboolean
 log_proto_server_validate_options(LogProtoServer *self)
 {
-  if (self->validate_options)
-    return self->validate_options(self);
-  else
-    return log_proto_server_options_validate(self->options);
+  return self->validate_options(self);
 }
 
 static inline void
@@ -141,6 +138,7 @@ log_proto_server_is_position_tracked(LogProtoServer *s)
   return FALSE;
 }
 
+gboolean log_proto_server_validate_options_method(LogProtoServer *s);
 void log_proto_server_init(LogProtoServer *s, LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_server_free_method(LogProtoServer *s);
 void log_proto_server_free(LogProtoServer *s);
