@@ -115,3 +115,8 @@ include contrib/Makefile.am
 include scl/Makefile.am
 include debian/Makefile.am
 include tgz2build/Makefile.am
+
+@VALGRIND_CHECK_RULES@
+
+#VALGRIND_SUPPRESSIONS_FILES = syslog-ng.supp
+#EXTRA_DIST += syslog-ng.supp
