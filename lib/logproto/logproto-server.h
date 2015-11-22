@@ -40,7 +40,6 @@ struct _LogProtoServerOptions
   void (*destroy)(LogProtoServerOptions *self);
   gboolean initialized;
   gchar *encoding;
-  GIConv convert;
   /* maximum message length in bytes */
   gint max_msg_size;
   gint max_buffer_size;

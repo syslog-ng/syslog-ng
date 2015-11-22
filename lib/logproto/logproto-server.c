@@ -149,7 +149,6 @@ void
 log_proto_server_options_defaults(LogProtoServerOptions *options)
 {
   memset(options, 0, sizeof(*options));
-  options->convert = (GIConv) -1;
   options->max_msg_size = -1;
   options->init_buffer_size = -1;
   options->max_buffer_size = -1;
@@ -177,11 +176,6 @@ log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg)
     }
   if (options->init_buffer_size == -1)
     options->init_buffer_size = MIN(options->max_msg_size, options->max_buffer_size);
-  if (options->encoding)
-    {
-      /* validate the character set */
-      options->convert = g_iconv_open("utf-8", options->encoding);
-    }
   options->initialized = TRUE;
 }
 
@@ -189,8 +183,6 @@ void
 log_proto_server_options_destroy(LogProtoServerOptions *options)
 {
   g_free(options->encoding);
-  if (options->convert != (GIConv) -1)
-    g_iconv_close(options->convert);
   if (options->destroy)
     options->destroy(options);
   options->initialized = FALSE;
