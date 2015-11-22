@@ -170,6 +170,7 @@ test_log_message_merge_with_empty_context(void)
   log_msg_merge_context(msg, context, 0);
   log_msg_unref(msg);
   assert_log_messages_equal(msg, msg_clone);
+  log_msg_unref(msg_clone);
 }
 
 
