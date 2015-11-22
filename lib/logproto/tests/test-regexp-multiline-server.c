@@ -34,6 +34,7 @@ test_lines_separated_with_prefix(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
 }
 
 static void
@@ -63,6 +64,7 @@ test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
 }
 
 static void
@@ -88,7 +90,7 @@ test_lines_separated_with_prefix_and_suffix(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "prefix multi\nsuffix", -1);
 
   log_proto_server_free(proto);
-
+  log_proto_server_options_destroy(&proto_server_options);
 };
 
 
@@ -119,6 +121,7 @@ test_lines_separated_with_garbage(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
 }
 
 static void
@@ -148,6 +151,7 @@ test_first_line_without_prefix(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
 }
 
 void
