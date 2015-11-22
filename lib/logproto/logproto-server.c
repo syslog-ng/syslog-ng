@@ -122,12 +122,20 @@ log_proto_server_init(LogProtoServer *self, LogTransport *transport, const LogPr
   self->transport = transport;
 }
 
-void
+gboolean
 log_proto_server_options_set_encoding(LogProtoServerOptions *self, const gchar *encoding)
 {
-  if (self->encoding)
-    g_free(self->encoding);
+  GIConv convert;
+
+  g_free(self->encoding);
   self->encoding = g_strdup(encoding);
+
+  /* validate encoding */
+  convert = g_iconv_open("utf8", encoding);
+  if (convert == (GIConv) -1)
+    return FALSE;
+  g_iconv_close(convert);
+  return TRUE;
 }
 
 gboolean
@@ -143,7 +151,6 @@ log_proto_server_options_validate(const LogProtoServerOptions *options)
     }
   return TRUE;
 }
-
 
 void
 log_proto_server_options_defaults(LogProtoServerOptions *options)
