@@ -91,6 +91,23 @@ r_parser_estring_c(guint8 *str, gint *len, const gchar *param, gpointer state, R
 }
 
 gboolean
+r_parser_nlstring(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  guint8 *end;
+
+  if ((end = strchr(str, '\n')) != NULL)
+    {
+      /* drop CR before to LF */
+      if (end - str >= 1 && *(end - 1) == '\r')
+        end--;
+      *len = (end - str);
+      return TRUE;
+    }
+  else
+    return FALSE;
+}
+
+gboolean
 r_parser_estring(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   guint8 *end;
@@ -618,6 +635,21 @@ r_new_pnode(guint8 *key)
         }
 
     }
+  else if (strcmp(params[0], "NLSTRING") == 0)
+    {
+      if (params_len <= 2)
+        {
+          parser_node->parse = r_parser_nlstring;
+          parser_node->type = RPT_NLSTRING;
+        }
+      else
+        {
+          g_free(parser_node);
+          msg_error("Too many arguments to NLSTRING, no 3rd parameter supported",
+                    NULL);
+          parser_node = NULL;
+        }
+    }
   else if (strcmp(params[0], "PCRE") == 0)
     {
       parser_node->parse = r_parser_pcre;
@@ -1113,20 +1145,19 @@ _truncate_debug_info(RFindNodeState *state, gint truncated_size)
     g_array_set_size(state->dbg_list, truncated_size);
 }
 
-static gint
-_find_matching_literal_prefix(RNode *root, guint8 *key, gint keylen)
+static void
+_find_matching_literal_prefix(RNode *root, guint8 *key, gint keylen,
+                              gint *literal_prefix_inputlen,
+                              gint *literal_prefix_radixlen)
 {
   gint current_node_key_length = root->keylen;
-  gint match_length;
+  gint input_length;
+  gint radix_length;
 
   if (current_node_key_length < 1)
-    match_length = 0;
-  else if (current_node_key_length == 1)
-    match_length = 1;
+    radix_length = input_length = 0;
   else
     {
-      gint m = MIN(keylen, current_node_key_length);
-
       /* this is a prefix match algorithm, we are interested how long the
        * common part between key and root->key is.  Currently this uses a
        * byte-by-byte comparison, using a 64/32/16 bit units would be
@@ -1135,27 +1166,38 @@ _find_matching_literal_prefix(RNode *root, guint8 *key, gint keylen)
        * removed. We might want to rerun perf tests and see if we could
        * speed things up, but db-parser() seems fast enough as it is.
        */
-      match_length = 1;
-      while (match_length < m)
+      input_length = radix_length = 0;
+      while (input_length < keylen && radix_length < current_node_key_length)
         {
-          if (key[match_length] != root->key[match_length])
+          if (key[input_length] == '\r' && root->key[radix_length] == '\n')
+            {
+              /* skip CR from input if the radix contains a newline */
+              input_length++;
+            }
+          if (key[input_length] != root->key[radix_length])
             break;
 
-          match_length++;
+          input_length++;
+          radix_length++;
         }
     }
-  return match_length;
+  *literal_prefix_inputlen = input_length;
+  *literal_prefix_radixlen = radix_length;
 }
 
 static RNode *
 _find_child_by_remaining_key(RFindNodeState *state, RNode *root, guint8 *remaining_key, gint remaining_keylen)
 {
-  RNode *candidate = r_find_child_by_first_character(root, remaining_key[0]);
+  RNode *candidate;
 
-  if (candidate)
+  if (remaining_keylen >= 2 && remaining_key[0] == '\r' && remaining_key[1] == '\n')
     {
-      return _find_node_recursively(state, candidate, remaining_key, remaining_keylen);
+      remaining_key++;
+      remaining_keylen--;
     }
+  candidate = r_find_child_by_first_character(root, remaining_key[0]);
+  if (candidate)
+    return _find_node_recursively(state, candidate, remaining_key, remaining_keylen);
   return NULL;
 }
 
@@ -1315,20 +1357,23 @@ _find_child_by_parser(RFindNodeState *state, RNode *root, guint8 *remaining_key,
 static RNode *
 _find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint keylen)
 {
-  gint literal_prefix_len;
+  gint literal_prefix_inputlen, literal_prefix_radixlen;
 
-  literal_prefix_len = _find_matching_literal_prefix(root, key, keylen);
-  _add_literal_match_to_debug_info(state, root, literal_prefix_len);
+  _find_matching_literal_prefix(root, key, keylen,
+                                &literal_prefix_inputlen,
+                                &literal_prefix_radixlen);
+  _add_literal_match_to_debug_info(state, root, literal_prefix_inputlen);
 
   msg_trace("Looking up node in the radix tree",
-            evt_tag_int("literal_prefix_len", literal_prefix_len),
+            evt_tag_int("literal_prefix_inputlen", literal_prefix_inputlen),
+            evt_tag_int("literal_prefix_radixlen", literal_prefix_radixlen),
             evt_tag_int("root->keylen", root->keylen),
             evt_tag_int("keylen", keylen),
             evt_tag_str("root_key", root->key),
             evt_tag_str("key", key),
             NULL);
 
-  if (literal_prefix_len == keylen && (literal_prefix_len == root->keylen || root->keylen == -1))
+  if (literal_prefix_inputlen == keylen && (literal_prefix_radixlen == root->keylen || root->keylen == -1))
     {
       /* key completely consumed by the literal */
 
@@ -1342,12 +1387,12 @@ _find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint key
       if (root->value)
         return root;
     }
-  else if ((root->keylen < 1) || (literal_prefix_len < keylen && literal_prefix_len >= root->keylen))
+  else if ((root->keylen < 1) || (literal_prefix_inputlen < keylen && literal_prefix_radixlen >= root->keylen))
     {
       /* we matched the key partially, go on with child nodes */
       RNode *ret;
-      guint8 *remaining_key = key + literal_prefix_len;
-      gint remaining_keylen = keylen - literal_prefix_len;
+      guint8 *remaining_key = key + literal_prefix_inputlen;
+      gint remaining_keylen = keylen - literal_prefix_inputlen;
 
       /* prefer a literal match over parsers */
       ret = _find_child_by_remaining_key(state, root, remaining_key, remaining_keylen);

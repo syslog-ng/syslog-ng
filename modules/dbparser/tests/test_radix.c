@@ -219,6 +219,7 @@ test_literals(void)
   insert_node(root, "korozott");
   insert_node(root, "al");
   insert_node(root, "all");
+  insert_node(root, "uj\nsor");
 
   test_search(root, "alma", TRUE);
   test_search(root, "korte", TRUE);
@@ -235,6 +236,9 @@ test_literals(void)
   test_search(root, "korozott", TRUE);
   test_search(root, "al", TRUE);
   test_search(root, "all", TRUE);
+  test_search(root, "uj", FALSE);
+  test_search(root, "uj\nsor", TRUE);
+  test_search_value(root, "uj\r\nsor", "uj\nsor");
 
   test_search(root, "mmm", FALSE);
   test_search_value(root, "kor", "ko");
@@ -303,6 +307,7 @@ test_parsers(void)
   printf("We excpect an error message\n");
   insert_node(root, "AAA@SET:set@AAA");
   insert_node(root, "AAA@MACADDR@AAA");
+  insert_node(root, "newline@NUMBER@\n2ndline\n");
 
   printf("We excpect an error message\n");
   insert_node(root, "AAA@PCRE:set@AAA");
@@ -315,6 +320,9 @@ test_parsers(void)
   test_search_value(root, "a@ax", NULL);
 
   test_search_value(root, "a@15555", "a@@@NUMBER:szam0@");
+
+  /* CRLF sequence immediately after a parser, e.g. in the initial position */
+  test_search_value(root, "newline123\r\n2ndline\n", "newline@NUMBER@\n2ndline\n");
 
   /* FIXME: this one fails, because the shorter match is returned. The
    * current radix implementation does not ensure the longest match when the
@@ -354,6 +362,8 @@ test_matches(void)
 
   insert_node(root, "jjj @PCRE:regexp:[abc]+@");
   insert_node(root, "jjjj @PCRE:regexp:[abc]+@d foobar");
+
+  insert_node(root, "mmm @NLSTRING:nlstring@\n");
 
   test_search_matches(root, "aaa 12345 hihihi",
                       "number", "12345",
@@ -637,6 +647,11 @@ test_matches(void)
 
   test_search_matches(root, "lll 83:63:25:93:eb:51:aa:bb.iii", "lladdr6", "83:63:25:93:eb:51", NULL);
   test_search_matches(root, "lll 83:63:25:93:EB:51:aa:bb.iii", "lladdr6", "83:63:25:93:EB:51", NULL);
+
+  test_search_matches(root, "mmm foobar\r\nbaz", "nlstring", "foobar", NULL);
+  test_search_matches(root, "mmm foobar\nbaz", "nlstring", "foobar", NULL);
+  test_search_matches(root, "mmm \nbaz", "nlstring", "", NULL);
+  test_search_matches(root, "mmm \r\nbaz", "nlstring", "", NULL);
 
   test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
 
