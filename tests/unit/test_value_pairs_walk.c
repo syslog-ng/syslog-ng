@@ -82,7 +82,8 @@ test_vp_value(const gchar *name, const gchar *prefix,
   return FALSE;
 }
 
-void test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
+void
+test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
 {
   ValuePairs *vp;
   LogMessage *msg;
@@ -93,14 +94,14 @@ void test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
 
   vp = value_pairs_new();
   value_pairs_add_glob_pattern(vp, "root.*", TRUE);
-  msg = log_msg_new("test",4, NULL, &parse_options);
+  msg = log_msg_new("test", 4, NULL, &parse_options);
 
   log_msg_set_value_by_name(msg, "root.test.alma", value, strlen(value));
-
   log_msg_set_value_by_name(msg, "root.test.korte", value, strlen(value));
 
   value_pairs_walk(vp, test_vp_obj_start, test_vp_value, test_vp_obj_stop, msg, 0, LTZ_LOCAL, &template_options, NULL);
-
+  value_pairs_unref(vp);
+  log_msg_unref(msg);
 };
 
 int main()
