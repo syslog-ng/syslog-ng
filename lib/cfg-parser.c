@@ -52,7 +52,6 @@ static CfgLexerKeyword main_keywords[] = {
 
   /* value pairs */
   { "value_pairs",        KW_VALUE_PAIRS, 0x0303 },
-  { "select",             KW_SELECT, 0x0303 },
   { "exclude",            KW_EXCLUDE, 0x0303 },
   { "pair",               KW_PAIR, 0x0303 },
   { "key",                KW_KEY, 0x0303 },
