@@ -49,13 +49,6 @@ static CfgLexerKeyword main_keywords[] = {
 
   /* source or destination items */
   { "internal",           KW_INTERNAL },
-  { "columns",            KW_COLUMNS, 0x0300 },
-  { "delimiters",         KW_DELIMITERS, 0x0300 },
-  { "quotes",             KW_QUOTES, 0x0300 },
-  { "quote_pairs",        KW_QUOTE_PAIRS, 0x0300},
-  { "chars",              KW_CHARS, 0x0300},
-  { "strings",             KW_STRINGS, 0x0300},
-  { "null",               KW_NULL, 0x0300 },
 
   /* value pairs */
   { "value_pairs",        KW_VALUE_PAIRS, 0x0303 },
