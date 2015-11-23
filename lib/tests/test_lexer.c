@@ -133,38 +133,33 @@ _current_token(void)
   _next_token();                                                        \
   assert_gint(_current_token()->type, required, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
 
-#define TEST_STRING "\"test\" \"test\\x0a\" \"test\\o011\" \"test\\n\" \"test\\r\" \"test\\a\" \"test\\t\" \"test\\v\" \"test\\c\""
-
-void
-test_lexer_string()
+static void
+test_lexer_string(void)
 {
-  _input(TEST_STRING);
+  _input("\"test\"");
   assert_parser_string(parser, "test");
+  _input("\"test\\x0a\"");
   assert_parser_string(parser, "test\n");
+  _input("\"test\\o011\"");
   assert_parser_string(parser, "test\t");
-  assert_parser_string(parser, "test\n");
-  assert_parser_string(parser, "test\r");
-  assert_parser_string(parser, "test\a");
-  assert_parser_string(parser, "test\t");
-  assert_parser_string(parser, "test\v");
-  assert_parser_string(parser, "testc");
+  _input("\"test\\n\\r\\a\\t\\v\\c\"");
+  assert_parser_string(parser, "test\n\r\a\t\vc");
 }
 
-#define TEST_QSTRING "'test' '\"test\\n\\r\"'"
-
-void
-test_lexer_qstring()
+static void
+test_lexer_qstring(void)
 {
-  _input(TEST_QSTRING);
+  _input("'test'");
   assert_parser_string(parser, "test");
+  _input("'\"test\\n\\r\"'");
   assert_parser_string(parser, "\"test\\n\\r\"");
 }
 
 #define TEST_BLOCK " {'hello world' \"test value\" {other_block} other\text}"
 #define TEST_BAD_BLOCK "this is a bad block starting " TEST_BLOCK
 
-void
-test_lexer_block()
+static void
+test_lexer_block(void)
 {
   _input(TEST_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
@@ -175,15 +170,15 @@ test_lexer_block()
   assert_parser_block_bad(parser);
 }
 
-
-#define TEST_VALUES "#This is a full line comment\n@version():;{}| 4.2 12 0x50 011 +12 -12 -4.2 +4.2 test_value"
-
-void
-test_lexer_others()
+static void
+test_lexer_others(void)
 {
-  _input(TEST_VALUES);
+  _input("#This is a full line comment\nfoobar");
+  assert_parser_identifier(parser, "foobar");
+  _input("@version");
   assert_parser_pragma(parser);
   assert_parser_identifier(parser, "version");
+  _input("():;{}|");
   assert_parser_char(parser, '(');
   assert_parser_char(parser, ')');
   assert_parser_char(parser, ':');
@@ -191,6 +186,7 @@ test_lexer_others()
   assert_parser_char(parser, '{');
   assert_parser_char(parser, '}');
   assert_parser_char(parser, '|');
+  _input("4.2 12 0x50 011 +12 -12 -4.2 +4.2");
   assert_parser_float(parser, 4.2);
   assert_parser_number(parser, 12);
   assert_parser_number(parser, 80 /*0x50*/);
@@ -199,6 +195,7 @@ test_lexer_others()
   assert_parser_number(parser, -12);
   assert_parser_float(parser, -4.2);
   assert_parser_float(parser, 4.2);
+  _input("test_value");
   assert_parser_identifier(parser, "test_value");
 }
 
