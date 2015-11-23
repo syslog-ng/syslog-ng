@@ -52,7 +52,9 @@ kv_parser_set_prefix(LogParser *p, const gchar *prefix)
 static const gchar *
 _get_formatted_key(KVParser *self, const gchar *key)
 {
-  if (self->formatted_key->len > 0)
+  if (!self->prefix)
+    return key;
+  else if (self->formatted_key->len > 0)
     g_string_truncate(self->formatted_key, self->prefix_len);
   else
     g_string_assign(self->formatted_key, self->prefix);
