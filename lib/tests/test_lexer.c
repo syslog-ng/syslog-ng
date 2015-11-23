@@ -14,12 +14,19 @@ test_parser_clear_token(TestParser *self)
   cfg_lexer_free_token(self->yylval);
 }
 
+static void
+test_parser_input(TestParser *self, const gchar *buffer)
+{
+  if (self->lexer)
+    cfg_lexer_free(self->lexer);
+  self->lexer = cfg_lexer_new_buffer(buffer, strlen(buffer));
+}
+
 TestParser *
-test_parser_new(const gchar *buffer)
+test_parser_new(void)
 {
   TestParser *self = g_new0(TestParser, 1);
 
-  self->lexer = cfg_lexer_new_buffer(buffer, strlen(buffer));
   self->yylval = g_new0(YYSTYPE, 1);
   self->yylloc = g_new0(YYLTYPE, 1);
   self->yylval->type = LL_CONTEXT_ROOT;
@@ -34,11 +41,33 @@ test_parser_new(const gchar *buffer)
 void
 test_parser_free(TestParser *self)
 {
-  cfg_lexer_free(self->lexer);
+  if (self->lexer)
+    cfg_lexer_free(self->lexer);
   g_free(self->yylval);
   g_free(self->yylloc);
   g_free(self);
 }
+
+#define LEXER_TESTCASE(x, ...) do { lexer_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); lexer_testcase_end(); } while(0)
+
+TestParser *parser = NULL;
+
+#define lexer_testcase_begin(func, args) 			\
+  do                                          			\
+    {                                         			\
+      testcase_begin("%s(%s)", func, args);                     \
+      parser = test_parser_new();                               \
+    }                                         			\
+  while (0)
+
+#define lexer_testcase_end()				        \
+  do								\
+    {								\
+      test_parser_free(parser);                                 \
+      testcase_end();						\
+    }								\
+  while (0)
+
 
 #define assert_parser_string(parser, required) \
   assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_STRING, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
@@ -82,7 +111,7 @@ test_parser_free(TestParser *self)
 void
 test_lexer_string()
 {
-  TestParser *parser = test_parser_new(TEST_STRING);
+  test_parser_input(parser, TEST_STRING);
   assert_parser_string(parser, "test");
   assert_parser_string(parser, "test\n");
   assert_parser_string(parser, "test\t");
@@ -92,7 +121,6 @@ test_lexer_string()
   assert_parser_string(parser, "test\t");
   assert_parser_string(parser, "test\v");
   assert_parser_string(parser, "testc");
-  test_parser_free(parser);
 }
 
 #define TEST_QSTRING "'test' '\"test\\n\\r\"'"
@@ -100,10 +128,9 @@ test_lexer_string()
 void
 test_lexer_qstring()
 {
-  TestParser *parser = test_parser_new(TEST_QSTRING);
+  test_parser_input(parser, TEST_QSTRING);
   assert_parser_string(parser, "test");
   assert_parser_string(parser, "\"test\\n\\r\"");
-  test_parser_free(parser);
 }
 
 #define TEST_BLOCK " {'hello world' \"test value\" {other_block} other\text}"
@@ -112,15 +139,13 @@ test_lexer_qstring()
 void
 test_lexer_block()
 {
-  TestParser *parser = test_parser_new(TEST_BLOCK);
+  test_parser_input(parser, TEST_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block(parser, "'hello world' \"test value\" {other_block} other\text");
-  test_parser_free(parser);
 
-  parser = test_parser_new(TEST_BAD_BLOCK);
+  test_parser_input(parser, TEST_BAD_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block_bad(parser);
-  test_parser_free(parser);
 }
 
 
@@ -129,7 +154,7 @@ test_lexer_block()
 void
 test_lexer_others()
 {
-  TestParser *parser = test_parser_new(TEST_VALUES);
+  test_parser_input(parser, TEST_VALUES);
   assert_parser_pragma(parser);
   assert_parser_identifier(parser, "version");
   assert_parser_char(parser, '(');
@@ -148,15 +173,14 @@ test_lexer_others()
   assert_parser_float(parser, -4.2);
   assert_parser_float(parser, 4.2);
   assert_parser_identifier(parser, "test_value");
-  test_parser_free(parser);
 }
 
 int
 main(int argc, char **argv)
 {
-  test_lexer_string();
-  test_lexer_qstring();
-  test_lexer_block();
-  test_lexer_others();
+  LEXER_TESTCASE(test_lexer_string);
+  LEXER_TESTCASE(test_lexer_qstring);
+  LEXER_TESTCASE(test_lexer_block);
+  LEXER_TESTCASE(test_lexer_others);
   return 0;
 }
