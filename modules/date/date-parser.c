@@ -30,6 +30,7 @@ typedef struct _DateParser
   LogParser super;
   gchar *date_format;
   gchar *date_tz;
+  LogMessageTimeStamp time_stamp;
   TimeZoneInfo *date_tz_info;
 } DateParser;
 
@@ -49,6 +50,14 @@ date_parser_set_timezone(LogParser *s, gchar *tz)
 
   g_free(self->date_tz);
   self->date_tz = g_strdup(tz);
+}
+
+void
+date_parser_set_time_stamp(LogParser *s, LogMessageTimeStamp time_stamp)
+{
+  DateParser *self = (DateParser *) s;
+
+  self->time_stamp = time_stamp;
 }
 
 static gboolean
@@ -179,7 +188,7 @@ date_parser_process(LogParser *s,
   APPEND_ZERO(input, input, input_len);
   return _convert_timestamp_to_logstamp(self,
                                         msg->timestamps[LM_TS_RECVD].tv_sec,
-                                        &msg->timestamps[LM_TS_STAMP],
+                                        &msg->timestamps[self->time_stamp],
                                         input);
 }
 
@@ -192,6 +201,7 @@ date_parser_clone(LogPipe *s)
   cloned = date_parser_new(log_pipe_get_config(&self->super.super));
   date_parser_set_format(cloned, self->date_format);
   date_parser_set_timezone(cloned, self->date_tz);
+  date_parser_set_time_stamp(cloned, self->time_stamp);
   log_parser_set_template(cloned, log_template_ref(self->super.template));
 
   return &cloned->super;
@@ -220,6 +230,7 @@ date_parser_new(GlobalConfig *cfg)
   self->super.process = date_parser_process;
   self->super.super.clone = date_parser_clone;
   self->super.super.free_fn = date_parser_free;
+  self->time_stamp = LM_TS_STAMP;
 
   date_parser_set_format(&self->super, "%FT%T%z");
   return &self->super;

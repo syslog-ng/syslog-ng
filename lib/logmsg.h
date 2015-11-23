@@ -56,9 +56,12 @@ typedef void (*LMAckFunc)(LogMessage *lm, AckType ack_type);
 
 #define RE_MAX_MATCHES 256
 
-#define LM_TS_STAMP 0
-#define LM_TS_RECVD 1
-#define LM_TS_MAX   2
+typedef enum
+{
+  LM_TS_STAMP = 0,
+  LM_TS_RECVD = 1,
+  LM_TS_MAX
+} LogMessageTimeStamp;
 
 /* builtin values */
 enum
@@ -300,5 +303,7 @@ void log_msg_registry_deinit(void);
 void log_msg_global_init(void);
 void log_msg_global_deinit(void);
 void log_msg_registry_foreach(GHFunc func, gpointer user_data);
+
+gint log_msg_lookup_time_stamp_name(const gchar *name);
 
 #endif
