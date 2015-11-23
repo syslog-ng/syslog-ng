@@ -118,5 +118,5 @@ include tgz2build/Makefile.am
 
 @VALGRIND_CHECK_RULES@
 
-#VALGRIND_SUPPRESSIONS_FILES = syslog-ng.supp
-#EXTRA_DIST += syslog-ng.supp
+VALGRIND_SUPPRESSIONS_FILES = $(top_srcdir)/syslog-ng.supp
+EXTRA_DIST += syslog-ng.supp
