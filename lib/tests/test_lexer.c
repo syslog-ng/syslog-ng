@@ -15,11 +15,11 @@ test_parser_clear_token(TestParser *self)
 }
 
 TestParser *
-test_parser_new(const gchar *buffer, gint buffer_len)
+test_parser_new(const gchar *buffer)
 {
   TestParser *self = g_new0(TestParser, 1);
 
-  self->lexer = cfg_lexer_new_buffer(buffer, buffer_len);
+  self->lexer = cfg_lexer_new_buffer(buffer, strlen(buffer));
   self->yylval = g_new0(YYSTYPE, 1);
   self->yylloc = g_new0(YYLTYPE, 1);
   self->yylval->type = LL_CONTEXT_ROOT;
@@ -82,7 +82,7 @@ test_parser_free(TestParser *self)
 void
 test_lexer_string()
 {
-  TestParser *parser = test_parser_new(TEST_STRING, strlen(TEST_STRING));
+  TestParser *parser = test_parser_new(TEST_STRING);
   assert_parser_string(parser, "test");
   assert_parser_string(parser, "test\n");
   assert_parser_string(parser, "test\t");
@@ -100,7 +100,7 @@ test_lexer_string()
 void
 test_lexer_qstring()
 {
-  TestParser *parser = test_parser_new(TEST_QSTRING, strlen(TEST_QSTRING));
+  TestParser *parser = test_parser_new(TEST_QSTRING);
   assert_parser_string(parser, "test");
   assert_parser_string(parser, "\"test\\n\\r\"");
   test_parser_free(parser);
@@ -112,12 +112,12 @@ test_lexer_qstring()
 void
 test_lexer_block()
 {
-  TestParser *parser = test_parser_new(TEST_BLOCK, strlen(TEST_BLOCK));
+  TestParser *parser = test_parser_new(TEST_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block(parser, "'hello world' \"test value\" {other_block} other\text");
   test_parser_free(parser);
 
-  parser = test_parser_new(TEST_BAD_BLOCK, strlen(TEST_BAD_BLOCK));
+  parser = test_parser_new(TEST_BAD_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block_bad(parser);
   test_parser_free(parser);
@@ -129,7 +129,7 @@ test_lexer_block()
 void
 test_lexer_others()
 {
-  TestParser *parser = test_parser_new(TEST_VALUES, strlen(TEST_VALUES));
+  TestParser *parser = test_parser_new(TEST_VALUES);
   assert_parser_pragma(parser);
   assert_parser_identifier(parser, "version");
   assert_parser_char(parser, '(');
