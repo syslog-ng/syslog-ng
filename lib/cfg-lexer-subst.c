@@ -146,6 +146,7 @@ static gboolean
 _append_value(CfgLexerSubst *self, const gchar *value, GError **error)
 {
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
+  gboolean result = TRUE;
 
   if (self->string_state == CLS_NOT_STRING)
     {
@@ -161,18 +162,21 @@ _append_value(CfgLexerSubst *self, const gchar *value, GError **error)
           switch (self->string_state)
             {
             case CLS_WITHIN_STRING:
-              return _encode_as_string(self, string_literal, error);
+              result = _encode_as_string(self, string_literal, error);
+              break;
             case CLS_WITHIN_QSTRING:
-              return _encode_as_qstring(self, string_literal, error);
+              result = _encode_as_qstring(self, string_literal, error);
+              break;
             default:
               g_assert_not_reached();
+              break;
             }
           g_free(string_literal);
         }
       else
         g_string_append(self->result_buffer, value);
     }
-  return TRUE;
+  return result;
 }
 
 gchar *
