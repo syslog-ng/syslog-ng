@@ -175,6 +175,7 @@ test_macros(void)
 
   assert_template_format("$SEQNUM", "999");
   assert_template_format("$CONTEXT_ID", "test-context-id");
+  assert_template_format("$UNIQID", "cafebabe@000000000000022b");
 }
 
 static void
