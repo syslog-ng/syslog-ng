@@ -116,8 +116,6 @@ typedef struct _AFSqlDestDriver
 } AFSqlDestDriver;
 
 
-#if SYSLOG_NG_ENABLE_SQL
-
 void afsql_dd_set_type(LogDriver *s, const gchar *type);
 void afsql_dd_set_host(LogDriver *s, const gchar *host);
 gboolean afsql_dd_check_port(const gchar *port);
@@ -140,24 +138,5 @@ gint afsql_dd_lookup_flag(const gchar *flag);
 void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 void afsql_dd_add_dbd_option(LogDriver *s, const gchar *name, const gchar *value);
 void afsql_dd_add_dbd_option_numeric(LogDriver *s, const gchar *name, gint value);
-
-#else
-
-#define afsql_dd_set_type(s, t)
-#define afsql_dd_set_host(s, h)
-#define afsql_dd_set_port(s, p)
-#define afsql_dd_set_user(s, u)
-#define afsql_dd_set_password(s, p)
-#define afsql_dd_set_database(s, d)
-#define afsql_dd_set_table(s, t)
-#define afsql_dd_set_columns(s, c)
-#define afsql_dd_set_values(s, v)
-#define afsql_dd_set_null_value(s, v)
-#define afsql_dd_add_dbd_option(s, n, v)
-#define afsql_dd_add_dbd_option_numeric(s, n, v)
-
-#define afsql_dd_new(c) 0
-
-#endif
 
 #endif
