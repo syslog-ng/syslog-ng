@@ -83,6 +83,7 @@ testcase(gchar *msg_string, gboolean input_is_rfc5424, gchar *template, guint wr
     log_template_unref(templ);
   log_pipe_unref((LogPipe *) writer);
   log_msg_unref(msg);
+  log_queue_unref(queue);
   g_string_free(res, TRUE);
 }
 
