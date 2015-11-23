@@ -68,6 +68,12 @@ TestParser *parser = NULL;
     }								\
   while (0)
 
+static void
+_input(const gchar *input)
+{
+  test_parser_input(parser, input);
+}
+
 
 #define assert_parser_string(parser, required) \
   assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_STRING, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
@@ -111,7 +117,7 @@ TestParser *parser = NULL;
 void
 test_lexer_string()
 {
-  test_parser_input(parser, TEST_STRING);
+  _input(TEST_STRING);
   assert_parser_string(parser, "test");
   assert_parser_string(parser, "test\n");
   assert_parser_string(parser, "test\t");
@@ -128,7 +134,7 @@ test_lexer_string()
 void
 test_lexer_qstring()
 {
-  test_parser_input(parser, TEST_QSTRING);
+  _input(TEST_QSTRING);
   assert_parser_string(parser, "test");
   assert_parser_string(parser, "\"test\\n\\r\"");
 }
@@ -139,11 +145,11 @@ test_lexer_qstring()
 void
 test_lexer_block()
 {
-  test_parser_input(parser, TEST_BLOCK);
+  _input(TEST_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block(parser, "'hello world' \"test value\" {other_block} other\text");
 
-  test_parser_input(parser, TEST_BAD_BLOCK);
+  _input(TEST_BAD_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block_bad(parser);
 }
@@ -154,7 +160,7 @@ test_lexer_block()
 void
 test_lexer_others()
 {
-  test_parser_input(parser, TEST_VALUES);
+  _input(TEST_VALUES);
   assert_parser_pragma(parser);
   assert_parser_identifier(parser, "version");
   assert_parser_char(parser, '(');
