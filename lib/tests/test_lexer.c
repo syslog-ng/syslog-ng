@@ -96,42 +96,45 @@ _current_token(void)
   return parser->yylval;
 }
 
+#define assert_token_type(expected)                                     \
+  assert_gint(_current_token()->type, expected, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
+
 #define assert_parser_string(expected)                          \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, LL_STRING, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
+  assert_token_type(LL_STRING);                                        \
   assert_string(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__); \
 
 #define assert_parser_block(expected) \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, LL_BLOCK, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_string(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__); \
+  assert_token_type(LL_BLOCK);                                         \
+  assert_string(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_parser_block_bad(parser) \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, LL_ERROR, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
+  assert_token_type(LL_ERROR);
 
 #define assert_parser_pragma(parser) \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, LL_PRAGMA, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
+  assert_token_type(LL_PRAGMA);
 
 #define assert_parser_number(expected) \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, LL_NUMBER, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_gint(_current_token()->num, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__); \
+  assert_token_type(LL_NUMBER);                                        \
+  assert_gint(_current_token()->num, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_parser_float(expected)                           \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, LL_FLOAT, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_true(_current_token()->fnum == expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__); \
+  assert_token_type(LL_FLOAT);                                         \
+  assert_true(_current_token()->fnum == expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_parser_identifier(expected) \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, LL_IDENTIFIER, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_string(_current_token()->cptr, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__); \
+  assert_token_type(LL_IDENTIFIER);                                         \
+  assert_string(_current_token()->cptr, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_parser_char(expected) \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, expected, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
+  assert_gint(_current_token()->type, expected, "Bad character value at %s:%d", __FUNCTION__, __LINE__);
 
 static void
 test_lexer_string(void)
