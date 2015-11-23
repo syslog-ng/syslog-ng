@@ -35,13 +35,13 @@ static CfgLexerKeyword affile_keywords[] = {
   { "pipe",               KW_PIPE },
 
   { "fsync",              KW_FSYNC },
-  { "remove_if_older",    KW_OVERWRITE_IF_OLDER, 0, KWS_OBSOLETE, "overwrite_if_older" },
+  { "remove_if_older",    KW_OVERWRITE_IF_OLDER, KWS_OBSOLETE, "overwrite_if_older" },
   { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
-  { "follow_freq",        KW_FOLLOW_FREQ,  },
-  { "multi_line_mode",    KW_MULTI_LINE_MODE, 0x0305  },
-  { "multi_line_prefix",  KW_MULTI_LINE_PREFIX, 0x0305 },
-  { "multi_line_garbage", KW_MULTI_LINE_GARBAGE, 0x0305 },
-  { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE, 0x0306 },
+  { "follow_freq",        KW_FOLLOW_FREQ },
+  { "multi_line_mode",    KW_MULTI_LINE_MODE  },
+  { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
+  { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
+  { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE },
   { NULL }
 };
 

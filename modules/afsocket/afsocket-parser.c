@@ -36,7 +36,7 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "udp",                KW_UDP },
   { "tcp",                KW_TCP },
   { "syslog",             KW_SYSLOG },
-  { "network",            KW_NETWORK, 0x0304 },
+  { "network",            KW_NETWORK },
 #if SYSLOG_NG_ENABLE_IPV6
   { "udp6",               KW_UDP6 },
   { "tcp6",               KW_TCP6 },
@@ -65,16 +65,16 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "so_sndbuf",          KW_SO_SNDBUF },
   { "so_keepalive",       KW_SO_KEEPALIVE },
   { "tcp_keep_alive",     KW_SO_KEEPALIVE }, /* old, once deprecated form, but revived in 3.4 */
-  { "tcp_keepalive",      KW_SO_KEEPALIVE, 0x0304 }, /* alias for so-keepalive, as tcp is the only option actually using it */
-  { "tcp_keepalive_time", KW_TCP_KEEPALIVE_TIME, 0x0304 },
-  { "tcp_keepalive_probes", KW_TCP_KEEPALIVE_PROBES, 0x0304 },
-  { "tcp_keepalive_intvl", KW_TCP_KEEPALIVE_INTVL, 0x0304 },
+  { "tcp_keepalive",      KW_SO_KEEPALIVE }, /* alias for so-keepalive, as tcp is the only option actually using it */
+  { "tcp_keepalive_time", KW_TCP_KEEPALIVE_TIME },
+  { "tcp_keepalive_probes", KW_TCP_KEEPALIVE_PROBES },
+  { "tcp_keepalive_intvl", KW_TCP_KEEPALIVE_INTVL },
   { "spoof_source",       KW_SPOOF_SOURCE },
   { "transport",          KW_TRANSPORT },
   { "ip_protocol",        KW_IP_PROTOCOL },
   { "max_connections",    KW_MAX_CONNECTIONS },
   { "keep_alive",         KW_KEEP_ALIVE },
-  { "systemd_syslog",            KW_SYSTEMD_SYSLOG  },
+  { "systemd_syslog",     KW_SYSTEMD_SYSLOG  },
   { NULL }
 };
 
