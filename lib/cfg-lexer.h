@@ -80,7 +80,6 @@ typedef struct _CfgLexerKeyword
 {
   const gchar *kw_name;
   gint  kw_token;
-  gint  kw_req_version;
   gint  kw_status;
   const gchar *kw_explain;
 } CfgLexerKeyword;

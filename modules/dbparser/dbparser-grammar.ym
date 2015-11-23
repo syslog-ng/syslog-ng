@@ -65,6 +65,7 @@ SyntheticMessage *last_message;
 %token KW_WHERE
 %token KW_HAVING
 %token KW_AGGREGATE
+%token KW_VALUE
 
 %type <num> stateful_parser_inject_mode
 %type <ptr> synthetic_message
