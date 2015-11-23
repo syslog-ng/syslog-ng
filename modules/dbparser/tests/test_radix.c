@@ -47,7 +47,7 @@ r_print_node(RNode *node, int depth)
 }
 
 void
-insert_node(RNode *root, gchar *key)
+insert_node_with_value(RNode *root, gchar *key, gpointer value)
 {
   gchar *dup;
 
@@ -55,8 +55,14 @@ insert_node(RNode *root, gchar *key)
    * and it might be a read-only string literal */
 
   dup = g_strdup(key);
-  r_insert_node(root, dup, key, NULL);
+  r_insert_node(root, dup, value ? : key, NULL);
   g_free(dup);
+}
+
+void
+insert_node(RNode *root, gchar *key)
+{
+  insert_node_with_value(root, key, NULL);
 }
 
 void
@@ -664,10 +670,10 @@ test_zorp_logs(void)
   RNode *root = r_new_node("", NULL);
 
   /* these are conflicting logs */
-  r_insert_node(root, strdup("core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local='AF_INET(@IPv4:local_ip@:@NUMBER:local_port@)', remote='AF_INET(@IPv4:remote_ip@:@NUMBER:remote_port@)', error=@QSTRING:errormsg:'@"), "ZORP", NULL);
-  r_insert_node(root, strdup("core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local=@QSTRING:p:'@, remote=@QSTRING:p:'@, error=@QSTRING:p:'@"), "ZORP1", NULL);
-  r_insert_node(root, strdup("Deny@QSTRING:FIREWALL.DENY_PROTO: @src@QSTRING:FIREWALL.DENY_O_INT: :@@IPv4:FIREWALL.DENY_SRCIP@/@NUMBER:FIREWALL.DENY_SRCPORT@ dst"), "CISCO", NULL);
-  r_insert_node(root, strdup("@NUMBER:Seq@, @ESTRING:DateTime:,@@ESTRING:Severity:,@@ESTRING:Comp:,@"), "3com", NULL);
+  insert_node_with_value(root, "core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local='AF_INET(@IPv4:local_ip@:@NUMBER:local_port@)', remote='AF_INET(@IPv4:remote_ip@:@NUMBER:remote_port@)', error=@QSTRING:errormsg:'@", "ZORP");
+  insert_node_with_value(root, "core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local=@QSTRING:p:'@, remote=@QSTRING:p:'@, error=@QSTRING:p:'@", "ZORP1");
+  insert_node_with_value(root, "Deny@QSTRING:FIREWALL.DENY_PROTO: @src@QSTRING:FIREWALL.DENY_O_INT: :@@IPv4:FIREWALL.DENY_SRCIP@/@NUMBER:FIREWALL.DENY_SRCPORT@ dst", "CISCO");
+  insert_node_with_value(root, "@NUMBER:Seq@, @ESTRING:DateTime:,@@ESTRING:Severity:,@@ESTRING:Comp:,@", "3com");
 
   test_search_value(root, "core.error(2): (svc/intra.servers.alef_SSH_dmz.zajin:111/plug): Connection to remote end failed; local='AF_INET(172.16.0.1:56867)', remote='AF_INET(172.18.0.1:22)', error='No route to host'PAS", "ZORP");
   test_search_value(root, "Deny udp src OUTSIDE:10.0.0.0/1234 dst INSIDE:192.168.0.0/5678 by access-group \"OUTSIDE\" [0xb74026ad, 0x0]", "CISCO");
