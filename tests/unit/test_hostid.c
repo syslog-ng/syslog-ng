@@ -44,13 +44,16 @@ load_hostid_from_persist(const gchar *persist_file)
   HostIdState *host_id_state;
   gsize size;
   guint8 version;
+  guint32 result;
 
   state = create_persist_state(persist_file);
   handle = persist_state_lookup_entry(state, HOST_ID_PERSIST_KEY, &size, &version);
   assert_true(handle != 0, "cannot find hostid in persist file");
   host_id_state = persist_state_map_entry(state, handle);
-
-  return host_id_state->host_id;
+  result = host_id_state->host_id;
+  persist_state_unmap_entry(state, handle);
+  persist_state_free(state);
+  return result;
 }
 
 static void
@@ -86,7 +89,9 @@ create_persist_file_with_hostid(const gchar *persist_file, guint32 hostid)
   handle = persist_state_alloc_entry(state, HOST_ID_PERSIST_KEY, sizeof(HostIdState));
   host_id_state = persist_state_map_entry(state, handle);
   host_id_state->host_id = hostid;
+  persist_state_unmap_entry(state, handle);
   persist_state_commit(state);
+  persist_state_free(state);
 }
 
 static void
