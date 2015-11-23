@@ -76,6 +76,7 @@ test_generate_gstring_from_frame()
   stomp_frame_set_body(&frame, "body", sizeof("body"));
   actual = create_gstring_from_frame(&frame);
   assert_string(actual->str, "SEND\nheader_name:header_value\n\nbody", "Generated stomp frame does not match");
+  stomp_frame_deinit(&frame);
 };
 
 int
