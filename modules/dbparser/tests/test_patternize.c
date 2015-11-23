@@ -59,7 +59,7 @@ testcase_get_logmessages(gchar *logs)
      }
 
   msg_format_options_destroy(&parse_options);
-
+  g_strfreev(input_lines);
   return self;
 }
 
@@ -115,7 +115,7 @@ testcase_frequent_words(gchar* logs, guint support, gchar *expected)
 
             }
 
-          g_free(expected_item);
+          g_strfreev(expected_item);
         }
     }
 
