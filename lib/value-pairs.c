@@ -615,6 +615,22 @@ vp_walker_stack_unwind_all_containers(vp_walk_state_t *state)
   vp_walker_stack_unwind_containers_until(state, NULL);
 }
 
+static gint
+vp_walker_skip_sdata_enterprise_id(const gchar *name, gint pos)
+{
+  /* parse .SDATA.foo@1234.56.678 format, starting with the '@'
+     character. Assume that any numbers + dots form part of the
+     "foo@1234.56.678" key, even if they contain dots */
+  do
+    {
+      /* skip @ or . */
+      pos++;
+      pos += strspn(&name[pos], "0123456789");
+    }
+  while (name[pos] == '.' && isdigit(name[pos + 1]));
+  return pos;
+}
+
 static GPtrArray *
 vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 {
@@ -626,18 +642,8 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
     {
       pos += strcspn(&name[pos], "@.");
       if (name[pos] == '@')
-        {
-          /* parse .SDATA.foo@1234.56.678 format, and assume that any
-             numbers + dots form part of the "foo@1234.56.678" key,
-             even if they contain dots */
-          do
-            {
-              /* skip @ or . */
-              pos++;
-              pos += strspn(&name[pos], "0123456789");
-            }
-          while (name[pos] == '.' && isdigit(name[pos + 1]));
-        }
+        pos = vp_walker_skip_sdata_enterprise_id(name, pos);
+
       if (name[pos] == '.' || pos == name_len)
         {
           g_ptr_array_add(array, g_strndup(&name[token_start], pos - token_start));
