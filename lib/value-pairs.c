@@ -615,12 +615,6 @@ vp_walker_stack_unwind_all_containers(vp_walk_state_t *state)
   vp_walker_stack_unwind_containers_until(state, NULL);
 }
 
-static void
-vp_walker_extract_name_token(GPtrArray *array, const gchar *name, gsize len)
-{
-  g_ptr_array_add(array, g_strndup(name, len));
-}
-
 static GPtrArray *
 vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 {
@@ -646,7 +640,7 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
         }
       if (name[pos] == '.' || pos == name_len)
         {
-          vp_walker_extract_name_token(array, &name[token_start], pos - token_start);
+          g_ptr_array_add(array, g_strndup(&name[token_start], pos - token_start));
           pos++;
           token_start = pos;
         }
