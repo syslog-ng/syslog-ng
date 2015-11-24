@@ -108,6 +108,11 @@ test_numeric_funcs(void)
   assert_template_format("$(/ $FACILITY_NUM 0)", "NaN");
   assert_template_format("$(% $FACILITY_NUM 0)", "NaN");
   assert_template_format("$(+ foo bar)", "NaN");
+  assert_template_format("$(/ 2147483648 1)", "2147483648");
+  assert_template_format("$(+ 5000000000 5000000000)", "10000000000");
+  assert_template_format("$(% 10000000000 5000000001)", "4999999999");
+  assert_template_format("$(* 5000000000 2)", "10000000000");
+  assert_template_format("$(- 10000000000 5000000000)", "5000000000");
 }
 
 void
