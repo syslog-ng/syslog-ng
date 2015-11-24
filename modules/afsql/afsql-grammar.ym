@@ -53,6 +53,16 @@
 
 %token KW_DEFAULT
 %token KW_DBD_OPTION
+%token KW_INDEXES
+%token KW_VALUES
+%token KW_SQL
+%token KW_PASSWORD
+%token KW_USERNAME
+%token KW_DATABASE
+%token KW_TABLE
+%token KW_SESSION_STATEMENTS
+%token KW_COLUMNS
+%token KW_NULL
 
 %type   <ptr> dest_afsql
 %type   <ptr> dest_afsql_params

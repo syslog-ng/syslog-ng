@@ -49,6 +49,9 @@
 %token KW_SERVERS
 %token KW_SAFE_MODE
 %token KW_PATH
+%token KW_PASSWORD
+%token KW_USERNAME
+%token KW_DATABASE
 
 %%
 

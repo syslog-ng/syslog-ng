@@ -58,7 +58,9 @@ FilterRE *last_re_filter;
 
 /* INCLUDE_DECLS */
 
-%token KW_PROGRAM KW_IN_LIST
+%token KW_PROGRAM
+%token KW_IN_LIST
+%token KW_VALUE
 
 %left   ';'
 %left	KW_OR

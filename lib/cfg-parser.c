@@ -38,7 +38,13 @@ int main_parse(CfgLexer *lexer, gpointer *dummy, gpointer arg);
  * keywords might collide with user-defined identifiers (e.g. source,
  * destination & block names).
  *
- * Add the keyword to the parser of the module in question instead.
+ * Add the keyword & the token to the parser of the module in question
+ * instead, even if there are multiple modules using the same
+ * keywords.
+ *
+ * Tokens (e.g. KW_xxx) associated with core keywords (e.g. those
+ * listed here) should be declared only once and only in cfg-grammar.y
+ * and NOT in external modules.
  */
 static CfgLexerKeyword main_keywords[] = {
   /* statements */
