@@ -47,8 +47,6 @@ LogParser *last_parser;
 /* INCLUDE_DECLS */
 
 %token KW_DATE_PARSER
-%token KW_FORMAT
-%token KW_TIME_ZONE
 %token KW_TIME_STAMP
 
 %type <num> date_parser_stamp

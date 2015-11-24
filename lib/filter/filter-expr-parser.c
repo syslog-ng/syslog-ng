@@ -60,7 +60,6 @@ static CfgLexerKeyword filter_expr_keywords[] = {
   { "netmask6",     KW_NETMASK6 },
 #endif
 
-  { "type",               KW_TYPE },
   { "value",              KW_VALUE },
   { "flags",              KW_FLAGS },
 
