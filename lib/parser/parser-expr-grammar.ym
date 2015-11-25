@@ -36,8 +36,6 @@
 #include "plugin.h"
 #include "cfg-grammar.h"
 
-LogParser *last_parser;
-
 }
 
 %name-prefix "parser_expr_"
