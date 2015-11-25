@@ -31,6 +31,16 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
 
+enum
+{
+  TSO_NONE,
+  TSO_NOSSLv2=0x0001,
+  TSO_NOSSLv3=0x0002,
+  TSO_NOTLSv1=0x0004,
+  TSO_NOTLSv11=0x0008,
+  TSO_NOTLSv12=0x0010,
+} TLSSslOptions;
+
 gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
 {
