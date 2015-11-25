@@ -339,14 +339,15 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
     case M_SOURCE_IP:
       {
         gchar *ip;
+        int checker;
 
-        if (msg->saddr && (g_sockaddr_inet_check(msg->saddr) ||
+        checker = msg->saddr;
 #if SYSLOG_NG_ENABLE_IPV6
-            g_sockaddr_inet6_check(msg->saddr))
+        checker = checker && (g_sockaddr_inet_check(msg->saddr) || g_sockaddr_inet6_check(msg->saddr));
 #else
-            0)
+        checker = checker && g_sockaddr_inet_check(msg->saddr);
 #endif
-           )
+        if(checker)
           {
             gchar buf[MAX_SOCKADDR_STRING];
 
