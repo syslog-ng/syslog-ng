@@ -25,6 +25,7 @@ GLIB_MIN_VERSION="2.10.1"
 EVTLOG_MIN_VERSION="0.2.12"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
+LIBRABBITMQ_MIN_VERSION="0.5.3"
 IVYKIS_MIN_VERSION="0.36.1"
 JSON_C_MIN_VERSION="0.9"
 PCRE_MIN_VERSION="6.1"
@@ -1041,7 +1042,7 @@ if test "x$with_librabbitmq_client" = "xinternal"; then
         with_librabbitmq_client="no"
     fi
 elif test "x$with_librabbitmq_client" = "xsystem"; then
-    AC_MSG_ERROR([Building with system librabbitmq is not supported yet.])
+    PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LIBRABBITMQ_MIN_VERSION, , enable_amqp = "no")
 fi
 
 if test "x$with_librabbitmq_client" = "xno"; then
