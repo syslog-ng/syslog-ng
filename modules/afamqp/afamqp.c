@@ -306,7 +306,7 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
           msg_error(context,
                     evt_tag_str("driver", self->super.super.super.id),
                     evt_tag_str("error", "unknown server error"),
-                    evt_tag_printf("method id", "0x%08X", ret.reply.id),
+                    evt_tag_printf("method_id", "0x%08X", ret.reply.id),
                     evt_tag_int("time_reopen", self->super.time_reopen),
                     NULL);
           log_threaded_dest_driver_suspend(&self->super);
