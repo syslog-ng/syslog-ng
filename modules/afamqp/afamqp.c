@@ -220,8 +220,8 @@ afamqp_dd_format_persist_name(LogThrDestDriver *s)
 static inline void
 _amqp_connection_deinit(AMQPDestDriver* self)
 {
-    amqp_destroy_connection(self->conn);
-    self->conn = NULL;
+  amqp_destroy_connection(self->conn);
+  self->conn = NULL;
 }
 
 static void
@@ -333,7 +333,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
         }
       else
         {
-            _amqp_connection_disconnect(self);
+          _amqp_connection_disconnect(self);
         }
     }
 
@@ -341,9 +341,9 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 
   if (self->conn == NULL)
     {
-        msg_error("Error allocating AMQP connection.",
-                  NULL);
-        goto exception_amqp_dd_connect_failed_init;
+      msg_error("Error allocating AMQP connection.",
+                NULL);
+      goto exception_amqp_dd_connect_failed_init;
     }
 
   self->sockfd = amqp_tcp_socket_new(self->conn);
@@ -397,14 +397,15 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
   return TRUE;
 
   /* Exceptions */
-  exception_amqp_dd_connect_failed_exchange:
-    amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
-  exception_amqp_dd_connect_failed_channel:
+ exception_amqp_dd_connect_failed_exchange:
+  amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
 
-    amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
-  exception_amqp_dd_connect_failed_init:
-    _amqp_connection_deinit(self);
-    return FALSE;
+ exception_amqp_dd_connect_failed_channel:
+  amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
+
+ exception_amqp_dd_connect_failed_init:
+  _amqp_connection_deinit(self);
+  return FALSE;
 }
 
 /*
