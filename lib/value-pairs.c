@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 typedef struct
 {
@@ -133,6 +134,29 @@ static CfgFlagHandler value_pair_scope[] =
   { NULL,                 0,       0,                            0},
 };
 
+static gboolean
+vp_pattern_spec_eval(VPPatternSpec *self, const gchar *input)
+{
+  return g_pattern_match_string(self->pattern, input);
+}
+
+static void
+vp_pattern_spec_free(VPPatternSpec *self)
+{
+  g_pattern_spec_free(self->pattern);
+  g_free(self);
+}
+
+static VPPatternSpec *
+vp_pattern_spec_new(const gchar *pattern, gboolean include)
+{
+  VPPatternSpec *self = g_new0(VPPatternSpec, 1);
+
+  self->pattern = g_pattern_spec_new(pattern);
+  self->include = include;
+  return self;
+}
+
 gboolean
 value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 {
@@ -144,16 +168,10 @@ value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
                              gboolean include)
 {
   gint i;
-  VPPatternSpec *p;
 
   i = vp->patterns_size++;
   vp->patterns = g_renew(VPPatternSpec *, vp->patterns, vp->patterns_size);
-
-  p = g_new(VPPatternSpec, 1);
-  p->pattern = g_pattern_spec_new(pattern);
-  p->include = include;
-
-  vp->patterns[i] = p;
+  vp->patterns[i] = vp_pattern_spec_new(pattern, include);;
 }
 
 void
@@ -250,7 +268,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 
   for (j = 0; j < vp->patterns_size; j++)
     {
-      if (g_pattern_match_string(vp->patterns[j]->pattern, name))
+      if (vp_pattern_spec_eval(vp->patterns[j], name))
         inc = vp->patterns[j]->include;
     }
 
@@ -274,7 +292,7 @@ vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
 
   for (j = 0; j < vp->patterns_size; j++)
     {
-      if (g_pattern_match_string(vp->patterns[j]->pattern, name))
+      if (vp_pattern_spec_eval(vp->patterns[j], name))
         included = vp->patterns[j]->include;
     }
 
@@ -442,6 +460,70 @@ evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq
    return result;
 };
 
+/*******************************************************************************
+ * vp_stack (represented by vp_stack_t)
+ *
+ * A not very generic stack implementation used by vp_walker.
+ *******************************************************************************/
+
+#define VP_STACK_INITIAL_SIZE 16
+
+typedef struct
+{
+  GPtrArray *elems;
+} vp_stack_t;
+
+static void
+vp_stack_init(vp_stack_t *stack)
+{
+  stack->elems = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
+}
+
+static void
+vp_stack_destroy(vp_stack_t *stack)
+{
+  g_ptr_array_free(stack->elems, TRUE);
+}
+
+static void
+vp_stack_push(vp_stack_t *stack, gpointer data)
+{
+  g_ptr_array_add(stack->elems, data);
+}
+
+static gpointer
+vp_stack_peek(vp_stack_t *stack)
+{
+  if (stack->elems->len == 0)
+    return NULL;
+
+  return g_ptr_array_index(stack->elems, stack->elems->len - 1);
+}
+
+static gpointer
+vp_stack_pop(vp_stack_t *stack)
+{
+  gpointer data = NULL;
+
+  data = vp_stack_peek(stack);
+  if (data)
+    g_ptr_array_remove_index(stack->elems, stack->elems->len - 1);
+  return data;
+}
+
+static guint
+vp_stack_height(vp_stack_t *stack)
+{
+  return stack->elems->len;
+}
+
+/*******************************************************************************
+ * vp_walker (represented by vp_walk_state_t),
+ *
+ * The stuff that translates name-value pairs to a tree with SAX like
+ * callbacks. (start/value/end)
+ *******************************************************************************/
+
 typedef struct
 {
   gchar *key;
@@ -451,15 +533,6 @@ typedef struct
   gpointer data;
 } vp_walk_stack_data_t;
 
-#define VP_STACK_INITIAL_SIZE 16
-
-typedef struct
-{
-  vp_walk_stack_data_t **buffer;
-  guint buffer_size;
-  guint count;
-} vp_stack_t;
-
 typedef struct
 {
   VPWalkCallbackFunc obj_start;
@@ -467,131 +540,8 @@ typedef struct
   VPWalkValueCallbackFunc process_value;
 
   gpointer user_data;
-  vp_stack_t *stack;
+  vp_stack_t stack;
 } vp_walk_state_t;
-
-static vp_stack_t *
-vp_stack_create()
-{
-  vp_stack_t *stack = g_new(vp_stack_t, 1);
-  stack->buffer = g_new(vp_walk_stack_data_t *, VP_STACK_INITIAL_SIZE);
-  stack->buffer_size = VP_STACK_INITIAL_SIZE;
-  stack->count = 0;
-  return stack;
-}
-
-static void
-vp_stack_destroy(vp_stack_t *stack)
-{
-  g_free(stack->buffer);
-  g_free(stack);
-}
-
-static void
-vp_stack_realloc(vp_stack_t *stack, guint new_size)
-{
-  g_assert(new_size > stack->buffer_size);
-  stack->buffer = g_renew(vp_walk_stack_data_t *, stack->buffer, new_size);
-  stack->buffer_size = new_size;
-}
-
-static void
-vp_stack_push(vp_stack_t *stack, vp_walk_stack_data_t *data)
-{
-  if (stack->count >= stack->buffer_size)
-    vp_stack_realloc(stack, stack->buffer_size * 2);
-
-  stack->buffer[stack->count++] = data;
-}
-
-static vp_walk_stack_data_t *
-vp_stack_peek(vp_stack_t *stack)
-{
-  if (stack->count == 0)
-    return NULL;
-
-  return stack->buffer[stack->count-1];
-}
-
-static vp_walk_stack_data_t *
-vp_stack_pop(vp_stack_t *stack)
-{
-  vp_walk_stack_data_t *data = NULL;
-
-  if (stack->count == 0)
-    return NULL;
-
-  data = stack->buffer[stack->count-1];
-  stack->count--;
-  return data;
-}
-
-static guint
-vp_stack_height(vp_stack_t *stack)
-{
-  return stack->count;
-}
-
-static void
-vp_walker_stack_unwind_until (vp_stack_t *stack, vp_walk_state_t *state,
-                              const gchar *name)
-{
-  vp_walk_stack_data_t *t;
-
-  if (!stack)
-    return;
-
-  while ((t = vp_stack_pop(stack)) != NULL)
-    {
-      vp_walk_stack_data_t *p;
-
-      if (strncmp(name, t->prefix, t->prefix_len) == 0)
-        {
-          /* This one matched, put it back, PUT IT BACK! */
-          vp_stack_push(stack, t);
-          break;
-        }
-
-      p = vp_stack_peek(stack);
-
-      if (p)
-        state->obj_end(t->key, t->prefix, &t->data,
-                       p->prefix, &p->data,
-                       state->user_data);
-      else
-        state->obj_end(t->key, t->prefix, &t->data,
-                       NULL, NULL,
-                       state->user_data);
-      g_free(t->key);
-      g_free(t->prefix);
-      g_free(t);
-    }
-}
-
-static void
-vp_walker_stack_unwind_all(vp_stack_t *stack,
-                           vp_walk_state_t *state)
-{
-  vp_walk_stack_data_t *t;
-
-  while ((t = vp_stack_pop(stack)) != NULL)
-    {
-      vp_walk_stack_data_t *p = vp_stack_peek(stack);
-
-      if (p)
-        state->obj_end(t->key, t->prefix, &t->data,
-                       p->prefix, &p->data,
-                       state->user_data);
-      else
-        state->obj_end(t->key, t->prefix, &t->data,
-                       NULL, NULL,
-                       state->user_data);
-
-      g_free(t->key);
-      g_free(t->prefix);
-      g_free(t);
-    }
-}
 
 static vp_walk_stack_data_t *
 vp_walker_stack_push (vp_stack_t *stack,
@@ -608,40 +558,106 @@ vp_walker_stack_push (vp_stack_t *stack,
   return nt;
 }
 
-static void
-vp_walker_name_value_split_add_name_token(GPtrArray *array, const gchar *name,
-                                          int *current_name_start_idx,
-                                          int *index)
+static vp_walk_stack_data_t *
+vp_walker_stack_peek(vp_stack_t *stack)
 {
-  gchar *token;
+  return (vp_walk_stack_data_t *) vp_stack_peek(stack);
+}
 
-  token = g_strndup(name + *current_name_start_idx, *index - *current_name_start_idx);
-  *current_name_start_idx = ++(*index);
-  g_ptr_array_add(array, (gpointer) token);
+static vp_walk_stack_data_t *
+vp_walker_stack_pop(vp_stack_t *stack)
+{
+  return (vp_walk_stack_data_t *) vp_stack_pop(stack);
+}
+
+static void
+vp_walker_free_stack_data(vp_walk_stack_data_t *t)
+{
+  g_free(t->key);
+  g_free(t->prefix);
+  g_free(t);
+}
+
+static void
+vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
+                                        const gchar *name)
+{
+  vp_walk_stack_data_t *t;
+
+  while ((t = vp_walker_stack_pop(&state->stack)) != NULL)
+    {
+      vp_walk_stack_data_t *p;
+
+      if (name && strncmp(name, t->prefix, t->prefix_len) == 0)
+        {
+          /* This one matched, put it back, PUT IT BACK! */
+          vp_stack_push(&state->stack, t);
+          break;
+        }
+
+      p = vp_walker_stack_peek(&state->stack);
+
+      if (p)
+        state->obj_end(t->key, t->prefix, &t->data,
+                       p->prefix, &p->data,
+                       state->user_data);
+      else
+        state->obj_end(t->key, t->prefix, &t->data,
+                       NULL, NULL,
+                       state->user_data);
+      vp_walker_free_stack_data(t);
+    }
+}
+
+static void
+vp_walker_stack_unwind_all_containers(vp_walk_state_t *state)
+{
+  vp_walker_stack_unwind_containers_until(state, NULL);
+}
+
+static gint
+vp_walker_skip_sdata_enterprise_id(const gchar *name, gint pos)
+{
+  /* parse .SDATA.foo@1234.56.678 format, starting with the '@'
+     character. Assume that any numbers + dots form part of the
+     "foo@1234.56.678" key, even if they contain dots */
+  do
+    {
+      /* skip @ or . */
+      pos++;
+      pos += strspn(&name[pos], "0123456789");
+    }
+  while (name[pos] == '.' && isdigit(name[pos + 1]));
+  return pos;
 }
 
 static GPtrArray *
-vp_walker_name_value_split(const gchar *name)
+vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 {
-  int i, current_name_start_idx = 0, name_len = strlen(name);
-  GPtrArray *array = g_ptr_array_new();
+  gint pos, token_start = 0, name_len = strlen(name);
+  GPtrArray *array = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
 
-  for (i = 0; i < name_len; i++)
+  pos = 0;
+  do
     {
-      if (name[i] == '@')
+      token_start = pos;
+      pos += strcspn(&name[pos], "@.");
+      if (name[pos] == '@')
+        pos = vp_walker_skip_sdata_enterprise_id(name, pos);
+
+      if (name[pos] == '.' || pos == name_len)
         {
-          i++;
-          while (g_ascii_isdigit(name[i]) || (name[i] == '.' && g_ascii_isdigit(name[i + 1])))
-            i++;
+          g_ptr_array_add(array, g_strndup(&name[token_start], pos - token_start));
+          pos++;
         }
-      if (name[i] == '.')
-        vp_walker_name_value_split_add_name_token(array, name, &current_name_start_idx, &i);
     }
-  if (current_name_start_idx <= i - 1)
-    vp_walker_name_value_split_add_name_token(array, name, &current_name_start_idx, &i);
+  while (pos < name_len);
 
   if (array->len == 0)
-    return NULL;
+    {
+      g_ptr_array_free(array, TRUE);
+      return NULL;
+    }
 
   return array;
 }
@@ -668,21 +684,24 @@ vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
 }
 
 static gchar *
-vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
-                     const gchar *name)
+vp_walker_start_containers_for_name(vp_walk_state_t *state,
+                                    const gchar *name)
 {
   GPtrArray *tokens;
   gchar *key = NULL;
   guint i, start;
 
-  tokens = vp_walker_name_value_split(name);
+  tokens = vp_walker_split_name_to_tokens(state, name);
 
-  start = vp_stack_height(stack);
+  start = vp_stack_height(&state->stack);
   for (i = start; i < tokens->len - 1; i++)
     {
-      vp_walk_stack_data_t *p = vp_stack_peek(stack);
-      vp_walk_stack_data_t *nt = vp_walker_stack_push(stack, g_strdup(g_ptr_array_index(tokens, i)),
-                                 vp_walker_name_combine_prefix(tokens, i));
+      vp_walk_stack_data_t *p, *nt;
+
+      p = vp_walker_stack_peek(&state->stack);
+      nt = vp_walker_stack_push(&state->stack,
+                                g_strdup(g_ptr_array_index(tokens, i)),
+                                vp_walker_name_combine_prefix(tokens, i));
 
       if (p)
         state->obj_start(nt->key, nt->prefix, &nt->data,
@@ -695,7 +714,8 @@ vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
 
   /* The last token is the key (well, second to last, last being
      NULL), so treat that normally. */
-  key = g_strdup(g_ptr_array_index(tokens, tokens->len - 1));
+  key = g_ptr_array_index(tokens, tokens->len - 1);
+  g_ptr_array_index(tokens, tokens->len - 1) = NULL;
 
   g_ptr_array_foreach(tokens, (GFunc)g_free, NULL);
   g_ptr_array_free(tokens, TRUE);
@@ -712,9 +732,9 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
   gchar *key;
   gboolean result;
 
-  vp_walker_stack_unwind_until (state->stack, state, name);
-  key = vp_walker_name_split (state->stack, state, name);
-  data = vp_stack_peek (state->stack);
+  vp_walker_stack_unwind_containers_until(state, name);
+  key = vp_walker_start_containers_for_name(state, name);
+  data = vp_walker_stack_peek(&state->stack);
 
   if (data != NULL)
     result = state->process_value(key, data->prefix,
@@ -738,6 +758,10 @@ vp_walk_cmp(const gchar *s1, const gchar *s2)
   return strcmp(s2, s1);
 }
 
+/*******************************************************************************
+ * Public API
+ *******************************************************************************/
+
 gboolean
 value_pairs_walk(ValuePairs *vp,
                  VPWalkCallbackFunc obj_start_func,
@@ -754,15 +778,15 @@ value_pairs_walk(ValuePairs *vp,
   state.obj_start = obj_start_func;
   state.obj_end = obj_end_func;
   state.process_value = process_value_func;
-  state.stack = vp_stack_create();
+  vp_stack_init(&state.stack);
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
                                       (GCompareDataFunc)vp_walk_cmp, msg,
                                       seq_num, time_zone_mode, template_options, &state);
-  vp_walker_stack_unwind_all(state.stack, &state);
+  vp_walker_stack_unwind_all_containers(&state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
-  vp_stack_destroy(state.stack);
+  vp_stack_destroy(&state.stack);
 
   return result;
 }
@@ -865,6 +889,17 @@ value_pairs_new(void)
   return vp;
 }
 
+ValuePairs *
+value_pairs_new_default(GlobalConfig *cfg)
+{
+  ValuePairs *vp = value_pairs_new();
+
+  value_pairs_add_scope(vp, "selected-macros");
+  value_pairs_add_scope(vp, "nv-pairs");
+  value_pairs_add_scope(vp, "sdata");
+  return vp;
+}
+
 void
 value_pairs_free (ValuePairs *vp)
 {
@@ -878,8 +913,7 @@ value_pairs_free (ValuePairs *vp)
 
   for (i = 0; i < vp->patterns_size; i++)
     {
-      g_pattern_spec_free(vp->patterns[i]->pattern);
-      g_free(vp->patterns[i]);
+      vp_pattern_spec_free(vp->patterns[i]);
     }
   g_free(vp->patterns);
 
@@ -899,6 +933,10 @@ value_pairs_add_transforms(ValuePairs *vp, gpointer vpts)
 {
   vp->transforms = g_list_append(vp->transforms, vpts);
 }
+
+/*******************************************************************************
+ * Command line parser
+ *******************************************************************************/
 
 static void
 vp_cmdline_parse_rekey_finish (gpointer data)
@@ -1234,16 +1272,5 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       vp = NULL;
     }
 
-  return vp;
-}
-
-ValuePairs *
-value_pairs_new_default(GlobalConfig *cfg)
-{
-  ValuePairs *vp = value_pairs_new();
-
-  value_pairs_add_scope(vp, "selected-macros");
-  value_pairs_add_scope(vp, "nv-pairs");
-  value_pairs_add_scope(vp, "sdata");
   return vp;
 }
