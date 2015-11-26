@@ -262,10 +262,9 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
 
     case AMQP_RESPONSE_LIBRARY_EXCEPTION:
       {
-        const gchar *errstr = amqp_error_string2(ret.library_error);
         msg_error(context,
                   evt_tag_str("driver", self->super.super.super.id),
-                  evt_tag_str("error", errstr),
+                  evt_tag_str("error", amqp_error_string2(ret.library_error)),
                   evt_tag_int("time_reopen", self->super.time_reopen),
                   NULL);
         log_threaded_dest_driver_suspend(&self->super);
@@ -354,10 +353,9 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 
   if (sockfd_ret != AMQP_STATUS_OK)
     {
-      const gchar *errstr = amqp_error_string2(-sockfd_ret);
       msg_error("Error connecting to AMQP server",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("error", errstr),
+                evt_tag_str("error", amqp_error_string2(-sockfd_ret)),
                 evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
 
