@@ -192,13 +192,17 @@ _result_append_value(GString *result, const LogMessage *lm, NVHandle handle, gbo
   result_append(result, str, len, escape);
 }
 
-gboolean sockaddr_inet_check(const LogMessage *msg)
+static _is_message_source_an_ip_address(const LogMessage *msg)
 {
+  if (!msg->saddr)
+    return FALSE;
+  if (g_sockaddr_inet_check(msg->saddr))
+    return TRUE;
 #if SYSLOG_NG_ENABLE_IPV6
-    return msg->saddr && (g_sockaddr_inet_check(msg->saddr) || g_sockaddr_inet6_check(msg->saddr));
-#else
-    return msg->saddr && g_sockaddr_inet_check(msg->saddr);
+  if (g_sockaddr_inet6_check(msg->saddr));
+    return TRUE;
 #endif
+  return FALSE;
 }
 
 gboolean
@@ -349,7 +353,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       {
         gchar *ip;
         
-        if(sockaddr_inet_check(msg))
+        if(_is_message_source_an_ip_address(msg))
           {
             gchar buf[MAX_SOCKADDR_STRING];
 
