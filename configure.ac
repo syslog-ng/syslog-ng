@@ -669,24 +669,25 @@ elif test "x$enable_tcp_wrapper" != "xyes"; then
 fi
 
 dnl ***************************************************************************
-dnl libdbi headers/libraries
+dnl -ldl
 dnl ***************************************************************************
 
 AC_CHECK_LIB(dl, dlsym, DL_LIBS="-ldl")
-PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION, libdbi_pkgconfig_not_found="0", libdbi_pkgconfig_not_found="1")
 
-if test "$libdbi_pkgconfig_not_found" -eq 1; then
-	dnl if libdbi has no .pc file, try it without one
-	AC_CHECK_LIB(dbi, dbi_initialize, LIBDBI_LIBS="-ldbi"; LIBDBI_CFLAGS="-I/usr/include")
-fi
-
-if test "x$enable_sql" = "xauto"; then
+dnl ***************************************************************************
+dnl libdbi headers/libraries
+dnl ***************************************************************************
+if test "x$enable_sql" = "xyes" || test "x$enable_sql" = "xauto"; then
+	PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, with_libdbi="")
 	AC_MSG_CHECKING(whether to enable SQL support)
 	if test "x$LIBDBI_LIBS" != "x"; then
 		enable_sql="yes"
 		AC_MSG_RESULT(yes)
-	else
+	elif test "x$enable_sql" = "xyes"; then
+		AC_MSG_RESULT(no)
 		enable_sql="no"
+                AC_MSG_ERROR([Could not find libdbi, and SQL support was explicitly enabled.])
+        else
 		AC_MSG_RESULT(no)
 	fi
 fi
