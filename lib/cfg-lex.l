@@ -331,4 +331,4 @@ cfg_lexer_start_block_state(CfgLexer *self, gchar block_boundary[2])
 }
 
 /* avoid warnings of unused symbols */
-gpointer __dummy[] = { yy_top_state };
+gpointer __dummy[] = { yy_top_state, yy_fatal_error };
