@@ -79,7 +79,7 @@ def get_value_pairs_scopes():
 
 # override implementations from the module supplied by the C implementation.
 try:
-    # pylint: disable=import-error,wildcard-import
+    # pylint: disable=import-error,wildcard-import,wrong-import-position
     from _syslogngdbg import *
 except ImportError:
     pass
