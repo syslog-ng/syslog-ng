@@ -89,6 +89,6 @@ void msg_format_options_copy(MsgFormatOptions *options, const MsgFormatOptions *
 
 gboolean msg_format_options_process_flag(MsgFormatOptions *options, gchar *flag);
 
-void msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length);
+void msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length, gint problem_position);
 
 #endif

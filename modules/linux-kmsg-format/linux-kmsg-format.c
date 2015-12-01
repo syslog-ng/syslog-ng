@@ -95,94 +95,94 @@ kmsg_to_absolute_time(guint64 timestamp, LogStamp *dest)
   dest->tv_usec = t % G_USEC_PER_SEC;
 }
 
-static gsize
-kmsg_parse_prio(const guchar *data, gsize pos, gsize length, LogMessage *msg)
+static gboolean
+kmsg_parse_prio(const guchar *data, gsize *pos, gsize length, LogMessage *msg)
 {
   gint pri = 0;
 
-  while (pos < length && data[pos] != ',')
+  while (*pos < length && data[*pos] != ',')
     {
-      if (isdigit(data[pos]))
-        pri = pri * 10 + ((data[pos]) - '0');
+      if (isdigit(data[*pos]))
+        pri = pri * 10 + ((data[*pos]) - '0');
       else
-        return -1;
-      pos++;
+        return FALSE;
+      (*pos)++;
     }
-  if (data[pos] != ',' || pos == length)
-    return -1;
+  if (data[*pos] != ',' || *pos == length)
+    return FALSE;
 
   msg->pri = pri;
-  return pos;
+  return TRUE;
 }
 
-static gsize
-kmsg_parse_seq(const guchar *data, gsize pos, gsize length, LogMessage *msg)
+static gboolean
+kmsg_parse_seq(const guchar *data, gsize *pos, gsize length, LogMessage *msg)
 {
-  gsize start = pos;
+  gsize start = *pos;
 
-  while (pos < length && data[pos] != ',')
+  while (*pos < length && data[*pos] != ',')
     {
-      if (!isdigit(data[pos]))
-        return -1;
-      pos++;
+      if (!isdigit(data[*pos]))
+        return TRUE;
+      (*pos)++;
     }
-  if (data[pos] != ',' || pos == length)
-    return -1;
+  if (data[*pos] != ',' || *pos == length)
+    return FALSE;
 
-  log_msg_set_value(msg, LM_V_MSGID, (const gchar *)data + start, pos - start);
-  return pos;
+  log_msg_set_value(msg, LM_V_MSGID, (const gchar *)data + start, *pos - start);
+  return TRUE;
 }
 
-static gsize
-kmsg_parse_timestamp(const guchar *data, gsize pos, gsize length, LogMessage *msg)
+static gboolean
+kmsg_parse_timestamp(const guchar *data, gsize *pos, gsize length, LogMessage *msg)
 {
   guint64 timestamp = 0;
-  gsize start = pos;
+  gsize start = *pos;
 
-  while (pos < length && data[pos] != ',' && data[pos] != ';')
+  while (*pos < length && data[*pos] != ',' && data[*pos] != ';')
     {
-      if (isdigit(data[pos]))
-        timestamp = timestamp * 10 + ((data[pos]) - '0');
+      if (isdigit(data[*pos]))
+        timestamp = timestamp * 10 + ((data[*pos]) - '0');
       else
-        return -1;
-      pos++;
+        return FALSE;
+      (*pos)++;
     }
-  if ((data[pos] != ',' && data[pos] != ';') || pos == length)
-    return -1;
+  if ((data[*pos] != ',' && data[*pos] != ';') || *pos == length)
+    return FALSE;
 
   log_msg_set_value(msg, KMSG_LM_V_TIMESTAMP,
-                    (const gchar *)data + start, pos - start);
+                    (const gchar *)data + start, *pos - start);
   kmsg_to_absolute_time(timestamp, &msg->timestamps[LM_TS_STAMP]);
   msg->timestamps[LM_TS_STAMP].zone_offset =
     get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
 
-  return pos;
+  return TRUE;
+}
+
+static gboolean
+kmsg_skip_to_message(const guchar *data, gsize *pos, gsize length)
+{
+  while (*pos < length && data[*pos] != ';')
+    (*pos)++;
+
+  if (data[*pos] != ';' || *pos == length)
+    return FALSE;
+  return TRUE;
 }
 
 static gsize
-kmsg_skip_to_message(const guchar *data, gsize pos, gsize length)
+kmsg_parse_message(const guchar *data, gsize *pos, gsize length, LogMessage *msg)
 {
-  while (pos < length && data[pos] != ';')
-    pos++;
+  gsize start = *pos;
 
-  if (data[pos] != ';' || pos == length)
-    return -1;
-  return pos;
-}
-
-static gsize
-kmsg_parse_message(const guchar *data, gsize pos, gsize length, LogMessage *msg)
-{
-  gsize start = pos;
-
-  while (pos < length && data[pos] != '\n')
-    pos++;
-  if (data[pos] != '\n')
-    return -1;
+  while (*pos < length && data[*pos] != '\n')
+    (*pos)++;
+  if (data[*pos] != '\n')
+    return FALSE;
 
   log_msg_set_value(msg, LM_V_MESSAGE, (const gchar *)data + start,
-                    pos - start);
-  return pos;
+                    *pos - start);
+  return TRUE;
 }
 
 static gboolean
@@ -269,37 +269,37 @@ kmsg_parse_device_key_value_pair(const guchar *value, gsize length,
     }
 }
 
-static gsize
-kmsg_parse_key_value_pair(const guchar *data, gsize pos, gsize length,
+static gboolean
+kmsg_parse_key_value_pair(const guchar *data, gsize *pos, gsize length,
                           LogMessage *msg)
 {
   gsize name_start, name_len, value_start, value_len;
   SBGString *name;
 
-  while (pos < length && (data[pos] == ' ' || data[pos] == '\t'))
-    pos++;
-  if (pos == length)
-    return -1;
-  name_start = pos;
+  while (*pos < length && (data[*pos] == ' ' || data[*pos] == '\t'))
+    (*pos)++;
+  if (*pos == length)
+    return FALSE;
+  name_start = *pos;
 
-  while (pos < length && data[pos] != '=')
-    pos++;
-  if (pos == length)
-    return -1;
-  name_len = pos - name_start;
-  value_start = ++pos;
+  while (*pos < length && data[*pos] != '=')
+    (*pos)++;
+  if (*pos == length)
+    return FALSE;
+  name_len = *pos - name_start;
+  value_start = ++(*pos);
 
-  while (pos < length && data[pos] != '\n')
-    pos++;
-  if (data[pos] != '\n')
-    return -1;
-  value_len = pos - value_start;
+  while (*pos < length && data[*pos] != '\n')
+    (*pos)++;
+  if (data[*pos] != '\n')
+    return FALSE;
+  value_len = *pos - value_start;
 
   if (kmsg_is_key_value_pair_device(data + name_start, name_len))
     {
       kmsg_parse_device_key_value_pair(data + value_start, value_len,
                                        msg);
-      return pos;
+      return TRUE;
     }
 
   name = sb_gstring_acquire();
@@ -312,40 +312,48 @@ kmsg_parse_key_value_pair(const guchar *data, gsize pos, gsize length,
                     (const gchar *)data + value_start, value_len);
   sb_gstring_release(name);
 
-  return pos;
+  return TRUE;
 }
 
 static gboolean
-log_msg_parse_kmsg(LogMessage *msg, const guchar *data, gsize length)
+log_msg_parse_kmsg(LogMessage *msg, const guchar *data, gsize length, gint *position)
 {
   gsize pos = 0;
 
-  if ((pos = kmsg_parse_prio(data, pos, length, msg)) == -1)
-    return FALSE;
+  if (!kmsg_parse_prio(data, &pos, length, msg))
+    goto error;
 
-  if ((pos = kmsg_parse_seq(data, pos + 1, length, msg)) == -1)
-    return FALSE;
+  pos++;
+  if (!kmsg_parse_seq(data, &pos, length, msg))
+    goto error;
 
-  if ((pos = kmsg_parse_timestamp(data, pos + 1, length, msg)) == -1)
-    return FALSE;
+  pos++;
+  if (!kmsg_parse_timestamp(data, &pos, length, msg))
+    goto error;
 
-  if ((pos = kmsg_skip_to_message(data, pos, length)) == -1)
-    return FALSE;
+  if (!kmsg_skip_to_message(data, &pos, length))
+    goto error;
 
-  if ((pos = kmsg_parse_message(data, pos + 1, length, msg)) == -1)
-    return FALSE;
+  pos++;
+  if (!kmsg_parse_message(data, &pos, length, msg))
+    goto error;
 
   if (pos + 1 >= length)
     return TRUE;
 
   do
     {
-      if ((pos = kmsg_parse_key_value_pair(data, pos + 1, length, msg)) == -1)
-        return FALSE;
+      pos++;
+      if (!kmsg_parse_key_value_pair(data, &pos, length, msg))
+        goto error;
     }
   while (pos < length);
 
   return TRUE;
+
+error:
+  *position = pos;
+  return FALSE;
 }
 
 void
@@ -354,6 +362,7 @@ linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
                           LogMessage *self)
 {
   gboolean success;
+  gint problem_position = 0;
 
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
@@ -372,13 +381,13 @@ linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
 
   self->initial_parse = TRUE;
 
-  success = log_msg_parse_kmsg(self, data, length);
+  success = log_msg_parse_kmsg(self, data, length, &problem_position);
 
   self->initial_parse = FALSE;
 
   if (G_UNLIKELY(!success))
     {
-      msg_format_inject_parse_error(self, data, length);
+      msg_format_inject_parse_error(self, data, length, problem_position);
       return;
     }
 }

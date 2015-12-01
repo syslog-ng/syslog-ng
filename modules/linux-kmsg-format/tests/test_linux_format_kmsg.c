@@ -129,6 +129,8 @@ test_kmsg_device_parsing(void)
                        " DEVICE=n8\n";
   gchar msg_unknown[] = "6,202,98513;Fake message\n" \
                         " DEVICE=w12345\n";
+  gchar msg_invalid_block[] = "6,202;Fake message\n" \
+                              " DEVICE=b12:1\n";
   LogMessage *parsed_message;
 
   testcase_begin("Testing /dev/kmsg DEVICE= parsing");
@@ -158,6 +160,11 @@ test_kmsg_device_parsing(void)
   parsed_message = kmsg_parse_message(msg_unknown);
   assert_log_kmsg_value(parsed_message, ".linux.DEVICE.type", "<unknown>");
   assert_log_kmsg_value(parsed_message, ".linux.DEVICE.name", "w12345");
+  log_msg_unref(parsed_message);
+
+  parsed_message = kmsg_parse_message(msg_invalid_block);
+  assert_log_message_value(parsed_message, LM_V_MESSAGE,
+                           "Error processing log message (at position 6): 6,202;Fake message\n DEVICE=b12:1");
   log_msg_unref(parsed_message);
 
   testcase_end();
