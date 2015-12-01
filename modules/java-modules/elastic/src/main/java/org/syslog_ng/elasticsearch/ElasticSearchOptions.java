@@ -42,6 +42,7 @@ public class ElasticSearchOptions {
 	public static String CLIENT_MODE = "client_mode";
 	public static String CONFIG_FILE = "resource";
 	public static String CONCURRENT_REQUESTS = "concurrent_requests";
+	public static String SHIELD_CREDENTIALS = "shield_credentials";
 
 	public static String SERVER_DEFAULT = "localhost";
 	public static String PORT_DEFAULT = "9300";
@@ -117,7 +118,11 @@ public class ElasticSearchOptions {
 
         public int getConcurrentRequests() {
         	return options.get(CONCURRENT_REQUESTS).getValueAsInteger();
-        }	
+        }
+        
+        public String getShieldCredentials() {
+                return options.get(SHIELD_CREDENTIALS).getValue();
+        }
 
 	private void fillOptions() {
 		fillStringOptions();
@@ -139,5 +144,6 @@ public class ElasticSearchOptions {
 		options.put(new EnumOptionDecorator(new StringOption(owner, CLIENT_MODE, CLIENT_MODE_DEFAULT), CLIENT_MODES));
 		options.put(new StringOption(owner, CONFIG_FILE));
 		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_DEFAULT), 0, Integer.MAX_VALUE));
+		options.put(new StringOption(owner, SHIELD_CREDENTIALS));
 	}
 }
