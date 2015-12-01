@@ -41,8 +41,6 @@ typedef struct _AFStreamsSourceDriver
 } AFStreamsSourceDriver;
 
 
-#if SYSLOG_NG_ENABLE_SUN_STREAMS
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stropts.h>
@@ -286,35 +284,3 @@ afstreams_sd_new(gchar *filename, GlobalConfig *cfg)
   self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
   return &self->super.super;
 }
-#else
-
-void
-afstreams_sd_set_sundoor(LogDriver *s, gchar *filename)
-{
-}
-
-static gboolean
-afstreams_sd_dummy_init(LogPipe *s)
-{
-  return TRUE;
-}
-
-static gboolean
-afstreams_sd_dummy_deinit(LogPipe *s)
-{
-  return TRUE;
-}
-
-LogDriver *
-afstreams_sd_new(gchar *filename, GlobalConfig *cfg)
-{
-  LogDriver *self = g_new0(LogDriver, 1);
-
-  log_src_driver_init_instance(self, cfg);
-  self->super.init = afstreams_sd_dummy_init;
-  self->super.deinit = afstreams_sd_dummy_deinit;
-  self->super.free_fn = log_src_driver_free;
-  return self;
-}
-
-#endif
