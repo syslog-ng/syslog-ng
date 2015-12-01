@@ -355,13 +355,8 @@ afsocket_dd_setup_addresses_method(AFSocketDestDriver *self)
 static void
 afsocket_dd_restore_writer(AFSocketDestDriver *self)
 {
-  GlobalConfig *cfg;
-  ReloadStoreItem *item;
-
-  g_assert(self->writer == NULL);
-
-  cfg = log_pipe_get_config(&self->super.super.super);
-  item = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+  ReloadStoreItem *item = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
 
   if (item && !_is_protocol_type_changed_during_reload(self, item))
     self->writer = _reload_store_item_release_writer(item);
