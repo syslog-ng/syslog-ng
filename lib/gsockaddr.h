@@ -77,6 +77,7 @@ g_sockaddr_get_sa(GSockAddr *self)
   return &self->sa;
 }
 
+guint16 g_sockaddr_inet_get_port(GSockAddr *s);
 gboolean g_sockaddr_inet_check(GSockAddr *a);
 GSockAddr *g_sockaddr_inet_new(const gchar *ip, guint16 port);
 GSockAddr *g_sockaddr_inet_new2(struct sockaddr_in *sin);

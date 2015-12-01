@@ -159,6 +159,7 @@ LogMacroDef macros[] =
         { "SDATA", M_SDATA },
         { "MSGHDR", M_MSGHDR },
         { "SOURCEIP", M_SOURCE_IP },
+        { "SOURCEPORT", M_SOURCE_PORT },
         { "SEQNUM", M_SEQNUM },
         { "CONTEXT_ID", M_CONTEXT_ID },
         { "_", M_CONTEXT_ID },
@@ -336,6 +337,11 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
         log_macro_expand(result, M_MSGHDR, escape, opts, tz, seq_num, context_id, msg);
       _result_append_value(result, msg, LM_V_MESSAGE, escape);
       break;
+    case M_SOURCE_PORT:
+      {
+        format_uint32_padded(result, 0, 0, 10, g_sockaddr_inet_get_port(msg->saddr));
+        break;
+      }
     case M_SOURCE_IP:
       {
         gchar *ip;
