@@ -73,10 +73,9 @@ parser_expr_geoip
             template = cfg_tree_check_inline_template(&configuration->tree, $4, &error);
             CHECK_ERROR_GERROR(template != NULL, @4, error, "Error compiling template");
             log_parser_set_template(last_parser, template);
-            free($4);
           }
           parser_geoip_opts
-          ')'					{ $$ = last_parser; }
+          ')'					{ $$ = last_parser; free($4); }
         ;
 
 
