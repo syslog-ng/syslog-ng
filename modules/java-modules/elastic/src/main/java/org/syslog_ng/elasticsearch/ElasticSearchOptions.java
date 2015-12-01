@@ -43,6 +43,10 @@ public class ElasticSearchOptions {
 	public static String CONFIG_FILE = "resource";
 	public static String CONCURRENT_REQUESTS = "concurrent_requests";
 	public static String SHIELD_CREDENTIALS = "shield_credentials";
+	public static String SHIELD_KEYSTORE_PATH = "shield_keystore_path";
+	public static String SHIELD_KEYSTORE_PWD = "shield_keystore_password";
+	public static String SHIELD_TRUSTSTORE_PATH = "shield_truststore_path";
+	public static String SHIELD_TRUSTSTORE_PWD = "shield_truststore_password";
 
 	public static String SERVER_DEFAULT = "localhost";
 	public static String PORT_DEFAULT = "9300";
@@ -124,6 +128,22 @@ public class ElasticSearchOptions {
                 return options.get(SHIELD_CREDENTIALS).getValue();
         }
 
+        public String getShieldKeystorePath() {
+                return options.get(SHIELD_KEYSTORE_PATH).getValue();
+        }
+        
+        public String getShieldKeystorePassword() {
+                return options.get(SHIELD_KEYSTORE_PWD).getValue();
+        }
+
+        public String getShieldTruststorePath() {
+                return options.get(SHIELD_TRUSTSTORE_PATH).getValue();
+        }
+        
+        public String getShieldTruststorePassword() {
+                return options.get(SHIELD_TRUSTSTORE_PWD).getValue();
+        }
+        
 	private void fillOptions() {
 		fillStringOptions();
 		fillTemplateOptions();
@@ -145,5 +165,9 @@ public class ElasticSearchOptions {
 		options.put(new StringOption(owner, CONFIG_FILE));
 		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_DEFAULT), 0, Integer.MAX_VALUE));
 		options.put(new StringOption(owner, SHIELD_CREDENTIALS));
+		options.put(new StringOption(owner, SHIELD_KEYSTORE_PATH));
+		options.put(new StringOption(owner, SHIELD_KEYSTORE_PWD));
+		options.put(new StringOption(owner, SHIELD_TRUSTSTORE_PATH));
+		options.put(new StringOption(owner, SHIELD_TRUSTSTORE_PWD));
 	}
 }
