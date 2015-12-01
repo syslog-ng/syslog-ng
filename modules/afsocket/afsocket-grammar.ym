@@ -236,20 +236,17 @@ source_afunix
 source_afunix_dgram_params
 	: string
 	  {
-        create_and_set_unix_dgram_or_systemd_syslog_source($1, configuration);
-
-	    free($1);
+      create_and_set_unix_dgram_or_systemd_syslog_source($1, configuration);
 	  }
-	  source_afunix_options			{ $$ = last_driver; }
+	  source_afunix_options			{ $$ = last_driver; free($1); }
 	;
 
 source_afunix_stream_params
 	: string
 	  {
       create_and_set_unix_stream_or_systemd_syslog_source($1, configuration);
-	    free($1);
 	  }
-	  source_afunix_options			{ $$ = last_driver; }
+	  source_afunix_options			{ $$ = last_driver; free($1); }
 	;
 
 /* options are common between dgram & stream */
@@ -468,10 +465,9 @@ dest_afunix_dgram_params
 	  {
 	    AFUnixDestDriver *d = afunix_dd_new_dgram($1, configuration);
 
-            afunix_grammar_set_dest_driver(d);
-	    free($1);
+      afunix_grammar_set_dest_driver(d);
 	  }
-	  dest_afunix_options			{ $$ = last_driver; }
+	  dest_afunix_options			{ $$ = last_driver; free($1); }
 	;
 
 dest_afunix_stream_params
@@ -479,10 +475,9 @@ dest_afunix_stream_params
 	  {
 	    AFUnixDestDriver *d = afunix_dd_new_stream($1, configuration);
 
-            afunix_grammar_set_dest_driver(d);
-	    free($1);
+      afunix_grammar_set_dest_driver(d);
 	  }
-	  dest_afunix_options			{ $$ = last_driver; }
+	  dest_afunix_options			{ $$ = last_driver; free($1); }
 	;
 
 dest_afunix_options
@@ -509,10 +504,9 @@ dest_afinet_udp_params
 	  {
 	    AFInetDestDriver *d = afinet_dd_new_udp($1, configuration);
 
-            afinet_grammar_set_dest_driver(d);
-	    free($1);
+      afinet_grammar_set_dest_driver(d);
 	  }
-	  dest_afinet_udp_options		{ $$ = last_driver; }
+	  dest_afinet_udp_options		{ $$ = last_driver; free($1); }
 	;
 
 dest_afinet_udp6_params
@@ -521,9 +515,8 @@ dest_afinet_udp6_params
 	    AFInetDestDriver *d = afinet_dd_new_udp6($1, configuration);
 
 	    afinet_grammar_set_dest_driver(d);
-	    free($1);
 	  }
-	  dest_afinet_udp_options		{ $$ = last_driver; }
+	  dest_afinet_udp_options		{ $$ = last_driver; free($1); }
 	;
 
 
@@ -555,10 +548,9 @@ dest_afinet_tcp_params
 	  {
 	    AFInetDestDriver *d = afinet_dd_new_tcp($1, configuration);
 
-            afinet_grammar_set_dest_driver(d);
-	    free($1);
+      afinet_grammar_set_dest_driver(d);
 	  }
-	  dest_afinet_tcp_options		{ $$ = last_driver; }
+	  dest_afinet_tcp_options		{ $$ = last_driver; free($1); }
 	;
 
 dest_afinet_tcp6_params
@@ -567,9 +559,8 @@ dest_afinet_tcp6_params
 	    AFInetDestDriver *d = afinet_dd_new_tcp6($1, configuration);
 
 	    afinet_grammar_set_dest_driver(d);
-	    free($1);
 	  }
-	  dest_afinet_tcp_options		{ $$ = last_driver; }
+	  dest_afinet_tcp_options		{ $$ = last_driver; free($1); }
 	;
 
 dest_afinet_tcp_options
@@ -603,9 +594,8 @@ dest_afsyslog_params
             AFInetDestDriver *d = afinet_dd_new_syslog($1, configuration);
 
             afinet_grammar_set_dest_driver(d);
-	    free($1);
 	  }
-	  dest_afsyslog_options			{ $$ = last_driver; }
+	  dest_afsyslog_options			{ $$ = last_driver; free($1); }
         ;
 
 
@@ -629,9 +619,8 @@ dest_afnetwork_params
             AFInetDestDriver *d = afinet_dd_new_network($1, configuration);
 
             afinet_grammar_set_dest_driver(d);
-	    free($1);
 	  }
-	  dest_afnetwork_options			{ $$ = last_driver; }
+	  dest_afnetwork_options			{ $$ = last_driver; free($1); }
         ;
 
 dest_afnetwork_options
