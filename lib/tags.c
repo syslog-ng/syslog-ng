@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2002-2012 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2009-2013 Balabit
+ * Copyright (c) 2009 Marton Illes
+ * Copyright (c) 2009-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

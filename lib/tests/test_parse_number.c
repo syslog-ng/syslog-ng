@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2013-2014 Balabit
+ * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

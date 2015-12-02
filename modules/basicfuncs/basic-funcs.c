@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2014 Balabit
- * Copyright (c) 1998-2014 Balázs Scheidler
+ * Copyright (c) 2010-2015 Balabit
+ * Copyright (c) 2010-2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
