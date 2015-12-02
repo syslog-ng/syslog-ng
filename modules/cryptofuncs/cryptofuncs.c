@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>,
- *                    Peter Gyongyosi <gyp@balabit.hu>
+ * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012 Peter Gyongyosi <gyp@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
