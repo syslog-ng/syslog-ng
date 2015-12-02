@@ -33,7 +33,6 @@ static CfgLexerKeyword python_keywords[] = {
   { "python",                   KW_PYTHON  },
   { "class",                    KW_CLASS   },
   { "imports",                  KW_IMPORTS },
-  { "options",                  KW_OPTIONS },
   { NULL }
 };
 

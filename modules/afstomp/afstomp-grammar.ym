@@ -51,6 +51,8 @@
 %token KW_PERSISTENT
 %token KW_ACK
 %token KW_BODY
+%token KW_PASSWORD
+%token KW_USERNAME
 
 %%
 

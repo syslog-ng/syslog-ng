@@ -63,6 +63,10 @@ LogRewrite *last_rewrite;
 %token KW_SET_TAG
 %token KW_CLEAR_TAG
 %token KW_GROUP_SET
+%token KW_SET
+%token KW_SUBST
+%token KW_VALUE
+%token KW_VALUES
 
 %%
 

@@ -49,7 +49,6 @@
 %token KW_PYTHON
 %token KW_CLASS
 %token KW_IMPORTS
-%token KW_OPTIONS
 
 %%
 

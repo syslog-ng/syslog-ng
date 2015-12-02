@@ -48,7 +48,7 @@
 %token KW_CLASS_PATH
 %token KW_CLASS_NAME
 %token KW_OPTION
-%token KW_RETRIES
+
 %%
 
 start
