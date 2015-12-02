@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2012 Balabit
+ * Copyright (c) 2012 Peter Gyorko
  * Copyright (c) 2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
