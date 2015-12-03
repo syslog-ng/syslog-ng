@@ -23,6 +23,7 @@
 
 #include "cfg-parser.h"
 #include "dbparser.h"
+#include "groupingby.h"
 #include "plugin.h"
 #include "plugin-types.h"
 
@@ -35,12 +36,18 @@ static Plugin dbparser_plugins[] =
     .name = "db-parser",
     .parser = &dbparser_parser,
   },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "grouping-by",
+    .parser = &dbparser_parser,
+  },
 };
 
 gboolean
 dbparser_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   pattern_db_global_init();
+  grouping_by_global_init();
   plugin_register(cfg, dbparser_plugins, G_N_ELEMENTS(dbparser_plugins));
   return TRUE;
 }

@@ -54,7 +54,7 @@ typedef struct _PDBAction
   {
     struct {
       SyntheticMessage message;
-      PDBActionMessageInheritMode inherit_mode;
+      SyntheticMessageInheritMode inherit_mode;
     };
   } content;
 } PDBAction;

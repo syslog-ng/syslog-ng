@@ -451,7 +451,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
           *error = g_error_new(1, 0, "Unexpected <value> element, must be within a rule");
           return;
         }
-      if (!synthetic_message_add_value_template(state->current_message, state->cfg, state->value_name, text, &err))
+      if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
         {
           *error = g_error_new(1, 0, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
                                state->current_rule->rule_id, state->value_name, text, err->message);

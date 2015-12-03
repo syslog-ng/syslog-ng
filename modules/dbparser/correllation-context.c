@@ -62,6 +62,15 @@ correllation_context_free_method(CorrellationContext *self)
 }
 
 CorrellationContext *
+correllation_context_new(CorrellationKey *key)
+{
+  CorrellationContext *self = g_new0(CorrellationContext, 1);
+
+  correllation_context_init(self, key);
+  return self;
+}
+
+CorrellationContext *
 correllation_context_ref(CorrellationContext *self)
 {
   self->ref_cnt++;

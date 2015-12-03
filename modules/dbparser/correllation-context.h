@@ -49,6 +49,7 @@ correllation_context_get_last_message(CorrellationContext *self)
 
 void correllation_context_init(CorrellationContext *self, const CorrellationKey *key);
 void correllation_context_free_method(CorrellationContext *self);
+CorrellationContext *correllation_context_new(CorrellationKey *key);
 CorrellationContext *correllation_context_ref(CorrellationContext *self);
 void correllation_context_unref(CorrellationContext *self);
 
