@@ -358,7 +358,9 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
   gint left = *length;
   const guchar *src = *data;
   time_t now_tv_sec = (time_t) now->tv_sec;
+  struct tm local_time;
   cached_localtime(&now_tv_sec, tm);
+  cached_localtime(&now_tv_sec, &local_time);
 
   if (__is_bsd_pix_or_asa(src, left))
     {
@@ -383,7 +385,7 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
 
       *usec = __parse_usec(&src, &left);
 
-      tm->tm_year = determine_year_for_month(tm->tm_mon, tm);
+      tm->tm_year = determine_year_for_month(tm->tm_mon, &local_time);
     }
   else
     {
