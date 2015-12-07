@@ -77,6 +77,7 @@ gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc,
 void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);
 gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args);
 
+const gchar* plugin_get_module_path();
 void plugin_list_modules(FILE *out, gboolean verbose);
 
 void plugin_load_candidate_modules(GlobalConfig *cfg);
