@@ -1077,7 +1077,7 @@ dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
 if test "x$enable_python" != "xno"; then
-  if test "x$with_python" != "xno"; then
+  if test "x$with_python" != "xauto"; then
     case "$with_python" in
       auto)
           with_python="python"
@@ -1089,14 +1089,15 @@ if test "x$enable_python" != "xno"; then
           with_python="python-${with_python}"
           ;;
     esac
-    PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, enable_python="yes", enable_python="no")
-    if test "x$enable_python" = "xno"; then
-      AC_MSG_ERROR([Could not find the requested Python development libraries])
-    fi
   else
-    enable_python="no"
-    with_python=""
+    with_python="python"
   fi
+
+  PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, python_found="yes", python_found="no")
+  if test "x$enable_python" = "xyes" -a "x$python_found" = "xno"; then
+    AC_MSG_ERROR([Could not find the requested Python development libraries])
+  fi
+  enable_python="$python_found" 
 else
   with_python=""
 fi
