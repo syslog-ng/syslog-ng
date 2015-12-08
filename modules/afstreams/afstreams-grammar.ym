@@ -61,27 +61,18 @@ extern LogDriver *last_driver;
 %%
 
 start
-        : LL_CONTEXT_SOURCE source_afstreams                        { YYACCEPT; }
-        ;
-
+  : LL_CONTEXT_SOURCE source_afstreams                        { YYACCEPT; }
+  ;
 
 source_afstreams
-	: KW_IFDEF {
-#if SYSLOG_NG_ENABLE_SUN_STREAMS
-}
-        | KW_SUN_STREAMS '(' source_afstreams_params ')'	{ $$ = $3; }
-        | KW_ENDIF {
-#endif
-}
+	: KW_SUN_STREAMS '(' source_afstreams_params ')'	{ $$ = $3; }
 	;
 
 source_afstreams_params
 	: string
 	  {
-#if SYSLOG_NG_ENABLE_SUN_STREAMS
 	    last_driver = *instance = afstreams_sd_new($1, configuration);
 	    free($1);
-#endif
 	  }
 	  source_afstreams_options		{ $$ = last_driver; }
 	;
@@ -92,13 +83,7 @@ source_afstreams_options
 	;
 
 source_afstreams_option
-	: KW_IFDEF {
-#if SYSLOG_NG_ENABLE_SUN_STREAMS
-}
-	| KW_DOOR '(' string ')'		{ afstreams_sd_set_sundoor(last_driver, $3); free($3); }
-	| KW_ENDIF {
-#endif
-}
+	: KW_DOOR '(' string ')'		{ afstreams_sd_set_sundoor(last_driver, $3); free($3); }
 	;
 
 

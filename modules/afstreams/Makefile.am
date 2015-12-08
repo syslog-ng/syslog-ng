@@ -10,7 +10,7 @@ modules_afstreams_libafstreams_la_SOURCES	=	\
 	modules/afstreams/afstreams-plugin.c
 
 modules_afstreams_libafstreams_la_CPPFLAGS	=	\
-	$(AM_CPPFLAGS) -DENABLE_SUN_STREAMS=1		\
+	$(AM_CPPFLAGS) \
 	-I$(top_srcdir)/modules/afstreams		\
 	-I$(top_builddir)/modules/afstreams
 modules_afstreams_libafstreams_la_LIBADD	=	\
