@@ -249,6 +249,10 @@ AC_ARG_ENABLE(manpages, AC_HELP_STRING([ --enable-manpages], [ Enable generation
 
 AC_ARG_ENABLE(java, [ --enable-java  Enable java destination (default: auto)],, enable_java="auto")
 
+AC_ARG_ENABLE(native,
+              [  --enable-native        Enable native bindings (default: auto)]
+              ,,enable_native="auto")
+
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
               ,,enable_all_modules="auto")
@@ -1059,6 +1063,10 @@ if test "x$enable_amqp" = "xno"; then
    LIBRABBITMQ_SUBDIRS=""
 fi
 
+if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
+    AC_CONFIG_FILES([syslog-ng-native-connector.pc])
+fi
+
 dnl ***************************************************************************
 dnl riemann-client headers/libraries
 dnl ***************************************************************************
@@ -1426,6 +1434,7 @@ AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
+AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1532,3 +1541,4 @@ echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
 echo "  java                        : ${enable_java:=no}"
+echo "  native bindings             : ${enable_native:=no}"
