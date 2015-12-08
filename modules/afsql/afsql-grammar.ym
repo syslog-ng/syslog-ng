@@ -74,9 +74,7 @@ dest_afsql
 dest_afsql_params
         :
           {
-#if SYSLOG_NG_ENABLE_SQL
             last_driver = *instance = afsql_dd_new(configuration);
-#endif /* SYSLOG_NG_ENABLE_SQL */
           }
           dest_afsql_options			{ $$ = last_driver; }
         ;
@@ -87,10 +85,7 @@ dest_afsql_options
         ;
 
 dest_afsql_option
-        : KW_IFDEF {
-#if SYSLOG_NG_ENABLE_SQL
-}
-        | KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
+        : KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
         | KW_HOST '(' string ')'		{ afsql_dd_set_host(last_driver, $3); free($3); }
         | KW_PORT '(' string_or_number ')'
           {
@@ -117,9 +112,6 @@ dest_afsql_option
 
 	| { last_template_options = &((AFSqlDestDriver *) last_driver)->template_options; } template_option
 	| dest_driver_option
-        | KW_ENDIF {
-#endif /* SYSLOG_NG_ENABLE_SQL */
-}
         ;
 
 dest_afsql_values
