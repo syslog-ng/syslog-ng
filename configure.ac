@@ -29,7 +29,7 @@ LIBRABBITMQ_MIN_VERSION="0.5.3"
 IVYKIS_MIN_VERSION="0.36.1"
 JSON_C_MIN_VERSION="0.9"
 PCRE_MIN_VERSION="6.1"
-LMC_MIN_VERSION="0.1.8"
+LMC_MIN_VERSION="1.0.0"
 LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.6.0"
 JOURNALD_MIN_VERSION="195"
@@ -161,10 +161,10 @@ AC_ARG_ENABLE(mongodb,
 	      [  --enable-mongodb        Enable mongodb destination (default: auto)]
               ,,enable_mongodb="auto")
 
-AC_ARG_WITH(libmongo-client,
-              [  --with-libmongo-client=[system/internal/auto]
-                                         Link against the system supplied or the built-in libmongo-client library. (default: auto)]
-              ,,with_libmongo_client="auto")
+AC_ARG_WITH(mongoc,
+              [  --with-mongoc=[system/internal/auto]
+                                         Link against the system supplied or the built-in mongo-c-driver library. (default: auto)]
+              ,,with_mongoc="auto")
 
 AC_ARG_WITH(jsonc,
               [  --with-jsonc=[system/internal/auto/no]
@@ -926,36 +926,44 @@ if test "x$with_jsonc" = "xinternal" -o "x$with_jsonc" = "xauto"; then
 fi
 
 dnl ***************************************************************************
-dnl libmongo headers/libraries
+dnl mongo-c-driver headers/libraries
 dnl ***************************************************************************
 
-if test "x$with_libmongo_client" = "xauto"; then
-  with_libmongo_client="system"
-  PKG_CHECK_MODULES(LIBMONGO, libmongo-client >= $LMC_MIN_VERSION,,with_libmongo_client="auto-internal")
-elif test "x$with_libmongo_client" = "xsystem"; then
-  PKG_CHECK_MODULES(LIBMONGO, libmongo-client >= $LMC_MIN_VERSION)
+if test "x$with_mongoc" = "xauto"; then
+  with_mongoc="system"
+  PKG_CHECK_MODULES(LIBMONGO, libmongoc >= $LMC_MIN_VERSION,,with_mongoc="auto-internal")
+elif test "x$with_mongoc" = "xsystem"; then
+  PKG_CHECK_MODULES(LIBMONGO, libmongoc >= $LMC_MIN_VERSION)
 fi
 
-if test "x$with_libmongo_client" = "xinternal" || test "x$with_libmongo_client" = "xauto-internal"; then
-        with_libmongo_client="internal"
-	if test -f "$srcdir/modules/afmongodb/libmongo-client/src/mongo.h"; then
-		AC_CONFIG_SUBDIRS([modules/afmongodb/libmongo-client])
+if test "x$with_mongoc" = "xinternal" || test "x$with_mongoc" = "xauto-internal"; then
+        with_mongoc="internal"
+	if test -f "$srcdir/modules/afmongodb/mongo-c-driver/src/mongoc/mongoc.h"; then
+		AC_CONFIG_SUBDIRS([modules/afmongodb/mongo-c-driver])
 
 		# these can only be used in modules/mongodb as it assumes
-		# the current directory just one below libmongo-client
+		# the current directory just one below mongo-c-driver
 
-		LIBMONGO_LIBS="-L\$(top_builddir)/modules/afmongodb/libmongo-client/src -lmongo-client $OPENSSL_LIBS"
-		LIBMONGO_CFLAGS="-I\$(top_srcdir)/modules/afmongodb/libmongo-client/src"
-		LIBMONGO_SUBDIRS="modules/afmongodb/libmongo-client"
+		LIBMONGO_LIBS="\
+			-L\$(top_builddir)/modules/afmongodb/mongo-c-driver \
+			-L\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/libbson \
+			-lmongoc-1.0 -lbson -lsasl2 $OPENSSL_LIBS"
+		LIBMONGO_CFLAGS="\
+			-I\$(top_srcdir)/modules/afmongodb/mongo-c-driver/src/mongoc \
+			-I\$(top_srcdir)/modules/afmongodb/mongo-c-driver/src/libbson/src/bson \
+			-I\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/libbson/src/bson \
+			-I\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/mongoc \
+		"
+		LIBMONGO_SUBDIRS="modules/afmongodb/mongo-c-driver"
 	else
-		AC_MSG_WARN([Internal libmongo-client sources not found in modules/afmongodb/libmongo-client])
-		with_libmongo_client="no"
+		AC_MSG_WARN([Internal mongo-c-driver sources not found in modules/afmongodb/mongo-c-driver])
+		with_mongoc="no"
 	fi
 fi
 
-if test "x$with_libmongo_client" = "xno"; then
+if test "x$with_mongoc" = "xno"; then
    if test "x$enable_mongodb" = "xyes"; then
-      AC_MSG_ERROR([Could not find libmongo-client, and MongoDB support was explicitly enabled.])
+      AC_MSG_ERROR([Could not find mongo-c-driver, and MongoDB support was explicitly enabled.])
    fi
    enable_mongodb="no"
 fi
@@ -1512,7 +1520,7 @@ echo "  embedded crypto             : ${with_embedded_crypto:=no}"
 echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
 echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
-echo "  libmongo-client             : $with_libmongo_client"
+echo "  mongoc                      : $with_mongoc"
 echo "  librabbitmq                 : $with_librabbitmq_client"
 echo "  jsonc                       : $with_jsonc"
 echo " Features:"

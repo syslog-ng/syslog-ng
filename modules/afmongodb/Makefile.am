@@ -1,11 +1,11 @@
-DIST_SUBDIRS 					+= modules/afmongodb/libmongo-client
+DIST_SUBDIRS 					+= modules/afmongodb/mongo-c-driver
 
 if LIBMONGO_INTERNAL
 CLEAN_SUBDIRS					+= @LIBMONGO_SUBDIRS@
-lmc_EXTRA_DEPS					= modules/afmongodb/libmongo-client/src/libmongo-client.la
+lmc_EXTRA_DEPS					= modules/afmongodb/mongo-c-driver/src/libmongoc-1.0.la
 
-modules/afmongodb/libmongo-client/src/libmongo-client.la:
-	${MAKE} -C modules/afmongodb/libmongo-client
+modules/afmongodb/mongo-c-driver/src/libmongoc-1.0.la:
+	${MAKE} -C modules/afmongodb/mongo-c-driver
 endif
 
 if ENABLE_MONGODB
@@ -46,6 +46,6 @@ BUILT_SOURCES					+=	\
 	modules/afmongodb/dummy.c
 EXTRA_DIST					+=	\
 	modules/afmongodb/afmongodb-grammar.ym		\
-	modules/afmongodb/libmongo-client/configure.gnu
+	modules/afmongodb/mongo-c-driver/configure.gnu
 
 .PHONY: modules/afmongodb/ mod-afmongodb mod-mongodb
