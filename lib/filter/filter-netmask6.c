@@ -128,6 +128,7 @@ filter_netmask6_new(gchar *cidr)
   gchar address[INET6_ADDRSTRLEN] = "";
   gchar *slash = strchr(cidr, '/');
 
+  filter_expr_node_init_instance(&self->super);
   if (strlen(cidr) >= INET6_ADDRSTRLEN + 5 || !slash)
     {
       strcpy(address, cidr);

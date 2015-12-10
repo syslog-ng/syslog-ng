@@ -69,6 +69,7 @@ test_stats()
   StatsCounterItem *counter = NULL;
   gchar **stats_result;
 
+  stats_init();
   stats_lock();
   stats_register_counter(0, SCS_CENTER, "id", "received", SC_TYPE_PROCESSED, &counter);
   stats_unlock();
@@ -83,6 +84,7 @@ test_stats()
   g_string_free(reply, TRUE);
 
   g_string_free(command, TRUE);
+  stats_destroy();
   return;
 }
 
@@ -117,10 +119,9 @@ test_reset_stats()
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
-  app_startup();
+  msg_init(FALSE);
   test_log();
   test_stats();
   test_reset_stats();
-  app_shutdown();
   return 0;
 }

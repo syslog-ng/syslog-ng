@@ -52,7 +52,6 @@ typedef struct
   gpointer user_data;
 } LogProtoClientFlowControlFuncs;
 
-gboolean log_proto_client_options_validate(const LogProtoClientOptions *options);
 void log_proto_client_options_defaults(LogProtoClientOptions *options);
 void log_proto_client_options_init(LogProtoClientOptions *options, GlobalConfig *cfg);
 void log_proto_client_options_destroy(LogProtoClientOptions *options);
@@ -95,10 +94,7 @@ log_proto_client_msg_rewind(LogProtoClient *self)
 static inline gboolean
 log_proto_client_validate_options(LogProtoClient *self)
 {
-  if (self->validate_options)
-    return self->validate_options(self);
-  else
-    return log_proto_client_options_validate(self->options);
+  return self->validate_options(self);
 }
 
 static inline gboolean

@@ -66,9 +66,13 @@ assert_transport_mapper_udp6_socket(TransportMapper *transport_mapper)
 static gboolean
 create_socket_with_address(GSockAddr *addr, gint *sock)
 {
-  SocketOptionsInet *sock_options = socket_options_inet_new_instance();
+  SocketOptionsInet *sock_options;
+  gboolean result;
 
-  return transport_mapper_open_socket(transport_mapper, &sock_options->super, addr, AFSOCKET_DIR_RECV, sock);
+  sock_options = socket_options_inet_new_instance();
+  result = transport_mapper_open_socket(transport_mapper, &sock_options->super, addr, AFSOCKET_DIR_RECV, sock);
+  socket_options_free(&sock_options->super);
+  return result;
 }
 
 static gboolean

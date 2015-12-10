@@ -16,8 +16,7 @@ tests_unit_TESTS			=  \
 	tests/unit/test_value_pairs     \
 	tests/unit/test_value_pairs_walk   \
 	tests/unit/test_ringbuffer	   \
-	tests/unit/test_hostid		   \
-	tests/unit/test_uniqid
+	tests/unit/test_hostid
  
 check_PROGRAMS				+= \
 	${tests_unit_TESTS}
@@ -82,8 +81,4 @@ tests_unit_test_ringbuffer_LDADD	= \
 
 tests_unit_test_hostid_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_hostid_LDADD	= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_uniqid_CFLAGS	= $(TEST_CFLAGS)
-tests_unit_test_uniqid_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)

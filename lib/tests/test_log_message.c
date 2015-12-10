@@ -170,6 +170,7 @@ test_log_message_merge_with_empty_context(void)
   log_msg_merge_context(msg, context, 0);
   log_msg_unref(msg);
   assert_log_messages_equal(msg, msg_clone);
+  log_msg_unref(msg_clone);
 }
 
 
@@ -276,7 +277,6 @@ test_log_msg_set_value_indirect_with_self_referencing_handle_results_in_a_nonind
 {
   LogMessage *msg;
   gssize value_len;
-  NVHandle handle;
 
   msg = construct_log_message_with_all_bells_and_whistles();
   log_msg_set_value_indirect(msg, nv_handle, nv_handle, 0, 0, 5);

@@ -67,6 +67,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   LogMessage *msg = create_message();
   gpointer args[2];
   gboolean test_key_found = FALSE;
+  LogTemplate *template;
 
   vp_keys = g_string_sized_new(0);
 
@@ -74,7 +75,9 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   value_pairs_add_scope(vp, scope);
   if (exclude)
     value_pairs_add_glob_pattern(vp, exclude, FALSE);
-  value_pairs_add_pair(vp, "test.key", create_template("string", "$MESSAGE"));
+  template = create_template("string", "$MESSAGE");
+  value_pairs_add_pair(vp, "test.key", template);
+  log_template_unref(template);
 
   if (transformers)
     {

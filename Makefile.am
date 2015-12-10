@@ -30,6 +30,7 @@ PREOPEN_CORE		= $(PREOPEN_SYSLOGFORMAT) $(PREOPEN_BASICFUNCS)
 syslog_ng_tools		= ${top_srcdir}/lib
 
 export top_srcdir
+export MAKE
 
 CLEAN_SUBDIRS		=
 
@@ -59,7 +60,8 @@ module_LTLIBRARIES	=
 BUILT_SOURCES		=
 CLEANFILES 		= $(BUILT_SOURCES)
 check_PROGRAMS		=
-TESTS			= $(check_PROGRAMS)
+check_SCRIPTS		=
+TESTS			= $(check_PROGRAMS) $(check_SCRIPTS)
 bin_SCRIPTS		=
 bin_PROGRAMS		=
 sbin_PROGRAMS		=
@@ -70,7 +72,7 @@ INSTALL_EXEC_HOOKS	=
 UNINSTALL_HOOKS		=
 CLEAN_HOOKS =
 
-AUTOMAKE_OPTIONS	= subdir-objects
+AUTOMAKE_OPTIONS	= subdir-objects parallel-tests
 
 ${top_srcdir}/ChangeLog:
 	(cd $(top_srcdir); git log) > $@
@@ -115,3 +117,9 @@ include contrib/Makefile.am
 include scl/Makefile.am
 include debian/Makefile.am
 include tgz2build/Makefile.am
+
+TEST_EXTENSIONS = .sh
+@VALGRIND_CHECK_RULES@
+
+VALGRIND_SUPPRESSIONS_FILES = $(top_srcdir)/syslog-ng.supp
+EXTRA_DIST += syslog-ng.supp

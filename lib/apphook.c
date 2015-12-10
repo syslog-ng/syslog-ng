@@ -39,6 +39,7 @@
 #include "scratch-buffers.h"
 #include "mainloop-call.h"
 #include "service-management.h"
+#include "crypto.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -119,6 +120,7 @@ app_startup(void)
   iv_set_fatal_msg_handler(app_fatal);
   iv_init();
   g_thread_init(NULL);
+  crypto_init();
   hostname_global_init();
   dns_cache_global_init();
   dns_cache_thread_init();
@@ -168,6 +170,7 @@ app_shutdown(void)
   dns_cache_thread_deinit();
   dns_cache_global_deinit();
   hostname_global_deinit();
+  crypto_deinit();
   msg_deinit();
 
   

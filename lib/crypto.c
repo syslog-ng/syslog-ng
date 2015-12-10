@@ -98,7 +98,7 @@ crypto_deinit(void)
   crypto_deinit_threading();
 }
 
-static void
+void
 crypto_init(void)
 {
   SSL_library_init();
@@ -121,18 +121,4 @@ crypto_init(void)
         fprintf(stderr, "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
     }
 }
-
-static void __attribute__((constructor))
-crypto_load(void)
-{
-  crypto_init();
-}
-
-static void __attribute__((destructor))
-crypto_unload(void)
-{
-  crypto_deinit();
-}
-
-/* the crypto options (seed) are handled in main.c */
 

@@ -36,7 +36,8 @@ EXTRA_DIST += \
 	modules/python/pylib/syslogng/debuggercli/tests/test_templatelang.py	\
 	modules/python/pylib/syslogng/debuggercli/tests/test_tflang.py		\
 	modules/python/pylib/setup.py						\
-	modules/python/pylib/pylintrc
+	modules/python/pylib/pylintrc						\
+	modules/python/pylib/test_pylib.sh
 
 PYLIB_PATH = modules/python/pylib
 PYLIB_BUILDDIR = $(abs_builddir)/$(PYLIB_PATH)
@@ -73,16 +74,8 @@ python-pep8:
 python-pylint:
 	pylint -r n --rcfile=$(PYLIB_SRCDIR)/pylintrc $(PYLIB_SRCDIR)/syslogng
 
-modules_python_pylib_TESTS = modules/python/pylib/test_pylib
-
-check_PROGRAMS += $(modules_python_pylib_TESTS)
-
-modules/python/pylib/test_pylib$(EXEEXT): Makefile
-	mkdir -p modules/python/pylib && \
-	echo "$(MAKE) MAKEFLAGS= python-checks" > "$@" && \
-	chmod +x "$@"
-
-modules_python_pylib_test_pylib_SOURCES = modules/python/pylib/test_pylib$(EXEEXT)
+modules_python_pylib_tests_TESTS = modules/python/pylib/test_pylib.sh
+check_SCRIPTS += $(modules_python_pylib_tests_TESTS)
 
 endif
 

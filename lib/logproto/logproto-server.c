@@ -100,6 +100,12 @@ find_eom(const guchar *s, gsize n)
   return NULL;
 }
 
+gboolean
+log_proto_server_validate_options_method(LogProtoServer *s)
+{
+  return TRUE;
+}
+
 void
 log_proto_server_free_method(LogProtoServer *s)
 {
@@ -117,39 +123,32 @@ log_proto_server_free(LogProtoServer *s)
 void
 log_proto_server_init(LogProtoServer *self, LogTransport *transport, const LogProtoServerOptions *options)
 {
+  self->validate_options = log_proto_server_validate_options_method;
   self->free_fn = log_proto_server_free_method;
   self->options = options;
   self->transport = transport;
 }
 
-void
+gboolean
 log_proto_server_options_set_encoding(LogProtoServerOptions *self, const gchar *encoding)
 {
-  if (self->encoding)
-    g_free(self->encoding);
-  self->encoding = g_strdup(encoding);
-}
+  GIConv convert;
 
-gboolean
-log_proto_server_options_validate(const LogProtoServerOptions *options)
-{
-  /* check for new data */
-  if (options->encoding && options->convert == (GIConv) -1)
-    {
-      msg_error("Unknown character set name specified",
-                evt_tag_str("encoding", options->encoding),
-                NULL);
-      return FALSE;
-    }
+  g_free(self->encoding);
+  self->encoding = g_strdup(encoding);
+
+  /* validate encoding */
+  convert = g_iconv_open("utf8", encoding);
+  if (convert == (GIConv) -1)
+    return FALSE;
+  g_iconv_close(convert);
   return TRUE;
 }
-
 
 void
 log_proto_server_options_defaults(LogProtoServerOptions *options)
 {
   memset(options, 0, sizeof(*options));
-  options->convert = (GIConv) -1;
   options->max_msg_size = -1;
   options->init_buffer_size = -1;
   options->max_buffer_size = -1;
@@ -177,11 +176,6 @@ log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg)
     }
   if (options->init_buffer_size == -1)
     options->init_buffer_size = MIN(options->max_msg_size, options->max_buffer_size);
-  if (options->encoding)
-    {
-      /* validate the character set */
-      options->convert = g_iconv_open("utf-8", options->encoding);
-    }
   options->initialized = TRUE;
 }
 
@@ -189,8 +183,6 @@ void
 log_proto_server_options_destroy(LogProtoServerOptions *options)
 {
   g_free(options->encoding);
-  if (options->convert != (GIConv) -1)
-    g_iconv_close(options->convert);
   if (options->destroy)
     options->destroy(options);
   options->initialized = FALSE;

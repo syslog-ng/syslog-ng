@@ -404,7 +404,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
           dst = entry->vdirect.data + entry->name_len + 1;
 
           entry->vdirect.value_len = value_len;
-          memcpy(dst, value, value_len);
+          memmove(dst, value, value_len);
           dst[value_len] = 0;
         }
       else
@@ -413,8 +413,8 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
           entry->indirect = 0;
           entry->vdirect.value_len = value_len;
           entry->name_len = name_len;
-          memcpy(entry->vdirect.data, name, name_len + 1);
-          memcpy(entry->vdirect.data + name_len + 1, value, value_len);
+          memmove(entry->vdirect.data, name, name_len + 1);
+          memmove(entry->vdirect.data + name_len + 1, value, value_len);
           entry->vdirect.data[entry->name_len + 1 + value_len] = 0;
         }
       return TRUE;
@@ -438,11 +438,11 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
     {
       /* we only store the name for non-builtin values */
       entry->name_len = name_len;
-      memcpy(entry->vdirect.data, name, name_len + 1);
+      memmove(entry->vdirect.data, name, name_len + 1);
     }
   else
     entry->name_len = 0;
-  memcpy(entry->vdirect.data + entry->name_len + 1, value, value_len);
+  memmove(entry->vdirect.data + entry->name_len + 1, value, value_len);
   entry->vdirect.data[entry->name_len + 1 + value_len] = 0;
 
   nv_table_set_table_entry(self, handle, ofs, dyn_slot);
@@ -513,7 +513,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
           if (handle >= self->num_static_entries)
             {
               entry->name_len = name_len;
-              memcpy(entry->vindirect.name, name, name_len + 1);
+              memmove(entry->vindirect.name, name, name_len + 1);
             }
           else
             {
@@ -543,7 +543,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
   if (handle >= self->num_static_entries)
     {
       entry->name_len = name_len;
-      memcpy(entry->vindirect.name, name, name_len + 1);
+      memmove(entry->vindirect.name, name, name_len + 1);
     }
   else
     entry->name_len = 0;

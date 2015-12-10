@@ -357,5 +357,6 @@ debugger_free(Debugger *self)
 {
   log_template_unref(self->display_template);
   tracer_free(self->tracer);
+  g_free(self->command_buffer);
   g_free(self);
 }

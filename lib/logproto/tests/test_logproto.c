@@ -36,6 +36,7 @@ test_log_proto_base(void)
   assert_proto_server_status(proto, proto->status, LPS_SUCCESS);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
 }
 
 static void

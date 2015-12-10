@@ -80,6 +80,8 @@ log_template_prepare_function_call(LogTemplateCompiler *self, Plugin *p, LogTemp
           e->func.ops->free_state(e->func.state);
           g_free(e->func.state);
         }
+      if (e->func.ops->free_fn)
+        e->func.ops->free_fn(e->func.ops);
       return FALSE;
     }
   g_strfreev(argv);
