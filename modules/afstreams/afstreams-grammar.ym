@@ -72,9 +72,8 @@ source_afstreams_params
 	: string
 	  {
 	    last_driver = *instance = afstreams_sd_new($1, configuration);
-	    free($1);
 	  }
-	  source_afstreams_options		{ $$ = last_driver; }
+	  source_afstreams_options		{ $$ = last_driver; free($1); }
 	;
 
 source_afstreams_options
