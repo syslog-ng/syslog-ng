@@ -53,6 +53,13 @@
 %token KW_CSV_PARSER
 %token KW_DIALECT
 %token KW_PREFIX
+%token KW_COLUMNS
+%token KW_DELIMITERS
+%token KW_QUOTES
+%token KW_QUOTE_PAIRS
+%token KW_NULL
+%token KW_CHARS
+%token KW_STRINGS
 
 %type	<ptr> parser_expr_csv
 %type   <num> parser_csv_flags

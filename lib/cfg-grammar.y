@@ -174,26 +174,6 @@ extern struct _StatsOptions *last_stats_options;
 /* source & destination items */
 %token KW_INTERNAL                    10010
 %token KW_FILE                        10011
-
-%token KW_SQL                         10030
-%token KW_TYPE                        10031
-%token KW_COLUMNS                     10032
-%token KW_INDEXES                     10033
-%token KW_VALUES                      10034
-%token KW_PASSWORD                    10035
-%token KW_DATABASE                    10036
-%token KW_USERNAME                    10037
-%token KW_TABLE                       10038
-%token KW_ENCODING                    10039
-%token KW_SESSION_STATEMENTS          10040
-
-%token KW_DELIMITERS                  10050
-%token KW_QUOTES                      10051
-%token KW_QUOTE_PAIRS                 10052
-%token KW_NULL                        10053
-%token KW_CHARS                       10054
-%token KW_STRINGS                     10055
-
 %token KW_SYSLOG                      10060
 
 /* option items */
@@ -208,6 +188,8 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_FILE_TEMPLATE               10079
 %token KW_PROTO_TEMPLATE              10080
 %token KW_MARK_MODE                   10081
+%token KW_ENCODING                    10082
+%token KW_TYPE                        10083
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -304,13 +286,8 @@ extern struct _StatsOptions *last_stats_options;
 
 /* parser items */
 
-%token KW_VALUE                       10361
-
 /* rewrite items */
-
 %token KW_REWRITE                     10370
-%token KW_SET                         10371
-%token KW_SUBST                       10372
 
 /* yes/no switches */
 

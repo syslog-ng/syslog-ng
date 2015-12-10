@@ -55,6 +55,8 @@
 %token KW_VHOST
 %token KW_ROUTING_KEY
 %token KW_BODY
+%token KW_PASSWORD
+%token KW_USERNAME
 
 %%
 

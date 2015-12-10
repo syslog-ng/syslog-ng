@@ -54,14 +54,13 @@ static CfgLexerKeyword filter_expr_keywords[] = {
   { "message",            KW_MESSAGE },
   { "match",		  KW_MATCH },
   { "netmask",		  KW_NETMASK },
-  { "tags",		  KW_TAGS, 0x0301 },
-  { "in_list",            KW_IN_LIST, 0x0305 },
+  { "tags",		  KW_TAGS },
+  { "in_list",            KW_IN_LIST },
 #if SYSLOG_NG_ENABLE_IPV6
   { "netmask6",     KW_NETMASK6 },
 #endif
 
-  { "type",               KW_TYPE, 0x0300 },
-  { "value",              KW_VALUE, 0x0300 },
+  { "value",              KW_VALUE },
   { "flags",              KW_FLAGS },
 
   { NULL }

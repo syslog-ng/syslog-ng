@@ -196,17 +196,6 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
               if (token[j] == 0 && keywords[i].kw_name[j] == 0)
                 {
                   /* match */
-                  if (cfg_is_config_version_older(configuration, keywords[i].kw_req_version))
-                    {
-                      msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name or enclose it in quotes before upgrading",
-                                  evt_tag_str("keyword", keywords[i].kw_name),
-                                  evt_tag_printf("config-version", "%d.%d", (configuration->user_version >> 8), configuration->user_version & 0xFF),
-                                  evt_tag_printf("version", "%d.%d", (keywords[i].kw_req_version >> 8), keywords[i].kw_req_version & 0xFF),
-                                  yylloc ? evt_tag_str("filename", yylloc->level->name) : NULL,
-                                  yylloc ? evt_tag_printf("line", "%d:%d", yylloc->first_line, yylloc->first_column) : NULL,
-                                  NULL);
-                      break;
-                    }
                   switch (keywords[i].kw_status)
                     {
                     case KWS_OBSOLETE:

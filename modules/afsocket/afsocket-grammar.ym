@@ -146,7 +146,6 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TCP_KEEPALIVE_PROBES
 %token KW_TCP_KEEPALIVE_INTVL
 %token KW_SPOOF_SOURCE
-%token KW_PASS_UNIX_CREDENTIALS
 
 %token KW_KEEP_ALIVE
 %token KW_MAX_CONNECTIONS
