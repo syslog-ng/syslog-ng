@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
