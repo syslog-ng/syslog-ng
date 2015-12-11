@@ -91,6 +91,29 @@ the [Incubator](https://github.com/balabit/syslog-ng-incubator) first,
 because it is easier to have your code accepted there. The Incubator
 is the repository of new and experimental modules.
 
+## Licensing
+
+Please ensure that your contribution is clean in respect to licensing and
+copyright.
+
+If your contribution is eligible for copyright, you should also extend the list
+of copyright holders at the top of the relevant files which carry your
+modifications.
+
+The absolute minimum to specify is the identity of the author entity, which is
+usually one or more of an e-mail address and your full name or the name of the
+legal entity who holds the intellectual rights if it is not you.
+Please make it clear which is the case, because this may depend on your
+contract if you are employed or are a subcontractor.
+
+Note that from time to time, we may rephrase the exact text surrounding
+attributions, however the specified identities and the license binding a given
+contribution will not be changed in a legally incompatibly manner.
+
+Every new file must carry a standard copyright notice and be compatible with
+our licensing scheme described in COPYING.
+You should observe some of the existing files for reference.
+
 ## Additional resources
 
 For additional information, have a look at the
