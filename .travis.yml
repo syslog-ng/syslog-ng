@@ -1,4 +1,7 @@
 language: c
+env:
+  - TEST_SUITE=distcheck
+  - TEST_SUITE=func-test
 install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq curl
@@ -12,7 +15,7 @@ before_script:
 script:
   - unset PYTHON_CFLAGS # HACK
   - ./configure --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-pacct --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl 
-  - make && make distcheck VERBOSE=1 && make func-test VERBOSE=1
+  - make && make $TEST_SUITE VERBOSE=1
 compiler:
   - gcc
   - clang
