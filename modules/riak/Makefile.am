@@ -5,6 +5,8 @@ modules/riak/libriack/lib/libriack.la:
 
 if ENABLE_RIAK
 
+RIAK_DUMMY_C_DEPS = modules/riak/libriack/lib/libriack.la
+
 module_LTLIBRARIES += modules/riak/libriak.la
 
 modules_riak_libriak_la_CFLAGS		=	    \
@@ -33,10 +35,14 @@ else
 modules/riak modules/riak/ mod-riak:
 endif
 
+modules/riak/dummy.c: ${RIAK_DUMMY_C_DEPS}
+	$(AM_V_GEN) touch $@
+
 BUILT_SOURCES				+=	\
 	modules/riak/riak-grammar.y		\
 	modules/riak/riak-grammar.c		\
-	modules/riak/riak-grammar.h
+	modules/riak/riak-grammar.h \
+	modules/riak/dummy.c
 EXTRA_DIST				+=	\
 	modules/riak/riak-grammar.ym \
 	modules/riak/libriack/configure.ac
