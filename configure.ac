@@ -1106,6 +1106,7 @@ if test "$enable_riak" != "no"; then
    enable_riak="no";
  else
    enable_riak="yes";
+   AC_CONFIG_SUBDIRS([modules/riak/libriack])
  fi
 fi
 
