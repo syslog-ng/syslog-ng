@@ -1,9 +1,11 @@
-include modules/riak/libriack/Makefile.am
+DIST_SUBDIRS += modules/riak/libriack
+
+modules/riak/libriack/lib/libriack.la:
+	${MAKE} -C modules/riak/libriack
 
 if ENABLE_RIAK
 
-module_LTLIBRARIES			+=	\
-	modules/riak/libriak.la
+module_LTLIBRARIES += modules/riak/libriak.la
 
 modules_riak_libriak_la_CFLAGS		=	    \
 	-I$(top_srcdir)/modules/riak/libriack/lib   \
