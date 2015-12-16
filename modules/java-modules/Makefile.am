@@ -1,5 +1,7 @@
 if ENABLE_JAVA
 
+export GRADLE_OPTS
+
 JAVA_MOD_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
 
