@@ -74,6 +74,15 @@ fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
 
+case "$CC" in
+  llvm-gcc*) WHA_OPT="-all_load"
+             NWHA_OPT="-noall_load" ;;
+       gcc*) WHA_OPT="--whole-archive"
+             NWHA_OPT="--no-whole-archive" ;;
+     clang*) WHA_OPT="-all_load"
+             NWHA_OPT="-noall_load" ;;
+esac
+
 AC_CONFIG_HEADERS(config.h)
 
 
@@ -872,13 +881,13 @@ if test "x$with_ivykis" = "xinternal"; then
 		# these can only be used in lib as it assumes
 		# the current directory just one below ivykis
 
-		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src -livykis  -Wl,--no-whole-archive"
+		IVYKIS_LIBS="-Wl,\${WHA_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis  -Wl,\${NWHA_OPT}"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/src/include -I\$(top_builddir)/lib/ivykis/src/include"
 		IVYKIS_SUBDIRS=lib/ivykis
                 INTERNAL_IVYKIS_CFLAGS="-I\${includedir}/syslog-ng/ivykis"
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
-		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,--no-whole-archive"
+		IVYKIS_NO_LIBTOOL_LIBS="-Wl,\${WHA_OPT} -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl, ${NWHA_OPT}"
 	else
 		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
 	fi
@@ -1339,7 +1348,7 @@ if test "x$linking_mode" = "xdynamic"; then
 	# syslog-ng binary is linked with the default link command (e.g. libtool)
 	SYSLOGNG_LINK='$(LINK)'
 else
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS -Wl,--no-whole-archive $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl, \${WHA_OPT} $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS -Wl, \${NWHA_OPT} $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
 	TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS $DL_LIBS"
 	CORE_DEPS_LIBS=""
 
