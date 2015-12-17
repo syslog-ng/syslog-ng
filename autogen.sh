@@ -61,7 +61,12 @@ if [ -z "$skip_submodules" ] || [ "$skip_modules" = 0 ]; then
 fi
 
 # bootstrap syslog-ng itself
-libtoolize --force --copy
+if [ -z "$LIBTOOL"  ]; then
+    case `uname` in Darwin*) glibtoolize --force --copy ;;
+    *) libtoolize --force --copy ;; esac
+else
+    $LIBTOOL --force --copy
+fi
 aclocal -I m4 --install
 sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
 
