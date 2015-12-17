@@ -32,6 +32,11 @@
 #include <string.h>
 #include <iv.h>
 
+#ifdef __MACH__
+    #include <mach/clock.h>
+    #include <mach/mach.h>
+#endif
+
 const char *month_names_abbrev[] =
 {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -290,6 +295,31 @@ format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
 }
 
 /**
+ * get_currect_utc_time:
+ *
+ * This function hides the difference between getting the UTC time
+ * on a MACH based platform or not. MACH doesn't have `clock_gettime`
+ * function that's why it must be implemented.
+ **/
+struct timespec
+get_current_utc_time(void)
+{
+  struct timespec timestamp;
+#ifdef __MACH__
+  clock_serv_t clock_server;
+  mach_timespec_t mach_timestamp;
+  host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &clock_server);
+  clock_get_time(clock_server, &mach_timestamp);
+  mach_port_deallocate(mach_task_self(), clock_server);
+  timestamp.tv_sec = mach_timestamp.tv_sec;
+  timestamp.tv_nsec = mach_timestamp.tv_nsec;
+#else
+  clock_gettime(CLOCK_REALTIME, &timestamp);
+#endif
+  return timestamp;
+}
+
+/**
  * check_nanosleep:
  *
  * Check if nanosleep() is accurate enough for sub-millisecond sleeping. If
@@ -306,7 +336,7 @@ check_nanosleep(void)
 
   for (attempts = 0; attempts < 3; attempts++)
     {
-      clock_gettime(CLOCK_MONOTONIC, &start);
+      start = get_current_utc_time();
       sleep.tv_sec = 0;
       /* 0.1 msec */
       sleep.tv_nsec = 1e5;
@@ -314,7 +344,7 @@ check_nanosleep(void)
       while (nanosleep(&sleep, &sleep) < 0)
         ;
 
-      clock_gettime(CLOCK_MONOTONIC, &stop);
+      stop = get_current_utc_time();
       diff = timespec_diff_nsec(&stop, &start);
       if (diff < 5e5)
         return TRUE;
