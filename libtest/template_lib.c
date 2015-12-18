@@ -44,7 +44,30 @@ deinit_template_tests(void)
 }
 
 LogMessage *
-create_sample_message(void)
+message_from_list(va_list ap)
+{
+  char *key, *value;
+  LogMessage *msg = create_empty_message();
+
+  if (!msg)
+    return NULL;
+
+  key = va_arg(ap, char *);
+  while (key)
+    {
+      value = va_arg(ap, char *);
+      if (!value)
+        return msg;
+
+      log_msg_set_value_by_name(msg, key, value, -1);
+      key = va_arg(ap, char *);
+    }
+
+  return msg;
+}
+
+LogMessage *
+create_empty_message(void)
 {
   LogMessage *msg;
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
@@ -53,20 +76,6 @@ create_sample_message(void)
   saddr = g_sockaddr_inet_new("10.11.12.13", 1010);
   msg = log_msg_new(msg_str, strlen(msg_str), saddr, &parse_options);
   g_sockaddr_unref(saddr);
-  log_msg_set_value_by_name(msg, "APP.VALUE", "value", -1);
-  log_msg_set_value_by_name(msg, "APP.STRIP1", "     value", -1);
-  log_msg_set_value_by_name(msg, "APP.STRIP2", "value     ", -1);
-  log_msg_set_value_by_name(msg, "APP.STRIP3", "     value     ", -1);
-  log_msg_set_value_by_name(msg, "APP.STRIP4", "value", -1);
-  log_msg_set_value_by_name(msg, "APP.STRIP5", "", -1);
-  log_msg_set_value_by_name(msg, "APP.QVALUE", "\"value\"", -1);
-  log_msg_set_value_by_name(msg, ".unix.uid", "1000", -1);
-  log_msg_set_value_by_name(msg, ".unix.gid", "1000", -1);
-  log_msg_set_value_by_name(msg, ".unix.cmd", "command", -1);
-  log_msg_set_value_by_name(msg, ".json.foo", "bar", -1);
-  log_msg_set_value_by_name(msg, ".json.sub.value1", "subvalue1", -1);
-  log_msg_set_value_by_name(msg, ".json.sub.value2", "subvalue2", -1);
-  log_msg_set_value_by_name(msg, "escaping", "binary stuff follows \"\xad árvíztűrőtükörfúrógép", -1);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
   log_msg_set_tag_by_name(msg, "alma");
@@ -81,6 +90,29 @@ create_sample_message(void)
   msg->timestamps[LM_TS_RECVD].tv_sec = 1139684315;
   msg->timestamps[LM_TS_RECVD].tv_usec = 639000;
   msg->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(1139684315);
+
+  return msg;
+}
+
+LogMessage *
+create_sample_message(void)
+{
+  LogMessage *msg = create_empty_message();
+
+  log_msg_set_value_by_name(msg, "APP.VALUE", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.STRIP1", "     value", -1);
+  log_msg_set_value_by_name(msg, "APP.STRIP2", "value     ", -1);
+  log_msg_set_value_by_name(msg, "APP.STRIP3", "     value     ", -1);
+  log_msg_set_value_by_name(msg, "APP.STRIP4", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.STRIP5", "", -1);
+  log_msg_set_value_by_name(msg, "APP.QVALUE", "\"value\"", -1);
+  log_msg_set_value_by_name(msg, ".unix.uid", "1000", -1);
+  log_msg_set_value_by_name(msg, ".unix.gid", "1000", -1);
+  log_msg_set_value_by_name(msg, ".unix.cmd", "command", -1);
+  log_msg_set_value_by_name(msg, ".json.foo", "bar", -1);
+  log_msg_set_value_by_name(msg, ".json.sub.value1", "subvalue1", -1);
+  log_msg_set_value_by_name(msg, ".json.sub.value2", "subvalue2", -1);
+  log_msg_set_value_by_name(msg, "escaping", "binary stuff follows \"\xad árvíztűrőtükörfúrógép", -1);
 
   return msg;
 }
@@ -109,10 +141,17 @@ assert_template_format(const gchar *template, const gchar *expected)
 }
 
 void
-assert_template_format_with_escaping(const gchar *template, gboolean escaping,
-                                     const gchar *expected)
+assert_template_format_msg(const gchar *template, const gchar *expected,
+                            LogMessage *msg)
 {
-  LogMessage *msg;
+  assert_template_format_with_escaping_msg(template, FALSE, expected, msg);
+}
+
+
+void
+assert_template_format_with_escaping_msg(const gchar *template, gboolean escaping,
+                                     const gchar *expected, LogMessage *msg)
+{
   LogTemplate *templ = compile_template(template, escaping);
   if (!templ)
     return;
@@ -120,13 +159,21 @@ assert_template_format_with_escaping(const gchar *template, gboolean escaping,
   GString *res = g_string_sized_new(128);
   const gchar *context_id = "test-context-id";
 
-  msg = create_sample_message();
-
   log_template_format(templ, msg, NULL, LTZ_LOCAL, 999, context_id, res);
   expect_nstring(res->str, res->len, expected, strlen(expected),
                  "template test failed, template=%s", template);
   log_template_unref(templ);
   g_string_free(res, TRUE);
+}
+
+void
+assert_template_format_with_escaping(const gchar *template, gboolean escaping,
+                                     const gchar *expected)
+{
+  LogMessage *msg = create_sample_message();
+
+  assert_template_format_with_escaping_msg(template, escaping, expected, msg);
+
   log_msg_unref(msg);
 }
 

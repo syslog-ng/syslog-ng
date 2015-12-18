@@ -27,13 +27,20 @@
 
 #include "testutils.h"
 #include "template/templates.h"
+#include <stdarg.h>
 
 void assert_template_format(const gchar *template, const gchar *expected);
+void assert_template_format_msg(const gchar *template,
+                                     const gchar *expected, LogMessage *msg);
 void assert_template_format_with_escaping(const gchar *template, gboolean escaping, const gchar *expected);
+void assert_template_format_with_escaping_msg(const gchar *template, gboolean escaping,
+                                     const gchar *expected, LogMessage *msg);
 void assert_template_format_with_context(const gchar *template, const gchar *expected);
 void assert_template_failure(const gchar *template, const gchar *expected_failure);
 
+LogMessage *create_empty_message(void);
 LogMessage *create_sample_message(void);
+LogMessage *message_from_list(va_list ap);
 LogTemplate *compile_template(const gchar *template, gboolean escaping);
 void init_template_tests(void);
 void deinit_template_tests(void);
