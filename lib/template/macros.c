@@ -200,7 +200,7 @@ _is_message_source_an_ip_address(const LogMessage *msg)
   if (g_sockaddr_inet_check(msg->saddr))
     return TRUE;
 #if SYSLOG_NG_ENABLE_IPV6
-  if (g_sockaddr_inet6_check(msg->saddr));
+  if (g_sockaddr_inet6_check(msg->saddr))
     return TRUE;
 #endif
   return FALSE;
