@@ -22,8 +22,8 @@
  *
  */
 
-#include "python-dest.h"
 #include "python-module.h"
+#include "python-dest.h"
 #include "python-value-pairs.h"
 #include "python-logmsg.h"
 #include "python-helpers.h"
