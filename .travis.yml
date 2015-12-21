@@ -1,4 +1,6 @@
 language: c
+before_install:
+  - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
 install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq curl
