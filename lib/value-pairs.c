@@ -52,13 +52,12 @@ typedef struct
 struct _ValuePairs
 {
   GAtomicCounter ref_cnt;
-  VPPatternSpec **patterns;
+  GPtrArray *patterns;
   GPtrArray *vpairs;
   GList *transforms;
 
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
-  guint32 patterns_size;
 };
 
 typedef enum
@@ -166,11 +165,7 @@ void
 value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
                              gboolean include)
 {
-  gint i;
-
-  i = vp->patterns_size++;
-  vp->patterns = g_renew(VPPatternSpec *, vp->patterns, vp->patterns_size);
-  vp->patterns[i] = vp_pattern_spec_new(pattern, include);;
+  g_ptr_array_add(vp->patterns, vp_pattern_spec_new(pattern, include));
 }
 
 void
@@ -265,10 +260,11 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
         (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
         (log_msg_is_handle_sdata(handle) && (vp->scopes & (VPS_SDATA + VPS_RFC5424)));
 
-  for (j = 0; j < vp->patterns_size; j++)
+  for (j = 0; j < vp->patterns->len; j++)
     {
-      if (vp_pattern_spec_eval(vp->patterns[j], name))
-        inc = vp->patterns[j]->include;
+      VPPatternSpec *vps = (VPPatternSpec *) g_ptr_array_index(vp->patterns, j);
+      if (vp_pattern_spec_eval(vps, name))
+        inc = vps->include;
     }
 
   if (!inc)
@@ -289,10 +285,12 @@ vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
   guint j;
   gboolean included = exclude;
 
-  for (j = 0; j < vp->patterns_size; j++)
+  for (j = 0; j < vp->patterns->len; j++)
     {
-      if (vp_pattern_spec_eval(vp->patterns[j], name))
-        included = vp->patterns[j]->include;
+      VPPatternSpec *vps = (VPPatternSpec *) g_ptr_array_index(vp->patterns, j);
+
+      if (vp_pattern_spec_eval(vps, name))
+        included = vps->include;
     }
 
   return included;
@@ -398,11 +396,11 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
    * Build up the base set
    */
   if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA + VPS_RFC5424) ||
-      vp->patterns_size > 0)
+      vp->patterns->len > 0)
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
-  if (vp->patterns_size > 0)
+  if (vp->patterns->len > 0)
     vp_merge_macros(vp, msg, seq_num, time_zone_mode, scope_set, template_options);
 
   if (vp->scopes & (VPS_RFC3164 + VPS_RFC5424 + VPS_SELECTED_MACROS))
@@ -830,7 +828,8 @@ value_pairs_new(void)
 
   vp = g_new0(ValuePairs, 1);
    g_atomic_counter_set(&vp->ref_cnt, 1);
-  vp->vpairs = g_ptr_array_sized_new(8);
+  vp->vpairs = g_ptr_array_new();
+  vp->patterns = g_ptr_array_new();
 
   return vp;
 }
@@ -857,11 +856,12 @@ value_pairs_free (ValuePairs *vp)
 
   g_ptr_array_free(vp->vpairs, TRUE);
 
-  for (i = 0; i < vp->patterns_size; i++)
+  for (i = 0; i < vp->patterns->len; i++)
     {
-      vp_pattern_spec_free(vp->patterns[i]);
+      VPPatternSpec *vps = (VPPatternSpec *) g_ptr_array_index(vp->patterns, i);
+      vp_pattern_spec_free(vps);
     }
-  g_free(vp->patterns);
+  g_ptr_array_free(vp->patterns, TRUE);
 
   l = vp->transforms;
   while (l)
