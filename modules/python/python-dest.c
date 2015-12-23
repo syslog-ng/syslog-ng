@@ -80,8 +80,7 @@ python_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
-  if (self->vp)
-    value_pairs_unref(self->vp);
+  value_pairs_unref(self->vp);
   self->vp = vp;
 }
 
@@ -520,8 +519,7 @@ python_dd_free(LogPipe *d)
 
   g_free(self->class);
 
-  if (self->vp)
-    value_pairs_unref(self->vp);
+  value_pairs_unref(self->vp);
 
   if (self->options)
     g_hash_table_unref(self->options);
