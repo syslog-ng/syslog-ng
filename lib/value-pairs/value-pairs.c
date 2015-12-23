@@ -152,6 +152,24 @@ vp_pattern_spec_new(const gchar *pattern, gboolean include)
   return self;
 }
 
+static VPPairConf *
+vp_pair_conf_new(const gchar *key, LogTemplate *value)
+{
+  VPPairConf *p = g_new(VPPairConf, 1);
+
+  p->name = g_strdup(key);
+  p->template = log_template_ref(value);
+  return p;
+}
+
+static void
+vp_pair_conf_free(VPPairConf *vpc)
+{
+  log_template_unref(vpc->template);
+  g_free(vpc->name);
+  g_free(vpc);
+}
+
 gboolean
 value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 {
@@ -181,11 +199,7 @@ value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include)
 void
 value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
 {
-  VPPairConf *p = g_new(VPPairConf, 1);
-
-  p->name = g_strdup(key);
-  p->template = log_template_ref(value);
-  g_ptr_array_add(vp->vpairs, p);
+  g_ptr_array_add(vp->vpairs, vp_pair_conf_new(key, value));
 }
 
 static gchar *
@@ -785,13 +799,6 @@ value_pairs_walk(ValuePairs *vp,
 }
 
 
-static void
-vp_free_pair(VPPairConf *vpc)
-{
-  log_template_unref(vpc->template);
-  g_free(vpc->name);
-  g_free(vpc);
-}
 
 ValuePairs *
 value_pairs_ref(ValuePairs *self)
@@ -847,7 +854,7 @@ value_pairs_free (ValuePairs *vp)
   guint i;
 
   for (i = 0; i < vp->vpairs->len; i++)
-    vp_free_pair(g_ptr_array_index(vp->vpairs, i));
+    vp_pair_conf_free(g_ptr_array_index(vp->vpairs, i));
 
   g_ptr_array_free(vp->vpairs, TRUE);
 
