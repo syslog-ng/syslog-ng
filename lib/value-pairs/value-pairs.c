@@ -202,6 +202,12 @@ value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
   g_ptr_array_add(vp->vpairs, vp_pair_conf_new(key, value));
 }
 
+void
+value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts)
+{
+  g_ptr_array_add(vp->transforms, vpts);
+}
+
 static gchar *
 vp_transform_apply (ValuePairs *vp, gchar *key)
 {
@@ -849,13 +855,6 @@ value_pairs_free (ValuePairs *vp)
     }
   g_ptr_array_free(vp->transforms, TRUE);
 }
-
-void
-value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts)
-{
-  g_ptr_array_add(vp->transforms, vpts);
-}
-
 
 static void
 value_pairs_init_set(ValuePairSpec *set)
