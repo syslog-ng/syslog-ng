@@ -40,6 +40,7 @@
 #include "mainloop-call.h"
 #include "service-management.h"
 #include "crypto.h"
+#include "value-pairs.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -133,6 +134,7 @@ app_startup(void)
   log_tags_global_init();
   log_source_global_init();
   log_template_global_init();
+  value_pairs_global_init();
   service_management_init();
 }
 
@@ -159,6 +161,7 @@ void
 app_shutdown(void)
 {
   run_application_hook(AH_SHUTDOWN);
+  value_pairs_global_deinit();
   log_template_global_deinit();
   log_tags_global_deinit();
   log_msg_global_deinit();
