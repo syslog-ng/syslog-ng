@@ -851,11 +851,12 @@ value_pairs_ref(ValuePairs *self)
 void
 value_pairs_unref(ValuePairs *self)
 {
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-
-  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
+  if (self)
     {
-       value_pairs_free(self);
+      g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
+
+      if (g_atomic_counter_dec_and_test(&self->ref_cnt))
+        value_pairs_free(self);
     }
 }
 

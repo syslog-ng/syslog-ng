@@ -95,8 +95,7 @@ tf_format_welf_free_state(gpointer s)
 {
   TFWelfState *state = (TFWelfState *) s;
 
-  if (state->vp)
-    value_pairs_unref(state->vp);
+  value_pairs_unref(state->vp);
   tf_simple_func_free_state(s);
 }
 

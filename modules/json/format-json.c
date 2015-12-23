@@ -235,8 +235,7 @@ tf_json_free_state(gpointer s)
 {
   TFJsonState *state = (TFJsonState *)s;
 
-  if (state->vp)
-    value_pairs_unref(state->vp);
+  value_pairs_unref(state->vp);
   tf_simple_func_free_state(&state->super);
 }
 
