@@ -178,7 +178,7 @@ value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include)
   string_list_free(patterns);
 }
 
-gboolean
+void
 value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
 {
   VPPairConf *p = g_new(VPPairConf, 1);
@@ -186,7 +186,6 @@ value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
   p->name = g_strdup(key);
   p->template = log_template_ref(value);
   g_ptr_array_add(vp->vpairs, p);
-  return TRUE;
 }
 
 static gchar *
