@@ -72,8 +72,6 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           gpointer user_data);
 
 ValuePairs *value_pairs_new(void);
-void value_pairs_free(ValuePairs *vp);
-
 ValuePairs *value_pairs_ref(ValuePairs *self);
 void value_pairs_unref(ValuePairs *self);
 

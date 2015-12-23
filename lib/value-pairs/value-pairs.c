@@ -784,28 +784,6 @@ value_pairs_walk(ValuePairs *vp,
 
 
 
-ValuePairs *
-value_pairs_ref(ValuePairs *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-
-  if (self)
-    {
-      g_atomic_counter_inc(&self->ref_cnt);
-    }
-  return self;
-}
-
-void
-value_pairs_unref(ValuePairs *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-
-  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
-    {
-       value_pairs_free(self);
-    }
-}
 
 ValuePairs *
 value_pairs_new(void)
@@ -832,7 +810,7 @@ value_pairs_new_default(GlobalConfig *cfg)
   return vp;
 }
 
-void
+static void
 value_pairs_free (ValuePairs *vp)
 {
   guint i;
@@ -856,6 +834,29 @@ value_pairs_free (ValuePairs *vp)
     }
   g_ptr_array_free(vp->transforms, TRUE);
   g_free(vp);
+}
+
+ValuePairs *
+value_pairs_ref(ValuePairs *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    {
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+  return self;
+}
+
+void
+value_pairs_unref(ValuePairs *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
+    {
+       value_pairs_free(self);
+    }
 }
 
 static void
