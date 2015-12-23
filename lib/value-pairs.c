@@ -115,7 +115,6 @@ static ValuePairSpec selected_macros[] =
 };
 
 static ValuePairSpec *all_macros;
-static gboolean value_pair_sets_initialized;
 
 static CfgFlagHandler value_pair_scope[] =
 {
@@ -792,30 +791,6 @@ value_pairs_walk(ValuePairs *vp,
   return result;
 }
 
-static void
-value_pairs_init_set(ValuePairSpec *set)
-{
-  gint i;
-
-  for (i = 0; set[i].name; i++)
-    {
-      guint id;
-      gchar *name;
-
-      name = set[i].alt_name ? set[i].alt_name : set[i].name;
-
-      if ((id = log_macro_lookup(name, strlen(name))))
-        {
-          set[i].type = VPT_MACRO;
-          set[i].id = id;
-        }
-      else
-        {
-          set[i].type = VPT_NVPAIR;
-          set[i].id = log_msg_get_value_handle(name);
-        }
-    }
-}
 
 static void
 vp_free_pair(VPPairConf *vpc)
@@ -852,40 +827,10 @@ ValuePairs *
 value_pairs_new(void)
 {
   ValuePairs *vp;
-  gint i = 0;
-  GArray *a;
 
   vp = g_new0(ValuePairs, 1);
    g_atomic_counter_set(&vp->ref_cnt, 1);
   vp->vpairs = g_ptr_array_sized_new(8);
-
-  if (!value_pair_sets_initialized)
-    {
-
-      /* NOTE: that we're being only called during config parsing,
-       * thus this code is never threaded. And we only want to perform
-       * it once anyway. If it would be threaded, we'd need to convert
-       * this to a value_pairs_init() function called before anything
-       * else. */
-
-      value_pairs_init_set(rfc3164);
-      value_pairs_init_set(rfc5424);
-      value_pairs_init_set(selected_macros);
-
-      a = g_array_new(TRUE, TRUE, sizeof(ValuePairSpec));
-      for (i = 0; macros[i].name; i++)
-        {
-          ValuePairSpec pair;
-
-          pair.name = macros[i].name;
-          pair.type = VPT_MACRO;
-          pair.id = macros[i].id;
-          g_array_append_val(a, pair);
-        }
-      all_macros = (ValuePairSpec *) g_array_free(a, FALSE);
-
-      value_pair_sets_initialized = TRUE;
-    }
 
   return vp;
 }
@@ -1306,4 +1251,57 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     }
 
   return vp;
+}
+
+static void
+value_pairs_init_set(ValuePairSpec *set)
+{
+  gint i;
+
+  for (i = 0; set[i].name; i++)
+    {
+      guint id;
+      gchar *name;
+
+      name = set[i].alt_name ? set[i].alt_name : set[i].name;
+
+      if ((id = log_macro_lookup(name, strlen(name))))
+        {
+          set[i].type = VPT_MACRO;
+          set[i].id = id;
+        }
+      else
+        {
+          set[i].type = VPT_NVPAIR;
+          set[i].id = log_msg_get_value_handle(name);
+        }
+    }
+}
+
+void
+value_pairs_global_init(void)
+{
+  gint i = 0;
+  GArray *a;
+
+  value_pairs_init_set(rfc3164);
+  value_pairs_init_set(rfc5424);
+  value_pairs_init_set(selected_macros);
+
+  a = g_array_new(TRUE, TRUE, sizeof(ValuePairSpec));
+  for (i = 0; macros[i].name; i++)
+    {
+      ValuePairSpec pair;
+
+      pair.name = macros[i].name;
+      pair.type = VPT_MACRO;
+      pair.id = macros[i].id;
+      g_array_append_val(a, pair);
+    }
+  all_macros = (ValuePairSpec *) g_array_free(a, FALSE);
+}
+
+void
+value_pairs_global_deinit(void)
+{
 }

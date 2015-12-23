@@ -84,4 +84,8 @@ ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
 
 EVTTAG *evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, LogTemplateOptions *template_options);
 
+void value_pairs_global_init(void);
+void value_pairs_global_deinit(void);
+
+
 #endif
