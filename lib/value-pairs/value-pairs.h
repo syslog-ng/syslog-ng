@@ -72,10 +72,9 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           gpointer user_data);
 
 ValuePairs *value_pairs_new(void);
+ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
 ValuePairs *value_pairs_ref(ValuePairs *self);
 void value_pairs_unref(ValuePairs *self);
-
-ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
 
 void value_pairs_global_init(void);
 void value_pairs_global_deinit(void);
