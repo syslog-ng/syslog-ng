@@ -30,6 +30,7 @@
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
 #include "value-pairs/value-pairs.h"
+#include "value-pairs/evttag.h"
 #include "plugin.h"
 #include "plugin-types.h"
 #include "logthrdestdrv.h"
