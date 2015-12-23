@@ -31,7 +31,7 @@
 
 #include "cfg-grammar.h"
 #include "plugin.h"
-#include "value-pairs/vptransform.h"
+#include "value-pairs/value-pairs.h"
 
 }
 
