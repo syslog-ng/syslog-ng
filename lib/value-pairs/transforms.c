@@ -22,8 +22,7 @@
  *
  */
 
-#include "value-pairs.h"
-#include "vptransform.h"
+#include "transforms.h"
 #include "template/templates.h"
 #include "cfg-parser.h"
 #include "str-utils.h"
