@@ -50,7 +50,7 @@ typedef gboolean (*VPWalkCallbackFunc)(const gchar *name,
 gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
 void value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern, gboolean include);
 void value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include);
-gboolean value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
+void value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
 
 void value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts);
 
