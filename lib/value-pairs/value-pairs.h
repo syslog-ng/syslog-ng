@@ -52,7 +52,7 @@ void value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern, gboolean
 void value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include);
 gboolean value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
 
-void value_pairs_add_transforms(ValuePairs *vp, gpointer vpts);
+void value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts);
 
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
                                     GCompareDataFunc compare_func,
