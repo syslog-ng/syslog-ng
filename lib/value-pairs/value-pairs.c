@@ -451,7 +451,7 @@ value_pairs_debug_append (const gchar *name, TypeHint type, const gchar *value, 
   GString *text = (GString *) user_data;
   g_string_append_printf(text, "%s=%s ",name, value);
   return FALSE;
-};
+}
 
 EVTTAG *
 evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, LogTemplateOptions *template_options)
@@ -465,7 +465,7 @@ evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq
 
    g_string_free(debug_text, TRUE);
    return result;
-};
+}
 
 /*******************************************************************************
  * vp_stack (represented by vp_stack_t)
