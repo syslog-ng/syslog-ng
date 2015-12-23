@@ -195,8 +195,7 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  if (self->vp)
-    value_pairs_unref (self->vp);
+  value_pairs_unref (self->vp);
   self->vp = vp;
 }
 
@@ -686,8 +685,7 @@ afmongodb_dd_free(LogPipe *d)
   g_free(self->password);
   g_free(self->address);
   string_list_free(self->servers);
-  if (self->vp)
-    value_pairs_unref(self->vp);
+  value_pairs_unref(self->vp);
 
   mongo_sync_conn_recovery_cache_free(self->recovery_cache);
   self->recovery_cache = NULL;
