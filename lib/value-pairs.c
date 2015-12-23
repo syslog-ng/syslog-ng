@@ -54,7 +54,7 @@ struct _ValuePairs
   GAtomicCounter ref_cnt;
   GPtrArray *patterns;
   GPtrArray *vpairs;
-  GList *transforms;
+  GPtrArray *transforms;
 
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
@@ -195,20 +195,19 @@ value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
 static gchar *
 vp_transform_apply (ValuePairs *vp, gchar *key)
 {
-  GList *l;
   gchar *ckey, *okey = g_strdup(key);
+  gint i;
 
-  if (!vp->transforms)
+  if (vp->transforms->len == 0)
     return okey;
 
-  l = vp->transforms;
-  while (l)
+  for (i = 0; i < vp->transforms->len; i++)
     {
-      ValuePairsTransformSet *t = (ValuePairsTransformSet *)l->data;
+      ValuePairsTransformSet *t = (ValuePairsTransformSet *) g_ptr_array_index(vp->transforms, i);
+
       ckey = value_pairs_transform_set_apply(t, okey);
       g_free(okey);
       okey = ckey;
-      l = g_list_next (l);
     }
 
   return ckey;
@@ -830,6 +829,7 @@ value_pairs_new(void)
    g_atomic_counter_set(&vp->ref_cnt, 1);
   vp->vpairs = g_ptr_array_new();
   vp->patterns = g_ptr_array_new();
+  vp->transforms = g_ptr_array_new();
 
   return vp;
 }
@@ -849,7 +849,6 @@ void
 value_pairs_free (ValuePairs *vp)
 {
   guint i;
-  GList *l;
 
   for (i = 0; i < vp->vpairs->len; i++)
     vp_free_pair(g_ptr_array_index(vp->vpairs, i));
@@ -863,21 +862,19 @@ value_pairs_free (ValuePairs *vp)
     }
   g_ptr_array_free(vp->patterns, TRUE);
 
-  l = vp->transforms;
-  while (l)
+  for (i = 0; i < vp->transforms->len; i++)
     {
-      value_pairs_transform_set_free((ValuePairsTransformSet *)l->data);
-
-      l = g_list_delete_link (l, l);
+      ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) g_ptr_array_index(vp->transforms, i);
+      value_pairs_transform_set_free(vpts);
     }
-
+  g_ptr_array_free(vp->transforms, TRUE);
   g_free(vp);
 }
 
 void
 value_pairs_add_transforms(ValuePairs *vp, gpointer vpts)
 {
-  vp->transforms = g_list_append(vp->transforms, vpts);
+  g_ptr_array_add(vp->transforms, vpts);
 }
 
 /*******************************************************************************
