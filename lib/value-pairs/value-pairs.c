@@ -170,43 +170,6 @@ vp_pair_conf_free(VPPairConf *vpc)
   g_free(vpc);
 }
 
-gboolean
-value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
-{
-  return cfg_process_flag(value_pair_scope, vp, scope);
-}
-
-void
-value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
-                             gboolean include)
-{
-  g_ptr_array_add(vp->patterns, vp_pattern_spec_new(pattern, include));
-}
-
-void
-value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include)
-{
-  GList *l = patterns;
-
-  while (l)
-    {
-      value_pairs_add_glob_pattern(vp, (gchar *)l->data, include);
-      l = g_list_next (l);
-    }
-  string_list_free(patterns);
-}
-
-void
-value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
-{
-  g_ptr_array_add(vp->vpairs, vp_pair_conf_new(key, value));
-}
-
-void
-value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts)
-{
-  g_ptr_array_add(vp->transforms, vpts);
-}
 
 static gchar *
 vp_transform_apply (ValuePairs *vp, gchar *key)
@@ -782,8 +745,43 @@ value_pairs_walk(ValuePairs *vp,
   return result;
 }
 
+gboolean
+value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
+{
+  return cfg_process_flag(value_pair_scope, vp, scope);
+}
 
+void
+value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
+                             gboolean include)
+{
+  g_ptr_array_add(vp->patterns, vp_pattern_spec_new(pattern, include));
+}
 
+void
+value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include)
+{
+  GList *l = patterns;
+
+  while (l)
+    {
+      value_pairs_add_glob_pattern(vp, (gchar *)l->data, include);
+      l = g_list_next (l);
+    }
+  string_list_free(patterns);
+}
+
+void
+value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
+{
+  g_ptr_array_add(vp->vpairs, vp_pair_conf_new(key, value));
+}
+
+void
+value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts)
+{
+  g_ptr_array_add(vp->transforms, vpts);
+}
 
 ValuePairs *
 value_pairs_new(void)
@@ -791,7 +789,7 @@ value_pairs_new(void)
   ValuePairs *vp;
 
   vp = g_new0(ValuePairs, 1);
-   g_atomic_counter_set(&vp->ref_cnt, 1);
+  g_atomic_counter_set(&vp->ref_cnt, 1);
   vp->vpairs = g_ptr_array_new();
   vp->patterns = g_ptr_array_new();
   vp->transforms = g_ptr_array_new();
