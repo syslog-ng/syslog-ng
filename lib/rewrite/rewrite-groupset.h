@@ -23,7 +23,7 @@
  */
 
 #include "rewrite-expr.h"
-#include "value-pairs.h"
+#include "value-pairs/value-pairs.h"
 
 typedef struct _LogRewriteGroupSet {
   LogRewrite super;

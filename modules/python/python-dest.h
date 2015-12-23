@@ -27,7 +27,7 @@
 
 #include "driver.h"
 #include "logwriter.h"
-#include "value-pairs.h"
+#include "value-pairs/value-pairs.h"
 
 LogDriver *python_dd_new(GlobalConfig *cfg);
 void python_dd_set_imports(LogDriver *d, GList *imports);

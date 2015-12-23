@@ -34,7 +34,7 @@
 #include "cfg-grammar.h"
 #include "afamqp-grammar.h"
 #include "plugin.h"
-#include "vptransform.h"
+#include "value-pairs/vptransform.h"
 
 }
 
