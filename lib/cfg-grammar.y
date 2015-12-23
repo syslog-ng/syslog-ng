@@ -342,7 +342,6 @@ extern struct _StatsOptions *last_stats_options;
 #include "rewrite/rewrite-expr-parser.h"
 #include "filter/filter-expr-parser.h"
 #include "value-pairs/value-pairs.h"
-#include "value-pairs/vptransform.h"
 #include "file-perms.h"
 #include "block-ref-parser.h"
 #include "plugin.h"

@@ -25,7 +25,7 @@
 #ifndef VPTRANSFORM_INCLUDED
 #define VPTRANSFORM_INCLUDED 1
 
-#include "value-pairs.h"
+#include "syslog-ng.h"
 
 typedef struct _ValuePairsTransform ValuePairsTransform;
 typedef struct _ValuePairsTransformSet ValuePairsTransformSet;

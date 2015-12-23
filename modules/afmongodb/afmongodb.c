@@ -29,7 +29,7 @@
 #include "stats/stats-registry.h"
 #include "nvtable.h"
 #include "logqueue.h"
-#include "value-pairs/vptransform.h"
+#include "value-pairs/value-pairs.h"
 #include "plugin.h"
 #include "plugin-types.h"
 #include "logthrdestdrv.h"
