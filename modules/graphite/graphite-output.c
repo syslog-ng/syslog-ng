@@ -21,9 +21,9 @@
  */
 
 #include "graphite-output.h"
-#include <template/templates.h>
-#include <logmsg.h>
-#include <value-pairs/value-pairs.h>
+#include "template/templates.h"
+#include "logmsg.h"
+#include "value-pairs/cmdline.h"
 
 typedef struct _TFGraphiteState
 {

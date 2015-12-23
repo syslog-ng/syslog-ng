@@ -22,7 +22,7 @@
 
 #include "format-welf.h"
 #include "utf8utils.h"
-#include "value-pairs/value-pairs.h"
+#include "value-pairs/cmdline.h"
 
 typedef struct _TFWelfState
 {
