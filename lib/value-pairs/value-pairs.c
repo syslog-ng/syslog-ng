@@ -49,6 +49,7 @@ typedef struct
 struct _ValuePairs
 {
   GAtomicCounter ref_cnt;
+  GPtrArray *builtins;
   GPtrArray *patterns;
   GPtrArray *vpairs;
   GPtrArray *transforms;
@@ -275,22 +276,71 @@ vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
 }
 
 static void
-vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options, gboolean exclude)
+vp_merge_other_set(ValuePairs *vp, ValuePairSpec *set, gboolean exclude)
 {
   gint i;
-  SBTHGString *sb;
 
   for (i = 0; set[i].name; i++)
     {
       if (!vp_find_in_set(vp, set[i].name, exclude))
         continue;
 
+      g_ptr_array_add(vp->builtins, &set[i]);
+    }
+}
+
+/* runs over the all macros and merges the selected ones by the pattern into the value-pair set */
+static void
+vp_merge_macros(ValuePairs *vp)
+{
+  vp_merge_other_set(vp, all_macros, FALSE);
+}
+
+/* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
+static void
+vp_merge_set(ValuePairs *vp, ValuePairSpec *set)
+{
+  vp_merge_other_set(vp, set, TRUE);
+}
+
+
+static void
+vp_update_builtin_list_of_values(ValuePairs *vp)
+{
+  g_ptr_array_set_size(vp->builtins, 0);
+
+  if (vp->patterns->len > 0)
+    vp_merge_macros(vp);
+
+  if (vp->scopes & (VPS_RFC3164 + VPS_RFC5424 + VPS_SELECTED_MACROS))
+    vp_merge_set(vp, rfc3164);
+
+  if (vp->scopes & VPS_RFC5424)
+    vp_merge_set(vp, rfc5424);
+
+  if (vp->scopes & VPS_SELECTED_MACROS)
+    vp_merge_set(vp, selected_macros);
+
+  if (vp->scopes & VPS_ALL_MACROS)
+    vp_merge_set(vp, all_macros);
+}
+
+static void
+vp_merge_builtins(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, GTree *dest, const LogTemplateOptions *template_options)
+{
+  gint i;
+  SBTHGString *sb;
+
+  for (i = 0; i < vp->builtins->len; i++)
+    {
+      ValuePairSpec *spec = (ValuePairSpec *) g_ptr_array_index(vp->builtins, i);
+
       sb = sb_th_gstring_acquire();
 
-      switch (set[i].type)
+      switch (spec->type)
         {
         case VPT_MACRO:
-          log_macro_expand(sb_th_gstring_string(sb), set[i].id, FALSE,
+          log_macro_expand(sb_th_gstring_string(sb), spec->id, FALSE,
                            template_options, time_zone_mode, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
@@ -298,7 +348,7 @@ vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zo
             const gchar *nv;
             gssize len;
 
-            nv = log_msg_get_value(msg, (NVHandle) set[i].id, &len);
+            nv = log_msg_get_value(msg, (NVHandle) spec->id, &len);
             g_string_append_len(sb_th_gstring_string(sb), nv, len);
             break;
           }
@@ -312,22 +362,8 @@ vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zo
           continue;
         }
 
-      g_tree_insert(dest, vp_transform_apply(vp, set[i].name), sb);
+      g_tree_insert(dest, vp_transform_apply(vp, spec->name), sb);
     }
-}
-
-/* runs over the all macros and merges the selected ones by the pattern into the value-pair set */
-static void
-vp_merge_macros(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, GTree *dest, const LogTemplateOptions *template_options)
-{
-  vp_merge_other_set(vp, msg, seq_num, time_zone_mode, all_macros, dest, template_options, FALSE);
-}
-
-/* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
-static void
-vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options)
-{
-  vp_merge_other_set(vp, msg, seq_num, time_zone_mode, set, dest, template_options, TRUE);
 }
 
 static gboolean
@@ -378,20 +414,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
-  if (vp->patterns->len > 0)
-    vp_merge_macros(vp, msg, seq_num, time_zone_mode, scope_set, template_options);
-
-  if (vp->scopes & (VPS_RFC3164 + VPS_RFC5424 + VPS_SELECTED_MACROS))
-    vp_merge_set(vp, msg, seq_num, time_zone_mode, rfc3164, scope_set, template_options);
-
-  if (vp->scopes & VPS_RFC5424)
-    vp_merge_set(vp, msg, seq_num, time_zone_mode, rfc5424, scope_set, template_options);
-
-  if (vp->scopes & VPS_SELECTED_MACROS)
-    vp_merge_set(vp, msg, seq_num, time_zone_mode, selected_macros, scope_set, template_options);
-
-  if (vp->scopes & VPS_ALL_MACROS)
-    vp_merge_set(vp, msg, seq_num, time_zone_mode, all_macros, scope_set, template_options);
+  vp_merge_builtins(vp, msg, seq_num, time_zone_mode, scope_set, template_options);
 
   /* Merge the explicit key-value pairs too */
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
@@ -748,7 +771,11 @@ value_pairs_walk(ValuePairs *vp,
 gboolean
 value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 {
-  return cfg_process_flag(value_pair_scope, vp, scope);
+  gboolean result;
+
+  result = cfg_process_flag(value_pair_scope, vp, scope);
+  vp_update_builtin_list_of_values(vp);
+  return result;
 }
 
 void
@@ -756,6 +783,7 @@ value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
                              gboolean include)
 {
   g_ptr_array_add(vp->patterns, vp_pattern_spec_new(pattern, include));
+  vp_update_builtin_list_of_values(vp);
 }
 
 void
@@ -769,18 +797,21 @@ value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include)
       l = g_list_next (l);
     }
   string_list_free(patterns);
+  vp_update_builtin_list_of_values(vp);
 }
 
 void
 value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
 {
   g_ptr_array_add(vp->vpairs, vp_pair_conf_new(key, value));
+  vp_update_builtin_list_of_values(vp);
 }
 
 void
 value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts)
 {
   g_ptr_array_add(vp->transforms, vpts);
+  vp_update_builtin_list_of_values(vp);
 }
 
 ValuePairs *
@@ -790,6 +821,7 @@ value_pairs_new(void)
 
   vp = g_new0(ValuePairs, 1);
   g_atomic_counter_set(&vp->ref_cnt, 1);
+  vp->builtins = g_ptr_array_new();
   vp->vpairs = g_ptr_array_new();
   vp->patterns = g_ptr_array_new();
   vp->transforms = g_ptr_array_new();
@@ -831,6 +863,7 @@ value_pairs_free (ValuePairs *vp)
       value_pairs_transform_set_free(vpts);
     }
   g_ptr_array_free(vp->transforms, TRUE);
+  g_ptr_array_free(vp->builtins, TRUE);
   g_free(vp);
 }
 
