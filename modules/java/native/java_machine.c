@@ -41,7 +41,7 @@ struct _JavaVMSingleton
 static JavaVMSingleton *g_jvm_s;
 
 JavaVMSingleton *
-java_machine_ref()
+java_machine_ref(void)
 {
   if (g_jvm_s)
     {
@@ -138,7 +138,7 @@ java_machine_attach_thread(JavaVMSingleton* self, JNIEnv **penv)
 }
 
 void
-java_machine_detach_thread()
+java_machine_detach_thread(void)
 {
   (*(g_jvm_s->jvm))->DetachCurrentThread(g_jvm_s->jvm);
 }
