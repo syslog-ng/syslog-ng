@@ -21,10 +21,9 @@
  */
 
 #include "graphite-output.h"
-#include <template/templates.h>
-#include <logmsg.h>
-#include <value-pairs.h>
-#include <vptransform.h>
+#include "template/templates.h"
+#include "logmsg.h"
+#include "value-pairs/cmdline.h"
 
 typedef struct _TFGraphiteState
 {
@@ -165,8 +164,7 @@ tf_graphite_free_state(gpointer s)
 {
   TFGraphiteState *state = (TFGraphiteState *)s;
 
-  if (state->vp)
-    value_pairs_unref(state->vp);
+  value_pairs_unref(state->vp);
   log_template_unref(state->timestamp_template);
 }
 

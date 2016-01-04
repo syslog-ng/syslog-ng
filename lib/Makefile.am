@@ -7,6 +7,7 @@ include lib/rewrite/Makefile.am
 include lib/parser/Makefile.am
 include lib/filter/Makefile.am
 include lib/template/Makefile.am
+include lib/value-pairs/Makefile.am
 include lib/stats/Makefile.am
 include lib/control/Makefile.am
 include lib/debugger/Makefile.am
@@ -145,8 +146,6 @@ pkginclude_HEADERS			+= \
 	lib/type-hinting.h		\
 	lib/uuid.h			\
 	lib/utf8utils.h			\
-	lib/value-pairs.h		\
-	lib/vptransform.h		\
 	lib/versioning.h		\
 	lib/bookmark.h			\
 	lib/ringbuffer.h		\
@@ -217,8 +216,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/tags.c			\
 	lib/timeutils.c			\
 	lib/type-hinting.c		\
-	lib/value-pairs.c		\
-	lib/vptransform.c		\
 	lib/ringbuffer.c		\
 	lib/late_ack_tracker.c		\
 	lib/early_ack_tracker.c		\
@@ -239,6 +236,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(parser_sources)		\
 	$(rewrite_sources)		\
 	$(template_sources)		\
+	$(value_pairs_sources)		\
 	$(stats_sources)		\
 	$(control_sources)		\
 	$(debugger_sources)		\

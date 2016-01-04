@@ -26,7 +26,7 @@
 #define AFAMQP_H_INCLUDED
 
 #include "driver.h"
-#include "value-pairs.h"
+#include "value-pairs/value-pairs.h"
 
 LogDriver *afamqp_dd_new(GlobalConfig *cfg);
 

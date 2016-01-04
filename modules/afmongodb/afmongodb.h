@@ -25,7 +25,7 @@
 #define AFMONGODB_H_INCLUDED
 
 #include "driver.h"
-#include "value-pairs.h"
+#include "value-pairs/value-pairs.h"
 
 LogDriver *afmongodb_dd_new(GlobalConfig *cfg);
 

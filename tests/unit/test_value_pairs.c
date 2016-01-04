@@ -1,5 +1,4 @@
-#include "value-pairs.h"
-#include "vptransform.h"
+#include "value-pairs/value-pairs.h"
 #include "logmsg.h"
 #include "apphook.h"
 #include "cfg.h"
@@ -86,7 +85,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
 
       for (i = 0; i < transformers->len; i++)
 	value_pairs_transform_set_add_func(vpts, g_ptr_array_index(transformers, i));
-      value_pairs_add_transforms(vp, (gpointer *)vpts);
+      value_pairs_add_transforms(vp, vpts);
     }
 
   args[0] = &vp_keys_list;

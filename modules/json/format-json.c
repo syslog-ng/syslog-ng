@@ -27,8 +27,7 @@
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-parser.h"
 #include "cfg.h"
-#include "value-pairs.h"
-#include "vptransform.h"
+#include "value-pairs/cmdline.h"
 #include "syslog-ng.h"
 #include "utf8utils.h"
 
@@ -233,8 +232,7 @@ tf_json_free_state(gpointer s)
 {
   TFJsonState *state = (TFJsonState *)s;
 
-  if (state->vp)
-    value_pairs_unref(state->vp);
+  value_pairs_unref(state->vp);
   tf_simple_func_free_state(&state->super);
 }
 
