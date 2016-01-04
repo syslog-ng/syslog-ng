@@ -32,7 +32,7 @@
 jstring
 __create_class_path(ClassLoader *self, JNIEnv *java_env, const gchar *class_path)
 {
-  GString *g_class_path = g_string_new(java_module_path);
+  GString *g_class_path = g_string_new(get_installation_path_for(SYSLOG_NG_JAVA_MODULE_PATH));
   jstring str_class_path = NULL;
   g_string_append(g_class_path, "/" SYSLOG_NG_JAR);
   if (class_path && (strlen(class_path) > 0))

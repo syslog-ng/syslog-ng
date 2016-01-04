@@ -41,7 +41,7 @@ struct _JavaVMSingleton
 static JavaVMSingleton *g_jvm_s;
 
 JavaVMSingleton *
-java_machine_ref()
+java_machine_ref(void)
 {
   if (g_jvm_s)
     {
@@ -52,7 +52,7 @@ java_machine_ref()
       g_jvm_s = g_new0(JavaVMSingleton, 1);
       g_atomic_counter_set(&g_jvm_s->ref_cnt, 1);
 
-      g_jvm_s->class_path = g_string_new(java_module_path);
+      g_jvm_s->class_path = g_string_new(get_installation_path_for(SYSLOG_NG_JAVA_MODULE_PATH));
       g_string_append(g_jvm_s->class_path, "/syslog-ng-core.jar");
     }
   return g_jvm_s;
@@ -138,7 +138,7 @@ java_machine_attach_thread(JavaVMSingleton* self, JNIEnv **penv)
 }
 
 void
-java_machine_detach_thread()
+java_machine_detach_thread(void)
 {
   (*(g_jvm_s->jvm))->DetachCurrentThread(g_jvm_s->jvm);
 }
