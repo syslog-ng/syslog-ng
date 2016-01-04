@@ -5,7 +5,7 @@ from messagecheck import *
 from control import flush_files, stop_syslogng
 import os
 
-config = """@version: 3.7
+config = """@version: 3.8
 
 source s_int { internal(); };
 source s_tcp { tcp(port(%(port_number)d)); };
