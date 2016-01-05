@@ -133,6 +133,7 @@ append_unsafe_utf8_as_escaped_text(GString *escaped_string, const gchar *str, co
       switch (uchar)
         {
           case (gunichar) -1:
+          case (gunichar) -2:
             g_string_append_printf(escaped_string, "\\\\x%02x", *(guint8 *) char_ptr);
             char_ptr++;
             continue;
