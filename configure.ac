@@ -221,6 +221,16 @@ AC_ARG_ENABLE(riemann,
               [  --disable-riemann       Disable riemann destination]
               ,,enable_riemann="auto")
 
+AC_ARG_ENABLE(riak,
+              [  --disable-riak          Disable the Riak destination]
+              ,,enable_riak="auto")
+              
+AC_ARG_WITH(libriack,
+              [  --with-libriack=[system/internal]
+                                         Link against the system supplied or the built-in libriack library.]
+              ,,with_libriack="internal")
+
+
 AC_ARG_WITH(compile-date,
 	      [  --without-compile-date  Do not include the compile date in the binary]
 	      ,wcmp_date="${withval}", wcmp_date="yes")
@@ -256,12 +266,13 @@ AC_ARG_ENABLE(native,
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
               ,,enable_all_modules="auto")
+              
 
 if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
-            redis systemd geoip riemann ipv6 smtp"
+            redis systemd geoip riemann riak ipv6 smtp"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
        if test "x$modstate" = "xauto"; then
@@ -1083,6 +1094,23 @@ if test "$enable_riemann" != "no"; then
 fi
 
 dnl ***************************************************************************
+dnl riak headers/libraries
+dnl ***************************************************************************
+if test "$enable_riak" != "no"; then
+ dnl PKG_CHECK_MODULES(RIAK_CLIENT, riak-client >= 0.0.0,,riak_found="no")
+ riak_found="yes"
+ if test "$riak_found" = "no" && test "$enable_riak" = "yes"; then
+   AC_MSG_ERROR([Dependency for Riak not found!])
+ fi
+ if test "$riak_found" = "no"; then
+   enable_riak="no";
+ else
+   enable_riak="yes";
+   AC_CONFIG_SUBDIRS([modules/riak/libriack])
+ fi
+fi
+
+dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
 if test "x$enable_python" != "xno"; then
@@ -1255,6 +1283,32 @@ if test "x$enable_systemd" = "xyes"; then
 fi
 
 PKG_CHECK_MODULES(UUID, uuid, enable_libuuid="yes", enable_libuuid="no")
+
+dnl ***************************************************************************
+dnl Check support check
+dnl ***************************************************************************
+
+HAVE_CHECK=yes
+PKG_CHECK_MODULES(CHECK, check,,[HAVE_CHECK="no"])
+AM_CONDITIONAL([HAVE_CHECK], [test x$HAVE_CHECK != xno])
+
+dnl ***************************************************************************
+dnl Check for protobuf-c
+dnl ***************************************************************************
+PKG_CHECK_MODULES(PROTOBUF_C, libprotobuf-c,,
+ [dnl No libprotobuf-c found with pkg-config.
+  dnl Fall back to manually trying to find it.
+  ac_save_LIBS=$LIBS
+  ac_save_CFLAGS=$CFLAGS
+
+  LIBS="$PROTOBUF_C_LIBS $LIBS"
+  CFLAGS="$PROTOBUF_C_CFLAGS $CFLAGS"
+  AC_CHECK_LIB(protobuf-c, protobuf_c_message_pack,
+    [PROTOBUF_C_LIBS="${PROTOBUF_C_LIBS:--lprotobuf-c}"],
+    [AC_MSG_ERROR([Can't link against protobuf-c lib, please set PROTOBUF_C_CFLAGS/PROTOBUF_C_LIBS before calling configure])])
+
+  LIBS=$ac_save_LIBS
+  CFLAGS=$ac_save_CFLAGS])
 
 dnl ***************************************************************************
 dnl default modules to be loaded
@@ -1430,6 +1484,7 @@ AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
+AM_CONDITIONAL(ENABLE_RIAK, [test "$enable_riak" = "yes"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
@@ -1541,5 +1596,6 @@ echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
+echo "  Riak destination (module)   : ${enable_riak:=no}"
 echo "  java                        : ${enable_java:=no}"
 echo "  native bindings             : ${enable_native:=no}"

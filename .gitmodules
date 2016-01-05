@@ -10,3 +10,6 @@
 [submodule "modules/afamqp/rabbitmq-c"]
 	path = modules/afamqp/rabbitmq-c
 	url = https://github.com/alanxz/rabbitmq-c.git
+[submodule "modules/riak/libriack"]
+	path = modules/riak/libriack
+	url = https://github.com/dnsjts/riack.git

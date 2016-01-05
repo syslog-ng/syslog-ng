@@ -1,0 +1,20 @@
+#ifndef RIAK_H_INCLUDED
+#define RIAK_H_INCLUDED
+
+#include "driver.h"
+
+LogDriver *riak_dd_new(GlobalConfig *cfg);
+
+void riak_dd_set_host(LogDriver *d, const char *host);
+void riak_dd_set_port(LogDriver *d, int port);
+void riak_dd_set_bucket(LogDriver *d, LogTemplate *bucket);
+void riak_dd_set_mode(LogDriver *d, char *mode);
+void riak_dd_set_type(LogDriver *d, char *type);
+void riak_dd_set_key(LogDriver *d, LogTemplate *key);
+void riak_dd_set_value(LogDriver *d, LogTemplate *value);
+void riak_dd_set_charset(LogDriver *d, char *charset);
+void riak_dd_set_content_type(LogDriver *d, char *content_type);
+void riak_dd_set_flush_lines(LogDriver *d, int flush_lines);
+LogTemplateOptions *riak_dd_get_template_options(LogDriver *d);
+#endif
+
