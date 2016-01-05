@@ -73,8 +73,8 @@ public class HTTPDestination extends TextLogDestination {
                 osw.write(message);
                 osw.close();
             } catch (IOException e) {
-		logger.error("error in writing message.");
-		return false;
+                logger.error("error in writing message.");
+                return false;
             }
 
             responseCode = connection.getResponseCode();
