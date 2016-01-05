@@ -138,16 +138,6 @@ log_source_msg_ack(LogMessage *msg, AckType ack_type)
 }
 
 void
-log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment)
-{
-  _flow_control_window_size_adjust(self, window_size_increment);
-  _flow_control_rate_adjust(self);
-
-  if (self->is_external_ack_required)
-    log_source_wakeup(self);
-}
-
-void
 log_source_flow_control_suspend(LogSource *self)
 {
   g_atomic_counter_set(&self->window_size, 0);

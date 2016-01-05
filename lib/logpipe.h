@@ -300,7 +300,7 @@ log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_
     }
   else
     {
-      log_msg_drop(msg, path_options);
+      log_msg_drop(msg, path_options, AT_PROCESSED);
     }
 }
 
@@ -313,7 +313,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     {
       if (!pipe_single_step_hook(s, msg, path_options))
         {
-          log_msg_drop(msg, path_options);
+          log_msg_drop(msg, path_options, AT_PROCESSED);
           return;
         }
     }
