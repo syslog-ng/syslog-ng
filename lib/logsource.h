@@ -66,6 +66,7 @@ struct _LogSource
   gchar *stats_id;
   gchar *stats_instance;
   GAtomicCounter window_size;
+  GAtomicCounter suspended_window_size;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
