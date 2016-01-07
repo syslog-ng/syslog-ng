@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2015 Balabit
  * Copyright (c) 2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -27,6 +27,8 @@
 
 #include <string.h>
 
+gboolean slng_template_lib_failure = FALSE;
+
 void
 init_template_tests(void)
 {
@@ -37,6 +39,8 @@ void
 deinit_template_tests(void)
 {
   deinit_syslogformat_module();
+  if (slng_template_lib_failure)
+    exit(1);
 }
 
 LogMessage *
@@ -90,7 +94,9 @@ compile_template(const gchar *template, gboolean escaping)
 
   log_template_set_escape(templ, escaping);
   success = log_template_compile(templ, template, &error);
-  assert_true(success, "template expected to compile cleanly, but it didn't, template=%s, error=%s", template, error ? error->message : "(none)");
+  expect_true(success, "template expected to compile cleanly,"
+              " but it didn't, template=%s, error=%s",
+              template, error ? error->message : "(none)");
   g_clear_error(&error);
 
   return templ;
@@ -107,15 +113,18 @@ assert_template_format_with_escaping(const gchar *template, gboolean escaping,
                                      const gchar *expected)
 {
   LogMessage *msg;
-  LogTemplate *templ;
+  LogTemplate *templ = compile_template(template, escaping);
+  if (!templ)
+    return;
+
   GString *res = g_string_sized_new(128);
   const gchar *context_id = "test-context-id";
 
   msg = create_sample_message();
 
-  templ = compile_template(template, escaping);
   log_template_format(templ, msg, NULL, LTZ_LOCAL, 999, context_id, res);
-  assert_nstring(res->str, res->len, expected, strlen(expected), "template test failed, template=%s", template);
+  expect_nstring(res->str, res->len, expected, strlen(expected),
+                 "template test failed, template=%s", template);
   log_template_unref(templ);
   g_string_free(res, TRUE);
   log_msg_unref(msg);
@@ -124,8 +133,11 @@ assert_template_format_with_escaping(const gchar *template, gboolean escaping,
 void
 assert_template_format_with_context(const gchar *template, const gchar *expected)
 {
+  LogTemplate *templ = compile_template(template, FALSE);
+  if (!templ)
+    return;
+
   LogMessage *msg;
-  LogTemplate *templ;
   GString *res = g_string_sized_new(128);
   const gchar *context_id = "test-context-id";
   LogMessage *context[2];
@@ -133,10 +145,8 @@ assert_template_format_with_context(const gchar *template, const gchar *expected
   msg = create_sample_message();
   context[0] = context[1] = msg;
 
-  templ = compile_template(template, FALSE);
-
   log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 999, context_id, res);
-  assert_nstring(res->str, res->len, expected, strlen(expected), "context template test failed, template=%s", template);
+  expect_nstring(res->str, res->len, expected, strlen(expected), "context template test failed, template=%s", template);
   log_template_unref(templ);
   g_string_free(res, TRUE);
   log_msg_unref(msg);
@@ -145,12 +155,16 @@ assert_template_format_with_context(const gchar *template, const gchar *expected
 void
 assert_template_failure(const gchar *template, const gchar *expected_error)
 {
-  LogTemplate *templ;
+  LogTemplate *templ = log_template_new(configuration, NULL);
   GError *error = NULL;
 
-  templ = log_template_new(configuration, NULL);
-  assert_false(log_template_compile(templ, template, &error), "compilation failure expected to template, but success was returned, template=%s, expected_error=%s\n", template, expected_error);
-  assert_true(strstr(error->message, expected_error) != NULL, "FAIL: compilation error doesn't match, error=%s, expected_error=%s\n", error->message, expected_error);
+  expect_false(log_template_compile(templ, template, &error),
+               "compilation failure expected to template,"
+               " but success was returned, template=%s, expected_error=%s\n",
+               template, expected_error);
+  expect_true(strstr(error->message, expected_error) != NULL,
+              "FAIL: compilation error doesn't match, error=%s, expected_error=%s\n",
+              error->message, expected_error);
   g_clear_error(&error);
   log_template_unref(templ);
 }
