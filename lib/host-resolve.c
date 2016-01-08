@@ -316,6 +316,12 @@ resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr, 
 
   if (!hname && host_resolve_options->use_dns && host_resolve_options->use_dns != 2)
     {
+      msg_debug("Resolving using DNS",
+          evt_tag_int("ip1", saddr->sa->sa_data[2]),
+          evt_tag_int("ip2", saddr->sa->sa_data[3]),
+          evt_tag_int("ip3", saddr->sa->sa_data[4]),
+          evt_tag_int("ip4", saddr->sa->sa_data[5]),
+          NULL);
 #ifdef SYSLOG_NG_HAVE_GETNAMEINFO
       hname = resolve_address_using_getnameinfo(saddr, hostname_buffer, sizeof(hostname_buffer));
 #else
@@ -328,6 +334,7 @@ resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr, 
     {
       hname = g_sockaddr_format(saddr, hostname_buffer, sizeof(hostname_buffer), GSA_ADDRESS_ONLY);
       positive = FALSE;
+      msg_debug("Resolving failed", NULL);
     }
   if (host_resolve_options->use_dns_cache)
     dns_cache_store_dynamic(saddr->sa.sa_family, dnscache_key, hname, positive);
