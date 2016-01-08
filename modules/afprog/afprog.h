@@ -32,6 +32,7 @@ typedef struct _AFProgramProcessInfo
 {
   pid_t pid;
   GString *cmdline;
+  gboolean inherit_environment;
 } AFProgramProcessInfo;
 
 typedef struct _AFProgramSourceDriver
@@ -55,5 +56,6 @@ LogDriver *afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg);
 LogDriver *afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg);
 
 void afprogram_dd_set_keep_alive(AFProgramDestDriver *self, gboolean keep_alive);
+void afprogram_set_inherit_environment(AFProgramProcessInfo *self, gboolean inherit_environment);
 
 #endif
