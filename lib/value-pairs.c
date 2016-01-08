@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2015 Balabit
  * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
@@ -979,6 +979,36 @@ vp_cmdline_rekey_verify (const gchar *key, ValuePairsTransformSet *vpts,
   return vpts;
 }
 
+static gboolean
+vp_cmdline_parse_subkeys(const gchar *option_name, const gchar *value,
+                       gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairs *vp = (ValuePairs *) args[1];
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+
+  GString *prefix = g_string_new(value);
+  g_string_append_c(prefix, '*');
+  value_pairs_add_glob_pattern(vp, prefix->str, TRUE);
+
+  vp_cmdline_start_key(data, prefix->str);
+
+  vpts = vp_cmdline_rekey_verify(prefix->str, vpts, data);
+  if (!vpts)
+    {
+      g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --subkeys failed to create key");
+      g_string_free(prefix, TRUE);
+      return FALSE;
+    }
+
+  value_pairs_transform_set_add_func
+    (vpts, value_pairs_new_transform_replace_prefix(value, ""));
+
+  g_string_free(prefix, TRUE);
+  return TRUE;
+}
+
 /* parse a value-pair specification from a command-line like environment */
 static gboolean
 vp_cmdline_parse_scope(const gchar *option_name, const gchar *value,
@@ -1243,6 +1273,8 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL },
     { "replace", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_CALLBACK,
       vp_cmdline_parse_rekey_replace_prefix, NULL, NULL },
+    { "subkeys", 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_subkeys,
+      NULL, NULL },
     { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair_or_key,
       NULL, NULL },
     { NULL }
