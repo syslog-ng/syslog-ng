@@ -45,7 +45,8 @@ tf_format_welf_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
 }
 
 static gboolean
-tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value, gpointer user_data)
+tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value,
+                       gsize value_len, gpointer user_data)
 {
   GString *result = (GString *) user_data;
 
@@ -53,12 +54,12 @@ tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value, gpo
     g_string_append(result, " ");
   g_string_append(result, name);
   g_string_append_c(result, '=');
-  if (strchr(value, ' ') == NULL)
-    append_unsafe_utf8_as_escaped_binary(result, value, NULL);
+  if (memchr(value, ' ', value_len) == NULL)
+    append_unsafe_utf8_as_escaped_binary(result, value, value_len, NULL);
   else
     {
       g_string_append_c(result, '"');
-      append_unsafe_utf8_as_escaped_binary(result, value, "\"");
+      append_unsafe_utf8_as_escaped_binary(result, value, value_len, "\"");
       g_string_append_c(result, '"');
     }
 

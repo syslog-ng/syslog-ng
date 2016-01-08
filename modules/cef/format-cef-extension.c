@@ -73,20 +73,21 @@ tf_cef_append_unichar(GString *string, gunichar wc)
 }
 
 static inline void
-tf_cef_append_escaped(GString *escaped_string, const gchar *str)
+tf_cef_append_escaped(GString *escaped_string, const gchar *str, gsize str_len)
 {
+  const gchar *char_ptr;
   gunichar uchar;
 
-  while (*str)
+  while (str_len)
     {
-      uchar = g_utf8_get_char_validated(str, -1);
+      uchar = g_utf8_get_char_validated(str, str_len);
 
       switch (uchar)
         {
         case (gunichar) -1:
         case (gunichar) -2:
-          g_string_append_printf(escaped_string, "\\x%02x", *(guint8 *) str);
-          str++;
+          g_string_append_printf(escaped_string, "\\x%02x", *(guint8 *) str++);
+          str_len--;
           continue;
           break;
         case '=':
@@ -108,12 +109,14 @@ tf_cef_append_escaped(GString *escaped_string, const gchar *str)
             tf_cef_append_unichar(escaped_string, uchar);
           break;
         }
-      str = g_utf8_next_char(str);
+      char_ptr = g_utf8_next_char(str);
+      str_len -= char_ptr - str;
+      str = char_ptr;
     }
 }
 
 static gboolean
-tf_cef_append_value(const gchar *name, const gchar *value,
+tf_cef_append_value(const gchar *name, const gchar *value, gsize value_len,
                      CefWalkerState *state)
 {
   if (state->need_separator)
@@ -123,7 +126,7 @@ tf_cef_append_value(const gchar *name, const gchar *value,
 
   g_string_append_c(state->buffer, '=');
 
-  tf_cef_append_escaped(state->buffer, value);
+  tf_cef_append_escaped(state->buffer, value, value_len);
 
   return TRUE;
 }
@@ -135,7 +138,7 @@ tf_cef_walk_cmp(const gchar *s1, const gchar *s2)
 }
 
 static gboolean
-tf_cef_walker(const gchar *name, TypeHint type, const gchar *value,
+tf_cef_walker(const gchar *name, TypeHint type, const gchar *value, gsize value_len,
               gpointer user_data)
 {
   CefWalkerState *state = (CefWalkerState *)user_data;
@@ -152,7 +155,7 @@ tf_cef_walker(const gchar *name, TypeHint type, const gchar *value,
       return !!(on_error & ON_ERROR_DROP_MESSAGE);
     }
 
-  tf_cef_append_value(name, value, state);
+  tf_cef_append_value(name, value, value_len, state);
 
   state->need_separator = TRUE;
 

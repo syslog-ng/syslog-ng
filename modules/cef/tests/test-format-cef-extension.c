@@ -76,6 +76,17 @@ _expect_cef_result_format_va(const gchar *format, const gchar *expected, ...)
 }
 
 static void
+_test_null_in_value()
+{
+  LogMessage *msg = create_empty_message();
+
+  configuration->template_options.on_error = ON_ERROR_DROP_MESSAGE | ON_ERROR_SILENT;
+  log_msg_set_value_by_name(msg, ".cef.k", "a\0b", 3);
+  assert_template_format_msg("$(format-cef-extension --subkeys .cef.)", "k=a\\u0000b", msg);
+  log_msg_unref(msg);
+}
+
+static void
 _test_filter(void)
 {
   _EXPECT_CEF_RESULT("k=v", ".cef.k", "v", "x", "w");
@@ -224,6 +235,7 @@ main(int argc, char *argv[])
   _test_escaping();
   _test_prefix();
   _test_macro_parity();
+  _test_null_in_value();
 
   deinit_template_tests();
   app_shutdown();

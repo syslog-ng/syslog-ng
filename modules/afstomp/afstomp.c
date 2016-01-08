@@ -243,8 +243,9 @@ afstomp_dd_disconnect(LogThrDestDriver *s)
   self->conn = NULL;
 }
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
-afstomp_vp_foreach(const gchar *name, TypeHint type, const gchar *value,
+afstomp_vp_foreach(const gchar *name, TypeHint type, const gchar *value, gsize value_len,
                    gpointer user_data)
 {
   stomp_frame *frame = (stomp_frame *) (user_data);
