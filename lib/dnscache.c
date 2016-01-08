@@ -279,6 +279,9 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostnam
            (!entry->positive && entry->resolved < now - dns_cache_expire_failed)))
         {
           /* the entry is not persistent and is too old */
+          msg_debug("Entry is too old",
+          evt_tag_str("hostname", hostname),
+          NULL);
         }
       else
         {
@@ -309,11 +312,17 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
     {
       entry->resolved = cached_g_current_time_sec();
       dns_cache_entry_insert_before(&cache_last, entry);
+      msg_debug("Persistent entry cached",
+      evt_tag_str("hostname", hostname),
+      NULL);
     }
   else
     {
       entry->resolved = 0;
       dns_cache_entry_insert_before(&persist_last, entry);
+      msg_debug("Non persistent entry cached",
+      evt_tag_str("hostname", hostname),
+      NULL);
     }
   hash_size = g_hash_table_size(cache);
   g_hash_table_replace(cache, &entry->key, entry);
@@ -325,6 +334,9 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   if ((gint) (g_hash_table_size(cache) - dns_cache_persistent_count) > dns_cache_size)
     {
       /* remove oldest element */
+      msg_debug("DNS Cache full, removing one entry",
+      evt_tag_str("hostname", &cache_first.next->key),
+      NULL);
       g_hash_table_remove(cache, &cache_first.next->key);
     }
 }
