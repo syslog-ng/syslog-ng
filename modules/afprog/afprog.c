@@ -197,17 +197,17 @@ afprogram_sd_init(LogPipe *s)
 
   if (cfg)
     log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
-  
+
   msg_verbose("Starting source program",
               evt_tag_str("cmdline", self->cmdline->str),
-              NULL); 
- 
+              NULL);
+
   if (!afprogram_popen(self->cmdline->str, G_IO_IN, &self->pid, &fd))
     return FALSE;
 
   /* parent */
   child_manager_register(self->pid, afprogram_sd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify) log_pipe_unref);
-  
+
   g_fd_set_nonblock(fd, TRUE);
   g_fd_set_cloexec(fd, TRUE);
   if (!self->reader)
@@ -227,7 +227,7 @@ afprogram_sd_init(LogPipe *s)
     }
   log_pipe_append((LogPipe *) self->reader, &self->super.super.super);
   if (!log_pipe_init((LogPipe *) self->reader))
-    { 
+    {
       msg_error("Error initializing program source, closing fd",
                 evt_tag_int("fd", fd),
                 NULL);
@@ -262,7 +262,7 @@ static void
 afprogram_sd_free(LogPipe *s)
 {
   AFProgramSourceDriver *self = (AFProgramSourceDriver *) s;
-  
+
   log_reader_options_destroy(&self->reader_options);
   g_string_free(self->cmdline, TRUE);
   log_src_driver_free(s);
@@ -286,7 +286,7 @@ afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg)
 {
   AFProgramSourceDriver *self = g_new0(AFProgramSourceDriver, 1);
   log_src_driver_init_instance(&self->super, cfg);
-  
+
   self->super.super.super.init = afprogram_sd_init;
   self->super.super.super.deinit = afprogram_sd_deinit;
   self->super.super.super.free_fn = afprogram_sd_free;
@@ -514,7 +514,7 @@ afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg)
 {
   AFProgramDestDriver *self = g_new0(AFProgramDestDriver, 1);
   log_dest_driver_init_instance(&self->super, cfg);
-  
+
   self->super.super.super.init = afprogram_dd_init;
   self->super.super.super.deinit = afprogram_dd_deinit;
   self->super.super.super.free_fn = afprogram_dd_free;
