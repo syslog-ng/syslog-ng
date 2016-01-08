@@ -364,7 +364,8 @@ vp_foreach_helper (const gchar *name, const SBTHGString *hinted_value,
   gboolean *r = ((gpointer *)data)[2];
 
   *r &= !func(name, hinted_value->type_hint,
-              sb_th_gstring_string(hinted_value)->str, user_data);
+              sb_th_gstring_string(hinted_value)->str,
+              sb_th_gstring_string(hinted_value)->len, user_data);
   return !*r;
 }
 
@@ -724,7 +725,7 @@ vp_walker_start_containers_for_name(vp_walk_state_t *state,
 }
 
 static gboolean
-value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
+value_pairs_walker(const gchar *name, TypeHint type, const gchar *value, gsize value_len,
                    gpointer user_data)
 {
   vp_walk_state_t *state = (vp_walk_state_t *)user_data;
@@ -738,12 +739,12 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
 
   if (data != NULL)
     result = state->process_value(key, data->prefix,
-                                  type, value,
+                                  type, value, value_len,
                                   &data->data,
                                   state->user_data);
   else
     result = state->process_value(key, NULL,
-                                  type, value,
+                                  type, value, value_len,
                                   NULL,
                                   state->user_data);
 

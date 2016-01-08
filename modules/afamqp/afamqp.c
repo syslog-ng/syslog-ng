@@ -410,9 +410,10 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
  * Worker thread
  */
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
 afamqp_vp_foreach(const gchar *name,
-                  TypeHint type, const gchar *value,
+                  TypeHint type, const gchar *value, gsize value_len,
                   gpointer user_data)
 {
   amqp_table_entry_t **entries = (amqp_table_entry_t **) ((gpointer *)user_data)[0];
@@ -427,6 +428,7 @@ afamqp_vp_foreach(const gchar *name,
 
   (*entries)[*pos].key = amqp_cstring_bytes(strdup(name));
   (*entries)[*pos].value.kind = AMQP_FIELD_KIND_UTF8;
+
   (*entries)[*pos].value.value.bytes = amqp_cstring_bytes(strdup(value));
 
   (*pos)++;
