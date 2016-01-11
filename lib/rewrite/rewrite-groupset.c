@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Viktor Juhász <viktor.juhasz@balabit.com>
  * Copyright (c) 2014 Viktor Tusa <viktor.tusa@balabit.com>
  *

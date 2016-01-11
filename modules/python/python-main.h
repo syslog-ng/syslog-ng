@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013 Balabit
  * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it

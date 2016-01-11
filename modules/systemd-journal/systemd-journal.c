@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2014 Balabit
  * Copyright (c) 2012-2014 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it

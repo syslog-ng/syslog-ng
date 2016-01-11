@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2013 Viktor Tusa <tusa@balabit.hu>
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  *
