@@ -92,7 +92,7 @@ _exec_program(const gchar *cmdline)
 }
 
 static gboolean
-afprogram_popen(const gchar *cmdline, GIOCondition cond, pid_t *pid, gint *fd, gboolean inherit_environment)
+afprogram_popen(AFProgramProcessInfo* process_info, GIOCondition cond, gint *fd)
 {
   int msg_pipe[2];
   
@@ -101,13 +101,13 @@ afprogram_popen(const gchar *cmdline, GIOCondition cond, pid_t *pid, gint *fd, g
   if (pipe(msg_pipe) == -1)
     {
       msg_error("Error creating program pipe",
-                evt_tag_str("cmdline", cmdline),
+                evt_tag_str("cmdline", process_info->cmdline->str),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
       return FALSE;
     }
 
-  if ((*pid = fork()) < 0)
+  if ((process_info->pid = fork()) < 0)
     {
       msg_error("Error in fork()",
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
@@ -117,7 +117,7 @@ afprogram_popen(const gchar *cmdline, GIOCondition cond, pid_t *pid, gint *fd, g
       return FALSE;
     }
 
-  if (*pid == 0)
+  if (process_info->pid == 0)
     {
       /* child */
       int devnull;
@@ -147,10 +147,10 @@ afprogram_popen(const gchar *cmdline, GIOCondition cond, pid_t *pid, gint *fd, g
       close(msg_pipe[0]);
       close(msg_pipe[1]);
 
-      if (inherit_environment)
-        _exec_program(cmdline);
+      if (process_info->inherit_environment)
+        _exec_program(process_info->cmdline->str);
       else
-        _exec_program_with_clean_environment(cmdline);
+        _exec_program_with_clean_environment(process_info->cmdline->str);
 
       _exit(127);
     }
@@ -219,7 +219,7 @@ afprogram_sd_init(LogPipe *s)
               evt_tag_str("cmdline", self->process_info.cmdline->str),
               NULL);
 
-  if (!afprogram_popen(self->process_info.cmdline->str, G_IO_IN, &self->process_info.pid, &fd, self->process_info.inherit_environment))
+  if (!afprogram_popen(&self->process_info, G_IO_IN, &fd))
     return FALSE;
 
   /* parent */
@@ -364,7 +364,7 @@ afprogram_dd_open_program(AFProgramDestDriver *self, int *fd)
                   evt_tag_str("cmdline", self->process_info.cmdline->str),
                   NULL);
 
-      if (!afprogram_popen(self->process_info.cmdline->str, G_IO_OUT, &self->process_info.pid, fd, self->process_info.inherit_environment))
+      if (!afprogram_popen(&self->process_info, G_IO_OUT, fd))
         return FALSE;
 
       g_fd_set_nonblock(*fd, TRUE);
