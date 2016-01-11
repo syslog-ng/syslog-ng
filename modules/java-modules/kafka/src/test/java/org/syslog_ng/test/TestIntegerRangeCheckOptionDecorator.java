@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015 Balabit
- * Copyright (c) 2015 Benke Tibor
+ * Copyright (c) 2015 Tibor Benke
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
