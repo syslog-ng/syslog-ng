@@ -523,3 +523,9 @@ afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg)
   log_writer_options_defaults(&self->writer_options);
   return &self->super.super;
 }
+
+void
+afprogram_dd_set_keep_alive(AFProgramDestDriver *self, gboolean keep_alive)
+{
+  self->keep_alive = keep_alive;
+}

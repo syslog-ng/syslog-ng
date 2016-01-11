@@ -50,9 +50,6 @@ typedef struct _AFProgramDestDriver
 LogDriver *afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg);
 LogDriver *afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg);
 
-inline void
-afprogram_dd_set_keep_alive(AFProgramDestDriver *self, gboolean keep_alive) {
-  self->keep_alive = keep_alive;
-}
+void afprogram_dd_set_keep_alive(AFProgramDestDriver *self, gboolean keep_alive);
 
 #endif
