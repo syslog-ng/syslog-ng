@@ -9,10 +9,12 @@ install:
   - sudo pip install -r requirements.txt
 before_script:
   - ./autogen.sh
-script:
   - unset PYTHON_CFLAGS # HACK
   - ./configure CFLAGS=-Werror --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-pacct --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl 
-  - make && make distcheck VERBOSE=1 && make func-test VERBOSE=1
+  - if [ "$CC" = "clang" ]; then export COPYRIGHTVERBOSITY=1; make check-copyright; fi
+  - make -j || make V=1 # to make error messages more readable on error
+script:
+  - if [ "$CC" = "gcc" ]; then make distcheck V=1; else make func-test V=1; fi
 compiler:
   - gcc
   - clang

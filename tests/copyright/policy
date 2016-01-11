@@ -1,0 +1,23 @@
+ ignore
+.*\.(md|am)$
+.*/[^/]+-grammar\.[ch]$
+lib/cfg-lex\.[ch]$
+modules/java/org_syslog_ng_[^./_-]+\.h$
+modules/(afmongodb|afamqp)/dummy\.c$
+(syslog-ng-)?config\.h$
+(contrib|debian|lib|modules)/.*\.conf
+dist\.conf
+scl/syslog-ng\.conf
+ LGPLv2.1+_SSL
+lib/(compat|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|[^/]*$)
+libtest
+syslog-ng(-ctl)?
+modules/java-modules/common
+modules/java/(native|proxies|src)
+ GPLv2+_SSL
+tests
+modules/java/(tools|[^/]*$)
+modules/java-modules/(dummy|elastic|hdfs|http|kafka|[^/]*$)
+modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|basicfuncs|cef|confgen|cryptofuncs|csvparser|date|dbparser|geoip|graphite|json|kvformat|linux-kmsg-format|native|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|system-source|[^/]*$)
+scl
+
