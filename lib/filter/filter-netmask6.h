@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit S.a.r.l., Luxembourg, Luxembourg
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Zoltan Fried
  *
  * This program is free software; you can redistribute it and/or modify it

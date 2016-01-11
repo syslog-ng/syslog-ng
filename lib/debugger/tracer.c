@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014-2015 Balabit
  * Copyright (c) 2014-2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or

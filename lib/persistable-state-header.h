@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  * Copyright (c) 2012-2013 Viktor Juhasz
  * Copyright (c) 2012-2013 Viktor Tusa

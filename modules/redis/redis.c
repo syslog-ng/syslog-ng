@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  *

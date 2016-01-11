@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Adam Arsenault <adam.arsenault@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
