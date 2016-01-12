@@ -89,6 +89,7 @@ pkginclude_HEADERS			+= \
 	lib/crypto.h			\
 	lib/dnscache.h			\
 	lib/driver.h			\
+	lib/fdhelpers.h			\
 	lib/file-perms.h		\
 	lib/find-crlf.h			\
 	lib/gprocess.h			\
@@ -174,6 +175,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/children.c			\
 	lib/dnscache.c			\
 	lib/driver.c			\
+	lib/fdhelpers.c			\
 	lib/file-perms.c		\
 	lib/find-crlf.c			\
 	lib/globals.c			\

@@ -26,7 +26,7 @@
 #include "messages.h"
 #include "logwriter.h"
 #include "children.h"
-#include "misc.h"
+#include "fdhelpers.h"
 #include "stats/stats-registry.h"
 #include "transport/transport-pipe.h"
 #include "logproto/logproto-text-server.h"

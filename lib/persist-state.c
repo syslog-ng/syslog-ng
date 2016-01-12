@@ -25,7 +25,7 @@
 #include "persist-state.h"
 #include "serialize.h"
 #include "messages.h"
-#include "misc.h"
+#include "fdhelpers.h"
 
 #include <sys/types.h>
 #include <unistd.h>

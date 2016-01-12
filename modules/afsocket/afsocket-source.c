@@ -23,7 +23,7 @@
 
 #include "afsocket-source.h"
 #include "messages.h"
-#include "misc.h"
+#include "fdhelpers.h"
 #include "gsocket.h"
 #include "stats/stats-registry.h"
 #include "mainloop.h"

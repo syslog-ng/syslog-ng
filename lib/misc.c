@@ -42,45 +42,6 @@
 #include <stdio.h>
 #include <signal.h>
 
-
-gboolean
-g_fd_set_nonblock(int fd, gboolean enable)
-{
-  int flags;
-
-  if ((flags = fcntl(fd, F_GETFL)) == -1)
-    return FALSE;
-  if (enable)
-    flags |= O_NONBLOCK;
-  else
-    flags &= ~O_NONBLOCK;
-
-  if (fcntl(fd, F_SETFL, flags) < 0)
-    {
-      return FALSE;
-    }
-  return TRUE;
-}
-
-gboolean
-g_fd_set_cloexec(int fd, gboolean enable)
-{
-  int flags;
-
-  if ((flags = fcntl(fd, F_GETFD)) == -1)
-    return FALSE;
-  if (enable)
-    flags |= FD_CLOEXEC;
-  else
-    flags &= ~FD_CLOEXEC;
-
-  if (fcntl(fd, F_SETFD, flags) < 0)
-    {
-      return FALSE;
-    }
-  return TRUE;
-}
-
 gchar *
 find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
 {

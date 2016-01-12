@@ -26,7 +26,7 @@
 #include "gsockaddr.h"
 #include "gsocket.h"
 #include "messages.h"
-#include "misc.h"
+#include "fdhelpers.h"
 #include "transport/transport-socket.h"
 
 static gboolean
