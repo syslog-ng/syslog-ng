@@ -23,7 +23,6 @@
 #include "affile-source.h"
 #include "driver.h"
 #include "messages.h"
-#include "misc.h"
 #include "serialize.h"
 #include "gprocess.h"
 #include "stats/stats-registry.h"

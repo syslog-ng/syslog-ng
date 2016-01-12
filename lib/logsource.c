@@ -24,7 +24,6 @@
   
 #include "logsource.h"
 #include "messages.h"
-#include "misc.h"
 #include "host-resolve.h"
 #include "timeutils.h"
 #include "stats/stats-registry.h"

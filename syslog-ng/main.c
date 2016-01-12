@@ -27,7 +27,6 @@
 #include "messages.h"
 #include "memtrace.h"
 #include "children.h"
-#include "misc.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
 #include "alarms.h"

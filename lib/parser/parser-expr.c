@@ -24,7 +24,6 @@
 
 #include "parser/parser-expr.h"
 #include "template/templates.h"
-#include "misc.h"
 #include "logmatcher.h"
 
 #include <string.h>

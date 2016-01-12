@@ -23,7 +23,6 @@
  *
  */
 #include "persistable-state-presenter.h"
-#include "misc.h"
 #include "logmsg.h"
 #include "str-format.h"
 

@@ -25,7 +25,6 @@
 #include "transport-mapper-inet.h"
 #include "socket-options-inet.h"
 #include "messages.h"
-#include "misc.h"
 #include "gprocess.h"
 
 #include <sys/types.h>

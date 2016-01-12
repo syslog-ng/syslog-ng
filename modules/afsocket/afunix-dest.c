@@ -22,7 +22,6 @@
  */
 
 #include "afunix-dest.h"
-#include "misc.h"
 #include "messages.h"
 #include "gprocess.h"
 
