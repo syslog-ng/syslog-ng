@@ -23,6 +23,7 @@
 #include "filter/filter-expr-parser.h"
 #include "cfg.h"
 #include "value-pairs/value-pairs.h"
+#include "value-pairs/cmdline.h"
 #include "syslog-ng.h"
 #include "format-cef-extension.h"
 

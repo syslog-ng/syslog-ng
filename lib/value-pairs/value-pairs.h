@@ -78,9 +78,6 @@ void value_pairs_free(ValuePairs *vp);
 ValuePairs *value_pairs_ref(ValuePairs *self);
 void value_pairs_unref(ValuePairs *self);
 
-ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
-					 gint argc, gchar **argv,
-					 GError **error);
 ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
 
 EVTTAG *evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, LogTemplateOptions *template_options);
