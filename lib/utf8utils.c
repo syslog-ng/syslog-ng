@@ -63,7 +63,7 @@ _append_unichar(GString *string, gunichar wc)
  */
 static gsize
 _append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
-                               gssize *raw_len, const gchar *unsafe_chars,
+                               gssize raw_len, const gchar *unsafe_chars,
                                const gchar *control_format,
                                const gchar *invalid_format)
 {
