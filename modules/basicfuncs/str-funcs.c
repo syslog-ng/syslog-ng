@@ -435,3 +435,74 @@ tf_string_padding(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_string_padding);
+
+typedef struct _TFLiteralState
+{
+  TFSimpleFuncState super;
+  GString *literals;
+} TFLiteralState;
+
+static void
+tf_literal_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+{
+  TFLiteralState *state = (TFLiteralState *) s;
+
+  g_string_append_len(result, state->literals->str, state->literals->len);
+}
+
+static gboolean
+tf_literal_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
+{
+  gint i;
+  gchar **tokens = NULL;
+  TFLiteralState *state = (TFLiteralState *) s;
+  GString *literals = g_string_new("");
+
+  if (argc != 2)
+    {
+      msg_error("Incorrect parameters number usage $(literal <number>)", NULL);
+      goto error;
+    }
+
+  tokens = g_strsplit(argv[1], " ", 0);
+  for (i = 0; tokens[i] != NULL; i++)
+    {
+      gint64 number;
+      gchar *token = tokens[i];
+      if (!parse_number(token, &number))
+        {
+          msg_error("Literal template function requires list of numbers delimited with spaces", evt_tag_str("Bad token", token),  NULL);
+          goto error;
+        }
+      if (number > 0xFF)
+        {
+          msg_error("Literal template function requires list of 1byte wide numbers", evt_tag_int("Too wide number", number), evt_tag_str("token", token), NULL);
+          goto error;
+        }
+      g_string_append_c(literals, (guint8)number);
+    }
+
+  if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
+    {
+      goto error;
+    }
+
+  state->literals = literals;
+  g_strfreev(tokens);
+  return TRUE;
+error:
+  g_string_free(literals, TRUE);
+  g_strfreev(tokens);
+  return FALSE;
+}
+
+static void
+tf_literal_free_state(gpointer s)
+{
+  TFLiteralState *state = (TFLiteralState *) s;
+
+  g_string_free(state->literals, TRUE);
+  tf_simple_func_free_state(&state->super);
+}
+
+TEMPLATE_FUNCTION(TFLiteralState, tf_literal, tf_literal_prepare, tf_simple_func_eval, tf_literal_call, tf_literal_free_state, NULL);
