@@ -3,7 +3,7 @@
 #include "syslog-ng.h"
 #include "logmsg.h"
 #include "apphook.h"
-#include "misc.h"
+#include "string-list.h"
 #include "cfg.h"
 #include "plugin.h"
 

@@ -25,7 +25,7 @@
 #include "afmongodb.h"
 #include "afmongodb-parser.h"
 #include "messages.h"
-#include "misc.h"
+#include "string-list.h"
 #include "stats/stats-registry.h"
 #include "nvtable.h"
 #include "logqueue.h"

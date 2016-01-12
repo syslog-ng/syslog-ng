@@ -27,7 +27,7 @@
 #include <time.h>
 
 #include "logthrdestdrv.h"
-#include "misc.h"
+#include "string-list.h"
 #include "stats/stats.h"
 #include "scratch-buffers.h"
 #include "riemann.h"

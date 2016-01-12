@@ -26,7 +26,7 @@
 #include "logqueue.h"
 #include "template/templates.h"
 #include "messages.h"
-#include "misc.h"
+#include "string-list.h"
 #include "str-format.h"
 #include "seqnum.h"
 #include "stats/stats-registry.h"

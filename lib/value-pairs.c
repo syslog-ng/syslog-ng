@@ -29,7 +29,7 @@
 #include "template/macros.h"
 #include "type-hinting.h"
 #include "cfg-parser.h"
-#include "misc.h"
+#include "string-list.h"
 #include "scratch-buffers.h"
 #include "cfg.h"
 
