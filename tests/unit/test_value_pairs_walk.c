@@ -72,11 +72,11 @@ test_vp_obj_stop(const gchar *name,
 
 static gboolean
 test_vp_value(const gchar *name, const gchar *prefix,
-                           TypeHint type, const gchar *value,
+                           TypeHint type, const gchar *value, gsize value_len,
                            gpointer *prefix_data, gpointer user_data)
 {
   assert_string(prefix, "root.test", "Wrong prefix");
-  assert_string(value, "value", "Wrong value");
+  assert_nstring(value, value_len, "value", -1, "Wrong value");
   assert_gint(*((gint*)(*prefix_data)), root_test_data, "Wrong prefix data");
 
   return FALSE;

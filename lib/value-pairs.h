@@ -32,12 +32,15 @@
 #include "messages.h"
 
 typedef struct _ValuePairs ValuePairs;
-typedef gboolean (*VPForeachFunc)(const gchar *name, TypeHint type,
-                                  const gchar *value, gpointer user_data);
 
-typedef gboolean (*VPWalkValueCallbackFunc)(const gchar *name, const gchar *prefix,
-                                            TypeHint type, const gchar *value,
-                                            gpointer *prefix_data, gpointer user_data);
+typedef gboolean
+(*VPForeachFunc) (const gchar *name, TypeHint type, const gchar *value,
+                  gsize value_len, gpointer user_data);
+
+typedef gboolean
+(*VPWalkValueCallbackFunc) (const gchar *name, const gchar *prefix,
+                            TypeHint type, const gchar *value, gsize value_len,
+                            gpointer *prefix_data, gpointer user_data);
 typedef gboolean (*VPWalkCallbackFunc)(const gchar *name,
                                        const gchar *prefix, gpointer *prefix_data,
                                        const gchar *prev, gpointer *prev_data,

@@ -400,9 +400,11 @@ riemann_dd_field_add_msg_tag(const LogMessage *msg,
   return TRUE;
 }
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
 riemann_dd_field_add_attribute_vp(const gchar *name,
                                   TypeHint type, const gchar *value,
+                                  gsize value_len,
                                   gpointer user_data)
 {
   riemann_event_t *event = (riemann_event_t *)user_data;
