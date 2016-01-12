@@ -440,7 +440,7 @@ value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
 }
 
 static gboolean
-value_pairs_debug_append (const gchar *name, TypeHint type, const gchar *value, gpointer user_data)
+value_pairs_debug_append (const gchar *name, TypeHint type, const gchar *value, gsize value_len, gpointer user_data)
 {
   GString *text = (GString *) user_data;
   g_string_append_printf(text, "%s=%s ",name, value);
