@@ -31,7 +31,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
 gchar *__normalize_key(const gchar* buffer);
 gchar *replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place);
 

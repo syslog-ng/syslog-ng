@@ -48,3 +48,32 @@ is_file_device(const gchar *name)
   else
     return FALSE;
 }
+
+gchar *
+find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
+{
+  gchar **dirs;
+  gchar *fullname = NULL;
+  gint i;
+
+  if (filename[0] == '/' || !path)
+    {
+      if (g_file_test(filename, test))
+        return g_strdup(filename);
+      return NULL;
+    }
+
+  dirs = g_strsplit(path, G_SEARCHPATH_SEPARATOR_S, 0);
+  i = 0;
+  while (dirs && dirs[i])
+    {
+      fullname = g_build_filename(dirs[i], filename, NULL);
+      if (g_file_test(fullname, test))
+        break;
+      g_free(fullname);
+      fullname = NULL;
+      i++;
+    }
+  g_strfreev(dirs);
+  return fullname;
+}
