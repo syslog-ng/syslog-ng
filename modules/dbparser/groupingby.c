@@ -25,7 +25,7 @@
 #include "correllation-context.h"
 #include "synthetic-message.h"
 #include "messages.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "filter/filter-expr.h"
 #include <iv.h>
 

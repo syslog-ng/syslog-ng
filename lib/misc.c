@@ -42,22 +42,6 @@
 #include <stdio.h>
 #include <signal.h>
 
-GString *
-g_string_assign_len(GString *s, const gchar *val, gint len)
-{
-  g_string_truncate(s, 0);
-  if (val && len)
-    g_string_append_len(s, val, len);
-  return s;
-}
-
-void
-g_string_steal(GString *s)
-{
-  s->str = g_malloc0(1);
-  s->allocated_len = 1;
-  s->len = 0;
-}
 
 gboolean
 g_fd_set_nonblock(int fd, gboolean enable)

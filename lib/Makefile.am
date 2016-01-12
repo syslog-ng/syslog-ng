@@ -135,6 +135,7 @@ pkginclude_HEADERS			+= \
 	lib/serialize.h			\
 	lib/service-management.h	\
 	lib/str-format.h		\
+	lib/str-utils.h			\
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
 	lib/tags.h			\
@@ -214,6 +215,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/serialize.c			\
 	lib/service-management.c	\
 	lib/str-format.c		\
+	lib/str-utils.c			\
 	lib/syslog-names.c		\
 	lib/tags.c			\
 	lib/timeutils.c			\

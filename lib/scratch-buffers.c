@@ -24,7 +24,7 @@
 
 #include "tls-support.h"
 #include "scratch-buffers.h"
-#include "misc.h"
+#include "str-utils.h"
 
 TLS_BLOCK_START
 {
