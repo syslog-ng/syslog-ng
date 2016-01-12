@@ -135,6 +135,7 @@ pkginclude_HEADERS			+= \
 	lib/scratch-buffers.h		\
 	lib/serialize.h			\
 	lib/service-management.h	\
+	lib/seqnum.h			\
 	lib/str-format.h		\
 	lib/str-utils.h			\
 	lib/syslog-names.h		\

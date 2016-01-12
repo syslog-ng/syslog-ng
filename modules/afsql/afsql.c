@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "misc.h"
 #include "str-format.h"
+#include "seqnum.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
 #include "timeutils.h"

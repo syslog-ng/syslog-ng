@@ -27,6 +27,7 @@
 #include "stats/stats-registry.h"
 #include "hostname.h"
 #include "host-resolve.h"
+#include "seqnum.h"
 #include "misc.h"
 #include "find-crlf.h"
 #include "mainloop.h"

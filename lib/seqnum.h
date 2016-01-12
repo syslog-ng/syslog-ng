@@ -21,45 +21,24 @@
  * COPYING for details.
  *
  */
-
-#ifndef MISC_H_INCLUDED
-#define MISC_H_INCLUDED
+#ifndef SEQNUM_H_INLCLUDED
+#define SEQNUM_H_INLCLUDED 1
 
 #include "syslog-ng.h"
-#include "gsockaddr.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
+static inline void
+init_sequence_number(gint32 *seqnum)
+{
+  *seqnum = 1;
+}
 
-gboolean g_fd_set_nonblock(int fd, gboolean enable);
-gboolean g_fd_set_cloexec(int fd, gboolean enable);
+static inline void
+step_sequence_number(gint32 *seqnum)
+{
+  (*seqnum)++;
+  if (*seqnum < 0)
+    *seqnum = 1;
+}
 
-gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
-
-GList *string_list_clone(GList *string_list);
-GList *string_array_to_list(const gchar *strlist[]);
-void string_list_free(GList *l);
-
-#define APPEND_ZERO(dest, value, value_len)	\
-  do { \
-    gchar *__buf; \
-    if (G_UNLIKELY(value[value_len] != 0)) \
-      { \
-        /* value is NOT zero terminated */ \
-        \
-        __buf = g_alloca(value_len + 1); \
-        memcpy(__buf, value, value_len); \
-        __buf[value_len] = 0; \
-      } \
-    else \
-      { \
-        /* value is zero terminated */ \
-        __buf = (gchar *) value; \
-      } \
-    dest = __buf; \
-  } while (0)
-
-gchar *__normalize_key(const gchar* buffer);
-gchar *replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place);
 
 #endif
