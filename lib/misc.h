@@ -34,8 +34,6 @@
 gboolean g_fd_set_nonblock(int fd, gboolean enable);
 gboolean g_fd_set_cloexec(int fd, gboolean enable);
 
-gchar *find_cr_or_lf(gchar *s, gsize n);
-
 gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
 
 static inline void

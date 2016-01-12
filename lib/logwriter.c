@@ -28,6 +28,7 @@
 #include "hostname.h"
 #include "host-resolve.h"
 #include "misc.h"
+#include "find-crlf.h"
 #include "mainloop.h"
 #include "mainloop-io-worker.h"
 #include "mainloop-call.h"

@@ -90,6 +90,7 @@ pkginclude_HEADERS			+= \
 	lib/dnscache.h			\
 	lib/driver.h			\
 	lib/file-perms.h		\
+	lib/find-crlf.h			\
 	lib/gprocess.h			\
 	lib/gsockaddr.h			\
 	lib/gsocket.h			\
@@ -172,6 +173,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/dnscache.c			\
 	lib/driver.c			\
 	lib/file-perms.c		\
+	lib/find-crlf.c			\
 	lib/globals.c			\
 	lib/gprocess.c			\
 	lib/gsockaddr.c			\
