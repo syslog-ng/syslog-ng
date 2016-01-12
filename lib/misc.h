@@ -38,11 +38,6 @@ void g_string_steal(GString *s);
 gboolean g_fd_set_nonblock(int fd, gboolean enable);
 gboolean g_fd_set_cloexec(int fd, gboolean enable);
 
-/* deliberately using gint here as the extremal values may not fit into uid_t/gid_t */
-gboolean resolve_user(const char *user, gint *uid);
-gboolean resolve_group(const char *group, gint *gid);
-gboolean resolve_user_group(char *arg, gint *uid, gint *gid);
-
 gchar *find_cr_or_lf(gchar *s, gsize n);
 
 gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);

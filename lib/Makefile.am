@@ -144,6 +144,7 @@ pkginclude_HEADERS			+= \
 	lib/tlscontext.h  		\
 	lib/type-hinting.h		\
 	lib/uuid.h			\
+	lib/userdb.h			\
 	lib/utf8utils.h			\
 	lib/value-pairs.h		\
 	lib/vptransform.h		\
@@ -225,6 +226,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/crypto.c			\
 	lib/tlscontext.c		\
 	lib/uuid.c			\
+	lib/userdb.c			\
 	lib/utf8utils.c			\
 	$(transport_crypto_sources)	\
 	lib/host-id.c			\

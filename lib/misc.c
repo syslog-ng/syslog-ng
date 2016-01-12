@@ -97,66 +97,6 @@ g_fd_set_cloexec(int fd, gboolean enable)
   return TRUE;
 }
 
-gboolean
-resolve_user(const char *user, gint *uid)
-{
-  struct passwd *pw;
-  gchar *endptr;
-
-  *uid = 0;
-  if (!(*user))
-    return FALSE;
-
-  *uid = strtol(user, &endptr, 0);
-  if (*endptr)
-    {
-      pw = getpwnam(user);
-      if (!pw)
-        return FALSE;
-
-      *uid = pw->pw_uid;
-    }
-  return TRUE;
-}
-
-gboolean
-resolve_group(const char *group, gint *gid)
-{
-  struct group *gr;
-  gchar *endptr;
-
-  *gid = 0;
-  if (!(*group))
-    return FALSE;
-
-  *gid = strtol(group, &endptr, 0);
-  if (*endptr)
-    {
-      gr = getgrnam(group);
-      if (!gr)
-        return FALSE;
-
-      *gid = gr->gr_gid;
-    }
-  return TRUE;
-}
-
-gboolean
-resolve_user_group(char *arg, gint *uid, gint *gid)
-{
-  char *user, *group;
-
-  *uid = 0;
-  user = strtok(arg, ":.");
-  group = strtok(NULL, "");
-
-  if (user && !resolve_user(user, uid))
-    return FALSE;
-  if (group && !resolve_group(group, gid))
-    return FALSE;
-  return TRUE;
-}
-
 gchar *
 find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
 {
