@@ -480,6 +480,12 @@ plugin_free_candidate_modules(GlobalConfig *cfg)
   cfg->candidate_plugins = NULL;
 }
 
+const gchar*
+plugin_get_module_path()
+{
+    return module_path;
+}
+
 void
 plugin_list_modules(FILE *out, gboolean verbose)
 {
