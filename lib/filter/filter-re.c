@@ -23,7 +23,7 @@
  */
 
 #include "filter-re.h"
-#include "misc.h"
+#include "str-utils.h"
 
 #include <string.h>
 

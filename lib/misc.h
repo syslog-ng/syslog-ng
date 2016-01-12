@@ -32,26 +32,6 @@
 #include <sys/socket.h>
 
 gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
-
-#define APPEND_ZERO(dest, value, value_len)	\
-  do { \
-    gchar *__buf; \
-    if (G_UNLIKELY(value[value_len] != 0)) \
-      { \
-        /* value is NOT zero terminated */ \
-        \
-        __buf = g_alloca(value_len + 1); \
-        memcpy(__buf, value, value_len); \
-        __buf[value_len] = 0; \
-      } \
-    else \
-      { \
-        /* value is zero terminated */ \
-        __buf = (gchar *) value; \
-      } \
-    dest = __buf; \
-  } while (0)
-
 gchar *__normalize_key(const gchar* buffer);
 gchar *replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place);
 

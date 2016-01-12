@@ -28,7 +28,7 @@
 #include "hostname.h"
 #include "host-resolve.h"
 #include "seqnum.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "find-crlf.h"
 #include "mainloop.h"
 #include "mainloop-io-worker.h"
