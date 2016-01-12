@@ -24,6 +24,7 @@
 #include "template/templates.h"
 #include "logmsg/logmsg.h"
 #include "value-pairs/value-pairs.h"
+#include "value-pairs/cmdline.h"
 
 typedef struct _TFGraphiteState
 {
