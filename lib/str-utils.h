@@ -69,5 +69,6 @@ void g_string_steal(GString *s);
     dest = __buf; \
   } while (0)
 
+gchar *__normalize_key(const gchar* buffer);
 
 #endif

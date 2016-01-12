@@ -41,25 +41,3 @@
 #include <time.h>
 #include <stdio.h>
 #include <signal.h>
-
-
-static gchar *
-str_replace_char(const gchar* str, const gchar from, const gchar to)
-{
-  gchar *p;
-  gchar *ret = g_strdup(str);
-  p = ret;
-  while (*p)
-    {
-      if (*p == from)
-        *p = to;
-      p++;
-    }
-  return ret;
-}
-
-gchar *
-__normalize_key(const gchar* buffer)
-{
-  return str_replace_char(buffer, '-', '_');
-}

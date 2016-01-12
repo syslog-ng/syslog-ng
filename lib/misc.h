@@ -31,7 +31,5 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-gchar *__normalize_key(const gchar* buffer);
-gchar *replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place);
 
 #endif

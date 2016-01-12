@@ -30,7 +30,7 @@
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
 #include "string-list.h"
-#include "misc.h"
+#include "str-utils.h"
 
 #ifndef SCS_PYTHON
 #define SCS_PYTHON 0
