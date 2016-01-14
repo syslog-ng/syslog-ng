@@ -26,7 +26,7 @@
 #include "stats/stats.h"
 #include "logqueue.h"
 #include "driver.h"
-#include "misc.h"
+#include "str-utils.h"
 
 #include <stdio.h>
 

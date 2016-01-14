@@ -25,7 +25,6 @@
 #include "afsmtp-parser.h"
 #include "plugin.h"
 #include "messages.h"
-#include "misc.h"
 #include "stats/stats-registry.h"
 #include "logqueue.h"
 #include "plugin-types.h"

@@ -23,7 +23,7 @@
  */
 
 #include "logmsg.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "messages.h"
 #include "logpipe.h"
 #include "timeutils.h"

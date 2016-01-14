@@ -22,7 +22,7 @@
 
 #include "stomp.h"
 #include "host-resolve.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "messages.h"
 
 #include <errno.h>

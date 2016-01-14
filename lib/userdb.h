@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Viktor Juhasz
- * Copyright (c) 2013 Viktor Tusa
+ * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,14 +22,14 @@
  *
  */
 
-#ifndef _PATHUTILS_H
-#define _PATHUTILS_H
+#ifndef USERDB_H_INCLUDED
+#define USERDB_H_INCLUDED 1
+
 #include "syslog-ng.h"
 
-gboolean is_file_regular(const char *filename);
-gboolean is_file_directory(const char *filename);
-gboolean is_file_device(const gchar *name);
-
-gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
+/* deliberately using gint here as the extremal values may not fit into uid_t/gid_t */
+gboolean resolve_user(const char *user, gint *uid);
+gboolean resolve_group(const char *group, gint *gid);
+gboolean resolve_user_group(char *arg, gint *uid, gint *gid);
 
 #endif

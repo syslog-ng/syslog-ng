@@ -20,15 +20,15 @@
  * COPYING for details.
  *
  */
-#include <string.h>
 
 #include "control-server.h"
 #include "messages.h"
-#include "misc.h"
+#include "str-utils.h"
 
 #ifndef CONTROL_UNITTEST
 #include "control-server-unix.c"
 #endif
+#include <string.h>
 
 void
 control_server_init_instance(ControlServer *self, const gchar *path, GList *control_commands)

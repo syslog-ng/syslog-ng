@@ -802,6 +802,7 @@ error:
   g_free(transition_times);
   g_free(transition_types);
   g_free(gmt_offsets);
+  *version = 0;
   return info;
 }
 
@@ -877,8 +878,8 @@ zone_info_read(const gchar *zonename, ZoneInfo **zone, ZoneInfo **zone64)
     }
 
   g_mapped_file_unref(file_map);
-    g_free(filename);
-  return TRUE;
+  g_free(filename);
+  return *zone != NULL || *zone64 != NULL;
 }
 
 gint32

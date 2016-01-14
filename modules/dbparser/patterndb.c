@@ -31,7 +31,7 @@
 #include "logmsg.h"
 #include "tags.h"
 #include "template/templates.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "filter/filter-expr-parser.h"
 #include "logpipe.h"
 

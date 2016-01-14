@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Viktor Juhasz
- * Copyright (c) 2013 Viktor Tusa
+ * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,15 +21,24 @@
  * COPYING for details.
  *
  */
+#ifndef SEQNUM_H_INLCLUDED
+#define SEQNUM_H_INLCLUDED 1
 
-#ifndef _PATHUTILS_H
-#define _PATHUTILS_H
 #include "syslog-ng.h"
 
-gboolean is_file_regular(const char *filename);
-gboolean is_file_directory(const char *filename);
-gboolean is_file_device(const gchar *name);
+static inline void
+init_sequence_number(gint32 *seqnum)
+{
+  *seqnum = 1;
+}
 
-gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
+static inline void
+step_sequence_number(gint32 *seqnum)
+{
+  (*seqnum)++;
+  if (*seqnum < 0)
+    *seqnum = 1;
+}
+
 
 #endif

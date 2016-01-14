@@ -29,7 +29,8 @@
 #include "python-helpers.h"
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
-#include "misc.h"
+#include "string-list.h"
+#include "str-utils.h"
 
 #ifndef SCS_PYTHON
 #define SCS_PYTHON 0

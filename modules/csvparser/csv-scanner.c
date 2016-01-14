@@ -21,7 +21,7 @@
  *
  */
 #include "csv-scanner.h"
-#include "misc.h"
+#include "string-list.h"
 
 #include <string.h>
 

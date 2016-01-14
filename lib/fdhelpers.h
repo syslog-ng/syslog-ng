@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Viktor Juhasz
- * Copyright (c) 2013 Viktor Tusa
+ * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,14 +22,12 @@
  *
  */
 
-#ifndef _PATHUTILS_H
-#define _PATHUTILS_H
+#ifndef FDHELPERS_H_INCLUDED
+#define FDHELPERS_H_INCLUDED 1
+
 #include "syslog-ng.h"
 
-gboolean is_file_regular(const char *filename);
-gboolean is_file_directory(const char *filename);
-gboolean is_file_device(const gchar *name);
-
-gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
+gboolean g_fd_set_nonblock(int fd, gboolean enable);
+gboolean g_fd_set_cloexec(int fd, gboolean enable);
 
 #endif

@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2013 Viktor Juhasz
- * Copyright (c) 2013 Viktor Tusa
+ * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,15 +21,45 @@
  * COPYING for details.
  *
  */
+#include "fdhelpers.h"
 
-#ifndef _PATHUTILS_H
-#define _PATHUTILS_H
-#include "syslog-ng.h"
+#include <unistd.h>
+#include <fcntl.h>
 
-gboolean is_file_regular(const char *filename);
-gboolean is_file_directory(const char *filename);
-gboolean is_file_device(const gchar *name);
+gboolean
+g_fd_set_nonblock(int fd, gboolean enable)
+{
+  int flags;
 
-gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
+  if ((flags = fcntl(fd, F_GETFL)) == -1)
+    return FALSE;
+  if (enable)
+    flags |= O_NONBLOCK;
+  else
+    flags &= ~O_NONBLOCK;
 
-#endif
+  if (fcntl(fd, F_SETFL, flags) < 0)
+    {
+      return FALSE;
+    }
+  return TRUE;
+}
+
+gboolean
+g_fd_set_cloexec(int fd, gboolean enable)
+{
+  int flags;
+
+  if ((flags = fcntl(fd, F_GETFD)) == -1)
+    return FALSE;
+  if (enable)
+    flags |= FD_CLOEXEC;
+  else
+    flags &= ~FD_CLOEXEC;
+
+  if (fcntl(fd, F_SETFD, flags) < 0)
+    {
+      return FALSE;
+    }
+  return TRUE;
+}

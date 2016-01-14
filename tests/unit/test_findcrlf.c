@@ -1,4 +1,4 @@
-#include "misc.h"
+#include "find-crlf.h"
 #include <stdio.h>
 #include <stdlib.h>
 

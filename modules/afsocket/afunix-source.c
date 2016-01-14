@@ -22,7 +22,6 @@
  */
 
 #include "afunix-source.h"
-#include "misc.h"
 #include "messages.h"
 #include "gprocess.h"
 #include "transport-mapper-unix.h"

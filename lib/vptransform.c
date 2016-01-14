@@ -26,7 +26,7 @@
 #include "vptransform.h"
 #include "template/templates.h"
 #include "cfg-parser.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "scratch-buffers.h"
 
 #include <string.h>

@@ -20,7 +20,6 @@
 #include "logmsg.h"
 #include "messages.h"
 #include "timeutils.h"
-#include "misc.h"
 #include "cfg.h"
 #include "str-format.h"
 #include "scratch-buffers.h"

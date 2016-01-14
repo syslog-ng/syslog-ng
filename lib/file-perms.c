@@ -23,7 +23,7 @@
  */
 
 #include "file-perms.h"
-#include "misc.h"
+#include "userdb.h"
 #include "messages.h"
 #include "cfg.h"
 #include "gprocess.h"

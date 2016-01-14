@@ -19,7 +19,6 @@
 
 #include "logproto-regexp-multiline-server.h"
 #include "messages.h"
-#include "misc.h"
 
 #include <string.h>
 #include <pcre.h>

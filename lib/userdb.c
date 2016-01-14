@@ -21,23 +21,70 @@
  * COPYING for details.
  *
  */
-
-#include "misc.h"
-#include "dnscache.h"
-#include "messages.h"
-#include "gprocess.h"
+#include "userdb.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <string.h>
-#include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
+#include <string.h>
 #include <stdlib.h>
-#include <time.h>
-#include <stdio.h>
-#include <signal.h>
+
+gboolean
+resolve_user(const char *user, gint *uid)
+{
+  struct passwd *pw;
+  gchar *endptr;
+
+  *uid = 0;
+  if (!(*user))
+    return FALSE;
+
+  *uid = strtol(user, &endptr, 0);
+  if (*endptr)
+    {
+      pw = getpwnam(user);
+      if (!pw)
+        return FALSE;
+
+      *uid = pw->pw_uid;
+    }
+  return TRUE;
+}
+
+gboolean
+resolve_group(const char *group, gint *gid)
+{
+  struct group *gr;
+  gchar *endptr;
+
+  *gid = 0;
+  if (!(*group))
+    return FALSE;
+
+  *gid = strtol(group, &endptr, 0);
+  if (*endptr)
+    {
+      gr = getgrnam(group);
+      if (!gr)
+        return FALSE;
+
+      *gid = gr->gr_gid;
+    }
+  return TRUE;
+}
+
+gboolean
+resolve_user_group(char *arg, gint *uid, gint *gid)
+{
+  char *user, *group;
+
+  *uid = 0;
+  user = strtok(arg, ":.");
+  group = strtok(NULL, "");
+
+  if (user && !resolve_user(user, uid))
+    return FALSE;
+  if (group && !resolve_group(group, gid))
+    return FALSE;
+  return TRUE;
+}

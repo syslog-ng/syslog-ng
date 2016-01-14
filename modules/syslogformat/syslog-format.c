@@ -25,7 +25,7 @@
 #include "logmsg.h"
 #include "messages.h"
 #include "timeutils.h"
-#include "misc.h"
+#include "find-crlf.h"
 #include "cfg.h"
 #include "str-format.h"
 #include "utf8utils.h"

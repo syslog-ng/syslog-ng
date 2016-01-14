@@ -26,7 +26,6 @@
 #include "java-parser.h"
 #include "plugin.h"
 #include "messages.h"
-#include "misc.h"
 #include "stats/stats.h"
 #include "logqueue.h"
 #include "driver.h"
