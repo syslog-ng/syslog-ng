@@ -47,7 +47,9 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
 {
   guint32 old_window_size;
 
+  window_size_increment += g_atomic_counter_get(&self->suspended_window_size);
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, window_size_increment);
+  g_atomic_counter_set(&self->suspended_window_size, 0);
 
   if (old_window_size == 0)
     log_source_wakeup(self);
@@ -134,6 +136,14 @@ log_source_msg_ack(LogMessage *msg, AckType ack_type)
 {
   AckTracker *ack_tracker = msg->ack_record->tracker;
   ack_tracker_manage_msg_ack(ack_tracker, msg, ack_type);
+}
+
+void
+log_source_flow_control_suspend(LogSource *self)
+{
+  g_atomic_counter_set(&self->suspended_window_size, g_atomic_counter_get(&self->window_size));
+  g_atomic_counter_set(&self->window_size, 0);
+  _flow_control_rate_adjust(self);
 }
 
 void

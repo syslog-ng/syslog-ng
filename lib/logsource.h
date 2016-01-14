@@ -66,6 +66,7 @@ struct _LogSource
   gchar *stats_id;
   gchar *stats_instance;
   GAtomicCounter window_size;
+  GAtomicCounter suspended_window_size;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
@@ -104,6 +105,7 @@ void log_source_options_set_tags(LogSourceOptions *options, GList *tags);
 void log_source_free(LogPipe *s);
 void log_source_wakeup(LogSource *self);
 void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
+void log_source_flow_control_suspend(LogSource *self);
 
 void log_source_global_init(void);
 
