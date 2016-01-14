@@ -22,9 +22,10 @@
  *
  */
 
+#include "python-module.h"
+#include "python-grammar.h"
 #include "python-parser.h"
 #include "cfg-parser.h"
-#include "python-grammar.h"
 
 extern int python_debug;
 int python_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);

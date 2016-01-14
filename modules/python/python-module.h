@@ -24,7 +24,7 @@
 #ifndef PYTHON_MODULE_H_INCLUDED
 #define PYTHON_MODULE_H_INCLUDED 1
 
-#include "syslog-ng.h"
 #include <Python.h>
+#include "syslog-ng.h"
 
 #endif

@@ -65,12 +65,14 @@ pdb_rule_set_context_timeout(PDBRule *self, gint timeout)
 void
 pdb_rule_set_context_scope(PDBRule *self, const gchar *scope, GError **error)
 {
-  self->context_scope = correllation_key_lookup_scope(scope);
-  if (self->context_scope < 0)
+  int context_scope = correllation_key_lookup_scope(scope);
+  if (context_scope < 0)
     {
       self->context_scope = RCS_GLOBAL;
       g_set_error(error, 0, 1, "Unknown context scope: %s", scope);
     }
+  else
+    self->context_scope = context_scope;
 }
 
 void

@@ -330,7 +330,7 @@ format_timezone_offset_with_colon(char *timestamp, int timestamp_size, struct tm
   offset[len - 1] = offset[len - 2];
   offset[len - 2] = ':';
 
-  strncat(timestamp, offset, sizeof(offset));
+  strncat(timestamp, offset, timestamp_size - strlen(timestamp) -1);
 }
 
 static guint64
