@@ -25,6 +25,7 @@
 #ifndef _SNG_PYTHON_DEST_H
 #define _SNG_PYTHON_DEST_H
 
+#include "python-module.h"
 #include "driver.h"
 #include "logwriter.h"
 #include "value-pairs.h"

@@ -25,9 +25,10 @@
 #ifndef SNG_PYTHON_PARSER_H_INCLUDED
 #define SNG_PYTHON_PARSER_H_INCLUDED
 
+#include "python-module.h"
+#include "driver.h"
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
-#include "python-dest.h"
 
 extern CfgParser python_parser;
 
