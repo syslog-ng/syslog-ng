@@ -128,13 +128,16 @@ version(void)
     }
   printf(SYSLOG_NG_PACKAGE " " SYSLOG_NG_VERSION "\n"
          "Installer-Version: %s\n"
-         "Revision: " SYSLOG_NG_SOURCE_REVISION "\n"
-#if WITH_COMPILE_DATE
-         "Compile-Date: " __DATE__ " " __TIME__ "\n"
-#endif
-         "Available-Modules: ",
+         "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
          installer_version);
 
+#if WITH_COMPILE_DATE
+  printf("Compile-Date: " __DATE__ " " __TIME__ "\n");
+#endif
+
+  printf("Module-Directory: %s\n", get_installation_path_for(SYSLOG_NG_PATH_MODULEDIR));
+  printf("Module-Path: %s\n", module_path);
+  printf("Available-Modules: ");
   plugin_list_modules(stdout, FALSE);
 
   printf("Enable-Debug: %s\n"
