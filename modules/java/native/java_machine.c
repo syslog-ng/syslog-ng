@@ -26,6 +26,7 @@
 #include "syslog-ng.h"
 #include "messages.h"
 #include "atomic.h"
+#include "lib/reloc.h"
 
 struct _JavaVMSingleton
 {

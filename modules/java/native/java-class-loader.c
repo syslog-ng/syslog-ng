@@ -25,6 +25,7 @@
 #include "java-class-loader.h"
 #include "java_machine.h"
 #include "messages.h"
+#include "lib/reloc.h"
 
 #define SYSLOG_NG_CLASS_LOADER  "org/syslog_ng/SyslogNgClassLoader"
 #define SYSLOG_NG_JAR           "syslog-ng-core.jar"
