@@ -34,8 +34,11 @@ typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
 
 typedef struct _LogQueue LogQueue;
 
+typedef char *QueueType;
+
 struct _LogQueue
 {
+  QueueType type;
   /* this object is reference counted, but it is _not_ thread safe to
      acquire/release references in code executing in parallel */
   gint ref_cnt;
