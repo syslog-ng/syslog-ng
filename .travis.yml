@@ -1,4 +1,6 @@
 language: c
+before_install:
+  - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
 install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq curl
@@ -10,7 +12,6 @@ install:
 before_script:
   - ./autogen.sh
 script:
-  - unset PYTHON_CFLAGS # HACK
   - ./configure --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-pacct --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl 
   - make && make distcheck VERBOSE=1 && make func-test VERBOSE=1
 compiler:
