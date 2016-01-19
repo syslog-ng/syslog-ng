@@ -271,7 +271,7 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
         log_pipe_deinit((LogPipe *) self->reader);
         log_pipe_unref((LogPipe *) self->reader);
         self->reader = NULL;
-        
+
         if (affile_sd_open_file(self, self->filename->str, &fd))
           {
             LogProtoServer *proto;
@@ -293,6 +293,7 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
                                    SCS_FILE,
                                    self->super.super.id,
                                    self->filename->str);
+
             log_reader_set_immediate_check(self->reader);
 
             log_pipe_append((LogPipe *) self->reader, s);
@@ -329,95 +330,149 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 }
 
 static gboolean
+_configure_loaded_logreader_from_persist_file(LogPipe *s, GlobalConfig *cfg)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  log_reader_set_options(self->reader,
+                         s,
+                         &self->reader_options,
+                         STATS_LEVEL1,
+                         SCS_FILE,
+                         self->super.super.id,
+                         self->filename->str);
+
+  log_pipe_append((LogPipe *) self->reader, s);
+  if (!log_pipe_init((LogPipe *) self->reader))
+    {
+      log_pipe_unref((LogPipe *) self->reader);
+      self->reader = NULL;
+      return FALSE;
+    }
+
+  log_pipe_set_config((LogPipe *) self->reader, cfg);
+  return TRUE;
+}
+
+static gboolean
+_check_multiline_options(AFFileSourceDriver *self)
+{
+  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
+    {
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly", NULL);
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
+_reopen_log_reader(LogPipe *s, GlobalConfig *cfg, gint fd)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  LogProtoServer *proto;
+  PollEvents *poll_events;
+
+  poll_events = affile_sd_construct_poll_events(self, fd);
+  if (!poll_events)
+    {
+      close(fd);
+      return FALSE;
+    }
+
+  proto = affile_sd_construct_proto(self, fd);
+  self->reader = log_reader_new(self->super.super.super.cfg);
+  log_reader_reopen(self->reader, proto, poll_events);
+
+  log_reader_set_options(self->reader,
+                         s,
+                         &self->reader_options,
+                         STATS_LEVEL1,
+                         SCS_FILE,
+                         self->super.super.id,
+                         self->filename->str);
+
+  log_pipe_append((LogPipe *) self->reader, s);
+  if (!log_pipe_init((LogPipe *) self->reader))
+    {
+      msg_error("Error initializing log_reader, closing fd",
+                evt_tag_int("fd", fd),
+                NULL);
+      log_pipe_unref((LogPipe *) self->reader);
+      self->reader = NULL;
+      close(fd);
+      return FALSE;
+    }
+
+  affile_sd_recover_state(s, cfg, proto);
+
+  return TRUE;
+}
+
+static gboolean
+_open_file(LogPipe *s, GlobalConfig *cfg)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  gint fd;
+
+  if (!affile_sd_open_file(self, self->filename->str, &fd))
+    {
+      if (self->follow_freq == 0)
+        {
+          msg_error("Error opening file for reading",
+                    evt_tag_str("filename", self->filename->str),
+                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    NULL);
+          return self->super.super.optional;
+        }
+
+      msg_info("Follow-mode file source not found, deferring open",
+               evt_tag_str("filename", self->filename->str),
+               NULL);
+      fd = -1;
+    }
+
+  return _reopen_log_reader(s, cfg, fd);
+}
+
+static gboolean
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
-  gboolean file_opened, open_deferred = FALSE;
 
   if (!log_src_driver_init_method(s))
     return FALSE;
 
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
-    {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly", NULL);
-      return FALSE;
-    }
+  if (!_check_multiline_options(self))
+    return FALSE;
 
-  file_opened = affile_sd_open_file(self, self->filename->str, &fd);
-  if (!file_opened && self->follow_freq > 0)
-    {
-      msg_info("Follow-mode file source not found, deferring open",
-               evt_tag_str("filename", self->filename->str),
-               NULL);
-      open_deferred = TRUE;
-      fd = -1;
-    }
+  self->reader = cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self));
+  if (self->reader)
+    return _configure_loaded_logreader_from_persist_file(s, cfg);
 
-  if (file_opened || open_deferred)
-    {
-      LogProtoServer *proto;
-      PollEvents *poll_events;
+  return _open_file(s, cfg);
+}
 
-      poll_events = affile_sd_construct_poll_events(self, fd);
-      if (!poll_events)
-        {
-          close(fd);
-          return FALSE;
-        }
+static void
+affile_sd_destroy_reader(gpointer user_data)
+{
+  LogPipe *reader = (LogPipe *) user_data;
 
-      proto = affile_sd_construct_proto(self, fd);
-      self->reader = log_reader_new(self->super.super.super.cfg);
-      log_reader_reopen(self->reader, proto, poll_events);
-
-      log_reader_set_options(self->reader,
-                             s,
-                             &self->reader_options,
-                             STATS_LEVEL1,
-                             SCS_FILE,
-                             self->super.super.id,
-                             self->filename->str);
-      /* NOTE: if the file could not be opened, we ignore the last
-       * remembered file position, if the file is created in the future
-       * we're going to read from the start. */
-      
-      log_pipe_append((LogPipe *) self->reader, s);
-      if (!log_pipe_init((LogPipe *) self->reader))
-        {
-          msg_error("Error initializing log_reader, closing fd",
-                    evt_tag_int("fd", fd),
-                    NULL);
-          log_pipe_unref((LogPipe *) self->reader);
-          self->reader = NULL;
-          close(fd);
-          return FALSE;
-        }
-      affile_sd_recover_state(s, cfg, proto);
-    }
-  else
-    {
-      msg_error("Error opening file for reading",
-                evt_tag_str("filename", self->filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
-      return self->super.super.optional;
-    }
-  return TRUE;
-
+  log_pipe_unref(reader);
 }
 
 static gboolean
 affile_sd_deinit(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (self->reader)
     {
       log_pipe_deinit((LogPipe *) self->reader);
-      log_pipe_unref((LogPipe *) self->reader);
+      cfg_persist_config_add(cfg, affile_sd_format_persist_name(self), self->reader, affile_sd_destroy_reader, FALSE);
       self->reader = NULL;
     }
 
