@@ -311,9 +311,9 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostnam
         {
           /* the entry is not persistent and is too old */
           msg_debug("Entry is too old",
-                          evt_tag_str("hostname", entry->hostname),
-                          evt_tag_long("TID", gettid()),
-                          NULL);
+                    evt_tag_str("hostname", entry->hostname),
+                    evt_tag_long("TID", gettid()),
+                    NULL);
         }
       else
         {
@@ -345,18 +345,19 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
       entry->resolved = cached_g_current_time_sec();
       dns_cache_entry_insert_before(&cache_last, entry);
       msg_debug("Persistent entry cached",
-                      evt_tag_str("hostname", hostname),
-                      evt_tag_long("TID", gettid()),
-                      NULL);
+                evt_tag_str("hostname", hostname),
+                evt_tag_long("TID", gettid()),
+                NULL);
+
     }
   else
     {
       entry->resolved = 0;
       dns_cache_entry_insert_before(&persist_last, entry);
       msg_debug("Non persistent entry cached",
-                      evt_tag_str("hostname", hostname),
-                      evt_tag_long("TID", gettid()),
-                      NULL);
+                evt_tag_str("hostname", hostname),
+                evt_tag_long("TID", gettid()),
+                NULL);
     }
   hash_size = g_hash_table_size(cache);
   g_hash_table_replace(cache, &entry->key, entry);
@@ -369,9 +370,9 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
     {
       /* remove oldest element */
       msg_debug("DNS Cache full, removing one entry",
-                      evt_tag_str("hostname", cache_first.next->hostname),
-                      evt_tag_long("TID", gettid()),
-                      NULL);
+                evt_tag_str("hostname", cache_first.next->hostname),
+                evt_tag_long("TID", gettid()),
+                NULL);
       g_hash_table_remove(cache, &cache_first.next->key);
     }
 }
@@ -407,8 +408,8 @@ dns_cache_thread_init(void)
   if(available_caches == NULL)
     {
       msg_debug("No DNSCache is available, creating a new one for this thread", 
-                      evt_tag_long("TID", gettid()),
-                      NULL);
+                evt_tag_long("TID", gettid()),
+                NULL);
       cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
       cache_first.next = &cache_last;
       cache_first.prev = NULL;
@@ -425,8 +426,8 @@ dns_cache_thread_init(void)
   else
     {
       msg_debug("An old DNSCache is available, taking it for this new thread", 
-                      evt_tag_long("TID", gettid()),
-                      NULL);
+                evt_tag_long("TID", gettid()),
+                NULL);
       pthread_mutex_lock(&lock);
       cache = available_caches->cache_;
       cache_first = available_caches->cache_first_;
