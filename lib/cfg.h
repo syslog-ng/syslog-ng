@@ -57,7 +57,7 @@ struct _GlobalConfig
 {
   /* version number specified by the user, set _after_ parsing is complete */
   /* hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
-  gint user_version;
+  guint user_version;
   
   /* version number as parsed from the configuration file, it can be set
    * multiple times if the user uses @version multiple times */
@@ -138,12 +138,12 @@ void cfg_dir_perm_set(GlobalConfig *self, gint perm);
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 
-void cfg_set_version(GlobalConfig *self, gint version);
+void cfg_set_version(GlobalConfig *self, guint version);
 void cfg_load_candidate_modules(GlobalConfig *self);
 
 void cfg_set_global_paths(GlobalConfig *self);
 
-GlobalConfig *cfg_new(gint version);
+GlobalConfig *cfg_new(guint version);
 gboolean cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg);
 gboolean cfg_read_config(GlobalConfig *cfg, const gchar *fname, gboolean syntax_only, gchar *preprocess_into);
 gboolean cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, gchar *preprocess_into);
@@ -159,7 +159,7 @@ void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDes
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name);
 
 static inline gboolean
-cfg_is_config_version_older(GlobalConfig *cfg, gint req)
+cfg_is_config_version_older(GlobalConfig *cfg, guint req)
 {
   if (!cfg)
     return FALSE;
@@ -174,7 +174,7 @@ cfg_set_use_uniqid(gboolean flag)
   configuration->use_uniqid = !!flag;
 }
 
-gint cfg_get_user_version(const GlobalConfig *cfg);
+guint cfg_get_user_version(const GlobalConfig *cfg);
 guint cfg_get_parsed_version(const GlobalConfig *cfg);
 const gchar* cfg_get_filename(const GlobalConfig *cfg);
 
