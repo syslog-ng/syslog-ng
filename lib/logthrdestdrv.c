@@ -23,7 +23,7 @@
  */
 
 #include "logthrdestdrv.h"
-#include "misc.h"
+#include "seqnum.h"
 
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 

@@ -24,7 +24,6 @@
 #include "syslog-ng.h"
 #include "messages.h"
 #include "template/templates.h"
-#include "misc.h"
 #include "patterndb.h"
 #include "dbparser.h"
 #include "radix.h"

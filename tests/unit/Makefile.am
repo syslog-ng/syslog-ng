@@ -1,5 +1,4 @@
 tests_unit_TESTS			=  \
-	tests/unit/test_resolve_pwgr	   \
 	tests/unit/test_nvtable		   \
 	tests/unit/test_msgsdata	   \
 	tests/unit/test_logqueue	   \
@@ -23,9 +22,6 @@ check_PROGRAMS				+= \
 
 unit_test_extra_modules			= \
 	$(PREOPEN_SYSLOGFORMAT)
-
-tests_unit_test_resolve_pwgr_LDADD	= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_nvtable_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)

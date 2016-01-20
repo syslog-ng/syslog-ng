@@ -23,7 +23,7 @@
  */
 
 #include "journald-mock.h"
-#include "misc.h"
+#include "fdhelpers.h"
 
 #include <fcntl.h>
 #include <unistd.h>

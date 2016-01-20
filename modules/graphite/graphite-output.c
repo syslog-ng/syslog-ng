@@ -113,8 +113,10 @@ typedef struct _TFGraphiteForeachUserData
   GString* result;
 } TFGraphiteForeachUserData;
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
-tf_graphite_foreach_func(const gchar *name, TypeHint type, const gchar *value, gpointer user_data)
+tf_graphite_foreach_func(const gchar *name, TypeHint type, const gchar *value,
+                         gsize value_len, gpointer user_data)
 {
   TFGraphiteForeachUserData *data = (TFGraphiteForeachUserData*) user_data;
 

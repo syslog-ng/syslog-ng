@@ -22,10 +22,11 @@
  */
 
 #include "tlscontext.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "messages.h"
 
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 #include <openssl/err.h>

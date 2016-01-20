@@ -24,7 +24,7 @@
 
 #include "filter-in-list.h"
 #include "logmsg.h"
-#include "misc.h"
+#include "str-utils.h"
 
 #include <stdlib.h>
 #include <stdio.h>

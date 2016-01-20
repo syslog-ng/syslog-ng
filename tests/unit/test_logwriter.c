@@ -2,7 +2,6 @@
 #include "logwriter.h"
 #include "logmsg.h"
 #include "template/templates.h"
-#include "misc.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "timeutils.h"

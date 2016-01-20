@@ -31,4 +31,6 @@ gboolean is_file_regular(const char *filename);
 gboolean is_file_directory(const char *filename);
 gboolean is_file_device(const gchar *name);
 
+gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
+
 #endif

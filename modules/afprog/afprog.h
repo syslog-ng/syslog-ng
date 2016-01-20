@@ -28,21 +28,26 @@
 #include "logwriter.h"
 #include "logreader.h"
 
+typedef struct _AFProgramProcessInfo
+{
+  pid_t pid;
+  GString *cmdline;
+  gboolean inherit_environment;
+} AFProgramProcessInfo;
+
 typedef struct _AFProgramSourceDriver
 {
   LogSrcDriver super;
-  GString *cmdline;
+  AFProgramProcessInfo process_info;
   LogReader *reader;
-  pid_t pid;
   LogReaderOptions reader_options;
 } AFProgramSourceDriver;
 
 typedef struct _AFProgramDestDriver
 {
   LogDestDriver super;
-  GString *cmdline;
+  AFProgramProcessInfo process_info;
   LogWriter *writer;
-  pid_t pid;
   gboolean keep_alive;
   LogWriterOptions writer_options;
 } AFProgramDestDriver;
@@ -50,9 +55,7 @@ typedef struct _AFProgramDestDriver
 LogDriver *afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg);
 LogDriver *afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg);
 
-inline void
-afprogram_dd_set_keep_alive(AFProgramDestDriver *self, gboolean keep_alive) {
-  self->keep_alive = keep_alive;
-}
+void afprogram_dd_set_keep_alive(AFProgramDestDriver *self, gboolean keep_alive);
+void afprogram_set_inherit_environment(AFProgramProcessInfo *self, gboolean inherit_environment);
 
 #endif

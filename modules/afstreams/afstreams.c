@@ -24,7 +24,7 @@
 #include "afstreams.h"
 #include "messages.h"
 #include "logreader.h"
-#include "misc.h"
+#include "fdhelpers.h"
 #include "apphook.h"
 #include "stats/stats-registry.h"
 #include "poll-fd-events.h"

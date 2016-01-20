@@ -2,7 +2,6 @@
 #include "syslog-ng.h"
 #include "host-id.h"
 #include "logmsg.h"
-#include "misc.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "mainloop.h"

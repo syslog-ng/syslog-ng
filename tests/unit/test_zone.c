@@ -1,4 +1,3 @@
-#include "misc.h"
 #include "apphook.h"
 #include "timeutils.h"
 #include "timeutils.h"

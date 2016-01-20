@@ -25,7 +25,7 @@
 #include "logmsg.h"
 #include "messages.h"
 #include "timeutils.h"
-#include "misc.h"
+#include "find-crlf.h"
 #include "cfg.h"
 #include "str-format.h"
 #include "utf8utils.h"
@@ -991,7 +991,7 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
       sanitized_message.len = 0;
       sanitized_message.allocated_len = sizeof(buf);
 
-      append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) src, NULL);
+      append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) src, left, NULL);
 
       /* MUST NEVER BE REALLOCATED */
       g_assert(sanitized_message.str == buf);

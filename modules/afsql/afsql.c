@@ -26,8 +26,9 @@
 #include "logqueue.h"
 #include "template/templates.h"
 #include "messages.h"
-#include "misc.h"
+#include "string-list.h"
 #include "str-format.h"
+#include "seqnum.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
 #include "timeutils.h"
@@ -1013,7 +1014,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                     evt_tag_int("attempts", self->num_retries),
                     NULL);
           stats_counter_inc(self->dropped_messages);
-          log_msg_drop(msg, &path_options);
+          log_msg_drop(msg, &path_options, AT_PROCESSED);
           self->failed_message_counter = 0;
           success = TRUE;
         }

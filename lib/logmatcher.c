@@ -25,7 +25,7 @@
 #include "logmatcher.h"
 #include "messages.h"
 #include "cfg.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "compat/string.h"
 
 #include <pcre.h>

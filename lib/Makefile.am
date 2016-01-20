@@ -89,7 +89,9 @@ pkginclude_HEADERS			+= \
 	lib/crypto.h			\
 	lib/dnscache.h			\
 	lib/driver.h			\
+	lib/fdhelpers.h			\
 	lib/file-perms.h		\
+	lib/find-crlf.h			\
 	lib/gprocess.h			\
 	lib/gsockaddr.h			\
 	lib/gsocket.h			\
@@ -113,7 +115,6 @@ pkginclude_HEADERS			+= \
 	lib/module-config.h		\
 	lib/memtrace.h			\
 	lib/messages.h			\
-	lib/misc.h			\
 	lib/ml-batched-timer.h		\
 	lib/msg-format.h		\
 	lib/nvtable.h			\
@@ -134,9 +135,12 @@ pkginclude_HEADERS			+= \
 	lib/scratch-buffers.h		\
 	lib/serialize.h			\
 	lib/service-management.h	\
+	lib/seqnum.h			\
 	lib/str-format.h		\
+	lib/str-utils.h			\
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
+	lib/string-list.h		\
 	lib/tags.h			\
 	lib/timeutils.h			\
 	lib/tls-support.h		\
@@ -144,6 +148,7 @@ pkginclude_HEADERS			+= \
 	lib/tlscontext.h  		\
 	lib/type-hinting.h		\
 	lib/uuid.h			\
+	lib/userdb.h			\
 	lib/utf8utils.h			\
 	lib/value-pairs.h		\
 	lib/vptransform.h		\
@@ -169,7 +174,9 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/children.c			\
 	lib/dnscache.c			\
 	lib/driver.c			\
+	lib/fdhelpers.c			\
 	lib/file-perms.c		\
+	lib/find-crlf.c			\
 	lib/globals.c			\
 	lib/gprocess.c			\
 	lib/gsockaddr.c			\
@@ -194,7 +201,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/module-config.c		\
 	lib/memtrace.c			\
 	lib/messages.c			\
-	lib/misc.c			\
 	lib/ml-batched-timer.c		\
 	lib/msg-format.c		\
 	lib/nvtable.c			\
@@ -213,7 +219,9 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/serialize.c			\
 	lib/service-management.c	\
 	lib/str-format.c		\
+	lib/str-utils.c			\
 	lib/syslog-names.c		\
+	lib/string-list.c		\
 	lib/tags.c			\
 	lib/timeutils.c			\
 	lib/type-hinting.c		\
@@ -225,6 +233,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/crypto.c			\
 	lib/tlscontext.c		\
 	lib/uuid.c			\
+	lib/userdb.c			\
 	lib/utf8utils.c			\
 	$(transport_crypto_sources)	\
 	lib/host-id.c			\

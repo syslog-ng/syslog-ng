@@ -28,7 +28,6 @@
 #include "messages.h"
 #include "stats/stats-csv.h"
 #include "stats/stats-counter.h"
-#include "misc.h"
 #include "mainloop.h"
 
 #include <errno.h>

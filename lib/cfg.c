@@ -27,7 +27,7 @@
 #include "cfg-tree.h"
 #include "messages.h"
 #include "template/templates.h"
-#include "misc.h"
+#include "userdb.h"
 #include "logmsg.h"
 #include "dnscache.h"
 #include "serialize.h"

@@ -6,7 +6,7 @@
 void
 assert_escaped_binary_with_unsafe_chars(const gchar *str, const gchar *expected_escaped_str, const gchar *unsafe_chars)
 {
-  gchar *escaped_str = convert_unsafe_utf8_to_escaped_binary(str, unsafe_chars);
+  gchar *escaped_str = convert_unsafe_utf8_to_escaped_binary(str, -1, unsafe_chars);
 
   assert_string(escaped_str, expected_escaped_str, "Escaped UTF-8 string is not expected");
   g_free(escaped_str);
@@ -21,7 +21,7 @@ assert_escaped_binary(const gchar *str, const gchar *expected_escaped_str)
 void
 assert_escaped_text_with_unsafe_chars(const gchar *str, const gchar *expected_escaped_str, const gchar *unsafe_chars)
 {
-  gchar *escaped_str = convert_unsafe_utf8_to_escaped_text(str, unsafe_chars);
+  gchar *escaped_str = convert_unsafe_utf8_to_escaped_text(str, -1, unsafe_chars);
 
   assert_string(escaped_str, expected_escaped_str, "Escaped UTF-8 string is not expected");
   g_free(escaped_str);

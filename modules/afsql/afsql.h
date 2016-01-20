@@ -25,8 +25,10 @@
 #define AFSQL_H_INCLUDED
 
 #include "driver.h"
-#include <dbi/dbi.h>
 #include "mainloop-worker.h"
+#include "string-list.h"
+
+#include <dbi/dbi.h>
 
 enum
 {

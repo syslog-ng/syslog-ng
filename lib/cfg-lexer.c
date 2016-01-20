@@ -29,7 +29,7 @@
 #include "block-ref-parser.h"
 #include "pragma-parser.h"
 #include "messages.h"
-#include "misc.h"
+#include "pathutils.h"
 
 #include <string.h>
 #include <glob.h>

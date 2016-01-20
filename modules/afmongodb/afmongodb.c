@@ -25,7 +25,7 @@
 #include "afmongodb.h"
 #include "afmongodb-parser.h"
 #include "messages.h"
-#include "misc.h"
+#include "string-list.h"
 #include "stats/stats-registry.h"
 #include "nvtable.h"
 #include "logqueue.h"
@@ -329,7 +329,7 @@ afmongodb_vp_obj_end(const gchar *name,
 
 static gboolean
 afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
-                           TypeHint type, const gchar *value,
+                           TypeHint type, const gchar *value, gsize value_len,
                            gpointer *prefix_data, gpointer user_data)
 {
   bson *o;
@@ -355,7 +355,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
                                                value, "boolean");
 
             if (fallback)
-              bson_append_string (o, name, value, -1);
+              bson_append_string (o, name, value, value_len);
             else
               return r;
           }
@@ -373,7 +373,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
                                                value, "int32");
 
             if (fallback)
-              bson_append_string (o, name, value, -1);
+              bson_append_string (o, name, value, value_len);
             else
               return r;
           }
@@ -391,7 +391,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
                                                value, "int64");
 
             if (fallback)
-              bson_append_string(o, name, value, -1);
+              bson_append_string(o, name, value, value_len);
             else
               return r;
           }
@@ -409,7 +409,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
             gboolean r = type_cast_drop_helper(self->template_options.on_error,
                                                value, "double");
             if (fallback)
-              bson_append_string(o, name, value, -1);
+              bson_append_string(o, name, value, value_len);
             else
               return r;
           }
@@ -428,7 +428,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
                                                value, "datetime");
 
             if (fallback)
-              bson_append_string(o, name, value, -1);
+              bson_append_string(o, name, value, value_len);
             else
               return r;
           }
@@ -437,7 +437,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
       }
     case TYPE_HINT_STRING:
     case TYPE_HINT_LITERAL:
-      bson_append_string (o, name, value, -1);
+      bson_append_string (o, name, value, value_len);
       break;
     default:
       return TRUE;

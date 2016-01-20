@@ -22,7 +22,6 @@
  */
 #include "pdb-action.h"
 #include "filter/filter-expr-parser.h"
-#include "misc.h"
 #include <stdlib.h>
 
 void

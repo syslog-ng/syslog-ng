@@ -24,7 +24,6 @@
 
 #include "parser/parser-expr.h"
 #include "template/templates.h"
-#include "misc.h"
 #include "logmatcher.h"
 
 #include <string.h>
@@ -83,7 +82,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       if (path_options->matched)
         (*path_options->matched) = FALSE;
-      log_msg_drop(msg, path_options);
+      log_msg_drop(msg, path_options, AT_PROCESSED);
     }
 }
 

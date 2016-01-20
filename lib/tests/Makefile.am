@@ -13,7 +13,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_string_list	\
 	lib/tests/test_runid        	\
 	lib/tests/test_pathutils	\
-	lib/tests/test_utf8utils
+	lib/tests/test_utf8utils	\
+	lib/tests/test_userdb
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
@@ -104,3 +105,6 @@ CLEANFILES				+= \
 	test_values.persist-		   \
 	test_run_id.persist		   \
 	test_run_id.persist-
+
+lib_tests_test_userdb_LDADD	= \
+	$(TEST_LDADD)
