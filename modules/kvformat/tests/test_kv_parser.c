@@ -121,10 +121,73 @@ test_kv_parser_audit(void)
 }
 
 static void
+test_kv_parser_invalid(void)
+{
+  LogMessage *msg;
+
+  msg = parse_kv_into_log_message("k=\xff");
+  assert_log_message_value_by_name(msg, "k", "\xff");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=\"a");
+  assert_log_message_value_by_name(msg, "k", "a");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=\\");
+  assert_log_message_value_by_name(msg, "k", "\\");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=\"\\");
+  assert_log_message_value_by_name(msg, "k", "");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message(", k=v");
+  assert_log_message_value_by_name(msg, "k", "v");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=v,");
+  assert_log_message_value_by_name(msg, "k", "v,");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=v, ");
+  assert_log_message_value_by_name(msg, "k", "v");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=v x u=w");
+  assert_log_message_value_by_name(msg, "k", "v");
+  assert_log_message_value_by_name(msg, "x", "");
+  assert_log_message_value_by_name(msg, "u", "w");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=v =x u=w");
+  assert_log_message_value_by_name(msg, "k", "v");
+  assert_log_message_value_by_name(msg, "x", "");
+  assert_log_message_value_by_name(msg, "u", "w");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=v z*=x u=w");
+  assert_log_message_value_by_name(msg, "k", "v");
+  assert_log_message_value_by_name(msg, "z", "");
+  assert_log_message_value_by_name(msg, "u", "w");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k=v *z=x u=w");
+  assert_log_message_value_by_name(msg, "k", "v");
+  assert_log_message_value_by_name(msg, "z", "x");
+  assert_log_message_value_by_name(msg, "u", "w");
+  log_msg_unref(msg);
+
+  msg = parse_kv_into_log_message("k==");
+  assert_log_message_value_by_name(msg, "k", "=");
+  log_msg_unref(msg);
+}
+
+static void
 test_kv_parser(void)
 {
   KV_PARSER_TESTCASE(test_kv_parser_basics);
   KV_PARSER_TESTCASE(test_kv_parser_audit);
+  KV_PARSER_TESTCASE(test_kv_parser_invalid);
 }
 
 int
