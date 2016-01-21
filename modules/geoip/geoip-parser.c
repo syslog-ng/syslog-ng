@@ -33,6 +33,7 @@ typedef struct
 
   gchar *database;
   gchar *prefix;
+  gboolean quiet;
 
   struct
   {
@@ -71,6 +72,14 @@ geoip_parser_set_database(LogParser *s, const gchar *database)
 
   g_free(self->database);
   self->database = g_strdup(database);
+}
+
+void
+geoip_parser_set_quiet(LogParser *s, gboolean quiet)
+{
+  GeoIPParser *self = (GeoIPParser *) s;
+
+  self->quiet = quiet;
 }
 
 static gboolean
@@ -163,10 +172,14 @@ static gboolean
 geoip_parser_init(LogPipe *s)
 {
   GeoIPParser *self = (GeoIPParser *) s;
+  gint open_params = GEOIP_MMAP_CACHE;
 
   geoip_parser_reset_fields(self);
+  
+  if (self->quiet)
+    open_params |= GEOIP_SILENCE;
 
-  self->gi = GeoIP_open(self->database, GEOIP_MMAP_CACHE);
+  self->gi = GeoIP_open(self->database, open_params);
 
   if (!self->gi)
     return FALSE;

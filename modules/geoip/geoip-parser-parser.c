@@ -33,6 +33,7 @@ static CfgLexerKeyword geoip_parser_keywords[] =
   { "geoip",          KW_GEOIP },
   { "database",       KW_DATABASE },
   { "prefix",         KW_PREFIX },
+  { "quiet",          KW_QUIET },
   { NULL }
 };
 
