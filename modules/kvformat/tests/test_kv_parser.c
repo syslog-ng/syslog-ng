@@ -78,15 +78,6 @@ parse_kv_into_log_message(const gchar *kv)
 }
 
 static void
-assert_kv_parser_fails(const gchar *kv)
-{
-  LogMessage *msg;
-
-  msg = parse_kv_into_log_message_no_check(kv);
-  assert_null(msg, "expected kv-parser failure and it returned success, kv=%s", kv);
-}
-
-static void
 test_kv_parser_basics(void)
 {
   LogMessage *msg;

@@ -24,6 +24,7 @@
 #ifndef _SNG_PYTHON_TF_H
 #define _SNG_PYTHON_TF_H
 
+#include "python-module.h"
 #include "lib/template/function.h"
 
 TEMPLATE_FUNCTION_PROTOTYPE(tf_python);
