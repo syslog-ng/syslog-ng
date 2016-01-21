@@ -168,10 +168,9 @@ geoip_parser_free(LogPipe *s)
   log_parser_free_method(s);
 }
 
-static gboolean
-geoip_parser_init(LogPipe *s)
+static void
+__open(GeoIPParser *self)
 {
-  GeoIPParser *self = (GeoIPParser *) s;
   gint open_params = GEOIP_MMAP_CACHE;
 
   geoip_parser_reset_fields(self);
@@ -180,6 +179,14 @@ geoip_parser_init(LogPipe *s)
     open_params |= GEOIP_SILENCE;
 
   self->gi = GeoIP_open(self->database, open_params);
+}
+
+static gboolean
+geoip_parser_init(LogPipe *s)
+{
+  GeoIPParser *self = (GeoIPParser *) s;
+
+  __open(self);
 
   if (!self->gi)
     return FALSE;
