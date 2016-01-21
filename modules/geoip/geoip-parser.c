@@ -169,7 +169,7 @@ geoip_parser_free(LogPipe *s)
 }
 
 static void
-__open(GeoIPParser *self)
+_open(GeoIPParser *self)
 {
   gint open_params = GEOIP_MMAP_CACHE;
 
@@ -186,7 +186,7 @@ geoip_parser_init(LogPipe *s)
 {
   GeoIPParser *self = (GeoIPParser *) s;
 
-  __open(self);
+  _open(self);
 
   if (!self->gi)
     return FALSE;
