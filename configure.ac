@@ -73,8 +73,8 @@ if test "x$exec_prefix" = "xNONE"; then
 fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
-toolsdir='${datadir}/tools'
-scldir='${datadir}/include/scl'
+toolsdir='${datadir}/syslog-ng/tools'
+scldir='${datadir}/syslog-ng/include/scl'
 
 AC_CONFIG_HEADERS(config.h)
 
