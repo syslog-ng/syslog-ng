@@ -95,7 +95,6 @@
 static const gchar *cfgfilename;
 static const gchar *persist_file;
 static const gchar *ctlfilename;
-const gchar *module_path;
 static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 gboolean interactive_mode = FALSE;
@@ -530,6 +529,5 @@ main_loop_global_init(void)
   cfgfilename = get_installation_path_for(PATH_SYSLOG_NG_CONF);
   persist_file = get_installation_path_for(PATH_PERSIST_CONFIG);
   ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);
-  module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
 }
 

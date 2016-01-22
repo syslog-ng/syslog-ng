@@ -1122,7 +1122,7 @@ static GOptionEntry pdbtool_options[] =
     "Enable verbose messages on stderr", NULL },
   { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>" },
-  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path,
+  { "module-path",         0,         0, G_OPTION_ARG_STRING, &initial_module_path,
     "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -1193,13 +1193,12 @@ main(int argc, char *argv[])
   setlocale(LC_ALL, "");
 
   msg_init(TRUE);
+  plugin_global_init();
   stats_init();
   log_msg_global_init();
   log_template_global_init();
   log_tags_global_init();
   pattern_db_global_init();
-
-  module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
 
   configuration = cfg_new(VERSION_VALUE);
 
@@ -1225,6 +1224,7 @@ main(int argc, char *argv[])
 
   cfg_free(configuration);
   configuration = NULL;
+  plugin_global_deinit();
   msg_deinit();
   return ret;
 }

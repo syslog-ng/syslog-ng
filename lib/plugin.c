@@ -28,6 +28,7 @@
 #include "cfg-lexer.h"
 #include "plugin-types.h"
 #include "pathutils.h"
+#include "reloc.h"
 
 #include <gmodule.h>
 #include <string.h>
@@ -35,6 +36,10 @@
 #ifdef _AIX
 #define G_MODULE_SUFFIX "a"
 #endif
+
+/* module path as initialized by command line options. Later on can be
+ * overridden by the module-path define from the configuration file */
+const gchar *initial_module_path;
 
 typedef struct _PluginBase
 {
@@ -351,7 +356,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
     mp = NULL;
 
   if (!mp)
-    mp = module_path;
+    mp = initial_module_path;
 
   mod = plugin_dlopen_module(module_name, mp);
   if (!mod)
@@ -400,7 +405,7 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
   gchar **mod_paths;
   gint i, j;
 
-  mod_paths = g_strsplit(module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
+  mod_paths = g_strsplit(initial_module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
     {
       GDir *dir;
@@ -428,7 +433,7 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
                         evt_tag_str("fname", fname),
                         evt_tag_str("module", module_name),
                         NULL);
-              mod = plugin_dlopen_module(module_name, module_path);
+              mod = plugin_dlopen_module(module_name, initial_module_path);
               module_info = plugin_get_module_info(mod);
 
               if (module_info)
@@ -488,7 +493,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
   gint i, j, k;
   gboolean first = TRUE;
 
-  mod_paths = g_strsplit(module_path, ":", 0);
+  mod_paths = g_strsplit(initial_module_path, ":", 0);
   for (i = 0; mod_paths[i]; i++)
     {
       GDir *dir;
@@ -508,7 +513,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
                 fname += 3;
               module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
 
-              mod = plugin_dlopen_module(module_name, module_path);
+              mod = plugin_dlopen_module(module_name, initial_module_path);
               module_info = plugin_get_module_info(mod);
               if (verbose)
                 {
@@ -577,4 +582,15 @@ plugin_free_plugins(GlobalConfig *cfg)
 {
   g_list_foreach(cfg->plugins, (GFunc) _free_plugin, NULL);
   g_list_free(cfg->plugins);
+}
+
+void
+plugin_global_init(void)
+{
+  initial_module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
+}
+
+void
+plugin_global_deinit(void)
+{
 }
