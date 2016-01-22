@@ -73,6 +73,7 @@ if test "x$exec_prefix" = "xNONE"; then
 fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
+toolsdir='${datadir}/tools'
 
 AC_CONFIG_HEADERS(config.h)
 
@@ -1484,6 +1485,7 @@ expanded_moduledir=[`patheval $moduledir`]
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
+AC_SUBST(toolsdir)
 AC_SUBST(expanded_sysconfdir)
 AC_SUBST(expanded_moduledir)
 AC_SUBST(systemdsystemunitdir)
