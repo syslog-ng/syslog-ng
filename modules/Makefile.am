@@ -8,6 +8,7 @@ include modules/afuser/Makefile.am
 include modules/afamqp/Makefile.am
 include modules/afmongodb/Makefile.am
 include modules/afsmtp/Makefile.am
+include modules/curl/Makefile.am
 include modules/csvparser/Makefile.am
 include modules/confgen/Makefile.am
 include modules/system-source/Makefile.am
@@ -34,7 +35,7 @@ include modules/cef/Makefile.am
 
 SYSLOG_NG_MODULES	=	\
 	mod-afsocket mod-afstreams mod-affile mod-afprog \
-	mod-usertty mod-amqp mod-mongodb mod-smtp mod-json \
+	mod-usertty mod-amqp mod-mongodb mod-smtp mod-curl mod-json \
 	mod-syslogformat mod-linux-kmsg mod-pacctformat \
 	mod-confgen mod-system-source mod-csvparser mod-dbparser \
 	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
@@ -47,7 +48,7 @@ modules modules/: ${SYSLOG_NG_MODULES}
 modules_test_subdirs	=	\
 	modules_afsocket modules_afstreams modules_affile \
 	modules_afprog modules_usertty modules_afamqp \
-	modules_afmongodb modules_afsmtp modules_json \
+	modules_afmongodb modules_afsmtp modules_curl modules_json \
 	modules_syslogformat modules_linux_kmsg \
 	modules_pacctformat modules_confgen modules_system_source \
 	modules_csvparser modules_dbparser modules_basicfuncs \
