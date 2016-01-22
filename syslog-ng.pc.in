@@ -2,9 +2,10 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 datarootdir=@datarootdir@
+datadir=@datadir@
 libdir=@libdir@
 includedir=@includedir@
-toolsdir=@datadir@/tools
+toolsdir=@toolsdir@
 moduledir=@expanded_moduledir@
 scldir=@datadir@/include/scl
 ivykis=@with_ivykis@
