@@ -6,7 +6,7 @@ datadir=@datadir@
 libdir=@libdir@
 includedir=@includedir@
 toolsdir=@toolsdir@
-moduledir=@expanded_moduledir@
+moduledir=@moduledir@
 scldir=@scldir@
 ivykis=@with_ivykis@
 
