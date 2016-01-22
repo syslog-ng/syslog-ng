@@ -121,11 +121,12 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
   
 #define YY_FATAL_ERROR(msg)						\
   do {									\
-    struct yyguts_t * yyg = (struct yyguts_t*) yyscanner;		\
+    struct yyguts_t * __yyg = (struct yyguts_t*) yyscanner;		\
+                                                                        \
     msg_error("Fatal error in configuration lexer, giving up",		\
               evt_tag_str("error", msg),				\
               NULL);							\
-    longjmp(yyextra->fatal_error, 1);					\
+    longjmp(__yyg->yyextra_r->fatal_error, 1);				\
   } while(0)
 
 
