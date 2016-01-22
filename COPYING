@@ -15,6 +15,7 @@ libtest/
 syslog-ng/
 modules/java-common/
 modules/java/(native|proxies|src)/
+modules/native/
 
 The syslog-ng modules (modules/ subdirectory except the ones mentioned above)
 is free software; you can redistribute it and/or modify it
