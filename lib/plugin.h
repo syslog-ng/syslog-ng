@@ -83,4 +83,9 @@ void plugin_load_candidate_modules(GlobalConfig *cfg);
 void plugin_free_candidate_modules(GlobalConfig *cfg);
 void plugin_free_plugins(GlobalConfig *cfg);
 
+extern const gchar *initial_module_path;
+
+void plugin_global_init(void);
+void plugin_global_deinit(void);
+
 #endif

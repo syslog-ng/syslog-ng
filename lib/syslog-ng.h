@@ -53,6 +53,5 @@ typedef struct _AckRecord AckRecord;
 
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
 extern GlobalConfig *configuration;
-extern const gchar *module_path;
 
 #endif

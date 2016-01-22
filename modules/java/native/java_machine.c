@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "atomic.h"
 #include "lib/reloc.h"
+#include "plugin.h"
 
 struct _JavaVMSingleton
 {
@@ -101,7 +102,7 @@ java_machine_start(JavaVMSingleton* self)
           "-Djava.class.path=%s", self->class_path->str);
 
       self->options[1].optionString = g_strdup_printf(
-          "-Djava.library.path=%s", module_path);
+          "-Djava.library.path=%s", initial_module_path);
 
       self->options[2].optionString = g_strdup("-Xrs");
 
