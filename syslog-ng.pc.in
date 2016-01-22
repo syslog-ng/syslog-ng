@@ -7,7 +7,7 @@ libdir=@libdir@
 includedir=@includedir@
 toolsdir=@toolsdir@
 moduledir=@expanded_moduledir@
-scldir=@datadir@/include/scl
+scldir=@scldir@
 ivykis=@with_ivykis@
 
 Name: syslog-ng-dev
