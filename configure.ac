@@ -1439,15 +1439,11 @@ AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 
-# substitution into manual pages
-expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
-
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
 AC_SUBST(toolsdir)
 AC_SUBST(scldir)
-AC_SUBST(expanded_sysconfdir)
 AC_SUBST(systemdsystemunitdir)
 AC_SUBST(SYSLOGNG_LINK)
 AC_SUBST(SYSLOGNG_DEPS_LIBS)
