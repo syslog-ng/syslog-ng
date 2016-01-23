@@ -365,7 +365,7 @@ dnl ***************************************************************************
 dnl Set up CFLAGS
 
 if test "x$ac_compiler_gnu" = "xyes"; then
-        CFLAGS="${CFLAGS} -Wall"
+        CFLAGS="${CFLAGS} -Wall -Wshadow"
         if test "x$enable_debug" = "xyes"; then
                 CFLAGS="${ac_cv_env_CFLAGS_value} -Wall -g"
         fi
