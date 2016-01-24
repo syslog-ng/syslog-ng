@@ -207,9 +207,9 @@ kv_scanner_free_method(KVScanner *self)
 KVScanner *
 kv_scanner_clone(KVScanner *self)
 {
-  KVScanner *clone = kv_scanner_new();
-  clone->parse_value = self->parse_value;
-  return clone;
+  KVScanner *cloned = kv_scanner_new();
+  cloned->parse_value = self->parse_value;
+  return cloned;
 }
 
 void
