@@ -27,6 +27,7 @@
 
 #include <string.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <unistd.h>
 
 typedef struct _PseudoFileDestDriver

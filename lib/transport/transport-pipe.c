@@ -24,6 +24,9 @@
 #include "transport/transport-pipe.h"
 #include "transport/transport-file.h"
 
+#include <errno.h>
+#include <unistd.h>
+
 static gssize
 log_transport_pipe_write_method(LogTransport *s, const gpointer buf, gsize buflen)
 {

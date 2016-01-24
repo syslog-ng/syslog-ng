@@ -24,6 +24,7 @@
 #include "logproto-framed-server.h"
 #include "messages.h"
 
+#include <errno.h>
 #include <ctype.h>
 #include <string.h>
 

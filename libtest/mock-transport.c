@@ -26,6 +26,7 @@
 #include "gsockaddr.h"
 
 #include <string.h>
+#include <errno.h>
 
 typedef struct
 {

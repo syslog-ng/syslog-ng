@@ -32,6 +32,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 static NVHandle KMSG_LM_V_DEV_TYPE;
 static NVHandle KMSG_LM_V_DEV_MINOR;

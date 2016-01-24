@@ -29,6 +29,9 @@
 #include "fdhelpers.h"
 #include "transport/transport-socket.h"
 
+#include <errno.h>
+#include <unistd.h>
+
 static gboolean
 transport_mapper_privileged_bind(gint sock, GSockAddr *bind_addr)
 {

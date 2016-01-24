@@ -28,8 +28,10 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "mainloop.h"
+
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #define HOSTID_TESTCASE(testfunc, ...)  { testcase_begin("%s(%s)", #testfunc, #__VA_ARGS__); testfunc(__VA_ARGS__); testcase_end(); }
 

@@ -31,6 +31,8 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
 
 static void
 _add_nv_pair_int(LogTransportAuxData *aux, const gchar *name, gint value)
