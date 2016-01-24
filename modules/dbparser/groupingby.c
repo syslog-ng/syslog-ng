@@ -411,14 +411,14 @@ grouping_by_deinit(LogPipe *s)
 static LogPipe *
 grouping_by_clone(LogPipe *s)
 {
-  LogParser *clone;
+  LogParser *cloned;
   GroupingBy *self = (GroupingBy *) s;
 
   /* FIXME: share state between clones! */
-  clone = grouping_by_new(s->cfg);
-  grouping_by_set_key_template(clone, self->key_template);
-  grouping_by_set_timeout(clone, self->timeout);
-  return &clone->super;
+  cloned = grouping_by_new(s->cfg);
+  grouping_by_set_key_template(cloned, self->key_template);
+  grouping_by_set_timeout(cloned, self->timeout);
+  return &cloned->super;
 }
 
 static void
