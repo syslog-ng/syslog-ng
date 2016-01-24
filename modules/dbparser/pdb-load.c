@@ -29,6 +29,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 /* arguments passed to the markup parser functions */
 typedef struct _PDBLoader

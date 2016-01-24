@@ -25,6 +25,8 @@
 #include "logproto-buffered-server.h"
 #include "messages.h"
 
+#include <errno.h>
+
 /* proto that reads the stream in even sized chunks */
 typedef struct _LogProtoRecordServer LogProtoRecordServer;
 struct _LogProtoRecordServer

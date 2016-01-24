@@ -24,6 +24,8 @@
 #include "logproto-text-client.h"
 #include "messages.h"
 
+#include <errno.h>
+
 static gboolean
 log_proto_text_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond)
 {

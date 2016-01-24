@@ -25,6 +25,8 @@
 #include "logtransport.h"
 #include "messages.h"
 
+#include <unistd.h>
+
 void
 log_transport_free_method(LogTransport *s)
 {

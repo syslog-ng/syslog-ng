@@ -31,6 +31,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <poll.h>
+#include <unistd.h>
 
 
 #define STOMP_PARSE_HEADER 1
