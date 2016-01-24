@@ -300,18 +300,18 @@ format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
 gboolean
 check_nanosleep(void)
 {
-  struct timespec start, stop, sleep;
+  struct timespec start, stop, sleep_amount;
   glong diff;
   gint attempts;
 
   for (attempts = 0; attempts < 3; attempts++)
     {
       clock_gettime(CLOCK_MONOTONIC, &start);
-      sleep.tv_sec = 0;
+      sleep_amount.tv_sec = 0;
       /* 0.1 msec */
-      sleep.tv_nsec = 1e5;
+      sleep_amount.tv_nsec = 1e5;
 
-      while (nanosleep(&sleep, &sleep) < 0)
+      while (nanosleep(&sleep_amount, &sleep_amount) < 0)
         ;
 
       clock_gettime(CLOCK_MONOTONIC, &stop);
