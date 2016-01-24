@@ -27,9 +27,6 @@ java-modules-clean-hook:
 	$(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -q -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs clean
 	rm -rf $(abs_top_builddir)/modules/java/.gradle
 
-eclipse:
-	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs eclipse
-
 
 INSTALL_EXEC_HOOKS += java-modules-install-exec-hook
 UNINSTALL_HOOKS += java-modules-uninstall-exec-hook
