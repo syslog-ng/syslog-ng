@@ -163,14 +163,14 @@ write_header_into_gstring(gpointer key, gpointer value, gpointer userdata)
 }
 
 static int
-write_gstring_to_socket(int socket, GString *data)
+write_gstring_to_socket(int fd, GString *data)
 {
   int res = 0;
   int remaining = data->len;
 
   while ((remaining > 0) && (res >= 0))
     {
-      res = write(socket, data->str + (data->len - remaining), remaining);
+      res = write(fd, data->str + (data->len - remaining), remaining);
       if (res > 0)
         remaining = remaining - res;
     }
