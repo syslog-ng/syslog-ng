@@ -295,7 +295,7 @@ serialize_write_cstring(SerializeArchive *archive, const gchar *str, gssize len)
 }
 
 gboolean
-serialize_read_cstring(SerializeArchive *archive, gchar **str, gsize *strlen)
+serialize_read_cstring(SerializeArchive *archive, gchar **str, gsize *str_len)
 {
   guint32 len;
   
@@ -306,8 +306,8 @@ serialize_read_cstring(SerializeArchive *archive, gchar **str, gsize *strlen)
       if (!(*str))
         return FALSE;
       (*str)[len] = 0;
-      if (strlen)
-        *strlen = len;
+      if (str_len)
+        *str_len = len;
       return serialize_archive_read_bytes(archive, *str, len);
     }
   return FALSE;
