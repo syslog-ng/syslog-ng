@@ -208,7 +208,7 @@ log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond)
 }
 
 LogProtoClient *
-log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint flush_lines, gint fsync)
+log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint flush_lines, gint fsync_)
 {
   if (flush_lines == 0)
     /* the flush-lines option has not been specified, use a default value */
@@ -225,7 +225,7 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
   log_proto_client_init(&self->super, transport, options);
   self->fd = transport->fd;
   self->buf_size = flush_lines;
-  self->fsync = fsync;
+  self->fsync = fsync_;
   self->super.prepare = log_proto_file_writer_prepare;
   self->super.post = log_proto_file_writer_post;
   self->super.flush = log_proto_file_writer_flush;
