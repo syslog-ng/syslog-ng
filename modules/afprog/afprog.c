@@ -34,6 +34,7 @@
 #include "poll-fd-events.h"
 
 #include <sys/types.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
