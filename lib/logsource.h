@@ -27,7 +27,6 @@
 
 #include "logpipe.h"
 #include "stats/stats-registry.h"
-#include <iv_event.h>
 
 typedef struct _LogSourceOptions
 {

@@ -29,6 +29,8 @@
 #include "apphook.h"
 #include "mainloop.h"
 
+#include <iv_event.h>
+
 typedef struct _AFInterSource AFInterSource;
 
 static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;

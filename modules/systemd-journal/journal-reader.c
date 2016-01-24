@@ -31,7 +31,9 @@
 #include "ack_tracker.h"
 #include "parse-number.h"
 #include "journal-reader.h"
+
 #include <stdlib.h>
+#include <iv_event.h>
 
 #define JR_THREADED 0x0001
 

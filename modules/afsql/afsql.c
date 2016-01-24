@@ -35,7 +35,7 @@
 #include "mainloop-worker.h"
 
 #include <string.h>
-
+#include <errno.h>
 #include <openssl/md5.h>
 
 static gboolean dbi_initialized = FALSE;
