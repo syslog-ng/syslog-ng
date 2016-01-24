@@ -26,6 +26,7 @@
 
 #include "python-module.h"
 #include "lib/template/function.h"
+#include "plugin.h"
 
 TEMPLATE_FUNCTION_PROTOTYPE(tf_python);
 

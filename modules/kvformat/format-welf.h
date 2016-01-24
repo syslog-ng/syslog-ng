@@ -24,6 +24,7 @@
 #define WELF_FORMAT_WELF_H_INCLUDED
 
 #include "template/simple-function.h"
+#include "plugin.h"
 
 TEMPLATE_FUNCTION_DECLARE(tf_format_welf);
 

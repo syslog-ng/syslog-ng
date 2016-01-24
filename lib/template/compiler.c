@@ -26,7 +26,7 @@
 #include "template/templates.h"
 #include "template/repr.h"
 #include "template/macros.h"
-#include "plugin-types.h"
+#include "plugin.h"
 
 static void
 log_template_add_macro_elem(LogTemplateCompiler *self, guint macro, gchar *default_value)

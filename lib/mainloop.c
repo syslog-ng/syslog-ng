@@ -37,6 +37,7 @@
 #include "run-id.h"
 #include "host-id.h"
 #include "debugger/debugger-main.h"
+#include "plugin.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
