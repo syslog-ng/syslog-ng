@@ -55,14 +55,14 @@ JNICALL Java_org_syslog_1ng_LogTemplate_compile(JNIEnv *env, jobject obj, jlong 
 }
 
 JNIEXPORT jstring JNICALL
-Java_org_syslog_1ng_LogTemplate_format(JNIEnv *env, jobject obj, jlong template_handle, jlong msg_handle, jlong logtemplate_options_handle, jint timezone)
+Java_org_syslog_1ng_LogTemplate_format(JNIEnv *env, jobject obj, jlong template_handle, jlong msg_handle, jlong logtemplate_options_handle, jint tz)
 {
   LogTemplate *template = (LogTemplate *)template_handle;
   LogTemplateOptions *template_options = (LogTemplateOptions *)logtemplate_options_handle;
   LogMessage *msg = (LogMessage *)msg_handle;
   GString *formatted_message = g_string_sized_new(1024);
   jstring result = NULL;
-  log_template_format(template, msg, template_options, timezone, 0, NULL, formatted_message);
+  log_template_format(template, msg, template_options, tz, 0, NULL, formatted_message);
   result = (*env)->NewStringUTF(env, formatted_message->str);
   g_string_free(formatted_message, TRUE);
   return result;
