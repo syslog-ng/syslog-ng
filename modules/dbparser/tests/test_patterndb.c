@@ -23,7 +23,7 @@
 
 #include "apphook.h"
 #include "tags.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "messages.h"
 #include "filter/filter-expr.h"
 #include "patterndb.h"

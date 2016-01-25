@@ -23,7 +23,7 @@
  *
  */
 #include "persistable-state-presenter.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "str-format.h"
 
 static GHashTable *persist_state_storage = NULL;

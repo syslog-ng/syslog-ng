@@ -23,7 +23,7 @@
  */
 #include "debugger/debugger.h"
 #include "debugger/tracer.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "logpipe.h"
 #include "mainloop.h"
 

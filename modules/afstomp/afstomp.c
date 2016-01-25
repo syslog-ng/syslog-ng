@@ -28,7 +28,7 @@
 #include "plugin.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
-#include "nvtable.h"
+#include "logmsg/nvtable.h"
 #include "logqueue.h"
 #include "scratch-buffers.h"
 #include "plugin-types.h"

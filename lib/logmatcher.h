@@ -25,7 +25,7 @@
 #ifndef LOGMATCHER_H_INCLUDED
 #define LOGMATCHER_H_INCLUDED
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "template/templates.h"
 
 #define LOG_MATCHER_ERROR log_template_error_quark()

@@ -30,7 +30,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 #define PRETTY_STRING_FORMAT "%s%s%s"
 #define PRETTY_STRING(str) ((str) ? "'" : "<"), ((str) ? (str) : "NULL"), ((str) ? "'" : ">")

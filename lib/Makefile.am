@@ -11,6 +11,7 @@ include lib/stats/Makefile.am
 include lib/control/Makefile.am
 include lib/debugger/Makefile.am
 include lib/compat/Makefile.am
+include lib/logmsg/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @VERSION@ | cut -d. -f1,2)
 
@@ -99,7 +100,6 @@ pkginclude_HEADERS			+= \
 	lib/host-resolve.h		\
 	lib/logmatcher.h		\
 	lib/logmpx.h			\
-	lib/logmsg.h			\
 	lib/logpipe.h			\
 	lib/logqueue-fifo.h		\
 	lib/logqueue.h			\
@@ -117,7 +117,6 @@ pkginclude_HEADERS			+= \
 	lib/messages.h			\
 	lib/ml-batched-timer.h		\
 	lib/msg-format.h		\
-	lib/nvtable.h			\
 	lib/parse-number.h		\
 	lib/pathutils.h         \
 	lib/persist-state.h		\
@@ -185,7 +184,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/host-resolve.c		\
 	lib/logmatcher.c		\
 	lib/logmpx.c			\
-	lib/logmsg.c			\
 	lib/logpipe.c			\
 	lib/logqueue.c			\
 	lib/logqueue-fifo.c		\
@@ -203,7 +201,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/messages.c			\
 	lib/ml-batched-timer.c		\
 	lib/msg-format.c		\
-	lib/nvtable.c			\
 	lib/parse-number.c		\
 	lib/pathutils.c         \
 	lib/persist-state.c		\
@@ -251,7 +248,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(stats_sources)		\
 	$(control_sources)		\
 	$(debugger_sources)		\
-	$(compat_sources)
+	$(compat_sources)     \
+	$(logmsg_sources)
 
 lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
 lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@

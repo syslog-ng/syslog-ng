@@ -30,7 +30,7 @@
 #include "atomic.h"
 #include "serialize.h"
 #include "logstamp.h"
-#include "nvtable.h"
+#include "logmsg/nvtable.h"
 #include "msg-format.h"
 #include "tags.h"
 

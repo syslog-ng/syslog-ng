@@ -26,7 +26,7 @@
 #define TEMPLATE_REPR_H_INCLUDED
 
 #include "template/function.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 enum
 {

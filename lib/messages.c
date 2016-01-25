@@ -23,7 +23,7 @@
  */
   
 #include "messages.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 #include <stdio.h>
 #include <unistd.h>

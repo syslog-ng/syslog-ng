@@ -24,7 +24,7 @@
  */
 
 #include "filter-tags.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 typedef struct _FilterTags
 {

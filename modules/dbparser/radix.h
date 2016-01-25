@@ -24,7 +24,7 @@
 #ifndef RADIX_H_INCLUDED
 #define RADIX_H_INCLUDED
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "messages.h"
 
 /* parser types, these are saved in the serialized log message along with

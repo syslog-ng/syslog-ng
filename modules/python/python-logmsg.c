@@ -22,7 +22,7 @@
  *
  */
 #include "python-logmsg.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 typedef struct _PyLogMessage
 {

@@ -23,7 +23,7 @@
 #include "testutils.h"
 #include "msg_parse_lib.h"
 #include "syslog-ng.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "serialize.h"
 #include "apphook.h"
 #include "gsockaddr.h"
