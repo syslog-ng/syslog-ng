@@ -21,7 +21,7 @@
  *
  */
 #include "syslog-ng.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "logpipe.h"
 #include "messages.h"
 #include "poll-fd-events.h"

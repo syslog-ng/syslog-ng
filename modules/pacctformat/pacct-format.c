@@ -22,7 +22,7 @@
  */
 
 #include "pacct-format.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "logproto/logproto-record-server.h"
 
 /* we're using the Linux header as the glibc one is incomplete */

@@ -24,7 +24,7 @@
 #include "testutils.h"
 #include "syslog-ng.h"
 #include "host-id.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "mainloop.h"

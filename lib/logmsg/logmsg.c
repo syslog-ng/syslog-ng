@@ -22,13 +22,13 @@
  *
  */
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "str-utils.h"
 #include "messages.h"
 #include "logpipe.h"
 #include "timeutils.h"
 #include "tags.h"
-#include "nvtable.h"
+#include "logmsg/nvtable.h"
 #include "stats/stats-registry.h"
 #include "template/templates.h"
 #include "tls-support.h"

@@ -29,7 +29,7 @@
 #include "alarms.h"
 #include "stats/stats-registry.h"
 #include "tags.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "timeutils.h"
 #include "logsource.h"
 #include "logwriter.h"

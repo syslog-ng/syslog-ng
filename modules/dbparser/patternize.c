@@ -21,7 +21,7 @@
  *
  */
 #include "patternize.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "messages.h"
 #include "tags.h"
 #include "uuid.h"

@@ -28,7 +28,7 @@
 #include "cfg.h"
 #include "messages.h"
 #include "syslog-names.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "filter/filter-in-list.h"

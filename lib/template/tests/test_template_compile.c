@@ -25,7 +25,7 @@
 
 #include "template/templates.c"
 #include "template/simple-function.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "testutils.h"
 #include "cfg.h"
 #include "plugin.h"

@@ -25,7 +25,7 @@
 #include "syslog-ng.h"
 #include "template_lib.h"
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "template/templates.h"
 #include "template/user-function.h"
 #include "apphook.h"

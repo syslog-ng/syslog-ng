@@ -22,7 +22,7 @@
  */
 
 #include "linux-kmsg-format.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils.h"
 #include "cfg.h"

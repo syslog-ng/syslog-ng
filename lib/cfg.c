@@ -28,7 +28,7 @@
 #include "messages.h"
 #include "template/templates.h"
 #include "userdb.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "dnscache.h"
 #include "serialize.h"
 #include "plugin.h"

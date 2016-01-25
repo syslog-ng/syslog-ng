@@ -31,7 +31,7 @@
 #include "run-id.h"
 #include "host-id.h"
 #include "rcptid.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "syslog-names.h"
 #include "hostname.h"
 #include "template/templates.h"

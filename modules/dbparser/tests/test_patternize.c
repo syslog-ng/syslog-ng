@@ -22,7 +22,7 @@
  */
 
 #include "patternize.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "cfg.h"
 #include "plugin.h"
 #include "apphook.h"
