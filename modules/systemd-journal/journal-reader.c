@@ -195,18 +195,16 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       msg->pri = (msg->pri & ~7) | atoi(value);
     }
+
+  if (!options->prefix)
+    {
+      log_msg_set_value_by_name(msg, key, value, value_len);
+    }
   else
     {
-      if (!options->prefix)
-        {
-          log_msg_set_value_by_name(msg, key, value, value_len);
-        }
-      else
-        {
-          gchar *prefixed_key = g_strdup_printf("%s%s", options->prefix, key);
-          log_msg_set_value_by_name(msg, prefixed_key, value, value_len);
-          g_free(prefixed_key);
-        }
+      gchar *prefixed_key = g_strdup_printf("%s%s", options->prefix, key);
+      log_msg_set_value_by_name(msg, prefixed_key, value, value_len);
+      g_free(prefixed_key);
     }
 }
 
