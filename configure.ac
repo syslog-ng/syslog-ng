@@ -36,6 +36,7 @@ JOURNALD_MIN_VERSION="195"
 LIBSYSTEMD_MIN_VERSION="209"
 JAVA_MIN_VERSION="1.7"
 GRADLE_MIN_VERSION="2.2"
+HIREDIS_MIN_VERSION="0.11.0"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -1017,9 +1018,11 @@ if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
                LDFLAGS="$LDFLAGS_SAVE"
        else
                hiredis="yes"
-               PKG_CHECK_MODULES(HIREDIS, hiredis, ,
-                                 [PKG_CHECK_MODULES(HIREDIS, libhiredis,,
-                                  [AC_CHECK_HEADER(hiredis/hiredis.h, [HIREDIS_LIBS="-lhiredis"], [hiredis=no])])])
+               PKG_CHECK_MODULES(HIREDIS, hiredis >= $HIREDIS_MIN_VERSION, ,
+                                 [AC_MSG_WARN([pkg-config was not able to find hiredis >= $HIREDIS_MIN_VERSION])
+				  PKG_CHECK_MODULES(HIREDIS, libhiredis >= $HIREDIS_MIN_VERSION,,
+				  [AC_MSG_WARN([pkg-config was not able to find libhiredis >= $HIREDIS_MIN_VERSION])
+				   hiredis=no])])
        fi
 
        if test "x$enable_redis" = "xyes" && test "x$hiredis" = "xno"; then
