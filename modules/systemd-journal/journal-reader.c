@@ -174,19 +174,6 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       log_msg_set_value(msg, LM_V_PID, value, value_len);
     }
-  else if (strcmp(key, "_COMM") == 0)
-    {
-      log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
-    }
-  else if (strcmp(key, "SYSLOG_IDENTIFIER") == 0)
-    {
-      gssize program_length;
-      (void)log_msg_get_value(msg, LM_V_PROGRAM, &program_length);
-      if (program_length == 0)
-        {
-          log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
-        }
-    }
   else if (strcmp(key, "SYSLOG_FACILITY") == 0)
     {
       msg->pri = (msg->pri & 7) | atoi(value) << 3;
@@ -205,6 +192,39 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
       gchar *prefixed_key = g_strdup_printf("%s%s", options->prefix, key);
       log_msg_set_value_by_name(msg, prefixed_key, value, value_len);
       g_free(prefixed_key);
+    }
+}
+
+static const gchar*
+_get_value(JournalReaderOptions *options, LogMessage *msg,  gchar *key, gssize *value_length)
+{
+  if (!options->prefix)
+    {
+      return log_msg_get_value_by_name(msg, key, value_length);
+    }
+  else
+    {
+      gchar *prefixed_key = g_strdup_printf("%s%s", options->prefix, key);
+      const gchar *value = log_msg_get_value_by_name(msg, prefixed_key, value_length);
+      g_free(prefixed_key);
+      return value;
+    }
+}
+
+static void
+_set_program(JournalReaderOptions *options, LogMessage *msg)
+{
+  gssize value_length = 0;
+  const gchar *value = _get_value(options, msg, "SYSLOG_IDENTIFIER", &value_length);
+
+  if (value_length > 0)
+    {
+      log_msg_set_value(msg, LM_V_PROGRAM, value, value_length);
+    }
+  else
+    {
+      value = _get_value(options, msg, "_COMM", &value_length);
+      log_msg_set_value(msg, LM_V_PROGRAM, value, value_length);
     }
 }
 
@@ -234,6 +254,7 @@ __handle_message(JournalReader *self)
 
   journald_foreach_data(self->journal, __handle_data, args);
   __set_message_timestamp(self, msg);
+  _set_program(self->options, msg);
 
   log_source_post(&self->super, msg);
   return log_source_free_to_send(&self->super);
