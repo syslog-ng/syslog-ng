@@ -21,10 +21,10 @@
  */
 
 #include "graphite-output.h"
-#include <template/templates.h>
+#include "template/templates.h"
 #include "logmsg/logmsg.h"
-#include <value-pairs.h>
-#include <vptransform.h>
+#include "value-pairs/value-pairs.h"
+#include "value-pairs/vptransform.h"
 
 typedef struct _TFGraphiteState
 {
