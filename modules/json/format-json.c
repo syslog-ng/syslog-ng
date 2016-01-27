@@ -27,8 +27,8 @@
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-parser.h"
 #include "cfg.h"
-#include "value-pairs.h"
-#include "vptransform.h"
+#include "value-pairs/value-pairs.h"
+#include "value-pairs/vptransform.h"
 #include "syslog-ng.h"
 #include "utf8utils.h"
 

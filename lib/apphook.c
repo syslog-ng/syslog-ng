@@ -40,7 +40,7 @@
 #include "mainloop-call.h"
 #include "service-management.h"
 #include "crypto.h"
-#include "value-pairs.h"
+#include "value-pairs/value-pairs.h"
 
 #include <iv.h>
 #include <iv_work.h>
