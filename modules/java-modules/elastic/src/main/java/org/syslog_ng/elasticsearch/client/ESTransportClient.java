@@ -41,11 +41,33 @@ public class ESTransportClient extends ESClient {
 
 	public Client createClient() {
 		String clusterName = options.getCluster();
+		String shieldCredentials = options.getShieldCredentials();
+		String shieldKeystorePath = options.getShieldKeystorePath();
+		String shieldKeystorePassword = options.getShieldKeystorePassword();
+		String shieldTruststorePath = options.getShieldTruststorePath();
+		String shieldTruststorePassword = options.getShieldTruststorePassword();
 		Builder settingsBuilder = ImmutableSettings.settingsBuilder();
 		settingsBuilder = settingsBuilder.put("client.transport.sniff", true).classLoader(Settings.class.getClassLoader());
 
 		if (clusterName != null) {
 			settingsBuilder = settingsBuilder.put("cluster.name", clusterName);
+		}
+
+		if (shieldCredentials != null) {
+			settingsBuilder = settingsBuilder.put("shield.user", shieldCredentials);
+		}
+		
+		if (shieldKeystorePath != null || shieldTruststorePath != null)
+			settingsBuilder = settingsBuilder.put("shield.transport.ssl", "true");
+		
+		if (shieldKeystorePath != null) {
+			settingsBuilder = settingsBuilder.put("shield.ssl.keystore.path", shieldKeystorePath);
+			settingsBuilder = settingsBuilder.put("shield.ssl.keystore.password", shieldKeystorePassword);
+		}
+
+		if (shieldTruststorePath != null) {
+			settingsBuilder = settingsBuilder.put("shield.ssl.truststore.path", shieldTruststorePath);
+			settingsBuilder = settingsBuilder.put("shield.ssl.truststore.password", shieldTruststorePassword);
 		}
 
 		settings = settingsBuilder.build();
