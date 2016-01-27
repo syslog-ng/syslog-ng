@@ -1,6 +1,8 @@
 
 if ENABLE_JAVA
 
+export GRADLE_OPTS
+
 JAVA_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 JARS=$(shell find $(abs_top_builddir)/modules/java/syslog-ng-core -name '*.jar')
 GRADLE_WORKDIR=$(abs_top_builddir)/modules/java/.gradle
