@@ -22,7 +22,7 @@
  *
  */
 #include "utf8utils.h"
-#include <string.h>
+#include "str-utils.h"
 
 static inline gboolean
 _is_character_unsafe(gunichar uchar, const gchar *unsafe_chars)
@@ -33,7 +33,7 @@ _is_character_unsafe(gunichar uchar, const gchar *unsafe_chars)
   if (!unsafe_chars)
     return FALSE;
 
-  return strchr(unsafe_chars, (gchar) uchar) != NULL;
+  return _strchr_optimized_for_single_char_haystack(unsafe_chars, (gchar) uchar) != NULL;
 }
 
 static inline void
