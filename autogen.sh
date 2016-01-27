@@ -31,7 +31,10 @@ autogen_submodules()
 		echo "Running autogen in '$submod'..."
 		cd "$submod"
 		if [ -x autogen.sh ]; then
+			# NOCONFIGURE needed by mongo-c-driver
+			export NOCONFIGURE=1
 			./autogen.sh
+			unset NOCONFIGURE
 		elif [ -f configure.in ] || [ -f configure.ac ]; then
 			autoreconf -i
 		else
