@@ -29,6 +29,7 @@
 #include "cfg.h"
 #include "str-format.h"
 #include "utf8utils.h"
+#include "str-utils.h"
 
 #include <regex.h>
 #include <ctype.h>
@@ -90,7 +91,7 @@ log_msg_parse_skip_chars(LogMessage *self, const guchar **data, gint *length, co
   gint left = *length;
   gint num_skipped = 0;
 
-  while (max_len && left && strchr(chars, *src))
+  while (max_len && left && _strchr_optimized_for_single_char_haystack(chars, *src))
     {
       src++;
       left--;
@@ -131,7 +132,7 @@ log_msg_parse_skip_chars_until(LogMessage *self, const guchar **data, gint *leng
   gint left = *length;
   gint num_skipped = 0;
 
-  while (left && strchr(delims, *src) == 0)
+  while (left && _strchr_optimized_for_single_char_haystack(delims, *src) == 0)
     {
       src++;
       left--;
