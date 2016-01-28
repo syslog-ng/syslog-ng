@@ -59,26 +59,11 @@ public class ESNodeClient extends ESClient {
 		return result;
 	}
 
-	private void loadConfigFile(String cfgFile, NodeBuilder nodeBuilder) {
-		if (cfgFile == null || cfgFile.isEmpty()) {
-			return;
-		}
-		try {
-			URL url = new File(cfgFile).toURI().toURL();
-			Builder builder = nodeBuilder().settings().loadFromUrl(url);
-			nodeBuilder = nodeBuilder.settings(builder);
-		} catch (MalformedURLException e) {
-			logger.warn("Bad filename format, filename = '" + cfgFile + "'");
-		} catch (SettingsException e) {
-			logger.warn("Can't load settings from file, file = '" + cfgFile + "', reason = '" + e.getMessage() + "'");
-		}
-	}
-
 	@Override
 	public Client createClient() {
 		NodeBuilder nodeBuilder = createNodeBuilder(options.getCluster());
 		nodeBuilder.settings().put("discovery.initial_state_timeout", "5s");
-		loadConfigFile(options.getConfigFile(), nodeBuilder);
+		loadConfigFile(options.getConfigFile(), nodeBuilder.settings());
 		node = nodeBuilder.node();
 	    return node.client();
 	}
