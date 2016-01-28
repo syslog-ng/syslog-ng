@@ -346,16 +346,6 @@ _test_prefix_init(TestCase *self, TestSource *src, Journald *journal, JournalRea
 }
 
 void
-__test_message_has_no_prefix(TestCase *self, LogMessage *msg)
-{
-  gchar *requested_name = g_strdup_printf("%s%s", (gchar *)self->user_data, "MESSAGE");
-  gssize value_len;
-  log_msg_get_value_by_name(msg, requested_name, &value_len);
-  assert_gint(value_len, 0, ASSERTION_ERROR("MESSAGE has prefix"));
-  g_free(requested_name);
-}
-
-void
 __test_other_has_prefix(TestCase *self, LogMessage *msg)
 {
   gchar *requested_name = g_strdup_printf("%s%s", (gchar *) self->user_data, "_CMDLINE");
@@ -371,7 +361,6 @@ _test_prefix_test(TestCase *self, TestSource *src, LogMessage *msg)
   const gchar *message = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
   assert_string(message, "pam_unix(sshd:session): session opened for user foo_user by (uid=0)", ASSERTION_ERROR("Bad message"));
 
-  __test_message_has_no_prefix(self, msg);
   __test_other_has_prefix(self, msg);
 
   test_source_finish_tc(src);
