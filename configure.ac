@@ -32,6 +32,7 @@ PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="0.1.8"
 LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.6.0"
+LIBGEOIP_MIN_VERSION="1.6.3"
 JOURNALD_MIN_VERSION="195"
 LIBSYSTEMD_MIN_VERSION="209"
 JAVA_MIN_VERSION="1.7"
@@ -755,7 +756,7 @@ if test "x$enable_geoip" = "xyes" || test "x$enable_geoip" = "xauto"; then
                 AC_MSG_RESULT([yes (GEOIP_LIBS set, will use that.)])
                 with_geoip="yes"
         else
-                PKG_CHECK_MODULES(GEOIP, geoip, with_geoip="yes", with_geoip="no")
+                PKG_CHECK_MODULES(GEOIP, geoip >= $LIBGEOIP_MIN_VERSION, with_geoip="yes", with_geoip="no")
         fi
 
         if test "x$with_geoip" = "xno" && test "x$enable_geoip" = "xyes"; then

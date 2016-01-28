@@ -29,5 +29,6 @@
 LogParser *geoip_parser_new(GlobalConfig *cfg);
 void geoip_parser_set_database(LogParser *s, const gchar *database);
 void geoip_parser_set_prefix(LogParser *s, const gchar *prefix);
+void geoip_parser_set_quiet(LogParser *s, gboolean quiet);
 
 #endif
