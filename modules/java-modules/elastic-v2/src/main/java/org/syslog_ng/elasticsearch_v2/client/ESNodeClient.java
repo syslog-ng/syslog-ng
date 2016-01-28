@@ -28,7 +28,6 @@ import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Paths;
-
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.settings.SettingsException;

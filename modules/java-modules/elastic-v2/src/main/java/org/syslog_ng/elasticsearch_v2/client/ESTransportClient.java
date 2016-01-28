@@ -24,45 +24,45 @@
 package org.syslog_ng.elasticsearch_v2.client;
 
 import java.net.InetSocketAddress;
+import java.util.Iterator;
+import java.util.List;
 
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.plugins.Plugin;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 
 public class ESTransportClient extends ESClient {
 	private Settings settings;
-	private TransportClient transportClient;
+	protected TransportClient transportClient;
 
 	public ESTransportClient(ElasticSearchOptions options) {
 		super(options);
 	}
+	
+    @Override
+    public Client createClient() {
+        return createClient(null);        
+    }
 
-	public Client createClient() {
-		String clusterName = options.getCluster();
-		Builder settingsBuilder = Settings.builder();
-		settingsBuilder = settingsBuilder.put("client.transport.sniff", true);
-		        
-		if (clusterName != null) {
-			settingsBuilder = settingsBuilder.put("cluster.name", clusterName);
-		}
+	protected Client createClient(List<Class<? extends Plugin>> plugins) {
+	    settings = initSettingsBuilder();		
 
-		settings = settingsBuilder.build();
-
-		String[] servers =  options.getServerList();
-
-		transportClient = TransportClient.builder().settings(settings).build();
-
-        for (String server : servers) {
-            InetSocketAddress inetSocketAddress = new InetSocketAddress(server, options.getPort());
-            if (inetSocketAddress.isUnresolved()) {
-                logger.warn("Cannot resolve server, address = " + server + ", skipping from server list");
-            } else {
-                transportClient.addTransportAddress(new InetSocketTransportAddress(inetSocketAddress));
+	    org.elasticsearch.client.transport.TransportClient.Builder transportClientBuilder = TransportClient.builder().settings(settings);
+		
+        if (plugins != null) {
+            Iterator<Class<? extends Plugin>> iterator = plugins.iterator();
+            while (iterator.hasNext()) {
+                transportClientBuilder.addPlugin(iterator.next());
             }
         }
+		
+		transportClient = transportClientBuilder.build();
+		
+		addServersToClient(transportClient);
 		return transportClient;
 	}
 
@@ -79,5 +79,30 @@ public class ESTransportClient extends ESClient {
 	@Override
 	public void deinit() {
 
+	}
+	
+	protected Settings initSettingsBuilder() {
+        Builder settingsBuilder = Settings.builder();
+        String clusterName = options.getCluster();
+        loadConfigFile(options.getConfigFile(), settingsBuilder);
+        settingsBuilder = settingsBuilder.put("client.transport.sniff", true);
+                
+        if (clusterName != null) {
+            settingsBuilder = settingsBuilder.put("cluster.name", clusterName);
+        }
+
+        return settingsBuilder.build();
+	}
+	
+	protected void addServersToClient(TransportClient transportClient) {
+	    String[] servers =  options.getServerList();
+        for (String server : servers) {
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(server, options.getPort());
+            if (inetSocketAddress.isUnresolved()) {
+                logger.warn("Cannot resolve server, address = " + server + ", skipping from server list");
+            } else {
+                transportClient.addTransportAddress(new InetSocketTransportAddress(inetSocketAddress));
+            }
+        }
 	}
 }
