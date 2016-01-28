@@ -96,16 +96,25 @@ public class HTTPDestination extends TextLogDestination {
                 osw.write(message);
                 osw.close();
             } catch (IOException e) {
-		logger.error("error in writing message.");
-		return false;
+                logger.error("error in writing message.");
+                return false;
             }
+
             responseCode = connection.getResponseCode();
+            if (isHTTPResponseError(responseCode)) {
+                logger.error("HTTP response code error: " + responseCode);
+                return false;
+            }
         } catch (IOException | SecurityException | IllegalStateException e) {
             logger.debug("error in writing message." +
                     (responseCode != 0 ? "Response code is " + responseCode : ""));
             return false;
         }
         return true;
+    }
+
+    private static boolean isHTTPResponseError(int responseCode) {
+        return responseCode >= 400 && responseCode <= 599;
     }
 
     @Override
