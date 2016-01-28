@@ -151,14 +151,8 @@ __reader_wakeup(LogSource *s)
 }
 
 static void
-__handle_data(gchar *key, gchar *value, gpointer user_data)
+_map_key_value_pairs_to_syslog_macros(LogMessage *msg, gchar *key, gchar *value, gssize value_len)
 {
-  gpointer *args = user_data;
-
-  LogMessage *msg = args[0];
-  JournalReaderOptions *options = args[1];
-  gssize value_len = MIN(strlen(value), options->max_field_size);
-
   if (strcmp(key, "MESSAGE") == 0)
     {
       log_msg_set_value(msg, LM_V_MESSAGE, value, value_len);
@@ -182,7 +176,11 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       msg->pri = (msg->pri & ~7) | atoi(value);
     }
+}
 
+static void
+_fill_message(JournalReaderOptions *options, LogMessage *msg, gchar *key, gchar *value, gssize value_len)
+{
   if (!options->prefix)
     {
       log_msg_set_value_by_name(msg, key, value, value_len);
@@ -209,6 +207,19 @@ _get_value(JournalReaderOptions *options, LogMessage *msg,  gchar *key, gssize *
       g_free(prefixed_key);
       return value;
     }
+}
+
+static void
+_handle_data(gchar *key, gchar *value, gpointer user_data)
+{
+  gpointer *args = user_data;
+
+  LogMessage *msg = args[0];
+  JournalReaderOptions *options = args[1];
+  gssize value_len = MIN(strlen(value), options->max_field_size);
+
+  _map_key_value_pairs_to_syslog_macros(msg, key, value, value_len);
+  _fill_message(options, msg, key, value, value_len);
 }
 
 static void
@@ -252,7 +263,7 @@ __handle_message(JournalReader *self)
 
   gpointer args[] = {msg, self->options};
 
-  journald_foreach_data(self->journal, __handle_data, args);
+  journald_foreach_data(self->journal, _handle_data, args);
   __set_message_timestamp(self, msg);
   _set_program(self->options, msg);
 
