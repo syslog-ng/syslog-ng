@@ -23,12 +23,17 @@
 
 package org.syslog_ng.elasticsearch_v2.client;
 
+import java.io.File;
+import java.net.URI;
+import java.nio.file.Paths;
 import org.apache.log4j.Logger;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequestBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.settings.SettingsException;
+import org.elasticsearch.common.settings.Settings.Builder;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 
 public abstract class ESClient {
@@ -104,4 +109,16 @@ public abstract class ESClient {
 	protected void resetClient() {
 		this.client = null;
 	}
+	
+    protected void loadConfigFile(String cfgFile, Builder settingsBuilder) {
+        if (cfgFile == null || cfgFile.isEmpty()) {
+            return;
+        }
+        try {
+            URI url = new File(cfgFile).toURI();
+            settingsBuilder.loadFromPath(Paths.get(url));
+        } catch (SettingsException e) {
+            logger.warn("Can't load settings from file, file = '" + cfgFile + "', reason = '" + e.getMessage() + "'");
+        }
+    }
 }

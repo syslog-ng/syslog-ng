@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2016 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2016 Viktor Juhasz <viktor.juhasz@balabit.com>
+ * Copyright (c) 2016 Zoltan Pallagi <zoltan.pallagi@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -23,20 +24,24 @@
 
 package org.syslog_ng.elasticsearch_v2.client;
 
+import java.util.ArrayList;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.shield.ShieldPlugin;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 
-public class ESClientFactory {
-	public static ESClient getESClient(ElasticSearchOptions options) throws UnknownESClientModeException {
-		String client_type = options.getClientMode();
-		if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_TRANSPORT)) {		    
-			return new ESTransportClient(options);
-		}
-		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_NODE)) {
-			return new ESNodeClient(options);
-		}
-		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_SHIELD)) {
-            return new ESTransportShieldClient(options);
-        }
-		throw new UnknownESClientModeException(client_type);
-	}	
+public class ESTransportShieldClient extends ESTransportClient {
+
+	public ESTransportShieldClient(ElasticSearchOptions options) {
+		super(options);
+	}
+	
+	@Override
+    public Client createClient() {
+	    ArrayList<Class<? extends Plugin>> plugins = new ArrayList<Class<? extends Plugin>>();    
+        plugins.add(ShieldPlugin.class);
+        
+        super.createClient(plugins);
+        return transportClient;
+    }
 }

@@ -97,4 +97,6 @@ EXTRA_DIST += \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/ESNodeClient.java \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/UnknownESClientModeException.java \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/ESClientFactory.java \
-	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/ElasticSearchOptions.java
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/ElasticSearchOptions.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/ESTransportShieldClient.java
+
