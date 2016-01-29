@@ -21,6 +21,7 @@
  *
  */
 #include "csv-scanner.h"
+#include "str-utils.h"
 #include "string-list.h"
 
 #include <string.h>
@@ -170,7 +171,7 @@ _is_at_the_end_of_columns(CSVScanner *self)
 static void
 _parse_opening_quote_character(CSVScanner *self)
 {
-  gchar *quote = strchr(self->options->quotes_start, *self->src);
+  gchar *quote = _strchr_optimized_for_single_char_haystack(self->options->quotes_start, *self->src);
 
   if (quote != NULL)
     {
@@ -260,7 +261,7 @@ _parse_string_delimiters_at_current_position(CSVScanner *self)
 static gboolean
 _parse_character_delimiters_at_current_position(CSVScanner *self)
 {
-  if (strchr(self->options->delimiters, *self->src) != NULL)
+  if (_strchr_optimized_for_single_char_haystack(self->options->delimiters, *self->src) != NULL)
     {
       self->src++;
       return TRUE;

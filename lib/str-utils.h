@@ -26,6 +26,7 @@
 #define STR_UTILS_H_INCLUDED 1
 
 #include "syslog-ng.h"
+#include <string.h>
 
 /* functions that should be implemented by GLib but they aren't */
 GString *g_string_assign_len(GString *s, const gchar *val, gint len);
@@ -70,5 +71,35 @@ void g_string_steal(GString *s);
   } while (0)
 
 gchar *__normalize_key(const gchar* buffer);
+
+
+/* This version of strchr() is optimized for cases where the string we are
+ * looking up characters in is often zero or one character in length.  In
+ * those cases we can avoid the strchr() call, which can make a tight loop
+ * doing a lot of strchr() calls a lot faster, especially as this function
+ * is inlined.
+ *
+ * Naming: I originally wanted to use the original function as a prefix
+ * (strchr), however that would potentially pollute the namespace of the
+ * library that we are optimizing.  So I've added an underscore prefix in
+ * order not to clash, with that it is still obvious that it intends to
+ * behave the same as strchr().
+ *
+ * NOTE: don't use this unless strchr() really shows up in your profile.
+ */
+static inline char *
+_strchr_optimized_for_single_char_haystack(const char *str, int c)
+{
+  if (str[0] == c)
+    return (char *) str;
+  if (str[1] == '\0')
+    {
+      if (c != '\0')
+        return NULL;
+      else
+        return (char *) &str[1];
+    }
+  return strchr(str + 1, c);
+}
 
 #endif
