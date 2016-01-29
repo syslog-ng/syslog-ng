@@ -73,6 +73,8 @@ if test "x$exec_prefix" = "xNONE"; then
 fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
+toolsdir='${datadir}/syslog-ng/tools'
+scldir='${datadir}/syslog-ng/include/scl'
 
 AC_CONFIG_HEADERS(config.h)
 
@@ -1445,15 +1447,11 @@ AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 
-# substitution into manual pages
-expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
-expanded_moduledir=[`patheval $moduledir`]
-
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
-AC_SUBST(expanded_sysconfdir)
-AC_SUBST(expanded_moduledir)
+AC_SUBST(toolsdir)
+AC_SUBST(scldir)
 AC_SUBST(systemdsystemunitdir)
 AC_SUBST(SYSLOGNG_LINK)
 AC_SUBST(SYSLOGNG_DEPS_LIBS)

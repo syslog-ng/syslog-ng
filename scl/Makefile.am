@@ -18,8 +18,6 @@ SCL_CONFIGS	= scl.conf syslog-ng.conf
 
 EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS))
 
-scldir		= $(datadir)/include/scl
-
 scl-install-data-local:
 	for cfg in $(SCL_CONFIGS); do \
 		if [ -f $(DESTDIR)/$(sysconfdir)/$${cfg} ]; then \

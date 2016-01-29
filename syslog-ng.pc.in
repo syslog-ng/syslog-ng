@@ -2,11 +2,12 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 datarootdir=@datarootdir@
+datadir=@datadir@
 libdir=@libdir@
 includedir=@includedir@
-toolsdir=@datadir@/tools
-moduledir=@expanded_moduledir@
-scldir=@datadir@/include/scl
+toolsdir=@toolsdir@
+moduledir=@moduledir@
+scldir=@scldir@
 ivykis=@with_ivykis@
 
 Name: syslog-ng-dev
