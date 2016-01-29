@@ -9,7 +9,7 @@ modules/(afmongodb|afamqp)/dummy\.c$
 dist\.conf
 scl/syslog-ng\.conf
  LGPLv2.1+_SSL
-lib/(compat|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|[^/]*$)
+lib/(compat|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|[^/]*$)
 libtest
 syslog-ng(-ctl)?
 modules/java-modules/common
