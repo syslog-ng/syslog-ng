@@ -24,7 +24,7 @@
 
 #include "value-pairs.h"
 #include "vptransform.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "template/templates.h"
 #include "template/macros.h"
 #include "type-hinting.h"

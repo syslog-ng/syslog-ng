@@ -20,7 +20,7 @@
  *
  */
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "plugin.h"

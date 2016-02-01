@@ -26,7 +26,7 @@
 #include "python-helpers.h"
 #include "messages.h"
 #include "debugger/debugger.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 static void
 _add_nv_keys_to_list(gpointer key, gpointer value, gpointer user_data)

@@ -26,7 +26,7 @@
 #include <apphook.h>
 #include <plugin.h>
 #include <cfg.h>
-#include <logmsg.h>
+#include "logmsg/logmsg.h"
 
 MsgFormatOptions parse_options;
 LogTemplateOptions template_options;

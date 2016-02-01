@@ -23,7 +23,7 @@
  */
 
 #include "filter-in-list.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "str-utils.h"
 
 #include <stdlib.h>

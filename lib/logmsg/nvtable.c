@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-#include "nvtable.h"
+#include "logmsg/nvtable.h"
 #include "messages.h"
 
 #include <string.h>

@@ -26,7 +26,7 @@
 #define LOGPIPE_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "cfg.h"
 #include "atomic.h"
 #include "messages.h"

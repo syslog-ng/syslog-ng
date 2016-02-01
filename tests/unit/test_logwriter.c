@@ -23,7 +23,7 @@
 
 #include "syslog-ng.h"
 #include "logwriter.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "template/templates.h"
 #include "apphook.h"
 #include "cfg.h"

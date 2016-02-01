@@ -27,7 +27,7 @@
 #include "messages.h"
 #include "string-list.h"
 #include "stats/stats-registry.h"
-#include "nvtable.h"
+#include "logmsg/nvtable.h"
 #include "logqueue.h"
 #include "value-pairs.h"
 #include "vptransform.h"

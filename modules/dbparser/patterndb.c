@@ -28,7 +28,7 @@
 #include "pdb-ruleset.h"
 #include "pdb-load.h"
 #include "correllation.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "tags.h"
 #include "template/templates.h"
 #include "str-utils.h"

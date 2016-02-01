@@ -22,7 +22,7 @@
 
 #include "graphite-output.h"
 #include <template/templates.h>
-#include <logmsg.h>
+#include "logmsg/logmsg.h"
 #include <value-pairs.h>
 #include <vptransform.h>
 

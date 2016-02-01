@@ -24,7 +24,7 @@
 #include "csvparser.h"
 
 #include "syslog-ng.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "string-list.h"
 #include "cfg.h"

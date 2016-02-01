@@ -21,7 +21,7 @@
  *
  */
 #include "correllation-context.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 #include <string.h>
 

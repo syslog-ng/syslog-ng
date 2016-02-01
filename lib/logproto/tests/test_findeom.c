@@ -22,7 +22,7 @@
  */
 
 #include "logproto/logproto-server.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include <stdlib.h>
 
 static void

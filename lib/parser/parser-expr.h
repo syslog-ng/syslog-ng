@@ -25,7 +25,7 @@
 #ifndef LOGPARSER_H_INCLUDED
 #define LOGPARSER_H_INCLUDED
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "messages.h"
 #include "logpipe.h"
 #include "template/templates.h"

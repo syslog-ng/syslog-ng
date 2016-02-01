@@ -21,9 +21,9 @@
  *
  */
 
-#include "nvtable.h"
+#include "logmsg/nvtable.h"
 #include "apphook.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 #include <stdio.h>
 #include <string.h>

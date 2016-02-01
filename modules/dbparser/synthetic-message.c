@@ -24,7 +24,7 @@
 
 #include "template/templates.h"
 #include "tags.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "logpipe.h"
 
 void

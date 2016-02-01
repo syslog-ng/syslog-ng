@@ -21,7 +21,7 @@
  *
  */
 #include "correllation-key.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include <string.h>
 
 
