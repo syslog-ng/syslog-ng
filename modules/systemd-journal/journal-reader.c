@@ -179,34 +179,31 @@ _map_key_value_pairs_to_syslog_macros(LogMessage *msg, gchar *key, gchar *value,
 }
 
 static void
+_format_value_name_with_prefix(gchar *buf, gsize buf_len, JournalReaderOptions *options, const gchar *key)
+{
+  gsize cont = 0;
+
+  if (options->prefix)
+    cont = g_strlcpy(buf, options->prefix, buf_len);
+  g_strlcpy(buf + cont, key, buf_len - cont);
+}
+
+static void
 _set_value_in_message(JournalReaderOptions *options, LogMessage *msg, gchar *key, gchar *value, gssize value_len)
 {
-  if (!options->prefix)
-    {
-      log_msg_set_value_by_name(msg, key, value, value_len);
-    }
-  else
-    {
-      gchar *prefixed_key = g_strdup_printf("%s%s", options->prefix, key);
-      log_msg_set_value_by_name(msg, prefixed_key, value, value_len);
-      g_free(prefixed_key);
-    }
+  gchar name_with_prefix[256];
+
+  _format_value_name_with_prefix(name_with_prefix, sizeof(name_with_prefix), options, key);
+  log_msg_set_value_by_name(msg, name_with_prefix, value, value_len);
 }
 
 static const gchar*
 _get_value_from_message(JournalReaderOptions *options, LogMessage *msg,  gchar *key, gssize *value_length)
 {
-  if (!options->prefix)
-    {
-      return log_msg_get_value_by_name(msg, key, value_length);
-    }
-  else
-    {
-      gchar *prefixed_key = g_strdup_printf("%s%s", options->prefix, key);
-      const gchar *value = log_msg_get_value_by_name(msg, prefixed_key, value_length);
-      g_free(prefixed_key);
-      return value;
-    }
+  gchar name_with_prefix[256];
+
+  _format_value_name_with_prefix(name_with_prefix, sizeof(name_with_prefix), options, key);
+  return log_msg_get_value_by_name(msg, name_with_prefix, value_length);
 }
 
 static void
