@@ -629,7 +629,7 @@ journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, co
   if (options->prefix == NULL && !cfg_is_config_version_older(cfg, 0x0308))
     {
       gchar *value = ".journald.";
-      msg_warning("Default value changed for the prefix() option of systemd-journal source in " VERSION_3_8,
+      msg_warning("WARNING: Default value changed for the prefix() option of systemd-journal source in " VERSION_3_8,
                   evt_tag_str("old_value", ""),
                   evt_tag_str("new_value", value),
                   NULL);
