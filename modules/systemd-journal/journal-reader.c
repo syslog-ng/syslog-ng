@@ -179,7 +179,7 @@ _map_key_value_pairs_to_syslog_macros(LogMessage *msg, gchar *key, gchar *value,
 }
 
 static void
-_fill_message(JournalReaderOptions *options, LogMessage *msg, gchar *key, gchar *value, gssize value_len)
+_set_value_in_message(JournalReaderOptions *options, LogMessage *msg, gchar *key, gchar *value, gssize value_len)
 {
   if (!options->prefix)
     {
@@ -194,7 +194,7 @@ _fill_message(JournalReaderOptions *options, LogMessage *msg, gchar *key, gchar 
 }
 
 static const gchar*
-_get_value(JournalReaderOptions *options, LogMessage *msg,  gchar *key, gssize *value_length)
+_get_value_from_message(JournalReaderOptions *options, LogMessage *msg,  gchar *key, gssize *value_length)
 {
   if (!options->prefix)
     {
@@ -219,14 +219,14 @@ _handle_data(gchar *key, gchar *value, gpointer user_data)
   gssize value_len = MIN(strlen(value), options->max_field_size);
 
   _map_key_value_pairs_to_syslog_macros(msg, key, value, value_len);
-  _fill_message(options, msg, key, value, value_len);
+  _set_value_in_message(options, msg, key, value, value_len);
 }
 
 static void
 _set_program(JournalReaderOptions *options, LogMessage *msg)
 {
   gssize value_length = 0;
-  const gchar *value = _get_value(options, msg, "SYSLOG_IDENTIFIER", &value_length);
+  const gchar *value = _get_value_from_message(options, msg, "SYSLOG_IDENTIFIER", &value_length);
 
   if (value_length > 0)
     {
@@ -234,7 +234,7 @@ _set_program(JournalReaderOptions *options, LogMessage *msg)
     }
   else
     {
-      value = _get_value(options, msg, "_COMM", &value_length);
+      value = _get_value_from_message(options, msg, "_COMM", &value_length);
       log_msg_set_value(msg, LM_V_PROGRAM, value, value_length);
     }
 }
