@@ -175,8 +175,7 @@ afamqp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
-  if (self->vp)
-    value_pairs_unref(self->vp);
+  value_pairs_unref(self->vp);
   self->vp = vp;
 }
 
@@ -570,8 +569,7 @@ afamqp_dd_free(LogPipe *d)
   g_free(self->host);
   g_free(self->vhost);
   g_free(self->entries);
-  if (self->vp)
-    value_pairs_unref(self->vp);
+  value_pairs_unref(self->vp);
 
   log_threaded_dest_driver_free(d);
 }

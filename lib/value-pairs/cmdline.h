@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014 Balabit
- * Copyright (c) 2014 Viktor Tusa <viktor.tusa@balabit.com>
+ * Copyright (c) 2011-2015 Balabit
+ * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,15 +21,13 @@
  * COPYING for details.
  *
  */
+#ifndef VALUE_PAIRS_CMDLINE_H_INCLUDED
+#define VALUE_PAIRS_CMDLINE_H_INCLUDED 1
 
-#include "rewrite/rewrite-expr.h"
 #include "value-pairs/value-pairs.h"
 
-typedef struct _LogRewriteGroupSet {
-  LogRewrite super;
-  ValuePairs *query;
-  LogTemplate *replacement;
-} LogRewriteGroupSet;
+ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
+					 gint argc, gchar **argv,
+					 GError **error);
 
-LogRewrite *log_rewrite_groupset_new(LogTemplate *template, GlobalConfig *cfg);
-void log_rewrite_groupset_add_fields(LogRewrite *rewrite, GList *fields);
+#endif

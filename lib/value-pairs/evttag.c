@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014 Balabit
- * Copyright (c) 2014 Viktor Tusa <viktor.tusa@balabit.com>
+ * Copyright (c) 2011-2015 Balabit
+ * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,15 +21,26 @@
  * COPYING for details.
  *
  */
+#include "value-pairs/evttag.h"
 
-#include "rewrite/rewrite-expr.h"
-#include "value-pairs/value-pairs.h"
+static gboolean
+_append_pair_to_debug_string(const gchar *name, TypeHint type, const gchar *value, gsize value_len, gpointer user_data)
+{
+  GString *text = (GString *) user_data;
+  g_string_append_printf(text, "%s=%s ",name, value);
+  return FALSE;
+}
 
-typedef struct _LogRewriteGroupSet {
-  LogRewrite super;
-  ValuePairs *query;
-  LogTemplate *replacement;
-} LogRewriteGroupSet;
+EVTTAG *
+evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, LogTemplateOptions *template_options)
+{
+   GString *debug_text = g_string_new("");
+   EVTTAG* result;
 
-LogRewrite *log_rewrite_groupset_new(LogTemplate *template, GlobalConfig *cfg);
-void log_rewrite_groupset_add_fields(LogRewrite *rewrite, GList *fields);
+   value_pairs_foreach(vp, _append_pair_to_debug_string, msg, seq_num, time_zone_mode, template_options, debug_text);
+
+   result = evt_tag_str(key, debug_text->str);
+
+   g_string_free(debug_text, TRUE);
+   return result;
+}

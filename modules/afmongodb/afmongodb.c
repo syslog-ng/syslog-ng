@@ -29,8 +29,8 @@
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
-#include "value-pairs.h"
-#include "vptransform.h"
+#include "value-pairs/value-pairs.h"
+#include "value-pairs/evttag.h"
 #include "plugin.h"
 #include "plugin-types.h"
 #include "logthrdestdrv.h"
@@ -104,8 +104,7 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  if (self->vp)
-    value_pairs_unref (self->vp);
+  value_pairs_unref (self->vp);
   self->vp = vp;
 }
 
@@ -502,8 +501,7 @@ afmongodb_dd_free(LogPipe *d)
 
   g_free(self->uri);
   g_free(self->coll);
-  if (self->vp)
-    value_pairs_unref(self->vp);
+  value_pairs_unref(self->vp);
 
   mongoc_uri_destroy(self->uri_obj);
   mongoc_collection_destroy (self->coll_obj);

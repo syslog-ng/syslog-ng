@@ -154,8 +154,7 @@ riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
-  if (self->fields.attributes)
-    value_pairs_unref(self->fields.attributes);
+  value_pairs_unref(self->fields.attributes);
   self->fields.attributes = vp;
 }
 
@@ -642,8 +641,7 @@ riemann_dd_free(LogPipe *d)
   log_template_unref(self->fields.metric);
   log_template_unref(self->fields.ttl);
   string_list_free(self->fields.tags);
-  if (self->fields.attributes)
-    value_pairs_unref(self->fields.attributes);
+  value_pairs_unref(self->fields.attributes);
 
   log_threaded_dest_driver_free(d);
 }

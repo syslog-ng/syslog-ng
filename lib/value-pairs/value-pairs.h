@@ -27,9 +27,9 @@
 
 #include "syslog-ng.h"
 #include "logmsg/nvtable.h"
+#include "value-pairs/transforms.h"
 #include "type-hinting.h"
 #include "template/templates.h"
-#include "messages.h"
 
 typedef struct _ValuePairs ValuePairs;
 
@@ -49,9 +49,9 @@ typedef gboolean (*VPWalkCallbackFunc)(const gchar *name,
 gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
 void value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern, gboolean include);
 void value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include);
-gboolean value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
+void value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
 
-void value_pairs_add_transforms(ValuePairs *vp, gpointer vpts);
+void value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts);
 
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
                                     GCompareDataFunc compare_func,
@@ -72,16 +72,12 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           gpointer user_data);
 
 ValuePairs *value_pairs_new(void);
-void value_pairs_free(ValuePairs *vp);
-
+ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
 ValuePairs *value_pairs_ref(ValuePairs *self);
 void value_pairs_unref(ValuePairs *self);
 
-ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
-					 gint argc, gchar **argv,
-					 GError **error);
-ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
+void value_pairs_global_init(void);
+void value_pairs_global_deinit(void);
 
-EVTTAG *evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, LogTemplateOptions *template_options);
 
 #endif
