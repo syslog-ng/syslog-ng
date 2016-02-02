@@ -39,11 +39,18 @@
                     on_error, #expected);                               \
     } while(0)
 
+#define assert_on_error_parse_fails(on_error)                           \
+  do                                                                    \
+    {                                                                   \
+      gint r;                                                           \
+                                                                        \
+      assert_false(log_template_on_error_parse(on_error, &r),            \
+                   "Parsing '%s' works", on_error);                      \
+    } while(0)
+
 static void
 test_template_on_error(void)
 {
-  gint r;
-
   testcase_begin("Testing LogTemplate on-error parsing");
 
   assert_on_error_parse("drop-message", ON_ERROR_DROP_MESSAGE);
@@ -58,8 +65,7 @@ test_template_on_error(void)
   assert_on_error_parse("silently-fallback-to-string",
                         ON_ERROR_FALLBACK_TO_STRING | ON_ERROR_SILENT);
 
-  assert_false(log_template_on_error_parse("do-what-i-mean", &r),
-               "The 'do-what-i-mean' strictness is not recognised");
+  assert_on_error_parse_fails("do-what-i-mean");
 
   testcase_end();
 }
