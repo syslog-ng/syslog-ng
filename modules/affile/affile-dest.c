@@ -465,8 +465,8 @@ affile_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
-  if (cfg->create_dirs)
-    self->file_open_options.create_dirs = TRUE;
+  if (self->file_open_options.create_dirs == -1)
+    self->file_open_options.create_dirs = cfg->create_dirs;
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
   
@@ -758,6 +758,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
       self->filename_is_a_template = TRUE;
     }
   self->time_reap = -1;
+  self->file_open_options.create_dirs = -1;
   self->file_open_options.is_pipe = FALSE;
   self->file_open_options.needs_privileges = FALSE;
   self->file_open_options.open_flags = DEFAULT_DW_REOPEN_FLAGS;
