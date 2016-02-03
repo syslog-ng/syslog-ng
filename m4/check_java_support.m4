@@ -62,7 +62,7 @@ AC_DEFUN([AX_CHECK_JAVA_VERSION],
       fi
     fi
 
-    if test "$VERSION_OK" == "1";
+    if test "$VERSION_OK" = "1";
     then
       JNI_HOME=`echo $JAVAC_BIN | sed "s/\(.*\)[[/]]bin[[/]]java.*/\1/"`
       JNI_LIBDIR=`find $JNI_HOME -name "libjvm.so" | sed "s/\(.*\)libjvm.so/\1/" | head -n 1`
