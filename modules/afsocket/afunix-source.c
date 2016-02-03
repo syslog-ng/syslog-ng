@@ -95,6 +95,11 @@ afunix_sd_init(LogPipe *s)
   if (self->create_dirs == -1)
     self->create_dirs = cfg->create_dirs;
 
+  if (self->pass_unix_credentials == -1)
+    self->pass_unix_credentials = cfg->pass_unix_credentials;
+
+  afunix_sd_set_pass_unix_credentials(self, self->pass_unix_credentials);
+
   return afsocket_sd_init_method(s) &&
          afunix_sd_apply_perms_to_socket(self);
 }
@@ -125,8 +130,7 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
   self->filename = g_strdup(filename);
   file_perm_options_defaults(&self->file_perm_options);
   self->file_perm_options.file_perm = 0666;
-  self->pass_unix_credentials = cfg->pass_unix_credentials;
-  afunix_sd_set_pass_unix_credentials(self, self->pass_unix_credentials);
+  self->pass_unix_credentials = -1;
   self->create_dirs = -1;
 
   afunix_sd_adjust_reader_options(self, cfg);
