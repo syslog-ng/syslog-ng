@@ -33,8 +33,8 @@ typedef struct _AFUnixSourceDriver
   AFSocketSourceDriver super;
   gchar *filename;
   FilePermOptions file_perm_options;
-  gboolean pass_unix_credentials;
-  gboolean create_dirs;
+  gint pass_unix_credentials;
+  gint create_dirs;
 } AFUnixSourceDriver;
 
 AFUnixSourceDriver *afunix_sd_new_stream(gchar *filename, GlobalConfig *cfg);
