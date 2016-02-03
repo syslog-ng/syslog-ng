@@ -33,7 +33,7 @@ typedef struct _AFUnixSourceDriver
   AFSocketSourceDriver super;
   gchar *filename;
   FilePermOptions file_perm_options;
-  gboolean pass_unix_credentials;
+  gint pass_unix_credentials;
   gint create_dirs;
 } AFUnixSourceDriver;
 
