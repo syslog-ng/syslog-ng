@@ -34,7 +34,7 @@ typedef struct _AFUnixSourceDriver
   gchar *filename;
   FilePermOptions file_perm_options;
   gboolean pass_unix_credentials;
-  gboolean create_dirs;
+  gint create_dirs;
 } AFUnixSourceDriver;
 
 AFUnixSourceDriver *afunix_sd_new_stream(gchar *filename, GlobalConfig *cfg);
