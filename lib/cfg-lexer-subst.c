@@ -1,3 +1,27 @@
+/*
+ * Copyright (c) 2010-2013 Balabit
+ * Copyright (c) 2010-2013 Balázs Scheidler
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "cfg-lexer-subst.h"
 #include "cfg-args.h"
 #include "cfg-lexer.h"
@@ -146,6 +170,7 @@ static gboolean
 _append_value(CfgLexerSubst *self, const gchar *value, GError **error)
 {
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
+  gboolean result = TRUE;
 
   if (self->string_state == CLS_NOT_STRING)
     {
@@ -161,18 +186,21 @@ _append_value(CfgLexerSubst *self, const gchar *value, GError **error)
           switch (self->string_state)
             {
             case CLS_WITHIN_STRING:
-              return _encode_as_string(self, string_literal, error);
+              result = _encode_as_string(self, string_literal, error);
+              break;
             case CLS_WITHIN_QSTRING:
-              return _encode_as_qstring(self, string_literal, error);
+              result = _encode_as_qstring(self, string_literal, error);
+              break;
             default:
               g_assert_not_reached();
+              break;
             }
           g_free(string_literal);
         }
       else
         g_string_append(self->result_buffer, value);
     }
-  return TRUE;
+  return result;
 }
 
 gchar *

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -56,7 +56,7 @@ static TransportMapper *last_transport_mapper;
 TLSContext *last_tls_context;
 
 
-#if ! ENABLE_IPV6
+#if ! SYSLOG_NG_ENABLE_IPV6
 #undef AF_INET6
 #define AF_INET6 0; g_assert_not_reached()
 
@@ -146,7 +146,6 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TCP_KEEPALIVE_PROBES
 %token KW_TCP_KEEPALIVE_INTVL
 %token KW_SPOOF_SOURCE
-%token KW_PASS_UNIX_CREDENTIALS
 
 %token KW_KEEP_ALIVE
 %token KW_MAX_CONNECTIONS
@@ -236,20 +235,17 @@ source_afunix
 source_afunix_dgram_params
 	: string
 	  {
-        create_and_set_unix_dgram_or_systemd_syslog_source($1, configuration);
-
-	    free($1);
+      create_and_set_unix_dgram_or_systemd_syslog_source($1, configuration);
 	  }
-	  source_afunix_options			{ $$ = last_driver; }
+	  source_afunix_options			{ $$ = last_driver; free($1); }
 	;
 
 source_afunix_stream_params
 	: string
 	  {
       create_and_set_unix_stream_or_systemd_syslog_source($1, configuration);
-	    free($1);
 	  }
-	  source_afunix_options			{ $$ = last_driver; }
+	  source_afunix_options			{ $$ = last_driver; free($1); }
 	;
 
 /* options are common between dgram & stream */
@@ -434,7 +430,7 @@ source_systemd_syslog
 
 source_systemd_syslog_params
 	: {
-#if ! ENABLE_SYSTEMD
+#if ! SYSLOG_NG_ENABLE_SYSTEMD
             msg_error("systemd-syslog() source cannot be enabled and it is not"
                       " functioning. Please compile your syslog-ng with --enable-systemd"
                       " flag",
@@ -468,10 +464,9 @@ dest_afunix_dgram_params
 	  {
 	    AFUnixDestDriver *d = afunix_dd_new_dgram($1, configuration);
 
-            afunix_grammar_set_dest_driver(d);
-	    free($1);
+      afunix_grammar_set_dest_driver(d);
 	  }
-	  dest_afunix_options			{ $$ = last_driver; }
+	  dest_afunix_options			{ $$ = last_driver; free($1); }
 	;
 
 dest_afunix_stream_params
@@ -479,10 +474,9 @@ dest_afunix_stream_params
 	  {
 	    AFUnixDestDriver *d = afunix_dd_new_stream($1, configuration);
 
-            afunix_grammar_set_dest_driver(d);
-	    free($1);
+      afunix_grammar_set_dest_driver(d);
 	  }
-	  dest_afunix_options			{ $$ = last_driver; }
+	  dest_afunix_options			{ $$ = last_driver; free($1); }
 	;
 
 dest_afunix_options
@@ -509,10 +503,9 @@ dest_afinet_udp_params
 	  {
 	    AFInetDestDriver *d = afinet_dd_new_udp($1, configuration);
 
-            afinet_grammar_set_dest_driver(d);
-	    free($1);
+      afinet_grammar_set_dest_driver(d);
 	  }
-	  dest_afinet_udp_options		{ $$ = last_driver; }
+	  dest_afinet_udp_options		{ $$ = last_driver; free($1); }
 	;
 
 dest_afinet_udp6_params
@@ -521,9 +514,8 @@ dest_afinet_udp6_params
 	    AFInetDestDriver *d = afinet_dd_new_udp6($1, configuration);
 
 	    afinet_grammar_set_dest_driver(d);
-	    free($1);
 	  }
-	  dest_afinet_udp_options		{ $$ = last_driver; }
+	  dest_afinet_udp_options		{ $$ = last_driver; free($1); }
 	;
 
 
@@ -555,10 +547,9 @@ dest_afinet_tcp_params
 	  {
 	    AFInetDestDriver *d = afinet_dd_new_tcp($1, configuration);
 
-            afinet_grammar_set_dest_driver(d);
-	    free($1);
+      afinet_grammar_set_dest_driver(d);
 	  }
-	  dest_afinet_tcp_options		{ $$ = last_driver; }
+	  dest_afinet_tcp_options		{ $$ = last_driver; free($1); }
 	;
 
 dest_afinet_tcp6_params
@@ -567,9 +558,8 @@ dest_afinet_tcp6_params
 	    AFInetDestDriver *d = afinet_dd_new_tcp6($1, configuration);
 
 	    afinet_grammar_set_dest_driver(d);
-	    free($1);
 	  }
-	  dest_afinet_tcp_options		{ $$ = last_driver; }
+	  dest_afinet_tcp_options		{ $$ = last_driver; free($1); }
 	;
 
 dest_afinet_tcp_options
@@ -603,9 +593,8 @@ dest_afsyslog_params
             AFInetDestDriver *d = afinet_dd_new_syslog($1, configuration);
 
             afinet_grammar_set_dest_driver(d);
-	    free($1);
 	  }
-	  dest_afsyslog_options			{ $$ = last_driver; }
+	  dest_afsyslog_options			{ $$ = last_driver; free($1); }
         ;
 
 
@@ -629,9 +618,8 @@ dest_afnetwork_params
             AFInetDestDriver *d = afinet_dd_new_network($1, configuration);
 
             afinet_grammar_set_dest_driver(d);
-	    free($1);
 	  }
-	  dest_afnetwork_options			{ $$ = last_driver; }
+	  dest_afnetwork_options			{ $$ = last_driver; free($1); }
         ;
 
 dest_afnetwork_options

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@
 
 #include "compat/pio.h"
 
-#if !HAVE_PREAD || HAVE_BROKEN_PREAD
+#if !SYSLOG_NG_HAVE_PREAD || SYSLOG_NG_HAVE_BROKEN_PREAD
 
 #include <sys/types.h>
 #include <unistd.h>

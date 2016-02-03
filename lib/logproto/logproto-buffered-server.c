@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -846,6 +846,21 @@ log_proto_buffered_server_is_position_tracked(LogProtoServer *s)
   return self->pos_tracking;
 }
 
+gboolean
+log_proto_buffered_server_validate_options_method(LogProtoServer *s)
+{
+  LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
+
+  if (self->super.options->encoding && self->convert == (GIConv) -1)
+    {
+      msg_error("Unknown character set name specified",
+                evt_tag_str("encoding", self->super.options->encoding),
+                NULL);
+      return FALSE;
+    }
+  return log_proto_server_validate_options_method(s);
+}
+
 void
 log_proto_buffered_server_free_method(LogProtoServer *s)
 {
@@ -858,6 +873,8 @@ log_proto_buffered_server_free_method(LogProtoServer *s)
     {
       g_free(self->state1);
     }
+  if (self->convert != (GIConv) -1)
+    g_iconv_close(self->convert);
   log_proto_server_free_method(s);
 }
 
@@ -871,10 +888,13 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   self->super.transport = transport;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;
   self->super.is_position_tracked = log_proto_buffered_server_is_position_tracked;
+  self->super.validate_options = log_proto_buffered_server_validate_options_method;
   self->convert = (GIConv) -1;
   self->read_data = log_proto_buffered_server_read_data_method;
   self->io_status = G_IO_STATUS_NORMAL;
   if (options->encoding)
     self->convert = g_iconv_open("utf-8", options->encoding);
+  else
+    self->convert = (GIConv) -1;
   self->stream_based = TRUE;
 }

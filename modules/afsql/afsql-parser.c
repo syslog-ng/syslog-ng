@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -41,16 +41,14 @@ static CfgLexerKeyword afsql_keywords[] = {
   { "values",             KW_VALUES },
   { "log_fifo_size",      KW_LOG_FIFO_SIZE },
   { "frac_digits",        KW_FRAC_DIGITS },
-  { "session_statements", KW_SESSION_STATEMENTS, 0x0302 },
+  { "session_statements", KW_SESSION_STATEMENTS },
   { "host",               KW_HOST },
   { "port",               KW_PORT },
-  { "type",               KW_TYPE },
   { "default",            KW_DEFAULT },
 
-  { "time_zone",          KW_TIME_ZONE },
   { "local_time_zone",    KW_LOCAL_TIME_ZONE },
   { "null",               KW_NULL },
-  { "retry_sql_inserts",  KW_RETRIES, 0x0303 },
+  { "retry_sql_inserts",  KW_RETRIES },
   { "flush_lines",        KW_FLUSH_LINES },
   { "flush_timeout",      KW_FLUSH_TIMEOUT },
   { "flags",              KW_FLAGS },
@@ -61,7 +59,7 @@ static CfgLexerKeyword afsql_keywords[] = {
 
 CfgParser afsql_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afsql_debug,
 #endif
   .name = "afsql",

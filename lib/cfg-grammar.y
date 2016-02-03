@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -174,26 +174,6 @@ extern struct _StatsOptions *last_stats_options;
 /* source & destination items */
 %token KW_INTERNAL                    10010
 %token KW_FILE                        10011
-
-%token KW_SQL                         10030
-%token KW_TYPE                        10031
-%token KW_COLUMNS                     10032
-%token KW_INDEXES                     10033
-%token KW_VALUES                      10034
-%token KW_PASSWORD                    10035
-%token KW_DATABASE                    10036
-%token KW_USERNAME                    10037
-%token KW_TABLE                       10038
-%token KW_ENCODING                    10039
-%token KW_SESSION_STATEMENTS          10040
-
-%token KW_DELIMITERS                  10050
-%token KW_QUOTES                      10051
-%token KW_QUOTE_PAIRS                 10052
-%token KW_NULL                        10053
-%token KW_CHARS                       10054
-%token KW_STRINGS                     10055
-
 %token KW_SYSLOG                      10060
 
 /* option items */
@@ -208,6 +188,8 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_FILE_TEMPLATE               10079
 %token KW_PROTO_TEMPLATE              10080
 %token KW_MARK_MODE                   10081
+%token KW_ENCODING                    10082
+%token KW_TYPE                        10083
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -304,13 +286,8 @@ extern struct _StatsOptions *last_stats_options;
 
 /* parser items */
 
-%token KW_VALUE                       10361
-
 /* rewrite items */
-
 %token KW_REWRITE                     10370
-%token KW_SET                         10371
-%token KW_SUBST                       10372
 
 /* yes/no switches */
 
@@ -362,8 +339,7 @@ extern struct _StatsOptions *last_stats_options;
 #include "rewrite/rewrite-expr.h"
 #include "rewrite/rewrite-expr-parser.h"
 #include "filter/filter-expr-parser.h"
-#include "value-pairs.h"
-#include "vptransform.h"
+#include "value-pairs/value-pairs.h"
 #include "file-perms.h"
 #include "block-ref-parser.h"
 #include "plugin.h"
@@ -792,27 +768,24 @@ template_block
 	: KW_TEMPLATE string
 	  {
 	    last_template = log_template_new(configuration, $2);
-	    free($2);
 	  }
-	  '{' template_items '}'						{ $$ = last_template; }
+	  '{' template_items '}'						{ $$ = last_template; free($2); }
         ;
 
 template_simple
         : KW_TEMPLATE string
           {
 	    last_template = log_template_new(configuration, $2);
-	    free($2);
           }
-          template_content_inner						{ $$ = last_template; }
+          template_content_inner						{ $$ = last_template; free($2); }
 	;
 
 template_fn
         : KW_TEMPLATE_FUNCTION string
           {
 	    last_template = log_template_new(configuration, $2);
-	    free($2);
           }
-          template_content_inner						{ $$ = last_template; }
+          template_content_inner						{ $$ = last_template; free($2); }
 	;
 	
 template_items
@@ -1050,7 +1023,13 @@ source_option
         ;
 
 source_proto_option
-        : KW_ENCODING '(' string ')'		{ last_proto_server_options->encoding = g_strdup($3); free($3); }
+        : KW_ENCODING '(' string ')'
+          {
+            CHECK_ERROR(log_proto_server_options_set_encoding(last_proto_server_options, $3),
+                        @3,
+                        "unknown encoding %s", $3);
+            free($3);
+          }
 	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_proto_server_options->max_msg_size = $3; }
         ;
 

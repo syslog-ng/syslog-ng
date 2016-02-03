@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -29,5 +29,6 @@
 
 /* LogRewriteSet */
 LogRewrite *log_rewrite_set_new(LogTemplate *new_value, GlobalConfig *cfg);
+LogTemplateOptions *log_rewrite_set_get_template_options(LogRewrite *s);
 
 #endif

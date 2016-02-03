@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@
 #include "alarms.h"
 #include "stats/stats-registry.h"
 #include "tags.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "timeutils.h"
 #include "logsource.h"
 #include "logwriter.h"
@@ -39,6 +39,8 @@
 #include "scratch-buffers.h"
 #include "mainloop-call.h"
 #include "service-management.h"
+#include "crypto.h"
+#include "value-pairs/value-pairs.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -119,6 +121,7 @@ app_startup(void)
   iv_set_fatal_msg_handler(app_fatal);
   iv_init();
   g_thread_init(NULL);
+  crypto_init();
   hostname_global_init();
   dns_cache_global_init();
   dns_cache_thread_init();
@@ -131,6 +134,7 @@ app_startup(void)
   log_tags_global_init();
   log_source_global_init();
   log_template_global_init();
+  value_pairs_global_init();
   service_management_init();
 }
 
@@ -157,6 +161,7 @@ void
 app_shutdown(void)
 {
   run_application_hook(AH_SHUTDOWN);
+  value_pairs_global_deinit();
   log_template_global_deinit();
   log_tags_global_deinit();
   log_msg_global_deinit();
@@ -168,6 +173,7 @@ app_shutdown(void)
   dns_cache_thread_deinit();
   dns_cache_global_deinit();
   hostname_global_deinit();
+  crypto_deinit();
   msg_deinit();
 
   

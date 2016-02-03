@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014      BalaBit S.a.r.l., Luxembourg, Luxembourg
- * Copyright (c) 2010-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2014 Balabit
  * Copyright (c) 2010-2014 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -87,7 +86,7 @@ __queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointe
     {
       iv_quit();
     }
-  log_msg_drop(msg, path_options);
+  log_msg_drop(msg, path_options, AT_PROCESSED);
 }
 
 static void

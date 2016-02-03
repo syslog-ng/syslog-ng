@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -61,7 +61,7 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
       r = atoi(sb_gstring_string(right_buf)->str);
       if (l == r)
         cmp = 0;
-      else if (l > r)
+      else if (l < r)
         cmp = -1;
       else
         cmp = 1;
@@ -115,38 +115,50 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
     case KW_NUM_LT:
       self->cmp_op = FCMP_NUM;
     case KW_LT:
-      self->cmp_op = FCMP_LT;
+      self->cmp_op |= FCMP_LT;
       break;
 
     case KW_NUM_LE:
       self->cmp_op = FCMP_NUM;
     case KW_LE:
-      self->cmp_op = FCMP_LT | FCMP_EQ;
+      self->cmp_op |= FCMP_LT | FCMP_EQ;
       break;
 
     case KW_NUM_EQ:
       self->cmp_op = FCMP_NUM;
     case KW_EQ:
-      self->cmp_op = FCMP_EQ;
+      self->cmp_op |= FCMP_EQ;
       break;
 
     case KW_NUM_NE:
       self->cmp_op = FCMP_NUM;
     case KW_NE:
-      self->cmp_op = 0;
+      self->cmp_op |= 0;
       break;
 
     case KW_NUM_GE:
       self->cmp_op = FCMP_NUM;
     case KW_GE:
-      self->cmp_op = FCMP_GT | FCMP_EQ;
+      self->cmp_op |= FCMP_GT | FCMP_EQ;
       break;
 
     case KW_NUM_GT:
       self->cmp_op = FCMP_NUM;
     case KW_GT:
-      self->cmp_op = FCMP_GT;
+      self->cmp_op |= FCMP_GT;
       break;
+    }
+
+  if (self->cmp_op & FCMP_NUM && cfg_is_config_version_older(left->cfg, 0x0308))
+    {
+      msg_warning("WARNING: due to a bug in " VERSION_3_7 " and earlier, "
+                  "numeric comparison operators like '!=' in filter "
+                  "expressions were evaluated as string operators. This is fixed in " VERSION_3_8 ". "
+                  "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
+                  "behaviour as previous versions until you bump the @version value in your "
+                  "configuration file",
+                  NULL);
+      self->cmp_op &= ~FCMP_NUM;
     }
   return &self->super;
 }

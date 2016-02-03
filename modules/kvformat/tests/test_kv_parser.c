@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2015 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -75,15 +75,6 @@ parse_kv_into_log_message(const gchar *kv)
   msg = parse_kv_into_log_message_no_check(kv);
   assert_not_null(msg, "expected kv-parser success and it returned failure, kv=%s", kv);
   return msg;
-}
-
-static void
-assert_kv_parser_fails(const gchar *kv)
-{
-  LogMessage *msg;
-
-  msg = parse_kv_into_log_message_no_check(kv);
-  assert_null(msg, "expected kv-parser failure and it returned success, kv=%s", kv);
 }
 
 static void

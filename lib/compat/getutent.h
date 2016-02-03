@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -29,13 +29,13 @@
 #include <inttypes.h>
 #include <time.h>
 
-#ifdef HAVE_UTMPX_H
+#ifdef SYSLOG_NG_HAVE_UTMPX_H
 #include <utmpx.h>
 #else
 #include <utmp.h>
 #endif
 
-#if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT)
+#if !defined(SYSLOG_NG_HAVE_GETUTENT) && !defined(SYSLOG_NG_HAVE_GETUTXENT)
 struct utmp *getutent(void);
 void endutent(void);
 #endif

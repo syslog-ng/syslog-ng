@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@
 #include "persist-state.h"
 #include "serialize.h"
 #include "messages.h"
-#include "misc.h"
+#include "fdhelpers.h"
 
 #include <sys/types.h>
 #include <unistd.h>

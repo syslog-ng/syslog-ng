@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013 Balabit
  * Copyright (c) 2013 Balazs Scheidler <bazsi@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
@@ -15,11 +15,14 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
  */
 
 #include "logproto-regexp-multiline-server.h"
 #include "messages.h"
-#include "misc.h"
 
 #include <string.h>
 #include <pcre.h>

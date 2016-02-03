@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 /* NOTE: bb__ prefix is used for function names that might clash with system
  * supplied symbols. */
 
-#if !HAVE_PREAD || HAVE_BROKEN_PREAD
+#if !SYSLOG_NG_HAVE_PREAD || SYSLOG_NG_HAVE_BROKEN_PREAD
 # ifdef pread
 #  undef pread
 # endif

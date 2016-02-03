@@ -1,10 +1,33 @@
+/*
+ * Copyright (c) 2007-2014 Balabit
+ * Copyright (c) 2007-2014 Balázs Scheidler <balazs.scheidler@balabit.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "syslog-ng.h"
 #include "template_lib.h"
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "template/templates.h"
 #include "template/user-function.h"
-#include "misc.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "timeutils.h"
@@ -175,6 +198,7 @@ test_macros(void)
 
   assert_template_format("$SEQNUM", "999");
   assert_template_format("$CONTEXT_ID", "test-context-id");
+  assert_template_format("$UNIQID", "cafebabe@000000000000022b");
 }
 
 static void
@@ -264,9 +288,13 @@ test_escaping(void)
 static void
 test_user_template_function(void)
 {
-  user_template_function_register(configuration, "dummy", compile_template("this is a user-defined template function $DATE", FALSE));
+  LogTemplate *template;
+
+  template = compile_template("this is a user-defined template function $DATE", FALSE);
+  user_template_function_register(configuration, "dummy", template);
   assert_template_format("$(dummy)", "this is a user-defined template function Feb 11 10:34:56.000");
   assert_template_failure("$(dummy arg)", "User defined template function $(dummy) cannot have arguments");
+  log_template_unref(template);
 }
 
 int

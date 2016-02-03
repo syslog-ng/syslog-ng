@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -86,7 +86,7 @@ void msg_add_option_group(GOptionContext *ctx);
 	          msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags ));          \
 	} while (0)
 
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
 #define msg_trace(desc, tag1, tags...) 						  \
 	do { 									  \
 	  if (G_UNLIKELY(trace_flag))            				  \

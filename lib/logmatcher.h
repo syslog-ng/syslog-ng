@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2010 Balabit
  * Copyright (c) 1998-2010 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@
 #ifndef LOGMATCHER_H_INCLUDED
 #define LOGMATCHER_H_INCLUDED
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "template/templates.h"
 
 #define LOG_MATCHER_ERROR log_template_error_quark()

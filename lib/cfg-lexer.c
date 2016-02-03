@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@
 #include "block-ref-parser.h"
 #include "pragma-parser.h"
 #include "messages.h"
-#include "misc.h"
+#include "pathutils.h"
 
 #include <string.h>
 #include <glob.h>
@@ -195,17 +195,6 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
               if (token[j] == 0 && keywords[i].kw_name[j] == 0)
                 {
                   /* match */
-                  if (cfg_is_config_version_older(configuration, keywords[i].kw_req_version))
-                    {
-                      msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name or enclose it in quotes before upgrading",
-                                  evt_tag_str("keyword", keywords[i].kw_name),
-                                  evt_tag_printf("config-version", "%d.%d", (configuration->user_version >> 8), configuration->user_version & 0xFF),
-                                  evt_tag_printf("version", "%d.%d", (keywords[i].kw_req_version >> 8), keywords[i].kw_req_version & 0xFF),
-                                  yylloc ? evt_tag_str("filename", yylloc->level->name) : NULL,
-                                  yylloc ? evt_tag_printf("line", "%d:%d", yylloc->first_line, yylloc->first_column) : NULL,
-                                  NULL);
-                      break;
-                    }
                   switch (keywords[i].kw_status)
                     {
                     case KWS_OBSOLETE:
@@ -469,7 +458,7 @@ __glob_pattern_p (const char *pattern)
   return 0;
 }
 #else
-#define HAVE_GLOB_NOMAGIC 1
+#define SYSLOG_NG_HAVE_GLOB_NOMAGIC 1
 #endif
 
 static gboolean
@@ -505,7 +494,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
       globfree(&globbuf);
       if (r == GLOB_NOMATCH)
         {
-#ifndef HAVE_GLOB_NOMAGIC
+#ifndef SYSLOG_NG_HAVE_GLOB_NOMAGIC
           if (!__glob_pattern_p (pattern))
             {
               self->include_depth++;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Viktor Tusa <tusa@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,10 +21,10 @@
  */
 
 #include "graphite-output.h"
-#include <template/templates.h>
-#include <logmsg.h>
-#include <value-pairs.h>
-#include <vptransform.h>
+#include "template/templates.h"
+#include "logmsg/logmsg.h"
+#include "value-pairs/value-pairs.h"
+#include "value-pairs/cmdline.h"
 
 typedef struct _TFGraphiteState
 {
@@ -113,8 +113,10 @@ typedef struct _TFGraphiteForeachUserData
   GString* result;
 } TFGraphiteForeachUserData;
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
-tf_graphite_foreach_func(const gchar *name, TypeHint type, const gchar *value, gpointer user_data)
+tf_graphite_foreach_func(const gchar *name, TypeHint type, const gchar *value,
+                         gsize value_len, gpointer user_data)
 {
   TFGraphiteForeachUserData *data = (TFGraphiteForeachUserData*) user_data;
 
@@ -165,8 +167,7 @@ tf_graphite_free_state(gpointer s)
 {
   TFGraphiteState *state = (TFGraphiteState *)s;
 
-  if (state->vp)
-    value_pairs_unref(state->vp);
+  value_pairs_unref(state->vp);
   log_template_unref(state->timestamp_template);
 }
 

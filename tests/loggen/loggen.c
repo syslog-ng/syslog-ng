@@ -1,6 +1,29 @@
+/*
+ * Copyright (c) 2007-2015 Balabit
+ * Copyright (c) 2007-2015 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "syslog-ng.h"
 
-#include <config.h>
+#include <syslog-ng-config.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -330,7 +353,7 @@ format_timezone_offset_with_colon(char *timestamp, int timestamp_size, struct tm
   offset[len - 1] = offset[len - 2];
   offset[len - 2] = ':';
 
-  strncat(timestamp, offset, sizeof(offset));
+  strncat(timestamp, offset, timestamp_size - strlen(timestamp) -1);
 }
 
 static guint64
@@ -698,7 +721,7 @@ static GOptionEntry loggen_options[] = {
   { "csv", 'C', 0, G_OPTION_ARG_NONE, &csv, "Produce CSV output", NULL },
   { "number", 'n', 0, G_OPTION_ARG_INT, &number_of_messages, "Number of messages to generate", "<number>" },
   { "quiet", 'Q', 0, G_OPTION_ARG_NONE, &quiet, "Don't print the msg/sec data", NULL },
-  { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
+  { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE " " SYSLOG_NG_VERSION ")", NULL },
   { NULL }
 };
 
@@ -714,7 +737,7 @@ static GOptionEntry file_option_entries[] =
 void
 version(void)
 {
-  printf(PACKAGE " " VERSION "\n");
+  printf(SYSLOG_NG_PACKAGE " " SYSLOG_NG_VERSION "\n");
 }
 
 int
@@ -806,7 +829,7 @@ main(int argc, char *argv[])
 
       if (1)
         {
-#if HAVE_GETADDRINFO
+#if SYSLOG_NG_HAVE_GETADDRINFO
           struct addrinfo hints;
           struct addrinfo *res;
 

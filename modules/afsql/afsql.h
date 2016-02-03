@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -25,8 +25,10 @@
 #define AFSQL_H_INCLUDED
 
 #include "driver.h"
-#include <dbi/dbi.h>
 #include "mainloop-worker.h"
+#include "string-list.h"
+
+#include <dbi/dbi.h>
 
 enum
 {
@@ -116,8 +118,6 @@ typedef struct _AFSqlDestDriver
 } AFSqlDestDriver;
 
 
-#if ENABLE_SQL
-
 void afsql_dd_set_type(LogDriver *s, const gchar *type);
 void afsql_dd_set_host(LogDriver *s, const gchar *host);
 gboolean afsql_dd_check_port(const gchar *port);
@@ -140,24 +140,5 @@ gint afsql_dd_lookup_flag(const gchar *flag);
 void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 void afsql_dd_add_dbd_option(LogDriver *s, const gchar *name, const gchar *value);
 void afsql_dd_add_dbd_option_numeric(LogDriver *s, const gchar *name, gint value);
-
-#else
-
-#define afsql_dd_set_type(s, t)
-#define afsql_dd_set_host(s, h)
-#define afsql_dd_set_port(s, p)
-#define afsql_dd_set_user(s, u)
-#define afsql_dd_set_password(s, p)
-#define afsql_dd_set_database(s, d)
-#define afsql_dd_set_table(s, t)
-#define afsql_dd_set_columns(s, c)
-#define afsql_dd_set_values(s, v)
-#define afsql_dd_set_null_value(s, v)
-#define afsql_dd_add_dbd_option(s, n, v)
-#define afsql_dd_add_dbd_option_numeric(s, n, v)
-
-#define afsql_dd_new(c) 0
-
-#endif
 
 #endif

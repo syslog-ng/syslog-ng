@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -24,7 +24,6 @@
 #include "syslog-ng.h"
 #include "messages.h"
 #include "template/templates.h"
-#include "misc.h"
 #include "patterndb.h"
 #include "dbparser.h"
 #include "radix.h"
@@ -1124,7 +1123,7 @@ static GOptionEntry pdbtool_options[] =
   { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>" },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path,
-    "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
+    "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -1200,7 +1199,7 @@ main(int argc, char *argv[])
   log_tags_global_init();
   pattern_db_global_init();
 
-  module_path = get_installation_path_for(MODULE_PATH);
+  module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
 
   configuration = cfg_new(VERSION_VALUE);
 

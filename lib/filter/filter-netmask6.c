@@ -1,18 +1,19 @@
 /*
- * Copyright (c) 2014 BalaBit S.a.r.l., Luxembourg, Luxembourg
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Zoltan Fried
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -24,7 +25,7 @@
 
 #include "filter-netmask6.h"
 #include "gsocket.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -32,7 +33,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
 typedef struct _FilterNetmask6
 {
   FilterExprNode super;
@@ -51,7 +52,7 @@ static inline uint64_t
 _mask(uint64_t base, uint64_t mask)
 {
   if (G_BYTE_ORDER == G_BIG_ENDIAN)
-    return GUINT64_SWAP_LE_BE(base & mask);
+    return base & mask;
   else
     return GUINT64_SWAP_LE_BE(GUINT64_SWAP_LE_BE(base) & mask);
 }
@@ -128,6 +129,7 @@ filter_netmask6_new(gchar *cidr)
   gchar address[INET6_ADDRSTRLEN] = "";
   gchar *slash = strchr(cidr, '/');
 
+  filter_expr_node_init_instance(&self->super);
   if (strlen(cidr) >= INET6_ADDRSTRLEN + 5 || !slash)
     {
       strcpy(address, cidr);

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014-2015 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2014-2015 Balázs Scheidler
+ * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
  * COPYING for details.
  *
  */
+
 #ifndef DEBUGGER_DEBUGGER_MAIN_H_INCLUDED
 #define DEBUGGER_DEBUGGER_MAIN_H_INCLUDED 1
 

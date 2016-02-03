@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit
+ * Copyright (c) 2014-2015 Balabit
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
@@ -79,7 +79,7 @@ python_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
 const ModuleInfo module_info =
 {
   .canonical_name = "python",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The python module provides Python scripted destination support for syslog-ng.",
   .core_revision = VERSION_CURRENT_VER_ONLY,
   .plugins = python_plugins,

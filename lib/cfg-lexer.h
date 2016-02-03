@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -80,7 +80,6 @@ typedef struct _CfgLexerKeyword
 {
   const gchar *kw_name;
   gint  kw_token;
-  gint  kw_req_version;
   gint  kw_status;
   const gchar *kw_explain;
 } CfgLexerKeyword;

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>,
- *                    Peter Gyongyosi <gyp@balabit.hu>
+ * Copyright (c) 2012 Balabit
+ * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012 Peter Gyongyosi <gyp@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -165,9 +165,9 @@ cryptofuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "cryptofuncs",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The cryptofuncs module provides cryptographic template functions.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = cryptofuncs_plugins,
   .plugins_len = G_N_ELEMENTS(cryptofuncs_plugins),
 };

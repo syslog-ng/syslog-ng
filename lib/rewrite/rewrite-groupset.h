@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Viktor Tusa <viktor.tusa@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,8 +22,8 @@
  *
  */
 
-#include "rewrite-expr.h"
-#include "value-pairs.h"
+#include "rewrite/rewrite-expr.h"
+#include "value-pairs/value-pairs.h"
 
 typedef struct _LogRewriteGroupSet {
   LogRewrite super;

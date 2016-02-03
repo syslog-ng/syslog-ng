@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Balazs Scheidler <bazsilgernon@balabit.hu>
+ * Copyright (c) 2012 Balabit
+ * Copyright (c) 2012 Balazs Scheidler <bazsi@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
  */
 
 #include "file-perms.h"
-#include "misc.h"
+#include "userdb.h"
 #include "messages.h"
 #include "cfg.h"
 #include "gprocess.h"

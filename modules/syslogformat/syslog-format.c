@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -22,27 +22,18 @@
  */
 
 #include "syslog-format.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils.h"
-#include "misc.h"
+#include "find-crlf.h"
 #include "cfg.h"
 #include "str-format.h"
 #include "utf8utils.h"
+#include "str-utils.h"
 
 #include <regex.h>
 #include <ctype.h>
 #include <string.h>
-
-/*
- * Used in log_msg_parse_date(). Need to differentiate because Tru64's strptime
- * works differently than the rest of the supported systems.
- */
-#if defined(__digital__) && defined(__osf__)
-#define STRPTIME_ISOFORMAT "%Y-%m-%dT%H:%M:%S"
-#else
-#define STRPTIME_ISOFORMAT "%Y-%m-%d T%H:%M:%S"
-#endif
 
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
@@ -100,7 +91,7 @@ log_msg_parse_skip_chars(LogMessage *self, const guchar **data, gint *length, co
   gint left = *length;
   gint num_skipped = 0;
 
-  while (max_len && left && strchr(chars, *src))
+  while (max_len && left && _strchr_optimized_for_single_char_haystack(chars, *src))
     {
       src++;
       left--;
@@ -141,7 +132,7 @@ log_msg_parse_skip_chars_until(LogMessage *self, const guchar **data, gint *leng
   gint left = *length;
   gint num_skipped = 0;
 
-  while (left && strchr(delims, *src) == 0)
+  while (left && _strchr_optimized_for_single_char_haystack(delims, *src) == 0)
     {
       src++;
       left--;
@@ -368,7 +359,9 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
   gint left = *length;
   const guchar *src = *data;
   time_t now_tv_sec = (time_t) now->tv_sec;
+  struct tm local_time;
   cached_localtime(&now_tv_sec, tm);
+  cached_localtime(&now_tv_sec, &local_time);
 
   if (__is_bsd_pix_or_asa(src, left))
     {
@@ -393,7 +386,7 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
 
       *usec = __parse_usec(&src, &left);
 
-      tm->tm_year = determine_year_for_month(tm->tm_mon, tm);
+      tm->tm_year = determine_year_for_month(tm->tm_mon, &local_time);
     }
   else
     {
@@ -461,8 +454,6 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
       if (!__parse_iso_stamp(&now, self, &tm, &src, &left))
         goto error;
       tm.tm_isdst = -1;
-      unnormalized_hour = tm.tm_hour;
-      self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
@@ -1001,7 +992,7 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
       sanitized_message.len = 0;
       sanitized_message.allocated_len = sizeof(buf);
 
-      append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) src, NULL);
+      append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) src, left, NULL);
 
       /* MUST NEVER BE REALLOCATED */
       g_assert(sanitized_message.str == buf);

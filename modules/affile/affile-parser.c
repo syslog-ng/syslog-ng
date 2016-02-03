@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -35,19 +35,19 @@ static CfgLexerKeyword affile_keywords[] = {
   { "pipe",               KW_PIPE },
 
   { "fsync",              KW_FSYNC },
-  { "remove_if_older",    KW_OVERWRITE_IF_OLDER, 0, KWS_OBSOLETE, "overwrite_if_older" },
+  { "remove_if_older",    KW_OVERWRITE_IF_OLDER, KWS_OBSOLETE, "overwrite_if_older" },
   { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
-  { "follow_freq",        KW_FOLLOW_FREQ,  },
-  { "multi_line_mode",    KW_MULTI_LINE_MODE, 0x0305  },
-  { "multi_line_prefix",  KW_MULTI_LINE_PREFIX, 0x0305 },
-  { "multi_line_garbage", KW_MULTI_LINE_GARBAGE, 0x0305 },
-  { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE, 0x0306 },
+  { "follow_freq",        KW_FOLLOW_FREQ },
+  { "multi_line_mode",    KW_MULTI_LINE_MODE  },
+  { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
+  { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
+  { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE },
   { NULL }
 };
 
 CfgParser affile_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &affile_debug,
 #endif
   .name = "affile",

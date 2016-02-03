@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2014 Balabit
  * Copyright (c) 2011 Balint Kovacs <blint@balabit.hu>
  * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
@@ -27,8 +27,7 @@
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-parser.h"
 #include "cfg.h"
-#include "value-pairs.h"
-#include "vptransform.h"
+#include "value-pairs/cmdline.h"
 #include "syslog-ng.h"
 #include "utf8utils.h"
 
@@ -66,9 +65,9 @@ typedef struct
 } json_state_t;
 
 static inline void
-g_string_append_escaped(GString *dest, const char *str)
+tf_json_append_escaped(GString *dest, const gchar *str, gsize str_len)
 {
-  append_unsafe_utf8_as_escaped_text(dest, str, "\"");
+  append_unsafe_utf8_as_escaped_text(dest, str, str_len, "\"");
 }
 
 static gboolean
@@ -85,7 +84,7 @@ tf_json_obj_start(const gchar *name,
   if (name)
     {
       g_string_append_c(state->buffer, '"');
-      g_string_append_escaped(state->buffer, name);
+      tf_json_append_escaped(state->buffer, name, -1);
       g_string_append(state->buffer, "\":{");
     }
   else
@@ -112,21 +111,21 @@ tf_json_obj_end(const gchar *name,
 }
 
 static gboolean
-tf_json_append_value(const gchar *name, const gchar *value,
+tf_json_append_value(const gchar *name, const gchar *value, gsize value_len,
                      json_state_t *state, gboolean quoted)
 {
   if (state->need_comma)
     g_string_append_c(state->buffer, ',');
 
   g_string_append_c(state->buffer, '"');
-  g_string_append_escaped(state->buffer, name);
+  tf_json_append_escaped(state->buffer, name, -1);
 
   if (quoted)
     g_string_append(state->buffer, "\":\"");
   else
     g_string_append(state->buffer, "\":");
 
-  g_string_append_escaped(state->buffer, value);
+  tf_json_append_escaped(state->buffer, value, value_len);
 
   if (quoted)
     g_string_append_c(state->buffer, '"');
@@ -136,7 +135,7 @@ tf_json_append_value(const gchar *name, const gchar *value,
 
 static gboolean
 tf_json_value(const gchar *name, const gchar *prefix,
-              TypeHint type, const gchar *value,
+              TypeHint type, const gchar *value, gsize value_len,
               gpointer *prefix_data, gpointer user_data)
 {
   json_state_t *state = (json_state_t *)user_data;
@@ -147,10 +146,10 @@ tf_json_value(const gchar *name, const gchar *prefix,
     case TYPE_HINT_STRING:
     case TYPE_HINT_DATETIME:
     default:
-      tf_json_append_value(name, value, state, TRUE);
+      tf_json_append_value(name, value, value_len, state, TRUE);
       break;
     case TYPE_HINT_LITERAL:
-      tf_json_append_value(name, value, state, FALSE);
+      tf_json_append_value(name, value, value_len, state, FALSE);
       break;
     case TYPE_HINT_INT32:
     case TYPE_HINT_INT64:
@@ -163,6 +162,7 @@ tf_json_value(const gchar *name, const gchar *prefix,
         gboolean b;
         gboolean r = FALSE, fail = FALSE;
         const gchar *v = value;
+        gsize v_len = value_len;
 
         if (type == TYPE_HINT_INT32 &&
             (fail = !type_cast_to_int32(value, &i32 , NULL)) == TRUE)
@@ -175,17 +175,19 @@ tf_json_value(const gchar *name, const gchar *prefix,
           r = type_cast_drop_helper(on_error, value, "double");
         else if (type == TYPE_HINT_BOOLEAN)
           {
-            if ((fail = !type_cast_to_boolean(value, &b , NULL)) == TRUE)
+            if ((fail = !type_cast_to_boolean(value, &b, NULL)) == TRUE)
+            {
               r = type_cast_drop_helper(on_error, value, "boolean");
-            else
+            } else {
               v = b ? "true" : "false";
+              v_len = -1;
+            }
           }
-
         if (fail &&
             !(on_error & ON_ERROR_FALLBACK_TO_STRING))
           return r;
 
-        tf_json_append_value(name, v, state, fail);
+        tf_json_append_value(name, v, v_len, state, fail);
         break;
       }
     }
@@ -233,8 +235,7 @@ tf_json_free_state(gpointer s)
 {
   TFJsonState *state = (TFJsonState *)s;
 
-  if (state->vp)
-    value_pairs_unref(state->vp);
+  value_pairs_unref(state->vp);
   tf_simple_func_free_state(&state->super);
 }
 

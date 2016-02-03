@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -24,7 +24,7 @@
 #ifndef RADIX_H_INCLUDED
 #define RADIX_H_INCLUDED
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "messages.h"
 
 /* parser types, these are saved in the serialized log message along with
@@ -47,6 +47,7 @@ enum
   RPT_EMAIL,
   RPT_HOSTNAME,
   RPT_LLADDR,
+  RPT_NLSTRING,
 };
 
 typedef struct _RParserMatch

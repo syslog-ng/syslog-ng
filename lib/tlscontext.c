@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -22,10 +22,11 @@
  */
 
 #include "tlscontext.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "messages.h"
 
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 #include <openssl/err.h>

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2013 Viktor Tusa <tusa@balabit.hu>
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  *
@@ -8,13 +8,13 @@
  * under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -27,9 +27,8 @@
 #include "afstomp-parser.h"
 #include "plugin.h"
 #include "messages.h"
-#include "misc.h"
 #include "stats/stats-registry.h"
-#include "nvtable.h"
+#include "logmsg/nvtable.h"
 #include "logqueue.h"
 #include "scratch-buffers.h"
 #include "plugin-types.h"
@@ -140,8 +139,7 @@ afstomp_dd_set_value_pairs(LogDriver *s, ValuePairs *vp)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) s;
 
-  if (self->vp)
-    value_pairs_unref(self->vp);
+  value_pairs_unref(self->vp);
   self->vp = vp;
 }
 
@@ -243,8 +241,9 @@ afstomp_dd_disconnect(LogThrDestDriver *s)
   self->conn = NULL;
 }
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
-afstomp_vp_foreach(const gchar *name, TypeHint type, const gchar *value,
+afstomp_vp_foreach(const gchar *name, TypeHint type, const gchar *value, gsize value_len,
                    gpointer user_data)
 {
   stomp_frame *frame = (stomp_frame *) (user_data);
@@ -369,8 +368,7 @@ afstomp_dd_free(LogPipe *d)
   g_free(self->user);
   g_free(self->password);
   g_free(self->host);
-  if (self->vp)
-    value_pairs_unref(self->vp);
+  value_pairs_unref(self->vp);
   log_threaded_dest_driver_free(d);
 }
 
@@ -422,9 +420,9 @@ afstomp_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "afstomp",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afstomp module provides STOMP destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &afstomp_plugin,
   .plugins_len = 1,
 };

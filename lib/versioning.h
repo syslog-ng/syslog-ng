@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -98,11 +99,12 @@
 #define VERSION_3_5 "syslog-ng 3.5"
 #define VERSION_3_6 "syslog-ng 3.6"
 #define VERSION_3_7 "syslog-ng 3.7"
+#define VERSION_3_8 "syslog-ng 3.8"
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE   0x0307
-#define VERSION_CURRENT VERSION_3_7
-#define VERSION_CURRENT_VER_ONLY "3.7"
+#define VERSION_VALUE   0x0308
+#define VERSION_CURRENT VERSION_3_8
+#define VERSION_CURRENT_VER_ONLY "3.8"
 
 #define version_convert_from_user(v)  (v)
 

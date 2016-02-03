@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 2014 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
@@ -61,7 +61,11 @@ early_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_typ
 {
   EarlyAckTracker *self = (EarlyAckTracker *)s;
 
-  log_source_flow_control_adjust(self->super.source, 1);
+  if (ack_type == AT_SUSPENDED)
+    log_source_flow_control_suspend(self->super.source);
+  else
+    log_source_flow_control_adjust(self->super.source, 1);
+
   log_msg_unref(msg);
   log_pipe_unref((LogPipe *)self->super.source);
 }

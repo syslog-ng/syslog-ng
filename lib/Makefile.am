@@ -7,10 +7,12 @@ include lib/rewrite/Makefile.am
 include lib/parser/Makefile.am
 include lib/filter/Makefile.am
 include lib/template/Makefile.am
+include lib/value-pairs/Makefile.am
 include lib/stats/Makefile.am
 include lib/control/Makefile.am
 include lib/debugger/Makefile.am
 include lib/compat/Makefile.am
+include lib/logmsg/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @VERSION@ | cut -d. -f1,2)
 
@@ -89,7 +91,9 @@ pkginclude_HEADERS			+= \
 	lib/crypto.h			\
 	lib/dnscache.h			\
 	lib/driver.h			\
+	lib/fdhelpers.h			\
 	lib/file-perms.h		\
+	lib/find-crlf.h			\
 	lib/gprocess.h			\
 	lib/gsockaddr.h			\
 	lib/gsocket.h			\
@@ -97,7 +101,6 @@ pkginclude_HEADERS			+= \
 	lib/host-resolve.h		\
 	lib/logmatcher.h		\
 	lib/logmpx.h			\
-	lib/logmsg.h			\
 	lib/logpipe.h			\
 	lib/logqueue-fifo.h		\
 	lib/logqueue.h			\
@@ -113,10 +116,8 @@ pkginclude_HEADERS			+= \
 	lib/module-config.h		\
 	lib/memtrace.h			\
 	lib/messages.h			\
-	lib/misc.h			\
 	lib/ml-batched-timer.h		\
 	lib/msg-format.h		\
-	lib/nvtable.h			\
 	lib/parse-number.h		\
 	lib/pathutils.h         \
 	lib/persist-state.h		\
@@ -134,10 +135,12 @@ pkginclude_HEADERS			+= \
 	lib/scratch-buffers.h		\
 	lib/serialize.h			\
 	lib/service-management.h	\
-	lib/stringutils.h	\
+	lib/seqnum.h			\
 	lib/str-format.h		\
+	lib/str-utils.h			\
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
+	lib/string-list.h		\
 	lib/tags.h			\
 	lib/timeutils.h			\
 	lib/tls-support.h		\
@@ -145,9 +148,8 @@ pkginclude_HEADERS			+= \
 	lib/tlscontext.h  		\
 	lib/type-hinting.h		\
 	lib/uuid.h			\
+	lib/userdb.h			\
 	lib/utf8utils.h			\
-	lib/value-pairs.h		\
-	lib/vptransform.h		\
 	lib/versioning.h		\
 	lib/bookmark.h			\
 	lib/ringbuffer.h		\
@@ -170,7 +172,9 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/children.c			\
 	lib/dnscache.c			\
 	lib/driver.c			\
+	lib/fdhelpers.c			\
 	lib/file-perms.c		\
+	lib/find-crlf.c			\
 	lib/globals.c			\
 	lib/gprocess.c			\
 	lib/gsockaddr.c			\
@@ -179,7 +183,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/host-resolve.c		\
 	lib/logmatcher.c		\
 	lib/logmpx.c			\
-	lib/logmsg.c			\
 	lib/logpipe.c			\
 	lib/logqueue.c			\
 	lib/logqueue-fifo.c		\
@@ -195,10 +198,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/module-config.c		\
 	lib/memtrace.c			\
 	lib/messages.c			\
-	lib/misc.c			\
 	lib/ml-batched-timer.c		\
 	lib/msg-format.c		\
-	lib/nvtable.c			\
 	lib/parse-number.c		\
 	lib/pathutils.c         \
 	lib/persist-state.c		\
@@ -213,20 +214,20 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/scratch-buffers.c		\
 	lib/serialize.c			\
 	lib/service-management.c	\
-	lib/stringutils.c	\
 	lib/str-format.c		\
+	lib/str-utils.c			\
 	lib/syslog-names.c		\
+	lib/string-list.c		\
 	lib/tags.c			\
 	lib/timeutils.c			\
 	lib/type-hinting.c		\
-	lib/value-pairs.c		\
-	lib/vptransform.c		\
 	lib/ringbuffer.c		\
 	lib/late_ack_tracker.c		\
 	lib/early_ack_tracker.c		\
 	lib/crypto.c			\
 	lib/tlscontext.c		\
 	lib/uuid.c			\
+	lib/userdb.c			\
 	lib/utf8utils.c			\
 	$(transport_crypto_sources)	\
 	lib/host-id.c			\
@@ -241,10 +242,12 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(parser_sources)		\
 	$(rewrite_sources)		\
 	$(template_sources)		\
+	$(value_pairs_sources)		\
 	$(stats_sources)		\
 	$(control_sources)		\
 	$(debugger_sources)		\
-	$(compat_sources)
+	$(compat_sources)     \
+	$(logmsg_sources)
 
 lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
 lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@

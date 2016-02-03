@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -28,7 +28,6 @@
 #include "messages.h"
 #include "stats/stats-csv.h"
 #include "stats/stats-counter.h"
-#include "misc.h"
 #include "mainloop.h"
 
 #include <errno.h>
@@ -106,7 +105,7 @@ control_connection_message_log(GString *command)
         }
     }
   else
-    return g_string_new("Invalid arguments received");
+    g_string_assign(result, "Invalid arguments received");
 exit:
   g_strfreev(cmds);
   return result;

@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015 Adam Arsenault <adam.arsenault@balabit.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 package org.syslog_ng.http;
 
 import org.syslog_ng.*;
@@ -73,16 +96,25 @@ public class HTTPDestination extends TextLogDestination {
                 osw.write(message);
                 osw.close();
             } catch (IOException e) {
-		logger.error("error in writing message.");
-		return false;
+                logger.error("error in writing message.");
+                return false;
             }
+
             responseCode = connection.getResponseCode();
+            if (isHTTPResponseError(responseCode)) {
+                logger.error("HTTP response code error: " + responseCode);
+                return false;
+            }
         } catch (IOException | SecurityException | IllegalStateException e) {
             logger.debug("error in writing message." +
                     (responseCode != 0 ? "Response code is " + responseCode : ""));
             return false;
         }
         return true;
+    }
+
+    private static boolean isHTTPResponseError(int responseCode) {
+        return responseCode >= 400 && responseCode <= 599;
     }
 
     @Override

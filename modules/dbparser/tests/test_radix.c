@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2008-2015 Balabit
+ * Copyright (c) 2008-2015 Balázs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2009 Marton Illes
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
 
 #include "apphook.h"
 #include "radix.h"
@@ -47,7 +70,7 @@ r_print_node(RNode *node, int depth)
 }
 
 void
-insert_node(RNode *root, gchar *key)
+insert_node_with_value(RNode *root, gchar *key, gpointer value)
 {
   gchar *dup;
 
@@ -55,8 +78,14 @@ insert_node(RNode *root, gchar *key)
    * and it might be a read-only string literal */
 
   dup = g_strdup(key);
-  r_insert_node(root, dup, key, NULL);
+  r_insert_node(root, dup, value ? : key, NULL);
   g_free(dup);
+}
+
+void
+insert_node(RNode *root, gchar *key)
+{
+  insert_node_with_value(root, key, NULL);
 }
 
 void
@@ -219,6 +248,7 @@ test_literals(void)
   insert_node(root, "korozott");
   insert_node(root, "al");
   insert_node(root, "all");
+  insert_node(root, "uj\nsor");
 
   test_search(root, "alma", TRUE);
   test_search(root, "korte", TRUE);
@@ -235,6 +265,9 @@ test_literals(void)
   test_search(root, "korozott", TRUE);
   test_search(root, "al", TRUE);
   test_search(root, "all", TRUE);
+  test_search(root, "uj", FALSE);
+  test_search(root, "uj\nsor", TRUE);
+  test_search_value(root, "uj\r\nsor", "uj\nsor");
 
   test_search(root, "mmm", FALSE);
   test_search_value(root, "kor", "ko");
@@ -303,6 +336,7 @@ test_parsers(void)
   printf("We excpect an error message\n");
   insert_node(root, "AAA@SET:set@AAA");
   insert_node(root, "AAA@MACADDR@AAA");
+  insert_node(root, "newline@NUMBER@\n2ndline\n");
 
   printf("We excpect an error message\n");
   insert_node(root, "AAA@PCRE:set@AAA");
@@ -315,6 +349,9 @@ test_parsers(void)
   test_search_value(root, "a@ax", NULL);
 
   test_search_value(root, "a@15555", "a@@@NUMBER:szam0@");
+
+  /* CRLF sequence immediately after a parser, e.g. in the initial position */
+  test_search_value(root, "newline123\r\n2ndline\n", "newline@NUMBER@\n2ndline\n");
 
   /* FIXME: this one fails, because the shorter match is returned. The
    * current radix implementation does not ensure the longest match when the
@@ -354,6 +391,8 @@ test_matches(void)
 
   insert_node(root, "jjj @PCRE:regexp:[abc]+@");
   insert_node(root, "jjjj @PCRE:regexp:[abc]+@d foobar");
+
+  insert_node(root, "mmm @NLSTRING:nlstring@\n");
 
   test_search_matches(root, "aaa 12345 hihihi",
                       "number", "12345",
@@ -638,6 +677,11 @@ test_matches(void)
   test_search_matches(root, "lll 83:63:25:93:eb:51:aa:bb.iii", "lladdr6", "83:63:25:93:eb:51", NULL);
   test_search_matches(root, "lll 83:63:25:93:EB:51:aa:bb.iii", "lladdr6", "83:63:25:93:EB:51", NULL);
 
+  test_search_matches(root, "mmm foobar\r\nbaz", "nlstring", "foobar", NULL);
+  test_search_matches(root, "mmm foobar\nbaz", "nlstring", "foobar", NULL);
+  test_search_matches(root, "mmm \nbaz", "nlstring", "", NULL);
+  test_search_matches(root, "mmm \r\nbaz", "nlstring", "", NULL);
+
   test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
 
   r_free_node(root, NULL);
@@ -649,10 +693,10 @@ test_zorp_logs(void)
   RNode *root = r_new_node("", NULL);
 
   /* these are conflicting logs */
-  r_insert_node(root, strdup("core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local='AF_INET(@IPv4:local_ip@:@NUMBER:local_port@)', remote='AF_INET(@IPv4:remote_ip@:@NUMBER:remote_port@)', error=@QSTRING:errormsg:'@"), "ZORP", NULL);
-  r_insert_node(root, strdup("core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local=@QSTRING:p:'@, remote=@QSTRING:p:'@, error=@QSTRING:p:'@"), "ZORP1", NULL);
-  r_insert_node(root, strdup("Deny@QSTRING:FIREWALL.DENY_PROTO: @src@QSTRING:FIREWALL.DENY_O_INT: :@@IPv4:FIREWALL.DENY_SRCIP@/@NUMBER:FIREWALL.DENY_SRCPORT@ dst"), "CISCO", NULL);
-  r_insert_node(root, strdup("@NUMBER:Seq@, @ESTRING:DateTime:,@@ESTRING:Severity:,@@ESTRING:Comp:,@"), "3com", NULL);
+  insert_node_with_value(root, "core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local='AF_INET(@IPv4:local_ip@:@NUMBER:local_port@)', remote='AF_INET(@IPv4:remote_ip@:@NUMBER:remote_port@)', error=@QSTRING:errormsg:'@", "ZORP");
+  insert_node_with_value(root, "core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local=@QSTRING:p:'@, remote=@QSTRING:p:'@, error=@QSTRING:p:'@", "ZORP1");
+  insert_node_with_value(root, "Deny@QSTRING:FIREWALL.DENY_PROTO: @src@QSTRING:FIREWALL.DENY_O_INT: :@@IPv4:FIREWALL.DENY_SRCIP@/@NUMBER:FIREWALL.DENY_SRCPORT@ dst", "CISCO");
+  insert_node_with_value(root, "@NUMBER:Seq@, @ESTRING:DateTime:,@@ESTRING:Severity:,@@ESTRING:Comp:,@", "3com");
 
   test_search_value(root, "core.error(2): (svc/intra.servers.alef_SSH_dmz.zajin:111/plug): Connection to remote end failed; local='AF_INET(172.16.0.1:56867)', remote='AF_INET(172.18.0.1:22)', error='No route to host'PAS", "ZORP");
   test_search_value(root, "Deny udp src OUTSIDE:10.0.0.0/1234 dst INSIDE:192.168.0.0/5678 by access-group \"OUTSIDE\" [0xb74026ad, 0x0]", "CISCO");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 2013 Viktor Juhasz
  * Copyright (c) 2013 Viktor Tusa
  *
@@ -23,8 +23,7 @@
  *
  */
 #include "persistable-state-presenter.h"
-#include "misc.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "str-format.h"
 
 static GHashTable *persist_state_storage = NULL;

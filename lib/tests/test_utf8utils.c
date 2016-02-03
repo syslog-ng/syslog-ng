@@ -1,3 +1,27 @@
+/*
+ * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015 Balázs Scheidler
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "testutils.h"
 #include "utf8utils.h"
 
@@ -6,7 +30,7 @@
 void
 assert_escaped_binary_with_unsafe_chars(const gchar *str, const gchar *expected_escaped_str, const gchar *unsafe_chars)
 {
-  gchar *escaped_str = convert_unsafe_utf8_to_escaped_binary(str, unsafe_chars);
+  gchar *escaped_str = convert_unsafe_utf8_to_escaped_binary(str, -1, unsafe_chars);
 
   assert_string(escaped_str, expected_escaped_str, "Escaped UTF-8 string is not expected");
   g_free(escaped_str);
@@ -21,7 +45,7 @@ assert_escaped_binary(const gchar *str, const gchar *expected_escaped_str)
 void
 assert_escaped_text_with_unsafe_chars(const gchar *str, const gchar *expected_escaped_str, const gchar *unsafe_chars)
 {
-  gchar *escaped_str = convert_unsafe_utf8_to_escaped_text(str, unsafe_chars);
+  gchar *escaped_str = convert_unsafe_utf8_to_escaped_text(str, -1, unsafe_chars);
 
   assert_string(escaped_str, expected_escaped_str, "Escaped UTF-8 string is not expected");
   g_free(escaped_str);

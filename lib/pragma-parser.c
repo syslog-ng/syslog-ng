@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -30,15 +30,15 @@ int pragma_parse(CfgLexer *lexer, gpointer *result, gpointer arg);
 
 static CfgLexerKeyword pragma_keywords[] = {
   { "version",            KW_VERSION, },
-  { "include",            KW_INCLUDE, 0x0302, },
-  { "module",             KW_MODULE, 0x0302, },
-  { "define",             KW_DEFINE, 0x0302, },
+  { "include",            KW_INCLUDE, },
+  { "module",             KW_MODULE, },
+  { "define",             KW_DEFINE, },
   { CFG_KEYWORD_STOP },
 };
 
 CfgParser pragma_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &pragma_debug,
 #endif
   .name = "pragma",

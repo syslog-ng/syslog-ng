@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013, 2015 BalaBit
+ * Copyright (c) 2002-2013, 2015 Balabit
  * Copyright (c) 1998-2013, 2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -49,6 +49,7 @@ correllation_context_get_last_message(CorrellationContext *self)
 
 void correllation_context_init(CorrellationContext *self, const CorrellationKey *key);
 void correllation_context_free_method(CorrellationContext *self);
+CorrellationContext *correllation_context_new(CorrellationKey *key);
 CorrellationContext *correllation_context_ref(CorrellationContext *self);
 void correllation_context_unref(CorrellationContext *self);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -23,12 +23,20 @@
 
 package org.syslog_ng.elasticsearch.client;
 
+import java.io.File;
+import java.net.URI;
+import java.net.URL;
+import java.net.MalformedURLException;
+import java.nio.file.Paths;
+
 import org.apache.log4j.Logger;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequestBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.settings.ImmutableSettings.Builder;
+import org.elasticsearch.common.settings.SettingsException;
 import org.syslog_ng.elasticsearch.ElasticSearchOptions;
 
 public abstract class ESClient {
@@ -103,5 +111,19 @@ public abstract class ESClient {
 
 	protected void resetClient() {
 		this.client = null;
+	}
+
+	protected void loadConfigFile(String cfgFile, Builder settingsBuilder) {
+		if (cfgFile == null || cfgFile.isEmpty()) {
+			return;
+		}
+		try {
+			URL url = new File(cfgFile).toURI().toURL();
+			settingsBuilder.loadFromUrl(url);
+		} catch (MalformedURLException e) {
+			logger.warn("Bad filename format, filename = '" + cfgFile + "'");
+		} catch (SettingsException e) {
+			logger.warn("Can't load settings from file, file = '" + cfgFile + "', reason = '" + e.getMessage() + "'");
+		}
 	}
 }

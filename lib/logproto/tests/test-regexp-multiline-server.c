@@ -1,3 +1,28 @@
+/*
+ * Copyright (c) 2013-2014 Balabit
+ * Copyright (c) 2013-2014 Balázs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2014 Viktor Tusa <viktor.tusa@balabit.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "mock-transport.h"
 #include "proto_lib.h"
 #include "msg_parse_lib.h"
@@ -11,6 +36,7 @@ static void
 test_lines_separated_with_prefix(gboolean input_is_stream)
 {
   LogProtoServer *proto;
+  MultiLineRegexp *re;
 
   proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -26,7 +52,7 @@ test_lines_separated_with_prefix(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            multi_line_regexp_compile("^Foo", NULL), NULL);
+            re = multi_line_regexp_compile("^Foo", NULL), NULL);
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -34,12 +60,15 @@ test_lines_separated_with_prefix(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
+  multi_line_regexp_free(re);
 }
 
 static void
 test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
 {
   LogProtoServer *proto;
+  MultiLineRegexp *re1, *re2;
 
   proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -55,7 +84,8 @@ test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            multi_line_regexp_compile("^Foo", NULL), multi_line_regexp_compile(" Bar$", NULL));
+            re1 = multi_line_regexp_compile("^Foo", NULL),
+            re2 = multi_line_regexp_compile(" Bar$", NULL));
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -63,12 +93,16 @@ test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
+  multi_line_regexp_free(re1);
+  multi_line_regexp_free(re2);
 }
 
 static void
 test_lines_separated_with_prefix_and_suffix(gboolean input_is_stream)
 {
   LogProtoServer *proto;
+  MultiLineRegexp *re1, *re2;
 
   proto = log_proto_prefix_suffix_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -82,13 +116,16 @@ test_lines_separated_with_prefix_and_suffix(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            multi_line_regexp_compile("^prefix", NULL), multi_line_regexp_compile("suffix", NULL));
+            re1 = multi_line_regexp_compile("^prefix", NULL),
+            re2 = multi_line_regexp_compile("suffix", NULL));
 
   assert_proto_server_fetch(proto, "prefix first suffix", -1);
   assert_proto_server_fetch(proto, "prefix multi\nsuffix", -1);
 
   log_proto_server_free(proto);
-
+  log_proto_server_options_destroy(&proto_server_options);
+  multi_line_regexp_free(re1);
+  multi_line_regexp_free(re2);
 };
 
 
@@ -96,6 +133,7 @@ static void
 test_lines_separated_with_garbage(gboolean input_is_stream)
 {
   LogProtoServer *proto;
+  MultiLineRegexp *re;
 
   proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -111,7 +149,8 @@ test_lines_separated_with_garbage(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            NULL, multi_line_regexp_compile(" Bar$", NULL));
+            NULL,
+            re = multi_line_regexp_compile(" Bar$", NULL));
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -119,12 +158,15 @@ test_lines_separated_with_garbage(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
+  multi_line_regexp_free(re);
 }
 
 static void
 test_first_line_without_prefix(gboolean input_is_stream)
 {
   LogProtoServer *proto;
+  MultiLineRegexp *re;
 
   proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -140,7 +182,8 @@ test_first_line_without_prefix(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            multi_line_regexp_compile("^Foo", NULL), NULL);
+            re = multi_line_regexp_compile("^Foo", NULL),
+            NULL);
 
   assert_proto_server_fetch(proto, "First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -148,6 +191,8 @@ test_first_line_without_prefix(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
+  log_proto_server_options_destroy(&proto_server_options);
+  multi_line_regexp_free(re);
 }
 
 void

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -63,7 +63,7 @@ static const gchar *time_zone_path_list[] =
 #ifdef PATH_TIMEZONEDIR
   PATH_TIMEZONEDIR,               /* search the user specified dir */
 #endif
-  PATH_PREFIX "/share/zoneinfo/", /* then local installation first */
+  SYSLOG_NG_PATH_PREFIX "/share/zoneinfo/", /* then local installation first */
   "/usr/share/zoneinfo/",         /* linux */
   "/usr/share/lib/zoneinfo/",     /* solaris, AIX */
   NULL,
@@ -109,7 +109,7 @@ TLS_BLOCK_END;
 #define mktime_prev_tm       __tls_deref(mktime_prev_tm)
 #define mktime_prev_time     __tls_deref(mktime_prev_time)
 
-#if !defined(HAVE_LOCALTIME_R) || !defined(HAVE_GMTIME_R)
+#if !defined(SYSLOG_NG_HAVE_LOCALTIME_R) || !defined(SYSLOG_NG_HAVE_GMTIME_R)
 static GStaticMutex localtime_lock = G_STATIC_MUTEX_INIT;
 #endif
 
@@ -191,7 +191,7 @@ cached_localtime(time_t *when, struct tm *tm)
     }
   else
     {
-#ifdef HAVE_LOCALTIME_R
+#ifdef SYSLOG_NG_HAVE_LOCALTIME_R
       localtime_r(when, tm);
 #else
       struct tm *ltm;
@@ -219,7 +219,7 @@ cached_gmtime(time_t *when, struct tm *tm)
     }
   else
     {
-#ifdef HAVE_GMTIME_R
+#ifdef SYSLOG_NG_HAVE_GMTIME_R
       gmtime_r(when, tm);
 #else
       struct tm *ltm;
@@ -244,7 +244,7 @@ cached_gmtime(time_t *when, struct tm *tm)
 long
 get_local_timezone_ofs(time_t when)
 {
-#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+#ifdef SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
   struct tm ltm;
 
   cached_localtime(&when, &ltm);
@@ -269,7 +269,7 @@ get_local_timezone_ofs(time_t when)
     tzoff += 86400;
   
   return tzoff;
-#endif /* HAVE_STRUCT_TM_TM_GMTOFF */
+#endif /* SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF */
 }
 
 
@@ -802,6 +802,7 @@ error:
   g_free(transition_times);
   g_free(transition_types);
   g_free(gmt_offsets);
+  *version = 0;
   return info;
 }
 
@@ -877,8 +878,8 @@ zone_info_read(const gchar *zonename, ZoneInfo **zone, ZoneInfo **zone64)
     }
 
   g_mapped_file_unref(file_map);
-    g_free(filename);
-  return TRUE;
+  g_free(filename);
+  return *zone != NULL || *zone64 != NULL;
 }
 
 gint32

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2012 Balabit
  * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -33,13 +33,13 @@ static CfgLexerKeyword json_parser_keywords[] =
   { "json_parser",          KW_JSON_PARSER,  },
   { "prefix",               KW_PREFIX,  },
   { "marker",               KW_MARKER,  },
-  { "extract_prefix",       KW_EXTRACT_PREFIX, 0x0306 },
+  { "extract_prefix",       KW_EXTRACT_PREFIX, },
   { NULL }
 };
 
 CfgParser json_parser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &json_parser_debug,
 #endif
   .name = "json-parser",

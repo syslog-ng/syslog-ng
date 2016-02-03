@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
  */
 #include "compat/string.h"
 
-#if !defined(HAVE_STRTOK_R) || TEST_STRTOK_R
+#if !defined(SYSLOG_NG_HAVE_STRTOK_R) || TEST_STRTOK_R
 
 char *
 strtok_r(char *str, const char *delim, char **saveptr)

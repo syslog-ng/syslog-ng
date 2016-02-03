@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -28,10 +28,10 @@
 #include "pdb-ruleset.h"
 #include "pdb-load.h"
 #include "correllation.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "tags.h"
 #include "template/templates.h"
-#include "misc.h"
+#include "str-utils.h"
 #include "filter/filter-expr-parser.h"
 #include "logpipe.h"
 
@@ -668,8 +668,10 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
       synthetic_message_apply(&rule->msg, &context->super, msg, buffer);
       if (self->emit)
         {
+          g_static_rw_lock_writer_unlock(&self->lock);
           self->emit(msg, FALSE, self->emit_data);
           pdb_run_rule_actions(rule, self, RAT_MATCH, context, msg, buffer);
+          g_static_rw_lock_writer_lock(&self->lock);
         }
       pdb_rule_unref(rule);
       g_static_rw_lock_writer_unlock(&self->lock);

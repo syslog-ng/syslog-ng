@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@
 #include "messages.h"
 #include "memtrace.h"
 #include "children.h"
-#include "misc.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
 #include "alarms.h"
@@ -52,7 +51,7 @@
 
 #include <grp.h>
 
-#if HAVE_GETOPT_H
+#if SYSLOG_NG_HAVE_GETOPT_H
 #include <getopt.h>
 #endif
 
@@ -70,8 +69,8 @@ extern int cfg_parser_debug;
 
 static GOptionEntry syslogng_options[] = 
 {
-  { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
-  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
+  { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE " " SYSLOG_NG_VERSION ")", NULL },
+  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
 #ifdef YYDEBUG
@@ -125,17 +124,20 @@ version(void)
 {
   if (!get_installer_version(&installer_version) || installer_version == NULL)
     {
-      installer_version = VERSION;
+      installer_version = SYSLOG_NG_VERSION;
     }
-  printf(PACKAGE " " VERSION "\n"
+  printf(SYSLOG_NG_PACKAGE " " SYSLOG_NG_VERSION "\n"
          "Installer-Version: %s\n"
-         "Revision: " SOURCE_REVISION "\n"
-#if WITH_COMPILE_DATE
-         "Compile-Date: " __DATE__ " " __TIME__ "\n"
-#endif
-         "Available-Modules: ",
+         "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
          installer_version);
 
+#if WITH_COMPILE_DATE
+  printf("Compile-Date: " __DATE__ " " __TIME__ "\n");
+#endif
+
+  printf("Module-Directory: %s\n", get_installation_path_for(SYSLOG_NG_PATH_MODULEDIR));
+  printf("Module-Path: %s\n", module_path);
+  printf("Available-Modules: ");
   plugin_list_modules(stdout, FALSE);
 
   printf("Enable-Debug: %s\n"
@@ -145,17 +147,17 @@ version(void)
          "Enable-Spoof-Source: %s\n"
          "Enable-TCP-Wrapper: %s\n"
          "Enable-Linux-Caps: %s\n",
-         ON_OFF_STR(ENABLE_DEBUG),
-         ON_OFF_STR(ENABLE_GPROF),
-         ON_OFF_STR(ENABLE_MEMTRACE),
-         ON_OFF_STR(ENABLE_IPV6),
-         ON_OFF_STR(ENABLE_SPOOF_SOURCE),
-         ON_OFF_STR(ENABLE_TCP_WRAPPER),
-         ON_OFF_STR(ENABLE_LINUX_CAPS));
+         ON_OFF_STR(SYSLOG_NG_ENABLE_DEBUG),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_GPROF),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_MEMTRACE),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_IPV6),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_SPOOF_SOURCE),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_TCP_WRAPPER),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_LINUX_CAPS));
 
 }
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 #define BASE_CAPS "cap_net_bind_service,cap_net_broadcast,cap_net_raw," \
   "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner=p "
 

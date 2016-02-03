@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -168,7 +169,9 @@ geoip_parser_init(LogPipe *s)
 
   self->gi = GeoIP_open(self->database, GEOIP_MMAP_CACHE);
 
-  return !!self->gi;
+  if (!self->gi)
+    return FALSE;
+  return log_parser_init_method(s);
 }
 
 LogParser *

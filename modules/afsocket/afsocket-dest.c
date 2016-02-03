@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -23,7 +23,6 @@
 
 #include "afsocket-dest.h"
 #include "messages.h"
-#include "misc.h"
 #include "logwriter.h"
 #include "gsocket.h"
 #include "stats/stats-registry.h"

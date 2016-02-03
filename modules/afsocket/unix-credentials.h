@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit S.a.r.l., Luxembourg, Luxembourg
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -30,13 +30,13 @@
 #include "syslog-ng.h"
 
 #if defined(__linux__)
-# if HAVE_STRUCT_UCRED && HAVE_CTRLBUF_IN_MSGHDR
+# if SYSLOG_NG_HAVE_STRUCT_UCRED && SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
 # define CRED_PASS_SUPPORTED
 # define cred_t struct ucred
 # define cred_get(c,x) (c->x)
 # endif
 #elif defined(__FreeBSD__)
-# if HAVE_STRUCT_CMSGCRED && HAVE_CTRLBUF_IN_MSGHDR
+# if SYSLOG_NG_HAVE_STRUCT_CMSGCRED && SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
 #  define CRED_PASS_SUPPORTED
 #  define SCM_CREDENTIALS SCM_CREDS
 #  define cred_t struct cmsgcred

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -25,9 +25,9 @@
 #ifndef SYSLOG_NG_H_INCLUDED
 #define SYSLOG_NG_H_INCLUDED
 
-#include <config.h>
+#include <syslog-ng-config.h>
 
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
 #undef YYDEBUG
 #define YYDEBUG 1
 #endif
@@ -35,16 +35,14 @@
 #include "compat/glib.h"
 #include "versioning.h"
 
-#define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
-#define PATH_INSTALL_DAT	PATH_SYSCONFDIR "/install.dat"
-#define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"
-#define PATH_CONTROL_SOCKET     PATH_PIDFILEDIR "/syslog-ng.ctl"
-#if ENABLE_ENV_WRAPPER
-#define PATH_SYSLOGNG           PATH_LIBEXECDIR "/syslog-ng"
+#define PATH_SYSLOG_NG_CONF     SYSLOG_NG_PATH_SYSCONFDIR "/syslog-ng.conf"
+#define PATH_INSTALL_DAT	SYSLOG_NG_PATH_SYSCONFDIR "/install.dat"
+#define PATH_PIDFILE            SYSLOG_NG_PATH_PIDFILEDIR "/syslog-ng.pid"
+#define PATH_CONTROL_SOCKET     SYSLOG_NG_PATH_PIDFILEDIR "/syslog-ng.ctl"
+#if SYSLOG_NG_ENABLE_ENV_WRAPPER
+#define PATH_SYSLOGNG           SYSLOG_NG_PATH_LIBEXECDIR "/syslog-ng"
 #endif
-#define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
-
-#define SAFE_STRING(x) ((x) ? (x) : "NULL")
+#define PATH_PERSIST_CONFIG     SYSLOG_NG_PATH_LOCALSTATEDIR "/syslog-ng.persist"
 
 typedef struct _LogPipe LogPipe;
 typedef struct _LogMessage LogMessage;
@@ -56,6 +54,5 @@ typedef struct _AckRecord AckRecord;
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
 extern GlobalConfig *configuration;
 extern const gchar *module_path;
-extern const gchar *java_module_path;
 
 #endif

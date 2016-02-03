@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013 Balabit
  * Copyright (c) 2013, 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -41,16 +41,25 @@ static CfgLexerKeyword riemann_keywords[] = {
   { "ttl",                      KW_TTL },
   { "attributes",               KW_ATTRIBUTES },
 
-  { "cacert",                   KW_CACERT },
-  { "cert",                     KW_CERT },
-  { "key",                      KW_KEY },
+  { "ca_file",                  KW_CA_FILE },
+  { "cert_file",                KW_CERT_FILE },
+  { "key_file",                 KW_KEY_FILE },
+
+  /* compatibility with original but inconsistent option naming */
+  { "cacert",                   KW_CA_FILE },
+  { "cert",                     KW_CERT_FILE },
+
+  /* this one overrides the token in the core set (cfg-parser.c), but
+   * we use it for compatibility reasons, and I didn't want duplicate
+   * rules in the grammar just for this */
+  { "key",                      KW_KEY_FILE },
 
   { NULL }
 };
 
 CfgParser riemann_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &riemann_debug,
 #endif
   .name = "riemann",

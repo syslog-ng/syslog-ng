@@ -1,3 +1,27 @@
+/*
+ * Copyright (c) 2005-2015 Balabit
+ * Copyright (c) 2005-2015 Balázs Scheidler <balazs.scheidler@balabit.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-grammar.h"
 #include "filter/filter-netmask.h"
@@ -10,7 +34,7 @@
 #include "cfg.h"
 #include "messages.h"
 #include "syslog-names.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "plugin.h"
 
@@ -217,7 +241,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   app_startup();
 
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE);
   plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
@@ -300,7 +324,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   TEST_ASSERT(create_posix_regexp_match("((", 0) == NULL);
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   sender_saddr = g_sockaddr_inet6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348", 5000);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::/1"), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e::/95"), 1);
@@ -354,6 +378,18 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_and_new(create_posix_regexp_match("^PTHREAD$", 0), create_posix_regexp_match(" PTHREAD ", 0)), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_and_new(create_posix_regexp_match(" PAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 0);
 
+  /* LEVEL_NUM is 7 */
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("7"), KW_NUM_EQ), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("5"), KW_NUM_NE), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("8"), KW_NUM_LT), 1);
+
+  /* 7 < 10 is TRUE */
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("10"), KW_NUM_LT), 1);
+  /* 7 lt 10 is FALSE as 10 orders lower when interpreted as a string */
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("10"), KW_LT), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("5"), KW_NUM_GT), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("7"), KW_NUM_GE), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("$LEVEL_NUM"), create_template("7"), KW_NUM_LE), 1);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("alma"), create_template("korte"), KW_LT), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(create_template("alma"), create_template("korte"), KW_LE), 1);

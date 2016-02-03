@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013, 2015 BalaBit
+ * Copyright (c) 2002-2013, 2015 Balabit
  * Copyright (c) 1998-2013, 2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,7 +21,7 @@
  *
  */
 #include "correllation-context.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 #include <string.h>
 
@@ -59,6 +59,15 @@ correllation_context_free_method(CorrellationContext *self)
   if (self->key.pid)
     g_free((gchar *) self->key.pid);
   g_free(self->key.session_id);
+}
+
+CorrellationContext *
+correllation_context_new(CorrellationKey *key)
+{
+  CorrellationContext *self = g_new0(CorrellationContext, 1);
+
+  correllation_context_init(self, key);
+  return self;
 }
 
 CorrellationContext *

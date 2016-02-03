@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -40,7 +40,6 @@ struct _LogProtoServerOptions
   void (*destroy)(LogProtoServerOptions *self);
   gboolean initialized;
   gchar *encoding;
-  GIConv convert;
   /* maximum message length in bytes */
   gint max_msg_size;
   gint max_buffer_size;
@@ -54,7 +53,7 @@ typedef union LogProtoServerOptionsStorage
 } LogProtoServerOptionsStorage;
 
 gboolean log_proto_server_options_validate(const LogProtoServerOptions *options);
-void log_proto_server_options_set_encoding(LogProtoServerOptions *s, const gchar *encoding);
+gboolean log_proto_server_options_set_encoding(LogProtoServerOptions *s, const gchar *encoding);
 void log_proto_server_options_defaults(LogProtoServerOptions *options);
 void log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg);
 void log_proto_server_options_destroy(LogProtoServerOptions *options);
@@ -77,10 +76,7 @@ struct _LogProtoServer
 static inline gboolean
 log_proto_server_validate_options(LogProtoServer *self)
 {
-  if (self->validate_options)
-    return self->validate_options(self);
-  else
-    return log_proto_server_options_validate(self->options);
+  return self->validate_options(self);
 }
 
 static inline void
@@ -141,6 +137,7 @@ log_proto_server_is_position_tracked(LogProtoServer *s)
   return FALSE;
 }
 
+gboolean log_proto_server_validate_options_method(LogProtoServer *s);
 void log_proto_server_init(LogProtoServer *s, LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_server_free_method(LogProtoServer *s);
 void log_proto_server_free(LogProtoServer *s);

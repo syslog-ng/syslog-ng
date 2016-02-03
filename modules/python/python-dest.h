@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit
+ * Copyright (c) 2014-2015 Balabit
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  * Copyright (c) 2014-2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
@@ -25,9 +25,10 @@
 #ifndef _SNG_PYTHON_DEST_H
 #define _SNG_PYTHON_DEST_H
 
+#include "python-module.h"
 #include "driver.h"
 #include "logwriter.h"
-#include "value-pairs.h"
+#include "value-pairs/value-pairs.h"
 
 LogDriver *python_dd_new(GlobalConfig *cfg);
 void python_dd_set_imports(LogDriver *d, GList *imports);

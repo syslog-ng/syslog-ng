@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
  */
 #include "compat/socket.h"
 
-#ifndef HAVE_INET_ATON
+#ifndef SYSLOG_NG_HAVE_INET_ATON
 int
 inet_aton(const char *cp, struct in_addr *dst)
 {

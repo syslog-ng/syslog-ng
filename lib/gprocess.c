@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@
  */
 
 #include "gprocess.h"
-#include "misc.h"
+#include "userdb.h"
 #include "messages.h"
 #include "reloc.h"
  
@@ -47,7 +47,7 @@
 #include <pwd.h>
 #include <grp.h>
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 #  include <sys/capability.h>
 #  include <sys/prctl.h>
 #endif
@@ -90,8 +90,9 @@ typedef enum
   G_PK_DAEMON,
 } GProcessKind;
 
+#define SAFE_STRING(x) ((x) ? (x) : "NULL")
 #define G_PROCESS_FD_LIMIT_RESERVE 64
-#define G_PROCESS_FAILURE_NOTIFICATION PATH_PREFIX "/sbin/syslog-ng-failure"
+#define G_PROCESS_FAILURE_NOTIFICATION SYSLOG_NG_PATH_PREFIX "/sbin/syslog-ng-failure"
 
 /* pipe used to deliver the initialization result to the calling process */
 static gint startup_result_pipe[2] = { -1, -1 };
@@ -99,7 +100,7 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 static int have_capsyslog = FALSE;
 #endif
 
@@ -140,7 +141,7 @@ static struct
   .gid = -1
 };
 
-#if ENABLE_SYSTEMD
+#if SYSLOG_NG_ENABLE_SYSTEMD
 /**
  * Inherits systemd socket activation from parent process updating the pid
  * in LISTEN_PID to the pid of the child process.
@@ -196,7 +197,7 @@ inherit_systemd_activation(void)
 
 #endif
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 
 /**
  * g_process_cap_modify:
@@ -493,7 +494,7 @@ g_process_set_caps(const gchar *caps)
 void
 g_process_set_argv_space(gint argc, gchar **argv)
 {
-#ifdef HAVE_ENVIRON
+#ifdef SYSLOG_NG_HAVE_ENVIRON
   extern char **environ;
   gchar *lastargv = NULL;
   gchar **envp    = environ;
@@ -678,7 +679,7 @@ g_process_enable_core(void)
 
   if (process_opts.core)
     {
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
       if (!prctl(PR_GET_DUMPABLE, 0, 0, 0, 0))
         {
           gint rc;
@@ -712,13 +713,13 @@ g_process_format_pidfile_name(gchar *buf, gsize buflen)
 
   if (pidfile == NULL)
     {
-      g_snprintf(buf, buflen, "%s/%s.pid", process_opts.pidfile_dir ? process_opts.pidfile_dir : get_installation_path_for(PATH_PIDFILEDIR), process_opts.name);
+      g_snprintf(buf, buflen, "%s/%s.pid", process_opts.pidfile_dir ? process_opts.pidfile_dir : get_installation_path_for(SYSLOG_NG_PATH_PIDFILEDIR), process_opts.name);
       pidfile = buf;
     }
   else if (pidfile[0] != '/')
     {
       /* complete path to pidfile not specified, assume it is a relative path to pidfile_dir */
-      g_snprintf(buf, buflen, "%s/%s", process_opts.pidfile_dir ? process_opts.pidfile_dir : get_installation_path_for(PATH_PIDFILEDIR), pidfile);
+      g_snprintf(buf, buflen, "%s/%s", process_opts.pidfile_dir ? process_opts.pidfile_dir : get_installation_path_for(SYSLOG_NG_PATH_PIDFILEDIR), pidfile);
       pidfile = buf;
       
     }
@@ -811,7 +812,7 @@ g_process_change_root(void)
 static gboolean
 g_process_change_user(void)
 {
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
   if (process_opts.caps)
     prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
 #endif
@@ -845,7 +846,7 @@ g_process_change_user(void)
   return TRUE;
 }
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 /**
  * g_process_change_caps:
  *
@@ -927,7 +928,7 @@ g_process_change_dir(void)
       else if (process_opts.pidfile_dir)
         cwd = process_opts.pidfile_dir;
       if (!cwd)
-        cwd = get_installation_path_for(PATH_PIDFILEDIR);
+        cwd = get_installation_path_for(SYSLOG_NG_PATH_PIDFILEDIR);
         
       if (cwd)
         if (chdir(cwd))
@@ -1044,7 +1045,7 @@ g_process_perform_startup(void)
 static void
 g_process_setproctitle(const gchar* proc_title)
 {
-#ifdef HAVE_ENVIRON
+#ifdef SYSLOG_NG_HAVE_ENVIRON
   size_t len;
 
   g_assert(process_opts.argv_start != NULL);

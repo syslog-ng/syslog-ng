@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@
 
 #include <sys/types.h>
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 #  include <sys/capability.h>
 #endif
 
@@ -40,7 +40,7 @@ typedef enum
   G_PM_SAFE_BACKGROUND,
 } GProcessMode;
 
-#if ENABLE_LINUX_CAPS
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
 
 gboolean g_process_cap_modify(int capability, int onoff);
 cap_t g_process_cap_save(void);

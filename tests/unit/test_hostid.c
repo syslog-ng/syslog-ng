@@ -1,8 +1,30 @@
+/*
+ * Copyright (c) 2014 Balabit
+ * Copyright (c) 2014 Laszlo Budai
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "testutils.h"
 #include "syslog-ng.h"
 #include "host-id.h"
-#include "logmsg.h"
-#include "misc.h"
+#include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "mainloop.h"
@@ -44,13 +66,16 @@ load_hostid_from_persist(const gchar *persist_file)
   HostIdState *host_id_state;
   gsize size;
   guint8 version;
+  guint32 result;
 
   state = create_persist_state(persist_file);
   handle = persist_state_lookup_entry(state, HOST_ID_PERSIST_KEY, &size, &version);
   assert_true(handle != 0, "cannot find hostid in persist file");
   host_id_state = persist_state_map_entry(state, handle);
-
-  return host_id_state->host_id;
+  result = host_id_state->host_id;
+  persist_state_unmap_entry(state, handle);
+  persist_state_free(state);
+  return result;
 }
 
 static void
@@ -86,7 +111,9 @@ create_persist_file_with_hostid(const gchar *persist_file, guint32 hostid)
   handle = persist_state_alloc_entry(state, HOST_ID_PERSIST_KEY, sizeof(HostIdState));
   host_id_state = persist_state_map_entry(state, handle);
   host_id_state->host_id = hostid;
+  persist_state_unmap_entry(state, handle);
   persist_state_commit(state);
+  persist_state_free(state);
 }
 
 static void

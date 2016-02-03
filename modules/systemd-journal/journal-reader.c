@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014      BalaBit S.a.r.l., Luxembourg, Luxembourg
- * Copyright (c) 2010-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2014 Balabit
  * Copyright (c) 2010-2014 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -22,7 +21,7 @@
  *
  */
 #include "syslog-ng.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "logpipe.h"
 #include "messages.h"
 #include "poll-fd-events.h"

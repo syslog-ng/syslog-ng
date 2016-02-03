@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014, 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014, 2015 Balabit
  * Copyright (c) 2013, 2014, 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -24,8 +24,7 @@
 %code requires {
 
 #include "riemann-parser.h"
-#include "value-pairs.h"
-#include "vptransform.h"
+#include "value-pairs/value-pairs.h"
 
 }
 
@@ -53,9 +52,9 @@
 %token KW_TTL
 %token KW_ATTRIBUTES
 %token KW_TIMEOUT
-%token KW_CACERT
-%token KW_CERT
-%token KW_KEY
+%token KW_CA_FILE
+%token KW_CERT_FILE
+%token KW_KEY_FILE
 
 %%
 
@@ -163,9 +162,9 @@ riemann_type_options
         ;
 
 riemann_type_option
-        : KW_CACERT '(' string ')' { riemann_dd_set_tls_cacert(last_driver, $3); free($3); }
-        | KW_CERT '(' string ')' { riemann_dd_set_tls_cert(last_driver, $3); free($3); }
-        | KW_KEY '(' string ')' { riemann_dd_set_tls_key(last_driver, $3); free($3); }
+        : KW_CA_FILE '(' string ')' { riemann_dd_set_tls_cacert(last_driver, $3); free($3); }
+        | KW_CERT_FILE '(' string ')' { riemann_dd_set_tls_cert(last_driver, $3); free($3); }
+        | KW_KEY_FILE '(' string ')' { riemann_dd_set_tls_key(last_driver, $3); free($3); }
         ;
 
 /* INCLUDE_RULES */

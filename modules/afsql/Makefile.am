@@ -10,7 +10,7 @@ modules_afsql_libafsql_la_SOURCES	= 	\
 	modules/afsql/afsql-plugin.c
 
 modules_afsql_libafsql_la_CPPFLAGS	=	\
-	$(AM_CPPFLAGS) -DENABLE_SQL=1		\
+	$(AM_CPPFLAGS)				\
 	-I$(top_srcdir)/modules/afsql		\
 	-I$(top_builddir)/modules/afsql
 modules_afsql_libafsql_la_LIBADD	= 	\

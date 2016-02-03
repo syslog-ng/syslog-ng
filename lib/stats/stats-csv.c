@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -46,13 +46,13 @@ stats_format_csv_escapevar(const gchar *var)
     {
       gchar *result;
       /* quote */
-      result = convert_unsafe_utf8_to_escaped_binary(var, "\"");
+      result = convert_unsafe_utf8_to_escaped_binary(var, -1, "\"");
       escaped_result = g_strdup_printf("\"%s\"", result);
       g_free(result);
     }
   else
     {
-      escaped_result = convert_unsafe_utf8_to_escaped_binary(var, NULL);
+      escaped_result = convert_unsafe_utf8_to_escaped_binary(var, -1, NULL);
     }
   return escaped_result;
 }

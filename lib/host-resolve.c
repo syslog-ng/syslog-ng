@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 #include <netdb.h>
 #include <string.h>
 
-#if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO)
+#if !defined(SYSLOG_NG_HAVE_GETADDRINFO) || !defined(SYSLOG_NG_HAVE_GETNAMEINFO)
 G_LOCK_DEFINE_STATIC(resolv_lock);
 #endif
 
@@ -119,7 +119,7 @@ resolve_wildcard_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar
     case AF_INET:
       *addr = g_sockaddr_inet_new2(((struct sockaddr_in *) &ss));
       break;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
     case AF_INET6:
       *addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) &ss);
       break;
@@ -131,7 +131,7 @@ resolve_wildcard_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar
   return TRUE;
 }
 
-#ifdef HAVE_GETADDRINFO
+#ifdef SYSLOG_NG_HAVE_GETADDRINFO
 static gboolean
 resolve_hostname_to_sockaddr_using_getaddrinfo(GSockAddr **addr, gint family, const gchar *name)
 {
@@ -151,7 +151,7 @@ resolve_hostname_to_sockaddr_using_getaddrinfo(GSockAddr **addr, gint family, co
         case AF_INET:
           *addr = g_sockaddr_inet_new2(((struct sockaddr_in *) res->ai_addr));
           break;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
         case AF_INET6:
           *addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) res->ai_addr);
           break;
@@ -207,7 +207,7 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
   if (is_wildcard_hostname(name))
     return resolve_wildcard_hostname_to_sockaddr(addr, family, name);
 
-#ifdef HAVE_GETADDRINFO
+#ifdef SYSLOG_NG_HAVE_GETADDRINFO
   result = resolve_hostname_to_sockaddr_using_getaddrinfo(addr, family, name);
 #else
   result = resolve_hostname_to_sockaddr_using_gethostbyname(addr, family, name);
@@ -244,7 +244,7 @@ resolve_sockaddr_to_local_hostname(gsize *result_len, GSockAddr *saddr, const Ho
   return hostname_apply_options(-1, result_len, hname, host_resolve_options);
 }
 
-#ifdef HAVE_GETNAMEINFO
+#ifdef SYSLOG_NG_HAVE_GETNAMEINFO
 
 static const gchar *
 resolve_address_using_getnameinfo(GSockAddr *saddr, gchar *buf, gsize buf_len)
@@ -289,7 +289,7 @@ sockaddr_to_dnscache_key(GSockAddr *saddr)
 {
   if (saddr->sa.sa_family == AF_INET)
     return &((struct sockaddr_in *) &saddr->sa)->sin_addr;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   else
     return &((struct sockaddr_in6 *) &saddr->sa)->sin6_addr;
 #endif
@@ -316,7 +316,7 @@ resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr, 
 
   if (!hname && host_resolve_options->use_dns && host_resolve_options->use_dns != 2)
     {
-#ifdef HAVE_GETNAMEINFO
+#ifdef SYSLOG_NG_HAVE_GETNAMEINFO
       hname = resolve_address_using_getnameinfo(saddr, hostname_buffer, sizeof(hostname_buffer));
 #else
       hname = resolve_address_using_gethostbyaddr(saddr, hostname_buffer, sizeof(hostname_buffer));

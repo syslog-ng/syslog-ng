@@ -1,9 +1,32 @@
+/*
+ * Copyright (c) 2014 Balabit
+ * Copyright (c) 2014 Viktor Tusa
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include <libtest/testutils.h>
-#include <value-pairs.h>
+#include <value-pairs/value-pairs.h>
 #include <apphook.h>
 #include <plugin.h>
 #include <cfg.h>
-#include <logmsg.h>
+#include "logmsg/logmsg.h"
 
 MsgFormatOptions parse_options;
 LogTemplateOptions template_options;
@@ -72,17 +95,18 @@ test_vp_obj_stop(const gchar *name,
 
 static gboolean
 test_vp_value(const gchar *name, const gchar *prefix,
-                           TypeHint type, const gchar *value,
+                           TypeHint type, const gchar *value, gsize value_len,
                            gpointer *prefix_data, gpointer user_data)
 {
   assert_string(prefix, "root.test", "Wrong prefix");
-  assert_string(value, "value", "Wrong value");
+  assert_nstring(value, value_len, "value", -1, "Wrong value");
   assert_gint(*((gint*)(*prefix_data)), root_test_data, "Wrong prefix data");
 
   return FALSE;
 }
 
-void test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
+void
+test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
 {
   ValuePairs *vp;
   LogMessage *msg;
@@ -93,14 +117,14 @@ void test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
 
   vp = value_pairs_new();
   value_pairs_add_glob_pattern(vp, "root.*", TRUE);
-  msg = log_msg_new("test",4, NULL, &parse_options);
+  msg = log_msg_new("test", 4, NULL, &parse_options);
 
   log_msg_set_value_by_name(msg, "root.test.alma", value, strlen(value));
-
   log_msg_set_value_by_name(msg, "root.test.korte", value, strlen(value));
 
   value_pairs_walk(vp, test_vp_obj_start, test_vp_value, test_vp_obj_stop, msg, 0, LTZ_LOCAL, &template_options, NULL);
-
+  value_pairs_unref(vp);
+  log_msg_unref(msg);
 };
 
 int main()

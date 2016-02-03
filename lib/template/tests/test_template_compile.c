@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013-2014 Balabit
+ * Copyright (c) 2013-2014 Balázs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2013 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,7 +25,7 @@
 
 #include "template/templates.c"
 #include "template/simple-function.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "testutils.h"
 #include "cfg.h"
 #include "plugin.h"

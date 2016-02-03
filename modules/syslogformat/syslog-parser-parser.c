@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012 Balabit
  * Copyright (c) 2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -31,13 +31,13 @@ int syslog_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword syslog_parser_keywords[] =
 {
-  { "syslog_parser",          KW_SYSLOG_PARSER, 0x0304 },
+  { "syslog_parser",          KW_SYSLOG_PARSER },
   { NULL }
 };
 
 CfgParser syslog_parser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &syslog_parser_debug,
 #endif
   .name = "syslog_parser",

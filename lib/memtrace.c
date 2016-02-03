@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2010 Balabit
  * Copyright (c) 1998-2010 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -24,10 +24,10 @@
    
 #include "syslog-ng.h"
 
-#if ENABLE_MEMTRACE
+#if SYSLOG_NG_ENABLE_MEMTRACE
 
 #define REALLY_TRACE_MALLOC 1
-#define ENABLE_HEAP_TRACE 1
+#define SYSLOG_NG_ENABLE_HEAP_TRACE 1
 
 #include <dlfcn.h>
 #include <assert.h>

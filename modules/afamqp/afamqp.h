@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012 Balabit
  * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -26,7 +26,7 @@
 #define AFAMQP_H_INCLUDED
 
 #include "driver.h"
-#include "value-pairs.h"
+#include "value-pairs/value-pairs.h"
 
 LogDriver *afamqp_dd_new(GlobalConfig *cfg);
 

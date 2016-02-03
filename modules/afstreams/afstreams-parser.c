@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -30,17 +30,15 @@ extern int afstreams_debug;
 int afstreams_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afstreams_keywords[] = {
-#if ENABLE_SUN_STREAMS
   { "sun_stream",         KW_SUN_STREAMS },
   { "sun_streams",        KW_SUN_STREAMS },
-#endif
   { "door",               KW_DOOR },
   { NULL }
 };
 
 CfgParser afstreams_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afstreams_debug,
 #endif
   .name = "afstreams",

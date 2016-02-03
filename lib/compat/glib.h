@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,7 @@
 
 #include <glib.h>
 
-#if !HAVE_G_MAPPED_FILE_UNREF
+#if !SYSLOG_NG_HAVE_G_MAPPED_FILE_UNREF
 #define g_mapped_file_unref g_mapped_file_free
 #endif
 

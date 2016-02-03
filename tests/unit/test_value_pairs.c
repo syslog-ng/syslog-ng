@@ -1,6 +1,28 @@
-#include "value-pairs.h"
-#include "vptransform.h"
-#include "logmsg.h"
+/*
+ * Copyright (c) 2014 Balabit
+ * Copyright (c) 2014 Laszlo Budai
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+#include "value-pairs/value-pairs.h"
+#include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "plugin.h"
@@ -10,7 +32,8 @@
 gboolean success = TRUE;
 
 gboolean
-vp_keys_foreach(const gchar  *name, TypeHint type, const gchar *value, gpointer user_data)
+vp_keys_foreach(const gchar *name, TypeHint type, const gchar *value,
+                gsize value_len, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GList **keys = (GList **) args[0];
@@ -67,6 +90,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   LogMessage *msg = create_message();
   gpointer args[2];
   gboolean test_key_found = FALSE;
+  LogTemplate *template;
 
   vp_keys = g_string_sized_new(0);
 
@@ -74,7 +98,9 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   value_pairs_add_scope(vp, scope);
   if (exclude)
     value_pairs_add_glob_pattern(vp, exclude, FALSE);
-  value_pairs_add_pair(vp, "test.key", create_template("string", "$MESSAGE"));
+  template = create_template("string", "$MESSAGE");
+  value_pairs_add_pair(vp, "test.key", template);
+  log_template_unref(template);
 
   if (transformers)
     {
@@ -83,7 +109,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
 
       for (i = 0; i < transformers->len; i++)
 	value_pairs_transform_set_add_func(vpts, g_ptr_array_index(transformers, i));
-      value_pairs_add_transforms(vp, (gpointer *)vpts);
+      value_pairs_add_transforms(vp, vpts);
     }
 
   args[0] = &vp_keys_list;

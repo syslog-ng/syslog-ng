@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit
+ * Copyright (c) 2014-2015 Balabit
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
@@ -25,9 +25,10 @@
 #ifndef SNG_PYTHON_PARSER_H_INCLUDED
 #define SNG_PYTHON_PARSER_H_INCLUDED
 
+#include "python-module.h"
+#include "driver.h"
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
-#include "python-dest.h"
 
 extern CfgParser python_parser;
 

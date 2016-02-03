@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit
+ * Copyright (c) 2014-2015 Balabit
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
@@ -29,7 +29,8 @@
 #include "python-helpers.h"
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
-#include "misc.h"
+#include "string-list.h"
+#include "str-utils.h"
 
 #ifndef SCS_PYTHON
 #define SCS_PYTHON 0
@@ -79,8 +80,7 @@ python_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
-  if (self->vp)
-    value_pairs_free(self->vp);
+  value_pairs_unref(self->vp);
   self->vp = vp;
 }
 
@@ -519,8 +519,7 @@ python_dd_free(LogPipe *d)
 
   g_free(self->class);
 
-  if (self->vp)
-    value_pairs_free(self->vp);
+  value_pairs_unref(self->vp);
 
   if (self->options)
     g_hash_table_unref(self->options);

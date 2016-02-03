@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013, 2015 BalaBit
+ * Copyright (c) 2002-2013, 2015 Balabit
  * Copyright (c) 1998-2013, 2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,7 +21,7 @@
  *
  */
 #include "correllation-key.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include <string.h>
 
 
@@ -86,7 +86,7 @@ correllation_key_equal(gconstpointer k1, gconstpointer k2)
 
 /* fills a CorrellationKey structure with borrowed values */
 void
-correllation_key_setup(CorrellationKey *self, PDBCorrellationScope scope, LogMessage *msg, gchar *session_id)
+correllation_key_setup(CorrellationKey *self, CorrellationScope scope, LogMessage *msg, gchar *session_id)
 {
   memset(self, 0, sizeof(*self));
   self->scope = scope;
@@ -107,4 +107,18 @@ correllation_key_setup(CorrellationKey *self, PDBCorrellationScope scope, LogMes
       g_assert_not_reached();
       break;
     }
+}
+
+gint
+correllation_key_lookup_scope(const gchar *scope)
+{
+  if (strcasecmp(scope, "global") ==  0)
+    return RCS_GLOBAL;
+  else if (strcasecmp(scope, "host") == 0)
+    return RCS_HOST;
+  else if (strcasecmp(scope, "program") == 0)
+    return RCS_PROGRAM;
+  else if (strcasecmp(scope, "process") == 0)
+    return RCS_PROCESS;
+  return -1;
 }

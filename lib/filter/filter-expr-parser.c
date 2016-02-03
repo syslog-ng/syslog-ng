@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -54,14 +54,13 @@ static CfgLexerKeyword filter_expr_keywords[] = {
   { "message",            KW_MESSAGE },
   { "match",		  KW_MATCH },
   { "netmask",		  KW_NETMASK },
-  { "tags",		  KW_TAGS, 0x0301 },
-  { "in_list",            KW_IN_LIST, 0x0305 },
-#if ENABLE_IPV6
+  { "tags",		  KW_TAGS },
+  { "in_list",            KW_IN_LIST },
+#if SYSLOG_NG_ENABLE_IPV6
   { "netmask6",     KW_NETMASK6 },
 #endif
 
-  { "type",               KW_TYPE, 0x0300 },
-  { "value",              KW_VALUE, 0x0300 },
+  { "value",              KW_VALUE },
   { "flags",              KW_FLAGS },
 
   { NULL }
@@ -69,7 +68,7 @@ static CfgLexerKeyword filter_expr_keywords[] = {
 
 CfgParser filter_expr_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &filter_expr_debug,
 #endif
   .name = "filter expression",

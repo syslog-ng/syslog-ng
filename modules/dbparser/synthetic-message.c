@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013, 2015 BalaBit
+ * Copyright (c) 2002-2013, 2015 Balabit
  * Copyright (c) 1998-2013, 2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -24,7 +24,7 @@
 
 #include "template/templates.h"
 #include "tags.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "logpipe.h"
 
 void
@@ -39,22 +39,31 @@ synthetic_message_add_tag(SyntheticMessage *self, const gchar *text)
 }
 
 gboolean
-synthetic_message_add_value_template(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
+synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
 {
   LogTemplate *value_template;
+  gboolean result = FALSE;
 
+  /* NOTE: we shouldn't use the name property for LogTemplate structs, see the comment at log_template_set_name() */
+  value_template = log_template_new(cfg, name);
+  if (log_template_compile(value_template, value, error))
+    {
+      synthetic_message_add_value_template(self, name, value_template);
+      result = TRUE;
+    }
+  log_template_unref(value_template);
+  return result;
+}
+
+void
+synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, LogTemplate *value)
+{
   if (!self->values)
     self->values = g_ptr_array_new();
 
-  value_template = log_template_new(cfg, name);
-  if (!log_template_compile(value_template, value, error))
-    {
-      log_template_unref(value_template);
-      return FALSE;
-    }
-  else
-    g_ptr_array_add(self->values, value_template);
-  return TRUE;
+  /* NOTE: we shouldn't use the name property for LogTemplate structs, see the comment at log_template_set_name() */
+  log_template_set_name(value, name);
+  g_ptr_array_add(self->values, log_template_ref(value));
 }
 
 void
@@ -115,7 +124,7 @@ _generate_message_inheriting_properties_from_the_entire_context(CorrellationCont
 }
 
 static LogMessage *
-_generate_default_message(gint inherit_mode, LogMessage *triggering_msg)
+_generate_default_message(SyntheticMessageInheritMode inherit_mode, LogMessage *triggering_msg)
 {
   switch (inherit_mode)
     {
@@ -130,7 +139,7 @@ _generate_default_message(gint inherit_mode, LogMessage *triggering_msg)
 }
 
 static LogMessage *
-_generate_default_message_from_context(gint inherit_mode, CorrellationContext *context)
+_generate_default_message_from_context(SyntheticMessageInheritMode inherit_mode, CorrellationContext *context)
 {
   LogMessage *triggering_msg = correllation_context_get_last_message(context);
 
@@ -141,7 +150,7 @@ _generate_default_message_from_context(gint inherit_mode, CorrellationContext *c
 }
 
 LogMessage *
-synthetic_message_generate_with_context(SyntheticMessage *self, gint inherit_mode, CorrellationContext *context, GString *buffer)
+synthetic_message_generate_with_context(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode, CorrellationContext *context, GString *buffer)
 {
   LogMessage *genmsg;
 
@@ -167,7 +176,7 @@ synthetic_message_generate_with_context(SyntheticMessage *self, gint inherit_mod
 }
 
 LogMessage *
-synthetic_message_generate_without_context(SyntheticMessage *self, gint inherit_mode, LogMessage *msg, GString *buffer)
+synthetic_message_generate_without_context(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode, LogMessage *msg, GString *buffer)
 {
   LogMessage *genmsg;
 
@@ -225,4 +234,16 @@ synthetic_message_free(SyntheticMessage *self)
 {
   synthetic_message_deinit(self);
   g_free(self);
+}
+
+gint
+synthetic_message_lookup_inherit_mode(const gchar *inherit_mode)
+{
+  if (strcasecmp(inherit_mode, "none") == 0)
+    return RAC_MSG_INHERIT_NONE;
+  else if (strcasecmp(inherit_mode, "last-message") == 0)
+    return RAC_MSG_INHERIT_LAST_MESSAGE;
+  else if (strcasecmp(inherit_mode, "context") == 0)
+    return RAC_MSG_INHERIT_CONTEXT;
+  return -1;
 }

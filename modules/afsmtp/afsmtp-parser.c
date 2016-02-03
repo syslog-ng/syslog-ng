@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2014 Balabit
  * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -46,7 +46,7 @@ static CfgLexerKeyword afsmtp_keywords[] = {
 
 CfgParser afsmtp_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afsmtp_debug,
 #endif
   .name = "afsmtp",

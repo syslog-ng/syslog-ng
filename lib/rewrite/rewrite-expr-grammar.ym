@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -63,6 +63,10 @@ LogRewrite *last_rewrite;
 %token KW_SET_TAG
 %token KW_CLEAR_TAG
 %token KW_GROUP_SET
+%token KW_SET
+%token KW_SUBST
+%token KW_VALUE
+%token KW_VALUES
 
 %%
 
@@ -103,9 +107,10 @@ rewrite_expr
         | KW_SET '(' rewrite_template_content
           {
             last_rewrite = log_rewrite_set_new($3, configuration);
+            last_template_options = log_rewrite_set_get_template_options(last_rewrite);
             log_template_unref($3);
           }
-          rewrite_expr_opts ')'                 { $$ = last_rewrite; }
+          rewrite_set_opts ')'                 { $$ = last_rewrite; }
 	| KW_SET_TAG '(' string ')'             { $$ = log_rewrite_set_tag_new($3, TRUE, configuration); free($3); }
 	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE, configuration); free($3); }
         | KW_GROUP_SET '(' rewrite_template_content
@@ -154,6 +159,16 @@ rewrite_subst_opts
 rewrite_subst_opt
 	: { last_matcher_options = log_rewrite_subst_get_matcher_options(last_rewrite); } matcher_option
 	| rewrite_expr_opt
+        ;
+
+rewrite_set_opts
+        : rewrite_set_opt rewrite_set_opts
+        |
+        ;
+
+rewrite_set_opt
+        : rewrite_expr_opt
+        | template_option
         ;
 
 rewrite_expr_opts

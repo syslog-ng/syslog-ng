@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2015 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,7 +22,7 @@
 
 #include "format-welf.h"
 #include "utf8utils.h"
-#include "value-pairs.h"
+#include "value-pairs/cmdline.h"
 
 typedef struct _TFWelfState
 {
@@ -45,7 +45,8 @@ tf_format_welf_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
 }
 
 static gboolean
-tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value, gpointer user_data)
+tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value,
+                       gsize value_len, gpointer user_data)
 {
   GString *result = (GString *) user_data;
 
@@ -53,12 +54,12 @@ tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value, gpo
     g_string_append(result, " ");
   g_string_append(result, name);
   g_string_append_c(result, '=');
-  if (strchr(value, ' ') == NULL)
-    append_unsafe_utf8_as_escaped_binary(result, value, NULL);
+  if (memchr(value, ' ', value_len) == NULL)
+    append_unsafe_utf8_as_escaped_binary(result, value, value_len, NULL);
   else
     {
       g_string_append_c(result, '"');
-      append_unsafe_utf8_as_escaped_binary(result, value, "\"");
+      append_unsafe_utf8_as_escaped_binary(result, value, value_len, "\"");
       g_string_append_c(result, '"');
     }
 
@@ -94,8 +95,7 @@ tf_format_welf_free_state(gpointer s)
 {
   TFWelfState *state = (TFWelfState *) s;
 
-  if (state->vp)
-    value_pairs_unref(state->vp);
+  value_pairs_unref(state->vp);
   tf_simple_func_free_state(s);
 }
 

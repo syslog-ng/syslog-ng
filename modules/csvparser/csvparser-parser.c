@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2011 Balázs Scheidler
+ * Copyright (c) 2002-2015 Balabit
+ * Copyright (c) 1998-2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -31,13 +31,22 @@ int csvparser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword csvparser_keywords[] =
 {
-  { "csv_parser",          KW_CSV_PARSER, 0x0300 },
+  { "csv_parser",  KW_CSV_PARSER },
+  { "dialect",     KW_DIALECT },
+  { "prefix",      KW_PREFIX },
+  { "columns",     KW_COLUMNS },
+  { "delimiters",  KW_DELIMITERS },
+  { "quotes",      KW_QUOTES },
+  { "quote_pairs", KW_QUOTE_PAIRS },
+  { "chars",       KW_CHARS},
+  { "strings",     KW_STRINGS},
+  { "null",        KW_NULL },
   { NULL }
 };
 
 CfgParser csvparser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &csvparser_debug,
 #endif
   .name = "csvparser",

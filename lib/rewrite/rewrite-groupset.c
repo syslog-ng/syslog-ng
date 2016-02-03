@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Viktor Juhász <viktor.juhasz@balabit.com>
  * Copyright (c) 2014 Viktor Tusa <viktor.tusa@balabit.com>
  *
@@ -31,8 +31,11 @@ typedef struct _LogRewriteGroupSetCallbackData
   LogTemplate *template;
 } LogRewriteGroupSetCallbackData;
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
-log_rewrite_groupset_foreach_func(const gchar *name, TypeHint type,const gchar *value, gpointer user_data)
+log_rewrite_groupset_foreach_func(const gchar *name, TypeHint type,
+                                  const gchar *value, gsize value_len,
+                                  gpointer user_data)
 {
   LogRewriteGroupSetCallbackData *callback_data = (LogRewriteGroupSetCallbackData*) user_data;
   LogMessage *msg = callback_data->msg;

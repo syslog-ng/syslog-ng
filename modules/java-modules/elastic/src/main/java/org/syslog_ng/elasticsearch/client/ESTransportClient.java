@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -38,17 +38,23 @@ public class ESTransportClient extends ESClient {
 	public ESTransportClient(ElasticSearchOptions options) {
 		super(options);
 	}
-
-	public Client createClient() {
-		String clusterName = options.getCluster();
+	
+	private Settings buildSettings() {
 		Builder settingsBuilder = ImmutableSettings.settingsBuilder();
+		String clusterName = options.getCluster();
+
+		loadConfigFile(options.getConfigFile(), settingsBuilder);
 		settingsBuilder = settingsBuilder.put("client.transport.sniff", true).classLoader(Settings.class.getClassLoader());
 
 		if (clusterName != null) {
-			settingsBuilder = settingsBuilder.put("cluster.name", clusterName);
+		        settingsBuilder = settingsBuilder.put("cluster.name", clusterName);
 		}
 
-		settings = settingsBuilder.build();
+		return settingsBuilder.build();
+	}
+
+	public Client createClient() {
+		settings = buildSettings();
 
 		String[] servers =  options.getServerList();
 

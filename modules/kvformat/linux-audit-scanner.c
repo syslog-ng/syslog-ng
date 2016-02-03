@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2015 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,6 @@
  *
  */
 #include "kv-scanner.h"
-#include "misc.h"
 #include "utf8utils.h"
 
 #include <string.h>
@@ -103,6 +102,9 @@ static gboolean
 _is_field_hex_encoded(const gchar *field)
 {
   gint i;
+
+  if (field[0] == 'a' && isdigit(field[1]))
+    return TRUE;
 
   for (i = 0; hexcoded_fields[i]; i++)
     {

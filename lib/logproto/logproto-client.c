@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -29,6 +29,12 @@
 #include "plugin.h"
 #include "plugin-types.h"
 
+gboolean
+log_proto_client_validate_options_method(LogProtoClient *s)
+{
+  return TRUE;
+}
+
 void
 log_proto_client_free_method(LogProtoClient *s)
 {
@@ -46,17 +52,11 @@ log_proto_client_free(LogProtoClient *s)
 void
 log_proto_client_init(LogProtoClient *self, LogTransport *transport, const LogProtoClientOptions *options)
 {
+  self->validate_options = log_proto_client_validate_options_method;
   self->free_fn = log_proto_client_free_method;
   self->options = options;
   self->transport = transport;
 }
-
-gboolean
-log_proto_client_options_validate(const LogProtoClientOptions *options)
-{
-  return TRUE;
-}
-
 
 void
 log_proto_client_options_defaults(LogProtoClientOptions *options)

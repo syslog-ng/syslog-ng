@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -22,10 +22,11 @@
  */
 
 #include "timerwheel.h"
+#include <iv_list.h>
 
 struct _TWEntry
 {
-  TWEntry *next, **pprev;
+  struct iv_list_head list;
   guint64 target;
   TWCallbackFunc callback;
   gpointer user_data;
@@ -33,21 +34,15 @@ struct _TWEntry
 };
 
 void
-tw_entry_prepend(TWEntry **pfirst, TWEntry *new)
+tw_entry_add(struct iv_list_head *head, TWEntry *new)
 {
-  new->next = *pfirst;
-  new->pprev = pfirst;
-  if (*pfirst)
-    (*pfirst)->pprev = &new->next;
-  *pfirst = new;
+  iv_list_add_tail(&new->list, head);
 }
 
 void
 tw_entry_unlink(TWEntry *entry)
 {
-  if (entry->next)
-    entry->next->pprev = entry->pprev;
-  *(entry->pprev) = entry->next;
+  iv_list_del_init(&entry->list);
 }
 
 static void
@@ -58,27 +53,24 @@ tw_entry_free(TWEntry *entry)
   g_free(entry);
 }
 
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
 static void
-tw_entry_list_validate(TWEntry **head)
+tw_entry_list_validate(struct iv_list_head *head)
 {
-  TWEntry *last, *first, *p;
+  struct iv_list_head *lh, *llh;
 
-  last = NULL;
-  first = *head;
-  g_assert(first->pprev == head);
-  for (p = first; p; p = p->next)
+  llh = head;
+  for (lh = head->next; lh != head; lh = lh->next)
     {
-      if (last)
-        g_assert(p->pprev == &last->next);
-      last = p;
+      g_assert(lh->prev == llh);
+      llh = lh;
     }
 }
 
 #else
 
 static inline void
-tw_entry_list_validate(TWEntry **head)
+tw_entry_list_validate(struct iv_list_head *head)
 {
 }
 
@@ -92,7 +84,7 @@ typedef struct _TWLevel
   guint64 slot_mask;
   guint16 num;
   guint8  shift;
-  TWEntry *slots[0];
+  struct iv_list_head slots[0];
 } TWLevel;
 
 TWLevel *
@@ -100,6 +92,7 @@ tw_level_new(gint bits, gint shift)
 {
   TWLevel *self;
   gint num;
+  gint i;
 
   num = (1 << bits);
   self = g_malloc0(sizeof(TWLevel) + num * sizeof(self->slots[0]));
@@ -107,6 +100,8 @@ tw_level_new(gint bits, gint shift)
   self->mask = (num - 1) << shift;
   self->slot_mask = (1 << shift) - 1;
   self->num = num;
+  for (i = 0; i < num; i++)
+    INIT_IV_LIST_HEAD(&self->slots[i]);
   return self;
 }
 
@@ -118,11 +113,11 @@ tw_level_free(TWLevel *self)
   for (i = 0; i < self->num; i++)
     {
       TWEntry *entry;
-      TWEntry *next;
+      struct iv_list_head *lh, *lh_next;
 
-      for (entry = self->slots[i]; entry; entry = next)
+      iv_list_for_each_safe(lh, lh_next, &self->slots[i])
         {
-          next = entry->next;
+          entry = iv_list_entry(lh, TWEntry, list);
           tw_entry_free(entry);
         }
     }
@@ -132,7 +127,7 @@ tw_level_free(TWLevel *self)
 struct _TimerWheel
 {
   TWLevel *levels[4];
-  TWEntry *future;
+  struct iv_list_head future;
   guint64 now;
   guint64 base;
   gint num_timers;
@@ -171,13 +166,13 @@ timer_wheel_add_timer_entry(TimerWheel *self, TWEntry *entry)
         }
 
       slot = (entry->target & level->mask) >> level->shift;
-      tw_entry_prepend(&level->slots[slot], entry);
+      tw_entry_add(&level->slots[slot], entry);
       tw_entry_list_validate(&level->slots[slot]);
       break;
     }
   if (level_ndx >= G_N_ELEMENTS(self->levels))
     {
-      tw_entry_prepend(&self->future, entry);
+      tw_entry_add(&self->future, entry);
       tw_entry_list_validate(&self->future);
     }
 
@@ -193,6 +188,7 @@ timer_wheel_add_timer(TimerWheel *self, gint timeout, TWCallbackFunc cb, gpointe
   entry->callback = cb;
   entry->user_data = user_data;
   entry->user_data_free = user_data_free;
+  INIT_IV_LIST_HEAD(&entry->list);
 
   timer_wheel_add_timer_entry(self, entry);
   self->num_timers++;
@@ -226,9 +222,10 @@ timer_wheel_cascade(TimerWheel *self)
 {
   gint level_ndx;
   TWLevel *source_level, *target_level;
-  TWEntry *next, **source_head, **target_head, *entry;
+  TWEntry *entry;
   gint source_slot, target_slot;
   guint64 target_level_base;
+  struct iv_list_head *lh, *lh_next, *target_head, *source_head;
 
   for (level_ndx = 1; level_ndx < G_N_ELEMENTS(self->levels); level_ndx++)
     {
@@ -242,18 +239,18 @@ timer_wheel_cascade(TimerWheel *self)
         source_slot++;
 
       source_head = &source_level->slots[source_slot];
-      for (entry = *source_head; entry; entry = next)
+      iv_list_for_each_safe(lh, lh_next, source_head)
         {
-          next = entry->next;
+          entry = iv_list_entry(lh, TWEntry, list);
 
           target_slot = (entry->target & target_level->mask) >> target_level->shift;
           target_head = &target_level->slots[target_slot];
 
-          /* we don't need to unlink entry from the list as that list is completely emptied anyway */
-          tw_entry_prepend(target_head, entry);
+          tw_entry_unlink(entry);
+          tw_entry_list_validate(source_head);
+          tw_entry_add(target_head, entry);
           tw_entry_list_validate(target_head);
         }
-      *source_head = NULL;
 
       if (source_slot < source_level->num - 1)
         break;
@@ -261,11 +258,12 @@ timer_wheel_cascade(TimerWheel *self)
 
   if (level_ndx == G_N_ELEMENTS(self->levels))
     {
-      source_head = &self->future;
       target_level = self->levels[level_ndx - 1];
-      for (entry = *source_head; entry; entry = next)
+
+      source_head = &self->future;
+      iv_list_for_each_safe(lh, lh_next, source_head)
         {
-          next = entry->next;
+          entry = iv_list_entry(lh, TWEntry, list);
 
           target_level_base = self->base & ~target_level->slot_mask & ~target_level->mask;
           if (entry->target < target_level_base + 2 * (target_level->num << target_level->shift))
@@ -276,7 +274,7 @@ timer_wheel_cascade(TimerWheel *self)
               /* unlink current entry */
               tw_entry_unlink(entry);
               tw_entry_list_validate(source_head);
-              tw_entry_prepend(target_head, entry);
+              tw_entry_add(target_head, entry);
               tw_entry_list_validate(target_head);
             }
         }
@@ -308,22 +306,23 @@ timer_wheel_set_time(TimerWheel *self, guint64 new_now)
 
   for (; self->now < new_now; self->now++)
     {
-      TWEntry **head, *next, *entry;
+      TWEntry *entry;
+      struct iv_list_head *head, *lh, *lh_next;
       gint slot;
       TWLevel *level = self->levels[0];
 
       slot = (self->now & level->mask) >> level->shift;
 
       head = &self->levels[0]->slots[slot];
-      for (entry = *head; entry; entry = next)
+      iv_list_for_each_safe(lh, lh_next, head)
         {
-          next = entry->next;
+          entry = iv_list_entry(lh, TWEntry, list);
 
+          tw_entry_unlink(entry);
           entry->callback(self, self->now, entry->user_data);
           tw_entry_free(entry);
           self->num_timers--;
         }
-      *head = NULL;
 
       if (self->num_timers == 0)
         {
@@ -389,6 +388,7 @@ timer_wheel_new(void)
       self->levels[i] = tw_level_new(bits[i], shift);
       shift += bits[i];
     }
+  INIT_IV_LIST_HEAD(&self->future);
   return self;
 }
 

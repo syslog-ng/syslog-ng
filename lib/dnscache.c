@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -46,7 +46,7 @@ struct _DNSCacheKey
   union
   {
     struct in_addr ip;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
     struct in6_addr ip6;
 #endif
   } addr;
@@ -90,14 +90,14 @@ static gint dns_cache_expire_failed = 60;
 static gint dns_cache_persistent_count = 0;
 static gchar *dns_cache_hosts = NULL;
 
-static gboolean 
+static gboolean
 dns_cache_key_equal(DNSCacheKey *e1, DNSCacheKey *e2)
 {
   if (e1->family == e2->family)
     {
       if ((e1->family == AF_INET && memcmp(&e1->addr.ip, &e2->addr.ip, sizeof(e1->addr.ip)) == 0))
         return TRUE;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
       if ((e1->family == AF_INET6 && memcmp(&e1->addr.ip6, &e2->addr.ip6, sizeof(e1->addr.ip6)) == 0))
         return TRUE;
 #endif
@@ -112,7 +112,7 @@ dns_cache_key_hash(DNSCacheKey *e)
     {
       return ntohl(e->addr.ip.s_addr);
     }
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
   else if (e->family == AF_INET6)
     {
       guint32 *a32 = (guint32 *) &e->addr.ip6.s6_addr;
@@ -140,7 +140,7 @@ dns_cache_entry_free(DNSCacheEntry *e)
 {
   e->prev->next = e->next;
   e->next->prev = e->prev;
-  
+
   g_free(e->hostname);
   g_free(e);
 }
@@ -154,7 +154,7 @@ dns_cache_fill_key(DNSCacheKey *key, gint family, void *addr)
     case AF_INET:
       key->addr.ip = *(struct in_addr *) addr;
       break;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
     case AF_INET6:
       key->addr.ip6 = *(struct in6_addr *) addr;
       break;
@@ -184,7 +184,7 @@ dns_cache_check_hosts(glong t)
     return;
 
   cache_hosts_checktime = t;
-  
+
   if (!dns_cache_hosts || stat(dns_cache_hosts, &st) < 0)
     {
       dns_cache_cleanup_persistent_hosts();
@@ -201,39 +201,39 @@ dns_cache_check_hosts(glong t)
         {
           gchar buf[4096];
           char *strtok_saveptr;
-          
+
           while (fgets(buf, sizeof(buf), hosts))
             {
               gchar *p, *ip;
               gint len;
               gint family;
-              union 
+              union
               {
                 struct in_addr ip4;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
                 struct in6_addr ip6;
 #endif
               } ia;
-              
+
               if (buf[0] == 0 || buf[0] == '\n' || buf[0] == '#')
                 continue;
-                
+
               len = strlen(buf);
               if (buf[len - 1] == '\n')
                 buf[len-1] = 0;
-                
+
               p = strtok_r(buf, " \t", &strtok_saveptr);
               if (!p)
                 continue;
               ip = p;
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
               if (strchr(ip, ':') != NULL)
                 family = AF_INET6;
               else
 #endif
-              family = AF_INET;
-                
+                family = AF_INET;
+
               p = strtok_r(NULL, " \t", &strtok_saveptr);
               if (!p)
                 continue;
@@ -244,12 +244,12 @@ dns_cache_check_hosts(glong t)
         }
       else
         {
-          msg_error("Error loading dns cache hosts file", 
-                    evt_tag_str("filename", dns_cache_hosts), 
+          msg_error("Error loading dns cache hosts file",
+                    evt_tag_str("filename", dns_cache_hosts),
                     evt_tag_errno("error", errno),
                     NULL);
         }
-        
+
     }
 }
 
@@ -266,15 +266,15 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostnam
   DNSCacheKey key;
   DNSCacheEntry *entry;
   time_t now;
-  
+
   now = cached_g_current_time_sec();
   dns_cache_check_hosts(now);
-  
+
   dns_cache_fill_key(&key, family, addr);
   entry = g_hash_table_lookup(cache, &key);
   if (entry)
     {
-      if (entry->resolved && 
+      if (entry->resolved &&
           ((entry->positive && entry->resolved < now - dns_cache_expire) ||
            (!entry->positive && entry->resolved < now - dns_cache_expire_failed)))
         {
@@ -298,7 +298,7 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
 {
   DNSCacheEntry *entry;
   guint hash_size;
-  
+
   entry = g_new(DNSCacheEntry, 1);
 
   dns_cache_fill_key(&entry->key, family, addr);
@@ -320,7 +320,7 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
 
   if (persistent && hash_size != g_hash_table_size(cache))
     dns_cache_persistent_count++;
-  
+
   /* persistent elements are not counted */
   if ((gint) (g_hash_table_size(cache) - dns_cache_persistent_count) > dns_cache_size)
     {

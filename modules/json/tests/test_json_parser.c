@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Balazs Scheidler <bazsi@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -166,6 +166,7 @@ test_json_parser_extracts_subobjects_if_extract_prefix_is_specified(void)
   json_parser_set_extract_prefix(json_parser, "[0]");
   msg = parse_json_into_log_message("[{'foo':'bar'}, {'bar':'foo'}]");
   assert_log_message_value(msg, log_msg_get_value_handle("foo"), "bar");
+  log_msg_unref(msg);
 }
 
 static void

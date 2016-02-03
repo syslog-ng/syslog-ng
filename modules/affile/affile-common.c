@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -23,7 +23,8 @@
 #include "affile-common.h"
 #include "messages.h"
 #include "gprocess.h"
-#include "misc.h"
+#include "fdhelpers.h"
+#include "pathutils.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -158,7 +159,8 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
 
   *fd = _open_fd(name, open_opts, perm_opts);
 
-  _set_fd_permission(perm_opts, *fd);
+  if (!is_file_device(name))
+    _set_fd_permission(perm_opts, *fd);
 
   g_process_cap_restore(saved_caps);
 

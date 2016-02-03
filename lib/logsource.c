@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -24,7 +24,6 @@
   
 #include "logsource.h"
 #include "messages.h"
-#include "misc.h"
 #include "host-resolve.h"
 #include "timeutils.h"
 #include "stats/stats-registry.h"
@@ -48,7 +47,9 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
 {
   guint32 old_window_size;
 
+  window_size_increment += g_atomic_counter_get(&self->suspended_window_size);
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, window_size_increment);
+  g_atomic_counter_set(&self->suspended_window_size, 0);
 
   if (old_window_size == 0)
     log_source_wakeup(self);
@@ -62,7 +63,7 @@ _flow_control_rate_adjust(LogSource *self)
    * threads. I don't want to lock, all we need is an approximate value of
    * the ACK rate of the last couple of seconds.  */
 
-#ifdef HAVE_CLOCK_GETTIME
+#ifdef SYSLOG_NG_HAVE_CLOCK_GETTIME
   if (accurate_nanosleep && self->threaded)
     {
       cur_ack_count = ++self->ack_count;
@@ -135,6 +136,14 @@ log_source_msg_ack(LogMessage *msg, AckType ack_type)
 {
   AckTracker *ack_tracker = msg->ack_record->tracker;
   ack_tracker_manage_msg_ack(ack_tracker, msg, ack_type);
+}
+
+void
+log_source_flow_control_suspend(LogSource *self)
+{
+  g_atomic_counter_set(&self->suspended_window_size, g_atomic_counter_get(&self->window_size));
+  g_atomic_counter_set(&self->window_size, 0);
+  _flow_control_rate_adjust(self);
 }
 
 void

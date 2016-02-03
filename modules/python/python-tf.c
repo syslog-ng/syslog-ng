@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@
  *
  */
 #include "python-tf.h"
-#include "python-module.h"
 #include "python-helpers.h"
 #include "python-main.h"
 #include "template/simple-function.h"

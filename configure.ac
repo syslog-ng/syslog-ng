@@ -24,11 +24,12 @@ dnl dependencies
 GLIB_MIN_VERSION="2.10.1"
 EVTLOG_MIN_VERSION="0.2.12"
 OPENSSL_MIN_VERSION="0.9.8"
-LIBDBI_MIN_VERSION="0.8.0"
+LIBDBI_MIN_VERSION="0.9.0"
+LIBRABBITMQ_MIN_VERSION="0.5.3"
 IVYKIS_MIN_VERSION="0.36.1"
 JSON_C_MIN_VERSION="0.9"
 PCRE_MIN_VERSION="6.1"
-LMC_MIN_VERSION="0.1.8"
+LMC_MIN_VERSION="1.0.0"
 LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.6.0"
 JOURNALD_MIN_VERSION="195"
@@ -72,8 +73,12 @@ if test "x$exec_prefix" = "xNONE"; then
 fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
+toolsdir='${datadir}/syslog-ng/tools'
+scldir='${datadir}/syslog-ng/include/scl'
 
 AC_CONFIG_HEADERS(config.h)
+
+
 
 dnl ***************************************************************************
 dnl Arguments
@@ -158,10 +163,10 @@ AC_ARG_ENABLE(mongodb,
 	      [  --enable-mongodb        Enable mongodb destination (default: auto)]
               ,,enable_mongodb="auto")
 
-AC_ARG_WITH(libmongo-client,
-              [  --with-libmongo-client=[system/internal/auto]
-                                         Link against the system supplied or the built-in libmongo-client library. (default: auto)]
-              ,,with_libmongo_client="auto")
+AC_ARG_WITH(mongoc,
+              [  --with-mongoc=[system/internal/auto]
+                                         Link against the system supplied or the built-in mongo-c-driver library. (default: auto)]
+              ,,with_mongoc="auto")
 
 AC_ARG_WITH(jsonc,
               [  --with-jsonc=[system/internal/auto/no]
@@ -245,6 +250,10 @@ AC_ARG_WITH(docbook-dir,
 AC_ARG_ENABLE(manpages, AC_HELP_STRING([ --enable-manpages], [ Enable generation of manpages (default: no)]), , [enable_manpages="no"; XSL_STYLESHEET=""])
 
 AC_ARG_ENABLE(java, [ --enable-java  Enable java destination (default: auto)],, enable_java="auto")
+
+AC_ARG_ENABLE(native,
+              [  --enable-native        Enable native bindings (default: auto)]
+              ,,enable_native="auto")
 
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
@@ -666,24 +675,25 @@ elif test "x$enable_tcp_wrapper" != "xyes"; then
 fi
 
 dnl ***************************************************************************
-dnl libdbi headers/libraries
+dnl -ldl
 dnl ***************************************************************************
 
 AC_CHECK_LIB(dl, dlsym, DL_LIBS="-ldl")
-PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION, libdbi_pkgconfig_not_found="0", libdbi_pkgconfig_not_found="1")
 
-if test "$libdbi_pkgconfig_not_found" -eq 1; then
-	dnl if libdbi has no .pc file, try it without one
-	AC_CHECK_LIB(dbi, dbi_initialize, LIBDBI_LIBS="-ldbi"; LIBDBI_CFLAGS="-I/usr/include")
-fi
-
-if test "x$enable_sql" = "xauto"; then
+dnl ***************************************************************************
+dnl libdbi headers/libraries
+dnl ***************************************************************************
+if test "x$enable_sql" = "xyes" || test "x$enable_sql" = "xauto"; then
+	PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, with_libdbi="")
 	AC_MSG_CHECKING(whether to enable SQL support)
 	if test "x$LIBDBI_LIBS" != "x"; then
 		enable_sql="yes"
 		AC_MSG_RESULT(yes)
-	else
+	elif test "x$enable_sql" = "xyes"; then
+		AC_MSG_RESULT(no)
 		enable_sql="no"
+                AC_MSG_ERROR([Could not find libdbi, and SQL support was explicitly enabled.])
+        else
 		AC_MSG_RESULT(no)
 	fi
 fi
@@ -918,36 +928,44 @@ if test "x$with_jsonc" = "xinternal" -o "x$with_jsonc" = "xauto"; then
 fi
 
 dnl ***************************************************************************
-dnl libmongo headers/libraries
+dnl mongo-c-driver headers/libraries
 dnl ***************************************************************************
 
-if test "x$with_libmongo_client" = "xauto"; then
-  with_libmongo_client="system"
-  PKG_CHECK_MODULES(LIBMONGO, libmongo-client >= $LMC_MIN_VERSION,,with_libmongo_client="auto-internal")
-elif test "x$with_libmongo_client" = "xsystem"; then
-  PKG_CHECK_MODULES(LIBMONGO, libmongo-client >= $LMC_MIN_VERSION)
+if test "x$with_mongoc" = "xauto"; then
+  with_mongoc="system"
+  PKG_CHECK_MODULES(LIBMONGO, libmongoc >= $LMC_MIN_VERSION,,with_mongoc="auto-internal")
+elif test "x$with_mongoc" = "xsystem"; then
+  PKG_CHECK_MODULES(LIBMONGO, libmongoc >= $LMC_MIN_VERSION)
 fi
 
-if test "x$with_libmongo_client" = "xinternal" || test "x$with_libmongo_client" = "xauto-internal"; then
-        with_libmongo_client="internal"
-	if test -f "$srcdir/modules/afmongodb/libmongo-client/src/mongo.h"; then
-		AC_CONFIG_SUBDIRS([modules/afmongodb/libmongo-client])
+if test "x$with_mongoc" = "xinternal" || test "x$with_mongoc" = "xauto-internal"; then
+        with_mongoc="internal"
+	if test -f "$srcdir/modules/afmongodb/mongo-c-driver/src/mongoc/mongoc.h"; then
+		AC_CONFIG_SUBDIRS([modules/afmongodb/mongo-c-driver])
 
 		# these can only be used in modules/mongodb as it assumes
-		# the current directory just one below libmongo-client
+		# the current directory just one below mongo-c-driver
 
-		LIBMONGO_LIBS="-L\$(top_builddir)/modules/afmongodb/libmongo-client/src -lmongo-client $OPENSSL_LIBS"
-		LIBMONGO_CFLAGS="-I\$(top_srcdir)/modules/afmongodb/libmongo-client/src"
-		LIBMONGO_SUBDIRS="modules/afmongodb/libmongo-client"
+		LIBMONGO_LIBS="\
+			-L\$(top_builddir)/modules/afmongodb/mongo-c-driver \
+			-L\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/libbson \
+			-lmongoc-1.0 -lbson -lsasl2 $OPENSSL_LIBS"
+		LIBMONGO_CFLAGS="\
+			-I\$(top_srcdir)/modules/afmongodb/mongo-c-driver/src/mongoc \
+			-I\$(top_srcdir)/modules/afmongodb/mongo-c-driver/src/libbson/src/bson \
+			-I\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/libbson/src/bson \
+			-I\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/mongoc \
+		"
+		LIBMONGO_SUBDIRS="modules/afmongodb/mongo-c-driver"
 	else
-		AC_MSG_WARN([Internal libmongo-client sources not found in modules/afmongodb/libmongo-client])
-		with_libmongo_client="no"
+		AC_MSG_WARN([Internal mongo-c-driver sources not found in modules/afmongodb/mongo-c-driver])
+		with_mongoc="no"
 	fi
 fi
 
-if test "x$with_libmongo_client" = "xno"; then
+if test "x$with_mongoc" = "xno"; then
    if test "x$enable_mongodb" = "xyes"; then
-      AC_MSG_ERROR([Could not find libmongo-client, and MongoDB support was explicitly enabled.])
+      AC_MSG_ERROR([Could not find mongo-c-driver, and MongoDB support was explicitly enabled.])
    fi
    enable_mongodb="no"
 fi
@@ -1039,7 +1057,7 @@ if test "x$with_librabbitmq_client" = "xinternal"; then
         with_librabbitmq_client="no"
     fi
 elif test "x$with_librabbitmq_client" = "xsystem"; then
-    AC_MSG_ERROR([Building with system librabbitmq is not supported yet.])
+    PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LIBRABBITMQ_MIN_VERSION, , enable_amqp = "no")
 fi
 
 if test "x$with_librabbitmq_client" = "xno"; then
@@ -1053,6 +1071,10 @@ fi
 if test "x$enable_amqp" = "xno"; then
    with_librabbitmq_client="no"
    LIBRABBITMQ_SUBDIRS=""
+fi
+
+if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
+    AC_CONFIG_FILES([syslog-ng-native-connector.pc])
 fi
 
 dnl ***************************************************************************
@@ -1074,7 +1096,7 @@ dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
 if test "x$enable_python" != "xno"; then
-  if test "x$with_python" != "xno"; then
+  if test "x$with_python" != "xauto"; then
     case "$with_python" in
       auto)
           with_python="python"
@@ -1086,14 +1108,15 @@ if test "x$enable_python" != "xno"; then
           with_python="python-${with_python}"
           ;;
     esac
-    PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, enable_python="yes", enable_python="no")
-    if test "x$enable_python" = "xno"; then
-      AC_MSG_ERROR([Could not find the requested Python development libraries])
-    fi
   else
-    enable_python="no"
-    with_python=""
+    with_python="python"
   fi
+
+  PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, python_found="yes", python_found="no")
+  if test "x$enable_python" = "xyes" -a "x$python_found" = "xno"; then
+    AC_MSG_ERROR([Could not find the requested Python development libraries])
+  fi
+  enable_python="$python_found" 
 else
   with_python=""
 fi
@@ -1380,6 +1403,7 @@ fi
 if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
+AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory])
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 AC_DEFINE_UNQUOTED(JAVA_MODULE_PATH, "$java_module_path", [java module search path])
 
@@ -1421,16 +1445,13 @@ AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
-
-# substitution into manual pages
-expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
-expanded_moduledir=[`patheval $moduledir`]
+AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
-AC_SUBST(expanded_sysconfdir)
-AC_SUBST(expanded_moduledir)
+AC_SUBST(toolsdir)
+AC_SUBST(scldir)
 AC_SUBST(systemdsystemunitdir)
 AC_SUBST(SYSLOGNG_LINK)
 AC_SUBST(SYSLOGNG_DEPS_LIBS)
@@ -1476,6 +1497,8 @@ AC_SUBST(LIBSYSTEMD_JOURNAL_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
 AC_SUBST(XSL_STYLESHEET)
 
+AX_PREFIX_CONFIG_H
+AX_VALGRIND_CHECK
 
 AC_OUTPUT(dist.conf
           Makefile
@@ -1497,7 +1520,7 @@ echo "  embedded crypto             : ${with_embedded_crypto:=no}"
 echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
 echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
-echo "  libmongo-client             : $with_libmongo_client"
+echo "  mongoc                      : $with_mongoc"
 echo "  librabbitmq                 : $with_librabbitmq_client"
 echo "  jsonc                       : $with_jsonc"
 echo " Features:"
@@ -1526,3 +1549,4 @@ echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
 echo "  java                        : ${enable_java:=no}"
+echo "  native bindings             : ${enable_native:=no}"

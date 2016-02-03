@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -27,8 +27,8 @@
 #include "cfg-tree.h"
 #include "messages.h"
 #include "template/templates.h"
-#include "misc.h"
-#include "logmsg.h"
+#include "userdb.h"
+#include "logmsg/logmsg.h"
 #include "dnscache.h"
 #include "serialize.h"
 #include "plugin.h"
@@ -396,10 +396,10 @@ cfg_new(gint version)
 void
 cfg_set_global_paths(GlobalConfig *self)
 {
-  cfg_args_set(self->lexer->globals, "syslog-ng-root", get_installation_path_for(PATH_PREFIX));
-  cfg_args_set(self->lexer->globals, "syslog-ng-data", get_installation_path_for(PATH_DATADIR));
+  cfg_args_set(self->lexer->globals, "syslog-ng-root", get_installation_path_for(SYSLOG_NG_PATH_PREFIX));
+  cfg_args_set(self->lexer->globals, "syslog-ng-data", get_installation_path_for(SYSLOG_NG_PATH_DATADIR));
   cfg_args_set(self->lexer->globals, "module-path", module_path);
-  cfg_args_set(self->lexer->globals, "include-path", get_installation_path_for(PATH_SYSCONFDIR));
+  cfg_args_set(self->lexer->globals, "include-path", get_installation_path_for(SYSLOG_NG_PATH_SYSCONFDIR));
   cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
 }
 

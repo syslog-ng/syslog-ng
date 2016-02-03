@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -24,7 +24,6 @@
 
 #include "parser/parser-expr.h"
 #include "template/templates.h"
-#include "misc.h"
 #include "logmatcher.h"
 
 #include <string.h>
@@ -83,17 +82,17 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       if (path_options->matched)
         (*path_options->matched) = FALSE;
-      log_msg_drop(msg, path_options);
+      log_msg_drop(msg, path_options, AT_PROCESSED);
     }
 }
 
-static gboolean
-log_parser_init(LogPipe *s)
+gboolean
+log_parser_init_method(LogPipe *s)
 {
   LogParser *self = (LogParser *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!self->name)
+  if (!self->name && s->expr_node)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_PARSER, s->expr_node);
   return TRUE;
 }
@@ -112,7 +111,7 @@ void
 log_parser_init_instance(LogParser *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
-  self->super.init = log_parser_init;
+  self->super.init = log_parser_init_method;
   self->super.free_fn = log_parser_free_method;
   self->super.queue = log_parser_queue;
 }

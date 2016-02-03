@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -23,6 +23,7 @@
 
 #include "cfg-parser.h"
 #include "dbparser.h"
+#include "groupingby.h"
 #include "plugin.h"
 #include "plugin-types.h"
 
@@ -35,12 +36,18 @@ static Plugin dbparser_plugins[] =
     .name = "db-parser",
     .parser = &dbparser_parser,
   },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "grouping-by",
+    .parser = &dbparser_parser,
+  },
 };
 
 gboolean
 dbparser_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   pattern_db_global_init();
+  grouping_by_global_init();
   plugin_register(cfg, dbparser_plugins, G_N_ELEMENTS(dbparser_plugins));
   return TRUE;
 }
@@ -48,9 +55,9 @@ dbparser_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "dbparser",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The db-parser() module implements sample database based parsing for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = dbparser_plugins,
   .plugins_len = G_N_ELEMENTS(dbparser_plugins),
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -105,6 +105,7 @@ LogProtoBufferedServerState *log_proto_buffered_server_get_state(LogProtoBuffere
 void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
 
 /* LogProtoBufferedServer */
+gboolean log_proto_buffered_server_validate_options_method(LogProtoServer *s);
 void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_buffered_server_free_method(LogProtoServer *s);
 

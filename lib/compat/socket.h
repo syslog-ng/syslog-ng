@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 
-#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+#ifndef SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage 
 {
   union
@@ -40,14 +40,14 @@ struct sockaddr_storage
     struct sockaddr __sa;
     struct sockaddr_un __sun;
     struct sockaddr_in __sin;
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
     struct sockaddr_in6 __sin6;
 #endif
   };
 };
 #endif
 
-#ifndef HAVE_INET_ATON
+#ifndef SYSLOG_NG_HAVE_INET_ATON
 int inet_aton(const char *cp, struct in_addr *dst);
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balabit
  * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  *
@@ -28,7 +28,6 @@
 #include "redis-parser.h"
 #include "plugin.h"
 #include "messages.h"
-#include "misc.h"
 #include "stats/stats-registry.h"
 #include "logqueue.h"
 #include "driver.h"
@@ -371,9 +370,9 @@ redis_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "redis",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afredis module provides Redis destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &redis_plugin,
   .plugins_len = 1,
 };

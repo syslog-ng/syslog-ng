@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2010 Balabit
  * Copyright (c) 1998-2010 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -118,7 +118,7 @@ g_sockaddr_inet_set_address(GSockAddr *s, struct in_addr addr)
 }
 
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
 gboolean g_sockaddr_inet6_check(GSockAddr *a);
 GSockAddr *g_sockaddr_inet6_new(const gchar *ip, guint16 port);
 GSockAddr *g_sockaddr_inet6_new2(struct sockaddr_in6 *sin6);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2014 Balabit
  * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 #include "afsmtp-parser.h"
 #include "plugin.h"
 #include "messages.h"
-#include "misc.h"
 #include "stats/stats-registry.h"
 #include "logqueue.h"
 #include "plugin-types.h"
@@ -427,7 +426,7 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
    * We add a header to the body, otherwise libesmtp will not
    * recognise headers, and will append them to the end of the body.
    */
-  g_string_assign(self->str, "X-Mailer: syslog-ng " VERSION "\r\n\r\n");
+  g_string_assign(self->str, "X-Mailer: syslog-ng " SYSLOG_NG_VERSION "\r\n\r\n");
   log_template_append_format(self->body_template, msg, &self->template_options,
                              LTZ_SEND, self->super.seq_num,
                              NULL, self->str);
@@ -728,9 +727,9 @@ afsmtp_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "afsmtp",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The afsmtp module provides SMTP destination support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = &afsmtp_plugin,
   .plugins_len = 1,
 };

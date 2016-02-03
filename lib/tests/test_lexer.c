@@ -1,3 +1,27 @@
+/*
+ * Copyright (c) 2013 Balabit
+ * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "testutils.h"
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
@@ -8,12 +32,34 @@ typedef struct {
   CfgLexer *lexer;
 } TestParser;
 
+static void
+test_parser_clear_token(TestParser *self)
+{
+  if (self->yylval->type)
+    cfg_lexer_free_token(self->yylval);
+  self->yylval->type = 0;
+}
+
+static void
+test_parser_next_token(TestParser *self)
+{
+  test_parser_clear_token(self);
+  cfg_lexer_lex(self->lexer, self->yylval, self->yylloc);
+}
+
+static void
+test_parser_input(TestParser *self, const gchar *buffer)
+{
+  if (self->lexer)
+    cfg_lexer_free(self->lexer);
+  self->lexer = cfg_lexer_new_buffer(buffer, strlen(buffer));
+}
+
 TestParser *
-test_parser_new(const gchar *buffer, gint buffer_len)
+test_parser_new(void)
 {
   TestParser *self = g_new0(TestParser, 1);
 
-  self->lexer = cfg_lexer_new_buffer(buffer, buffer_len);
   self->yylval = g_new0(YYSTYPE, 1);
   self->yylloc = g_new0(YYLTYPE, 1);
   self->yylval->type = LL_CONTEXT_ROOT;
@@ -28,123 +74,164 @@ test_parser_new(const gchar *buffer, gint buffer_len)
 void
 test_parser_free(TestParser *self)
 {
-  cfg_lexer_free(self->lexer);
+  test_parser_clear_token(self);
+  if (self->lexer)
+    cfg_lexer_free(self->lexer);
   g_free(self->yylval);
   g_free(self->yylloc);
   g_free(self);
 }
 
+#define LEXER_TESTCASE(x, ...) do { lexer_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); lexer_testcase_end(); } while(0)
 
+TestParser *parser = NULL;
 
-#define assert_parser_string(parser, required) \
-  assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_STRING, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_string(parser->yylval->cptr, required, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__);
+#define lexer_testcase_begin(func, args) 			\
+  do                                          			\
+    {                                         			\
+      testcase_begin("%s(%s)", func, args);                     \
+      parser = test_parser_new();                               \
+    }                                         			\
+  while (0)
 
-#define assert_parser_block(parser, required) \
-  assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_BLOCK, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_string(parser->yylval->cptr, required, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__);
+#define lexer_testcase_end()				        \
+  do								\
+    {								\
+      test_parser_free(parser);                                 \
+      testcase_end();						\
+    }								\
+  while (0)
 
-#define assert_parser_block_bad(parser) \
-  assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_ERROR, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
-
-#define assert_parser_pragma(parser) \
-  assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_PRAGMA, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
-
-#define assert_parser_number(parser, required) \
-  assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_NUMBER, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_gint(parser->yylval->num, required, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
-
-#define assert_parser_float(parser, required)                           \
-  assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_FLOAT, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_true(parser->yylval->fnum == required, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
-
-#define assert_parser_identifier(parser, required) \
-  assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), LL_IDENTIFIER, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
-  assert_string(parser->yylval->cptr, required, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
-
-#define assert_parser_char(parser, required) \
-  assert_gint(cfg_lexer_lex(parser->lexer, parser->yylval, parser->yylloc), required, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
-
-#define TEST_STRING "\"test\" \"test\\x0a\" \"test\\o011\" \"test\\n\" \"test\\r\" \"test\\a\" \"test\\t\" \"test\\v\" \"test\\c\""
-
-void
-test_lexer_string()
+static void
+_input(const gchar *input)
 {
-  TestParser *parser = test_parser_new(TEST_STRING, strlen(TEST_STRING));
-  assert_parser_string(parser, "test");
-  assert_parser_string(parser, "test\n");
-  assert_parser_string(parser, "test\t");
-  assert_parser_string(parser, "test\n");
-  assert_parser_string(parser, "test\r");
-  assert_parser_string(parser, "test\a");
-  assert_parser_string(parser, "test\t");
-  assert_parser_string(parser, "test\v");
-  assert_parser_string(parser, "testc");
-  test_parser_free(parser);
+  test_parser_input(parser, input);
 }
 
-#define TEST_QSTRING "'test' '\"test\\n\\r\"'"
-
-void
-test_lexer_qstring()
+static void
+_next_token(void)
 {
-  TestParser *parser = test_parser_new(TEST_QSTRING, strlen(TEST_QSTRING));
-  assert_parser_string(parser, "test");
-  assert_parser_string(parser, "\"test\\n\\r\"");
-  test_parser_free(parser);
+  test_parser_next_token(parser);
+}
+
+static YYSTYPE *
+_current_token(void)
+{
+  return parser->yylval;
+}
+
+#define assert_token_type(expected)                                     \
+  assert_gint(_current_token()->type, expected, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
+
+#define assert_parser_string(expected)                          \
+  _next_token();                                                        \
+  assert_token_type(LL_STRING);                                        \
+  assert_string(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__); \
+
+#define assert_parser_block(expected) \
+  _next_token();                                                        \
+  assert_token_type(LL_BLOCK);                                         \
+  assert_string(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__);
+
+#define assert_parser_block_bad(parser) \
+  _next_token();                                                        \
+  assert_token_type(LL_ERROR);
+
+#define assert_parser_pragma(parser) \
+  _next_token();                                                        \
+  assert_token_type(LL_PRAGMA);
+
+#define assert_parser_number(expected) \
+  _next_token();                                                        \
+  assert_token_type(LL_NUMBER);                                        \
+  assert_gint(_current_token()->num, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+
+#define assert_parser_float(expected)                           \
+  _next_token();                                                        \
+  assert_token_type(LL_FLOAT);                                         \
+  assert_true(_current_token()->fnum == expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+
+#define assert_parser_identifier(expected) \
+  _next_token();                                                        \
+  assert_token_type(LL_IDENTIFIER);                                         \
+  assert_string(_current_token()->cptr, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+
+#define assert_parser_char(expected) \
+  _next_token();                                                        \
+  assert_gint(_current_token()->type, expected, "Bad character value at %s:%d", __FUNCTION__, __LINE__);
+
+static void
+test_lexer_string(void)
+{
+  _input("\"test\"");
+  assert_parser_string("test");
+  _input("\"test\\x0a\"");
+  assert_parser_string("test\n");
+  _input("\"test\\o011\"");
+  assert_parser_string("test\t");
+  _input("\"test\\n\\r\\a\\t\\v\\c\"");
+  assert_parser_string("test\n\r\a\t\vc");
+}
+
+static void
+test_lexer_qstring(void)
+{
+  _input("'test'");
+  assert_parser_string("test");
+  _input("'\"test\\n\\r\"'");
+  assert_parser_string("\"test\\n\\r\"");
 }
 
 #define TEST_BLOCK " {'hello world' \"test value\" {other_block} other\text}"
 #define TEST_BAD_BLOCK "this is a bad block starting " TEST_BLOCK
 
-void
-test_lexer_block()
+static void
+test_lexer_block(void)
 {
-  TestParser *parser = test_parser_new(TEST_BLOCK, strlen(TEST_BLOCK));
+  _input(TEST_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
-  assert_parser_block(parser, "'hello world' \"test value\" {other_block} other\text");
-  test_parser_free(parser);
+  assert_parser_block("'hello world' \"test value\" {other_block} other\text");
 
-  parser = test_parser_new(TEST_BAD_BLOCK, strlen(TEST_BAD_BLOCK));
+  _input(TEST_BAD_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block_bad(parser);
-  test_parser_free(parser);
 }
 
-
-#define TEST_VALUES "#This is a full line comment\n@version():;{}| 4.2 12 0x50 011 +12 -12 -4.2 +4.2 test_value"
-
-void
-test_lexer_others()
+static void
+test_lexer_others(void)
 {
-  TestParser *parser = test_parser_new(TEST_VALUES, strlen(TEST_VALUES));
+  _input("#This is a full line comment\nfoobar");
+  assert_parser_identifier("foobar");
+  _input("@version");
   assert_parser_pragma(parser);
-  assert_parser_identifier(parser, "version");
-  assert_parser_char(parser, '(');
-  assert_parser_char(parser, ')');
-  assert_parser_char(parser, ':');
-  assert_parser_char(parser, ';');
-  assert_parser_char(parser, '{');
-  assert_parser_char(parser, '}');
-  assert_parser_char(parser, '|');
-  assert_parser_float(parser, 4.2);
-  assert_parser_number(parser, 12);
-  assert_parser_number(parser, 80 /*0x50*/);
-  assert_parser_number(parser, 9 /*011 */);
-  assert_parser_number(parser, 12);
-  assert_parser_number(parser, -12);
-  assert_parser_float(parser, -4.2);
-  assert_parser_float(parser, 4.2);
-  assert_parser_identifier(parser, "test_value");
-  test_parser_free(parser);
+  assert_parser_identifier("version");
+  _input("():;{}|");
+  assert_parser_char('(');
+  assert_parser_char(')');
+  assert_parser_char(':');
+  assert_parser_char(';');
+  assert_parser_char('{');
+  assert_parser_char('}');
+  assert_parser_char('|');
+  _input("4.2 12 0x50 011 +12 -12 -4.2 +4.2");
+  assert_parser_float(4.2);
+  assert_parser_number(12);
+  assert_parser_number(80 /*0x50*/);
+  assert_parser_number(9 /*011 */);
+  assert_parser_number(12);
+  assert_parser_number(-12);
+  assert_parser_float(-4.2);
+  assert_parser_float(4.2);
+  _input("test_value");
+  assert_parser_identifier("test_value");
 }
 
 int
 main(int argc, char **argv)
 {
-  test_lexer_string();
-  test_lexer_qstring();
-  test_lexer_block();
-  test_lexer_others();
+  LEXER_TESTCASE(test_lexer_string);
+  LEXER_TESTCASE(test_lexer_qstring);
+  LEXER_TESTCASE(test_lexer_block);
+  LEXER_TESTCASE(test_lexer_others);
   return 0;
 }

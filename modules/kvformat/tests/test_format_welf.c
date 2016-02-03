@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Balabit
  * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@ test_format_welf(void)
 {
   assert_template_format("$(format-welf MSG=$MSG)", "MSG=árvíztűrőtükörfúrógép");
   assert_template_format("$(format-welf MSG=$escaping)", "MSG=\"binary stuff follows \\\"\\xad árvíztűrőtükörfúrógép\"");
+  assert_template_format("$(format-welf MSG=$escaping2)", "MSG=\\xc3");
+  assert_template_format("$(format-welf MSG=$null)", "MSG=binary\\x00stuff");
   assert_template_format_with_context("$(format-welf MSG=$MSG)", "MSG=árvíztűrőtükörfúrógép MSG=árvíztűrőtükörfúrógép");
 }
 

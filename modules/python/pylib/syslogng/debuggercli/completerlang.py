@@ -1,8 +1,8 @@
 from __future__ import print_function, absolute_import
-import ply.yacc as yacc
 import sys
-from .tablexer import TabLexer
 from abc import abstractmethod, ABCMeta
+import ply.yacc as yacc
+from .tablexer import TabLexer
 
 
 class CompleterLang(object):

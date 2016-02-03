@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -28,7 +28,7 @@
 #include "afsocket-dest.h"
 #include "tlscontext.h"
 
-#if ENABLE_SPOOF_SOURCE
+#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
 
 /* this forward declaration avoids having to include libnet, which requires
  * ugly playing with macros, see that for yourself in the implementation
@@ -39,7 +39,7 @@ struct libnet_context;
 typedef struct _AFInetDestDriver
 {
   AFSocketDestDriver super;
-#if ENABLE_SPOOF_SOURCE
+#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
   struct libnet_context *lnet_ctx;
   GStaticMutex lnet_lock;

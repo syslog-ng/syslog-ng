@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -30,14 +30,15 @@ extern int afprog_debug;
 int afprog_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afprog_keywords[] = {
-  { "program",            KW_PROGRAM },
-  { "keep_alive",         KW_KEEP_ALIVE },
+  { "program",                 KW_PROGRAM },
+  { "keep_alive",              KW_KEEP_ALIVE },
+  { "inherit_environment",     KW_INHERIT_ENVIRONMENT },
   { NULL }
 };
 
 CfgParser afprog_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &afprog_debug,
 #endif
   .name = "afprog",

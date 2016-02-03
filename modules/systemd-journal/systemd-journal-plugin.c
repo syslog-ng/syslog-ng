@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014      BalaBit S.a.r.l., Luxembourg, Luxembourg
- * Copyright (c) 2010-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2014 Balabit
  * Copyright (c) 2010-2014 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -54,9 +53,9 @@ systemd_journal_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "systemd-journal",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The systemd-journal module provides systemd journal source drivers for syslog-ng where it is available.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = systemd_journal_plugins,
   .plugins_len = G_N_ELEMENTS(systemd_journal_plugins),
 };

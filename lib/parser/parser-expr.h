@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@
 #ifndef LOGPARSER_H_INCLUDED
 #define LOGPARSER_H_INCLUDED
 
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "messages.h"
 #include "logpipe.h"
 #include "template/templates.h"
@@ -42,6 +42,7 @@ struct _LogParser
 };
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);
+gboolean log_parser_init_method(LogPipe *s);
 void log_parser_init_instance(LogParser *self, GlobalConfig *cfg);
 void log_parser_free_method(LogPipe *self);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -27,8 +27,8 @@
 #include "stateful-parser.h"
 #include "patterndb.h"
 
-#define PATH_PATTERNDB_FILE     PATH_LOCALSTATEDIR "/patterndb.xml"
-#define PATH_XSDDIR             PATH_DATADIR "/xsd"
+#define PATH_PATTERNDB_FILE     SYSLOG_NG_PATH_LOCALSTATEDIR "/patterndb.xml"
+#define PATH_XSDDIR             SYSLOG_NG_PATH_DATADIR "/xsd"
 
 typedef struct _LogDBParser LogDBParser;
 

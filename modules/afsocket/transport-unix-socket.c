@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  * Copyright (c) 2014 Gergely Nagy
  *
@@ -86,7 +86,7 @@ _read_text_file_content(const gchar *filename, gchar *buf, gsize buflen)
 static gssize
 _read_text_file_content_without_trailing_newline(const gchar *filename, gchar *buf, gsize buflen)
 {
-  gsize content_len;
+  gssize content_len;
   
   content_len = _read_text_file_content(filename, buf, buflen);
   if (content_len <= 0)
@@ -213,7 +213,7 @@ _unix_socket_read(gint fd, gpointer buf, gsize buflen, LogTransportAuxData *aux)
   struct msghdr msg;
   struct iovec iov[1];
   struct sockaddr_storage ss;
-#if defined(HAVE_CTRLBUF_IN_MSGHDR)
+#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
   gchar ctlbuf[32];
   msg.msg_control = ctlbuf;
   msg.msg_controllen = sizeof(ctlbuf);

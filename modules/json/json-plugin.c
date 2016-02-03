@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2012 Balabit
  * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -47,9 +47,9 @@ json_plugin_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "json-plugin",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The json module provides JSON parsing & formatting support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = json_plugins,
   .plugins_len = G_N_ELEMENTS(json_plugins),
 };

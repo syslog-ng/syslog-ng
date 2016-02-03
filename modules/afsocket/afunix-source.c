@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -22,7 +22,6 @@
  */
 
 #include "afunix-source.h"
-#include "misc.h"
 #include "messages.h"
 #include "gprocess.h"
 #include "transport-mapper-unix.h"
@@ -91,6 +90,15 @@ static gboolean
 afunix_sd_init(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (self->create_dirs == -1)
+    self->create_dirs = cfg->create_dirs;
+
+  if (self->pass_unix_credentials == -1)
+    self->pass_unix_credentials = cfg->pass_unix_credentials;
+
+  afunix_sd_set_pass_unix_credentials(self, self->pass_unix_credentials);
 
   return afsocket_sd_init_method(s) &&
          afunix_sd_apply_perms_to_socket(self);
@@ -122,9 +130,8 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
   self->filename = g_strdup(filename);
   file_perm_options_defaults(&self->file_perm_options);
   self->file_perm_options.file_perm = 0666;
-  self->pass_unix_credentials = cfg->pass_unix_credentials;
-  self->create_dirs = cfg->create_dirs;
-  afunix_sd_set_pass_unix_credentials(self, self->pass_unix_credentials);
+  self->pass_unix_credentials = -1;
+  self->create_dirs = -1;
 
   afunix_sd_adjust_reader_options(self, cfg);
   return self;

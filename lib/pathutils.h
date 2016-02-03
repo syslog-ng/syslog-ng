@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 2013 Viktor Juhasz
  * Copyright (c) 2013 Viktor Tusa
  *
@@ -29,5 +29,8 @@
 
 gboolean is_file_regular(const char *filename);
 gboolean is_file_directory(const char *filename);
+gboolean is_file_device(const gchar *name);
+
+gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
 
 #endif

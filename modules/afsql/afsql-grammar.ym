@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -53,6 +53,16 @@
 
 %token KW_DEFAULT
 %token KW_DBD_OPTION
+%token KW_INDEXES
+%token KW_VALUES
+%token KW_SQL
+%token KW_PASSWORD
+%token KW_USERNAME
+%token KW_DATABASE
+%token KW_TABLE
+%token KW_SESSION_STATEMENTS
+%token KW_COLUMNS
+%token KW_NULL
 
 %type   <ptr> dest_afsql
 %type   <ptr> dest_afsql_params
@@ -74,9 +84,7 @@ dest_afsql
 dest_afsql_params
         :
           {
-#if ENABLE_SQL
             last_driver = *instance = afsql_dd_new(configuration);
-#endif /* ENABLE_SQL */
           }
           dest_afsql_options			{ $$ = last_driver; }
         ;
@@ -87,10 +95,7 @@ dest_afsql_options
         ;
 
 dest_afsql_option
-        : KW_IFDEF {
-#if ENABLE_SQL
-}
-        | KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
+        : KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
         | KW_HOST '(' string ')'		{ afsql_dd_set_host(last_driver, $3); free($3); }
         | KW_PORT '(' string_or_number ')'
           {
@@ -117,9 +122,6 @@ dest_afsql_option
 
 	| { last_template_options = &((AFSqlDestDriver *) last_driver)->template_options; } template_option
 	| dest_driver_option
-        | KW_ENDIF {
-#endif /* ENABLE_SQL */
-}
         ;
 
 dest_afsql_values

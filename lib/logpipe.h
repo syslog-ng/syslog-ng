@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -26,7 +26,7 @@
 #define LOGPIPE_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 #include "cfg.h"
 #include "atomic.h"
 #include "messages.h"
@@ -300,7 +300,7 @@ log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_
     }
   else
     {
-      log_msg_drop(msg, path_options);
+      log_msg_drop(msg, path_options, AT_PROCESSED);
     }
 }
 
@@ -313,7 +313,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     {
       if (!pipe_single_step_hook(s, msg, path_options))
         {
-          log_msg_drop(msg, path_options);
+          log_msg_drop(msg, path_options, AT_PROCESSED);
           return;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -46,7 +46,7 @@ log_proto_record_server_validate_options(LogProtoServer *s)
                 NULL);
       return FALSE;
     }
-  return log_proto_server_options_validate(s->options);
+  return log_proto_buffered_server_validate_options_method(s);
 }
 
 static gint

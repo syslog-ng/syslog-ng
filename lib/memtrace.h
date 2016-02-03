@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2010 Balabit
  * Copyright (c) 1998-2010 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@ void z_mem_trace_init(gchar *memtrace_file);
 void z_mem_trace_stats(void);
 void z_mem_trace_dump(void);
 
-#if ENABLE_MEMTRACE
+#if SYSLOG_NG_ENABLE_MEMTRACE
 
 #include <stdlib.h>
 

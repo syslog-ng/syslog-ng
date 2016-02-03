@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -62,7 +62,7 @@ tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int32_padded(result, 0, ' ', 10, n + m);
+  format_int64_padded(result, 0, ' ', 10, n + m);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_plus);
@@ -78,7 +78,7 @@ tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int32_padded(result, 0, ' ', 10, n - m);
+  format_int64_padded(result, 0, ' ', 10, n - m);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_minus);
@@ -94,7 +94,7 @@ tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int32_padded(result, 0, ' ', 10, n * m);
+  format_int64_padded(result, 0, ' ', 10, n * m);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_multi);
@@ -110,7 +110,7 @@ tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int32_padded(result, 0, ' ', 10, n / m);
+  format_int64_padded(result, 0, ' ', 10, n / m);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_div);
@@ -126,7 +126,7 @@ tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_uint32_padded(result, 0, ' ', 10, n % m);
+  format_uint64_padded(result, 0, ' ', 10, n % m);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -38,7 +39,7 @@ static CfgLexerKeyword geoip_parser_keywords[] =
 
 CfgParser geoip_parser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &geoip_parser_debug,
 #endif
   .name = "geoip-parser",

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,10 +26,14 @@
 
 #include "syslog-ng.h"
 
-void append_unsafe_utf8_as_escaped_binary(GString *escaped_string, const gchar *str, const gchar *unsafe_chars);
-gchar *convert_unsafe_utf8_to_escaped_binary(const gchar *str, const gchar *additional_unsafe_chars);
+void append_unsafe_utf8_as_escaped_binary(GString *escaped_string, const gchar *str,
+                                          gssize str_len, const gchar *unsafe_chars);
+gchar *convert_unsafe_utf8_to_escaped_binary(const gchar *str, gssize str_len,
+                                             const gchar *unsafe_chars);
 
-void append_unsafe_utf8_as_escaped_text(GString *escaped_string, const gchar *str, const gchar *unsafe_chars);
-gchar *convert_unsafe_utf8_to_escaped_text(const gchar *str, const gchar *additional_unsafe_chars);
+void append_unsafe_utf8_as_escaped_text(GString *escaped_string, const gchar *str,
+                                        gssize str_len, const gchar *unsafe_chars);
+gchar *convert_unsafe_utf8_to_escaped_text(const gchar *str, gssize str_len,
+                                           const gchar *unsafe_chars);
 
 #endif

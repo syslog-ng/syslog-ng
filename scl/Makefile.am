@@ -1,9 +1,22 @@
-SCL_SUBDIRS	= system pacct syslogconf rewrite nodejs graphite cim solaris mbox elasticsearch kafka hdfs
+SCL_SUBDIRS	= \
+	system		\
+	pacct		\
+	syslogconf	\
+	rewrite		\
+	nodejs		\
+	graphite	\
+	cim		\
+	solaris		\
+	mbox		\
+	elasticsearch	\
+	kafka		\
+	hdfs		\
+	apache		\
+	loggly		\
+	logmatic
 SCL_CONFIGS	= scl.conf syslog-ng.conf
 
 EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS))
-
-scldir		= $(datadir)/include/scl
 
 scl-install-data-local:
 	for cfg in $(SCL_CONFIGS); do \

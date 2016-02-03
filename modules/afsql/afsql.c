@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -23,13 +23,12 @@
 
 #include "afsql.h"
 
-#if ENABLE_SQL
-
 #include "logqueue.h"
 #include "template/templates.h"
 #include "messages.h"
-#include "misc.h"
+#include "string-list.h"
 #include "str-format.h"
+#include "seqnum.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
 #include "timeutils.h"
@@ -42,6 +41,7 @@
 static gboolean dbi_initialized = FALSE;
 static const char *s_oracle = "oracle";
 static const char *s_freetds = "freetds";
+static dbi_inst dbi_instance;
 
 #define MAX_FAILED_ATTEMPTS 3
 
@@ -702,7 +702,7 @@ afsql_dd_ensure_initialized_connection(AFSqlDestDriver *self)
   if (self->dbi_ctx)
     return TRUE;
 
-  self->dbi_ctx = dbi_conn_new(self->type);
+  self->dbi_ctx = dbi_conn_new_r(self->type, dbi_instance);
 
   if (!self->dbi_ctx)
     {
@@ -1014,7 +1014,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                     evt_tag_int("attempts", self->num_retries),
                     NULL);
           stats_counter_inc(self->dropped_messages);
-          log_msg_drop(msg, &path_options);
+          log_msg_drop(msg, &path_options, AT_PROCESSED);
           self->failed_message_counter = 0;
           success = TRUE;
         }
@@ -1297,7 +1297,7 @@ afsql_dd_init(LogPipe *s)
 
   if (!dbi_initialized)
     {
-      gint rc = dbi_initialize(NULL);
+      gint rc = dbi_initialize_r(NULL, &dbi_instance);
 
       if (rc < 0)
         {
@@ -1463,5 +1463,3 @@ afsql_dd_lookup_flag(const gchar *flag)
                 NULL);
   return 0;
 }
-
-#endif

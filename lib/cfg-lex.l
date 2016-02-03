@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -331,4 +331,4 @@ cfg_lexer_start_block_state(CfgLexer *self, gchar block_boundary[2])
 }
 
 /* avoid warnings of unused symbols */
-gpointer __dummy[] = { yy_top_state };
+gpointer __dummy[] = { yy_top_state, yy_fatal_error };

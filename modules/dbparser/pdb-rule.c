@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013, 2015 BalaBit
+ * Copyright (c) 2002-2013, 2015 Balabit
  * Copyright (c) 1998-2013, 2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -65,16 +65,14 @@ pdb_rule_set_context_timeout(PDBRule *self, gint timeout)
 void
 pdb_rule_set_context_scope(PDBRule *self, const gchar *scope, GError **error)
 {
-  if (strcmp(scope, "global") ==  0)
-    self->context_scope = RCS_GLOBAL;
-  else if (strcmp(scope, "host") == 0)
-    self->context_scope = RCS_HOST;
-  else if (strcmp(scope, "program") == 0)
-    self->context_scope = RCS_PROGRAM;
-  else if (strcmp(scope, "process") == 0)
-    self->context_scope = RCS_PROCESS;
+  int context_scope = correllation_key_lookup_scope(scope);
+  if (context_scope < 0)
+    {
+      self->context_scope = RCS_GLOBAL;
+      g_set_error(error, 0, 1, "Unknown context scope: %s", scope);
+    }
   else
-    g_set_error(error, 0, 1, "Unknown context scope: %s", scope);
+    self->context_scope = context_scope;
 }
 
 void

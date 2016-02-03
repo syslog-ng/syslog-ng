@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2015 Balabit
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
@@ -26,9 +26,10 @@
 
 /** Value pairs **/
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
 python_worker_vp_add_one(const gchar *name,
-                       TypeHint type, const gchar *value,
+                       TypeHint type, const gchar *value, gsize value_len,
                        gpointer user_data)
 {
   const LogTemplateOptions *template_options = (const LogTemplateOptions *)((gpointer *)user_data)[0];

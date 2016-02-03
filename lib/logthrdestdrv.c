@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014 Balabit
  * Copyright (c) 2013, 2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@
  */
 
 #include "logthrdestdrv.h"
-#include "misc.h"
+#include "seqnum.h"
 
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 

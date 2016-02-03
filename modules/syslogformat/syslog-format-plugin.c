@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -63,9 +63,9 @@ syslogformat_module_init(GlobalConfig *cfg, CfgArgs *args)
 const ModuleInfo module_info =
 {
   .canonical_name = "syslogformat",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "The syslogformat module provides support for parsing RFC3164 and RFC5424 format syslog messages.",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = syslog_format_plugins,
   .plugins_len = G_N_ELEMENTS(syslog_format_plugins),
 };

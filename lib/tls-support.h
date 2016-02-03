@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -26,9 +26,9 @@
 
 /* this header is about Thread Local Storage and not about Transport Layer Security */
 
-#include <config.h>
+#include <syslog-ng-config.h>
 
-#ifndef HAVE_THREAD_KEYWORD
+#ifndef SYSLOG_NG_HAVE_THREAD_KEYWORD
 
 #include <stdlib.h>
 #include <pthread.h>
@@ -71,7 +71,7 @@ static inline struct __tls_variables *__tls_deref_helper(pthread_key_t key, size
 
 #define __thread #
 
-#else  /* HAVE_TLS */
+#else  /* SYSLOG_NG_HAVE_TLS */
 
 #define TLS_BLOCK_START                         \
   struct __tls_variables

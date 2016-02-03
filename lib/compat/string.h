@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,8 +26,8 @@
 #include "compat.h"
 #include <string.h>
 
-#if !HAVE_STRTOLL
-# if HAVE_STRTOIMAX || defined(strtoimax)
+#if !SYSLOG_NG_HAVE_STRTOLL
+# if SYSLOG_NG_HAVE_STRTOIMAX || defined(strtoimax)
    /* HP-UX has an strtoimax macro, not a function */
    #define strtoll(nptr, endptr, base) strtoimax(nptr, endptr, base)
 # else
@@ -36,15 +36,15 @@
 # endif
 #endif
 
-#if !HAVE_STRCASESTR
+#if !SYSLOG_NG_HAVE_STRCASESTR
 char *strcasestr(const char *s, const char *find);
 #endif
 
-#if !HAVE_MEMRCHR
+#if !SYSLOG_NG_HAVE_MEMRCHR
 void *memrchr(const void *s, int c, size_t n);
 #endif
 
-#ifndef HAVE_STRTOK_R
+#ifndef SYSLOG_NG_HAVE_STRTOK_R
 char *strtok_r(char *string, const char *delim, char **saveptr);
 #endif
 #endif

@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2010-2015 Balabit
+ * Copyright (c) 2010-2015 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
 #include "template_lib.h"
 #include "apphook.h"
 #include "plugin.h"
@@ -18,10 +41,10 @@ test_cond_funcs(void)
   assert_template_format_with_context("$(grep -m 1 'facility(local3)' $PID)", "23323");
   assert_template_format_with_context("$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng,23323,syslog-ng");
   assert_template_format_with_context("$(grep 'facility(local4)' $PID)", "");
-  assert_template_format_with_context("$(grep ('$FACILITY' == 'local4') $PID)", "");
-  assert_template_format_with_context("$(grep ('$FACILITY(' == 'local3(') $PID)", "23323,23323");
-  assert_template_format_with_context("$(grep ('$FACILITY(' == 'local4)') $PID)", "");
-  assert_template_format_with_context("$(grep \\'$FACILITY\\'\\ ==\\ \\'local4\\' $PID)", "");
+  assert_template_format_with_context("$(grep ('$FACILITY' eq 'local4') $PID)", "");
+  assert_template_format_with_context("$(grep ('$FACILITY(' eq 'local3(') $PID)", "23323,23323");
+  assert_template_format_with_context("$(grep ('$FACILITY(' eq 'local4)') $PID)", "");
+  assert_template_format_with_context("$(grep \\'$FACILITY\\'\\ eq\\ \\'local4\\' $PID)", "");
 
   assert_template_format_with_context("$(if 'facility(local4)' alma korte)", "korte");
   assert_template_format_with_context("$(if 'facility(local3)' alma korte)", "alma");
@@ -39,8 +62,8 @@ test_cond_funcs(void)
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" != \"19\"' alma korte)", "korte");
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" > \"19\"' alma korte)", "korte");
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\"' alma korte)", "alma");
-  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" == \"nagy\"' alma korte)", "korte");
-  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" == \"nagy\"' alma korte)", "alma");
+  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" eq \"nagy\"' alma korte)", "korte");
+  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" eq \"nagy\"' alma korte)", "alma");
 
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@0", "23323");
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@1", "23323");
@@ -108,6 +131,11 @@ test_numeric_funcs(void)
   assert_template_format("$(/ $FACILITY_NUM 0)", "NaN");
   assert_template_format("$(% $FACILITY_NUM 0)", "NaN");
   assert_template_format("$(+ foo bar)", "NaN");
+  assert_template_format("$(/ 2147483648 1)", "2147483648");
+  assert_template_format("$(+ 5000000000 5000000000)", "10000000000");
+  assert_template_format("$(% 10000000000 5000000001)", "4999999999");
+  assert_template_format("$(* 5000000000 2)", "10000000000");
+  assert_template_format("$(- 10000000000 5000000000)", "5000000000");
 }
 
 void

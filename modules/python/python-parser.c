@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 BalaBit
+ * Copyright (c) 2014-2015 Balabit
  * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
  * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
@@ -33,13 +33,12 @@ static CfgLexerKeyword python_keywords[] = {
   { "python",                   KW_PYTHON  },
   { "class",                    KW_CLASS   },
   { "imports",                  KW_IMPORTS },
-  { "options",                  KW_OPTIONS },
   { NULL }
 };
 
 CfgParser python_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &python_debug,
 #endif
   .name = "python",

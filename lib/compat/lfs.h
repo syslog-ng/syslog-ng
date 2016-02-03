@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 
 #include "compat/compat.h"
 
-#ifndef HAVE_O_LARGEFILE
+#ifndef SYSLOG_NG_HAVE_O_LARGEFILE
 #define O_LARGEFILE 0
 #endif
 

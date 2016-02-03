@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014, 2015 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013, 2014, 2015 Balabit
  * Copyright (c) 2013, 2014, 2015 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -27,7 +27,7 @@
 #include <time.h>
 
 #include "logthrdestdrv.h"
-#include "misc.h"
+#include "string-list.h"
 #include "stats/stats.h"
 #include "scratch-buffers.h"
 #include "riemann.h"
@@ -154,8 +154,7 @@ riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
-  if (self->fields.attributes)
-    value_pairs_unref(self->fields.attributes);
+  value_pairs_unref(self->fields.attributes);
   self->fields.attributes = vp;
 }
 
@@ -400,9 +399,11 @@ riemann_dd_field_add_msg_tag(const LogMessage *msg,
   return TRUE;
 }
 
+/* TODO escape '\0' when passing down the value */
 static gboolean
 riemann_dd_field_add_attribute_vp(const gchar *name,
                                   TypeHint type, const gchar *value,
+                                  gsize value_len,
                                   gpointer user_data)
 {
   riemann_event_t *event = (riemann_event_t *)user_data;
@@ -640,8 +641,7 @@ riemann_dd_free(LogPipe *d)
   log_template_unref(self->fields.metric);
   log_template_unref(self->fields.ttl);
   string_list_free(self->fields.tags);
-  if (self->fields.attributes)
-    value_pairs_unref(self->fields.attributes);
+  value_pairs_unref(self->fields.attributes);
 
   log_threaded_dest_driver_free(d);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -35,7 +35,7 @@ TLS_BLOCK_START
   /* Thread IDs are low numbered integers that can be used to index
    * per-thread data in an array.  IDs get reused and the smallest possible
    * ID is allocated for newly started threads.  */
-  
+
   /* the thread id is shifted by one, to make 0 the uninitialized state,
    * e.g. everything that sets it adds +1, everything that queries it
    * subtracts 1 */
@@ -199,7 +199,7 @@ main_loop_worker_job_start(void)
 
 /*
  * This function is called in the main thread after a job was finished in
- * one of the worker threads. 
+ * one of the worker threads.
  *
  * If an intrusive operation (reload, termination) is pending and the number
  * of workers has dropped to zero, it commences with the intrusive
@@ -266,7 +266,7 @@ main_loop_worker_invoke_batch_callbacks(void)
   iv_list_for_each_safe(lh, lh2, &batch_callbacks)
     {
       WorkerBatchCallback *cb = iv_list_entry(lh, WorkerBatchCallback, list);
-      
+
       cb->func(cb->user_data);
       iv_list_del_init(&cb->list);
     }
@@ -283,15 +283,15 @@ static gpointer
 _worker_thread_func(gpointer st)
 {
   WorkerThreadParams *p = st;
-  
+
   main_loop_worker_thread_start(p->worker_options);
   p->func(p->data);
   main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
   main_loop_worker_thread_stop();
-  
-  
+
+
   /* NOTE: this assert aims to validate that the worker thread in fact
-   * invokes main_loop_worker_invoke_batch_callbacks() during its operation. 
+   * invokes main_loop_worker_invoke_batch_callbacks() during its operation.
    * Please do so every once a couple of messages, hopefully you have a
    * natural barrier that let's you decide when, the easiest would be
    * log-fetch-limit(), but other limits may also be applicable.
@@ -307,14 +307,14 @@ main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc
 {
   GThread *h;
   WorkerThreadParams *p;
-  
+
   main_loop_assert_main_thread();
-  
+
   p = g_new0(WorkerThreadParams, 1);
   p->func = func;
   p->data = data;
   p->worker_options = worker_options;
-  
+
   main_loop_worker_job_start();
   if (terminate_func)
     _register_exit_notification_callback(terminate_func, data);

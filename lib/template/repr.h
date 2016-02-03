@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2014 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -26,7 +26,7 @@
 #define TEMPLATE_REPR_H_INCLUDED
 
 #include "template/function.h"
-#include "logmsg.h"
+#include "logmsg/logmsg.h"
 
 enum
 {

@@ -1,5 +1,4 @@
 lib_tests_TESTS		= \
-	lib/tests/test_log_message	\
 	lib/tests/test_cfg_lexer_subst	\
 	lib/tests/test_cfg_tree		\
 	lib/tests/test_type_hints	\
@@ -13,17 +12,14 @@ lib_tests_TESTS		= \
 	lib/tests/test_string_list	\
 	lib/tests/test_runid        	\
 	lib/tests/test_pathutils	\
-	lib/tests/test_utf8utils
+	lib/tests/test_utf8utils	\
+	lib/tests/test_userdb		\
+	lib/tests/test_str-utils
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
 noinst_PROGRAMS 	= \
 	lib/tests/test_host_resolve
-
-lib_tests_test_log_message_CFLAGS	=	\
-	$(TEST_CFLAGS)
-lib_tests_test_log_message_LDADD	=	\
-	$(TEST_LDADD)
 
 lib_tests_test_cfg_lexer_subst_CFLAGS	=	\
 	$(TEST_CFLAGS)
@@ -99,8 +95,16 @@ lib_tests_test_utf8utils_CFLAGS	=	\
 lib_tests_test_utf8utils_LDADD	=	\
 	$(TEST_LDADD)
 
+lib_tests_test_str_utils_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_str_utils_LDADD	=	\
+	$(TEST_LDADD)
+
 CLEANFILES				+= \
 	test_values.persist		   \
 	test_values.persist-		   \
 	test_run_id.persist		   \
 	test_run_id.persist-
+
+lib_tests_test_userdb_LDADD	= \
+	$(TEST_LDADD)
