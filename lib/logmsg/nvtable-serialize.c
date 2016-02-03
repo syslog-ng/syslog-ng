@@ -58,7 +58,7 @@ _dyn_entry_cmp(const void *a, const void *b)
 }
 
 void
-_update_indirect_dynamic_entry(NVTable* self, NVHandle oh, const gchar* name, NVEntry* entry, NVRegistry *logmsg_registry)
+_update_indirect_dynamic_entry(NVTable* self, NVHandle oh, const gchar* name, NVEntry* entry, NVRegistry *logmsg_nv_registry)
 {
   NVDynValue* dyn_slot;
   NVEntry* oe = nv_table_get_entry(self, oh, &dyn_slot);
@@ -71,14 +71,14 @@ _update_indirect_dynamic_entry(NVTable* self, NVHandle oh, const gchar* name, NV
     }
   else
     {
-      oh = nv_registry_alloc_handle(logmsg_registry, oname);
+      oh = nv_registry_alloc_handle(logmsg_nv_registry, oname);
       if (oh != 0)
         entry->vindirect.handle = oh;
     }
 }
 
 static void
-_update_indirect_entry(NVTable *self, NVRegistry *logmsg_registry,
+_update_indirect_entry(NVTable *self, NVRegistry *logmsg_nv_registry,
                        NVEntry* entry)
 {
   NVHandle oh = entry->vindirect.handle;
@@ -86,9 +86,9 @@ _update_indirect_entry(NVTable *self, NVRegistry *logmsg_registry,
 
   if (oh > self->num_static_entries)
     {
-      _update_indirect_dynamic_entry(self, oh, name, entry, logmsg_registry);
+      _update_indirect_dynamic_entry(self, oh, name, entry, logmsg_nv_registry);
     }
-  nv_registry_alloc_handle(logmsg_registry, name);
+  nv_registry_alloc_handle(logmsg_nv_registry, name);
 }
 
 static inline gboolean
@@ -98,7 +98,7 @@ _is_indirect(NVEntry *entry)
 }
 
 static void
-_update_all_indirect_entries(NVTable *self, NVRegistry *logmsg_registry)
+_update_all_indirect_entries(NVTable *self, NVRegistry *logmsg_nv_registry)
 {
   int i;
   NVDynValue *dyn_entries = nv_table_get_dyn_entries(self);
@@ -108,7 +108,7 @@ _update_all_indirect_entries(NVTable *self, NVRegistry *logmsg_registry)
       NVEntry *entry = nv_table_get_entry_at_ofs(self, NV_TABLE_DYNVALUE_OFS(dyn_entries[i]));
 
       if (_is_indirect(entry))
-        _update_indirect_entry(self, logmsg_registry, entry);
+        _update_indirect_entry(self, logmsg_nv_registry, entry);
     }
 }
 
@@ -150,7 +150,7 @@ _set_updated_handle(NVDynValue *dyn_entry, NVHandle new_handle, NVHandle *handle
 }
 
 static void
-_update_dynamic_handles(NVTable *self, NVRegistry *logmsg_registry,
+_update_dynamic_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
                         NVHandle *handles_to_update,
                         guint8 num_handles_to_update)
 {
@@ -167,7 +167,7 @@ _update_dynamic_handles(NVTable *self, NVRegistry *logmsg_registry,
       if (!name)
         continue;
 
-      new_handle = nv_registry_alloc_handle(logmsg_registry, name);
+      new_handle = nv_registry_alloc_handle(logmsg_nv_registry, name);
 
       _set_updated_handle(dyn_entry, new_handle, handles_to_update, updated_handles, num_handles_to_update);
     }
@@ -205,14 +205,14 @@ _update_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssiz
 }
 
 void
-nv_table_update_handles(NVTable *self, NVRegistry *logmsg_registry,
+nv_table_update_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
                     NVHandle *handles_to_update, guint8 num_handles_to_update)
 {
-  _update_all_indirect_entries(self, logmsg_registry);
-  _update_dynamic_handles(self, logmsg_registry, handles_to_update, num_handles_to_update);
+  _update_all_indirect_entries(self, logmsg_nv_registry);
+  _update_dynamic_handles(self, logmsg_nv_registry, handles_to_update, num_handles_to_update);
   if (handles_to_update)
     {
-      nv_table_foreach(self, logmsg_registry, _update_sd_entries, NULL);
+      nv_table_foreach(self, logmsg_nv_registry, _update_sd_entries, NULL);
     }
 }
 
