@@ -23,6 +23,35 @@ script:
 compiler:
   - gcc
   - clang
+after_success:
+  - rm libtest/*.gc* # HACK, otherwise lcov/gcov reports Out of memory! error
+  - lcov -c --config-file=.lcovrc --directory . --output-file coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/cfg-lex.l" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/pragma-grammar.y" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/afsocket/afsocket-grammar.y" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/parser-expr-grammar.y" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/compat/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/filter/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/logproto/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/rewrite/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/stats/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/template/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "libtest/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/affile/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/afsocket/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/afstomp/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/basicfuncs/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/cryptofuncs/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/csvparser/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/dbparser/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/json/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/kvformat/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/linux-kmsg-format/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/modules/python/pylib/syslogng/debuggercli/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/systemd-journal/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "tests/*" -o coverage.info
+  - coveralls-lcov coverage.info
 branches:
   except:
     - /wip/
