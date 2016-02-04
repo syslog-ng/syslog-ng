@@ -28,10 +28,10 @@
 
 typedef struct _FileOpenOptions
 {
-  gboolean create_dirs:1,
-           needs_privileges:1,
+  gboolean needs_privileges:1,
            is_pipe:1;
   gint open_flags;
+  gint create_dirs;
 } FileOpenOptions;
 
 gboolean affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd);
