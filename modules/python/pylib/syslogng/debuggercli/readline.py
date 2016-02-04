@@ -1,7 +1,7 @@
 from __future__ import absolute_import, print_function
-from .debuggercli import DebuggerCLI
 import readline
 import traceback
+from .debuggercli import DebuggerCLI
 
 
 class ReadlineCompleteHook(object):
