@@ -958,7 +958,7 @@ if test "x$with_mongoc" = "xinternal" || test "x$with_mongoc" = "xauto-internal"
 		LIBMONGO_LIBS="\
 			-L\$(top_builddir)/modules/afmongodb/mongo-c-driver \
 			-L\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/libbson \
-			-lmongoc-1.0 -lbson -lsasl2 $OPENSSL_LIBS"
+			-lmongoc-1.0 -lbson $OPENSSL_LIBS"
 		LIBMONGO_CFLAGS="\
 			-I\$(top_srcdir)/modules/afmongodb/mongo-c-driver/src/mongoc \
 			-I\$(top_srcdir)/modules/afmongodb/mongo-c-driver/src/libbson/src/bson \
@@ -966,6 +966,7 @@ if test "x$with_mongoc" = "xinternal" || test "x$with_mongoc" = "xauto-internal"
 			-I\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/mongoc \
 		"
 		LIBMONGO_SUBDIRS="modules/afmongodb/mongo-c-driver"
+		AC_CHECK_LIB(sasl2, prop_get, LIBMONGO_LIBS="$LIBMONGO_LIBS -lsasl2")
 	else
 		AC_MSG_WARN([Internal mongo-c-driver sources not found in modules/afmongodb/mongo-c-driver])
 		with_mongoc="no"
