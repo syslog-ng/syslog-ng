@@ -103,14 +103,14 @@ BUILT_SOURCES += \
     modules/java/native/java-grammar.c \
     modules/java/native/java-grammar.h
 
+EXTRA_DIST += \
+    modules/java/native/java-grammar.ym \
+    $(JAVA_FILES) \
+    modules/java/build.gradle
+
 if ENABLE_JAVA
 BUILT_SOURCES += $(JAVA_HEADER_FILES)
 
 CLEANFILES += $(JAVA_HEADER_FILES)
 
 endif
-
-EXTRA_DIST += \
-    modules/java/native/java-grammar.ym \
-    $(JAVA_FILES) \
-    modules/java/build.gradle
