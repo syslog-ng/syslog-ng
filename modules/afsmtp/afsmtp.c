@@ -209,10 +209,10 @@ afsmtp_dd_format_stats_instance(LogThrDestDriver *d)
   return persist_name;
 }
 
-static gchar *
-afsmtp_dd_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+afsmtp_dd_format_persist_name(const LogPipe *s)
 {
-  AFSMTPDriver *self = (AFSMTPDriver *)d;
+  const AFSMTPDriver *self = (const AFSMTPDriver *)s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
