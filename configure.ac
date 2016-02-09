@@ -75,6 +75,7 @@ fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
 toolsdir='${datadir}/syslog-ng/tools'
+xsddir='${datadir}/syslog-ng/xsd'
 
 config_includedir='${datadir}/syslog-ng/include'
 scldir="${config_includedir}/scl"
@@ -1443,6 +1444,7 @@ AC_DEFINE_UNQUOTED(PATH_DATAROOTDIR, "$datarootdir", [data root directory])
 AC_DEFINE_UNQUOTED(PATH_DATADIR, "$datadir", [data directory])
 AC_DEFINE_UNQUOTED(PATH_CONFIG_INCLUDEDIR, "$config_includedir", [include directory])
 AC_DEFINE_UNQUOTED(PATH_SCLDIR, "$scldir", [SCL directory])
+AC_DEFINE_UNQUOTED(PATH_XSDDIR, "$xsddir", [XSD directory])
 AC_DEFINE_UNQUOTED(PATH_LIBEXECDIR, "$libexecdir", [libexec directory])
 if test -n "$timezonedir"; then
         AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "$timezonedir", [timezone base directory])
@@ -1501,6 +1503,7 @@ AC_SUBST(moduledir)
 AC_SUBST(toolsdir)
 AC_SUBST(config_includedir)
 AC_SUBST(scldir)
+AC_SUBST(xsddir)
 AC_SUBST(systemdsystemunitdir)
 AC_SUBST(SYSLOGNG_LINK)
 AC_SUBST(SYSLOGNG_DEPS_LIBS)

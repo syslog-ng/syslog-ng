@@ -11,7 +11,6 @@ EXTRA_DIST	+=  \
 		doc/xsd/patterndb-3.xsd \
 		doc/xsd/patterndb-4.xsd
 
-xsddir		= $(datadir)/xsd
 xsd_DATA	= \
 		doc/xsd/patterndb-1.xsd \
 		doc/xsd/patterndb-2.xsd \
