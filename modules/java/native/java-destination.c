@@ -269,6 +269,7 @@ java_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = java_dd_free;
   self->super.super.super.super.init = java_dd_init;
   self->super.super.super.super.deinit = java_dd_deinit;
+  self->super.super.super.super.generate_persist_name = java_dd_format_persist_name;
 
   self->super.worker.thread_deinit = java_worker_thread_deinit;
   self->super.worker.insert = java_worker_insert;
