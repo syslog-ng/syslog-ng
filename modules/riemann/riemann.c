@@ -235,8 +235,11 @@ riemann_dd_format_stats_instance(LogThrDestDriver *s)
   RiemannDestDriver *self = (RiemannDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "riemann,%s,%u", self->server, self->port);
+  if (s->super.super.super.persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s", s->super.super.super.persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s,%u", self->server, self->port);
+
   return persist_name;
 }
 
