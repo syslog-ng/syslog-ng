@@ -1156,9 +1156,10 @@ afsql_dd_format_stats_instance(AFSqlDestDriver *self)
   return persist_name;
 }
 
-static inline gchar *
-afsql_dd_format_persist_name(AFSqlDestDriver *self)
+static inline const gchar *
+afsql_dd_format_persist_name(const LogPipe *s)
 {
+  AFSqlDestDriver *self = (AFSqlDestDriver *)s;
   static gchar persist_name[256];
 
   g_snprintf(persist_name, sizeof(persist_name),
@@ -1206,7 +1207,7 @@ afsql_dd_init(LogPipe *s)
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
 
-  self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
+  self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name((const LogPipe *)self));
   if (self->queue == NULL)
     {
       return FALSE;
