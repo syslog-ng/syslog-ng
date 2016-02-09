@@ -543,6 +543,7 @@ afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg)
   self->super.super.super.deinit = afprogram_dd_deinit;
   self->super.super.super.free_fn = afprogram_dd_free;
   self->super.super.super.notify = afprogram_dd_notify;
+  self->super.super.super.generate_persist_name = afprogram_dd_format_persist_name;
   self->process_info.cmdline = g_string_new(cmdline);
   self->process_info.pid = -1;
   afprogram_set_inherit_environment(&self->process_info, TRUE);
