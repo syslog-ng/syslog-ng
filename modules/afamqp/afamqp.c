@@ -593,7 +593,6 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = afamqp_worker_insert;
 
   self->super.format.stats_instance = afamqp_dd_format_stats_instance;
-  self->super.format.persist_name = afamqp_dd_format_persist_name;
   self->super.stats_source = SCS_AMQP;
 
   self->routing_key_template = log_template_new(cfg, NULL);

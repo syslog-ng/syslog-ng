@@ -257,7 +257,6 @@ java_dd_new(GlobalConfig *cfg)
   self->super.worker.worker_message_queue_empty = java_worker_message_queue_empty;
 
   self->super.format.stats_instance = java_dd_format_stats_instance;
-  self->super.format.persist_name = java_dd_format_stats_instance;
   self->super.messages.retry_over = __retry_over_message;
   self->super.stats_source = SCS_JAVA;
 

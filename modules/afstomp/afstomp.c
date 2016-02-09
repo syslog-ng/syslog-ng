@@ -386,7 +386,6 @@ afstomp_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = afstomp_worker_insert;
 
   self->super.format.stats_instance = afstomp_dd_format_stats_instance;
-  self->super.format.persist_name = afstomp_dd_format_persist_name;
   self->super.stats_source = SCS_STOMP;
 
   afstomp_dd_set_host((LogDriver *) self, "127.0.0.1");

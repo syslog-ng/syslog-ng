@@ -76,7 +76,6 @@ struct _LogThrDestDriver
   struct
   {
     gchar *(*stats_instance) (LogThrDestDriver *s);
-    gchar *(*persist_name) (LogThrDestDriver *s);
   } format;
   gint stats_source;
   gint32 seq_num;
