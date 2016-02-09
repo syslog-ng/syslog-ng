@@ -393,9 +393,10 @@ affile_dd_set_fsync(LogDriver *s, gboolean fsync)
   self->use_fsync = fsync;
 }
 
-static inline gchar *
-affile_dd_format_persist_name(AFFileDestDriver *self)
+static inline const gchar *
+affile_dd_format_persist_name(const LogPipe *s)
 {
+  const AFFileDestDriver *self = (const AFFileDestDriver *)s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name), "affile_dd_writers(%s)", self->filename_template->template);
@@ -474,13 +475,13 @@ affile_dd_init(LogPipe *s)
               
   if (self->filename_is_a_template)
     {
-      self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
+      self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(s));
       if (self->writer_hash)
         g_hash_table_foreach(self->writer_hash, affile_dd_reuse_writer, self);
     }
   else
     {
-      self->single_writer = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
+      self->single_writer = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(s));
       if (self->single_writer)
         {
           affile_dw_set_owner(self->single_writer, self);
@@ -554,7 +555,7 @@ affile_dd_deinit(LogPipe *s)
       g_assert(self->writer_hash == NULL);
 
       log_pipe_deinit(&self->single_writer->super);
-      cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->single_writer, affile_dd_destroy_writer, FALSE);
+      cfg_persist_config_add(cfg, affile_dd_format_persist_name(s), self->single_writer, affile_dd_destroy_writer, FALSE);
       self->single_writer = NULL;
     }
   else if (self->writer_hash)
@@ -562,7 +563,7 @@ affile_dd_deinit(LogPipe *s)
       g_assert(self->single_writer == NULL);
       
       g_hash_table_foreach(self->writer_hash, affile_dd_deinit_writer, NULL);
-      cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash, FALSE);
+      cfg_persist_config_add(cfg, affile_dd_format_persist_name(s), self->writer_hash, affile_dd_destroy_writer_hash, FALSE);
       self->writer_hash = NULL;
     }
 
