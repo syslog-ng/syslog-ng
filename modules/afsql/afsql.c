@@ -1421,6 +1421,7 @@ afsql_dd_new(GlobalConfig *cfg)
   self->super.super.super.deinit = afsql_dd_deinit;
   self->super.super.super.queue = afsql_dd_queue;
   self->super.super.super.free_fn = afsql_dd_free;
+  self->super.super.super.generate_persist_name = afsql_dd_format_persist_name;
 
   self->type = g_strdup("mysql");
   self->host = g_strdup("");
