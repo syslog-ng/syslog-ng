@@ -7,7 +7,7 @@ JAVA_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 JARS=$(shell find $(abs_top_builddir)/modules/java/syslog-ng-core -name '*.jar')
 GRADLE_WORKDIR=$(abs_top_builddir)/modules/java/.gradle
 
-java-binaries:
+java-binaries: $(JAVA_HEADER_FILES)
 	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) build -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java build 
 
 java-headers:
