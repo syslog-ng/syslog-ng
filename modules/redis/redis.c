@@ -117,10 +117,10 @@ redis_dd_format_stats_instance(LogThrDestDriver *d)
   return persist_name;
 }
 
-static gchar *
-redis_dd_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+redis_dd_format_persist_name(const LogPipe *s)
 {
-  RedisDriver *self = (RedisDriver *)d;
+  const RedisDriver *self = (const RedisDriver *)s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
