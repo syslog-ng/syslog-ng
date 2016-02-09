@@ -154,7 +154,8 @@ pkginclude_HEADERS			+= \
 	lib/bookmark.h			\
 	lib/ringbuffer.h		\
 	lib/ack_tracker.h		\
-	lib/host-id.h
+	lib/host-id.h			\
+	lib/resolved-configurable-paths.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_la_SOURCES		= \
@@ -231,6 +232,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/utf8utils.c			\
 	$(transport_crypto_sources)	\
 	lib/host-id.c			\
+	lib/resolved-configurable-paths.c \
 					\
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\

@@ -40,6 +40,7 @@
 #include "logproto/logproto-text-server.h"
 #include "reloc.h"
 #include "pathutils.h"
+#include "resolved-configurable-paths.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -1122,7 +1123,7 @@ static GOptionEntry pdbtool_options[] =
     "Enable verbose messages on stderr", NULL },
   { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>" },
-  { "module-path",         0,         0, G_OPTION_ARG_STRING, &initial_module_path,
+  { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path,
     "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -1193,7 +1194,7 @@ main(int argc, char *argv[])
   setlocale(LC_ALL, "");
 
   msg_init(TRUE);
-  plugin_global_init();
+  resolved_configurable_paths_init(&resolvedConfigurablePaths);
   stats_init();
   log_msg_global_init();
   log_template_global_init();
@@ -1224,7 +1225,6 @@ main(int argc, char *argv[])
 
   cfg_free(configuration);
   configuration = NULL;
-  plugin_global_deinit();
   msg_deinit();
   return ret;
 }

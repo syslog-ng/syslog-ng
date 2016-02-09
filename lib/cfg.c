@@ -38,6 +38,7 @@
 #include "reloc.h"
 #include "hostname.h"
 #include "rcptid.h"
+#include "resolved-configurable-paths.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -402,7 +403,7 @@ cfg_set_global_paths(GlobalConfig *self)
   cfg_args_set(self->lexer->globals, "syslog-ng-data", get_installation_path_for(SYSLOG_NG_PATH_DATADIR));
   cfg_args_set(self->lexer->globals, "syslog-ng-include", get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
   cfg_args_set(self->lexer->globals, "scl-root", get_installation_path_for(SYSLOG_NG_PATH_SCLDIR));
-  cfg_args_set(self->lexer->globals, "module-path", module_path);
+  cfg_args_set(self->lexer->globals, "module-path", resolvedConfigurablePaths.initial_module_path);
   cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
 
   include_path = g_strdup_printf("%s:%s",

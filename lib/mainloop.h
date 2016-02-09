@@ -64,7 +64,6 @@ void main_loop_init(void);
 void main_loop_deinit(void);
 
 void main_loop_add_options(GOptionContext *ctx);
-void main_loop_global_init(void);
 
 gboolean main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename);
 
