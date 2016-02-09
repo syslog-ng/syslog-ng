@@ -31,6 +31,3 @@ task nativeHeaders {
         }
     }
 }
-
-build.dependsOn nativeHeaders
-
