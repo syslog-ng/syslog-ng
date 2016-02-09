@@ -10,7 +10,7 @@ GRADLE_WORKDIR=$(abs_top_builddir)/modules/java/.gradle
 java-binaries: $(JAVA_HEADER_FILES)
 	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) build -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java build 
 
-java-headers:
+$(JAVA_HEADER_FILES):
 	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) build -q -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java nativeHeaders
 
 all-local: java-binaries
@@ -93,8 +93,6 @@ JAVA_HEADER_FILES = \
    $(top_builddir)/modules/java/org_syslog_ng_LogMessage.h \
    $(top_builddir)/modules/java/org_syslog_ng_LogTemplate.h \
    $(top_builddir)/modules/java/org_syslog_ng_InternalMessageSender.h
-
-$(JAVA_HEADER_FILES): java-headers
 
 endif
 
