@@ -1,11 +1,12 @@
 #!/bin/bash
-COPYRIGHTVERBOSITY="${COPYRIGHTVERBOSITY-3}" # 0..4, 0=least amount of output
+COPYRIGHTVERBOSITY="${COPYRIGHTVERBOSITY-1}" # 0..4, 0=least amount of output
 COLUMNS="118" # hack when running in a pipe
 PREVIEW="" # non-null to preview files in error
 
 main() {
  if [ $# -ne 3 -a $# -ne 2 ]; then
   echo "usage: $0 <repo dir> <result dir> [<license policy>]" >&2
+  echo "export COPYRIGHTVERBOSITY=2 # 0..4, where 0=shorter output" >&2
   return 1
  fi
 
@@ -29,7 +30,7 @@ main() {
  local LOG="$BUILDDIR/copyright-run.log"
  local ERR="$BUILDDIR/copyright-err.log"
 
- echo "debug: verbose log in $LOG" >&2
+ echo "debug: more verbose copyright log in $LOG" >&2
 
  local SIGS="2 3 6 7 8 9 11 15"
  trap -- "rm --recursive \"$WORKDIR\" ; exit 1;" $SIGS
@@ -258,7 +259,7 @@ compare_expected_detected() {
      if
       is_license_compatible "$PATHMATCH" "$LICTEXTMATCHB"
      then
-      if [ 0$COPYRIGHTVERBOSITY -ge 2 ]; then
+      if [ 0$COPYRIGHTVERBOSITY -ge 1 ]; then
        printf "%s\n" "warning: compatible $FILE expected:$PATHMATCH detected:$LICTEXTMATCHB" >&2
       fi
      else
