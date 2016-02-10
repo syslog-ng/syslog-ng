@@ -2,8 +2,12 @@
 .*\.(md|am)$
 .*/[^/]+-grammar\.[ch]$
 lib/cfg-lex\.[ch]$
+lib/ivykis
+lib/jsonc
 modules/java/org_syslog_ng_[^./_-]+\.h$
 modules/(afmongodb|afamqp)/dummy\.c$
+modules/afamqp/rabbitmq-c
+modules/afmongodb/mongo-c-driver
 (syslog-ng-)?config\.h$
 (contrib|debian|lib|modules)/.*\.conf
 dist\.conf
