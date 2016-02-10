@@ -1,7 +1,19 @@
-EXTRA_DIST += tests/collect-cov.sh
+EXTRA_DIST += \
+	tests/collect-cov.sh \
+	tests/copyright/check.sh \
+	tests/copyright/policy \
+	tests/copyright/license.text.GPLv2+.txt \
+	tests/copyright/license.text.GPLv2+_SSL.txt \
+	tests/copyright/license.text.LGPLv2.1+.txt \
+	tests/copyright/license.text.LGPLv2.1+_SSL.txt
 
 check-copyright:
 	@$(top_srcdir)/tests/copyright/check.sh $(top_srcdir) $(top_builddir) policy
+
+CLEAN_HOOKS += clean-check-copyright
+
+clean-check-copyright:
+	rm copyright-run.log copyright-err.log
 
 coverage:
 	@$(top_srcdir)/tests/collect-cov.sh
