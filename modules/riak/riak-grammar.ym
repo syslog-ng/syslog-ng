@@ -91,6 +91,7 @@ riak_bucket_option
           riak_dd_set_type(last_driver, $3);
           free($3);
           }
+        |
         ;
         
         
