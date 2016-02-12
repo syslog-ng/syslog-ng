@@ -13,7 +13,7 @@ check-copyright:
 CLEAN_HOOKS += clean-check-copyright
 
 clean-check-copyright:
-	rm copyright-run.log copyright-err.log
+	rm -f copyright-run.log copyright-err.log
 
 coverage:
 	@$(top_srcdir)/tests/collect-cov.sh
