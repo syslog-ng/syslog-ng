@@ -1,4 +1,4 @@
-if ENABLE_JAVA
+if ENABLE_JAVA_MODULES
 
 # GRADLE_OPTS is also needed here but it is exported by the Makefile in modules/java
 
