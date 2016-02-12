@@ -33,6 +33,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 /* MADV_RANDOM not defined on legacy Linux systems. Could be removed in the
  * future, when support for Glibc 2.1.X drops.*/
