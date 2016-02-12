@@ -263,6 +263,8 @@ AC_ARG_ENABLE(manpages, AC_HELP_STRING([ --enable-manpages], [ Enable generation
 
 AC_ARG_ENABLE(java, [ --enable-java  Enable java destination (default: auto)],, enable_java="auto")
 
+AC_ARG_ENABLE(java-modules, [ --enable-java-modules  Compile all Java modules (default: auto)],, enable_java_modules="auto")
+
 AC_ARG_ENABLE(native,
               [  --enable-native        Enable native bindings (default: auto)]
               ,,enable_native="auto")
@@ -1179,6 +1181,23 @@ if test "x$enable_java" = "xauto" || test "x$enable_java" = "xyes"; then
     fi
 fi
 
+if test "x$enable_java" = "xyes"; then
+    if test "x$enable_java_modules" = "xauto" || test "x$enable_java_modules" = "xyes"; then
+        if test "x$enable_java_modules" = "xauto"; then
+          AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java_modules=yes], [enable_java_modules=no])
+        else
+          AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java_modules=yes], [AC_MSG_ERROR([Gradle not found])])
+        fi
+    fi
+else
+    if test "x$enable_java_modules" = "xyes"; then
+        AC_MSG_ERROR([Could not build Java modules without Java])
+    elif test "x$enable_java_modules" = "xauto"; then
+        AC_MSG_WARN([Could not build Java modules without Java])
+	enable_java_modules=no
+    fi
+fi
+
 dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
@@ -1492,6 +1511,7 @@ AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
+AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 
@@ -1602,4 +1622,5 @@ echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
 echo "  java                        : ${enable_java:=no}"
+echo "  java modules                : ${enable_java_modules:=no}"
 echo "  native bindings             : ${enable_native:=no}"
