@@ -20,8 +20,10 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 	libtest/persist_lib.c		\
 	libtest/mock-transport.c	\
 	libtest/mock-transport.h    \
-    libtest/config_parse_lib.c  \
-    libtest/config_parse_lib.h
+  libtest/config_parse_lib.c  \
+  libtest/config_parse_lib.h  \
+  libtest/queue_utils_lib.c \
+  libtest/queue_utils_lib.h
 
 libtestinclude_HEADERS		    =	\
 	libtest/testutils.h		\
