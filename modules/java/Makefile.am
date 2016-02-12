@@ -65,8 +65,6 @@ INSTALL_EXEC_HOOKS += java-install-exec-hook
 UNINSTALL_HOOKS += java-uninstall-exec-hook
 CLEAN_HOOKS += java-clean-hook
 
-
-
 module_LTLIBRARIES += modules/java/libmod-java.la
 
 modules_java_libmod_java_la_CFLAGS = \
