@@ -1174,10 +1174,8 @@ dnl ***************************************************************************
 if test "x$enable_java" = "xauto" || test "x$enable_java" = "xyes"; then
     if test "x$enable_java" = "xauto"; then
       AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [enable_java=no])
-      AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java=yes], [enable_java=no])
     else
       AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [AC_MSG_ERROR([Java not found])])
-      AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java=yes], [AC_MSG_ERROR([Gradle not found])])
     fi
 fi
 
