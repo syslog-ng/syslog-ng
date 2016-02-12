@@ -23,6 +23,9 @@
 
 #include "transport-file.h"
 
+#include <errno.h>
+#include <unistd.h>
+
 static gssize
 log_transport_file_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {

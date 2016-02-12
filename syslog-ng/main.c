@@ -38,6 +38,7 @@
 #include "mainloop.h"
 #include "plugin.h"
 #include "reloc.h"
+#include "resolved-configurable-paths.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -70,7 +71,7 @@ extern int cfg_parser_debug;
 static GOptionEntry syslogng_options[] = 
 {
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE " " SYSLOG_NG_VERSION ")", NULL },
-  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+  { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
 #ifdef YYDEBUG
@@ -136,7 +137,7 @@ version(void)
 #endif
 
   printf("Module-Directory: %s\n", get_installation_path_for(SYSLOG_NG_PATH_MODULEDIR));
-  printf("Module-Path: %s\n", module_path);
+  printf("Module-Path: %s\n", resolvedConfigurablePaths.initial_module_path);
   printf("Available-Modules: ");
   plugin_list_modules(stdout, FALSE);
 
@@ -197,7 +198,7 @@ main(int argc, char *argv[])
 
   setup_caps();
 
-  main_loop_global_init();
+  resolved_configurable_paths_init(&resolvedConfigurablePaths);
 
   ctx = g_option_context_new("syslog-ng");
   g_process_add_option_group(ctx);

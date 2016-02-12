@@ -23,6 +23,8 @@
  */
 
 #include "gsocket.h"
+
+#include <errno.h>
 #include <arpa/inet.h>
 
 /**

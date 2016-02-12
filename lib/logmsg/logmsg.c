@@ -597,21 +597,21 @@ log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer
 }
 
 void
-log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len)
+log_msg_set_match(LogMessage *self, gint index_, const gchar *value, gssize value_len)
 {
-  g_assert(index < 256);
+  g_assert(index_ < 256);
 
-  if (index >= self->num_matches)
-    self->num_matches = index + 1;
-  log_msg_set_value(self, match_handles[index], value, value_len);
+  if (index_ >= self->num_matches)
+    self->num_matches = index_ + 1;
+  log_msg_set_value(self, match_handles[index_], value, value_len);
 }
 
 void
-log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
+log_msg_set_match_indirect(LogMessage *self, gint index_, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
 {
-  g_assert(index < 256);
+  g_assert(index_ < 256);
 
-  log_msg_set_value_indirect(self, match_handles[index], ref_handle, type, ofs, len);
+  log_msg_set_value_indirect(self, match_handles[index_], ref_handle, type, ofs, len);
 }
 
 void
@@ -682,18 +682,18 @@ log_msg_tags_foreach(const LogMessage *self, LogMessageTagsForeachFunc callback,
 
 
 static inline void
-log_msg_set_bit(gulong *tags, gint index, gboolean value)
+log_msg_set_bit(gulong *tags, gint index_, gboolean value)
 {
   if (value)
-    tags[index >> LOGMSG_TAGS_NDX_SHIFT] |= ((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK)));
+    tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] |= ((gulong) (1UL << (index_ & LOGMSG_TAGS_NDX_MASK)));
   else
-    tags[index >> LOGMSG_TAGS_NDX_SHIFT] &= ~((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK)));
+    tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] &= ~((gulong) (1UL << (index_ & LOGMSG_TAGS_NDX_MASK)));
 }
 
 static inline gboolean
-log_msg_get_bit(gulong *tags, gint index)
+log_msg_get_bit(gulong *tags, gint index_)
 {
-  return !!(tags[index >> LOGMSG_TAGS_NDX_SHIFT] & ((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK))));
+  return !!(tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] & ((gulong) (1UL << (index_ & LOGMSG_TAGS_NDX_MASK))));
 }
 
 void

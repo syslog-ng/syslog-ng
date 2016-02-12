@@ -29,7 +29,6 @@
 #include "common-template-typedefs.h"
 #include "timeutils.h"
 #include "type-hinting.h"
-#include "plugin.h"
 
 #define LTZ_LOCAL 0
 #define LTZ_SEND  1

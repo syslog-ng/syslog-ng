@@ -26,6 +26,8 @@
 #include "serialize.h"
 #include "compat/string.h"
 
+#include <errno.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 

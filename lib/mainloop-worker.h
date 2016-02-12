@@ -26,7 +26,6 @@
 
 #include "mainloop.h"
 
-#include <iv.h>
 #include <iv_list.h>
 
 #define MAIN_LOOP_MIN_WORKER_THREADS 2

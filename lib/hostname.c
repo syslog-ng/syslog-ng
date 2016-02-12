@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "dnscache.h"
 
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <string.h>
 

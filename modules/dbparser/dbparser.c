@@ -231,12 +231,12 @@ log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file)
 static LogPipe *
 log_db_parser_clone(LogPipe *s)
 {
-  LogDBParser *clone;
+  LogDBParser *cloned;
   LogDBParser *self = (LogDBParser *) s;
 
-  clone = (LogDBParser *) log_db_parser_new(s->cfg);
-  log_db_parser_set_db_file(clone, self->db_file);
-  return &clone->super.super.super;
+  cloned = (LogDBParser *) log_db_parser_new(s->cfg);
+  log_db_parser_set_db_file(cloned, self->db_file);
+  return &cloned->super.super.super;
 }
 
 static void

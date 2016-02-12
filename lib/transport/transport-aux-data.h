@@ -23,8 +23,8 @@
 #ifndef TRANSPORT_TRANSPORT_AUX_DATA_H_INCLUDED
 #define TRANSPORT_TRANSPORT_AUX_DATA_H_INCLUDED
 
-#include <string.h>
 #include "gsockaddr.h"
+#include <string.h>
 
 typedef struct _LogTransportAuxData
 {

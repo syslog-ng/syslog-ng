@@ -352,19 +352,19 @@ pdb_lookup_ruleset(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
   RNode *node;
   LogMessage *msg = lookup->msg;
   GArray *prg_matches, *matches;
-  const gchar *program;
+  const gchar *program_value;
   gssize program_len;
 
   if (G_UNLIKELY(!self->programs))
     return FALSE;
 
-  program = log_msg_get_value(msg, lookup->program_handle, &program_len);
+  program_value = log_msg_get_value(msg, lookup->program_handle, &program_len);
   prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
-  node = r_find_node(self->programs, (guint8 *) program, program_len, prg_matches);
+  node = r_find_node(self->programs, (guint8 *) program_value, program_len, prg_matches);
 
   if (node)
     {
-      _add_matches_to_message(msg, prg_matches, lookup->program_handle, program);
+      _add_matches_to_message(msg, prg_matches, lookup->program_handle, program_value);
       g_array_free(prg_matches, TRUE);
 
       PDBProgram *program = (PDBProgram *) node->value;

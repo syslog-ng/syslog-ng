@@ -23,8 +23,6 @@
  */
 
 #include "cfg-tree.h"
-#include "messages.h"
-#include "afinter.h"
 #include "logmpx.h"
 
 #include <string.h>

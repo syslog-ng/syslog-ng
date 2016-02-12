@@ -911,7 +911,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 
   if ((self->flags & LW_SYSLOG_PROTOCOL) || (self->options->options & LWO_SYSLOG_PROTOCOL))
     {
-      gint len;
+      gssize len;
        
       /* we currently hard-wire version 1 */
       g_string_append_c(result, '<');
@@ -952,7 +952,6 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       else
         {
           const gchar *p;
-          gssize len;
 
           p = log_msg_get_value(lm, LM_V_MESSAGE, &len);
           g_string_append_c(result, ' ');

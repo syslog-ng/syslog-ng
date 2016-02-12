@@ -326,11 +326,11 @@ debugger_start_console(Debugger *self)
 }
 
 gboolean
-debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe, LogMessage *msg)
+debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe_, LogMessage *msg)
 {
   self->drop_current_message = FALSE;
   self->current_msg = log_msg_ref(msg);
-  self->current_pipe = log_pipe_ref(pipe);
+  self->current_pipe = log_pipe_ref(pipe_);
   tracer_stop_on_breakpoint(self->tracer);
   log_msg_unref(self->current_msg);
   log_pipe_unref(self->current_pipe);

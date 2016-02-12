@@ -26,6 +26,9 @@
 #include "messages.h"
 #include "alarms.h"
 
+#include <errno.h>
+#include <unistd.h>
+
 typedef struct _LogTransportDevice LogTransportDevice;
 struct _LogTransportDevice
 {

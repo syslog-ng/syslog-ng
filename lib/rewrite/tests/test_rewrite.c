@@ -80,10 +80,10 @@ create_message_with_field(const char *field_name, const char *field_value)
 }
 
 void
-invoke_rewrite_rule(LogRewrite *pipe, LogMessage *msg)
+invoke_rewrite_rule(LogRewrite *pipe_, LogMessage *msg)
 {
   LogPathOptions po = LOG_PATH_OPTIONS_INIT;
-  log_pipe_queue((LogPipe *) pipe, log_msg_ref(msg), &po);
+  log_pipe_queue((LogPipe *) pipe_, log_msg_ref(msg), &po);
 };
 
 void

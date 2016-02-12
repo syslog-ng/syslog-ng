@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
+ * Copyright (c) 2016 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,34 +22,16 @@
  *
  */
 
-#include "logtransport.h"
-#include "messages.h"
+#include "resolved-configurable-paths.h"
+#include "reloc.h"
 
-#include <unistd.h>
-
-void
-log_transport_free_method(LogTransport *s)
-{
-  if (s->fd != -1)
-    {
-      msg_verbose("Closing log transport fd",
-                  evt_tag_int("fd", s->fd),
-                  NULL);
-      close(s->fd);
-    }
-}
+ResolvedConfigurablePaths resolvedConfigurablePaths;
 
 void
-log_transport_init_instance(LogTransport *self, gint fd)
+resolved_configurable_paths_init(ResolvedConfigurablePaths *self)
 {
-  self->fd = fd;
-  self->cond = 0;
-  self->free_fn = log_transport_free_method;
-}
-
-void
-log_transport_free(LogTransport *self)
-{
-  self->free_fn(self);
-  g_free(self);
+  resolvedConfigurablePaths.cfgfilename = get_installation_path_for(PATH_SYSLOG_NG_CONF);
+  resolvedConfigurablePaths.persist_file = get_installation_path_for(PATH_PERSIST_CONFIG);
+  resolvedConfigurablePaths.ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);
+  resolvedConfigurablePaths.initial_module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
 }

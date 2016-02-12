@@ -27,6 +27,8 @@
 #include "mainloop-call.h"
 #include "ack_tracker.h"
 
+#include <iv_event.h>
+
 struct _LogReader
 {
   LogSource super;

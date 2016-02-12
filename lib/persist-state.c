@@ -546,7 +546,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
             {
               if (serialize_read_uint32(sa, &entry_ofs))
                 {
-                  PersistValueHeader *header;
+                  PersistValueHeader *value_header;
                   i++;
 
                   if (entry_ofs < sizeof(PersistFileHeader) || entry_ofs > file_size)
@@ -558,15 +558,15 @@ _load_v4(PersistState *self, gboolean load_all_entries)
                       goto free_and_exit;
                     }
 
-                  header = (PersistValueHeader *) ((gchar *) map + entry_ofs - sizeof(PersistValueHeader));
-                  if ((header->in_use) || load_all_entries)
+                  value_header = (PersistValueHeader *) ((gchar *) map + entry_ofs - sizeof(PersistValueHeader));
+                  if ((value_header->in_use) || load_all_entries)
                     {
                       gpointer new_block;
                       PersistEntryHandle new_handle;
 
-                      new_handle = _alloc_value(self, GUINT32_FROM_BE(header->size), FALSE, header->version);
+                      new_handle = _alloc_value(self, GUINT32_FROM_BE(value_header->size), FALSE, value_header->version);
                       new_block = persist_state_map_entry(self, new_handle);
-                      memcpy(new_block, header + 1, GUINT32_FROM_BE(header->size));
+                      memcpy(new_block, value_header + 1, GUINT32_FROM_BE(value_header->size));
                       persist_state_unmap_entry(self, new_handle);
                       /* add key to the current file */
                       _add_key(self, name, new_handle);

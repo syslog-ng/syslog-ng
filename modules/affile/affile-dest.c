@@ -386,11 +386,11 @@ affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older)
 }
 
 void 
-affile_dd_set_fsync(LogDriver *s, gboolean fsync)
+affile_dd_set_fsync(LogDriver *s, gboolean use_fsync)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
 
-  self->use_fsync = fsync;
+  self->use_fsync = use_fsync;
 }
 
 static inline gchar *

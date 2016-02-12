@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
+ * Copyright (c) 2016 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,34 +22,21 @@
  *
  */
 
-#include "logtransport.h"
-#include "messages.h"
 
-#include <unistd.h>
+#ifndef RESOLVED_CONFIGURABLE_PATHS_H_INCLUDED
+#define RESOLVED_CONFIGURABLE_PATHS_H_INCLUDED
 
-void
-log_transport_free_method(LogTransport *s)
+#include <glib.h>
+
+typedef struct _ResolvedConfigurablePaths
 {
-  if (s->fd != -1)
-    {
-      msg_verbose("Closing log transport fd",
-                  evt_tag_int("fd", s->fd),
-                  NULL);
-      close(s->fd);
-    }
-}
+  const gchar *cfgfilename;
+  const gchar *persist_file;
+  const gchar *ctlfilename;
+  const gchar *initial_module_path;
+} ResolvedConfigurablePaths;
 
-void
-log_transport_init_instance(LogTransport *self, gint fd)
-{
-  self->fd = fd;
-  self->cond = 0;
-  self->free_fn = log_transport_free_method;
-}
+extern ResolvedConfigurablePaths resolvedConfigurablePaths;
+void resolved_configurable_paths_init(ResolvedConfigurablePaths *self);
 
-void
-log_transport_free(LogTransport *self)
-{
-  self->free_fn(self);
-  g_free(self);
-}
+#endif

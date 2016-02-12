@@ -29,6 +29,7 @@
 #include "control-server-unix.c"
 #endif
 #include <string.h>
+#include <errno.h>
 
 void
 control_server_init_instance(ControlServer *self, const gchar *path, GList *control_commands)
