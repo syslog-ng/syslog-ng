@@ -7,10 +7,10 @@ JAVA_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 JARS=$(shell find $(abs_top_builddir)/modules/java/syslog-ng-core -name '*.jar')
 GRADLE_WORKDIR=$(abs_top_builddir)/modules/java/.gradle
 
-java-binaries:
+java-binaries: $(JAVA_HEADER_FILES)
 	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) build -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java build 
 
-java-headers:
+$(JAVA_HEADER_FILES):
 	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) build -q -p $(abs_top_srcdir)/modules/java -PsyslogBuildDir=$(abs_top_builddir)/modules/java nativeHeaders
 
 all-local: java-binaries
@@ -94,8 +94,6 @@ JAVA_HEADER_FILES = \
    $(top_builddir)/modules/java/org_syslog_ng_LogTemplate.h \
    $(top_builddir)/modules/java/org_syslog_ng_InternalMessageSender.h
 
-$(JAVA_HEADER_FILES): java-headers
-
 endif
 
 BUILT_SOURCES += \
@@ -103,14 +101,15 @@ BUILT_SOURCES += \
     modules/java/native/java-grammar.c \
     modules/java/native/java-grammar.h
 
-if ENABLE_JAVA
-BUILT_SOURCES += $(JAVA_HEADER_FILES)
-
-CLEANFILES += $(JAVA_HEADER_FILES)
-
-endif
-
 EXTRA_DIST += \
     modules/java/native/java-grammar.ym \
     $(JAVA_FILES) \
     modules/java/build.gradle
+
+if ENABLE_JAVA
+
+BUILT_SOURCES += $(JAVA_HEADER_FILES)
+EXTRA_DIST += $(JAVA_HEADER_FILES)
+CLEANFILES += $(JAVA_HEADER_FILES)
+
+endif
