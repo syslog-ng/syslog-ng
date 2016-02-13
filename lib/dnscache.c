@@ -169,27 +169,27 @@ dns_cache_cleanup_persistent_hosts(DNSCache *self)
 }
 
 static void
-dns_cache_check_hosts(glong t)
+dns_cache_check_hosts(DNSCache *self, glong t)
 {
   struct stat st;
 
-  if (G_LIKELY(dns_cache->hosts_checktime == t))
+  if (G_LIKELY(self->hosts_checktime == t))
     return;
 
-  dns_cache->hosts_checktime = t;
+  self->hosts_checktime = t;
 
   if (!dns_cache_hosts || stat(dns_cache_hosts, &st) < 0)
     {
-      dns_cache_cleanup_persistent_hosts(dns_cache);
+      dns_cache_cleanup_persistent_hosts(self);
       return;
     }
 
-  if (dns_cache->hosts_mtime == -1 || st.st_mtime > dns_cache->hosts_mtime)
+  if (self->hosts_mtime == -1 || st.st_mtime > self->hosts_mtime)
     {
       FILE *hosts;
 
-      dns_cache->hosts_mtime = st.st_mtime;
-      dns_cache_cleanup_persistent_hosts(dns_cache);
+      self->hosts_mtime = st.st_mtime;
+      dns_cache_cleanup_persistent_hosts(self);
       hosts = fopen(dns_cache_hosts, "r");
       if (hosts)
         {
@@ -262,7 +262,7 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostnam
   time_t now;
 
   now = cached_g_current_time_sec();
-  dns_cache_check_hosts(now);
+  dns_cache_check_hosts(dns_cache, now);
 
   dns_cache_fill_key(&key, family, addr);
   entry = g_hash_table_lookup(dns_cache->cache, &key);
