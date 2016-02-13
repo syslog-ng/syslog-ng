@@ -63,31 +63,30 @@ struct _DNSCacheEntry
   gboolean positive;
 };
 
-
-TLS_BLOCK_START
+typedef struct _DNSCache
 {
   GHashTable *cache;
   DNSCacheEntry cache_first;
   DNSCacheEntry cache_last;
   DNSCacheEntry persist_first;
   DNSCacheEntry persist_last;
-  time_t cache_hosts_mtime;
-  time_t cache_hosts_checktime;
+  gint persistent_count;
+  time_t hosts_mtime;
+  time_t hosts_checktime;
+} DNSCache;
+
+
+TLS_BLOCK_START
+{
+  DNSCache *dns_cache;
 }
 TLS_BLOCK_END;
 
-#define cache  __tls_deref(cache)
-#define cache_first __tls_deref(cache_first)
-#define cache_last __tls_deref(cache_last)
-#define persist_first __tls_deref(persist_first)
-#define persist_last __tls_deref(persist_last)
-#define cache_hosts_mtime __tls_deref(cache_hosts_mtime)
-#define cache_hosts_checktime __tls_deref(cache_hosts_checktime)
+#define dns_cache __tls_deref(dns_cache)
 
 static gint dns_cache_size = 1007;
 static gint dns_cache_expire = 3600;
 static gint dns_cache_expire_failed = 60;
-static gint dns_cache_persistent_count = 0;
 static gchar *dns_cache_hosts = NULL;
 
 static gboolean
@@ -168,10 +167,10 @@ dns_cache_fill_key(DNSCacheKey *key, gint family, void *addr)
 static void
 dns_cache_cleanup_persistent_hosts(void)
 {
-  while (persist_first.next != &persist_last)
+  while (dns_cache->persist_first.next != &dns_cache->persist_last)
     {
-      g_hash_table_remove(cache, &persist_first.next->key);
-      dns_cache_persistent_count--;
+      g_hash_table_remove(dns_cache->cache, &dns_cache->persist_first.next->key);
+      dns_cache->persistent_count--;
     }
 }
 
@@ -180,10 +179,10 @@ dns_cache_check_hosts(glong t)
 {
   struct stat st;
 
-  if (G_LIKELY(cache_hosts_checktime == t))
+  if (G_LIKELY(dns_cache->hosts_checktime == t))
     return;
 
-  cache_hosts_checktime = t;
+  dns_cache->hosts_checktime = t;
 
   if (!dns_cache_hosts || stat(dns_cache_hosts, &st) < 0)
     {
@@ -191,10 +190,11 @@ dns_cache_check_hosts(glong t)
       return;
     }
 
-  if (cache_hosts_mtime == -1 || st.st_mtime > cache_hosts_mtime)
+  if (dns_cache->hosts_mtime == -1 || st.st_mtime > dns_cache->hosts_mtime)
     {
       FILE *hosts;
-      cache_hosts_mtime = st.st_mtime;
+
+      dns_cache->hosts_mtime = st.st_mtime;
       dns_cache_cleanup_persistent_hosts();
       hosts = fopen(dns_cache_hosts, "r");
       if (hosts)
@@ -271,7 +271,7 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostnam
   dns_cache_check_hosts(now);
 
   dns_cache_fill_key(&key, family, addr);
-  entry = g_hash_table_lookup(cache, &key);
+  entry = g_hash_table_lookup(dns_cache->cache, &key);
   if (entry)
     {
       if (entry->resolved &&
@@ -308,24 +308,24 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   if (!persistent)
     {
       entry->resolved = cached_g_current_time_sec();
-      dns_cache_entry_insert_before(&cache_last, entry);
+      dns_cache_entry_insert_before(&dns_cache->cache_last, entry);
     }
   else
     {
       entry->resolved = 0;
-      dns_cache_entry_insert_before(&persist_last, entry);
+      dns_cache_entry_insert_before(&dns_cache->persist_last, entry);
     }
-  hash_size = g_hash_table_size(cache);
-  g_hash_table_replace(cache, &entry->key, entry);
+  hash_size = g_hash_table_size(dns_cache->cache);
+  g_hash_table_replace(dns_cache->cache, &entry->key, entry);
 
-  if (persistent && hash_size != g_hash_table_size(cache))
-    dns_cache_persistent_count++;
+  if (persistent && hash_size != g_hash_table_size(dns_cache->cache))
+    dns_cache->persistent_count++;
 
   /* persistent elements are not counted */
-  if ((gint) (g_hash_table_size(cache) - dns_cache_persistent_count) > dns_cache_size)
+  if ((gint) (g_hash_table_size(dns_cache->cache) - dns_cache->persistent_count) > dns_cache_size)
     {
       /* remove oldest element */
-      g_hash_table_remove(cache, &cache_first.next->key);
+      g_hash_table_remove(dns_cache->cache, &dns_cache->cache_first.next->key);
     }
 }
 
@@ -356,27 +356,30 @@ dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gch
 void
 dns_cache_thread_init(void)
 {
-  g_assert(cache == NULL);
-  cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
-  cache_first.next = &cache_last;
-  cache_first.prev = NULL;
-  cache_last.prev = &cache_first;
-  cache_last.next = NULL;
-  cache_hosts_mtime = -1;
-  cache_hosts_checktime = 0;
+  g_assert(dns_cache == NULL);
+  dns_cache = g_new0(DNSCache, 1);
+  dns_cache->cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
+  dns_cache->cache_first.next = &dns_cache->cache_last;
+  dns_cache->cache_first.prev = NULL;
+  dns_cache->cache_last.prev = &dns_cache->cache_first;
+  dns_cache->cache_last.next = NULL;
+  dns_cache->hosts_mtime = -1;
+  dns_cache->hosts_checktime = 0;
 
-  persist_first.next = &persist_last;
-  persist_first.prev = NULL;
-  persist_last.prev = &persist_first;
-  persist_last.next = NULL;
+  dns_cache->persist_first.next = &dns_cache->persist_last;
+  dns_cache->persist_first.prev = NULL;
+  dns_cache->persist_last.prev = &dns_cache->persist_first;
+  dns_cache->persist_last.next = NULL;
+  dns_cache->persistent_count = 0;
 }
 
 void
 dns_cache_thread_deinit(void)
 {
-  g_assert(cache != NULL);
-  g_hash_table_destroy(cache);
-  cache = NULL;
+  g_assert(dns_cache != NULL);
+  g_hash_table_destroy(dns_cache->cache);
+  g_free(dns_cache);
+  dns_cache = NULL;
 }
 
 void
@@ -385,7 +388,6 @@ dns_cache_global_init(void)
   dns_cache_size = 1007;
   dns_cache_expire = 3600;
   dns_cache_expire_failed = 60;
-  dns_cache_persistent_count = 0;
 }
 
 void
