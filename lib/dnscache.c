@@ -155,16 +155,16 @@ dns_cache_fill_key(DNSCacheKey *key, gint family, void *addr)
 }
 
 static void
-dns_cache_cleanup_persistent_hosts(void)
+dns_cache_cleanup_persistent_hosts(DNSCache *self)
 {
   struct iv_list_head *ilh, *ilh2;
 
-  iv_list_for_each_safe(ilh, ilh2, &dns_cache->persist_list)
+  iv_list_for_each_safe(ilh, ilh2, &self->persist_list)
     {
       DNSCacheEntry *entry = iv_list_entry(ilh, DNSCacheEntry, list);
 
-      g_hash_table_remove(dns_cache->cache, &entry->key);
-      dns_cache->persistent_count--;
+      g_hash_table_remove(self->cache, &entry->key);
+      self->persistent_count--;
     }
 }
 
@@ -180,7 +180,7 @@ dns_cache_check_hosts(glong t)
 
   if (!dns_cache_hosts || stat(dns_cache_hosts, &st) < 0)
     {
-      dns_cache_cleanup_persistent_hosts();
+      dns_cache_cleanup_persistent_hosts(dns_cache);
       return;
     }
 
@@ -189,7 +189,7 @@ dns_cache_check_hosts(glong t)
       FILE *hosts;
 
       dns_cache->hosts_mtime = st.st_mtime;
-      dns_cache_cleanup_persistent_hosts();
+      dns_cache_cleanup_persistent_hosts(dns_cache);
       hosts = fopen(dns_cache_hosts, "r");
       if (hosts)
         {
