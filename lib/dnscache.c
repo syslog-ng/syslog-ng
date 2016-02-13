@@ -37,6 +37,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <iv_list.h>
+
 typedef struct _DNSCacheEntry DNSCacheEntry;
 typedef struct _DNSCacheKey DNSCacheKey;
 
@@ -54,7 +56,7 @@ struct _DNSCacheKey
 
 struct _DNSCacheEntry
 {
-  DNSCacheEntry *prev, *next;
+  struct iv_list_head list;
   DNSCacheKey key;
   time_t resolved;
   gchar *hostname;
@@ -66,10 +68,8 @@ struct _DNSCacheEntry
 typedef struct _DNSCache
 {
   GHashTable *cache;
-  DNSCacheEntry cache_first;
-  DNSCacheEntry cache_last;
-  DNSCacheEntry persist_first;
-  DNSCacheEntry persist_last;
+  struct iv_list_head cache_list;
+  struct iv_list_head persist_list;
   gint persistent_count;
   time_t hosts_mtime;
   time_t hosts_checktime;
@@ -125,20 +125,10 @@ dns_cache_key_hash(DNSCacheKey *e)
     }
 }
 
-static inline void
-dns_cache_entry_insert_before(DNSCacheEntry *elem, DNSCacheEntry *new_elem)
-{
-  elem->prev->next = new_elem;
-  new_elem->prev = elem->prev;
-  new_elem->next = elem;
-  elem->prev = new_elem;
-}
-
 static void
 dns_cache_entry_free(DNSCacheEntry *e)
 {
-  e->prev->next = e->next;
-  e->next->prev = e->prev;
+  iv_list_del(&e->list);
 
   g_free(e->hostname);
   g_free(e);
@@ -167,9 +157,13 @@ dns_cache_fill_key(DNSCacheKey *key, gint family, void *addr)
 static void
 dns_cache_cleanup_persistent_hosts(void)
 {
-  while (dns_cache->persist_first.next != &dns_cache->persist_last)
+  struct iv_list_head *ilh, *ilh2;
+
+  iv_list_for_each_safe(ilh, ilh2, &dns_cache->persist_list)
     {
-      g_hash_table_remove(dns_cache->cache, &dns_cache->persist_first.next->key);
+      DNSCacheEntry *entry = iv_list_entry(ilh, DNSCacheEntry, list);
+
+      g_hash_table_remove(dns_cache->cache, &entry->key);
       dns_cache->persistent_count--;
     }
 }
@@ -305,15 +299,16 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   entry->hostname = g_strdup(hostname);
   entry->hostname_len = strlen(hostname);
   entry->positive = positive;
+  INIT_IV_LIST_HEAD(&entry->list);
   if (!persistent)
     {
       entry->resolved = cached_g_current_time_sec();
-      dns_cache_entry_insert_before(&dns_cache->cache_last, entry);
+      iv_list_add(&dns_cache->cache_list, &entry->list);
     }
   else
     {
       entry->resolved = 0;
-      dns_cache_entry_insert_before(&dns_cache->persist_last, entry);
+      iv_list_add(&dns_cache->persist_list, &entry->list);
     }
   hash_size = g_hash_table_size(dns_cache->cache);
   g_hash_table_replace(dns_cache->cache, &entry->key, entry);
@@ -324,8 +319,10 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   /* persistent elements are not counted */
   if ((gint) (g_hash_table_size(dns_cache->cache) - dns_cache->persistent_count) > dns_cache_size)
     {
+      DNSCacheEntry *entry_to_remove = iv_list_entry(&dns_cache->cache_list, DNSCacheEntry, list);
+
       /* remove oldest element */
-      g_hash_table_remove(dns_cache->cache, &dns_cache->cache_first.next->key);
+      g_hash_table_remove(dns_cache->cache, &entry_to_remove->key);
     }
 }
 
@@ -359,17 +356,10 @@ dns_cache_thread_init(void)
   g_assert(dns_cache == NULL);
   dns_cache = g_new0(DNSCache, 1);
   dns_cache->cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
-  dns_cache->cache_first.next = &dns_cache->cache_last;
-  dns_cache->cache_first.prev = NULL;
-  dns_cache->cache_last.prev = &dns_cache->cache_first;
-  dns_cache->cache_last.next = NULL;
+  INIT_IV_LIST_HEAD(&dns_cache->cache_list);
+  INIT_IV_LIST_HEAD(&dns_cache->persist_list);
   dns_cache->hosts_mtime = -1;
   dns_cache->hosts_checktime = 0;
-
-  dns_cache->persist_first.next = &dns_cache->persist_last;
-  dns_cache->persist_first.prev = NULL;
-  dns_cache->persist_last.prev = &dns_cache->persist_first;
-  dns_cache->persist_last.next = NULL;
   dns_cache->persistent_count = 0;
 }
 
