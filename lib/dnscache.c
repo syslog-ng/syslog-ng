@@ -326,6 +326,27 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
     }
 }
 
+static DNSCache *
+dns_cache_new(void)
+{
+  DNSCache *self = g_new0(DNSCache, 1);
+
+  self->cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
+  INIT_IV_LIST_HEAD(&self->cache_list);
+  INIT_IV_LIST_HEAD(&self->persist_list);
+  self->hosts_mtime = -1;
+  self->hosts_checktime = 0;
+  self->persistent_count = 0;
+  return self;
+}
+
+static void
+dns_cache_free(DNSCache *self)
+{
+  g_hash_table_destroy(self->cache);
+  g_free(self);
+}
+
 void
 dns_cache_store_persistent(gint family, void *addr, const gchar *hostname)
 {
@@ -354,21 +375,14 @@ void
 dns_cache_thread_init(void)
 {
   g_assert(dns_cache == NULL);
-  dns_cache = g_new0(DNSCache, 1);
-  dns_cache->cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
-  INIT_IV_LIST_HEAD(&dns_cache->cache_list);
-  INIT_IV_LIST_HEAD(&dns_cache->persist_list);
-  dns_cache->hosts_mtime = -1;
-  dns_cache->hosts_checktime = 0;
-  dns_cache->persistent_count = 0;
+  dns_cache = dns_cache_new();
 }
 
 void
 dns_cache_thread_deinit(void)
 {
   g_assert(dns_cache != NULL);
-  g_hash_table_destroy(dns_cache->cache);
-  g_free(dns_cache);
+  dns_cache_free(dns_cache);
   dns_cache = NULL;
 }
 
