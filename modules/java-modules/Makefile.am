@@ -7,7 +7,7 @@ MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
 
 # GRADLE_WORKDIR is set in modules/java, which must be enabled if this module is being compiled.
 
-java-modules:
+java-modules: $(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs build
 
 all-local: java-modules
