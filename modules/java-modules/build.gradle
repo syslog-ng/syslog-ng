@@ -11,6 +11,9 @@ allprojects {
             dirs '/usr/lib/syslog-ng-java-module-dependency-jars/jars'
         }
       mavenCentral()
+      maven {
+        url "http://maven.elasticsearch.org/releases"
+      }
     }
 
     compileJava {
@@ -18,4 +21,3 @@ allprojects {
         targetCompatibility "1.7"
     }
 }
-

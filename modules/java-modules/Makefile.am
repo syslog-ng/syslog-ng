@@ -37,6 +37,7 @@ endif
 EXTRA_DIST += \
 	modules/java-modules/common/build.gradle  \
 	modules/java-modules/elastic/build.gradle \
+	modules/java-modules/elastic-v2/build.gradle \
 	modules/java-modules/kafka/build.gradle \
 	modules/java-modules/hdfs/build.gradle    \
 	modules/java-modules/dummy/build.gradle   \
@@ -84,5 +85,18 @@ EXTRA_DIST += \
 	modules/java-modules/hdfs/src/main/java/org/syslog_ng/hdfs/HdfsOptions.java \
 	modules/java-modules/http/src/main/java/org/syslog_ng/http/HTTPDestination.java \
 	modules/java-modules/http/src/main/java/org/syslog_ng/http/HTTPDestinationOptions.java \
-	modules/java-modules/dummy/src/main/java/org/syslog_ng/DummyTextDestination.java 
+	modules/java-modules/dummy/src/main/java/org/syslog_ng/DummyTextDestination.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/ESMessageProcessor.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/DummyProcessor.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/ESBulkMessageProcessor.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/ESMessageProcessorFactory.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/ESSingleMessageProcessor.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/ElasticSearchDestination.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/ESTransportClient.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/ESClient.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/ESNodeClient.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/UnknownESClientModeException.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/ESClientFactory.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/ElasticSearchOptions.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/ESTransportShieldClient.java
 
