@@ -1,0 +1,6 @@
+usr/include/syslog-ng/*
+usr/lib/libsyslog-ng.so
+usr/lib/syslog-ng/libtest/libsyslog-ng-test.a
+usr/lib/pkgconfig/syslog-ng.pc
+usr/lib/pkgconfig/syslog-ng-test.pc
+usr/share/syslog-ng/tools

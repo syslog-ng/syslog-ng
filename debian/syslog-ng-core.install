@@ -1,0 +1,7 @@
+etc/syslog-ng/*
+usr/sbin
+usr/bin
+usr/lib/libsyslog-ng-*.so.*
+usr/lib/syslog-ng/*.so
+usr/share/syslog-ng/include/scl/*
+usr/share/syslog-ng/xsd/*

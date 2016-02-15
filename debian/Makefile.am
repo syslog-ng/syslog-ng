@@ -1,21 +1,17 @@
 EXTRA_DIST		+= \
-			debian/README.Debian \
-			debian/syslog-ng.conf.example \
+			debian/compat \
 			debian/changelog debian/changelog.in \
-			debian/syslog-ng.default debian/syslog-ng.init \
-			debian/syslog-ng.logrotate debian/syslog-ng.logrotate.example \
-			debian/syslog-ng.conf \
-			debian/syslog-ng.files \
-			debian/syslog-ng.postrm \
-			debian/syslog-ng.preinst \
-			debian/syslog-ng.postinst \
+			debian/syslog-ng-core.syslog-ng.default debian/syslog-ng-core.syslog-ng.init \
+			debian/syslog-ng-core.syslog-ng.logrotate \
+			debian/syslog-ng-core.dirs \
+			debian/syslog-ng-core.install \
+			debian/syslog-ng-dev.install \
 			debian/rules debian/control debian/copyright \
-			debian/syslog-ng.files \
-			debian/syslog-ng.postrm \
-			debian/syslog-ng.preinst \
-			debian/syslog-ng.postinst
+			debian/syslog-ng-core.postrm \
+			debian/syslog-ng-core.preinst \
+			debian/syslog-ng-core.postinst
 
 debian/changelog: debian/changelog.in
 	$(top_builddir)/config.status --file $@:$<
 
-MAINTAINERCLEANFILES	= debian/control debian/rules debian/copyright debian/changelog
+MAINTAINERCLEANFILES	= debian/changelog
