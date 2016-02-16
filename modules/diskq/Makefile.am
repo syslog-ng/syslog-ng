@@ -1,5 +1,6 @@
-module_LTLIBRARIES += modules/diskq/libdisk-buffer.la
 bin_PROGRAMS += modules/diskq/dqtool
+
+module_LTLIBRARIES += modules/diskq/libdisk-buffer.la
 
 modules_diskq_libdisk_buffer_la_SOURCES = \
   modules/diskq/diskq.c \
@@ -32,8 +33,9 @@ modules_diskq_libdisk_buffer_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 modules_diskq_dqtool_SOURCES = modules/diskq/dqtool.c
 modules_diskq_dqtool_LDADD = $(top_builddir)/modules/diskq/libdisk-buffer.la $(top_builddir)/lib/libsyslog-ng.la @BASE_LIBS@ @OPENSSL_LIBS@ @GLIB_LIBS@
-modules/diskq modules/diskq/ mod-diskq: modules/diskq/libdisk-buffer.la
 
+modules/diskq modules/diskq/ mod-diskq: modules/diskq/libdisk-buffer.la \
+  modules/diskq/dqtool
 
 include modules/diskq/tests/Makefile.am
 
