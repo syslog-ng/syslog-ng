@@ -1,5 +1,3 @@
-EXTRA_DIST += $(BUILT_SOURCES) modules/diskq/diskq-grammar.ym
-
 module_LTLIBRARIES += modules/diskq/libdisk-buffer.la
 bin_PROGRAMS += modules/diskq/dqtool
 
@@ -25,6 +23,8 @@ BUILT_SOURCES += \
   modules/diskq/diskq-grammar.y \
   modules/diskq/diskq-grammar.c \
   modules/diskq/diskq-grammar.h
+
+EXTRA_DIST += $(BUILT_SOURCES) modules/diskq/diskq-grammar.ym
 
 modules_diskq_libdisk_buffer_la_CFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/diskq -I$(top_builddir)/modules/diskq -I$(top_srcdir)/lib -I../../lib
 modules_diskq_libdisk_buffer_la_LIBADD = $(MODULE_DEPS_LIBS)
