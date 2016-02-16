@@ -30,6 +30,7 @@ EXTRA_DIST += $(BUILT_SOURCES) modules/diskq/diskq-grammar.ym
 modules_diskq_libdisk_buffer_la_CFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/diskq -I$(top_builddir)/modules/diskq -I$(top_srcdir)/lib -I../../lib
 modules_diskq_libdisk_buffer_la_LIBADD = $(MODULE_DEPS_LIBS)
 modules_diskq_libdisk_buffer_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules_diskq_libdisk_buffer_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules_diskq_dqtool_SOURCES = modules/diskq/dqtool.c
 modules_diskq_dqtool_LDADD = $(top_builddir)/modules/diskq/libdisk-buffer.la $(TOOL_DEPS_LIBS) $(top_builddir)/lib/libsyslog-ng.la
