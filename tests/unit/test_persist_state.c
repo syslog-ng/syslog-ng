@@ -46,7 +46,9 @@ test_persist_state_open_success_on_invalid_file(void)
   unlink("test_invalid_magic.persist");
 
   fd = open("test_invalid_magic.persist", O_CREAT | O_RDWR, 0777);
-  write(fd, "aaa", 3);
+  assert_false(fd < 0, ASSERTION_ERROR("Can't open diskq file for writing"));
+  ssize_t written = write(fd, "aaa", 3);
+  assert_gint(written, 3, ASSERTION_ERROR("Can't write to diskq file"));
   close(fd);
 
   state = persist_state_new("test_invalid_magic.persist");
@@ -63,7 +65,9 @@ test_persist_state_open_fails_on_invalid_file_with_dump(void)
   unlink("test_invalid_magic.persist");
 
   fd = open("test_invalid_magic.persist", O_CREAT | O_RDWR, 0777);
-  write(fd, "aaa", 3);
+  assert_false(fd < 0, ASSERTION_ERROR("Can't open diskq file for writing"));
+  ssize_t written = write(fd, "aaa", 3);
+  assert_gint(written, 3, ASSERTION_ERROR("Can't write to diskq file"));
   close(fd);
 
   state = persist_state_new("test_invalid_magic.persist");
