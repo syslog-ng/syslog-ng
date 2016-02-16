@@ -6,7 +6,6 @@ SYSLOG_NG_CORE_SRC_DIR = $(top_srcdir)/modules/java/src/main/java/org/syslog_ng
 SYSLOG_NG_CORE_CLASSES_DIR=$(top_builddir)/modules/java/syslog-ng-core/classes
 SYSLOG_NG_CORE_PACKAGE_DIR=$(top_builddir)/modules/java/syslog-ng-core/classes/org/syslog_ng
 SYSLOG_NG_CORE_LIBS_DIR=$(top_builddir)/modules/java/syslog-ng-core/libs
-SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 
 LogDestination_CLASS_DEPS = \
 	$(SYSLOG_NG_CORE_PACKAGE_DIR)/LogPipe.class

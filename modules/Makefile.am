@@ -34,6 +34,8 @@ include modules/native/Makefile.am
 include modules/cef/Makefile.am
 include modules/diskq/Makefile.am
 
+SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
+
 SYSLOG_NG_MODULES	=	\
 	mod-afsocket mod-afstreams mod-affile mod-afprog \
 	mod-usertty mod-amqp mod-mongodb mod-smtp mod-curl mod-json \
