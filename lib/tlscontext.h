@@ -44,7 +44,7 @@ typedef enum
   TVM_REQUIRED=0x0020,
 } TLSVerifyMode;
 
-enum
+typedef enum
 {
   TSO_NONE,
   TSO_NOSSLv2=0x0001,
