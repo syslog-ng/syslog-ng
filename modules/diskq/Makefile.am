@@ -35,7 +35,7 @@ BUILT_SOURCES += \
   modules/diskq/diskq-grammar.c \
   modules/diskq/diskq-grammar.h
 
-EXTRA_DIST += $(BUILT_SOURCES) modules/diskq/diskq-grammar.ym
+EXTRA_DIST += modules/diskq/diskq-grammar.ym
 
 modules_diskq_libdisk_buffer_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/diskq -I$(top_builddir)/modules/diskq
 modules_diskq_libdisk_buffer_la_LIBADD = $(MODULE_DEPS_LIBS) $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la
