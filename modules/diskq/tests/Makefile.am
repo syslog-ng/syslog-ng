@@ -1,6 +1,6 @@
 DISKQ_TEST_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I$(top_srcdir)/modules/diskq @CFLAGS_NOWARN_POINTER_SIGN@
 DISKQ_TEST_LDFLAGS = ${PREOPEN_SYSLOGFORMAT}
-DISKQ_TEST_LDADD = $(top_builddir)/libtest/libsyslog-ng-test.a $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la $(MODULE_DEPS_LIBS) @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@
+DISKQ_TEST_LDADD = $(top_builddir)/libtest/libsyslog-ng-test.a $(LIBSYSLOG_NG_DISK_BUFFER) $(MODULE_DEPS_LIBS) @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@
 
 modules_diskq_tests_TESTS = \
   modules/diskq/tests/test_diskq \

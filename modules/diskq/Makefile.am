@@ -37,16 +37,18 @@ BUILT_SOURCES += \
 
 EXTRA_DIST += modules/diskq/diskq-grammar.ym
 
+LIBSYSLOG_NG_DISK_BUFFER = $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la
+
 modules_diskq_libdisk_buffer_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/diskq -I$(top_builddir)/modules/diskq
-modules_diskq_libdisk_buffer_la_LIBADD = $(MODULE_DEPS_LIBS) $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la
+modules_diskq_libdisk_buffer_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBSYSLOG_NG_DISK_BUFFER)
 modules_diskq_libdisk_buffer_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_diskq_libdisk_buffer_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la
+modules_diskq_libdisk_buffer_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(LIBSYSLOG_NG_DISK_BUFFER)
 
 modules_diskq_dqtool_SOURCES = modules/diskq/dqtool.c
 modules_diskq_dqtool_LDADD = \
   $(TOOL_DEPS_LIBS) \
   $(MODULE_DEPS_LIBS) \
-  $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la
+  $(LIBSYSLOG_NG_DISK_BUFFER)
 
 modules/diskq modules/diskq/ mod-diskq: modules/diskq/libdisk-buffer.la \
   modules/diskq/dqtool
