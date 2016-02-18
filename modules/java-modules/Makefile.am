@@ -1,13 +1,12 @@
-if ENABLE_JAVA
+if ENABLE_JAVA_MODULES
 
 # GRADLE_OPTS is also needed here but it is exported by the Makefile in modules/java
 
 JAVA_MOD_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
+GRADLE_WORKDIR=$(abs_top_builddir)/modules/java-modules/.gradle
 
-# GRADLE_WORKDIR is set in modules/java, which must be enabled if this module is being compiled.
-
-java-modules:
+java-modules: $(SYSLOG_NG_CORE_JAR)
 	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs build
 
 all-local: java-modules
@@ -25,7 +24,7 @@ java-modules-uninstall-exec-hook:
 java-modules-clean-hook:
 	rm -rf $(abs_top_builddir)/modules/java-modules/*.log
 	$(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -q -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs clean
-	rm -rf $(abs_top_builddir)/modules/java/.gradle
+	rm -rf $(GRADLE_WORKDIR)
 
 
 INSTALL_EXEC_HOOKS += java-modules-install-exec-hook
