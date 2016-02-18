@@ -31,8 +31,7 @@
 #include "linux-audit-scanner.h"
 #include "cfg-parser.h"
 #include "kv-parser-grammar.h"
-
-extern LogParser *last_parser;
+#include "cfg-grammar.h"
 
 }
 
