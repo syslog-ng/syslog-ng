@@ -45,7 +45,7 @@ modules_diskq_libdisk_buffer_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(top_builddi
 modules_diskq_dqtool_SOURCES = modules/diskq/dqtool.c
 modules_diskq_dqtool_LDADD = \
   $(TOOL_DEPS_LIBS) \
-  $(top_builddir)/lib/libsyslog-ng.la \
+  $(MODULE_DEPS_LIBS) \
   $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la
 
 modules/diskq modules/diskq/ mod-diskq: modules/diskq/libdisk-buffer.la \
