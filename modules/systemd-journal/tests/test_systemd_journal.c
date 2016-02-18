@@ -346,16 +346,6 @@ _test_prefix_init(TestCase *self, TestSource *src, Journald *journal, JournalRea
 }
 
 void
-__test_message_has_no_prefix(TestCase *self, LogMessage *msg)
-{
-  gchar *requested_name = g_strdup_printf("%s%s", (gchar *)self->user_data, "MESSAGE");
-  gssize value_len;
-  log_msg_get_value_by_name(msg, requested_name, &value_len);
-  assert_gint(value_len, 0, ASSERTION_ERROR("MESSAGE has prefix"));
-  g_free(requested_name);
-}
-
-void
 __test_other_has_prefix(TestCase *self, LogMessage *msg)
 {
   gchar *requested_name = g_strdup_printf("%s%s", (gchar *) self->user_data, "_CMDLINE");
@@ -371,7 +361,6 @@ _test_prefix_test(TestCase *self, TestSource *src, LogMessage *msg)
   const gchar *message = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
   assert_string(message, "pam_unix(sshd:session): session opened for user foo_user by (uid=0)", ASSERTION_ERROR("Bad message"));
 
-  __test_message_has_no_prefix(self, msg);
   __test_other_has_prefix(self, msg);
 
   test_source_finish_tc(src);
@@ -473,8 +462,8 @@ _test_program_field_init(TestCase *self, TestSource *src, Journald *journal, Jou
   mock_entry_add_data(entry, "_COMM=comm_program");
   journald_mock_add_entry(journal, entry);
 
-  entry = mock_entry_new("no _COMM");
-  mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
+  entry = mock_entry_new("no SYSLOG_IDENTIFIER");
+  mock_entry_add_data(entry, "_COMM=comm_program");
   journald_mock_add_entry(journal, entry);
 
   self->user_data = journal;
@@ -486,14 +475,14 @@ _test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
   Journald *journal = self->user_data;
   gchar *cursor;
   journald_get_cursor(journal, &cursor);
-  if (strcmp(cursor, "no _COMM") != 0)
+  if (strcmp(cursor, "no SYSLOG_IDENTIFIER") != 0)
     {
-      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "comm_program", ASSERTION_ERROR("Bad program name"));
+      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", ASSERTION_ERROR("Bad program name"));
       g_free(cursor);
     }
   else
     {
-      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", ASSERTION_ERROR("Bad program name"));
+      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "comm_program", ASSERTION_ERROR("Bad program name"));
       g_free(cursor);
       test_source_finish_tc(src);
     }

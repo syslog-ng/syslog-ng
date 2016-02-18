@@ -75,7 +75,7 @@ struct _JournalReader {
 };
 
 static void
-__start_watches_if_stopped(JournalReader *self)
+_start_watches_if_stopped(JournalReader *self)
 {
   if (!self->watches_running)
     {
@@ -85,7 +85,7 @@ __start_watches_if_stopped(JournalReader *self)
 }
 
 static void
-__suspend_until_awoken(JournalReader *self)
+_suspend_until_awoken(JournalReader *self)
 {
   self->immediate_check = FALSE;
   poll_events_suspend_watches(self->poll_events);
@@ -93,7 +93,7 @@ __suspend_until_awoken(JournalReader *self)
 }
 
 static void
-__force_check_in_next_poll(JournalReader *self)
+_force_check_in_next_poll(JournalReader *self)
 {
   self->immediate_check = FALSE;
   poll_events_suspend_watches(self->poll_events);
@@ -106,43 +106,43 @@ __force_check_in_next_poll(JournalReader *self)
 }
 
 static void
-__update_watches(JournalReader *self)
+_update_watches(JournalReader *self)
 {
   gboolean free_to_send;
 
   main_loop_assert_main_thread();
 
-  __start_watches_if_stopped(self);
+  _start_watches_if_stopped(self);
 
   free_to_send = log_source_free_to_send(&self->super);
   if (!free_to_send)
     {
-      __suspend_until_awoken(self);
+      _suspend_until_awoken(self);
       return;
     }
 
   if (self->immediate_check)
     {
-      __force_check_in_next_poll(self);
+      _force_check_in_next_poll(self);
       return;
     }
   poll_events_update_watches(self->poll_events, G_IO_IN);
 }
 
 static void
-__wakeup_triggered(gpointer s)
+_wakeup_triggered(gpointer s)
 {
   JournalReader *self = (JournalReader *) s;
 
   if (!self->io_job.working && self->suspended)
     {
       self->immediate_check = TRUE;
-      __update_watches(self);
+      _update_watches(self);
     }
 }
 
 static void
-__reader_wakeup(LogSource *s)
+_reader_wakeup(LogSource *s)
 {
   JournalReader *self = (JournalReader *) s;
 
@@ -151,14 +151,8 @@ __reader_wakeup(LogSource *s)
 }
 
 static void
-__handle_data(gchar *key, gchar *value, gpointer user_data)
+_map_key_value_pairs_to_syslog_macros(LogMessage *msg, gchar *key, gchar *value, gssize value_len)
 {
-  gpointer *args = user_data;
-
-  LogMessage *msg = args[0];
-  JournalReaderOptions *options = args[1];
-  gssize value_len = MIN(strlen(value), options->max_field_size);
-
   if (strcmp(key, "MESSAGE") == 0)
     {
       log_msg_set_value(msg, LM_V_MESSAGE, value, value_len);
@@ -174,19 +168,6 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       log_msg_set_value(msg, LM_V_PID, value, value_len);
     }
-  else if (strcmp(key, "_COMM") == 0)
-    {
-      log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
-    }
-  else if (strcmp(key, "SYSLOG_IDENTIFIER") == 0)
-    {
-      gssize program_length;
-      (void)log_msg_get_value(msg, LM_V_PROGRAM, &program_length);
-      if (program_length == 0)
-        {
-          log_msg_set_value(msg, LM_V_PROGRAM, value, value_len);
-        }
-    }
   else if (strcmp(key, "SYSLOG_FACILITY") == 0)
     {
       msg->pri = (msg->pri & 7) | atoi(value) << 3;
@@ -195,38 +176,83 @@ __handle_data(gchar *key, gchar *value, gpointer user_data)
     {
       msg->pri = (msg->pri & ~7) | atoi(value);
     }
+}
+
+static void
+_format_value_name_with_prefix(gchar *buf, gsize buf_len, JournalReaderOptions *options, const gchar *key)
+{
+  gsize cont = 0;
+
+  if (options->prefix)
+    cont = g_strlcpy(buf, options->prefix, buf_len);
+  g_strlcpy(buf + cont, key, buf_len - cont);
+}
+
+static void
+_set_value_in_message(JournalReaderOptions *options, LogMessage *msg, gchar *key, gchar *value, gssize value_len)
+{
+  gchar name_with_prefix[256];
+
+  _format_value_name_with_prefix(name_with_prefix, sizeof(name_with_prefix), options, key);
+  log_msg_set_value_by_name(msg, name_with_prefix, value, value_len);
+}
+
+static const gchar*
+_get_value_from_message(JournalReaderOptions *options, LogMessage *msg,  gchar *key, gssize *value_length)
+{
+  gchar name_with_prefix[256];
+
+  _format_value_name_with_prefix(name_with_prefix, sizeof(name_with_prefix), options, key);
+  return log_msg_get_value_by_name(msg, name_with_prefix, value_length);
+}
+
+static void
+_handle_data(gchar *key, gchar *value, gpointer user_data)
+{
+  gpointer *args = user_data;
+
+  LogMessage *msg = args[0];
+  JournalReaderOptions *options = args[1];
+  gssize value_len = MIN(strlen(value), options->max_field_size);
+
+  _map_key_value_pairs_to_syslog_macros(msg, key, value, value_len);
+  _set_value_in_message(options, msg, key, value, value_len);
+}
+
+static void
+_set_program(JournalReaderOptions *options, LogMessage *msg)
+{
+  gssize value_length = 0;
+  const gchar *value = _get_value_from_message(options, msg, "SYSLOG_IDENTIFIER", &value_length);
+
+  if (value_length > 0)
+    {
+      log_msg_set_value(msg, LM_V_PROGRAM, value, value_length);
+    }
   else
     {
-      if (!options->prefix)
-        {
-          log_msg_set_value_by_name(msg, key, value, value_len);
-        }
-      else
-        {
-          gchar *prefixed_key = g_strdup_printf("%s%s", options->prefix, key);
-          log_msg_set_value_by_name(msg, prefixed_key, value, value_len);
-          g_free(prefixed_key);
-        }
+      value = _get_value_from_message(options, msg, "_COMM", &value_length);
+      log_msg_set_value(msg, LM_V_PROGRAM, value, value_length);
     }
 }
 
 static void
-__set_message_timestamp(JournalReader *self, LogMessage *msg)
+_set_message_timestamp(JournalReader *self, LogMessage *msg)
 {
-   guint64 ts;
-   journald_get_realtime_usec(self->journal, &ts);
-   msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
-   msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
-   msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(self->options->recv_time_zone_info, msg->timestamps[LM_TS_STAMP].tv_sec);
-   if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
-     {
-       msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
-     }
+  guint64 ts;
 
+  journald_get_realtime_usec(self->journal, &ts);
+  msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
+  msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
+  msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(self->options->recv_time_zone_info, msg->timestamps[LM_TS_STAMP].tv_sec);
+  if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
+    {
+      msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
+    }
 }
 
 static gboolean
-__handle_message(JournalReader *self)
+_handle_message(JournalReader *self)
 {
   LogMessage *msg = log_msg_new_empty();
 
@@ -234,15 +260,16 @@ __handle_message(JournalReader *self)
 
   gpointer args[] = {msg, self->options};
 
-  journald_foreach_data(self->journal, __handle_data, args);
-  __set_message_timestamp(self, msg);
+  journald_foreach_data(self->journal, _handle_data, args);
+  _set_message_timestamp(self, msg);
+  _set_program(self->options, msg);
 
   log_source_post(&self->super, msg);
   return log_source_free_to_send(&self->super);
 }
 
 static void
-__alloc_state(JournalReader *self)
+_alloc_state(JournalReader *self)
 {
   self->persist_handle = persist_state_alloc_entry(self->persist_state, self->persist_name, sizeof(JournalReaderState));
   JournalReaderState *state = persist_state_map_entry(self->persist_state, self->persist_handle);
@@ -254,7 +281,7 @@ __alloc_state(JournalReader *self)
 }
 
 static gboolean
-__load_state(JournalReader *self)
+_load_state(JournalReader *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
@@ -267,7 +294,7 @@ __load_state(JournalReader *self)
 }
 
 static inline gboolean
-__seek_to_head(JournalReader *self)
+_seek_to_head(JournalReader *self)
 {
   gint rc = journald_seek_head(self->journal);
   if (rc != 0)
@@ -286,7 +313,7 @@ __seek_to_head(JournalReader *self)
 }
 
 static inline gboolean
-__seek_to_saved_state(JournalReader *self)
+_seek_to_saved_state(JournalReader *self)
 {
   JournalReaderState *state = persist_state_map_entry(self->persist_state, self->persist_handle);
   gint rc = journald_seek_cursor(self->journal, state->cursor);
@@ -297,7 +324,7 @@ __seek_to_saved_state(JournalReader *self)
                   evt_tag_str("cursor", state->cursor),
                   evt_tag_errno("error", errno),
                   NULL);
-      return __seek_to_head(self);
+      return _seek_to_head(self);
     }
   else
     {
@@ -310,18 +337,18 @@ __seek_to_saved_state(JournalReader *self)
 }
 
 static gboolean
-__set_starting_position(JournalReader *self)
+_set_starting_position(JournalReader *self)
 {
-  if (!__load_state(self))
+  if (!_load_state(self))
     {
-      __alloc_state(self);
-      return __seek_to_head(self);
+      _alloc_state(self);
+      return _seek_to_head(self);
     }
-  return __seek_to_saved_state(self);
+  return _seek_to_saved_state(self);
 }
 
 static gchar *
-__get_cursor(JournalReader *self)
+_get_cursor(JournalReader *self)
 {
   gchar *cursor;
   journald_get_cursor(self->journal, &cursor);
@@ -329,7 +356,7 @@ __get_cursor(JournalReader *self)
 }
 
 static void
-__reader_save_state(Bookmark *bookmark)
+_reader_save_state(Bookmark *bookmark)
 {
   JournalBookmarkData *bookmark_data = (JournalBookmarkData *)(&bookmark->container);
   JournalReaderState *state = persist_state_map_entry(bookmark->persist_state, bookmark_data->persist_handle);
@@ -338,24 +365,24 @@ __reader_save_state(Bookmark *bookmark)
 }
 
 static void
-__destroy_bookmark(Bookmark *bookmark)
+_destroy_bookmark(Bookmark *bookmark)
 {
   JournalBookmarkData *bookmark_data = (JournalBookmarkData *)(&bookmark->container);
   free(bookmark_data->cursor);
 }
 
 static void
-__fill_bookmark(JournalReader *self, Bookmark *bookmark)
+_fill_bookmark(JournalReader *self, Bookmark *bookmark)
 {
   JournalBookmarkData *bookmark_data = (JournalBookmarkData *)(&bookmark->container);
-  bookmark_data->cursor = __get_cursor(self);
+  bookmark_data->cursor = _get_cursor(self);
   bookmark_data->persist_handle = self->persist_handle;
-  bookmark->save = __reader_save_state;
-  bookmark->destroy = __destroy_bookmark;
+  bookmark->save = _reader_save_state;
+  bookmark->destroy = _destroy_bookmark;
 }
 
 static gint
-__fetch_log(JournalReader *self)
+_fetch_log(JournalReader *self)
 {
   gint msg_count = 0;
   gint result = 0;
@@ -366,9 +393,9 @@ __fetch_log(JournalReader *self)
       if (rc > 0)
         {
           Bookmark *bookmark = ack_tracker_request_bookmark(self->super.ack_tracker);
-          __fill_bookmark(self, bookmark);
+          _fill_bookmark(self, bookmark);
           msg_count++;
-          if (!__handle_message(self))
+          if (!_handle_message(self))
             {
               break;
             }
@@ -391,7 +418,7 @@ __fetch_log(JournalReader *self)
 }
 
 static void
-__work_finished(gpointer s)
+_work_finished(gpointer s)
 {
   JournalReader *self = (JournalReader *) s;
   if (self->notify_code)
@@ -403,20 +430,20 @@ __work_finished(gpointer s)
     }
   if (self->super.super.flags & PIF_INITIALIZED)
     {
-      __update_watches(self);
+      _update_watches(self);
     }
   log_pipe_unref(&self->super.super);
 }
 
 static void
-__work_perform(gpointer s)
+_work_perform(gpointer s)
 {
   JournalReader *self = (JournalReader *) s;
-  self->notify_code = __fetch_log(self);
+  self->notify_code = _fetch_log(self);
 }
 
 static void
-__stop_watches(JournalReader *self)
+_stop_watches(JournalReader *self)
 {
   if (self->watches_running)
     {
@@ -429,11 +456,11 @@ __stop_watches(JournalReader *self)
 }
 
 static void
-__io_process_input(gpointer s)
+_io_process_input(gpointer s)
 {
   JournalReader *self = (JournalReader *) s;
 
-  __stop_watches(self);
+  _stop_watches(self);
   log_pipe_ref(&self->super.super);
   if ((self->options->flags & JR_THREADED))
     {
@@ -443,22 +470,22 @@ __io_process_input(gpointer s)
     {
       if (!main_loop_worker_job_quit())
         {
-          __work_perform(s);
-          __work_finished(s);
+          _work_perform(s);
+          _work_finished(s);
         }
     }
 }
 
 static void
-__io_process_async_input(gpointer s)
+_io_process_async_input(gpointer s)
 {
   JournalReader *self = (JournalReader *)s;
   journald_process(self->journal);
-  __io_process_input(s);
+  _io_process_input(s);
 }
 
 static gboolean
-__add_poll_events(JournalReader *self)
+_add_poll_events(JournalReader *self)
 {
   gint fd = journald_get_fd(self->journal);
   if (fd < 0)
@@ -471,12 +498,12 @@ __add_poll_events(JournalReader *self)
     }
 
   self->poll_events = poll_fd_events_new(fd);
-  poll_events_set_callback(self->poll_events, __io_process_async_input, self);
+  poll_events_set_callback(self->poll_events, _io_process_async_input, self);
   return TRUE;
 }
 
 static gboolean
-__init(LogPipe *s)
+_init(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
 
@@ -499,29 +526,29 @@ __init(LogPipe *s)
       return FALSE;
     }
 
-  if (!__set_starting_position(self))
+  if (!_set_starting_position(self))
     {
       journald_close(self->journal);
       return FALSE;
     }
 
-  if (!__add_poll_events(self))
+  if (!_add_poll_events(self))
     {
       return FALSE;
     }
 
   self->immediate_check = TRUE;
   journal_reader_initialized = TRUE;
-  __update_watches(self);
+  _update_watches(self);
   iv_event_register(&self->schedule_wakeup);
   return TRUE;
 }
 
 static gboolean
-__deinit(LogPipe *s)
+_deinit(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
-  __stop_watches(self);
+  _stop_watches(self);
   journald_close(self->journal);
   poll_events_free(self->poll_events);
   journal_reader_initialized = FALSE;
@@ -529,7 +556,7 @@ __deinit(LogPipe *s)
 }
 
 static void
-__free(LogPipe *s)
+_free(LogPipe *s)
 {
   JournalReader *self = (JournalReader *) s;
   log_pipe_unref(self->control);
@@ -552,21 +579,21 @@ journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *o
 }
 
 static void
-__init_watches(JournalReader *self)
+_init_watches(JournalReader *self)
 {
   IV_EVENT_INIT(&self->schedule_wakeup);
   self->schedule_wakeup.cookie = self;
-  self->schedule_wakeup.handler = __wakeup_triggered;
+  self->schedule_wakeup.handler = _wakeup_triggered;
   iv_event_register(&self->schedule_wakeup);
 
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
-  self->restart_task.handler = __io_process_input;
+  self->restart_task.handler = _io_process_input;
 
   main_loop_io_worker_job_init(&self->io_job);
   self->io_job.user_data = self;
-  self->io_job.work = (void (*)(void *)) __work_perform;
-  self->io_job.completion = (void (*)(void *)) __work_finished;
+  self->io_job.work = (void (*)(void *)) _work_perform;
+  self->io_job.completion = (void (*)(void *)) _work_finished;
 }
 
 JournalReader *
@@ -574,13 +601,13 @@ journal_reader_new(GlobalConfig *cfg, Journald *journal)
 {
   JournalReader *self = g_new0(JournalReader, 1);
   log_source_init_instance(&self->super, cfg);
-  self->super.wakeup = __reader_wakeup;
-  self->super.super.init = __init;
-  self->super.super.deinit = __deinit;
-  self->super.super.free_fn = __free;
+  self->super.wakeup = _reader_wakeup;
+  self->super.super.init = _init;
+  self->super.super.deinit = _deinit;
+  self->super.super.free_fn = _free;
   self->persist_name = g_strdup("systemd-journal");
   self->journal = journal;
-  __init_watches(self);
+  _init_watches(self);
   return self;
 }
 
@@ -598,6 +625,16 @@ journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, co
     options->recv_time_zone = g_strdup(cfg->recv_time_zone);
   if (options->recv_time_zone_info == NULL)
     options->recv_time_zone_info = time_zone_info_new(options->recv_time_zone);
+
+  if (options->prefix == NULL && !cfg_is_config_version_older(cfg, 0x0308))
+    {
+      gchar *value = ".journald.";
+      msg_warning("WARNING: Default value changed for the prefix() option of systemd-journal source in " VERSION_3_8,
+                  evt_tag_str("old_value", ""),
+                  evt_tag_str("new_value", value),
+                  NULL);
+      options->prefix = g_strdup(value);
+    }
 
   options->initialized = TRUE;
 }
