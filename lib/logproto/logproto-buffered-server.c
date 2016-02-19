@@ -375,7 +375,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
       if (!serialize_read_uint16(archive, &version) || version != 0)
         {
           msg_error("Internal error restoring log reader state, stored data has incorrect version",
-                    evt_tag_int("version", version));
+                    evt_tag_int("version", version), NULL);
           goto error_converting_v3;
         }
 
@@ -501,7 +501,7 @@ log_proto_buffered_server_restart_with_state(LogProtoServer *s, PersistState *pe
       if (state->header.version > 0)
         {
           msg_error("Internal error restoring log reader state, stored data is too new",
-                    evt_tag_int("version", state->header.version));
+                    evt_tag_int("version", state->header.version), NULL);
           goto error;
         }
       persist_state_unmap_entry(persist_state, old_state_handle);
@@ -511,7 +511,7 @@ log_proto_buffered_server_restart_with_state(LogProtoServer *s, PersistState *pe
   else
     {
       msg_error("Internal error restoring log reader state, stored data is too new",
-                evt_tag_int("version", persist_version));
+                evt_tag_int("version", persist_version), NULL);
       goto error;
     }
   return TRUE;

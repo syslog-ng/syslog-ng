@@ -354,7 +354,7 @@ ptz_find_clusters_step(Patternizer *self, GPtrArray *logs, guint support, guint 
     return ptz_find_clusters_slct(logs, support, self->delimiters, num_of_samples);
   else
     {
-      msg_error("Unknown clustering algorithm", evt_tag_int("algo_id", self->algo));
+      msg_error("Unknown clustering algorithm", evt_tag_int("algo_id", self->algo), NULL);
       return NULL;
     }
 }
