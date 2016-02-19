@@ -57,9 +57,8 @@ transport_mapper_inet_validate_tls_options(TransportMapperInet *self)
 {
   if (!self->tls_context && _is_tls_required(self))
     {
-      msg_error("transport(tls) was specified, but tls() options missing",
+      msg_error("transport(tls) was specified, but tls() options missing");
                 // evt_tag_str("id", self->super.super.super.id),
-                NULL);
       return FALSE;
     }
   else if (self->tls_context && !_is_tls_allowed(self))
