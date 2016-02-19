@@ -35,7 +35,6 @@
 #include "parser/parser-expr.h"
 #include "date-parser.h"
 
-LogParser *last_parser;
 }
 
 %name-prefix "date_"
