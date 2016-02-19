@@ -138,13 +138,18 @@ assert_grabbed_messages_contain_non_fatal(const gchar *pattern, const gchar *err
   print_failure(error_message, args, "no grabbed message contains the pattern=%s", pattern);
   va_end(args);
 
-  fprintf(stderr, "  # Grabbed internal messages follow:\n");
-  for (l = internal_messages; l; l = l->next)
+  if (internal_messages)
     {
-      LogMessage *msg = (LogMessage *) l->data;
-      const gchar *msg_text = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+      fprintf(stderr, "  # Grabbed internal messages follow:\n");
+      for (l = internal_messages; l; l = l->next)
+        {
+          LogMessage *msg = (LogMessage *) l->data;
+          const gchar *msg_text = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
 
-      fprintf(stderr, "  #\t%s\n", msg_text);
+          fprintf(stderr, "  #\t%s\n", msg_text);
+        }
+    } else {
+        fprintf(stderr, "  # No internal messeges grabbed!\n");
     }
 
   return FALSE;
