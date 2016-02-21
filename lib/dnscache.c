@@ -65,7 +65,7 @@ struct _DNSCacheEntry
   gboolean positive;
 };
 
-typedef struct _DNSCache
+struct _DNSCache
 {
   GHashTable *cache;
   const DNSCacheOptions *options;
@@ -74,7 +74,7 @@ typedef struct _DNSCache
   gint persistent_count;
   time_t hosts_mtime;
   time_t hosts_checktime;
-} DNSCache;
+};
 
 
 TLS_BLOCK_START
@@ -224,13 +224,13 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
     }
 }
 
-static void
+void
 dns_cache_store_persistent(DNSCache *self, gint family, void *addr, const gchar *hostname)
 {
   dns_cache_store(self, TRUE, family, addr, hostname, TRUE);
 }
 
-static void
+void
 dns_cache_store_dynamic(DNSCache *self, gint family, void *addr, const gchar *hostname, gboolean positive)
 {
   dns_cache_store(self, FALSE, family, addr, hostname, positive);
@@ -369,7 +369,7 @@ dns_cache_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname
   return FALSE;
 }
 
-static DNSCache *
+DNSCache *
 dns_cache_new(const DNSCacheOptions *options)
 {
   DNSCache *self = g_new0(DNSCache, 1);
@@ -384,7 +384,7 @@ dns_cache_new(const DNSCacheOptions *options)
   return self;
 }
 
-static void
+void
 dns_cache_free(DNSCache *self)
 {
   g_hash_table_destroy(self->cache);
