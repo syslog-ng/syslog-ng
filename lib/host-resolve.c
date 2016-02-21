@@ -310,7 +310,7 @@ resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr, 
 
   if (host_resolve_options->use_dns_cache)
     {
-      if (dns_cache_lookup(saddr->sa.sa_family, dnscache_key, (const gchar **) &hname, &hname_len, &positive))
+      if (dns_caching_lookup(saddr->sa.sa_family, dnscache_key, (const gchar **) &hname, &hname_len, &positive))
         return hostname_apply_options_fqdn(hname_len, result_len, hname, positive, host_resolve_options);
     }
 
@@ -330,7 +330,7 @@ resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr, 
       positive = FALSE;
     }
   if (host_resolve_options->use_dns_cache)
-    dns_cache_store_dynamic(saddr->sa.sa_family, dnscache_key, hname, positive);
+    dns_caching_store_dynamic(saddr->sa.sa_family, dnscache_key, hname, positive);
 
   return hostname_apply_options_fqdn(-1, result_len, hname, positive, host_resolve_options);
 }

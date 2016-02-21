@@ -186,6 +186,57 @@ dns_cache_fill_key(DNSCacheKey *key, gint family, void *addr)
 }
 
 static void
+dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive)
+{
+  DNSCacheEntry *entry;
+  guint hash_size;
+
+  entry = g_new(DNSCacheEntry, 1);
+
+  dns_cache_fill_key(&entry->key, family, addr);
+  entry->hostname = g_strdup(hostname);
+  entry->hostname_len = strlen(hostname);
+  entry->positive = positive;
+  INIT_IV_LIST_HEAD(&entry->list);
+  if (!persistent)
+    {
+      entry->resolved = cached_g_current_time_sec();
+      iv_list_add(&self->cache_list, &entry->list);
+    }
+  else
+    {
+      entry->resolved = 0;
+      iv_list_add(&self->persist_list, &entry->list);
+    }
+  hash_size = g_hash_table_size(self->cache);
+  g_hash_table_replace(self->cache, &entry->key, entry);
+
+  if (persistent && hash_size != g_hash_table_size(self->cache))
+    self->persistent_count++;
+
+  /* persistent elements are not counted */
+  if ((gint) (g_hash_table_size(self->cache) - self->persistent_count) > self->options->cache_size)
+    {
+      DNSCacheEntry *entry_to_remove = iv_list_entry(&self->cache_list, DNSCacheEntry, list);
+
+      /* remove oldest element */
+      g_hash_table_remove(self->cache, &entry_to_remove->key);
+    }
+}
+
+static void
+dns_cache_store_persistent(DNSCache *self, gint family, void *addr, const gchar *hostname)
+{
+  dns_cache_store(self, TRUE, family, addr, hostname, TRUE);
+}
+
+static void
+dns_cache_store_dynamic(DNSCache *self, gint family, void *addr, const gchar *hostname, gboolean positive)
+{
+  dns_cache_store(self, FALSE, family, addr, hostname, positive);
+}
+
+static void
 dns_cache_cleanup_persistent_hosts(DNSCache *self)
 {
   struct iv_list_head *ilh, *ilh2;
@@ -263,7 +314,7 @@ dns_cache_check_hosts(DNSCache *self, glong t)
               if (!p)
                 continue;
               inet_pton(family, ip, &ia);
-              dns_cache_store_persistent(family, &ia, p);
+              dns_cache_store_persistent(self, family, &ia, p);
             }
           fclose(hosts);
         }
@@ -286,7 +337,7 @@ dns_cache_check_hosts(DNSCache *self, glong t)
  * matching entry at all).
  */
 gboolean
-_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
+dns_cache_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
 {
   DNSCacheKey key;
   DNSCacheEntry *entry;
@@ -318,45 +369,6 @@ _lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *
   return FALSE;
 }
 
-static void
-dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive)
-{
-  DNSCacheEntry *entry;
-  guint hash_size;
-
-  entry = g_new(DNSCacheEntry, 1);
-
-  dns_cache_fill_key(&entry->key, family, addr);
-  entry->hostname = g_strdup(hostname);
-  entry->hostname_len = strlen(hostname);
-  entry->positive = positive;
-  INIT_IV_LIST_HEAD(&entry->list);
-  if (!persistent)
-    {
-      entry->resolved = cached_g_current_time_sec();
-      iv_list_add(&self->cache_list, &entry->list);
-    }
-  else
-    {
-      entry->resolved = 0;
-      iv_list_add(&self->persist_list, &entry->list);
-    }
-  hash_size = g_hash_table_size(self->cache);
-  g_hash_table_replace(self->cache, &entry->key, entry);
-
-  if (persistent && hash_size != g_hash_table_size(self->cache))
-    self->persistent_count++;
-
-  /* persistent elements are not counted */
-  if ((gint) (g_hash_table_size(self->cache) - self->persistent_count) > self->options->cache_size)
-    {
-      DNSCacheEntry *entry_to_remove = iv_list_entry(&self->cache_list, DNSCacheEntry, list);
-
-      /* remove oldest element */
-      g_hash_table_remove(self->cache, &entry_to_remove->key);
-    }
-}
-
 static DNSCache *
 dns_cache_new(const DNSCacheOptions *options)
 {
@@ -379,74 +391,6 @@ dns_cache_free(DNSCache *self)
   g_free(self);
 }
 
-gboolean
-dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
-{
-  return _lookup(dns_cache, family, addr, hostname, hostname_len, positive);
-}
-
-void
-dns_cache_store_persistent(gint family, void *addr, const gchar *hostname)
-{
-  dns_cache_store(dns_cache, TRUE, family, addr, hostname, TRUE);
-}
-
-void
-dns_cache_store_dynamic(gint family, void *addr, const gchar *hostname, gboolean positive)
-{
-  dns_cache_store(dns_cache, FALSE, family, addr, hostname, positive);
-}
-
-void
-dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts)
-{
-  DNSCacheOptions *options = &effective_dns_cache_options;
-
-  if (options->hosts)
-    g_free(options->hosts);
-
-  options->cache_size = cache_size;
-  options->expire = expire;
-  options->expire_failed = expire_failed;
-  options->hosts = g_strdup(hosts);
-}
-
-void
-dns_cache_update_options(const DNSCacheOptions *dns_cache_options)
-{
-  dns_cache_set_params(dns_cache_options->cache_size,
-                       dns_cache_options->expire,
-                       dns_cache_options->expire_failed,
-                       dns_cache_options->hosts);
-}
-
-void
-dns_cache_thread_init(void)
-{
-  g_assert(dns_cache == NULL);
-  dns_cache = dns_cache_new(&effective_dns_cache_options);
-}
-
-void
-dns_cache_thread_deinit(void)
-{
-  g_assert(dns_cache != NULL);
-  dns_cache_free(dns_cache);
-  dns_cache = NULL;
-}
-
-void
-dns_cache_global_init(void)
-{
-  dns_cache_options_defaults(&effective_dns_cache_options);
-}
-
-void
-dns_cache_global_deinit(void)
-{
-  dns_cache_options_destroy(&effective_dns_cache_options);
-}
-
 void
 dns_cache_options_defaults(DNSCacheOptions *options)
 {
@@ -461,4 +405,81 @@ dns_cache_options_destroy(DNSCacheOptions *options)
 {
   g_free(options->hosts);
   options->hosts = NULL;
+}
+
+/**************************************************************************
+ * The global API that manages DNSCache instances on its own. Callers need
+ * not be aware of underlying data structures and locking, they can simply
+ * call these functions to lookup/query the DNS cache.
+ *
+ * I would prefer these to be moved into a higher level implementation
+ * detail.
+ **************************************************************************/
+
+gboolean
+dns_caching_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
+{
+  return dns_cache_lookup(dns_cache, family, addr, hostname, hostname_len, positive);
+}
+
+void
+dns_caching_store_persistent(gint family, void *addr, const gchar *hostname)
+{
+  dns_cache_store_persistent(dns_cache, family, addr, hostname);
+}
+
+void
+dns_caching_store_dynamic(gint family, void *addr, const gchar *hostname, gboolean positive)
+{
+  dns_cache_store_dynamic(dns_cache, family, addr, hostname, positive);
+}
+
+void
+dns_caching_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts)
+{
+  DNSCacheOptions *options = &effective_dns_cache_options;
+
+  if (options->hosts)
+    g_free(options->hosts);
+
+  options->cache_size = cache_size;
+  options->expire = expire;
+  options->expire_failed = expire_failed;
+  options->hosts = g_strdup(hosts);
+}
+
+void
+dns_caching_update_options(const DNSCacheOptions *dns_cache_options)
+{
+  dns_caching_set_params(dns_cache_options->cache_size,
+                       dns_cache_options->expire,
+                       dns_cache_options->expire_failed,
+                       dns_cache_options->hosts);
+}
+
+void
+dns_caching_thread_init(void)
+{
+  g_assert(dns_cache == NULL);
+  dns_cache = dns_cache_new(&effective_dns_cache_options);
+}
+
+void
+dns_caching_thread_deinit(void)
+{
+  g_assert(dns_cache != NULL);
+  dns_cache_free(dns_cache);
+  dns_cache = NULL;
+}
+
+void
+dns_caching_global_init(void)
+{
+  dns_cache_options_defaults(&effective_dns_cache_options);
+}
+
+void
+dns_caching_global_deinit(void)
+{
+  dns_cache_options_destroy(&effective_dns_cache_options);
 }
