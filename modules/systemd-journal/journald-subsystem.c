@@ -79,18 +79,18 @@ typedef int
 typedef int
 (*SD_JOURNAL_GET_REALTIME_USEC)(sd_journal *j, guint64 *usec);
 
-SD_JOURNAL_OPEN sd_journal_open;
-SD_JOURNAL_CLOSE sd_journal_close;
-SD_JOURNAL_SEEK_HEAD sd_journal_seek_head;
-SD_JOURNAL_SEEK_TAIL sd_journal_seek_tail;
-SD_JOURNAL_GET_CURSOR sd_journal_get_cursor;
-SD_JOURNAL_NEXT sd_journal_next;
-SD_JOURNAL_RESTART_DATA sd_journal_restart_data;
-SD_JOURNAL_ENUMERATE_DATA sd_journal_enumerate_data;
-SD_JOURNAL_SEEK_CURSOR sd_journal_seek_cursor;
-SD_JOURNAL_GET_FD sd_journal_get_fd;
-SD_JOURNAL_PROCESS sd_journal_process;
-SD_JOURNAL_GET_REALTIME_USEC sd_journal_get_realtime_usec;
+static SD_JOURNAL_OPEN sd_journal_open;
+static SD_JOURNAL_CLOSE sd_journal_close;
+static SD_JOURNAL_SEEK_HEAD sd_journal_seek_head;
+static SD_JOURNAL_SEEK_TAIL sd_journal_seek_tail;
+static SD_JOURNAL_GET_CURSOR sd_journal_get_cursor;
+static SD_JOURNAL_NEXT sd_journal_next;
+static SD_JOURNAL_RESTART_DATA sd_journal_restart_data;
+static SD_JOURNAL_ENUMERATE_DATA sd_journal_enumerate_data;
+static SD_JOURNAL_SEEK_CURSOR sd_journal_seek_cursor;
+static SD_JOURNAL_GET_FD sd_journal_get_fd;
+static SD_JOURNAL_PROCESS sd_journal_process;
+static SD_JOURNAL_GET_REALTIME_USEC sd_journal_get_realtime_usec;
 
 gboolean
 load_journald_subsystem()
