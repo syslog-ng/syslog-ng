@@ -255,17 +255,17 @@ dns_cache_check_hosts(DNSCache *self, glong t)
  * matching entry at all).
  */
 gboolean
-dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
+_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
 {
   DNSCacheKey key;
   DNSCacheEntry *entry;
   time_t now;
 
   now = cached_g_current_time_sec();
-  dns_cache_check_hosts(dns_cache, now);
+  dns_cache_check_hosts(self, now);
 
   dns_cache_fill_key(&key, family, addr);
-  entry = g_hash_table_lookup(dns_cache->cache, &key);
+  entry = g_hash_table_lookup(self->cache, &key);
   if (entry)
     {
       if (entry->resolved &&
@@ -345,6 +345,12 @@ dns_cache_free(DNSCache *self)
 {
   g_hash_table_destroy(self->cache);
   g_free(self);
+}
+
+gboolean
+dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
+{
+  return _lookup(dns_cache, family, addr, hostname, hostname_len, positive);
 }
 
 void
