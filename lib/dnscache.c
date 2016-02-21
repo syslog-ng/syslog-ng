@@ -378,6 +378,15 @@ dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gch
 }
 
 void
+dns_cache_update_options(const DNSCacheOptions *dns_cache_options)
+{
+  dns_cache_set_params(dns_cache_options->cache_size,
+                       dns_cache_options->expire,
+                       dns_cache_options->expire_failed,
+                       dns_cache_options->hosts);
+}
+
+void
 dns_cache_thread_init(void)
 {
   g_assert(dns_cache == NULL);
@@ -406,4 +415,20 @@ dns_cache_global_deinit(void)
   if (dns_cache_hosts)
     g_free(dns_cache_hosts);
   dns_cache_hosts = NULL;
+}
+
+void
+dns_cache_options_defaults(DNSCacheOptions *options)
+{
+  options->cache_size = 1007;
+  options->expire = 3600;
+  options->expire_failed = 60;
+  options->hosts = NULL;
+}
+
+void
+dns_cache_options_destroy(DNSCacheOptions *options)
+{
+  g_free(options->hosts);
+  options->hosts = NULL;
 }

@@ -28,16 +28,28 @@
 
 #include "syslog-ng.h"
 
+typedef struct
+{
+  gint cache_size;
+  gint expire;
+  gint expire_failed;
+  gchar *hosts;
+} DNSCacheOptions;
+
 gboolean dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive);
 
 void dns_cache_store_persistent(gint family, void *addr, const gchar *hostname);
 void dns_cache_store_dynamic(gint family, void *addr, const gchar *hostname, gboolean positive);
 
 void dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts);
+void dns_cache_update_options(const DNSCacheOptions *dns_cache_options);
 
 void dns_cache_thread_init(void);
 void dns_cache_thread_deinit(void);
 void dns_cache_global_init(void);
 void dns_cache_global_deinit(void);
+
+void dns_cache_options_defaults(DNSCacheOptions *options);
+void dns_cache_options_destroy(DNSCacheOptions *options);
 
 #endif
