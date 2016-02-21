@@ -77,48 +77,6 @@ struct _DNSCache
 };
 
 
-TLS_BLOCK_START
-{
-  DNSCache *dns_cache;
-}
-TLS_BLOCK_END;
-
-#define dns_cache __tls_deref(dns_cache)
-
-/* DNS cache related options are global, independent of the configuration
- * (e.g.  GlobalConfig instance), and they are stored in the
- * "effective_dns_cache_options" variable below.
- *
- * The reasons for using the global variable are as explained below.
- *
- * Some notes:
- *   1) DNS cache contents are better retained between configuration reloads
- *   2) There are multiple DNSCache instances as they are per-thread data structs.
- *
- * The usual pattern would be:
- *    DNSCache->options -> DNSCacheOptions
- *
- * And options would be a reference and would point inside a DNSCacheOptions
- * instance contained within the GlobalConfig.
- *
- * The problem with this approach is that we don't want to recreate DNSCache
- * instances when reloading the configuration (as we want to keep their
- * config), and this would mean that we'd have to update the "options"
- * pointers in each of the existing instances.  And those instances are
- * per-thread variables, making it a bit more difficult to track them.
- *
- * For this reason, it was a lot simpler to use a global variable to hold
- * configuration options, one that can be updated as the configuration is
- * reloaded.  Then DNSCache instances transparently take the options changes
- * into account as they continue to resolve names.
- *
- * I could come up with even better solutions to this problem (like using a
- * layer above GlobalConfig, a state that encapsulates per-execution state
- * of syslog-ng), however, right now that would be an overkill and I want to
- * get the DNSCache refactors into the master tree.
- */
-
-static DNSCacheOptions effective_dns_cache_options;
 
 static gboolean
 dns_cache_key_equal(DNSCacheKey *e1, DNSCacheKey *e2)
@@ -415,6 +373,50 @@ dns_cache_options_destroy(DNSCacheOptions *options)
  * I would prefer these to be moved into a higher level implementation
  * detail.
  **************************************************************************/
+
+TLS_BLOCK_START
+{
+  DNSCache *dns_cache;
+}
+TLS_BLOCK_END;
+
+#define dns_cache __tls_deref(dns_cache)
+
+/* DNS cache related options are global, independent of the configuration
+ * (e.g.  GlobalConfig instance), and they are stored in the
+ * "effective_dns_cache_options" variable below.
+ *
+ * The reasons for using the global variable are as explained below.
+ *
+ * Some notes:
+ *   1) DNS cache contents are better retained between configuration reloads
+ *   2) There are multiple DNSCache instances as they are per-thread data structs.
+ *
+ * The usual pattern would be:
+ *    DNSCache->options -> DNSCacheOptions
+ *
+ * And options would be a reference and would point inside a DNSCacheOptions
+ * instance contained within the GlobalConfig.
+ *
+ * The problem with this approach is that we don't want to recreate DNSCache
+ * instances when reloading the configuration (as we want to keep their
+ * config), and this would mean that we'd have to update the "options"
+ * pointers in each of the existing instances.  And those instances are
+ * per-thread variables, making it a bit more difficult to track them.
+ *
+ * For this reason, it was a lot simpler to use a global variable to hold
+ * configuration options, one that can be updated as the configuration is
+ * reloaded.  Then DNSCache instances transparently take the options changes
+ * into account as they continue to resolve names.
+ *
+ * I could come up with even better solutions to this problem (like using a
+ * layer above GlobalConfig, a state that encapsulates per-execution state
+ * of syslog-ng), however, right now that would be an overkill and I want to
+ * get the DNSCache refactors into the master tree.
+ */
+
+static DNSCacheOptions effective_dns_cache_options;
+
 
 gboolean
 dns_caching_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
