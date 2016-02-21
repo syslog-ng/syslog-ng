@@ -617,7 +617,6 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
   pos = 0;
   do
     {
-      token_start = pos;
       pos += strcspn(&name[pos], "@.");
       if (name[pos] == '@')
         pos = vp_walker_skip_sdata_enterprise_id(name, pos);
@@ -626,6 +625,7 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
         {
           g_ptr_array_add(array, g_strndup(&name[token_start], pos - token_start));
           pos++;
+          token_start = pos;
         }
     }
   while (pos < name_len);
