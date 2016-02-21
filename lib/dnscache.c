@@ -416,7 +416,8 @@ TLS_BLOCK_END;
  */
 
 static DNSCacheOptions effective_dns_cache_options;
-
+G_LOCK_DEFINE_STATIC(unused_dns_caches);
+static GList *unused_dns_caches;
 
 gboolean
 dns_caching_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
@@ -448,14 +449,27 @@ void
 dns_caching_thread_init(void)
 {
   g_assert(dns_cache == NULL);
-  dns_cache = dns_cache_new(&effective_dns_cache_options);
+
+  G_LOCK(unused_dns_caches);
+  if (unused_dns_caches)
+    {
+      dns_cache = unused_dns_caches->data;
+      unused_dns_caches = g_list_delete_link(unused_dns_caches, unused_dns_caches);
+    }
+  G_UNLOCK(unused_dns_caches);
+
+  if (!dns_cache)
+    dns_cache = dns_cache_new(&effective_dns_cache_options);
 }
 
 void
 dns_caching_thread_deinit(void)
 {
   g_assert(dns_cache != NULL);
-  dns_cache_free(dns_cache);
+
+  G_LOCK(unused_dns_caches);
+  unused_dns_caches = g_list_prepend(unused_dns_caches, dns_cache);
+  G_UNLOCK(unused_dns_caches);
   dns_cache = NULL;
 }
 
@@ -468,5 +482,7 @@ dns_caching_global_init(void)
 void
 dns_caching_global_deinit(void)
 {
+  g_list_foreach(unused_dns_caches, (GFunc) dns_cache_free, NULL);
+  g_list_free(unused_dns_caches);
   dns_cache_options_destroy(&effective_dns_cache_options);
 }
