@@ -48,11 +48,7 @@ void dns_cache_options_defaults(DNSCacheOptions *options);
 void dns_cache_options_destroy(DNSCacheOptions *options);
 
 gboolean dns_caching_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive);
-
-void dns_caching_store_persistent(gint family, void *addr, const gchar *hostname);
-void dns_caching_store_dynamic(gint family, void *addr, const gchar *hostname, gboolean positive);
-
-void dns_caching_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts);
+void dns_caching_store(gint family, void *addr, const gchar *hostname, gboolean positive);
 void dns_caching_update_options(const DNSCacheOptions *dns_cache_options);
 
 void dns_caching_thread_init(void);
