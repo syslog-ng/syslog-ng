@@ -68,6 +68,7 @@ struct _DNSCacheEntry
 typedef struct _DNSCache
 {
   GHashTable *cache;
+  const DNSCacheOptions *options;
   struct iv_list_head cache_list;
   struct iv_list_head persist_list;
   gint persistent_count;
@@ -84,10 +85,40 @@ TLS_BLOCK_END;
 
 #define dns_cache __tls_deref(dns_cache)
 
-static gint dns_cache_size = 1007;
-static gint dns_cache_expire = 3600;
-static gint dns_cache_expire_failed = 60;
-static gchar *dns_cache_hosts = NULL;
+/* DNS cache related options are global, independent of the configuration
+ * (e.g.  GlobalConfig instance), and they are stored in the
+ * "effective_dns_cache_options" variable below.
+ *
+ * The reasons for using the global variable are as explained below.
+ *
+ * Some notes:
+ *   1) DNS cache contents are better retained between configuration reloads
+ *   2) There are multiple DNSCache instances as they are per-thread data structs.
+ *
+ * The usual pattern would be:
+ *    DNSCache->options -> DNSCacheOptions
+ *
+ * And options would be a reference and would point inside a DNSCacheOptions
+ * instance contained within the GlobalConfig.
+ *
+ * The problem with this approach is that we don't want to recreate DNSCache
+ * instances when reloading the configuration (as we want to keep their
+ * config), and this would mean that we'd have to update the "options"
+ * pointers in each of the existing instances.  And those instances are
+ * per-thread variables, making it a bit more difficult to track them.
+ *
+ * For this reason, it was a lot simpler to use a global variable to hold
+ * configuration options, one that can be updated as the configuration is
+ * reloaded.  Then DNSCache instances transparently take the options changes
+ * into account as they continue to resolve names.
+ *
+ * I could come up with even better solutions to this problem (like using a
+ * layer above GlobalConfig, a state that encapsulates per-execution state
+ * of syslog-ng), however, right now that would be an overkill and I want to
+ * get the DNSCache refactors into the master tree.
+ */
+
+static DNSCacheOptions effective_dns_cache_options;
 
 static gboolean
 dns_cache_key_equal(DNSCacheKey *e1, DNSCacheKey *e2)
@@ -178,7 +209,7 @@ dns_cache_check_hosts(DNSCache *self, glong t)
 
   self->hosts_checktime = t;
 
-  if (!dns_cache_hosts || stat(dns_cache_hosts, &st) < 0)
+  if (!self->options->hosts || stat(self->options->hosts, &st) < 0)
     {
       dns_cache_cleanup_persistent_hosts(self);
       return;
@@ -190,7 +221,7 @@ dns_cache_check_hosts(DNSCache *self, glong t)
 
       self->hosts_mtime = st.st_mtime;
       dns_cache_cleanup_persistent_hosts(self);
-      hosts = fopen(dns_cache_hosts, "r");
+      hosts = fopen(self->options->hosts, "r");
       if (hosts)
         {
           gchar buf[4096];
@@ -239,7 +270,7 @@ dns_cache_check_hosts(DNSCache *self, glong t)
       else
         {
           msg_error("Error loading dns cache hosts file",
-                    evt_tag_str("filename", dns_cache_hosts),
+                    evt_tag_str("filename", self->options->hosts),
                     evt_tag_errno("error", errno),
                     NULL);
         }
@@ -269,8 +300,8 @@ _lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *
   if (entry)
     {
       if (entry->resolved &&
-          ((entry->positive && entry->resolved < now - dns_cache_expire) ||
-           (!entry->positive && entry->resolved < now - dns_cache_expire_failed)))
+          ((entry->positive && entry->resolved < now - self->options->expire) ||
+           (!entry->positive && entry->resolved < now - self->options->expire_failed)))
         {
           /* the entry is not persistent and is too old */
         }
@@ -317,7 +348,7 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
     self->persistent_count++;
 
   /* persistent elements are not counted */
-  if ((gint) (g_hash_table_size(self->cache) - self->persistent_count) > dns_cache_size)
+  if ((gint) (g_hash_table_size(self->cache) - self->persistent_count) > self->options->cache_size)
     {
       DNSCacheEntry *entry_to_remove = iv_list_entry(&self->cache_list, DNSCacheEntry, list);
 
@@ -327,7 +358,7 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
 }
 
 static DNSCache *
-dns_cache_new(void)
+dns_cache_new(const DNSCacheOptions *options)
 {
   DNSCache *self = g_new0(DNSCache, 1);
 
@@ -337,6 +368,7 @@ dns_cache_new(void)
   self->hosts_mtime = -1;
   self->hosts_checktime = 0;
   self->persistent_count = 0;
+  self->options = options;
   return self;
 }
 
@@ -368,13 +400,15 @@ dns_cache_store_dynamic(gint family, void *addr, const gchar *hostname, gboolean
 void
 dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts)
 {
-  if (dns_cache_hosts)
-    g_free(dns_cache_hosts);
+  DNSCacheOptions *options = &effective_dns_cache_options;
 
-  dns_cache_size = cache_size;
-  dns_cache_expire = expire;
-  dns_cache_expire_failed = expire_failed;
-  dns_cache_hosts = g_strdup(hosts);
+  if (options->hosts)
+    g_free(options->hosts);
+
+  options->cache_size = cache_size;
+  options->expire = expire;
+  options->expire_failed = expire_failed;
+  options->hosts = g_strdup(hosts);
 }
 
 void
@@ -390,7 +424,7 @@ void
 dns_cache_thread_init(void)
 {
   g_assert(dns_cache == NULL);
-  dns_cache = dns_cache_new();
+  dns_cache = dns_cache_new(&effective_dns_cache_options);
 }
 
 void
@@ -404,17 +438,13 @@ dns_cache_thread_deinit(void)
 void
 dns_cache_global_init(void)
 {
-  dns_cache_size = 1007;
-  dns_cache_expire = 3600;
-  dns_cache_expire_failed = 60;
+  dns_cache_options_defaults(&effective_dns_cache_options);
 }
 
 void
 dns_cache_global_deinit(void)
 {
-  if (dns_cache_hosts)
-    g_free(dns_cache_hosts);
-  dns_cache_hosts = NULL;
+  dns_cache_options_destroy(&effective_dns_cache_options);
 }
 
 void
