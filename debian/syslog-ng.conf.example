@@ -26,7 +26,7 @@ source src { unix-dgram("/dev/log"); internal();
 ########################
 # Destinations
 ########################
-# First some standard logfile
+# First some standard logfiles.
 #
 destination auth { file("/var/log/auth.log"); };
 destination cron { file("/var/log/cron.log"); };
@@ -38,13 +38,13 @@ destination syslog { file("/var/log/syslog.log"); };
 destination user { file("/var/log/user.log"); };
 destination uucp { file("/var/log/uucp.log"); };
 
-# This files are the log come from the mail subsystem.
+# These files are the logs that come from the mail subsystem.
 #
 destination mailinfo { file("/var/log/mail/mail.info"); };
 destination mailwarn { file("/var/log/mail/mail.warn"); };
 destination mailerr { file("/var/log/mail/mail.err"); };
 
-# Logging for INN news system
+# Logging for INN news system.
 #
 destination newscrit { file("/var/log/news/news.crit"); };
 destination newserr { file("/var/log/news/news.err"); };
@@ -80,8 +80,8 @@ destination ppp { file("/var/log/ppp.log"); };
 ########################
 # Filters
 ########################
-# Here's come the filter options. With this rules, we can set which 
-# message go where.
+# Here are some filter options. With these rules, we can set which
+# message goes where.
 
 filter dbg { level(debug); };
 filter info { level(info); };
