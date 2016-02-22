@@ -3,7 +3,7 @@ if ENABLE_JAVA_MODULES
 export GRADLE_OPTS
 
 JAVA_MOD_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
-MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar')
+MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar' -not -path "$(abs_top_builddir)/modules/java-modules/.gradle/*")
 GRADLE_WORKDIR=$(abs_top_builddir)/modules/java-modules/.gradle
 
 java-modules: $(SYSLOG_NG_CORE_JAR)
