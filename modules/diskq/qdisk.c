@@ -28,6 +28,7 @@
 #include "logmsg/logmsg-serialize.h"
 #include "stats/stats-registry.h"
 #include "reloc.h"
+#include "compat/lfs.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
