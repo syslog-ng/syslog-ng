@@ -1,12 +1,20 @@
 AU_ALIAS([AC_CHECK_JAVA_VERSION], [AX_CHECK_JAVA_VERSION])
 AU_ALIAS([AC_CHECK_GRADLE_VERSION], [AX_CHECK_GRADLE_VERSION])
 
+AC_DEFUN([AX_READLINK],
+[
+  READLINK_TARGET=[$1]
+  while test -L "$READLINK_TARGET"; do
+    READLINK_TARGET=$(readlink "$READLINK_TARGET")
+  done
+  echo "$READLINK_TARGET"
+])
 AC_DEFUN([AX_CHECK_GRADLE_VERSION],
 [AC_MSG_CHECKING([for GRADLE_VERSION])
   EXPECTED_GRADLE_VERSION=[$1]
   GRADLE_BIN=`which gradle`
   if test "x$GRADLE_BIN" != "x"; then
-    GRADLE_BIN=`readlink -f $GRADLE_BIN`
+    GRADLE_BIN=`AX_READLINK([$GRADLE_BIN])`
     GRADLE_VERSION=`gradle -version 2>&1 | grep Gradle | head -1 |sed "s/.*\ \(.*\)/\1/"`
     SHORT_VERSION=${GRADLE_VERSION%.*}
     MAJOR_VERSION=${SHORT_VERSION%.*}
@@ -38,9 +46,9 @@ AC_DEFUN([AX_CHECK_JAVA_VERSION],
   JAVAH_BIN=`which javah`
   JAR_BIN=`which jar`
   if test "x$JAVAC_BIN" != "x"; then
-    JAVAC_BIN=`readlink -f $JAVAC_BIN`
-    JAVAH_BIN=`readlink -f $JAVAH_BIN`
-    JAR_BIN=`readlink -f $JAR_BIN`
+    JAVAC_BIN=`AX_READLINK([$JAVAC_BIN])`
+    JAVAH_BIN=`AX_READLINK([$JAVAH_BIN])`
+    JAR_BIN=`AX_READLINK([$JAR_BIN])`
     JAVAC_VERSION=`$JAVAC_BIN -version 2>&1 | sed "s/.*\ \(.*\)/\1/"`
     SHORT_VERSION=${JAVAC_VERSION%.*}
     MAJOR_VERSION=${SHORT_VERSION%.*}
