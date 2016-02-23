@@ -18,7 +18,7 @@ AC_DEFUN([AX_CHECK_GRADLE_VERSION],
     GRADLE_VERSION=`gradle -version 2>&1 | grep Gradle | head -1 |sed "s/.*\ \(.*\)/\1/"`
     SHORT_VERSION=${GRADLE_VERSION%.*}
     MAJOR_VERSION=${SHORT_VERSION%.*}
-    MINOR_VERSION=${SHORT_VERSION##*.}                                                                                                                                           
+    MINOR_VERSION=${SHORT_VERSION##*.}
     EXPECTED_MAJOR_VERSION=${EXPECTED_GRADLE_VERSION%.*}
     EXPECTED_MINOR_VERSION=${EXPECTED_GRADLE_VERSION##*.}
     if test "$MAJOR_VERSION" -lt "$EXPECTED_MAJOR_VERSION";
@@ -45,6 +45,8 @@ AC_DEFUN([AX_CHECK_JAVA_VERSION],
   JAVAC_BIN=`which javac`
   JAVAH_BIN=`which javah`
   JAR_BIN=`which jar`
+  JAVA_HOME_CHECKER="/usr/libexec/java_home"
+
   if test "x$JAVAC_BIN" != "x"; then
     JAVAC_BIN=`AX_READLINK([$JAVAC_BIN])`
     JAVAH_BIN=`AX_READLINK([$JAVAH_BIN])`
@@ -72,12 +74,16 @@ AC_DEFUN([AX_CHECK_JAVA_VERSION],
 
     if test "$VERSION_OK" = "1";
     then
-      JNI_HOME=`echo $JAVAC_BIN | sed "s/\(.*\)[[/]]bin[[/]]java.*/\1/"`
+      if test -e "$JAVA_HOME_CHECKER"; then
+        JNI_HOME=`$JAVA_HOME_CHECKER`
+      else
+        JNI_HOME=`echo $JAVAC_BIN | sed "s/\(.*\)[[/]]bin[[/]]java.*/\1/"`
+      fi
       JNI_LIBDIR=`find $JNI_HOME -name "libjvm.so" | sed "s/\(.*\)libjvm.so/\1/" | head -n 1`
       JNI_LIBS="-L$JNI_LIBDIR -ljvm"
       JNI_INCLUDE_DIR=`find $JNI_HOME -name "jni.h" |  sed "s/\(.*\)jni.h/\1/" | head -n 1`
       JNI_CFLAGS="-I$JNI_INCLUDE_DIR"
-     
+
       JNI_MD_INCLUDE_DIR=`find $JNI_HOME -name "jni_md.h" |  sed "s/\(.*\)jni_md.h/\1/" | head -n 1`
       JNI_CFLAGS="$JNI_CFLAGS -I$JNI_MD_INCLUDE_DIR"
       AC_SUBST(JNI_CFLAGS, "$JNI_CFLAGS")
