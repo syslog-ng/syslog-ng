@@ -203,6 +203,14 @@ AC_ARG_WITH(libesmtp,
              AC_HELP_STRING([--with-libesmtp=DIR],
                             [use libesmtp library from (prefix) directory DIR]),,)
 
+AC_ARG_ENABLE(curl,
+              [  --disable-curl          Disable cURL support (default: auto)]
+              ,,enable_curl="auto")
+
+AC_ARG_WITH(libcurl,
+             AC_HELP_STRING([--with-libcurl=DIR],
+                            [use libcurl library from (prefix) directory DIR]),,)
+
 AC_ARG_ENABLE(redis,
               [  --disable-redis          Disable REDIS support (default: auto)]
               ,,enable_redis="auto")
@@ -1005,6 +1013,37 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
 fi
 
 dnl ***************************************************************************
+dnl libcurl headers/libraries
+dnl ***************************************************************************
+if test "x$enable_curl" != "xno" && test "x$with_libcurl" != "no"; then
+	libcurl="yes"
+	if test "x$with_libcurl" != "yes" && test "x$with_libcurl" != "x"; then
+		CPPFLAGS_SAVE="$CPPFLAGS"
+		LDFLAGS_SAVE="$LDFLAGS"
+		CPPFLAGS="$CPPFLAGS -I$with_libcurl/include"
+		LDFLAGS="$LDFLAGS -L$with_libcurl/lib"
+		AC_CHECK_HEADER(curl/curl.h, [LIBCURL_CFLAGS="-I$with_libcurl/include"
+					     LIBCURL_LIBS="-L$with_libcurl/lib -lcurl"], [libcurl=no])
+		CPPFLAGS="$CPPFLAGS_SAVE"
+		LDFLAGS="$LDFLAGS_SAVE"
+	else
+		AC_MSG_CHECKING(for libcurl)
+		if curl-config --version >/dev/null 2>&1; then
+			AC_MSG_RESULT(yes)
+			LIBCURL_CFLAGS="`curl-config --cflags`"
+			LIBCURL_LIBS="`curl-config --libs`"
+		else
+			AC_MSG_RESULT(no)
+			libcurl=no
+		fi
+	fi
+	if test "x$enable_curl" = "xyes" && test "x$libcurl" = "xno"; then
+		AC_MSG_ERROR(libcurl not found)
+	fi
+	enable_curl=$libcurl
+fi
+
+dnl ***************************************************************************
 dnl libhiredis headers/libraries
 dnl ***************************************************************************
 if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
@@ -1454,6 +1493,7 @@ AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
+AM_CONDITIONAL(ENABLE_CURL, [test "$enable_curl" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
@@ -1500,6 +1540,8 @@ AC_SUBST(LIBMONGO_CFLAGS)
 AC_SUBST(LIBMONGO_SUBDIRS)
 AC_SUBST(LIBESMTP_CFLAGS)
 AC_SUBST(LIBESMTP_LIBS)
+AC_SUBST(LIBCURL_CFLAGS)
+AC_SUBST(LIBCURL_LIBS)
 AC_SUBST(LIBRABBITMQ_LIBS)
 AC_SUBST(LIBRABBITMQ_CFLAGS)
 AC_SUBST(LIBRABBITMQ_SUBDIRS)
@@ -1568,6 +1610,7 @@ echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
 echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
+echo "  cURL support (module)       : ${enable_curl:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
