@@ -40,6 +40,8 @@ typedef struct
   LogTemplateOptions template_options;
 } CurlDestinationDriver;
 
+gboolean curl_dd_init(LogPipe *s);
+gboolean curl_dd_deinit(LogPipe *s);
 LogDriver *curl_dd_new(GlobalConfig *cfg);
 void curl_dd_set_url(LogDriver *d, const gchar *url);
 void curl_dd_set_user(LogDriver *d, const gchar *user);

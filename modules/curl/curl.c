@@ -169,7 +169,8 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK) {
       msg_error("curl: error sending HTTP request",
-      evt_tag_str("error", curl_easy_strerror(ret)), NULL);
+                evt_tag_str("error", curl_easy_strerror(ret)),
+                NULL);
 
       if (body_rendered)
         g_string_free(body_rendered, TRUE);
@@ -240,6 +241,26 @@ curl_dd_get_template_options(LogDriver *d)
   return &self->template_options;
 }
 
+gboolean
+curl_dd_init(LogPipe *s)
+{
+  CurlDestinationDriver *self = (CurlDestinationDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (!log_dest_driver_init_method(s))
+    return FALSE;
+
+  log_template_options_init(&self->template_options, cfg);
+
+  return log_threaded_dest_driver_start(s);
+}
+
+gboolean
+curl_dd_deinit(LogPipe *s)
+{
+  return log_threaded_dest_driver_deinit_method(s);
+}
+
 LogDriver *
 curl_dd_new(GlobalConfig *cfg)
 {
@@ -247,6 +268,8 @@ curl_dd_new(GlobalConfig *cfg)
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
+  self->super.super.super.super.init = curl_dd_init;
+  self->super.super.super.super.deinit = curl_dd_deinit;
   self->super.worker.thread_init = _thread_init;
   self->super.worker.thread_deinit = _thread_deinit;
   self->super.worker.connect = _connect;
