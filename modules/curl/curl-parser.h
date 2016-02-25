@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef curl_PARSER_H_INCLUDED
-#define curl_PARSER_H_INCLUDED
+#ifndef CURL_PARSER_H_INCLUDED
+#define CURL_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
