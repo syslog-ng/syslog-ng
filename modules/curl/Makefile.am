@@ -24,6 +24,6 @@ modules_curl_libcurl_la_LIBADD  = $(MODULE_DEPS_LIBS) $(LIBCURL_LIBS)
 modules_curl_libcurl_la_LDFLAGS = $(MODULE_LDFLAGS)
 modules_curl_libcurl_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
-modules/curl modules/curl/ mod-curl mod-file: modules/curl/libcurl.la
-.PHONY: modules/curl/ mod-curl mod-file
+modules/curl modules/curl/ mod-curl: modules/curl/libcurl.la
+.PHONY: modules/curl/ mod-curl
 
