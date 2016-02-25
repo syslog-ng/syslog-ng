@@ -46,7 +46,6 @@ void curl_dd_set_user(LogDriver *d, const gchar *user);
 void curl_dd_set_password(LogDriver *d, const gchar *password);
 void curl_dd_set_headers(LogDriver *d, GList *headers);
 void curl_dd_set_body(LogDriver *d, LogTemplate *body);
-size_t curl_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata);
 LogTemplateOptions *curl_dd_get_template_options(LogDriver *d);
 
 #endif

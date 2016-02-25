@@ -49,6 +49,13 @@ _format_stats_instance(LogThrDestDriver *s)
   return stats;
 }
 
+static size_t
+_curl_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+    // Discard response content
+    return nmemb * size;
+}
+
 static void
 _thread_init(LogThrDestDriver *s)
 {
@@ -122,7 +129,7 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 
   curl_easy_reset(self->curl);
 
-  curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
+  curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _curl_write_cb);
 
   curl_easy_setopt(self->curl, CURLOPT_URL, self->url);
 
@@ -214,13 +221,6 @@ curl_dd_set_headers(LogDriver *d, GList *headers)
 
   g_list_free(self->headers);
   self->headers = headers;
-}
-
-size_t
-curl_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
-{
-    // Discard response content
-    return nmemb * size;
 }
 
 void
