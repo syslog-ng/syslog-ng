@@ -1399,7 +1399,7 @@ journald_mode()
   elif test "x$with_systemd_journal" = "xsystem"; then
     echo JOURNALD_SYSTEM
   else
-    echo JOURNALD_OPTIONS
+    echo JOURNALD_OPTIONAL
   fi
 }
 
