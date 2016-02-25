@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # This script is needed to setup build environment from checked out
-# source tree. 
+# source tree.
 #
 SUBMODULES="lib/ivykis modules/afmongodb/mongo-c-driver/src/libbson modules/afmongodb/mongo-c-driver modules/afamqp/rabbitmq-c lib/jsonc"
 GIT=`which git`
@@ -19,11 +19,11 @@ autogen_submodules()
 
 	if [ -n "$GIT" ] && [ -f .gitmodules ] && [ -d .git ] && [ $submod_initialized = 0 ]; then
 		# only clone submodules if none of them present
-                git submodule update --init
-                sed -e "s#git://#https://#" \
-                        < modules/afamqp/rabbitmq-c/.gitmodules \
-                        > modules/afamqp/rabbitmq-c/.gitmodules.new && \
-                        mv modules/afamqp/rabbitmq-c/.gitmodules.new modules/afamqp/rabbitmq-c/.gitmodules
+		git submodule update --init
+		sed -e "s#git://#https://#" \
+			< modules/afamqp/rabbitmq-c/.gitmodules \
+			> modules/afamqp/rabbitmq-c/.gitmodules.new && \
+			mv modules/afamqp/rabbitmq-c/.gitmodules.new modules/afamqp/rabbitmq-c/.gitmodules
 		git submodule update --init --recursive
 	fi
 
@@ -42,11 +42,11 @@ autogen_submodules()
 			exit 1
 		fi
 
-                CONFIGURE_OPTS="--disable-shared --enable-static --with-pic"
+		CONFIGURE_OPTS="--disable-shared --enable-static --with-pic"
 		# kludge needed by make distcheck in mongo-c-driver
 		CONFIGURE_OPTS="$CONFIGURE_OPTS --enable-man-pages"
 
-                sed -e "s/@__CONFIGURE_OPTS__@/${CONFIGURE_OPTS}/g" ${origdir}/sub-configure.sh >configure.gnu
+		sed -e "s/@__CONFIGURE_OPTS__@/${CONFIGURE_OPTS}/g" ${origdir}/sub-configure.sh >configure.gnu
 		cd "$origdir"
 	done
 }
@@ -57,8 +57,8 @@ fi
 
 # bootstrap syslog-ng itself
 case `uname -s` in
-  "Darwin") LIBTOOLIZE="glibtoolize" ;;
-  *) LIBTOOLIZE="libtoolize" ;;
+	"Darwin") LIBTOOLIZE="glibtoolize" ;;
+	*) LIBTOOLIZE="libtoolize" ;;
 esac
 
 $LIBTOOLIZE --force --copy
