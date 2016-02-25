@@ -1403,9 +1403,9 @@ journald_mode()
   fi
 }
 
-AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, [Test value])
-AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, [Test value])
-AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, [Test value])
+AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, ["Disable systemd-journal source"])
+AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, ["Enable systemd-journal source if journald is available"])
+AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, ["Force systemd-journal source to use system's journald"])
 
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [package name])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
