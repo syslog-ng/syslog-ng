@@ -1395,11 +1395,11 @@ enable_value()
 journald_mode()
 {
   if test "x$with_systemd_journal" = "xno"; then
-    echo JOURNALD_OFF
+    echo SYSLOG_NG_JOURNALD_OFF
   elif test "x$with_systemd_journal" = "xsystem"; then
-    echo JOURNALD_SYSTEM
+    echo SYSLOG_NG_JOURNALD_SYSTEM
   else
-    echo JOURNALD_OPTIONAL
+    echo SYSLOG_NG_JOURNALD_OPTIONAL
   fi
 }
 
