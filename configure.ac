@@ -1395,17 +1395,17 @@ enable_value()
 journald_mode()
 {
   if test "x$with_systemd_journal" = "xno"; then
-    echo JOURNALD_OFF
+    echo SYSLOG_NG_JOURNALD_OFF
   elif test "x$with_systemd_journal" = "xsystem"; then
-    echo JOURNALD_SYSTEM
+    echo SYSLOG_NG_JOURNALD_SYSTEM
   else
-    echo JOURNALD_OPTIONS
+    echo SYSLOG_NG_JOURNALD_OPTIONAL
   fi
 }
 
-AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, [Test value])
-AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, [Test value])
-AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, [Test value])
+AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, ["Disable systemd-journal source"])
+AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, ["Enable systemd-journal source if journald is available"])
+AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, ["Force systemd-journal source to use system's journald"])
 
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [package name])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
@@ -1527,7 +1527,7 @@ AC_SUBST(LIBSYSTEMD_JOURNAL_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
 AC_SUBST(XSL_STYLESHEET)
 
-AX_PREFIX_CONFIG_H
+AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
 AX_VALGRIND_CHECK
 
 AC_OUTPUT(dist.conf
