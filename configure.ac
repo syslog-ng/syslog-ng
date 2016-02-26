@@ -8,15 +8,11 @@ dnl SNAPSHOT_VERSION   - snapshot version to add to version number
 dnl BINARY_BRANCH      - the value is added to all source/binary packages
 dnl SOURCE_REVISION    - Revision of the source-tree, will added to the version string
 dnl
-AC_INIT(syslog-ng/main.c)
+
+AC_INIT([syslog-ng], m4_esyscmd([tr -d '\n' < VERSION]))
+AC_CONFIG_SRCDIR([syslog-ng/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-
-dnl ***************************************************************************
-dnl definitions
-
-PACKAGE="syslog-ng"
-VERSION="`cat $srcdir/VERSION`"
 
 dnl ***************************************************************************
 dnl dependencies
@@ -60,7 +56,7 @@ else
         CURRDATE=`date +"%a, %d %b %Y %H:%M:%S %Z"`
 fi
 
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION, [foreign no-define subdir-objects])
+AM_INIT_AUTOMAKE([foreign no-define subdir-objects])
 _AM_PROG_TAR([ustar])
 if test -n "$SNAPSHOT_VERSION"; then
 	VERSION=$VERSION+$SNAPSHOT_VERSION
