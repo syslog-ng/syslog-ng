@@ -2,7 +2,7 @@
 #include "riak-parser.h"
 #include "plugin.h"
 #include "messages.h"
-#include "misc.h"
+//#include "misc.h"
 #include "stats/stats-registry.h"
 #include "logqueue.h"
 #include "driver.h"
@@ -391,6 +391,7 @@ riak_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 static void
 riak_worker_thread_init(LogThrDestDriver *d)
 {
+  RiakDestDriver *self = (RiakDestDriver *)d;
   msg_error("Riak worker init error, LogTemplate values NULL, suspending",
             evt_tag_str("driver", self->super.super.super.id), NULL);
   riak_dd_connect(self, TRUE);
