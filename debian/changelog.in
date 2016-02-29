@@ -1,4 +1,4 @@
-@PACKAGE@ (@VERSION@) @RELEASE_TAG@; urgency=low
+@PACKAGE_NAME@ (@VERSION@) @RELEASE_TAG@; urgency=low
 
   * New upstream version.
 

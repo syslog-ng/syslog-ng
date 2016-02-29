@@ -1,10 +1,10 @@
 Summary: Next generation system logging daemon
-Name: @PACKAGE@
+Name: @PACKAGE_NAME@
 Version: @VERSION@
 Release: 1
 License: GPL
 Group: System Environment/Daemons
-Source: @PACKAGE@_%{version}.tar.gz
+Source: @PACKAGE_NAME@_%{version}.tar.gz
 URL: http://www.balabit.com
 Packager: Tamas Pal <folti@balabit.com>
 Vendor: BalaBit IT Ltd.
@@ -53,7 +53,7 @@ Provides: syslog
 
 
 %prep
-%setup -q -n @PACKAGE@-%{version}
+%setup -q -n @PACKAGE_NAME@-%{version}
 
 
 %build

@@ -1403,7 +1403,7 @@ AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, ["Disable systemd-journal source"])
 AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, ["Enable systemd-journal source if journald is available"])
 AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, ["Force systemd-journal source to use system's journald"])
 
-AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [package name])
+AC_DEFINE_UNQUOTED(PACKAGE_NAME, "$PACKAGE_NAME", [package name])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
 AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
 AC_DEFINE_UNQUOTED(LICENSE_VERSION, "$LICENSE_VERSION", [Required license version])
