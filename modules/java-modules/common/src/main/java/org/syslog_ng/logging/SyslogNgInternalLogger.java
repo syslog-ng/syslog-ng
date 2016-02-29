@@ -37,6 +37,7 @@ public class SyslogNgInternalLogger extends AppenderSkeleton {
 	public static void register(Logger logger) {
 		if (logger.getAppender(SyslogNgInternalLogger.NAME) == null) {
 			logger.addAppender(new SyslogNgInternalLogger());
+			logger.setLevel(Level.DEBUG);
 		}
 	}
 
