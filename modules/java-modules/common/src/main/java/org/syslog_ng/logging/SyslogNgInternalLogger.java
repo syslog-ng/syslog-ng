@@ -57,20 +57,15 @@ public class SyslogNgInternalLogger extends AppenderSkeleton {
 
 	@Override
 	protected void append(LoggingEvent event) {
-		 String message = null;
-         if(event.locationInformationExists()){
-	            StringBuilder formatedMessage = new StringBuilder();
-	            formatedMessage.append(event.getLocationInformation().getClassName());
-	            formatedMessage.append(".");
-	            formatedMessage.append(event.getLocationInformation().getMethodName());
-	            formatedMessage.append(":");
-	            formatedMessage.append(event.getLocationInformation().getLineNumber());
-	            formatedMessage.append(" - ");
-	            formatedMessage.append(event.getMessage().toString());
-	            message = formatedMessage.toString();
-	        }else{
-	            message = event.getMessage().toString();
-	        }
+        StringBuilder formatedMessage = new StringBuilder();
+        formatedMessage.append(event.getLocationInformation().getClassName());
+        formatedMessage.append(".");
+        formatedMessage.append(event.getLocationInformation().getMethodName());
+        formatedMessage.append(":");
+        formatedMessage.append(event.getLocationInformation().getLineNumber());
+        formatedMessage.append(" - ");
+        formatedMessage.append(event.getMessage().toString());
+        String message = formatedMessage.toString();
 
 	        switch(event.getLevel().toInt()){
 	        case Level.INFO_INT:
