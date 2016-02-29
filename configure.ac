@@ -59,7 +59,7 @@ fi
 AM_INIT_AUTOMAKE([foreign no-define subdir-objects])
 _AM_PROG_TAR([ustar])
 if test -n "$SNAPSHOT_VERSION"; then
-	VERSION=$VERSION+$SNAPSHOT_VERSION
+	PACKAGE_VERSION=$PACKAGE_VERSION+$SNAPSHOT_VERSION
 fi
 
 if test "x$prefix" = "xNONE"; then
@@ -1404,7 +1404,7 @@ AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, ["Enable systemd-journal source if jour
 AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, ["Force systemd-journal source to use system's journald"])
 
 AC_DEFINE_UNQUOTED(PACKAGE_NAME, "$PACKAGE_NAME", [package name])
-AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
+AC_DEFINE_UNQUOTED(VERSION, "$PACKAGE_VERSION", [version number])
 AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
 AC_DEFINE_UNQUOTED(LICENSE_VERSION, "$LICENSE_VERSION", [Required license version])
 
@@ -1535,7 +1535,7 @@ AC_OUTPUT(dist.conf
           )
 
 echo
-echo "syslog-ng Open Source Edition $VERSION configured"
+echo "syslog-ng Open Source Edition $PACKAGE_VERSION configured"
 echo " Compiler options:"
 echo "  compiler                    : $CC"
 echo "  compiler options            : $CFLAGS $CPPFLAGS"

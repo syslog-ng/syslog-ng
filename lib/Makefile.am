@@ -14,7 +14,7 @@ include lib/debugger/Makefile.am
 include lib/compat/Makefile.am
 include lib/logmsg/Makefile.am
 
-LSNG_RELEASE		= $(shell echo @VERSION@ | cut -d. -f1,2)
+LSNG_RELEASE		= $(shell echo @PACKAGE_VERSION@ | cut -d. -f1,2)
 
 # * Start with version information of ‘0:0:0’ for each libtool
 #   library.
