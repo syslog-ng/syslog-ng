@@ -78,6 +78,9 @@ public class SyslogNgInternalLogger extends AppenderSkeleton {
         case Level.ERROR_INT:
             InternalMessageSender.error(message);
             break;
+        case Level.FATAL_INT:
+            InternalMessageSender.fatal(message);
+            break;
         case Level.WARN_INT:
             InternalMessageSender.warning(message);
             break;
