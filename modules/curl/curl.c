@@ -69,15 +69,6 @@ _thread_init(LogThrDestDriver *s)
 static void
 _thread_deinit(LogThrDestDriver *s)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) s;
-
-  curl_easy_cleanup(self->curl);
-  curl_global_cleanup();
-
-  g_free(self->url);
-  g_free(self->user);
-  g_free(self->password);
-  g_list_free(self->headers);
 }
 
 static gboolean
@@ -261,6 +252,23 @@ curl_dd_deinit(LogPipe *s)
   return log_threaded_dest_driver_deinit_method(s);
 }
 
+static void
+curl_dd_free(LogPipe *s)
+{
+  CurlDestinationDriver *self = (CurlDestinationDriver *)s;
+
+  curl_easy_cleanup(self->curl);
+  curl_global_cleanup();
+
+  g_free(self->url);
+  g_free(self->user);
+  g_free(self->password);
+  g_list_free(self->headers);
+
+  log_threaded_dest_driver_free(s);
+}
+
+
 LogDriver *
 curl_dd_new(GlobalConfig *cfg)
 {
@@ -278,6 +286,7 @@ curl_dd_new(GlobalConfig *cfg)
   self->super.format.persist_name = _format_persist_name;
   self->super.format.stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_CURL;
+  self->super.super.super.super.free_fn = curl_dd_free;
 
   curl_global_init(CURL_GLOBAL_ALL);
 
