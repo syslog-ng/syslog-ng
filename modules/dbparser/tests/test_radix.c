@@ -442,6 +442,22 @@ test_matches(void)
                       "ipv4", "192.168.1.1",
                       NULL);
 
+  test_search_matches(root, "bbb4 192.168.1.1.huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "bbb4 192.168.1.1.. huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "bbb4 192.168.1.1.2 huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "bbb4 192.168.1.1..huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
   test_search_matches(root, "bbb 192.168.1.1huhuhu",
                       "ip", "192.168.1.1",
                       NULL);
@@ -488,6 +504,42 @@ test_matches(void)
 
   test_search_matches(root, "bbb6 2001:0DB8:0:CD30:: huhuhu",
                       "ipv6", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "bbb6 2001:0DB8:0:CD30::huhuhu",
+                      "ipv6", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "bbb6 ::ffff:200.200.200.200huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "bbb6 2001:0DB8:0:CD30::huhuhu",
+                      "ipv6", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "bbb6 ::ffff:200.200.200.200 :huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "bbb6 ::ffff:200.200.200.200: huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "bbb6 ::ffff:200.200.200.200. :huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "bbb6 ::ffff:200.200.200.200.:huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "bbb6 ::ffff:200.200.200.200.2:huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "bbb6 ::0: huhuhu",
+                      "ipv6", "::0", NULL);
+
+  test_search_matches(root, "bbb6 0:0:0:0:0:0:0:0: huhuhu",
+                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
+
+  test_search_matches(root, "bbb6 ::129.144.52.38: huhuhu",
+                      "ipv6", "::129.144.52.38", NULL);
+
+  test_search_matches(root, "bbb6 ::ffff:129.144.52.38: huhuhu",
+                      "ipv6", "::ffff:129.144.52.38", NULL);
 
   test_search_matches(root, "bbb ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
                       "ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
