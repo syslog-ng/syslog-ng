@@ -428,14 +428,17 @@ r_parser_ipv6(guint8 *str, gint *len, const gchar *param, gpointer state, RParse
     {
       if (str[*len] == ':')
         {
-          if (G_UNLIKELY(octet > 0xffff || (octet == -1 && shortened) || digit == 10))
+          if (G_UNLIKELY(octet > 0xffff || (octet == -1 && shortened)))
+            return FALSE;
+
+          if (G_UNLIKELY(colons == 7 || dots == 3))
+            break;
+
+          if (G_UNLIKELY(digit == 10))
             return FALSE;
 
           if (octet == -1)
             shortened = TRUE;
-
-          if (G_UNLIKELY(colons == 7))
-            break;
 
           colons++;
           octet = -1;
