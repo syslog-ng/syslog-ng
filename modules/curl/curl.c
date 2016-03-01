@@ -64,10 +64,6 @@ _thread_init(LogThrDestDriver *s)
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
   g_snprintf(self->user_agent, sizeof(self->user_agent),
              "syslog-ng %s/libcurl %s", SYSLOG_NG_VERSION, curl_info->version);
-
-  if (!self->url) {
-    self->url = g_strdup(CURL_DEFAULT_URL);
-  }
 }
 
 static void
@@ -251,6 +247,10 @@ curl_dd_init(LogPipe *s)
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
+
+  if (!self->url) {
+    self->url = g_strdup(CURL_DEFAULT_URL);
+  }
 
   return log_threaded_dest_driver_start(s);
 }
