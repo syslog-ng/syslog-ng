@@ -27,6 +27,7 @@
 #include "timeutils.h"
 #include "tls-support.h"
 
+#include<pthread.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -36,9 +37,12 @@
 #include <errno.h>
 #include <string.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
 
 typedef struct _DNSCacheEntry DNSCacheEntry;
 typedef struct _DNSCacheKey DNSCacheKey;
+typedef struct _DNSCache DNSCache;
 
 struct _DNSCacheKey
 {
@@ -63,6 +67,24 @@ struct _DNSCacheEntry
   gboolean positive;
 };
 
+/* 
+    DNS caching is done on a per thread basis
+    DNSCache structure allows a given cache to persists between thread creation/termination
+    When a new thread starts, if there is a DNSCache available, it takes it
+*/
+struct _DNSCache
+{
+  DNSCache *prev_, *next_;
+  GHashTable *cache_;
+  DNSCacheEntry cache_first_;
+  DNSCacheEntry cache_last_;
+  DNSCacheEntry persist_first_;
+  DNSCacheEntry persist_last_;
+  time_t cache_hosts_mtime_;
+  time_t cache_hosts_checktime_;
+};
+
+DNSCache *available_caches = NULL;
 
 TLS_BLOCK_START
 {
@@ -89,6 +111,15 @@ static gint dns_cache_expire = 3600;
 static gint dns_cache_expire_failed = 60;
 static gint dns_cache_persistent_count = 0;
 static gchar *dns_cache_hosts = NULL;
+pthread_mutex_t lock;
+
+long 
+gettid(void)
+{
+  pid_t tid;
+  tid = syscall(SYS_gettid);
+  return (long) tid;
+}
 
 static gboolean
 dns_cache_key_equal(DNSCacheKey *e1, DNSCacheKey *e2)
@@ -279,6 +310,10 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostnam
            (!entry->positive && entry->resolved < now - dns_cache_expire_failed)))
         {
           /* the entry is not persistent and is too old */
+          msg_debug("Entry is too old",
+                    evt_tag_str("hostname", entry->hostname),
+                    evt_tag_long("TID", gettid()),
+                    NULL);
         }
       else
         {
@@ -309,11 +344,20 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
     {
       entry->resolved = cached_g_current_time_sec();
       dns_cache_entry_insert_before(&cache_last, entry);
+      msg_debug("Persistent entry cached",
+                evt_tag_str("hostname", hostname),
+                evt_tag_long("TID", gettid()),
+                NULL);
+
     }
   else
     {
       entry->resolved = 0;
       dns_cache_entry_insert_before(&persist_last, entry);
+      msg_debug("Non persistent entry cached",
+                evt_tag_str("hostname", hostname),
+                evt_tag_long("TID", gettid()),
+                NULL);
     }
   hash_size = g_hash_table_size(cache);
   g_hash_table_replace(cache, &entry->key, entry);
@@ -325,6 +369,10 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   if ((gint) (g_hash_table_size(cache) - dns_cache_persistent_count) > dns_cache_size)
     {
       /* remove oldest element */
+      msg_debug("DNS Cache full, removing one entry",
+                evt_tag_str("hostname", cache_first.next->hostname),
+                evt_tag_long("TID", gettid()),
+                NULL);
       g_hash_table_remove(cache, &cache_first.next->key);
     }
 }
@@ -357,26 +405,67 @@ void
 dns_cache_thread_init(void)
 {
   g_assert(cache == NULL);
-  cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
-  cache_first.next = &cache_last;
-  cache_first.prev = NULL;
-  cache_last.prev = &cache_first;
-  cache_last.next = NULL;
-  cache_hosts_mtime = -1;
-  cache_hosts_checktime = 0;
-
-  persist_first.next = &persist_last;
-  persist_first.prev = NULL;
-  persist_last.prev = &persist_first;
-  persist_last.next = NULL;
+  if(available_caches == NULL)
+    {
+      msg_debug("No DNSCache is available, creating a new one for this thread", 
+                evt_tag_long("TID", gettid()),
+                NULL);
+      cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
+      cache_first.next = &cache_last;
+      cache_first.prev = NULL;
+      cache_last.prev = &cache_first;
+      cache_last.next = NULL;
+      cache_hosts_mtime = -1;
+      cache_hosts_checktime = 0;
+      persist_first.next = &persist_last;
+      persist_first.prev = NULL;
+      persist_last.prev = &persist_first;
+      persist_last.next = NULL;
+      
+    }
+  else
+    {
+      msg_debug("An old DNSCache is available, taking it for this new thread", 
+                evt_tag_long("TID", gettid()),
+                NULL);
+      pthread_mutex_lock(&lock);
+      cache = available_caches->cache_;
+      cache_first = available_caches->cache_first_;
+      cache_last = available_caches->cache_last_;
+      persist_first = available_caches->persist_first_;
+      persist_last = available_caches->persist_last_;
+      cache_hosts_mtime = available_caches->cache_hosts_mtime_;
+      cache_hosts_checktime = available_caches->cache_hosts_checktime_;
+      available_caches = available_caches->next_;
+      pthread_mutex_unlock(&lock);
+    }
 }
+
+
 
 void
 dns_cache_thread_deinit(void)
 {
-  g_assert(cache != NULL);
-  g_hash_table_destroy(cache);
-  cache = NULL;
+    DNSCache * dnscache;
+    pthread_mutex_lock(&lock);
+    dnscache = g_new(DNSCache, 1);
+    dnscache->prev_ = NULL;
+    dnscache->next_ = NULL;
+    dnscache->cache_ = cache;
+    dnscache->cache_first_ = cache_first;
+    dnscache->cache_last_ = cache_last;
+    dnscache->persist_first_ = persist_first;
+    dnscache->persist_last_ = persist_last;
+    dnscache->cache_hosts_mtime_ = cache_hosts_mtime;
+    dnscache->cache_hosts_checktime_ = cache_hosts_checktime;
+    if(available_caches != NULL)
+      {
+        available_caches->prev_ = dnscache;
+        dnscache->next_ = available_caches;
+      }
+    available_caches = dnscache;
+    pthread_mutex_unlock(&lock);
+    cache = NULL;
 }
 
 void
