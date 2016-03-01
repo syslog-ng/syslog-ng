@@ -168,7 +168,7 @@ AC_ARG_ENABLE(mongodb,
               ,,enable_mongodb="auto")
 
 AC_ARG_WITH(mongoc,
-              [  --with-mongoc=[system/internal/auto]
+              [  --with-mongoc=[system/internal/auto/no]
                                          Link against the system supplied or the built-in mongo-c-driver library. (default: auto)]
               ,,with_mongoc="auto")
 
@@ -1218,7 +1218,7 @@ fi
 
 if test "x$enable_mongodb" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable mongodb destination support)
-	if test "x$with_mongo_client" != "no"; then
+	if test "x$with_mongoc" != "no"; then
 		enable_mongodb="yes"
 	else
 		enable_mongodb="no"
