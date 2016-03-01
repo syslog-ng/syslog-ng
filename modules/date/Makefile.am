@@ -15,6 +15,9 @@ modules_date_libdate_la_SOURCES	 = \
 	modules/date/strptime-tz.c	           \
 	modules/date/strptime-tz.h
 
+modules_date_libdate_la_LIBADD = \
+	$(MODULE_DEPS_LIBS)
+
 modules_date_libdate_la_LDFLAGS	 = \
 	$(MODULE_LDFLAGS)
 modules_date_libdate_la_DEPENDENCIES	=  \

@@ -19,6 +19,9 @@ modules_kvformat_libkvformat_la_CPPFLAGS	=	\
 	-I$(top_srcdir)/modules/kvformat			\
 	-I$(top_builddir)/modules/kvformat
 
+modules_kvformat_libkvformat_la_LIBADD = \
+	$(MODULE_DEPS_LIBS)
+
 modules_kvformat_libkvformat_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_kvformat_libkvformat_la_DEPENDENCIES	=	\
