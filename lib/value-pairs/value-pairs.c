@@ -611,10 +611,12 @@ vp_walker_skip_sdata_enterprise_id(const gchar *name, gint pos)
 static GPtrArray *
 vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 {
-  gint pos, token_start = 0, name_len = strlen(name);
+  gint pos = 0;
+  gint token_start = 0;
+  size_t name_len = strlen(name);
+
   GPtrArray *array = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
 
-  pos = 0;
   do
     {
       pos += strcspn(&name[pos], "@.");
