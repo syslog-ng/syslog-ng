@@ -368,270 +368,310 @@ test_parsers(void)
 }
 
 void
-test_matches(void)
+test_ip_matches(void)
 {
   RNode *root = r_new_node("", NULL);
+  insert_node(root, "@IPvANY:ip@");
 
-  insert_node(root, "aaa @NUMBER:number@");
-  insert_node(root, "bbb @IPvANY:ip@");
-  insert_node(root, "bbb4 @IPv4:ipv4@");
-  insert_node(root, "bbb6 @IPv6:ipv6@");
-  insert_node(root, "ccc @QSTRING:qstring:'@");
-  insert_node(root, "ddd @ESTRING:estring::@");
-  insert_node(root, "dddd @ESTRING:estring::*@");
-  insert_node(root, "dddd2 @ESTRING:estring::*@ d");
-  insert_node(root, "eee @STRING:string@");
-  insert_node(root, "fff @FLOAT:float@");
-  insert_node(root, "zzz @ESTRING:test:gép@");
-  insert_node(root, "ggg @SET:set: 	@");
-  insert_node(root, "iii @MACADDR:macaddr@");
-  insert_node(root, "hhh @EMAIL:email:[<]>@");
-  insert_node(root, "kkk @HOSTNAME:hostname@");
-  insert_node(root, "lll @LLADDR:lladdr6:6@");
-
-  insert_node(root, "jjj @PCRE:regexp:[abc]+@");
-  insert_node(root, "jjjj @PCRE:regexp:[abc]+@d foobar");
-
-  insert_node(root, "mmm @NLSTRING:nlstring@\n");
-
-  test_search_matches(root, "aaa 12345 hihihi",
-                      "number", "12345",
-                      NULL);
-
-  test_search_matches(root, "bbb 192.168.1.1 huhuhu",
+  test_search_matches(root, "192.168.1.1 huhuhu",
                       "ip", "192.168.1.1",
                       NULL);
 
-  test_search_matches(root, "aaa 12345 hihihi",
+  test_search_matches(root, "192.168.1.1 huhuhu",
+                      "ip", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1.1. huhuhu",
+                      "ip", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1huhuhu", NULL);
+  test_search_matches(root, "192.168.1.huhuhu", NULL);
+  test_search_matches(root, "192.168.1 huhuhu", NULL);
+  test_search_matches(root, "192.168.1. huhuhu", NULL);
+  test_search_matches(root, "192.168.1.1huhuhu",
+                      "ip", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
+                      "ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
+
+  test_search_matches(root, "abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
+                      "ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
+
+  test_search_matches(root, ":: huhuhu",
+                      "ip", "::", NULL);
+
+  test_search_matches(root, "0:0:0:0:0:0:13.1.68.3 huhuhu",
+                      "ip", "0:0:0:0:0:0:13.1.68.3", NULL);
+
+  test_search_matches(root, "::202.1.68.3 huhuhu",
+                      "ip", "::202.1.68.3", NULL);
+
+  test_search_matches(root, "2001:0DB8:0:CD30:: huhuhu",
+                      "ip", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
+                      "ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
+
+  test_search_matches(root, "abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
+                      "ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
+
+  test_search_matches(root, "::.huhuhu",
+                      "ip", "::", NULL);
+
+  test_search_matches(root, "0:0:0:0:0:0:13.1.68.3.huhuhu",
+                      "ip", "0:0:0:0:0:0:13.1.68.3", NULL);
+
+  test_search_matches(root, "::202.1.68.3.huhuhu",
+                      "ip", "::202.1.68.3", NULL);
+
+  test_search_matches(root, "2001:0DB8:0:CD30::.huhuhu",
+                      "ip", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "1:2:3:4:5:6:7:8.huhuhu",
+                      "ip", "1:2:3:4:5:6:7:8", NULL);
+
+  test_search_matches(root, "1:2:3:4:5:6:7:8 huhuhu",
+                      "ip", "1:2:3:4:5:6:7:8", NULL);
+
+  test_search_matches(root, "1:2:3:4:5:6:7:8:huhuhu",
+                      "ip", "1:2:3:4:5:6:7:8", NULL);
+
+  test_search_matches(root, "1:2:3:4:5:6:7 huhu", NULL);
+  test_search_matches(root, "1:2:3:4:5:6:7.huhu", NULL);
+  test_search_matches(root, "1:2:3:4:5:6:7:huhu", NULL);
+  test_search_matches(root, "1:2:3:4:5:6:77777:8 huhu", NULL);
+  test_search_matches(root, "1:2:3:4:5:6:1.2.333.4 huhu", NULL);
+
+  test_search_matches(root, "v12345", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_ipv4_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@IPv4:ipv4@");
+
+  test_search_matches(root, "192.168.1.1 huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1.1. huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1.1.huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1.1.. huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1.1.2 huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1.1..huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1.1huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "192.168.1huhuhu", NULL);
+  test_search_matches(root, "192.168.1.huhuhu", NULL);
+  test_search_matches(root, "192.168.1 huhuhu", NULL);
+  test_search_matches(root, "192.168.1. huhuhu", NULL);
+
+  test_search_matches(root, "v12345", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_ipv6_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@IPv6:ipv6@");
+
+  test_search_matches(root, "1:2:3:4:5:6:7 huhu", NULL);
+  test_search_matches(root, "1:2:3:4:5:6:7.huhu", NULL);
+  test_search_matches(root, "1:2:3:4:5:6:7:huhu", NULL);
+
+  test_search_matches(root, "v12345", NULL);
+
+  test_search_matches(root, "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
+                      "ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
+
+  test_search_matches(root, "abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
+                      "ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
+
+  test_search_matches(root, "0:0:0:0:0:0:0:0 huhuhu",
+                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
+
+  test_search_matches(root, "2001:DB8::8:800:200C:417A huhuhu",
+                      "ipv6", "2001:DB8::8:800:200C:417A", NULL);
+
+  test_search_matches(root, "FF01::101 huhuhu",
+                      "ipv6", "FF01::101", NULL);
+
+  test_search_matches(root, "::1 huhuhu",
+                      "ipv6", "::1", NULL);
+
+  test_search_matches(root, ":: huhuhu",
+                      "ipv6", "::", NULL);
+
+  test_search_matches(root, "0:0:0:0:0:0:13.1.68.3 huhuhu",
+                      "ipv6", "0:0:0:0:0:0:13.1.68.3", NULL);
+
+  test_search_matches(root, "::202.1.68.3 huhuhu",
+                      "ipv6", "::202.1.68.3", NULL);
+
+  test_search_matches(root, "2001:0DB8:0:CD30:: huhuhu",
+                      "ipv6", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "2001:0DB8:0:CD30::huhuhu",
+                      "ipv6", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "::ffff:200.200.200.200huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "2001:0DB8:0:CD30::huhuhu",
+                      "ipv6", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "::ffff:200.200.200.200 :huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "::ffff:200.200.200.200: huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "::ffff:200.200.200.200. :huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "::ffff:200.200.200.200.:huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "::ffff:200.200.200.200.2:huhuhu",
+                      "ipv6", "::ffff:200.200.200.200", NULL);
+
+  test_search_matches(root, "::0: huhuhu",
+                      "ipv6", "::0", NULL);
+
+  test_search_matches(root, "0:0:0:0:0:0:0:0: huhuhu",
+                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
+
+  test_search_matches(root, "::129.144.52.38: huhuhu",
+                      "ipv6", "::129.144.52.38", NULL);
+
+  test_search_matches(root, "::ffff:129.144.52.38: huhuhu",
+                      "ipv6", "::ffff:129.144.52.38", NULL);
+
+  test_search_matches(root, "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
+                      "ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
+
+  test_search_matches(root, "abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
+                      "ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
+
+  test_search_matches(root, "0:0:0:0:0:0:0:0.huhuhu",
+                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
+
+  test_search_matches(root, "2001:DB8::8:800:200C:417A.huhuhu",
+                      "ipv6", "2001:DB8::8:800:200C:417A", NULL);
+
+  test_search_matches(root, "FF01::101.huhuhu",
+                      "ipv6", "FF01::101", NULL);
+
+  test_search_matches(root, "::1.huhuhu",
+                      "ipv6", "::1", NULL);
+
+  test_search_matches(root, "::.huhuhu",
+                      "ipv6", "::", NULL);
+
+  test_search_matches(root, "0:0:0:0:0:0:13.1.68.3.huhuhu",
+                      "ipv6", "0:0:0:0:0:0:13.1.68.3", NULL);
+
+  test_search_matches(root, "::202.1.68.3.huhuhu",
+                      "ipv6", "::202.1.68.3", NULL);
+
+  test_search_matches(root, "2001:0DB8:0:CD30::.huhuhu",
+                      "ipv6", "2001:0DB8:0:CD30::", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_number_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@NUMBER:number@");
+
+  test_search_matches(root, "12345 hihihi",
                       "number", "12345",
                       NULL);
 
-  test_search_matches(root, "aaa 0xaf12345 hihihi",
+  test_search_matches(root, "12345 hihihi",
+                      "number", "12345",
+                      NULL);
+
+  test_search_matches(root, "0xaf12345 hihihi",
                       "number", "0xaf12345",
                       NULL);
 
-  test_search_matches(root, "aaa 0xAF12345 hihihi",
+  test_search_matches(root, "0xAF12345 hihihi",
                       "number", "0xAF12345",
                       NULL);
 
-  test_search_matches(root, "aaa 0x12345 hihihi",
+  test_search_matches(root, "0x12345 hihihi",
                       "number", "0x12345",
                       NULL);
 
-  test_search_matches(root, "aaa 0XABCDEF12345ABCDEF hihihi",
+  test_search_matches(root, "0XABCDEF12345ABCDEF hihihi",
                       "number", "0XABCDEF12345ABCDEF",
                       NULL);
 
-  test_search_matches(root, "aaa -12345 hihihi",
+  test_search_matches(root, "-12345 hihihi",
                       "number", "-12345",
                       NULL);
 
-  test_search_matches(root, "bbb 192.168.1.1 huhuhu",
-                      "ip", "192.168.1.1",
-                      NULL);
+  test_search_matches(root, "v12345", NULL);
 
-  test_search_matches(root, "bbb 192.168.1.1. huhuhu",
-                      "ip", "192.168.1.1",
-                      NULL);
+  r_free_node(root, NULL);
+}
 
-  test_search_matches(root, "bbb4 192.168.1.1 huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
+void
+test_qstring_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@QSTRING:qstring:'@");
 
-  test_search_matches(root, "bbb4 192.168.1.1. huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "bbb4 192.168.1.1.huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "bbb4 192.168.1.1.. huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "bbb4 192.168.1.1.2 huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "bbb4 192.168.1.1..huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "bbb 192.168.1.1huhuhu",
-                      "ip", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "bbb4 192.168.1.1huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "bbb4 192.168.1huhuhu", NULL);
-  test_search_matches(root, "bbb4 192.168.1.huhuhu", NULL);
-  test_search_matches(root, "bbb4 192.168.1 huhuhu", NULL);
-  test_search_matches(root, "bbb4 192.168.1. huhuhu", NULL);
-  test_search_matches(root, "bbb 192.168.1huhuhu", NULL);
-  test_search_matches(root, "bbb 192.168.1.huhuhu", NULL);
-  test_search_matches(root, "bbb 192.168.1 huhuhu", NULL);
-  test_search_matches(root, "bbb 192.168.1. huhuhu", NULL);
-
-  test_search_matches(root, "bbb6 ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
-                      "ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
-
-  test_search_matches(root, "bbb6 abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
-                      "ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
-
-  test_search_matches(root, "bbb6 0:0:0:0:0:0:0:0 huhuhu",
-                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
-
-  test_search_matches(root, "bbb6 2001:DB8::8:800:200C:417A huhuhu",
-                      "ipv6", "2001:DB8::8:800:200C:417A", NULL);
-
-  test_search_matches(root, "bbb6 FF01::101 huhuhu",
-                      "ipv6", "FF01::101", NULL);
-
-  test_search_matches(root, "bbb6 ::1 huhuhu",
-                      "ipv6", "::1", NULL);
-
-  test_search_matches(root, "bbb6 :: huhuhu",
-                      "ipv6", "::", NULL);
-
-  test_search_matches(root, "bbb6 0:0:0:0:0:0:13.1.68.3 huhuhu",
-                      "ipv6", "0:0:0:0:0:0:13.1.68.3", NULL);
-
-  test_search_matches(root, "bbb6 ::202.1.68.3 huhuhu",
-                      "ipv6", "::202.1.68.3", NULL);
-
-  test_search_matches(root, "bbb6 2001:0DB8:0:CD30:: huhuhu",
-                      "ipv6", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "bbb6 2001:0DB8:0:CD30::huhuhu",
-                      "ipv6", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "bbb6 ::ffff:200.200.200.200huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "bbb6 2001:0DB8:0:CD30::huhuhu",
-                      "ipv6", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "bbb6 ::ffff:200.200.200.200 :huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "bbb6 ::ffff:200.200.200.200: huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "bbb6 ::ffff:200.200.200.200. :huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "bbb6 ::ffff:200.200.200.200.:huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "bbb6 ::ffff:200.200.200.200.2:huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "bbb6 ::0: huhuhu",
-                      "ipv6", "::0", NULL);
-
-  test_search_matches(root, "bbb6 0:0:0:0:0:0:0:0: huhuhu",
-                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
-
-  test_search_matches(root, "bbb6 ::129.144.52.38: huhuhu",
-                      "ipv6", "::129.144.52.38", NULL);
-
-  test_search_matches(root, "bbb6 ::ffff:129.144.52.38: huhuhu",
-                      "ipv6", "::ffff:129.144.52.38", NULL);
-
-  test_search_matches(root, "bbb ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
-                      "ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
-
-  test_search_matches(root, "bbb abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
-                      "ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
-
-  test_search_matches(root, "bbb :: huhuhu",
-                      "ip", "::", NULL);
-
-  test_search_matches(root, "bbb 0:0:0:0:0:0:13.1.68.3 huhuhu",
-                      "ip", "0:0:0:0:0:0:13.1.68.3", NULL);
-
-  test_search_matches(root, "bbb ::202.1.68.3 huhuhu",
-                      "ip", "::202.1.68.3", NULL);
-
-  test_search_matches(root, "bbb 2001:0DB8:0:CD30:: huhuhu",
-                      "ip", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "bbb6 ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
-                      "ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
-
-  test_search_matches(root, "bbb6 abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
-                      "ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
-
-  test_search_matches(root, "bbb6 0:0:0:0:0:0:0:0.huhuhu",
-                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
-
-  test_search_matches(root, "bbb6 2001:DB8::8:800:200C:417A.huhuhu",
-                      "ipv6", "2001:DB8::8:800:200C:417A", NULL);
-
-  test_search_matches(root, "bbb6 FF01::101.huhuhu",
-                      "ipv6", "FF01::101", NULL);
-
-  test_search_matches(root, "bbb6 ::1.huhuhu",
-                      "ipv6", "::1", NULL);
-
-  test_search_matches(root, "bbb6 ::.huhuhu",
-                      "ipv6", "::", NULL);
-
-  test_search_matches(root, "bbb6 0:0:0:0:0:0:13.1.68.3.huhuhu",
-                      "ipv6", "0:0:0:0:0:0:13.1.68.3", NULL);
-
-  test_search_matches(root, "bbb6 ::202.1.68.3.huhuhu",
-                      "ipv6", "::202.1.68.3", NULL);
-
-  test_search_matches(root, "bbb6 2001:0DB8:0:CD30::.huhuhu",
-                      "ipv6", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "bbb ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
-                      "ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
-
-  test_search_matches(root, "bbb abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
-                      "ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
-
-  test_search_matches(root, "bbb ::.huhuhu",
-                      "ip", "::", NULL);
-
-  test_search_matches(root, "bbb 0:0:0:0:0:0:13.1.68.3.huhuhu",
-                      "ip", "0:0:0:0:0:0:13.1.68.3", NULL);
-
-  test_search_matches(root, "bbb ::202.1.68.3.huhuhu",
-                      "ip", "::202.1.68.3", NULL);
-
-  test_search_matches(root, "bbb 2001:0DB8:0:CD30::.huhuhu",
-                      "ip", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "bbb 1:2:3:4:5:6:7:8.huhuhu",
-                      "ip", "1:2:3:4:5:6:7:8", NULL);
-
-  test_search_matches(root, "bbb 1:2:3:4:5:6:7:8 huhuhu",
-                      "ip", "1:2:3:4:5:6:7:8", NULL);
-
-  test_search_matches(root, "bbb 1:2:3:4:5:6:7:8:huhuhu",
-                      "ip", "1:2:3:4:5:6:7:8", NULL);
-
-  test_search_matches(root, "bbb 1:2:3:4:5:6:7 huhu", NULL);
-  test_search_matches(root, "bbb 1:2:3:4:5:6:7.huhu", NULL);
-  test_search_matches(root, "bbb 1:2:3:4:5:6:7:huhu", NULL);
-  test_search_matches(root, "bbb6 1:2:3:4:5:6:7 huhu", NULL);
-  test_search_matches(root, "bbb6 1:2:3:4:5:6:7.huhu", NULL);
-  test_search_matches(root, "bbb6 1:2:3:4:5:6:7:huhu", NULL);
-  test_search_matches(root, "bbb 1:2:3:4:5:6:77777:8 huhu", NULL);
-  test_search_matches(root, "bbb 1:2:3:4:5:6:1.2.333.4 huhu", NULL);
-
-  test_search_matches(root, "ccc 'quoted string' hehehe",
+  test_search_matches(root, "'quoted string' hehehe",
                       "qstring", "quoted string",
                       NULL);
+
+  test_search_matches(root, "v12345", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_estring_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "ddd @ESTRING:estring::@");
+  insert_node(root, "dddd @ESTRING:estring::*@");
+  insert_node(root, "dddd2 @ESTRING:estring::*@ d");
+  insert_node(root, "zzz @ESTRING:test:gép@");
 
   test_search_matches(root, "ddd estring: hehehe",
                       "estring", "estring",
                       NULL);
+
+  test_search_matches(root, "ddd v12345", NULL);
 
   test_search_matches(root, "dddd estring:* hehehe",
                       "estring", "estring",
@@ -654,87 +694,167 @@ test_matches(void)
   test_search_matches(root, "dddd2 estring:estring:*", NULL);
   test_search_matches(root, "dddd2 estring:estring", NULL);
 
-  test_search_matches(root, "eee string hehehe",
+  test_search_matches(root, "dddd v12345", NULL);
+
+  test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_string_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@STRING:string@");
+
+  test_search_matches(root, "string hehehe",
                       "string", "string",
                       NULL);
 
-  test_search_matches(root, "fff 12345 hihihi",
+  r_free_node(root, NULL);
+}
+
+void
+test_float_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@FLOAT:float@");
+
+  test_search_matches(root, "12345 hihihi",
                       "float", "12345", NULL);
 
-  test_search_matches(root, "fff 12345hihihi",
+  test_search_matches(root, "12345hihihi",
                       "float", "12345", NULL);
 
-  test_search_matches(root, "fff 12.345hihihi",
+  test_search_matches(root, "12.345hihihi",
                       "float", "12.345", NULL);
 
-  test_search_matches(root, "fff 12.345.hihihi",
+  test_search_matches(root, "12.345.hihihi",
                       "float", "12.345", NULL);
 
-  test_search_matches(root, "fff 12.345.6hihihi",
+  test_search_matches(root, "12.345.6hihihi",
                       "float", "12.345", NULL);
 
-  test_search_matches(root, "fff 12345.hihihi",
+  test_search_matches(root, "12345.hihihi",
                       "float", "12345.", NULL);
 
-  test_search_matches(root, "fff -12.345 hihihi",
+  test_search_matches(root, "-12.345 hihihi",
                       "float", "-12.345", NULL);
 
-  test_search_matches(root, "fff -12.345e12 hihihi",
+  test_search_matches(root, "-12.345e12 hihihi",
                       "float", "-12.345e12", NULL);
 
-  test_search_matches(root, "fff -12.345e-12 hihihi",
+  test_search_matches(root, "-12.345e-12 hihihi",
                       "float", "-12.345e-12", NULL);
 
-  test_search_matches(root, "fff 12.345e12 hihihi",
+  test_search_matches(root, "12.345e12 hihihi",
                       "float", "12.345e12", NULL);
 
-  test_search_matches(root, "fff 12.345e-12 hihihi",
+  test_search_matches(root, "12.345e-12 hihihi",
                       "float", "12.345e-12", NULL);
 
-  test_search_matches(root, "fff -12.345E12 hihihi",
+  test_search_matches(root, "-12.345E12 hihihi",
                       "float", "-12.345E12", NULL);
 
-  test_search_matches(root, "fff -12.345E-12 hihihi",
+  test_search_matches(root, "-12.345E-12 hihihi",
                       "float", "-12.345E-12", NULL);
 
-  test_search_matches(root, "fff 12.345E12 hihihi",
+  test_search_matches(root, "12.345E12 hihihi",
                       "float", "12.345E12", NULL);
 
-  test_search_matches(root, "fff 12.345E-12 hihihi",
+  test_search_matches(root, "12.345E-12 hihihi",
                       "float", "12.345E-12", NULL);
 
-  test_search_matches(root, "aaa v12345", NULL);
-  test_search_matches(root, "bbb v12345", NULL);
-  test_search_matches(root, "bbb4 v12345", NULL);
-  test_search_matches(root, "bbb6 v12345", NULL);
-  test_search_matches(root, "ccc v12345", NULL);
-  test_search_matches(root, "ddd v12345", NULL);
-  test_search_matches(root, "dddd v12345", NULL);
-  test_search_matches(root, "fff v12345", NULL);
-  test_search_matches(root, "fff 12345.hihihi","float", "12345.", NULL);
-  test_search_matches(root, "ggg  aaa", "set", " ", NULL);
-  test_search_matches(root, "ggg   aaa", "set", "  ", NULL);
-  test_search_matches(root, "ggg 	aaa", "set", "	", NULL);
-  test_search_matches(root, "iii 82:63:25:93:eb:51.iii", "macaddr", "82:63:25:93:eb:51", NULL);
-  test_search_matches(root, "iii 82:63:25:93:EB:51.iii", "macaddr", "82:63:25:93:EB:51", NULL);
+  test_search_matches(root, "v12345", NULL);
+  test_search_matches(root, "12345.hihihi","float", "12345.", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_set_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@SET:set:  @");
+
+  test_search_matches(root, " aaa", "set", " ", NULL);
+  test_search_matches(root, "  aaa", "set", "  ", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_macaddr_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@MACADDR:macaddr@");
+
+  test_search_matches(root, "82:63:25:93:eb:51.iii", "macaddr", "82:63:25:93:eb:51", NULL);
+  test_search_matches(root, "82:63:25:93:EB:51.iii", "macaddr", "82:63:25:93:EB:51", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_email_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@EMAIL:email:[<]>@");
+
+  test_search_matches(root, "blint@balabit.hu","email", "blint@balabit.hu", NULL);
+  test_search_matches(root, "<blint@balabit.hu>","email", "blint@balabit.hu", NULL);
+  test_search_matches(root, "[blint@balabit.hu]","email", "blint@balabit.hu", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_hostname_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@HOSTNAME:hostname@");
+
+  test_search_matches(root, "www.example.org", "hostname", "www.example.org", NULL);
+  test_search_matches(root, "www.example.org. kkk", "hostname", "www.example.org.", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_lladdr_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@LLADDR:lladdr6:6@");
+
+  test_search_matches(root, "83:63:25:93:eb:51:aa:bb.iii", "lladdr6", "83:63:25:93:eb:51", NULL);
+  test_search_matches(root, "83:63:25:93:EB:51:aa:bb.iii", "lladdr6", "83:63:25:93:EB:51", NULL);
+
+  r_free_node(root, NULL);
+}
+
+void
+test_pcre_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "jjj @PCRE:regexp:[abc]+@");
+  insert_node(root, "jjjj @PCRE:regexp:[abc]+@d foobar");
+
   test_search_matches(root, "jjj abcabcd", "regexp", "abcabc", NULL);
   test_search_matches(root, "jjjj abcabcd foobar", "regexp", "abcabc", NULL);
-  test_search_matches(root, "hhh blint@balabit.hu","email", "blint@balabit.hu", NULL);
-  test_search_matches(root, "hhh <blint@balabit.hu>","email", "blint@balabit.hu", NULL);
-  test_search_matches(root, "hhh [blint@balabit.hu]","email", "blint@balabit.hu", NULL);
 
-  test_search_matches(root, "kkk www.example.org", "hostname", "www.example.org", NULL);
-  test_search_matches(root, "kkk www.example.org. kkk", "hostname", "www.example.org.", NULL);
+  r_free_node(root, NULL);
+}
 
-  test_search_matches(root, "lll 83:63:25:93:eb:51:aa:bb.iii", "lladdr6", "83:63:25:93:eb:51", NULL);
-  test_search_matches(root, "lll 83:63:25:93:EB:51:aa:bb.iii", "lladdr6", "83:63:25:93:EB:51", NULL);
+void
+test_nlstring_matches(void)
+{
+  RNode *root = r_new_node("", NULL);
+  insert_node(root, "@NLSTRING:nlstring@\n");
 
-  test_search_matches(root, "mmm foobar\r\nbaz", "nlstring", "foobar", NULL);
-  test_search_matches(root, "mmm foobar\nbaz", "nlstring", "foobar", NULL);
-  test_search_matches(root, "mmm \nbaz", "nlstring", "", NULL);
-  test_search_matches(root, "mmm \r\nbaz", "nlstring", "", NULL);
-
-  test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
+  test_search_matches(root, "foobar\r\nbaz", "nlstring", "foobar", NULL);
+  test_search_matches(root, "foobar\nbaz", "nlstring", "foobar", NULL);
+  test_search_matches(root, "\nbaz", "nlstring", "", NULL);
+  test_search_matches(root, "\r\nbaz", "nlstring", "", NULL);
 
   r_free_node(root, NULL);
 }
@@ -771,7 +891,23 @@ main(int argc, char *argv[])
 
   test_literals();
   test_parsers();
-  test_matches();
+
+  test_ip_matches();
+  test_ipv4_matches();
+  test_ipv6_matches();
+  test_number_matches();
+  test_qstring_matches();
+  test_estring_matches();
+  test_string_matches();
+  test_float_matches();
+  test_set_matches();
+  test_macaddr_matches();
+  test_email_matches();
+  test_hostname_matches();
+  test_lladdr_matches();
+  test_pcre_matches();
+  test_nlstring_matches();
+
   test_zorp_logs();
 
   app_shutdown();
