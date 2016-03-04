@@ -592,8 +592,8 @@ vp_walker_stack_unwind_all_containers(vp_walk_state_t *state)
   vp_walker_stack_unwind_containers_until(state, NULL);
 }
 
-static gint
-vp_walker_skip_sdata_enterprise_id(const gchar *name, gint pos)
+static const gchar *
+vp_walker_skip_sdata_enterprise_id(const gchar *name)
 {
   /* parse .SDATA.foo@1234.56.678 format, starting with the '@'
      character. Assume that any numbers + dots form part of the
@@ -601,36 +601,41 @@ vp_walker_skip_sdata_enterprise_id(const gchar *name, gint pos)
   do
     {
       /* skip @ or . */
-      pos++;
-      pos += strspn(&name[pos], "0123456789");
+      ++name;
+      name += strspn(name, "0123456789");
     }
-  while (name[pos] == '.' && isdigit(name[pos + 1]));
-  return pos;
+  while (*name == '.' && isdigit(*(name + 1)));
+  return name;
 }
 
 static GPtrArray *
 vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 {
-  gint pos = 0;
-  gint token_start = 0;
-  size_t name_len = strlen(name);
+  const gchar *token_start = name;
+  const gchar *token_end = name;
 
   GPtrArray *array = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
 
-  do
+  while (*token_end)
     {
-      pos += strcspn(&name[pos], "@.");
-      if (name[pos] == '@')
-        pos = vp_walker_skip_sdata_enterprise_id(name, pos);
-
-      if (name[pos] == '.' || pos == name_len)
+      switch (*token_end)
         {
-          g_ptr_array_add(array, g_strndup(&name[token_start], pos - token_start));
-          pos++;
-          token_start = pos;
+        case '@':
+          token_end = vp_walker_skip_sdata_enterprise_id(token_end);
+          break;
+        case '.':
+          g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
+          ++token_end;
+          token_start = token_end;
+          break;
+        default:
+          ++token_end;
+          token_end += strcspn(token_end, "@.");
         }
     }
-  while (pos < name_len);
+
+  if (token_start != token_end)
+    g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
 
   if (array->len == 0)
     {
