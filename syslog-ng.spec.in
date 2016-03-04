@@ -1,10 +1,10 @@
 Summary: Next generation system logging daemon
-Name: @PACKAGE@
-Version: @VERSION@
+Name: @PACKAGE_NAME@
+Version: @PACKAGE_VERSION@
 Release: 1
 License: GPL
 Group: System Environment/Daemons
-Source: @PACKAGE@_%{version}.tar.gz
+Source: @PACKAGE_NAME@_%{version}.tar.gz
 URL: http://www.balabit.com
 Packager: Tamas Pal <folti@balabit.com>
 Vendor: BalaBit IT Ltd.
@@ -53,7 +53,7 @@ Provides: syslog
 
 
 %prep
-%setup -q -n @PACKAGE@-%{version}
+%setup -q -n @PACKAGE_NAME@-%{version}
 
 
 %build
@@ -94,21 +94,21 @@ elif [ "%{_host_vendor}" = "redhat" ] || [ "%{_host_vendor}" = "suse" ]; then
 fi
 
 # install documentation
-[ -d "${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@" ] || ./install-sh -d "${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@"
+[ -d "${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@PACKAGE_VERSION@" ] || ./install-sh -d "${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@PACKAGE_VERSION@"
 ./install-sh -o root -g root -m 0644 NEWS \
-  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/NEWS
+  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@PACKAGE_VERSION@/NEWS
 ./install-sh -o root -g root -m 0644 AUTHORS \
-  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/AUTHORS
+  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@PACKAGE_VERSION@/AUTHORS
 ./install-sh -o root -g root -m 0644 COPYING \
-  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/COPYING
+  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@PACKAGE_VERSION@/COPYING
 
 %files
 %defattr(-,root,root)
 %{prefix}/sbin/syslog-ng
 %{prefix}/bin/loggen
 %{_mandir}/*
-%docdir %{_prefix}/share/doc/syslog-ng-@VERSION@
-%{_prefix}/share/doc/syslog-ng-@VERSION@/*
+%docdir %{_prefix}/share/doc/syslog-ng-@PACKAGE_VERSION@
+%{_prefix}/share/doc/syslog-ng-@PACKAGE_VERSION@/*
 %config(noreplace) /etc/syslog-ng/syslog-ng.conf
 %ifnos aix5.2
 /etc/rc.d/init.d/syslog-ng
@@ -234,11 +234,11 @@ fi
 [ $RPM_BUILD_ROOT = / ] || rm -rf $RPM_BUILD_ROOT
 
 %changelog
-* Mon Sep 14 2009 Balazs Scheidler <bazsi@balabit.com> @VERSION@-1
+* Mon Sep 14 2009 Balazs Scheidler <bazsi@balabit.com> @PACKAGE_VERSION@-1
 - Removed some more Premium Edition related cruft.
-* Wed Sep 02 2009 Balazs Scheidler <bazsi@balabit.com> @VERSION@-1
+* Wed Sep 02 2009 Balazs Scheidler <bazsi@balabit.com> @PACKAGE_VERSION@-1
 - Removed the references to the documentation and libzlicense-devel
-* Wed Apr 04 2007 Tamas Pal <folti@balabit.com> @VERSION@-1
+* Wed Apr 04 2007 Tamas Pal <folti@balabit.com> @PACKAGE_VERSION@-1
 - Added libnet-devel and libzlicense-devel to BuildRequires.
 - Changed Packager to Tamas Pal.
 - Changed license to BalaBit Proprietary one.
