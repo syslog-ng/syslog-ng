@@ -50,6 +50,8 @@ public class ElasticSearchOptions {
 	public static String CLIENT_MODE_TRANSPORT = "transport";
 	public static String CLIENT_MODE_NODE = "node";
 	public static String CLIENT_MODE_SHIELD = "shield";
+	public static String SKIP_CLUSTER_HEALTH_CHECK = "skip_cluster_health_check";
+	public static String SKIP_CLUSTER_HEALTH_CHECK_DEFAULT = "false";
 	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD));
 
 	public static String CLIENT_MODE_DEFAULT = CLIENT_MODE_TRANSPORT;
@@ -120,9 +122,14 @@ public class ElasticSearchOptions {
         	return options.get(CONCURRENT_REQUESTS).getValueAsInteger();
         }	
 
+        public boolean getSkipClusterHealthCheck() {
+                return options.get(SKIP_CLUSTER_HEALTH_CHECK).getValueAsBoolean();
+        }
+
 	private void fillOptions() {
 		fillStringOptions();
 		fillTemplateOptions();
+		fillBooleanOptions();
 	}
 
 	private void fillTemplateOptions() {
@@ -140,5 +147,9 @@ public class ElasticSearchOptions {
 		options.put(new EnumOptionDecorator(new StringOption(owner, CLIENT_MODE, CLIENT_MODE_DEFAULT), CLIENT_MODES));
 		options.put(new StringOption(owner, CONFIG_FILE));
 		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_DEFAULT), 0, Integer.MAX_VALUE));
+	}
+
+	private void fillBooleanOptions() {
+	        options.put(new BooleanOptionDecorator(new StringOption(owner, SKIP_CLUSTER_HEALTH_CHECK, SKIP_CLUSTER_HEALTH_CHECK_DEFAULT)));
 	}
 }

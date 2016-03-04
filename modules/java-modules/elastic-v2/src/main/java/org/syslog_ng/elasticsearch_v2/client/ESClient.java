@@ -58,6 +58,10 @@ public abstract class ESClient {
 
 	public void connect() throws ElasticsearchException {
 		String clusterName = getClusterName();
+		if (options.getSkipClusterHealthCheck()) {
+		        logger.warn("Skip cluster health check during connection.");
+		        return;
+		}
 		logger.info("connecting to cluster, cluster_name='" + clusterName + "'");
 		if (!waitForStatus(ClusterHealthStatus.GREEN)) {
 			logger.debug("Failed to wait for green");
