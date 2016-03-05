@@ -41,7 +41,7 @@ static CfgLexerKeyword diskq_keywords[] = {
 
 CfgParser diskq_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &diskq_debug,
 #endif
   .name = "disk_buffer",
