@@ -55,6 +55,7 @@ struct _NVRegistry
   gint num_static_names;
   GArray *names;
   GHashTable *name_map;
+  GStaticMutex nv_registry_lock;
 };
 
 extern const gchar *null_string;

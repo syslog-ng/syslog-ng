@@ -234,6 +234,14 @@ cached_gmtime(time_t *when, struct tm *tm)
     }
 }
 
+void
+timeutils_deinit(void)
+{
+#if !defined(SYSLOG_NG_HAVE_LOCALTIME_R) || !defined(SYSLOG_NG_HAVE_GMTIME_R)
+  g_static_mutex_free(&localtime_lock);
+#endif
+}
+
 /**
  * get_local_timezone_ofs:
  * @when: time in UTC

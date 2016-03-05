@@ -283,6 +283,7 @@ msg_init(gboolean interactive)
 void
 msg_deinit(void)
 {
+  g_static_mutex_free(&evtlog_lock);
   evt_ctx_free(evt_context);
   log_stderr = TRUE;
 }

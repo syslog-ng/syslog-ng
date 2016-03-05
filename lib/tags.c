@@ -222,5 +222,6 @@ log_tags_global_deinit(void)
   log_tags_hash = NULL;
 
   g_static_mutex_unlock(&log_tags_lock);
+  g_static_mutex_free(&log_tags_lock);
 }
 

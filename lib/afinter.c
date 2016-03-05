@@ -457,6 +457,8 @@ afinter_global_init(void)
 void
 afinter_global_deinit(void)
 {
+  g_static_mutex_free(&internal_msg_lock);
+  g_static_mutex_free(&internal_mark_target_lock);
   if (internal_msg_queue)
     {
       g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);

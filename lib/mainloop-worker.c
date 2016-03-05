@@ -361,4 +361,5 @@ main_loop_worker_init(void)
 void
 main_loop_worker_deinit(void)
 {
+  g_static_mutex_free(&main_loop_workers_idmap_lock);
 }

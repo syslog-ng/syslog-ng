@@ -176,7 +176,7 @@ app_shutdown(void)
   hostname_global_deinit();
   crypto_deinit();
   msg_deinit();
-
+  timeutils_deinit();
   
   /* NOTE: the iv_deinit() call should come here, but there's some exit
    * synchronization issue in libivykis that causes use-after-free with the
