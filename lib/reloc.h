@@ -31,5 +31,6 @@ void path_resolver_add_configure_variable(CacheResolver *self, const gchar *name
 CacheResolver *path_resolver_new(const gchar *sysprefix);
 
 const gchar *get_installation_path_for(const gchar *template);
+void reloc_deinit(void);
 
 #endif
