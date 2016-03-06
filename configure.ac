@@ -984,7 +984,7 @@ fi
 dnl ***************************************************************************
 dnl libesmtp headers/libraries
 dnl ***************************************************************************
-if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
+if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
 	libesmtp="yes"
 	if test "x$with_libesmtp" != "yes" && test "x$with_libesmtp" != "x"; then
 		CPPFLAGS_SAVE="$CPPFLAGS"
@@ -1015,7 +1015,7 @@ fi
 dnl ***************************************************************************
 dnl libcurl headers/libraries
 dnl ***************************************************************************
-if test "x$enable_curl" != "xno" && test "x$with_libcurl" != "no"; then
+if test "x$enable_curl" != "xno" && test "x$with_libcurl" != "xno"; then
 	libcurl="yes"
 	if test "x$with_libcurl" != "yes" && test "x$with_libcurl" != "x"; then
 		CPPFLAGS_SAVE="$CPPFLAGS"
@@ -1046,7 +1046,7 @@ fi
 dnl ***************************************************************************
 dnl libhiredis headers/libraries
 dnl ***************************************************************************
-if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
+if test "x$enable_redis" != "xno" && test "x$with_redis" != "xno"; then
        hiredis="yes"
        if test "x$with_libhiredis" != "yes" && test "x$with_libhiredis" != "x"; then
                CFLAGS_SAVE="$CFLAGS"
@@ -1253,7 +1253,7 @@ fi
 
 if test "x$enable_mongodb" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable mongodb destination support)
-	if test "x$with_mongoc" != "no"; then
+	if test "x$with_mongoc" != "xno"; then
 		enable_mongodb="yes"
 	else
 		enable_mongodb="no"
@@ -1263,7 +1263,7 @@ fi
 
 if test "x$enable_amqp" = "xauto"; then
     AC_MSG_CHECKING(whether to enable amqp destination support)
-    if test "x$with_librabbitmq_client" != "no"; then
+    if test "x$with_librabbitmq_client" != "xno"; then
         enable_amqp="yes"
     else
         enable_amqp="no"
