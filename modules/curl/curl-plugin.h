@@ -46,6 +46,7 @@ LogDriver *curl_dd_new(GlobalConfig *cfg);
 void curl_dd_set_url(LogDriver *d, const gchar *url);
 void curl_dd_set_user(LogDriver *d, const gchar *user);
 void curl_dd_set_password(LogDriver *d, const gchar *password);
+void curl_dd_set_user_agent(LogDriver *d, const gchar *user_agent);
 void curl_dd_set_headers(LogDriver *d, GList *headers);
 void curl_dd_set_body(LogDriver *d, LogTemplate *body);
 LogTemplateOptions *curl_dd_get_template_options(LogDriver *d);

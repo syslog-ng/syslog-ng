@@ -32,6 +32,7 @@ static CfgLexerKeyword curl_keywords[] = {
   { "curl",         KW_CURL },
   { "user",         KW_USER },
   { "password",     KW_PASSWORD },
+  { "user_agent",   KW_USER_AGENT },
   { "url",          KW_URL },
   { "headers",      KW_HEADERS },
   { "body",         KW_BODY },

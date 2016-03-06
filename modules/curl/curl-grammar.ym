@@ -52,6 +52,7 @@
 %token KW_URL
 %token KW_USER
 %token KW_PASSWORD
+%token KW_USER_AGENT
 %token KW_HEADERS
 %token KW_BODY
 
@@ -93,6 +94,7 @@ curl_option
     : KW_URL        '(' string ')'            { curl_dd_set_url(last_driver, $3); free($3); }
     | KW_USER       '(' string ')'            { curl_dd_set_user(last_driver, $3); free($3); }
     | KW_PASSWORD   '(' string ')'            { curl_dd_set_password(last_driver, $3); free($3); }
+    | KW_USER_AGENT '(' string ')'            { curl_dd_set_user_agent(last_driver, $3); free($3); }
     | KW_HEADERS    '(' string_list ')'       { curl_dd_set_headers(last_driver, $3); g_list_free($3); }
     | KW_BODY       '(' template_content ')'  { curl_dd_set_body(last_driver, $3); log_template_unref($3); }
     | dest_driver_option
