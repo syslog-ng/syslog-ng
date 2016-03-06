@@ -288,7 +288,7 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostnam
 }
 
 static void
-dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive)
+dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive)
 {
   DNSCacheEntry *entry;
   guint hash_size;
@@ -303,39 +303,39 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   if (!persistent)
     {
       entry->resolved = cached_g_current_time_sec();
-      iv_list_add(&dns_cache->cache_list, &entry->list);
+      iv_list_add(&self->cache_list, &entry->list);
     }
   else
     {
       entry->resolved = 0;
-      iv_list_add(&dns_cache->persist_list, &entry->list);
+      iv_list_add(&self->persist_list, &entry->list);
     }
-  hash_size = g_hash_table_size(dns_cache->cache);
-  g_hash_table_replace(dns_cache->cache, &entry->key, entry);
+  hash_size = g_hash_table_size(self->cache);
+  g_hash_table_replace(self->cache, &entry->key, entry);
 
-  if (persistent && hash_size != g_hash_table_size(dns_cache->cache))
-    dns_cache->persistent_count++;
+  if (persistent && hash_size != g_hash_table_size(self->cache))
+    self->persistent_count++;
 
   /* persistent elements are not counted */
-  if ((gint) (g_hash_table_size(dns_cache->cache) - dns_cache->persistent_count) > dns_cache_size)
+  if ((gint) (g_hash_table_size(self->cache) - self->persistent_count) > dns_cache_size)
     {
-      DNSCacheEntry *entry_to_remove = iv_list_entry(&dns_cache->cache_list, DNSCacheEntry, list);
+      DNSCacheEntry *entry_to_remove = iv_list_entry(&self->cache_list, DNSCacheEntry, list);
 
       /* remove oldest element */
-      g_hash_table_remove(dns_cache->cache, &entry_to_remove->key);
+      g_hash_table_remove(self->cache, &entry_to_remove->key);
     }
 }
 
 void
 dns_cache_store_persistent(gint family, void *addr, const gchar *hostname)
 {
-  dns_cache_store(TRUE, family, addr, hostname, TRUE);
+  dns_cache_store(dns_cache, TRUE, family, addr, hostname, TRUE);
 }
 
 void
 dns_cache_store_dynamic(gint family, void *addr, const gchar *hostname, gboolean positive)
 {
-  dns_cache_store(FALSE, family, addr, hostname, positive);
+  dns_cache_store(dns_cache, FALSE, family, addr, hostname, positive);
 }
 
 void
