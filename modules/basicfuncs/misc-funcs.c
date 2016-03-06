@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2012 Balabit
+ * Copyright 2016 Simon Arlott
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -19,6 +20,11 @@
  * COPYING for details.
  *
  */
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <grp.h>
 
 static gboolean
 tf_context_length_prepare(LogTemplateFunction *self, gpointer s,
@@ -63,3 +69,77 @@ tf_env(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_env);
+
+static void
+tf_pwuid_to_nam(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  long buflen = sysconf(_SC_GETPW_R_SIZE_MAX);
+  char *buf = g_malloc(buflen);
+  struct passwd pwd;
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      gint64 id;
+      struct passwd *pwdp = NULL;
+
+      if (parse_number(argv[i]->str, &id))
+        {
+           if (getpwuid_r(id, &pwd, buf, buflen, &pwdp) != 0)
+             pwdp = NULL;
+        }
+
+      if (pwdp)
+        {
+          g_string_append(result, pwdp->pw_name);
+        }
+      else
+        {
+          g_string_append(result, argv[i]->str);
+        }
+
+      if (i < argc - 1)
+        g_string_append_c(result, ' ');
+    }
+
+  g_free(buf);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_pwuid_to_nam);
+
+static void
+tf_grgid_to_nam(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  long buflen = sysconf(_SC_GETGR_R_SIZE_MAX);
+  char *buf = g_malloc(buflen);
+  struct group grp;
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      gint64 id;
+      struct group *grpp = NULL;
+
+      if (parse_number(argv[i]->str, &id))
+        {
+           if (getgrgid_r(id, &grp, buf, buflen, &grpp) != 0)
+             grpp = NULL;
+        }
+
+      if (grpp)
+        {
+          g_string_append(result, grpp->gr_name);
+        }
+      else
+        {
+          g_string_append(result, argv[i]->str);
+        }
+
+      if (i < argc - 1)
+        g_string_append_c(result, ' ');
+    }
+
+  g_free(buf);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_grgid_to_nam);
