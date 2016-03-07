@@ -34,6 +34,7 @@
 #include "host-resolve.h"
 #include "type-hinting.h"
 #include "stats/stats.h"
+#include "dnscache.h"
 
 #include <sys/types.h>
 #include <regex.h>
@@ -81,9 +82,8 @@ struct _GlobalConfig
   gboolean bad_hostname_compiled;
   regex_t bad_hostname;
   gchar *bad_hostname_re;
-  gint dns_cache_size, dns_cache_expire, dns_cache_expire_failed;
-  gchar *dns_cache_hosts;
   gchar *custom_domain;
+  DNSCacheOptions dns_cache_options;
   gint time_reopen;
   gint time_reap;
   gint suppress;

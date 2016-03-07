@@ -373,6 +373,7 @@ ValuePairsTransformSet *last_vp_transset;
 LogMatcherOptions *last_matcher_options;
 HostResolveOptions *last_host_resolve_options;
 StatsOptions *last_stats_options;
+DNSCacheOptions *last_dns_cache_options;
 
 }
 
@@ -917,17 +918,13 @@ options_item
 	| KW_DIR_PERM '(' LL_NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
 	| KW_DIR_PERM '('  ')'		        { cfg_dir_perm_set(configuration, -2); }
         | KW_CUSTOM_DOMAIN '(' string ')'       { configuration->custom_domain = g_strdup($3); free($3); }
-	| KW_DNS_CACHE_SIZE '(' LL_NUMBER ')'	{ configuration->dns_cache_size = $3; }
-	| KW_DNS_CACHE_EXPIRE '(' LL_NUMBER ')'	{ configuration->dns_cache_expire = $3; }
-	| KW_DNS_CACHE_EXPIRE_FAILED '(' LL_NUMBER ')'
-	  			{ configuration->dns_cache_expire_failed = $3; }
-	| KW_DNS_CACHE_HOSTS '(' string ')'     { configuration->dns_cache_hosts = g_strdup($3); free($3); }
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
 	| { last_template_options = &configuration->template_options; } template_option
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
 	| { last_stats_options = &configuration->stats_options; } stat_option
+	| { last_dns_cache_options = &configuration->dns_cache_options; } dns_cache_option
 	;
 
 stat_option
@@ -935,6 +932,15 @@ stat_option
 	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { last_stats_options->level = $3; }
 	| KW_STATS_LIFETIME '(' LL_NUMBER ')'      { last_stats_options->lifetime = $3; }
 	;
+
+dns_cache_option
+	: KW_DNS_CACHE_SIZE '(' LL_NUMBER ')'	{ last_dns_cache_options->cache_size = $3; }
+	| KW_DNS_CACHE_EXPIRE '(' LL_NUMBER ')'	{ last_dns_cache_options->expire = $3; }
+	| KW_DNS_CACHE_EXPIRE_FAILED '(' LL_NUMBER ')'
+	                                        { last_dns_cache_options->expire_failed = $3; }
+	| KW_DNS_CACHE_HOSTS '(' string ')'     { last_dns_cache_options->hosts = g_strdup($3); free($3); }
+        ;
+
 
 /* START_RULES */
 

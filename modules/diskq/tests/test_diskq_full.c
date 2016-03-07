@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define DISKQ_FILENAME "test_become_full.qf"
 

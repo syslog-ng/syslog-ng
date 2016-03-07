@@ -123,8 +123,8 @@ app_startup(void)
   g_thread_init(NULL);
   crypto_init();
   hostname_global_init();
-  dns_cache_global_init();
-  dns_cache_thread_init();
+  dns_caching_global_init();
+  dns_caching_thread_init();
   afinter_global_init();
   child_manager_init();
   alarm_init();
@@ -170,8 +170,8 @@ app_shutdown(void)
   child_manager_deinit();
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
   g_list_free(application_hooks);
-  dns_cache_thread_deinit();
-  dns_cache_global_deinit();
+  dns_caching_thread_deinit();
+  dns_caching_global_deinit();
   hostname_global_deinit();
   crypto_deinit();
   msg_deinit();
@@ -194,14 +194,14 @@ void
 app_thread_start(void)
 {
   scratch_buffers_init();
-  dns_cache_thread_init();
+  dns_caching_thread_init();
   main_loop_call_thread_init();
 }
 
 void
 app_thread_stop(void)
 {
-  dns_cache_thread_deinit();
+  dns_caching_thread_deinit();
   scratch_buffers_free();
   main_loop_call_thread_deinit();
 }

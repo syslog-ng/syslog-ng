@@ -258,7 +258,7 @@ cfg_init(GlobalConfig *cfg)
   stats_reinit(&cfg->stats_options);
   log_tags_reinit_stats(cfg);
 
-  dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
+  dns_caching_update_options(&cfg->dns_cache_options);
   hostname_reinit(cfg->custom_domain);
   host_resolve_options_init(&cfg->host_resolve_options, cfg);
   log_template_options_init(&cfg->template_options, cfg);
@@ -365,9 +365,7 @@ cfg_new(gint version)
   self->dir_gid = 0;
   self->dir_perm = 0700;
 
-  self->dns_cache_size = 1007;
-  self->dns_cache_expire = 3600;
-  self->dns_cache_expire_failed = 60;
+  dns_cache_options_defaults(&self->dns_cache_options);
   self->threaded = TRUE;
   self->pass_unix_credentials = TRUE;
   
@@ -540,7 +538,7 @@ cfg_free(GlobalConfig *self)
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);
   g_free(self->bad_hostname_re);
-  g_free(self->dns_cache_hosts);
+  dns_cache_options_destroy(&self->dns_cache_options);
   g_free(self->custom_domain);
   plugin_free_plugins(self);
   plugin_free_candidate_modules(self);
