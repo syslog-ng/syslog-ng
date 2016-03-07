@@ -208,7 +208,6 @@ curl_dd_set_user_agent(LogDriver *d, const gchar *user_agent)
 {
   CurlDestinationDriver *self = (CurlDestinationDriver *) d;
 
-  g_free(self->password);
   g_strlcpy(self->user_agent, user_agent, 1024);
 }
 
