@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2010-2012 Balabit
- * Copyright (c) 2010-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,20 +20,12 @@
  *
  */
 
-#ifndef AFMONGODB_PARSER_H_INCLUDED
-#define AFMONGODB_PARSER_H_INCLUDED
+#ifndef AFMONGODB_LEGACY_PRIVATE_H_
+#define AFMONGODB_LEGACY_PRIVATE_H_
 
 #include "syslog-ng.h"
-#include "cfg-parser.h"
-#include "cfg-lexer.h"
-#include "afmongodb.h"
+#include "afmongodb-private.h"
 
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-#include "afmongodb-legacy-grammar.h"
-#endif
-
-extern CfgParser afmongodb_parser;
-
-CFG_PARSER_DECLARE_LEXER_BINDING(afmongodb_, LogDriver **)
+#define MONGO_CONN_LOCAL -1
 
 #endif

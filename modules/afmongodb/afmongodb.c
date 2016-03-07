@@ -34,6 +34,11 @@
 
 #include <time.h>
 
+#include "afmongodb-private.h"
+#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
+#include "afmongodb-legacy-uri.h"
+#endif
+
 #define DEFAULT_URI \
       "mongodb://127.0.0.1:27017/syslog"\
       "?wtimeoutMS=60000&socketTimeoutMS=60000&connectTimeoutMS=60000"
@@ -435,6 +440,11 @@ afmongodb_dd_private_uri_init(LogDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
+#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
+  if (!afmongodb_dd_create_uri_from_legacy(self))
+    return FALSE;
+#endif
+
   if (!self->uri_str)
     self->uri_str = g_string_new(DEFAULT_URI);
 
@@ -539,6 +549,9 @@ _free(LogPipe *d)
       self->uri_str = NULL;
     }
   g_free(self->coll);
+#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
+  afmongodb_dd_free_legacy(self);
+#endif
   value_pairs_unref(self->vp);
 
   if (self->uri_obj)
@@ -583,6 +596,9 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.stats_source = SCS_MONGODB;
   self->super.messages.retry_over = _worker_retry_over_message;
 
+#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
+  afmongodb_dd_init_legacy(self);
+#endif
   afmongodb_dd_set_collection(&self->super.super.super, "messages");
 
   log_template_options_defaults(&self->template_options);
