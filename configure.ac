@@ -986,7 +986,7 @@ dnl libesmtp headers/libraries
 dnl ***************************************************************************
 if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
 	libesmtp="yes"
-	if test "x$with_libesmtp" != "yes" && test "x$with_libesmtp" != "x"; then
+	if test "x$with_libesmtp" != "xyes" && test "x$with_libesmtp" != "x"; then
 		CPPFLAGS_SAVE="$CPPFLAGS"
 		LDFLAGS_SAVE="$LDFLAGS"
 		CPPFLAGS="$CPPFLAGS -I$with_libesmtp/include"
@@ -1017,7 +1017,7 @@ dnl libcurl headers/libraries
 dnl ***************************************************************************
 if test "x$enable_curl" != "xno" && test "x$with_libcurl" != "xno"; then
 	libcurl="yes"
-	if test "x$with_libcurl" != "yes" && test "x$with_libcurl" != "x"; then
+	if test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "x"; then
 		CPPFLAGS_SAVE="$CPPFLAGS"
 		LDFLAGS_SAVE="$LDFLAGS"
 		CPPFLAGS="$CPPFLAGS -I$with_libcurl/include"
@@ -1048,7 +1048,7 @@ dnl libhiredis headers/libraries
 dnl ***************************************************************************
 if test "x$enable_redis" != "xno" && test "x$with_redis" != "xno"; then
        hiredis="yes"
-       if test "x$with_libhiredis" != "yes" && test "x$with_libhiredis" != "x"; then
+       if test "x$with_libhiredis" != "xyes" && test "x$with_libhiredis" != "x"; then
                CFLAGS_SAVE="$CFLAGS"
                LDFLAGS_SAVE="$LDFLAGS"
                CFLAGS="$CFLAGS -I$with_libhiredis/include"
