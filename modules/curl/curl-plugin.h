@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef SYSLOG_NG_CURL_CURL_H_INCLUDED
-#define SYSLOG_NG_CURL_CURL_H_INCLUDED 1
+#ifndef CURL_PLUGIN_H_INCLUDED
+#define CURL_PLUGIN_H_INCLUDED 1
 
 #define CURL_DEFAULT_URL "http://localhost/"
 
