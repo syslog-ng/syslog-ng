@@ -41,7 +41,7 @@ static CfgLexerKeyword curl_keywords[] = {
 
 CfgParser curl_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &curl_debug,
 #endif
   .name = "curl",
