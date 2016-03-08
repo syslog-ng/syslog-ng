@@ -62,9 +62,9 @@ _thread_init(LogThrDestDriver *s)
   CurlDestinationDriver *self = (CurlDestinationDriver *) s;
 
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
-  if (self->user_agent[0] == '\0')
-      g_snprintf(self->user_agent, sizeof(self->user_agent),
-                 "syslog-ng %s/libcurl %s", SYSLOG_NG_VERSION, curl_info->version);
+  if (!self->user_agent)
+    self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
+                                        SYSLOG_NG_VERSION, curl_info->version);
 }
 
 static void
@@ -127,7 +127,8 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
   if (self->password)
     curl_easy_setopt(self->curl, CURLOPT_PASSWORD, self->password);
 
-  curl_easy_setopt(self->curl, CURLOPT_USERAGENT, self->user_agent);
+  if (self->user_agent)
+    curl_easy_setopt(self->curl, CURLOPT_USERAGENT, self->user_agent);
 
   g_snprintf(header_host, sizeof(header_host),
     "X-Syslog-Host: %s", log_host);
@@ -208,7 +209,8 @@ curl_dd_set_user_agent(LogDriver *d, const gchar *user_agent)
 {
   CurlDestinationDriver *self = (CurlDestinationDriver *) d;
 
-  g_strlcpy(self->user_agent, user_agent, 1024);
+  g_free(self->user_agent);
+  self->user_agent = g_strdup(user_agent);
 }
 
 void
@@ -272,6 +274,7 @@ curl_dd_free(LogPipe *s)
   g_free(self->url);
   g_free(self->user);
   g_free(self->password);
+  g_free(self->user_agent);
   g_list_free(self->headers);
 
   log_threaded_dest_driver_free(s);

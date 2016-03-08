@@ -35,7 +35,7 @@ typedef struct
   gchar *user;
   gchar *password;
   GList *headers;
-  gchar user_agent[1024];
+  gchar *user_agent;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
 } CurlDestinationDriver;
