@@ -83,38 +83,57 @@ _disconnect(LogThrDestDriver *s)
 {
 }
 
-static worker_insert_result_t
-_insert(LogThrDestDriver *s, LogMessage *msg)
+static struct curl_slist *
+_get_curl_headers(CurlDestinationDriver *self, LogMessage *msg)
 {
-  const gchar *log_host = NULL;
-  const gchar *log_program = NULL;
-  const gchar *log_facility = NULL;
-  const gchar *log_level = NULL;
-  const gchar *body = NULL;
-  GString *body_rendered = NULL;
   GList *header = NULL;
+  struct curl_slist *curl_headers = NULL;
   gchar header_host[128] = {0};
   gchar header_program[32] = {0};
   gchar header_facility[32] = {0};
   gchar header_level[32] = {0};
-  struct curl_slist *curl_headers = NULL;
-  CURLcode ret;
 
-  CurlDestinationDriver *self = (CurlDestinationDriver *) s;
+  g_snprintf(header_host, sizeof(header_host),
+    "X-Syslog-Host: %s", log_msg_get_value(msg, LM_V_HOST, NULL));
+  curl_headers = curl_slist_append(curl_headers, header_host);
 
-  log_host = log_msg_get_value(msg, LM_V_HOST, NULL);
-  log_program = log_msg_get_value(msg, LM_V_PROGRAM, NULL);
-  log_facility = syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities);
-  log_level = syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels);
+  g_snprintf(header_program, sizeof(header_program),
+    "X-Syslog-Program: %s", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+  curl_headers = curl_slist_append(curl_headers, header_program);
+
+  g_snprintf(header_facility, sizeof(header_facility),
+    "X-Syslog-Facility: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+  curl_headers = curl_slist_append(curl_headers, header_facility);
+
+  g_snprintf(header_level, sizeof(header_level),
+    "X-Syslog-Level: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+  curl_headers = curl_slist_append(curl_headers, header_level);
+
+  header = self->headers;
+  while (header != NULL) {
+    curl_headers = curl_slist_append(curl_headers, (gchar *)header->data);
+    header = g_list_next(header);
+  }
+
+  return curl_headers;
+}
+
+static GString *
+_get_body_rendered(CurlDestinationDriver *self, LogMessage *msg)
+{
+  GString *body_rendered = NULL;
 
   if (self->body_template) {
     body_rendered = g_string_new(NULL);
     log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
                         self->super.seq_num, NULL, body_rendered);
-    body = body_rendered->str;
-  } else
-    body = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+  }
+  return body_rendered;
+}
 
+static void
+_set_curl_opt(CurlDestinationDriver *self, LogMessage *msg, struct curl_slist *curl_headers, GString *body_rendered)
+{
   curl_easy_reset(self->curl);
 
   curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _curl_write_cb);
@@ -130,31 +149,25 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
   if (self->user_agent)
     curl_easy_setopt(self->curl, CURLOPT_USERAGENT, self->user_agent);
 
-  g_snprintf(header_host, sizeof(header_host),
-    "X-Syslog-Host: %s", log_host);
-  curl_headers = curl_slist_append(curl_headers, header_host);
-
-  g_snprintf(header_program, sizeof(header_program),
-    "X-Syslog-Program: %s", log_program);
-  curl_headers = curl_slist_append(curl_headers, header_program);
-
-  g_snprintf(header_facility, sizeof(header_facility),
-    "X-Syslog-Facility: %s", log_facility);
-  curl_headers = curl_slist_append(curl_headers, header_facility);
-
-  g_snprintf(header_level, sizeof(header_level),
-    "X-Syslog-Level: %s", log_level);
-  curl_headers = curl_slist_append(curl_headers, header_level);
-
-  header = self->headers;
-  while (header != NULL) {
-    curl_headers = curl_slist_append(curl_headers, (gchar *)header->data);
-    header = g_list_next(header);
-  }
 
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, curl_headers);
 
+  const gchar *body = body_rendered ? body_rendered->str : log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+
   curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, body);
+}
+
+static worker_insert_result_t
+_insert(LogThrDestDriver *s, LogMessage *msg)
+{
+  CURLcode ret;
+
+  CurlDestinationDriver *self = (CurlDestinationDriver *) s;
+
+  struct curl_slist * curl_headers = _get_curl_headers(self, msg);
+  GString *body_rendered = _get_body_rendered(self, msg);
+
+  _set_curl_opt(self, msg, curl_headers, body_rendered);
 
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK) {
       msg_error("curl: error sending HTTP request",
