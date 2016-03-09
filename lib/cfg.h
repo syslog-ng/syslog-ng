@@ -123,9 +123,6 @@ void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);
 gint cfg_lookup_mark_mode(gchar *mark_mode);
 void cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode);
 
-void cfg_dir_owner_set(GlobalConfig *self, gchar *owner);
-void cfg_dir_group_set(GlobalConfig *self, gchar *group);
-void cfg_dir_perm_set(GlobalConfig *self, gint perm);
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 

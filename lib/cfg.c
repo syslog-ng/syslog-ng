@@ -107,30 +107,6 @@ cfg_ts_format_value(gchar *format)
 }
 
 void
-cfg_dir_owner_set(GlobalConfig *self, gchar *owner)
-{
-  if (!resolve_user(owner, &self->file_perm_options.dir_uid))
-    msg_error("Error resolving user",
-               evt_tag_str("user", owner),
-               NULL);
-}
-
-void
-cfg_dir_group_set(GlobalConfig *self, gchar *group)
-{
-  if (!resolve_group(group, &self->file_perm_options.dir_gid))
-    msg_error("Error resolving group",
-               evt_tag_str("group", group),
-               NULL);
-}
-
-void
-cfg_dir_perm_set(GlobalConfig *self, gint perm)
-{
-  self->file_perm_options.dir_perm = perm;
-}
-
-void
 cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re)
 {
   if (self->bad_hostname_re)

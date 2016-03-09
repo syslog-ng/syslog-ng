@@ -255,7 +255,7 @@ source_afunix_options
 	;
 
 source_afunix_option
-        : file_dir_perm_option
+        : file_perm_option
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
 	| socket_option				{}
