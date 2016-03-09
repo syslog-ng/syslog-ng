@@ -109,7 +109,7 @@ cfg_ts_format_value(gchar *format)
 void
 cfg_file_owner_set(GlobalConfig *self, gchar *owner)
 {
-  if (!resolve_user(owner, &self->file_uid))
+  if (!resolve_user(owner, &self->file_perm_options.file_uid))
     msg_error("Error resolving user",
                evt_tag_str("user", owner),
                NULL);
@@ -118,7 +118,7 @@ cfg_file_owner_set(GlobalConfig *self, gchar *owner)
 void
 cfg_file_group_set(GlobalConfig *self, gchar *group)
 {
-  if (!resolve_group(group, &self->file_gid))
+  if (!resolve_group(group, &self->file_perm_options.file_gid))
     msg_error("Error resolving group",
                evt_tag_str("group", group),
                NULL);
@@ -127,13 +127,13 @@ cfg_file_group_set(GlobalConfig *self, gchar *group)
 void
 cfg_file_perm_set(GlobalConfig *self, gint perm)
 {
-  self->file_perm = perm;
+  self->file_perm_options.file_perm = perm;
 }
 
 void
 cfg_dir_owner_set(GlobalConfig *self, gchar *owner)
 {
-  if (!resolve_user(owner, &self->dir_uid))
+  if (!resolve_user(owner, &self->file_perm_options.dir_uid))
     msg_error("Error resolving user",
                evt_tag_str("user", owner),
                NULL);
@@ -142,7 +142,7 @@ cfg_dir_owner_set(GlobalConfig *self, gchar *owner)
 void
 cfg_dir_group_set(GlobalConfig *self, gchar *group)
 {
-  if (!resolve_group(group, &self->dir_gid))
+  if (!resolve_group(group, &self->file_perm_options.dir_gid))
     msg_error("Error resolving group",
                evt_tag_str("group", group),
                NULL);
@@ -151,7 +151,7 @@ cfg_dir_group_set(GlobalConfig *self, gchar *group)
 void
 cfg_dir_perm_set(GlobalConfig *self, gint perm)
 {
-  self->dir_perm = perm;
+  self->file_perm_options.dir_perm = perm;
 }
 
 void
@@ -358,12 +358,7 @@ cfg_new(gint version)
   self->log_fifo_size = 10000;
   self->log_msg_size = 8192;
 
-  self->file_uid = 0;
-  self->file_gid = 0;
-  self->file_perm = 0600;
-  self->dir_uid = 0;
-  self->dir_gid = 0;
-  self->dir_perm = 0700;
+  file_perm_options_global_defaults(&self->file_perm_options);
 
   dns_cache_options_defaults(&self->dns_cache_options);
   self->threaded = TRUE;

@@ -35,6 +35,7 @@
 #include "type-hinting.h"
 #include "stats/stats.h"
 #include "dnscache.h"
+#include "file-perms.h"
 
 #include <sys/types.h>
 #include <regex.h>
@@ -93,14 +94,7 @@ struct _GlobalConfig
   gint log_msg_size;
 
   gboolean create_dirs;
-  gint file_uid;
-  gint file_gid;
-  gint file_perm;
-  
-  gint dir_uid;
-  gint dir_gid;
-  gint dir_perm;
-
+  FilePermOptions file_perm_options;
   gboolean use_uniqid;
 
   gboolean keep_timestamp;  
