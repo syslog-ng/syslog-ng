@@ -21,7 +21,10 @@ Key features:
   * hand on messages for further processing using message queues (like
     [AMQP](http://www.amqp.org/)), files or databases (like
     [PostgreSQL](http://www.postgresql.org/) or
-    [MongoDB](http://www.mongodb.org/)).
+    [MongoDB](http://www.mongodb.org/)), and
+  * forward log messages to big data tools like [Elasticsearch](https://www.elastic.co/),
+    [Apache Kafka](http://kafka.apache.org/), or
+    [Apache Hadoop](http://hadoop.apache.org/).
 
 Performance:
   * syslog-ng provides performance levels comparable to a large
@@ -46,6 +49,7 @@ the required dependencies):
 Some of the functionality is compiled only in case the required
 development libraries are present. The configure script displays a
 summary of enabled features at the end of its run.
+For details, see the [syslog-ng compiling instructions](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/compiling-syslog-ng.html)
 
 
 Installation from Binaries
@@ -64,7 +68,7 @@ Simply invoke the following command as root:
 
 Latest versions of syslog-ng are available for a wide range of Debian
 and Ubuntu releases and architectures from an
-[unofficial repository][madhouse-repo].
+[unofficial repository](https://build.opensuse.org/project/show/home:laszlo_budai:syslog-ng).
 
  [madhouse-repo]: http://asylum.madhouse-project.org/projects/debian/
 
@@ -76,10 +80,12 @@ yum:
 
     # yum install syslog-ng
 
+You can download packages for the latest versions from [here](https://copr.fedoraproject.org/coprs/czanik/).
+
 Others
 ------
 
-Binaries for other platforms might be available, please check out the
+Binaries for other platforms are listed at the
 official [third party page][3rd-party] for more information.
 
- [3rd-party]: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system/downloads/3rd-party
+ [3rd-party]: https://syslog-ng.org/3rd-party-binaries/
