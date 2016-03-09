@@ -119,9 +119,6 @@ struct _GlobalConfig
 
 gboolean cfg_allow_config_dups(GlobalConfig *self);
 
-void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
-void cfg_file_group_set(GlobalConfig *self, gchar *group);
-void cfg_file_perm_set(GlobalConfig *self, gint perm);
 void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);
 gint cfg_lookup_mark_mode(gchar *mark_mode);
 void cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode);

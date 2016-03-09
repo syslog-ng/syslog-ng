@@ -913,7 +913,7 @@ options_item
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
 	| { last_stats_options = &configuration->stats_options; } stat_option
 	| { last_dns_cache_options = &configuration->dns_cache_options; } dns_cache_option
-	| global_file_perm_option
+	| { last_file_perm_options = &configuration->file_perm_options; } global_file_perm_option
 	;
 
 stat_option
@@ -1155,12 +1155,7 @@ file_perm_option
         ;
 
 global_file_perm_option
-	: KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
-	| KW_OWNER '(' ')'	                { cfg_file_owner_set(configuration, "-2"); }
-	| KW_GROUP '(' string_or_number ')'	{ cfg_file_group_set(configuration, $3); free($3); }
-	| KW_GROUP '(' ')'                    	{ cfg_file_group_set(configuration, "-2"); }
-	| KW_PERM '(' LL_NUMBER ')'		{ cfg_file_perm_set(configuration, $3); }
-	| KW_PERM '(' ')'		        { cfg_file_perm_set(configuration, -2); }
+        : file_perm_option
 	| KW_DIR_OWNER '(' string_or_number ')'	{ cfg_dir_owner_set(configuration, $3); free($3); }
 	| KW_DIR_OWNER '('  ')'	                { cfg_dir_owner_set(configuration, "-2"); }
 	| KW_DIR_GROUP '(' string_or_number ')'	{ cfg_dir_group_set(configuration, $3); free($3); }
