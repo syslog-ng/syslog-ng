@@ -469,7 +469,7 @@ affile_dd_init(LogPipe *s)
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
   
-  file_perm_options_init(&self->file_perm_options, &cfg->file_perm_options);
+  file_perm_options_inherit_from(&self->file_perm_options, &cfg->file_perm_options);
   log_writer_options_init(&self->writer_options, cfg, 0);
               
   if (self->filename_is_a_template)

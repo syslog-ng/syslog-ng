@@ -152,20 +152,36 @@ file_perm_options_global_defaults(FilePermOptions *self)
 }
 
 void
-file_perm_options_init(FilePermOptions *self, FilePermOptions *global_options)
+file_perm_options_inherit_from(FilePermOptions *self, const FilePermOptions *from)
 {
   if (self->file_uid == -1)
-    self->file_uid = global_options->file_uid;
+    self->file_uid = from->file_uid;
   if (self->file_gid == -1)
-    self->file_gid = global_options->file_gid;
+    self->file_gid = from->file_gid;
   if (self->file_perm == -1)
-    self->file_perm = global_options->file_perm;
+    self->file_perm = from->file_perm;
   if (self->dir_uid == -1)
-    self->dir_uid = global_options->dir_uid;
+    self->dir_uid = from->dir_uid;
   if (self->dir_gid == -1)
-    self->dir_gid = global_options->dir_gid;
+    self->dir_gid = from->dir_gid;
   if (self->dir_perm == -1)
-    self->dir_perm = global_options->dir_perm;
+    self->dir_perm = from->dir_perm;
+}
+
+void
+file_perm_options_inherit_dont_change(FilePermOptions *self)
+{
+  FilePermOptions dont_change =
+  {
+    .file_uid = DONTCHANGE,
+    .file_gid = DONTCHANGE,
+    .file_perm = DONTCHANGE,
+    .dir_uid = DONTCHANGE,
+    .dir_gid = DONTCHANGE,
+    .dir_perm = DONTCHANGE,
+  };
+
+  file_perm_options_inherit_from(self, &dont_change);
 }
 
 gboolean

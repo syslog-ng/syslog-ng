@@ -52,7 +52,8 @@ void file_perm_options_dont_change_dir_perm(FilePermOptions *s);
 
 void file_perm_options_defaults(FilePermOptions *self);
 void file_perm_options_global_defaults(FilePermOptions *self);
-void file_perm_options_init(FilePermOptions *self, FilePermOptions *global_options);
+void file_perm_options_inherit_from(FilePermOptions *self, const FilePermOptions *from);
+void file_perm_options_inherit_dont_change(FilePermOptions *self);
 
 gboolean file_perm_options_apply_file(const FilePermOptions *self, gchar *name);
 gboolean file_perm_options_apply_dir(const FilePermOptions *self, gchar *name);
