@@ -905,18 +905,6 @@ options_item
 	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ configuration->log_msg_size = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
-	| KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
-	| KW_OWNER '(' ')'	                { cfg_file_owner_set(configuration, "-2"); }
-	| KW_GROUP '(' string_or_number ')'	{ cfg_file_group_set(configuration, $3); free($3); }
-	| KW_GROUP '(' ')'                    	{ cfg_file_group_set(configuration, "-2"); }
-	| KW_PERM '(' LL_NUMBER ')'		{ cfg_file_perm_set(configuration, $3); }
-	| KW_PERM '(' ')'		        { cfg_file_perm_set(configuration, -2); }
-	| KW_DIR_OWNER '(' string_or_number ')'	{ cfg_dir_owner_set(configuration, $3); free($3); }
-	| KW_DIR_OWNER '('  ')'	                { cfg_dir_owner_set(configuration, "-2"); }
-	| KW_DIR_GROUP '(' string_or_number ')'	{ cfg_dir_group_set(configuration, $3); free($3); }
-	| KW_DIR_GROUP '('  ')'	                { cfg_dir_group_set(configuration, "-2"); }
-	| KW_DIR_PERM '(' LL_NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
-	| KW_DIR_PERM '('  ')'		        { cfg_dir_perm_set(configuration, -2); }
         | KW_CUSTOM_DOMAIN '(' string ')'       { configuration->custom_domain = g_strdup($3); free($3); }
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
@@ -925,6 +913,7 @@ options_item
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
 	| { last_stats_options = &configuration->stats_options; } stat_option
 	| { last_dns_cache_options = &configuration->dns_cache_options; } dns_cache_option
+	| global_file_perm_option
 	;
 
 stat_option
@@ -1163,6 +1152,21 @@ file_perm_option
 	| KW_GROUP '(' ')'	                { file_perm_options_set_file_gid(last_file_perm_options, "-2"); }
 	| KW_PERM '(' LL_NUMBER ')'		{ file_perm_options_set_file_perm(last_file_perm_options, $3); }
 	| KW_PERM '(' ')'		        { file_perm_options_set_file_perm(last_file_perm_options, -2); }
+        ;
+
+global_file_perm_option
+	: KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
+	| KW_OWNER '(' ')'	                { cfg_file_owner_set(configuration, "-2"); }
+	| KW_GROUP '(' string_or_number ')'	{ cfg_file_group_set(configuration, $3); free($3); }
+	| KW_GROUP '(' ')'                    	{ cfg_file_group_set(configuration, "-2"); }
+	| KW_PERM '(' LL_NUMBER ')'		{ cfg_file_perm_set(configuration, $3); }
+	| KW_PERM '(' ')'		        { cfg_file_perm_set(configuration, -2); }
+	| KW_DIR_OWNER '(' string_or_number ')'	{ cfg_dir_owner_set(configuration, $3); free($3); }
+	| KW_DIR_OWNER '('  ')'	                { cfg_dir_owner_set(configuration, "-2"); }
+	| KW_DIR_GROUP '(' string_or_number ')'	{ cfg_dir_group_set(configuration, $3); free($3); }
+	| KW_DIR_GROUP '('  ')'	                { cfg_dir_group_set(configuration, "-2"); }
+	| KW_DIR_PERM '(' LL_NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
+	| KW_DIR_PERM '('  ')'		        { cfg_dir_perm_set(configuration, -2); }
         ;
 
 file_dir_perm_option
