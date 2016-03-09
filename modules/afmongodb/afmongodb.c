@@ -115,24 +115,32 @@ _worker_disconnect(LogThrDestDriver *s)
 static gboolean
 _connect(MongoDBDestDriver *self, gboolean reconnect)
 {
-  if (reconnect && self->client)
-    return TRUE;
-
-  self->client = mongoc_client_new_from_uri(self->uri_obj);
-
   if (!self->client)
     {
-      msg_error("Error connecting to MongoDB", evt_tag_str("driver", self->super.super.super.id));
-      return FALSE;
+      self->client = mongoc_client_new_from_uri(self->uri_obj);
+
+      if (!self->client)
+        {
+          msg_error("Error connecting to MongoDB", evt_tag_str("driver", self->super.super.super.id));
+          return FALSE;
+        }
     }
 
-  self->coll_obj = mongoc_client_get_collection(self->client, self->const_db, self->coll);
   if (!self->coll_obj)
     {
-      msg_error("Error getting specified MongoDB collection",
-                evt_tag_str("collection", self->coll),
-                evt_tag_str("driver", self->super.super.super.id));
-      return FALSE;
+      self->coll_obj = mongoc_client_get_collection(self->client, self->const_db, self->coll);
+
+      if (!self->coll_obj)
+        {
+          msg_error("Error getting specified MongoDB collection",
+                    evt_tag_str("collection", self->coll),
+                    evt_tag_str("driver", self->super.super.super.id));
+
+          mongoc_client_destroy(self->client);
+          self->client = NULL;
+
+          return FALSE;
+        }
     }
 
   return TRUE;
