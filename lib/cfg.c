@@ -205,7 +205,7 @@ cfg_init(GlobalConfig *cfg)
     return FALSE;
 
   stats_reinit(&cfg->stats_options);
-  log_tags_reinit_stats(cfg);
+  log_tags_reinit_stats();
 
   dns_caching_update_options(&cfg->dns_cache_options);
   hostname_reinit(cfg->custom_domain);
