@@ -57,14 +57,14 @@ _create_log_message(const gchar *log)
 }
 
 static LogMatcher *
-_construct_matcher(gint matcher_flags, LogMatcher *(*construct)(const LogMatcherOptions *options))
+_construct_matcher(gint matcher_flags, LogMatcher *(*construct)(GlobalConfig *cfg, const LogMatcherOptions *options))
 {
   LogMatcherOptions matcher_options;
 
   log_matcher_options_defaults(&matcher_options);
   matcher_options.flags = matcher_flags;
 
-  return construct(&matcher_options);
+  return construct(configuration, &matcher_options);
 }
 
 
