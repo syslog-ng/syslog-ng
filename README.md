@@ -16,7 +16,7 @@ Key features:
   * work with any kind of unstructured data
   * receive and send [JSON](http://json.org/) formatted messages
   * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), ...)
+    db-parser(), kv-parser(), ...)
   * normalize, crunch and process logs as they flow through the system
   * hand on messages for further processing using message queues (like
     [AMQP](http://www.amqp.org/)), files or databases (like
@@ -33,6 +33,34 @@ Performance:
     second.
   * But classification, parsing and filtering still produces several
     tens of thousands messages per second.
+
+Community:
+  * syslog-ng is developed by a community of volunteers, the best way to
+    connect us is via our [github project page](http://github.com/balabit/syslog-ng)
+    project, our [gitter channel](https://gitter.im/balabit/syslog-ng) or
+    our [mailing list](https://lists.balabit.hu/mailman/listinfo/syslog-ng)
+  * syslog-ng is integrated into almost all Linux distributions & BSDs, it
+    is also incorporated into a number of products, see our [powered by
+    syslog-ng] page for more details.
+
+Sponsors:
+  * [Balabit](http://www.balabit.com/) is the original creator and the
+    largest current sponsor of the syslog-ng project, they provide support,
+    professional services and addons you might be interested in.
+
+Feedback
+========
+
+We are really interested in who uses our software, so if you do and you like
+what you see, please tell us about it.  A simple "thanks" is also enough,
+but learning about your usecase, experience, things to improve would be most
+appreciated.
+
+Just send an email to feedback (at) syslog-ng.org.
+
+Should not take more than a minute, right?  Now go ahead. Please.
+
+#FeedbackPowersOpenSource.
 
 Installation from Source
 ========================
