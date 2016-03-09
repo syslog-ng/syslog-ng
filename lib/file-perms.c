@@ -33,6 +33,8 @@
 #include <string.h>
 #include <errno.h>
 
+#define DONTCHANGE -2
+
 void
 file_perm_options_set_file_uid(FilePermOptions *self, const gchar *file_uid)
 {
@@ -43,6 +45,12 @@ file_perm_options_set_file_uid(FilePermOptions *self, const gchar *file_uid)
                  evt_tag_str("user", file_uid),
                  NULL);
     }
+}
+
+void
+file_perm_options_dont_change_file_uid(FilePermOptions *self)
+{
+  self->file_uid = DONTCHANGE;
 }
 
 void
@@ -58,9 +66,21 @@ file_perm_options_set_file_gid(FilePermOptions *self, const gchar *file_gid)
 }
 
 void
+file_perm_options_dont_change_file_gid(FilePermOptions *self)
+{
+  self->file_gid = DONTCHANGE;
+}
+
+void
 file_perm_options_set_file_perm(FilePermOptions *self, gint file_perm)
 {
   self->file_perm = file_perm;
+}
+
+void
+file_perm_options_dont_change_file_perm(FilePermOptions *self)
+{
+  self->file_perm = DONTCHANGE;
 }
 
 void
@@ -76,6 +96,12 @@ file_perm_options_set_dir_uid(FilePermOptions *self, const gchar *dir_uid)
 }
 
 void
+file_perm_options_dont_change_dir_uid(FilePermOptions *self)
+{
+  self->dir_uid = DONTCHANGE;
+}
+
+void
 file_perm_options_set_dir_gid(FilePermOptions *self, const gchar *dir_gid)
 {
   self->dir_gid = 0;
@@ -88,9 +114,21 @@ file_perm_options_set_dir_gid(FilePermOptions *self, const gchar *dir_gid)
 }
 
 void
+file_perm_options_dont_change_dir_gid(FilePermOptions *self)
+{
+  self->dir_gid = DONTCHANGE;
+}
+
+void
 file_perm_options_set_dir_perm(FilePermOptions *self, gint dir_perm)
 {
   self->dir_perm = dir_perm;
+}
+
+void
+file_perm_options_dont_change_dir_perm(FilePermOptions *self)
+{
+  self->dir_perm = DONTCHANGE;
 }
 
 void

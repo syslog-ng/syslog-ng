@@ -1147,17 +1147,17 @@ dest_writer_options_flags
 
 file_perm_option
 	: KW_OWNER '(' string_or_number ')'	{ file_perm_options_set_file_uid(last_file_perm_options, $3); free($3); }
-	| KW_OWNER '(' ')'	                { file_perm_options_set_file_uid(last_file_perm_options, "-2"); }
+	| KW_OWNER '(' ')'	                { file_perm_options_dont_change_file_uid(last_file_perm_options); }
 	| KW_GROUP '(' string_or_number ')'	{ file_perm_options_set_file_gid(last_file_perm_options, $3); free($3); }
-	| KW_GROUP '(' ')'	                { file_perm_options_set_file_gid(last_file_perm_options, "-2"); }
+	| KW_GROUP '(' ')'	                { file_perm_options_dont_change_file_gid(last_file_perm_options); }
 	| KW_PERM '(' LL_NUMBER ')'		{ file_perm_options_set_file_perm(last_file_perm_options, $3); }
-	| KW_PERM '(' ')'		        { file_perm_options_set_file_perm(last_file_perm_options, -2); }
+	| KW_PERM '(' ')'		        { file_perm_options_dont_change_file_perm(last_file_perm_options); }
         | KW_DIR_OWNER '(' string_or_number ')'	{ file_perm_options_set_dir_uid(last_file_perm_options, $3); free($3); }
-	| KW_DIR_OWNER '(' ')'	                { file_perm_options_set_dir_uid(last_file_perm_options, "-2"); }
+	| KW_DIR_OWNER '(' ')'	                { file_perm_options_dont_change_dir_uid(last_file_perm_options); }
 	| KW_DIR_GROUP '(' string_or_number ')'	{ file_perm_options_set_dir_gid(last_file_perm_options, $3); free($3); }
-	| KW_DIR_GROUP '(' ')'	                { file_perm_options_set_dir_gid(last_file_perm_options, "-2"); }
+	| KW_DIR_GROUP '(' ')'	                { file_perm_options_dont_change_dir_gid(last_file_perm_options); }
 	| KW_DIR_PERM '(' LL_NUMBER ')'		{ file_perm_options_set_dir_perm(last_file_perm_options, $3); }
-	| KW_DIR_PERM '(' ')'		        { file_perm_options_set_dir_perm(last_file_perm_options, -2); }
+	| KW_DIR_PERM '(' ')'		        { file_perm_options_dont_change_dir_perm(last_file_perm_options); }
         ;
 
 template_option
