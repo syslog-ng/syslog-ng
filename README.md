@@ -86,6 +86,6 @@ Others
 ------
 
 Binaries for other platforms are listed at the
-official [third party page][3rd-party] for more information.
+official [third party page][3rd-party].
 
  [3rd-party]: https://syslog-ng.org/3rd-party-binaries/
