@@ -13,6 +13,10 @@ modules/afmongodb/mongo-c-driver
 dist\.conf
 scl/syslog-ng\.conf
  LGPLv2.1+_SSL
+autogen\.sh$
+sub-configure\.sh$
+configure\.ac$
+Makefile\.am$
 lib/(compat|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|[^/]*$)
 libtest
 syslog-ng(-ctl)?
