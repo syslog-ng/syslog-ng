@@ -107,7 +107,6 @@ main_logged() {
   -o \
  -type f -print |
  sed "s~^\./~~" |
- grep --extended-regexp "\.(c|h|am|md|ym|conf)$" |
  prune_ignored_paths |
  sort |
  while read FILE; do
@@ -298,10 +297,10 @@ extract_holder_license() {
  local FILE="$1"
  local EXT="`echo "$FILE" | sed -r "s~^.*\.([^.]+)$~\1~"`"
  case "$EXT" in
-  c|h|ym)
+  c|h|ym|java)
     extract_holder_license_c
     ;;
-  conf)
+  ac|am|conf|sh|pl|py)
     extract_holder_license_sh
     ;;
   *)
@@ -312,6 +311,7 @@ extract_holder_license() {
 extract_holder_license_sh() {
 sed --regexp-extended "
  s~^\
+(#![^<]*<br>|)\
 #############################################################################<br>\
 (\
 (# Copyright \(c\) ([0-9, -]+) [^ <][^<]*<br>)+\
@@ -328,7 +328,7 @@ sed --regexp-extended "
 #<br>\
 #############################################################################<br>\
 .*$\
-~\1\n\4~
+~\2\n\5~
 t success
  s~^.*$~~
 :success
@@ -384,6 +384,7 @@ parse_expected_licenses() {
 
  cat "$POLICY" |
  grep --invert-match --extended-regexp "^\s*$" |
+ sed "s~[\\]~&&~g" |
  sed "
   s~^ ~L ~
   t e
