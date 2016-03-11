@@ -385,17 +385,29 @@ host_resolve_options_global_defaults(HostResolveOptions *options)
   options->normalize_hostnames = FALSE;
 }
 
+static void
+_init_options(HostResolveOptions *options)
+{
+}
+
 void
-host_resolve_options_init(HostResolveOptions *options, GlobalConfig *cfg)
+host_resolve_options_init_globals(HostResolveOptions *options)
+{
+  _init_options(options);
+}
+
+void
+host_resolve_options_init(HostResolveOptions *options, HostResolveOptions *global_options)
 {
   if (options->use_dns == -1)
-    options->use_dns = cfg->host_resolve_options.use_dns;
+    options->use_dns = global_options->use_dns;
   if (options->use_fqdn == -1)
-    options->use_fqdn = cfg->host_resolve_options.use_fqdn;
+    options->use_fqdn = global_options->use_fqdn;
   if (options->use_dns_cache == -1)
-    options->use_dns_cache = cfg->host_resolve_options.use_dns_cache;
+    options->use_dns_cache = global_options->use_dns_cache;
   if (options->normalize_hostnames == -1)
-    options->normalize_hostnames = cfg->host_resolve_options.normalize_hostnames;
+    options->normalize_hostnames = global_options->normalize_hostnames;
+  _init_options(options);
 }
 
 void

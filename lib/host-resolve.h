@@ -41,7 +41,8 @@ const gchar *resolve_hostname_to_hostname(gsize *result_len, const gchar *hostna
 
 void host_resolve_options_defaults(HostResolveOptions *options);
 void host_resolve_options_global_defaults(HostResolveOptions *options);
-void host_resolve_options_init(HostResolveOptions *options, GlobalConfig *cfg);
+void host_resolve_options_init_globals(HostResolveOptions *options);
+void host_resolve_options_init(HostResolveOptions *options, HostResolveOptions *global_options);
 void host_resolve_options_destroy(HostResolveOptions *options);
 
 #endif
