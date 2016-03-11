@@ -28,7 +28,7 @@
 #include "mainloop-worker.h"
 #include "string-list.h"
 
-#include <dbi/dbi.h>
+#include <dbi.h>
 
 enum
 {
