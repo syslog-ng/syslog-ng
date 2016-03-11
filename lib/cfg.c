@@ -409,7 +409,7 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 void
 cfg_load_candidate_modules(GlobalConfig *self)
 {
-  plugin_load_candidate_modules(self);
+  plugin_load_candidate_modules(&self->plugin_context);
 }
 
 static void
@@ -506,8 +506,8 @@ cfg_free(GlobalConfig *self)
   g_free(self->bad_hostname_re);
   dns_cache_options_destroy(&self->dns_cache_options);
   g_free(self->custom_domain);
-  plugin_free_plugins(self);
-  plugin_free_candidate_modules(self);
+  plugin_free_plugins(&self->plugin_context);
+  plugin_free_candidate_modules(&self->plugin_context);
   cfg_tree_free_instance(&self->tree);
   g_hash_table_unref(self->module_config);
   g_free(self);
