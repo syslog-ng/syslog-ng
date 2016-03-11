@@ -47,6 +47,7 @@
 typedef struct _LogPipe LogPipe;
 typedef struct _LogMessage LogMessage;
 typedef struct _GlobalConfig GlobalConfig;
+typedef struct _PluginContext PluginContext;
 typedef struct _Bookmark Bookmark;
 typedef struct _AckTracker AckTracker;
 typedef struct _AckRecord AckRecord;

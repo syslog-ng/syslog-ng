@@ -74,7 +74,7 @@ plugin_candidate_free(PluginCandidate *self)
 }
 
 static Plugin *
-plugin_find_in_list(GlobalConfig *cfg, GList *head, gint plugin_type, const gchar *plugin_name)
+plugin_find_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
 {
   GList *p;
   Plugin *plugin;
@@ -112,14 +112,14 @@ plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
 
   for (i = 0; i < number; i++)
     {
-      if (plugin_find_in_list(cfg, cfg->plugins, p[i].type, p[i].name))
+      if (plugin_find_in_list(cfg->plugin_context.plugins, p[i].type, p[i].name))
         {
           msg_debug("Attempted to register the same plugin multiple times, ignoring",
                     evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
                     evt_tag_str("name", p[i].name));
           continue;
         }
-      cfg->plugins = g_list_prepend(cfg->plugins, &p[i]);
+      cfg->plugin_context.plugins = g_list_prepend(cfg->plugin_context.plugins, &p[i]);
     }
 }
 
@@ -130,13 +130,13 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
   PluginCandidate *candidate;
 
   /* try registered plugins first */
-  p = plugin_find_in_list(cfg, cfg->plugins, plugin_type, plugin_name);
+  p = plugin_find_in_list(cfg->plugin_context.plugins, plugin_type, plugin_name);
   if (p)
     {
       return p;
     }
 
-  candidate = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin_type, plugin_name);
+  candidate = (PluginCandidate *) plugin_find_in_list(cfg->plugin_context.candidate_plugins, plugin_type, plugin_name);
   if (!candidate)
     return NULL;
 
@@ -144,7 +144,7 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
   plugin_load_module(candidate->module_name, cfg, NULL);
 
   /* by this time it should've registered */
-  p = plugin_find_in_list(cfg, cfg->plugins, plugin_type, plugin_name);
+  p = plugin_find_in_list(cfg->plugin_context.plugins, plugin_type, plugin_name);
   if (p)
     {
       p->failure_info.aux_data = candidate->super.failure_info.aux_data;
@@ -445,7 +445,7 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
                       Plugin *plugin = &module_info->plugins[j];
                       PluginCandidate *candidate_plugin;
 
-                      candidate_plugin = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin->type, plugin->name);
+                      candidate_plugin = (PluginCandidate *) plugin_find_in_list(cfg->plugin_context.candidate_plugins, plugin->type, plugin->name);
 
                       msg_debug("Registering candidate plugin",
                                 evt_tag_str("module", module_name),
@@ -462,8 +462,9 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
                         }
                       else
                         {
-                          cfg->candidate_plugins = g_list_prepend(cfg->candidate_plugins, plugin_candidate_new(plugin->type, plugin->name,
-                                                                  module_name, module_info->preference));
+                          cfg->plugin_context.candidate_plugins = g_list_prepend(cfg->plugin_context.candidate_plugins,
+                                                                                 plugin_candidate_new(plugin->type, plugin->name,
+                                                                                 module_name, module_info->preference));
                         }
                     }
                 }
@@ -482,9 +483,9 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
 void
 plugin_free_candidate_modules(GlobalConfig *cfg)
 {
-  g_list_foreach(cfg->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
-  g_list_free(cfg->candidate_plugins);
-  cfg->candidate_plugins = NULL;
+  g_list_foreach(cfg->plugin_context.candidate_plugins, (GFunc) plugin_candidate_free, NULL);
+  g_list_free(cfg->plugin_context.candidate_plugins);
+  cfg->plugin_context.candidate_plugins = NULL;
 }
 
 void
@@ -582,6 +583,6 @@ _free_plugin(Plugin *plugin, gpointer user_data)
 void
 plugin_free_plugins(GlobalConfig *cfg)
 {
-  g_list_foreach(cfg->plugins, (GFunc) _free_plugin, NULL);
-  g_list_free(cfg->plugins);
+  g_list_foreach(cfg->plugin_context.plugins, (GFunc) _free_plugin, NULL);
+  g_list_free(cfg->plugin_context.plugins);
 }

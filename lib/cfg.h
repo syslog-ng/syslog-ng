@@ -51,6 +51,13 @@ enum
   MM_GLOBAL,
 };
 
+struct _PluginContext
+{
+  GList *plugins;
+  GList *candidate_plugins;
+};
+
+
 /* configuration data kept between configuration reloads */
 typedef struct _PersistConfig PersistConfig;
 
@@ -65,8 +72,7 @@ struct _GlobalConfig
    * multiple times if the user uses @version multiple times */
   gint parsed_version;
   const gchar *filename;
-  GList *plugins;
-  GList *candidate_plugins;
+  struct _PluginContext plugin_context;
   gboolean autoload_compiled_modules;
   CfgLexer *lexer;
 

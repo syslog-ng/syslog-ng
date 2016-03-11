@@ -29,6 +29,7 @@
 
 typedef struct _Plugin Plugin;
 typedef struct _ModuleInfo ModuleInfo;
+typedef struct _PluginContext PluginContext;
 
 typedef struct _PluginFailureInfo
 {
