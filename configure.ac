@@ -732,9 +732,14 @@ dnl ***************************************************************************
 dnl libdbi headers/libraries
 dnl ***************************************************************************
 if test "x$enable_sql" = "xyes" || test "x$enable_sql" = "xauto"; then
-	PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, with_libdbi="")
+	PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION, with_libdbi="1", with_libdbi="0")
+	if test "$with_libdbi" -eq 0; then
+		dnl if libdbi has no .pc file (e.g., Ubuntu Precise), try it without one
+		AC_CHECK_LIB(dbi, dbi_initialize_r, LIBDBI_LIBS="-ldbi"; LIBDBI_CFLAGS="-I/usr/include/dbi"; with_libdbi="1")
+	fi
+
 	AC_MSG_CHECKING(whether to enable SQL support)
-	if test "x$LIBDBI_LIBS" != "x"; then
+	if test "$with_libdbi" -eq 1; then
 		enable_sql="yes"
 		AC_MSG_RESULT(yes)
 	elif test "x$enable_sql" = "xyes"; then
