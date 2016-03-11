@@ -316,11 +316,7 @@ cfg_new(gint version)
   self->template_options.frac_digits = 0;
   self->template_options.on_error = ON_ERROR_DROP_MESSAGE;
 
-  host_resolve_options_defaults(&self->host_resolve_options);
-  self->host_resolve_options.use_fqdn = FALSE;
-  self->host_resolve_options.use_dns = TRUE;
-  self->host_resolve_options.use_dns_cache = TRUE;
-  self->host_resolve_options.normalize_hostnames = FALSE;
+  host_resolve_options_global_defaults(&self->host_resolve_options);
 
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;

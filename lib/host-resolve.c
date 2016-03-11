@@ -377,6 +377,15 @@ host_resolve_options_defaults(HostResolveOptions *options)
 }
 
 void
+host_resolve_options_global_defaults(HostResolveOptions *options)
+{
+  options->use_fqdn = FALSE;
+  options->use_dns = TRUE;
+  options->use_dns_cache = TRUE;
+  options->normalize_hostnames = FALSE;
+}
+
+void
 host_resolve_options_init(HostResolveOptions *options, GlobalConfig *cfg)
 {
   if (options->use_dns == -1)
