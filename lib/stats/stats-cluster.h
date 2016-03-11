@@ -79,7 +79,7 @@ enum
   SCS_RIEMANN        = 33,
   SCS_JOURNALD       = 34,
   SCS_JAVA           = 35,
-  SCS_CURL           = 36,
+  SCS_HTTP           = 36,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };

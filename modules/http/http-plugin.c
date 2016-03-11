@@ -20,16 +20,34 @@
  *
  */
 
-#ifndef CURL_PARSER_H_INCLUDED
-#define CURL_PARSER_H_INCLUDED
+#include "http-plugin.h"
+#include "plugin.h"
+#include "plugin-types.h"
 
-#include "cfg-parser.h"
-#include "cfg-lexer.h"
-#include "driver.h"
+extern CfgParser http_parser;
 
-extern CfgParser curl_parser;
+static Plugin http_plugins[] =
+{
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "http",
+    .parser = &http_parser,
+  },
+};
 
-CFG_PARSER_DECLARE_LEXER_BINDING(curl_, LogDriver **)
+gboolean
+http_module_init(GlobalConfig *cfg, CfgArgs *args)
+{
+  plugin_register(cfg, http_plugins, G_N_ELEMENTS(http_plugins));
+  return TRUE;
+}
 
-#endif
-
+const ModuleInfo module_info =
+{
+  .canonical_name = "http",
+  .version = SYSLOG_NG_VERSION,
+  .description = "The http module provides HTTP destination support for syslog-ng.",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = http_plugins,
+  .plugins_len = G_N_ELEMENTS(http_plugins),
+};

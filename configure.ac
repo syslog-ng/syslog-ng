@@ -203,9 +203,9 @@ AC_ARG_WITH(libesmtp,
              AC_HELP_STRING([--with-libesmtp=DIR],
                             [use libesmtp library from (prefix) directory DIR]),,)
 
-AC_ARG_ENABLE(curl,
-              [  --disable-curl          Disable cURL support (default: auto)]
-              ,,enable_curl="auto")
+AC_ARG_ENABLE(http,
+              [  --disable-http          Disable http support (default: auto)]
+              ,,enable_http="auto")
 
 AC_ARG_WITH(libcurl,
              AC_HELP_STRING([--with-libcurl=DIR],
@@ -1015,7 +1015,7 @@ fi
 dnl ***************************************************************************
 dnl libcurl headers/libraries
 dnl ***************************************************************************
-if test "x$enable_curl" != "xno" && test "x$with_libcurl" != "xno"; then
+if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
 	libcurl="yes"
 	if test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "x"; then
 		CPPFLAGS_SAVE="$CPPFLAGS"
@@ -1037,10 +1037,10 @@ if test "x$enable_curl" != "xno" && test "x$with_libcurl" != "xno"; then
 			libcurl=no
 		fi
 	fi
-	if test "x$enable_curl" = "xyes" && test "x$libcurl" = "xno"; then
+	if test "x$enable_http" = "xyes" && test "x$libcurl" = "xno"; then
 		AC_MSG_ERROR(libcurl not found)
 	fi
-	enable_curl=$libcurl
+	enable_http=$libcurl
 fi
 
 dnl ***************************************************************************
@@ -1493,7 +1493,7 @@ AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
-AM_CONDITIONAL(ENABLE_CURL, [test "$enable_curl" = "yes"])
+AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
@@ -1610,7 +1610,7 @@ echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
 echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
-echo "  cURL support (module)       : ${enable_curl:=no}"
+echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"

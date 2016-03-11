@@ -21,7 +21,7 @@
  */
 
 %code top {
-#include "curl-parser.h"
+#include "http-parser.h"
 
 }
 
@@ -30,15 +30,15 @@
 
 #include "cfg-grammar.h"
 #include "cfg-parser.h"
-#include "curl-plugin.h"
-#include "curl-grammar.h"
+#include "http-plugin.h"
+#include "http-grammar.h"
 #include "plugin.h"
 
 #include <string.h>
 
 }
 
-%name-prefix "curl_"
+%name-prefix "http_"
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */
@@ -48,7 +48,7 @@
 %parse-param {LogDriver **instance}
 %parse-param {gpointer arg}
 
-%token KW_CURL
+%token KW_HTTP
 %token KW_URL
 %token KW_USER
 %token KW_PASSWORD
@@ -57,7 +57,7 @@
 %token KW_BODY
 
 %type   <ptr> driver
-%type   <ptr> curl_destination
+%type   <ptr> http_destination
 
 /* INCLUDE_DECLS */
 
@@ -74,32 +74,32 @@ start
     ;
 
 driver
-    : LL_CONTEXT_DESTINATION curl_destination          { $$ = $2; }
+    : LL_CONTEXT_DESTINATION http_destination          { $$ = $2; }
     ;
 
-curl_destination
-    : KW_CURL
+http_destination
+    : KW_HTTP
       {
-        last_driver = curl_dd_new(configuration);
+        last_driver = http_dd_new(configuration);
       }
-      '(' curl_options ')'  { $$ = last_driver; }
+      '(' http_options ')'  { $$ = last_driver; }
     ;
 
-curl_options
-    : curl_option curl_options
+http_options
+    : http_option http_options
     |
     ;
 
-curl_option
-    : KW_URL        '(' string ')'            { curl_dd_set_url(last_driver, $3); free($3); }
-    | KW_USER       '(' string ')'            { curl_dd_set_user(last_driver, $3); free($3); }
-    | KW_PASSWORD   '(' string ')'            { curl_dd_set_password(last_driver, $3); free($3); }
-    | KW_USER_AGENT '(' string ')'            { curl_dd_set_user_agent(last_driver, $3); free($3); }
-    | KW_HEADERS    '(' string_list ')'       { curl_dd_set_headers(last_driver, $3); g_list_free($3); }
-    | KW_BODY       '(' template_content ')'  { curl_dd_set_body(last_driver, $3); log_template_unref($3); }
+http_option
+    : KW_URL        '(' string ')'            { http_dd_set_url(last_driver, $3); free($3); }
+    | KW_USER       '(' string ')'            { http_dd_set_user(last_driver, $3); free($3); }
+    | KW_PASSWORD   '(' string ')'            { http_dd_set_password(last_driver, $3); free($3); }
+    | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }
+    | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free($3); }
+    | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
     | dest_driver_option
     | threaded_dest_driver_option
-    | { last_template_options = curl_dd_get_template_options(last_driver); } template_option
+    | { last_template_options = http_dd_get_template_options(last_driver); } template_option
     ;
 
 /* INCLUDE_RULES */

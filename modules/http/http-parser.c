@@ -22,14 +22,14 @@
 
 #include "driver.h"
 #include "cfg-parser.h"
-#include "curl-grammar.h"
+#include "http-grammar.h"
 
-extern int curl_debug;
+extern int http_debug;
 
-int curl_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+int http_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword curl_keywords[] = {
-  { "curl",         KW_CURL },
+static CfgLexerKeyword http_keywords[] = {
+  { "http",         KW_HTTP },
   { "user",         KW_USER },
   { "password",     KW_PASSWORD },
   { "user_agent",   KW_USER_AGENT },
@@ -39,15 +39,15 @@ static CfgLexerKeyword curl_keywords[] = {
   { NULL }
 };
 
-CfgParser curl_parser =
+CfgParser http_parser =
 {
 #if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &curl_debug,
+  .debug_flag = &http_debug,
 #endif
-  .name = "curl",
-  .keywords = curl_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) curl_parse,
+  .name = "http",
+  .keywords = http_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) http_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(curl_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(http_, LogDriver **)

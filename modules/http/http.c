@@ -23,16 +23,16 @@
 #include <curl/curl.h>
 
 #include "syslog-names.h"
-#include "curl-plugin.h"
+#include "http-plugin.h"
 
 static gchar *
 _format_persist_name(LogThrDestDriver *s)
 {
   static gchar persist_name[1024];
 
-  CurlDestinationDriver *self = (CurlDestinationDriver *) s;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  g_snprintf(persist_name, sizeof(persist_name), "curl(%s,)", self->url);
+  g_snprintf(persist_name, sizeof(persist_name), "http(%s,)", self->url);
 
   return persist_name;
 }
@@ -42,15 +42,15 @@ _format_stats_instance(LogThrDestDriver *s)
 {
   static gchar stats[1024];
 
-  CurlDestinationDriver *self = (CurlDestinationDriver *) s;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  g_snprintf(stats, sizeof(stats), "curl,%s", self->url);
+  g_snprintf(stats, sizeof(stats), "http,%s", self->url);
 
   return stats;
 }
 
 static size_t
-_curl_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
+_http_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
     // Discard response content
     return nmemb * size;
@@ -59,7 +59,7 @@ _curl_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 static void
 _thread_init(LogThrDestDriver *s)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) s;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
   if (!self->user_agent)
@@ -84,7 +84,7 @@ _disconnect(LogThrDestDriver *s)
 }
 
 static struct curl_slist *
-_get_curl_headers(CurlDestinationDriver *self, LogMessage *msg)
+_get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
 {
   GList *header = NULL;
   struct curl_slist *curl_headers = NULL;
@@ -119,7 +119,7 @@ _get_curl_headers(CurlDestinationDriver *self, LogMessage *msg)
 }
 
 static GString *
-_get_body_rendered(CurlDestinationDriver *self, LogMessage *msg)
+_get_body_rendered(HTTPDestinationDriver *self, LogMessage *msg)
 {
   GString *body_rendered = NULL;
 
@@ -132,11 +132,11 @@ _get_body_rendered(CurlDestinationDriver *self, LogMessage *msg)
 }
 
 static void
-_set_curl_opt(CurlDestinationDriver *self, LogMessage *msg, struct curl_slist *curl_headers, GString *body_rendered)
+_set_curl_opt(HTTPDestinationDriver *self, LogMessage *msg, struct curl_slist *curl_headers, GString *body_rendered)
 {
   curl_easy_reset(self->curl);
 
-  curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _curl_write_cb);
+  curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _http_write_cb);
 
   curl_easy_setopt(self->curl, CURLOPT_URL, self->url);
 
@@ -162,7 +162,7 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 {
   CURLcode ret;
 
-  CurlDestinationDriver *self = (CurlDestinationDriver *) s;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
   struct curl_slist * curl_headers = _get_curl_headers(self, msg);
   GString *body_rendered = _get_body_rendered(self, msg);
@@ -191,71 +191,71 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 }
 
 void
-curl_dd_set_url(LogDriver *d, const gchar *url)
+http_dd_set_url(LogDriver *d, const gchar *url)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) d;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   g_free(self->url);
   self->url = g_strdup(url);
 }
 
 void
-curl_dd_set_user(LogDriver *d, const gchar *user)
+http_dd_set_user(LogDriver *d, const gchar *user)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) d;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   g_free(self->user);
   self->user = g_strdup(user);
 }
 
 void
-curl_dd_set_password(LogDriver *d, const gchar *password)
+http_dd_set_password(LogDriver *d, const gchar *password)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) d;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   g_free(self->password);
   self->password = g_strdup(password);
 }
 
 void
-curl_dd_set_user_agent(LogDriver *d, const gchar *user_agent)
+http_dd_set_user_agent(LogDriver *d, const gchar *user_agent)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) d;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   g_free(self->user_agent);
   self->user_agent = g_strdup(user_agent);
 }
 
 void
-curl_dd_set_headers(LogDriver *d, GList *headers)
+http_dd_set_headers(LogDriver *d, GList *headers)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) d;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   g_list_free(self->headers);
   self->headers = headers;
 }
 
 void
-curl_dd_set_body(LogDriver *d, LogTemplate *body)
+http_dd_set_body(LogDriver *d, LogTemplate *body)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) d;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   log_template_unref(self->body_template);
   self->body_template = log_template_ref(body);
 }
 
 LogTemplateOptions *
-curl_dd_get_template_options(LogDriver *d)
+http_dd_get_template_options(LogDriver *d)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *) d;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   return &self->template_options;
 }
 
 gboolean
-curl_dd_init(LogPipe *s)
+http_dd_init(LogPipe *s)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *)s;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (!log_dest_driver_init_method(s))
@@ -264,22 +264,22 @@ curl_dd_init(LogPipe *s)
   log_template_options_init(&self->template_options, cfg);
 
   if (!self->url) {
-    self->url = g_strdup(CURL_DEFAULT_URL);
+    self->url = g_strdup(HTTP_DEFAULT_URL);
   }
 
   return log_threaded_dest_driver_start(s);
 }
 
 gboolean
-curl_dd_deinit(LogPipe *s)
+http_dd_deinit(LogPipe *s)
 {
   return log_threaded_dest_driver_deinit_method(s);
 }
 
 static void
-curl_dd_free(LogPipe *s)
+http_dd_free(LogPipe *s)
 {
-  CurlDestinationDriver *self = (CurlDestinationDriver *)s;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
 
   curl_easy_cleanup(self->curl);
   curl_global_cleanup();
@@ -295,14 +295,14 @@ curl_dd_free(LogPipe *s)
 
 
 LogDriver *
-curl_dd_new(GlobalConfig *cfg)
+http_dd_new(GlobalConfig *cfg)
 {
-  CurlDestinationDriver *self = g_new0(CurlDestinationDriver, 1);
+  HTTPDestinationDriver *self = g_new0(HTTPDestinationDriver, 1);
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
-  self->super.super.super.super.init = curl_dd_init;
-  self->super.super.super.super.deinit = curl_dd_deinit;
+  self->super.super.super.super.init = http_dd_init;
+  self->super.super.super.super.deinit = http_dd_deinit;
   self->super.worker.thread_init = _thread_init;
   self->super.worker.thread_deinit = _thread_deinit;
   self->super.worker.connect = _connect;
@@ -310,8 +310,8 @@ curl_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = _insert;
   self->super.format.persist_name = _format_persist_name;
   self->super.format.stats_instance = _format_stats_instance;
-  self->super.stats_source = SCS_CURL;
-  self->super.super.super.super.free_fn = curl_dd_free;
+  self->super.stats_source = SCS_HTTP;
+  self->super.super.super.super.free_fn = http_dd_free;
 
   curl_global_init(CURL_GLOBAL_ALL);
 

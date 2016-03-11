@@ -20,10 +20,10 @@
  *
  */
 
-#ifndef CURL_PLUGIN_H_INCLUDED
-#define CURL_PLUGIN_H_INCLUDED 1
+#ifndef HTTP_PLUGIN_H_INCLUDED
+#define HTTP_PLUGIN_H_INCLUDED 1
 
-#define CURL_DEFAULT_URL "http://localhost/"
+#define HTTP_DEFAULT_URL "http://localhost/"
 
 #include "logthrdestdrv.h"
 
@@ -38,17 +38,17 @@ typedef struct
   gchar *user_agent;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
-} CurlDestinationDriver;
+} HTTPDestinationDriver;
 
-gboolean curl_dd_init(LogPipe *s);
-gboolean curl_dd_deinit(LogPipe *s);
-LogDriver *curl_dd_new(GlobalConfig *cfg);
-void curl_dd_set_url(LogDriver *d, const gchar *url);
-void curl_dd_set_user(LogDriver *d, const gchar *user);
-void curl_dd_set_password(LogDriver *d, const gchar *password);
-void curl_dd_set_user_agent(LogDriver *d, const gchar *user_agent);
-void curl_dd_set_headers(LogDriver *d, GList *headers);
-void curl_dd_set_body(LogDriver *d, LogTemplate *body);
-LogTemplateOptions *curl_dd_get_template_options(LogDriver *d);
+gboolean http_dd_init(LogPipe *s);
+gboolean http_dd_deinit(LogPipe *s);
+LogDriver *http_dd_new(GlobalConfig *cfg);
+void http_dd_set_url(LogDriver *d, const gchar *url);
+void http_dd_set_user(LogDriver *d, const gchar *user);
+void http_dd_set_password(LogDriver *d, const gchar *password);
+void http_dd_set_user_agent(LogDriver *d, const gchar *user_agent);
+void http_dd_set_headers(LogDriver *d, GList *headers);
+void http_dd_set_body(LogDriver *d, LogTemplate *body);
+LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
 
 #endif
