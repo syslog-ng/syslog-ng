@@ -226,18 +226,19 @@ http_dd_set_user_agent(LogDriver *d, const gchar *user_agent)
   self->user_agent = g_strdup(user_agent);
 }
 
-gpointer
-_g_strdup_for_copy_deep(gconstpointer src, gpointer user_data) {
-  return (gpointer *) g_strdup(src);
-}
-
 void
 http_dd_set_headers(LogDriver *d, GList *headers)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   g_list_free_full(self->headers, g_free);
-  self->headers = g_list_copy_deep(headers, _g_strdup_for_copy_deep, NULL);
+  self->headers = g_list_copy(headers);
+
+  GList *header = self->headers;
+  while (header != NULL) {
+    header->data = g_strdup(header->data);
+    header = g_list_next(header);
+  }
 }
 
 void
