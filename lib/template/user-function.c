@@ -116,7 +116,6 @@ user_template_function_register(GlobalConfig *cfg, const gchar *name, LogTemplat
   plugin->super.type = LL_CONTEXT_TEMPLATE_FUNC;
   plugin->super.name = g_strdup(name);
   plugin->super.parser = NULL;
-  plugin->super.setup_context = NULL;
   plugin->super.construct = user_template_function_construct;
   plugin->super.free_fn = user_template_function_plugin_free;
   plugin->template = log_template_ref(template);
