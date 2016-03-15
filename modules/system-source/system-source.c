@@ -351,13 +351,11 @@ system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
 }
 
 static gboolean
-system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
-                       CfgArgs *args, gpointer user_data)
+system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args)
 {
   gchar buf[256];
   GString *sysblock;
   gboolean result = FALSE;
-  GlobalConfig *cfg = (GlobalConfig *) user_data;
 
   g_snprintf(buf, sizeof(buf), "source confgen system");
 
@@ -383,13 +381,23 @@ exit:
   return result;
 }
 
+
+CfgBlockGenerator *
+system_source_generator_new(gint context, const gchar *name)
+{
+  CfgBlockGenerator *self = g_new0(CfgBlockGenerator, 1);
+
+  cfg_block_generator_init_instance(self, context, name);
+  self->generate = system_source_generate;
+  return self;
+}
+
 gboolean
 system_source_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   cfg_lexer_register_block_generator(cfg->lexer,
-                                     cfg_lexer_lookup_context_type_by_name("source"),
-                                     "system", system_generate_system,
-                                     cfg, NULL);
+                                     system_source_generator_new(cfg_lexer_lookup_context_type_by_name("source"),
+                                                                 "system"));
 
   return TRUE;
 }

@@ -87,15 +87,6 @@ typedef struct _CfgLexerKeyword
 
 #define CFG_KEYWORD_STOP "@!#?"
 
-/* a block generator is a function that includes a configuration file
- * snippet in place to the block reference.  This is used by the
- * "block" statement, but can also be used by external plugins to
- * generate configuration snippets programmatically.  That code
- * however is missing as of now.  (though would be trivial to add)
- */
-typedef gboolean (*CfgBlockGeneratorFunc)(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, gpointer user_data);
-
-
 /**
  * CfgBlockGenerator:
  *
@@ -110,13 +101,19 @@ struct _CfgBlockGenerator
 {
   gint context;
   gchar *name;
-  CfgBlockGeneratorFunc generator;
-  gpointer generator_data;
-  GDestroyNotify generator_data_free;
+  gboolean (*generate)(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args);
+  void (*free_fn)(CfgBlockGenerator *self);
 };
 
-CfgBlockGenerator *cfg_block_generator_new(gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer generator_data, GDestroyNotify generator_data_free);
+gboolean cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args);
+void cfg_block_generator_init_instance(CfgBlockGenerator *self, gint context, const gchar *name);
+void cfg_block_generator_free_instance(CfgBlockGenerator *self);
 void cfg_block_generator_free(CfgBlockGenerator *self);
+
+/* user defined configuration block */
+
+CfgBlockGenerator *cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs);
+
 
 /* structure that describes a given location in the include stack */
 struct _CfgIncludeLevel
@@ -205,7 +202,7 @@ gint cfg_lexer_get_context_type(CfgLexer *self);
 
 /* token blocks */
 void cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block);
-gboolean cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer user_data, GDestroyNotify user_data_free);
+gboolean cfg_lexer_register_block_generator(CfgLexer *self, CfgBlockGenerator *gen);
 
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 void cfg_lexer_free_token(YYSTYPE *token);
@@ -226,11 +223,6 @@ YYSTYPE *cfg_token_block_get_token(CfgTokenBlock *self);
 CfgTokenBlock *cfg_token_block_new(void);
 void cfg_token_block_free(CfgTokenBlock *self);
 
-/* user defined configuration block */
-
-gboolean cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *args, gpointer user_data);
-CfgBlock *cfg_block_new(const gchar *content, CfgArgs *arg_defs);
-void cfg_block_free(CfgBlock *self);
 
 #define CFG_LEXER_ERROR cfg_lexer_error_quark()
 
