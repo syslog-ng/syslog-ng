@@ -239,7 +239,42 @@ plugin_get_module_init_name(const gchar *module_name)
 }
 
 static GModule *
-plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
+plugin_dlopen_module_as_filename(const gchar *module_file_name, const gchar *module_name)
+{
+  GModule *mod = NULL;
+
+  msg_trace("Trying to open module",
+            evt_tag_str("module", module_name),
+            evt_tag_str("filename", module_file_name),
+            NULL);
+
+  mod = g_module_open(module_file_name, G_MODULE_BIND_LAZY);
+  if (!mod)
+    {
+      msg_error("Error opening plugin module",
+                evt_tag_str("module", module_name),
+                evt_tag_str("error", g_module_error()),
+                NULL);
+      return NULL;
+    }
+  return mod;
+}
+
+static GModule *
+plugin_dlopen_module_as_dir_and_filename(const gchar *module_dir_name, const gchar *module_file_name, const gchar *module_name)
+{
+  gchar *path;
+  GModule *mod;
+
+  path = g_build_path(G_DIR_SEPARATOR_S, module_dir_name, module_file_name, NULL);
+  mod = plugin_dlopen_module_as_filename(path, module_name);
+  g_free(path);
+  return mod;
+}
+
+
+static GModule *
+plugin_dlopen_module_on_path(const gchar *module_name, const gchar *module_path)
 {
   gchar *plugin_module_name = NULL;
   gchar **module_path_dirs, *p, *dot;
@@ -293,19 +328,9 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
                 evt_tag_str("module", module_name));
       return NULL;
     }
-  msg_trace("Trying to open module",
-            evt_tag_str("module", module_name),
-            evt_tag_str("filename", plugin_module_name));
 
-  mod = g_module_open(plugin_module_name, G_MODULE_BIND_LAZY);
+  mod = plugin_dlopen_module_as_filename(plugin_module_name, module_name);
   g_free(plugin_module_name);
-  if (!mod)
-    {
-      msg_debug("Error opening plugin module",
-                evt_tag_str("module", module_name),
-                evt_tag_str("error", g_module_error()));
-      return NULL;
-    }
   return mod;
 }
 
@@ -331,7 +356,7 @@ plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *ar
     }
 
   /* try to load it from external .so */
-  mod = plugin_dlopen_module(module_name, context->module_path);
+  mod = plugin_dlopen_module_on_path(module_name, context->module_path);
   if (!mod)
     {
       g_free(module_init_func);
@@ -378,7 +403,7 @@ plugin_load_candidate_modules(PluginContext *context)
   if (context->candidate_plugins)
     return;
 
-  mod_paths = g_strsplit(resolvedConfigurablePaths.initial_module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
+  mod_paths = g_strsplit(context->module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
     {
       GDir *dir;
@@ -395,16 +420,17 @@ plugin_load_candidate_modules(PluginContext *context)
             {
               gchar *module_name;
               ModuleInfo *module_info;
+              const gchar *so_basename = fname;
 
               if (g_str_has_prefix(fname, "lib"))
-                fname += 3;
-              module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
+                so_basename = fname + 3;
+              module_name = g_strndup(so_basename, (gint) (strlen(so_basename) - strlen(G_MODULE_SUFFIX) - 1));
 
               msg_debug("Reading shared object for a candidate module",
                         evt_tag_str("path", mod_paths[i]),
                         evt_tag_str("fname", fname),
                         evt_tag_str("module", module_name));
-              mod = plugin_dlopen_module(module_name, resolvedConfigurablePaths.initial_module_path);
+              mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
               module_info = plugin_get_module_info(mod);
 
               if (module_info)
@@ -519,12 +545,13 @@ plugin_list_modules(FILE *out, gboolean verbose)
             {
               gchar *module_name;
               ModuleInfo *module_info;
+              const gchar *so_basename = fname;
 
               if (g_str_has_prefix(fname, "lib"))
-                fname += 3;
-              module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
+                so_basename = fname + 3;
+              module_name = g_strndup(so_basename, (gint) (strlen(so_basename) - strlen(G_MODULE_SUFFIX) - 1));
 
-              mod = plugin_dlopen_module(module_name, resolvedConfigurablePaths.initial_module_path);
+              mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
               module_info = plugin_get_module_info(mod);
               if (verbose)
                 {
