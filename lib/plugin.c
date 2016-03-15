@@ -371,6 +371,9 @@ plugin_load_candidate_modules(PluginContext *context)
   gchar **mod_paths;
   gint i, j;
 
+  if (context->candidate_plugins)
+    return;
+
   mod_paths = g_strsplit(resolvedConfigurablePaths.initial_module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
     {
