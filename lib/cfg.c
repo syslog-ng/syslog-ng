@@ -159,10 +159,37 @@ _invoke_module_deinit(gchar *key, ModuleConfig *mc, gpointer user_data)
   module_config_deinit(mc, cfg);
 }
 
+static void
+_sync_plugin_module_path_with_global_define(GlobalConfig *self)
+{
+  const gchar *module_path;
+
+  /* Sync the @define module-path with the actual module search path as implemented by plugin.
+   *
+   * if @define module-path is not defined, we use whatever there's in
+   * PluginContext by default */
+  if (self->lexer)
+    {
+      module_path = cfg_args_get(self->lexer->globals, "module-path");
+      if (module_path)
+        {
+          plugin_context_set_module_path(&self->plugin_context, module_path);
+        }
+    }
+}
+
 gboolean
 cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
 {
+  _sync_plugin_module_path_with_global_define(cfg);
   return plugin_load_module(&cfg->plugin_context, module_name, NULL);
+}
+
+void
+cfg_load_candidate_modules(GlobalConfig *self)
+{
+  _sync_plugin_module_path_with_global_define(self);
+  plugin_load_candidate_modules(&self->plugin_context);
 }
 
 Plugin *
@@ -450,12 +477,6 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   self->lexer = old_lexer;
   configuration = old_cfg;
   return res;
-}
-
-void
-cfg_load_candidate_modules(GlobalConfig *self)
-{
-  plugin_load_candidate_modules(&self->plugin_context);
 }
 
 static void
