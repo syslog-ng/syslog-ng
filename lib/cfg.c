@@ -162,7 +162,7 @@ _invoke_module_deinit(gchar *key, ModuleConfig *mc, gpointer user_data)
 gboolean
 cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
 {
-  return plugin_load_module(module_name, &cfg->plugin_context, NULL);
+  return plugin_load_module(&cfg->plugin_context, module_name, NULL);
 }
 
 Plugin *

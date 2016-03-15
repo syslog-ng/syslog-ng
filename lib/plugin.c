@@ -139,7 +139,7 @@ plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
     return NULL;
 
   /* try to autoload the module */
-  plugin_load_module(candidate->module_name, context, NULL);
+  plugin_load_module(context, candidate->module_name, NULL);
 
   /* by this time it should've registered */
   p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
@@ -306,7 +306,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
 }
 
 gboolean
-plugin_load_module(const gchar *module_name, PluginContext *context, CfgArgs *args)
+plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *args)
 {
   GModule *mod;
   static GModule *main_module_handle;
