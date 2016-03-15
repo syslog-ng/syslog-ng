@@ -449,6 +449,53 @@ plugin_load_candidate_modules(PluginContext *context)
   g_strfreev(mod_paths);
 }
 
+static void
+_free_plugin(Plugin *plugin, gpointer user_data)
+{
+  if (plugin->free_fn)
+    plugin->free_fn(plugin);
+}
+
+static void
+plugin_free_plugins(PluginContext *context)
+{
+  g_list_foreach(context->plugins, (GFunc) _free_plugin, NULL);
+  g_list_free(context->plugins);
+  context->plugins = NULL;
+}
+
+static void
+plugin_free_candidate_modules(PluginContext *context)
+{
+  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
+  g_list_free(context->candidate_plugins);
+  context->candidate_plugins = NULL;
+}
+
+void
+plugin_context_set_module_path(PluginContext *context, const gchar *module_path)
+{
+  g_free(context->module_path);
+  context->module_path = g_strdup(module_path);
+}
+
+void
+plugin_context_init_instance(PluginContext *context)
+{
+  memset(context, 0, sizeof(*context));
+  plugin_context_set_module_path(context, resolvedConfigurablePaths.initial_module_path);
+}
+
+void
+plugin_context_deinit_instance(PluginContext *context)
+{
+  plugin_free_plugins(context);
+  plugin_free_candidate_modules(context);
+  g_free(context->module_path);
+}
+
+/* global functions */
+
 void
 plugin_list_modules(FILE *out, gboolean verbose)
 {
@@ -532,49 +579,4 @@ plugin_list_modules(FILE *out, gboolean verbose)
   g_strfreev(mod_paths);
   if (!verbose)
     fprintf(out, "\n");
-}
-
-static void
-_free_plugin(Plugin *plugin, gpointer user_data)
-{
-  if (plugin->free_fn)
-    plugin->free_fn(plugin);
-}
-
-static void
-plugin_free_plugins(PluginContext *context)
-{
-  g_list_foreach(context->plugins, (GFunc) _free_plugin, NULL);
-  g_list_free(context->plugins);
-  context->plugins = NULL;
-}
-
-static void
-plugin_free_candidate_modules(PluginContext *context)
-{
-  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
-  g_list_free(context->candidate_plugins);
-  context->candidate_plugins = NULL;
-}
-
-void
-plugin_context_set_module_path(PluginContext *context, const gchar *module_path)
-{
-  g_free(context->module_path);
-  context->module_path = g_strdup(module_path);
-}
-
-void
-plugin_context_init_instance(PluginContext *context)
-{
-  memset(context, 0, sizeof(*context));
-  plugin_context_set_module_path(context, resolvedConfigurablePaths.initial_module_path);
-}
-
-void
-plugin_context_deinit_instance(PluginContext *context)
-{
-  plugin_free_plugins(context);
-  plugin_free_candidate_modules(context);
-  g_free(context->module_path);
 }
