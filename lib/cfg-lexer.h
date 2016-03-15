@@ -95,6 +95,29 @@ typedef struct _CfgLexerKeyword
  */
 typedef gboolean (*CfgBlockGeneratorFunc)(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, gpointer user_data);
 
+
+/**
+ * CfgBlockGenerator:
+ *
+ * This class describes a block generator, e.g. a function callback
+ * that returns a configuration snippet in a given context. Each
+ * user-defined "block" results in a generator to be registered, but
+ * theoretically this mechanism can be used to write plugins that
+ * generate syslog-ng configuration on the fly, based on system
+ * settings for example.
+ **/
+struct _CfgBlockGenerator
+{
+  gint context;
+  gchar *name;
+  CfgBlockGeneratorFunc generator;
+  gpointer generator_data;
+  GDestroyNotify generator_data_free;
+};
+
+CfgBlockGenerator *cfg_block_generator_new(gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer generator_data, GDestroyNotify generator_data_free);
+void cfg_block_generator_free(CfgBlockGenerator *self);
+
 /* structure that describes a given location in the include stack */
 struct _CfgIncludeLevel
 {

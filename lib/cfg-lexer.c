@@ -37,6 +37,28 @@
 #include <glob.h>
 #include <sys/stat.h>
 
+CfgBlockGenerator *
+cfg_block_generator_new(gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer generator_data, GDestroyNotify generator_data_free)
+{
+  CfgBlockGenerator *self = g_new0(CfgBlockGenerator, 1);
+
+  self->context = context;
+  self->name = g_strdup(name);
+  self->generator = generator;
+  self->generator_data = generator_data;
+  self->generator_data_free = generator_data_free;
+  return self;
+}
+
+void
+cfg_block_generator_free(CfgBlockGenerator *self)
+{
+  if (self->generator_data_free && self->generator_data)
+    self->generator_data_free(self->generator_data);
+  g_free(self->name);
+  g_free(self);
+}
+
 /*
  * A token block is a series of tokens to be injected into the tokens
  * fetched by the lexer.  It is assumed to be filled and then depleted, the
@@ -46,25 +68,6 @@ struct _CfgTokenBlock
 {
   gint pos;
   GArray *tokens;
-};
-
-/**
- * CfgBlockGenerator:
- *
- * This class describes a block generator, e.g. a function callback
- * that returns a configuration snippet in a given context. Each
- * user-defined "block" results in a generator to be registered, but
- * theoretically this mechanism can be used to write plugins that
- * generate syslog-ng configuration on the fly, based on system
- * settings for example.
- **/
-struct _CfgBlockGenerator
-{
-  gint context;
-  gchar *name;
-  CfgBlockGeneratorFunc generator;
-  gpointer generator_data;
-  GDestroyNotify generator_data_free;
 };
 
 /**
@@ -709,21 +712,12 @@ cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *na
   gen = cfg_lexer_find_generator(self, context, name);
   if (gen)
     {
-      gen->generator_data_free(gen->generator_data);
-      g_free(gen->name);
-    }
-  else
-    {
-      gen = g_new0(CfgBlockGenerator, 1);
-      self->generators = g_list_append(self->generators, gen);
-      res = TRUE;
+      self->generators = g_list_remove(self->generators, gen);
+      cfg_block_generator_free(gen);
     }
 
-  gen->context = context;
-  gen->name = g_strdup(name);
-  gen->generator = generator;
-  gen->generator_data = generator_data;
-  gen->generator_data_free = generator_data_free;
+  gen = cfg_block_generator_new(context, name, generator, generator_data, generator_data_free);
+  self->generators = g_list_append(self->generators, gen);
   return res;
 }
 
@@ -1074,10 +1068,7 @@ cfg_lexer_free(CfgLexer *self)
     {
       CfgBlockGenerator *gen = self->generators->data;
 
-      if (gen->generator_data && gen->generator_data_free)
-        gen->generator_data_free(gen->generator_data);
-      g_free(gen->name);
-      g_free(gen);
+      cfg_block_generator_free(gen);
       self->generators = g_list_delete_link(self->generators, self->generators);
     }
   cfg_args_unref(self->globals);
