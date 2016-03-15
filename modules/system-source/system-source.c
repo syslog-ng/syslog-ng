@@ -319,7 +319,7 @@ system_generate_system_transports(GString *sysblock)
 static gboolean
 _is_json_parser_available(GlobalConfig *cfg)
 {
-  return plugin_find(cfg, LL_CONTEXT_PARSER, "json-parser") != NULL;
+  return cfg_find_plugin(cfg, LL_CONTEXT_PARSER, "json-parser") != NULL;
 }
 
 static void

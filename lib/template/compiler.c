@@ -99,8 +99,7 @@ log_template_lookup_and_setup_function_call(LogTemplateCompiler *self, LogTempla
   Plugin *p;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-
-  p = plugin_find(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+  p = cfg_find_plugin(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
 
   if (!p)
     {

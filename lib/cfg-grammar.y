@@ -549,7 +549,7 @@ plugin_stmt
             gint context = LL_CONTEXT_ROOT;
             gpointer result;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
             result = plugin_parse_config(p, configuration, &@1, NULL);
@@ -588,7 +588,7 @@ source_plugin
             Plugin *p;
             gint context = LL_CONTEXT_SOURCE;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
             last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1, NULL);
@@ -680,7 +680,7 @@ dest_plugin
             Plugin *p;
             gint context = LL_CONTEXT_DESTINATION;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
             last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1, NULL);
@@ -1125,7 +1125,7 @@ dest_driver_option
             gint context = LL_CONTEXT_INNER_DEST;
             gpointer value;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
             value = plugin_parse_config(p, configuration, &@1, last_driver);

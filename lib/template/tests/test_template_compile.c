@@ -144,7 +144,7 @@ get_template_function_ops(const gchar *name)
 {
   Plugin *plugin;
 
-  plugin = plugin_find(configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
+  plugin = cfg_find_plugin(configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
   assert_not_null(plugin, "Template function %s is not found", name);
 
   if (plugin)

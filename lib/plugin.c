@@ -124,27 +124,27 @@ plugin_register(PluginContext *context, Plugin *p, gint number)
 }
 
 Plugin *
-plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
 {
   Plugin *p;
   PluginCandidate *candidate;
 
   /* try registered plugins first */
-  p = plugin_find_in_list(cfg->plugin_context.plugins, plugin_type, plugin_name);
+  p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
   if (p)
     {
       return p;
     }
 
-  candidate = (PluginCandidate *) plugin_find_in_list(cfg->plugin_context.candidate_plugins, plugin_type, plugin_name);
+  candidate = (PluginCandidate *) plugin_find_in_list(context->candidate_plugins, plugin_type, plugin_name);
   if (!candidate)
     return NULL;
 
   /* try to autoload the module */
-  plugin_load_module(candidate->module_name, &cfg->plugin_context, NULL);
+  plugin_load_module(candidate->module_name, context, NULL);
 
   /* by this time it should've registered */
-  p = plugin_find_in_list(cfg->plugin_context.plugins, plugin_type, plugin_name);
+  p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
   if (p)
     {
       p->failure_info.aux_data = candidate->super.failure_info.aux_data;

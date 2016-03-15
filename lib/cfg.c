@@ -164,6 +164,12 @@ cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
   return plugin_load_module(module_name, &cfg->plugin_context, NULL);
 }
 
+Plugin *
+cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+{
+  return plugin_find(&cfg->plugin_context, plugin_type, plugin_name);
+}
+
 static gboolean
 cfg_init_modules(GlobalConfig *cfg)
 {

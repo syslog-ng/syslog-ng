@@ -78,7 +78,7 @@ msg_format_options_init(MsgFormatOptions *options, GlobalConfig *cfg)
   if (!options->format)
     options->format = g_strdup("syslog");
 
-  p = plugin_find(cfg, LL_CONTEXT_FORMAT, options->format);
+  p = cfg_find_plugin(cfg, LL_CONTEXT_FORMAT, options->format);
   if (p)
     options->format_handler = plugin_construct(p, cfg, LL_CONTEXT_FORMAT, options->format);
   options->initialized = TRUE;
