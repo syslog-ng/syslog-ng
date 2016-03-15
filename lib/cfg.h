@@ -29,6 +29,7 @@
 #include "cfg-tree.h"
 #include "cfg-lexer.h"
 #include "cfg-parser.h"
+#include "plugin.h"
 #include "persist-state.h"
 #include "template/templates.h"
 #include "host-resolve.h"
@@ -51,14 +52,6 @@ enum
   MM_GLOBAL,
 };
 
-struct _PluginContext
-{
-  GList *plugins;
-  GList *candidate_plugins;
-  gchar *module_path;
-};
-
-
 /* configuration data kept between configuration reloads */
 typedef struct _PersistConfig PersistConfig;
 
@@ -73,7 +66,7 @@ struct _GlobalConfig
    * multiple times if the user uses @version multiple times */
   gint parsed_version;
   const gchar *filename;
-  struct _PluginContext plugin_context;
+  PluginContext plugin_context;
   gboolean autoload_compiled_modules;
   CfgLexer *lexer;
 
@@ -129,10 +122,8 @@ struct _GlobalConfig
 
 gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);
 
-/* FIXME: once we are done with the transition to "cfg.h depends on
- * plugin.h" we can use a normal typedef here */
-struct _Plugin *cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
-gpointer cfg_parse_plugin(GlobalConfig *cfg, struct _Plugin *plugin, YYLTYPE *yylloc, gpointer arg);
+Plugin *cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+gpointer cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc, gpointer arg);
 
 gboolean cfg_allow_config_dups(GlobalConfig *self);
 

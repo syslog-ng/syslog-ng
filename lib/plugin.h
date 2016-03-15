@@ -52,6 +52,13 @@ typedef struct _PluginCandidate
   gint preference;
 } PluginCandidate;
 
+struct _PluginContext
+{
+  GList *plugins;
+  GList *candidate_plugins;
+  gchar *module_path;
+};
+
 /* A plugin actually registered by a module. See PluginCandidate in
  * the implementation module, which encapsulates a demand-loadable
  * plugin, not yet loaded.
