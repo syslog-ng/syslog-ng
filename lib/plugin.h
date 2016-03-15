@@ -105,7 +105,8 @@ gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs
 void plugin_list_modules(FILE *out, gboolean verbose);
 
 void plugin_load_candidate_modules(PluginContext *context);
-void plugin_free_candidate_modules(PluginContext *context);
-void plugin_free_plugins(PluginContext *context);
+
+void plugin_context_init_instance(PluginContext *context);
+void plugin_context_deinit_instance(PluginContext *context);
 
 #endif

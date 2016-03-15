@@ -481,14 +481,6 @@ plugin_load_candidate_modules(PluginContext *context)
 }
 
 void
-plugin_free_candidate_modules(PluginContext *context)
-{
-  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
-  g_list_free(context->candidate_plugins);
-  context->candidate_plugins = NULL;
-}
-
-void
 plugin_list_modules(FILE *out, gboolean verbose)
 {
   GModule *mod;
@@ -580,9 +572,31 @@ _free_plugin(Plugin *plugin, gpointer user_data)
     plugin->free_fn(plugin);
 }
 
-void
+static void
 plugin_free_plugins(PluginContext *context)
 {
   g_list_foreach(context->plugins, (GFunc) _free_plugin, NULL);
   g_list_free(context->plugins);
+  context->plugins = NULL;
+}
+
+static void
+plugin_free_candidate_modules(PluginContext *context)
+{
+  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
+  g_list_free(context->candidate_plugins);
+  context->candidate_plugins = NULL;
+}
+
+void
+plugin_context_init_instance(PluginContext *context)
+{
+  memset(context, 0, sizeof(*context));
+}
+
+void
+plugin_context_deinit_instance(PluginContext *context)
+{
+  plugin_free_plugins(context);
+  plugin_free_candidate_modules(context);
 }
