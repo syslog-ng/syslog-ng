@@ -659,6 +659,7 @@ riemann_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = riemann_worker_init;
   self->super.super.super.super.free_fn = riemann_dd_free;
+  self->super.super.super.super.generate_persist_name = riemann_dd_format_persist_name;
 
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
