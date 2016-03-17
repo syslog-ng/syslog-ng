@@ -95,3 +95,7 @@ Documentation
 
 The documentation of the latest released version of syslog-ng Open Source Edition is available [here](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html). For earlier versions, see the [Balabit Documentation Page](https://www.balabit.com/support/documentation). For ancient versions, see the [Balabit Documentation Archive](https://my.balabit.com/downloads/archived_documents).
 
+Contributing
+===========
+
+If you want to modify the source of syslog-ng, for example, to correct a bug or develop a new module, the [syslog-ng gitbook](https://syslog-ng.gitbooks.io/getting-started/content/) helps you to take the first steps with the code base.
