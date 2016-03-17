@@ -39,7 +39,7 @@
 
 /* MADV_RANDOM not defined on legacy Linux systems. Could be removed in the
  * future, when support for Glibc 2.1.X drops.*/
-#ifndef HAVE_MADV_RANDOM
+#ifndef MADV_RANDOM
 #define MADV_RANDOM 1
 #endif
 
