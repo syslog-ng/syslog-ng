@@ -324,9 +324,10 @@ afprogram_dd_format_queue_persist_name(AFProgramDestDriver *self)
   return persist_name;
 }
 
-static gchar *
-afprogram_dd_format_persist_name(AFProgramDestDriver *self)
+static const gchar *
+afprogram_dd_format_persist_name(const LogPipe *s)
 {
+  const AFProgramDestDriver *self = (const AFProgramDestDriver *)s;
   static gchar persist_name[256];
 
   g_snprintf(persist_name, sizeof(persist_name),
@@ -402,7 +403,8 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
 static gboolean
 afprogram_dd_restore_reload_store_item(AFProgramDestDriver *self, GlobalConfig *cfg)
 {
-  AFProgramReloadStoreItem *restored_info = (AFProgramReloadStoreItem *)cfg_persist_config_fetch(cfg, afprogram_dd_format_persist_name(self));
+  const gchar *persist_name = afprogram_dd_format_persist_name((const LogPipe *)self);
+  AFProgramReloadStoreItem *restored_info = (AFProgramReloadStoreItem *)cfg_persist_config_fetch(cfg, persist_name);
 
   if (restored_info)
     {
@@ -459,7 +461,8 @@ afprogram_dd_store_reload_store_item(AFProgramDestDriver *self, GlobalConfig *cf
   reload_info->pid = self->process_info.pid;
   reload_info->writer = self->writer;
 
-  cfg_persist_config_add(cfg, afprogram_dd_format_persist_name(self), reload_info, afprogram_reload_store_item_destroy_notify, FALSE);
+  cfg_persist_config_add(cfg, afprogram_dd_format_persist_name((const LogPipe *)self), reload_info,
+                         afprogram_reload_store_item_destroy_notify, FALSE);
 }
 
 static gboolean
