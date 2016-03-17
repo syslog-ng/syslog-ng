@@ -215,8 +215,11 @@ afsmtp_dd_format_persist_name(const LogPipe *s)
   const AFSMTPDriver *self = (const AFSMTPDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "smtp(%s,%u)", self->host, self->port);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "smtp.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "smtp(%s,%u)", self->host, self->port);
+
   return persist_name;
 }
 
