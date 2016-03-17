@@ -131,10 +131,10 @@ python_dd_format_stats_instance(LogThrDestDriver *d)
   return persist_name;
 }
 
-static gchar *
-python_dd_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+python_dd_format_persist_name(const LogPipe *s)
 {
-  PythonDestDriver *self = (PythonDestDriver *)d;
+  const PythonDestDriver *self = (const PythonDestDriver *)s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
