@@ -34,6 +34,8 @@ modules_afmongodb_libafmongodb_la_DEPENDENCIES	=	\
 
 modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb: \
 	modules/afmongodb/libafmongodb.la
+
+include modules/afmongodb/tests/Makefile.am
 else
 modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb:
 endif
