@@ -128,7 +128,11 @@ afmongodb_dd_format_persist_name(const LogPipe * s)
   const MongoDBDestDriver *self = (const MongoDBDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf (persist_name, sizeof(persist_name), "afmongodb(%s,%s)", self->uri, self->coll);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afmongodb.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "afmongodb(%s,%s)", self->uri, self->coll);
+
   return persist_name;
 }
 
