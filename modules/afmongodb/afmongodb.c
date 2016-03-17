@@ -51,8 +51,8 @@ afmongodb_dd_set_uri(LogDriver *d, const gchar *uri)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  g_free(self->uri);
-  self->uri = g_strdup(uri);
+  g_string_free(self->uri_str, TRUE);
+  self->uri_str = g_string_new(uri);
 }
 
 void
@@ -83,7 +83,7 @@ _format_stats_instance(LogThrDestDriver *d)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   static gchar persist_name[1024];
 
-  g_snprintf (persist_name, sizeof(persist_name), "mongodb,%s,%s", self->uri, self->coll);
+  g_snprintf(persist_name, sizeof(persist_name), "mongodb,%s,%s", self->uri_str->str, self->coll);
   return persist_name;
 }
 
@@ -93,7 +93,7 @@ _format_persist_name(LogThrDestDriver *d)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   static gchar persist_name[1024];
 
-  g_snprintf (persist_name, sizeof(persist_name), "afmongodb(%s,%s)", self->uri, self->coll);
+  g_snprintf(persist_name, sizeof(persist_name), "afmongodb(%s,%s)", self->uri_str->str, self->coll);
   return persist_name;
 }
 
@@ -120,8 +120,7 @@ _connect(MongoDBDestDriver *self, gboolean reconnect)
       return FALSE;
     }
 
-  self->coll_obj = mongoc_client_get_collection (self->client, self->db,
-                                                 self->coll);
+  self->coll_obj = mongoc_client_get_collection(self->client, self->const_db, self->coll);
   if (!self->coll_obj)
     {
       msg_error("Error getting specified MongoDB collection",
@@ -363,6 +362,38 @@ _worker_insert(LogThrDestDriver *s, LogMessage *msg)
   return WORKER_INSERT_RESULT_SUCCESS;
 }
 
+gboolean
+afmongodb_dd_private_uri_init(LogDriver *d)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->uri_obj = mongoc_uri_new(self->uri_str->str);
+  if (!self->uri_obj)
+    {
+      msg_error("Error parsing MongoDB URI",
+                evt_tag_str("uri", self->uri_str->str),
+                evt_tag_str("driver", self->super.super.super.id));
+      return FALSE;
+    }
+
+  self->const_db = mongoc_uri_get_database(self->uri_obj);
+  if (!self->const_db || !strlen(self->const_db))
+    {
+      msg_error("Missing DB name from MongoDB URI",
+                evt_tag_str("uri", self->uri_str->str),
+                evt_tag_str("driver", self->super.super.super.id));
+      return FALSE;
+    }
+
+  msg_verbose("Initializing MongoDB destination",
+              evt_tag_str("uri", self->uri_str->str),
+              evt_tag_str("db", self->const_db),
+              evt_tag_str("collection", self->coll),
+              evt_tag_str("driver", self->super.super.super.id));
+
+  return TRUE;
+}
+
 static void
 _worker_thread_init(LogThrDestDriver *d)
 {
@@ -413,29 +444,8 @@ _init(LogPipe *s)
 
   _init_value_pairs_dot_to_underscore_transformation(self);
 
-  self->uri_obj = mongoc_uri_new (self->uri);
-  if (!self->uri_obj)
-    {
-      msg_error("Error parsing MongoDB URI",
-                evt_tag_str ("uri", self->uri),
-                evt_tag_str ("driver", self->super.super.super.id));
-      return FALSE;
-    }
-
-  self->db = mongoc_uri_get_database (self->uri_obj);
-  if (!self->db || !strlen (self->db))
-    {
-      msg_error("Missing DB name from MongoDB URI",
-                evt_tag_str ("uri", self->uri),
-                evt_tag_str ("driver", self->super.super.super.id));
-      return FALSE;
-    }
-
-  msg_verbose("Initializing MongoDB destination",
-              evt_tag_str ("uri", self->uri),
-              evt_tag_str ("db", self->db),
-              evt_tag_str ("collection", self->coll),
-              evt_tag_str ("driver", self->super.super.super.id));
+  if (!afmongodb_dd_private_uri_init(&self->super.super.super))
+    return FALSE;
 
   return log_threaded_dest_driver_start(s);
 }
@@ -447,7 +457,7 @@ _free(LogPipe *d)
 
   log_template_options_destroy(&self->template_options);
 
-  g_free(self->uri);
+  g_string_free(self->uri_str, TRUE);
   g_free(self->coll);
   value_pairs_unref(self->vp);
 

@@ -36,4 +36,6 @@ void afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 
 LogTemplateOptions *afmongodb_dd_get_template_options(LogDriver *s);
 
+gboolean afmongodb_dd_private_uri_init(LogDriver *self);
+
 #endif

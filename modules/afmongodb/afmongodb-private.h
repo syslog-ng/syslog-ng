@@ -36,7 +36,7 @@ typedef struct _MongoDBDestDriver
   /* Shared between main/writer; only read by the writer, never
    written */
   gchar *coll;
-  GString *uri;
+  GString *uri_str;
 
   LogTemplateOptions template_options;
 
@@ -45,7 +45,7 @@ typedef struct _MongoDBDestDriver
   ValuePairs *vp;
 
   /* Writer-only stuff */
-  const gchar *db;
+  const gchar *const_db;
   mongoc_uri_t *uri_obj;
   mongoc_client_t *client;
   mongoc_collection_t *coll_obj;
