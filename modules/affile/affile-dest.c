@@ -395,7 +395,11 @@ affile_dd_format_persist_name(const LogPipe *s)
   const AFFileDestDriver *self = (const AFFileDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "affile_dd_writers(%s)", self->filename_template->template);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "affile_dd.%s.writers", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "affile_dd_writers(%s)", self->filename_template->template);
+
   return persist_name;
 }
 
