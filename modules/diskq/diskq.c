@@ -31,7 +31,7 @@
 #include "persist-state.h"
 
 static LogQueue *
-_acquire_queue(LogDestDriver *dd, gchar *persist_name, gpointer user_data)
+_acquire_queue(LogDestDriver *dd, const gchar *persist_name, gpointer user_data)
 {
   DiskQDestPlugin *self = (DiskQDestPlugin *) user_data;
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
