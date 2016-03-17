@@ -301,12 +301,6 @@ afsocket_sd_format_connections_name(const AFSocketSourceDriver *self)
   return persist_name;
 }
 
-static inline const gchar *
-afsocket_sd_format_persist_name(const AFSocketSourceDriver *self, gboolean listener_name)
-{
-  return listener_name ? afsocket_sd_format_listener_name(self) : afsocket_sd_format_connections_name(self);
-}
-
 static gboolean
 afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_addr, GSockAddr *local_addr, gint fd)
 {
@@ -515,7 +509,7 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
   if (self->connections_kept_alive_accross_reloads)
     {
       GList *p = NULL;
-      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE));
+      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
 
       self->num_connections = 0;
       for (p = self->connections; p; p = p->next)
@@ -552,7 +546,7 @@ afsocket_sd_open_listener(AFSocketSourceDriver *self)
         {
           /* NOTE: this assumes that fd 0 will never be used for listening fds,
            * main.c opens fd 0 so this assumption can hold */
-          sock = GPOINTER_TO_UINT(cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, TRUE))) - 1;
+          sock = GPOINTER_TO_UINT(cfg_persist_config_fetch(cfg, afsocket_sd_format_listener_name(self))) - 1;
         }
 
       if (sock == -1)
@@ -621,7 +615,7 @@ afsocket_sd_save_connections(AFSocketSourceDriver *self)
         {
           log_pipe_deinit((LogPipe *) p->data);
         }
-      cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection_list, FALSE);
+      cfg_persist_config_add(cfg, afsocket_sd_format_connections_name(self), self->connections, (GDestroyNotify) afsocket_sd_kill_connection_list, FALSE);
     }
   self->connections = NULL;
 }
@@ -645,7 +639,7 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
           /* NOTE: the fd is incremented by one when added to persistent config
            * as persist config cannot store NULL */
 
-          cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd, FALSE);
+          cfg_persist_config_add(cfg, afsocket_sd_format_listener_name(self), GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd, FALSE);
         }
     }
 }
