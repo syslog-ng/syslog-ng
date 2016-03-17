@@ -333,6 +333,7 @@ redis_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = redis_dd_init;
   self->super.super.super.super.free_fn = redis_dd_free;
+  self->super.super.super.super.generate_persist_name = redis_dd_format_persist_name;
 
   self->super.worker.thread_init = redis_worker_thread_init;
   self->super.worker.thread_deinit = redis_worker_thread_deinit;
