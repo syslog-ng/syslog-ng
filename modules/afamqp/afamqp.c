@@ -197,9 +197,13 @@ afamqp_dd_format_stats_instance(LogThrDestDriver *s)
   AMQPDestDriver *self = (AMQPDestDriver *) s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "amqp,%s,%s,%u,%s,%s",
-             self->vhost, self->host, self->port, self->exchange,
-             self->exchange_type);
+  if (s->super.super.super.persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "amqp,%s", s->super.super.super.persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "amqp,%s,%s,%u,%s,%s",
+               self->vhost, self->host, self->port, self->exchange,
+               self->exchange_type);
+
   return persist_name;
 }
 
