@@ -255,7 +255,7 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
 }
 
 static void
-affile_sd_reopen_on_notify(LogPipe *s)
+affile_sd_reopen_on_notify(LogPipe *s, gboolean recover_state)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -302,7 +302,8 @@ affile_sd_reopen_on_notify(LogPipe *s)
           close(fd);
           return;
         }
-      affile_sd_recover_state(s, cfg, proto);
+      if (recover_state)
+        affile_sd_recover_state(s, cfg, proto);
     }
 }
 
@@ -319,7 +320,15 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
         msg_verbose("Follow-mode file source moved, tracking of the new file is started",
                     evt_tag_str("filename", self->filename->str),
                     NULL);
-        affile_sd_reopen_on_notify(self);
+        affile_sd_reopen_on_notify(s, TRUE);
+        break;
+      }
+    case NC_READ_ERROR:
+      {
+        msg_verbose("Error while following source file, reopening in the hope it would work",
+                    evt_tag_str("filename", self->filename->str),
+                    NULL);
+        affile_sd_reopen_on_notify(s, FALSE);
         break;
       }
     default:
