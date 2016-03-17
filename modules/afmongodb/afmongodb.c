@@ -122,10 +122,10 @@ afmongodb_dd_format_stats_instance(LogThrDestDriver *d)
   return persist_name;
 }
 
-static gchar *
-afmongodb_dd_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+afmongodb_dd_format_persist_name(const LogPipe * s)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+  const MongoDBDestDriver *self = (const MongoDBDestDriver *)s;
   static gchar persist_name[1024];
 
   g_snprintf (persist_name, sizeof(persist_name), "afmongodb(%s,%s)", self->uri, self->coll);
