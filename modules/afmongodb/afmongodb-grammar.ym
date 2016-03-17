@@ -51,26 +51,35 @@
 %%
 
 start
-        : LL_CONTEXT_DESTINATION KW_MONGODB
-          {
+    : LL_CONTEXT_DESTINATION KW_MONGODB
+        {
             last_driver = *instance = afmongodb_dd_new(configuration);
-          }
-          '(' afmongodb_options ')'         { YYACCEPT; }
-	;
+        }
+        '(' afmongodb_options ')'         { YYACCEPT; }
+    ;
 
 afmongodb_options
-        : afmongodb_option afmongodb_options
-	|
-	;
+    : afmongodb_option afmongodb_options
+    |
+    ;
 
 afmongodb_option
-	: KW_URI '(' string ')'		{ afmongodb_dd_set_uri(last_driver, $3); free($3); }
-	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection(last_driver, $3); free($3); }
-	| value_pair_option			{ afmongodb_dd_set_value_pairs(last_driver, $1); }
-	| dest_driver_option
-	| threaded_dest_driver_option
-	| { last_template_options = afmongodb_dd_get_template_options(last_driver); } template_option
-        ;
+    : KW_URI '(' string ')'
+        {
+            afmongodb_dd_set_uri(last_driver, $3); free($3);
+        }
+    | KW_COLLECTION '(' string ')'
+        {
+            afmongodb_dd_set_collection(last_driver, $3); free($3);
+        }
+    | value_pair_option
+        {
+            afmongodb_dd_set_value_pairs(last_driver, $1);
+        }
+    | dest_driver_option
+    | threaded_dest_driver_option
+    | { last_template_options = afmongodb_dd_get_template_options(last_driver); } template_option
+    ;
 
 /* INCLUDE_RULES */
 

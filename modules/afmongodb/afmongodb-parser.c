@@ -29,10 +29,10 @@ extern int afmongodb_debug;
 int afmongodb_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afmongodb_keywords[] = {
-  { "mongodb",			KW_MONGODB },
-  { "uri",                      KW_URI },
-  { "collection",		KW_COLLECTION },
-  { NULL }
+  { "mongodb", KW_MONGODB },
+  { "uri", KW_URI },
+  { "collection", KW_COLLECTION },
+  { }
 };
 
 CfgParser afmongodb_parser =

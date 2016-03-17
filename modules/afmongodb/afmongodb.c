@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 Balabit
+ * Copyright (c) 2010-2016 Balabit
  * Copyright (c) 2010-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -40,12 +40,6 @@
 
 typedef struct
 {
-  gchar *name;
-  LogTemplate *value;
-} MongoDBField;
-
-typedef struct
-{
   LogThrDestDriver super;
 
   /* Shared between main/writer; only read by the writer, never
@@ -76,7 +70,7 @@ typedef struct
 LogTemplateOptions *
 afmongodb_dd_get_template_options(LogDriver *s)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *) s;
+  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
   return &self->template_options;
 }
@@ -104,7 +98,7 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  value_pairs_unref (self->vp);
+  value_pairs_unref(self->vp);
   self->vp = vp;
 }
 
@@ -147,11 +141,11 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
   if (reconnect && self->client)
     return TRUE;
 
-  self->client = mongoc_client_new_from_uri (self->uri_obj);
+  self->client = mongoc_client_new_from_uri(self->uri_obj);
+
   if (!self->client)
     {
-      msg_error("Error connecting to MongoDB",
-                evt_tag_str ("driver", self->super.super.super.id));
+      msg_error("Error connecting to MongoDB", evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
 
@@ -160,8 +154,8 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
   if (!self->coll_obj)
     {
       msg_error("Error getting specified MongoDB collection",
-                evt_tag_str ("collection", self->coll),
-                evt_tag_str ("driver", self->super.super.super.id));
+                evt_tag_str("collection", self->coll),
+                evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
 
@@ -205,8 +199,8 @@ afmongodb_vp_obj_end(const gchar *name,
     {
       bson_t *d = (bson_t *)*prefix_data;
 
-      bson_append_document (root, name, -1, d);
-      bson_free (d);
+      bson_append_document(root, name, -1, d);
+      bson_free(d);
     }
   return FALSE;
 }
@@ -231,15 +225,14 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
       {
         gboolean b;
 
-        if (type_cast_to_boolean (value, &b, NULL))
-          bson_append_bool (o, name, -1, b);
+        if (type_cast_to_boolean(value, &b, NULL))
+          bson_append_bool(o, name, -1, b);
         else
           {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error,
-                                               value, "boolean");
+            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "boolean");
 
             if (fallback)
-              bson_append_utf8 (o, name, -1, value, value_len);
+              bson_append_utf8(o, name, -1, value, value_len);
             else
               return r;
           }
@@ -249,15 +242,14 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
       {
         gint32 i;
 
-        if (type_cast_to_int32 (value, &i, NULL))
-          bson_append_int32 (o, name, -1, i);
+        if (type_cast_to_int32(value, &i, NULL))
+          bson_append_int32(o, name, -1, i);
         else
           {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error,
-                                               value, "int32");
+            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "int32");
 
             if (fallback)
-              bson_append_utf8 (o, name, -1, value, value_len);
+              bson_append_utf8(o, name, -1, value, value_len);
             else
               return r;
           }
@@ -267,12 +259,11 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
       {
         gint64 i;
 
-        if (type_cast_to_int64 (value, &i, NULL))
-          bson_append_int64 (o, name, -1, i);
+        if (type_cast_to_int64(value, &i, NULL))
+          bson_append_int64(o, name, -1, i);
         else
           {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error,
-                                               value, "int64");
+            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "int64");
 
             if (fallback)
               bson_append_utf8(o, name, -1, value, value_len);
@@ -286,12 +277,11 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
       {
         gdouble d;
 
-        if (type_cast_to_double (value, &d, NULL))
-          bson_append_double (o, name, -1, d);
+        if (type_cast_to_double(value, &d, NULL))
+          bson_append_double(o, name, -1, d);
         else
           {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error,
-                                               value, "double");
+            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "double");
             if (fallback)
               bson_append_utf8(o, name, -1, value, value_len);
             else
@@ -304,12 +294,11 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
       {
         guint64 i;
 
-        if (type_cast_to_datetime_int (value, &i, NULL))
-          bson_append_date_time (o, name, -1, (gint64)i);
+        if (type_cast_to_datetime_int(value, &i, NULL))
+          bson_append_date_time(o, name, -1, (gint64)i);
         else
           {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error,
-                                               value, "datetime");
+            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "datetime");
 
             if (fallback)
               bson_append_utf8(o, name, -1, value, value_len);
@@ -321,7 +310,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
       }
     case TYPE_HINT_STRING:
     case TYPE_HINT_LITERAL:
-      bson_append_utf8 (o, name, -1, value, value_len);
+      bson_append_utf8(o, name, -1, value, value_len);
       break;
     default:
       return TRUE;
@@ -335,13 +324,13 @@ afmongodb_worker_retry_over_message(LogThrDestDriver *s, LogMessage *msg)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
-  msg_error("Multiple failures while inserting this record into the database, "
-            "message dropped",
-            evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_int("number_of_retries", s->retries.max),
-            evt_tag_value_pairs("message", self->vp, msg,
-                                self->super.seq_num,
-                                LTZ_SEND, &self->template_options));
+  msg_error(
+      "Multiple failures while inserting this record into the database, "
+      "message dropped",
+      evt_tag_str("driver", self->super.super.super.id),
+      evt_tag_int("number_of_retries", s->retries.max),
+      evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num,
+                          LTZ_SEND, &self->template_options));
 }
 
 static worker_insert_result_t
@@ -354,7 +343,7 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
   if (!afmongodb_dd_connect(self, TRUE))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
-  bson_reinit (self->bson);
+  bson_reinit(self->bson);
 
   success = value_pairs_walk(self->vp,
                              afmongodb_vp_obj_start,
@@ -370,8 +359,7 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
       if (!drop_silently)
         {
           msg_error("Failed to format message for MongoDB, dropping message",
-                    evt_tag_value_pairs("message", self->vp, msg,
-                                        self->super.seq_num,
+                    evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num,
                                         LTZ_SEND, &self->template_options),
                     evt_tag_str("driver", self->super.super.super.id));
         }
@@ -381,15 +369,12 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
     {
       bson_error_t error;
       msg_debug("Outgoing message to MongoDB destination",
-                evt_tag_value_pairs("message", self->vp, msg,
-                                    self->super.seq_num,
-                                    LTZ_SEND, &self->template_options),
+                evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num, LTZ_SEND,
+                                    &self->template_options),
                 evt_tag_str("driver", self->super.super.super.id));
 
-      success = mongoc_collection_insert (self->coll_obj, MONGOC_INSERT_NONE,
-                                          (const bson_t *) self->bson,
-                                          NULL,
-                                          &error);
+      success = mongoc_collection_insert(self->coll_obj, MONGOC_INSERT_NONE, (const bson_t *)self->bson,
+                                         NULL, &error);
       if (!success)
         {
           msg_error("Network error while inserting into MongoDB",
@@ -425,9 +410,9 @@ afmongodb_worker_thread_deinit(LogThrDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  g_string_free (self->current_value, TRUE);
+  g_string_free(self->current_value, TRUE);
 
-  bson_free (self->bson);
+  bson_free(self->bson);
 }
 
 /*
@@ -439,7 +424,7 @@ afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(MongoDBDestDriver
 {
   ValuePairsTransformSet *vpts;
 
- /* Always replace a leading dot with an underscore. */
+  /* Always replace a leading dot with an underscore. */
   vpts = value_pairs_transform_set_new(".*");
   value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
   value_pairs_add_transforms(self->vp, vpts);
@@ -497,8 +482,8 @@ afmongodb_dd_free(LogPipe *d)
   value_pairs_unref(self->vp);
 
   mongoc_uri_destroy(self->uri_obj);
-  mongoc_collection_destroy (self->coll_obj);
-  mongoc_cleanup ();
+  mongoc_collection_destroy(self->coll_obj);
+  mongoc_cleanup();
   log_threaded_dest_driver_free(d);
 }
 
@@ -507,7 +492,7 @@ afmongodb_dd_queue_method(LogThrDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  self->last_msg_stamp = cached_g_current_time_sec ();
+  self->last_msg_stamp = cached_g_current_time_sec();
 }
 
 /*
@@ -519,7 +504,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
 {
   MongoDBDestDriver *self = g_new0(MongoDBDestDriver, 1);
 
-  mongoc_init ();
+  mongoc_init();
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
@@ -536,12 +521,12 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.stats_source = SCS_MONGODB;
   self->super.messages.retry_over = afmongodb_worker_retry_over_message;
 
-  afmongodb_dd_set_collection((LogDriver *)self, "messages");
+  afmongodb_dd_set_collection(&self->super.super.super, "messages");
 
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
 
-  return (LogDriver *)self;
+  return &self->super.super.super;
 }
 
 extern CfgParser afmongodb_dd_parser;

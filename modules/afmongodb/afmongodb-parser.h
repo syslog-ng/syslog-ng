@@ -24,6 +24,7 @@
 #ifndef AFMONGODB_PARSER_H_INCLUDED
 #define AFMONGODB_PARSER_H_INCLUDED
 
+#include "syslog-ng.h"
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
 #include "afmongodb.h"
