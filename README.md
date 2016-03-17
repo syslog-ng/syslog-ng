@@ -89,3 +89,9 @@ Binaries for other platforms are listed at the
 official [third party page][3rd-party].
 
  [3rd-party]: https://syslog-ng.org/3rd-party-binaries/
+
+Documentation
+============
+
+The documentation of the latest released version of syslog-ng Open Source Edition is available [here](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html). For earlier versions, see the [Balabit Documentation Page](https://www.balabit.com/support/documentation). For ancient versions, see the [Balabit Documentation Archive](https://my.balabit.com/downloads/archived_documents).
+
