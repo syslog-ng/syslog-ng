@@ -34,6 +34,10 @@
 
 #include <time.h>
 
+#define DEFAULT_URI \
+      "mongodb://127.0.0.1:27017/syslog"\
+      "?wtimeoutMS=60000&socketTimeoutMS=60000&connectTimeoutMS=60000"
+
 /*
  * Configuration
  */
@@ -366,6 +370,9 @@ gboolean
 afmongodb_dd_private_uri_init(LogDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  if (!self->uri_str)
+    self->uri_str = g_string_new(DEFAULT_URI);
 
   self->uri_obj = mongoc_uri_new(self->uri_str->str);
   if (!self->uri_obj)
