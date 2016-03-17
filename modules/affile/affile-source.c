@@ -473,6 +473,7 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.deinit = affile_sd_deinit;
   self->super.super.super.notify = affile_sd_notify;
   self->super.super.super.free_fn = affile_sd_free;
+  self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
   log_reader_options_defaults(&self->reader_options);
   file_perm_options_defaults(&self->file_perm_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
