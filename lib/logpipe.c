@@ -99,8 +99,17 @@ log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data)
 void
 log_pipe_set_persist_name(LogPipe *self, const gchar *persist_name)
 {
-  g_free(self->persist_name);
+  g_free((gpointer)self->persist_name);
   self->persist_name = persist_name;
+}
+
+const gchar *
+log_pipe_get_persist_name(const LogPipe *self)
+{
+  if (self->generate_persist_name != NULL)
+    return self->generate_persist_name(self);
+  else
+    return self->persist_name;
 }
 
 #ifdef __linux__

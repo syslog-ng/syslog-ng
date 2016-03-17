@@ -368,6 +368,9 @@ log_pipe_append(LogPipe *s, LogPipe *next)
 void
 log_pipe_set_persist_name(LogPipe *self, const gchar *persist_name);
 
+const gchar *
+log_pipe_get_persist_name(const LogPipe *self);
+
 void log_pipe_free_method(LogPipe *s);
 
 #endif
