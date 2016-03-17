@@ -78,7 +78,7 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
  */
 
 static gchar *
-afmongodb_dd_format_stats_instance(LogThrDestDriver *d)
+_format_stats_instance(LogThrDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   static gchar persist_name[1024];
@@ -88,7 +88,7 @@ afmongodb_dd_format_stats_instance(LogThrDestDriver *d)
 }
 
 static gchar *
-afmongodb_dd_format_persist_name(LogThrDestDriver *d)
+_format_persist_name(LogThrDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   static gchar persist_name[1024];
@@ -98,7 +98,7 @@ afmongodb_dd_format_persist_name(LogThrDestDriver *d)
 }
 
 static void
-afmongodb_dd_disconnect(LogThrDestDriver *s)
+_worker_disconnect(LogThrDestDriver *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
@@ -107,7 +107,7 @@ afmongodb_dd_disconnect(LogThrDestDriver *s)
 }
 
 static gboolean
-afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
+_connect(MongoDBDestDriver *self, gboolean reconnect)
 {
   if (reconnect && self->client)
     return TRUE;
@@ -137,10 +137,10 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
  * Worker thread
  */
 static gboolean
-afmongodb_vp_obj_start(const gchar *name,
-                       const gchar *prefix, gpointer *prefix_data,
-                       const gchar *prev, gpointer *prev_data,
-                       gpointer user_data)
+_vp_obj_start(const gchar *name,
+                 const gchar *prefix, gpointer *prefix_data,
+                 const gchar *prev, gpointer *prev_data,
+                 gpointer user_data)
 {
   bson_t *o;
 
@@ -153,10 +153,10 @@ afmongodb_vp_obj_start(const gchar *name,
 }
 
 static gboolean
-afmongodb_vp_obj_end(const gchar *name,
-                     const gchar *prefix, gpointer *prefix_data,
-                     const gchar *prev, gpointer *prev_data,
-                     gpointer user_data)
+_vp_obj_end(const gchar *name,
+               const gchar *prefix, gpointer *prefix_data,
+               const gchar *prev, gpointer *prev_data,
+               gpointer user_data)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)user_data;
   bson_t *root;
@@ -177,9 +177,8 @@ afmongodb_vp_obj_end(const gchar *name,
 }
 
 static gboolean
-afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
-                           TypeHint type, const gchar *value, gsize value_len,
-                           gpointer *prefix_data, gpointer user_data)
+_vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
+                  const gchar *value, gsize value_len, gpointer *prefix_data, gpointer user_data)
 {
   bson_t *o;
   MongoDBDestDriver *self = (MongoDBDestDriver *)user_data;
@@ -291,7 +290,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
 }
 
 static void
-afmongodb_worker_retry_over_message(LogThrDestDriver *s, LogMessage *msg)
+_worker_retry_over_message(LogThrDestDriver *s, LogMessage *msg)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
@@ -305,21 +304,21 @@ afmongodb_worker_retry_over_message(LogThrDestDriver *s, LogMessage *msg)
 }
 
 static worker_insert_result_t
-afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
+_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   gboolean success;
   gboolean drop_silently = self->template_options.on_error & ON_ERROR_SILENT;
 
-  if (!afmongodb_dd_connect(self, TRUE))
+  if (!_connect(self, TRUE))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
   bson_reinit(self->bson);
 
   success = value_pairs_walk(self->vp,
-                             afmongodb_vp_obj_start,
-                             afmongodb_vp_process_value,
-                             afmongodb_vp_obj_end,
+                             _vp_obj_start,
+                             _vp_process_value,
+                             _vp_obj_end,
                              msg, self->super.seq_num,
                              LTZ_SEND,
                              &self->template_options,
@@ -365,11 +364,11 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
 }
 
 static void
-afmongodb_worker_thread_init(LogThrDestDriver *d)
+_worker_thread_init(LogThrDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  afmongodb_dd_connect(self, FALSE);
+  _connect(self, FALSE);
 
   self->current_value = g_string_sized_new(256);
 
@@ -377,7 +376,7 @@ afmongodb_worker_thread_init(LogThrDestDriver *d)
 }
 
 static void
-afmongodb_worker_thread_deinit(LogThrDestDriver *d)
+_worker_thread_deinit(LogThrDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
@@ -391,7 +390,7 @@ afmongodb_worker_thread_deinit(LogThrDestDriver *d)
  */
 
 static void
-afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(MongoDBDestDriver *self)
+_init_value_pairs_dot_to_underscore_transformation(MongoDBDestDriver *self)
 {
   ValuePairsTransformSet *vpts;
 
@@ -402,7 +401,7 @@ afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(MongoDBDestDriver
 }
 
 static gboolean
-afmongodb_dd_init(LogPipe *s)
+_init(LogPipe *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -412,7 +411,7 @@ afmongodb_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
 
-  afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(self);
+  _init_value_pairs_dot_to_underscore_transformation(self);
 
   self->uri_obj = mongoc_uri_new (self->uri);
   if (!self->uri_obj)
@@ -442,7 +441,7 @@ afmongodb_dd_init(LogPipe *s)
 }
 
 static void
-afmongodb_dd_free(LogPipe *d)
+_free(LogPipe *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
@@ -459,7 +458,7 @@ afmongodb_dd_free(LogPipe *d)
 }
 
 static void
-afmongodb_dd_queue_method(LogThrDestDriver *d)
+_logthrdest_queue_method(LogThrDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
@@ -479,18 +478,18 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
-  self->super.super.super.super.init = afmongodb_dd_init;
-  self->super.super.super.super.free_fn = afmongodb_dd_free;
-  self->super.queue_method = afmongodb_dd_queue_method;
+  self->super.super.super.super.init = _init;
+  self->super.super.super.super.free_fn = _free;
+  self->super.queue_method = _logthrdest_queue_method;
 
-  self->super.worker.thread_init = afmongodb_worker_thread_init;
-  self->super.worker.thread_deinit = afmongodb_worker_thread_deinit;
-  self->super.worker.disconnect = afmongodb_dd_disconnect;
-  self->super.worker.insert = afmongodb_worker_insert;
-  self->super.format.stats_instance = afmongodb_dd_format_stats_instance;
-  self->super.format.persist_name = afmongodb_dd_format_persist_name;
+  self->super.worker.thread_init = _worker_thread_init;
+  self->super.worker.thread_deinit = _worker_thread_deinit;
+  self->super.worker.disconnect = _worker_disconnect;
+  self->super.worker.insert = _worker_insert;
+  self->super.format.stats_instance = _format_stats_instance;
+  self->super.format.persist_name = _format_persist_name;
   self->super.stats_source = SCS_MONGODB;
-  self->super.messages.retry_over = afmongodb_worker_retry_over_message;
+  self->super.messages.retry_over = _worker_retry_over_message;
 
   afmongodb_dd_set_collection(&self->super.super.super, "messages");
 
