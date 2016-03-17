@@ -24,6 +24,7 @@
 
 #include "cfg-tree.h"
 #include "logmpx.h"
+#include "logpipe.h"
 
 #include <string.h>
 
