@@ -33,7 +33,7 @@ log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
   static gchar persist_name[256];
 
   g_snprintf(persist_name, sizeof(persist_name),
-             "%s.seqnum", self->format.persist_name(self));
+             "%s.seqnum", self->super.super.super.generate_persist_name((const LogPipe *)self));
 
   return persist_name;
 }
@@ -320,7 +320,7 @@ log_threaded_dest_driver_start(LogPipe *s)
     self->time_reopen = cfg->time_reopen;
 
   self->queue = log_dest_driver_acquire_queue(&self->super,
-                                              self->format.persist_name(self));
+                                              self->super.super.super.generate_persist_name((const LogPipe *)self));
 
   if (self->queue == NULL)
     {
