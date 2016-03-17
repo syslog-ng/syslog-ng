@@ -82,16 +82,54 @@ afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
   self->connections_kept_alive_accross_reloads = enable;
 }
 
+static const gchar * _module_name = "afsocket_dd";
+
+static const gchar *
+_get_module_identifier(const AFSocketDestDriver *self)
+{
+  static gchar module_identifier[128];
+
+  g_snprintf(module_identifier,
+             sizeof(module_identifier),
+             "%s,%s",
+             (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
+             afsocket_dd_get_dest_name(self));
+
+  return self->super.super.super.persist_name ? self->super.super.super.persist_name : module_identifier;
+}
+
+static const gchar *
+afsocket_dd_format_name(const LogPipe *s)
+{
+  const AFSocketDestDriver *self = (const AFSocketDestDriver *)s;
+  static gchar persist_name[1024];
+  g_snprintf(persist_name, sizeof(persist_name), "%s.(%s)", _module_name, _get_module_identifier(self));
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_dd_format_qfile_name(const AFSocketDestDriver *self)
+{
+  static gchar persist_name[1024];
+  g_snprintf(persist_name, sizeof(persist_name), "%s_qfile(%s)", _module_name, _get_module_identifier(self));
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_dd_format_connections_name(const AFSocketDestDriver *self)
+{
+  static gchar persist_name[1024];
+  g_snprintf(persist_name, sizeof(persist_name), "%s_connections(%s)", _module_name, _get_module_identifier(self));
+
+  return persist_name;
+}
+
 static gchar *
 afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
 {
-  static gchar persist_name[256];
-
-  g_snprintf(persist_name, sizeof(persist_name),
-             qfile ? "afsocket_dd_qfile(%s,%s)" : "afsocket_dd_connection(%s,%s)",
-             (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
-             afsocket_dd_get_dest_name(self));
-  return persist_name;
+  return qfile ? afsocket_dd_format_qfile_name(self) : afsocket_dd_format_connections_name(self);
 }
 
 static gchar *
