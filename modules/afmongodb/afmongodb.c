@@ -529,6 +529,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = afmongodb_dd_init;
   self->super.super.super.super.free_fn = afmongodb_dd_free;
+  self->super.super.super.super.generate_persist_name = afmongodb_dd_format_persist_name;
   self->super.queue_method = afmongodb_dd_queue_method;
 
   self->super.worker.thread_init = afmongodb_worker_thread_init;
