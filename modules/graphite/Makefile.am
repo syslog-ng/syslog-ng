@@ -6,7 +6,8 @@ modules_graphite_libgraphite_la_SOURCES		 = \
   modules/graphite/graphite-output.h		   \
   modules/graphite/graphite-output.c
 
-modules_graphite_libgraphite_la_CFLAGS		 = \
+modules_graphite_libgraphite_la_CPPFLAGS		 = \
+  $(AM_CPPFLAGS) \
   -I$(top_srcdir)/modules/graphite		   \
   -I$(top_builddir)/modules/graphite
 modules_graphite_libgraphite_la_LIBADD		 = \

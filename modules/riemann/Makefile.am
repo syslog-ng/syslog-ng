@@ -3,6 +3,7 @@ if ENABLE_RIEMANN
 module_LTLIBRARIES				+= modules/riemann/libriemann.la
 
 modules_riemann_libriemann_la_CFLAGS		 = \
+    $(AM_CFLAGS) \
 	$(RIEMANN_CLIENT_CFLAGS)		   \
 	-I$(top_srcdir)/modules/riemann		   \
 	-I$(top_builddir)/modules/riemann

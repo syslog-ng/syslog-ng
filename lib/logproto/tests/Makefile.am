@@ -18,7 +18,9 @@ lib_logproto_tests_test_logproto_SOURCES = 			\
 	lib/logproto/tests/test-indented-multiline-server.c	\
 	lib/logproto/tests/test-regexp-multiline-server.c
 
-lib_logproto_tests_test_findeom_CFLAGS	= -I${top_srcdir}/libtest
+lib_logproto_tests_test_findeom_CFLAGS	= \
+	$(TEST_CFLAGS) \
+	-I${top_srcdir}/libtest
 lib_logproto_tests_test_findeom_LDADD	= \
 	${top_builddir}/lib/libsyslog-ng.la \
 	${top_builddir}/libtest/libsyslog-ng-test.a

@@ -13,6 +13,7 @@ modules_geoip_libgeoip_plugin_la_CPPFLAGS	=	\
 	-I$(top_srcdir)/modules/geoip			\
 	-I$(top_builddir)/modules/geoip
 modules_geoip_libgeoip_plugin_la_CFLAGS		=	\
+	$(AM_CFLAGS) \
 	$(GEOIP_CFLAGS)
 modules_geoip_libgeoip_plugin_la_LIBADD		=	\
 	$(MODULE_DEPS_LIBS) $(GEOIP_LIBS)

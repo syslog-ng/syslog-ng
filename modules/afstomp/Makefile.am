@@ -1,7 +1,7 @@
 if ENABLE_STOMP
 
 module_LTLIBRARIES += modules/afstomp/libafstomp.la
-modules_afstomp_libafstomp_la_CFLAGS = \
+modules_afstomp_libafstomp_la_CPPFLAGS = \
     $(AM_CPPFLAGS)  \
     -I$(top_srcdir)/modules/afstomp    \
     -I$(top_builddir)/modules/afstomp
