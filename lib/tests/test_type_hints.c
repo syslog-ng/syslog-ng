@@ -54,9 +54,6 @@ assert_error(GError *error, gint code, const gchar *expected_message)
 static void
 test_type_hint_parse(void)
 {
-  TypeHint t;
-  GError *e = NULL;
-
   testcase_begin("Testing type hint parsing");
 
   assert_type_hint(NULL, TYPE_HINT_STRING);
@@ -70,6 +67,8 @@ test_type_hint_parse(void)
   assert_type_hint("datetime", TYPE_HINT_DATETIME);
   assert_type_hint("default", TYPE_HINT_DEFAULT);
 
+  TypeHint t;
+  GError *e = NULL;
   assert_false(type_hint_parse("invalid-hint", &t, &e),
                "Parsing an invalid hint results in an error.");
 
@@ -126,7 +125,6 @@ static void
 test_type_cast(void)
 {
   GError *error = NULL;
-  gboolean ob;
   gint32 i32;
   gint64 i64;
   guint64 dt;
@@ -145,7 +143,10 @@ test_type_cast(void)
   assert_bool_cast("0", FALSE);
   assert_bool_cast("fatally false", FALSE);
 
-  assert_type_cast_fail(boolean, "booyah", &ob);
+  {
+    gboolean ob;
+    assert_type_cast_fail(boolean, "booyah", &ob);
+  }
 
   /* int32 */
   assert_int_cast("12345", 32, 12345);

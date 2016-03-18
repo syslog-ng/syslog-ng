@@ -57,35 +57,35 @@ assert_transport_mapper_inet_server_port(TransportMapper *s, gint server_port)
 }
 
 static void
-assert_transport_mapper_tcp_socket(TransportMapper *transport_mapper)
+assert_transport_mapper_tcp_socket(TransportMapper *self)
 {
-  assert_transport_mapper_address_family(transport_mapper, AF_INET);
-  assert_transport_mapper_sock_type(transport_mapper, SOCK_STREAM);
-  assert_transport_mapper_sock_proto(transport_mapper, IPPROTO_TCP);
+  assert_transport_mapper_address_family(self, AF_INET);
+  assert_transport_mapper_sock_type(self, SOCK_STREAM);
+  assert_transport_mapper_sock_proto(self, IPPROTO_TCP);
 }
 
 static void
-assert_transport_mapper_tcp6_socket(TransportMapper *transport_mapper)
+assert_transport_mapper_tcp6_socket(TransportMapper *self)
 {
-  assert_transport_mapper_address_family(transport_mapper, AF_INET6);
-  assert_transport_mapper_sock_type(transport_mapper, SOCK_STREAM);
-  assert_transport_mapper_sock_proto(transport_mapper, IPPROTO_TCP);
+  assert_transport_mapper_address_family(self, AF_INET6);
+  assert_transport_mapper_sock_type(self, SOCK_STREAM);
+  assert_transport_mapper_sock_proto(self, IPPROTO_TCP);
 }
 
 static void
-assert_transport_mapper_udp_socket(TransportMapper *transport_mapper)
+assert_transport_mapper_udp_socket(TransportMapper *self)
 {
-  assert_transport_mapper_address_family(transport_mapper, AF_INET);
-  assert_transport_mapper_sock_type(transport_mapper, SOCK_DGRAM);
-  assert_transport_mapper_sock_proto(transport_mapper, IPPROTO_UDP);
+  assert_transport_mapper_address_family(self, AF_INET);
+  assert_transport_mapper_sock_type(self, SOCK_DGRAM);
+  assert_transport_mapper_sock_proto(self, IPPROTO_UDP);
 }
 
 static void
-assert_transport_mapper_udp6_socket(TransportMapper *transport_mapper)
+assert_transport_mapper_udp6_socket(TransportMapper *self)
 {
-  assert_transport_mapper_address_family(transport_mapper, AF_INET6);
-  assert_transport_mapper_sock_type(transport_mapper, SOCK_DGRAM);
-  assert_transport_mapper_sock_proto(transport_mapper, IPPROTO_UDP);
+  assert_transport_mapper_address_family(self, AF_INET6);
+  assert_transport_mapper_sock_type(self, SOCK_DGRAM);
+  assert_transport_mapper_sock_proto(self, IPPROTO_UDP);
 }
 
 static gboolean

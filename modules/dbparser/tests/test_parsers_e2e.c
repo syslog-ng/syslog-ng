@@ -84,7 +84,7 @@ void
 test_parser(gchar **test)
 {
   GString *str;
-  gint index = 1;
+  gsize i = 1;
 
   str = g_string_new(pdb_parser_skeleton_prefix);
   g_string_append(str, test[0]);
@@ -92,11 +92,11 @@ test_parser(gchar **test)
 
   _load_pattern_db_from_string(str->str);
   g_string_free(str, TRUE);
-  while(test[index] != NULL)
-    test_pattern(test[index++], test[0], TRUE);
-  index++;
-  while(test[index] != NULL)
-    test_pattern(test[index++], test[0], FALSE);
+  while(test[i] != NULL)
+    test_pattern(test[i++], test[0], TRUE);
+  i++;
+  while(test[i] != NULL)
+    test_pattern(test[i++], test[0], FALSE);
 
   _destroy_pattern_db();
 }
