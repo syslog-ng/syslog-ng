@@ -135,6 +135,9 @@ AC_ARG_WITH([systemdsystemunitdir],
 AC_ARG_ENABLE(debug,
               [  --enable-debug      Enable debugging code.],, enable_debug="no")
 
+AC_ARG_ENABLE(extra-warnings,
+              [  --enable-extra-warnings      Enable extra compiler warnings (recommended).],, enable_extra_warnings="no")
+
 AC_ARG_ENABLE(env-wrapper,
               [  --enable-env-wrapper    Enable wrapper program to set up various environment variables],, enable_env_wrapper=auto)
 
@@ -384,7 +387,7 @@ dnl ***************************************************************************
 dnl Set up CFLAGS
 
 if test "x$ac_compiler_gnu" = "xyes"; then
-        CFLAGS="${CFLAGS} -Wall -Wshadow"
+        CFLAGS="${CFLAGS} -Wall"
         if test "x$enable_debug" = "xyes"; then
                 CFLAGS="${ac_cv_env_CFLAGS_value} -Wall -g"
         fi
@@ -395,6 +398,8 @@ if test "x$ac_compiler_gnu" = "xyes"; then
         if test "x$enable_gcov" = "xyes"; then
                 CFLAGS="${CFLAGS} -fprofile-arcs -ftest-coverage"
         fi
+else
+        enable_extra_warnings="no"
 fi
 CFLAGS="${CFLAGS} -pthread"
 
@@ -1543,6 +1548,7 @@ AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
+AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
