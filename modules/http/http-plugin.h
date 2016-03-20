@@ -49,6 +49,7 @@ LogDriver *http_dd_new(GlobalConfig *cfg);
 void http_dd_set_url(LogDriver *d, const gchar *url);
 void http_dd_set_user(LogDriver *d, const gchar *user);
 void http_dd_set_password(LogDriver *d, const gchar *password);
+void http_dd_set_method(LogDriver *d, const gchar *method);
 void http_dd_set_user_agent(LogDriver *d, const gchar *user_agent);
 void http_dd_set_headers(LogDriver *d, GList *headers);
 void http_dd_set_body(LogDriver *d, LogTemplate *body);
