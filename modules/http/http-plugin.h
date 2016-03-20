@@ -24,6 +24,8 @@
 #define HTTP_PLUGIN_H_INCLUDED 1
 
 #define HTTP_DEFAULT_URL "http://localhost/"
+#define METHOD_TYPE_POST 1
+#define METHOD_TYPE_PUT  2
 
 #include "logthrdestdrv.h"
 
@@ -36,6 +38,7 @@ typedef struct
   gchar *password;
   GList *headers;
   gchar *user_agent;
+  short int method_type;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
 } HTTPDestinationDriver;

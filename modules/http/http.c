@@ -155,6 +155,8 @@ _set_curl_opt(HTTPDestinationDriver *self, LogMessage *msg, struct curl_slist *c
   const gchar *body = body_rendered ? body_rendered->str : log_msg_get_value(msg, LM_V_MESSAGE, NULL);
 
   curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, body);
+  if (self->method_type == METHOD_TYPE_PUT)
+    curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
 }
 
 static worker_insert_result_t
@@ -239,6 +241,24 @@ http_dd_set_headers(LogDriver *d, GList *headers)
     header->data = g_strdup(header->data);
     header = g_list_next(header);
   }
+}
+
+void
+http_dd_set_method(LogDriver *d, const gchar *method)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  if (g_ascii_strcasecmp(method, "POST") == 0)
+    self->method_type = METHOD_TYPE_POST;
+  else if (g_ascii_strcasecmp(method, "PUT") == 0)
+    self->method_type = METHOD_TYPE_PUT;
+  else
+    {
+      msg_warning("Unsupported method is set(Only POST and PUT are supported), default method POST will be used",
+                  evt_tag_str("method", method),
+                  NULL);
+      self->method_type = METHOD_TYPE_POST;
+    }
 }
 
 void
