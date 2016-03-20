@@ -3,7 +3,8 @@ http destination
 
 The http destination can send the log as HTTP requests to an HTTP server.
 It supports setting url, method, headers, user\_agent, authentication
-and body. Only PUT and POST method is supported so far.
+and body. Only PUT and POST method is supported so far. If the method is
+not set, POST will be used.
 
 Example config:
 
@@ -19,7 +20,7 @@ destination http_des {
         user("user")
         password("password")
         headers("HEADER1: header1", "HEADER2: header2")
-        body("BODY")
+        body("${ISODATE} ${MSG}")
     );
 };
 log { source(s_system); destination(http_des); };
