@@ -35,6 +35,7 @@
 #include "type-hinting.h"
 #include "stats/stats.h"
 #include "dnscache.h"
+#include "file-perms.h"
 
 #include <sys/types.h>
 #include <regex.h>
@@ -93,14 +94,7 @@ struct _GlobalConfig
   gint log_msg_size;
 
   gboolean create_dirs;
-  gint file_uid;
-  gint file_gid;
-  gint file_perm;
-  
-  gint dir_uid;
-  gint dir_gid;
-  gint dir_perm;
-
+  FilePermOptions file_perm_options;
   gboolean use_uniqid;
 
   gboolean keep_timestamp;  
@@ -125,16 +119,10 @@ struct _GlobalConfig
 
 gboolean cfg_allow_config_dups(GlobalConfig *self);
 
-void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
-void cfg_file_group_set(GlobalConfig *self, gchar *group);
-void cfg_file_perm_set(GlobalConfig *self, gint perm);
 void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);
 gint cfg_lookup_mark_mode(gchar *mark_mode);
 void cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode);
 
-void cfg_dir_owner_set(GlobalConfig *self, gchar *owner);
-void cfg_dir_group_set(GlobalConfig *self, gchar *group);
-void cfg_dir_perm_set(GlobalConfig *self, gint perm);
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 

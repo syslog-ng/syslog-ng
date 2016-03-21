@@ -38,14 +38,22 @@ typedef struct _FilePermOptions
 } FilePermOptions;
 
 void file_perm_options_set_file_uid(FilePermOptions *s, const gchar *file_uid);
+void file_perm_options_dont_change_file_uid(FilePermOptions *s);
 void file_perm_options_set_file_gid(FilePermOptions *s, const gchar *file_gid);
+void file_perm_options_dont_change_file_gid(FilePermOptions *s);
 void file_perm_options_set_file_perm(FilePermOptions *s, gint file_perm);
+void file_perm_options_dont_change_file_perm(FilePermOptions *s);
 void file_perm_options_set_dir_uid(FilePermOptions *s, const gchar *dir_uid);
+void file_perm_options_dont_change_dir_uid(FilePermOptions *s);
 void file_perm_options_set_dir_gid(FilePermOptions *s, const gchar *dir_gid);
+void file_perm_options_dont_change_dir_gid(FilePermOptions *s);
 void file_perm_options_set_dir_perm(FilePermOptions *s, gint dir_perm);
+void file_perm_options_dont_change_dir_perm(FilePermOptions *s);
 
 void file_perm_options_defaults(FilePermOptions *self);
-void file_perm_options_init(FilePermOptions *self, GlobalConfig *cfg);
+void file_perm_options_global_defaults(FilePermOptions *self);
+void file_perm_options_inherit_from(FilePermOptions *self, const FilePermOptions *from);
+void file_perm_options_inherit_dont_change(FilePermOptions *self);
 
 gboolean file_perm_options_apply_file(const FilePermOptions *self, gchar *name);
 gboolean file_perm_options_apply_dir(const FilePermOptions *self, gchar *name);

@@ -33,6 +33,8 @@
 #include <string.h>
 #include <errno.h>
 
+#define DONTCHANGE -2
+
 void
 file_perm_options_set_file_uid(FilePermOptions *self, const gchar *file_uid)
 {
@@ -43,6 +45,12 @@ file_perm_options_set_file_uid(FilePermOptions *self, const gchar *file_uid)
                  evt_tag_str("user", file_uid),
                  NULL);
     }
+}
+
+void
+file_perm_options_dont_change_file_uid(FilePermOptions *self)
+{
+  self->file_uid = DONTCHANGE;
 }
 
 void
@@ -58,9 +66,21 @@ file_perm_options_set_file_gid(FilePermOptions *self, const gchar *file_gid)
 }
 
 void
+file_perm_options_dont_change_file_gid(FilePermOptions *self)
+{
+  self->file_gid = DONTCHANGE;
+}
+
+void
 file_perm_options_set_file_perm(FilePermOptions *self, gint file_perm)
 {
   self->file_perm = file_perm;
+}
+
+void
+file_perm_options_dont_change_file_perm(FilePermOptions *self)
+{
+  self->file_perm = DONTCHANGE;
 }
 
 void
@@ -76,6 +96,12 @@ file_perm_options_set_dir_uid(FilePermOptions *self, const gchar *dir_uid)
 }
 
 void
+file_perm_options_dont_change_dir_uid(FilePermOptions *self)
+{
+  self->dir_uid = DONTCHANGE;
+}
+
+void
 file_perm_options_set_dir_gid(FilePermOptions *self, const gchar *dir_gid)
 {
   self->dir_gid = 0;
@@ -88,9 +114,21 @@ file_perm_options_set_dir_gid(FilePermOptions *self, const gchar *dir_gid)
 }
 
 void
+file_perm_options_dont_change_dir_gid(FilePermOptions *self)
+{
+  self->dir_gid = DONTCHANGE;
+}
+
+void
 file_perm_options_set_dir_perm(FilePermOptions *self, gint dir_perm)
 {
   self->dir_perm = dir_perm;
+}
+
+void
+file_perm_options_dont_change_dir_perm(FilePermOptions *self)
+{
+  self->dir_perm = DONTCHANGE;
 }
 
 void
@@ -103,20 +141,47 @@ file_perm_options_defaults(FilePermOptions *self)
 }
 
 void
-file_perm_options_init(FilePermOptions *self, GlobalConfig *cfg)
+file_perm_options_global_defaults(FilePermOptions *self)
+{
+  self->file_uid = 0;
+  self->file_gid = 0;
+  self->file_perm = 0600;
+  self->dir_uid = 0;
+  self->dir_gid = 0;
+  self->dir_perm = 0700;
+}
+
+void
+file_perm_options_inherit_from(FilePermOptions *self, const FilePermOptions *from)
 {
   if (self->file_uid == -1)
-    self->file_uid = cfg->file_uid;
+    self->file_uid = from->file_uid;
   if (self->file_gid == -1)
-    self->file_gid = cfg->file_gid;
+    self->file_gid = from->file_gid;
   if (self->file_perm == -1)
-    self->file_perm = cfg->file_perm;
+    self->file_perm = from->file_perm;
   if (self->dir_uid == -1)
-    self->dir_uid = cfg->dir_uid;
+    self->dir_uid = from->dir_uid;
   if (self->dir_gid == -1)
-    self->dir_gid = cfg->dir_gid;
+    self->dir_gid = from->dir_gid;
   if (self->dir_perm == -1)
-    self->dir_perm = cfg->dir_perm;
+    self->dir_perm = from->dir_perm;
+}
+
+void
+file_perm_options_inherit_dont_change(FilePermOptions *self)
+{
+  FilePermOptions dont_change =
+  {
+    .file_uid = DONTCHANGE,
+    .file_gid = DONTCHANGE,
+    .file_perm = DONTCHANGE,
+    .dir_uid = DONTCHANGE,
+    .dir_gid = DONTCHANGE,
+    .dir_perm = DONTCHANGE,
+  };
+
+  file_perm_options_inherit_from(self, &dont_change);
 }
 
 gboolean

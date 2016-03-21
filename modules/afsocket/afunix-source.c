@@ -98,6 +98,7 @@ afunix_sd_init(LogPipe *s)
   if (self->pass_unix_credentials == -1)
     self->pass_unix_credentials = cfg->pass_unix_credentials;
 
+  file_perm_options_inherit_dont_change(&self->file_perm_options);
   afunix_sd_set_pass_unix_credentials(self, self->pass_unix_credentials);
 
   return afsocket_sd_init_method(s) &&
@@ -129,7 +130,8 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
 
   self->filename = g_strdup(filename);
   file_perm_options_defaults(&self->file_perm_options);
-  self->file_perm_options.file_perm = 0666;
+  file_perm_options_set_file_perm(&self->file_perm_options, 0666);
+
   self->pass_unix_credentials = -1;
   self->create_dirs = -1;
 
