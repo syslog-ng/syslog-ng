@@ -254,100 +254,13 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
     }
 }
 
-/* NOTE: runs in the main thread */
-static void
-affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
-  
-  switch (notify_code)
-    {
-    case NC_FILE_MOVED:
-      { 
-        msg_verbose("Follow-mode file source moved, tracking of the new file is started",
-                    evt_tag_str("filename", self->filename->str),
-                    NULL);
-        
-        log_pipe_deinit((LogPipe *) self->reader);
-        log_pipe_unref((LogPipe *) self->reader);
-        self->reader = NULL;
-        
-        if (affile_sd_open_file(self, self->filename->str, &fd))
-          {
-            LogProtoServer *proto;
-            PollEvents *poll_events;
-            
-            poll_events = affile_sd_construct_poll_events(self, fd);
-            if (!poll_events)
-              break;
-
-            proto = affile_sd_construct_proto(self, fd);
-
-            self->reader = log_reader_new(self->super.super.super.cfg);
-            log_reader_reopen(self->reader, proto, poll_events);
-
-            log_reader_set_options(self->reader,
-                                   s,
-                                   &self->reader_options,
-                                   STATS_LEVEL1,
-                                   SCS_FILE,
-                                   self->super.super.id,
-                                   self->filename->str);
-            log_reader_set_immediate_check(self->reader);
-
-            log_pipe_append((LogPipe *) self->reader, s);
-            if (!log_pipe_init((LogPipe *) self->reader))
-              {
-                msg_error("Error initializing log_reader, closing fd",
-                          evt_tag_int("fd", fd),
-                          NULL);
-                log_pipe_unref((LogPipe *) self->reader);
-                self->reader = NULL;
-                close(fd);
-              }
-            affile_sd_recover_state(s, cfg, proto);
-          }
-        break;
-      }
-    default:
-      break;
-    }
-}
-
-static void
-affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  static NVHandle filename_handle = 0;
-
-  if (!filename_handle)
-    filename_handle = log_msg_get_value_handle("FILE_NAME");
-  
-  log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
-
-  log_src_driver_queue_method(s, msg, path_options, user_data);
-}
-
 static gboolean
-affile_sd_init(LogPipe *s)
+affile_sd_reopen_file(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
   gboolean file_opened, open_deferred = FALSE;
-
-  if (!log_src_driver_init_method(s))
-    return FALSE;
-
-  log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
-
-  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
-    {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly", NULL);
-      return FALSE;
-    }
+  gint fd;
 
   file_opened = affile_sd_open_file(self, self->filename->str, &fd);
   if (!file_opened && self->follow_freq > 0)
@@ -408,7 +321,68 @@ affile_sd_init(LogPipe *s)
       return self->super.super.optional;
     }
   return TRUE;
+}
 
+/* NOTE: runs in the main thread */
+static void
+affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  gint fd;
+
+  switch (notify_code)
+    {
+    case NC_FILE_MOVED:
+      {
+        msg_verbose("Follow-mode file source moved, tracking of the new file is started",
+                    evt_tag_str("filename", self->filename->str),
+                    NULL);
+
+        log_pipe_deinit((LogPipe *) self->reader);
+        log_pipe_unref((LogPipe *) self->reader);
+        self->reader = NULL;
+        affile_sd_reopen_file(s);
+        break;
+      }
+    default:
+      break;
+    }
+}
+
+static void
+affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  static NVHandle filename_handle = 0;
+
+  if (!filename_handle)
+    filename_handle = log_msg_get_value_handle("FILE_NAME");
+
+  log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
+
+  log_src_driver_queue_method(s, msg, path_options, user_data);
+}
+
+static gboolean
+affile_sd_init(LogPipe *s)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  gint fd;
+  gboolean file_opened, open_deferred = FALSE;
+
+  if (!log_src_driver_init_method(s))
+    return FALSE;
+
+  log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
+
+  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
+    {
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly", NULL);
+      return FALSE;
+    }
+  return affile_sd_reopen_file(s);
 }
 
 static gboolean
