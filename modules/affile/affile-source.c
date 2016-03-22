@@ -253,13 +253,64 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
     }
 }
 
+static void
+affile_sd_reopen_on_notify(LogPipe *s, gboolean recover_state)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  gint fd;
+
+  log_pipe_deinit((LogPipe *) self->reader);
+  log_pipe_unref((LogPipe *) self->reader);
+  self->reader = NULL;
+
+  if (affile_sd_open_file(self, self->filename->str, &fd))
+    {
+      LogProtoServer *proto;
+      PollEvents *poll_events;
+
+      poll_events = affile_sd_construct_poll_events(self, fd);
+      if (!poll_events)
+        {
+          close(fd);
+          return;
+        }
+
+      proto = affile_sd_construct_proto(self, fd);
+
+      self->reader = log_reader_new(self->super.super.super.cfg);
+      log_reader_reopen(self->reader, proto, poll_events);
+
+      log_reader_set_options(self->reader,
+                             s,
+                             &self->reader_options,
+                             STATS_LEVEL1,
+                             SCS_FILE,
+                             self->super.super.id,
+                             self->filename->str);
+      log_reader_set_immediate_check(self->reader);
+
+      log_pipe_append((LogPipe *) self->reader, s);
+      if (!log_pipe_init((LogPipe *) self->reader))
+        {
+          msg_error("Error initializing log_reader, closing fd",
+                    evt_tag_int("fd", fd),
+                    NULL);
+          log_pipe_unref((LogPipe *) self->reader);
+          self->reader = NULL;
+          close(fd);
+          return;
+        }
+      if (recover_state)
+        affile_sd_recover_state(s, cfg, proto);
+    }
+}
+
 /* NOTE: runs in the main thread */
 static void
 affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
   
   switch (notify_code)
     {
@@ -268,46 +319,15 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
         msg_verbose("Follow-mode file source moved, tracking of the new file is started",
                     evt_tag_str("filename", self->filename->str),
                     NULL);
-        
-        log_pipe_deinit((LogPipe *) self->reader);
-        log_pipe_unref((LogPipe *) self->reader);
-        self->reader = NULL;
-        
-        if (affile_sd_open_file(self, self->filename->str, &fd))
-          {
-            LogProtoServer *proto;
-            PollEvents *poll_events;
-            
-            poll_events = affile_sd_construct_poll_events(self, fd);
-            if (!poll_events)
-              break;
-
-            proto = affile_sd_construct_proto(self, fd);
-
-            self->reader = log_reader_new(self->super.super.super.cfg);
-            log_reader_reopen(self->reader, proto, poll_events);
-
-            log_reader_set_options(self->reader,
-                                   s,
-                                   &self->reader_options,
-                                   STATS_LEVEL1,
-                                   SCS_FILE,
-                                   self->super.super.id,
-                                   self->filename->str);
-            log_reader_set_immediate_check(self->reader);
-
-            log_pipe_append((LogPipe *) self->reader, s);
-            if (!log_pipe_init((LogPipe *) self->reader))
-              {
-                msg_error("Error initializing log_reader, closing fd",
-                          evt_tag_int("fd", fd),
-                          NULL);
-                log_pipe_unref((LogPipe *) self->reader);
-                self->reader = NULL;
-                close(fd);
-              }
-            affile_sd_recover_state(s, cfg, proto);
-          }
+        affile_sd_reopen_on_notify(s, TRUE);
+        break;
+      }
+    case NC_READ_ERROR:
+      {
+        msg_verbose("Error while following source file, reopening in the hope it would work",
+                    evt_tag_str("filename", self->filename->str),
+                    NULL);
+        affile_sd_reopen_on_notify(s, FALSE);
         break;
       }
     default:
