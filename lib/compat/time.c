@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014 Balabit
- * Copyright (c) 2014 Gergely Nagy <algernon@madhouse-project.org>
+ * Copyright (c) 2016 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,28 +21,24 @@
  *
  */
 
-#ifndef COMPAT_TIME_H_INCLUDED
-#define COMPAT_TIME_H_INCLUDED
-
-#include "compat/compat.h"
-#include <time.h>
+#include "compat/time.h"
 
 #ifdef __MACH__
 
-#include <mach/clock.h>
-#include <mach/mach.h>
+int
+clock_gettime(clock_t clock_id, struct timespec *timestamp)
+{
+  clock_serv_t clock_server;
+  mach_timespec_t mach_timestamp;
 
-#define CLOCK_REALTIME CALENDAR_CLOCK
-#define CLOCK_MONOTONIC SYSTEM_CLOCK
+  host_get_clock_service(mach_host_self(), clock_id, &clock_server);
+  clock_get_time(clock_server, &mach_timestamp);
 
-int clock_gettime(clock_t clock_id, struct timespec *timestamp);
+  timestamp->tv_sec = mach_timestamp.tv_sec;
+  timestamp->tv_nsec = mach_timestamp.tv_nsec;
 
-#else
+  mach_port_deallocate(mach_task_self(), clock_server);
+  return 0;
+}
 
-#ifndef CLOCK_MONOTONIC
-#define CLOCK_MONOTONIC CLOCK_REALTIME
 #endif
-
-#endif /* __MACH__ */
-
-#endif /* COMPAT_TIME_H_INCLUDED */

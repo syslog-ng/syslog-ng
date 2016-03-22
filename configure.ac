@@ -78,8 +78,6 @@ scldir="${config_includedir}/scl"
 
 AC_CONFIG_HEADERS(config.h)
 
-
-
 dnl ***************************************************************************
 dnl Arguments
 
@@ -428,6 +426,18 @@ elif test "x$enable_mixed_linking" = "xyes"; then
 	enable_dynamic_linking="no"
 	enable_mixed_linking="yes"
 	linking_mode="mixed"
+fi
+
+dnl ***************************************************************************
+dnl Check for --whole-archive flag
+dnl ***************************************************************************
+
+if test $ostype = "Darwin"; then
+  WHOLE_ARCHIVE_OPT="-all_load"
+  NO_WHOLE_ARCHIVE_OPT="-noall_load"
+else
+  WHOLE_ARCHIVE_OPT="--whole-archive"
+  NO_WHOLE_ARCHIVE_OPT="--no-whole-archive"
 fi
 
 dnl ***************************************************************************
@@ -876,13 +886,13 @@ if test "x$with_ivykis" = "xinternal"; then
 		# these can only be used in lib as it assumes
 		# the current directory just one below ivykis
 
-		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src -livykis  -Wl,--no-whole-archive"
+		IVYKIS_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/src/include -I\$(top_builddir)/lib/ivykis/src/include"
 		IVYKIS_SUBDIRS=lib/ivykis
                 INTERNAL_IVYKIS_CFLAGS="-I\${includedir}/syslog-ng/ivykis"
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
-		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,--no-whole-archive"
+		IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 	else
 		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
 	fi
@@ -1369,7 +1379,7 @@ if test "x$linking_mode" = "xdynamic"; then
 	# syslog-ng binary is linked with the default link command (e.g. libtool)
 	SYSLOGNG_LINK='$(LINK)'
 else
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS -Wl,--no-whole-archive $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,${WHOLE_ARCHIVE_OPT} $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS  -Wl,${NO_WHOLE_ARCHIVE_OPT} $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
 	TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS $DL_LIBS"
 	CORE_DEPS_LIBS=""
 

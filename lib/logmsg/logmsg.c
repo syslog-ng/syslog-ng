@@ -1723,6 +1723,8 @@ log_msg_lookup_time_stamp_name(const gchar *name)
   return -1;
 }
 
+#ifdef __linux__
+
 const gchar *
 __log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
 __attribute__((alias("log_msg_get_value")));
@@ -1735,3 +1737,4 @@ void
 __log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
 __attribute__((alias("log_msg_set_value_by_name")));
 
+#endif
