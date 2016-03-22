@@ -1,3 +1,74 @@
+3.7.3
+=====
+
+<!-- Tue, 22 Mar 2016 10:40:37 +0100 -->
+
+Changes compared to 3.7.2:
+
+Improvements
+------------
+
+ * Updated Python package requirements.
+
+ * Can now compile without MongoDB.
+
+ * Added eventlog to the list of required pkg-config packages.
+
+ * Basic FreeBSD and HP-UX support of syslog debug bundle generator by
+   improving POSIX shell compatibility.
+
+ * Keep the program destination open between configuration reloads.
+
+ * `system-source` now uses `keep-timestamp(no)` for Linux kernel log.
+   The time source used by `/dev/kmsg` is not updated after system
+   SUSPEND/RESUME.
+
+
+Fixes
+-----
+
+ * Fix a SIGSEGV when a Redis command returns an error.
+
+ * Resolve deadlock in logwriter triggered by `suppress()`
+
+ * Mitigate possible deadlock in patterndb
+
+ * Fixed global inheritance of `pass-unix-credentials()` and `create-dirs()`.
+
+ * Certain compilers complained about an undefined symbol when setting
+   `keep-alive(yes)`.
+
+ * For certain use cases, afsocket would not handle procfs read errors due
+   to an integer underflow.
+
+ * Enhanced Java version check and the handling of SyslogNgInternalLogger
+   (used by Kafka), the FATAL loglevel and `getLocationInformation()`.
+
+ * When a big amount of kernel log was produced in a very short time,
+   the syslog-ng process sometimes entered into a spin and stop processing
+   messages.
+
+
+Credits
+-------
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessarily to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+
+András Mitzki, Avleen Vig, Balázs Scheidler, Ben Kibbey, Christian Herzig,
+David Schweikert, Douglas Carmichael, Dezso Endre Molnar, Fabien Wernli,
+Gergely Czuczy, Gergely Nagy, Gergo Nagy, Hanno Böck, Herzig, Christian,
+Laszlo Budai, László Várady, MÓZES Ádám István, PÁSZTOR György, Péter Czanik, 
+Robert Fekete, Saurabh Shukla, Tamás Nagy, Tibor Benke, Viktor Juhász,
+Vincent Bernat, Wang Long, Zdenek Styblik, Zoltán FRIED, Zoltán Pallagi
+
+
 3.7.2
 =====
 
