@@ -1,8 +1,8 @@
 project.buildDir = syslogBuildDir+'/elastic-v2/gradle'
 
 dependencies {
-    compile 'org.elasticsearch:elasticsearch:2.1.1'
-    compile 'org.elasticsearch.plugin:shield:2.1.1'
+    compile 'org.elasticsearch:elasticsearch:2.2.0'
+    compile 'org.elasticsearch.plugin:shield:2.2.0'
     compile name: 'syslog-ng-common'
     compile name: 'syslog-ng-core'
     compile 'junit:junit:4.12'
