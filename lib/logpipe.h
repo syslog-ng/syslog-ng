@@ -185,7 +185,7 @@ struct _LogPathOptions
     * ack_needed.
     */
 
-  gboolean ack_needed:1,
+  gboolean ack_needed;
 
   /* The user has requested flow-control on this processing path,
    * which means that the destination should invoke log_msg_ack()
@@ -199,7 +199,7 @@ struct _LogPathOptions
    * required action.
    */
 
-    flow_control_requested:1;
+  gboolean flow_control_requested;
 
   gboolean *matched;
 };
