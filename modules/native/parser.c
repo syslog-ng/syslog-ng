@@ -34,7 +34,7 @@ __attribute__((visibility("hidden"))) void
 native_parser_proxy_set_option(struct NativeParserProxy* self, const gchar* key, const gchar* value);
 
 __attribute__((visibility("hidden"))) gboolean
-native_parser_proxy_process(struct NativeParserProxy* this, LogParser *super, LogMessage *pmsg, const gchar *input, gsize input_len);
+native_parser_proxy_process(struct NativeParserProxy* this, LogParser *super, LogMessage *pmsg, const gchar *input);
 
 __attribute__((visibility("hidden"))) int
 native_parser_proxy_init(struct NativeParserProxy* s);
@@ -59,7 +59,7 @@ native_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   ParserNative *self = (ParserNative *) s;
 
   LogMessage *writable_msg = log_msg_make_writable(pmsg, path_options);
-  return native_parser_proxy_process(self->native_object, &self->super, writable_msg, input, input_len);
+  return native_parser_proxy_process(self->native_object, &self->super, writable_msg, input);
 }
 
 void
