@@ -42,6 +42,7 @@
 #include "crypto.h"
 #include "value-pairs/value-pairs.h"
 #include "reloc.h"
+#include "plugin.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -177,6 +178,7 @@ app_shutdown(void)
   hostname_global_deinit();
   crypto_deinit();
   msg_deinit();
+  plugin_global_deinit();
   timeutils_deinit();
   reloc_deinit();
   
