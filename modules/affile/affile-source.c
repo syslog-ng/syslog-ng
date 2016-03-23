@@ -155,8 +155,7 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
   if (!log_proto_server_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
-                evt_tag_str("filename", self->filename->str),
-                NULL);
+                evt_tag_str("filename", self->filename->str));
       return;
     }
 }
@@ -188,8 +187,7 @@ affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
     {
       msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it with the current ivykis polling method. Set follow-freq() for regular files or change IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
                 evt_tag_str("filename", self->filename->str),
-                evt_tag_int("fd", fd),
-                NULL);
+                evt_tag_int("fd", fd));
       return NULL;
     }
 }
@@ -208,8 +206,7 @@ affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
       if (lseek(fd, 0, SEEK_END) < 0)
         {
           msg_error("Error seeking /dev/kmsg to the end",
-                    evt_tag_str("error", g_strerror(errno)),
-                    NULL);
+                    evt_tag_str("error", g_strerror(errno)));
         }
       return log_transport_device_new(fd, 0);
     }
@@ -295,8 +292,7 @@ affile_sd_reopen_on_notify(LogPipe *s, gboolean recover_state)
       if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
-                    evt_tag_int("fd", fd),
-                    NULL);
+                    evt_tag_int("fd", fd));
           log_pipe_unref((LogPipe *) self->reader);
           self->reader = NULL;
           close(fd);
@@ -318,16 +314,14 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
     case NC_FILE_MOVED:
       { 
         msg_verbose("Follow-mode file source moved, tracking of the new file is started",
-                    evt_tag_str("filename", self->filename->str),
-                    NULL);
+                    evt_tag_str("filename", self->filename->str));
         affile_sd_reopen_on_notify(s, TRUE);
         break;
       }
     case NC_READ_ERROR:
       {
         msg_verbose("Error while following source file, reopening in the hope it would work",
-                    evt_tag_str("filename", self->filename->str),
-                    NULL);
+                    evt_tag_str("filename", self->filename->str));
         affile_sd_reopen_on_notify(s, FALSE);
         break;
       }
@@ -365,7 +359,7 @@ affile_sd_init(LogPipe *s)
 
   if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
     {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly", NULL);
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
       return FALSE;
     }
 
@@ -373,8 +367,7 @@ affile_sd_init(LogPipe *s)
   if (!file_opened && self->follow_freq > 0)
     {
       msg_info("Follow-mode file source not found, deferring open",
-               evt_tag_str("filename", self->filename->str),
-               NULL);
+               evt_tag_str("filename", self->filename->str));
       open_deferred = TRUE;
       fd = -1;
     }
@@ -410,8 +403,7 @@ affile_sd_init(LogPipe *s)
       if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
-                    evt_tag_int("fd", fd),
-                    NULL);
+                    evt_tag_int("fd", fd));
           log_pipe_unref((LogPipe *) self->reader);
           self->reader = NULL;
           close(fd);
@@ -423,8 +415,7 @@ affile_sd_init(LogPipe *s)
     {
       msg_error("Error opening file for reading",
                 evt_tag_str("filename", self->filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       return self->super.super.optional;
     }
   return TRUE;
@@ -496,8 +487,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
-      msg_warning_once("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0 " to '1' for all files except /proc/kmsg",
-                       NULL);
+      msg_warning_once("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0 " to '1' for all files except /proc/kmsg");
       self->follow_freq = -1;
     }
   else
@@ -525,7 +515,7 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
       msg_warning_once("WARNING: the expected message format is being changed for pipe() to improve "
                        "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
                        "applications which bypass the syslog() API, you might "
-                       "need the 'expect-hostname' flag to get the old behaviour back", NULL);
+                       "need the 'expect-hostname' flag to get the old behaviour back");
     }
   else
     {

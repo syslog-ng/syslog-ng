@@ -209,8 +209,7 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
       msg_warning("system(): The kernel message buffer is not readable, "
                   "please check permissions if this is unintentional.",
                   evt_tag_str("device", kmsg),
-                  evt_tag_errno("error", errno),
-                  NULL);
+                  evt_tag_errno("error", errno));
     }
   else
     system_sysblock_add_file(sysblock, kmsg, -1,
@@ -263,8 +262,7 @@ system_generate_system_transports(GString *sysblock)
   if (uname(&u) < 0)
     {
       msg_error("system(): Cannot get information about the running kernel",
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       return FALSE;
     }
 
@@ -311,8 +309,7 @@ system_generate_system_transports(GString *sysblock)
       msg_error("system(): Error detecting platform, unable to define the system() source. "
                 "Please send your system information to the developers!",
                 evt_tag_str("sysname", u.sysname),
-                evt_tag_str("release", u.release),
-                NULL);
+                evt_tag_str("release", u.release));
       return FALSE;
     }
   g_string_append(sysblock, "\n");
@@ -330,15 +327,13 @@ system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
 {
   if (cfg_is_config_version_older(cfg, 0x0306))
     {
-      msg_warning_once("WARNING: Starting with " VERSION_3_6 ", the system() source performs JSON parsing of messages starting with the '@cim:' prefix. No additional action is needed",
-                       NULL);
+      msg_warning_once("WARNING: Starting with " VERSION_3_6 ", the system() source performs JSON parsing of messages starting with the '@cim:' prefix. No additional action is needed");
       return;
     }
 
   if (!_is_json_parser_available(cfg))
     {
-      msg_debug("system(): json-parser() is missing, skipping the automatic JSON parsing of messages submitted via syslog(3), Please install the json module",
-                NULL);
+      msg_debug("system(): json-parser() is missing, skipping the automatic JSON parsing of messages submitted via syslog(3), Please install the json module");
       return;
     }
 

@@ -157,8 +157,7 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
                * wake up when the rate limits lets us send at least 1 message */
               *timeout = (1000 / self->throttle) + 1;
               msg_debug("Throttling output",
-                        evt_tag_int("wait", *timeout),
-                        NULL);
+                        evt_tag_int("wait", *timeout));
             }
           return FALSE;
         }

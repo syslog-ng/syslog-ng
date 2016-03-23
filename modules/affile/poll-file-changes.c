@@ -58,16 +58,14 @@ poll_file_changes_check_file(gpointer s)
   gint fd = self->fd;
 
   msg_trace("Checking if the followed file has new lines",
-            evt_tag_str("follow_filename", self->follow_filename),
-            NULL);
+            evt_tag_str("follow_filename", self->follow_filename));
   if (fd >= 0)
     {
       pos = lseek(fd, 0, SEEK_CUR);
       if (pos == (off_t) -1)
         {
           msg_error("Error invoking seek on followed file",
-                    evt_tag_errno("error", errno),
-                    NULL);
+                    evt_tag_errno("error", errno));
           goto reschedule;
         }
 
@@ -76,24 +74,21 @@ poll_file_changes_check_file(gpointer s)
           if (errno == ESTALE)
             {
               msg_trace("log_reader_fd_check file moved ESTALE",
-                        evt_tag_str("follow_filename", self->follow_filename),
-                        NULL);
+                        evt_tag_str("follow_filename", self->follow_filename));
               log_pipe_notify(self->control, NC_FILE_MOVED, self);
               return;
             }
           else
             {
               msg_error("Error invoking fstat() on followed file",
-                        evt_tag_errno("error", errno),
-                        NULL);
+                        evt_tag_errno("error", errno));
               goto reschedule;
             }
         }
 
       msg_trace("log_reader_fd_check",
                 evt_tag_int("pos", pos),
-                evt_tag_int("size", st.st_size),
-                NULL);
+                evt_tag_int("size", st.st_size));
 
       if (pos < st.st_size || !S_ISREG(st.st_mode))
         {
@@ -125,8 +120,7 @@ poll_file_changes_check_file(gpointer s)
               msg_trace("log_reader_fd_check file moved eof",
                         evt_tag_int("pos", pos),
                         evt_tag_int("size", followed_st.st_size),
-                        evt_tag_str("follow_filename", self->follow_filename),
-                        NULL);
+                        evt_tag_str("follow_filename", self->follow_filename));
               /* file was moved and we are at EOF, follow the new file */
               log_pipe_notify(self->control, NC_FILE_MOVED, self);
               /* we may be freed by the time the notification above returns */
@@ -136,8 +130,7 @@ poll_file_changes_check_file(gpointer s)
       else
         {
           msg_verbose("Follow mode file still does not exist",
-                      evt_tag_str("filename", self->follow_filename),
-                      NULL);
+                      evt_tag_str("filename", self->follow_filename));
         }
     }
  reschedule:

@@ -122,14 +122,12 @@ _validate_file_type(const gchar *name, FileOpenOptions *open_opts)
       if (open_opts->is_pipe && !S_ISFIFO(st.st_mode))
         {
           msg_warning("WARNING: you are using the pipe driver, underlying file is not a FIFO, it should be used by file()",
-                      evt_tag_str("filename", name),
-                      NULL);
+                      evt_tag_str("filename", name));
         }
       else if (!open_opts->is_pipe && S_ISFIFO(st.st_mode))
         {
           msg_warning("WARNING: you are using the file driver, underlying file is a FIFO, it should be used by pipe()",
-                      evt_tag_str("filename", name),
-                      NULL);
+                      evt_tag_str("filename", name));
         }
     }
 }
@@ -142,8 +140,7 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
   if (_is_path_spurious(name))
     {
       msg_error("Spurious path, logfile not created",
-                evt_tag_str("path", name),
-                NULL);
+                evt_tag_str("path", name));
       return FALSE;
     }
 
@@ -166,8 +163,7 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
 
   msg_trace("affile_open_file",
             evt_tag_str("path", name),
-            evt_tag_int("fd", *fd),
-            NULL);
+            evt_tag_int("fd", *fd));
 
   return (*fd != -1);
 }

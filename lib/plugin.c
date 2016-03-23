@@ -128,8 +128,7 @@ plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
         {
           msg_debug("Attempted to register the same plugin multiple times, ignoring",
                     evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
-                    evt_tag_str("name", p[i].name),
-                    NULL);
+                    evt_tag_str("name", p[i].name));
           continue;
         }
       cfg->plugins = g_list_prepend(cfg->plugins, &p[i]);
@@ -165,8 +164,7 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
       msg_error("This module claims to support a plugin, which it didn't register after loading",
                 evt_tag_str("module", candidate->module_name),
                 evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin_type)),
-                evt_tag_str("name", plugin_name),
-                NULL);
+                evt_tag_str("name", plugin_name));
     }
   return NULL;
 }
@@ -301,14 +299,12 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
     {
       msg_error("Plugin module not found in 'module-path'",
                 evt_tag_str("module-path", module_path),
-                evt_tag_str("module", module_name),
-                NULL);
+                evt_tag_str("module", module_name));
       return NULL;
     }
   msg_trace("Trying to open module",
             evt_tag_str("module", module_name),
-            evt_tag_str("filename", plugin_module_name),
-            NULL);
+            evt_tag_str("filename", plugin_module_name));
 
   mod = g_module_open(plugin_module_name, G_MODULE_BIND_LAZY);
   g_free(plugin_module_name);
@@ -316,8 +312,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
     {
       msg_error("Error opening plugin module",
                 evt_tag_str("module", module_name),
-                evt_tag_str("error", g_module_error()),
-                NULL);
+                evt_tag_str("error", g_module_error()));
       return NULL;
     }
   return mod;
@@ -374,8 +369,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
       msg_error("Error finding init function in module",
                 evt_tag_str("module", module_name),
                 evt_tag_str("symbol", module_init_func),
-                evt_tag_str("error", g_module_error()),
-                NULL);
+                evt_tag_str("error", g_module_error()));
       g_free(module_init_func);
       return FALSE;
     }
@@ -385,12 +379,10 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   result = (*init_func)(cfg, args);
   if (result)
     msg_verbose("Module loaded and initialized successfully",
-               evt_tag_str("module", module_name),
-               NULL);
+               evt_tag_str("module", module_name));
   else
     msg_error("Module initialization failed",
-               evt_tag_str("module", module_name),
-               NULL);
+               evt_tag_str("module", module_name));
   return result;
 }
 
@@ -408,8 +400,7 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
       const gchar *fname;
 
       msg_debug("Reading path for candidate modules",
-                evt_tag_str("path", mod_paths[i]),
-                NULL);
+                evt_tag_str("path", mod_paths[i]));
       dir = g_dir_open(mod_paths[i], 0, NULL);
       if (!dir)
         continue;
@@ -427,8 +418,7 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
               msg_debug("Reading shared object for a candidate module",
                         evt_tag_str("path", mod_paths[i]),
                         evt_tag_str("fname", fname),
-                        evt_tag_str("module", module_name),
-                        NULL);
+                        evt_tag_str("module", module_name));
               mod = plugin_dlopen_module(module_name, resolvedConfigurablePaths.initial_module_path);
               module_info = plugin_get_module_info(mod);
 
@@ -445,8 +435,7 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
                                 evt_tag_str("module", module_name),
                                 evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin->type)),
                                 evt_tag_str("name", plugin->name),
-                                evt_tag_int("preference", module_info->preference),
-                                NULL);
+                                evt_tag_int("preference", module_info->preference));
                       if (candidate_plugin)
                         {
                           if (candidate_plugin->preference < module_info->preference)

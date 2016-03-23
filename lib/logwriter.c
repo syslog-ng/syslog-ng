@@ -218,8 +218,7 @@ log_writer_work_finished(gpointer s)
           log_writer_suspend(self);
           msg_notice("Suspending write operation because of an I/O error",
                      evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
-                     evt_tag_int("time_reopen", self->options->time_reopen),
-                     NULL);
+                     evt_tag_int("time_reopen", self->options->time_reopen));
         }
       goto exit;
     }
@@ -274,8 +273,7 @@ log_writer_io_error(gpointer s)
   if (self->fd_watch.handler_out == NULL && self->fd_watch.handler_in == NULL)
     {
       msg_debug("POLLERR occurred while idle",
-                evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
-                NULL);
+                evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
       log_writer_broken(self, NC_WRITE_ERROR);
       return;
     }
@@ -294,8 +292,7 @@ log_writer_io_check_eof(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   msg_error("EOF occurred while idle",
-            evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
-            NULL);
+            evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
   log_writer_broken(self, NC_CLOSE);
 }
 
@@ -306,8 +303,7 @@ log_writer_error_suspend_elapsed(gpointer s)
 
   self->suspended = FALSE;
   msg_notice("Error suspend timeout has elapsed, attempting to write again",
-             evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
-             NULL);
+             evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
   log_writer_start_watches(self);
 }
 
@@ -569,8 +565,7 @@ log_writer_emit_suppress_summary(LogWriter *self)
   gssize len;
   const gchar *p;
 
-  msg_debug("Suppress timer elapsed, emitting suppression summary", 
-            NULL);
+  msg_debug("Suppress timer elapsed, emitting suppression summary");
 
   m = log_msg_new_empty();
   m->timestamps[LM_TS_STAMP] = m->timestamps[LM_TS_RECVD];
@@ -719,8 +714,7 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
 
           msg_debug("Suppressing duplicate message",
                     evt_tag_str("host", log_msg_get_value(lm, LM_V_HOST, NULL)),
-                    evt_tag_str("msg", log_msg_get_value(lm, LM_V_MESSAGE, NULL)),
-                    NULL);
+                    evt_tag_str("msg", log_msg_get_value(lm, LM_V_MESSAGE, NULL)));
           return TRUE;
         }
       else
@@ -863,8 +857,7 @@ log_writer_do_padding(LogWriter *self, GString *result)
     {
       msg_warning("Padding is too small to hold the full message",
                evt_tag_int("padding", self->options->padding),
-               evt_tag_int("msg_size", result->len),
-               NULL);
+               evt_tag_int("msg_size", result->len));
       g_string_set_size(result, self->options->padding);
       return;
     }
@@ -1114,8 +1107,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
   if (!(msg->flags & LF_INTERNAL))
     {
       msg_debug("Outgoing message",
-            evt_tag_str("message",self->line_buffer->str),
-            NULL);
+            evt_tag_str("message",self->line_buffer->str));
     }
 
   if (self->line_buffer->len)
@@ -1145,8 +1137,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
     }
   else
     {
-      msg_debug("Error posting log message as template() output resulted in an empty string, skipping message",
-                NULL);
+      msg_debug("Error posting log message as template() output resulted in an empty string, skipping message");
       consumed = TRUE;
     }
 
@@ -1164,8 +1155,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
   else
     {
       msg_debug("Can't send the message rewind backlog",
-                evt_tag_str("message",self->line_buffer->str),
-                NULL);
+                evt_tag_str("message",self->line_buffer->str));
 
       log_queue_rewind_backlog(self->queue, 1);
 
@@ -1571,7 +1561,7 @@ log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enabl
     }
   else
     {
-      msg_error("Macro escaping can only be specified for inline templates", NULL);
+      msg_error("Macro escaping can only be specified for inline templates");
     }
 }
 
@@ -1666,6 +1656,6 @@ log_writer_options_lookup_flag(const gchar *flag)
     return LWO_THREADED;
   if (strcmp(flag, "ignore-errors") == 0 || strcmp(flag, "ignore_errors") == 0)
     return LWO_IGNORE_ERRORS;
-  msg_error("Unknown dest writer flag", evt_tag_str("flag", flag), NULL);
+  msg_error("Unknown dest writer flag", evt_tag_str("flag", flag));
   return 0;
 }

@@ -43,7 +43,7 @@ alarm_set(int timeout)
 {
   if (G_UNLIKELY(alarm_pending))
     {
-      msg_error("Internal error, alarm_set() called while an alarm is still active", NULL);
+      msg_error("Internal error, alarm_set() called while an alarm is still active");
       return;
     }
   alarm(timeout);

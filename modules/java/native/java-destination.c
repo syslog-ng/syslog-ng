@@ -119,9 +119,7 @@ java_dd_init(LogPipe *s)
     {
       msg_error("Can't compile template",
                 evt_tag_str("template", self->template_string),
-                evt_tag_str("error", error->message),
-                NULL
-      );
+                evt_tag_str("error", error->message));
       return FALSE;
     }
 
@@ -228,8 +226,7 @@ static void
 __retry_over_message(LogThrDestDriver *s, LogMessage *msg)
 {
   msg_error("Multiple failures while inserting this record to the java destination, message dropped",
-            evt_tag_int("number_of_retries", s->retries.max),
-            NULL);
+            evt_tag_int("number_of_retries", s->retries.max));
 }
 
 LogTemplateOptions *

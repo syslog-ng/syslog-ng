@@ -64,8 +64,7 @@ tf_geoip(LogMessage *msg, gint argc, GString *argv[], GString *result)
   if (argc != 1)
     {
       msg_debug("tfgeoip takes only one argument",
-                evt_tag_int("count", argc),
-                NULL);
+                evt_tag_int("count", argc));
       return FALSE;
     }
 

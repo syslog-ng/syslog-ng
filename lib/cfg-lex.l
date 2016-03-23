@@ -46,8 +46,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
       msg_error("Error performing backtick substitution in configuration file",
                 evt_tag_str("error", error->message),
                 evt_tag_str("filename", cur_lloc->level->name),
-                evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column),
-                NULL);
+                evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
       g_clear_error(&error);
       goto error;
     }
@@ -58,8 +57,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
           msg_error("Error performing backtick substitution in configuration file",
                     evt_tag_str("error", "lexer buffer is too small to hold substituted result"),
                     evt_tag_str("filename", cur_lloc->level->name),
-                    evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column),
-                    NULL);
+                    evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
           goto error;
         }
       else

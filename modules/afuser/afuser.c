@@ -138,16 +138,14 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 #else
                     evt_tag_str("user", ut->ut_name),
 #endif
-                    evt_tag_str("line", line),
-                    NULL);
+                    evt_tag_str("line", line));
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
           if (fd != -1) 
             {
               if (write(fd, buf, strlen(buf)) < 0 && errno == EAGAIN)
                 {
                   msg_notice("Writing to the user terminal has blocked for writing, disabling for 10 minutes",
-                            evt_tag_str("user", self->username->str),
-                            NULL);
+                            evt_tag_str("user", self->username->str));
                   self->disable_until = now + 600;
                 }
               close(fd);

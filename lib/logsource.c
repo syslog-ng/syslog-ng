@@ -461,6 +461,6 @@ log_source_global_init(void)
   accurate_nanosleep = check_nanosleep();
   if (!accurate_nanosleep)
     {
-      msg_debug("nanosleep() is not accurate enough to introduce minor stalls on the reader side, multi-threaded performance may be affected", NULL);
+      msg_debug("nanosleep() is not accurate enough to introduce minor stalls on the reader side, multi-threaded performance may be affected");
     }
 }

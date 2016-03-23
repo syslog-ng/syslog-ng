@@ -49,8 +49,7 @@ static inline void
 _terminate_process_group_by_pid(const pid_t pid)
 {
   msg_verbose("Sending TERM signal to the process group",
-              evt_tag_int("pid", pid),
-              NULL);
+              evt_tag_int("pid", pid));
 
   pid_t pgid = getpgid(pid);
   if (pgid != -1)
@@ -103,16 +102,14 @@ afprogram_popen(AFProgramProcessInfo* process_info, GIOCondition cond, gint *fd)
     {
       msg_error("Error creating program pipe",
                 evt_tag_str("cmdline", process_info->cmdline->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       return FALSE;
     }
 
   if ((process_info->pid = fork()) < 0)
     {
       msg_error("Error in fork()",
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       close(msg_pipe[0]);
       close(msg_pipe[1]);
       return FALSE;
@@ -178,8 +175,7 @@ afprogram_sd_kill_child(AFProgramSourceDriver *self)
     {
       msg_verbose("Sending source program a TERM signal",
                   evt_tag_str("cmdline", self->process_info.cmdline->str),
-                  evt_tag_int("child_pid", self->process_info.pid),
-                  NULL);
+                  evt_tag_int("child_pid", self->process_info.pid));
       _terminate_process_group_by_pid(self->process_info.pid);
       self->process_info.pid = -1;
     }
@@ -197,8 +193,7 @@ afprogram_sd_exit(pid_t pid, int status, gpointer s)
     {
       msg_verbose("Child program exited",
                   evt_tag_str("cmdline", self->process_info.cmdline->str),
-                  evt_tag_int("status", status),
-                  NULL);
+                  evt_tag_int("status", status));
       self->process_info.pid = -1;
     }
 }
@@ -217,8 +212,7 @@ afprogram_sd_init(LogPipe *s)
     log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   msg_verbose("Starting source program",
-              evt_tag_str("cmdline", self->process_info.cmdline->str),
-              NULL);
+              evt_tag_str("cmdline", self->process_info.cmdline->str));
 
   if (!afprogram_popen(&self->process_info, G_IO_IN, &fd))
     return FALSE;
@@ -247,8 +241,7 @@ afprogram_sd_init(LogPipe *s)
   if (!log_pipe_init((LogPipe *) self->reader))
     {
       msg_error("Error initializing program source, closing fd",
-                evt_tag_int("fd", fd),
-                NULL);
+                evt_tag_int("fd", fd));
       log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
       close(fd);
@@ -349,8 +342,7 @@ afprogram_dd_kill_child(AFProgramDestDriver *self)
     {
       msg_verbose("Sending destination program a TERM signal",
                   evt_tag_str("cmdline", self->process_info.cmdline->str),
-                  evt_tag_int("child_pid", self->process_info.pid),
-                  NULL);
+                  evt_tag_int("child_pid", self->process_info.pid));
       _terminate_process_group_by_pid(self->process_info.pid);
       self->process_info.pid = -1;
     }
@@ -362,8 +354,7 @@ afprogram_dd_open_program(AFProgramDestDriver *self, int *fd)
   if (self->process_info.pid == -1)
     {
       msg_verbose("Starting destination program",
-                  evt_tag_str("cmdline", self->process_info.cmdline->str),
-                  NULL);
+                  evt_tag_str("cmdline", self->process_info.cmdline->str));
 
       if (!afprogram_popen(&self->process_info, G_IO_OUT, fd))
         return FALSE;
@@ -402,8 +393,7 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
     {
       msg_verbose("Child program exited, restarting",
                   evt_tag_str("cmdline", self->process_info.cmdline->str),
-                  evt_tag_int("status", status),
-                  NULL);
+                  evt_tag_int("status", status));
       self->process_info.pid = -1;
       afprogram_dd_reopen(self);
     }

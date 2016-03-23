@@ -49,23 +49,20 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
   if (number_of_fds > 1)
     {
       msg_error("Systemd socket activation failed: got more than one fd",
-                evt_tag_int("number", number_of_fds),
-                NULL);
+                evt_tag_int("number", number_of_fds));
 
       return TRUE;
     }
   else if (number_of_fds < 1)
     {
-      msg_error("Failed to acquire /run/systemd/journal/syslog socket, disabling systemd-syslog source",
-                NULL);
+      msg_error("Failed to acquire /run/systemd/journal/syslog socket, disabling systemd-syslog source");
       return TRUE;
     }
   else
     {
       fd = SD_LISTEN_FDS_START;
       msg_debug("Systemd socket activation",
-                evt_tag_int("file-descriptor", fd),
-                NULL);
+                evt_tag_int("file-descriptor", fd));
 
       if (sd_is_socket_unix(fd, SOCK_DGRAM, -1, NULL, 0))
         {
@@ -77,8 +74,7 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
                     " different type, check the configured driver and"
                     " the matching systemd unit file",
                     evt_tag_int("systemd-sock-fd", fd),
-                    evt_tag_str("expecting", "unix-dgram()"),
-                    NULL);
+                    evt_tag_str("expecting", "unix-dgram()"));
           *acquired_fd = -1;
           return TRUE;
         }
@@ -88,8 +84,7 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
     {
       g_fd_set_nonblock(*acquired_fd, TRUE);
       msg_verbose("Acquired systemd syslog socket",
-                  evt_tag_int("systemd-syslog-sock-fd", *acquired_fd),
-                  NULL);
+                  evt_tag_int("systemd-syslog-sock-fd", *acquired_fd));
       return TRUE;
     }
 
@@ -114,16 +109,14 @@ systemd_syslog_sd_init_method(LogPipe *s)
   if (service_management_get_type() != SMT_SYSTEMD)
     {
       msg_error("Error initializing systemd-syslog() source",
-                evt_tag_str("systemd_status", "not-running"),
-                NULL);
+                evt_tag_str("systemd_status", "not-running"));
       return FALSE;
     }
 
   if (self->from_unix_source)
     {
       msg_warning("systemd-syslog() source ignores configuration options. "
-                  "Please, do not set anything on it",
-                  NULL);
+                  "Please, do not set anything on it");
       socket_options_free(self->super.socket_options);
       self->super.socket_options = socket_options_new();
       socket_options_init_instance(self->super.socket_options);
@@ -196,8 +189,7 @@ create_and_set_unix_socket_or_systemd_syslog_source(gchar *filename, GlobalConfi
     {
       msg_warning("Using /dev/log Unix socket with systemd is not"
                 " possible. Changing to systemd-syslog source, which supports"
-                " socket activation.",
-                NULL);
+                " socket activation.");
       
       sd = systemd_syslog_sd_new(configuration, TRUE);
       systemd_syslog_grammar_set_source_driver(sd);

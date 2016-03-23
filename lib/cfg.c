@@ -100,8 +100,7 @@ cfg_ts_format_value(gchar *format)
   else
     {
       msg_error("Invalid ts_format() value",
-                evt_tag_str("value", format),
-                NULL);
+                evt_tag_str("value", format));
       return TS_FMT_BSD;
     }
 }
@@ -180,12 +179,10 @@ cfg_init(GlobalConfig *cfg)
   
   if (cfg->file_template_name && !(cfg->file_template = cfg_tree_lookup_template(&cfg->tree, cfg->file_template_name)))
     msg_error("Error resolving file template",
-               evt_tag_str("name", cfg->file_template_name),
-               NULL);
+               evt_tag_str("name", cfg->file_template_name));
   if (cfg->proto_template_name && !(cfg->proto_template = cfg_tree_lookup_template(&cfg->tree, cfg->proto_template_name)))
     msg_error("Error resolving protocol template",
-               evt_tag_str("name", cfg->proto_template_name),
-               NULL);
+               evt_tag_str("name", cfg->proto_template_name));
 
   if (cfg->bad_hostname_re)
     {
@@ -195,8 +192,7 @@ cfg_init(GlobalConfig *cfg)
           
           regerror(regerr, &cfg->bad_hostname, buf, sizeof(buf));
           msg_error("Error compiling bad_hostname regexp",
-                    evt_tag_str("error", buf),
-                    NULL);
+                    evt_tag_str("error", buf));
         }
       else
         { 
@@ -238,28 +234,24 @@ cfg_set_version(GlobalConfig *self, gint version)
                   "compatibility mode can operate less efficiently in some cases. "
                   "To upgrade the configuration, please review the warnings about incompatible changes printed "
                   "by syslog-ng, and once completed change the @version header at the top of the configuration "
-                  "file.",
-                  NULL);
+                  "file.");
     }
   else if (version_convert_from_user(self->user_version) > VERSION_VALUE)
     {
       msg_warning("WARNING: Configuration file format is newer than the current version, please specify the "
                   "current version number ("  VERSION_CURRENT_VER_ONLY ") in the @version directive. "
-                  "syslog-ng will operate at its highest supported version in this mode",
-                  NULL);
+                  "syslog-ng will operate at its highest supported version in this mode");
       self->user_version = VERSION_VALUE;
     }
 
   if (cfg_is_config_version_older(self, 0x0300))
     {
-      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in " VERSION_3_0 ", please update your configuration accordingly",
-                  NULL);
+      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in " VERSION_3_0 ", please update your configuration accordingly");
       self->chain_hostnames = TRUE;
     }
   if (cfg_is_config_version_older(self, 0x0303))
     {
-      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3 " to reflect log_iw_size() changes for tcp()/udp() window size changes",
-                  NULL);
+      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3 " to reflect log_iw_size() changes for tcp()/udp() window size changes");
     }
 
 }
@@ -280,7 +272,7 @@ cfg_allow_config_dups(GlobalConfig *self)
   else
     {
       /* duplicate found, but allow-config-dups is not enabled, hint the user that he might want to use allow-config-dups */
-      msg_warning_once("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to reenable", NULL);
+      msg_warning_once("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to reenable");
       return FALSE;
     }
 }
@@ -461,8 +453,7 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gc
     {
       msg_error("Error opening configuration file",
                 evt_tag_str(EVT_TAG_FILENAME, fname),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
     }
   
   return FALSE;
@@ -517,8 +508,7 @@ cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyN
           if (!force)
             {
               msg_error("Internal error, duplicate configuration elements refer to the same persistent config", 
-                        evt_tag_str("name", name),
-                        NULL);
+                        evt_tag_str("name", name));
               if (destroy)
                 destroy(value);
               return;

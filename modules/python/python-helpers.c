@@ -97,8 +97,7 @@ _py_do_import(const gchar *modname)
   if (!module)
     {
       msg_error("Error allocating Python string",
-                evt_tag_str("string", modname),
-                NULL);
+                evt_tag_str("string", modname));
       return NULL;
     }
 
@@ -110,8 +109,7 @@ _py_do_import(const gchar *modname)
 
       msg_error("Error loading Python module",
                 evt_tag_str("module", modname),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
-                NULL);
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       return NULL;
     }
   return modobj;

@@ -165,8 +165,7 @@ parse_msg_ref(LogTemplateCompiler *self)
           if ((*self->cursor) != '@')
             {
               msg_warning("Non-numeric correlation state ID found, assuming a literal '@' character. To avoid confusion when using a literal '@' after a macro or template function, write '@@' in the template.",
-                          evt_tag_str("Template", self->template->template),
-                          NULL);
+                          evt_tag_str("Template", self->template->template));
               self->cursor--;
             }
           self->msg_ref = 0;
@@ -456,8 +455,7 @@ log_template_compiler_process_token(LogTemplateCompiler *self, GError **error)
       if (cfg_is_config_version_older(self->template->cfg, 0x305))
         {
           msg_warning("Template escaping changed in version 3.5. Use '$$' to specify a literal dollar sign instead of '\\$' and remove the escaping of the backslash character when you upgrade your configuration",
-                      evt_tag_str("Template", self->template->template),
-                      NULL);
+                      evt_tag_str("Template", self->template->template));
           self->cursor++;
         }
 

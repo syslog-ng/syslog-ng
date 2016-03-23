@@ -289,8 +289,7 @@ riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
   if (!self->client)
     {
       msg_error("Error connecting to Riemann",
-                evt_tag_errno("errno", errno),
-                NULL);
+                evt_tag_errno("errno", errno));
       return FALSE;
     }
 
@@ -355,8 +354,7 @@ riemann_worker_init(LogPipe *s)
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("server", self->server),
-              evt_tag_int("port", self->port),
-              NULL);
+              evt_tag_int("port", self->port));
 
   return log_threaded_dest_driver_start(s);
 }

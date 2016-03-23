@@ -172,8 +172,7 @@ stats_publish_and_prune_counters(void)
     {
       msg_notice("Pruning stats-counters have finished",
                  evt_tag_int("dropped", st.dropped_counters),
-                 evt_tag_long("oldest-timestamp", (long) st.oldest_counter),
-                 NULL);
+                 evt_tag_long("oldest-timestamp", (long) st.oldest_counter));
     }
 }
 

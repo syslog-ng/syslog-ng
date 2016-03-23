@@ -156,8 +156,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
                   "expressions were evaluated as string operators. This is fixed in " VERSION_3_8 ". "
                   "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
                   "behaviour as previous versions until you bump the @version value in your "
-                  "configuration file",
-                  NULL);
+                  "configuration file");
       self->cmp_op &= ~FCMP_NUM;
     }
   return &self->super;

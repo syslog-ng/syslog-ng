@@ -47,8 +47,7 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
     {
       msg_error("confgen: confgen invocations do not process arguments, but your argument list is not empty",
                 evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(type)),
-                evt_tag_str("block", name),
-                NULL);
+                evt_tag_str("block", name));
       return FALSE;
     }
 
@@ -59,8 +58,7 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
                 evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(type)),
                 evt_tag_str("block", name),
                 evt_tag_str("exec", exec),
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       return FALSE;
     }
   value = g_malloc(1024);
@@ -75,8 +73,7 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
       msg_error("confgen: Generator program returned with non-zero exit code",
                 evt_tag_str("block", name),
                 evt_tag_str("exec", exec),
-                evt_tag_int("rc", res),
-                NULL);
+                evt_tag_int("rc", res));
       g_free(value);
       return FALSE;
     }
@@ -93,22 +90,19 @@ confgen_module_init(GlobalConfig *cfg, CfgArgs *args)
   name = cfg_args_get(args, "name");
   if (!name)
     {
-      msg_error("confgen: name argument expected",
-                NULL);
+      msg_error("confgen: name argument expected");
       return FALSE;
     }
   context = cfg_args_get(args, "context");
   if (!context)
     {
-      msg_error("confgen: context argument expected",
-                NULL);
+      msg_error("confgen: context argument expected");
       return FALSE;
     }
   exec = cfg_args_get(args, "exec");
   if (!exec)
     {
-      msg_error("confgen: exec argument expected",
-                NULL);
+      msg_error("confgen: exec argument expected");
       return FALSE;
     }
   cfg_lexer_register_block_generator(cfg->lexer, cfg_lexer_lookup_context_type_by_name(context), name, confgen_generate, g_strdup(exec), g_free);

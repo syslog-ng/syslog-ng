@@ -162,8 +162,7 @@ r_parser_pcre_compile_state(const gchar *expr)
                 evt_tag_str("error_at", &expr[erroffset]),
                 evt_tag_int("error_offset", erroffset),
                 evt_tag_str("error_message", errptr),
-                evt_tag_int("error_code", rc),
-                NULL);
+                evt_tag_int("error_code", rc));
       g_free(self);
       return NULL;
     }
@@ -172,8 +171,7 @@ r_parser_pcre_compile_state(const gchar *expr)
     {
       msg_error("Error while optimizing regular expression",
                 evt_tag_str("regular_expression", expr),
-                evt_tag_str("error_message", errptr),
-                NULL);
+                evt_tag_str("error_message", errptr));
       pcre_free(self->re);
       if (self->extra)
         pcre_free(self->extra);
@@ -633,7 +631,7 @@ r_new_pnode(guint8 *key)
         {
           g_free(parser_node);
           msg_error("Missing ESTRING parser parameters",
-                     evt_tag_str("type", params[0]), NULL);
+                     evt_tag_str("type", params[0]));
           parser_node = NULL;
         }
 
@@ -648,8 +646,7 @@ r_new_pnode(guint8 *key)
       else
         {
           g_free(parser_node);
-          msg_error("Too many arguments to NLSTRING, no 3rd parameter supported",
-                    NULL);
+          msg_error("Too many arguments to NLSTRING, no 3rd parameter supported");
           parser_node = NULL;
         }
     }
@@ -667,7 +664,7 @@ r_new_pnode(guint8 *key)
         {
           g_free(parser_node);
           msg_error("Missing regular expression as 3rd argument",
-                     evt_tag_str("type", params[0]), NULL);
+                     evt_tag_str("type", params[0]));
           parser_node = NULL;
         }
     }
@@ -687,7 +684,7 @@ r_new_pnode(guint8 *key)
         {
           g_free(parser_node);
           msg_error("Missing SET parser parameters",
-                     evt_tag_str("type", params[0]), NULL);
+                     evt_tag_str("type", params[0]));
           parser_node = NULL;
         }
     }
@@ -726,7 +723,7 @@ r_new_pnode(guint8 *key)
         {
           g_free(parser_node);
           msg_error("Missing QSTRING parser parameters",
-                     evt_tag_str("type", params[0]), NULL);
+                     evt_tag_str("type", params[0]));
           parser_node = NULL;
         }
     }
@@ -734,7 +731,7 @@ r_new_pnode(guint8 *key)
     {
       g_free(parser_node);
       msg_error("Unknown parser type specified",
-                 evt_tag_str("type", params[0]), NULL);
+                 evt_tag_str("type", params[0]));
       parser_node = NULL;
     }
 
@@ -937,8 +934,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
                 msg_error("Duplicate key in parser radix tree",
                     evt_tag_str("key", "@"),
                     evt_tag_str("value", value_func ? value_func(value) : "unknown"),
-                    evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"),
-                    NULL);
+                    evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"));
             }
 
           /* go down building the tree if there is key left */
@@ -990,8 +986,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
                                 evt_tag_int("type", node->parser->type),
                                 evt_tag_str("name", log_msg_get_value_name(node->parser->handle, NULL)),
                                 evt_tag_str("value", value_func ? value_func(value) : "unknown"),
-                                evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"),
-                                NULL);
+                                evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"));
                     }
                 }
             }
@@ -1000,8 +995,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
       else
         msg_error("Key contains '@' without escaping",
                     evt_tag_str("key", key),
-                    evt_tag_str("value", value_func ? value_func(value) : "unknown"),
-                    NULL);
+                    evt_tag_str("value", value_func ? value_func(value) : "unknown"));
     }
   else
     {
@@ -1045,8 +1039,7 @@ r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_
           else
             msg_error("Duplicate key in radix tree",
                         evt_tag_str("key", key),
-                        evt_tag_str("value", value_func ? value_func(value) : "unknown"),
-                        NULL);
+                        evt_tag_str("value", value_func ? value_func(value) : "unknown"));
         }
       else if (i > 0 && i < nodelen)
         {
@@ -1373,8 +1366,7 @@ _find_node_recursively(RFindNodeState *state, RNode *root, guint8 *key, gint key
             evt_tag_int("root->keylen", root->keylen),
             evt_tag_int("keylen", keylen),
             evt_tag_str("root_key", root->key),
-            evt_tag_str("key", key),
-            NULL);
+            evt_tag_str("key", key));
 
   if (literal_prefix_inputlen == keylen && (literal_prefix_radixlen == root->keylen || root->keylen == -1))
     {

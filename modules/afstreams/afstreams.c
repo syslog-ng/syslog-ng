@@ -81,8 +81,7 @@ log_transport_streams_read(LogTransport *self, void *buf, gsize buflen, GSockAdd
   else
     {
       msg_error("Insufficient buffer space for retrieving STREAMS log message",
-                evt_tag_printf("res", "%x", res),
-                NULL);
+                evt_tag_printf("res", "%x", res));
     }
   return 0;
 }
@@ -129,8 +128,7 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
         {
           msg_error("Error creating syslog door file",
                     evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    NULL);
+                    evt_tag_errno(EVT_TAG_OSERROR, errno));
           close(fd);
           return;
         }
@@ -141,8 +139,7 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
     {
       msg_error("Error creating syslog door",
                 evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       return;
     }
   g_fd_set_cloexec(self->door_fd, TRUE);
@@ -150,8 +147,7 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
     {
       msg_error("Error attaching syslog door",
                 evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       close(self->door_fd);
       self->door_fd = -1;
       return;
@@ -182,8 +178,7 @@ afstreams_sd_init(LogPipe *s)
         {
           msg_error("Error in ioctl(I_STR, I_CONSLOG)",
                     evt_tag_str(EVT_TAG_FILENAME, self->dev_filename->str),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    NULL);
+                    evt_tag_errno(EVT_TAG_OSERROR, errno));
           close(fd);
           return FALSE;
         }
@@ -211,8 +206,7 @@ afstreams_sd_init(LogPipe *s)
       if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
-                    evt_tag_int("fd", fd),
-                    NULL);
+                    evt_tag_int("fd", fd));
           log_pipe_unref((LogPipe *) self->reader);
           self->reader = NULL;
           close(fd);
@@ -224,8 +218,7 @@ afstreams_sd_init(LogPipe *s)
     {
       msg_error("Error opening syslog device",
                 evt_tag_str(EVT_TAG_FILENAME, self->dev_filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       return FALSE;
     }
   return TRUE;

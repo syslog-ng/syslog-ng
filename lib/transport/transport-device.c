@@ -52,8 +52,7 @@ log_transport_device_read_method(LogTransport *s, gpointer buf, gsize buflen, Lo
         {
           msg_notice("Nonblocking read has blocked, returning with an error",
                      evt_tag_int("fd", self->super.fd),
-                     evt_tag_int("timeout", self->timeout),
-                     NULL);
+                     evt_tag_int("timeout", self->timeout));
           alarm_cancel();
           break;
         }

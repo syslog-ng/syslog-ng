@@ -285,8 +285,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
 
           msg_error("Syslog connection rejected by tcpd",
                     evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
-                    evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
-                    NULL);
+                    evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)));
           return FALSE;
         }
     }
@@ -298,8 +297,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
       msg_error("Number of allowed concurrent connections reached, rejecting connection",
                 evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
-                evt_tag_int("max", self->max_connections),
-                NULL);
+                evt_tag_int("max", self->max_connections));
       return FALSE;
     }
   else
@@ -348,8 +346,7 @@ afsocket_sd_accept(gpointer s)
       else if (status != G_IO_STATUS_NORMAL)
         {
           msg_error("Error accepting new connection",
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    NULL);
+                    evt_tag_errno(EVT_TAG_OSERROR, errno));
           return;
         }
 
@@ -364,14 +361,12 @@ afsocket_sd_accept(gpointer s)
             msg_notice("Syslog connection accepted",
                         evt_tag_int("fd", new_fd),
                         evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-                        evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
-                        NULL);
+                        evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
           else
             msg_verbose("Syslog connection accepted",
                         evt_tag_int("fd", new_fd),
                         evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-                        evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
-                        NULL);
+                        evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
         }
       else
         {
@@ -393,14 +388,12 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
     msg_notice("Syslog connection closed",
                evt_tag_int("fd", sc->sock),
                evt_tag_str("client", g_sockaddr_format(sc->peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
-               NULL);
+               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
   else
     msg_verbose("Syslog connection closed",
                evt_tag_int("fd", sc->sock),
                evt_tag_str("client", g_sockaddr_format(sc->peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
-               NULL);
+               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
   log_pipe_deinit(&sc->super);
   self->connections = g_list_remove(self->connections, sc);
   afsocket_sd_kill_connection(sc);
@@ -442,8 +435,7 @@ afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
           msg_warning("WARNING: window sizing for tcp sources were changed in " VERSION_3_3 ", the configuration value was divided by the value of max-connections(). The result was too small, clamping to 100 entries. Ensure you have a proper log_fifo_size setting to avoid message loss.",
                       evt_tag_int("orig_log_iw_size", self->reader_options.super.init_window_size),
                       evt_tag_int("new_log_iw_size", 100),
-                      evt_tag_int("min_log_fifo_size", 100 * self->max_connections),
-                      NULL);
+                      evt_tag_int("min_log_fifo_size", 100 * self->max_connections));
           self->reader_options.super.init_window_size = 100;
         }
       self->window_size_initialized = TRUE;
@@ -464,8 +456,7 @@ afsocket_sd_setup_transport(AFSocketSourceDriver *self)
   if (!self->proto_factory)
     {
       msg_error("Unknown value specified in the transport() option, no such LogProto plugin found",
-                evt_tag_str("transport", self->transport_mapper->logproto),
-                NULL);
+                evt_tag_str("transport", self->transport_mapper->logproto));
       return FALSE;
     }
 
@@ -534,8 +525,7 @@ afsocket_sd_open_listener(AFSocketSourceDriver *self)
       if (listen(sock, self->listen_backlog) < 0)
         {
           msg_error("Error during listen()",
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    NULL);
+                    evt_tag_errno(EVT_TAG_OSERROR, errno));
           close(sock);
           return FALSE;
         }
@@ -605,8 +595,7 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
       if (!self->connections_kept_alive_accross_reloads)
         {
           msg_verbose("Closing listener fd",
-                      evt_tag_int("fd", self->fd),
-                      NULL);
+                      evt_tag_int("fd", self->fd));
           close(self->fd);
         }
       else

@@ -72,8 +72,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg_debug("Message parsing complete",
             evt_tag_int("result", success),
             evt_tag_str("rule", self->name),
-            log_pipe_location_tag(s),
-            NULL);
+            log_pipe_location_tag(s));
   if (success)
     {
       log_pipe_forward_msg(s, msg, path_options);

@@ -42,8 +42,7 @@ file_perm_options_set_file_uid(FilePermOptions *self, const gchar *file_uid)
   if (!resolve_user(file_uid, &self->file_uid))
     {
       msg_error("Error resolving user",
-                 evt_tag_str("user", file_uid),
-                 NULL);
+                 evt_tag_str("user", file_uid));
     }
 }
 
@@ -60,8 +59,7 @@ file_perm_options_set_file_gid(FilePermOptions *self, const gchar *file_gid)
   if (!resolve_group(file_gid, &self->file_gid))
     {
       msg_error("Error resolving group",
-                 evt_tag_str("group", file_gid),
-                 NULL);
+                 evt_tag_str("group", file_gid));
     }
 }
 
@@ -90,8 +88,7 @@ file_perm_options_set_dir_uid(FilePermOptions *self, const gchar *dir_uid)
   if (!resolve_user(dir_uid, &self->dir_uid))
     {
       msg_error("Error resolving user",
-                 evt_tag_str("user", dir_uid),
-                 NULL);
+                 evt_tag_str("user", dir_uid));
     }
 }
 
@@ -108,8 +105,7 @@ file_perm_options_set_dir_gid(FilePermOptions *self, const gchar *dir_gid)
   if (!resolve_group(dir_gid, &self->dir_gid))
     {
       msg_error("Error resolving group",
-                 evt_tag_str("group", dir_gid),
-                 NULL);
+                 evt_tag_str("group", dir_gid));
     }
 }
 

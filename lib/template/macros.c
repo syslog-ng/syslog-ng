@@ -596,8 +596,7 @@ log_macro_lookup(gchar *macro, gint len)
 
   if (cfg_is_config_version_older(configuration, 0x0300) && (macro_id == M_MESSAGE))
     {
-      msg_warning_once("WARNING: template: the meaning of the $MSG/$MESSAGE macros has changed from " VERSION_3_0 ", please prepend a $MSGHDR when upgrading to " VERSION_3_0 " config format",
-                       NULL);
+      msg_warning_once("WARNING: template: the meaning of the $MSG/$MESSAGE macros has changed from " VERSION_3_0 ", please prepend a $MSGHDR when upgrading to " VERSION_3_0 " config format");
     }
   return macro_id;
 }

@@ -158,8 +158,7 @@ _py_invoke_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("script", self->class),
                 evt_tag_str("function", _py_get_callable_name(func, buf1, sizeof(buf1))),
-                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))),
-                NULL);
+                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
       return NULL;
     }
   return ret;
@@ -213,8 +212,7 @@ _py_get_method(PythonDestDriver *self, PyObject *o, const gchar *method_name)
       msg_error("Missing Python method in the driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("method", method_name),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
-                NULL);
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       return NULL;
     }
   return method;
@@ -301,8 +299,7 @@ _py_init_bindings(PythonDestDriver *self)
       msg_error("Error looking Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
-                NULL);
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       return FALSE;
     }
 
@@ -314,8 +311,7 @@ _py_init_bindings(PythonDestDriver *self)
       msg_error("Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))),
-                NULL);
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       return FALSE;
     }
 
@@ -326,8 +322,7 @@ _py_init_bindings(PythonDestDriver *self)
     {
       msg_error("Error initializing Python destination, class does not have a send() method",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
-                NULL);
+                evt_tag_str("class", self->class));
     }
   return self->py.send != NULL;
 }
@@ -348,8 +343,7 @@ _py_init_object(PythonDestDriver *self)
     {
       msg_error("Error initializing Python driver object, init() returned FALSE",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
-                NULL);
+                evt_tag_str("class", self->class));
       return FALSE;
     }
   return TRUE;
@@ -393,8 +387,7 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
       msg_error("Python send() method returned failure, suspending destination for time_reopen()",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_int("time_reopen", self->super.time_reopen),
-                NULL);
+                evt_tag_int("time_reopen", self->super.time_reopen));
     }
   Py_DECREF(msg_object);
 
@@ -460,8 +453,7 @@ python_dd_init(LogPipe *d)
   if (!self->class)
     {
       msg_error("Error initializing Python destination: no script specified!",
-                evt_tag_str("driver", self->super.super.super.id),
-                NULL);
+                evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
 
@@ -482,8 +474,7 @@ python_dd_init(LogPipe *d)
 
   msg_verbose("Python destination initialized",
               evt_tag_str("driver", self->super.super.super.id),
-              evt_tag_str("class", self->class),
-              NULL);
+              evt_tag_str("class", self->class));
 
   return log_threaded_dest_driver_start(d);
 

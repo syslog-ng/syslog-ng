@@ -220,8 +220,7 @@ _create_store(PersistState *self)
     {
       msg_error("Error creating persistent state file",
                 evt_tag_str("filename", self->temp_filename),
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       return FALSE;
     }
   g_fd_set_cloexec(self->fd, TRUE);
@@ -278,8 +277,7 @@ _map_header_of_entry_from_handle(PersistState *self, PersistEntryHandle handle)
   if (handle > self->current_size)
     {
       msg_error("Corrupted handle in persist_state_lookup_entry, handle value too large",
-                evt_tag_printf("handle", "%08x", handle),
-                NULL);
+                evt_tag_printf("handle", "%08x", handle));
       return NULL;
     }
   header = (PersistValueHeader *) persist_state_map_entry(self, handle - sizeof(PersistValueHeader));
@@ -288,8 +286,7 @@ _map_header_of_entry_from_handle(PersistState *self, PersistEntryHandle handle)
       msg_error("Corrupted entry header found in persist_state_lookup_entry, size too large",
                 evt_tag_printf("handle", "%08x", handle),
                 evt_tag_int("size", GUINT32_FROM_BE(header->size)),
-                evt_tag_int("file_size", self->current_size),
-                NULL);
+                evt_tag_int("file_size", self->current_size));
       return NULL;
     }
   return header;
@@ -391,8 +388,7 @@ _add_key(PersistState *self, const gchar *key, PersistEntryHandle handle)
               new_block = _alloc_value(self, PERSIST_STATE_KEY_BLOCK_SIZE, TRUE, 0);
               if (!new_block)
                 {
-                  msg_error("Unable to allocate space in the persistent file for key store",
-                            NULL);
+                  msg_error("Unable to allocate space in the persistent file for key store");
                   return FALSE;
                 }
 
@@ -419,8 +415,7 @@ _add_key(PersistState *self, const gchar *key, PersistEntryHandle handle)
                * entry won't fit even into a freshly initialized key
                * block, this means that the key is too large. */
               msg_error("Persistent key too large, it cannot be larger than somewhat less than 4k",
-                        evt_tag_str("key", key),
-                        NULL);
+                        evt_tag_str("key", key));
               persist_state_unmap_entry(self, self->current_key_block);
               return FALSE;
             }
@@ -505,8 +500,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
     {
       msg_error("Persistent file too large",
                 evt_tag_str("filename", self->commited_filename),
-                evt_tag_printf("size", "%" G_GINT64_FORMAT, file_size),
-                NULL);
+                evt_tag_printf("size", "%" G_GINT64_FORMAT, file_size));
       return FALSE;
     }
   map = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0);
@@ -515,8 +509,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
     {
       msg_error("Error mapping persistent file into memory",
                 evt_tag_str("filename", self->commited_filename),
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       return FALSE;
     }
   header = (PersistFileHeader *) map;
@@ -538,8 +531,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
           if (!serialize_read_cstring(sa, &name, NULL))
             {
               serialize_archive_free(sa);
-              msg_error("Persistent file format error, unable to fetch key name",
-                        NULL);
+              msg_error("Persistent file format error, unable to fetch key name");
               goto free_and_exit;
             }
           if (name[0])
@@ -553,8 +545,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
                     {
                       serialize_archive_free(sa);
                       g_free(name);
-                      msg_error("Persistent file format error, entry offset is out of bounds",
-                                NULL);
+                      msg_error("Persistent file format error, entry offset is out of bounds");
                       goto free_and_exit;
                     }
 
@@ -578,8 +569,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
                   /* bad format */
                   serialize_archive_free(sa);
                   g_free(name);
-                  msg_error("Persistent file format error, unable to fetch key name",
-                            NULL);
+                  msg_error("Persistent file format error, unable to fetch key name");
                   goto free_and_exit;
                 }
             }
@@ -594,8 +584,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
                       msg_error("Persistent file format error, key block chain offset is too large or zero",
                                 evt_tag_printf("key_block", "%08lx", (gulong) ((gchar *) key_block - (gchar *) map)),
                                 evt_tag_printf("key_size", "%d", key_size),
-                                evt_tag_int("ofs", chain_ofs),
-                                NULL);
+                                evt_tag_int("ofs", chain_ofs));
                       serialize_archive_free(sa);
                       goto free_and_exit;
                     }
@@ -604,8 +593,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
                   if (chain_ofs + key_size > file_size)
                     {
                       msg_error("Persistent file format error, key block size is too large",
-                                evt_tag_int("key_size", key_size),
-                                NULL);
+                                evt_tag_int("key_size", key_size));
                       serialize_archive_free(sa);
                       goto free_and_exit;
                     }
@@ -614,8 +602,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
               else
                 {
                   serialize_archive_free(sa);
-                  msg_error("Persistent file format error, unable to fetch chained key block offset",
-                            NULL);
+                  msg_error("Persistent file format error, unable to fetch chained key block offset");
                   goto free_and_exit;
                 }
             }
@@ -644,7 +631,7 @@ _load(PersistState *self, gboolean all_errors_are_fatal, gboolean load_all_entri
       serialize_read_blob(sa, magic, 4);
       if (memcmp(magic, "SLP", 3) != 0)
         {
-          msg_error("Persistent configuration file is in invalid format, ignoring", NULL);
+          msg_error("Persistent configuration file is in invalid format, ignoring");
           success = all_errors_are_fatal ? FALSE : TRUE;
           goto close_and_exit;
         }
@@ -660,8 +647,7 @@ _load(PersistState *self, gboolean all_errors_are_fatal, gboolean load_all_entri
       else
         {
           msg_error("Persistent configuration file has an unsupported major version, ignoring",
-                    evt_tag_int("version", version),
-                    NULL);
+                    evt_tag_int("version", version));
           success = TRUE;
         }
     close_and_exit:
@@ -674,8 +660,7 @@ _load(PersistState *self, gboolean all_errors_are_fatal, gboolean load_all_entri
       {
         msg_error("Failed to open persist file!",
                     evt_tag_str("filename", self->commited_filename),
-                    evt_tag_str("error", strerror(errno)),
-                    NULL);
+                    evt_tag_str("error", strerror(errno)));
         success = FALSE;
       }
       else

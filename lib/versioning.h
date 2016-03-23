@@ -45,7 +45,7 @@
  *
  * Example:
  *
- *   msg_warning("WARNING: foo got changed to bar in " VERSION_3_4", NULL);
+ *   msg_warning("WARNING: foo got changed to bar in " VERSION_3_4");
  *
  * Incompatible changes in non-OSE products
  * ========================================

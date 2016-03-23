@@ -137,13 +137,11 @@ detect_local_fqdn_hostname(void)
       hostname = get_local_fqdn_hostname_from_dns();
       if (!hostname)
         {
-          msg_verbose("Unable to detect fully qualified hostname for localhost, use_fqdn() will use the short hostname",
-                      NULL);
+          msg_verbose("Unable to detect fully qualified hostname for localhost, use_fqdn() will use the short hostname");
           hostname = get_local_hostname_from_system();
           if (!hostname[0])
             {
-              msg_error("Could not resolve local hostname either from the DNS nor gethostname(), assuming localhost",
-                        NULL);
+              msg_error("Could not resolve local hostname either from the DNS nor gethostname(), assuming localhost");
               hostname = g_strdup("localhost");
             }
         }

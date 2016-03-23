@@ -66,8 +66,7 @@ _update_indirect_dynamic_entry(NVTable* self, NVHandle oh, const gchar* name, NV
   if (G_UNLIKELY(oname[0] == '\0'))
     {
       msg_debug("nvtable: the name of the nventry referred by entry->indirect has zero length",
-                evt_tag_str("entry.name", name),
-                NULL);
+                evt_tag_str("entry.name", name));
     }
   else
     {

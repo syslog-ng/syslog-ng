@@ -64,8 +64,7 @@ cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context)
       msg_error("Unknown argument",
                 evt_tag_str("context", context),
                 evt_tag_str("arg", validate_params[1]),
-                evt_tag_str("value", validate_params[2]),
-                NULL);
+                evt_tag_str("value", validate_params[2]));
       return FALSE;
     }
   return TRUE;

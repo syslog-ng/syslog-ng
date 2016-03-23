@@ -201,7 +201,7 @@ main_loop_reload_config_apply(void)
 
   if (cfg_init(main_loop_new_config))
     {
-      msg_verbose("New configuration initialized", NULL);
+      msg_verbose("New configuration initialized");
       persist_config_free(main_loop_new_config->persist);
       main_loop_new_config->persist = NULL;
       cfg_free(main_loop_old_config);
@@ -210,7 +210,7 @@ main_loop_reload_config_apply(void)
     }
   else
     {
-      msg_error("Error initializing new configuration, reverting to old config", NULL);
+      msg_error("Error initializing new configuration, reverting to old config");
       service_management_publish_status("Error initializing new configuration, using the old config");
       cfg_persist_config_move(main_loop_new_config, main_loop_old_config);
       cfg_deinit(main_loop_new_config);
@@ -232,8 +232,7 @@ main_loop_reload_config_apply(void)
 
   /* this is already running with the new config in place */
   app_post_config_loaded();
-  msg_notice("Configuration reload request received, reloading configuration",
-               NULL);
+  msg_notice("Configuration reload request received, reloading configuration");
 
  finish:
   main_loop_new_config = NULL;
@@ -272,8 +271,7 @@ main_loop_reload_config_initiate(void)
       main_loop_new_config = NULL;
       main_loop_old_config = NULL;
       msg_error("Error parsing configuration",
-                evt_tag_str(EVT_TAG_FILENAME, resolvedConfigurablePaths.cfgfilename),
-                NULL);
+                evt_tag_str(EVT_TAG_FILENAME, resolvedConfigurablePaths.cfgfilename));
       service_management_publish_status("Error parsing new configuration, using the old config");
       return;
     }
@@ -309,8 +307,7 @@ main_loop_exit_initiate(void)
     return;
 
   msg_notice("syslog-ng shutting down",
-             evt_tag_str("version", SYSLOG_NG_VERSION),
-             NULL);
+             evt_tag_str("version", SYSLOG_NG_VERSION));
 
   IV_TIMER_INIT(&main_loop_exit_timer);
   iv_validate_now();
@@ -487,8 +484,7 @@ void
 main_loop_run(void)
 {
   msg_notice("syslog-ng starting up",
-             evt_tag_str("version", SYSLOG_NG_VERSION),
-             NULL);
+             evt_tag_str("version", SYSLOG_NG_VERSION));
 
   /* main loop */
   service_management_indicate_readiness();

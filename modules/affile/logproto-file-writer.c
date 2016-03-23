@@ -134,8 +134,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
     {
       msg_error("I/O error occurred while writing",
                 evt_tag_int("fd", self->super.transport->fd),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       return LPS_ERROR;
     }
 

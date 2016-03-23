@@ -65,7 +65,7 @@ java_machine_ref(void)
 static void inline
 __jvm_free(JavaVMSingleton *self)
 {
-  msg_debug("Java machine free", NULL);
+  msg_debug("Java machine free");
   g_string_free(self->class_path, TRUE);
   if (self->jvm)
     {

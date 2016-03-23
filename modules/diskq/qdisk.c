@@ -100,8 +100,7 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
         {
           msg_error("Short written",
                     evt_tag_int("Number of bytes want to write", count),
-                    evt_tag_int("Number of bytes written", written),
-                    NULL);
+                    evt_tag_int("Number of bytes written", written));
           errno = ENOSPC;
         }
       result = FALSE;
@@ -150,8 +149,7 @@ _next_filename(QDisk *self)
     }
   if (!success)
     {
-      msg_error("Error generating unique queue filename, not using disk queue",
-                 NULL);
+      msg_error("Error generating unique queue filename, not using disk queue");
       return NULL;
     }
   return g_strdup(tmpfname);
@@ -211,8 +209,7 @@ _truncate_file(QDisk *self, gint64 new_size)
                 evt_tag_errno("error", errno),
                 evt_tag_str("filename", self->filename),
                 evt_tag_int("newsize",self->hdr->write_head),
-                evt_tag_int("fd",self->fd),
-                NULL);
+                evt_tag_int("fd",self->fd));
     }
 
   return success;
@@ -236,8 +233,7 @@ qdisk_push_tail(QDisk *self, GString *record)
 
   if (n == 0)
     {
-      msg_error("Error writing empty message into the disk-queue file",
-          NULL);
+      msg_error("Error writing empty message into the disk-queue file");
       return FALSE;
     }
 
@@ -245,8 +241,7 @@ qdisk_push_tail(QDisk *self, GString *record)
       !pwrite_strict(self->fd, record->str, record->len, self->hdr->write_head + sizeof(n)))
     {
       msg_error("Error writing disk-queue file",
-          evt_tag_errno("error", errno),
-          NULL);
+          evt_tag_errno("error", errno));
       return FALSE;
     }
 
@@ -318,8 +313,7 @@ qdisk_pop_head(QDisk *self, GString *record)
         {
           msg_error("Error reading disk-queue file",
                     evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                    evt_tag_str("filename", self->filename),
-                    NULL);
+                    evt_tag_str("filename", self->filename));
           return FALSE;
         }
 
@@ -328,16 +322,14 @@ qdisk_pop_head(QDisk *self, GString *record)
         {
           msg_warning("Disk-queue file contains possibly invalid record-length",
                     evt_tag_int("rec_length", n),
-                    evt_tag_str("filename", self->filename),
-                    NULL);
+                    evt_tag_str("filename", self->filename));
           return FALSE;
         }
       else if (n == 0)
         {
           msg_error("Disk-queue file contains empty record",
                     evt_tag_int("rec_length", n),
-                    evt_tag_str("filename", self->filename),
-                    NULL);
+                    evt_tag_str("filename", self->filename));
           return FALSE;
         }
 
@@ -348,8 +340,7 @@ qdisk_pop_head(QDisk *self, GString *record)
           msg_error("Error reading disk-queue file",
                     evt_tag_str("filename", self->filename),
                     evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                    evt_tag_int("read_length", n),
-                    NULL);
+                    evt_tag_int("read_length", n));
           return FALSE;
         }
 
@@ -369,8 +360,7 @@ qdisk_pop_head(QDisk *self, GString *record)
       if (self->hdr->length == 0 && !self->options->reliable)
         {
           msg_debug("Queue file became empty, truncating file",
-                    evt_tag_str("filename", self->filename),
-                    NULL);
+                    evt_tag_str("filename", self->filename));
           self->hdr->read_head = QDISK_RESERVED_SPACE;
           self->hdr->write_head = QDISK_RESERVED_SPACE;
           if (!self->options->reliable)
@@ -404,8 +394,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
         {
           msg_error("Error reading in-memory buffer from disk-queue file",
                     evt_tag_str("filename", self->filename),
-                    read_len < 0 ? evt_tag_errno("error", errno) : evt_tag_str("error", "short read"),
-                    NULL);
+                    read_len < 0 ? evt_tag_errno("error", errno) : evt_tag_str("error", "short read"));
           g_string_free(serialized, TRUE);
           return FALSE;
         }
@@ -425,8 +414,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
             {
               msg_error("Error reading message from disk-queue file (maybe currupted file) some messages will be lost",
                             evt_tag_str("filename", self->filename),
-                            evt_tag_int("lost messages", q_count - i),
-                            NULL);
+                            evt_tag_int("lost messages", q_count - i));
               log_msg_unref(msg);
               break;
             }
@@ -451,8 +439,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   if (memcmp(self->hdr->magic, self->file_id, 4) != 0)
     {
       msg_error("Error reading disk-queue file header",
-                evt_tag_str("filename", self->filename),
-                NULL);
+                evt_tag_str("filename", self->filename));
       return FALSE;
     }
 
@@ -475,8 +462,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
                 evt_tag_str("filename", self->filename),
                 evt_tag_int("read_head", self->hdr->read_head),
                 evt_tag_int("write_head", self->hdr->write_head),
-                evt_tag_int("qdisk_length",  self->hdr->length),
-                NULL);
+                evt_tag_int("qdisk_length",  self->hdr->length));
       return FALSE;
     }
 
@@ -492,8 +478,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
            msg_error("Inconsistent header data in disk-queue file, ignoring qout",
                     evt_tag_str("filename", self->filename),
                     evt_tag_int("qout_ofs", qout_ofs),
-                    evt_tag_int("qdisk_length",  self->hdr->length),
-                    NULL);
+                    evt_tag_int("qdisk_length",  self->hdr->length));
         }
 
       if (!(qbacklog_ofs > 0 && qbacklog_ofs < self->hdr->write_head))
@@ -506,8 +491,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
            msg_error("Inconsistent header data in disk-queue file, ignoring qbacklog",
                     evt_tag_str("filename", self->filename),
                     evt_tag_int("qbacklog_ofs", qbacklog_ofs),
-                    evt_tag_int("qdisk_length",  self->hdr->length),
-                    NULL);
+                    evt_tag_int("qdisk_length",  self->hdr->length));
         }
 
       if (!(qoverflow_ofs > 0 && qoverflow_ofs < self->hdr->write_head))
@@ -520,8 +504,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
            msg_error("Inconsistent header data in disk-queue file, ignoring qoverflow",
                     evt_tag_str("filename", self->filename),
                     evt_tag_int("qoverflow_ofs", qoverflow_ofs),
-                    evt_tag_int("qdisk_length",  self->hdr->length),
-                    NULL);
+                    evt_tag_int("qdisk_length",  self->hdr->length));
         }
     }
 
@@ -545,8 +528,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
           evt_tag_int("qout_length", qout_count),
           evt_tag_int("qbacklog_length", qbacklog_count),
           evt_tag_int("qoverflow_length", qoverflow_count),
-          evt_tag_int("qdisk_length", self->hdr->length),
-          NULL);
+          evt_tag_int("qdisk_length", self->hdr->length));
     }
   else
     {
@@ -556,8 +538,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       msg_info("Reliable disk-buffer state loaded",
           evt_tag_str("filename", self->filename),
           evt_tag_int("queue_length", self->hdr->length),
-          evt_tag_int("size", self->hdr->write_head - self->hdr->read_head),
-          NULL);
+          evt_tag_int("size", self->hdr->write_head - self->hdr->read_head));
     }
 
   return TRUE;
@@ -599,8 +580,7 @@ _save_queue(QDisk *self, GQueue *q, gint64 *q_ofs, gint32 *q_len)
     {
       msg_error("Error writing in-memory buffer of disk-queue to disk",
                 evt_tag_str("filename", self->filename),
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       g_string_free(serialized, TRUE);
       return FALSE;
     }
@@ -654,13 +634,11 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
              evt_tag_int("qout_length", qout_count),
              evt_tag_int("qbacklog_length", qbacklog_count),
              evt_tag_int("qoverflow_length", qoverflow_count),
-             evt_tag_int("qdisk_length", self->hdr->length),
-             NULL);
+             evt_tag_int("qdisk_length", self->hdr->length));
   else
     msg_info("Reliable disk-buffer state saved",
              evt_tag_str("filename", self->filename),
-             evt_tag_int("qdisk_length", self->hdr->length),
-             NULL);
+             evt_tag_int("qdisk_length", self->hdr->length));
 
   return TRUE;
 }
@@ -709,8 +687,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     {
       msg_error("Error opening disk-queue file",
                 evt_tag_str("filename", self->filename),
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       return FALSE;
     }
 
@@ -720,8 +697,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     {
       msg_error("Error returned by mmap",
                 evt_tag_errno("errno", errno),
-                evt_tag_str("filename", self->filename),
-                NULL);
+                evt_tag_str("filename", self->filename));
        return FALSE;
      }
    else
@@ -748,7 +724,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       memset(&tmp, 0, sizeof(tmp));
       if (!pwrite_strict(self->fd, &tmp, sizeof(tmp), 0))
         {
-          msg_error("Error occured while initalizing the new queue file",evt_tag_str("filename",self->filename),evt_tag_errno("error",errno), NULL);
+          msg_error("Error occured while initalizing the new queue file",evt_tag_str("filename",self->filename),evt_tag_errno("error",errno));
           munmap((void *)self->hdr, sizeof(QDiskFileHeader));
           self->hdr = NULL;
           close(self->fd);
@@ -781,8 +757,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
            msg_error("Error loading disk-queue file",
                      evt_tag_str("filename", self->filename),
                      evt_tag_errno("fstat error", errno),
-                     evt_tag_int("size", st.st_size),
-                     NULL);
+                     evt_tag_int("size", st.st_size));
            munmap((void *)self->hdr, sizeof(QDiskFileHeader));
            self->hdr = NULL;
            close(self->fd);
@@ -886,8 +861,7 @@ qdisk_read_from_backlog(QDisk *self, gpointer buffer, gsize bytes_to_read)
     {
       msg_error("Error reading disk-queue file",
                           evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                          evt_tag_str("filename", self->filename),
-                          NULL);
+                          evt_tag_str("filename", self->filename));
     }
   if (self->hdr->backlog_head > self->hdr->write_head)
     {
@@ -905,8 +879,7 @@ qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position)
     {
       msg_error("Error reading disk-queue file",
                 evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                evt_tag_str("filename", self->filename),
-                NULL);
+                evt_tag_str("filename", self->filename));
     }
   return res;
 }

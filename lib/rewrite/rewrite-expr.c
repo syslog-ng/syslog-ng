@@ -42,8 +42,7 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
   if (self->condition && !filter_expr_eval_root(self->condition, &msg, path_options))
     {
       msg_debug("Rewrite condition unmatched, skipping rewrite",
-                evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)),
-                NULL);
+                evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)));
     }
   else
     {
@@ -56,8 +55,7 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
                 evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)),
                 evt_tag_printf("new_value", "%.*s", (gint) length, value),
                 evt_tag_str("rule", self->name),
-                log_pipe_location_tag(s),
-                NULL);
+                log_pipe_location_tag(s));
     }
   log_pipe_forward_msg(s, msg, path_options);
 }

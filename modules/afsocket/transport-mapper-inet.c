@@ -65,8 +65,7 @@ transport_mapper_inet_validate_tls_options(TransportMapperInet *self)
     {
       msg_error("tls() options specified for a transport that doesn't allow TLS encryption",
                 //evt_tag_str("id", self->super.super.super.id),
-                evt_tag_str("transport", self->super.transport),
-                NULL);
+                evt_tag_str("transport", self->super.transport));
       return FALSE;
     }
   return TRUE;

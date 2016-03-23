@@ -64,8 +64,7 @@ log_matcher_posix_re_compile(LogMatcher *s, const gchar *re, GError **error)
                /* deprecated */
                msg_warning_once("WARNING: Your configuration file uses an obsoleted regexp option, please update your configuration",
                                 evt_tag_str("option", "(?i)"),
-                                evt_tag_str("change", "use ignore-case flag instead of (?i)"),
-                                NULL);
+                                evt_tag_str("change", "use ignore-case flag instead of (?i)"));
  
                flags |= REG_ICASE;
              }
@@ -223,8 +222,7 @@ log_matcher_posix_re_new(const LogMatcherOptions *options)
 
   if (configuration && cfg_is_config_version_older(configuration, 0x0300))
     {
-      msg_warning_once("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
-                       NULL);
+      msg_warning_once("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that");
       self->super.flags = LMF_STORE_MATCHES;
     }
   return &self->super;
@@ -426,8 +424,7 @@ log_matcher_glob_match(LogMatcher *s, LogMessage *msg, gint value_handle, const 
       if (G_UNLIKELY(!warned && (msg->flags & LF_UTF8) == 0))
         {
           msg_warning("Input is valid utf8, but the log message is not tagged as such, this performs worse than enabling validate-utf8 flag on input", 
-                      evt_tag_printf("value", "%.*s", (gint) value_len, value),
-                      NULL);
+                      evt_tag_printf("value", "%.*s", (gint) value_len, value));
           warned = TRUE;
         }
       APPEND_ZERO(buf, value, value_len);
@@ -436,8 +433,7 @@ log_matcher_glob_match(LogMatcher *s, LogMessage *msg, gint value_handle, const 
   else
     {
       msg_warning("Input is not valid utf8, glob match requires utf8 input, thus it never matches in this case", 
-                  evt_tag_printf("value", "%.*s", (gint) value_len, value),
-                  NULL);
+                  evt_tag_printf("value", "%.*s", (gint) value_len, value));
     }
   return FALSE;
 }
@@ -493,7 +489,7 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
     flags |= PCRE_NEWLINE_ANYCRLF;
 #else
   if (self->super.flags & LMF_NEWLINE)
-    msg_warning("syslog-ng was compiled against an old PCRE which doesn't support the 'newline' flag", NULL);
+    msg_warning("syslog-ng was compiled against an old PCRE which doesn't support the 'newline' flag");
 #endif
   if (self->super.flags & LMF_UTF8)
     {
@@ -620,15 +616,14 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, con
         default:
           /* Handle other special cases */
           msg_error("Error while matching regexp",
-                    evt_tag_int("error_code", rc),
-                    NULL);
+                    evt_tag_int("error_code", rc));
           break;
         }
       return FALSE;
     }
   if (rc == 0)
     {
-      msg_error("Error while storing matching substrings", NULL);
+      msg_error("Error while storing matching substrings");
     }
   else
     {
@@ -715,8 +710,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
       if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
         {
           msg_error("Error while matching regexp",
-                    evt_tag_int("error_code", rc),
-                    NULL);
+                    evt_tag_int("error_code", rc));
           break;
         }
       else if (rc < 0)
@@ -793,8 +787,7 @@ log_matcher_pcre_re_new(const LogMatcherOptions *options)
 
   if (configuration && cfg_is_config_version_older(configuration, 0x0300))
     {
-      msg_warning_once("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
-                       NULL);
+      msg_warning_once("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that");
       self->super.flags = LMF_STORE_MATCHES;
     }
 
@@ -910,8 +903,7 @@ log_matcher_options_init(LogMatcherOptions *options, GlobalConfig *cfg)
 
       if (cfg_is_config_version_older(cfg, 0x0306))
         {
-          msg_warning_once("WARNING: syslog-ng changed the default regexp implementation to PCRE starting from " VERSION_3_6 ", please ensure your regexp works with PCRE or please specify type(\"posix\") in filters explicitly",
-                           NULL);
+          msg_warning_once("WARNING: syslog-ng changed the default regexp implementation to PCRE starting from " VERSION_3_6 ", please ensure your regexp works with PCRE or please specify type(\"posix\") in filters explicitly");
           default_matcher = "posix";
         }
       if (!log_matcher_options_set_type(options, default_matcher))

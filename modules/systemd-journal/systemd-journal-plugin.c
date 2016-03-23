@@ -43,7 +43,7 @@ systemd_journal_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   if (!load_journald_subsystem())
     {
-      msg_error("Can't find systemd-journal on this system", NULL);
+      msg_error("Can't find systemd-journal on this system");
       return FALSE;
     }
   plugin_register(cfg, systemd_journal_plugins, G_N_ELEMENTS(systemd_journal_plugins));

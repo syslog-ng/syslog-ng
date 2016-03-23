@@ -79,8 +79,7 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
 
   ssl_error = ERR_get_error();
   msg_error("SSL error while reading stream",
-            evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)),
-            NULL);
+            evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)));
   ERR_clear_error();
 
   errno = ECONNRESET;
@@ -130,8 +129,7 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
 
   ssl_error = ERR_get_error();
   msg_error("SSL error while writing stream",
-            evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)),
-            NULL);
+            evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)));
   ERR_clear_error();
 
   errno = EPIPE;

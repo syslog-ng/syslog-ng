@@ -215,8 +215,7 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
   if (!result)
     {
       msg_error("Error resolving hostname",
-                evt_tag_str("host", name),
-                NULL);
+                evt_tag_str("host", name));
     }
   return result;
 }

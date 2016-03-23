@@ -69,14 +69,13 @@ _acquire_queue(LogDestDriver *dd, gchar *persist_name, gpointer user_data)
         {
           msg_error("Error opening disk-queue file, a new one started",
                     evt_tag_str("old_filename", qfile_name),
-                    evt_tag_str("new_filename", log_queue_disk_get_filename(queue)),
-                    NULL);
+                    evt_tag_str("new_filename", log_queue_disk_get_filename(queue)));
           g_free(qfile_name);
         }
       else
         {
           g_free(qfile_name);
-          msg_error("Error initializing log queue", NULL);
+          msg_error("Error initializing log queue");
           return NULL;
         }
     }
@@ -120,15 +119,14 @@ _attach(LogDriverPlugin *s, LogDriver *d)
 
   if (self->options.disk_buf_size == -1)
     {
-      msg_error("The required 'disk_buf_size()' parameter of diskq module has not been set.", NULL);
+      msg_error("The required 'disk_buf_size()' parameter of diskq module has not been set.");
       return FALSE;
     }
 
   if (self->options.disk_buf_size < MIN_DISK_BUF_SIZE && self->options.disk_buf_size != 0)
     {
       msg_warning("The value of 'disk_buf_size()' is too low, setting to the smallest acceptable value",
-                  evt_tag_int("min_space", MIN_DISK_BUF_SIZE),
-                  NULL);
+                  evt_tag_int("min_space", MIN_DISK_BUF_SIZE));
       self->options.disk_buf_size = MIN_DISK_BUF_SIZE;
     }
 
@@ -136,8 +134,7 @@ _attach(LogDriverPlugin *s, LogDriver *d)
     if (dd->acquire_queue_data != self)
       {
         msg_error("Another queueing plugin is registered in this destination, unable to register diskq again",
-                  evt_tag_str("driver", dd->super.id),
-                  NULL);
+                  evt_tag_str("driver", dd->super.id));
         return FALSE;
       }
 

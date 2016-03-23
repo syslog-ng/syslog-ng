@@ -93,7 +93,7 @@ control_connection_message_log(GString *command)
           on = g_str_equal(cmds[2], "ON");
           if (*type != on)
             {
-              msg_info("Verbosity changed", evt_tag_str("type", cmds[1]), evt_tag_int("on", on), NULL);
+              msg_info("Verbosity changed", evt_tag_str("type", cmds[1]), evt_tag_int("on", on));
               *type = on;
             }
 

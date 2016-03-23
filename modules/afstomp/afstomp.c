@@ -211,21 +211,20 @@ afstomp_dd_connect(STOMPDestDriver *self, gboolean reconnect)
   afstomp_create_connect_frame(self, &frame);
   if (!afstomp_send_frame(self, &frame))
     {
-      msg_error("Sending CONNECT frame to STOMP server failed!", NULL);
+      msg_error("Sending CONNECT frame to STOMP server failed!");
       return FALSE;
     }
 
   stomp_receive_frame(self->conn, &frame);
   if (strcmp(frame.command, "CONNECTED"))
     {
-      msg_debug("Error connecting to STOMP server, stomp server did not accept CONNECT request", NULL);
+      msg_debug("Error connecting to STOMP server, stomp server did not accept CONNECT request");
       stomp_frame_deinit(&frame);
 
       return FALSE;
   }
   msg_debug("Connecting to STOMP succeeded",
-            evt_tag_str("driver", self->super.super.super.id),
-            NULL);
+            evt_tag_str("driver", self->super.super.super.id));
 
   stomp_frame_deinit(&frame);
 
@@ -275,7 +274,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
 
   if (!self->conn)
     {
-      msg_error("STOMP server is not connected, not sending message!", NULL);
+      msg_error("STOMP server is not connected, not sending message!");
       return FALSE;
     }
 
@@ -300,7 +299,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
 
   if (!afstomp_send_frame(self, &frame))
     {
-      msg_error("Error while inserting into STOMP server", NULL);
+      msg_error("Error while inserting into STOMP server");
       success = FALSE;
     }
 
@@ -350,8 +349,7 @@ afstomp_dd_init(LogPipe *s)
   msg_verbose("Initializing STOMP destination",
               evt_tag_str("host", self->host),
               evt_tag_int("port", self->port),
-              evt_tag_str("destination", self->destination),
-              NULL);
+              evt_tag_str("destination", self->destination));
 
   return log_threaded_dest_driver_start(s);
 }
