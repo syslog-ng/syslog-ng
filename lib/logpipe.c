@@ -94,3 +94,11 @@ log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data)
 {
   log_pipe_notify(self->pipe_next, notify_code, user_data);
 }
+
+#ifdef __linux__
+
+void
+__log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
+__attribute__((alias("log_pipe_forward_msg")));
+
+#endif
