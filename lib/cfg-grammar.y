@@ -340,6 +340,7 @@ extern struct _StatsOptions *last_stats_options;
 #include "cfg-parser.h"
 #include "cfg.h"
 #include "cfg-tree.h"
+#include "cfg-block.h"
 #include "template/templates.h"
 #include "template/user-function.h"
 #include "logreader.h"

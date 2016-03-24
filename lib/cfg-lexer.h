@@ -87,32 +87,6 @@ typedef struct _CfgLexerKeyword
 
 #define CFG_KEYWORD_STOP "@!#?"
 
-/**
- * CfgBlockGenerator:
- *
- * This class describes a block generator, e.g. a function callback
- * that returns a configuration snippet in a given context. Each
- * user-defined "block" results in a generator to be registered, but
- * theoretically this mechanism can be used to write plugins that
- * generate syslog-ng configuration on the fly, based on system
- * settings for example.
- **/
-struct _CfgBlockGenerator
-{
-  gint context;
-  gchar *name;
-  gboolean (*generate)(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args);
-  void (*free_fn)(CfgBlockGenerator *self);
-};
-
-gboolean cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args);
-void cfg_block_generator_init_instance(CfgBlockGenerator *self, gint context, const gchar *name);
-void cfg_block_generator_free_instance(CfgBlockGenerator *self);
-void cfg_block_generator_free(CfgBlockGenerator *self);
-
-/* user defined configuration block */
-
-CfgBlockGenerator *cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs);
 
 
 /* structure that describes a given location in the include stack */

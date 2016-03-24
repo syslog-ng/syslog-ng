@@ -23,6 +23,7 @@
 
 #include "cfg.h"
 #include "cfg-lexer.h"
+#include "cfg-block-generator.h"
 #include "messages.h"
 #include "plugin.h"
 #include "plugin-types.h"
