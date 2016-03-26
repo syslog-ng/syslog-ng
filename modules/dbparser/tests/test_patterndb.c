@@ -395,6 +395,25 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
      </action>\
    </actions>\
   </rule>\
+  <rule provider='test' id='10d' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-with-action-condition</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='match' condition='\"${PID}\" ne \"" MYPID "\"' >\
+       <message>\
+         <value name='MESSAGE'>not-generated-message</value>\
+       </message>\
+     </action>\
+\
+     <action trigger='match' condition='\"${PID}\" eq \"" MYPID "\"' >\
+       <message>\
+         <value name='MESSAGE'>generated-message-on-condition</value>\
+       </message>\
+     </action>\
+\
+   </actions>\
+  </rule>\
   <rule provider='test' id='11' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
    <patterns>\
     <pattern>pattern11</pattern>\
@@ -502,6 +521,15 @@ test_correllation_rule_with_action_on_timeout(void)
   assert_msg_matches_and_has_tag("correllated-message-with-action-on-timeout", ".classifier.violation", TRUE);
 
   assert_msg_matches_and_output_message_nvpair_equals_with_timeout("correllated-message-with-action-on-timeout", 60, 1, "MESSAGE", "generated-message-on-timeout");
+}
+
+static void
+test_correllation_rule_with_action_condition(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-with-action-condition", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-condition", 1, "MESSAGE", "generated-message-on-condition");
 }
 
 static void
