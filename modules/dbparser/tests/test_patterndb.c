@@ -344,6 +344,20 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <pattern>prog1</pattern>\
     <pattern>prog2</pattern>\
   </patterns>\
+  <rule provider='test' id='10' class='system' context-scope='program'>\
+   <patterns>\
+    <pattern>simple-message</pattern>\
+   </patterns>\
+   <tags>\
+    <tag>simple-msg-tag1</tag>\
+    <tag>simple-msg-tag2</tag>\
+   </tags>\
+   <values>\
+    <value name='simple-msg-value-1'>value1</value>\
+    <value name='simple-msg-value-2'>value2</value>\
+    <value name='simple-msg-host'>${HOST}</value>\
+   </values>\
+  </rule>\
   <rule provider='test' id='11' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
    <patterns>\
     <pattern>pattern11</pattern>\
@@ -405,6 +419,20 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
   </rule>\
  </ruleset>\
 </patterndb>";
+
+static void
+test_simple_rule_without_context_or_actions(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("simple-message", ".classifier.system", TRUE);
+
+  /* tag assignment based on <tags/> */
+  assert_msg_matches_and_nvpair_equals("simple-message", "TAGS", ".classifier.system,simple-msg-tag1,simple-msg-tag2");
+
+  assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-value-1", "value1");
+  assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-value-2", "value2");
+  assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-host", MYHOST);
+}
 
 static void
 test_rule_tag_assignment(void)
@@ -485,6 +513,7 @@ test_patterndb_rule(void)
 {
   _load_pattern_db_from_string(pdb_ruletest_skeleton);
 
+  test_simple_rule_without_context_or_actions();
   test_rule_tag_assignment();
   test_rule_value_assignment();
   test_rule_emit_message_on_match();
