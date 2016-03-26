@@ -383,6 +383,18 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
      </action>\
    </actions>\
   </rule>\
+  <rule provider='test' id='10c' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-with-action-on-timeout</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='timeout'>\
+       <message>\
+         <value name='MESSAGE'>generated-message-on-timeout</value>\
+       </message>\
+     </action>\
+   </actions>\
+  </rule>\
   <rule provider='test' id='11' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
    <patterns>\
     <pattern>pattern11</pattern>\
@@ -484,6 +496,15 @@ test_correllation_rule_with_action_on_match(void)
 }
 
 static void
+test_correllation_rule_with_action_on_timeout(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-with-action-on-timeout", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("correllated-message-with-action-on-timeout", 60, 1, "MESSAGE", "generated-message-on-timeout");
+}
+
+static void
 test_rule_tag_assignment(void)
 {
   /* tag assigned based on "class" */
@@ -565,6 +586,7 @@ test_patterndb_rule(void)
   test_simple_rule_without_context_or_actions();
   test_correllation_rule_without_actions();
   test_correllation_rule_with_action_on_match();
+  test_correllation_rule_with_action_on_timeout();
   test_rule_tag_assignment();
   test_rule_value_assignment();
   test_rule_emit_message_on_match();
