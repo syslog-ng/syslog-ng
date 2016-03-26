@@ -406,54 +406,90 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
  </ruleset>\
 </patterndb>";
 
-void
-test_patterndb_rule(void)
+static void
+test_rule_tag_assignment(void)
 {
-  _load_pattern_db_from_string(pdb_ruletest_skeleton);
-  assert_msg_matches_and_has_tag("pattern11", "tag11-1", TRUE);
+  /* tag assigned based on "class" */
   assert_msg_matches_and_has_tag("pattern11", ".classifier.system", TRUE);
+  assert_msg_matches_and_has_tag("pattern12", ".classifier.violation", TRUE);
+
+  /* tag assigned due to <tags/> */
+  assert_msg_matches_and_has_tag("pattern11", "tag11-1", TRUE);
   assert_msg_matches_and_has_tag("pattern11", "tag11-2", TRUE);
   assert_msg_matches_and_has_tag("pattern11", "tag11-3", FALSE);
   assert_msg_matches_and_has_tag("pattern11a", "tag11-1", TRUE);
   assert_msg_matches_and_has_tag("pattern11a", "tag11-2", TRUE);
   assert_msg_matches_and_has_tag("pattern11a", "tag11-3", FALSE);
-  assert_msg_matches_and_has_tag("pattern12", ".classifier.violation", TRUE);
+
+  /* negative tests, no tags are assigned to pattern12 */
   assert_msg_matches_and_has_tag("pattern12", "tag12-1", FALSE);
   assert_msg_matches_and_has_tag("pattern12", "tag12-2", FALSE);
   assert_msg_matches_and_has_tag("pattern12", "tag12-3", FALSE);
   assert_msg_matches_and_has_tag("pattern12a", "tag12-1", FALSE);
   assert_msg_matches_and_has_tag("pattern12a", "tag12-2", FALSE);
   assert_msg_matches_and_has_tag("pattern12a", "tag12-3", FALSE);
-  assert_msg_doesnot_match("pattern1x");
+}
 
-  assert_msg_matches_and_nvpair_equals("pattern11", "n11-1", "v11-1");
+static void
+test_rule_value_assignment(void)
+{
+  /* value assigned automatically based on "class" */
   assert_msg_matches_and_nvpair_equals("pattern11", ".classifier.class", "system");
+  assert_msg_matches_and_nvpair_equals("pattern12", ".classifier.class", "violation");
+
+  /* value assigned automatically based on context-id */
+  assert_msg_matches_and_nvpair_equals("pattern11", ".classifier.context_id", "999");
+
+  /* simple name-value pairs */
+  assert_msg_matches_and_nvpair_equals("pattern11", "n11-1", "v11-1");
   assert_msg_matches_and_nvpair_equals("pattern11", "n11-2", "v11-2");
   assert_msg_matches_and_nvpair_equals("pattern11", "n11-3", NULL);
-  assert_msg_matches_and_nvpair_equals("pattern11", "context-id", "999");
-  assert_msg_matches_and_nvpair_equals("pattern11", ".classifier.context_id", "999");
+
   assert_msg_matches_and_nvpair_equals("pattern11a", "n11-1", "v11-1");
   assert_msg_matches_and_nvpair_equals("pattern11a", "n11-2", "v11-2");
   assert_msg_matches_and_nvpair_equals("pattern11a", "n11-3", NULL);
-  assert_msg_matches_and_nvpair_equals("pattern12", ".classifier.class", "violation");
+
+  /* assert that ${CONTEXT_ID} is set in <value/> expressions */
+  assert_msg_matches_and_nvpair_equals("pattern11", "context-id", "999");
+
+  /* negative tests, pattern12 does not have <value/> expressions */
   assert_msg_matches_and_nvpair_equals("pattern12", "n12-1", NULL);
   assert_msg_matches_and_nvpair_equals("pattern12", "n12-2", NULL);
   assert_msg_matches_and_nvpair_equals("pattern12", "n12-3", NULL);
   assert_msg_matches_and_nvpair_equals("pattern11", "vvv", MYHOST);
+}
 
+static void
+test_rule_emit_message_on_match(void)
+{
   assert_msg_matches_and_output_message_nvpair_equals("pattern11", 1, "MESSAGE", "rule11 matched");
   assert_msg_matches_and_output_message_nvpair_equals("pattern11", 1, "context-id", "999");
   assert_msg_matches_and_output_message_has_tag("pattern11", 1, "tag11-3", TRUE);
   assert_msg_matches_and_output_message_has_tag("pattern11", 1, "tag11-4", FALSE);
 
+  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value1", 1, "MESSAGE",  "message1");
+  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value2", 1, "MESSAGE",  "message2");
+}
+
+static void
+test_rule_emit_message_on_timeout(void)
+{
   assert_msg_matches_and_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "MESSAGE", "rule11 timed out");
   assert_msg_matches_and_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "context-id", "999");
   assert_msg_matches_and_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-3", FALSE);
   assert_msg_matches_and_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-4", TRUE);
+}
 
-  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value1", 1, "MESSAGE",  "message1");
-  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value2", 1, "MESSAGE",  "message2");
+static void
+test_patterndb_rule(void)
+{
+  _load_pattern_db_from_string(pdb_ruletest_skeleton);
 
+  test_rule_tag_assignment();
+  test_rule_value_assignment();
+  test_rule_emit_message_on_match();
+  test_rule_emit_message_on_timeout();
+  assert_msg_doesnot_match("pattern1x");
   _destroy_pattern_db();
 }
 
