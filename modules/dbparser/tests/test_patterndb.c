@@ -229,6 +229,24 @@ assert_msg_matches_and_output_message_nvpair_equals_with_timeout(const gchar *pa
   log_msg_unref(msg);
 }
 
+static void
+assert_no_such_output_message(gint ndx)
+{
+  assert_true(ndx >= messages->len, "Unexpected message generated at %d index\n", ndx);
+}
+
+void
+assert_msg_matches_and_no_such_output_message(const gchar *pattern, gint ndx)
+{
+  LogMessage *msg;
+
+  msg = _construct_message("prog2", pattern);
+  _process(msg);
+
+  assert_no_such_output_message(ndx);
+  log_msg_unref(msg);
+}
+
 void
 assert_msg_matches_and_output_message_nvpair_equals(const gchar *pattern, gint ndx, const gchar *name, const gchar *value)
 {
@@ -411,6 +429,18 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
          <value name='MESSAGE'>generated-message-on-condition</value>\
        </message>\
      </action>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='10e' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-with-rate-limited-action</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='match' rate='1/60'>\
+       <message>\
+         <value name='MESSAGE'>generated-message-rate-limit</value>\
+       </message>\
+     </action>\
 \
    </actions>\
   </rule>\
@@ -530,6 +560,30 @@ test_correllation_rule_with_action_condition(void)
   assert_msg_matches_and_has_tag("correllated-message-with-action-condition", ".classifier.violation", TRUE);
 
   assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-condition", 1, "MESSAGE", "generated-message-on-condition");
+}
+
+static void
+test_correllation_rule_with_rate_limited_action(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-with-rate-limited-action", ".classifier.violation", TRUE);
+
+  /* messages in the output:
+   * [0] trigger
+   * [1] GENERATED (as rate limit was met)
+   * [2] trigger
+   * [3] trigger
+   * [4] trigger
+   * [5] GENERATED (as rate limit was met again due to advance time */
+
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-rate-limited-action", 1, "MESSAGE", "generated-message-rate-limit");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_no_such_output_message("correllated-message-with-rate-limited-action", 3);
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_no_such_output_message("correllated-message-with-rate-limited-action", 4);
+  _dont_reset_patterndb_state_for_the_next_call();
+  _advance_time(120);
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-rate-limited-action", 5, "MESSAGE", "generated-message-rate-limit");
 }
 
 static void
