@@ -77,7 +77,7 @@ AC_DEFUN([AX_CHECK_JAVA_VERSION],
       if test -e "$JAVA_HOME_CHECKER"; then
         JNI_HOME=`$JAVA_HOME_CHECKER`
       else
-        JNI_HOME=`echo $JAVAC_BIN | sed "s/\(.*\)[[/]]bin[[/]]java.*/\1/"`
+        JNI_HOME=`echo $JAVAC_BIN | sed "s/\(.*\)[[/]]bin[[/]]java.*/\1\//"`
       fi
 
       JNI_LIBDIR=`find $JNI_HOME \( -name "libjvm.so" -or -name "libjvm.dylib" \) \
