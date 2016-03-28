@@ -358,6 +358,15 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <value name='simple-msg-host'>${HOST}</value>\
    </values>\
   </rule>\
+  <rule provider='test' id='10a' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-based-on-pid</pattern>\
+   </patterns>\
+   <values>\
+    <value name='correllated-msg-context-id'>${CONTEXT_ID}</value>\
+    <value name='correllated-msg-context-length'>$(context-length)</value>\
+   </values>\
+  </rule>\
   <rule provider='test' id='11' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
    <patterns>\
     <pattern>pattern11</pattern>\
@@ -432,6 +441,20 @@ test_simple_rule_without_context_or_actions(void)
   assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-value-1", "value1");
   assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-value-2", "value2");
   assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-host", MYHOST);
+}
+
+static void
+test_correllation_rule_without_actions(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-based-on-pid", ".classifier.system", TRUE);
+  assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-id", MYPID);
+  assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-length", "1");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-length", "2");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-length", "3");
+
 }
 
 static void
@@ -514,6 +537,7 @@ test_patterndb_rule(void)
   _load_pattern_db_from_string(pdb_ruletest_skeleton);
 
   test_simple_rule_without_context_or_actions();
+  test_correllation_rule_without_actions();
   test_rule_tag_assignment();
   test_rule_value_assignment();
   test_rule_emit_message_on_match();
