@@ -367,6 +367,22 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <value name='correllated-msg-context-length'>$(context-length)</value>\
    </values>\
   </rule>\
+  <rule provider='test' id='10b' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-with-action-on-match</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='match'>\
+       <message>\
+         <value name='MESSAGE'>generated-message-on-match</value>\
+         <value name='context-id'>${CONTEXT_ID}</value>\
+         <tags>\
+           <tag>correllated-msg-tag</tag>\
+         </tags>\
+       </message>\
+     </action>\
+   </actions>\
+  </rule>\
   <rule provider='test' id='11' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
    <patterns>\
     <pattern>pattern11</pattern>\
@@ -454,7 +470,17 @@ test_correllation_rule_without_actions(void)
   assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-length", "2");
   _dont_reset_patterndb_state_for_the_next_call();
   assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-length", "3");
+}
 
+static void
+test_correllation_rule_with_action_on_match(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-with-action-on-match", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-on-match", 1, "MESSAGE", "generated-message-on-match");
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-on-match", 1, "context-id", "999");
+  assert_msg_matches_and_output_message_has_tag("correllated-message-with-action-on-match", 1, "correllated-msg-tag", TRUE);
 }
 
 static void
@@ -538,6 +564,7 @@ test_patterndb_rule(void)
 
   test_simple_rule_without_context_or_actions();
   test_correllation_rule_without_actions();
+  test_correllation_rule_with_action_on_match();
   test_rule_tag_assignment();
   test_rule_value_assignment();
   test_rule_emit_message_on_match();
