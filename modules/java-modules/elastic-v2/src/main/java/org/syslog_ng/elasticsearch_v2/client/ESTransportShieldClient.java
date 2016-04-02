@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2016 Balabit
  * Copyright (c) 2016 Viktor Juhasz <viktor.juhasz@balabit.com>
  * Copyright (c) 2016 Zoltan Pallagi <zoltan.pallagi@balabit.com>
  *
