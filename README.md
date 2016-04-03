@@ -16,12 +16,15 @@ Key features:
   * work with any kind of unstructured data
   * receive and send [JSON](http://json.org/) formatted messages
   * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), ...)
+    db-parser(), kv-parser(), ...)
   * normalize, crunch and process logs as they flow through the system
   * hand on messages for further processing using message queues (like
     [AMQP](http://www.amqp.org/)), files or databases (like
     [PostgreSQL](http://www.postgresql.org/) or
-    [MongoDB](http://www.mongodb.org/)).
+    [MongoDB](http://www.mongodb.org/)), and
+  * forward log messages to big data tools like [Elasticsearch](https://www.elastic.co/),
+    [Apache Kafka](http://kafka.apache.org/), or
+    [Apache Hadoop](http://hadoop.apache.org/).
 
 Performance:
   * syslog-ng provides performance levels comparable to a large
@@ -30,6 +33,34 @@ Performance:
     second.
   * But classification, parsing and filtering still produces several
     tens of thousands messages per second.
+
+Community:
+  * syslog-ng is developed by a community of volunteers, the best way to
+    connect us is via our [github project page](http://github.com/balabit/syslog-ng)
+    project, our [gitter channel](https://gitter.im/balabit/syslog-ng) or
+    our [mailing list](https://lists.balabit.hu/mailman/listinfo/syslog-ng)
+  * syslog-ng is integrated into almost all Linux distributions & BSDs, it
+    is also incorporated into a number of products, see our [powered by
+    syslog-ng] page for more details.
+
+Sponsors:
+  * [Balabit](http://www.balabit.com/) is the original creator and the
+    largest current sponsor of the syslog-ng project, they provide support,
+    professional services and addons you might be interested in.
+
+Feedback
+========
+
+We are really interested in who uses our software, so if you do and you like
+what you see, please tell us about it.  A simple "thanks" is also enough,
+but learning about your usecase, experience, things to improve would be most
+appreciated.
+
+Just send an email to feedback (at) syslog-ng.org.
+
+Should not take more than a minute, right?  Now go ahead. Please.
+
+#FeedbackPowersOpenSource.
 
 Installation from Source
 ========================
@@ -46,6 +77,7 @@ the required dependencies):
 Some of the functionality is compiled only in case the required
 development libraries are present. The configure script displays a
 summary of enabled features at the end of its run.
+For details, see the [syslog-ng compiling instructions](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/compiling-syslog-ng.html)
 
 
 Installation from Binaries
@@ -64,7 +96,7 @@ Simply invoke the following command as root:
 
 Latest versions of syslog-ng are available for a wide range of Debian
 and Ubuntu releases and architectures from an
-[unofficial repository][madhouse-repo].
+[unofficial repository](https://build.opensuse.org/project/show/home:laszlo_budai:syslog-ng).
 
  [madhouse-repo]: http://asylum.madhouse-project.org/projects/debian/
 
@@ -76,10 +108,22 @@ yum:
 
     # yum install syslog-ng
 
+You can download packages for the latest versions from [here](https://copr.fedoraproject.org/coprs/czanik/).
+
 Others
 ------
 
-Binaries for other platforms might be available, please check out the
-official [third party page][3rd-party] for more information.
+Binaries for other platforms are listed at the
+official [third party page][3rd-party].
 
- [3rd-party]: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system/downloads/3rd-party
+ [3rd-party]: https://syslog-ng.org/3rd-party-binaries/
+
+Documentation
+============
+
+The documentation of the latest released version of syslog-ng Open Source Edition is available [here](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html). For earlier versions, see the [Balabit Documentation Page](https://www.balabit.com/support/documentation). For ancient versions, see the [Balabit Documentation Archive](https://my.balabit.com/downloads/archived_documents).
+
+Contributing
+===========
+
+If you want to modify the source of syslog-ng, for example, to correct a bug or develop a new module, the [syslog-ng gitbook](https://syslog-ng.gitbooks.io/getting-started/content/) helps you to take the first steps with the code base.
