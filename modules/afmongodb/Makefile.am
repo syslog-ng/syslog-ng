@@ -1,10 +1,10 @@
-DIST_SUBDIRS 					+= modules/afmongodb/mongo-c-driver
+DIST_SUBDIRS 					+= @LIBMONGO_SUBDIRS@
 
 if LIBMONGO_INTERNAL
 CLEAN_SUBDIRS					+= @LIBMONGO_SUBDIRS@
-lmc_EXTRA_DEPS					= modules/afmongodb/mongo-c-driver/src/libmongoc-1.0.la
+lmc_EXTRA_DEPS					= @LIBMONGO_SUBDIRS@/src/libmongoc-1.0.la
 
-modules/afmongodb/mongo-c-driver/src/libmongoc-1.0.la:
+$(lmc_EXTRA_DEPS):
 	${MAKE} -C modules/afmongodb/mongo-c-driver
 endif
 
