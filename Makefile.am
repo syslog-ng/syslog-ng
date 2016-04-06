@@ -72,8 +72,6 @@ local-check:
 	${AM_v_at}${MAKE} check check_PROGRAMS="${current_tests} ${subdir_tests}" \
 				TESTS="${current_tests} ${subdir_tests}"
 
-check-local: check-copyright
-
 ${check_PROGRAMS}: LDFLAGS+="${test_ldflags}"
 
 noinst_LIBRARIES	=
