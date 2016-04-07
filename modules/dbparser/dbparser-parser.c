@@ -44,6 +44,7 @@ static CfgLexerKeyword dbparser_keywords[] =
   { "where",              KW_WHERE },
   { "having",             KW_HAVING },
   { "trigger",            KW_TRIGGER },
+  { "value",              KW_VALUE },
   { NULL }
 };
 
