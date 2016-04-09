@@ -47,6 +47,9 @@
 #define LWO_SHARE_STATS     0x0008
 #define LWO_THREADED        0x0010
 #define LWO_IGNORE_ERRORS   0x0020
+/* wirter otions to replace all \r and \n with \r (CR) or \n (LF)*/
+#define LWO_MULTI_LINE_TO_CR  0x0100
+#define LWO_MULTI_LINE_TO_LF  0x0200
 
 typedef struct _LogWriterOptions
 {
