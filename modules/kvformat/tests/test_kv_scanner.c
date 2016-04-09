@@ -246,6 +246,28 @@ test_kv_scanner_quotation_is_stored_in_the_was_quoted_value_member(void)
   assert_no_more_tokens();
 }
 
+static void
+test_kv_scanner_value_separator_is_used_to_separate_key_from_value(void)
+{
+  KVScanner *old_scanner;
+
+  kv_scanner_set_value_separator(kv_scanner, ':');
+  kv_scanner_input(kv_scanner, "key1:value1 key2:value2 key3:value3 ");
+  assert_next_kv_is("key1", "value1");
+  assert_next_kv_is("key2", "value2");
+  assert_next_kv_is("key3", "value3");
+  assert_no_more_tokens();
+
+  old_scanner = kv_scanner;
+  kv_scanner = kv_scanner_clone(kv_scanner);
+  kv_scanner_free(old_scanner);
+
+  kv_scanner_input(kv_scanner, "key1:value1 key2:value2 key3:value3 ");
+  assert_next_kv_is("key1", "value1");
+  assert_next_kv_is("key2", "value2");
+  assert_next_kv_is("key3", "value3");
+  assert_no_more_tokens();
+}
 
 static void
 test_kv_scanner(void)
@@ -259,6 +281,7 @@ test_kv_scanner(void)
   KV_SCANNER_TESTCASE(test_kv_scanner_quoted_values_are_unquoted_like_c_strings);
   KV_SCANNER_TESTCASE(test_kv_scanner_transforms_values_if_parse_value_is_set);
   KV_SCANNER_TESTCASE(test_kv_scanner_quotation_is_stored_in_the_was_quoted_value_member);
+  KV_SCANNER_TESTCASE(test_kv_scanner_value_separator_is_used_to_separate_key_from_value);
 }
 
 int main(int argc, char *argv[])
