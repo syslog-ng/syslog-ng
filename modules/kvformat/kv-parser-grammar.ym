@@ -50,6 +50,7 @@
 %token KW_KV_PARSER
 %token KW_LINUX_AUDIT_PARSER
 %token KW_PREFIX
+%token KW_VALUE_SEPARATOR
 
 %type	<ptr> parser_expr_kv
 
@@ -82,6 +83,12 @@ parser_kv_opts
 
 parser_kv_opt
 	: KW_PREFIX '(' string ')'		{ kv_parser_set_prefix(last_parser, $3); free($3); }
+	| KW_VALUE_SEPARATOR '(' string ')'
+	  {
+	    CHECK_ERROR((strlen($3) == 1), @3, "kv-parser() only supports single-character values for value-separator()");
+            kv_parser_set_value_separator(last_parser, $3[0]);
+            free($3);
+          }
 	| parser_opt
 	;
 
