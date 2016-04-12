@@ -26,6 +26,7 @@
 #include "kv-scanner.h"
 
 void kv_parser_set_prefix(LogParser *p, const gchar *prefix);
+void kv_parser_set_value_separator(LogParser *p, gchar value_separator);
 LogParser *kv_parser_new(GlobalConfig *cfg, KVScanner *kv_scanner);
 
 #endif

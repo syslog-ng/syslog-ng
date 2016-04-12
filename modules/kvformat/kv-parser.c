@@ -49,6 +49,14 @@ kv_parser_set_prefix(LogParser *p, const gchar *prefix)
     }
 }
 
+void
+kv_parser_set_value_separator(LogParser *s, gchar value_separator)
+{
+  KVParser *self = (KVParser *) s;
+
+  kv_scanner_set_value_separator(self->kv_scanner, value_separator);
+}
+
 static const gchar *
 _get_formatted_key(KVParser *self, const gchar *key)
 {

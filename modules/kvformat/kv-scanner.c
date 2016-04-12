@@ -33,6 +33,12 @@ enum {
 };
 
 void
+kv_scanner_set_value_separator(KVScanner *self, gchar value_separator)
+{
+  self->value_separator = value_separator;
+}
+
+void
 kv_scanner_input(KVScanner *self, const gchar *input)
 {
   self->input = input;
@@ -63,18 +69,18 @@ _kv_scanner_extract_key(KVScanner *self)
 {
   const gchar *input_ptr = &self->input[self->input_pos];
   const gchar *start_of_key;
-  const gchar *equal;
+  const gchar *separator;
 
-  equal = strchr(input_ptr, '=');
-  if (!equal)
+  separator = strchr(input_ptr, self->value_separator);
+  if (!separator)
     return FALSE;
-  start_of_key = equal - 1;
+  start_of_key = separator - 1;
   while (start_of_key > input_ptr && _is_valid_key_character(*start_of_key))
     start_of_key--;
   if (!_is_valid_key_character(*start_of_key))
     start_of_key++;
-  g_string_assign_len(self->key, start_of_key, equal - start_of_key);
-  self->input_pos = equal - self->input + 1;
+  g_string_assign_len(self->key, start_of_key, separator - start_of_key);
+  self->input_pos = separator - self->input + 1;
   return TRUE;
 }
 
@@ -209,6 +215,7 @@ kv_scanner_clone(KVScanner *self)
 {
   KVScanner *cloned = kv_scanner_new();
   cloned->parse_value = self->parse_value;
+  cloned->value_separator = self->value_separator;
   return cloned;
 }
 
@@ -220,6 +227,7 @@ kv_scanner_init(KVScanner *self)
   self->value = g_string_sized_new(64);
   self->decoded_value = g_string_sized_new(64);
   self->free_fn = kv_scanner_free_method;
+  self->value_separator = '=';
 }
 
 KVScanner *
