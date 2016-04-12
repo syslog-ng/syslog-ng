@@ -313,7 +313,6 @@ extern struct _StatsOptions *last_stats_options;
 
 /* value pairs */
 %token KW_VALUE_PAIRS                 10500
-%token KW_SELECT                      10501
 %token KW_EXCLUDE                     10502
 %token KW_PAIR                        10503
 %token KW_KEY                         10504

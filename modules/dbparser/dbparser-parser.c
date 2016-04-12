@@ -31,19 +31,20 @@ int dbparser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword dbparser_keywords[] =
 {
-  { "db_parser",          KW_DB_PARSER, 0x0300 },
-  { "grouping_by",        KW_GROUPING_BY, 0x0307 },
+  { "db_parser",          KW_DB_PARSER },
+  { "grouping_by",        KW_GROUPING_BY },
 
   /* correllate options */
-  { "inject_mode",        KW_INJECT_MODE, 0x0307 },
-  { "key",                KW_KEY, 0x0307 },
-  { "scope",              KW_SCOPE, 0x0307 },
-  { "timeout",            KW_TIMEOUT, 0x0307 },
-  { "aggregate",          KW_AGGREGATE, 0x0307 },
-  { "inherit_mode",       KW_INHERIT_MODE, 0x0307 },
-  { "where",              KW_WHERE, 0x0307 },
-  { "having",             KW_HAVING, 0x0307 },
-  { "trigger",            KW_TRIGGER, 0x0307 },
+  { "inject_mode",        KW_INJECT_MODE },
+  { "key",                KW_KEY },
+  { "scope",              KW_SCOPE },
+  { "timeout",            KW_TIMEOUT },
+  { "aggregate",          KW_AGGREGATE },
+  { "inherit_mode",       KW_INHERIT_MODE },
+  { "where",              KW_WHERE },
+  { "having",             KW_HAVING },
+  { "trigger",            KW_TRIGGER },
+  { "value",              KW_VALUE },
   { NULL }
 };
 
