@@ -173,8 +173,7 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK) {
       msg_error("curl: error sending HTTP request",
-                evt_tag_str("error", curl_easy_strerror(ret)),
-                NULL);
+                evt_tag_str("error", curl_easy_strerror(ret)));
 
       if (body_rendered)
         g_string_free(body_rendered, TRUE);
@@ -255,8 +254,7 @@ http_dd_set_method(LogDriver *d, const gchar *method)
   else
     {
       msg_warning("Unsupported method is set(Only POST and PUT are supported), default method POST will be used",
-                  evt_tag_str("method", method),
-                  NULL);
+                  evt_tag_str("method", method));
       self->method_type = METHOD_TYPE_POST;
     }
 }
@@ -342,7 +340,7 @@ http_dd_new(GlobalConfig *cfg)
   curl_global_init(CURL_GLOBAL_ALL);
 
   if (!(self->curl = curl_easy_init())) {
-    msg_error("curl: cannot initialize libcurl", NULL, NULL);
+    msg_error("curl: cannot initialize libcurl", NULL);
 
     return NULL;
   }
