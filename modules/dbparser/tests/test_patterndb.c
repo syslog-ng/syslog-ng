@@ -229,6 +229,24 @@ assert_msg_matches_and_output_message_nvpair_equals_with_timeout(const gchar *pa
   log_msg_unref(msg);
 }
 
+static void
+assert_no_such_output_message(gint ndx)
+{
+  assert_true(ndx >= messages->len, "Unexpected message generated at %d index\n", ndx);
+}
+
+void
+assert_msg_matches_and_no_such_output_message(const gchar *pattern, gint ndx)
+{
+  LogMessage *msg;
+
+  msg = _construct_message("prog2", pattern);
+  _process(msg);
+
+  assert_no_such_output_message(ndx);
+  log_msg_unref(msg);
+}
+
 void
 assert_msg_matches_and_output_message_nvpair_equals(const gchar *pattern, gint ndx, const gchar *name, const gchar *value)
 {
@@ -344,61 +362,127 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <pattern>prog1</pattern>\
     <pattern>prog2</pattern>\
   </patterns>\
-  <rule provider='test' id='11' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
+  <rule provider='test' id='10' class='system' context-scope='program'>\
    <patterns>\
-    <pattern>pattern11</pattern>\
-    <pattern>pattern11a</pattern>\
+    <pattern>simple-message</pattern>\
    </patterns>\
    <tags>\
-    <tag>tag11-1</tag>\
-    <tag>tag11-2</tag>\
+    <tag>simple-msg-tag1</tag>\
+    <tag>simple-msg-tag2</tag>\
    </tags>\
    <values>\
-    <value name='n11-1'>v11-1</value>\
-    <value name='n11-2'>v11-2</value>\
-    <value name='vvv'>${HOST}</value>\
-    <value name='context-id'>${CONTEXT_ID}</value>\
+    <value name='simple-msg-value-1'>value1</value>\
+    <value name='simple-msg-value-2'>value2</value>\
+    <value name='simple-msg-host'>${HOST}</value>\
    </values>\
+  </rule>\
+  <rule provider='test' id='10a' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-based-on-pid</pattern>\
+   </patterns>\
+   <values>\
+    <value name='correllated-msg-context-id'>${CONTEXT_ID}</value>\
+    <value name='correllated-msg-context-length'>$(context-length)</value>\
+   </values>\
+  </rule>\
+  <rule provider='test' id='10b' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-with-action-on-match</pattern>\
+   </patterns>\
    <actions>\
-     <action rate='1/60' condition='\"${n11-1}\" eq \"v11-1\"' trigger='match'>\
+     <action trigger='match'>\
        <message>\
-         <value name='MESSAGE'>rule11 matched</value>\
+         <value name='MESSAGE'>generated-message-on-match</value>\
          <value name='context-id'>${CONTEXT_ID}</value>\
          <tags>\
-           <tag>tag11-3</tag>\
-         </tags>\
-       </message>\
-     </action>\
-     <action rate='1/60' condition='\"${n11-1}\" eq \"v11-1\"' trigger='timeout'>\
-       <message>\
-         <value name='MESSAGE'>rule11 timed out</value>\
-         <value name='context-id'>${CONTEXT_ID}</value>\
-         <tags>\
-           <tag>tag11-4</tag>\
+           <tag>correllated-msg-tag</tag>\
          </tags>\
        </message>\
      </action>\
    </actions>\
   </rule>\
-  <rule provider='test' id='12' class='violation'>\
+  <rule provider='test' id='10c' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
    <patterns>\
-    <pattern>pattern12</pattern>\
-    <pattern>pattern12a</pattern>\
-   </patterns>\
-  </rule>\
-  <rule provider='test' id='11' class='system'>\
-   <patterns>\
-    <pattern>contextlesstest @STRING:field:@</pattern>\
+    <pattern>correllated-message-with-action-on-timeout</pattern>\
    </patterns>\
    <actions>\
-     <action condition='\"${field}\" eq \"value1\"'>\
+     <action trigger='timeout'>\
        <message>\
-         <value name='MESSAGE'>message1</value>\
+         <value name='MESSAGE'>generated-message-on-timeout</value>\
        </message>\
      </action>\
-     <action condition='\"${field}\" eq \"value2\"'>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='10d' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-with-action-condition</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='match' condition='\"${PID}\" ne \"" MYPID "\"' >\
        <message>\
-         <value name='MESSAGE'>message2</value>\
+         <value name='MESSAGE'>not-generated-message</value>\
+       </message>\
+     </action>\
+     <action trigger='match' condition='\"${PID}\" eq \"" MYPID "\"' >\
+       <message>\
+         <value name='MESSAGE'>generated-message-on-condition</value>\
+       </message>\
+     </action>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='10e' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>correllated-message-with-rate-limited-action</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='match' rate='1/60'>\
+       <message>\
+         <value name='MESSAGE'>generated-message-rate-limit</value>\
+       </message>\
+     </action>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='11b' class='violation'>\
+   <patterns>\
+    <pattern>simple-message-with-action-on-match</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='match'>\
+       <message>\
+         <value name='MESSAGE'>generated-message-on-match</value>\
+         <value name='context-id'>${CONTEXT_ID}</value>\
+         <tags>\
+           <tag>simple-msg-tag</tag>\
+         </tags>\
+       </message>\
+     </action>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='11d' class='violation'>\
+   <patterns>\
+    <pattern>simple-message-with-action-condition</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='match' condition='\"${PID}\" ne \"" MYPID "\"' >\
+       <message>\
+         <value name='MESSAGE'>not-generated-message</value>\
+       </message>\
+     </action>\
+     <action trigger='match' condition='\"${PID}\" eq \"" MYPID "\"' >\
+       <message>\
+         <value name='MESSAGE'>generated-message-on-condition</value>\
+       </message>\
+     </action>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='11e' class='violation'>\
+   <patterns>\
+    <pattern>simple-message-with-rate-limited-action</pattern>\
+   </patterns>\
+   <actions>\
+     <action trigger='match' rate='1/60'>\
+       <message>\
+         <value name='MESSAGE'>generated-message-rate-limit</value>\
        </message>\
      </action>\
    </actions>\
@@ -406,54 +490,147 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
  </ruleset>\
 </patterndb>";
 
-void
+static void
+test_simple_rule_without_context_or_actions(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("simple-message", ".classifier.system", TRUE);
+
+  /* tag assignment based on <tags/> */
+  assert_msg_matches_and_nvpair_equals("simple-message", "TAGS", ".classifier.system,simple-msg-tag1,simple-msg-tag2");
+
+  assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-value-1", "value1");
+  assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-value-2", "value2");
+  assert_msg_matches_and_nvpair_equals("simple-message", "simple-msg-host", MYHOST);
+}
+
+static void
+test_correllation_rule_without_actions(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-based-on-pid", ".classifier.system", TRUE);
+  assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-id", MYPID);
+  assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-length", "1");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-length", "2");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-based-on-pid", "correllated-msg-context-length", "3");
+}
+
+static void
+test_correllation_rule_with_action_on_match(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-with-action-on-match", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-on-match", 1, "MESSAGE", "generated-message-on-match");
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-on-match", 1, "context-id", "999");
+  assert_msg_matches_and_output_message_has_tag("correllated-message-with-action-on-match", 1, "correllated-msg-tag", TRUE);
+}
+
+static void
+test_correllation_rule_with_action_on_timeout(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-with-action-on-timeout", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("correllated-message-with-action-on-timeout", 60, 1, "MESSAGE", "generated-message-on-timeout");
+}
+
+static void
+test_correllation_rule_with_action_condition(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-with-action-condition", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-condition", 1, "MESSAGE", "generated-message-on-condition");
+}
+
+static void
+test_correllation_rule_with_rate_limited_action(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("correllated-message-with-rate-limited-action", ".classifier.violation", TRUE);
+
+  /* messages in the output:
+   * [0] trigger
+   * [1] GENERATED (as rate limit was met)
+   * [2] trigger
+   * [3] trigger
+   * [4] trigger
+   * [5] GENERATED (as rate limit was met again due to advance time */
+
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-rate-limited-action", 1, "MESSAGE", "generated-message-rate-limit");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_no_such_output_message("correllated-message-with-rate-limited-action", 3);
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_no_such_output_message("correllated-message-with-rate-limited-action", 4);
+  _dont_reset_patterndb_state_for_the_next_call();
+  _advance_time(120);
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-rate-limited-action", 5, "MESSAGE", "generated-message-rate-limit");
+}
+
+static void
+test_simple_rule_with_action_on_match(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("simple-message-with-action-on-match", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-action-on-match", 1, "MESSAGE", "generated-message-on-match");
+  assert_msg_matches_and_output_message_has_tag("simple-message-with-action-on-match", 1, "simple-msg-tag", TRUE);
+}
+
+static void
+test_simple_rule_with_rate_limited_action(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("simple-message-with-rate-limited-action", ".classifier.violation", TRUE);
+
+  /* messages in the output:
+   * [0] trigger
+   * [1] GENERATED (as rate limit was met)
+   * [2] trigger
+   * [3] trigger
+   * [4] trigger
+   * [5] GENERATED (as rate limit was met again due to advance time */
+
+  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-rate-limited-action", 1, "MESSAGE", "generated-message-rate-limit");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_no_such_output_message("simple-message-with-rate-limited-action", 3);
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_no_such_output_message("simple-message-with-rate-limited-action", 4);
+  _dont_reset_patterndb_state_for_the_next_call();
+  _advance_time(120);
+  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-rate-limited-action", 5, "MESSAGE", "generated-message-rate-limit");
+}
+
+
+static void
+test_simple_rule_with_action_condition(void)
+{
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag("simple-message-with-action-condition", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-action-condition", 1, "MESSAGE", "generated-message-on-condition");
+}
+
+static void
 test_patterndb_rule(void)
 {
   _load_pattern_db_from_string(pdb_ruletest_skeleton);
-  assert_msg_matches_and_has_tag("pattern11", "tag11-1", TRUE);
-  assert_msg_matches_and_has_tag("pattern11", ".classifier.system", TRUE);
-  assert_msg_matches_and_has_tag("pattern11", "tag11-2", TRUE);
-  assert_msg_matches_and_has_tag("pattern11", "tag11-3", FALSE);
-  assert_msg_matches_and_has_tag("pattern11a", "tag11-1", TRUE);
-  assert_msg_matches_and_has_tag("pattern11a", "tag11-2", TRUE);
-  assert_msg_matches_and_has_tag("pattern11a", "tag11-3", FALSE);
-  assert_msg_matches_and_has_tag("pattern12", ".classifier.violation", TRUE);
-  assert_msg_matches_and_has_tag("pattern12", "tag12-1", FALSE);
-  assert_msg_matches_and_has_tag("pattern12", "tag12-2", FALSE);
-  assert_msg_matches_and_has_tag("pattern12", "tag12-3", FALSE);
-  assert_msg_matches_and_has_tag("pattern12a", "tag12-1", FALSE);
-  assert_msg_matches_and_has_tag("pattern12a", "tag12-2", FALSE);
-  assert_msg_matches_and_has_tag("pattern12a", "tag12-3", FALSE);
-  assert_msg_doesnot_match("pattern1x");
 
-  assert_msg_matches_and_nvpair_equals("pattern11", "n11-1", "v11-1");
-  assert_msg_matches_and_nvpair_equals("pattern11", ".classifier.class", "system");
-  assert_msg_matches_and_nvpair_equals("pattern11", "n11-2", "v11-2");
-  assert_msg_matches_and_nvpair_equals("pattern11", "n11-3", NULL);
-  assert_msg_matches_and_nvpair_equals("pattern11", "context-id", "999");
-  assert_msg_matches_and_nvpair_equals("pattern11", ".classifier.context_id", "999");
-  assert_msg_matches_and_nvpair_equals("pattern11a", "n11-1", "v11-1");
-  assert_msg_matches_and_nvpair_equals("pattern11a", "n11-2", "v11-2");
-  assert_msg_matches_and_nvpair_equals("pattern11a", "n11-3", NULL);
-  assert_msg_matches_and_nvpair_equals("pattern12", ".classifier.class", "violation");
-  assert_msg_matches_and_nvpair_equals("pattern12", "n12-1", NULL);
-  assert_msg_matches_and_nvpair_equals("pattern12", "n12-2", NULL);
-  assert_msg_matches_and_nvpair_equals("pattern12", "n12-3", NULL);
-  assert_msg_matches_and_nvpair_equals("pattern11", "vvv", MYHOST);
+  test_simple_rule_without_context_or_actions();
+  test_correllation_rule_without_actions();
+  test_correllation_rule_with_action_on_match();
+  test_correllation_rule_with_action_on_timeout();
+  test_correllation_rule_with_action_condition();
+  test_correllation_rule_with_rate_limited_action();
 
-  assert_msg_matches_and_output_message_nvpair_equals("pattern11", 1, "MESSAGE", "rule11 matched");
-  assert_msg_matches_and_output_message_nvpair_equals("pattern11", 1, "context-id", "999");
-  assert_msg_matches_and_output_message_has_tag("pattern11", 1, "tag11-3", TRUE);
-  assert_msg_matches_and_output_message_has_tag("pattern11", 1, "tag11-4", FALSE);
+  test_simple_rule_with_action_on_match();
+  test_simple_rule_with_action_condition();
+  test_simple_rule_with_rate_limited_action();
 
-  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "MESSAGE", "rule11 timed out");
-  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("pattern11", 60, 2, "context-id", "999");
-  assert_msg_matches_and_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-3", FALSE);
-  assert_msg_matches_and_output_message_has_tag_with_timeout("pattern11", 60, 2, "tag11-4", TRUE);
-
-  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value1", 1, "MESSAGE",  "message1");
-  assert_msg_matches_and_output_message_nvpair_equals("contextlesstest value2", 1, "MESSAGE",  "message2");
-
+  assert_msg_doesnot_match("non-matching-pattern");
   _destroy_pattern_db();
 }
 
