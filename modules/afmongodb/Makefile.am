@@ -1,10 +1,10 @@
-DIST_SUBDIRS 					+= modules/afmongodb/mongo-c-driver
+DIST_SUBDIRS 					+= @LIBMONGO_SUBDIRS@
 
 if LIBMONGO_INTERNAL
 CLEAN_SUBDIRS					+= @LIBMONGO_SUBDIRS@
-lmc_EXTRA_DEPS					= modules/afmongodb/mongo-c-driver/src/libmongoc-1.0.la
+lmc_EXTRA_DEPS					= @LIBMONGO_SUBDIRS@/src/libmongoc-1.0.la
 
-modules/afmongodb/mongo-c-driver/src/libmongoc-1.0.la:
+$(lmc_EXTRA_DEPS):
 	${MAKE} -C modules/afmongodb/mongo-c-driver
 endif
 
@@ -28,7 +28,7 @@ modules_afmongodb_libafmongodb_la_LIBADD	=	\
 modules_afmongodb_libafmongodb_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_afmongodb_libafmongodb_la_DEPENDENCIES	=	\
-	$(MODULE_DEPS_LIBS) ${lmc_EXTRA_DEPS}
+	$(MODULE_DEPS_LIBS) $(lmc_EXTRA_DEPS)
 
 modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb: \
 	modules/afmongodb/libafmongodb.la
@@ -36,14 +36,11 @@ else
 modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb:
 endif
 
-modules/afmongodb/dummy.c: ${lmc_EXTRA_DEPS}
-	$(AM_V_GEN) touch $@
-
 BUILT_SOURCES					+=	\
 	modules/afmongodb/afmongodb-grammar.y		\
 	modules/afmongodb/afmongodb-grammar.c		\
-	modules/afmongodb/afmongodb-grammar.h		\
-	modules/afmongodb/dummy.c
+	modules/afmongodb/afmongodb-grammar.h
+
 EXTRA_DIST					+=	\
 	modules/afmongodb/afmongodb-grammar.ym		\
 	modules/afmongodb/mongo-c-driver/configure.gnu
