@@ -58,7 +58,11 @@ public abstract class ESClient {
 
 	public void connect() throws ElasticsearchException {
 		String clusterName = getClusterName();
-		logger.info("connecting to cluster, cluster_name='" + clusterName + "'");
+		if (options.getSkipClusterHealthCheck()) {
+		        logger.warn("Skip checking cluster state, cluster_name='" + clusterName + '"');
+		        return;
+		}
+		logger.info("Checking cluster state..., cluster_name='" + clusterName + "'");
 		if (!waitForStatus(ClusterHealthStatus.GREEN)) {
 			logger.debug("Failed to wait for green");
 			logger.debug("Wait for read yellow status...");
@@ -68,7 +72,7 @@ public abstract class ESClient {
 				throw new ElasticsearchException("Can't connect to cluster: " + clusterName);
 			}
 		}
-		logger.info("conneted to cluster, cluster_name='" + clusterName + "'");
+		logger.info("Cluster is ready to work, cluster_name='" + clusterName + "'");
 	}
 
 	public final boolean open() {
