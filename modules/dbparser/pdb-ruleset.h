@@ -32,6 +32,7 @@ typedef struct _PDBRuleSet
   RNode *programs;
   gchar *version;
   gchar *pub_date;
+  gboolean is_empty;
 } PDBRuleSet;
 
 PDBRuleSet *pdb_rule_set_new(void);

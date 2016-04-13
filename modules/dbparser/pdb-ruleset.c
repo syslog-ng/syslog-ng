@@ -27,6 +27,7 @@ PDBRuleSet *
 pdb_rule_set_new(void)
 {
   PDBRuleSet *self = g_new0(PDBRuleSet, 1);
+  self->is_empty = TRUE;
 
   return self;
 }

@@ -81,6 +81,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           return;
         }
 
+      state->ruleset->is_empty = FALSE;
       state->in_ruleset = TRUE;
       state->first_program = TRUE;
       state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
