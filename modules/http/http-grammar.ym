@@ -1,0 +1,110 @@
+/*
+ * Copyright (c) 2016 Marc Falzon
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "http-parser.h"
+
+}
+
+
+%code {
+
+#include "cfg-grammar.h"
+#include "cfg-parser.h"
+#include "http-plugin.h"
+#include "http-grammar.h"
+#include "plugin.h"
+
+#include <string.h>
+
+}
+
+%name-prefix "http_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+%token KW_HTTP
+%token KW_URL
+%token KW_USER
+%token KW_PASSWORD
+%token KW_USER_AGENT
+%token KW_METHOD
+%token KW_HEADERS
+%token KW_BODY
+
+%type   <ptr> driver
+%type   <ptr> http_destination
+
+/* INCLUDE_DECLS */
+
+%%
+
+start
+    : driver
+          {
+            *instance = $1;
+            if (yychar != YYEMPTY)
+              cfg_lexer_unput_token(lexer, &yylval);
+            YYACCEPT;
+          }
+    ;
+
+driver
+    : LL_CONTEXT_DESTINATION http_destination          { $$ = $2; }
+    ;
+
+http_destination
+    : KW_HTTP
+      {
+        last_driver = http_dd_new(configuration);
+      }
+      '(' http_options ')'  { $$ = last_driver; }
+    ;
+
+http_options
+    : http_option http_options
+    |
+    ;
+
+http_option
+    : KW_URL        '(' string ')'            { http_dd_set_url(last_driver, $3); free($3); }
+    | KW_USER       '(' string ')'            { http_dd_set_user(last_driver, $3); free($3); }
+    | KW_PASSWORD   '(' string ')'            { http_dd_set_password(last_driver, $3); free($3); }
+    | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }
+    | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free($3); }
+    | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
+    | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
+    | dest_driver_option
+    | threaded_dest_driver_option
+    | { last_template_options = http_dd_get_template_options(last_driver); } template_option
+    ;
+
+/* INCLUDE_RULES */
+
+%%
+

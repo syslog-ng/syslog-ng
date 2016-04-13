@@ -224,6 +224,14 @@ AC_ARG_WITH(libesmtp,
              AC_HELP_STRING([--with-libesmtp=DIR],
                             [use libesmtp library from (prefix) directory DIR]),,)
 
+AC_ARG_ENABLE(http,
+              [  --disable-http          Disable http support (default: auto)]
+              ,,enable_http="auto")
+
+AC_ARG_WITH(libcurl,
+             AC_HELP_STRING([--with-libcurl=DIR],
+                            [use libcurl library from (prefix) directory DIR]),,)
+
 AC_ARG_ENABLE(redis,
               [  --disable-redis          Disable REDIS support (default: auto)]
               ,,enable_redis="auto")
@@ -1009,9 +1017,9 @@ fi
 dnl ***************************************************************************
 dnl libesmtp headers/libraries
 dnl ***************************************************************************
-if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
+if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
 	libesmtp="yes"
-	if test "x$with_libesmtp" != "yes" && test "x$with_libesmtp" != "x"; then
+	if test "x$with_libesmtp" != "xyes" && test "x$with_libesmtp" != "x"; then
 		CPPFLAGS_SAVE="$CPPFLAGS"
 		LDFLAGS_SAVE="$LDFLAGS"
 		CPPFLAGS="$CPPFLAGS -I$with_libesmtp/include"
@@ -1038,11 +1046,42 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
 fi
 
 dnl ***************************************************************************
+dnl libcurl headers/libraries
+dnl ***************************************************************************
+if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
+	libcurl="yes"
+	if test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "x"; then
+		CPPFLAGS_SAVE="$CPPFLAGS"
+		LDFLAGS_SAVE="$LDFLAGS"
+		CPPFLAGS="$CPPFLAGS -I$with_libcurl/include"
+		LDFLAGS="$LDFLAGS -L$with_libcurl/lib"
+		AC_CHECK_HEADER(curl/curl.h, [LIBCURL_CFLAGS="-I$with_libcurl/include"
+					     LIBCURL_LIBS="-L$with_libcurl/lib -lcurl"], [libcurl=no])
+		CPPFLAGS="$CPPFLAGS_SAVE"
+		LDFLAGS="$LDFLAGS_SAVE"
+	else
+		AC_MSG_CHECKING(for libcurl)
+		if curl-config --version >/dev/null 2>&1; then
+			AC_MSG_RESULT(yes)
+			LIBCURL_CFLAGS="`curl-config --cflags`"
+			LIBCURL_LIBS="`curl-config --libs`"
+		else
+			AC_MSG_RESULT(no)
+			libcurl=no
+		fi
+	fi
+	if test "x$enable_http" = "xyes" && test "x$libcurl" = "xno"; then
+		AC_MSG_ERROR(libcurl not found)
+	fi
+	enable_http=$libcurl
+fi
+
+dnl ***************************************************************************
 dnl libhiredis headers/libraries
 dnl ***************************************************************************
-if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
+if test "x$enable_redis" != "xno" && test "x$with_redis" != "xno"; then
        hiredis="yes"
-       if test "x$with_libhiredis" != "yes" && test "x$with_libhiredis" != "x"; then
+       if test "x$with_libhiredis" != "xyes" && test "x$with_libhiredis" != "x"; then
                CFLAGS_SAVE="$CFLAGS"
                LDFLAGS_SAVE="$LDFLAGS"
                CFLAGS="$CFLAGS -I$with_libhiredis/include"
@@ -1247,7 +1286,7 @@ fi
 
 if test "x$enable_mongodb" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable mongodb destination support)
-	if test "x$with_mongoc" != "no"; then
+	if test "x$with_mongoc" != "xno"; then
 		enable_mongodb="yes"
 	else
 		enable_mongodb="no"
@@ -1257,7 +1296,7 @@ fi
 
 if test "x$enable_amqp" = "xauto"; then
     AC_MSG_CHECKING(whether to enable amqp destination support)
-    if test "x$with_librabbitmq_client" != "no"; then
+    if test "x$with_librabbitmq_client" != "xno"; then
         enable_amqp="yes"
     else
         enable_amqp="no"
@@ -1487,6 +1526,7 @@ AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
+AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
@@ -1533,6 +1573,8 @@ AC_SUBST(LIBMONGO_CFLAGS)
 AC_SUBST(LIBMONGO_SUBDIRS)
 AC_SUBST(LIBESMTP_CFLAGS)
 AC_SUBST(LIBESMTP_LIBS)
+AC_SUBST(LIBCURL_CFLAGS)
+AC_SUBST(LIBCURL_LIBS)
 AC_SUBST(LIBRABBITMQ_LIBS)
 AC_SUBST(LIBRABBITMQ_CFLAGS)
 AC_SUBST(LIBRABBITMQ_SUBDIRS)
@@ -1601,6 +1643,7 @@ echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
 echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
+echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
