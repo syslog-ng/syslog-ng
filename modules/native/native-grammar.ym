@@ -88,8 +88,7 @@ native_parser_params
 
       if (!*instance)
        {
-         msg_error("Cannot create the Native parser, aborting",
-                   NULL);
+         msg_error("Cannot create the Native parser, aborting");
          YYERROR;
        }
     }

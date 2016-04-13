@@ -78,16 +78,14 @@ __load_object(JavaLogMessageProxy *self)
   self->loaded_class = java_machine_load_class(self->java_machine, LOG_MESSAGE, NULL);
   if (!self->loaded_class) {
       msg_error("Can't find class",
-                evt_tag_str("class_name", LOG_MESSAGE),
-                NULL);
+                evt_tag_str("class_name", LOG_MESSAGE));
       return FALSE;
   }
 
   self->mi_constructor = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "<init>", "(J)V");
   if (!self->mi_constructor) {
       msg_error("Can't find default constructor for class",
-                evt_tag_str("class_name", LOG_MESSAGE),
-                NULL);
+                evt_tag_str("class_name", LOG_MESSAGE));
       return FALSE;
   }
 
@@ -102,8 +100,7 @@ java_log_message_proxy_create_java_object(JavaLogMessageProxy *self, LogMessage 
   if (!jmsg)
     {
       msg_error("Can't create object",
-                evt_tag_str("class_name", LOG_MESSAGE),
-                NULL);
+                evt_tag_str("class_name", LOG_MESSAGE));
     }
   return jmsg;
 }

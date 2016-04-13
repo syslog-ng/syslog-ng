@@ -71,7 +71,7 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
    * would be to return original string and perhaps print an error...)
    */
   if (argv[0]->len >= G_MAXLONG) {
-    msg_error("$(substr) error: string is too long", NULL);
+    msg_error("$(substr) error: string is too long");
     return;
   }
 
@@ -81,14 +81,14 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   /* get offset position from second argument */
   if (!parse_number(argv[1]->str, &start)) {
-    msg_error("$(substr) parsing failed, start could not be parsed", evt_tag_str("start", argv[1]->str), NULL);
+    msg_error("$(substr) parsing failed, start could not be parsed", evt_tag_str("start", argv[1]->str));
     return;
   }
 
   /* if we were called with >2 arguments, third was desired length */
   if (argc > 2) {
     if (!parse_number(argv[2]->str, &len)) {
-      msg_error("$(substr) parsing failed, length could not be parsed", evt_tag_str("length", argv[2]->str), NULL);
+      msg_error("$(substr) parsing failed, length could not be parsed", evt_tag_str("length", argv[2]->str));
       return;
     }
   } else
@@ -378,8 +378,7 @@ tf_replace_delimiter(LogMessage *msg, gint argc, GString *argv[], GString *resul
 
   if (argc != 3)
     {
-      msg_error("$(replace-delimiter) parsing failed, wrong number of arguments",
-                NULL);
+      msg_error("$(replace-delimiter) parsing failed, wrong number of arguments");
       return;
     }
 
@@ -403,13 +402,13 @@ tf_string_padding(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (argc <= 1)
     {
-      msg_debug("Not enough arguments for padding template function!", NULL);
+      msg_debug("Not enough arguments for padding template function!");
       return;
     }
 
   if (!parse_number_with_suffix(argv[1]->str, &width))
     {
-      msg_debug("Padding template function requires a number as second argument!", NULL);
+      msg_debug("Padding template function requires a number as second argument!");
       return;
     }
 

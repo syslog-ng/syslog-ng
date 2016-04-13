@@ -82,8 +82,7 @@ afinet_sd_setup_addresses(AFSocketSourceDriver *s)
       if (port_change_warning)
         {
           msg_warning(port_change_warning,
-                      evt_tag_str("id", self->super.super.super.id),
-                      NULL);
+                      evt_tag_str("id", self->super.super.super.id));
         }
       g_sockaddr_set_port(self->super.bind_addr, transport_mapper_inet_get_server_port(self->super.transport_mapper));
     }

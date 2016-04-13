@@ -370,7 +370,7 @@ log_expr_node_lookup_flag(const gchar *flag)
     return LC_FINAL;
   else if (strcmp(flag, "flow_control") == 0 || strcmp(flag, "flow-control") == 0)
     return LC_FLOW_CONTROL;
-  msg_error("Unknown log statement flag", evt_tag_str("flag", flag), NULL);
+  msg_error("Unknown log statement flag", evt_tag_str("flag", flag));
   return 0;
 }
 
@@ -470,8 +470,7 @@ cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
       if (!pipe)
         {
           msg_error("Error cloning pipe into its reference point, probably the element in question is not meant to be used in this situation",
-                    log_expr_node_location_tag(node),
-                    NULL);
+                    log_expr_node_location_tag(node));
           goto error;
         }
       pipe->flags |= PIF_INLINED;
@@ -509,8 +508,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
       msg_error("Error resolving reference",
                 evt_tag_str("content", log_expr_node_get_content_name(node->content)),
                 evt_tag_str("name", node->name),
-                log_expr_node_location_tag(node),
-                NULL);
+                log_expr_node_location_tag(node));
       goto error;
     }
 
@@ -663,8 +661,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
     {
       /* the catch-all resolution code clears this flag */
 
-      msg_error("Error in configuration, catch-all flag can only be specified for top-level log statements",
-                NULL);
+      msg_error("Error in configuration, catch-all flag can only be specified for top-level log statements");
       goto error;
     }
 
@@ -739,8 +736,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
           if (first_pipe)
             {
               msg_error("Error compiling sequence, source-pipe follows a non-source one, please list source references/definitions first",
-                        log_expr_node_location_tag(ep),
-                        NULL);
+                        log_expr_node_location_tag(ep));
               goto error;
             }
 
@@ -836,8 +832,7 @@ cfg_tree_compile_junction(CfgTree *self,
           if (!is_first_branch && !fork_mpx)
             {
               msg_error("Error compiling junction, source and non-source branches are mixed",
-                        log_expr_node_location_tag(ep),
-                        NULL);
+                        log_expr_node_location_tag(ep));
               goto error;
             }
           if (!fork_mpx)
@@ -853,8 +848,7 @@ cfg_tree_compile_junction(CfgTree *self,
           if (fork_mpx)
             {
               msg_error("Error compiling junction, source and non-source branches are mixed",
-                        log_expr_node_location_tag(ep),
-                        NULL);
+                        log_expr_node_location_tag(ep));
               goto error;
             }
         }
@@ -1083,8 +1077,7 @@ cfg_tree_start(CfgTree *self)
 
       if (!log_pipe_init(pipe))
         {
-          msg_error("Error initializing message pipeline",
-                    NULL);
+          msg_error("Error initializing message pipeline");
           return FALSE;
         }
     }

@@ -62,8 +62,7 @@ serialize_archive_read_bytes(SerializeArchive *self, gchar *buf, gsize buflen)
       if (!self->silent)
         {
           msg_error("Error reading serialized data",
-                    evt_tag_str("error", self->error->message),
-                    NULL);
+                    evt_tag_str("error", self->error->message));
         }
     }
   return self->error == NULL;
@@ -81,8 +80,7 @@ serialize_archive_write_bytes(SerializeArchive *self, const gchar *buf, gsize bu
       if (!self->silent)
         {
           msg_error("Error writing serializing data",
-                    evt_tag_str("error", self->error->message),
-                    NULL);
+                    evt_tag_str("error", self->error->message));
         }
     }
   return self->error == NULL;

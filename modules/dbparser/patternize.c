@@ -117,8 +117,7 @@ ptz_find_frequent_words(GPtrArray *logs, guint support, gchar *delimiters, gbool
       if (pass == 1)
         {
           msg_progress("Finding frequent words",
-                       evt_tag_str("phase", "caching"),
-                       NULL);
+                       evt_tag_str("phase", "caching"));
           srand(time(NULL));
           cachesize = (guint) ((logs->len * PTZ_WORDLIST_CACHE));
           cacheseed = rand();
@@ -127,8 +126,7 @@ ptz_find_frequent_words(GPtrArray *logs, guint support, gchar *delimiters, gbool
       else
         {
           msg_progress("Finding frequent words",
-                       evt_tag_str("phase", "searching"),
-                       NULL);
+                       evt_tag_str("phase", "searching"));
         }
 
       for (i = 0; i < logs->len; ++i)
@@ -349,7 +347,7 @@ ptz_merge_clusterlists(gpointer _key, gpointer _value, gpointer _target)
 GHashTable *
 ptz_find_clusters_step(Patternizer *self, GPtrArray *logs, guint support, guint num_of_samples)
 {
-  msg_progress("Searching clusters", evt_tag_int("input lines", logs->len), NULL);
+  msg_progress("Searching clusters", evt_tag_int("input lines", logs->len));
   if (self->algo == PTZ_ALGO_SLCT)
     return ptz_find_clusters_slct(logs, support, self->delimiters, num_of_samples);
   else
@@ -425,7 +423,7 @@ ptz_find_clusters(Patternizer *self)
       return ret_clusters;
     }
 
-  msg_error("Invalid iteration type", evt_tag_int("iteration_type", self->iterate), NULL);
+  msg_error("Invalid iteration type", evt_tag_int("iteration_type", self->iterate));
   return NULL;
 
 }

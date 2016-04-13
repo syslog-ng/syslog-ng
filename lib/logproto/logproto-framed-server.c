@@ -98,8 +98,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
         {
           msg_error("Error reading RFC5428 style framed data",
                     evt_tag_int("fd", self->super.transport->fd),
-                    evt_tag_errno("error", errno),
-                    NULL);
+                    evt_tag_errno("error", errno));
           return LPS_ERROR;
         }
       else
@@ -111,8 +110,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
   else if (rc == 0)
     {
       msg_verbose("EOF occurred while reading",
-                  evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
-                  NULL);
+                  evt_tag_int(EVT_TAG_FD, self->super.transport->fd));
       return LPS_EOF;
     }
   else
@@ -145,8 +143,7 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
       else
         {
           msg_error("Invalid frame header",
-                    evt_tag_printf("header", "%.*s", (gint) (i - self->buffer_pos), &self->buffer[self->buffer_pos]),
-                    NULL);
+                    evt_tag_printf("header", "%.*s", (gint) (i - self->buffer_pos), &self->buffer[self->buffer_pos]));
           return FALSE;
         }
     }
@@ -195,8 +192,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
             {
               msg_error("Incoming frame larger than log_msg_size()",
                         evt_tag_int("log_msg_size", self->super.options->max_msg_size),
-                        evt_tag_int("frame_length", self->frame_len),
-                        NULL);
+                        evt_tag_int("frame_length", self->frame_len));
               return LPS_ERROR;
             }
           if (self->buffer_size < self->super.options->max_buffer_size &&
@@ -211,8 +207,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
                 self->buffer_size = self->super.options->max_buffer_size;
               self->buffer = g_realloc(self->buffer, self->buffer_size);
               msg_debug("Resizing input buffer",
-                        evt_tag_int("new_size", self->buffer_size),
-                        NULL);
+                        evt_tag_int("new_size", self->buffer_size));
             }
           if (self->buffer_pos + self->frame_len > self->buffer_size)
             {

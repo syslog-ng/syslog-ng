@@ -53,8 +53,7 @@ afinet_lookup_service_and_proto(const gchar *service, const gchar *proto)
       else
         {
           msg_error("Error finding port number, falling back to default",
-                    evt_tag_printf("service", "%s/%s", proto, service),
-                    NULL);
+                    evt_tag_printf("service", "%s/%s", proto, service));
           return 0;
         }
     }

@@ -157,8 +157,7 @@ _map_key_value_pairs_to_syslog_macros(LogMessage *msg, gchar *key, gchar *value,
     {
       log_msg_set_value(msg, LM_V_MESSAGE, value, value_len);
       msg_debug("Incoming log entry from journal",
-                evt_tag_printf("message", "%.*s", (int)value_len, value),
-                NULL);
+                evt_tag_printf("message", "%.*s", (int)value_len, value));
     }
   else if (strcmp(key, "_HOSTNAME") == 0)
     {
@@ -300,14 +299,12 @@ _seek_to_head(JournalReader *self)
   if (rc != 0)
     {
       msg_error("Failed to seek to the start position of the journal",
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       return FALSE;
     }
   else
     {
-      msg_debug("Seeking the journal to the start position",
-                NULL);
+      msg_debug("Seeking the journal to the start position");
     }
   return TRUE;
 }
@@ -322,15 +319,13 @@ _seek_to_saved_state(JournalReader *self)
     {
       msg_warning("Failed to seek journal to the saved cursor position",
                   evt_tag_str("cursor", state->cursor),
-                  evt_tag_errno("error", errno),
-                  NULL);
+                  evt_tag_errno("error", errno));
       return _seek_to_head(self);
     }
   else
     {
       msg_debug("Seeking the journal to the last cursor position",
-                evt_tag_str("cursor", state->cursor),
-                NULL);
+                evt_tag_str("cursor", state->cursor));
     }
   journald_next(self->journal);
   return TRUE;
@@ -407,8 +402,7 @@ _fetch_log(JournalReader *self)
           if (rc < 0)
             {
               msg_error("Error occurred while getting next message from journal",
-                        evt_tag_errno("error", errno),
-                        NULL);
+                        evt_tag_errno("error", errno));
               result = NC_READ_ERROR;
             }
           break;
@@ -491,8 +485,7 @@ _add_poll_events(JournalReader *self)
   if (fd < 0)
     {
       msg_error("Error setting up journal polling, journald_get_fd() returned failure",
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       journald_close(self->journal);
       return FALSE;
     }
@@ -509,8 +502,7 @@ _init(LogPipe *s)
 
   if (journal_reader_initialized)
     {
-      msg_error("The configuration must not contain more than one systemd-journal() source",
-          NULL);
+      msg_error("The configuration must not contain more than one systemd-journal() source");
       return FALSE;
     }
 
@@ -521,8 +513,7 @@ _init(LogPipe *s)
   if (res < 0)
     {
       msg_error("Error opening the journal",
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       return FALSE;
     }
 
@@ -631,8 +622,7 @@ journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, co
       gchar *value = ".journald.";
       msg_warning("WARNING: Default value changed for the prefix() option of systemd-journal source in " VERSION_3_8,
                   evt_tag_str("old_value", ""),
-                  evt_tag_str("new_value", value),
-                  NULL);
+                  evt_tag_str("new_value", value));
       options->prefix = g_strdup(value);
     }
 

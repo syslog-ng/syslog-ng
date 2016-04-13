@@ -327,8 +327,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       if (G_UNLIKELY(debug_flag))
         {
           msg_debug("Requesting flow control",
-                    log_pipe_location_tag(s),
-                    NULL);
+                    log_pipe_location_tag(s));
         }
     }
 

@@ -340,7 +340,7 @@ afinter_sd_init(LogPipe *s)
 
   if (current_internal_source != NULL)
     {
-      msg_error("Multiple internal() sources were detected, this is not possible", NULL);
+      msg_error("Multiple internal() sources were detected, this is not possible");
       return FALSE;
     }
 

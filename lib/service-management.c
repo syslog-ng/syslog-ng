@@ -78,12 +78,12 @@ service_management_systemd_is_active()
 
   if (lstat("/run/systemd/system/", &st) < 0 || !S_ISDIR(st.st_mode))
   {
-    msg_debug("Systemd is not detected as the running init system", NULL);
+    msg_debug("Systemd is not detected as the running init system");
     return FALSE;
   }
   else
   {
-    msg_debug("Systemd is detected as the running init system", NULL);
+    msg_debug("Systemd is detected as the running init system");
     return TRUE;
   }
 }

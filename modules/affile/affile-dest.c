@@ -138,8 +138,7 @@ affile_dw_reap(gpointer s)
       g_static_mutex_unlock(&self->lock);
       msg_verbose("Destination timed out, reaping",
                   evt_tag_str("template", self->owner->filename_template->template),
-                  evt_tag_str("filename", self->filename),
-                  NULL);
+                  evt_tag_str("filename", self->filename));
       affile_dd_reap_writer(self->owner, self);
     }
   else
@@ -169,8 +168,7 @@ affile_dw_reopen(AFFileDestWriter *self)
 
    msg_verbose("Initializing destination file writer",
               evt_tag_str("template", self->owner->filename_template->template),
-              evt_tag_str("filename", self->filename),
-              NULL);
+              evt_tag_str("filename", self->filename));
 
   self->last_open_stamp = self->last_msg_stamp;
   if (self->owner->overwrite_if_older > 0 && 
@@ -179,8 +177,7 @@ affile_dw_reopen(AFFileDestWriter *self)
     {
       msg_info("Destination file is older than overwrite_if_older(), overwriting",
                  evt_tag_str("filename", self->filename),
-                 evt_tag_int("overwrite_if_older", self->owner->overwrite_if_older),
-                 NULL);
+                 evt_tag_int("overwrite_if_older", self->owner->overwrite_if_older));
       unlink(self->filename);
     }
 
@@ -198,8 +195,7 @@ affile_dw_reopen(AFFileDestWriter *self)
     {
       msg_error("Error opening file for writing",
                 evt_tag_str("filename", self->filename),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
     }
 
   log_writer_reopen(self->writer, proto);
@@ -233,7 +229,7 @@ affile_dw_init(LogPipe *s)
 
   if (!log_pipe_init((LogPipe *) self->writer))
     {
-      msg_error("Error initializing log writer", NULL);
+      msg_error("Error initializing log writer");
       log_pipe_unref((LogPipe *) self->writer);
       self->writer = NULL;
       return FALSE;

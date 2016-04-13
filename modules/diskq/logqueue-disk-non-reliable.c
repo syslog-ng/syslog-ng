@@ -284,8 +284,7 @@ _push_tail (LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, con
                          evt_tag_int ("queue_len", _get_length(s)),
                          evt_tag_int ("mem_buf_length", self->qoverflow_size),
                          evt_tag_int ("size", qdisk_get_size (self->super.qdisk)),
-                         evt_tag_str ("persist_name", self->super.super.persist_name),
-                         NULL);
+                         evt_tag_str ("persist_name", self->super.super.persist_name));
               return FALSE;
             }
         }

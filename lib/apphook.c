@@ -74,7 +74,7 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
       /* the requested hook has already passed, call the requested function immediately */
       msg_debug("Application hook registered after the given point passed", 
                 evt_tag_int("current", current_state), 
-                evt_tag_int("hook", type), NULL);
+                evt_tag_int("hook", type));
       func(type, user_data);
     }
 }
@@ -86,7 +86,7 @@ run_application_hook(gint type)
   
   g_assert(current_state <= type);
   
-  msg_debug("Running application hooks", evt_tag_int("hook", type), NULL);
+  msg_debug("Running application hooks", evt_tag_int("hook", type));
   current_state = type;
   for (l = application_hooks; l; l = l_next)
     {

@@ -259,7 +259,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
   stats_counter_inc(count_sdata_updates);
   if (self->num_sdata == 255)
     {
-      msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it", NULL);
+      msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it");
       return;
     }
 
@@ -536,8 +536,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
           /* can't grow the payload, it has reached the maximum size */
           msg_info("Cannot store value for this log message, maximum size has been reached",
                    evt_tag_str("name", name),
-                   evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""),
-                   NULL);
+                   evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""));
           break;
         }
       stats_counter_inc(count_payload_reallocs);
@@ -579,8 +578,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
           /* error growing the payload, skip without storing the value */
           msg_info("Cannot store referenced value for this log message, maximum size has been reached",
                    evt_tag_str("name", name),
-                   evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)),
-                   NULL);
+                   evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)));
           break;
         }
       stats_counter_inc(count_payload_reallocs);
@@ -725,7 +723,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
         {
           if (G_UNLIKELY(8159 < id))
             {
-              msg_error("Maximum number of tags reached", NULL);
+              msg_error("Maximum number of tags reached");
               return;
             }
           old_num_tags = self->num_tags;
@@ -783,7 +781,7 @@ log_msg_is_tag_by_id(LogMessage *self, LogTagId id)
 {
   if (G_UNLIKELY(8159 < id))
     {
-      msg_error("Invalid tag", evt_tag_int("id", (gint) id), NULL);
+      msg_error("Invalid tag", evt_tag_int("id", (gint) id));
       return FALSE;
     }
   if (self->num_tags == 0 && id < LOGMSG_TAGS_BITS)

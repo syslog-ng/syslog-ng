@@ -50,8 +50,7 @@ log_transport_aux_data_add_nv_pair(LogTransportAuxData *self, const gchar *name,
       if (!warned)
         {
           msg_notice("Transport aux data overflow, some fields may not be associated with the message, please increase aux buffer size",
-                     evt_tag_int("aux_size", sizeof(self->data)),
-                     NULL);
+                     evt_tag_int("aux_size", sizeof(self->data)));
           warned = TRUE;
         }
     }

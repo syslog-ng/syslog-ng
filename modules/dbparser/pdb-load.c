@@ -128,8 +128,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       else
         {
           msg_error("No name is specified for test_value",
-                    evt_tag_str("rule_id", state->current_rule->rule_id),
-                    NULL);
+                    evt_tag_str("rule_id", state->current_rule->rule_id));
           *error = g_error_new(1, 0, "<test_value> misses name attribute");
           return;
         }
@@ -189,7 +188,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         state->value_name = g_strdup(attribute_values[0]);
       else
         {
-          msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_rule->rule_id), NULL);
+          msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_rule->rule_id));
           *error = g_error_new(1, 0, "<value> misses name attribute");
           return;
         }
@@ -205,7 +204,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       if (!state->ruleset->version)
         {
-          msg_warning("patterndb version is unspecified, assuming v4 format", NULL);
+          msg_warning("patterndb version is unspecified, assuming v4 format");
           state->ruleset->version = g_strdup("4");
         }
       else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
@@ -502,8 +501,7 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
     {
       msg_error("Error opening classifier configuration file",
                  evt_tag_str(EVT_TAG_FILENAME, config),
-                 evt_tag_errno(EVT_TAG_OSERROR, errno),
-                 NULL);
+                 evt_tag_errno(EVT_TAG_OSERROR, errno));
       goto error;
     }
 
@@ -525,8 +523,7 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
         {
           msg_error("Error parsing pattern database file",
                     evt_tag_str(EVT_TAG_FILENAME, config),
-                    evt_tag_str("error", error ? error->message : "unknown"),
-                    NULL);
+                    evt_tag_str("error", error ? error->message : "unknown"));
           goto error;
         }
     }
@@ -537,8 +534,7 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
     {
       msg_error("Error parsing pattern database file",
                 evt_tag_str(EVT_TAG_FILENAME, config),
-                evt_tag_str("error", error ? error->message : "unknown"),
-                NULL);
+                evt_tag_str("error", error ? error->message : "unknown"));
       goto error;
     }
 

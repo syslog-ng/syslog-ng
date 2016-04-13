@@ -47,8 +47,7 @@ JNICALL Java_org_syslog_1ng_LogTemplate_compile(JNIEnv *env, jobject obj, jlong 
     {
       msg_error("Can't compile template",
                 evt_tag_str("template", template_cstr),
-                evt_tag_str("error", error->message),
-                NULL);
+                evt_tag_str("error", error->message));
     }
   (*env)->ReleaseStringUTFChars(env, template_string, template_cstr);
   return result;

@@ -28,7 +28,7 @@ tf_num_parse(gint argc, GString *argv[],
   if (argc != 2)
     {
       msg_debug("Template function requires two arguments.",
-		evt_tag_str("function", func_name), NULL);
+		evt_tag_str("function", func_name));
       return FALSE;
     }
 
@@ -36,7 +36,7 @@ tf_num_parse(gint argc, GString *argv[],
     {
       msg_debug("Parsing failed, template function's first argument is not a number",
 		evt_tag_str("function", func_name),
-		evt_tag_str("arg1", argv[0]->str), NULL);
+		evt_tag_str("arg1", argv[0]->str));
       return FALSE;
     }
 
@@ -44,7 +44,7 @@ tf_num_parse(gint argc, GString *argv[],
     {
       msg_debug("Parsing failed, template function's second argument is not a number",
 		evt_tag_str("function", func_name),
-		evt_tag_str("arg2", argv[1]->str), NULL);
+		evt_tag_str("arg2", argv[1]->str));
       return FALSE;
     }
 

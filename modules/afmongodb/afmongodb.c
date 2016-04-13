@@ -151,7 +151,7 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
   if (!self->client)
     {
       msg_error("Error connecting to MongoDB",
-                evt_tag_str ("driver", self->super.super.super.id), NULL);
+                evt_tag_str ("driver", self->super.super.super.id));
       return FALSE;
     }
 
@@ -161,7 +161,7 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
     {
       msg_error("Error getting specified MongoDB collection",
                 evt_tag_str ("collection", self->coll),
-                evt_tag_str ("driver", self->super.super.super.id), NULL);
+                evt_tag_str ("driver", self->super.super.super.id));
       return FALSE;
     }
 
@@ -341,8 +341,7 @@ afmongodb_worker_retry_over_message(LogThrDestDriver *s, LogMessage *msg)
             evt_tag_int("number_of_retries", s->retries.max),
             evt_tag_value_pairs("message", self->vp, msg,
                                 self->super.seq_num,
-                                LTZ_SEND, &self->template_options),
-            NULL);
+                                LTZ_SEND, &self->template_options));
 }
 
 static worker_insert_result_t
@@ -374,8 +373,7 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
                     evt_tag_value_pairs("message", self->vp, msg,
                                         self->super.seq_num,
                                         LTZ_SEND, &self->template_options),
-                    evt_tag_str("driver", self->super.super.super.id),
-                    NULL);
+                    evt_tag_str("driver", self->super.super.super.id));
         }
       return WORKER_INSERT_RESULT_DROP;
     }
@@ -386,8 +384,7 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
                 evt_tag_value_pairs("message", self->vp, msg,
                                     self->super.seq_num,
                                     LTZ_SEND, &self->template_options),
-                evt_tag_str("driver", self->super.super.super.id),
-                NULL);
+                evt_tag_str("driver", self->super.super.super.id));
 
       success = mongoc_collection_insert (self->coll_obj, MONGOC_INSERT_NONE,
                                           (const bson_t *) self->bson,
@@ -398,8 +395,7 @@ afmongodb_worker_insert (LogThrDestDriver *s, LogMessage *msg)
           msg_error("Network error while inserting into MongoDB",
                     evt_tag_int("time_reopen", self->super.time_reopen),
                     evt_tag_str("reason", error.message),
-                    evt_tag_str("driver", self->super.super.super.id),
-                    NULL);
+                    evt_tag_str("driver", self->super.super.super.id));
         }
     }
 
@@ -467,8 +463,7 @@ afmongodb_dd_init(LogPipe *s)
     {
       msg_error("Error parsing MongoDB URI",
                 evt_tag_str ("uri", self->uri),
-                evt_tag_str ("driver", self->super.super.super.id),
-                NULL);
+                evt_tag_str ("driver", self->super.super.super.id));
       return FALSE;
     }
 
@@ -477,8 +472,7 @@ afmongodb_dd_init(LogPipe *s)
     {
       msg_error("Missing DB name from MongoDB URI",
                 evt_tag_str ("uri", self->uri),
-                evt_tag_str ("driver", self->super.super.super.id),
-                NULL);
+                evt_tag_str ("driver", self->super.super.super.id));
       return FALSE;
     }
 
@@ -486,8 +480,7 @@ afmongodb_dd_init(LogPipe *s)
               evt_tag_str ("uri", self->uri),
               evt_tag_str ("db", self->db),
               evt_tag_str ("collection", self->coll),
-              evt_tag_str ("driver", self->super.super.super.id),
-              NULL);
+              evt_tag_str ("driver", self->super.super.super.id));
 
   return log_threaded_dest_driver_start(s);
 }

@@ -149,8 +149,7 @@ tf_cef_walker(const gchar *name, TypeHint type, const gchar *value, gsize value_
       if (!(on_error & ON_ERROR_SILENT))
         {
           msg_error("Invalid CEF key",
-                    evt_tag_str("key", name),
-                    NULL);
+                    evt_tag_str("key", name));
         }
       return !!(on_error & ON_ERROR_DROP_MESSAGE);
     }

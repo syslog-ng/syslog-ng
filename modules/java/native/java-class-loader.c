@@ -56,14 +56,13 @@ class_loader_new(JNIEnv *java_env)
   if (!self->syslogng_class_loader)
     {
       msg_error("Can't find class",
-                evt_tag_str("class_name", SYSLOG_NG_CLASS_LOADER),
-                NULL);
+                evt_tag_str("class_name", SYSLOG_NG_CLASS_LOADER));
       goto error;
     }
   self->loader_constructor = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "<init>", "()V");
   if (!self->loader_constructor)
     {
-      msg_error("Can't find constructor for SyslogNgClassLoader", NULL);
+      msg_error("Can't find constructor for SyslogNgClassLoader");
       goto error;
     }
 
@@ -72,8 +71,7 @@ class_loader_new(JNIEnv *java_env)
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", SYSLOG_NG_CLASS_LOADER),
-                evt_tag_str("method", "Class loadClass(String className)"),
-                NULL);
+                evt_tag_str("method", "Class loadClass(String className)"));
       goto error;
     }
 
@@ -82,15 +80,14 @@ class_loader_new(JNIEnv *java_env)
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", SYSLOG_NG_CLASS_LOADER),
-                evt_tag_str("method", "void initCurrentThread()"),
-                NULL);
+                evt_tag_str("method", "void initCurrentThread()"));
     }
 
 
   self->loader_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->syslogng_class_loader, self->loader_constructor);
   if (!self->loader_object)
     {
-      msg_error("Can't create SyslogNgClassLoader", NULL);
+      msg_error("Can't create SyslogNgClassLoader");
       goto error;
     }
   return self;

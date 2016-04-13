@@ -66,8 +66,7 @@ rcptid_restore_entry(void)
   if (data->header.version > 0)
     {
       msg_error("Internal error restoring log reader state, stored data is too new",
-                evt_tag_int("version", data->header.version),
-                NULL);
+                evt_tag_int("version", data->header.version));
       return FALSE;
     }
 
@@ -90,8 +89,7 @@ rcptid_create_new_entry(void)
   rcptid_service.persist_handle = persist_state_alloc_entry(rcptid_service.persist_state, "next.rcptid", sizeof(RcptidState));
   if (!rcptid_service.persist_handle)
     {
-      msg_error("Error allocating RCPTID structure in persist-state",
-                NULL);
+      msg_error("Error allocating RCPTID structure in persist-state");
       return FALSE;
     }
 

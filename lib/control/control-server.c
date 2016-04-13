@@ -79,8 +79,7 @@ control_connection_io_output(gpointer s)
       if (errno != EAGAIN)
         {
           msg_error("Error writing control channel",
-                    evt_tag_errno("error", errno),
-                    NULL);
+                    evt_tag_errno("error", errno));
           control_connection_stop_watches(self);
           control_connection_free(self);
           return;
@@ -107,8 +106,7 @@ control_connection_io_input(void *s)
   if (self->input_buffer->len > MAX_CONTROL_LINE_LENGTH)
     {
       /* too much data in input, drop the connection */
-      msg_error("Too much data in the control socket input buffer",
-                NULL);
+      msg_error("Too much data in the control socket input buffer");
       control_connection_stop_watches(self);
       control_connection_free(self);
       return;
@@ -124,8 +122,7 @@ control_connection_io_input(void *s)
       if (errno != EAGAIN)
         {
           msg_error("Error reading command on control channel, closing control channel",
-                    evt_tag_errno("error", errno),
-                    NULL);
+                    evt_tag_errno("error", errno));
           goto destroy_connection;
         }
       /* EAGAIN, should try again when data comes */
@@ -134,8 +131,7 @@ control_connection_io_input(void *s)
     }
   else if (rc == 0)
     {
-      msg_debug("EOF on control channel, closing connection",
-                NULL);
+      msg_debug("EOF on control channel, closing connection");
       goto destroy_connection;
     }
   else
@@ -174,7 +170,7 @@ control_connection_io_input(void *s)
   if (iter == NULL)
     {
       msg_error("Unknown command read on control channel, closing control channel",
-                evt_tag_str("command", command->str), NULL);
+                evt_tag_str("command", command->str));
       g_string_free(command, TRUE);
       goto destroy_connection;
     }

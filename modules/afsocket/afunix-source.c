@@ -63,7 +63,7 @@ afunix_sd_adjust_reader_options(AFUnixSourceDriver *self, GlobalConfig *cfg)
       msg_warning_once("WARNING: the expected message format is being changed for unix-domain transports to improve "
                        "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
                        "applications which bypass the syslog() API, you might "
-                       "need the 'expect-hostname' flag to get the old behaviour back", NULL);
+                       "need the 'expect-hostname' flag to get the old behaviour back");
     }
   else
     {

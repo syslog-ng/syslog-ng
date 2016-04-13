@@ -66,15 +66,13 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   else if (len > 255)
     {
       msg_error("Value names cannot be longer than 255 characters, this value will always expand to the emptry string",
-                evt_tag_str("value", name),
-                NULL);
+                evt_tag_str("value", name));
       goto exit;
     }
   else if (self->names->len >= 65535)
     {
       msg_error("Hard wired limit of 65535 name-value pairs have been reached, all further name-value pair will expand to nothing",
-                evt_tag_str("value", name),
-                NULL);
+                evt_tag_str("value", name));
       goto exit;
     }
   /* flags (2 bytes) || length (1 byte) || name (len bytes) || NUL */

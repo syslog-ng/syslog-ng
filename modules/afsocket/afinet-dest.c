@@ -87,7 +87,7 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
 
   self->spoof_source = enable;
 #else
-  msg_error("Error enabling spoof-source, you need to compile syslog-ng with --enable-spoof-source", NULL);
+  msg_error("Error enabling spoof-source, you need to compile syslog-ng with --enable-spoof-source");
 #endif
 }
 
@@ -173,8 +173,7 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
       if (port_change_warning)
         {
           msg_warning(port_change_warning,
-                      evt_tag_str("id", self->super.super.super.id),
-                      NULL);
+                      evt_tag_str("id", self->super.super.super.id));
         }
     }
 
@@ -224,8 +223,7 @@ afinet_dd_init(LogPipe *s)
           if (!self->lnet_ctx)
             {
               msg_error("Error initializing raw socket, spoof-source support disabled",
-                        evt_tag_str("error", NULL),
-                        NULL);
+                        evt_tag_str("error", NULL));
             }
         }
     }
@@ -400,8 +398,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
           else
             {
               msg_error("Error sending raw frame",
-                        evt_tag_str("error", libnet_geterror(self->lnet_ctx)),
-                        NULL);
+                        evt_tag_str("error", libnet_geterror(self->lnet_ctx)));
             }
         }
       g_static_mutex_unlock(&self->lnet_lock);

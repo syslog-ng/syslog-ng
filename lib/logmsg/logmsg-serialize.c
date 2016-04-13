@@ -153,8 +153,7 @@ _check_msg_version(SerializeArchive *sa)
   if (version != 26)
     {
       msg_error("Error deserializing log message, unsupported version",
-          evt_tag_int("version", version),
-          NULL);
+          evt_tag_int("version", version));
       return FALSE;
     }
   return TRUE;

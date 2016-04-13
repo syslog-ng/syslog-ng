@@ -48,8 +48,7 @@ log_proto_framed_client_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboo
       if (warn_msg != msg)
         {
           msg_warning("Error, message length too large for framed protocol, truncated",
-                      evt_tag_int("length", msg_len),
-                      NULL);
+                      evt_tag_int("length", msg_len));
           warn_msg = msg;
         }
       msg_len = 9999999;

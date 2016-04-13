@@ -271,8 +271,7 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
   iv_init();
 
   msg_debug("Worker thread started",
-            evt_tag_str("driver", self->super.super.id),
-            NULL);
+            evt_tag_str("driver", self->super.super.id));
 
   log_queue_set_use_backlog(self->queue, TRUE);
 
@@ -290,8 +289,7 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
     self->worker.thread_deinit(self);
 
   msg_debug("Worker thread finished",
-            evt_tag_str("driver", self->super.super.id),
-            NULL);
+            evt_tag_str("driver", self->super.super.id));
   iv_deinit();
 }
 
@@ -334,8 +332,7 @@ log_threaded_dest_driver_start(LogPipe *s)
       msg_warning("Wrong value for retries(), setting to default",
                   evt_tag_int("value", self->retries.max),
                   evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
-                  evt_tag_str("driver", self->super.super.id),
-                  NULL);
+                  evt_tag_str("driver", self->super.super.id));
       self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
     }
 

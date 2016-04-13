@@ -143,8 +143,7 @@ afsocket_dd_stop_watches(AFSocketDestDriver *self)
 
       /* need to close the fd in this case as it wasn't established yet */
       msg_verbose("Closing connecting fd",
-                  evt_tag_int("fd", self->fd),
-                  NULL);
+                  evt_tag_int("fd", self->fd));
       close(self->fd);
     }
   if (iv_timer_registered(&self->reconnect_timer))
@@ -193,8 +192,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     evt_tag_int("fd", self->fd),
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    evt_tag_int("time_reopen", self->time_reopen),
-                    NULL);
+                    evt_tag_int("time_reopen", self->time_reopen));
           goto error_reconnect;
         }
       if (error)
@@ -203,16 +201,14 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     evt_tag_int("fd", self->fd),
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, error),
-                    evt_tag_int("time_reopen", self->time_reopen),
-                    NULL);
+                    evt_tag_int("time_reopen", self->time_reopen));
           goto error_reconnect;
         }
     }
   msg_notice("Syslog connection established",
               evt_tag_int("fd", self->fd),
               evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
-              evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
-              NULL);
+              evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)));
 
   transport = afsocket_dd_construct_transport(self, self->fd);
   if (!transport)
@@ -267,8 +263,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
                 evt_tag_int("fd", sock),
                 evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       close(sock);
       return FALSE;
     }
@@ -283,8 +278,7 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
       !afsocket_dd_start_connect(self))
     {
       msg_error("Initiating connection failed, reconnecting",
-                evt_tag_int("time_reopen", self->time_reopen),
-                NULL);
+                evt_tag_int("time_reopen", self->time_reopen));
       afsocket_dd_start_reconnect_timer(self);
     }
 }
@@ -296,8 +290,7 @@ afsocket_dd_try_connect(AFSocketDestDriver *self)
       !afsocket_dd_setup_connection(self))
     {
       msg_error("Initiating connection failed, reconnecting",
-                evt_tag_int("time_reopen", self->time_reopen),
-                NULL);
+                evt_tag_int("time_reopen", self->time_reopen));
       afsocket_dd_start_reconnect_timer(self);
       return;
     }
@@ -313,8 +306,7 @@ afsocket_dd_setup_proto_factory(AFSocketDestDriver *self)
   if (!self->proto_factory)
     {
       msg_error("Unknown value specified in the transport() option, no such LogProto plugin found",
-                evt_tag_str("transport", self->transport_mapper->logproto),
-                NULL);
+                evt_tag_str("transport", self->transport_mapper->logproto));
       return FALSE;
     }
   return TRUE;
@@ -493,8 +485,7 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
       msg_notice("Syslog connection broken",
                  evt_tag_int("fd", self->fd),
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
-                 evt_tag_int("time_reopen", self->time_reopen),
-                 NULL);
+                 evt_tag_int("time_reopen", self->time_reopen));
       afsocket_dd_start_reconnect_timer(self);
       break;
     }

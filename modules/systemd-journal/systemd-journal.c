@@ -56,8 +56,7 @@ __init(LogPipe *s)
   log_pipe_append((LogPipe *)self->reader, &self->super.super.super);
   if (!log_pipe_init((LogPipe *)self->reader))
     {
-      msg_error("Error initializing journal_reader",
-                NULL);
+      msg_error("Error initializing journal_reader");
       log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
       return FALSE;

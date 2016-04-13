@@ -201,8 +201,7 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
                     case KWS_OBSOLETE:
                       msg_warning("WARNING: Your configuration file uses an obsoleted keyword, please update your configuration",
                                   evt_tag_str("keyword", keywords[i].kw_name),
-                                  evt_tag_str("change", keywords[i].kw_explain),
-                                  NULL);
+                                  evt_tag_str("change", keywords[i].kw_explain));
                       break;
                     default:
                       break;
@@ -237,8 +236,7 @@ cfg_lexer_start_next_include(CfgLexer *self)
     {
       msg_debug("Finishing include",
                 evt_tag_str((level->include_type == CFGI_FILE ? "filename" : "content"), level->name),
-                evt_tag_int("depth", self->include_depth),
-                NULL);
+                evt_tag_int("depth", self->include_depth));
       buffer_processed = TRUE;
     }
 
@@ -289,15 +287,13 @@ cfg_lexer_start_next_include(CfgLexer *self)
         {
           msg_error("Error opening include file",
                     evt_tag_str("filename", filename),
-                    evt_tag_int("depth", self->include_depth),
-                    NULL);
+                    evt_tag_int("depth", self->include_depth));
           g_free(filename);
           return FALSE;
         }
       msg_debug("Starting to read include file",
                 evt_tag_str("filename", filename),
-                evt_tag_int("depth", self->include_depth),
-                NULL);
+                evt_tag_int("depth", self->include_depth));
       g_free(level->name);
       level->name = filename;
 
@@ -342,8 +338,7 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
         {
           msg_error("Error opening directory for reading",
                 evt_tag_str("filename", filename),
-                evt_tag_str("error", error->message),
-                NULL);
+                evt_tag_str("error", error->message));
           goto drop_level;
         }
       while ((entry = g_dir_read_name(dir)))
@@ -352,8 +347,7 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
           if (entry[0] == '.')
             {
               msg_debug("Skipping include file, it cannot begin with .",
-                        evt_tag_str("filename", entry),
-                        NULL);
+                        evt_tag_str("filename", entry));
               continue;
             }
           for (p = entry; *p; p++)
@@ -364,8 +358,7 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
                    (*p == '_') || (*p == '-') || (*p == '.')))
                 {
                   msg_debug("Skipping include file, does not match pattern [\\-_a-zA-Z0-9]+",
-                            evt_tag_str("filename", entry),
-                            NULL);
+                            evt_tag_str("filename", entry));
                   p = NULL;
                   break;
                 }
@@ -376,15 +369,13 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
               if (stat(full_filename, &st) < 0 || S_ISDIR(st.st_mode))
                 {
                   msg_debug("Skipping include file as it is a directory",
-                            evt_tag_str("filename", entry),
-                            NULL);
+                            evt_tag_str("filename", entry));
                   g_free(full_filename);
                   continue;
                 }
               level->file.files = g_slist_insert_sorted(level->file.files, full_filename, (GCompareFunc) strcmp);
               msg_debug("Adding include file",
-                        evt_tag_str("filename", entry),
-                        NULL);
+                        evt_tag_str("filename", entry));
             }
         }
       g_dir_close(dir);
@@ -392,8 +383,7 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
         {
           /* no include files in the specified directory */
           msg_debug("No files in this include directory",
-                    evt_tag_str("dir", filename),
-                    NULL);
+                    evt_tag_str("dir", filename));
           self->include_depth--;
           return TRUE;
         }
@@ -419,8 +409,7 @@ _cfg_lexer_glob_err (const char *p, gint e)
     {
       msg_debug ("Error processing path for inclusion",
                  evt_tag_str("path", p),
-                 evt_tag_errno("errno", e),
-                 NULL);
+                 evt_tag_errno("errno", e));
       return -1;
     }
   return 0;
@@ -476,8 +465,7 @@ cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
                                             (GCompareFunc) strcmp);
 
   msg_debug("Adding include file",
-            evt_tag_str("filename", fn),
-            NULL);
+            evt_tag_str("filename", fn));
 
   return TRUE;
 }
@@ -559,8 +547,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
     {
       msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
                 evt_tag_str("filename", filename_),
-                evt_tag_int("depth", self->include_depth),
-                NULL);
+                evt_tag_int("depth", self->include_depth));
       return FALSE;
     }
 
@@ -573,8 +560,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
       msg_error("Include file/directory not found",
                 evt_tag_str("filename", filename_),
                 evt_tag_str("include-path", cfg_args_get(self->globals, "include-path")),
-                evt_tag_errno("error", errno),
-                NULL);
+                evt_tag_errno("error", errno));
       return FALSE;
     }
   else
@@ -600,8 +586,7 @@ cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gch
     {
       msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
                 evt_tag_str("buffer", name),
-                evt_tag_int("depth", self->include_depth),
-                NULL);
+                evt_tag_int("depth", self->include_depth));
       return FALSE;
     }
 
@@ -638,8 +623,7 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer,
     {
       msg_error("Error resolving backtick references in block or buffer",
                 evt_tag_str("buffer", name),
-                evt_tag_str("error", error->message),
-                NULL);
+                evt_tag_str("error", error->message));
       g_clear_error(&error);
       return FALSE;
     }
@@ -906,8 +890,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
         {
           /* no version selected yet, and we have a non-pragma token, this
            * means that the configuration is meant for syslog-ng 2.1 */
-          msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file to indicate this explicitly",
-                      NULL);
+          msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file to indicate this explicitly");
           cfg_set_version(configuration, 0x0201);
         }
       cfg_load_candidate_modules(configuration);
@@ -1200,8 +1183,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       msg_warning("Syntax error while resolving backtick references in block",
                   evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(context)),
                   evt_tag_str("block", name),
-                  evt_tag_str("error", error->message),
-                  NULL);
+                  evt_tag_str("error", error->message));
       g_clear_error(&error);
       return FALSE;
     }

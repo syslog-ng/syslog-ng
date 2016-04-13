@@ -468,8 +468,7 @@ readcoded32(unsigned char **input, gint64 minv, gint64 maxv)
       msg_error("Error while processing the time zone file", 
                 evt_tag_str("message", "oded value out-of-range"), 
                 evt_tag_int("value", val),
-                evt_tag_printf("expected", "[%"G_GINT64_FORMAT", %"G_GINT64_FORMAT"]", minv, maxv), 
-                NULL);
+                evt_tag_printf("expected", "[%"G_GINT64_FORMAT", %"G_GINT64_FORMAT"]", minv, maxv));
       g_assert_not_reached();
     }
   return val;
@@ -495,8 +494,7 @@ readcoded64(unsigned char **input, gint64 minv, gint64 maxv)
       msg_error("Error while processing the time zone file",
                 evt_tag_str("message", "Coded value out-of-range"), 
                 evt_tag_int("value", val), 
-                evt_tag_printf("expected", "[%"G_GINT64_FORMAT", %"G_GINT64_FORMAT"]", minv, maxv), 
-                NULL);
+                evt_tag_printf("expected", "[%"G_GINT64_FORMAT", %"G_GINT64_FORMAT"]", minv, maxv));
       g_assert_not_reached();
     }
   return val;
@@ -515,8 +513,7 @@ readbool(unsigned char **input)
     {
       msg_error("Error while processing the time zone file",
                 evt_tag_str("message", "Boolean value out-of-range"), 
-                evt_tag_int("value", c), 
-                NULL);
+                evt_tag_int("value", c));
       g_assert_not_reached();
     }
   return (c != 0);
@@ -576,8 +573,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   if (strncmp((gchar*)buf, TZ_MAGIC, 4) != 0)
     {
       msg_error("Error while processing the time zone file", 
-                evt_tag_str("message", TZ_MAGIC" signature is missing"), 
-                NULL);
+                evt_tag_str("message", TZ_MAGIC" signature is missing"));
       goto error;
     }
   
@@ -592,8 +588,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   if (buf[0] != 0 && buf[0] != '2' && buf[0] != '3')
     {
       msg_error("Error in the time zone file", 
-                evt_tag_str("message", "Bad Olson version info"), 
-                NULL);
+                evt_tag_str("message", "Bad Olson version info"));
       goto error;
     }
   else 
@@ -625,8 +620,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
       isdstcnt != typecnt) 
     {
       msg_warning("Error in the time zone file", 
-                   evt_tag_str("message", "Count mismatch between tzh_ttisgmtcnt, tzh_ttisdstcnt, tth_typecnt"), 
-                   NULL);
+                   evt_tag_str("message", "Count mismatch between tzh_ttisgmtcnt, tzh_ttisdstcnt, tth_typecnt"));
     }
 
   /* 
@@ -660,8 +654,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
           msg_warning("Error in the time zone file", 
                       evt_tag_str("message", "Illegal type number"), 
                       evt_tag_printf("val", "%ld", (long) t), 
-                      evt_tag_printf("expected", "[0, %" G_GINT64_FORMAT "]", typecnt-1), 
-                      NULL);
+                      evt_tag_printf("expected", "[0, %" G_GINT64_FORMAT "]", typecnt-1));
           goto error;
         }
       transition_types[i] = t;
@@ -681,8 +674,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
           msg_warning("Error in the time zone file", 
                       evt_tag_str("message", "Illegal gmtoffset number"), 
                       evt_tag_int("val", gmt_offsets[i]), 
-                      evt_tag_printf("expected", "[%d, %d]", -1 * offs * 60 * 60, offs * 60 * 60), 
-                      NULL);
+                      evt_tag_printf("expected", "[%d, %d]", -1 * offs * 60 * 60, offs * 60 * 60));
           goto error;
         }
       /* ignore isdst flag */ 
@@ -852,7 +844,7 @@ zone_info_read(const gchar *zonename, ZoneInfo **zone, ZoneInfo **zone64)
   file_map = g_mapped_file_new(filename, FALSE, &error);
   if (!file_map)
     {
-      msg_error("Failed to open the time zone file", evt_tag_str("filename", filename), evt_tag_str("message", error->message), NULL);
+      msg_error("Failed to open the time zone file", evt_tag_str("filename", filename), evt_tag_str("message", error->message));
       g_error_free(error);
       g_free(filename);
       return FALSE;
@@ -863,17 +855,17 @@ zone_info_read(const gchar *zonename, ZoneInfo **zone, ZoneInfo **zone64)
 
   if (byte_read == -1)
     {
-      msg_error("Failed to read the time zone file", evt_tag_str("filename", filename), NULL);
+      msg_error("Failed to read the time zone file", evt_tag_str("filename", filename));
       g_mapped_file_unref(file_map);
       g_free(filename);
       return FALSE;
     }
 
-  msg_debug("Processing the time zone file (32bit part)", evt_tag_str("filename", filename), NULL);
+  msg_debug("Processing the time zone file (32bit part)", evt_tag_str("filename", filename));
   *zone = zone_info_parser(&buff, FALSE, &version);
   if (version == 2)
     {
-      msg_debug("Processing the time zone file (64bit part)", evt_tag_str("filename", filename), NULL);
+      msg_debug("Processing the time zone file (64bit part)", evt_tag_str("filename", filename));
       *zone64 = zone_info_parser(&buff, TRUE, &version);
     }
 
@@ -937,8 +929,7 @@ time_zone_info_new(const gchar *tz)
 
   /* failed to read time zone data */
   msg_error("Bogus timezone spec, must be in the format [+-]HH:MM, offset must be less than 24:00",
-            evt_tag_str("value", tz),
-            NULL);
+            evt_tag_str("value", tz));
   return NULL;
 }
 

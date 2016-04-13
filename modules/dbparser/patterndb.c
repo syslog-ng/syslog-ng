@@ -403,8 +403,7 @@ pdb_lookup_ruleset(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
               GString *buffer = g_string_sized_new(32);
 
               msg_debug("patterndb rule matches",
-                        evt_tag_str("rule_id", rule->rule_id),
-                        NULL);
+                        evt_tag_str("rule_id", rule->rule_id));
               log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
               log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
 
@@ -459,8 +458,7 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 
   msg_debug("Expiring patterndb correllation context",
             evt_tag_str("last_rule", context->rule->rule_id),
-            evt_tag_long("utc", timer_wheel_get_time(pdb->timer_wheel)),
-            NULL);
+            evt_tag_long("utc", timer_wheel_get_time(pdb->timer_wheel)));
   if (pdb->emit)
     pdb_run_rule_actions(context->rule, pdb, RAT_TIMEOUT, context, msg, buffer);
   g_hash_table_remove(pdb->correllation.state, &context->super.key);
@@ -495,8 +493,7 @@ pattern_db_timer_tick(PatternDB *self)
 
       timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
       msg_debug("Advancing patterndb current time because of timer tick",
-                evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
-                NULL);
+                evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
       self->last_tick = now;
@@ -532,8 +529,7 @@ pattern_db_set_time(PatternDB *self, const LogStamp *ls)
 
   timer_wheel_set_time(self->timer_wheel, now.tv_sec);
   msg_debug("Advancing patterndb current time because of an incoming message",
-            evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
-            NULL);
+            evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)));
 }
 
 gboolean
@@ -624,8 +620,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
                         evt_tag_str("rule", rule->rule_id),
                         evt_tag_str("context", buffer->str),
                         evt_tag_int("context_timeout", rule->context_timeout),
-                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
-                        NULL);
+                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout));
               context = pdb_context_new(&key);
               g_hash_table_insert(self->correllation.state, &context->super.key, context);
               g_string_steal(buffer);
@@ -637,8 +632,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
                         evt_tag_str("context", buffer->str),
                         evt_tag_int("context_timeout", rule->context_timeout),
                         evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
-                        evt_tag_int("num_messages", context->super.messages->len),
-                        NULL);
+                        evt_tag_int("num_messages", context->super.messages->len));
             }
 
           g_ptr_array_add(context->super.messages, log_msg_ref(msg));

@@ -153,13 +153,12 @@ redis_dd_connect(RedisDriver *self, gboolean reconnect)
       msg_error("REDIS server error, suspending",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", self->c->errstr),
-                evt_tag_int("time_reopen", self->super.time_reopen),
-                NULL);
+                evt_tag_int("time_reopen", self->super.time_reopen));
       return FALSE;
     }
   else
     msg_debug("Connecting to REDIS succeeded",
-              evt_tag_str("driver", self->super.super.super.id), NULL);
+              evt_tag_str("driver", self->super.super.super.id));
 
   return TRUE;
 }
@@ -233,8 +232,7 @@ redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
                 evt_tag_str("param1", self->param1_str->str),
                 evt_tag_str("param2", self->param2_str->str),
                 evt_tag_str("error", self->c->errstr),
-                evt_tag_int("time_reopen", self->super.time_reopen),
-                NULL);
+                evt_tag_int("time_reopen", self->super.time_reopen));
       return WORKER_INSERT_RESULT_ERROR;
     }
 
@@ -243,8 +241,7 @@ redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
             evt_tag_str("command", self->command->str),
             evt_tag_str("key", self->key_str->str),
             evt_tag_str("param1", self->param1_str->str),
-            evt_tag_str("param2", self->param2_str->str),
-            NULL);
+            evt_tag_str("param2", self->param2_str->str));
   freeReplyObject(reply);
 
   return WORKER_INSERT_RESULT_SUCCESS;
@@ -256,8 +253,7 @@ redis_worker_thread_init(LogThrDestDriver *d)
   RedisDriver *self = (RedisDriver *)d;
 
   msg_debug("Worker thread started",
-            evt_tag_str("driver", self->super.super.super.id),
-            NULL);
+            evt_tag_str("driver", self->super.super.super.id));
 
   self->key_str = g_string_sized_new(1024);
   self->param1_str = g_string_sized_new(1024);
@@ -294,8 +290,7 @@ redis_dd_init(LogPipe *s)
   msg_verbose("Initializing Redis destination",
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("host", self->host),
-              evt_tag_int("port", self->port),
-              NULL);
+              evt_tag_int("port", self->port));
 
   return log_threaded_dest_driver_start(s);
 }
