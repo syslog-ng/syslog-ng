@@ -587,15 +587,23 @@ pattern_db_get_timer_wheel(PatternDB *self)
 }
 
 static gboolean
+_pattern_db_is_empty(PatternDB *self)
+{
+  return (G_UNLIKELY(!self->ruleset) || self->ruleset->is_empty);
+}
+
+static gboolean
 _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 {
   PDBRule *rule;
   LogMessage *msg = lookup->msg;
 
-  if (G_UNLIKELY(!self->ruleset))
-    return FALSE;
-
   g_static_rw_lock_reader_lock(&self->lock);
+  if (_pattern_db_is_empty(self))
+    {
+      g_static_rw_lock_reader_unlock(&self->lock);
+      return FALSE;
+    }
   rule = pdb_lookup_ruleset(self->ruleset, lookup, dbg_list);
   g_static_rw_lock_reader_unlock(&self->lock);
   if (rule)
