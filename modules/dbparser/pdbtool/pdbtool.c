@@ -35,6 +35,7 @@
 #include "pdb-example.h"
 #include "pdb-program.h"
 #include "pdb-load.h"
+#include "pdb-file.h"
 #include "apphook.h"
 #include "transport/transport-file.h"
 #include "logproto/logproto-text-server.h"
@@ -76,44 +77,6 @@ static gchar **colors = empty_colors;
 
 static gchar *patterndb_file = PATH_PATTERNDB_FILE;
 static gboolean color_out = FALSE;
-
-static gint
-pdbfile_detect_version(const gchar *pdbfile)
-{
-  FILE *pdb;
-  gchar line[1024];
-  gint result = 0;
-
-  pdb = fopen(pdbfile, "r");
-  if (!pdb)
-    return 0;
-
-  while (fgets(line, sizeof(line), pdb))
-    {
-      if (strstr(line, "<patterndb"))
-        {
-          gchar *version, *start_quote, *end_quote;
-
-          /* ok, we do have the patterndb tag, look for the version attribute */
-          version = strstr(line, "version=");
-
-          if (!version)
-            goto exit;
-          start_quote = version + 8;
-          end_quote = strchr(start_quote + 1, *start_quote);
-          if (!end_quote)
-            {
-              goto exit;
-            }
-          *end_quote = 0;
-          result = strtoll(start_quote + 1, NULL, 0);
-          break;
-        }
-    }
- exit:
-  fclose(pdb);
-  return result;
-}
 
 typedef struct _PdbToolMergeState
 {
@@ -747,7 +710,7 @@ pdbtool_test(int argc, char *argv[])
           gchar cmd[1024];
           gint version;
 
-          version = pdbfile_detect_version(argv[arg_pos]);
+          version = pdb_file_detect_version(argv[arg_pos], NULL);
           if (!version)
             {
               fprintf(stderr, "%s: Unable to detect patterndb version, please write the <patterndb> tag on a single line\n", argv[arg_pos]);
