@@ -180,6 +180,7 @@
                 <xs:unique name="examples">
                     <xs:selector xpath="example"/>
                     <xs:field xpath="test_message"/>
+                    <xs:field xpath="@program"/>
                 </xs:unique>
             </xs:element>
 
