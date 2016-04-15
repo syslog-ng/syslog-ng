@@ -271,6 +271,56 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           state->current_example->rule = pdb_rule_ref(state->current_rule);
           state->current_state = PDBL_RULE_EXAMPLE;
         }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <example>", element_name);
+        }
+      break;
+    case PDBL_RULE_EXAMPLE:
+      if (strcmp(element_name, "test_message") == 0)
+        {
+          if (state->in_test_msg || !state->in_example)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <test_message> element");
+              return;
+            }
+
+          state->in_test_msg = TRUE;
+
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "program") == 0)
+                state->current_example->program = g_strdup(attribute_values[i]);
+            }
+        }
+      else if (strcmp(element_name, "test_values") == 0)
+        {
+          /* */
+        }
+      else if (strcmp(element_name, "test_value") == 0)
+        {
+          if (state->in_test_value || !state->in_example)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <test_value> element");
+              return;
+            }
+
+          state->in_test_value = TRUE;
+
+          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+            state->test_value_name = g_strdup(attribute_values[0]);
+          else
+            {
+              msg_error("No name is specified for test_value",
+                        evt_tag_str("rule_id", state->current_rule->rule_id));
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<test_value> misses name attribute");
+              return;
+            }
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <test_message>, <test_values> or <test_value>", element_name);
+        }
       break;
     case PDBL_RULE_ACTIONS:
       if (strcmp(element_name, "action") == 0)
@@ -353,42 +403,8 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       break;
     default:
-      if (strcmp(element_name, "test_message") == 0)
-        {
-          if (state->in_test_msg || !state->in_example)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <test_message> element");
-              return;
-            }
-
-          state->in_test_msg = TRUE;
-
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "program") == 0)
-                state->current_example->program = g_strdup(attribute_values[i]);
-            }
-        }
-      else if (strcmp(element_name, "test_value") == 0)
-        {
-          if (state->in_test_value || !state->in_example)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <test_value> element");
-              return;
-            }
-
-          state->in_test_value = TRUE;
-
-          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-            state->test_value_name = g_strdup(attribute_values[0]);
-          else
-            {
-              msg_error("No name is specified for test_value",
-                        evt_tag_str("rule_id", state->current_rule->rule_id));
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<test_value> misses name attribute");
-              return;
-            }
-        }
+      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected state %d, tag <%s>", state->current_state, element_name);
+      break;
     }
 }
 
