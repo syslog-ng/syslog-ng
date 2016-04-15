@@ -82,6 +82,19 @@ typedef struct _PDBProgramPattern
   PDBRule *rule;
 } PDBProgramPattern;
 
+static gboolean
+_is_whitespace_only(const gchar *text, gsize text_len)
+{
+  gint i;
+
+  for (i = 0; i < text_len; i++)
+    {
+      if (!g_ascii_isspace(text[i]))
+        return FALSE;
+    }
+  return TRUE;
+}
+
 void
 pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
                          const gchar **attribute_values, gpointer user_data, GError **error)
@@ -793,6 +806,8 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
         }
       break;
     default:
+      if (!_is_whitespace_only(text, text_len))
+        g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected text node in state %d, text=[[%s]]", state->current_state, text);
       break;
     }
 }
