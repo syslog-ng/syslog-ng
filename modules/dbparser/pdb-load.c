@@ -634,21 +634,36 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </action>", element_name);
         }
       break;
-    default:
-      if (strcmp(element_name, "value") == 0)
+    case PDBL_RULE_ACTION_MESSAGE:
+      if (strcmp(element_name, "message") == 0)
+        {
+          state->current_message = &state->current_rule->msg;
+          state->current_state = PDBL_RULE_ACTION;
+        }
+      else if (strcmp(element_name, "values") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "value") == 0)
         {
           if (state->value_name)
             g_free(state->value_name);
 
           state->value_name = NULL;
         }
-      else if (strcmp(element_name, "tag") == 0)
-        state->in_tag = FALSE;
-      else if (strcmp(element_name, "message") == 0)
+      else if (strcmp(element_name, "tags") == 0)
         {
-          state->current_message = &state->current_rule->msg;
-          state->current_state = PDBL_RULE_ACTION;
+          /* valid, but we don't do anything */
         }
+      else if (strcmp(element_name, "tag") == 0)
+        {
+          state->in_tag = FALSE;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </message>", element_name);
+        }
+      break;
     }
 }
 
