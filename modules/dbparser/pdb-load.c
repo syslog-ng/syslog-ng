@@ -38,6 +38,7 @@ enum PDBLoaderState
   PDBL_PATTERNDB,
   PDBL_RULESET,
   PDBL_RULES,
+  PDBL_RULE,
 };
 
 /* arguments passed to the markup parser functions */
@@ -155,6 +156,53 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <rules>, <patterns> or <pattern>", element_name);
         }
       break;
+    case PDBL_RULES:
+      if (strcmp(element_name, "rule") == 0)
+        {
+          if (state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <rule> element");
+              return;
+            }
+
+          state->current_rule = pdb_rule_new();
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "class") == 0)
+                pdb_rule_set_class(state->current_rule, attribute_values[i]);
+              else if (strcmp(attribute_names[i], "id") == 0)
+                pdb_rule_set_rule_id(state->current_rule, attribute_values[i]);
+              else if (strcmp(attribute_names[i], "context-id") == 0)
+                {
+                  LogTemplate *template;
+
+                  template = log_template_new(state->cfg, NULL);
+                  log_template_compile(template, attribute_values[i], NULL);
+                  pdb_rule_set_context_id_template(state->current_rule, template);
+                }
+              else if (strcmp(attribute_names[i], "context-timeout") == 0)
+                pdb_rule_set_context_timeout(state->current_rule, strtol(attribute_values[i], NULL, 0));
+              else if (strcmp(attribute_names[i], "context-scope") == 0)
+                pdb_rule_set_context_scope(state->current_rule, attribute_values[i], error);
+            }
+
+          if (!state->current_rule->rule_id)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "No id attribute for rule element");
+              pdb_rule_unref(state->current_rule);
+              state->current_rule = NULL;
+              return;
+            }
+
+          state->in_rule = TRUE;
+          state->current_message = &state->current_rule->msg;
+          state->action_id = 0;
+          state->current_state = PDBL_RULE;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <rule>", element_name);
+        }
     default:
       if (strcmp(element_name, "example") == 0)
         {
@@ -203,47 +251,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<test_value> misses name attribute");
               return;
             }
-        }
-      else if (strcmp(element_name, "rule") == 0)
-        {
-          if (state->in_rule)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <rule> element");
-              return;
-            }
-
-          state->current_rule = pdb_rule_new();
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "class") == 0)
-                pdb_rule_set_class(state->current_rule, attribute_values[i]);
-              else if (strcmp(attribute_names[i], "id") == 0)
-                pdb_rule_set_rule_id(state->current_rule, attribute_values[i]);
-              else if (strcmp(attribute_names[i], "context-id") == 0)
-                {
-                  LogTemplate *template;
-
-                  template = log_template_new(state->cfg, NULL);
-                  log_template_compile(template, attribute_values[i], NULL);
-                  pdb_rule_set_context_id_template(state->current_rule, template);
-                }
-              else if (strcmp(attribute_names[i], "context-timeout") == 0)
-                pdb_rule_set_context_timeout(state->current_rule, strtol(attribute_values[i], NULL, 0));
-              else if (strcmp(attribute_names[i], "context-scope") == 0)
-                pdb_rule_set_context_scope(state->current_rule, attribute_values[i], error);
-            }
-
-          if (!state->current_rule->rule_id)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "No id attribute for rule element");
-              pdb_rule_unref(state->current_rule);
-              state->current_rule = NULL;
-              return;
-            }
-
-          state->in_rule = TRUE;
-          state->current_message = &state->current_rule->msg;
-          state->action_id = 0;
         }
       else if (strcmp(element_name, "pattern") == 0)
         {
@@ -419,6 +426,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
               state->current_rule = NULL;
             }
           state->current_message = NULL;
+          state->current_state = PDBL_RULES;
         }
       else if (strcmp(element_name, "value") == 0)
         {
