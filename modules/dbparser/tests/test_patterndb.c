@@ -522,6 +522,14 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
          </message>\
        </action>\
      </actions>\
+     <examples>\
+       <example>\
+         <test_message program='prog1'>simple-message-with-rate-limited-action</test_message>\
+       </example>\
+       <example>\
+         <test_message program='prog2'>simple-message-with-rate-limited-action</test_message>\
+       </example>\
+     </examples>\
     </rule>\
   </rules>\
  </ruleset>\
