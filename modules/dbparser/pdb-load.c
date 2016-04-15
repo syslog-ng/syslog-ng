@@ -63,7 +63,6 @@ typedef struct _PDBLoader
   enum PDBLoaderState current_state;
   gboolean first_program;
   gboolean in_pattern;
-  gboolean in_ruleset;
   gboolean in_tag;
   gboolean in_test_msg;
   gboolean in_test_value;
@@ -162,14 +161,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_PATTERNDB:
       if (strcmp(element_name, "ruleset") == 0)
         {
-          if (state->in_ruleset)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <ruleset> element");
-              return;
-            }
-
           state->ruleset->is_empty = FALSE;
-          state->in_ruleset = TRUE;
           state->first_program = TRUE;
           state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
           state->current_state = PDBL_RULESET;
@@ -465,12 +457,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULESET:
       if (strcmp(element_name, "ruleset") == 0)
         {
-          if (!state->in_ruleset)
-            {
-              pdb_loader_set_error(state, error, "Unexpected </ruleset> element");
-              return;
-            }
-
           program = (state->current_program ? state->current_program : state->root_program);
 
           /* Copy stored rules into current program */
@@ -486,7 +472,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
             }
 
           state->current_program = NULL;
-          state->in_ruleset = FALSE;
 
           g_array_free(state->program_patterns, TRUE);
           state->program_patterns = NULL;
@@ -690,34 +675,31 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
     case PDBL_RULESET:
       if (state->in_pattern)
         {
-          if (state->in_ruleset)
+          if (state->first_program)
             {
-              if (state->first_program)
+              state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
+              if (state->current_program == NULL)
                 {
-                  state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
-                  if (state->current_program == NULL)
-                    {
-                      /* create new program specific radix */
-                      state->current_program = pdb_program_new();
-                      g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
-                    }
-
-                  state->first_program = FALSE;
+                  /* create new program specific radix */
+                  state->current_program = pdb_program_new();
+                  g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
                 }
-              else if (state->current_program)
-                {
-                  /* secondary program names should point to the same MSG radix */
 
-                  PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
-                  if (!program)
-                    {
-                      g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
-                    }
-                  else if (program != state->current_program)
-                    {
-                      pdb_loader_set_error(state, error, "Joining rulesets with mismatching program name sets, program=%s", text);
-                      return;
-                    }
+              state->first_program = FALSE;
+            }
+          else if (state->current_program)
+            {
+              /* secondary program names should point to the same MSG radix */
+
+              PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
+              if (!program)
+                {
+                  g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
+                }
+              else if (program != state->current_program)
+                {
+                  pdb_loader_set_error(state, error, "Joining rulesets with mismatching program name sets, program=%s", text);
+                  return;
                 }
             }
         }
