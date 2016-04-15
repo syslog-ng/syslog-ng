@@ -703,7 +703,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         }
       break;
     default:
-      pdb_loader_set_error(state, error, "Unexpected state %d, tag <%s>", state->current_state, element_name);
+      pdb_loader_set_error(state, error, "Unexpected state %d, tag </%s>", state->current_state, element_name);
       break;
     }
 }
