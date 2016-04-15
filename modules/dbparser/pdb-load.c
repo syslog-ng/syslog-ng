@@ -65,7 +65,6 @@ typedef struct _PDBLoader
   gboolean in_pattern;
   gboolean in_ruleset;
   gboolean in_tag;
-  gboolean in_example;
   gboolean in_test_msg;
   gboolean in_test_value;
   gboolean in_action;
@@ -290,13 +289,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_EXAMPLES:
       if (strcmp(element_name, "example") == 0)
         {
-          if (state->in_example)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <example> element");
-              return;
-            }
-
-          state->in_example = TRUE;
           state->current_example = g_new0(PDBExample, 1);
           state->current_example->rule = pdb_rule_ref(state->current_rule);
           state->current_state = PDBL_RULE_EXAMPLE;
@@ -309,7 +301,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_EXAMPLE:
       if (strcmp(element_name, "test_message") == 0)
         {
-          if (state->in_test_msg || !state->in_example)
+          if (state->in_test_msg)
             {
               pdb_loader_set_error(state, error, "Unexpected <test_message> element");
               return;
@@ -329,7 +321,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       else if (strcmp(element_name, "test_value") == 0)
         {
-          if (state->in_test_value || !state->in_example)
+          if (state->in_test_value)
             {
               pdb_loader_set_error(state, error, "Unexpected <test_value> element");
               return;
@@ -583,14 +575,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULE_EXAMPLE:
       if (strcmp(element_name, "example") == 0)
         {
-          if (!state->in_example)
-            {
-              pdb_loader_set_error(state, error, "Unexpected </example> element");
-              return;
-            }
-
-          state->in_example = FALSE;
-
           if (state->load_examples)
             state->examples = g_list_prepend(state->examples, state->current_example);
           else
