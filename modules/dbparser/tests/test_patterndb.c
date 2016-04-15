@@ -65,7 +65,6 @@ _load_pattern_db_from_string(gchar *pdb)
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);
 
   assert_true(pattern_db_reload_ruleset(patterndb, configuration, filename), "Error loading ruleset [[[%s]]]", pdb);
-  assert_string(pattern_db_get_ruleset_version(patterndb), "3", "Invalid version");
   assert_string(pattern_db_get_ruleset_pub_date(patterndb), "2010-02-22", "Invalid pubdate");
 }
 
@@ -280,23 +279,25 @@ assert_msg_matches_and_output_message_has_tag(const gchar *pattern, gint ndx, co
   assert_msg_matches_and_output_message_has_tag_with_timeout(pattern, 0, ndx, tag, set);
 }
 
-gchar *pdb_conflicting_rules_with_different_parsers = "<patterndb version='3' pub_date='2010-02-22'>\
+gchar *pdb_conflicting_rules_with_different_parsers = "<patterndb version='4' pub_date='2010-02-22'>\
  <ruleset name='testset' id='1'>\
   <patterns>\
    <pattern>prog1</pattern>\
    <pattern>prog2</pattern>\
   </patterns>\
-  <!-- different parsers at the same location -->\
-  <rule provider='test' id='11' class='short'>\
-   <patterns>\
-    <pattern>pattern @ESTRING:foo1: @</pattern>\
-   </patterns>\
-  </rule>\
-  <rule provider='test' id='12' class='long'>\
-   <patterns>\
-    <pattern>pattern @ESTRING:foo2: @tail</pattern>\
-   </patterns>\
-  </rule>\
+  <rules>\
+    <!-- different parsers at the same location -->\
+    <rule provider='test' id='11' class='short'>\
+     <patterns>\
+      <pattern>pattern @ESTRING:foo1: @</pattern>\
+     </patterns>\
+    </rule>\
+    <rule provider='test' id='12' class='long'>\
+     <patterns>\
+      <pattern>pattern @ESTRING:foo2: @tail</pattern>\
+     </patterns>\
+    </rule>\
+  </rules>\
  </ruleset>\
 </patterndb>";
 
@@ -316,23 +317,25 @@ test_conflicting_rules_with_different_parsers(void)
   _destroy_pattern_db();
 }
 
-gchar *pdb_conflicting_rules_with_the_same_parsers = "<patterndb version='3' pub_date='2010-02-22'>\
+gchar *pdb_conflicting_rules_with_the_same_parsers = "<patterndb version='4' pub_date='2010-02-22'>\
  <ruleset name='testset' id='1'>\
   <patterns>\
    <pattern>prog1</pattern>\
    <pattern>prog2</pattern>\
   </patterns>\
-  <!-- different parsers at the same location -->\
-  <rule provider='test' id='11' class='short'>\
-   <patterns>\
-    <pattern>pattern @ESTRING:foo: @</pattern>\
-   </patterns>\
-  </rule>\
-  <rule provider='test' id='12' class='long'>\
-   <patterns>\
-    <pattern>pattern @ESTRING:foo: @tail</pattern>\
-   </patterns>\
-  </rule>\
+  <rules>\
+    <!-- different parsers at the same location -->\
+    <rule provider='test' id='11' class='short'>\
+     <patterns>\
+      <pattern>pattern @ESTRING:foo: @</pattern>\
+     </patterns>\
+    </rule>\
+    <rule provider='test' id='12' class='long'>\
+     <patterns>\
+      <pattern>pattern @ESTRING:foo: @tail</pattern>\
+     </patterns>\
+    </rule>\
+  </rules>\
  </ruleset>\
 </patterndb>";
 
@@ -356,137 +359,157 @@ test_conflicting_rules_with_the_same_parsers(void)
 /* pdb skeleton used to test patterndb rule actions. E.g. whenever a rule
  * matches, certain actions described in the rule need to be performed.
  * This tests those */
-gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+gchar *pdb_ruletest_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
  <ruleset name='testset' id='1'>\
   <patterns>\
     <pattern>prog1</pattern>\
     <pattern>prog2</pattern>\
   </patterns>\
-  <rule provider='test' id='10' class='system' context-scope='program'>\
-   <patterns>\
-    <pattern>simple-message</pattern>\
-   </patterns>\
-   <tags>\
-    <tag>simple-msg-tag1</tag>\
-    <tag>simple-msg-tag2</tag>\
-   </tags>\
-   <values>\
-    <value name='simple-msg-value-1'>value1</value>\
-    <value name='simple-msg-value-2'>value2</value>\
-    <value name='simple-msg-host'>${HOST}</value>\
-   </values>\
-  </rule>\
-  <rule provider='test' id='10a' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>correllated-message-based-on-pid</pattern>\
-   </patterns>\
-   <values>\
-    <value name='correllated-msg-context-id'>${CONTEXT_ID}</value>\
-    <value name='correllated-msg-context-length'>$(context-length)</value>\
-   </values>\
-  </rule>\
-  <rule provider='test' id='10b' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>correllated-message-with-action-on-match</pattern>\
-   </patterns>\
-   <actions>\
-     <action trigger='match'>\
-       <message>\
-         <value name='MESSAGE'>generated-message-on-match</value>\
-         <value name='context-id'>${CONTEXT_ID}</value>\
-         <tags>\
-           <tag>correllated-msg-tag</tag>\
-         </tags>\
-       </message>\
-     </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='10c' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>correllated-message-with-action-on-timeout</pattern>\
-   </patterns>\
-   <actions>\
-     <action trigger='timeout'>\
-       <message>\
-         <value name='MESSAGE'>generated-message-on-timeout</value>\
-       </message>\
-     </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='10d' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>correllated-message-with-action-condition</pattern>\
-   </patterns>\
-   <actions>\
-     <action trigger='match' condition='\"${PID}\" ne \"" MYPID "\"' >\
-       <message>\
-         <value name='MESSAGE'>not-generated-message</value>\
-       </message>\
-     </action>\
-     <action trigger='match' condition='\"${PID}\" eq \"" MYPID "\"' >\
-       <message>\
-         <value name='MESSAGE'>generated-message-on-condition</value>\
-       </message>\
-     </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='10e' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>correllated-message-with-rate-limited-action</pattern>\
-   </patterns>\
-   <actions>\
-     <action trigger='match' rate='1/60'>\
-       <message>\
-         <value name='MESSAGE'>generated-message-rate-limit</value>\
-       </message>\
-     </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='11b' class='violation'>\
-   <patterns>\
-    <pattern>simple-message-with-action-on-match</pattern>\
-   </patterns>\
-   <actions>\
-     <action trigger='match'>\
-       <message>\
-         <value name='MESSAGE'>generated-message-on-match</value>\
-         <value name='context-id'>${CONTEXT_ID}</value>\
-         <tags>\
-           <tag>simple-msg-tag</tag>\
-         </tags>\
-       </message>\
-     </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='11d' class='violation'>\
-   <patterns>\
-    <pattern>simple-message-with-action-condition</pattern>\
-   </patterns>\
-   <actions>\
-     <action trigger='match' condition='\"${PID}\" ne \"" MYPID "\"' >\
-       <message>\
-         <value name='MESSAGE'>not-generated-message</value>\
-       </message>\
-     </action>\
-     <action trigger='match' condition='\"${PID}\" eq \"" MYPID "\"' >\
-       <message>\
-         <value name='MESSAGE'>generated-message-on-condition</value>\
-       </message>\
-     </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='11e' class='violation'>\
-   <patterns>\
-    <pattern>simple-message-with-rate-limited-action</pattern>\
-   </patterns>\
-   <actions>\
-     <action trigger='match' rate='1/60'>\
-       <message>\
-         <value name='MESSAGE'>generated-message-rate-limit</value>\
-       </message>\
-     </action>\
-   </actions>\
-  </rule>\
+  <rules>\
+    <rule provider='test' id='10' class='system' context-scope='program'>\
+     <patterns>\
+      <pattern>simple-message</pattern>\
+     </patterns>\
+     <tags>\
+      <tag>simple-msg-tag1</tag>\
+      <tag>simple-msg-tag2</tag>\
+     </tags>\
+     <values>\
+      <value name='simple-msg-value-1'>value1</value>\
+      <value name='simple-msg-value-2'>value2</value>\
+      <value name='simple-msg-host'>${HOST}</value>\
+     </values>\
+    </rule>\
+    <rule provider='test' id='10a' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
+     <patterns>\
+      <pattern>correllated-message-based-on-pid</pattern>\
+     </patterns>\
+     <values>\
+      <value name='correllated-msg-context-id'>${CONTEXT_ID}</value>\
+      <value name='correllated-msg-context-length'>$(context-length)</value>\
+     </values>\
+    </rule>\
+    <rule provider='test' id='10b' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+     <patterns>\
+      <pattern>correllated-message-with-action-on-match</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='match'>\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>generated-message-on-match</value>\
+             <value name='context-id'>${CONTEXT_ID}</value>\
+           </values>\
+           <tags>\
+             <tag>correllated-msg-tag</tag>\
+           </tags>\
+         </message>\
+       </action>\
+     </actions>\
+    </rule>\
+    <rule provider='test' id='10c' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+     <patterns>\
+      <pattern>correllated-message-with-action-on-timeout</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='timeout'>\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>generated-message-on-timeout</value>\
+           </values>\
+         </message>\
+       </action>\
+     </actions>\
+    </rule>\
+    <rule provider='test' id='10d' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+     <patterns>\
+      <pattern>correllated-message-with-action-condition</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='match' condition='\"${PID}\" ne \"" MYPID "\"' >\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>not-generated-message</value>\
+           </values>\
+         </message>\
+       </action>\
+       <action trigger='match' condition='\"${PID}\" eq \"" MYPID "\"' >\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>generated-message-on-condition</value>\
+           </values>\
+         </message>\
+       </action>\
+     </actions>\
+    </rule>\
+    <rule provider='test' id='10e' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
+     <patterns>\
+      <pattern>correllated-message-with-rate-limited-action</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='match' rate='1/60'>\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>generated-message-rate-limit</value>\
+           </values>\
+         </message>\
+       </action>\
+     </actions>\
+    </rule>\
+    <rule provider='test' id='11b' class='violation'>\
+     <patterns>\
+      <pattern>simple-message-with-action-on-match</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='match'>\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>generated-message-on-match</value>\
+             <value name='context-id'>${CONTEXT_ID}</value>\
+           </values>\
+           <tags>\
+             <tag>simple-msg-tag</tag>\
+           </tags>\
+         </message>\
+       </action>\
+     </actions>\
+    </rule>\
+    <rule provider='test' id='11d' class='violation'>\
+     <patterns>\
+      <pattern>simple-message-with-action-condition</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='match' condition='\"${PID}\" ne \"" MYPID "\"' >\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>not-generated-message</value>\
+           </values>\
+         </message>\
+       </action>\
+       <action trigger='match' condition='\"${PID}\" eq \"" MYPID "\"' >\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>generated-message-on-condition</value>\
+           </values>\
+         </message>\
+       </action>\
+     </actions>\
+    </rule>\
+    <rule provider='test' id='11e' class='violation'>\
+     <patterns>\
+      <pattern>simple-message-with-rate-limited-action</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='match' rate='1/60'>\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>generated-message-rate-limit</value>\
+           </values>\
+         </message>\
+       </action>\
+     </actions>\
+    </rule>\
+  </rules>\
  </ruleset>\
 </patterndb>";
 
@@ -634,31 +657,35 @@ test_patterndb_rule(void)
   _destroy_pattern_db();
 }
 
-gchar *pdb_inheritance_enabled_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
- <ruleset name='testset' id='1'>\
-  <patterns>\
-   <pattern>prog2</pattern>\
-  </patterns>\
-  <rule provider='test' id='11' class='system'>\
-   <patterns>\
-    <pattern>pattern-with-inheritance-enabled</pattern>\
-   </patterns>\
-   <tags>\
-    <tag>basetag1</tag>\
-    <tag>basetag2</tag>\
-   </tags>\
-   <actions>\
-    <action trigger='match'>\
-     <message inherit-properties='TRUE'>\
-      <value name='actionkey'>actionvalue</value>\
-      <tags>\
-       <tag>actiontag</tag>\
-      </tags>\
-     </message>\
-    </action>\
-   </actions>\
-  </rule>\
- </ruleset>\
+gchar *pdb_inheritance_enabled_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
+  <ruleset name='testset' id='1'>\
+    <patterns>\
+      <pattern>prog2</pattern>\
+    </patterns>\
+    <rules>\
+      <rule provider='test' id='11' class='system'>\
+        <patterns>\
+          <pattern>pattern-with-inheritance-enabled</pattern>\
+        </patterns>\
+        <tags>\
+          <tag>basetag1</tag>\
+          <tag>basetag2</tag>\
+        </tags>\
+        <actions>\
+          <action trigger='match'>\
+            <message inherit-properties='TRUE'>\
+              <values>\
+                <value name='actionkey'>actionvalue</value>\
+              </values>\
+              <tags>\
+                <tag>actiontag</tag>\
+              </tags>\
+            </message>\
+          </action>\
+        </actions>\
+      </rule>\
+    </rules>\
+  </ruleset>\
 </patterndb>";
 
 void
@@ -675,30 +702,34 @@ test_patterndb_message_property_inheritance_enabled()
   _destroy_pattern_db();
 }
 
-gchar *pdb_inheritance_disabled_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
- <ruleset name='testset' id='1'>\
-  <patterns>\
-   <pattern>prog2</pattern>\
-  </patterns>\
-  <rule provider='test' id='12' class='system'>\
-   <patterns>\
-    <pattern>pattern-with-inheritance-disabled</pattern>\
-   </patterns>\
-   <tags>\
-    <tag>basetag1</tag>\
-    <tag>basetag2</tag>\
-   </tags>\
-   <actions>\
-    <action trigger='match'>\
-     <message inherit-properties='FALSE'>\
-      <value name='actionkey'>actionvalue</value>\
-      <tags>\
-       <tag>actiontag</tag>\
-      </tags>\
-     </message>\
-    </action>\
-   </actions>\
-  </rule>\
+gchar *pdb_inheritance_disabled_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
+  <ruleset name='testset' id='1'>\
+    <patterns>\
+      <pattern>prog2</pattern>\
+    </patterns>\
+    <rules>\
+      <rule provider='test' id='12' class='system'>\
+        <patterns>\
+          <pattern>pattern-with-inheritance-disabled</pattern>\
+        </patterns>\
+        <tags>\
+          <tag>basetag1</tag>\
+          <tag>basetag2</tag>\
+        </tags>\
+        <actions>\
+          <action trigger='match'>\
+            <message inherit-properties='FALSE'>\
+              <values>\
+                <value name='actionkey'>actionvalue</value>\
+              </values>\
+              <tags>\
+                <tag>actiontag</tag>\
+              </tags>\
+            </message>\
+          </action>\
+        </actions>\
+      </rule>\
+    </rules>\
  </ruleset>\
 </patterndb>";
 
@@ -716,32 +747,37 @@ test_patterndb_message_property_inheritance_disabled()
   _destroy_pattern_db();
 }
 
-gchar *pdb_inheritance_context_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
- <ruleset name='testset' id='1'>\
-  <patterns>\
-   <pattern>prog2</pattern>\
-  </patterns>\
-  <rule provider='test' id='11' class='system' context-scope='program'\
-        context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>pattern-with-inheritance-context</pattern>\
-   </patterns>\
-   <tags>\
-    <tag>basetag1</tag>\
-    <tag>basetag2</tag>\
-   </tags>\
-   <actions>\
-    <action trigger='timeout'>\
-     <message inherit-properties='context'>\
-      <value name='MESSAGE'>action message</value>\
-      <tags>\
-       <tag>actiontag</tag>\
-      </tags>\
-     </message>\
-    </action>\
-   </actions>\
-  </rule>\
- </ruleset>\
+gchar *pdb_inheritance_context_skeleton = "\
+<patterndb version='4' pub_date='2010-02-22'>\
+  <ruleset name='testset' id='1'>\
+    <patterns>\
+      <pattern>prog2</pattern>\
+    </patterns>\
+    <rules>\
+      <rule provider='test' id='11' class='system' context-scope='program'\
+           context-id='$PID' context-timeout='60'>\
+        <patterns>\
+          <pattern>pattern-with-inheritance-context</pattern>\
+        </patterns>\
+        <tags>\
+          <tag>basetag1</tag>\
+          <tag>basetag2</tag>\
+        </tags>\
+        <actions>\
+          <action trigger='timeout'>\
+            <message inherit-properties='context'>\
+              <values>\
+                <value name='MESSAGE'>action message</value>\
+              </values>\
+              <tags>\
+                <tag>actiontag</tag>\
+              </tags>\
+            </message>\
+          </action>\
+        </actions>\
+     </rule>\
+    </rules>\
+  </ruleset>\
 </patterndb>";
 
 void
@@ -769,54 +805,62 @@ test_patterndb_message_property_inheritance(void)
   test_patterndb_message_property_inheritance_context();
 }
 
-gchar *pdb_msg_count_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+gchar *pdb_msg_count_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
  <ruleset name='testset' id='1'>\
   <patterns>\
    <pattern>prog1</pattern>\
    <pattern>prog2</pattern>\
   </patterns>\
-  <rule provider='test' id='13' class='system' context-scope='program'\
-        context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>pattern13</pattern>\
-   </patterns>\
-   <values>\
-    <value name='n13-1'>v13-1</value>\
-   </values>\
-   <actions>\
-    <action condition='\"${n13-1}\" eq \"v13-1\"' trigger='match'>\
-     <message inherit-properties='TRUE'>\
-      <value name='CONTEXT_LENGTH'>$(context-length)</value>\
-     </message>\
-    </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='14' class='system' context-scope='program'\
-        context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>pattern14</pattern>\
-   </patterns>\
-   <actions>\
-    <action condition='\"$(context-length)\" eq \"1\"' trigger='match'>\
-     <message inherit-properties='TRUE'>\
-      <value name='CONTEXT_LENGTH'>$(context-length)</value>\
-     </message>\
-    </action>\
-   </actions>\
-  </rule>\
-  <rule provider='test' id='15' class='system' context-scope='program'\
-        context-id='$PID' context-timeout='60'>\
-   <patterns>\
-    <pattern>pattern15@ANYSTRING:p15@</pattern>\
-   </patterns>\
-   <actions>\
-    <action condition='\"$(context-length)\" eq \"2\"' trigger='match'>\
-     <message inherit-properties='FALSE'>\
-      <value name='fired'>true</value>\
-     </message>\
-    </action>\
-   </actions>\
-  </rule>\
+  <rules>\
+    <rule provider='test' id='13' class='system' context-scope='program'\
+          context-id='$PID' context-timeout='60'>\
+      <patterns>\
+        <pattern>pattern13</pattern>\
+      </patterns>\
+      <values>\
+        <value name='n13-1'>v13-1</value>\
+      </values>\
+      <actions>\
+        <action condition='\"${n13-1}\" eq \"v13-1\"' trigger='match'>\
+          <message inherit-properties='TRUE'>\
+            <values>\
+              <value name='CONTEXT_LENGTH'>$(context-length)</value>\
+            </values>\
+          </message>\
+        </action>\
+      </actions>\
+    </rule>\
+    <rule provider='test' id='14' class='system' context-scope='program'\
+          context-id='$PID' context-timeout='60'>\
+      <patterns>\
+        <pattern>pattern14</pattern>\
+      </patterns>\
+      <actions>\
+        <action condition='\"$(context-length)\" eq \"1\"' trigger='match'>\
+          <message inherit-properties='TRUE'>\
+            <values>\
+              <value name='CONTEXT_LENGTH'>$(context-length)</value>\
+            </values>\
+          </message>\
+        </action>\
+      </actions>\
+    </rule>\
+    <rule provider='test' id='15' class='system' context-scope='program'\
+          context-id='$PID' context-timeout='60'>\
+      <patterns>\
+        <pattern>pattern15@ANYSTRING:p15@</pattern>\
+      </patterns>\
+      <actions>\
+        <action condition='\"$(context-length)\" eq \"2\"' trigger='match'>\
+          <message inherit-properties='FALSE'>\
+            <values>\
+              <value name='fired'>true</value>\
+            </values>\
+          </message>\
+        </action>\
+      </actions>\
+    </rule>\
+  </rules>\
  </ruleset>\
 </patterndb>";
 
