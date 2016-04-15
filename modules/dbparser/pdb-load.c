@@ -35,6 +35,7 @@
 enum PDBLoaderState
 {
   PDBL_INITIAL = 0,
+  PDBL_PATTERNDB,
 };
 
 /* arguments passed to the markup parser functions */
@@ -82,6 +83,38 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
 
   switch (state->current_state)
     {
+    case PDBL_INITIAL:
+      if (strcmp(element_name, "patterndb") == 0)
+        {
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "version") == 0)
+                state->ruleset->version = g_strdup(attribute_values[i]);
+              else if (strcmp(attribute_names[i], "pub_date") == 0)
+                state->ruleset->pub_date = g_strdup(attribute_values[i]);
+            }
+          if (!state->ruleset->version)
+            {
+              msg_warning("patterndb version is unspecified, assuming v4 format");
+              state->ruleset->version = g_strdup("4");
+            }
+          else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
+              return;
+            }
+          else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
+              return;
+            }
+          state->current_state = PDBL_PATTERNDB;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <patterndb>", element_name);
+        }
+      break;
     default:
       if (strcmp(element_name, "ruleset") == 0)
         {
@@ -204,31 +237,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               return;
             }
         }
-      else if (strcmp(element_name, "patterndb") == 0)
-        {
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "version") == 0)
-                state->ruleset->version = g_strdup(attribute_values[i]);
-              else if (strcmp(attribute_names[i], "pub_date") == 0)
-                state->ruleset->pub_date = g_strdup(attribute_values[i]);
-            }
-          if (!state->ruleset->version)
-            {
-              msg_warning("patterndb version is unspecified, assuming v4 format");
-              state->ruleset->version = g_strdup("4");
-            }
-          else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
-              return;
-            }
-          else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
-              return;
-            }
-        }
       else if (strcmp(element_name, "action") == 0)
         {
           if (!state->current_rule)
@@ -292,6 +300,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         {
           g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
           g_hash_table_remove_all(state->ruleset_patterns);
+          state->current_state = PDBL_INITIAL;
         }
       if (strcmp(element_name, "ruleset") == 0)
         {
