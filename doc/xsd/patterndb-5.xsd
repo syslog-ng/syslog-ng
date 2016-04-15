@@ -387,6 +387,7 @@
               If set to TRUE, the original message that triggered the action is
               cloned, including its name-value pairs and tags.
               For details, see Section 13.4, Triggering actions for identified messages.
+              NOTE: This attribute is deprecated in favour of inherit-mode.
             </xs:documentation>
           </xs:annotation>
           <xs:simpleType>
@@ -394,6 +395,28 @@
               <xs:enumeration value="context"/>
               <xs:enumeration value="TRUE"/>
               <xs:enumeration value="FALSE"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+
+        <xs:attribute name="inherit-mode">
+          <xs:annotation>
+            <xs:documentation>
+              This attribute is used to control which set of name-value
+              pairs are propagated to the newly generated message. "context"
+              means that the new message is populated with a union of all
+              name-value pairs present in messages in the context.
+              "last-message" means that only name-value pairs of the last
+              message is copied. "none" means that the new message becomes
+              empty initially.
+              For details, see Section 13.4, Triggering actions for identified messages.
+            </xs:documentation>
+          </xs:annotation>
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="none"/>
+              <xs:enumeration value="context"/>
+              <xs:enumeration value="last-message"/>
             </xs:restriction>
           </xs:simpleType>
         </xs:attribute>

@@ -62,7 +62,8 @@ typedef struct _PDBAction
 void pdb_action_set_condition(PDBAction *self, GlobalConfig *cfg, const gchar *filter_string, GError **error);
 void pdb_action_set_rate(PDBAction *self, const gchar *rate_);
 void pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error);
-void pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error);
+void pdb_action_set_message_inherit_mode(PDBAction *self, const gchar *inherit_mode, GError **error);
+void pdb_action_set_message_inherit_properties(PDBAction *self, const gchar *inherit_properties, GError **error);
 
 PDBAction *pdb_action_new(gint id);
 void pdb_action_free(PDBAction *self);

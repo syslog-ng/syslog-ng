@@ -78,7 +78,7 @@ pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error)
 }
 
 void
-pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error)
+pdb_action_set_message_inherit_properties(PDBAction *self, const gchar *inherit_properties, GError **error)
 {
   if (strcasecmp(inherit_properties, "context") == 0)
     self->content.inherit_mode = RAC_MSG_INHERIT_CONTEXT;
@@ -89,9 +89,16 @@ pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_propert
            inherit_properties[0] == '0')
     self->content.inherit_mode = RAC_MSG_INHERIT_NONE;
   else
-    g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inheritance type: %s", inherit_properties);
+    g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inherit-properties: %s", inherit_properties);
 }
 
+void
+pdb_action_set_message_inherit_mode(PDBAction *self, const gchar *inherit_mode, GError **error)
+{
+  self->content.message.inherit_mode = synthetic_message_lookup_inherit_mode(inherit_mode);
+  if (self->content.message.inherit_mode < 0)
+    g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inherit-mode: %s", inherit_mode);
+}
 
 PDBAction *
 pdb_action_new(gint id)

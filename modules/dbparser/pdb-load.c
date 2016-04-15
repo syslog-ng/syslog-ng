@@ -176,7 +176,9 @@ _process_message_element(PDBLoader *state,
   for (i = 0; attribute_names[i]; i++)
     {
       if (strcmp(attribute_names[i], "inherit-properties") == 0)
-        pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
+        pdb_action_set_message_inherit_properties(state->current_action, attribute_values[i], error);
+      else if (strcmp(attribute_names[i], "inherit-mode") == 0)
+        pdb_action_set_message_inherit_mode(state->current_action, attribute_values[i], error);
     }
   state->current_message = &state->current_action->content.message;
   _push_state(state, PDBL_MESSAGE);
