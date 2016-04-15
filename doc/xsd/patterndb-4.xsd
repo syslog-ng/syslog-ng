@@ -390,6 +390,7 @@
           </xs:annotation>
           <xs:simpleType>
             <xs:restriction base="xs:string">
+              <xs:enumeration value="context"/>
               <xs:enumeration value="TRUE"/>
               <xs:enumeration value="FALSE"/>
             </xs:restriction>
