@@ -41,6 +41,7 @@ enum PDBLoaderState
   PDBL_RULESET_PATTERN,
   PDBL_RULES,
   PDBL_RULE,
+  PDBL_RULE_PATTERN,
   PDBL_RULE_EXAMPLES,
   PDBL_RULE_EXAMPLE,
   PDBL_RULE_ACTIONS,
@@ -238,6 +239,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       else if (strcmp(element_name, "pattern") == 0)
         {
+          state->current_state = PDBL_RULE_PATTERN;
           state->in_pattern = TRUE;
         }
       else if (strcmp(element_name, "description") == 0)
@@ -514,10 +516,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         {
           /* valid, but we don't do anything */
         }
-      else if (strcmp(element_name, "pattern") == 0)
-        {
-          state->in_pattern = FALSE;
-        }
       else if (strcmp(element_name, "description") == 0)
         {
           /* valid, but we don't do anything */
@@ -544,6 +542,16 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
       else
         {
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values> or </value>", element_name);
+        }
+      break;
+    case PDBL_RULE_PATTERN:
+      if (strcmp(element_name, "pattern") == 0)
+        {
+          state->current_state = PDBL_RULE;
+        }
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </pattern>", element_name);
         }
       break;
     case PDBL_RULE_EXAMPLES:
@@ -700,12 +708,6 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
         }
       break;
     case PDBL_RULE:
-      if (state->in_pattern)
-        {
-          program_pattern.pattern = g_strdup(text);
-          program_pattern.rule = pdb_rule_ref(state->current_rule);
-          g_array_append_val(state->program_patterns, program_pattern);
-        }
       if (state->in_tag)
         {
           synthetic_message_add_tag(state->current_message, text);
@@ -719,6 +721,11 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
               return;
             }
         }
+      break;
+    case PDBL_RULE_PATTERN:
+      program_pattern.pattern = g_strdup(text);
+      program_pattern.rule = pdb_rule_ref(state->current_rule);
+      g_array_append_val(state->program_patterns, program_pattern);
       break;
     case PDBL_RULE_ACTION_MESSAGE:
       if (state->in_tag)
