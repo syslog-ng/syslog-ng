@@ -21,6 +21,7 @@
  *
  */
 #include "pdb-rule.h"
+#include "pdb-error.h"
 
 void
 pdb_rule_set_class(PDBRule *self, const gchar *class)
@@ -69,7 +70,7 @@ pdb_rule_set_context_scope(PDBRule *self, const gchar *scope, GError **error)
   if (context_scope < 0)
     {
       self->context_scope = RCS_GLOBAL;
-      g_set_error(error, 0, 1, "Unknown context scope: %s", scope);
+      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown context scope: %s", scope);
     }
   else
     self->context_scope = context_scope;
