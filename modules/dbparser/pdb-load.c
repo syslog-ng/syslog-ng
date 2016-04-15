@@ -168,11 +168,11 @@ _process_tag_element(PDBLoader *state,
 static void
 _process_message_element(PDBLoader *state,
                          const gchar **attribute_names, const gchar **attribute_values,
+                         SyntheticMessage *target,
                          GError **error)
 {
   gint i;
 
-  state->current_action->content_type = RAC_MESSAGE;
   for (i = 0; attribute_names[i]; i++)
     {
       if (strcmp(attribute_names[i], "inherit-properties") == 0)
@@ -180,7 +180,7 @@ _process_message_element(PDBLoader *state,
       else if (strcmp(attribute_names[i], "inherit-mode") == 0)
         synthetic_message_set_inherit_mode_string(target, attribute_values[i], error);
     }
-  state->current_message = &state->current_action->content.message;
+  state->current_message = target;
   _push_state(state, PDBL_MESSAGE);
 }
 
@@ -421,7 +421,8 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_ACTION:
       if (strcmp(element_name, "message") == 0)
         {
-          _process_message_element(state, attribute_names, attribute_values, error);
+          state->current_action->content_type = RAC_MESSAGE;
+          _process_message_element(state, attribute_names, attribute_values, &state->current_action->content.message, error);
         }
       else
         {
