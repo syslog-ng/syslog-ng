@@ -440,7 +440,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </patterndb>", element_name);
         }
       break;
-    default:
+    case PDBL_RULESET:
       if (strcmp(element_name, "ruleset") == 0)
         {
           if (!state->in_ruleset)
@@ -470,7 +470,21 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           state->program_patterns = NULL;
           state->current_state = PDBL_PATTERNDB;
         }
-      else if (strcmp(element_name, "examples") == 0)
+      else if (strcmp(element_name, "patterns") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "pattern") == 0)
+        {
+          state->in_pattern = FALSE;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </ruleset>, </patterns> or </pattern>", element_name);
+        }
+      break;
+    default:
+      if (strcmp(element_name, "examples") == 0)
         {
           state->current_state = PDBL_RULE;
         }
