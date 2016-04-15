@@ -547,12 +547,18 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values> or </value>", element_name);
         }
       break;
-    default:
+    case PDBL_RULE_EXAMPLES:
       if (strcmp(element_name, "examples") == 0)
         {
           state->current_state = PDBL_RULE;
         }
-      else if (strcmp(element_name, "example") == 0)
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </examples>", element_name);
+        }
+      break;
+    default:
+      if (strcmp(element_name, "example") == 0)
         {
           if (!state->in_example)
             {
