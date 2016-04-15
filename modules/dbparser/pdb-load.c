@@ -618,8 +618,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
 
           state->value_name = NULL;
         }
-      else if (strcmp(element_name, "pattern") == 0)
-        state->in_pattern = FALSE;
       else if (strcmp(element_name, "tag") == 0)
         state->in_tag = FALSE;
       else if (strcmp(element_name, "action") == 0)
