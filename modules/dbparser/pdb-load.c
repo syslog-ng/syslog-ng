@@ -308,6 +308,34 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <message>", element_name);
         }
       break;
+    case PDBL_RULE_ACTION_MESSAGE:
+      if (strcmp(element_name, "values") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "value") == 0)
+        {
+          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+            state->value_name = g_strdup(attribute_values[0]);
+          else
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
+              return;
+            }
+        }
+      else if (strcmp(element_name, "tags") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "tag") == 0)
+        {
+          state->in_tag = TRUE;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <values>, <value>, <tags> or <tag>", element_name);
+        }
+      break;
     default:
       if (strcmp(element_name, "example") == 0)
         {
@@ -354,25 +382,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               msg_error("No name is specified for test_value",
                         evt_tag_str("rule_id", state->current_rule->rule_id));
               g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<test_value> misses name attribute");
-              return;
-            }
-        }
-      else if (strcmp(element_name, "pattern") == 0)
-        {
-          state->in_pattern = TRUE;
-        }
-      else if (strcmp(element_name, "tag") == 0)
-        {
-          state->in_tag = TRUE;
-        }
-      else if (strcmp(element_name, "value") == 0)
-        {
-          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-            state->value_name = g_strdup(attribute_values[0]);
-          else
-            {
-              msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_rule->rule_id));
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<value> misses name attribute");
               return;
             }
         }
