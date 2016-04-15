@@ -66,7 +66,6 @@ typedef struct _PDBLoader
   gboolean in_tag;
   gboolean in_test_msg;
   gboolean in_test_value;
-  gboolean in_action;
   gboolean load_examples;
   GList *examples;
   gchar *value_name;
@@ -355,7 +354,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               else if (strcmp(attribute_names[i], "rate") == 0)
                 pdb_action_set_rate(state->current_action, attribute_values[i]);
             }
-          state->in_action = TRUE;
           state->current_state = PDBL_RULE_ACTION;
         }
       else
@@ -366,21 +364,13 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_ACTION:
       if (strcmp(element_name, "message") == 0)
         {
-          if (state->in_action)
+          state->current_action->content_type = RAC_MESSAGE;
+          for (i = 0; attribute_names[i]; i++)
             {
-              state->current_action->content_type = RAC_MESSAGE;
-              for (i = 0; attribute_names[i]; i++)
-                {
-                  if (strcmp(attribute_names[i], "inherit-properties") == 0)
-                    pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
-                }
-              state->current_message = &state->current_action->content.message;
+              if (strcmp(attribute_names[i], "inherit-properties") == 0)
+                pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
             }
-          else
-            {
-              pdb_loader_set_error(state, error, "Unexpected <message> element, it must be inside an action");
-              return;
-            }
+          state->current_message = &state->current_action->content.message;
           state->current_state = PDBL_RULE_ACTION_MESSAGE;
         }
       else
@@ -616,7 +606,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULE_ACTION:
       if (strcmp(element_name, "action") == 0)
         {
-          state->in_action = FALSE;
           pdb_rule_add_action(state->current_rule, state->current_action);
           state->current_action = NULL;
           state->current_state = PDBL_RULE_ACTIONS;
