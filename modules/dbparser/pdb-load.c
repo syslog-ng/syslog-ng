@@ -52,6 +52,7 @@ enum PDBLoaderState
   PDBL_RULE_ACTIONS,
   PDBL_RULE_ACTION,
   PDBL_RULE_ACTION_MESSAGE,
+  PDBL_RULE_ACTION_MESSAGE_VALUE,
   PDBL_RULE_ACTION_MESSAGE_TAG,
 };
 
@@ -392,6 +393,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               pdb_loader_set_error(state, error, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
               return;
             }
+          state->current_state = PDBL_RULE_ACTION_MESSAGE_VALUE;
         }
       else if (strcmp(element_name, "tags") == 0)
         {
@@ -655,20 +657,27 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         {
           /* valid, but we don't do anything */
         }
-      else if (strcmp(element_name, "value") == 0)
-        {
-          if (state->value_name)
-            g_free(state->value_name);
-
-          state->value_name = NULL;
-        }
       else if (strcmp(element_name, "tags") == 0)
         {
           /* valid, but we don't do anything */
         }
       else
         {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>, </values>, </value>, </tags>", element_name);
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>, </values> or </tags>", element_name);
+        }
+      break;
+    case PDBL_RULE_ACTION_MESSAGE_VALUE:
+      if (strcmp(element_name, "value") == 0)
+        {
+          if (state->value_name)
+            g_free(state->value_name);
+
+          state->value_name = NULL;
+          state->current_state = PDBL_RULE_ACTION_MESSAGE;
+        }
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </value>", element_name);
         }
       break;
     case PDBL_RULE_ACTION_MESSAGE_TAG:
@@ -745,7 +754,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
       program_pattern.rule = pdb_rule_ref(state->current_rule);
       g_array_append_val(state->program_patterns, program_pattern);
       break;
-    case PDBL_RULE_ACTION_MESSAGE:
+    case PDBL_RULE_ACTION_MESSAGE_VALUE:
       if (state->value_name)
         {
           if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
