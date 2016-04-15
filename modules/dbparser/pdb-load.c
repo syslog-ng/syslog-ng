@@ -50,7 +50,6 @@ enum PDBLoaderState
   PDBL_RULE_ACTIONS,
   PDBL_RULE_ACTION,
   PDBL_RULE_ACTION_MESSAGE,
-  PDBL_RULE_ACTION_MESSAGE_TAG,
 
   /* generic states, reused by multiple paths in the XML */
   PDBL_VALUE,
@@ -432,7 +431,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       else if (strcmp(element_name, "tag") == 0)
         {
-          state->current_state = PDBL_RULE_ACTION_MESSAGE_TAG;
+          _process_tag_element(state, attribute_names, attribute_values, error);
         }
       else
         {
@@ -673,16 +672,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>, </values> or </tags>", element_name);
         }
       break;
-    case PDBL_RULE_ACTION_MESSAGE_TAG:
-      if (strcmp(element_name, "tag") == 0)
-        {
-          state->current_state = PDBL_RULE_ACTION_MESSAGE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
-        }
-      break;
 
     /* generic states reused by multiple locations in the grammar */
 
@@ -761,9 +750,6 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
       program_pattern.pattern = g_strdup(text);
       program_pattern.rule = pdb_rule_ref(state->current_rule);
       g_array_append_val(state->program_patterns, program_pattern);
-      break;
-    case PDBL_RULE_ACTION_MESSAGE_TAG:
-      synthetic_message_add_tag(state->current_message, text);
       break;
     case PDBL_RULE_EXAMPLE:
       break;
