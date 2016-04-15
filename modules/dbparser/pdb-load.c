@@ -41,6 +41,7 @@ enum PDBLoaderState
   PDBL_RULESET_PATTERN,
   PDBL_RULES,
   PDBL_RULE,
+  PDBL_RULE_VALUE,
   PDBL_RULE_PATTERN,
   PDBL_RULE_TAG,
   PDBL_RULE_EXAMPLES,
@@ -266,6 +267,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               pdb_loader_set_error(state, error, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
               return;
             }
+          state->current_state = PDBL_RULE_VALUE;
         }
       else if (strcmp(element_name, "actions") == 0)
         {
@@ -521,16 +523,23 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         {
           /* valid, but we don't do anything */
         }
-      else if (strcmp(element_name, "value") == 0)
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values>", element_name);
+        }
+      break;
+    case PDBL_RULE_VALUE:
+      if (strcmp(element_name, "value") == 0)
         {
           if (state->value_name)
             g_free(state->value_name);
 
           state->value_name = NULL;
+          state->current_state = PDBL_RULE;
         }
       else
         {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values> or </value>", element_name);
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </value>", element_name);
         }
       break;
     case PDBL_RULE_TAG:
@@ -717,7 +726,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
             }
         }
       break;
-    case PDBL_RULE:
+    case PDBL_RULE_VALUE:
       if (state->value_name)
         {
           if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
