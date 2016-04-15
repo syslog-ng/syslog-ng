@@ -41,6 +41,7 @@ enum PDBLoaderState
   PDBL_RULE,
   PDBL_RULE_EXAMPLES,
   PDBL_RULE_ACTIONS,
+  PDBL_RULE_ACTION,
 };
 
 /* arguments passed to the markup parser functions */
@@ -254,6 +255,33 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <patterns>, <pattern>, <tags>, <tag> or <actions>", element_name);
         }
       break;
+    case PDBL_RULE_ACTIONS:
+      if (strcmp(element_name, "action") == 0)
+        {
+          if (!state->current_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <action> element, it must be inside a rule");
+              return;
+            }
+          state->current_action = pdb_action_new(state->action_id++);
+
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "trigger") == 0)
+                pdb_action_set_trigger(state->current_action, attribute_values[i], error);
+              else if (strcmp(attribute_names[i], "condition") == 0)
+                pdb_action_set_condition(state->current_action, state->cfg, attribute_values[i], error);
+              else if (strcmp(attribute_names[i], "rate") == 0)
+                pdb_action_set_rate(state->current_action, attribute_values[i]);
+            }
+          state->in_action = TRUE;
+          state->current_state = PDBL_RULE_ACTION;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <action>", element_name);
+        }
+      break;
     default:
       if (strcmp(element_name, "example") == 0)
         {
@@ -321,26 +349,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<value> misses name attribute");
               return;
             }
-        }
-      else if (strcmp(element_name, "action") == 0)
-        {
-          if (!state->current_rule)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <action> element, it must be inside a rule");
-              return;
-            }
-          state->current_action = pdb_action_new(state->action_id++);
-
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "trigger") == 0)
-                pdb_action_set_trigger(state->current_action, attribute_values[i], error);
-              else if (strcmp(attribute_names[i], "condition") == 0)
-                pdb_action_set_condition(state->current_action, state->cfg, attribute_values[i], error);
-              else if (strcmp(attribute_names[i], "rate") == 0)
-                pdb_action_set_rate(state->current_action, attribute_values[i]);
-            }
-          state->in_action = TRUE;
         }
       else if (strcmp(element_name, "message") == 0)
         {
@@ -499,6 +507,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           state->in_action = FALSE;
           pdb_rule_add_action(state->current_rule, state->current_action);
           state->current_action = NULL;
+          state->current_state = PDBL_RULE_ACTIONS;
         }
       else if (strcmp(element_name, "actions") == 0)
         {
