@@ -69,7 +69,6 @@ typedef struct _PDBLoader
   SyntheticMessage *current_message;
   enum PDBLoaderState current_state;
   gboolean first_program;
-  gboolean in_test_value;
   gboolean load_examples;
   GList *examples;
   gchar *value_name;
@@ -315,14 +314,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_EXAMPLE_TEST_VALUES:
       if (strcmp(element_name, "test_value") == 0)
         {
-          if (state->in_test_value)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <test_value> element");
-              return;
-            }
-
-          state->in_test_value = TRUE;
-
           if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
             state->test_value_name = g_strdup(attribute_values[0]);
           else
@@ -601,14 +592,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULE_EXAMPLE_TEST_VALUE:
       if (strcmp(element_name, "test_value") == 0)
         {
-          if (!state->in_test_value)
-            {
-              pdb_loader_set_error(state, error, "Unexpected </test_value> element");
-              return;
-            }
-
-          state->in_test_value = FALSE;
-
           if (state->test_value_name)
             g_free(state->test_value_name);
 
@@ -773,18 +756,15 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
       state->current_example->message = g_strdup(text);
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUE:
-      if (state->in_test_value)
-        {
-          if (!state->current_example->values)
-            state->current_example->values = g_ptr_array_new();
+      if (!state->current_example->values)
+        state->current_example->values = g_ptr_array_new();
 
-          nv = g_new(gchar *, 2);
-          nv[0] = state->test_value_name;
-          state->test_value_name = NULL;
-          nv[1] = g_strdup(text);
+      nv = g_new(gchar *, 2);
+      nv[0] = state->test_value_name;
+      state->test_value_name = NULL;
+      nv[1] = g_strdup(text);
 
-          g_ptr_array_add(state->current_example->values, nv);
-        }
+      g_ptr_array_add(state->current_example->values, nv);
       break;
     default:
       if (!_is_whitespace_only(text, text_len))
