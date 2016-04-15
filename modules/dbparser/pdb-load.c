@@ -64,7 +64,6 @@ typedef struct _PDBLoader
   gboolean first_program;
   gboolean in_pattern;
   gboolean in_ruleset;
-  gboolean in_rule;
   gboolean in_tag;
   gboolean in_example;
   gboolean in_test_msg;
@@ -202,12 +201,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULES:
       if (strcmp(element_name, "rule") == 0)
         {
-          if (state->in_rule)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <rule> element");
-              return;
-            }
-
           state->current_rule = pdb_rule_new();
           for (i = 0; attribute_names[i]; i++)
             {
@@ -237,7 +230,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               return;
             }
 
-          state->in_rule = TRUE;
           state->current_message = &state->current_rule->msg;
           state->action_id = 0;
           state->current_state = PDBL_RULE;
@@ -298,7 +290,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_EXAMPLES:
       if (strcmp(element_name, "example") == 0)
         {
-          if (state->in_example || !state->in_rule)
+          if (state->in_example)
             {
               pdb_loader_set_error(state, error, "Unexpected <example> element");
               return;
@@ -534,13 +526,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULE:
       if (strcmp(element_name, "rule") == 0)
         {
-          if (!state->in_rule)
-            {
-              pdb_loader_set_error(state, error, "Unexpected </rule> element");
-              return;
-            }
-
-          state->in_rule = FALSE;
           if (state->current_rule)
             {
               pdb_rule_unref(state->current_rule);
@@ -756,29 +741,16 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
     case PDBL_RULE:
       if (state->in_pattern)
         {
-          if (state->in_rule)
-            {
-              program_pattern.pattern = g_strdup(text);
-              program_pattern.rule = pdb_rule_ref(state->current_rule);
-              g_array_append_val(state->program_patterns, program_pattern);
-            }
+          program_pattern.pattern = g_strdup(text);
+          program_pattern.rule = pdb_rule_ref(state->current_rule);
+          g_array_append_val(state->program_patterns, program_pattern);
         }
       if (state->in_tag)
         {
-          if (!state->in_rule)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <tag> element, must be within a rule");
-              return;
-            }
           synthetic_message_add_tag(state->current_message, text);
         }
       if (state->value_name)
         {
-          if (!state->in_rule)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <value> element, must be within a rule");
-              return;
-            }
           if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
             {
               pdb_loader_set_error(state, error, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
@@ -790,20 +762,10 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
     case PDBL_RULE_ACTION_MESSAGE:
       if (state->in_tag)
         {
-          if (!state->in_rule)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <tag> element, must be within a rule");
-              return;
-            }
           synthetic_message_add_tag(state->current_message, text);
         }
       if (state->value_name)
         {
-          if (!state->in_rule)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <value> element, must be within a rule");
-              return;
-            }
           if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
             {
               pdb_loader_set_error(state, error, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
