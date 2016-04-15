@@ -428,13 +428,19 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
 
   switch (state->current_state)
     {
-    default:
+    case PDBL_PATTERNDB:
       if (strcmp(element_name, "patterndb") == 0)
         {
           g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
           g_hash_table_remove_all(state->ruleset_patterns);
           state->current_state = PDBL_INITIAL;
         }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </patterndb>", element_name);
+        }
+      break;
+    default:
       if (strcmp(element_name, "ruleset") == 0)
         {
           if (!state->in_ruleset)
