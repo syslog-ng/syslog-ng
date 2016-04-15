@@ -64,7 +64,6 @@ typedef struct _PDBLoader
   SyntheticMessage *current_message;
   enum PDBLoaderState current_state;
   gboolean first_program;
-  gboolean in_pattern;
   gboolean in_tag;
   gboolean in_test_msg;
   gboolean in_test_value;
@@ -183,7 +182,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       else if (strcmp(element_name, "pattern") == 0)
         {
-          state->in_pattern = TRUE;
           state->current_state = PDBL_RULESET_PATTERN;
         }
       else
@@ -240,7 +238,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       else if (strcmp(element_name, "pattern") == 0)
         {
           state->current_state = PDBL_RULE_PATTERN;
-          state->in_pattern = TRUE;
         }
       else if (strcmp(element_name, "description") == 0)
         {
@@ -483,7 +480,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULESET_PATTERN:
       if (strcmp(element_name, "pattern") == 0)
         {
-          state->in_pattern = FALSE;
           state->current_state = PDBL_RULESET;
         }
       else
