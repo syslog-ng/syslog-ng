@@ -73,6 +73,7 @@ pdb_rule_new(void)
 
   g_atomic_counter_set(&self->ref_cnt, 1);
   synthetic_context_init(&self->context);
+  synthetic_message_init(&self->msg);
   return self;
 }
 
