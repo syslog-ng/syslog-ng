@@ -42,6 +42,7 @@ enum PDBLoaderState
   PDBL_RULES,
   PDBL_RULE,
   PDBL_RULE_PATTERN,
+  PDBL_RULE_TAG,
   PDBL_RULE_EXAMPLES,
   PDBL_RULE_EXAMPLE,
   PDBL_RULE_ACTIONS,
@@ -250,6 +251,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       else if (strcmp(element_name, "tag") == 0)
         {
           state->in_tag = TRUE;
+          state->current_state = PDBL_RULE_TAG;
         }
       else if (strcmp(element_name, "values") == 0)
         {
@@ -520,10 +522,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         {
           /* valid, but we don't do anything */
         }
-      else if (strcmp(element_name, "tag") == 0)
-        {
-          state->in_tag = FALSE;
-        }
       else if (strcmp(element_name, "values") == 0)
         {
           /* valid, but we don't do anything */
@@ -538,6 +536,17 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
       else
         {
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values> or </value>", element_name);
+        }
+      break;
+    case PDBL_RULE_TAG:
+      if (strcmp(element_name, "tag") == 0)
+        {
+          state->in_tag = FALSE;
+          state->current_state = PDBL_RULE;
+        }
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
         }
       break;
     case PDBL_RULE_PATTERN:
@@ -704,10 +713,6 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
         }
       break;
     case PDBL_RULE:
-      if (state->in_tag)
-        {
-          synthetic_message_add_tag(state->current_message, text);
-        }
       if (state->value_name)
         {
           if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
@@ -717,6 +722,9 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
               return;
             }
         }
+      break;
+    case PDBL_RULE_TAG:
+      synthetic_message_add_tag(state->current_message, text);
       break;
     case PDBL_RULE_PATTERN:
       program_pattern.pattern = g_strdup(text);
