@@ -32,6 +32,11 @@
 #include <stdlib.h>
 #include <errno.h>
 
+enum PDBLoaderState
+{
+  PDBL_INITIAL = 0,
+};
+
 /* arguments passed to the markup parser functions */
 typedef struct _PDBLoader
 {
@@ -42,6 +47,7 @@ typedef struct _PDBLoader
   PDBAction *current_action;
   PDBExample *current_example;
   SyntheticMessage *current_message;
+  enum PDBLoaderState current_state;
   gboolean first_program;
   gboolean in_pattern;
   gboolean in_ruleset;
@@ -74,186 +80,190 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
   PDBLoader *state = (PDBLoader *) user_data;
   gint i;
 
-  if (strcmp(element_name, "ruleset") == 0)
+  switch (state->current_state)
     {
-      if (state->in_ruleset)
+    default:
+      if (strcmp(element_name, "ruleset") == 0)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <ruleset> element");
-          return;
-        }
-
-      state->ruleset->is_empty = FALSE;
-      state->in_ruleset = TRUE;
-      state->first_program = TRUE;
-      state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
-    }
-  else if (strcmp(element_name, "example") == 0)
-    {
-      if (state->in_example || !state->in_rule)
-        {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <example> element");
-          return;
-        }
-
-      state->in_example = TRUE;
-      state->current_example = g_new0(PDBExample, 1);
-      state->current_example->rule = pdb_rule_ref(state->current_rule);
-    }
-  else if (strcmp(element_name, "test_message") == 0)
-    {
-      if (state->in_test_msg || !state->in_example)
-        {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <test_message> element");
-          return;
-        }
-
-      state->in_test_msg = TRUE;
-
-      for (i = 0; attribute_names[i]; i++)
-        {
-          if (strcmp(attribute_names[i], "program") == 0)
-            state->current_example->program = g_strdup(attribute_values[i]);
-        }
-    }
-  else if (strcmp(element_name, "test_value") == 0)
-    {
-      if (state->in_test_value || !state->in_example)
-        {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <test_value> element");
-          return;
-        }
-
-      state->in_test_value = TRUE;
-
-      if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-        state->test_value_name = g_strdup(attribute_values[0]);
-      else
-        {
-          msg_error("No name is specified for test_value",
-                    evt_tag_str("rule_id", state->current_rule->rule_id));
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<test_value> misses name attribute");
-          return;
-        }
-    }
-  else if (strcmp(element_name, "rule") == 0)
-    {
-      if (state->in_rule)
-        {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <rule> element");
-          return;
-        }
-
-      state->current_rule = pdb_rule_new();
-      for (i = 0; attribute_names[i]; i++)
-        {
-          if (strcmp(attribute_names[i], "class") == 0)
-            pdb_rule_set_class(state->current_rule, attribute_values[i]);
-          else if (strcmp(attribute_names[i], "id") == 0)
-            pdb_rule_set_rule_id(state->current_rule, attribute_values[i]);
-          else if (strcmp(attribute_names[i], "context-id") == 0)
+          if (state->in_ruleset)
             {
-              LogTemplate *template;
-
-              template = log_template_new(state->cfg, NULL);
-              log_template_compile(template, attribute_values[i], NULL);
-              pdb_rule_set_context_id_template(state->current_rule, template);
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <ruleset> element");
+              return;
             }
-          else if (strcmp(attribute_names[i], "context-timeout") == 0)
-            pdb_rule_set_context_timeout(state->current_rule, strtol(attribute_values[i], NULL, 0));
-          else if (strcmp(attribute_names[i], "context-scope") == 0)
-            pdb_rule_set_context_scope(state->current_rule, attribute_values[i], error);
-        }
 
-      if (!state->current_rule->rule_id)
-        {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "No id attribute for rule element");
-          pdb_rule_unref(state->current_rule);
-          state->current_rule = NULL;
-          return;
+          state->ruleset->is_empty = FALSE;
+          state->in_ruleset = TRUE;
+          state->first_program = TRUE;
+          state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
         }
+      else if (strcmp(element_name, "example") == 0)
+        {
+          if (state->in_example || !state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <example> element");
+              return;
+            }
 
-      state->in_rule = TRUE;
-      state->current_message = &state->current_rule->msg;
-      state->action_id = 0;
-    }
-  else if (strcmp(element_name, "pattern") == 0)
-    {
-      state->in_pattern = TRUE;
-    }
-  else if (strcmp(element_name, "tag") == 0)
-    {
-      state->in_tag = TRUE;
-    }
-  else if (strcmp(element_name, "value") == 0)
-    {
-      if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-        state->value_name = g_strdup(attribute_values[0]);
-      else
-        {
-          msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_rule->rule_id));
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<value> misses name attribute");
-          return;
+          state->in_example = TRUE;
+          state->current_example = g_new0(PDBExample, 1);
+          state->current_example->rule = pdb_rule_ref(state->current_rule);
         }
-    }
-  else if (strcmp(element_name, "patterndb") == 0)
-    {
-      for (i = 0; attribute_names[i]; i++)
+      else if (strcmp(element_name, "test_message") == 0)
         {
-          if (strcmp(attribute_names[i], "version") == 0)
-            state->ruleset->version = g_strdup(attribute_values[i]);
-          else if (strcmp(attribute_names[i], "pub_date") == 0)
-            state->ruleset->pub_date = g_strdup(attribute_values[i]);
-        }
-      if (!state->ruleset->version)
-        {
-          msg_warning("patterndb version is unspecified, assuming v4 format");
-          state->ruleset->version = g_strdup("4");
-        }
-      else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
-        {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
-          return;
-        }
-      else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
-        {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
-          return;
-        }
-    }
-  else if (strcmp(element_name, "action") == 0)
-    {
-      if (!state->current_rule)
-        {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <action> element, it must be inside a rule");
-          return;
-        }
-      state->current_action = pdb_action_new(state->action_id++);
+          if (state->in_test_msg || !state->in_example)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <test_message> element");
+              return;
+            }
 
-      for (i = 0; attribute_names[i]; i++)
-        {
-          if (strcmp(attribute_names[i], "trigger") == 0)
-            pdb_action_set_trigger(state->current_action, attribute_values[i], error);
-          else if (strcmp(attribute_names[i], "condition") == 0)
-            pdb_action_set_condition(state->current_action, state->cfg, attribute_values[i], error);
-          else if (strcmp(attribute_names[i], "rate") == 0)
-            pdb_action_set_rate(state->current_action, attribute_values[i]);
+          state->in_test_msg = TRUE;
+
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "program") == 0)
+                state->current_example->program = g_strdup(attribute_values[i]);
+            }
         }
-      state->in_action = TRUE;
-    }
-  else if (strcmp(element_name, "message") == 0)
-    {
-      for (i = 0; attribute_names[i]; i++)
+      else if (strcmp(element_name, "test_value") == 0)
         {
-          if (strcmp(attribute_names[i], "inherit-properties") == 0)
-            pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
+          if (state->in_test_value || !state->in_example)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <test_value> element");
+              return;
+            }
+
+          state->in_test_value = TRUE;
+
+          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+            state->test_value_name = g_strdup(attribute_values[0]);
+          else
+            {
+              msg_error("No name is specified for test_value",
+                        evt_tag_str("rule_id", state->current_rule->rule_id));
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<test_value> misses name attribute");
+              return;
+            }
         }
-      if (!state->in_action)
+      else if (strcmp(element_name, "rule") == 0)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <message> element, it must be inside an action");
-          return;
+          if (state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <rule> element");
+              return;
+            }
+
+          state->current_rule = pdb_rule_new();
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "class") == 0)
+                pdb_rule_set_class(state->current_rule, attribute_values[i]);
+              else if (strcmp(attribute_names[i], "id") == 0)
+                pdb_rule_set_rule_id(state->current_rule, attribute_values[i]);
+              else if (strcmp(attribute_names[i], "context-id") == 0)
+                {
+                  LogTemplate *template;
+
+                  template = log_template_new(state->cfg, NULL);
+                  log_template_compile(template, attribute_values[i], NULL);
+                  pdb_rule_set_context_id_template(state->current_rule, template);
+                }
+              else if (strcmp(attribute_names[i], "context-timeout") == 0)
+                pdb_rule_set_context_timeout(state->current_rule, strtol(attribute_values[i], NULL, 0));
+              else if (strcmp(attribute_names[i], "context-scope") == 0)
+                pdb_rule_set_context_scope(state->current_rule, attribute_values[i], error);
+            }
+
+          if (!state->current_rule->rule_id)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "No id attribute for rule element");
+              pdb_rule_unref(state->current_rule);
+              state->current_rule = NULL;
+              return;
+            }
+
+          state->in_rule = TRUE;
+          state->current_message = &state->current_rule->msg;
+          state->action_id = 0;
         }
-      state->current_action->content_type = RAC_MESSAGE;
-      state->current_message = &state->current_action->content.message;
+      else if (strcmp(element_name, "pattern") == 0)
+        {
+          state->in_pattern = TRUE;
+        }
+      else if (strcmp(element_name, "tag") == 0)
+        {
+          state->in_tag = TRUE;
+        }
+      else if (strcmp(element_name, "value") == 0)
+        {
+          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+            state->value_name = g_strdup(attribute_values[0]);
+          else
+            {
+              msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_rule->rule_id));
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<value> misses name attribute");
+              return;
+            }
+        }
+      else if (strcmp(element_name, "patterndb") == 0)
+        {
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "version") == 0)
+                state->ruleset->version = g_strdup(attribute_values[i]);
+              else if (strcmp(attribute_names[i], "pub_date") == 0)
+                state->ruleset->pub_date = g_strdup(attribute_values[i]);
+            }
+          if (!state->ruleset->version)
+            {
+              msg_warning("patterndb version is unspecified, assuming v4 format");
+              state->ruleset->version = g_strdup("4");
+            }
+          else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
+              return;
+            }
+          else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
+              return;
+            }
+        }
+      else if (strcmp(element_name, "action") == 0)
+        {
+          if (!state->current_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <action> element, it must be inside a rule");
+              return;
+            }
+          state->current_action = pdb_action_new(state->action_id++);
+
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "trigger") == 0)
+                pdb_action_set_trigger(state->current_action, attribute_values[i], error);
+              else if (strcmp(attribute_names[i], "condition") == 0)
+                pdb_action_set_condition(state->current_action, state->cfg, attribute_values[i], error);
+              else if (strcmp(attribute_names[i], "rate") == 0)
+                pdb_action_set_rate(state->current_action, attribute_values[i]);
+            }
+          state->in_action = TRUE;
+        }
+      else if (strcmp(element_name, "message") == 0)
+        {
+          for (i = 0; attribute_names[i]; i++)
+            {
+              if (strcmp(attribute_names[i], "inherit-properties") == 0)
+                pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
+            }
+          if (!state->in_action)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <message> element, it must be inside an action");
+              return;
+            }
+          state->current_action->content_type = RAC_MESSAGE;
+          state->current_message = &state->current_action->content.message;
+        }
     }
 }
 
@@ -275,118 +285,121 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
   PDBProgram *program;
   int i;
 
-
-  if (strcmp(element_name, "patterndb") == 0)
+  switch (state->current_state)
     {
-      g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
-      g_hash_table_remove_all(state->ruleset_patterns);
-    }
-  if (strcmp(element_name, "ruleset") == 0)
-    {
-      if (!state->in_ruleset)
+    default:
+      if (strcmp(element_name, "patterndb") == 0)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </ruleset> element");
-          return;
+          g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
+          g_hash_table_remove_all(state->ruleset_patterns);
         }
-
-      program = (state->current_program ? state->current_program : state->root_program);
-
-      /* Copy stored rules into current program */
-      for (i = 0; i < state->program_patterns->len; i++)
+      if (strcmp(element_name, "ruleset") == 0)
         {
-          program_pattern = &g_array_index(state->program_patterns, PDBProgramPattern, i);
+          if (!state->in_ruleset)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </ruleset> element");
+              return;
+            }
 
-          r_insert_node(program->rules,
-                        program_pattern->pattern,
-                        program_pattern->rule,
-                        (RNodeGetValueFunc) pdb_rule_get_name);
-          g_free(program_pattern->pattern);
+          program = (state->current_program ? state->current_program : state->root_program);
+
+          /* Copy stored rules into current program */
+          for (i = 0; i < state->program_patterns->len; i++)
+            {
+              program_pattern = &g_array_index(state->program_patterns, PDBProgramPattern, i);
+
+              r_insert_node(program->rules,
+                            program_pattern->pattern,
+                            program_pattern->rule,
+                            (RNodeGetValueFunc) pdb_rule_get_name);
+              g_free(program_pattern->pattern);
+            }
+
+          state->current_program = NULL;
+          state->in_ruleset = FALSE;
+
+          g_array_free(state->program_patterns, TRUE);
+          state->program_patterns = NULL;
         }
-
-      state->current_program = NULL;
-      state->in_ruleset = FALSE;
-
-      g_array_free(state->program_patterns, TRUE);
-      state->program_patterns = NULL;
-    }
-  else if (strcmp(element_name, "example") == 0)
-    {
-      if (!state->in_example)
+      else if (strcmp(element_name, "example") == 0)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </example> element");
-          return;
+          if (!state->in_example)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </example> element");
+              return;
+            }
+
+          state->in_example = FALSE;
+
+          if (state->load_examples)
+            state->examples = g_list_prepend(state->examples, state->current_example);
+          else
+            pdb_example_free(state->current_example);
+
+          state->current_example = NULL;
         }
-
-      state->in_example = FALSE;
-
-      if (state->load_examples)
-        state->examples = g_list_prepend(state->examples, state->current_example);
-      else
-        pdb_example_free(state->current_example);
-
-      state->current_example = NULL;
-    }
-  else if (strcmp(element_name, "test_message") == 0)
-    {
-      if (!state->in_test_msg)
+      else if (strcmp(element_name, "test_message") == 0)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </test_message> element");
-          return;
-        }
+          if (!state->in_test_msg)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </test_message> element");
+              return;
+            }
 
-      state->in_test_msg = FALSE;
-    }
-  else if (strcmp(element_name, "test_value") == 0)
-    {
-      if (!state->in_test_value)
+          state->in_test_msg = FALSE;
+        }
+      else if (strcmp(element_name, "test_value") == 0)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </test_value> element");
-          return;
+          if (!state->in_test_value)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </test_value> element");
+              return;
+            }
+
+          state->in_test_value = FALSE;
+
+          if (state->test_value_name)
+            g_free(state->test_value_name);
+
+          state->test_value_name = NULL;
         }
-
-      state->in_test_value = FALSE;
-
-      if (state->test_value_name)
-        g_free(state->test_value_name);
-
-      state->test_value_name = NULL;
-    }
-  else if (strcmp(element_name, "rule") == 0)
-    {
-      if (!state->in_rule)
+      else if (strcmp(element_name, "rule") == 0)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </rule> element");
-          return;
-        }
+          if (!state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </rule> element");
+              return;
+            }
 
-      state->in_rule = FALSE;
-      if (state->current_rule)
+          state->in_rule = FALSE;
+          if (state->current_rule)
+            {
+              pdb_rule_unref(state->current_rule);
+              state->current_rule = NULL;
+            }
+          state->current_message = NULL;
+        }
+      else if (strcmp(element_name, "value") == 0)
         {
-          pdb_rule_unref(state->current_rule);
-          state->current_rule = NULL;
-        }
-      state->current_message = NULL;
-    }
-  else if (strcmp(element_name, "value") == 0)
-    {
-      if (state->value_name)
-        g_free(state->value_name);
+          if (state->value_name)
+            g_free(state->value_name);
 
-      state->value_name = NULL;
-    }
-  else if (strcmp(element_name, "pattern") == 0)
-    state->in_pattern = FALSE;
-  else if (strcmp(element_name, "tag") == 0)
-    state->in_tag = FALSE;
-  else if (strcmp(element_name, "action") == 0)
-    {
-      state->in_action = FALSE;
-      pdb_rule_add_action(state->current_rule, state->current_action);
-      state->current_action = NULL;
-    }
-  else if (strcmp(element_name, "message") == 0)
-    {
-      state->current_message = &state->current_rule->msg;
+          state->value_name = NULL;
+        }
+      else if (strcmp(element_name, "pattern") == 0)
+        state->in_pattern = FALSE;
+      else if (strcmp(element_name, "tag") == 0)
+        state->in_tag = FALSE;
+      else if (strcmp(element_name, "action") == 0)
+        {
+          state->in_action = FALSE;
+          pdb_rule_add_action(state->current_rule, state->current_action);
+          state->current_action = NULL;
+        }
+      else if (strcmp(element_name, "message") == 0)
+        {
+          state->current_message = &state->current_rule->msg;
+        }
     }
 }
 
@@ -398,83 +411,87 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
   PDBProgramPattern program_pattern;
   gchar **nv;
 
-  if (state->in_pattern)
+  switch (state->current_state)
     {
-      if (state->in_rule)
+    default:
+      if (state->in_pattern)
         {
-          program_pattern.pattern = g_strdup(text);
-          program_pattern.rule = pdb_rule_ref(state->current_rule);
-          g_array_append_val(state->program_patterns, program_pattern);
-        }
-      else if (state->in_ruleset)
-        {
-          if (state->first_program)
+          if (state->in_rule)
             {
-              state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
-              if (state->current_program == NULL)
-                {
-                  /* create new program specific radix */
-                  state->current_program = pdb_program_new();
-                  g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
-                }
-
-              state->first_program = FALSE;
+              program_pattern.pattern = g_strdup(text);
+              program_pattern.rule = pdb_rule_ref(state->current_rule);
+              g_array_append_val(state->program_patterns, program_pattern);
             }
-          else if (state->current_program)
+          else if (state->in_ruleset)
             {
-              /* secondary program names should point to the same MSG radix */
+              if (state->first_program)
+                {
+                  state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
+                  if (state->current_program == NULL)
+                    {
+                      /* create new program specific radix */
+                      state->current_program = pdb_program_new();
+                      g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
+                    }
 
-              PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
-              if (!program)
-                {
-                  g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
+                  state->first_program = FALSE;
                 }
-              else if (program != state->current_program)
+              else if (state->current_program)
                 {
-                  g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Joining rulesets with mismatching program name sets, program=%s", text);
-                  return;
+                  /* secondary program names should point to the same MSG radix */
+
+                  PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
+                  if (!program)
+                    {
+                      g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
+                    }
+                  else if (program != state->current_program)
+                    {
+                      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Joining rulesets with mismatching program name sets, program=%s", text);
+                      return;
+                    }
                 }
             }
         }
-    }
-  else if (state->in_tag)
-    {
-      if (!state->in_rule)
+      else if (state->in_tag)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <tag> element, must be within a rule");
-          return;
+          if (!state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <tag> element, must be within a rule");
+              return;
+            }
+          synthetic_message_add_tag(state->current_message, text);
         }
-      synthetic_message_add_tag(state->current_message, text);
-    }
-  else if (state->value_name)
-    {
-      if (!state->in_rule)
+      else if (state->value_name)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <value> element, must be within a rule");
-          return;
+          if (!state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <value> element, must be within a rule");
+              return;
+            }
+          if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
+                                   state->current_rule->rule_id, state->value_name, text, err->message);
+              return;
+            }
         }
-      if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
+      else if (state->in_test_msg)
         {
-          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
-                               state->current_rule->rule_id, state->value_name, text, err->message);
-          return;
+          state->current_example->message = g_strdup(text);
         }
-    }
-  else if (state->in_test_msg)
-    {
-      state->current_example->message = g_strdup(text);
-    }
-  else if (state->in_test_value)
-    {
-      if (!state->current_example->values)
-        state->current_example->values = g_ptr_array_new();
+      else if (state->in_test_value)
+        {
+          if (!state->current_example->values)
+            state->current_example->values = g_ptr_array_new();
 
-      nv = g_new(gchar *, 2);
-      nv[0] = state->test_value_name;
-      state->test_value_name = NULL;
-      nv[1] = g_strdup(text);
+          nv = g_new(gchar *, 2);
+          nv[0] = state->test_value_name;
+          state->test_value_name = NULL;
+          nv[1] = g_strdup(text);
 
-      g_ptr_array_add(state->current_example->values, nv);
+          g_ptr_array_add(state->current_example->values, nv);
+        }
     }
 }
 
