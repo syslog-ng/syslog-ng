@@ -45,12 +45,15 @@ pdb_file_detect_version(const gchar *pdbfile, GError **error)
 
   while (fgets(line, sizeof(line), pdb))
     {
-      if (strstr(line, "<patterndb"))
+      gchar *patterndb_tag;
+
+      patterndb_tag = strstr(line, "<patterndb");
+      if (patterndb_tag)
         {
           gchar *version, *start_quote, *end_quote;
 
           /* ok, we do have the patterndb tag, look for the version attribute */
-          version = strstr(line, "version=");
+          version = strstr(patterndb_tag, "version=");
 
           if (!version)
             goto exit;
