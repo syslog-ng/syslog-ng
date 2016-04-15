@@ -23,6 +23,8 @@
 
 #include "pdb-file.h"
 #include "pdb-error.h"
+#include "reloc.h"
+#include "pathutils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,4 +78,89 @@ pdb_file_detect_version(const gchar *pdbfile, GError **error)
                   "Error detecting pdbfile version, <patterndb> version attribute not found or <patterndb> is not on its own line");
     }
   return result;
+}
+
+static const gchar *
+_get_xsddir_in_build(void)
+{
+#ifdef SYSLOG_NG_ENABLE_DEBUG
+  const gchar *srcdir;
+  static gchar path[256];
+
+  srcdir = getenv("top_srcdir");
+  if (srcdir)
+    {
+      g_snprintf(path, sizeof(path), "%s/doc/xsd", srcdir);
+      return path;
+    }
+#endif
+  return NULL;
+}
+
+static const gchar *
+_get_xsddir_in_production(void)
+{
+  return get_installation_path_for(SYSLOG_NG_PATH_XSDDIR);
+}
+
+static const gchar *
+_get_xsddir(void)
+{
+  return _get_xsddir_in_build() ? : _get_xsddir_in_production();
+}
+
+static gchar *
+_get_xsd_file(gint version)
+{
+  return g_strdup_printf("%s/patterndb-%d.xsd", _get_xsddir(), version);
+}
+
+gboolean
+pdb_file_validate(const gchar *filename, GError **error)
+{
+  gchar *xmllint_cmdline;
+  gint version;
+  gint exit_status;
+  gchar *stderr_content = NULL;
+  gchar *xsd_file;
+
+  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+  version = pdb_file_detect_version(filename, error);
+  if (!version)
+    return FALSE;
+
+  xsd_file = _get_xsd_file(version);
+  if (!is_file_regular(xsd_file))
+    {
+      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "XSD file is not available at %s", xsd_file);
+      g_free(xsd_file);
+      return FALSE;
+    }
+
+  xmllint_cmdline = g_strdup_printf("xmllint --noout --nonet --schema '%s' '%s'", xsd_file, filename);
+  g_free(xsd_file);
+
+  if (!g_spawn_command_line_sync(xmllint_cmdline, NULL, &stderr_content, &exit_status, error))
+    {
+      g_free(xmllint_cmdline);
+      g_free(stderr_content);
+      return FALSE;
+    }
+
+  if (exit_status != 0)
+    {
+      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED,
+                  "Non-zero exit code from xmllint while validating PDB file, "
+                  "schema version %d, rc=%d, error: %s, command line %s",
+                  version,
+                  WEXITSTATUS(exit_status), stderr_content,
+                  xmllint_cmdline);
+      g_free(stderr_content);
+      g_free(xmllint_cmdline);
+      return FALSE;
+    }
+  g_free(xmllint_cmdline);
+  g_free(stderr_content);
+  return TRUE;
 }

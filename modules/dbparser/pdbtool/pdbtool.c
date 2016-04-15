@@ -707,20 +707,12 @@ pdbtool_test(int argc, char *argv[])
 
       if (test_validate)
         {
-          gchar cmd[1024];
-          gint version;
+          GError *error = NULL;
 
-          version = pdb_file_detect_version(argv[arg_pos], NULL);
-          if (!version)
+          if (!pdb_file_validate(argv[arg_pos], &error))
             {
-              fprintf(stderr, "%s: Unable to detect patterndb version, please write the <patterndb> tag on a single line\n", argv[arg_pos]);
-              failed_to_validate = TRUE;
-	      continue;
-            }
-          g_snprintf(cmd, sizeof(cmd), "xmllint --noout --nonet --schema %s/patterndb-%d.xsd %s", get_installation_path_for(PATH_XSDDIR), version, argv[arg_pos]);
-          if (system(cmd) != 0)
-            {
-              fprintf(stderr, "%s: xmllint returned an error, the executed command was: %s", argv[arg_pos], cmd);
+              fprintf(stderr, "%s: error validating pdb file: %s\n", argv[arg_pos], error->message);
+              g_clear_error(&error);
               failed_to_validate = TRUE;
 	      continue;
             }
