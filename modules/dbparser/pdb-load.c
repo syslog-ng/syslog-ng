@@ -40,6 +40,7 @@ enum PDBLoaderState
   PDBL_RULES,
   PDBL_RULE,
   PDBL_RULE_EXAMPLES,
+  PDBL_RULE_EXAMPLE,
   PDBL_RULE_ACTIONS,
   PDBL_RULE_ACTION,
   PDBL_RULE_ACTION_MESSAGE,
@@ -256,6 +257,21 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <patterns>, <pattern>, <tags>, <tag> or <actions>", element_name);
         }
       break;
+    case PDBL_RULE_EXAMPLES:
+      if (strcmp(element_name, "example") == 0)
+        {
+          if (state->in_example || !state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <example> element");
+              return;
+            }
+
+          state->in_example = TRUE;
+          state->current_example = g_new0(PDBExample, 1);
+          state->current_example->rule = pdb_rule_ref(state->current_rule);
+          state->current_state = PDBL_RULE_EXAMPLE;
+        }
+      break;
     case PDBL_RULE_ACTIONS:
       if (strcmp(element_name, "action") == 0)
         {
@@ -337,19 +353,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       break;
     default:
-      if (strcmp(element_name, "example") == 0)
-        {
-          if (state->in_example || !state->in_rule)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <example> element");
-              return;
-            }
-
-          state->in_example = TRUE;
-          state->current_example = g_new0(PDBExample, 1);
-          state->current_example->rule = pdb_rule_ref(state->current_rule);
-        }
-      else if (strcmp(element_name, "test_message") == 0)
+      if (strcmp(element_name, "test_message") == 0)
         {
           if (state->in_test_msg || !state->in_example)
             {
@@ -464,6 +468,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
             pdb_example_free(state->current_example);
 
           state->current_example = NULL;
+          state->current_state = PDBL_RULE_EXAMPLES;
         }
       else if (strcmp(element_name, "test_message") == 0)
         {
