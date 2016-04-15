@@ -56,6 +56,8 @@ enum PDBLoaderState
   PDBL_RULE_ACTION_MESSAGE_TAG,
 };
 
+#define MAX_DEPTH 8
+
 /* arguments passed to the markup parser functions */
 typedef struct _PDBLoader
 {
@@ -70,6 +72,8 @@ typedef struct _PDBLoader
   PDBExample *current_example;
   SyntheticMessage *current_message;
   enum PDBLoaderState current_state;
+  gint state_stack[MAX_DEPTH];
+  gint state_stack_top;
   gboolean first_program;
   gboolean load_examples;
   GList *examples;
@@ -86,6 +90,23 @@ typedef struct _PDBProgramPattern
   gchar *pattern;
   PDBRule *rule;
 } PDBProgramPattern;
+
+static void
+_push_state(PDBLoader *state, gint new_state)
+{
+  g_assert(state->state_stack_top < MAX_DEPTH - 1);
+  state->state_stack[state->state_stack_top] = state->current_state;
+  state->state_stack_top++;
+  state->current_state = new_state;
+}
+
+static void
+_pop_state(PDBLoader *state)
+{
+  g_assert(state->state_stack_top > 0);
+  state->state_stack_top--;
+  state->current_state = state->state_stack[state->state_stack_top];
+}
 
 static gboolean
 _is_whitespace_only(const gchar *text, gsize text_len)
@@ -268,7 +289,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               pdb_loader_set_error(state, error, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
               return;
             }
-          state->current_state = PDBL_RULE_VALUE;
+          _push_state(state, PDBL_RULE_VALUE);
         }
       else if (strcmp(element_name, "actions") == 0)
         {
@@ -537,7 +558,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
             g_free(state->value_name);
 
           state->value_name = NULL;
-          state->current_state = PDBL_RULE;
+          _pop_state(state);
         }
       else
         {
