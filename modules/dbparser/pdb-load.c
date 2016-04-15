@@ -493,6 +493,60 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </rules>", element_name);
         }
       break;
+    case PDBL_RULE:
+      if (strcmp(element_name, "rule") == 0)
+        {
+          if (!state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </rule> element");
+              return;
+            }
+
+          state->in_rule = FALSE;
+          if (state->current_rule)
+            {
+              pdb_rule_unref(state->current_rule);
+              state->current_rule = NULL;
+            }
+          state->current_message = NULL;
+          state->current_state = PDBL_RULES;
+        }
+      else if (strcmp(element_name, "patterns") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "pattern") == 0)
+        {
+          state->in_pattern = FALSE;
+        }
+      else if (strcmp(element_name, "description") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "tags") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "tag") == 0)
+        {
+          state->in_tag = FALSE;
+        }
+      else if (strcmp(element_name, "values") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "value") == 0)
+        {
+          if (state->value_name)
+            g_free(state->value_name);
+
+          state->value_name = NULL;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values> or </value>", element_name);
+        }
+      break;
     default:
       if (strcmp(element_name, "examples") == 0)
         {
@@ -540,23 +594,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
             g_free(state->test_value_name);
 
           state->test_value_name = NULL;
-        }
-      else if (strcmp(element_name, "rule") == 0)
-        {
-          if (!state->in_rule)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </rule> element");
-              return;
-            }
-
-          state->in_rule = FALSE;
-          if (state->current_rule)
-            {
-              pdb_rule_unref(state->current_rule);
-              state->current_rule = NULL;
-            }
-          state->current_message = NULL;
-          state->current_state = PDBL_RULES;
         }
       else if (strcmp(element_name, "value") == 0)
         {
