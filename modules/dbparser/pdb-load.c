@@ -41,7 +41,6 @@ enum PDBLoaderState
   PDBL_RULESET_PATTERN,
   PDBL_RULES,
   PDBL_RULE,
-  PDBL_RULE_VALUE,
   PDBL_RULE_PATTERN,
   PDBL_RULE_TAG,
   PDBL_RULE_EXAMPLES,
@@ -54,6 +53,9 @@ enum PDBLoaderState
   PDBL_RULE_ACTION_MESSAGE,
   PDBL_RULE_ACTION_MESSAGE_VALUE,
   PDBL_RULE_ACTION_MESSAGE_TAG,
+
+  /* generic states, reused by multiple paths in the XML */
+  PDBL_VALUE,
 };
 
 #define MAX_DEPTH 8
@@ -140,6 +142,21 @@ pdb_loader_set_error(PDBLoader *state, GError **error, const gchar *format, ...)
 
   g_free(error_text);
   g_free(error_location);
+}
+
+static void
+_process_value_element(PDBLoader *state,
+                       const gchar **attribute_names, const gchar **attribute_values,
+                       GError **error)
+{
+  if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+    state->value_name = g_strdup(attribute_values[0]);
+  else
+    {
+      pdb_loader_set_error(state, error, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
+      return;
+    }
+  _push_state(state, PDBL_VALUE);
 }
 
 void
@@ -282,14 +299,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       else if (strcmp(element_name, "value") == 0)
         {
-          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-            state->value_name = g_strdup(attribute_values[0]);
-          else
-            {
-              pdb_loader_set_error(state, error, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
-              return;
-            }
-          _push_state(state, PDBL_RULE_VALUE);
+          _process_value_element(state, attribute_names, attribute_values, error);
         }
       else if (strcmp(element_name, "actions") == 0)
         {
@@ -551,20 +561,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values>", element_name);
         }
       break;
-    case PDBL_RULE_VALUE:
-      if (strcmp(element_name, "value") == 0)
-        {
-          if (state->value_name)
-            g_free(state->value_name);
-
-          state->value_name = NULL;
-          _pop_state(state);
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </value>", element_name);
-        }
-      break;
     case PDBL_RULE_TAG:
       if (strcmp(element_name, "tag") == 0)
         {
@@ -711,6 +707,24 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
         }
       break;
+
+    /* generic states reused by multiple locations in the grammar */
+
+    case PDBL_VALUE:
+      if (strcmp(element_name, "value") == 0)
+        {
+          if (state->value_name)
+            g_free(state->value_name);
+
+          state->value_name = NULL;
+          _pop_state(state);
+        }
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </value>", element_name);
+        }
+      break;
+
     default:
       pdb_loader_set_error(state, error, "Unexpected state %d, tag </%s>", state->current_state, element_name);
       break;
@@ -756,17 +770,6 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
             }
         }
       break;
-    case PDBL_RULE_VALUE:
-      if (state->value_name)
-        {
-          if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
-            {
-              pdb_loader_set_error(state, error, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
-                                   state->current_rule->rule_id, state->value_name, text, err->message);
-              return;
-            }
-        }
-      break;
     case PDBL_RULE_TAG:
       synthetic_message_add_tag(state->current_message, text);
       break;
@@ -805,6 +808,19 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
 
       g_ptr_array_add(state->current_example->values, nv);
       break;
+
+    /* generic states reused by multiple locations in the grammar */
+
+    case PDBL_VALUE:
+      g_assert(state->value_name != NULL);
+      if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
+        {
+          pdb_loader_set_error(state, error, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
+                               state->current_rule->rule_id, state->value_name, text, err->message);
+          return;
+        }
+      break;
+
     default:
       if (!_is_whitespace_only(text, text_len))
         pdb_loader_set_error(state, error, "Unexpected text node in state %d, text=[[%s]]", state->current_state, text);
