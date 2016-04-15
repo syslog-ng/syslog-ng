@@ -48,6 +48,7 @@ enum PDBLoaderState
   PDBL_RULE_ACTIONS,
   PDBL_RULE_ACTION,
   PDBL_RULE_ACTION_MESSAGE,
+  PDBL_RULE_ACTION_MESSAGE_TAG,
 };
 
 /* arguments passed to the markup parser functions */
@@ -403,6 +404,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       else if (strcmp(element_name, "tag") == 0)
         {
           state->in_tag = TRUE;
+          state->current_state = PDBL_RULE_ACTION_MESSAGE_TAG;
         }
       else
         {
@@ -658,13 +660,20 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         {
           /* valid, but we don't do anything */
         }
-      else if (strcmp(element_name, "tag") == 0)
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>, </values>, </value>, </tags>", element_name);
+        }
+      break;
+    case PDBL_RULE_ACTION_MESSAGE_TAG:
+      if (strcmp(element_name, "tag") == 0)
         {
           state->in_tag = FALSE;
+          state->current_state = PDBL_RULE_ACTION_MESSAGE;
         }
       else
         {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>", element_name);
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
         }
       break;
     default:
@@ -732,10 +741,6 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
       g_array_append_val(state->program_patterns, program_pattern);
       break;
     case PDBL_RULE_ACTION_MESSAGE:
-      if (state->in_tag)
-        {
-          synthetic_message_add_tag(state->current_message, text);
-        }
       if (state->value_name)
         {
           if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
@@ -745,6 +750,9 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
               return;
             }
         }
+      break;
+    case PDBL_RULE_ACTION_MESSAGE_TAG:
+      synthetic_message_add_tag(state->current_message, text);
       break;
     case PDBL_RULE_EXAMPLE:
       if (state->in_test_msg)
