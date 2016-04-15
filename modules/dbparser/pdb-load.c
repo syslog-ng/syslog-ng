@@ -39,6 +39,8 @@ enum PDBLoaderState
   PDBL_RULESET,
   PDBL_RULES,
   PDBL_RULE,
+  PDBL_RULE_EXAMPLES,
+  PDBL_RULE_ACTIONS,
 };
 
 /* arguments passed to the markup parser functions */
@@ -203,6 +205,55 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         {
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <rule>", element_name);
         }
+      break;
+    case PDBL_RULE:
+      if (strcmp(element_name, "patterns") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "pattern") == 0)
+        {
+          state->in_pattern = TRUE;
+        }
+      else if (strcmp(element_name, "description") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "tags") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "tag") == 0)
+        {
+          state->in_tag = TRUE;
+        }
+      else if (strcmp(element_name, "values") == 0)
+        {
+          /* valid, but we don't do anything */
+        }
+      else if (strcmp(element_name, "value") == 0)
+        {
+          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+            state->value_name = g_strdup(attribute_values[0]);
+          else
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
+              return;
+            }
+        }
+      else if (strcmp(element_name, "actions") == 0)
+        {
+          state->current_state = PDBL_RULE_ACTIONS;
+        }
+      else if (strcmp(element_name, "examples") == 0)
+        {
+          state->current_state = PDBL_RULE_EXAMPLES;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <patterns>, <pattern>, <tags>, <tag> or <actions>", element_name);
+        }
+      break;
     default:
       if (strcmp(element_name, "example") == 0)
         {
@@ -365,6 +416,10 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           state->program_patterns = NULL;
           state->current_state = PDBL_PATTERNDB;
         }
+      else if (strcmp(element_name, "examples") == 0)
+        {
+          state->current_state = PDBL_RULE;
+        }
       else if (strcmp(element_name, "example") == 0)
         {
           if (!state->in_example)
@@ -444,6 +499,11 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           state->in_action = FALSE;
           pdb_rule_add_action(state->current_rule, state->current_action);
           state->current_action = NULL;
+        }
+      else if (strcmp(element_name, "actions") == 0)
+        {
+          g_assert(state->current_state == PDBL_RULE_ACTIONS);
+          state->current_state = PDBL_RULE;
         }
       else if (strcmp(element_name, "message") == 0)
         {
