@@ -42,6 +42,7 @@ enum PDBLoaderState
   PDBL_RULE_EXAMPLES,
   PDBL_RULE_ACTIONS,
   PDBL_RULE_ACTION,
+  PDBL_RULE_ACTION_MESSAGE,
 };
 
 /* arguments passed to the markup parser functions */
@@ -282,6 +283,31 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <action>", element_name);
         }
       break;
+    case PDBL_RULE_ACTION:
+      if (strcmp(element_name, "message") == 0)
+        {
+          if (state->in_action)
+            {
+              state->current_action->content_type = RAC_MESSAGE;
+              for (i = 0; attribute_names[i]; i++)
+                {
+                  if (strcmp(attribute_names[i], "inherit-properties") == 0)
+                    pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
+                }
+              state->current_message = &state->current_action->content.message;
+            }
+          else
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <message> element, it must be inside an action");
+              return;
+            }
+          state->current_state = PDBL_RULE_ACTION_MESSAGE;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <message>", element_name);
+        }
+      break;
     default:
       if (strcmp(element_name, "example") == 0)
         {
@@ -349,21 +375,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "<value> misses name attribute");
               return;
             }
-        }
-      else if (strcmp(element_name, "message") == 0)
-        {
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "inherit-properties") == 0)
-                pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
-            }
-          if (!state->in_action)
-            {
-              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <message> element, it must be inside an action");
-              return;
-            }
-          state->current_action->content_type = RAC_MESSAGE;
-          state->current_message = &state->current_action->content.message;
         }
     }
 }
@@ -517,6 +528,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
       else if (strcmp(element_name, "message") == 0)
         {
           state->current_message = &state->current_rule->msg;
+          state->current_state = PDBL_RULE_ACTION;
         }
     }
 }
