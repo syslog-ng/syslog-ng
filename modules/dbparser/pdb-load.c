@@ -680,16 +680,10 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
 
   switch (state->current_state)
     {
-    default:
+    case PDBL_RULESET:
       if (state->in_pattern)
         {
-          if (state->in_rule)
-            {
-              program_pattern.pattern = g_strdup(text);
-              program_pattern.rule = pdb_rule_ref(state->current_rule);
-              g_array_append_val(state->program_patterns, program_pattern);
-            }
-          else if (state->in_ruleset)
+          if (state->in_ruleset)
             {
               if (state->first_program)
                 {
@@ -720,7 +714,18 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
                 }
             }
         }
-      else if (state->in_tag)
+      break;
+    case PDBL_RULE:
+      if (state->in_pattern)
+        {
+          if (state->in_rule)
+            {
+              program_pattern.pattern = g_strdup(text);
+              program_pattern.rule = pdb_rule_ref(state->current_rule);
+              g_array_append_val(state->program_patterns, program_pattern);
+            }
+        }
+      if (state->in_tag)
         {
           if (!state->in_rule)
             {
@@ -729,7 +734,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
             }
           synthetic_message_add_tag(state->current_message, text);
         }
-      else if (state->value_name)
+      if (state->value_name)
         {
           if (!state->in_rule)
             {
@@ -743,7 +748,34 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
               return;
             }
         }
-      else if (state->in_test_msg)
+      break;
+    case PDBL_RULE_ACTION_MESSAGE:
+      if (state->in_tag)
+        {
+          if (!state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <tag> element, must be within a rule");
+              return;
+            }
+          synthetic_message_add_tag(state->current_message, text);
+        }
+      if (state->value_name)
+        {
+          if (!state->in_rule)
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <value> element, must be within a rule");
+              return;
+            }
+          if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
+            {
+              g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
+                                   state->current_rule->rule_id, state->value_name, text, err->message);
+              return;
+            }
+        }
+      break;
+    case PDBL_RULE_EXAMPLE:
+      if (state->in_test_msg)
         {
           state->current_example->message = g_strdup(text);
         }
@@ -759,6 +791,9 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
 
           g_ptr_array_add(state->current_example->values, nv);
         }
+      break;
+    default:
+      break;
     }
 }
 
