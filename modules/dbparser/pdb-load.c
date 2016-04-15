@@ -67,7 +67,6 @@ typedef struct _PDBLoader
   SyntheticMessage *current_message;
   enum PDBLoaderState current_state;
   gboolean first_program;
-  gboolean in_test_msg;
   gboolean in_test_value;
   gboolean load_examples;
   GList *examples;
@@ -295,14 +294,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_EXAMPLE:
       if (strcmp(element_name, "test_message") == 0)
         {
-          if (state->in_test_msg)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <test_message> element");
-              return;
-            }
-
-          state->in_test_msg = TRUE;
-
           for (i = 0; attribute_names[i]; i++)
             {
               if (strcmp(attribute_names[i], "program") == 0)
@@ -607,13 +598,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
       if (strcmp(element_name, "test_message") == 0)
         {
-          if (!state->in_test_msg)
-            {
-              pdb_loader_set_error(state, error, "Unexpected </test_message> element");
-              return;
-            }
-
-          state->in_test_msg = FALSE;
           state->current_state = PDBL_RULE_EXAMPLE;
         }
       else
@@ -773,10 +757,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
         }
       break;
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
-      if (state->in_test_msg)
-        {
-          state->current_example->message = g_strdup(text);
-        }
+      state->current_example->message = g_strdup(text);
       break;
     default:
       if (!_is_whitespace_only(text, text_len))
