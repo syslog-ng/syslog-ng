@@ -192,7 +192,7 @@ pdb_check_action_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
     return TRUE;
 
   g_string_printf(buffer, "%s:%d", rule->rule_id, self->id);
-  correllation_key_setup(&key, rule->context_scope, msg, buffer->str);
+  correllation_key_setup(&key, rule->context.scope, msg, buffer->str);
 
   rl = g_hash_table_lookup(db->rate_limits, &key);
   if (!rl)
@@ -613,22 +613,22 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 
       g_static_rw_lock_writer_lock(&self->lock);
       pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
-      if (rule->context_id_template)
+      if (rule->context.id_template)
         {
           CorrellationKey key;
 
-          log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+          log_template_format(rule->context.id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
           log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
-          correllation_key_setup(&key, rule->context_scope, msg, buffer->str);
+          correllation_key_setup(&key, rule->context.scope, msg, buffer->str);
           context = g_hash_table_lookup(self->correllation.state, &key);
           if (!context)
             {
               msg_debug("Correllation context lookup failure, starting a new context",
                         evt_tag_str("rule", rule->rule_id),
                         evt_tag_str("context", buffer->str),
-                        evt_tag_int("context_timeout", rule->context_timeout),
-                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout));
+                        evt_tag_int("context_timeout", rule->context.timeout),
+                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context.timeout));
               context = pdb_context_new(&key);
               g_hash_table_insert(self->correllation.state, &context->super.key, context);
               g_string_steal(buffer);
@@ -638,8 +638,8 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
               msg_debug("Correllation context lookup successful",
                         evt_tag_str("rule", rule->rule_id),
                         evt_tag_str("context", buffer->str),
-                        evt_tag_int("context_timeout", rule->context_timeout),
-                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
+                        evt_tag_int("context_timeout", rule->context.timeout),
+                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context.timeout),
                         evt_tag_int("num_messages", context->super.messages->len));
             }
 
@@ -647,11 +647,11 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 
           if (context->super.timer)
             {
-              timer_wheel_mod_timer(self->timer_wheel, context->super.timer, rule->context_timeout);
+              timer_wheel_mod_timer(self->timer_wheel, context->super.timer, rule->context.timeout);
             }
           else
             {
-              context->super.timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry,
+              context->super.timer = timer_wheel_add_timer(self->timer_wheel, rule->context.timeout, pattern_db_expire_entry,
                                                      correllation_context_ref(&context->super),
                                                      (GDestroyNotify) correllation_context_unref);
             }

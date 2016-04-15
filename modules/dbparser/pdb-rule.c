@@ -50,33 +50,6 @@ pdb_rule_set_rule_id(PDBRule *self, const gchar *rule_id)
 }
 
 void
-pdb_rule_set_context_id_template(PDBRule *self, LogTemplate *context_id_template)
-{
-  if (self->context_id_template)
-    log_template_unref(self->context_id_template);
-  self->context_id_template = context_id_template;
-}
-
-void
-pdb_rule_set_context_timeout(PDBRule *self, gint timeout)
-{
-  self->context_timeout = timeout;
-}
-
-void
-pdb_rule_set_context_scope(PDBRule *self, const gchar *scope, GError **error)
-{
-  int context_scope = correllation_key_lookup_scope(scope);
-  if (context_scope < 0)
-    {
-      self->context_scope = RCS_GLOBAL;
-      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown context scope: %s", scope);
-    }
-  else
-    self->context_scope = context_scope;
-}
-
-void
 pdb_rule_add_action(PDBRule *self, PDBAction *action)
 {
   if (!self->actions)
@@ -99,7 +72,7 @@ pdb_rule_new(void)
   PDBRule *self = g_new0(PDBRule, 1);
 
   g_atomic_counter_set(&self->ref_cnt, 1);
-  self->context_scope = RCS_PROCESS;
+  synthetic_context_init(&self->context);
   return self;
 }
 
@@ -115,8 +88,6 @@ pdb_rule_unref(PDBRule *self)
 {
   if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
-      if (self->context_id_template)
-        log_template_unref(self->context_id_template);
 
       if (self->actions)
         {
@@ -130,6 +101,7 @@ pdb_rule_unref(PDBRule *self)
       if (self->class)
         g_free(self->class);
 
+      synthetic_context_deinit(&self->context);
       synthetic_message_deinit(&self->msg);
       g_free(self);
     }

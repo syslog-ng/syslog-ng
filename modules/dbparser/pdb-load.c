@@ -271,13 +271,15 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
                   LogTemplate *template;
 
                   template = log_template_new(state->cfg, NULL);
-                  log_template_compile(template, attribute_values[i], NULL);
-                  pdb_rule_set_context_id_template(state->current_rule, template);
+                  if (log_template_compile(template, attribute_values[i], error))
+                    synthetic_context_set_context_id_template(&state->current_rule->context, template);
+                  else
+                    log_template_unref(template);
                 }
               else if (strcmp(attribute_names[i], "context-timeout") == 0)
-                pdb_rule_set_context_timeout(state->current_rule, strtol(attribute_values[i], NULL, 0));
+                synthetic_context_set_context_timeout(&state->current_rule->context, strtol(attribute_values[i], NULL, 0));
               else if (strcmp(attribute_names[i], "context-scope") == 0)
-                pdb_rule_set_context_scope(state->current_rule, attribute_values[i], error);
+                synthetic_context_set_context_scope(&state->current_rule->context, attribute_values[i], error);
             }
 
           if (!state->current_rule->rule_id)

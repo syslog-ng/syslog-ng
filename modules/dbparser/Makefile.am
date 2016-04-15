@@ -29,6 +29,8 @@ modules_dbparser_libsyslog_ng_patterndb_la_SOURCES	=	\
 	modules/dbparser/correllation-context.h			\
 	modules/dbparser/synthetic-message.c			\
 	modules/dbparser/synthetic-message.h			\
+	modules/dbparser/synthetic-context.c			\
+	modules/dbparser/synthetic-context.h			\
 	modules/dbparser/timerwheel.c				\
 	modules/dbparser/timerwheel.h				\
 	modules/dbparser/patternize.c				\
