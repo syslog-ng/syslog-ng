@@ -49,11 +49,11 @@ enum PDBLoaderState
   PDBL_RULE_EXAMPLE_TEST_VALUE,
   PDBL_RULE_ACTIONS,
   PDBL_RULE_ACTION,
-  PDBL_RULE_ACTION_MESSAGE,
 
   /* generic states, reused by multiple paths in the XML */
   PDBL_VALUE,
   PDBL_TAG,
+  PDBL_MESSAGE,
 };
 
 #define MAX_DEPTH 8
@@ -163,6 +163,23 @@ _process_tag_element(PDBLoader *state,
                      GError **error)
 {
   _push_state(state, PDBL_TAG);
+}
+
+static void
+_process_message_element(PDBLoader *state,
+                         const gchar **attribute_names, const gchar **attribute_values,
+                         GError **error)
+{
+  gint i;
+
+  state->current_action->content_type = RAC_MESSAGE;
+  for (i = 0; attribute_names[i]; i++)
+    {
+      if (strcmp(attribute_names[i], "inherit-properties") == 0)
+        pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
+    }
+  state->current_message = &state->current_action->content.message;
+  _push_state(state, PDBL_MESSAGE);
 }
 
 void
@@ -402,21 +419,17 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_ACTION:
       if (strcmp(element_name, "message") == 0)
         {
-          state->current_action->content_type = RAC_MESSAGE;
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "inherit-properties") == 0)
-                pdb_action_set_message_inheritance(state->current_action, attribute_values[i], error);
-            }
-          state->current_message = &state->current_action->content.message;
-          state->current_state = PDBL_RULE_ACTION_MESSAGE;
+          _process_message_element(state, attribute_names, attribute_values, error);
         }
       else
         {
           pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <message>", element_name);
         }
       break;
-    case PDBL_RULE_ACTION_MESSAGE:
+
+    /* generic states reused by multiple locations in the grammar */
+
+    case PDBL_MESSAGE:
       if (strcmp(element_name, "values") == 0)
         {
           /* valid, but we don't do anything */
@@ -653,11 +666,13 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </action>", element_name);
         }
       break;
-    case PDBL_RULE_ACTION_MESSAGE:
+
+    /* generic states reused by multiple locations in the grammar */
+    case PDBL_MESSAGE:
       if (strcmp(element_name, "message") == 0)
         {
           state->current_message = &state->current_rule->msg;
-          state->current_state = PDBL_RULE_ACTION;
+          _pop_state(state);
         }
       else if (strcmp(element_name, "values") == 0)
         {
@@ -672,8 +687,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>, </values> or </tags>", element_name);
         }
       break;
-
-    /* generic states reused by multiple locations in the grammar */
 
     case PDBL_VALUE:
       if (strcmp(element_name, "value") == 0)
