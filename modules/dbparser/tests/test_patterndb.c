@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "filter/filter-expr.h"
 #include "patterndb.h"
+#include "pdb-file.h"
 #include "plugin.h"
 #include "cfg.h"
 #include "timerwheel.h"
@@ -54,6 +55,17 @@ _emit_func(LogMessage *msg, gboolean synthetic, gpointer user_data)
 }
 
 static void
+assert_pdb_file_valid(const gchar *filename, const gchar *pdb)
+{
+  GError *error = NULL;
+  gboolean success;
+  
+  success = pdb_file_validate(filename, &error);
+  assert_true(success, "Error validating patterndb, error=%s\n>>>\n%s\n<<<", error ? error->message : "unknown", pdb);
+  g_clear_error(&error);
+}
+
+static void
 _load_pattern_db_from_string(gchar *pdb)
 {
   patterndb = pattern_db_new();
@@ -63,6 +75,8 @@ _load_pattern_db_from_string(gchar *pdb)
 
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);
+  
+  assert_pdb_file_valid(filename, pdb);
 
   assert_true(pattern_db_reload_ruleset(patterndb, configuration, filename), "Error loading ruleset [[[%s]]]", pdb);
   assert_string(pattern_db_get_ruleset_pub_date(patterndb), "2010-02-22", "Invalid pubdate");
