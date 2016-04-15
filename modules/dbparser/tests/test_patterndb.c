@@ -525,12 +525,16 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
      <examples>\
        <example>\
          <test_message program='prog1'>simple-message-with-rate-limited-action</test_message>\
+         <test_values>\
+            <test_value name='PROGRAM'>prog1</test_value>\
+            <test_value name='MESSAGE'>foobar</test_value>\
+         </test_values>\
        </example>\
        <example>\
          <test_message program='prog2'>simple-message-with-rate-limited-action</test_message>\
        </example>\
      </examples>\
-    </rule>\
+   </rule>\
   </rules>\
  </ruleset>\
 </patterndb>";
