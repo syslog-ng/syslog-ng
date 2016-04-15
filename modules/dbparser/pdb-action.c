@@ -80,24 +80,34 @@ pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error)
 void
 pdb_action_set_message_inherit_properties(PDBAction *self, const gchar *inherit_properties, GError **error)
 {
+  SyntheticMessageInheritMode inherit_mode;
+
   if (strcasecmp(inherit_properties, "context") == 0)
-    self->content.inherit_mode = RAC_MSG_INHERIT_CONTEXT;
+    {
+      inherit_mode = RAC_MSG_INHERIT_CONTEXT;
+    }
   else if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
       inherit_properties[0] == '1')
-    self->content.inherit_mode = RAC_MSG_INHERIT_LAST_MESSAGE;
+    {
+      inherit_mode = RAC_MSG_INHERIT_LAST_MESSAGE;
+    }
   else if (inherit_properties[0] == 'F' || inherit_properties[0] == 'f' ||
            inherit_properties[0] == '0')
-    self->content.inherit_mode = RAC_MSG_INHERIT_NONE;
+    {
+      inherit_mode = RAC_MSG_INHERIT_NONE;
+    }
   else
-    g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inherit-properties: %s", inherit_properties);
+    {
+      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inherit-properties: %s", inherit_properties);
+      return;
+    }
+  synthetic_message_set_inherit_mode(&self->content.message, inherit_mode);
 }
 
 void
 pdb_action_set_message_inherit_mode(PDBAction *self, const gchar *inherit_mode, GError **error)
 {
-  self->content.message.inherit_mode = synthetic_message_lookup_inherit_mode(inherit_mode);
-  if (self->content.message.inherit_mode < 0)
-    g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inherit-mode: %s", inherit_mode);
+  synthetic_message_set_inherit_mode_string(&self->content.message, inherit_mode, error);
 }
 
 PDBAction *

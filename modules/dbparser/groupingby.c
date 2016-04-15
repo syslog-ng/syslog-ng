@@ -40,7 +40,6 @@ typedef struct _GroupingBy
   LogTemplate *key_template;
   gint timeout;
   CorrellationScope scope;
-  SyntheticMessageInheritMode synthetic_message_inherit_mode;
   SyntheticMessage *synthetic_message;
   FilterExprNode *trigger_condition_expr;
   FilterExprNode *where_condition_expr;
@@ -72,14 +71,6 @@ grouping_by_set_timeout(LogParser *s, gint timeout)
   GroupingBy *self = (GroupingBy *) s;
 
   self->timeout = timeout;
-}
-
-void
-grouping_by_set_inherit_properties(LogParser *s, SyntheticMessageInheritMode inherit_mode)
-{
-  GroupingBy *self = (GroupingBy *) s;
-
-  self->synthetic_message_inherit_mode = inherit_mode;
 }
 
 void
@@ -209,7 +200,7 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
     {
       GString *buffer = g_string_sized_new(256);
 
-      msg = synthetic_message_generate_with_context(self->synthetic_message, self->synthetic_message_inherit_mode, context, buffer);
+      msg = synthetic_message_generate_with_context(self->synthetic_message, context, buffer);
       stateful_parser_emit_synthetic(&self->super, msg);
       log_msg_unref(msg);
       g_string_free(buffer, TRUE);
@@ -440,7 +431,6 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.process = grouping_by_process;
   g_static_mutex_init(&self->lock);
   self->scope = RCS_GLOBAL;
-  self->synthetic_message_inherit_mode = RAC_MSG_INHERIT_CONTEXT;
   self->timer_wheel = timer_wheel_new();
   timer_wheel_set_associated_data(self->timer_wheel, self, NULL);
   cached_g_current_time(&self->last_tick);

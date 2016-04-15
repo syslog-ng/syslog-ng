@@ -254,9 +254,9 @@ LogMessage *
 pdb_generate_message(PDBAction *self, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   if (context)
-    return synthetic_message_generate_with_context(&self->content.message, self->content.inherit_mode, &context->super, buffer);
+    return synthetic_message_generate_with_context(&self->content.message, &context->super, buffer);
   else
-    return synthetic_message_generate_without_context(&self->content.message, self->content.inherit_mode, msg, buffer);
+    return synthetic_message_generate_without_context(&self->content.message, msg, buffer);
 }
 
 void

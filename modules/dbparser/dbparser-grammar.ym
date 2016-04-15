@@ -163,7 +163,7 @@ synthetic_message_opts
 	;
 
 synthetic_message_opt
-	: KW_INHERIT_MODE '(' inherit_mode ')'                  { grouping_by_set_inherit_properties(last_parser, $3); }
+	: KW_INHERIT_MODE '(' inherit_mode ')'                  { synthetic_message_set_inherit_mode(last_message, $3); }
 	| KW_VALUE '(' string template_content ')'
 	  {
 	    synthetic_message_add_value_template(last_message, $3, $4);

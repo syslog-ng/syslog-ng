@@ -52,10 +52,7 @@ typedef struct _PDBAction
   guint8 id;
   union
   {
-    struct {
-      SyntheticMessage message;
-      SyntheticMessageInheritMode inherit_mode;
-    };
+    SyntheticMessage message;
   } content;
 } PDBAction;
 
