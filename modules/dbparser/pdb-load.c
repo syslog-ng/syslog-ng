@@ -38,6 +38,7 @@ enum PDBLoaderState
   PDBL_INITIAL = 0,
   PDBL_PATTERNDB,
   PDBL_RULESET,
+  PDBL_RULESET_PATTERN,
   PDBL_RULES,
   PDBL_RULE,
   PDBL_RULE_EXAMPLES,
@@ -182,6 +183,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       else if (strcmp(element_name, "pattern") == 0)
         {
           state->in_pattern = TRUE;
+          state->current_state = PDBL_RULESET_PATTERN;
         }
       else
         {
@@ -471,13 +473,20 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         {
           /* valid, but we don't do anything */
         }
-      else if (strcmp(element_name, "pattern") == 0)
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </ruleset> or </patterns>", element_name);
+        }
+      break;
+    case PDBL_RULESET_PATTERN:
+      if (strcmp(element_name, "pattern") == 0)
         {
           state->in_pattern = FALSE;
+          state->current_state = PDBL_RULESET;
         }
       else
         {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </ruleset>, </patterns> or </pattern>", element_name);
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected </pattern>", element_name);
         }
       break;
     case PDBL_RULES:
@@ -661,35 +670,32 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
 
   switch (state->current_state)
     {
-    case PDBL_RULESET:
-      if (state->in_pattern)
+    case PDBL_RULESET_PATTERN:
+      if (state->first_program)
         {
-          if (state->first_program)
+          state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
+          if (state->current_program == NULL)
             {
-              state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
-              if (state->current_program == NULL)
-                {
-                  /* create new program specific radix */
-                  state->current_program = pdb_program_new();
-                  g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
-                }
-
-              state->first_program = FALSE;
+              /* create new program specific radix */
+              state->current_program = pdb_program_new();
+              g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
             }
-          else if (state->current_program)
-            {
-              /* secondary program names should point to the same MSG radix */
 
-              PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
-              if (!program)
-                {
-                  g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
-                }
-              else if (program != state->current_program)
-                {
-                  pdb_loader_set_error(state, error, "Joining rulesets with mismatching program name sets, program=%s", text);
-                  return;
-                }
+          state->first_program = FALSE;
+        }
+      else if (state->current_program)
+        {
+          /* secondary program names should point to the same MSG radix */
+
+          PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
+          if (!program)
+            {
+              g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
+            }
+          else if (program != state->current_program)
+            {
+              pdb_loader_set_error(state, error, "Joining rulesets with mismatching program name sets, program=%s", text);
+              return;
             }
         }
       break;
