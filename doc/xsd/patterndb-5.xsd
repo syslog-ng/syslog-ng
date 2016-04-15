@@ -279,11 +279,19 @@
 
     <xs:complexType name="actionType">
         <xs:all>
-            <xs:element name="message" type="messageType" minOccurs="1" maxOccurs="1">
+            <xs:element name="message" type="messageType" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>
                         The message to be generated when the action
                         triggers.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="create-context" type="createContextType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The context to be created when the action is
+                        triggered.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
@@ -421,6 +429,51 @@
           </xs:simpleType>
         </xs:attribute>
 
+    </xs:complexType>
+
+    <xs:complexType name="createContextType">
+        <xs:all>
+            <xs:element name="message" type="messageType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The message that gets added to the new context to be
+                        created.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="context-id" type="xs:string"/>
+        <xs:attribute name="context-scope">
+          <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="process">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="program">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="host">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="global">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="context-timeout" type="xs:integer"/>
     </xs:complexType>
 
     <xs:simpleType name="uuidType">
