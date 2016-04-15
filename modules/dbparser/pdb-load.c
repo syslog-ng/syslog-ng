@@ -47,6 +47,7 @@ enum PDBLoaderState
   PDBL_RULE_EXAMPLE,
   PDBL_RULE_EXAMPLE_TEST_MESSAGE,
   PDBL_RULE_EXAMPLE_TEST_VALUES,
+  PDBL_RULE_EXAMPLE_TEST_VALUE,
   PDBL_RULE_ACTIONS,
   PDBL_RULE_ACTION,
   PDBL_RULE_ACTION_MESSAGE,
@@ -331,11 +332,15 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               pdb_loader_set_error(state, error, "<test_value> misses name attribute");
               return;
             }
+          state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUE;
         }
       else
         {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <test_message>, <test_values> or <test_value>", element_name);
+          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <test_value>", element_name);
         }
+      break;
+    case PDBL_RULE_EXAMPLE_TEST_VALUE:
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, only text node is expected", element_name);
       break;
     case PDBL_RULE_ACTIONS:
       if (strcmp(element_name, "action") == 0)
@@ -588,7 +593,13 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         {
           state->current_state = PDBL_RULE_EXAMPLE;
         }
-      else if (strcmp(element_name, "test_value") == 0)
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_values>", element_name);
+        }
+      break;
+    case PDBL_RULE_EXAMPLE_TEST_VALUE:
+      if (strcmp(element_name, "test_value") == 0)
         {
           if (!state->in_test_value)
             {
@@ -602,10 +613,11 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
             g_free(state->test_value_name);
 
           state->test_value_name = NULL;
+          state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUES;
         }
       else
         {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_values>, </test_value>", element_name);
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_value>", element_name);
         }
       break;
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
@@ -760,7 +772,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
       state->current_example->message = g_strdup(text);
       break;
-    case PDBL_RULE_EXAMPLE_TEST_VALUES:
+    case PDBL_RULE_EXAMPLE_TEST_VALUE:
       if (state->in_test_value)
         {
           if (!state->current_example->values)
