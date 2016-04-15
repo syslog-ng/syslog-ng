@@ -42,7 +42,6 @@ enum PDBLoaderState
   PDBL_RULES,
   PDBL_RULE,
   PDBL_RULE_PATTERN,
-  PDBL_RULE_TAG,
   PDBL_RULE_EXAMPLES,
   PDBL_RULE_EXAMPLE,
   PDBL_RULE_EXAMPLE_TEST_MESSAGE,
@@ -55,6 +54,7 @@ enum PDBLoaderState
 
   /* generic states, reused by multiple paths in the XML */
   PDBL_VALUE,
+  PDBL_TAG,
 };
 
 #define MAX_DEPTH 8
@@ -156,6 +156,14 @@ _process_value_element(PDBLoader *state,
       return;
     }
   _push_state(state, PDBL_VALUE);
+}
+
+static void
+_process_tag_element(PDBLoader *state,
+                     const gchar **attribute_names, const gchar **attribute_values,
+                     GError **error)
+{
+  _push_state(state, PDBL_TAG);
 }
 
 void
@@ -290,7 +298,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
         }
       else if (strcmp(element_name, "tag") == 0)
         {
-          state->current_state = PDBL_RULE_TAG;
+          _process_tag_element(state, attribute_names, attribute_values, error);
         }
       else if (strcmp(element_name, "values") == 0)
         {
@@ -553,16 +561,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values>", element_name);
         }
       break;
-    case PDBL_RULE_TAG:
-      if (strcmp(element_name, "tag") == 0)
-        {
-          state->current_state = PDBL_RULE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
-        }
-      break;
     case PDBL_RULE_PATTERN:
       if (strcmp(element_name, "pattern") == 0)
         {
@@ -703,6 +701,17 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
         }
       break;
 
+    case PDBL_TAG:
+      if (strcmp(element_name, "tag") == 0)
+        {
+          _pop_state(state);
+        }
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
+        }
+      break;
+
     default:
       pdb_loader_set_error(state, error, "Unexpected state %d, tag </%s>", state->current_state, element_name);
       break;
@@ -748,9 +757,6 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
             }
         }
       break;
-    case PDBL_RULE_TAG:
-      synthetic_message_add_tag(state->current_message, text);
-      break;
     case PDBL_RULE_PATTERN:
       program_pattern.pattern = g_strdup(text);
       program_pattern.rule = pdb_rule_ref(state->current_rule);
@@ -786,6 +792,10 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
                                state->current_rule->rule_id, state->value_name, text, err->message);
           return;
         }
+      break;
+
+    case PDBL_TAG:
+      synthetic_message_add_tag(state->current_message, text);
       break;
 
     default:
