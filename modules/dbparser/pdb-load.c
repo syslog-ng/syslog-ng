@@ -36,6 +36,7 @@ enum PDBLoaderState
 {
   PDBL_INITIAL = 0,
   PDBL_PATTERNDB,
+  PDBL_RULESET,
 };
 
 /* arguments passed to the markup parser functions */
@@ -115,7 +116,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <patterndb>", element_name);
         }
       break;
-    default:
+    case PDBL_PATTERNDB:
       if (strcmp(element_name, "ruleset") == 0)
         {
           if (state->in_ruleset)
@@ -128,8 +129,15 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           state->in_ruleset = TRUE;
           state->first_program = TRUE;
           state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
+          state->current_state = PDBL_RULESET;
         }
-      else if (strcmp(element_name, "example") == 0)
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected <%s> tag, expected a <ruleset>", element_name);
+        }
+      break;
+    default:
+      if (strcmp(element_name, "example") == 0)
         {
           if (state->in_example || !state->in_rule)
             {
@@ -329,6 +337,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
 
           g_array_free(state->program_patterns, TRUE);
           state->program_patterns = NULL;
+          state->current_state = PDBL_PATTERNDB;
         }
       else if (strcmp(element_name, "example") == 0)
         {
