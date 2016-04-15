@@ -610,6 +610,17 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </example>, </test_message>, </test_value>", element_name);
         }
       break;
+    case PDBL_RULE_ACTIONS:
+      if (strcmp(element_name, "actions") == 0)
+        {
+          g_assert(state->current_state == PDBL_RULE_ACTIONS);
+          state->current_state = PDBL_RULE;
+        }
+      else
+        {
+          g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unexpected </%s> tag, expected a </actions>", element_name);
+        }
+      break;
     default:
       if (strcmp(element_name, "value") == 0)
         {
@@ -626,11 +637,6 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_rule_add_action(state->current_rule, state->current_action);
           state->current_action = NULL;
           state->current_state = PDBL_RULE_ACTIONS;
-        }
-      else if (strcmp(element_name, "actions") == 0)
-        {
-          g_assert(state->current_state == PDBL_RULE_ACTIONS);
-          state->current_state = PDBL_RULE;
         }
       else if (strcmp(element_name, "message") == 0)
         {
