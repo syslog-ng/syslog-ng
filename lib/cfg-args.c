@@ -23,6 +23,7 @@
  */
 #include "cfg-args.h"
 #include "messages.h"
+#include "str-utils.h"
 
 struct _CfgArgs
 {
@@ -73,13 +74,22 @@ cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context)
 void
 cfg_args_set(CfgArgs *self, const gchar *name, const gchar *value)
 {
-  g_hash_table_insert(self->args, g_strdup(name), g_strdup(value));
+  g_hash_table_insert(self->args, __normalize_key(name), g_strdup(value));
 }
 
 const gchar *
 cfg_args_get(CfgArgs *self, const gchar *name)
 {
-  return g_hash_table_lookup(self->args, name);
+  const gchar *value = g_hash_table_lookup(self->args, name);
+
+  if (!value)
+    {
+      gchar *normalized_name = __normalize_key(name);
+      value = g_hash_table_lookup(self->args, normalized_name);
+      g_free(normalized_name);
+    }
+
+  return value;
 }
 
 CfgArgs *
