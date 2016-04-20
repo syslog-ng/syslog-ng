@@ -84,23 +84,52 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
  */
 
 static gchar *
-_format_stats_instance(LogThrDestDriver *d)
+_format_instance_id(LogThrDestDriver *d, const gchar *format)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-  static gchar persist_name[1024];
+  static gchar args[1024];
+  static gchar id[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "mongodb,%s,%s", self->uri_str->str, self->coll);
-  return persist_name;
+  const mongoc_host_list_t *hosts = mongoc_uri_get_hosts(self->uri_obj);
+  const gchar *first_host = "";
+  if (hosts)
+    {
+      if (hosts->family == AF_UNIX)
+        first_host = hosts->host;
+      else
+        first_host = hosts->host_and_port;
+    }
+
+  const gchar *db = self->const_db ? self->const_db : "";
+
+  const gchar *replica_set = mongoc_uri_get_replica_set(self->uri_obj);
+  if (!replica_set)
+    replica_set = "";
+
+  const gchar *coll = self->coll ? self->coll : "";
+
+  g_snprintf(args,
+             sizeof(args),
+             "%s,%s,%s,%s",
+             first_host,
+             db,
+             replica_set,
+             coll);
+
+  g_snprintf(id, sizeof(id), format, args);
+  return id;
+}
+
+static gchar *
+_format_stats_instance(LogThrDestDriver *d)
+{
+  return _format_instance_id(d, "mongodb,%s");
 }
 
 static gchar *
 _format_persist_name(LogThrDestDriver *d)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-  static gchar persist_name[1024];
-
-  g_snprintf(persist_name, sizeof(persist_name), "afmongodb(%s,%s)", self->uri_str->str, self->coll);
-  return persist_name;
+  return _format_instance_id(d, "afmongodb(%s)");
 }
 
 static void
