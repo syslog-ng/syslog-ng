@@ -369,30 +369,34 @@ _worker_insert(LogThrDestDriver *s, LogMessage *msg)
         }
       return WORKER_INSERT_RESULT_DROP;
     }
-  else
-    {
-      bson_error_t error;
-      msg_debug("Outgoing message to MongoDB destination",
-                evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num, LTZ_SEND,
-                                    &self->template_options),
-                evt_tag_str("driver", self->super.super.super.id));
 
-      success = mongoc_collection_insert(self->coll_obj, MONGOC_INSERT_NONE, (const bson_t *)self->bson,
-                                         NULL, &error);
-      if (!success)
+  msg_debug("Outgoing message to MongoDB destination",
+            evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num, LTZ_SEND,
+                                &self->template_options),
+            evt_tag_str("driver", self->super.super.super.id));
+
+  bson_error_t error;
+  success = mongoc_collection_insert(self->coll_obj, MONGOC_INSERT_NONE,
+                                     (const bson_t *)self->bson, NULL, &error);
+  if (!success)
+    {
+      if (error.domain == MONGOC_ERROR_STREAM)
         {
           msg_error("Network error while inserting into MongoDB",
                     evt_tag_int("time_reopen", self->super.time_reopen),
                     evt_tag_str("reason", error.message),
                     evt_tag_str("driver", self->super.super.super.id));
+          return WORKER_INSERT_RESULT_NOT_CONNECTED;
+        }
+      else
+        {
+          msg_error("Failed to insert into MongoDB",
+                    evt_tag_int("time_reopen", self->super.time_reopen),
+                    evt_tag_str("reason", error.message),
+                    evt_tag_str("driver", self->super.super.super.id));
+          return WORKER_INSERT_RESULT_ERROR;
         }
     }
-
-  if (!success && (errno == ENOTCONN))
-    return WORKER_INSERT_RESULT_NOT_CONNECTED;
-
-  if (!success)
-    return WORKER_INSERT_RESULT_ERROR;
 
   return WORKER_INSERT_RESULT_SUCCESS;
 }
