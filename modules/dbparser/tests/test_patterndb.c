@@ -373,7 +373,7 @@ test_conflicting_rules_with_the_same_parsers(void)
 /* pdb skeleton used to test patterndb rule actions. E.g. whenever a rule
  * matches, certain actions described in the rule need to be performed.
  * This tests those */
-gchar *pdb_ruletest_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
+gchar *pdb_ruletest_skeleton = "<patterndb version='5' pub_date='2010-02-22'>\
  <ruleset name='testset' id='1'>\
   <patterns>\
     <pattern>prog1</pattern>\
@@ -534,7 +534,60 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
          <test_message program='prog2'>simple-message-with-rate-limited-action</test_message>\
        </example>\
      </examples>\
-   </rule>\
+    </rule>\
+    <rule provider='test' id='12' class='violation'>\
+     <patterns>\
+      <pattern>simple-message-with-action-to-create-context</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='match'>\
+         <create-context context-id='1000' context-timeout='60' context-scope='program'>\
+           <message inherit-properties='context'>\
+             <values>\
+               <value name='MESSAGE'>context message</value>\
+             </values>\
+           </message>\
+         </create-context>\
+       </action>\
+     </actions>\
+    </rule>\
+    <rule provider='test' id='13' class='violation' context-id='1000' context-timeout='60' context-scope='program'>\
+     <patterns>\
+      <pattern>correllated-message-that-uses-context-created-by-rule-id#12</pattern>\
+     </patterns>\
+     <values>\
+       <value name='triggering-message'>${MESSAGE}@1 assd</value>\
+     </values>\
+    </rule>\
+    <rule provider='test' id='14' class='violation' context-id='1001' context-timeout='60' context-scope='program'>\
+     <patterns>\
+      <pattern>correllated-message-with-action-to-create-context</pattern>\
+     </patterns>\
+     <values>\
+       <value name='rule-msg-context-id'>${.classifier.context_id}</value>\
+     </values>\
+     <actions>\
+       <action trigger='match'>\
+         <create-context context-id='1002' context-timeout='60' context-scope='program'>\
+           <message inherit-properties='context'>\
+             <values>\
+               <!-- we should inherit from the LogMessage matching this rule and not the to be created context -->\
+               <value name='MESSAGE'>context message ${rule-msg-context-id}</value>\
+             </values>\
+           </message>\
+         </create-context>\
+       </action>\
+     </actions>\
+    </rule>\
+    <rule provider='test' id='15' class='violation' context-id='1002' context-timeout='60' context-scope='program'>\
+     <patterns>\
+      <pattern>correllated-message-that-uses-context-created-by-rule-id#14</pattern>\
+     </patterns>\
+     <values>\
+       <value name='triggering-message'>${MESSAGE}@1 assd</value>\
+       <value name='triggering-message-context-id'>$(grep ('${rule-msg-context-id}' ne '') ${rule-msg-context-id})</value>\
+     </values>\
+    </rule>\
   </rules>\
  </ruleset>\
 </patterndb>";
@@ -664,6 +717,25 @@ test_simple_rule_with_action_condition(void)
 }
 
 static void
+test_correllation_rule_with_create_context(void)
+{
+  assert_msg_matches_and_nvpair_equals("simple-message-with-action-to-create-context", ".classifier.rule_id", "12");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#12", "triggering-message", "context message assd");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#12", "PROGRAM", "prog1");
+
+
+  assert_msg_matches_and_nvpair_equals("correllated-message-with-action-to-create-context", ".classifier.rule_id", "14");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#14", "triggering-message", "context message 1001 assd");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#14", "PROGRAM", "prog1");
+  _dont_reset_patterndb_state_for_the_next_call();
+  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#14", "triggering-message-context-id", "1001");
+}
+
+static void
 test_patterndb_rule(void)
 {
   _load_pattern_db_from_string(pdb_ruletest_skeleton);
@@ -678,6 +750,8 @@ test_patterndb_rule(void)
   test_simple_rule_with_action_on_match();
   test_simple_rule_with_action_condition();
   test_simple_rule_with_rate_limited_action();
+
+  test_correllation_rule_with_create_context();
 
   assert_msg_doesnot_match("non-matching-pattern");
   _destroy_pattern_db();

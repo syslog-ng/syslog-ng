@@ -269,6 +269,53 @@ pdb_execute_action_message(PDBAction *self, PatternDB *db, PDBContext *context, 
   log_msg_unref(genmsg);
 }
 
+static void pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data);
+
+void
+pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *triggering_context, LogMessage *triggering_msg, GString *buffer)
+{
+  CorrellationKey key;
+  PDBContext *new_context;
+  LogMessage *context_msg;
+  SyntheticContext *syn_context;
+  SyntheticMessage *syn_message;
+
+  syn_context = &self->content.create_context.context;
+  syn_message = &self->content.create_context.message;
+  if (triggering_context)
+    {
+      context_msg = synthetic_message_generate_with_context(syn_message, &triggering_context->super, buffer);
+      log_template_format_with_context(syn_context->id_template,
+                                       (LogMessage **) triggering_context->super.messages->pdata, triggering_context->super.messages->len,
+                                       NULL, LTZ_LOCAL, 0, NULL, buffer);
+    }
+  else
+    {
+      context_msg = synthetic_message_generate_without_context(syn_message, triggering_msg, buffer);
+      log_template_format(syn_context->id_template,
+                          triggering_msg,
+                          NULL, LTZ_LOCAL, 0, NULL, buffer);
+    }
+
+  msg_debug("Explicit create-context action, starting a new context",
+            evt_tag_str("rule", rule->rule_id),
+            evt_tag_str("context", buffer->str),
+            evt_tag_int("context_timeout", syn_context->timeout),
+            evt_tag_int("context_expiration", timer_wheel_get_time(db->timer_wheel) + syn_context->timeout));
+
+  correllation_key_setup(&key, syn_context->scope, context_msg, buffer->str);
+  new_context = pdb_context_new(&key);
+  g_hash_table_insert(db->correllation.state, &new_context->super.key, new_context);
+  g_string_steal(buffer);
+
+  g_ptr_array_add(new_context->super.messages, context_msg);
+
+  new_context->super.timer = timer_wheel_add_timer(db->timer_wheel, rule->context.timeout, pattern_db_expire_entry,
+                                                   correllation_context_ref(&new_context->super),
+                                                   (GDestroyNotify) correllation_context_unref);
+  new_context->rule = pdb_rule_ref(rule);
+}
+
 void
 pdb_execute_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *context, LogMessage *msg, GString *buffer)
 {
@@ -278,6 +325,9 @@ pdb_execute_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *co
       break;
     case RAC_MESSAGE:
       pdb_execute_action_message(self, db, context, msg, buffer);
+      break;
+    case RAC_CREATE_CONTEXT:
+      pdb_execute_action_create_context(self, db, rule, context, msg, buffer);
       break;
     default:
       g_assert_not_reached();

@@ -95,7 +95,16 @@ pdb_action_free(PDBAction *self)
 {
   if (self->condition)
     filter_expr_unref(self->condition);
-  if (self->content_type == RAC_MESSAGE)
-    synthetic_message_deinit(&self->content.message);
+  switch (self->content_type)
+    {
+    case RAC_MESSAGE:
+      synthetic_message_deinit(&self->content.message);
+      break;
+    case RAC_CREATE_CONTEXT:
+      synthetic_context_deinit(&self->content.create_context.context);
+      break;
+    default:
+      g_assert_not_reached();
+    }
   g_free(self);
 }

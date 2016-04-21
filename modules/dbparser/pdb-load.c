@@ -49,6 +49,7 @@ enum PDBLoaderState
   PDBL_RULE_EXAMPLE_TEST_VALUE,
   PDBL_RULE_ACTIONS,
   PDBL_RULE_ACTION,
+  PDBL_RULE_ACTION_CREATE_CONTEXT,
 
   /* generic states, reused by multiple paths in the XML */
   PDBL_VALUE,
@@ -182,6 +183,34 @@ _process_message_element(PDBLoader *state,
     }
   state->current_message = target;
   _push_state(state, PDBL_MESSAGE);
+}
+
+static void
+_process_create_context_element(PDBLoader *state,
+                                const gchar **attribute_names, const gchar **attribute_values,
+                                SyntheticContext *target,
+                                GError **error)
+{
+  gint i;
+
+  for (i = 0; attribute_names[i]; i++)
+    {
+      if (strcmp(attribute_names[i], "context-id") == 0)
+        {
+          LogTemplate *template;
+
+          template = log_template_new(state->cfg, NULL);
+          if (log_template_compile(template, attribute_values[i], error))
+            synthetic_context_set_context_id_template(target, template);
+          else
+            log_template_unref(template);
+        }
+      else if (strcmp(attribute_names[i], "context-timeout") == 0)
+        synthetic_context_set_context_timeout(target, strtol(attribute_values[i], NULL, 0));
+      else if (strcmp(attribute_names[i], "context-scope") == 0)
+        synthetic_context_set_context_scope(target, attribute_values[i], error);
+    }
+  _push_state(state, PDBL_RULE_ACTION_CREATE_CONTEXT);
 }
 
 void
@@ -426,9 +455,24 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           state->current_action->content_type = RAC_MESSAGE;
           _process_message_element(state, attribute_names, attribute_values, &state->current_action->content.message, error);
         }
+      else if (strcmp(element_name, "create-context") == 0)
+        {
+          state->current_action->content_type = RAC_CREATE_CONTEXT;
+          _process_create_context_element(state, attribute_names, attribute_values, &state->current_action->content.create_context.context, error);
+        }
       else
         {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <message>", element_name);
+          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <message> or <create-context>", element_name);
+        }
+      break;
+    case PDBL_RULE_ACTION_CREATE_CONTEXT:
+      if (strcmp(element_name, "message") == 0)
+        {
+          _process_message_element(state, attribute_names, attribute_values, &state->current_action->content.create_context.message, error);
+        }
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <message>", element_name);
         }
       break;
 
@@ -671,7 +715,16 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </action>", element_name);
         }
       break;
-
+    case PDBL_RULE_ACTION_CREATE_CONTEXT:
+      if (strcmp(element_name, "create-context") == 0)
+        {
+          _pop_state(state);
+        }
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </create-context>", element_name);
+        }
+      break;
     /* generic states reused by multiple locations in the grammar */
     case PDBL_MESSAGE:
       if (strcmp(element_name, "message") == 0)
