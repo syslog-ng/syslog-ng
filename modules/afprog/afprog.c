@@ -52,7 +52,7 @@ _terminate_process_group_by_pid(const pid_t pid)
               evt_tag_int("pid", pid));
 
   pid_t pgid = getpgid(pid);
-  if (pgid != -1)
+  if (pgid != -1 && pgid != getpgrp())
     killpg(pgid, SIGTERM);
 }
 
