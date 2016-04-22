@@ -40,7 +40,7 @@ __attribute__((visibility("hidden"))) int
 native_parser_proxy_init(struct NativeParserProxy* s);
 
 __attribute__((visibility("hidden"))) struct NativeParserProxy*
-native_parser_proxy_new(void);
+native_parser_proxy_new(GlobalConfig *cfg);
 
 __attribute__((visibility("hidden"))) struct NativeParserProxy*
 native_parser_proxy_clone(struct NativeParserProxy *self);
@@ -124,7 +124,7 @@ native_parser_new(GlobalConfig *cfg)
   ParserNative *self = (ParserNative*) g_new0(ParserNative, 1);
 
   log_parser_init_instance(&self->super, cfg);
-  self->native_object = native_parser_proxy_new();
+  self->native_object = native_parser_proxy_new(cfg);
 
   if (!self->native_object)
     {
