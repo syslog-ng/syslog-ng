@@ -26,7 +26,7 @@
 #include <ctype.h>
 
 static void
-tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
+_append_args_with_separator(gint argc, GString *argv[], GString *result, gchar separator)
 {
   gint i;
 
@@ -34,8 +34,15 @@ tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
     {
       g_string_append_len(result, argv[i]->str, argv[i]->len);
       if (i < argc - 1)
-        g_string_append_c(result, ' ');
+        g_string_append_c(result, separator);
     }
+}
+
+
+static void
+tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  _append_args_with_separator(argc, argv, result, ' ');
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_echo);
@@ -307,26 +314,13 @@ TEMPLATE_FUNCTION(TFSanitizeState, tf_sanitize, tf_sanitize_prepare, tf_simple_f
                   tf_sanitize_free_state, NULL);
 
 
-static void
-append_args(gint argc, GString *argv[], GString *result)
-{
-  gint i;
-
-  for (i = 0; i < argc; i++)
-    {
-      g_string_append_len(result, argv[i]->str, argv[i]->len);
-      if (i < argc - 1)
-        g_string_append_c(result, ' ');
-    }
-}
-
 void
 tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text)
 {
   gchar *p, *new_line;
 
   /* append the message text(s) to the template string */
-  append_args(argc, argv, text);
+  _append_args_with_separator(argc, argv, text, ' ');
 
   /* look up the \n-s and insert a \t after them */
   p = text->str;
