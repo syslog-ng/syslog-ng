@@ -12,9 +12,22 @@ before_script:
   - unset PYTHON_CFLAGS # HACK
   - ./configure CFLAGS=-Werror --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-pacct --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl --enable-extra-warnings
   - if [ "$CC" = "clang" ]; then export COPYRIGHTVERBOSITY=1; make check-copyright; fi
-  - make -j || make V=1 --keep-going # to make error messages more readable on error
+  - . tests/build-log-cflags-propagation.sh;
+    exec_prop_check "make -j V=1";
+    S=$?;
+    if [ "$S" = "42" -o "$S" = "0" ]; then
+      return $S;
+    else
+      make V=1 --keep-going; false;
+    fi # to make error messages more readable on error
 script:
-  - if [ "$CC" = "gcc" ]; then make distcheck V=1; else make func-test V=1; fi
+  - if [ "$CC" = "gcc" ]; then
+      . tests/build-log-cflags-propagation.sh;
+      export DISTCHECK_CONFIGURE_FLAGS="CFLAGS=-Werror --enable-extra-warnings";
+      exec_prop_check "make distcheck V=1 --keep-going";
+    else
+      make func-test V=1;
+    fi
 compiler:
   - gcc
   - clang
