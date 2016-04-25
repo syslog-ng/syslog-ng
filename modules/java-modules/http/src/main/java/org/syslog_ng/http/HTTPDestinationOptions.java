@@ -32,6 +32,8 @@ import org.syslog_ng.options.*;
 public class HTTPDestinationOptions {
 
   public static String URL = "url";
+  public static String TEMPLATE = "template";
+  public static String TEMPLATE_DEFAULT = "$(format-json --scope rfc5424)";
   public static String METHOD  = "method";
   public static String METHOD_DEFAULT  = "PUT";
 
@@ -58,21 +60,29 @@ public class HTTPDestinationOptions {
     return options.get(optionName);
   }
 
-  public String getURL() {
-    return options.get(URL).getValue();
+  public TemplateOption getURLTemplate() {
+    return options.getTemplateOption(URL);
+  }
+
+  public TemplateOption getMessageTemplate() {
+    return options.getTemplateOption(TEMPLATE);
   }
 
   public String getMethod() {
-     return options.get(METHOD).getValue();
+    return options.get(METHOD).getValue();
   }
 
   private void fillOptions() {
     fillStringOptions();
+    fillTemplateOptions();
   }
 
   private void fillStringOptions() {
-		options.put(new RequiredOptionDecorator(new StringOption(owner, URL)));
-		options.put(new EnumOptionDecorator(new StringOption(owner, METHOD, METHOD_DEFAULT), HTTP_METHODS));
+    options.put(new EnumOptionDecorator(new StringOption(owner, METHOD, METHOD_DEFAULT), HTTP_METHODS));
   }
-
+  
+  private void fillTemplateOptions(){
+    options.put(new TemplateOption(owner.getConfigHandle(), new RequiredOptionDecorator(new StringOption(owner, URL))));
+    options.put(new TemplateOption(owner.getConfigHandle(), new RequiredOptionDecorator(new StringOption(owner, TEMPLATE))));
+  }
 }
