@@ -230,7 +230,7 @@ cfg_set_version(GlobalConfig *self, gint version)
   if (cfg_is_config_version_older(self, VERSION_VALUE))
     {
       msg_warning("WARNING: Configuration file format is too old, syslog-ng is running in compatibility mode "
-                  "Please update it to use the " VERSION_CURRENT " format at your time of convinience, "
+                  "Please update it to use the " VERSION_CURRENT " format at your time of convenience, "
                   "compatibility mode can operate less efficiently in some cases. "
                   "To upgrade the configuration, please review the warnings about incompatible changes printed "
                   "by syslog-ng, and once completed change the @version header at the top of the configuration "
