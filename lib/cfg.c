@@ -47,7 +47,7 @@
 #include <stdlib.h>
 #include <iv_work.h>
 
-/* PersistentConfig */
+/* Persistent Config */
 
 struct _PersistConfig
 {
@@ -272,7 +272,7 @@ cfg_allow_config_dups(GlobalConfig *self)
   else
     {
       /* duplicate found, but allow-config-dups is not enabled, hint the user that he might want to use allow-config-dups */
-      msg_warning_once("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to reenable");
+      msg_warning_once("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to re-enable");
       return FALSE;
     }
 }
