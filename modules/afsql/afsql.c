@@ -1276,6 +1276,7 @@ afsql_dd_init(LogPipe *s)
 
   if (!dbi_initialized)
     {
+      errno = 0;
       gint rc = dbi_initialize_r(NULL, &dbi_instance);
 
       if (rc < 0)
