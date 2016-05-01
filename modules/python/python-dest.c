@@ -49,6 +49,14 @@ typedef struct
 
   struct
   {
+    PyListObject* list;
+    gint current_size;
+    gint max_size;
+    // TODO: mutex is needed
+  } batch;
+
+  struct
+  {
     PyObject *class;
     PyObject *instance;
     PyObject *is_opened;
@@ -91,6 +99,13 @@ python_dd_set_imports(LogDriver *d, GList *imports)
 
   string_list_free(self->imports);
   self->imports = imports;
+}
+
+void
+python_dd_set_flush_lines(LogDriver *d, gint lines)
+{
+    PythonDestDriver *self = (PythonDestDriver *)d;
+    self->batch.max_size = lines;
 }
 
 void
@@ -349,21 +364,51 @@ _py_init_object(PythonDestDriver *self)
   return TRUE;
 }
 
-static worker_insert_result_t
-python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
+static void
+python_dd_free_batch_list(PythonDestDriver *self)
 {
-  PythonDestDriver *self = (PythonDestDriver *)d;
+  self->batch.current_size = 0; // TODO: OK because of list reference handling
+}
+
+static worker_insert_result_t // TODO: shouldnt it return gboolean
+python_dd_batch_flush(PythonDestDriver *self)
+{
   worker_insert_result_t result = WORKER_INSERT_RESULT_ERROR;
   gboolean success;
-  PyObject *msg_object;
-  PyGILState_STATE gstate;
+  PyObject* list_object = (PyObject *)self->batch.list;
 
-  gstate = PyGILState_Ensure();
   if (!_py_invoke_is_opened(self))
     {
       result = WORKER_INSERT_RESULT_NOT_CONNECTED;
       goto exit;
     }
+
+  success = _py_invoke_send(self, list_object);
+  if (success)
+    {
+      result = WORKER_INSERT_RESULT_SUCCESS;
+      python_dd_free_batch_list(self);
+    }
+  else
+    {
+      msg_error("Python send() method returned failure, suspending destination for time_reopen()",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("class", self->class),
+                evt_tag_int("time_reopen", self->super.time_reopen),
+                NULL);
+    }
+
+ exit:
+  return result;
+}
+
+static worker_insert_result_t
+python_dd_insert_one(PythonDestDriver *self, LogMessage *msg)
+{
+  worker_insert_result_t result = WORKER_INSERT_RESULT_ERROR;
+  gboolean success;
+  PyObject *msg_object;
+
   if (self->vp)
     {
       success = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, &msg_object);
@@ -377,19 +422,62 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
       msg_object = py_log_message_new(msg);
     }
 
-  success = _py_invoke_send(self, msg_object);
-  if (success)
+  if (self->batch.current_size >= self->batch.max_size)
     {
-      result = WORKER_INSERT_RESULT_SUCCESS;
+      result = WORKER_INSERT_RESULT_ERROR;
+      goto exit;
+    }
+
+  PyList_SetItem(self->batch.list, self->batch.current_size, msg_object);
+  ++self->batch.current_size;
+
+  result = WORKER_INSERT_RESULT_SUCCESS;
+
+ exit:
+  return result;
+}
+
+static worker_insert_result_t
+python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
+{
+  PythonDestDriver *self = (PythonDestDriver *)d;
+  worker_insert_result_t result = WORKER_INSERT_RESULT_ERROR;
+  gboolean success;
+  PyObject *msg_object;
+  PyGILState_STATE gstate;
+
+  gstate = PyGILState_Ensure();
+
+  if (self->batch.current_size < self->batch.max_size)
+    {
+      result = python_dd_insert_one(self, msg);
+      if (result != WORKER_INSERT_RESULT_SUCCESS)
+        {
+          goto exit;
+        }
     }
   else
+   {
+     result = python_dd_batch_flush(self);
+     if (result != WORKER_INSERT_RESULT_SUCCESS)
+       {
+         goto exit;
+       }
+     result = python_dd_insert_one(self, msg);
+     if (result != WORKER_INSERT_RESULT_SUCCESS)
+       {
+         goto exit;
+       }
+   }
+
+  if (self->batch.current_size == self->batch.max_size)
     {
-      msg_error("Python send() method returned failure, suspending destination for time_reopen()",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
-                evt_tag_int("time_reopen", self->super.time_reopen));
+      result = python_dd_batch_flush(self);
+      if (result != WORKER_INSERT_RESULT_SUCCESS)
+        {
+          goto exit;
+        }
     }
-  Py_DECREF(msg_object);
 
  exit:
   PyGILState_Release(gstate);
@@ -463,6 +551,19 @@ python_dd_init(LogPipe *d)
   log_template_options_init(&self->template_options, cfg);
   self->super.time_reopen = 1;
 
+  if (self->batch.max_size <= 0)
+    {
+      self->batch.max_size = 1;
+    }
+  self->batch.current_size = 0;
+
+  self->batch.list = PyList_New(self->batch.max_size);
+
+  if (self->batch.list == NULL)
+    {
+      goto fail;
+    }
+
   gstate = PyGILState_Ensure();
 
   _py_perform_imports(self);
@@ -490,6 +591,8 @@ python_dd_deinit(LogPipe *d)
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
+  python_dd_batch_flush(self);
+  python_dd_free_batch_list(self);
   _py_invoke_deinit(self);
   PyGILState_Release(gstate);
 
@@ -507,6 +610,8 @@ python_dd_free(LogPipe *d)
   gstate = PyGILState_Ensure();
   _py_free_bindings(self);
   PyGILState_Release(gstate);
+
+  python_dd_free_batch_list(self);
 
   g_free(self->class);
 
@@ -540,6 +645,8 @@ python_dd_new(GlobalConfig *cfg)
   self->super.stats_source = SCS_PYTHON;
 
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+
+  self->batch.max_size = cfg->flush_lines;
 
   return (LogDriver *)self;
 }
