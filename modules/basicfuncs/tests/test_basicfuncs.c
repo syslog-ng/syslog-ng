@@ -34,6 +34,29 @@ add_dummy_template_to_configuration(void)
   cfg_tree_add_template(&configuration->tree, dummy);
 }
 
+static void
+_log_msg_free(gpointer msg)
+{
+  log_msg_unref((LogMessage *) msg);
+}
+
+static GPtrArray *
+create_log_messages_with_values(const gchar *name, const gchar **values)
+{
+  LogMessage *message;
+  GPtrArray *messages = g_ptr_array_new_with_free_func(_log_msg_free);
+
+  const gchar **value;
+  for (value = values; *value != NULL; ++value)
+    {
+      message = create_empty_message();
+      log_msg_set_value_by_name(message, name, *value, -1);
+      g_ptr_array_add(messages, message);
+    }
+
+  return messages;
+}
+
 void
 test_cond_funcs(void)
 {
@@ -139,6 +162,68 @@ test_numeric_funcs(void)
 }
 
 void
+test_numeric_aggregate_simple(void)
+{
+  const gchar *numbers[] = { "1", "-1", "3", NULL };
+  GPtrArray *messages = create_log_messages_with_values("NUMBER", numbers);
+
+  assert_template_format_with_context_msgs("$(sum ${NUMBER})", "3",
+    (LogMessage **) messages->pdata, messages->len);
+
+  assert_template_format_with_context_msgs("$(min ${NUMBER})", "-1",
+    (LogMessage **) messages->pdata, messages->len);
+
+  assert_template_format_with_context_msgs("$(max ${NUMBER})", "3",
+    (LogMessage **) messages->pdata, messages->len);
+
+  g_ptr_array_free(messages, TRUE);
+}
+
+void
+test_numeric_aggregate_invalid_values(void)
+{
+  const gchar *numbers[] = { "abc", "1", "c", "2", "", NULL };
+  GPtrArray *messages = create_log_messages_with_values("NUMBER", numbers);
+
+  assert_template_format_with_context_msgs("$(sum ${NUMBER})", "3",
+    (LogMessage **) messages->pdata, messages->len);
+
+  assert_template_format_with_context_msgs("$(min ${NUMBER})", "1",
+    (LogMessage **) messages->pdata, messages->len);
+
+  assert_template_format_with_context_msgs("$(max ${NUMBER})", "2",
+    (LogMessage **) messages->pdata, messages->len);
+
+  g_ptr_array_free(messages, TRUE);
+}
+
+void
+test_numeric_aggregate_full_invalid_values(void)
+{
+  const gchar *numbers[] = { "abc", "184467440737095516160", "c", "", NULL };
+  GPtrArray *messages = create_log_messages_with_values("NUMBER", numbers);
+
+  assert_template_format_with_context_msgs("$(sum ${NUMBER})", "",
+    (LogMessage **) messages->pdata, messages->len);
+
+  assert_template_format_with_context_msgs("$(min ${NUMBER})", "",
+    (LogMessage **) messages->pdata, messages->len);
+
+  assert_template_format_with_context_msgs("$(max ${NUMBER})", "",
+    (LogMessage **) messages->pdata, messages->len);
+
+  g_ptr_array_free(messages, TRUE);
+}
+
+void
+test_numeric_aggregate_funcs(void)
+{
+  test_numeric_aggregate_simple();
+  test_numeric_aggregate_invalid_values();
+  test_numeric_aggregate_full_invalid_values();
+}
+
+void
 test_misc_funcs(void)
 {
   unsetenv("OHHELLO");
@@ -166,6 +251,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_cond_funcs();
   test_str_funcs();
   test_numeric_funcs();
+  test_numeric_aggregate_funcs();
   test_misc_funcs();
   test_tf_template();
 
