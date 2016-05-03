@@ -21,7 +21,7 @@
  *
  */
 
-typedef gboolean (*ExtremumFunc)(gint64, gint64);
+typedef gint64 (*AggregateFunc)(gint64, gint64);
 
 static gboolean
 tf_num_parse(gint argc, GString *argv[],
@@ -183,29 +183,6 @@ tf_num_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   return tf_simple_func_prepare(self, s, parent, argc, argv, error);
 }
 
-static void
-tf_num_sum_call(LogTemplateFunction *self, gpointer s,
-                const LogTemplateInvokeArgs *args, GString *result)
-{
-  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
-  gint64 number;
-  gint64 sum = 0;
-
-  gint message_index;
-  for (message_index = 0; message_index < args->num_messages; ++message_index)
-    {
-      LogMessage *message = args->messages[message_index];
-      if (_tf_num_parse_arg_with_message(state, message, args, &number))
-        sum += number;
-    }
-
-  format_int64_padded(result, 0, ' ', 10, sum);
-}
-
-TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_sum,
-                  tf_num_prepare, NULL, tf_num_sum_call,
-                  tf_simple_func_free_state, NULL);
-
 static gboolean
 _tf_num_get_first_valid_arg(const TFSimpleFuncState *state,
                             const LogTemplateInvokeArgs *args,
@@ -216,71 +193,87 @@ _tf_num_get_first_valid_arg(const TFSimpleFuncState *state,
       LogMessage *message = args->messages[*message_index];
 
       if (_tf_num_parse_arg_with_message(state, message, args, number))
-        return TRUE;
+        {
+          (*message_index)++;
+          return TRUE;
+        }
     }
 
   return FALSE;
 }
 
-static gboolean
-_tf_num_extremum(const TFSimpleFuncState *state,
-                 const LogTemplateInvokeArgs *args,
-                 ExtremumFunc extremum_compare, gint64 *extremum)
+static void
+_tf_num_aggregation(TFSimpleFuncState *state, const LogTemplateInvokeArgs *args,
+                    AggregateFunc aggregate, GString *result)
 {
-  gint64 number;
-
+  gint64 accumulator;
   gint message_index;
-  if (!_tf_num_get_first_valid_arg(state, args, &message_index, extremum))
-    return FALSE;
+  if (!_tf_num_get_first_valid_arg(state, args, &message_index, &accumulator))
+    return;
 
   for (; message_index < args->num_messages; ++message_index)
     {
       LogMessage *message = args->messages[message_index];
 
-      if (_tf_num_parse_arg_with_message(state, message, args, &number)
-          && extremum_compare(number, *extremum))
-        *extremum = number;
+      gint64 number;
+      if (_tf_num_parse_arg_with_message(state, message, args, &number))
+        accumulator = aggregate(accumulator, number);
     }
 
-  return TRUE;
+  format_int64_padded(result, 0, ' ', 10, accumulator);
 }
 
-static gboolean
-_extremum_minimum(gint64 number, gint64 min)
+static gint64
+_sum(gint64 accumulator, gint64 element)
 {
-  return number < min;
+  return accumulator + element;
+}
+
+static void
+tf_num_sum_call(LogTemplateFunction *self, gpointer s,
+                const LogTemplateInvokeArgs *args, GString *result)
+{
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _sum, result);
+}
+
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_sum,
+                  tf_num_prepare, NULL, tf_num_sum_call,
+                  tf_simple_func_free_state, NULL);
+
+static gint64
+_minimum(gint64 accumulator, gint64 element)
+{
+  if (element < accumulator)
+    accumulator = element;
+
+  return accumulator;
 }
 
 static void
 tf_num_min_call(LogTemplateFunction *self, gpointer s,
                 const LogTemplateInvokeArgs *args, GString *result)
 {
-  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
-  gint64 min;
-
-  if (_tf_num_extremum(state, args, _extremum_minimum, &min))
-    format_int64_padded(result, 0, ' ', 10, min);
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _minimum, result);
 }
 
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_min,
                   tf_num_prepare, NULL, tf_num_min_call,
                   tf_simple_func_free_state, NULL);
 
-static gboolean
-_extremum_maximum(gint64 number, gint64 max)
+static gint64
+_maximum(gint64 accumulator, gint64 element)
 {
-  return number > max;
+  if (element > accumulator)
+    accumulator = element;
+
+  return accumulator;
 }
 
 static void
 tf_num_max_call(LogTemplateFunction *self, gpointer s,
                 const LogTemplateInvokeArgs *args, GString *result)
 {
-  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
-  gint64 max;
-
-  if (_tf_num_extremum(state, args, _extremum_maximum, &max))
-    format_int64_padded(result, 0, ' ', 10, max);
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _maximum, result);
 }
 
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_max,
