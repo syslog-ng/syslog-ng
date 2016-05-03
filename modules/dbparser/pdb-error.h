@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2011 Balabit
- * Copyright (c) 1998-2011 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
+ * Copyright (c) 2016 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,20 +20,18 @@
  * COPYING for details.
  *
  */
+#ifndef PDB_ERROR_H_INCLUDED
+#define PDB_ERROR_H_INCLUDED
 
-#ifndef DBPARSER_H_INCLUDED
-#define DBPARSER_H_INCLUDED
+#include "syslog-ng.h"
 
-#include "stateful-parser.h"
-#include "patterndb.h"
+#define PDB_ERROR pdb_error_quark()
 
-#define PATH_PATTERNDB_FILE     SYSLOG_NG_PATH_LOCALSTATEDIR "/patterndb.xml"
+GQuark pdb_error_quark(void);
 
-typedef struct _LogDBParser LogDBParser;
-
-void log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file);
-LogParser *log_db_parser_new(GlobalConfig *cfg);
-
-void log_pattern_database_init(void);
+typedef enum
+{
+  PDB_ERROR_FAILED,
+} PDBError;
 
 #endif
