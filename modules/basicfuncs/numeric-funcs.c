@@ -21,6 +21,8 @@
  *
  */
 
+typedef gint64 (*AggregateFunc)(gint64, gint64);
+
 static gboolean
 tf_num_parse(gint argc, GString *argv[],
 	     const gchar *func_name, gint64 *n, gint64 *m)
@@ -130,3 +132,150 @@ tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);
+
+
+static GString *
+_get_gstring_scratch_buffer(const LogTemplateInvokeArgs *args,
+                            gsize initial_capacity)
+{
+  if (args->bufs->len == 0)
+    g_ptr_array_add(args->bufs, g_string_sized_new(initial_capacity));
+
+  return (GString *) g_ptr_array_index(args->bufs, 0);
+}
+
+static gboolean
+_tf_num_parse_arg_with_message(const TFSimpleFuncState *state,
+                               LogMessage *message,
+                               const LogTemplateInvokeArgs *args,
+                               gint64 *number)
+{
+  GString *formatted_template = _get_gstring_scratch_buffer(args, 64);
+  gint on_error = args->opts->on_error;
+
+  log_template_format(state->argv[0], message, args->opts, args->tz,
+    args->seq_num, args->context_id, formatted_template);
+
+  if (!parse_number_with_suffix(formatted_template->str, number))
+    {
+      if (!(on_error & ON_ERROR_SILENT))
+        msg_error("Parsing failed, template function's argument is not a number",
+                  evt_tag_str("arg", formatted_template->str));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+tf_num_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
+               gint argc, gchar *argv[], GError **error)
+{
+  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+  if (argc != 2)
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+        "$(%s) requires only one argument", argv[0]);
+      return FALSE;
+    }
+
+  return tf_simple_func_prepare(self, s, parent, argc, argv, error);
+}
+
+static gboolean
+_tf_num_get_first_valid_arg(const TFSimpleFuncState *state,
+                            const LogTemplateInvokeArgs *args,
+                            gint *message_index, gint64 *number)
+{
+  for (*message_index = 0; *message_index < args->num_messages; (*message_index)++)
+    {
+      LogMessage *message = args->messages[*message_index];
+
+      if (_tf_num_parse_arg_with_message(state, message, args, number))
+        {
+          (*message_index)++;
+          return TRUE;
+        }
+    }
+
+  return FALSE;
+}
+
+static void
+_tf_num_aggregation(TFSimpleFuncState *state, const LogTemplateInvokeArgs *args,
+                    AggregateFunc aggregate, GString *result)
+{
+  gint64 accumulator;
+  gint message_index;
+  if (!_tf_num_get_first_valid_arg(state, args, &message_index, &accumulator))
+    return;
+
+  for (; message_index < args->num_messages; ++message_index)
+    {
+      LogMessage *message = args->messages[message_index];
+
+      gint64 number;
+      if (_tf_num_parse_arg_with_message(state, message, args, &number))
+        accumulator = aggregate(accumulator, number);
+    }
+
+  format_int64_padded(result, 0, ' ', 10, accumulator);
+}
+
+static gint64
+_sum(gint64 accumulator, gint64 element)
+{
+  return accumulator + element;
+}
+
+static void
+tf_num_sum_call(LogTemplateFunction *self, gpointer s,
+                const LogTemplateInvokeArgs *args, GString *result)
+{
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _sum, result);
+}
+
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_sum,
+                  tf_num_prepare, NULL, tf_num_sum_call,
+                  tf_simple_func_free_state, NULL);
+
+static gint64
+_minimum(gint64 accumulator, gint64 element)
+{
+  if (element < accumulator)
+    accumulator = element;
+
+  return accumulator;
+}
+
+static void
+tf_num_min_call(LogTemplateFunction *self, gpointer s,
+                const LogTemplateInvokeArgs *args, GString *result)
+{
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _minimum, result);
+}
+
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_min,
+                  tf_num_prepare, NULL, tf_num_min_call,
+                  tf_simple_func_free_state, NULL);
+
+static gint64
+_maximum(gint64 accumulator, gint64 element)
+{
+  if (element > accumulator)
+    accumulator = element;
+
+  return accumulator;
+}
+
+static void
+tf_num_max_call(LogTemplateFunction *self, gpointer s,
+                const LogTemplateInvokeArgs *args, GString *result)
+{
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _maximum, result);
+}
+
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_max,
+                  tf_num_prepare, NULL, tf_num_max_call,
+                  tf_simple_func_free_state, NULL);

@@ -182,23 +182,32 @@ assert_template_format_with_escaping(const gchar *template, gboolean escaping,
 void
 assert_template_format_with_context(const gchar *template, const gchar *expected)
 {
-  LogTemplate *templ = compile_template(template, FALSE);
-  if (!templ)
-    return;
-
   LogMessage *msg;
-  GString *res = g_string_sized_new(128);
-  const gchar *context_id = "test-context-id";
   LogMessage *context[2];
 
   msg = create_sample_message();
   context[0] = context[1] = msg;
 
-  log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 999, context_id, res);
+  assert_template_format_with_context_msgs(template, expected, context, 2);
+
+  log_msg_unref(msg);
+}
+
+void
+assert_template_format_with_context_msgs(const gchar *template, const gchar *expected,
+                                         LogMessage **msgs, gint num_messages)
+{
+  LogTemplate *templ = compile_template(template, FALSE);
+  if (!templ)
+    return;
+
+  GString *res = g_string_sized_new(128);
+  const gchar *context_id = "test-context-id";
+
+  log_template_format_with_context(templ, msgs, num_messages, NULL, LTZ_LOCAL, 999, context_id, res);
   expect_nstring(res->str, res->len, expected, strlen(expected), "context template test failed, template=%s", template);
   log_template_unref(templ);
   g_string_free(res, TRUE);
-  log_msg_unref(msg);
 }
 
 void

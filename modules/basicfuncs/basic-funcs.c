@@ -69,6 +69,9 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_num_multi, "*"),
   TEMPLATE_FUNCTION_PLUGIN(tf_num_div, "/"),
   TEMPLATE_FUNCTION_PLUGIN(tf_num_mod, "%"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_num_sum, "sum"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_num_min, "min"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_num_max, "max"),
 
   /* ip-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_ipv4_to_int, "ipv4-to-int"),
