@@ -296,3 +296,46 @@ tf_num_max_call(LogTemplateFunction *self, gpointer s,
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_max,
                   tf_num_prepare, NULL, tf_num_max_call,
                   tf_simple_func_free_state, NULL);
+
+typedef struct _AverageState
+{
+  gint count;
+  gint64 sum;
+} AverageState;
+
+static gboolean
+_tf_num_store_average_first(gpointer accumulator, gint64 element)
+{
+  AverageState *state = (AverageState *) accumulator;
+  state->count = 1;
+  state->sum = element;
+  return FALSE;
+}
+
+static gboolean
+_tf_num_average(gpointer accumulator, gint64 element)
+{
+  AverageState *state = (AverageState *) accumulator;
+  ++state->count;
+  state->sum += element;
+  return TRUE;
+}
+
+static void
+tf_num_average_call(LogTemplateFunction *self, gpointer s,
+                const LogTemplateInvokeArgs *args, GString *result)
+{
+  TFSimpleFuncState *state = (TFSimpleFuncState *)s;
+  AverageState accumulator = {0, 0};
+
+  if (!_tf_num_filter(state, args, _tf_num_store_average_first, _tf_num_average, &accumulator))
+    return;
+
+  g_assert(accumulator.count > 0);
+  gint64 mean = accumulator.sum / accumulator.count;
+  format_int64_padded(result, 0, ' ', 10, mean);
+}
+
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_average,
+                  tf_num_prepare, NULL, tf_num_average_call,
+                  tf_simple_func_free_state, NULL);
