@@ -1310,8 +1310,8 @@ _try_parse_with_a_given_child(RFindNodeState *state, RNode *root, gint parser_nd
        * collision occurs, so there's a slight chance we'll
        * recognize if this happens in real life. */
 
-      ret = _find_node_recursively(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
       _add_parser_match_debug_info(state, root, parser_node, remaining_key, extracted_match_len, match_slot);
+      ret = _find_node_recursively(state, root->pchildren[parser_ndx], remaining_key + extracted_match_len, remaining_keylen - extracted_match_len);
 
       /* we have to look up "match_slot" again as the GArray may have
        * moved the data in case r_find_node() expanded it above */
