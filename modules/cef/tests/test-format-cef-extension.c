@@ -197,9 +197,9 @@ _test_prefix(void)
   assert_template_failure("$(format-cef-extension --subkeys)",
                          "Missing argument for --subkeys");
   assert_template_failure("$(format-cef-extension --subkeys '')",
-                         "Missing argument for --subkeys");
+                         "Error parsing value-pairs: --subkeys requires a non-empty argument");
   assert_template_failure("$(format-cef-extension --subkeys \"\")",
-                         "Missing argument for --subkeys");
+                         "Error parsing value-pairs: --subkeys requires a non-empty argument");
 }
 
 static void

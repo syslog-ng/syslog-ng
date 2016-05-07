@@ -300,6 +300,7 @@ static gboolean
 log_template_compiler_process_arg_list(LogTemplateCompiler *self, GPtrArray *result)
 {
   GString *arg_buf = g_string_sized_new(32);
+  gboolean arg_buf_has_a_value = FALSE;
   gint parens = 1;
   self->cursor++;
 
@@ -332,19 +333,22 @@ log_template_compiler_process_arg_list(LogTemplateCompiler *self, GPtrArray *res
               g_string_free(arg_buf, TRUE);
               return FALSE;
             }
+          arg_buf_has_a_value = TRUE;
           continue;
         }
       else if (parens == 1 && (*self->cursor == ' ' || *self->cursor == '\t'))
         {
           g_ptr_array_add(result, g_strndup(arg_buf->str, arg_buf->len));
           g_string_truncate(arg_buf, 0);
+          arg_buf_has_a_value = FALSE;
           while (*self->cursor && (*self->cursor == ' ' || *self->cursor == '\t'))
             self->cursor++;
           continue;
         }
       log_template_compiler_append_and_increment(self, arg_buf);
+      arg_buf_has_a_value = TRUE;
     }
-  if (arg_buf->len > 0)
+  if (arg_buf_has_a_value)
     {
       g_ptr_array_add(result, g_strndup(arg_buf->str, arg_buf->len));
     }

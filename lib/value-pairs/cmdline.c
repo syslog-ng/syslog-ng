@@ -239,6 +239,13 @@ vp_cmdline_parse_subkeys(const gchar *option_name, const gchar *value,
   ValuePairs *vp = (ValuePairs *) args[1];
   ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
 
+  if (!value[0])
+    {
+      g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                  "Error parsing value-pairs: --subkeys requires a non-empty argument");
+      return FALSE;
+    }
+
   GString *prefix = g_string_new(value);
   g_string_append_c(prefix, '*');
   value_pairs_add_glob_pattern(vp, prefix->str, TRUE);

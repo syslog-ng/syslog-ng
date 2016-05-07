@@ -297,6 +297,15 @@ test_user_template_function(void)
   log_template_unref(template);
 }
 
+static void
+test_template_function_args(void)
+{
+  assert_template_format("$(echo foo bar)", "foo bar");
+  assert_template_format("$(echo 'foobar' \"barfoo\")", "foobar barfoo");
+  assert_template_format("$(echo foo '' bar)", "foo  bar");
+  assert_template_format("$(echo foo '')", "foo ");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -319,6 +328,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_compat();
   test_multi_thread();
   test_escaping();
+  test_template_function_args();
   test_user_template_function();
   /* multi-threaded expansion */
 
