@@ -35,16 +35,16 @@ add_dummy_template_to_configuration(void)
 }
 
 static void
-_log_msg_free(gpointer msg)
+_log_msg_free(gpointer data, gpointer user_data)
 {
-  log_msg_unref((LogMessage *) msg);
+  log_msg_unref((LogMessage *) data);
 }
 
 static GPtrArray *
 create_log_messages_with_values(const gchar *name, const gchar **values)
 {
   LogMessage *message;
-  GPtrArray *messages = g_ptr_array_new_with_free_func(_log_msg_free);
+  GPtrArray *messages = g_ptr_array_new();
 
   const gchar **value;
   for (value = values; *value != NULL; ++value)
@@ -55,6 +55,13 @@ create_log_messages_with_values(const gchar *name, const gchar **values)
     }
 
   return messages;
+}
+
+static void
+free_log_message_array(GPtrArray *messages)
+{
+  g_ptr_array_foreach(messages, _log_msg_free, NULL);
+  g_ptr_array_free(messages, TRUE);
 }
 
 void
@@ -176,7 +183,7 @@ test_numeric_aggregate_simple(void)
   assert_template_format_with_context_msgs("$(max ${NUMBER})", "3",
     (LogMessage **) messages->pdata, messages->len);
 
-  g_ptr_array_free(messages, TRUE);
+  free_log_message_array(messages);
 }
 
 void
@@ -194,7 +201,7 @@ test_numeric_aggregate_invalid_values(void)
   assert_template_format_with_context_msgs("$(max ${NUMBER})", "2",
     (LogMessage **) messages->pdata, messages->len);
 
-  g_ptr_array_free(messages, TRUE);
+  free_log_message_array(messages);
 }
 
 void
@@ -212,7 +219,7 @@ test_numeric_aggregate_full_invalid_values(void)
   assert_template_format_with_context_msgs("$(max ${NUMBER})", "",
     (LogMessage **) messages->pdata, messages->len);
 
-  g_ptr_array_free(messages, TRUE);
+  free_log_message_array(messages);
 }
 
 void
