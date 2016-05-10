@@ -138,7 +138,7 @@ log_proto_server_options_set_encoding(LogProtoServerOptions *self, const gchar *
   self->encoding = g_strdup(encoding);
 
   /* validate encoding */
-  convert = g_iconv_open("utf8", encoding);
+  convert = g_iconv_open("utf-8", encoding);
   if (convert == (GIConv) -1)
     return FALSE;
   g_iconv_close(convert);
