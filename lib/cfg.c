@@ -47,7 +47,7 @@
 #include <stdlib.h>
 #include <iv_work.h>
 
-/* PersistentConfig */
+/* PersistConfig */
 
 struct _PersistConfig
 {
