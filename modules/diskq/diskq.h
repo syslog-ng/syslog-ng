@@ -24,7 +24,6 @@
 #ifndef DISKQ_H
 #define DISKQ_H
 
-#include "config.h"
 #include "logqueue.h"
 #include "driver.h"
 #include "logmsg/logmsg-serialize.h"
