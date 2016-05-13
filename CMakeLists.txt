@@ -156,7 +156,7 @@ add_subdirectory(Mk)
 add_subdirectory(lib)
 #add_subdirectory(modules)
 add_subdirectory(scripts)
-#add_subdirectory(syslog-ng)
+add_subdirectory(syslog-ng)
 #add_subdirectory(syslog-ng-ctl)
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
