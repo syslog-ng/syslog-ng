@@ -21,7 +21,7 @@
  *
  */
 #ifndef CONTROL_SERVER_H
-#define CONTROL_SERVER_H 1
+#define CONTROL_SERVER_H
 
 #include "syslog-ng.h"
 #include "control.h"
