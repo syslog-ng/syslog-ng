@@ -27,11 +27,11 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
 public class ESSingleMessageProcessor extends ESMessageProcessor {
 
-	public ESSingleMessageProcessor(ElasticSearchOptions options, ESClient client) {
+	public ESSingleMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		super(options, client);
 	}
 

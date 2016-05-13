@@ -35,7 +35,7 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 
-public class ESNodeClient extends ESClient {
+public class ESNodeClient extends ESNativeClient {
 	private Node node;
 
 	public ESNodeClient(ElasticSearchOptions options) {

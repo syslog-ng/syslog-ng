@@ -25,11 +25,11 @@ package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
 import org.elasticsearch.action.index.IndexRequest;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
 public class DummyProcessor extends ESMessageProcessor {
 
-	public DummyProcessor(ElasticSearchOptions options, ESClient client) {
+	public DummyProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		super(options, client);
 		
 	}

@@ -39,7 +39,7 @@ import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
 
-public abstract class ESClient {
+public abstract class ESNativeClient {
 	private Client client;
     private ESMessageProcessor messageProcessor;
 	private static final String TIMEOUT = "5s";
@@ -47,7 +47,7 @@ public abstract class ESClient {
 
 	protected ElasticSearchOptions options;
 
-	public ESClient(ElasticSearchOptions options) {
+	public ESNativeClient(ElasticSearchOptions options) {
 		this.options = options;
 		logger = Logger.getRootLogger();
         messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);

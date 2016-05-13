@@ -35,7 +35,7 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.plugins.Plugin;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 
-public class ESTransportClient extends ESClient {
+public class ESTransportClient extends ESNativeClient {
 	private Settings settings;
 	protected TransportClient transportClient;
 

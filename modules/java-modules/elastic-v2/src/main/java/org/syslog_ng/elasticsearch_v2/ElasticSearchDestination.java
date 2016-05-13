@@ -26,12 +26,9 @@ package org.syslog_ng.elasticsearch_v2;
 import org.syslog_ng.LogMessage;
 import org.syslog_ng.LogTemplate;
 import org.syslog_ng.StructuredLogDestination;
-import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 import org.syslog_ng.elasticsearch_v2.client.ESClientFactory;
 import org.syslog_ng.elasticsearch_v2.client.UnknownESClientModeException;
-import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
-import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
 import org.syslog_ng.options.InvalidOptionException;
 import org.syslog_ng.logging.SyslogNgInternalLogger;
 import org.apache.log4j.Logger;
@@ -39,7 +36,7 @@ import org.elasticsearch.action.index.IndexRequest;
 
 public class ElasticSearchDestination extends StructuredLogDestination {
 
-	ESClient client;
+	ESNativeClient client;
 	ElasticSearchOptions options;
 	Logger logger;
 

@@ -26,15 +26,15 @@ package org.syslog_ng.elasticsearch_v2.messageprocessor;
 import org.apache.log4j.Logger;
 import org.elasticsearch.action.index.IndexRequest;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
 public abstract class ESMessageProcessor {
 	protected ElasticSearchOptions options;
-	protected ESClient client;
+	protected ESNativeClient client;
 	protected Logger logger;
 
 
-	public ESMessageProcessor(ElasticSearchOptions options, ESClient client) {
+	public ESMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		this.options = options;
 		this.client = client;
 		logger = Logger.getRootLogger();

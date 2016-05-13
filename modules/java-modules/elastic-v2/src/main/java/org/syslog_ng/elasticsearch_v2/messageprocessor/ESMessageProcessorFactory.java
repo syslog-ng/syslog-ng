@@ -24,10 +24,10 @@
 package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
 public class ESMessageProcessorFactory {
-	public static ESMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESClient client) {
+	public static ESMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		int flush_limit = options.getFlushLimit();
 		if (flush_limit > 1) {
 			return new ESBulkMessageProcessor(options, client);
