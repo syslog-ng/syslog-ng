@@ -1,0 +1,19 @@
+set(STATS_HEADERS
+    stats/stats.h
+    stats/stats-counter.h
+    stats/stats-cluster.h
+    stats/stats-csv.h
+    stats/stats-log.h
+    stats/stats-registry.h
+    stats/stats-syslog.h
+    PARENT_SCOPE)
+
+set(STATS_SOURCES
+    stats/stats.c
+    stats/stats-counter.c
+    stats/stats-cluster.c
+    stats/stats-csv.c
+    stats/stats-log.c
+    stats/stats-registry.c
+    stats/stats-syslog.c
+    PARENT_SCOPE)
