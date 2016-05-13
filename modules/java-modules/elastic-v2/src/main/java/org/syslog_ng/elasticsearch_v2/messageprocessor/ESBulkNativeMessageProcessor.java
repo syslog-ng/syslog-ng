@@ -33,7 +33,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
-public class ESBulkMessageProcessor extends ESMessageProcessor {
+public class ESBulkNativeMessageProcessor extends ESNativeMessageProcessor {
 	private BulkProcessor bulkProcessor;
 
 	private class BulkProcessorListener implements BulkProcessor.Listener {
@@ -60,7 +60,7 @@ public class ESBulkMessageProcessor extends ESMessageProcessor {
 		}
 	}
 
-	public ESBulkMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+	public ESBulkNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		super(options, client);
 	}
 

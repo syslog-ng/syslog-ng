@@ -23,29 +23,25 @@
 
 package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
-import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
-public class ESSingleMessageProcessor extends ESMessageProcessor {
+public class DummyProcessorNative extends ESNativeMessageProcessor {
 
-	public ESSingleMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+	public DummyProcessorNative(ElasticSearchOptions options, ESNativeClient client) {
 		super(options, client);
+		
+	}
+
+	@Override
+	public void init() {
+		logger.warn("Using option(\"flush_limit\", \"0\"), means only testing the Elasticsearch client site without sending logs to the ES");
 	}
 
 	@Override
 	public boolean send(IndexRequest req) {
-		try {
-			IndexResponse response = client.getClient().index(req).actionGet();
-			logger.debug("Message inserted with id: " + response.getId());
-			return true;
-		}
-		catch (ElasticsearchException e) {
-			logger.error("Failed to send message: " + e.getMessage());
-			return false;
-		}
+		return true;
 	}
 
 }

@@ -36,12 +36,12 @@ import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESNativeMessageProcessor;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
 
 public abstract class ESNativeClient {
 	private Client client;
-    private ESMessageProcessor messageProcessor;
+    private ESNativeMessageProcessor messageProcessor;
 	private static final String TIMEOUT = "5s";
 	protected Logger logger;
 

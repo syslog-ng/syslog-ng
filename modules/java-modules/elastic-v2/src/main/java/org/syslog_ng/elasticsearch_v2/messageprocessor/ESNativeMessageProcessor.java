@@ -28,13 +28,13 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
-public abstract class ESMessageProcessor {
+public abstract class ESNativeMessageProcessor {
 	protected ElasticSearchOptions options;
 	protected ESNativeClient client;
 	protected Logger logger;
 
 
-	public ESMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+	public ESNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		this.options = options;
 		this.client = client;
 		logger = Logger.getRootLogger();

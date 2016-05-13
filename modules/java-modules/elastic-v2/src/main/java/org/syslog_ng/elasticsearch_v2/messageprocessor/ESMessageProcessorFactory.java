@@ -27,16 +27,16 @@ import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
 public class ESMessageProcessorFactory {
-	public static ESMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+	public static ESNativeMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		int flush_limit = options.getFlushLimit();
 		if (flush_limit > 1) {
-			return new ESBulkMessageProcessor(options, client);
+			return new ESBulkNativeMessageProcessor(options, client);
 		}
 		if (flush_limit == -1) {
-			return new DummyProcessor(options, client);
+			return new DummyProcessorNative(options, client);
 		}
 		else {
-			return new ESSingleMessageProcessor(options, client);
+			return new ESSingleNativeMessageProcessor(options, client);
 		}
 	}
 }
