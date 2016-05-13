@@ -1,0 +1,12 @@
+include (CheckTypeSize)
+
+set (CMAKE_EXTRA_INCLUDE_FILES sys/socket.h netinet/in.h)
+set (CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE=1)
+check_type_size ("struct sockaddr_in6" STRUCT_SOCKADDR_IN6)
+if (HAVE_STRUCT_SOCKADDR_IN6)
+    set(HAVE_IPV6 1 CACHE INTERNAL 1)
+else()
+    set(HAVE_IPV6 0 CACHE INTERNAL 0)
+endif()
+unset (CMAKE_EXTRA_INCLUDE_FILES)
+unset (CMAKE_REQUIRED_DEFINITIONS)
