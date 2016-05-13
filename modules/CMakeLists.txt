@@ -1,7 +1,7 @@
 #add_subdirectory(afuser)
 #add_subdirectory(redis)
 add_subdirectory(affile)
-#add_subdirectory(afprog)
+add_subdirectory(afprog)
 #add_subdirectory(afsmtp)
 #add_subdirectory(afsocket)
 #add_subdirectory(native)
