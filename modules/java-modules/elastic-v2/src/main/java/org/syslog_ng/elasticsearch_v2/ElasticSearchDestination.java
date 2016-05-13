@@ -61,9 +61,6 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 			client = ESClientFactory.getESClient(options);
 			msgProcessor = ESMessageProcessorFactory.getMessageProcessor(options, client);
 			client.init();
-			if (options.getClientMode().equals(ElasticSearchOptions.CLIENT_MODE_TRANSPORT) && options.getFlushLimit() > 1) {
-				logger.warn("Using transport client mode with bulk message processing (flush_limit > 1) can cause high message dropping rate in case of connection broken, using node client mode is suggested");
-			}
 			result = true;
 		}
 		catch (InvalidOptionException | UnknownESClientModeException e){

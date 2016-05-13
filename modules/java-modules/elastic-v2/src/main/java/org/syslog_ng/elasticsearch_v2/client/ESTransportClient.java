@@ -42,7 +42,13 @@ public class ESTransportClient extends ESClient {
 	public ESTransportClient(ElasticSearchOptions options) {
 		super(options);
 	}
-	
+
+	private void validate() {
+		if (options.getFlushLimit() > 1) {
+			logger.warn("Using transport based client mode with bulk message processing (flush_limit > 1) can cause high message dropping rate in case of connection broken, using node client mode is suggested");
+		}
+	}
+
     @Override
     public Client createClient() {
         return createClient(null);        
@@ -63,6 +69,9 @@ public class ESTransportClient extends ESClient {
 		transportClient = transportClientBuilder.build();
 		
 		addServersToClient(transportClient);
+
+		validate();
+
 		return transportClient;
 	}
 
