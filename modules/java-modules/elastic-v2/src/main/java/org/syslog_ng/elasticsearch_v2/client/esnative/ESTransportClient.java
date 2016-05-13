@@ -21,7 +21,7 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.client;
+package org.syslog_ng.elasticsearch_v2.client.esnative;
 
 import java.net.InetSocketAddress;
 import java.util.Iterator;
@@ -34,6 +34,7 @@ import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.plugins.Plugin;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
 public class ESTransportClient extends ESNativeClient {
 	private Settings settings;

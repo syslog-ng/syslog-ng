@@ -21,7 +21,7 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.client;
+package org.syslog_ng.elasticsearch_v2.client.esnative;
 
 import java.io.File;
 import java.net.URI;
@@ -36,6 +36,7 @@ import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.client.ESClient;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESNativeMessageProcessor;

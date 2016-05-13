@@ -31,7 +31,7 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
 public class ESBulkNativeMessageProcessor extends ESNativeMessageProcessor {
 	private BulkProcessor bulkProcessor;

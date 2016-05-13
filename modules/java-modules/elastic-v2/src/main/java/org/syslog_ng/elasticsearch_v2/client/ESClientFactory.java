@@ -24,6 +24,9 @@
 package org.syslog_ng.elasticsearch_v2.client;
 
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNodeClient;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESTransportClient;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESTransportShieldClient;
 
 public class ESClientFactory {
 	public static ESClient getESClient(ElasticSearchOptions options) throws UnknownESClientModeException {
