@@ -62,6 +62,7 @@ include (CheckTypeSize)
 include (CheckStructMember)
 include (CheckSymbolExists)
 include (GenerateYFromYm)
+include (CheckStructHasMember)
 
 add_definitions(-D_GNU_SOURCE=1)
 
@@ -91,6 +92,18 @@ check_symbol_exists (strtoimax inttypes.h SYSLOG_NG_HAVE_STRTOIMAX)
 check_symbol_exists (inet_aton "sys/socket.h;netinet/in.h;arpa/inet.h" SYSLOG_NG_HAVE_INET_ATON)
 check_symbol_exists (getutent utmp.h SYSLOG_NG_HAVE_GETUTENT)
 check_symbol_exists (getutxent utmpx.h SYSLOG_NG_HAVE_GETUTXENT)
+
+check_include_files (utmp.h SYSLOG_NG_HAVE_UTMP_H)
+check_include_files (utmpx.h SYSLOG_NG_HAVE_UTMPX_H)
+
+check_struct_has_member("struct utmpx" "ut_type" "utmpx.h" UTMPX_HAS_UT_TYPE LANGUAGE C)
+check_struct_has_member("struct utmp" "ut_type" "utmp.h" UTMP_HAS_UT_TYPE LANGUAGE C)
+check_struct_has_member("struct utmpx" "ut_user" "utmpx.h" UTMPX_HAS_UT_USER LANGUAGE C)
+check_struct_has_member("struct utmp" "ut_user" "utmp.h" UTMP_HAS_UT_USER LANGUAGE C)
+
+if ((UTMPX_HAS_UT_TYPE AND UTMPX_HAS_UT_USER) OR (UTMPX_HAS_UT_TYPE AND UTMP_HAS_UT_USER))
+  set (SYSLOG_NG_HAVE_MODERN_UTMP 1)
+endif()
 
 set (WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g. /usr)")
 
