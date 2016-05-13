@@ -300,7 +300,7 @@ extract_holder_license() {
   c|h|ym|java)
     extract_holder_license_c
     ;;
-  ac|am|conf|sh|pl|py)
+  ac|am|cmake|conf|sh|pl|py)
     extract_holder_license_sh
     ;;
   *)
