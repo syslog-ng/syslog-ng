@@ -26,6 +26,7 @@ package org.syslog_ng.elasticsearch_v2.client;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Paths;
+
 import org.apache.log4j.Logger;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequestBuilder;
@@ -36,21 +37,20 @@ import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
-import org.syslog_ng.elasticsearch_v2.messageprocessor.ESNativeMessageProcessor;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESNativeMessageProcessor;
 
-public abstract class ESNativeClient {
+public abstract class ESNativeClient implements ESClient {
 	private Client client;
-    private ESNativeMessageProcessor messageProcessor;
+	protected ESNativeMessageProcessor messageProcessor;
 	private static final String TIMEOUT = "5s";
 	protected Logger logger;
-
 	protected ElasticSearchOptions options;
 
 	public ESNativeClient(ElasticSearchOptions options) {
 		this.options = options;
 		logger = Logger.getRootLogger();
-        messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
+		messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
 	}
 
 	private boolean waitForStatus(ClusterHealthStatus status) {
@@ -61,7 +61,7 @@ public abstract class ESNativeClient {
 		return !response.isTimedOut();
 	}
 
-	public void connect() throws ElasticsearchException {
+	protected void connect() throws ElasticsearchException {
 		String clusterName = getClusterName();
 		if (options.getSkipClusterHealthCheck()) {
 		        logger.warn("Skip checking cluster state, cluster_name='" + clusterName + '"');
@@ -115,10 +115,6 @@ public abstract class ESNativeClient {
 		client = createClient();
 	}
 
-    public final boolean send(ESIndex index) {
-        return messageProcessor.send(index);
-    }
-
 	public abstract Client createClient();
 
 	public Client getClient() {
@@ -140,4 +136,9 @@ public abstract class ESNativeClient {
             logger.warn("Can't load settings from file, file = '" + cfgFile + "', reason = '" + e.getMessage() + "'");
         }
     }
+
+	@Override
+	public boolean send(ESIndex index) {
+		return messageProcessor.send(index);
+	}
 }
