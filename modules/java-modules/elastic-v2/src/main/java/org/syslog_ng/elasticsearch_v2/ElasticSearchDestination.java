@@ -40,7 +40,6 @@ import org.elasticsearch.action.index.IndexRequest;
 public class ElasticSearchDestination extends StructuredLogDestination {
 
 	ESClient client;
-	ESMessageProcessor msgProcessor;
 	ElasticSearchOptions options;
 	Logger logger;
 
@@ -59,7 +58,6 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 		try {
 			options.init();
 			client = ESClientFactory.getESClient(options);
-			msgProcessor = ESMessageProcessorFactory.getMessageProcessor(options, client);
 			client.init();
 			result = true;
 		}
@@ -78,9 +76,6 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	@Override
 	protected boolean open() {
 		opened = client.open();
-		if (opened){
-			msgProcessor.init();
-		}
 		return opened;
 	}
 
@@ -99,14 +94,12 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 			close();
 			return false;
 		}
-		return msgProcessor.send(createIndexRequest(msg));
+		return client.send(createIndexRequest(msg));
 	}
 
 	@Override
 	protected void close() {
 		if (opened) {
-			msgProcessor.flush();
-			msgProcessor.deinit();
 			client.close();
 			opened = false;
 		}

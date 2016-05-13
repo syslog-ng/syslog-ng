@@ -42,11 +42,6 @@ public class ESNodeClient extends ESClient {
 		super(options);
 	}
 
-	@Override
-	public void close() {
-		getClient().close();
-	}
-
 	private NodeBuilder createNodeBuilder(String cluster) {
 		NodeBuilder result = nodeBuilder().data(false)
 				  .client(true);

@@ -75,11 +75,6 @@ public class ESTransportClient extends ESClient {
 		return transportClient;
 	}
 
-	public void close() {
-		getClient().close();
-		resetClient();
-	}
-
 	@Override
 	public boolean isOpened() {
 		return !transportClient.connectedNodes().isEmpty();

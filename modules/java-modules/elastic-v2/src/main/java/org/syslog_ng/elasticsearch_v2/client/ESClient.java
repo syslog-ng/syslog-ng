@@ -30,14 +30,18 @@ import org.apache.log4j.Logger;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequestBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
 
 public abstract class ESClient {
 	private Client client;
+    private ESMessageProcessor messageProcessor;
 	private static final String TIMEOUT = "5s";
 	protected Logger logger;
 
@@ -46,6 +50,7 @@ public abstract class ESClient {
 	public ESClient(ElasticSearchOptions options) {
 		this.options = options;
 		logger = Logger.getRootLogger();
+        messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
 	}
 
 	private boolean waitForStatus(ClusterHealthStatus status) {
@@ -87,6 +92,7 @@ public abstract class ESClient {
 			close();
 			return false;
 		}
+        messageProcessor.init();
 		return true;
 	}
 
@@ -94,7 +100,12 @@ public abstract class ESClient {
 		return client.settings().get("cluster.name");
 	}
 
-	public abstract void close();
+	public final void close() {
+		messageProcessor.flush();
+		messageProcessor.deinit();
+		client.close();
+		resetClient();
+	}
 
 	public abstract boolean isOpened();
 
@@ -104,13 +115,17 @@ public abstract class ESClient {
 		client = createClient();
 	}
 
+    public final boolean send(IndexRequest req) {
+        return messageProcessor.send(req);
+    }
+
 	public abstract Client createClient();
 
 	public Client getClient() {
 		return client;
 	}
 
-	protected void resetClient() {
+	private void resetClient() {
 		this.client = null;
 	}
 	
