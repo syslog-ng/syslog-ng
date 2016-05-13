@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016 Balabit
- * Copyright (c) 2016 Viktor Juhasz <viktor.juhasz@balabit.com>
+ * Copyright (c) 2016 Laszlo Budai <laszlo.budai@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -23,29 +23,6 @@
 
 package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
-
-public class ESSingleNativeMessageProcessor extends ESNativeMessageProcessor {
-
-	public ESSingleNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
-		super(options, client);
-	}
-
-	@Override
-	protected boolean send(IndexRequest req) {
-		try {
-			IndexResponse response = client.getClient().index(req).actionGet();
-			logger.debug("Message inserted with id: " + response.getId());
-			return true;
-		}
-		catch (ElasticsearchException e) {
-			logger.error("Failed to send message: " + e.getMessage());
-			return false;
-		}
-	}
-
+public interface ESMessageProcessor {
+	boolean send(ESIndex index);
 }

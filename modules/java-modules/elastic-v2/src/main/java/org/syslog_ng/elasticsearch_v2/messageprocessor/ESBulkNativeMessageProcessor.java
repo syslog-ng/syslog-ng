@@ -65,7 +65,7 @@ public class ESBulkNativeMessageProcessor extends ESNativeMessageProcessor {
 	}
 
 	@Override
-	public boolean send(IndexRequest req) {
+	protected boolean send(IndexRequest req) {
 		bulkProcessor.add(req);
 		return true;
 	}

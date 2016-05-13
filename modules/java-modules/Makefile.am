@@ -85,6 +85,8 @@ EXTRA_DIST += \
 	modules/java-modules/http/src/main/java/org/syslog_ng/http/HTTPDestination.java \
 	modules/java-modules/http/src/main/java/org/syslog_ng/http/HTTPDestinationOptions.java \
 	modules/java-modules/dummy/src/main/java/org/syslog_ng/DummyTextDestination.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/ESIndex.java \
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/ESMessageProcessor.java \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/ESNativeMessageProcessor.java \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/DummyProcessorNative.java \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/ESBulkNativeMessageProcessor.java \

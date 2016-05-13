@@ -30,12 +30,12 @@ import org.apache.log4j.Logger;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequestBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESNativeMessageProcessor;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
 
@@ -115,8 +115,8 @@ public abstract class ESNativeClient {
 		client = createClient();
 	}
 
-    public final boolean send(IndexRequest req) {
-        return messageProcessor.send(req);
+    public final boolean send(ESIndex index) {
+        return messageProcessor.send(index);
     }
 
 	public abstract Client createClient();

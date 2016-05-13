@@ -28,7 +28,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 
-public abstract class ESNativeMessageProcessor {
+public abstract class ESNativeMessageProcessor implements  ESMessageProcessor {
 	protected ElasticSearchOptions options;
 	protected ESNativeClient client;
 	protected Logger logger;
@@ -52,6 +52,11 @@ public abstract class ESNativeMessageProcessor {
 
 	}
 
-	public abstract boolean send(IndexRequest req);
+	protected abstract boolean send(IndexRequest req);
 
+	@Override
+	public final boolean send(ESIndex index) {
+		IndexRequest req = new IndexRequest(index.getIndex(), index.getType(), index.getId()).source(index.getFormattedMessage());
+		return send(req);
+	}
 }

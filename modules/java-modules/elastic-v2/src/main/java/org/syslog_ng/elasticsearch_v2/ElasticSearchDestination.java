@@ -29,10 +29,10 @@ import org.syslog_ng.StructuredLogDestination;
 import org.syslog_ng.elasticsearch_v2.client.ESNativeClient;
 import org.syslog_ng.elasticsearch_v2.client.ESClientFactory;
 import org.syslog_ng.elasticsearch_v2.client.UnknownESClientModeException;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.options.InvalidOptionException;
 import org.syslog_ng.logging.SyslogNgInternalLogger;
 import org.apache.log4j.Logger;
-import org.elasticsearch.action.index.IndexRequest;
 
 public class ElasticSearchDestination extends StructuredLogDestination {
 
@@ -76,13 +76,14 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 		return opened;
 	}
 
-    private IndexRequest createIndexRequest(LogMessage msg) {
+    private ESIndex createIndexRequest(LogMessage msg) {
     	String formattedMessage = options.getMessageTemplate().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
     	String customId = options.getCustomId().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
     	String index = options.getIndex().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
     	String type = options.getType().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
     	logger.debug("Outgoing log entry, json='" + formattedMessage + "'");
-    	return new IndexRequest(index, type, customId).source(formattedMessage);
+
+		return new ESIndex.Builder().formattedMessage(formattedMessage).index(index).id(customId).type(type).build();
     }
 
 	@Override
