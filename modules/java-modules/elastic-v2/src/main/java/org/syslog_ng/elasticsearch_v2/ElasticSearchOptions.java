@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2016 Balabit
  * Copyright (c) 2016 Viktor Juhasz <viktor.juhasz@balabit.com>
+ * Copyright (c) 2016 Viktor Tusa <tusavik@gmail.com>
+ * Copyright (c) 2016 Laszlo Budai <laszlo.budai@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -42,6 +44,7 @@ public class ElasticSearchOptions {
 	public static String CLIENT_MODE = "client_mode";
 	public static String CONFIG_FILE = "resource";
 	public static String CONCURRENT_REQUESTS = "concurrent_requests";
+	public static String CLUSTER_URL = "cluster_url";
 
 	public static String SERVER_DEFAULT = "localhost";
 	public static String PORT_DEFAULT = "9300";
@@ -50,9 +53,11 @@ public class ElasticSearchOptions {
 	public static String CLIENT_MODE_TRANSPORT = "transport";
 	public static String CLIENT_MODE_NODE = "node";
 	public static String CLIENT_MODE_SHIELD = "shield";
+	public static String CLIENT_MODE_HTTP = "http";
 	public static String SKIP_CLUSTER_HEALTH_CHECK = "skip_cluster_health_check";
 	public static String SKIP_CLUSTER_HEALTH_CHECK_DEFAULT = "false";
-	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD));
+	public static String CLUSTER_URL_DEFAULT = "http://localhost:9200";
+	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD, CLIENT_MODE_HTTP));
 
 	public static String CLIENT_MODE_DEFAULT = CLIENT_MODE_TRANSPORT;
 	public static String CONCURRENT_REQUESTS_DEFAULT = "1";
@@ -120,11 +125,16 @@ public class ElasticSearchOptions {
 
         public int getConcurrentRequests() {
         	return options.get(CONCURRENT_REQUESTS).getValueAsInteger();
-        }	
+        }
 
         public boolean getSkipClusterHealthCheck() {
                 return options.get(SKIP_CLUSTER_HEALTH_CHECK).getValueAsBoolean();
         }
+
+	public String getClusterUrl() {
+		return options.get(CLUSTER_URL).getValue();
+	}
+
 
 	private void fillOptions() {
 		fillStringOptions();
@@ -147,6 +157,7 @@ public class ElasticSearchOptions {
 		options.put(new EnumOptionDecorator(new StringOption(owner, CLIENT_MODE, CLIENT_MODE_DEFAULT), CLIENT_MODES));
 		options.put(new StringOption(owner, CONFIG_FILE));
 		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_DEFAULT), 0, Integer.MAX_VALUE));
+		options.put(new StringOption(owner, CLUSTER_URL, CLUSTER_URL_DEFAULT));
 	}
 
 	private void fillBooleanOptions() {

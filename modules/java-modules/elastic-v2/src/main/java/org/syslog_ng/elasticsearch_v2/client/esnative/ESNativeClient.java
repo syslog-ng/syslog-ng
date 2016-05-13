@@ -97,6 +97,7 @@ public abstract class ESNativeClient implements ESClient {
 		return true;
 	}
 
+	@Override
 	public String getClusterName() {
 		return client.settings().get("cluster.name");
 	}
