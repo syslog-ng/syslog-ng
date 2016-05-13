@@ -44,8 +44,6 @@
 # endif
 #endif
 
-#if defined(CRED_PASS_SUPPORTED)
 void socket_set_pass_credentials(gint fd);
-#endif
 
 #endif
