@@ -39,7 +39,7 @@ import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.ESClient;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
-import org.syslog_ng.elasticsearch_v2.messageprocessor.ESNativeMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESNativeMessageProcessor;
 
 public abstract class ESNativeClient implements ESClient {
 	private Client client;

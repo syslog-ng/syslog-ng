@@ -21,14 +21,16 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.messageprocessor;
+package org.syslog_ng.elasticsearch_v2.messageprocessor.esnative;
 
 import org.apache.log4j.Logger;
 import org.elasticsearch.action.index.IndexRequest;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
 
-public abstract class ESNativeMessageProcessor implements  ESMessageProcessor {
+public abstract class ESNativeMessageProcessor implements ESMessageProcessor {
 	protected ElasticSearchOptions options;
 	protected ESNativeClient client;
 	protected Logger logger;

@@ -21,13 +21,14 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.messageprocessor;
+package org.syslog_ng.elasticsearch_v2.messageprocessor.esnative;
 
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESNativeMessageProcessor;
 
 public class ESSingleNativeMessageProcessor extends ESNativeMessageProcessor {
 

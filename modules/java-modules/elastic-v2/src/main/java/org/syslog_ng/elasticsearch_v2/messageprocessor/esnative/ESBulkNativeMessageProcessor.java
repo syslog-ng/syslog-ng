@@ -21,7 +21,7 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.messageprocessor;
+package org.syslog_ng.elasticsearch_v2.messageprocessor.esnative;
 
 import java.util.concurrent.TimeUnit;
 

@@ -21,7 +21,7 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.messageprocessor;
+package org.syslog_ng.elasticsearch_v2.messageprocessor.esnative;
 
 import org.elasticsearch.action.index.IndexRequest;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;

@@ -25,6 +25,10 @@ package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.DummyProcessorNative;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESBulkNativeMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESNativeMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESSingleNativeMessageProcessor;
 
 public class ESMessageProcessorFactory {
 	public static ESNativeMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
