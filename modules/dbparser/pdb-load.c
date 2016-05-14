@@ -199,12 +199,19 @@ _process_create_context_element(PDBLoader *state,
       if (strcmp(attribute_names[i], "context-id") == 0)
         {
           LogTemplate *template;
+          GError *local_error = NULL;
 
           template = log_template_new(state->cfg, NULL);
-          if (log_template_compile(template, attribute_values[i], error))
-            synthetic_context_set_context_id_template(target, template);
+          if (!log_template_compile(template, attribute_values[i], &local_error))
+            {
+              log_template_unref(template);
+              pdb_loader_set_error(state, error,
+                                   "Error compiling create-context context-id, rule=%s, context-id=%s, error=%s",
+                                   state->current_rule->rule_id, attribute_values[i], local_error->message);
+              g_clear_error(&local_error);
+            }
           else
-            log_template_unref(template);
+            synthetic_context_set_context_id_template(target, template);
         }
       else if (strcmp(attribute_names[i], "context-timeout") == 0)
         synthetic_context_set_context_timeout(target, strtol(attribute_values[i], NULL, 0));
@@ -303,12 +310,19 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
               else if (strcmp(attribute_names[i], "context-id") == 0)
                 {
                   LogTemplate *template;
+                  GError *local_error = NULL;
 
                   template = log_template_new(state->cfg, NULL);
-                  if (log_template_compile(template, attribute_values[i], error))
-                    synthetic_context_set_context_id_template(&state->current_rule->context, template);
+                  if (!log_template_compile(template, attribute_values[i], &local_error))
+                    {
+                      log_template_unref(template);
+                      pdb_loader_set_error(state, error,
+                                           "Error compiling context-id template, rule=%s, context-id=%s, error=%s",
+                                           state->current_rule->rule_id, attribute_values[i], local_error->message);
+                      g_clear_error(&local_error);
+                    }
                   else
-                    log_template_unref(template);
+                    synthetic_context_set_context_id_template(&state->current_rule->context, template);
                 }
               else if (strcmp(attribute_names[i], "context-timeout") == 0)
                 synthetic_context_set_context_timeout(&state->current_rule->context, strtol(attribute_values[i], NULL, 0));
