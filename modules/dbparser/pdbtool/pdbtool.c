@@ -42,6 +42,7 @@
 #include "reloc.h"
 #include "pathutils.h"
 #include "resolved-configurable-paths.h"
+#include "crypto.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -1155,6 +1156,7 @@ main(int argc, char *argv[])
   log_template_global_init();
   log_tags_global_init();
   pattern_db_global_init();
+  crypto_init();
 
   configuration = cfg_new(VERSION_VALUE);
 
@@ -1180,6 +1182,7 @@ main(int argc, char *argv[])
 
   cfg_free(configuration);
   configuration = NULL;
+  crypto_deinit();
   msg_deinit();
   return ret;
 }
