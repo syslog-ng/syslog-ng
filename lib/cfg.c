@@ -47,7 +47,7 @@
 #include <stdlib.h>
 #include <iv_work.h>
 
-/* PersistentConfig */
+/* PersistConfig */
 
 struct _PersistConfig
 {
@@ -230,7 +230,7 @@ cfg_set_version(GlobalConfig *self, gint version)
   if (cfg_is_config_version_older(self, VERSION_VALUE))
     {
       msg_warning("WARNING: Configuration file format is too old, syslog-ng is running in compatibility mode "
-                  "Please update it to use the " VERSION_CURRENT " format at your time of convinience, "
+                  "Please update it to use the " VERSION_CURRENT " format at your time of convenience, "
                   "compatibility mode can operate less efficiently in some cases. "
                   "To upgrade the configuration, please review the warnings about incompatible changes printed "
                   "by syslog-ng, and once completed change the @version header at the top of the configuration "
@@ -272,7 +272,7 @@ cfg_allow_config_dups(GlobalConfig *self)
   else
     {
       /* duplicate found, but allow-config-dups is not enabled, hint the user that he might want to use allow-config-dups */
-      msg_warning_once("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to reenable");
+      msg_warning_once("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to re-enable");
       return FALSE;
     }
 }
