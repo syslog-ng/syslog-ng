@@ -38,6 +38,7 @@ enum PDBLoaderState
   PDBL_INITIAL = 0,
   PDBL_PATTERNDB,
   PDBL_RULESET,
+  PDBL_RULESET_DESCRIPTION,
   PDBL_RULESET_PATTERN,
   PDBL_RULES,
   PDBL_RULE,
@@ -279,6 +280,10 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       else if (strcmp(element_name, "pattern") == 0)
         {
           state->current_state = PDBL_RULESET_PATTERN;
+        }
+      else if (strcmp(element_name, "description") == 0)
+        {
+          state->current_state = PDBL_RULESET_DESCRIPTION;
         }
       else
         {
@@ -580,6 +585,16 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected </pattern>", element_name);
         }
       break;
+    case PDBL_RULESET_DESCRIPTION:
+      if (strcmp(element_name, "description") == 0)
+        {
+          state->current_state = PDBL_RULESET;
+        }
+      else
+        {
+          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </description>", element_name);
+        }
+      break;    
     case PDBL_RULES:
       if (strcmp(element_name, "rules") == 0)
         {
@@ -788,6 +803,8 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
 
   switch (state->current_state)
     {
+    case PDBL_RULESET_DESCRIPTION:
+      break;
     case PDBL_RULESET_PATTERN:
       if (state->first_program)
         {

@@ -375,6 +375,7 @@ test_conflicting_rules_with_the_same_parsers(void)
  * This tests those */
 gchar *pdb_ruletest_skeleton = "<patterndb version='5' pub_date='2010-02-22'>\
  <ruleset name='testset' id='1'>\
+  <description>This is a test set</description>\
   <patterns>\
     <pattern>prog1</pattern>\
     <pattern>prog2</pattern>\
