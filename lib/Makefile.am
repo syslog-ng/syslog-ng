@@ -14,6 +14,7 @@ include lib/debugger/Makefile.am
 include lib/compat/Makefile.am
 include lib/logmsg/Makefile.am
 include lib/scanner/csv-scanner/Makefile.am
+include lib/str-repr/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @PACKAGE_VERSION@ | cut -d. -f1,2)
 
@@ -248,8 +249,9 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(stats_sources)		\
 	$(control_sources)		\
 	$(debugger_sources)		\
-	$(compat_sources)     \
-	$(logmsg_sources)
+	$(compat_sources)     		\
+	$(logmsg_sources)		\
+	$(str_repr_sources)
 
 lib_libsyslog_ng_la_CFLAGS		= \
 	$(AM_CFLAGS) \
