@@ -26,6 +26,7 @@
 package org.syslog_ng.elasticsearch_v2;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import org.syslog_ng.LogDestination;
@@ -47,7 +48,7 @@ public class ElasticSearchOptions {
 	public static String CLUSTER_URL = "cluster_url";
 
 	public static String SERVER_DEFAULT = "localhost";
-	public static String PORT_DEFAULT = "9300";
+	private static final String PORT_DEFAULT = "0";
 	public static String MESSAGE_TEMPLATE_DEFAULT = "$(format-json --scope rfc5424 --exclude DATE --key ISODATE)";
 	public static String FLUSH_LIMIT_DEFAULT = "5000";
 	public static String CLIENT_MODE_TRANSPORT = "transport";
@@ -57,6 +58,13 @@ public class ElasticSearchOptions {
 	public static String SKIP_CLUSTER_HEALTH_CHECK = "skip_cluster_health_check";
 	public static String SKIP_CLUSTER_HEALTH_CHECK_DEFAULT = "false";
 	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD, CLIENT_MODE_HTTP));
+	public static final HashMap<String, Integer> DEFAULT_PORTS_BY_MODE = new HashMap<String, Integer>() {
+		{
+			this.put(CLIENT_MODE_HTTP, 9200);
+			this.put(CLIENT_MODE_NODE, 9200);
+			this.put(CLIENT_MODE_TRANSPORT, 9300);
+		}
+	};
 
 	public static String CLIENT_MODE_DEFAULT = CLIENT_MODE_TRANSPORT;
 	public static String CONCURRENT_REQUESTS_DEFAULT = "1";
@@ -103,7 +111,14 @@ public class ElasticSearchOptions {
 	}
 
 	public int getPort() {
-		return options.get(PORT).getValueAsInteger();
+		Integer port;
+
+		if (options.get(PORT).getValue().equals(PORT_DEFAULT))
+			port = DEFAULT_PORTS_BY_MODE.get(getClientMode());
+		else
+			port = options.get(PORT).getValueAsInteger();
+
+		return port;
 	}
 
 	public String getCluster() {
