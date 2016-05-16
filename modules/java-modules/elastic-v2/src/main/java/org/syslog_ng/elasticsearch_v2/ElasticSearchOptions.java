@@ -56,7 +56,6 @@ public class ElasticSearchOptions {
 	public static String CLIENT_MODE_HTTP = "http";
 	public static String SKIP_CLUSTER_HEALTH_CHECK = "skip_cluster_health_check";
 	public static String SKIP_CLUSTER_HEALTH_CHECK_DEFAULT = "false";
-	public static String CLUSTER_URL_DEFAULT = "http://localhost:9200";
 	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD, CLIENT_MODE_HTTP));
 
 	public static String CLIENT_MODE_DEFAULT = CLIENT_MODE_TRANSPORT;
@@ -132,7 +131,16 @@ public class ElasticSearchOptions {
         }
 
 	public String getClusterUrl() {
-		return options.get(CLUSTER_URL).getValue();
+		String cluster_url = options.get(CLUSTER_URL).getValue();
+		if (cluster_url.isEmpty()) {
+			StringBuilder url = new StringBuilder();
+			url.append("http://");
+			url.append(getServerList()[0]);
+			url.append(":");
+			url.append(getPort());
+			cluster_url = url.toString();
+		}
+		return cluster_url;
 	}
 
 
@@ -157,7 +165,7 @@ public class ElasticSearchOptions {
 		options.put(new EnumOptionDecorator(new StringOption(owner, CLIENT_MODE, CLIENT_MODE_DEFAULT), CLIENT_MODES));
 		options.put(new StringOption(owner, CONFIG_FILE));
 		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_DEFAULT), 0, Integer.MAX_VALUE));
-		options.put(new StringOption(owner, CLUSTER_URL, CLUSTER_URL_DEFAULT));
+		options.put(new StringOption(owner, CLUSTER_URL, ""));
 	}
 
 	private void fillBooleanOptions() {
