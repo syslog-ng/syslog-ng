@@ -11,5 +11,5 @@ modules_systemd_journal_tests_test_systemd_journal_SOURCES = \
 	modules/systemd-journal/tests/test-source.c
 
 modules_systemd_journal_tests_test_systemd_journal_CFLAGS = $(TEST_CFLAGS) -I$(top_srcdir)/modules/systemd-journal
-modules_systemd_journal_tests_test_systemd_journal_LDADD = $(TEST_LDADD)
+modules_systemd_journal_tests_test_systemd_journal_LDADD = $(TEST_LDADD) $(IVYKIS_LIBS)
 endif
