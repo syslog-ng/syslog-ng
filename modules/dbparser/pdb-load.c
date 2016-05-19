@@ -221,303 +221,409 @@ _process_create_context_element(PDBLoader *state,
   _push_state(state, PDBL_RULE_ACTION_CREATE_CONTEXT);
 }
 
+static gboolean
+_pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+              const gchar **attribute_values, GError **error)
+{
+  gint i;
+
+  if (strcmp(element_name, "patterndb") == 0)
+    {
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (strcmp(attribute_names[i], "version") == 0)
+            state->ruleset->version = g_strdup(attribute_values[i]);
+          else if (strcmp(attribute_names[i], "pub_date") == 0)
+            state->ruleset->pub_date = g_strdup(attribute_values[i]);
+        }
+      if (!state->ruleset->version)
+        {
+          msg_warning("patterndb version is unspecified, assuming v4 format");
+          state->ruleset->version = g_strdup("4");
+        }
+      else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
+        {
+          pdb_loader_set_error(state, error, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
+          return FALSE;
+        }
+      else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
+        {
+          pdb_loader_set_error(state, error, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
+          return FALSE;
+        }
+      state->current_state = PDBL_PATTERNDB;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <patterndb>", element_name);
+    }
+
+  return TRUE;
+}
+
+static void
+_pdbl_patterndb_start(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "ruleset") == 0)
+    {
+      state->ruleset->is_empty = FALSE;
+      state->first_program = TRUE;
+      state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
+      state->current_state = PDBL_RULESET;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <ruleset>", element_name);
+    }
+}
+
+static void
+_pdbl_ruleset_start(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "rules") == 0)
+    {
+      state->current_state = PDBL_RULES;
+    }
+  else if (strcmp(element_name, "patterns") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "pattern") == 0)
+    {
+      state->current_state = PDBL_RULESET_PATTERN;
+    }
+  else if (strcmp(element_name, "description") == 0)
+    {
+      state->current_state = PDBL_RULESET_DESCRIPTION;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rules>, <patterns> or <pattern>", element_name);
+    }
+}
+
+static gboolean
+_pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+            const gchar **attribute_values, GError **error)
+{
+  gint i;
+
+  if (strcmp(element_name, "rule") == 0)
+    {
+      state->current_rule = pdb_rule_new();
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (strcmp(attribute_names[i], "class") == 0)
+            pdb_rule_set_class(state->current_rule, attribute_values[i]);
+          else if (strcmp(attribute_names[i], "id") == 0)
+            pdb_rule_set_rule_id(state->current_rule, attribute_values[i]);
+          else if (strcmp(attribute_names[i], "context-id") == 0)
+            {
+              LogTemplate *template;
+              GError *local_error = NULL;
+
+              template = log_template_new(state->cfg, NULL);
+              if (!log_template_compile(template, attribute_values[i], &local_error))
+                {
+                  log_template_unref(template);
+                  pdb_loader_set_error(state, error,
+                                       "Error compiling context-id template, rule=%s, context-id=%s, error=%s",
+                                       state->current_rule->rule_id, attribute_values[i], local_error->message);
+                  g_clear_error(&local_error);
+                }
+              else
+                synthetic_context_set_context_id_template(&state->current_rule->context, template);
+            }
+          else if (strcmp(attribute_names[i], "context-timeout") == 0)
+            synthetic_context_set_context_timeout(&state->current_rule->context, strtol(attribute_values[i], NULL, 0));
+          else if (strcmp(attribute_names[i], "context-scope") == 0)
+            synthetic_context_set_context_scope(&state->current_rule->context, attribute_values[i], error);
+        }
+
+      if (!state->current_rule->rule_id)
+        {
+          pdb_loader_set_error(state, error, "No id attribute for rule element");
+          pdb_rule_unref(state->current_rule);
+          state->current_rule = NULL;
+          return FALSE;
+        }
+
+      state->current_message = &state->current_rule->msg;
+      state->action_id = 0;
+      state->current_state = PDBL_RULE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rule>", element_name);
+    }
+
+  return TRUE;
+}
+
+static void
+_pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+           const gchar **attribute_values, GError **error)
+{
+  if (strcmp(element_name, "patterns") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "pattern") == 0)
+    {
+      state->current_state = PDBL_RULE_PATTERN;
+    }
+  else if (strcmp(element_name, "description") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "tags") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "tag") == 0)
+    {
+      _process_tag_element(state, attribute_names, attribute_values, error);
+    }
+  else if (strcmp(element_name, "values") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "value") == 0)
+    {
+      _process_value_element(state, attribute_names, attribute_values, error);
+    }
+  else if (strcmp(element_name, "actions") == 0)
+    {
+      state->current_state = PDBL_RULE_ACTIONS;
+    }
+  else if (strcmp(element_name, "examples") == 0)
+    {
+      state->current_state = PDBL_RULE_EXAMPLES;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <patterns>, <pattern>, <tags>, <tag> or <actions>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_examples_start(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "example") == 0)
+    {
+      state->current_example = g_new0(PDBExample, 1);
+      state->current_example->rule = pdb_rule_ref(state->current_rule);
+      state->current_state = PDBL_RULE_EXAMPLE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <example>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_example_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+                         const gchar **attribute_values, GError **error)
+{
+  gint i;
+
+  if (strcmp(element_name, "test_message") == 0)
+    {
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (strcmp(attribute_names[i], "program") == 0)
+            state->current_example->program = g_strdup(attribute_values[i]);
+        }
+      state->current_state = PDBL_RULE_EXAMPLE_TEST_MESSAGE;
+    }
+  else if (strcmp(element_name, "test_values") == 0)
+    {
+      state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUES;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <test_message>, <test_values>", element_name);
+    }
+}
+
+static gboolean
+_pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+                                     const gchar **attribute_values, GError **error)
+{
+  if (strcmp(element_name, "test_value") == 0)
+    {
+      if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+        state->test_value_name = g_strdup(attribute_values[0]);
+      else
+        {
+          msg_error("No name is specified for test_value",
+                    evt_tag_str("rule_id", state->current_rule->rule_id));
+          pdb_loader_set_error(state, error, "<test_value> misses name attribute");
+          return FALSE;
+        }
+      state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <test_value>", element_name);
+    }
+  return TRUE;
+}
+
+static void
+_pdbl_rule_example_test_value_start(PDBLoader *state, const gchar *element_name, GError **error)
+{
+   pdb_loader_set_error(state, error, "Unexpected <%s> tag, only text node is expected", element_name);
+}
+
+static gboolean
+_pdbl_rule_actions_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+                         const gchar **attribute_values, GError **error)
+{
+  gint i;
+
+  if (strcmp(element_name, "action") == 0)
+    {
+      if (!state->current_rule)
+        {
+          pdb_loader_set_error(state, error, "Unexpected <action> element, it must be inside a rule");
+          return FALSE;
+        }
+      state->current_action = pdb_action_new(state->action_id++);
+
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (strcmp(attribute_names[i], "trigger") == 0)
+            pdb_action_set_trigger(state->current_action, attribute_values[i], error);
+          else if (strcmp(attribute_names[i], "condition") == 0)
+            pdb_action_set_condition(state->current_action, state->cfg, attribute_values[i], error);
+          else if (strcmp(attribute_names[i], "rate") == 0)
+            pdb_action_set_rate(state->current_action, attribute_values[i]);
+        }
+      state->current_state = PDBL_RULE_ACTION;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <action>", element_name);
+    }
+
+  return TRUE;
+}
+
+static void
+_pdbl_rule_action_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+                         const gchar **attribute_values, GError **error)
+{
+  if (strcmp(element_name, "message") == 0)
+    {
+      state->current_action->content_type = RAC_MESSAGE;
+      _process_message_element(state, attribute_names, attribute_values, &state->current_action->content.message, error);
+    }
+  else if (strcmp(element_name, "create-context") == 0)
+    {
+      state->current_action->content_type = RAC_CREATE_CONTEXT;
+      _process_create_context_element(state, attribute_names, attribute_values, &state->current_action->content.create_context.context, error);
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <message> or <create-context>", element_name);
+    }
+}
+
+
+static void
+_pdbl_rule_action_create_context_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+                                       const gchar **attribute_values, GError **error)
+{
+  if (strcmp(element_name, "message") == 0)
+    {
+      _process_message_element(state, attribute_names, attribute_values, &state->current_action->content.create_context.message, error);
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <message>", element_name);
+    }
+}
+
+static void
+_pdbl_message_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
+                    const gchar **attribute_values, GError **error)
+{
+  if (strcmp(element_name, "values") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "value") == 0)
+    {
+      _process_value_element(state, attribute_names, attribute_values, error);
+    }
+  else if (strcmp(element_name, "tags") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "tag") == 0)
+    {
+      _process_tag_element(state, attribute_names, attribute_values, error);
+    }
+  else 
+    {
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <values>, <value>, <tags> or <tag>", element_name);
+    }
+}
+
 void
 pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
                          const gchar **attribute_values, gpointer user_data, GError **error)
 {
   PDBLoader *state = (PDBLoader *) user_data;
-  gint i;
 
   switch (state->current_state)
     {
     case PDBL_INITIAL:
-      if (strcmp(element_name, "patterndb") == 0)
-        {
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "version") == 0)
-                state->ruleset->version = g_strdup(attribute_values[i]);
-              else if (strcmp(attribute_names[i], "pub_date") == 0)
-                state->ruleset->pub_date = g_strdup(attribute_values[i]);
-            }
-          if (!state->ruleset->version)
-            {
-              msg_warning("patterndb version is unspecified, assuming v4 format");
-              state->ruleset->version = g_strdup("4");
-            }
-          else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
-            {
-              pdb_loader_set_error(state, error, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
-              return;
-            }
-          else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
-            {
-              pdb_loader_set_error(state, error, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
-              return;
-            }
-          state->current_state = PDBL_PATTERNDB;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <patterndb>", element_name);
-        }
+      if (!_pdbl_initial_start(state, element_name, attribute_names, attribute_values, error))
+        return;
       break;
     case PDBL_PATTERNDB:
-      if (strcmp(element_name, "ruleset") == 0)
-        {
-          state->ruleset->is_empty = FALSE;
-          state->first_program = TRUE;
-          state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
-          state->current_state = PDBL_RULESET;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <ruleset>", element_name);
-        }
+      _pdbl_patterndb_start(state, element_name, error);
       break;
     case PDBL_RULESET:
-      if (strcmp(element_name, "rules") == 0)
-        {
-          state->current_state = PDBL_RULES;
-        }
-      else if (strcmp(element_name, "patterns") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "pattern") == 0)
-        {
-          state->current_state = PDBL_RULESET_PATTERN;
-        }
-      else if (strcmp(element_name, "description") == 0)
-        {
-          state->current_state = PDBL_RULESET_DESCRIPTION;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rules>, <patterns> or <pattern>", element_name);
-        }
+      _pdbl_ruleset_start(state, element_name, error);
       break;
     case PDBL_RULES:
-      if (strcmp(element_name, "rule") == 0)
-        {
-          state->current_rule = pdb_rule_new();
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "class") == 0)
-                pdb_rule_set_class(state->current_rule, attribute_values[i]);
-              else if (strcmp(attribute_names[i], "id") == 0)
-                pdb_rule_set_rule_id(state->current_rule, attribute_values[i]);
-              else if (strcmp(attribute_names[i], "context-id") == 0)
-                {
-                  LogTemplate *template;
-                  GError *local_error = NULL;
-
-                  template = log_template_new(state->cfg, NULL);
-                  if (!log_template_compile(template, attribute_values[i], &local_error))
-                    {
-                      log_template_unref(template);
-                      pdb_loader_set_error(state, error,
-                                           "Error compiling context-id template, rule=%s, context-id=%s, error=%s",
-                                           state->current_rule->rule_id, attribute_values[i], local_error->message);
-                      g_clear_error(&local_error);
-                    }
-                  else
-                    synthetic_context_set_context_id_template(&state->current_rule->context, template);
-                }
-              else if (strcmp(attribute_names[i], "context-timeout") == 0)
-                synthetic_context_set_context_timeout(&state->current_rule->context, strtol(attribute_values[i], NULL, 0));
-              else if (strcmp(attribute_names[i], "context-scope") == 0)
-                synthetic_context_set_context_scope(&state->current_rule->context, attribute_values[i], error);
-            }
-
-          if (!state->current_rule->rule_id)
-            {
-              pdb_loader_set_error(state, error, "No id attribute for rule element");
-              pdb_rule_unref(state->current_rule);
-              state->current_rule = NULL;
-              return;
-            }
-
-          state->current_message = &state->current_rule->msg;
-          state->action_id = 0;
-          state->current_state = PDBL_RULE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rule>", element_name);
-        }
+      if (!_pdbl_rules_start(state, element_name, attribute_names, attribute_values, error))
+        return;
       break;
     case PDBL_RULE:
-      if (strcmp(element_name, "patterns") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "pattern") == 0)
-        {
-          state->current_state = PDBL_RULE_PATTERN;
-        }
-      else if (strcmp(element_name, "description") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "tags") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "tag") == 0)
-        {
-          _process_tag_element(state, attribute_names, attribute_values, error);
-        }
-      else if (strcmp(element_name, "values") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "value") == 0)
-        {
-          _process_value_element(state, attribute_names, attribute_values, error);
-        }
-      else if (strcmp(element_name, "actions") == 0)
-        {
-          state->current_state = PDBL_RULE_ACTIONS;
-        }
-      else if (strcmp(element_name, "examples") == 0)
-        {
-          state->current_state = PDBL_RULE_EXAMPLES;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <patterns>, <pattern>, <tags>, <tag> or <actions>", element_name);
-        }
+      _pdbl_rule_start(state, element_name, attribute_names, attribute_values, error);
       break;
     case PDBL_RULE_EXAMPLES:
-      if (strcmp(element_name, "example") == 0)
-        {
-          state->current_example = g_new0(PDBExample, 1);
-          state->current_example->rule = pdb_rule_ref(state->current_rule);
-          state->current_state = PDBL_RULE_EXAMPLE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <example>", element_name);
-        }
+      _pdbl_rule_examples_start(state, element_name, error);
       break;
     case PDBL_RULE_EXAMPLE:
-      if (strcmp(element_name, "test_message") == 0)
-        {
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "program") == 0)
-                state->current_example->program = g_strdup(attribute_values[i]);
-            }
-          state->current_state = PDBL_RULE_EXAMPLE_TEST_MESSAGE;
-        }
-      else if (strcmp(element_name, "test_values") == 0)
-        {
-          state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUES;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <test_message>, <test_values>", element_name);
-        }
+      _pdbl_rule_example_start(state, element_name, attribute_names, attribute_values, error);
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUES:
-      if (strcmp(element_name, "test_value") == 0)
-        {
-          if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-            state->test_value_name = g_strdup(attribute_values[0]);
-          else
-            {
-              msg_error("No name is specified for test_value",
-                        evt_tag_str("rule_id", state->current_rule->rule_id));
-              pdb_loader_set_error(state, error, "<test_value> misses name attribute");
-              return;
-            }
-          state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <test_value>", element_name);
-        }
+      if (!_pdbl_rule_example_test_values_start(state, element_name, attribute_names, attribute_values, error))
+        return;
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUE:
-      pdb_loader_set_error(state, error, "Unexpected <%s> tag, only text node is expected", element_name);
+      _pdbl_rule_example_test_value_start(state, element_name, error);
       break;
     case PDBL_RULE_ACTIONS:
-      if (strcmp(element_name, "action") == 0)
-        {
-          if (!state->current_rule)
-            {
-              pdb_loader_set_error(state, error, "Unexpected <action> element, it must be inside a rule");
-              return;
-            }
-          state->current_action = pdb_action_new(state->action_id++);
-
-          for (i = 0; attribute_names[i]; i++)
-            {
-              if (strcmp(attribute_names[i], "trigger") == 0)
-                pdb_action_set_trigger(state->current_action, attribute_values[i], error);
-              else if (strcmp(attribute_names[i], "condition") == 0)
-                pdb_action_set_condition(state->current_action, state->cfg, attribute_values[i], error);
-              else if (strcmp(attribute_names[i], "rate") == 0)
-                pdb_action_set_rate(state->current_action, attribute_values[i]);
-            }
-          state->current_state = PDBL_RULE_ACTION;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <action>", element_name);
-        }
+      if (!_pdbl_rule_actions_start(state, element_name, attribute_names, attribute_values, error))
+        return;
       break;
     case PDBL_RULE_ACTION:
-      if (strcmp(element_name, "message") == 0)
-        {
-          state->current_action->content_type = RAC_MESSAGE;
-          _process_message_element(state, attribute_names, attribute_values, &state->current_action->content.message, error);
-        }
-      else if (strcmp(element_name, "create-context") == 0)
-        {
-          state->current_action->content_type = RAC_CREATE_CONTEXT;
-          _process_create_context_element(state, attribute_names, attribute_values, &state->current_action->content.create_context.context, error);
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <message> or <create-context>", element_name);
-        }
+      _pdbl_rule_action_start(state, element_name, attribute_names, attribute_values, error);
       break;
     case PDBL_RULE_ACTION_CREATE_CONTEXT:
-      if (strcmp(element_name, "message") == 0)
-        {
-          _process_message_element(state, attribute_names, attribute_values, &state->current_action->content.create_context.message, error);
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <message>", element_name);
-        }
+      _pdbl_rule_action_create_context_start(state, element_name, attribute_names, attribute_values, error);
       break;
 
     /* generic states reused by multiple locations in the grammar */
 
     case PDBL_MESSAGE:
-      if (strcmp(element_name, "values") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "value") == 0)
-        {
-          _process_value_element(state, attribute_names, attribute_values, error);
-        }
-      else if (strcmp(element_name, "tags") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "tag") == 0)
-        {
-          _process_tag_element(state, attribute_names, attribute_values, error);
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <values>, <value>, <tags> or <tag>", element_name);
-        }
+      _pdbl_message_start(state, element_name, attribute_names, attribute_values, error);
       break;
     default:
       pdb_loader_set_error(state, error, "Unexpected state %d, tag <%s>", state->current_state, element_name);
