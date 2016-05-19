@@ -641,270 +641,381 @@ _populate_ruleset_radix(gpointer key, gpointer value, gpointer user_data)
   r_insert_node(state->ruleset->programs, pattern, pdb_program_ref(program), NULL);
 }
 
+static void
+_pdbl_patterndb_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "patterndb") == 0)
+    {
+      g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
+      g_hash_table_remove_all(state->ruleset_patterns);
+      state->current_state = PDBL_INITIAL;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </patterndb>", element_name);
+    }
+}
+
+static void
+_pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  gint i;
+  PDBProgramPattern *program_pattern;
+  PDBProgram *program;
+
+  if (strcmp(element_name, "ruleset") == 0)
+    {
+      program = (state->current_program ? state->current_program : state->root_program);
+
+      /* Copy stored rules into current program */
+      for (i = 0; i < state->program_patterns->len; i++)
+        {
+          program_pattern = &g_array_index(state->program_patterns, PDBProgramPattern, i);
+
+          r_insert_node(program->rules,
+                        program_pattern->pattern,
+                        program_pattern->rule,
+                        (RNodeGetValueFunc) pdb_rule_get_name);
+          g_free(program_pattern->pattern);
+        }
+
+      state->current_program = NULL;
+
+      g_array_free(state->program_patterns, TRUE);
+      state->program_patterns = NULL;
+      state->current_state = PDBL_PATTERNDB;
+    }
+  else if (strcmp(element_name, "patterns") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </ruleset> or </patterns>", element_name);
+    }
+}
+
+static void
+_pdbl_ruleset_pattern_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "pattern") == 0)
+    {
+      state->current_state = PDBL_RULESET;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected </pattern>", element_name);
+    }
+}
+
+static void
+_pdbl_ruleset_description_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "description") == 0)
+    {
+      state->current_state = PDBL_RULESET;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </description>", element_name);
+    }
+}
+
+static void
+_pdbl_rules_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "rules") == 0)
+    {
+      state->current_state = PDBL_RULESET;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rules>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "rule") == 0)
+    {
+      if (state->current_rule)
+        {
+          pdb_rule_unref(state->current_rule);
+          state->current_rule = NULL;
+        }
+      state->current_message = NULL;
+      state->current_state = PDBL_RULES;
+    }
+  else if (strcmp(element_name, "patterns") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "description") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "tags") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "values") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_pattern_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "pattern") == 0)
+    {
+      state->current_state = PDBL_RULE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </pattern>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_examples_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "examples") == 0)
+    {
+      state->current_state = PDBL_RULE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </examples>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_example_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "example") == 0)
+    {
+      if (state->load_examples)
+        state->examples = g_list_prepend(state->examples, state->current_example);
+      else
+        pdb_example_free(state->current_example);
+
+      state->current_example = NULL;
+      state->current_state = PDBL_RULE_EXAMPLES;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </example>, </test_values>, <test_value>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_examples_test_values_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "test_values") == 0)
+    {
+      state->current_state = PDBL_RULE_EXAMPLE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_values>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_example_test_value_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "test_value") == 0)
+    {
+      if (state->test_value_name)
+        g_free(state->test_value_name);
+
+      state->test_value_name = NULL;
+      state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUES;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_value>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_example_test_message_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "test_message") == 0)
+    {
+      state->current_state = PDBL_RULE_EXAMPLE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_message>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_actions_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "actions") == 0)
+    {
+      g_assert(state->current_state == PDBL_RULE_ACTIONS);
+      state->current_state = PDBL_RULE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </actions>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_action_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "action") == 0)
+    {
+      pdb_rule_add_action(state->current_rule, state->current_action);
+      state->current_action = NULL;
+      state->current_state = PDBL_RULE_ACTIONS;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </action>", element_name);
+    }
+}
+
+
+static void
+_pdbl_rule_action_create_context_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "create-context") == 0)
+    {
+      _pop_state(state);
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </create-context>", element_name);
+    }
+}
+
+static void
+_pdbl_message_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "message") == 0)
+    {
+      state->current_message = &state->current_rule->msg;
+      _pop_state(state);
+    }
+  else if (strcmp(element_name, "values") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "tags") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>, </values> or </tags>", element_name);
+    }
+}
+
+static void
+_pdbl_value_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "value") == 0)
+    {
+      if (state->value_name)
+        g_free(state->value_name);
+
+      state->value_name = NULL;
+      _pop_state(state);
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </value>", element_name);
+    }
+}
+
+
+static void
+_pdbl_tag_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "tag") == 0)
+    {
+      _pop_state(state);
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
+    }
+}
+
 void
 pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, gpointer user_data, GError **error)
 {
   PDBLoader *state = (PDBLoader *) user_data;
-  PDBProgramPattern *program_pattern;
-  PDBProgram *program;
-  int i;
 
   switch (state->current_state)
     {
     case PDBL_PATTERNDB:
-      if (strcmp(element_name, "patterndb") == 0)
-        {
-          g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
-          g_hash_table_remove_all(state->ruleset_patterns);
-          state->current_state = PDBL_INITIAL;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </patterndb>", element_name);
-        }
+      _pdbl_patterndb_end(state, element_name, error);
       break;
     case PDBL_RULESET:
-      if (strcmp(element_name, "ruleset") == 0)
-        {
-          program = (state->current_program ? state->current_program : state->root_program);
-
-          /* Copy stored rules into current program */
-          for (i = 0; i < state->program_patterns->len; i++)
-            {
-              program_pattern = &g_array_index(state->program_patterns, PDBProgramPattern, i);
-
-              r_insert_node(program->rules,
-                            program_pattern->pattern,
-                            program_pattern->rule,
-                            (RNodeGetValueFunc) pdb_rule_get_name);
-              g_free(program_pattern->pattern);
-            }
-
-          state->current_program = NULL;
-
-          g_array_free(state->program_patterns, TRUE);
-          state->program_patterns = NULL;
-          state->current_state = PDBL_PATTERNDB;
-        }
-      else if (strcmp(element_name, "patterns") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </ruleset> or </patterns>", element_name);
-        }
+      _pdbl_ruleset_end(state, element_name, error);
       break;
     case PDBL_RULESET_PATTERN:
-      if (strcmp(element_name, "pattern") == 0)
-        {
-          state->current_state = PDBL_RULESET;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected </pattern>", element_name);
-        }
+      _pdbl_ruleset_pattern_end(state, element_name, error);
       break;
     case PDBL_RULESET_DESCRIPTION:
-      if (strcmp(element_name, "description") == 0)
-        {
-          state->current_state = PDBL_RULESET;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </description>", element_name);
-        }
+      _pdbl_ruleset_description_end(state, element_name, error);
       break;    
     case PDBL_RULES:
-      if (strcmp(element_name, "rules") == 0)
-        {
-          state->current_state = PDBL_RULESET;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rules>", element_name);
-        }
+      _pdbl_rules_end(state, element_name, error);
       break;
     case PDBL_RULE:
-      if (strcmp(element_name, "rule") == 0)
-        {
-          if (state->current_rule)
-            {
-              pdb_rule_unref(state->current_rule);
-              state->current_rule = NULL;
-            }
-          state->current_message = NULL;
-          state->current_state = PDBL_RULES;
-        }
-      else if (strcmp(element_name, "patterns") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "description") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "tags") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "values") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values>", element_name);
-        }
+      _pdbl_rule_end(state, element_name, error);
       break;
     case PDBL_RULE_PATTERN:
-      if (strcmp(element_name, "pattern") == 0)
-        {
-          state->current_state = PDBL_RULE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </pattern>", element_name);
-        }
+      _pdbl_rule_pattern_end(state, element_name, error);
       break;
     case PDBL_RULE_EXAMPLES:
-      if (strcmp(element_name, "examples") == 0)
-        {
-          state->current_state = PDBL_RULE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </examples>", element_name);
-        }
+      _pdbl_rule_examples_end(state, element_name, error);
       break;
     case PDBL_RULE_EXAMPLE:
-      if (strcmp(element_name, "example") == 0)
-        {
-          if (state->load_examples)
-            state->examples = g_list_prepend(state->examples, state->current_example);
-          else
-            pdb_example_free(state->current_example);
-
-          state->current_example = NULL;
-          state->current_state = PDBL_RULE_EXAMPLES;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </example>, </test_values>, <test_value>", element_name);
-        }
+      _pdbl_rule_example_end(state, element_name, error);
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUES:
-      if (strcmp(element_name, "test_values") == 0)
-        {
-          state->current_state = PDBL_RULE_EXAMPLE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_values>", element_name);
-        }
+      _pdbl_rule_examples_test_values_end(state, element_name, error);
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUE:
-      if (strcmp(element_name, "test_value") == 0)
-        {
-          if (state->test_value_name)
-            g_free(state->test_value_name);
-
-          state->test_value_name = NULL;
-          state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUES;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_value>", element_name);
-        }
+      _pdbl_rule_example_test_value_end(state, element_name, error);
       break;
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
-      if (strcmp(element_name, "test_message") == 0)
-        {
-          state->current_state = PDBL_RULE_EXAMPLE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_message>", element_name);
-        }
+      _pdbl_rule_example_test_message_end(state, element_name, error);
       break;
     case PDBL_RULE_ACTIONS:
-      if (strcmp(element_name, "actions") == 0)
-        {
-          g_assert(state->current_state == PDBL_RULE_ACTIONS);
-          state->current_state = PDBL_RULE;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </actions>", element_name);
-        }
+      _pdbl_rule_actions_end(state, element_name, error);
       break;
     case PDBL_RULE_ACTION:
-      if (strcmp(element_name, "action") == 0)
-        {
-          pdb_rule_add_action(state->current_rule, state->current_action);
-          state->current_action = NULL;
-          state->current_state = PDBL_RULE_ACTIONS;
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </action>", element_name);
-        }
+      _pdbl_rule_action_end(state, element_name, error);
       break;
     case PDBL_RULE_ACTION_CREATE_CONTEXT:
-      if (strcmp(element_name, "create-context") == 0)
-        {
-          _pop_state(state);
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </create-context>", element_name);
-        }
+      _pdbl_rule_action_create_context_end(state, element_name, error);
       break;
     /* generic states reused by multiple locations in the grammar */
     case PDBL_MESSAGE:
-      if (strcmp(element_name, "message") == 0)
-        {
-          state->current_message = &state->current_rule->msg;
-          _pop_state(state);
-        }
-      else if (strcmp(element_name, "values") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else if (strcmp(element_name, "tags") == 0)
-        {
-          /* valid, but we don't do anything */
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>, </values> or </tags>", element_name);
-        }
+      _pdbl_message_end(state, element_name, error);
       break;
 
     case PDBL_VALUE:
-      if (strcmp(element_name, "value") == 0)
-        {
-          if (state->value_name)
-            g_free(state->value_name);
-
-          state->value_name = NULL;
-          _pop_state(state);
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </value>", element_name);
-        }
+      _pdbl_value_end(state, element_name, error);
       break;
 
     case PDBL_TAG:
-      if (strcmp(element_name, "tag") == 0)
-        {
-          _pop_state(state);
-        }
-      else
-        {
-          pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
-        }
+      _pdbl_tag_end(state, element_name, error);
       break;
 
     default:
