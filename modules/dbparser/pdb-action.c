@@ -77,22 +77,6 @@ pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error)
     g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown trigger type: %s", trigger);
 }
 
-void
-pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error)
-{
-  if (strcasecmp(inherit_properties, "context") == 0)
-    self->content.inherit_mode = RAC_MSG_INHERIT_CONTEXT;
-  else if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
-      inherit_properties[0] == '1')
-    self->content.inherit_mode = RAC_MSG_INHERIT_LAST_MESSAGE;
-  else if (inherit_properties[0] == 'F' || inherit_properties[0] == 'f' ||
-           inherit_properties[0] == '0')
-    self->content.inherit_mode = RAC_MSG_INHERIT_NONE;
-  else
-    g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inheritance type: %s", inherit_properties);
-}
-
-
 PDBAction *
 pdb_action_new(gint id)
 {
@@ -111,7 +95,16 @@ pdb_action_free(PDBAction *self)
 {
   if (self->condition)
     filter_expr_unref(self->condition);
-  if (self->content_type == RAC_MESSAGE)
-    synthetic_message_deinit(&self->content.message);
+  switch (self->content_type)
+    {
+    case RAC_MESSAGE:
+      synthetic_message_deinit(&self->content.message);
+      break;
+    case RAC_CREATE_CONTEXT:
+      synthetic_context_deinit(&self->content.create_context.context);
+      break;
+    default:
+      g_assert_not_reached();
+    }
   g_free(self);
 }

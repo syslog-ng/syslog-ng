@@ -21,11 +21,58 @@
  *
  */
 #include "synthetic-message.h"
-
+#include "pdb-error.h"
 #include "template/templates.h"
 #include "tags.h"
 #include "logmsg/logmsg.h"
 #include "logpipe.h"
+
+void
+synthetic_message_set_inherit_mode(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode)
+{
+  self->inherit_mode = inherit_mode;
+}
+
+gboolean
+synthetic_message_set_inherit_mode_string(SyntheticMessage *self, const gchar *inherit_mode_name, GError **error)
+{
+  gint inherit_mode = synthetic_message_lookup_inherit_mode(inherit_mode_name);
+
+  if (inherit_mode < 0)
+    {
+      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inherit mode %s", inherit_mode_name);
+      return FALSE;
+    }
+  synthetic_message_set_inherit_mode(self, inherit_mode);
+  return TRUE;
+}
+
+void
+synthetic_message_set_inherit_properties_string(SyntheticMessage *self, const gchar *inherit_properties, GError **error)
+{
+  SyntheticMessageInheritMode inherit_mode;
+
+  if (strcasecmp(inherit_properties, "context") == 0)
+    {
+      inherit_mode = RAC_MSG_INHERIT_CONTEXT;
+    }
+  else if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
+      inherit_properties[0] == '1')
+    {
+      inherit_mode = RAC_MSG_INHERIT_LAST_MESSAGE;
+    }
+  else if (inherit_properties[0] == 'F' || inherit_properties[0] == 'f' ||
+           inherit_properties[0] == '0')
+    {
+      inherit_mode = RAC_MSG_INHERIT_NONE;
+    }
+  else
+    {
+      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Unknown inherit-properties: %s", inherit_properties);
+      return;
+    }
+  synthetic_message_set_inherit_mode(self, inherit_mode);
+}
 
 void
 synthetic_message_add_tag(SyntheticMessage *self, const gchar *text)
@@ -150,11 +197,11 @@ _generate_default_message_from_context(SyntheticMessageInheritMode inherit_mode,
 }
 
 LogMessage *
-synthetic_message_generate_with_context(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode, CorrellationContext *context, GString *buffer)
+synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationContext *context, GString *buffer)
 {
   LogMessage *genmsg;
 
-  genmsg = _generate_default_message_from_context(inherit_mode, context);
+  genmsg = _generate_default_message_from_context(self->inherit_mode, context);
   switch (context->key.scope)
     {
       case RCS_PROCESS:
@@ -176,11 +223,11 @@ synthetic_message_generate_with_context(SyntheticMessage *self, SyntheticMessage
 }
 
 LogMessage *
-synthetic_message_generate_without_context(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode, LogMessage *msg, GString *buffer)
+synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *msg, GString *buffer)
 {
   LogMessage *genmsg;
 
-  genmsg = _generate_default_message(inherit_mode, msg);
+  genmsg = _generate_default_message(self->inherit_mode, msg);
 
   /* no context, which means no correllation. The action
    * rule contains the generated message at @0 and the one
@@ -226,6 +273,7 @@ synthetic_message_new(void)
 {
   SyntheticMessage *self = g_new0(SyntheticMessage, 1);
 
+  self->inherit_mode = RAC_MSG_INHERIT_CONTEXT;
   return self;
 }
 

@@ -37,17 +37,12 @@ struct _PDBRule
   gchar *class;
   gchar *rule_id;
   SyntheticMessage msg;
-  gint context_timeout;
-  CorrellationScope context_scope;
-  LogTemplate *context_id_template;
+  SyntheticContext context;
   GPtrArray *actions;
 };
 
 void pdb_rule_set_class(PDBRule *self, const gchar *class);
 void pdb_rule_set_rule_id(PDBRule *self, const gchar *rule_id);
-void pdb_rule_set_context_id_template(PDBRule *self, LogTemplate *context_id_template);
-void pdb_rule_set_context_timeout(PDBRule *self, gint timeout);
-void pdb_rule_set_context_scope(PDBRule *self, const gchar *scope, GError **error);
 void pdb_rule_add_action(PDBRule *self, PDBAction *action);
 gchar *pdb_rule_get_name(PDBRule *self);
 

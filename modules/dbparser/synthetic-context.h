@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2016 Balabit
+ * Copyright (c) 2016 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -19,21 +20,27 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_GROUPING_BY_PARSER_H_INCLUDED
-#define PATTERNDB_GROUPING_BY_PARSER_H_INCLUDED
+#ifndef PATTERNDB_SYNTHETIC_CONTEXT_H_INCLUDED
+#define PATTERNDB_SYNTHETIC_CONTEXT_H_INCLUDED
 
-#include "stateful-parser.h"
-#include "synthetic-message.h"
-#include "filter/filter-expr.h"
+#include "syslog-ng.h"
+#include "correllation-key.h"
+#include "template/templates.h"
 
-void grouping_by_set_key_template(LogParser *s, LogTemplate *context_id);
-void grouping_by_set_timeout(LogParser *s, gint timeout);
-void grouping_by_set_scope(LogParser *s, CorrellationScope scope);
-void grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message);
-void grouping_by_set_trigger_condition(LogParser *s, FilterExprNode *filter_expr);
-void grouping_by_set_where_condition(LogParser *s, FilterExprNode *filter_expr);
-void grouping_by_set_having_condition(LogParser *s, FilterExprNode *filter_expr);
-LogParser *grouping_by_new(GlobalConfig *cfg);
-void grouping_by_global_init(void);
+typedef struct _SyntheticContext
+{
+  gint timeout;
+  CorrellationScope scope;
+  LogTemplate *id_template;
+} SyntheticContext;
+
+void synthetic_context_set_context_id_template(SyntheticContext *self, LogTemplate *context_id_template);
+void synthetic_context_set_context_timeout(SyntheticContext *self, gint timeout);
+void synthetic_context_set_context_scope(SyntheticContext *self, const gchar *scope, GError **error);
+
+void synthetic_context_init(SyntheticContext *self);
+void synthetic_context_deinit(SyntheticContext *self);
+
+gint synthetic_context_lookup_context_scope(const gchar *context_scope);
 
 #endif

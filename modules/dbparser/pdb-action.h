@@ -25,6 +25,7 @@
 
 #include "syslog-ng.h"
 #include "synthetic-message.h"
+#include "synthetic-context.h"
 #include "filter/filter-expr.h"
 
 /* rule action triggers */
@@ -38,7 +39,8 @@ typedef enum
 typedef enum
 {
   RAC_NONE,
-  RAC_MESSAGE
+  RAC_MESSAGE,
+  RAC_CREATE_CONTEXT,
 } PDBActionContentType;
 
 /* a rule may contain one or more actions to be performed */
@@ -52,17 +54,18 @@ typedef struct _PDBAction
   guint8 id;
   union
   {
-    struct {
+    SyntheticMessage message;
+    struct
+    {
       SyntheticMessage message;
-      SyntheticMessageInheritMode inherit_mode;
-    };
+      SyntheticContext context;
+    } create_context;
   } content;
 } PDBAction;
 
 void pdb_action_set_condition(PDBAction *self, GlobalConfig *cfg, const gchar *filter_string, GError **error);
 void pdb_action_set_rate(PDBAction *self, const gchar *rate_);
 void pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error);
-void pdb_action_set_message_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error);
 
 PDBAction *pdb_action_new(gint id);
 void pdb_action_free(PDBAction *self);

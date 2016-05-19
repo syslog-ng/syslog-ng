@@ -1,3 +1,10 @@
+xsd_DATA	= \
+		doc/xsd/patterndb-1.xsd \
+		doc/xsd/patterndb-2.xsd \
+		doc/xsd/patterndb-3.xsd \
+		doc/xsd/patterndb-4.xsd \
+		doc/xsd/patterndb-5.xsd
+
 EXTRA_DIST	+=  \
 		doc/man/syslog-ng.8.xml \
 		doc/man/syslog-ng.conf.5.xml \
@@ -6,16 +13,8 @@ EXTRA_DIST	+=  \
 		doc/man/syslog-ng-ctl.1.xml \
 		doc/security/bof-2002-09-27.txt \
 		doc/security/dos-2000-11-22.txt \
-		doc/xsd/patterndb-1.xsd \
-		doc/xsd/patterndb-2.xsd \
-		doc/xsd/patterndb-3.xsd \
-		doc/xsd/patterndb-4.xsd
+		$(xsd_DATA)
 
-xsd_DATA	= \
-		doc/xsd/patterndb-1.xsd \
-		doc/xsd/patterndb-2.xsd \
-		doc/xsd/patterndb-3.xsd \
-		doc/xsd/patterndb-4.xsd
 
 if ENABLE_MANPAGES
 man_MANS	+= \

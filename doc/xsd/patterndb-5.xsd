@@ -12,11 +12,11 @@
                     </xs:annotation>
                 </xs:element>
             </xs:sequence>
-            <xs:attribute name="version" type="xs:NMTOKEN" use="required" fixed="4">
+            <xs:attribute name="version" type="xs:NMTOKEN" use="required" fixed="5">
                 <xs:annotation>
                     <xs:documentation>
                         The schema version of the pattern database.
-                        The current version is '4'.
+                        The current version is '5'.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
@@ -279,11 +279,19 @@
 
     <xs:complexType name="actionType">
         <xs:all>
-            <xs:element name="message" type="messageType" minOccurs="1" maxOccurs="1">
+            <xs:element name="message" type="messageType" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>
                         The message to be generated when the action
                         triggers.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="create-context" type="createContextType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The context to be created when the action is
+                        triggered.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
@@ -387,6 +395,7 @@
               If set to TRUE, the original message that triggered the action is
               cloned, including its name-value pairs and tags.
               For details, see Section 13.4, Triggering actions for identified messages.
+              NOTE: This attribute is deprecated in favour of inherit-mode.
             </xs:documentation>
           </xs:annotation>
           <xs:simpleType>
@@ -398,6 +407,73 @@
           </xs:simpleType>
         </xs:attribute>
 
+        <xs:attribute name="inherit-mode">
+          <xs:annotation>
+            <xs:documentation>
+              This attribute is used to control which set of name-value
+              pairs are propagated to the newly generated message. "context"
+              means that the new message is populated with a union of all
+              name-value pairs present in messages in the context.
+              "last-message" means that only name-value pairs of the last
+              message is copied. "none" means that the new message becomes
+              empty initially.
+              For details, see Section 13.4, Triggering actions for identified messages.
+            </xs:documentation>
+          </xs:annotation>
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="none"/>
+              <xs:enumeration value="context"/>
+              <xs:enumeration value="last-message"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+
+    </xs:complexType>
+
+    <xs:complexType name="createContextType">
+        <xs:all>
+            <xs:element name="message" type="messageType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The message that gets added to the new context to be
+                        created.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="context-id" type="xs:string"/>
+        <xs:attribute name="context-scope">
+          <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="process">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="program">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="host">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="global">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="context-timeout" type="xs:integer"/>
     </xs:complexType>
 
     <xs:simpleType name="uuidType">

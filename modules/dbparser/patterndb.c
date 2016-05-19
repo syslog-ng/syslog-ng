@@ -192,7 +192,7 @@ pdb_check_action_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
     return TRUE;
 
   g_string_printf(buffer, "%s:%d", rule->rule_id, self->id);
-  correllation_key_setup(&key, rule->context_scope, msg, buffer->str);
+  correllation_key_setup(&key, rule->context.scope, msg, buffer->str);
 
   rl = g_hash_table_lookup(db->rate_limits, &key);
   if (!rl)
@@ -254,9 +254,9 @@ LogMessage *
 pdb_generate_message(PDBAction *self, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   if (context)
-    return synthetic_message_generate_with_context(&self->content.message, self->content.inherit_mode, &context->super, buffer);
+    return synthetic_message_generate_with_context(&self->content.message, &context->super, buffer);
   else
-    return synthetic_message_generate_without_context(&self->content.message, self->content.inherit_mode, msg, buffer);
+    return synthetic_message_generate_without_context(&self->content.message, msg, buffer);
 }
 
 void
@@ -269,6 +269,53 @@ pdb_execute_action_message(PDBAction *self, PatternDB *db, PDBContext *context, 
   log_msg_unref(genmsg);
 }
 
+static void pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data);
+
+void
+pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *triggering_context, LogMessage *triggering_msg, GString *buffer)
+{
+  CorrellationKey key;
+  PDBContext *new_context;
+  LogMessage *context_msg;
+  SyntheticContext *syn_context;
+  SyntheticMessage *syn_message;
+
+  syn_context = &self->content.create_context.context;
+  syn_message = &self->content.create_context.message;
+  if (triggering_context)
+    {
+      context_msg = synthetic_message_generate_with_context(syn_message, &triggering_context->super, buffer);
+      log_template_format_with_context(syn_context->id_template,
+                                       (LogMessage **) triggering_context->super.messages->pdata, triggering_context->super.messages->len,
+                                       NULL, LTZ_LOCAL, 0, NULL, buffer);
+    }
+  else
+    {
+      context_msg = synthetic_message_generate_without_context(syn_message, triggering_msg, buffer);
+      log_template_format(syn_context->id_template,
+                          triggering_msg,
+                          NULL, LTZ_LOCAL, 0, NULL, buffer);
+    }
+
+  msg_debug("Explicit create-context action, starting a new context",
+            evt_tag_str("rule", rule->rule_id),
+            evt_tag_str("context", buffer->str),
+            evt_tag_int("context_timeout", syn_context->timeout),
+            evt_tag_int("context_expiration", timer_wheel_get_time(db->timer_wheel) + syn_context->timeout));
+
+  correllation_key_setup(&key, syn_context->scope, context_msg, buffer->str);
+  new_context = pdb_context_new(&key);
+  g_hash_table_insert(db->correllation.state, &new_context->super.key, new_context);
+  g_string_steal(buffer);
+
+  g_ptr_array_add(new_context->super.messages, context_msg);
+
+  new_context->super.timer = timer_wheel_add_timer(db->timer_wheel, rule->context.timeout, pattern_db_expire_entry,
+                                                   correllation_context_ref(&new_context->super),
+                                                   (GDestroyNotify) correllation_context_unref);
+  new_context->rule = pdb_rule_ref(rule);
+}
+
 void
 pdb_execute_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *context, LogMessage *msg, GString *buffer)
 {
@@ -278,6 +325,9 @@ pdb_execute_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *co
       break;
     case RAC_MESSAGE:
       pdb_execute_action_message(self, db, context, msg, buffer);
+      break;
+    case RAC_CREATE_CONTEXT:
+      pdb_execute_action_create_context(self, db, rule, context, msg, buffer);
       break;
     default:
       g_assert_not_reached();
@@ -592,6 +642,95 @@ _pattern_db_is_empty(PatternDB *self)
   return (G_UNLIKELY(!self->ruleset) || self->ruleset->is_empty);
 }
 
+static void
+_pattern_db_process_matching_rule(PatternDB *self, PDBRule *rule, LogMessage *msg)
+{
+  PDBContext *context = NULL;
+  GString *buffer = g_string_sized_new(32);
+
+  g_static_rw_lock_writer_lock(&self->lock);
+  pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
+  if (rule->context.id_template)
+    {
+      CorrellationKey key;
+
+      log_template_format(rule->context.id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+      log_msg_set_value(msg, context_id_handle, buffer->str, -1);
+
+      correllation_key_setup(&key, rule->context.scope, msg, buffer->str);
+      context = g_hash_table_lookup(self->correllation.state, &key);
+      if (!context)
+        {
+          msg_debug("Correllation context lookup failure, starting a new context",
+                    evt_tag_str("rule", rule->rule_id),
+                    evt_tag_str("context", buffer->str),
+                    evt_tag_int("context_timeout", rule->context.timeout),
+                    evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context.timeout));
+          context = pdb_context_new(&key);
+          g_hash_table_insert(self->correllation.state, &context->super.key, context);
+          g_string_steal(buffer);
+        }
+      else
+        {
+          msg_debug("Correllation context lookup successful",
+                    evt_tag_str("rule", rule->rule_id),
+                    evt_tag_str("context", buffer->str),
+                    evt_tag_int("context_timeout", rule->context.timeout),
+                    evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context.timeout),
+                    evt_tag_int("num_messages", context->super.messages->len));
+        }
+
+      g_ptr_array_add(context->super.messages, log_msg_ref(msg));
+
+      if (context->super.timer)
+        {
+          timer_wheel_mod_timer(self->timer_wheel, context->super.timer, rule->context.timeout);
+        }
+      else
+        {
+          context->super.timer = timer_wheel_add_timer(self->timer_wheel, rule->context.timeout, pattern_db_expire_entry,
+                                                 correllation_context_ref(&context->super),
+                                                 (GDestroyNotify) correllation_context_unref);
+        }
+      if (context->rule != rule)
+        {
+          if (context->rule)
+            pdb_rule_unref(context->rule);
+          context->rule = pdb_rule_ref(rule);
+        }
+    }
+  else
+    {
+      context = NULL;
+    }
+
+  synthetic_message_apply(&rule->msg, &context->super, msg, buffer);
+  if (self->emit)
+    {
+      g_static_rw_lock_writer_unlock(&self->lock);
+      self->emit(msg, FALSE, self->emit_data);
+      pdb_run_rule_actions(rule, self, RAT_MATCH, context, msg, buffer);
+      g_static_rw_lock_writer_lock(&self->lock);
+    }
+  pdb_rule_unref(rule);
+  g_static_rw_lock_writer_unlock(&self->lock);
+
+  if (context)
+    log_msg_write_protect(msg);
+
+  g_string_free(buffer, TRUE);
+}
+
+static void
+_pattern_db_process_unmatching_rule(PatternDB *self, LogMessage *msg)
+{
+  g_static_rw_lock_writer_lock(&self->lock);
+  pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
+  g_static_rw_lock_writer_unlock(&self->lock);
+  if (self->emit)
+    self->emit(msg, FALSE, self->emit_data);
+}
+
 static gboolean
 _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 {
@@ -607,90 +746,9 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
   rule = pdb_lookup_ruleset(self->ruleset, lookup, dbg_list);
   g_static_rw_lock_reader_unlock(&self->lock);
   if (rule)
-    {
-      PDBContext *context = NULL;
-      GString *buffer = g_string_sized_new(32);
-
-      g_static_rw_lock_writer_lock(&self->lock);
-      pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
-      if (rule->context_id_template)
-        {
-          CorrellationKey key;
-
-          log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
-          log_msg_set_value(msg, context_id_handle, buffer->str, -1);
-
-          correllation_key_setup(&key, rule->context_scope, msg, buffer->str);
-          context = g_hash_table_lookup(self->correllation.state, &key);
-          if (!context)
-            {
-              msg_debug("Correllation context lookup failure, starting a new context",
-                        evt_tag_str("rule", rule->rule_id),
-                        evt_tag_str("context", buffer->str),
-                        evt_tag_int("context_timeout", rule->context_timeout),
-                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout));
-              context = pdb_context_new(&key);
-              g_hash_table_insert(self->correllation.state, &context->super.key, context);
-              g_string_steal(buffer);
-            }
-          else
-            {
-              msg_debug("Correllation context lookup successful",
-                        evt_tag_str("rule", rule->rule_id),
-                        evt_tag_str("context", buffer->str),
-                        evt_tag_int("context_timeout", rule->context_timeout),
-                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
-                        evt_tag_int("num_messages", context->super.messages->len));
-            }
-
-          g_ptr_array_add(context->super.messages, log_msg_ref(msg));
-
-          if (context->super.timer)
-            {
-              timer_wheel_mod_timer(self->timer_wheel, context->super.timer, rule->context_timeout);
-            }
-          else
-            {
-              context->super.timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry,
-                                                     correllation_context_ref(&context->super),
-                                                     (GDestroyNotify) correllation_context_unref);
-            }
-          if (context->rule != rule)
-            {
-              if (context->rule)
-                pdb_rule_unref(context->rule);
-              context->rule = pdb_rule_ref(rule);
-            }
-        }
-      else
-        {
-          context = NULL;
-        }
-
-      synthetic_message_apply(&rule->msg, &context->super, msg, buffer);
-      if (self->emit)
-        {
-          g_static_rw_lock_writer_unlock(&self->lock);
-          self->emit(msg, FALSE, self->emit_data);
-          pdb_run_rule_actions(rule, self, RAT_MATCH, context, msg, buffer);
-          g_static_rw_lock_writer_lock(&self->lock);
-        }
-      pdb_rule_unref(rule);
-      g_static_rw_lock_writer_unlock(&self->lock);
-
-      if (context)
-        log_msg_write_protect(msg);
-
-      g_string_free(buffer, TRUE);
-    }
+    _pattern_db_process_matching_rule(self, rule, msg);
   else
-    {
-      g_static_rw_lock_writer_lock(&self->lock);
-      pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
-      g_static_rw_lock_writer_unlock(&self->lock);
-      if (self->emit)
-        self->emit(msg, FALSE, self->emit_data);
-    }
+    _pattern_db_process_unmatching_rule(self, msg);
   return rule != NULL;
 }
 
