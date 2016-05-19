@@ -1024,83 +1024,139 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     }
 }
 
+static gboolean
+_pdbl_ruleset_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
+{
+  if (state->first_program)
+    {
+      state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
+      if (state->current_program == NULL)
+        {
+          /* create new program specific radix */
+          state->current_program = pdb_program_new();
+          g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
+        }
+
+      state->first_program = FALSE;
+    }
+  else if (state->current_program)
+    {
+      /* secondary program names should point to the same MSG radix */
+
+      PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
+      if (!program)
+        {
+          g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
+        }
+      else if (program != state->current_program)
+        {
+          pdb_loader_set_error(state, error, "Joining rulesets with mismatching program name sets, program=%s", text);
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
+
+static gboolean
+_pdbl_rule_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
+{
+  PDBProgramPattern program_pattern;
+
+  program_pattern.pattern = g_strdup(text);
+  program_pattern.rule = pdb_rule_ref(state->current_rule);
+  g_array_append_val(state->program_patterns, program_pattern);
+
+  return TRUE;
+}
+
+static gboolean
+_pdbl_rule_example_test_message_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
+{
+  state->current_example->message = g_strdup(text);
+  return TRUE;
+}
+
+static gboolean
+_pdbl_rule_example_test_value_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
+{
+  gchar **nv;
+
+  if (!state->current_example->values)
+    state->current_example->values = g_ptr_array_new();
+
+  nv = g_new(gchar *, 2);
+  nv[0] = state->test_value_name;
+  state->test_value_name = NULL;
+  nv[1] = g_strdup(text);
+
+  g_ptr_array_add(state->current_example->values, nv);
+
+  return TRUE;
+}
+
+static gboolean
+_pdbl_value_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
+{
+  GError *err = NULL;
+
+  g_assert(state->value_name != NULL);
+  if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
+    {
+      pdb_loader_set_error(state, error, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
+                           state->current_rule->rule_id, state->value_name, text, err->message);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_pdbl_tag_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
+{
+  synthetic_message_add_tag(state->current_message, text);
+
+  return TRUE;
+}
+
+
 void
 pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data, GError **error)
 {
   PDBLoader *state = (PDBLoader *) user_data;
-  GError *err = NULL;
-  PDBProgramPattern program_pattern;
-  gchar **nv;
 
   switch (state->current_state)
     {
     case PDBL_RULESET_DESCRIPTION:
       break;
     case PDBL_RULESET_PATTERN:
-      if (state->first_program)
-        {
-          state->current_program = g_hash_table_lookup(state->ruleset_patterns, text);
-          if (state->current_program == NULL)
-            {
-              /* create new program specific radix */
-              state->current_program = pdb_program_new();
-              g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
-            }
-
-          state->first_program = FALSE;
-        }
-      else if (state->current_program)
-        {
-          /* secondary program names should point to the same MSG radix */
-
-          PDBProgram *program = g_hash_table_lookup(state->ruleset_patterns, text);
-          if (!program)
-            {
-              g_hash_table_insert(state->ruleset_patterns, g_strdup(text), pdb_program_ref(state->current_program));
-            }
-          else if (program != state->current_program)
-            {
-              pdb_loader_set_error(state, error, "Joining rulesets with mismatching program name sets, program=%s", text);
-              return;
-            }
-        }
+      if (!_pdbl_ruleset_pattern_text(state, text, text_len, error))
+        return;
       break;
     case PDBL_RULE_PATTERN:
-      program_pattern.pattern = g_strdup(text);
-      program_pattern.rule = pdb_rule_ref(state->current_rule);
-      g_array_append_val(state->program_patterns, program_pattern);
+      if (!_pdbl_rule_pattern_text(state, text, text_len, error))
+        return;
       break;
     case PDBL_RULE_EXAMPLE:
       break;
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
-      state->current_example->message = g_strdup(text);
+      if (!_pdbl_rule_example_test_message_text(state, text, text_len, error))
+        return;
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUE:
-      if (!state->current_example->values)
-        state->current_example->values = g_ptr_array_new();
-
-      nv = g_new(gchar *, 2);
-      nv[0] = state->test_value_name;
-      state->test_value_name = NULL;
-      nv[1] = g_strdup(text);
-
-      g_ptr_array_add(state->current_example->values, nv);
+      if (!_pdbl_rule_example_test_value_text(state, text, text_len, error))
+        return;
       break;
 
     /* generic states reused by multiple locations in the grammar */
 
     case PDBL_VALUE:
-      g_assert(state->value_name != NULL);
-      if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
-        {
-          pdb_loader_set_error(state, error, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
-                               state->current_rule->rule_id, state->value_name, text, err->message);
-          return;
-        }
+      if (!_pdbl_value_text(state, text, text_len, error))
+        return;
       break;
 
     case PDBL_TAG:
-      synthetic_message_add_tag(state->current_message, text);
+      if (!_pdbl_tag_text(state, text, text_len, error))
+        return;
       break;
 
     default:
