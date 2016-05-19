@@ -58,7 +58,13 @@ enum PDBLoaderState
   PDBL_MESSAGE,
 };
 
-#define MAX_DEPTH 8
+#define PDB_STATE_STACK_MAX_DEPTH 8
+
+typedef struct _PDBStateStack
+{
+  gint stack[PDB_STATE_STACK_MAX_DEPTH];
+  gint top;
+}PDBStateStack;
 
 /* arguments passed to the markup parser functions */
 typedef struct _PDBLoader
@@ -74,8 +80,7 @@ typedef struct _PDBLoader
   PDBExample *current_example;
   SyntheticMessage *current_message;
   enum PDBLoaderState current_state;
-  gint state_stack[MAX_DEPTH];
-  gint state_stack_top;
+  PDBStateStack state_stack;
   gboolean first_program;
   gboolean load_examples;
   GList *examples;
@@ -93,21 +98,35 @@ typedef struct _PDBProgramPattern
   PDBRule *rule;
 } PDBProgramPattern;
 
+
+static void
+_pdb_state_stack_push(PDBStateStack *self, gint state)
+{
+  g_assert(self->top < PDB_STATE_STACK_MAX_DEPTH - 1);
+  self->stack[self->top] = state;
+  self->top++;
+}
+
+static gint
+_pdb_state_stack_pop(PDBStateStack *self)
+{
+  g_assert(self->top > 0);
+  self->top--;
+
+  return self->stack[self->top];
+}
+
 static void
 _push_state(PDBLoader *state, gint new_state)
 {
-  g_assert(state->state_stack_top < MAX_DEPTH - 1);
-  state->state_stack[state->state_stack_top] = state->current_state;
-  state->state_stack_top++;
+  _pdb_state_stack_push(&state->state_stack, state->current_state);
   state->current_state = new_state;
 }
 
 static void
 _pop_state(PDBLoader *state)
 {
-  g_assert(state->state_stack_top > 0);
-  state->state_stack_top--;
-  state->current_state = state->state_stack[state->state_stack_top];
+  state->current_state = _pdb_state_stack_pop(&state->state_stack);
 }
 
 static gboolean
