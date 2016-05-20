@@ -27,6 +27,8 @@ set(PATTERNDB_SOURCES
     correllation-context.h
     synthetic-message.c
     synthetic-message.h
+    synthetic-context.c
+    synthetic-context.h
     timerwheel.c
     timerwheel.h
     patternize.c
