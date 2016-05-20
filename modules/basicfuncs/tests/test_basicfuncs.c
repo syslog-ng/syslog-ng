@@ -179,7 +179,7 @@ _test_macros_with_context(const gchar *id, const gchar *numbers[], const MacroAn
 {
   GPtrArray *messages = create_log_messages_with_values(id, numbers);
 
-  for (MacroAndResult *test_case = test_cases; test_case->macro; test_case++)
+  for (const MacroAndResult *test_case = test_cases; test_case->macro; test_case++)
     assert_template_format_with_context_msgs(
         test_case->macro, test_case->result,
         (LogMessage **)messages->pdata, messages->len);
