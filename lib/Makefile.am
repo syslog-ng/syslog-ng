@@ -45,7 +45,7 @@ if IVYKIS_INTERNAL
 lib_libsyslog_ng_la_DEPENDENCIES	= lib/ivykis/src/libivykis.la
 
 lib/ivykis/src/libivykis.la:
-	${MAKE} -C lib/ivykis
+	${MAKE} CFLAGS="${CFLAGS} -Wno-error=unused-result" -C lib/ivykis
 
 CLEAN_SUBDIRS				+= @IVYKIS_SUBDIRS@
 
@@ -251,7 +251,9 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(compat_sources)     \
 	$(logmsg_sources)
 
-lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_CFLAGS)
+lib_libsyslog_ng_la_CFLAGS		= \
+	$(AM_CFLAGS) \
+	@UUID_CFLAGS@ $(libsystemd_CFLAGS)
 lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@
 
 # each line with closely related files (e.g. the ones generated from the same source)

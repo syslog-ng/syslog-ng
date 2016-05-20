@@ -67,6 +67,7 @@ CLEAN_HOOKS += java-clean-hook
 module_LTLIBRARIES += modules/java/libmod-java.la
 
 modules_java_libmod_java_la_CFLAGS = \
+    $(AM_CFLAGS) \
     $(JNI_CFLAGS)  \
     $(INCUBATOR_CFLAGS) \
     -I$(top_srcdir)/modules/java    \

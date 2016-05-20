@@ -31,15 +31,15 @@
 #include <stdlib.h>
 
 static LogParser *
-_construct_parser(gchar *timezone, gchar *format, gint time_stamp)
+_construct_parser(gchar *timezone_, gchar *format, gint time_stamp)
 {
   LogParser *parser;
 
   parser = date_parser_new (configuration);
   if (format != NULL)
     date_parser_set_format(parser, format);
-  if (timezone != NULL)
-    date_parser_set_timezone(parser, timezone);
+  if (timezone_ != NULL)
+    date_parser_set_timezone(parser, timezone_);
   date_parser_set_time_stamp(parser, time_stamp);
 
   log_pipe_init(&parser->super);
@@ -58,10 +58,10 @@ _construct_logmsg(const gchar *msg)
 }
 
 static void
-assert_parsed_date_equals_with_stamp(gchar *msg, gchar *timezone, gchar *format, gint time_stamp, gchar *expected)
+assert_parsed_date_equals_with_stamp(gchar *msg, gchar *timezone_, gchar *format, gint time_stamp, gchar *expected)
 {
   LogMessage *logmsg;
-  LogParser *parser = _construct_parser(timezone, format, time_stamp);
+  LogParser *parser = _construct_parser(timezone_, format, time_stamp);
   gboolean success;
   GString *res = g_string_sized_new(128);
 
@@ -88,9 +88,9 @@ assert_parsed_date_equals_with_stamp(gchar *msg, gchar *timezone, gchar *format,
 }
 
 static void
-assert_parsed_date_equals(gchar *msg, gchar *timezone, gchar *format, gchar *expected)
+assert_parsed_date_equals(gchar *msg, gchar *timezone_, gchar *format, gchar *expected)
 {
-  assert_parsed_date_equals_with_stamp(msg, timezone, format, LM_TS_STAMP, expected);
+  assert_parsed_date_equals_with_stamp(msg, timezone_, format, LM_TS_STAMP, expected);
 }
 
 static void

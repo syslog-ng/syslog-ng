@@ -69,7 +69,8 @@ _init_diskq_for_test(gint64 size, gint64 membuf_size)
   log_queue_disk_load_queue(q, filename);
   dq = (LogQueueDiskReliable *)q;
   lseek(dq->super.qdisk->fd, size - 1, SEEK_SET);
-  write(dq->super.qdisk->fd, "", 1);
+  ssize_t written = write(dq->super.qdisk->fd, "", 1);
+  assert_gint(written, 1, ASSERTION_ERROR("Can't write to diskq file"));
   fstat(dq->super.qdisk->fd, &st);
   assert_gint64(st.st_size, size, ASSERTION_ERROR("INITIALIZATION FAILED"));
   dq->super.super.use_backlog = TRUE;

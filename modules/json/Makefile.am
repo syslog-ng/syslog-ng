@@ -18,6 +18,7 @@ modules_json_libjson_plugin_la_CPPFLAGS	=	\
 	-I$(top_srcdir)/modules/json		\
 	-I$(top_builddir)/modules/json
 modules_json_libjson_plugin_la_CFLAGS	= 	\
+    $(AM_CFLAGS) \
 	$(JSON_CFLAGS)
 modules_json_libjson_plugin_la_LIBADD	= 	\
 	$(MODULE_DEPS_LIBS) $(JSON_LIBS)

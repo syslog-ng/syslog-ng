@@ -131,7 +131,6 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
   GArray *matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
   RParserMatch *match;
   const gchar *match_name;
-  gint i;
 
   g_array_set_size(matches, 1);
   va_start(args, name1);
@@ -140,7 +139,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
   if (ret && !name1)
     {
       printf("FAIL: found unexpected: '%s' => '%s' matches: ", key, (gchar *) ret->value);
-      for (i = 0; i < matches->len; i++)
+      for (gsize i = 0; i < matches->len; i++)
         {
           match = &g_array_index(matches, RParserMatch, i);
           match_name = log_msg_get_value_name(match->handle, NULL);
@@ -157,7 +156,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
     }
   else if (ret && name1)
     {
-      gint i = 1;
+      gsize i = 1;
       gchar *name, *value;
 
       name = name1;
@@ -166,7 +165,9 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
         {
           if (i >= matches->len)
             {
-              printf("FAIL: not enough matches: '%s' => expecting %d. match, value %s, total %d\n", key, i, value, matches->len);
+              printf("FAIL: not enough matches: '%s' => expecting %" G_GSIZE_FORMAT ". match, value %s, "
+                     " total %u\n",
+                     key, i, value, matches->len);
               fail = TRUE;
               goto out;
             }
@@ -175,7 +176,9 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
 
           if (strcmp(match_name, name) != 0)
             {
-              printf("FAIL: name does not match: '%s' => expecting %d. match, name %s != %s\n", key, i, name, match_name);
+              printf("FAIL: name does not match: '%s' => expecting %" G_GSIZE_FORMAT ". match, "
+                     "name %s != %s\n",
+                     key, i, name, match_name);
               fail = TRUE;
             }
 
@@ -183,7 +186,9 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
             {
               if (strncmp(&key[match->ofs], value, match->len) != 0 || strlen(value) != match->len)
                 {
-                  printf("FAIL: value does not match: '%s' => expecting %d. match, value '%s' != '%.*s', total %d\n", key, i, value, match->len, &key[match->ofs], matches->len);
+                  printf("FAIL: value does not match: '%s' => expecting %" G_GSIZE_FORMAT ". match, "
+                         "value '%s' != '%.*s', total %d\n",
+                         key, i, value, match->len, &key[match->ofs], matches->len);
                   fail = TRUE;
                 }
             }
@@ -191,7 +196,9 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
             {
               if (strcmp(match->match, value) != 0)
                 {
-                  printf("FAIL: value does not match: '%s' => expecting %d. match, value '%s' != '%s', total %d\n", key, i, value, match->match, matches->len);
+                  printf("FAIL: value does not match: '%s' => expecting %" G_GSIZE_FORMAT ". match, "
+                         "value '%s' != '%s', total %d\n",
+                         key, i, value, match->match, matches->len);
                   fail = TRUE;
                 }
             }
@@ -217,7 +224,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
  out:
   va_end(args);
 
-  for (i = 0; i < matches->len; i++)
+  for (gsize i = 0; i < matches->len; i++)
     {
       match = &g_array_index(matches, RParserMatch, i);
       if (match->match)

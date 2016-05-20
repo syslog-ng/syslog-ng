@@ -3,10 +3,13 @@ if ENABLE_PYTHON
 module_LTLIBRARIES				+= modules/python/libmod-python.la
 
 modules_python_libmod_python_la_CFLAGS		= \
+    $(AM_CFLAGS) \
 	$(PYTHON_CFLAGS)			  \
 	$(SYSLOG_NG_CFLAGS)			  \
 	$(EVENTLOG_CFLAGS)			  \
-	$(IVYKIS_CFLAGS)			  \
+	$(IVYKIS_CFLAGS)
+modules_python_libmod_python_la_CPPFLAGS		= \
+    $(AM_CPPFLAGS) \
 	-I$(top_srcdir)/modules/python		  \
 	-I$(top_builddir)/modules/python
 

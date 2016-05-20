@@ -3,7 +3,10 @@ module_LTLIBRARIES			+=	\
 	modules/redis/libredis.la
 
 modules_redis_libredis_la_CFLAGS	=	\
-	$(HIREDIS_CFLAGS)			\
+    $(AM_CFLAGS) \
+	$(HIREDIS_CFLAGS)
+modules_redis_libredis_la_CPPFLAGS	=	\
+    $(AM_CPPFLAGS) \
 	-I$(top_srcdir)/modules/redis		\
 	-I$(top_builddir)/modules/redis
 modules_redis_libredis_la_SOURCES	=	\

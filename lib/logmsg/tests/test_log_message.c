@@ -87,13 +87,13 @@ assert_log_msg_clear_clears_all_properties(LogMessage *msg)
 static void
 test_log_message_can_be_cleared(void)
 {
-  LogMessage *msg, *clone;
+  LogMessage *msg, *cloned;
 
   msg = construct_log_message_with_all_bells_and_whistles();
-  clone = clone_cow_log_message(msg);
+  cloned = clone_cow_log_message(msg);
 
-  assert_log_msg_clear_clears_all_properties(clone);
-  log_msg_unref(clone);
+  assert_log_msg_clear_clears_all_properties(cloned);
+  log_msg_unref(cloned);
 
   assert_log_msg_clear_clears_all_properties(msg);
   log_msg_unref(msg);
