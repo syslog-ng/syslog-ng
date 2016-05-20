@@ -1,0 +1,4 @@
+geninfo_adjust_src_path = /.libs
+geninfo_compat_libtool = 1
+geninfo_auto_base = 1
+

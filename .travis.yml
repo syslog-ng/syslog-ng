@@ -1,23 +1,56 @@
 language: c
+sudo: required
+dist: trusty
 install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq curl
   - curl http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_12.04/Release.key | sudo apt-key add -
   - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_12.04 ./" | sudo tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
   - sudo apt-get update -qq
-  - sudo apt-get install -qq pkg-config flex bison xsltproc docbook-xsl libevtlog-dev libnet1-dev libglib2.0-dev libdbi0-dev libssl-dev libjson0-dev libwrap0-dev libpcre3-dev libcap-dev libesmtp-dev libgeoip-dev libhiredis-dev sqlite3 libdbd-sqlite3 libriemann-client-dev openjdk-7-jdk gradle-2.2.1 autoconf-archive
+  - sudo apt-get install -qq pkg-config flex bison xsltproc docbook-xsl libevtlog-dev libnet1-dev libglib2.0-dev libdbi0-dev libssl-dev libjson0-dev libwrap0-dev libpcre3-dev libcap-dev libesmtp-dev libgeoip-dev libhiredis-dev sqlite3 libdbd-sqlite3 libriemann-client-dev openjdk-7-jdk gradle-2.2.1 autoconf-archive lcov
+  - rvm install 2.0.0
   - sudo pip install -r requirements.txt
+  - gem install coveralls-lcov
 before_script:
   - ./autogen.sh
-  - unset PYTHON_CFLAGS # HACK
-  - ./configure CFLAGS=-Werror --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-pacct --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl 
+  - ./configure CFLAGS=-Werror --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-gcov --enable-pacct --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
   - if [ "$CC" = "clang" ]; then export COPYRIGHTVERBOSITY=1; make check-copyright; fi
   - make -j || make V=1 --keep-going # to make error messages more readable on error
+  - make check
 script:
   - if [ "$CC" = "gcc" ]; then make distcheck V=1; else make func-test V=1; fi
 compiler:
   - gcc
   - clang
+after_success:
+  - rm libtest/*.gc* # HACK, otherwise lcov/gcov reports Out of memory! error
+  - lcov -c --config-file=.lcovrc --directory . --output-file coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/cfg-lex.l" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/pragma-grammar.y" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/afsocket/afsocket-grammar.y" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/parser-expr-grammar.y" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/compat/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/filter/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/logproto/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/rewrite/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/stats/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/template/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "lib/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "libtest/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/affile/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/afsocket/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/afstomp/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/basicfuncs/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/cryptofuncs/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/csvparser/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/dbparser/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/json/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/kvformat/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/linux-kmsg-format/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/modules/python/pylib/syslogng/debuggercli/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "modules/systemd-journal/tests/*" -o coverage.info
+  - lcov --config-file=.lcovrc --remove coverage.info "tests/*" -o coverage.info
+  - coveralls-lcov coverage.info
 branches:
   except:
     - /wip/
