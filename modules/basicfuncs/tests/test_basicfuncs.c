@@ -168,58 +168,68 @@ test_numeric_funcs(void)
   assert_template_format("$(- 10000000000 5000000000)", "5000000000");
 }
 
+typedef struct
+{
+  const gchar *macro;
+  const gchar *result;
+} MacroAndResult;
+
+static void
+_test_macros_with_context(const gchar *id, const gchar *numbers[], const MacroAndResult test_cases[])
+{
+  GPtrArray *messages = create_log_messages_with_values(id, numbers);
+
+  for (MacroAndResult *test_case = test_cases; test_case->macro; test_case++)
+    assert_template_format_with_context_msgs(
+        test_case->macro, test_case->result,
+        (LogMessage **)messages->pdata, messages->len);
+
+  free_log_message_array(messages);
+}
+
 void
 test_numeric_aggregate_simple(void)
 {
-  const gchar *numbers[] = { "1", "-1", "3", NULL };
-  GPtrArray *messages = create_log_messages_with_values("NUMBER", numbers);
-
-  assert_template_format_with_context_msgs("$(sum ${NUMBER})", "3",
-    (LogMessage **) messages->pdata, messages->len);
-
-  assert_template_format_with_context_msgs("$(min ${NUMBER})", "-1",
-    (LogMessage **) messages->pdata, messages->len);
-
-  assert_template_format_with_context_msgs("$(max ${NUMBER})", "3",
-    (LogMessage **) messages->pdata, messages->len);
-
-  free_log_message_array(messages);
+  _test_macros_with_context(
+      "NUMBER", (const gchar *[]) { "1", "-1", "3", NULL },
+      (const MacroAndResult[])
+      {
+        { "$(sum ${NUMBER})", "3" },
+        { "$(min ${NUMBER})", "-1" },
+        { "$(max ${NUMBER})", "3" },
+        { "$(average ${NUMBER})", "1" },
+        { }
+      });
 }
 
 void
 test_numeric_aggregate_invalid_values(void)
 {
-  const gchar *numbers[] = { "abc", "1", "c", "2", "", NULL };
-  GPtrArray *messages = create_log_messages_with_values("NUMBER", numbers);
-
-  assert_template_format_with_context_msgs("$(sum ${NUMBER})", "3",
-    (LogMessage **) messages->pdata, messages->len);
-
-  assert_template_format_with_context_msgs("$(min ${NUMBER})", "1",
-    (LogMessage **) messages->pdata, messages->len);
-
-  assert_template_format_with_context_msgs("$(max ${NUMBER})", "2",
-    (LogMessage **) messages->pdata, messages->len);
-
-  free_log_message_array(messages);
+  _test_macros_with_context(
+      "NUMBER", (const gchar *[]) { "abc", "1", "c", "2", "", NULL },
+      (const MacroAndResult[])
+      {
+        { "$(sum ${NUMBER})", "3" },
+        { "$(min ${NUMBER})", "1" },
+        { "$(max ${NUMBER})", "2" },
+        { "$(average ${NUMBER})", "1" },
+        { }
+      });
 }
 
 void
 test_numeric_aggregate_full_invalid_values(void)
 {
-  const gchar *numbers[] = { "abc", "184467440737095516160", "c", "", NULL };
-  GPtrArray *messages = create_log_messages_with_values("NUMBER", numbers);
-
-  assert_template_format_with_context_msgs("$(sum ${NUMBER})", "",
-    (LogMessage **) messages->pdata, messages->len);
-
-  assert_template_format_with_context_msgs("$(min ${NUMBER})", "",
-    (LogMessage **) messages->pdata, messages->len);
-
-  assert_template_format_with_context_msgs("$(max ${NUMBER})", "",
-    (LogMessage **) messages->pdata, messages->len);
-
-  free_log_message_array(messages);
+  _test_macros_with_context(
+      "NUMBER", (const gchar *[]) { "abc", "184467440737095516160", "c", "", NULL },
+      (const MacroAndResult[])
+      {
+        { "$(sum ${NUMBER})", "" },
+        { "$(min ${NUMBER})", "" },
+        { "$(max ${NUMBER})", "" },
+        { "$(average ${NUMBER})", "" },
+        { }
+      });
 }
 
 void

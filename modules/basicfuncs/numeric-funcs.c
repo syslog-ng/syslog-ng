@@ -21,7 +21,7 @@
  *
  */
 
-typedef gint64 (*AggregateFunc)(gint64, gint64);
+typedef gboolean (*AggregateFunc)(gpointer, gint64);
 
 static gboolean
 tf_num_parse(gint argc, GString *argv[],
@@ -183,22 +183,45 @@ tf_num_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   return tf_simple_func_prepare(self, s, parent, argc, argv, error);
 }
 
-static gboolean
-_tf_num_get_first_valid_arg(const TFSimpleFuncState *state,
-                            const LogTemplateInvokeArgs *args,
-                            gint *message_index, gint64 *number)
+static gint
+_tf_num_filter_iterate(const TFSimpleFuncState *state,
+        const LogTemplateInvokeArgs *args,
+        gint message_index,
+        AggregateFunc aggregate,
+        gpointer accumulator)
 {
-  for (*message_index = 0; *message_index < args->num_messages; (*message_index)++)
+  for (; message_index < args->num_messages; message_index++)
     {
-      LogMessage *message = args->messages[*message_index];
-
-      if (_tf_num_parse_arg_with_message(state, message, args, number))
-        {
-          (*message_index)++;
-          return TRUE;
-        }
+      LogMessage *message = args->messages[message_index];
+      gint64 number;
+      if ((_tf_num_parse_arg_with_message(state, message, args, &number) &&
+          (!aggregate(accumulator, number))))
+        return message_index;
     }
 
+  return -1;
+}
+
+static gboolean
+_tf_num_filter(const TFSimpleFuncState *state,
+        const LogTemplateInvokeArgs *args,
+        AggregateFunc start,
+        AggregateFunc aggregate,
+        gpointer accumulator)
+{
+  gint first = _tf_num_filter_iterate(state, args, 0, start, accumulator);
+  if (first < 0)
+    return FALSE;
+
+  _tf_num_filter_iterate(state, args, first + 1, aggregate, accumulator);
+  return TRUE;
+}
+
+static gboolean
+_tf_num_store_first(gpointer accumulator, gint64 element)
+{
+  gint64 *acc = (gint64 *)accumulator;
+  *acc = element;
   return FALSE;
 }
 
@@ -207,75 +230,112 @@ _tf_num_aggregation(TFSimpleFuncState *state, const LogTemplateInvokeArgs *args,
                     AggregateFunc aggregate, GString *result)
 {
   gint64 accumulator;
-  gint message_index;
-  if (!_tf_num_get_first_valid_arg(state, args, &message_index, &accumulator))
+  if (!_tf_num_filter(state, args, _tf_num_store_first, aggregate, &accumulator))
     return;
-
-  for (; message_index < args->num_messages; ++message_index)
-    {
-      LogMessage *message = args->messages[message_index];
-
-      gint64 number;
-      if (_tf_num_parse_arg_with_message(state, message, args, &number))
-        accumulator = aggregate(accumulator, number);
-    }
 
   format_int64_padded(result, 0, ' ', 10, accumulator);
 }
 
-static gint64
-_sum(gint64 accumulator, gint64 element)
+static gboolean
+_tf_num_sum(gpointer accumulator, gint64 element)
 {
-  return accumulator + element;
+  gint64 *acc = (gint64 *)accumulator;
+  *acc += element;
+  return TRUE;
 }
 
 static void
 tf_num_sum_call(LogTemplateFunction *self, gpointer s,
                 const LogTemplateInvokeArgs *args, GString *result)
 {
-  _tf_num_aggregation((TFSimpleFuncState *) s, args, _sum, result);
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_sum, result);
 }
 
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_sum,
                   tf_num_prepare, NULL, tf_num_sum_call,
                   tf_simple_func_free_state, NULL);
 
-static gint64
-_minimum(gint64 accumulator, gint64 element)
+static gboolean
+_tf_num_minimum(gpointer accumulator, gint64 element)
 {
-  if (element < accumulator)
-    accumulator = element;
+  gint64 *acc = (gint64 *)accumulator;
+  if (element < *acc)
+    *acc = element;
 
-  return accumulator;
+  return TRUE;
 }
 
 static void
 tf_num_min_call(LogTemplateFunction *self, gpointer s,
                 const LogTemplateInvokeArgs *args, GString *result)
 {
-  _tf_num_aggregation((TFSimpleFuncState *) s, args, _minimum, result);
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_minimum, result);
 }
 
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_min,
                   tf_num_prepare, NULL, tf_num_min_call,
                   tf_simple_func_free_state, NULL);
 
-static gint64
-_maximum(gint64 accumulator, gint64 element)
+static gboolean
+_tf_num_maximum(gpointer accumulator, gint64 element)
 {
-  if (element > accumulator)
-    accumulator = element;
+  gint64 *acc = (gint64 *)accumulator;
+  if (element > *acc)
+    *acc = element;
 
-  return accumulator;
+  return TRUE;
 }
 
 static void
 tf_num_max_call(LogTemplateFunction *self, gpointer s,
                 const LogTemplateInvokeArgs *args, GString *result)
 {
-  _tf_num_aggregation((TFSimpleFuncState *) s, args, _maximum, result);
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_maximum, result);
 }
 
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_max,
                   tf_num_prepare, NULL, tf_num_max_call,
+                  tf_simple_func_free_state, NULL);
+
+typedef struct _AverageState
+{
+  gint count;
+  gint64 sum;
+} AverageState;
+
+static gboolean
+_tf_num_store_average_first(gpointer accumulator, gint64 element)
+{
+  AverageState *state = (AverageState *) accumulator;
+  state->count = 1;
+  state->sum = element;
+  return FALSE;
+}
+
+static gboolean
+_tf_num_average(gpointer accumulator, gint64 element)
+{
+  AverageState *state = (AverageState *) accumulator;
+  ++state->count;
+  state->sum += element;
+  return TRUE;
+}
+
+static void
+tf_num_average_call(LogTemplateFunction *self, gpointer s,
+                const LogTemplateInvokeArgs *args, GString *result)
+{
+  TFSimpleFuncState *state = (TFSimpleFuncState *)s;
+  AverageState accumulator = {0, 0};
+
+  if (!_tf_num_filter(state, args, _tf_num_store_average_first, _tf_num_average, &accumulator))
+    return;
+
+  g_assert(accumulator.count > 0);
+  gint64 mean = accumulator.sum / accumulator.count;
+  format_int64_padded(result, 0, ' ', 10, mean);
+}
+
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_average,
+                  tf_num_prepare, NULL, tf_num_average_call,
                   tf_simple_func_free_state, NULL);
