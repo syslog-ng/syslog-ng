@@ -9,7 +9,64 @@ syslog-ng is an enhanced log daemon, supporting a wide range of input
 and output methods: syslog, unstructured text, message queues,
 databases (SQL and NoSQL alike) and more.
 
-Key features:
+Quickstart
+==========
+
+The easiest configuration that accepts system logs on /dev/log (from
+applications or forwarded by systemd) and writes everything to a single
+file:
+
+```
+@version: 3.8
+@include "scl.conf"
+
+log {
+	source { system(); };
+	destination { file("/var/log/syslog"); };
+};
+```
+
+This one also processes logs from the network (TCP/514 by default):
+
+```
+@version: 3.8
+@include "scl.conf"
+
+log {
+	source {
+		system();
+		network();
+	};
+	destination { file("/var/log/syslog"); };
+};
+```
+Structured/application logging, local submission via JSON, output in key=value format.
+
+```
+@version: 3.8
+@include "scl.conf"
+
+log {
+	source { system(); };
+	destination { file("/var/log/app.log" template("$(format-welf --subkeys .cim.)\n")); };
+};
+```
+
+Here's how to submit a structured message using "logger":
+
+```
+$ logger '@cim: {"name1":"value1", "name2":"value2"}'
+```
+
+and the result will be:
+
+```
+name1=value1 name2=value2
+```
+
+
+Features
+========
   * receive and send [RFC3164](https://tools.ietf.org/html/rfc3164)
     and [RFC5424](https://tools.ietf.org/html/rfc5424) style syslog
     messages
