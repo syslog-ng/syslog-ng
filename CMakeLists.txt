@@ -40,7 +40,6 @@ set (SYSLOG_NG_PATH_LIBEXECDIR "\${exec_prefix}/libexec")
 set (SYSLOG_NG_PATH_DATAROOTDIR "\${prefix}/share")
 set (SYSLOG_NG_ENABLE_LINUX_CAPS 0)
 set (SYSLOG_NG_ENABLE_TCP_WRAPPER 0)
-set (SYSLOG_NG_ENABLE_DEBUG 0)
 set (SYSLOG_NG_ENABLE_GPROF 0)
 set (SYSLOG_NG_ENABLE_MEMTRACE 0)
 set (SYSLOG_NG_PATH_MODULEDIR "\${exec_prefix}/lib/syslog-ng")
@@ -51,7 +50,11 @@ set (LIBDIR "\${exec_prefix}/lib")
 set (INCLUDEDIR "\${prefix}/include")
 set (TOOLSDIR "\${datadir}/syslog-ng/tools")
 
-
+IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
+  set (SYSLOG_NG_ENABLE_DEBUG 1)
+ELSE()
+  set (SYSLOG_NG_ENABLE_DEBUG 0)
+ENDIF()
 
 # CMake will generate tests only if the enable_testing() command has been invoked.
 # The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
