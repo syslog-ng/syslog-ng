@@ -1,7 +1,7 @@
  ignore
 scl/syslogconf/convert-syslogconf.awk$
 .*/.*\.am$
-.*\.(yml|md|y|l|txt|xml|xsd|log|key|crt|files|in|conf\.example|gradle|mk|supp|sub|guess|list)$
+.*\.(yml|md|y|l|txt|xml|xsd|log|key|crt|files|in|conf\.example|gradle|mk|supp|sub|guess|list|pc\.cmake)$
 .*/[^/]+-grammar\.[ch]$
 (.*/)?(README|\.gitignore|pylintrc)$
 lib/ivykis
@@ -34,6 +34,7 @@ doc/ChangeLog\.[0-9]$
 .*/[^/.]*$
  LGPLv2.1+_SSL
 autogen\.sh$
+cmake
 sub-configure\.sh$
 configure\.ac$
 Makefile\.am$

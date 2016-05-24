@@ -21,3 +21,8 @@ subprojects {
         targetCompatibility "1.7"
     }
 }
+
+task copyJars(type: Copy, dependsOn: subprojects.jar) {
+  from(subprojects.jar)
+  into syslogBuildDir + '/built-jars'
+}

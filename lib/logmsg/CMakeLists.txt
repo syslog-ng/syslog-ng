@@ -1,0 +1,22 @@
+set(LOGMSG_HEADERS
+    logmsg/gsockaddr-serialize.h
+    logmsg/logmsg.h
+    logmsg/logmsg-serialize.h
+    logmsg/nvtable.h
+    logmsg/nvtable-serialize.h
+    logmsg/nvtable-serialize-endianutils.h
+    logmsg/sdata-serialize.h
+    logmsg/tags-serialize.h
+    logmsg/timestamp-serialize.h
+    PARENT_SCOPE)
+
+set(LOGMSG_SOURCES
+    logmsg/gsockaddr-serialize.c
+    logmsg/logmsg.c
+    logmsg/logmsg-serialize.c
+    logmsg/nvtable.c
+    logmsg/nvtable-serialize.c
+    logmsg/sdata-serialize.c
+    logmsg/tags-serialize.c
+    logmsg/timestamp-serialize.c
+    PARENT_SCOPE)
