@@ -1101,14 +1101,6 @@ cfg_token_block_new()
 void
 cfg_token_block_free(CfgTokenBlock *self)
 {
-  gint i;
-
-  for (i = 0; i < self->tokens->len; i++)
-    {
-      YYSTYPE *token = &g_array_index(self->tokens, YYSTYPE, i);
-
-      cfg_lexer_free_token(token);
-    }
   g_array_free(self->tokens, TRUE);
   g_free(self);
 }
