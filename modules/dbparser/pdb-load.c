@@ -240,6 +240,13 @@ _process_create_context_element(PDBLoader *state,
       else if (strcmp(attribute_names[i], "context-scope") == 0)
         synthetic_context_set_context_scope(target, attribute_values[i], error);
     }
+  if (!target->id_template)
+    {
+      pdb_loader_set_error(state, error,
+                           "context-id attribute is missing from <create-context>, rule=%s",
+                           state->current_rule->rule_id);
+      return;
+    }
   _push_state(state, PDBL_RULE_ACTION_CREATE_CONTEXT);
 }
 
