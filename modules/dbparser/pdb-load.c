@@ -465,14 +465,6 @@ _pdbl_ruleset_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, 
   return TRUE;
 }
 
-/* PDBL_RULESET_URL */
-
-static void
-_pdbl_ruleset_url_start(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  pdb_loader_set_error(state, error, "Unexpected <%s> tag, we only expect an URL within the <url> tags", element_name);
-}
-
 /* PDBL_RULES */
 
 static gboolean
@@ -719,12 +711,6 @@ _pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name
 /* PDBL_RULE_EXAMPLE_TEST_VALUE */
 
 static void
-_pdbl_rule_example_test_value_start(PDBLoader *state, const gchar *element_name, GError **error)
-{
-   pdb_loader_set_error(state, error, "Unexpected <%s> tag, only text node is expected", element_name);
-}
-
-static void
 _pdbl_rule_example_test_value_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
   if (_pop_state_for_closing_tag(state, element_name, "test_value", error))
@@ -962,9 +948,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULESET:
       _pdbl_ruleset_start(state, element_name, error);
       break;
-    case PDBL_RULESET_URL:
-      _pdbl_ruleset_url_start(state, element_name, error);
-      break;
     case PDBL_RULES:
       if (!_pdbl_rules_start(state, element_name, attribute_names, attribute_values, error))
         return;
@@ -981,9 +964,6 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULE_EXAMPLE_TEST_VALUES:
       if (!_pdbl_rule_example_test_values_start(state, element_name, attribute_names, attribute_values, error))
         return;
-      break;
-    case PDBL_RULE_EXAMPLE_TEST_VALUE:
-      _pdbl_rule_example_test_value_start(state, element_name, error);
       break;
     case PDBL_RULE_ACTIONS:
       if (!_pdbl_rule_actions_start(state, element_name, attribute_names, attribute_values, error))
