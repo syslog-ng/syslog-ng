@@ -279,7 +279,7 @@ _process_create_context_element(PDBLoader *state,
 
 /* PDBL_INITIAL */
 
-static gboolean
+static void
 _pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
               const gchar **attribute_values, GError **error)
 {
@@ -302,12 +302,12 @@ _pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **a
       else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
         {
           pdb_loader_set_error(state, error, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
-          return FALSE;
+          return;
         }
       else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
         {
           pdb_loader_set_error(state, error, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
-          return FALSE;
+          return;
         }
       _push_state(state, PDBL_PATTERNDB);
     }
@@ -315,8 +315,6 @@ _pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **a
     {
       pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <patterndb>", element_name);
     }
-
-  return TRUE;
 }
 
 /* PDBL_PATTERNDB */
@@ -467,7 +465,7 @@ _pdbl_ruleset_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, 
 
 /* PDBL_RULES */
 
-static gboolean
+static void
 _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
             const gchar **attribute_values, GError **error)
 {
@@ -510,7 +508,7 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
           pdb_loader_set_error(state, error, "No id attribute for rule element");
           pdb_rule_unref(state->current_rule);
           state->current_rule = NULL;
-          return FALSE;
+          return;
         }
 
       state->current_message = &state->current_rule->msg;
@@ -521,8 +519,6 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
     {
       pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rule>", element_name);
     }
-
-  return TRUE;
 }
 
 /* PDBL_RULE */
@@ -684,7 +680,7 @@ _pdbl_rule_example_test_message_text(PDBLoader *state, const gchar *text, gsize 
 
 /* PDBL_RULE_EXAMPLE_TEST_VALUES */
 
-static gboolean
+static void
 _pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
                                      const gchar **attribute_values, GError **error)
 {
@@ -697,7 +693,7 @@ _pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name
           msg_error("No name is specified for test_value",
                     evt_tag_str("rule_id", state->current_rule->rule_id));
           pdb_loader_set_error(state, error, "<test_value> misses name attribute");
-          return FALSE;
+          return;
         }
       _push_state(state, PDBL_RULE_EXAMPLE_TEST_VALUE);
     }
@@ -705,7 +701,6 @@ _pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name
     {
       pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <test_value>", element_name);
     }
-  return TRUE;
 }
 
 /* PDBL_RULE_EXAMPLE_TEST_VALUE */
@@ -743,7 +738,7 @@ _pdbl_rule_example_test_value_text(PDBLoader *state, const gchar *text, gsize te
 
 /* PDBL_RULE_ACTIONS */
 
-static gboolean
+static void
 _pdbl_rule_actions_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
                          const gchar **attribute_values, GError **error)
 {
@@ -754,7 +749,7 @@ _pdbl_rule_actions_start(PDBLoader *state, const gchar *element_name, const gcha
       if (!state->current_rule)
         {
           pdb_loader_set_error(state, error, "Unexpected <action> element, it must be inside a rule");
-          return FALSE;
+          return;
         }
       state->current_action = pdb_action_new(state->action_id++);
 
@@ -773,8 +768,6 @@ _pdbl_rule_actions_start(PDBLoader *state, const gchar *element_name, const gcha
     {
       pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <action>", element_name);
     }
-
-  return TRUE;
 }
 
 /* PDBL_RULE_ACTION */
@@ -939,8 +932,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
   switch (state->current_state)
     {
     case PDBL_INITIAL:
-      if (!_pdbl_initial_start(state, element_name, attribute_names, attribute_values, error))
-        return;
+      _pdbl_initial_start(state, element_name, attribute_names, attribute_values, error);
       break;
     case PDBL_PATTERNDB:
       _pdbl_patterndb_start(state, element_name, error);
@@ -949,8 +941,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       _pdbl_ruleset_start(state, element_name, error);
       break;
     case PDBL_RULES:
-      if (!_pdbl_rules_start(state, element_name, attribute_names, attribute_values, error))
-        return;
+      _pdbl_rules_start(state, element_name, attribute_names, attribute_values, error);
       break;
     case PDBL_RULE:
       _pdbl_rule_start(state, element_name, attribute_names, attribute_values, error);
@@ -962,12 +953,10 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       _pdbl_rule_example_start(state, element_name, attribute_names, attribute_values, error);
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUES:
-      if (!_pdbl_rule_example_test_values_start(state, element_name, attribute_names, attribute_values, error))
-        return;
+      _pdbl_rule_example_test_values_start(state, element_name, attribute_names, attribute_values, error);
       break;
     case PDBL_RULE_ACTIONS:
-      if (!_pdbl_rule_actions_start(state, element_name, attribute_names, attribute_values, error))
-        return;
+      _pdbl_rule_actions_start(state, element_name, attribute_names, attribute_values, error);
       break;
     case PDBL_RULE_ACTION:
       _pdbl_rule_action_start(state, element_name, attribute_names, attribute_values, error);
