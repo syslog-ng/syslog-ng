@@ -388,7 +388,7 @@ _pdbl_ruleset_start(PDBLoader *state, const gchar *element_name, GError **error)
     }
   else
     {
-      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rules>, <patterns> or <pattern>", element_name);
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rules>, <urls>, <url>, <description>, <patterns> or <pattern>", element_name);
     }
 }
 
