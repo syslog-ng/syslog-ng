@@ -120,32 +120,6 @@ _pdb_state_stack_pop(PDBStateStack *self)
 }
 
 static void
-_push_state(PDBLoader *state, gint new_state)
-{
-  _pdb_state_stack_push(&state->state_stack, state->current_state);
-  state->current_state = new_state;
-}
-
-static void
-_pop_state(PDBLoader *state)
-{
-  state->current_state = _pdb_state_stack_pop(&state->state_stack);
-}
-
-static gboolean
-_is_whitespace_only(const gchar *text, gsize text_len)
-{
-  gint i;
-
-  for (i = 0; i < text_len; i++)
-    {
-      if (!g_ascii_isspace(text[i]))
-        return FALSE;
-    }
-  return TRUE;
-}
-
-static void
 pdb_loader_set_error(PDBLoader *state, GError **error, const gchar *format, ...)
 {
   gchar *error_text;
@@ -165,6 +139,59 @@ pdb_loader_set_error(PDBLoader *state, GError **error, const gchar *format, ...)
   g_free(error_text);
   g_free(error_location);
 }
+
+static void
+_push_state(PDBLoader *state, gint new_state)
+{
+  _pdb_state_stack_push(&state->state_stack, state->current_state);
+  state->current_state = new_state;
+}
+
+static void
+_pop_state(PDBLoader *state)
+{
+  state->current_state = _pdb_state_stack_pop(&state->state_stack);
+}
+
+static gboolean
+_pop_state_for_closing_tag_with_alternatives(PDBLoader *state, const gchar *element_name,
+                                             const gchar *expected_element, const gchar *alternatives,
+                                             GError **error)
+{
+  if (strcmp(element_name, expected_element) != 0)
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected </%s>%s%s",
+                           element_name,
+                           expected_element,
+                           alternatives ? ", " : "",
+                           alternatives);
+      return FALSE;
+    }
+  _pop_state(state);
+  return TRUE;
+}
+
+static gboolean
+_pop_state_for_closing_tag(PDBLoader *state, const gchar *element_name,
+                           const gchar *expected_element,
+                           GError **error)
+{
+  return _pop_state_for_closing_tag_with_alternatives(state, element_name, expected_element, NULL, error);
+}
+
+static gboolean
+_is_whitespace_only(const gchar *text, gsize text_len)
+{
+  gint i;
+
+  for (i = 0; i < text_len; i++)
+    {
+      if (!g_ascii_isspace(text[i]))
+        return FALSE;
+    }
+  return TRUE;
+}
+
 
 static void
 _process_value_element(PDBLoader *state,
@@ -323,15 +350,10 @@ _populate_ruleset_radix(gpointer key, gpointer value, gpointer user_data)
 static void
 _pdbl_patterndb_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "patterndb") == 0)
+  if (_pop_state_for_closing_tag(state, element_name, "patterndb", error))
     {
       g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
       g_hash_table_remove_all(state->ruleset_patterns);
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </patterndb>", element_name);
     }
 }
 
@@ -377,7 +399,15 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
   PDBProgramPattern *program_pattern;
   PDBProgram *program;
 
-  if (strcmp(element_name, "ruleset") == 0)
+  if (strcmp(element_name, "patterns") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "urls") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (_pop_state_for_closing_tag_with_alternatives(state, element_name, "ruleset", "</patterns> or </urls>", error))
     {
       program = (state->current_program ? state->current_program : state->root_program);
 
@@ -397,19 +427,6 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
 
       g_array_free(state->program_patterns, TRUE);
       state->program_patterns = NULL;
-      _pop_state(state);
-    }
-  else if (strcmp(element_name, "patterns") == 0)
-    {
-      /* valid, but we don't do anything */
-    }
-  else if (strcmp(element_name, "urls") == 0)
-    {
-      /* valid, but we don't do anything */
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </ruleset> or </patterns>", element_name);
     }
 }
 
@@ -418,14 +435,7 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
 static void
 _pdbl_ruleset_pattern_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "pattern") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected </pattern>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "pattern", error);
 }
 
 static gboolean
@@ -461,21 +471,12 @@ _pdbl_ruleset_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, 
   return TRUE;
 }
 
-
-
 /* PDBL_RULESET_DESCRIPTION */
 
 static void
 _pdbl_ruleset_description_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "description") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </description>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "description", error);
 }
 
 /* PDBL_RULESET_URL */
@@ -489,14 +490,7 @@ _pdbl_ruleset_url_start(PDBLoader *state, const gchar *element_name, GError **er
 static void
 _pdbl_ruleset_url_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "url") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </url>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "url", error);
 }
 
 /* PDBL_RULES */
@@ -562,14 +556,7 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
 static void
 _pdbl_rules_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "rules") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rules>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "rules", error);
 }
 
 /* PDBL_RULE */
@@ -631,17 +618,7 @@ _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attr
 static void
 _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "rule") == 0)
-    {
-      if (state->current_rule)
-        {
-          pdb_rule_unref(state->current_rule);
-          state->current_rule = NULL;
-        }
-      state->current_message = NULL;
-      _pop_state(state);
-    }
-  else if (strcmp(element_name, "patterns") == 0)
+  if (strcmp(element_name, "patterns") == 0)
     {
       /* valid, but we don't do anything */
     }
@@ -661,9 +638,14 @@ _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
     {
       /* valid, but we don't do anything */
     }
-  else
+  else if (_pop_state_for_closing_tag_with_alternatives(state, element_name, "rule", "</patterns>, </description>, </tags>, </urls>, </values>", error) == 0)
     {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </rule>, </patterns>, </pattern>, </description>, </tags>, </tag>, </values>", element_name);
+      if (state->current_rule)
+        {
+          pdb_rule_unref(state->current_rule);
+          state->current_rule = NULL;
+        }
+      state->current_message = NULL;
     }
 }
 
@@ -672,14 +654,7 @@ _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
 static void
 _pdbl_rule_description_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "description") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </description>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "description", error);
 }
 
 /* PDBL_RULE_URL */
@@ -687,14 +662,7 @@ _pdbl_rule_description_end(PDBLoader *state, const gchar *element_name, GError *
 static void
 _pdbl_rule_url_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "url") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </url>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "url", error);
 }
 
 /* PDBL_RULE_EXAMPLES */
@@ -717,14 +685,7 @@ _pdbl_rule_examples_start(PDBLoader *state, const gchar *element_name, GError **
 static void
 _pdbl_rule_examples_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "examples") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </examples>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "examples", error);
 }
 
 /* PDBL_RULE_EXAMPLE */
@@ -757,7 +718,7 @@ _pdbl_rule_example_start(PDBLoader *state, const gchar *element_name, const gcha
 static void
 _pdbl_rule_example_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "example") == 0)
+  if (_pop_state_for_closing_tag(state, element_name, "example", error))
     {
       if (state->load_examples)
         state->examples = g_list_prepend(state->examples, state->current_example);
@@ -765,11 +726,6 @@ _pdbl_rule_example_end(PDBLoader *state, const gchar *element_name, GError **err
         pdb_example_free(state->current_example);
 
       state->current_example = NULL;
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </example>, </test_values>, <test_value>", element_name);
     }
 }
 
@@ -778,14 +734,7 @@ _pdbl_rule_example_end(PDBLoader *state, const gchar *element_name, GError **err
 static void
 _pdbl_rule_example_test_message_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "test_message") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_message>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "test_message", error);
 }
 
 static gboolean
@@ -824,14 +773,7 @@ _pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name
 static void
 _pdbl_rule_examples_test_values_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "test_values") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_values>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "test_values", error);
 }
 
 /* PDBL_RULE_EXAMPLE_TEST_VALUE */
@@ -845,17 +787,12 @@ _pdbl_rule_example_test_value_start(PDBLoader *state, const gchar *element_name,
 static void
 _pdbl_rule_example_test_value_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "test_value") == 0)
+  if (_pop_state_for_closing_tag(state, element_name, "test_value", error))
     {
       if (state->test_value_name)
         g_free(state->test_value_name);
 
       state->test_value_name = NULL;
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </test_value>", element_name);
     }
 }
 
@@ -985,14 +922,7 @@ _pdbl_message_start(PDBLoader *state, const gchar *element_name, const gchar **a
 static void
 _pdbl_rule_pattern_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "pattern") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </pattern>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "pattern", error);
 }
 
 static gboolean
@@ -1012,14 +942,7 @@ _pdbl_rule_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, GEr
 static void
 _pdbl_rule_actions_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "actions") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </actions>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "actions", error);
 }
 
 /* PDBL_RULE_ACTION */
@@ -1027,15 +950,10 @@ _pdbl_rule_actions_end(PDBLoader *state, const gchar *element_name, GError **err
 static void
 _pdbl_rule_action_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "action") == 0)
+  if (_pop_state_for_closing_tag(state, element_name, "action", error))
     {
       pdb_rule_add_action(state->current_rule, state->current_action);
       state->current_action = NULL;
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </action>", element_name);
     }
 }
 
@@ -1044,14 +962,7 @@ _pdbl_rule_action_end(PDBLoader *state, const gchar *element_name, GError **erro
 static void
 _pdbl_rule_action_create_context_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "create-context") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </create-context>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "create-context", error);
 }
 
 /* PDBL_MESSAGE */
@@ -1059,12 +970,7 @@ _pdbl_rule_action_create_context_end(PDBLoader *state, const gchar *element_name
 static void
 _pdbl_message_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "message") == 0)
-    {
-      state->current_message = &state->current_rule->msg;
-      _pop_state(state);
-    }
-  else if (strcmp(element_name, "values") == 0)
+  if (strcmp(element_name, "values") == 0)
     {
       /* valid, but we don't do anything */
     }
@@ -1072,9 +978,9 @@ _pdbl_message_end(PDBLoader *state, const gchar *element_name, GError **error)
     {
       /* valid, but we don't do anything */
     }
-  else
+  else if (_pop_state_for_closing_tag_with_alternatives(state, element_name, "message", "</values>, </tags>", error))
     {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </message>, </values> or </tags>", element_name);
+      state->current_message = &state->current_rule->msg;
     }
 }
 
@@ -1083,17 +989,12 @@ _pdbl_message_end(PDBLoader *state, const gchar *element_name, GError **error)
 static void
 _pdbl_value_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "value") == 0)
+  if (_pop_state_for_closing_tag(state, element_name, "value", error))
     {
       if (state->value_name)
         g_free(state->value_name);
 
       state->value_name = NULL;
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </value>", element_name);
     }
 }
 
@@ -1118,14 +1019,7 @@ _pdbl_value_text(PDBLoader *state, const gchar *text, gsize text_len, GError **e
 static void
 _pdbl_tag_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
-  if (strcmp(element_name, "tag") == 0)
-    {
-      _pop_state(state);
-    }
-  else
-    {
-      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </tag>", element_name);
-    }
+  _pop_state_for_closing_tag(state, element_name, "tag", error);
 }
 
 static gboolean
