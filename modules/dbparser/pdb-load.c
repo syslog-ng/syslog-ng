@@ -38,10 +38,12 @@ enum PDBLoaderState
   PDBL_INITIAL = 0,
   PDBL_PATTERNDB,
   PDBL_RULESET,
+  PDBL_RULESET_URL,
   PDBL_RULESET_DESCRIPTION,
   PDBL_RULESET_PATTERN,
   PDBL_RULES,
   PDBL_RULE,
+  PDBL_RULE_URL,
   PDBL_RULE_PATTERN,
   PDBL_RULE_EXAMPLES,
   PDBL_RULE_EXAMPLE,
@@ -307,6 +309,14 @@ _pdbl_ruleset_start(PDBLoader *state, const gchar *element_name, GError **error)
     {
       /* valid, but we don't do anything */
     }
+  else if (strcmp(element_name, "urls") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "url") == 0)
+    {
+      state->current_state = PDBL_RULESET_URL;
+    }
   else if (strcmp(element_name, "pattern") == 0)
     {
       state->current_state = PDBL_RULESET_PATTERN;
@@ -319,6 +329,12 @@ _pdbl_ruleset_start(PDBLoader *state, const gchar *element_name, GError **error)
     {
       pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rules>, <patterns> or <pattern>", element_name);
     }
+}
+
+static void
+_pdbl_ruleset_url_start(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  pdb_loader_set_error(state, error, "Unexpected <%s> tag, we only expect an URL within the <url> tags", element_name);
 }
 
 static gboolean
@@ -406,6 +422,14 @@ _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attr
   else if (strcmp(element_name, "values") == 0)
     {
       /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "urls") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "url") == 0)
+    {
+      state->current_state = PDBL_RULE_URL;
     }
   else if (strcmp(element_name, "value") == 0)
     {
@@ -608,6 +632,9 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     case PDBL_RULESET:
       _pdbl_ruleset_start(state, element_name, error);
       break;
+    case PDBL_RULESET_URL:
+      _pdbl_ruleset_url_start(state, element_name, error);
+      break;
     case PDBL_RULES:
       if (!_pdbl_rules_start(state, element_name, attribute_names, attribute_values, error))
         return;
@@ -708,9 +735,52 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
     {
       /* valid, but we don't do anything */
     }
+  else if (strcmp(element_name, "urls") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
   else
     {
       pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </ruleset> or </patterns>", element_name);
+    }
+}
+
+static void
+_pdbl_ruleset_url_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "url") == 0)
+    {
+      state->current_state = PDBL_RULESET;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </url>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_url_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "url") == 0)
+    {
+      state->current_state = PDBL_RULE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </url>", element_name);
+    }
+}
+
+static void
+_pdbl_rule_description_end(PDBLoader *state, const gchar *element_name, GError **error)
+{
+  if (strcmp(element_name, "description") == 0)
+    {
+      state->current_state = PDBL_RULE;
+    }
+  else
+    {
+      pdb_loader_set_error(state, error, "Unexpected </%s> tag, expected a </description>", element_name);
     }
 }
 
@@ -775,6 +845,10 @@ _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
       /* valid, but we don't do anything */
     }
   else if (strcmp(element_name, "tags") == 0)
+    {
+      /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "urls") == 0)
     {
       /* valid, but we don't do anything */
     }
@@ -985,6 +1059,9 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULESET:
       _pdbl_ruleset_end(state, element_name, error);
       break;
+    case PDBL_RULESET_URL:
+      _pdbl_ruleset_url_end(state, element_name, error);
+      break;
     case PDBL_RULESET_PATTERN:
       _pdbl_ruleset_pattern_end(state, element_name, error);
       break;
@@ -996,6 +1073,9 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
       break;
     case PDBL_RULE:
       _pdbl_rule_end(state, element_name, error);
+      break;
+    case PDBL_RULE_URL:
+      _pdbl_rule_url_end(state, element_name, error);
       break;
     case PDBL_RULE_PATTERN:
       _pdbl_rule_pattern_end(state, element_name, error);
@@ -1151,11 +1231,15 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
       if (!_pdbl_ruleset_pattern_text(state, text, text_len, error))
         return;
       break;
+    case PDBL_RULESET_URL:
+      break;
     case PDBL_RULE_PATTERN:
       if (!_pdbl_rule_pattern_text(state, text, text_len, error))
         return;
       break;
     case PDBL_RULE_EXAMPLE:
+      break;
+    case PDBL_RULE_URL:
       break;
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
       if (!_pdbl_rule_example_test_message_text(state, text, text_len, error))
