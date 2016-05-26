@@ -432,12 +432,6 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
 
 /* PDBL_RULESET_PATTERN */
 
-static void
-_pdbl_ruleset_pattern_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "pattern", error);
-}
-
 static gboolean
 _pdbl_ruleset_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
 {
@@ -471,26 +465,12 @@ _pdbl_ruleset_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, 
   return TRUE;
 }
 
-/* PDBL_RULESET_DESCRIPTION */
-
-static void
-_pdbl_ruleset_description_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "description", error);
-}
-
 /* PDBL_RULESET_URL */
 
 static void
 _pdbl_ruleset_url_start(PDBLoader *state, const gchar *element_name, GError **error)
 {
   pdb_loader_set_error(state, error, "Unexpected <%s> tag, we only expect an URL within the <url> tags", element_name);
-}
-
-static void
-_pdbl_ruleset_url_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "url", error);
 }
 
 /* PDBL_RULES */
@@ -551,12 +531,6 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
     }
 
   return TRUE;
-}
-
-static void
-_pdbl_rules_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "rules", error);
 }
 
 /* PDBL_RULE */
@@ -649,22 +623,6 @@ _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
     }
 }
 
-/* PDBL_RULE_DESCRIPTION */
-
-static void
-_pdbl_rule_description_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "description", error);
-}
-
-/* PDBL_RULE_URL */
-
-static void
-_pdbl_rule_url_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "url", error);
-}
-
 /* PDBL_RULE_EXAMPLES */
 
 static void
@@ -680,12 +638,6 @@ _pdbl_rule_examples_start(PDBLoader *state, const gchar *element_name, GError **
     {
       pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <example>", element_name);
     }
-}
-
-static void
-_pdbl_rule_examples_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "examples", error);
 }
 
 /* PDBL_RULE_EXAMPLE */
@@ -731,12 +683,6 @@ _pdbl_rule_example_end(PDBLoader *state, const gchar *element_name, GError **err
 
 /* PDBL_RULE_EXAMPLE_TEST_MESSAGE */
 
-static void
-_pdbl_rule_example_test_message_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "test_message", error);
-}
-
 static gboolean
 _pdbl_rule_example_test_message_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
 {
@@ -768,12 +714,6 @@ _pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name
       pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected <test_value>", element_name);
     }
   return TRUE;
-}
-
-static void
-_pdbl_rule_examples_test_values_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "test_values", error);
 }
 
 /* PDBL_RULE_EXAMPLE_TEST_VALUE */
@@ -919,12 +859,6 @@ _pdbl_message_start(PDBLoader *state, const gchar *element_name, const gchar **a
 
 /* PDBL_RULE_PATTERN */
 
-static void
-_pdbl_rule_pattern_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "pattern", error);
-}
-
 static gboolean
 _pdbl_rule_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
 {
@@ -937,14 +871,6 @@ _pdbl_rule_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, GEr
   return TRUE;
 }
 
-/* PDBL_RULE_ACTIONS */
-
-static void
-_pdbl_rule_actions_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "actions", error);
-}
-
 /* PDBL_RULE_ACTION */
 
 static void
@@ -955,14 +881,6 @@ _pdbl_rule_action_end(PDBLoader *state, const gchar *element_name, GError **erro
       pdb_rule_add_action(state->current_rule, state->current_action);
       state->current_action = NULL;
     }
-}
-
-/* PDBL_RULE_ACTION_CREATE_CONTEXT */
-
-static void
-_pdbl_rule_action_create_context_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "create-context", error);
 }
 
 /* PDBL_MESSAGE */
@@ -1016,12 +934,6 @@ _pdbl_value_text(PDBLoader *state, const gchar *text, gsize text_len, GError **e
 
 /* PDBL_TAG */
 
-static void
-_pdbl_tag_end(PDBLoader *state, const gchar *element_name, GError **error)
-{
-  _pop_state_for_closing_tag(state, element_name, "tag", error);
-}
-
 static gboolean
 _pdbl_tag_text(PDBLoader *state, const gchar *text, gsize text_len, GError **error)
 {
@@ -1029,7 +941,6 @@ _pdbl_tag_text(PDBLoader *state, const gchar *text, gsize text_len, GError **err
 
   return TRUE;
 }
-
 
 /* element start callback */
 
@@ -1110,52 +1021,52 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
       _pdbl_ruleset_end(state, element_name, error);
       break;
     case PDBL_RULESET_URL:
-      _pdbl_ruleset_url_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "url", error);
       break;
     case PDBL_RULESET_PATTERN:
-      _pdbl_ruleset_pattern_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "pattern", error);
       break;
     case PDBL_RULESET_DESCRIPTION:
-      _pdbl_ruleset_description_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "description", error);
       break;    
     case PDBL_RULES:
-      _pdbl_rules_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "rules", error);
       break;
     case PDBL_RULE:
       _pdbl_rule_end(state, element_name, error);
       break;
     case PDBL_RULE_DESCRIPTION:
-      _pdbl_rule_description_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "description", error);
       break;
     case PDBL_RULE_URL:
-      _pdbl_rule_url_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "url", error);
       break;
     case PDBL_RULE_PATTERN:
-      _pdbl_rule_pattern_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "pattern", error);
       break;
     case PDBL_RULE_EXAMPLES:
-      _pdbl_rule_examples_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "examples", error);
       break;
     case PDBL_RULE_EXAMPLE:
       _pdbl_rule_example_end(state, element_name, error);
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUES:
-      _pdbl_rule_examples_test_values_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "test_values", error);
       break;
     case PDBL_RULE_EXAMPLE_TEST_VALUE:
       _pdbl_rule_example_test_value_end(state, element_name, error);
       break;
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
-      _pdbl_rule_example_test_message_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "test_message", error);
       break;
     case PDBL_RULE_ACTIONS:
-      _pdbl_rule_actions_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "actions", error);
       break;
     case PDBL_RULE_ACTION:
       _pdbl_rule_action_end(state, element_name, error);
       break;
     case PDBL_RULE_ACTION_CREATE_CONTEXT:
-      _pdbl_rule_action_create_context_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "create-context", error);
       break;
     /* generic states reused by multiple locations in the grammar */
     case PDBL_MESSAGE:
@@ -1167,7 +1078,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
       break;
 
     case PDBL_TAG:
-      _pdbl_tag_end(state, element_name, error);
+      _pop_state_for_closing_tag(state, element_name, "tag", error);
       break;
 
     default:
