@@ -303,7 +303,13 @@ word	[^ \#'"\(\)\{\}\\;\r\n\t,|\.@:]
 
 <block_content>[^{}()\"\'\n\r]+   { g_string_append(yyextra->string_buffer, yytext); }
 
-<INITIAL><<EOF>>           { if (!cfg_lexer_start_next_include(yyextra)) yyterminate(); }
+<INITIAL><<EOF>>           {
+                             if (!cfg_lexer_start_next_include(yyextra))
+                               {
+                                 *yylloc = yyextra->include_stack[0].lloc;
+                                 yyterminate();
+                               }
+                           }
 
 %%
 
