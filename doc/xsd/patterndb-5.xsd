@@ -562,13 +562,6 @@
                     <xs:field xpath="@name"/>
                 </xs:unique>
             </xs:element>
-            <xs:element name="test_tags" minOccurs="0">
-                <xs:complexType>
-                    <xs:sequence>
-                        <xs:element name="test_tag" type="xs:string" minOccurs="0"  maxOccurs="unbounded"/>
-                    </xs:sequence>
-                </xs:complexType>
-            </xs:element>
         </xs:all>
     </xs:complexType>
 
