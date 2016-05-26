@@ -61,7 +61,7 @@ enum PDBLoaderState
   PDBL_MESSAGE,
 };
 
-#define PDB_STATE_STACK_MAX_DEPTH 8
+#define PDB_STATE_STACK_MAX_DEPTH 12
 
 typedef struct _PDBStateStack
 {
@@ -282,7 +282,7 @@ _pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **a
           pdb_loader_set_error(state, error, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
           return FALSE;
         }
-      state->current_state = PDBL_PATTERNDB;
+      _push_state(state, PDBL_PATTERNDB);
     }
   else
     {
@@ -302,7 +302,7 @@ _pdbl_patterndb_start(PDBLoader *state, const gchar *element_name, GError **erro
       state->ruleset->is_empty = FALSE;
       state->first_program = TRUE;
       state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
-      state->current_state = PDBL_RULESET;
+      _push_state(state, PDBL_RULESET);
     }
   else
     {
@@ -327,7 +327,7 @@ _pdbl_patterndb_end(PDBLoader *state, const gchar *element_name, GError **error)
     {
       g_hash_table_foreach(state->ruleset_patterns, _populate_ruleset_radix, state);
       g_hash_table_remove_all(state->ruleset_patterns);
-      state->current_state = PDBL_INITIAL;
+      _pop_state(state);
     }
   else
     {
@@ -342,7 +342,7 @@ _pdbl_ruleset_start(PDBLoader *state, const gchar *element_name, GError **error)
 {
   if (strcmp(element_name, "rules") == 0)
     {
-      state->current_state = PDBL_RULES;
+      _push_state(state, PDBL_RULES);
     }
   else if (strcmp(element_name, "patterns") == 0)
     {
@@ -354,15 +354,15 @@ _pdbl_ruleset_start(PDBLoader *state, const gchar *element_name, GError **error)
     }
   else if (strcmp(element_name, "url") == 0)
     {
-      state->current_state = PDBL_RULESET_URL;
+      _push_state(state, PDBL_RULESET_URL);
     }
   else if (strcmp(element_name, "pattern") == 0)
     {
-      state->current_state = PDBL_RULESET_PATTERN;
+      _push_state(state, PDBL_RULESET_PATTERN);
     }
   else if (strcmp(element_name, "description") == 0)
     {
-      state->current_state = PDBL_RULESET_DESCRIPTION;
+      _push_state(state, PDBL_RULESET_DESCRIPTION);
     }
   else
     {
@@ -397,7 +397,7 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
 
       g_array_free(state->program_patterns, TRUE);
       state->program_patterns = NULL;
-      state->current_state = PDBL_PATTERNDB;
+      _pop_state(state);
     }
   else if (strcmp(element_name, "patterns") == 0)
     {
@@ -420,7 +420,7 @@ _pdbl_ruleset_pattern_end(PDBLoader *state, const gchar *element_name, GError **
 {
   if (strcmp(element_name, "pattern") == 0)
     {
-      state->current_state = PDBL_RULESET;
+      _pop_state(state);
     }
   else
     {
@@ -470,7 +470,7 @@ _pdbl_ruleset_description_end(PDBLoader *state, const gchar *element_name, GErro
 {
   if (strcmp(element_name, "description") == 0)
     {
-      state->current_state = PDBL_RULESET;
+      _pop_state(state);
     }
   else
     {
@@ -491,7 +491,7 @@ _pdbl_ruleset_url_end(PDBLoader *state, const gchar *element_name, GError **erro
 {
   if (strcmp(element_name, "url") == 0)
     {
-      state->current_state = PDBL_RULESET;
+      _pop_state(state);
     }
   else
     {
@@ -549,7 +549,7 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
 
       state->current_message = &state->current_rule->msg;
       state->action_id = 0;
-      state->current_state = PDBL_RULE;
+      _push_state(state, PDBL_RULE);
     }
   else
     {
@@ -564,7 +564,7 @@ _pdbl_rules_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
   if (strcmp(element_name, "rules") == 0)
     {
-      state->current_state = PDBL_RULESET;
+      _pop_state(state);
     }
   else
     {
@@ -584,7 +584,7 @@ _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attr
     }
   else if (strcmp(element_name, "pattern") == 0)
     {
-      state->current_state = PDBL_RULE_PATTERN;
+      _push_state(state, PDBL_RULE_PATTERN);
     }
   else if (strcmp(element_name, "tags") == 0)
     {
@@ -604,11 +604,11 @@ _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attr
     }
   else if (strcmp(element_name, "description") == 0)
     {
-      state->current_state = PDBL_RULE_DESCRIPTION;
+      _push_state(state, PDBL_RULE_DESCRIPTION);
     }
   else if (strcmp(element_name, "url") == 0)
     {
-      state->current_state = PDBL_RULE_URL;
+      _push_state(state, PDBL_RULE_URL);
     }
   else if (strcmp(element_name, "value") == 0)
     {
@@ -616,11 +616,11 @@ _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attr
     }
   else if (strcmp(element_name, "actions") == 0)
     {
-      state->current_state = PDBL_RULE_ACTIONS;
+      _push_state(state, PDBL_RULE_ACTIONS);
     }
   else if (strcmp(element_name, "examples") == 0)
     {
-      state->current_state = PDBL_RULE_EXAMPLES;
+      _push_state(state, PDBL_RULE_EXAMPLES);
     }
   else
     {
@@ -639,7 +639,7 @@ _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
           state->current_rule = NULL;
         }
       state->current_message = NULL;
-      state->current_state = PDBL_RULES;
+      _pop_state(state);
     }
   else if (strcmp(element_name, "patterns") == 0)
     {
@@ -674,7 +674,7 @@ _pdbl_rule_description_end(PDBLoader *state, const gchar *element_name, GError *
 {
   if (strcmp(element_name, "description") == 0)
     {
-      state->current_state = PDBL_RULE;
+      _pop_state(state);
     }
   else
     {
@@ -689,7 +689,7 @@ _pdbl_rule_url_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
   if (strcmp(element_name, "url") == 0)
     {
-      state->current_state = PDBL_RULE;
+      _pop_state(state);
     }
   else
     {
@@ -706,7 +706,7 @@ _pdbl_rule_examples_start(PDBLoader *state, const gchar *element_name, GError **
     {
       state->current_example = g_new0(PDBExample, 1);
       state->current_example->rule = pdb_rule_ref(state->current_rule);
-      state->current_state = PDBL_RULE_EXAMPLE;
+      _push_state(state, PDBL_RULE_EXAMPLE);
     }
   else
     {
@@ -719,7 +719,7 @@ _pdbl_rule_examples_end(PDBLoader *state, const gchar *element_name, GError **er
 {
   if (strcmp(element_name, "examples") == 0)
     {
-      state->current_state = PDBL_RULE;
+      _pop_state(state);
     }
   else
     {
@@ -742,11 +742,11 @@ _pdbl_rule_example_start(PDBLoader *state, const gchar *element_name, const gcha
           if (strcmp(attribute_names[i], "program") == 0)
             state->current_example->program = g_strdup(attribute_values[i]);
         }
-      state->current_state = PDBL_RULE_EXAMPLE_TEST_MESSAGE;
+      _push_state(state, PDBL_RULE_EXAMPLE_TEST_MESSAGE);
     }
   else if (strcmp(element_name, "test_values") == 0)
     {
-      state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUES;
+      _push_state(state, PDBL_RULE_EXAMPLE_TEST_VALUES);
     }
   else
     {
@@ -765,7 +765,7 @@ _pdbl_rule_example_end(PDBLoader *state, const gchar *element_name, GError **err
         pdb_example_free(state->current_example);
 
       state->current_example = NULL;
-      state->current_state = PDBL_RULE_EXAMPLES;
+      _pop_state(state);
     }
   else
     {
@@ -780,7 +780,7 @@ _pdbl_rule_example_test_message_end(PDBLoader *state, const gchar *element_name,
 {
   if (strcmp(element_name, "test_message") == 0)
     {
-      state->current_state = PDBL_RULE_EXAMPLE;
+      _pop_state(state);
     }
   else
     {
@@ -812,7 +812,7 @@ _pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name
           pdb_loader_set_error(state, error, "<test_value> misses name attribute");
           return FALSE;
         }
-      state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUE;
+      _push_state(state, PDBL_RULE_EXAMPLE_TEST_VALUE);
     }
   else
     {
@@ -826,7 +826,7 @@ _pdbl_rule_examples_test_values_end(PDBLoader *state, const gchar *element_name,
 {
   if (strcmp(element_name, "test_values") == 0)
     {
-      state->current_state = PDBL_RULE_EXAMPLE;
+      _pop_state(state);
     }
   else
     {
@@ -851,7 +851,7 @@ _pdbl_rule_example_test_value_end(PDBLoader *state, const gchar *element_name, G
         g_free(state->test_value_name);
 
       state->test_value_name = NULL;
-      state->current_state = PDBL_RULE_EXAMPLE_TEST_VALUES;
+      _pop_state(state);
     }
   else
     {
@@ -904,7 +904,7 @@ _pdbl_rule_actions_start(PDBLoader *state, const gchar *element_name, const gcha
           else if (strcmp(attribute_names[i], "rate") == 0)
             pdb_action_set_rate(state->current_action, attribute_values[i]);
         }
-      state->current_state = PDBL_RULE_ACTION;
+      _push_state(state, PDBL_RULE_ACTION);
     }
   else
     {
@@ -987,7 +987,7 @@ _pdbl_rule_pattern_end(PDBLoader *state, const gchar *element_name, GError **err
 {
   if (strcmp(element_name, "pattern") == 0)
     {
-      state->current_state = PDBL_RULE;
+      _pop_state(state);
     }
   else
     {
@@ -1014,8 +1014,7 @@ _pdbl_rule_actions_end(PDBLoader *state, const gchar *element_name, GError **err
 {
   if (strcmp(element_name, "actions") == 0)
     {
-      g_assert(state->current_state == PDBL_RULE_ACTIONS);
-      state->current_state = PDBL_RULE;
+      _pop_state(state);
     }
   else
     {
@@ -1032,7 +1031,7 @@ _pdbl_rule_action_end(PDBLoader *state, const gchar *element_name, GError **erro
     {
       pdb_rule_add_action(state->current_rule, state->current_action);
       state->current_action = NULL;
-      state->current_state = PDBL_RULE_ACTIONS;
+      _pop_state(state);
     }
   else
     {
