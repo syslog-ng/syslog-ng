@@ -258,6 +258,7 @@ _process_create_context_element(PDBLoader *state,
                                    "Error compiling create-context context-id, rule=%s, context-id=%s, error=%s",
                                    state->current_rule->rule_id, attribute_values[i], local_error->message);
               g_clear_error(&local_error);
+              return;
             }
           else
             synthetic_context_set_context_id_template(target, template);
@@ -493,6 +494,7 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
                                        "Error compiling context-id template, rule=%s, context-id=%s, error=%s",
                                        state->current_rule->rule_id, attribute_values[i], local_error->message);
                   g_clear_error(&local_error);
+                  return;
                 }
               else
                 synthetic_context_set_context_id_template(&state->current_rule->context, template);
