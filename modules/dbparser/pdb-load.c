@@ -44,6 +44,7 @@ enum PDBLoaderState
   PDBL_RULES,
   PDBL_RULE,
   PDBL_RULE_URL,
+  PDBL_RULE_DESCRIPTION,
   PDBL_RULE_PATTERN,
   PDBL_RULE_EXAMPLES,
   PDBL_RULE_EXAMPLE,
@@ -407,10 +408,6 @@ _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attr
     {
       state->current_state = PDBL_RULE_PATTERN;
     }
-  else if (strcmp(element_name, "description") == 0)
-    {
-      /* valid, but we don't do anything */
-    }
   else if (strcmp(element_name, "tags") == 0)
     {
       /* valid, but we don't do anything */
@@ -426,6 +423,10 @@ _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attr
   else if (strcmp(element_name, "urls") == 0)
     {
       /* valid, but we don't do anything */
+    }
+  else if (strcmp(element_name, "description") == 0)
+    {
+      state->current_state = PDBL_RULE_DESCRIPTION;
     }
   else if (strcmp(element_name, "url") == 0)
     {
@@ -1074,6 +1075,9 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
     case PDBL_RULE:
       _pdbl_rule_end(state, element_name, error);
       break;
+    case PDBL_RULE_DESCRIPTION:
+      _pdbl_rule_description_end(state, element_name, error);
+      break;
     case PDBL_RULE_URL:
       _pdbl_rule_url_end(state, element_name, error);
       break;
@@ -1240,6 +1244,8 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
     case PDBL_RULE_EXAMPLE:
       break;
     case PDBL_RULE_URL:
+      break;
+    case PDBL_RULE_DESCRIPTION:
       break;
     case PDBL_RULE_EXAMPLE_TEST_MESSAGE:
       if (!_pdbl_rule_example_test_message_text(state, text, text_len, error))
