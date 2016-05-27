@@ -373,14 +373,6 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
   if (new_entry)
     *new_entry = FALSE;
   entry = nv_table_get_entry(self, handle, &dyn_slot);
-  if (G_UNLIKELY(!entry && !new_entry && value_len == 0))
-    {
-      /* we don't store zero length matches unless the caller is
-       * interested in whether a new entry was created. It is used by
-       * the SDATA support code to decide whether a previously
-       * not-present SDATA was set */
-      return TRUE;
-    }
   if (G_UNLIKELY(entry && !entry->indirect && entry->referenced))
     {
       gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
