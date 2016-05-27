@@ -5,6 +5,10 @@ git:
 env: B=autotools
 
 install:
+  - export SLNG_CACHE="$HOME/.local";
+    export SLNG="$HOME/install/syslog-ng";
+    export PATH="$SLNG_CACHE"/bin:$PATH;
+    export PKG_CONFIG_PATH=$SLNG_CACHE/lib/pkgconfig:$SLNG/lib/pkgconfig:$PKG_CONFIG_PATH;
   - curl http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_12.04/Release.key | sudo apt-key add -
   - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_12.04 ./" | sudo tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
   - sudo apt-get update -qq
@@ -31,6 +35,7 @@ install:
       sqlite3
       xsltproc
   - sudo pip install -r requirements.txt
+  - ./scripts/build-dbi.sh || exit $?
 before_script:
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
@@ -47,7 +52,6 @@ before_script:
       --enable-linux-caps
       --disable-sun-streams
       --enable-all-modules
-      --disable-sql
       --enable-pacct
       --enable-manpages
       --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
