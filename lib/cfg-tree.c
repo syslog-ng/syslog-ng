@@ -1036,6 +1036,8 @@ cfg_tree_compile(CfgTree *self)
   gint i;
 
   /* resolve references within the configuration */
+  if (self->compiled)
+    return TRUE;
 
   for (i = 0; i < self->rules->len; i++)
     {
@@ -1054,6 +1056,7 @@ cfg_tree_compile(CfgTree *self)
           return FALSE;
         }
     }
+  self->compiled = TRUE;
   return TRUE;
 }
 
