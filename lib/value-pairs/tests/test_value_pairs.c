@@ -139,15 +139,16 @@ int
 main(int argc, char *argv[])
 {
   GPtrArray *transformers;
+  GlobalConfig *cfg;
 
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
 
-  configuration = cfg_new(0x0302);
-  plugin_load_module("syslogformat", configuration, NULL);
+  cfg = cfg_new(VERSION_VALUE);
+  plugin_load_module("syslogformat", cfg, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
+  msg_format_options_init(&parse_options, cfg);
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
 
   testcase("rfc3164", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);

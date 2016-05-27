@@ -12,4 +12,4 @@ value_pairs_sources = \
 	lib/value-pairs/cmdline.c		\
 	lib/value-pairs/evttag.c
 
-# include lib/value-pairs/tests/Makefile.am
+include lib/value-pairs/tests/Makefile.am

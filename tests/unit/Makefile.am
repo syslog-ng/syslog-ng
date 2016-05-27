@@ -11,8 +11,6 @@ tests_unit_TESTS			=  \
 	tests/unit/test_logwriter	   \
 	tests/unit/test_zone		   \
 	tests/unit/test_persist_state	   \
-	tests/unit/test_value_pairs     \
-	tests/unit/test_value_pairs_walk   \
 	tests/unit/test_ringbuffer	   \
 	tests/unit/test_hostid
  
@@ -59,12 +57,6 @@ tests_unit_test_zone_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_persist_state_LDADD	= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_value_pairs_LDADD	= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_value_pairs_walk_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_ringbuffer_CFLAGS	= $(TEST_CFLAGS)
