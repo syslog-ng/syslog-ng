@@ -240,7 +240,7 @@ log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
   if ((flags & LM_VF_MACRO) == 0)
-    return __nv_table_get_value(self->payload, handle, LM_V_MAX, value_len);
+    return nv_table_get_value(self->payload, handle, value_len);
   else
     return log_msg_get_macro_value(self, flags >> 8, value_len);
 }
