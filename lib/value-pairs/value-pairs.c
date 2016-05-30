@@ -211,12 +211,6 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
                              template_options,
                              time_zone_mode, seq_num, NULL, sb_th_gstring_string(sb));
 
-  if (sb_th_gstring_string(sb)->len == 0)
-    {
-      sb_th_gstring_release(sb);
-      return;
-    }
-
   g_tree_insert(scope_set, vp_transform_apply(vp, vpc->name), sb);
 }
 
@@ -231,9 +225,6 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   guint j;
   gboolean inc;
   SBTHGString *sb;
-
-  if (value_len == 0)
-    return FALSE;
 
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
         (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
