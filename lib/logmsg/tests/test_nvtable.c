@@ -898,6 +898,42 @@ test_nvtable_realloc(void)
 }
 
 static void
+test_nvtable_unset_values(void)
+{
+  NVTable *tab;
+  gssize size = 9999;
+  const gchar *value;
+  gboolean success;
+
+  tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 1024);
+  value = nv_table_get_value(tab, DYN_HANDLE, &size);
+  TEST_ASSERT(value != NULL);
+  TEST_ASSERT(value[0] == 0);
+  TEST_ASSERT(size == 0);
+
+  size = 1;
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  TEST_ASSERT(value == NULL);
+  TEST_ASSERT(size == 0);
+
+  success = nv_table_add_value(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), "foo", 3, NULL);
+  TEST_ASSERT(success == TRUE);
+  size = 1;
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  TEST_ASSERT(value != NULL);
+  TEST_ASSERT(strncmp(value, "foo", 3) == 0);
+  TEST_ASSERT(size == 3);
+
+  nv_table_unset_value(tab, DYN_HANDLE);
+  size = 1;
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  TEST_ASSERT(value == NULL);
+  TEST_ASSERT(size == 0);
+
+  nv_table_unref(tab);
+}
+
+static void
 test_nvtable(void)
 {
   test_nvtable_direct();
@@ -906,6 +942,7 @@ test_nvtable(void)
   test_nvtable_lookup();
   test_nvtable_clone();
   test_nvtable_realloc();
+  test_nvtable_unset_values();
 }
 
 int

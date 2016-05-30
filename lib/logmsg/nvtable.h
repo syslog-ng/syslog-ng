@@ -105,7 +105,9 @@ struct _NVEntry
   /* negative offset, counting from string table top, e.g. start of the string is at @top + ofs */
   union {
     struct {
-      guint8 indirect:1, referenced:1;
+      guint8 indirect:1,
+             referenced:1,
+             unset:1;
     };
     guint8 flags;
   };
@@ -234,6 +236,7 @@ struct _NVTable
 #define NV_TABLE_MIN_BYTES  128
 
 gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len, gboolean *new_entry);
+void nv_table_unset_value(NVTable *self, NVHandle handle);
 gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint32 ofs, guint32 len, gboolean *new_entry);
 
 gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, gpointer user_data);
@@ -333,17 +336,17 @@ nv_table_is_value_set(NVTable *self, NVHandle handle)
 }
 
 static inline const gchar *
-__nv_table_get_value(NVTable *self, NVHandle handle, guint16 num_static_entries, gssize *length)
+nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length)
 {
   NVEntry *entry;
   NVIndexEntry *index_entry;
 
   entry = nv_table_get_entry(self, handle, &index_entry);
-  if (G_UNLIKELY(!entry))
+  if (!entry || entry->unset)
     {
       if (length)
         *length = 0;
-      return null_string;
+      return NULL;
     }
 
   if (!entry->indirect)
@@ -358,7 +361,11 @@ __nv_table_get_value(NVTable *self, NVHandle handle, guint16 num_static_entries,
 static inline const gchar *
 nv_table_get_value(NVTable *self, NVHandle handle, gssize *length)
 {
-  return __nv_table_get_value(self, handle, self->num_static_entries, length);
+  const gchar *value = nv_table_get_value_if_set(self, handle, length);
+
+  if (!value)
+    return null_string;
+  return value;
 }
 
 static inline NVIndexEntry *

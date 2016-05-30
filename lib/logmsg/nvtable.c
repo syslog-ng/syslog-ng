@@ -155,9 +155,14 @@ nv_table_alloc_value(NVTable *self, gsize alloc_size)
     return NULL;
   self->used += alloc_size;
   entry = (NVEntry *) (nv_table_get_top(self) - (self->used));
+
+  /* initialize all flags to zero, so we don't need to bump the version for
+   * a compatible change */
+  entry->flags = 0;
   entry->alloc_len = alloc_size;
   entry->indirect = FALSE;
   entry->referenced = FALSE;
+  entry->unset = FALSE;
   return entry;
 }
 
@@ -186,7 +191,13 @@ nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
 static const inline gchar *
 nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length)
 {
-  if (!entry->indirect)
+  if (entry->unset)
+    {
+      if (length)
+        *length = 0;
+      return null_string;
+    }
+  else if (!entry->indirect)
     {
       if (length)
         *length = entry->vdirect.value_len;
@@ -385,6 +396,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
           memmove(entry->vdirect.data + name_len + 1, value, value_len);
           entry->vdirect.data[entry->name_len + 1 + value_len] = 0;
         }
+      entry->unset = FALSE;
       return TRUE;
     }
   else if (!entry && new_entry)
@@ -415,6 +427,31 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 
   nv_table_set_table_entry(self, handle, ofs, index_entry);
   return TRUE;
+}
+
+void
+nv_table_unset_value(NVTable *self, NVHandle handle)
+{
+  NVIndexEntry *index_entry;
+  NVEntry *entry = nv_table_get_entry(self, handle, &index_entry);
+
+  if (!entry)
+    return;
+  entry->unset = TRUE;
+
+  /* make sure the actual value is also set to the null_string just in case
+   * this message is serialized and then deserialized by an earlier
+   * syslog-ng version which does not support the unset flag */
+  if (entry->indirect)
+    {
+      entry->vindirect.ofs = 0;
+      entry->vindirect.len = 0;
+    }
+  else
+    {
+      entry->vdirect.value_len = 0;
+      entry->vdirect.data[entry->name_len + 1] = 0;
+    }
 }
 
 gboolean
@@ -531,6 +568,8 @@ nv_table_call_foreach(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry
   const gchar *value;
   gssize value_len;
 
+  if (entry->unset)
+    return FALSE;
   value = nv_table_resolve_entry(self, entry, &value_len);
   return func(handle, nv_registry_get_handle_name(registry, handle, NULL), value, value_len, func_data);
 }
