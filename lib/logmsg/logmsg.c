@@ -862,6 +862,9 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
 
       sdata_name = log_msg_get_value_name(handle, &sdata_name_len);
       handle_flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+      value = log_msg_get_value_if_set(self, handle, &len);
+      if (!value)
+        continue;
 
       g_assert(handle_flags & LM_VF_SDATA);
 
@@ -937,12 +940,14 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
         }
       if (sdata_param_len)
         {
-          g_string_append_c(result, ' ');
-          g_string_append_len(result, sdata_param, sdata_param_len);
-          g_string_append(result, "=\"");
-          value = log_msg_get_value(self, handle, &len);
-          log_msg_sdata_append_escaped(result, value, len);
-          g_string_append_c(result, '"');
+          if (value)
+            {
+              g_string_append_c(result, ' ');
+              g_string_append_len(result, sdata_param, sdata_param_len);
+              g_string_append(result, "=\"");
+              log_msg_sdata_append_escaped(result, value, len);
+              g_string_append_c(result, '"');
+            }
         }
     }
   if (cur_elem)

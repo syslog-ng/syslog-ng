@@ -372,9 +372,28 @@ test_sdata_seqnum_adds_meta_sequence_id(void)
 }
 
 static void
+test_sdata_value_omits_unset_values(void)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar1", "value", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar2", "value", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar3", "value", -1);
+  assert_sdata_value_equals(msg, "[foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
+  log_msg_unset_value_by_name(msg, ".SDATA.foo.bar2");
+  assert_sdata_value_equals(msg, "[foo bar1=\"value\" bar3=\"value\"]");
+  log_msg_unset_value_by_name(msg, ".SDATA.foo.bar1");
+  log_msg_unset_value_by_name(msg, ".SDATA.foo.bar3");
+  assert_sdata_value_equals(msg, "");
+  log_msg_unref(msg);
+}
+
+static void
 test_sdata_format(void)
 {
   MSG_TESTCASE(test_sdata_value_is_updated_by_sdata_name_value_pairs);
+  MSG_TESTCASE(test_sdata_value_omits_unset_values);
   MSG_TESTCASE(test_sdata_seqnum_adds_meta_sequence_id);
 }
 
