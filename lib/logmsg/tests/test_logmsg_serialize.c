@@ -121,6 +121,7 @@ _check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
   assert_string(log_msg_get_value(msg, LM_V_HOST, NULL), "mymachine", ERROR_MSG);
   assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "evntslog", ERROR_MSG);
   assert_string(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "An application event log entry...", ERROR_MSG);
+  assert_null(log_msg_get_value_if_set(msg, log_msg_get_value_handle("unset_value"), NULL), ERROR_MSG);
   assert_string(log_msg_get_value_by_name(msg, ".SDATA.exampleSDID@0.eventSource", NULL), "Application", ERROR_MSG);
   assert_guint16(msg->pri, 132, ERROR_MSG);
   log_template_unref(template);
@@ -138,6 +139,9 @@ _create_message_to_be_serialized(void)
 
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
   log_msg_set_value_indirect(msg, indirect_handle, test_handle, 0, 5, 3);
+
+  log_msg_set_value_by_name(msg, "unset_value", "foobar", -1);
+  log_msg_unset_value_by_name(msg, "unset_value");
 
   for (int i = 0; i < 32; i++)
     {

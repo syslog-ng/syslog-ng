@@ -549,6 +549,18 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 }
 
 void
+log_msg_unset_value(LogMessage *self, NVHandle handle)
+{
+  nv_table_unset_value(self->payload, handle);
+}
+
+void
+log_msg_unset_value_by_name(LogMessage *self, const gchar *name)
+{
+  log_msg_unset_value(self, log_msg_get_value_handle(name));
+}
+
+void
 log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
 {
   const gchar *name;

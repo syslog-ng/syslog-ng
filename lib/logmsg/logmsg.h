@@ -246,6 +246,18 @@ log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
 }
 
 static inline const gchar *
+log_msg_get_value_if_set(const LogMessage *self, NVHandle handle, gssize *value_len)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  if ((flags & LM_VF_MACRO) == 0)
+    return nv_table_get_value_if_set(self->payload, handle, value_len);
+  else
+    return log_msg_get_macro_value(self, flags >> 8, value_len);
+}
+
+static inline const gchar *
 log_msg_get_value_by_name(const LogMessage *self, const gchar *name, gssize *value_len)
 {
   NVHandle handle = log_msg_get_value_handle(name);
@@ -256,6 +268,8 @@ typedef gboolean (*LogMessageTagsForeachFunc)(const LogMessage *self, LogTagId t
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
 void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
+void log_msg_unset_value(LogMessage *self, NVHandle handle);
+void log_msg_unset_value_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data);
 void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len);
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
