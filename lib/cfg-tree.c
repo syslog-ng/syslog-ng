@@ -1036,6 +1036,8 @@ cfg_tree_compile(CfgTree *self)
   gint i;
 
   /* resolve references within the configuration */
+  if (self->compiled)
+    return TRUE;
 
   for (i = 0; i < self->rules->len; i++)
     {
@@ -1054,6 +1056,7 @@ cfg_tree_compile(CfgTree *self)
           return FALSE;
         }
     }
+  self->compiled = TRUE;
   return TRUE;
 }
 
@@ -1102,6 +1105,7 @@ cfg_tree_stop(CfgTree *self)
 void
 cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg)
 {
+  memset(self, 0, sizeof(*self));
   self->initialized_pipes = g_ptr_array_new();
   self->objects = g_hash_table_new_full(cfg_tree_objects_hash, cfg_tree_objects_equal, NULL, (GDestroyNotify) log_expr_node_free);
   self->templates = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_template_unref);

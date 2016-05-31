@@ -157,6 +157,7 @@ typedef struct _CfgTree
   /* list of top-level rules */
   GPtrArray *rules;
   GHashTable *templates;
+  gboolean compiled;
 } CfgTree;
 
 gboolean cfg_tree_add_object(CfgTree *self, LogExprNode *rule);
