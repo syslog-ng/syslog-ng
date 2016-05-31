@@ -79,7 +79,7 @@ native
   ;
 
 native_parser
-  : LL_IDENTIFIER '(' native_parser_params ')' { $$ = *instance; }
+  : LL_IDENTIFIER '(' native_parser_params ')' { $$ = *instance; free($1); }
   ;
 
 native_parser_params
