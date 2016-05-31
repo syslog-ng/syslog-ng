@@ -66,7 +66,7 @@ assert_pdb_file_valid(const gchar *filename_, const gchar *pdb)
 }
 
 static void
-_load_pattern_db_from_string(gchar *pdb)
+_load_pattern_db_from_string(const gchar *pdb)
 {
   patterndb = pattern_db_new();
   messages = g_ptr_array_new();
@@ -758,6 +758,92 @@ test_patterndb_rule(void)
   _destroy_pattern_db();
 }
 
+const gchar *pdb_complete_syntax = "\
+<patterndb version='5' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <url>http://foobar.org/</url>\
+  <urls>\
+    <url>http://foobar.org/1</url>\
+    <url>http://foobar.org/2</url>\
+  </urls>\
+  <description>This is a test set</description>\
+  <patterns>\
+    <pattern>prog2</pattern>\
+    <pattern>prog3</pattern>\
+  </patterns>\
+  <pattern>prog1</pattern>\
+  <rules>\
+    <rule provider='test' id='10' class='system' context-id='foobar' context-scope='program'>\
+     <description>This is a rule description</description>\
+     <urls>\
+       <url>http://foobar.org/1</url>\
+       <url>http://foobar.org/2</url>\
+     </urls>\
+     <patterns>\
+      <pattern>simple-message</pattern>\
+      <pattern>simple-message-alternative</pattern>\
+     </patterns>\
+     <tags>\
+      <tag>simple-msg-tag1</tag>\
+      <tag>simple-msg-tag2</tag>\
+     </tags>\
+     <values>\
+      <value name='simple-msg-value-1'>value1</value>\
+      <value name='simple-msg-value-2'>value2</value>\
+      <value name='simple-msg-host'>${HOST}</value>\
+     </values>\
+     <examples>\
+       <example>\
+         <test_message program='foobar'>This is foobar message</test_message>\
+         <test_values>\
+           <test_value name='foo'>foo</test_value>\
+           <test_value name='bar'>bar</test_value>\
+         </test_values>\
+       </example>\
+     </examples>\
+     <actions>\
+       <action>\
+         <message>\
+           <values>\
+             <value name='FOO'>foo</value>\
+             <value name='BAR'>bar</value>\
+           </values>\
+           <tags>\
+             <tag>tag1</tag>\
+             <tag>tag2</tag>\
+           </tags>\
+         </message>\
+       </action>\
+       <action>\
+         <create-context context-id='foobar'>\
+           <message>\
+             <values>\
+               <value name='FOO'>foo</value>\
+               <value name='BAR'>bar</value>\
+             </values>\
+             <tags>\
+               <tag>tag1</tag>\
+               <tag>tag2</tag>\
+             </tags>\
+             </message>\
+         </create-context>\
+       </action>\
+     </actions>\
+    </rule>\
+  </rules>\
+</ruleset>\
+</patterndb>\
+";
+
+static void
+test_patterndb_loads_a_syntactically_complete_xml_properly(void)
+{
+  _load_pattern_db_from_string(pdb_complete_syntax);
+  /* check we did indeed load the patterns */
+  assert_msg_matches_and_has_tag("simple-message", ".classifier.system", TRUE);
+  _destroy_pattern_db();
+}
+
 gchar *pdb_inheritance_enabled_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
   <ruleset name='testset' id='1'>\
     <patterns>\
@@ -1025,6 +1111,7 @@ main(int argc, char *argv[])
   test_conflicting_rules_with_different_parsers();
   test_conflicting_rules_with_the_same_parsers();
   test_patterndb_rule();
+  test_patterndb_loads_a_syntactically_complete_xml_properly();
   test_patterndb_parsers();
   test_patterndb_message_property_inheritance();
   test_patterndb_context_length();
