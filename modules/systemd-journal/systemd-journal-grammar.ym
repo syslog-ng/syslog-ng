@@ -101,7 +101,7 @@ source_systemd_journal_option
     }
   | KW_TIME_ZONE '(' string ')'
     {
-      if (last_journal_reader_options->recv_time_zone);
+      if (last_journal_reader_options->recv_time_zone)
         free(last_journal_reader_options->recv_time_zone);
       last_journal_reader_options->recv_time_zone = strdup($3);
       free($3);

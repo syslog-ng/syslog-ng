@@ -1,5 +1,6 @@
+#!/bin/sh
 #############################################################################
-# Copyright (c) 2015-2016 Balabit
+# Copyright (c) 2016 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,37 +21,21 @@
 #
 #############################################################################
 
-class LogDestination(object):
+recursive_readlink() {
+  local READLINK_TARGET="$1"
+  while test -L "$READLINK_TARGET"; do
+    local READLINK_TARGET=$(readlink "$READLINK_TARGET")
+  done
+  echo "$READLINK_TARGET"
+}
 
-    def open(self):
-        """Open a connection to the target service"""
-        return True
-
-    def close(self):
-        """Close the connection to the target service"""
-        pass
-
-    def is_opened(self):
-        """Check if the connection to the target is able to receive messages"""
-        return True
-
-    def init(self):
-        """This method is called at initialization time"""
-        return True
-
-    def deinit(self):
-        """This method is called at deinitialization time"""
-        pass
-
-    def send(self, msg):
-        """Send a message to the target service
-
-        It should return True to indicate success, False will suspend the
-        destination for a period specified by the time-reopen() option."""
-        pass
-
-
-class DummyPythonDest(LogDestination):
-    def send(self, msg):
-        print('queue', msg)
-        return True
+JAVAC_BIN="`which javac`"
+JAVAC_BIN="`recursive_readlink "$JAVAC_BIN"`"
+if test -e "$JAVA_HOME_CHECKER"; then
+  JNI_HOME=`$JAVA_HOME_CHECKER`
+else
+  JNI_HOME=`echo $JAVAC_BIN | sed "s~/bin/javac$~/~"`
+fi
+JNI_LIBDIR=`find $JNI_HOME \( -name "libjvm.so" -or -name "libjvm.dylib" \) \
+        | sed "s-/libjvm\.so-/-" \
+        | sed "s-/libjvm\.dylib-/-" | head -n 1`

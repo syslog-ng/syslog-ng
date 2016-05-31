@@ -8,27 +8,68 @@ install:
   - curl http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_12.04/Release.key | sudo apt-key add -
   - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_12.04 ./" | sudo tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
   - sudo apt-get update -qq
-  - sudo apt-get install -qq pkg-config flex bison xsltproc docbook-xsl libivykis-dev libevtlog-dev libnet1-dev libglib2.0-dev libdbi0-dev libjson0-dev libwrap0-dev libcap-dev libesmtp-dev libgeoip-dev libhiredis-dev sqlite3 libdbd-sqlite3 libriemann-client-dev gradle-2.2.1 autoconf-archive
+  - sudo apt-get install -qq
+      autoconf-archive
+      bison
+      docbook-xsl
+      flex
+      gradle-2.2.1
+      libcap-dev
+      libdbd-sqlite3
+      libdbi0-dev
+      libesmtp-dev
+      libevtlog-dev
+      libgeoip-dev
+      libglib2.0-dev
+      libhiredis-dev
+      libivykis-dev
+      libjson0-dev
+      libnet1-dev
+      libriemann-client-dev
+      libwrap0-dev
+      pkg-config
+      sqlite3
+      xsltproc
   - sudo pip install -r requirements.txt
 before_script:
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
-  - ./configure CFLAGS=-Werror --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-pacct --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl --enable-extra-warnings
-  - . tests/build-log-cflags-propagation.sh;
-    exec_prop_check "make -j V=1 --keep-going";
-    S=$?;
-    if [ "$S" = "42" -o "$S" = "0" ]; then
-      return $S;
-    else
-      make V=1; false;
-    fi # to make error messages more readable on error
+  - ./configure
+      CFLAGS=-Werror
+      --prefix=$HOME/install/syslog-ng
+      --with-ivykis=internal
+      --with-mongoc=internal
+      --with-librabbitmq=internal
+      --with-jsonc=system
+      --disable-env-wrapper
+      --disable-memtrace
+      --enable-tcp-wrapper
+      --enable-linux-caps
+      --disable-sun-streams
+      --enable-all-modules
+      --disable-sql
+      --enable-pacct
+      --enable-manpages
+      --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
+      --enable-extra-warnings
 script:
-  - if [ "$CC" = "gcc" ]; then
-      . tests/build-log-cflags-propagation.sh;
+  - . tests/build-log-cflags-propagation.sh;
+    if [ "$CC" = "gcc" ]; then
       export DISTCHECK_CONFIGURE_FLAGS="CFLAGS=-Werror --enable-extra-warnings";
       exec_prop_check "make distcheck V=1 --keep-going";
     else
-      make func-test V=1;
+      exec_prop_check "make -j V=1 --keep-going install";
+      S=$?;
+      if [ "$S" = "0" ]; then
+        . scripts/get-libjvm-path.sh || return $?;
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
+        make func-test V=1;
+      elif [ "$S" = "42" ]; then
+        return $S;
+      else
+        make V=1;
+        return $S;
+      fi;
     fi
 compiler:
   - gcc
@@ -52,7 +93,10 @@ matrix:
       script:
         - mkdir build
         - cd build
-        - cmake -DCMAKE_C_FLAGS=-Werror -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng ..
+        - cmake
+            -DCMAKE_C_FLAGS=-Werror
+            -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
+            ..
         - make -j install
 
 branches:
