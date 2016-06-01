@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2010-2012 Balabit
- * Copyright (c) 2010-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,20 +20,58 @@
  *
  */
 
-#ifndef AFMONGODB_PARSER_H_INCLUDED
-#define AFMONGODB_PARSER_H_INCLUDED
+#ifndef AFMONGODB_PRIVATE_H_
+#define AFMONGODB_PRIVATE_H_
 
 #include "syslog-ng.h"
-#include "cfg-parser.h"
-#include "cfg-lexer.h"
-#include "afmongodb.h"
+#include "mongoc.h"
+#include "logthrdestdrv.h"
+#include "string-list.h"
+#include "value-pairs/value-pairs.h"
 
 #if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-#include "afmongodb-legacy-grammar.h"
+#include "host-list.h"
 #endif
 
-extern CfgParser afmongodb_parser;
+typedef struct _MongoDBDestDriver
+{
+  LogThrDestDriver super;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afmongodb_, LogDriver **)
+  /* Shared between main/writer; only read by the writer, never
+   written */
+  gchar *coll;
+  GString *uri_str;
+
+#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
+  GList *servers;
+  gchar *address;
+  gint port;
+
+  gboolean safe_mode;
+  gchar *user;
+  gchar *password;
+#endif
+
+  LogTemplateOptions template_options;
+
+  time_t last_msg_stamp;
+
+  ValuePairs *vp;
+
+  /* Writer-only stuff */
+#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
+  HostList *recovery_cache;
+  gboolean is_legacy;
+  gchar *db;
+#endif
+
+  const gchar *const_db;
+  mongoc_uri_t *uri_obj;
+  mongoc_client_t *client;
+  mongoc_collection_t *coll_obj;
+
+  GString *current_value;
+  bson_t *bson;
+} MongoDBDestDriver;
 
 #endif

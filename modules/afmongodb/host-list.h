@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2010-2012 Balabit
- * Copyright (c) 2010-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,20 +20,18 @@
  *
  */
 
-#ifndef AFMONGODB_PARSER_H_INCLUDED
-#define AFMONGODB_PARSER_H_INCLUDED
+#ifndef HOST_LIST_H_
+#define HOST_LIST_H_
 
 #include "syslog-ng.h"
-#include "cfg-parser.h"
-#include "cfg-lexer.h"
-#include "afmongodb.h"
+#include <glib.h>
 
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-#include "afmongodb-legacy-grammar.h"
-#endif
+typedef GList HostList;
 
-extern CfgParser afmongodb_parser;
+typedef gboolean (*HostListProcessor)(gpointer user_data, const char *host, gint port);
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afmongodb_, LogDriver **)
+gboolean host_list_append(HostList **list, const char *host, gint port);
+gboolean host_list_iterate(const HostList *host_list, HostListProcessor processor, gpointer user_data);
+void host_list_free(HostList *host_list);
 
 #endif
