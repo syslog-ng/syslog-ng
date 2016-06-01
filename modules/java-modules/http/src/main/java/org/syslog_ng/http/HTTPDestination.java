@@ -39,8 +39,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 
-public class HTTPDestination extends TextLogDestination {
-    private URL url;
+public class HTTPDestination extends StructuredLogDestination {
     Logger logger;
     private HTTPDestinationOptions options;
 
@@ -53,7 +52,7 @@ public class HTTPDestination extends TextLogDestination {
 
     @Override
     public String getNameByUniqOptions() {
-        return String.format("HTTPDestination,%s", options.getURL());
+        return String.format("HTTPDestination,%s", options.getURLTemplate());
     }
 
 
@@ -62,12 +61,7 @@ public class HTTPDestination extends TextLogDestination {
         try {
             options.init();
         } catch (InvalidOptionException e) {
-            return false;
-        }
-        try {
-            this.url = new URL(options.getURL());
-        } catch (MalformedURLException e) {
-            logger.error("A properly formatted URL is a required option for this destination");
+            logger.error(e);
             return false;
         }
         return true;
@@ -85,10 +79,14 @@ public class HTTPDestination extends TextLogDestination {
 
 
     @Override
-    public boolean send(String message) {
+    public boolean send(LogMessage msg) {
+        URL url;
         int responseCode = 0;
+        String message;
         try {
-            HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
+            url = new URL(options.getURLTemplate().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND));
+            message = options.getMessageTemplate().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(options.getMethod());
             connection.setRequestProperty("content-length", Integer.toString(message.length()));
             connection.setDoOutput(true);
@@ -99,7 +97,6 @@ public class HTTPDestination extends TextLogDestination {
                 logger.error("error in writing message.");
                 return false;
             }
-
             responseCode = connection.getResponseCode();
             if (isHTTPResponseError(responseCode)) {
                 logger.error("HTTP response code error: " + responseCode);
@@ -128,7 +125,6 @@ public class HTTPDestination extends TextLogDestination {
     @Override
     public void deinit() {
     }
-
 
 }
 
