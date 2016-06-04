@@ -23,6 +23,7 @@
  */
 
 #include "logmsg/logmsg-serialize.h"
+#include "logmsg/serialization.h"
 #include "logmsg/logmsg.h"
 #include "logmsg/nvtable-serialize.h"
 #include "logmsg/gsockaddr-serialize.h"
@@ -34,29 +35,41 @@
 
 #include <stdlib.h>
 
+static gboolean
+_serialize_message(LogMessageSerializationState *state)
+{
+  LogMessage *msg = state->msg;
+  SerializeArchive *sa = state->sa;
+  gint i = 0;
+
+  serialize_write_uint8(sa, state->version);
+  serialize_write_uint64(sa, msg->rcptid);
+  g_assert(sizeof(msg->flags) == 4);
+  serialize_write_uint32(sa, msg->flags & ~LF_STATE_MASK);
+  serialize_write_uint16(sa, msg->pri);
+  g_sockaddr_serialize(sa, msg->saddr);
+  timestamp_serialize(sa, msg->timestamps);
+  serialize_write_uint32(sa, msg->host_id);
+  tags_serialize(msg, sa);
+  serialize_write_uint8(sa, msg->initial_parse);
+  serialize_write_uint8(sa, msg->num_matches);
+  serialize_write_uint8(sa, msg->num_sdata);
+  serialize_write_uint8(sa, msg->alloc_sdata);
+  for (i = 0; i < msg->num_sdata; i++)
+    serialize_write_uint32(sa, msg->sdata[i]);
+  nv_table_serialize(sa, msg->payload);
+  return TRUE;
+}
+
 gboolean
 log_msg_serialize(LogMessage *self, SerializeArchive *sa)
 {
-  guint8 version = 26;
-  gint i = 0;
+  LogMessageSerializationState state = { 0 };
 
-  serialize_write_uint8(sa, version);
-  serialize_write_uint64(sa, self->rcptid);
-  g_assert(sizeof(self->flags) == 4);
-  serialize_write_uint32(sa, self->flags & ~LF_STATE_MASK);
-  serialize_write_uint16(sa, self->pri);
-  g_sockaddr_serialize(sa, self->saddr);
-  timestamp_serialize(sa, self->timestamps);
-  serialize_write_uint32(sa, self->host_id);
-  tags_serialize(self, sa);
-  serialize_write_uint8(sa, self->initial_parse);
-  serialize_write_uint8(sa, self->num_matches);
-  serialize_write_uint8(sa, self->num_sdata);
-  serialize_write_uint8(sa, self->alloc_sdata);
-  for (i = 0; i < self->num_sdata; i++)
-    serialize_write_uint32(sa, self->sdata[i]);
-  nv_table_serialize(sa, self->payload);
-  return TRUE;
+  state.version = 26;
+  state.msg = self;
+  state.sa = sa;
+  return _serialize_message(&state);
 }
 
 static gboolean
@@ -82,57 +95,60 @@ _deserialize_sdata(LogMessage *self, SerializeArchive *sa)
 }
 
 static gboolean
-_deserialize_message(LogMessage *self, SerializeArchive *sa)
+_deserialize_message(LogMessageSerializationState *state)
 {
   guint8 initial_parse = 0;
+  LogMessage *msg = state->msg;
+  SerializeArchive *sa = state->sa;
 
-  if (!serialize_read_uint64(sa, &self->rcptid))
+  if (!serialize_read_uint64(sa, &msg->rcptid))
      return FALSE;
-  if (!serialize_read_uint32(sa, &self->flags))
+  if (!serialize_read_uint32(sa, &msg->flags))
      return FALSE;
-  self->flags |= LF_STATE_MASK;
-  if (!serialize_read_uint16(sa, &self->pri))
+  msg->flags |= LF_STATE_MASK;
+  if (!serialize_read_uint16(sa, &msg->pri))
      return FALSE;
-  if (!g_sockaddr_deserialize(sa, &self->saddr))
+  if (!g_sockaddr_deserialize(sa, &msg->saddr))
      return FALSE;
-  if (!timestamp_deserialize(sa, self->timestamps))
+  if (!timestamp_deserialize(sa, msg->timestamps))
     return FALSE;
-  if (!serialize_read_uint32(sa, &self->host_id))
+  if (!serialize_read_uint32(sa, &msg->host_id))
     return FALSE;
 
-  if (!tags_deserialize(self, sa))
+  if (!tags_deserialize(msg, sa))
     return FALSE;
 
   if (!serialize_read_uint8(sa, &initial_parse))
     return FALSE;
-  self->initial_parse=initial_parse;
+  msg->initial_parse=initial_parse;
 
-  if (!serialize_read_uint8(sa, &self->num_matches))
+  if (!serialize_read_uint8(sa, &msg->num_matches))
     return FALSE;
 
-  if (!_deserialize_sdata(self, sa))
+  if (!_deserialize_sdata(msg, sa))
     return FALSE;
 
-  nv_table_unref(self->payload);
-  self->payload = nv_table_deserialize(sa);
-  if(!self->payload)
+  nv_table_unref(msg->payload);
+  msg->payload = nv_table_deserialize(sa);
+  if(!msg->payload)
     return FALSE;
 
-  nv_table_update_handles(self->payload, logmsg_registry, self->sdata, self->num_sdata);
+  nv_table_update_handles(msg->payload, logmsg_registry, msg->sdata, msg->num_sdata);
   return TRUE;
 }
 
 static gboolean
-_check_msg_version(SerializeArchive *sa)
+_check_msg_version(LogMessageSerializationState *state)
 {
-  guint8 version;
-
-  if (!serialize_read_uint8(sa, &version))
+  if (!serialize_read_uint8(state->sa, &state->version))
     return FALSE;
-  if (version != 26)
+
+  if (state->version != 26)
     {
-      msg_error("Error deserializing log message, unsupported version",
-          evt_tag_int("version", version));
+      msg_error("Error deserializing log message, unsupported version, "
+                "we only support v26 introduced in " VERSION_3_8 ", "
+                "earlier versions in syslog-ng Premium Editions are not supported",
+                evt_tag_int("version", state->version));
       return FALSE;
     }
   return TRUE;
@@ -141,9 +157,13 @@ _check_msg_version(SerializeArchive *sa)
 gboolean
 log_msg_deserialize(LogMessage *self, SerializeArchive *sa)
 {
-  if (!_check_msg_version(sa))
+  LogMessageSerializationState state = { 0 };
+
+  state.sa = sa;
+  state.msg = self;
+  if (!_check_msg_version(&state))
     {
       return FALSE;
     }
-  return _deserialize_message(self, sa);
+  return _deserialize_message(&state);
 }

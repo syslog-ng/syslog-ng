@@ -3,6 +3,7 @@ logmsgincludedir = ${pkgincludedir}/logmsg
 logmsginclude_HEADERS =     \
  lib/logmsg/gsockaddr-serialize.h           \
  lib/logmsg/logmsg.h                        \
+ lib/logmsg/serialization.h                 \
  lib/logmsg/logmsg-serialize.h              \
  lib/logmsg/nvtable.h                       \
  lib/logmsg/nvtable-serialize.h             \
