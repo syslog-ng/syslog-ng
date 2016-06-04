@@ -57,7 +57,7 @@ _serialize_message(LogMessageSerializationState *state)
   serialize_write_uint8(sa, msg->alloc_sdata);
   for (i = 0; i < msg->num_sdata; i++)
     serialize_write_uint32(sa, msg->sdata[i]);
-  nv_table_serialize(sa, msg->payload);
+  nv_table_serialize(state, msg->payload);
   return TRUE;
 }
 
@@ -129,7 +129,7 @@ _deserialize_message(LogMessageSerializationState *state)
     return FALSE;
 
   nv_table_unref(msg->payload);
-  msg->payload = nv_table_deserialize(sa);
+  msg->payload = nv_table_deserialize(state);
   if(!msg->payload)
     return FALSE;
 

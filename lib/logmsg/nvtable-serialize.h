@@ -27,11 +27,11 @@
 #ifndef _NVTABLE_SERIALIZE_H
 #define _NVTABLE_SERIALIZE_H
 
-#include "nvtable.h"
-#include "serialize.h"
+#include "logmsg/nvtable.h"
+#include "logmsg/serialization.h"
 
-NVTable *nv_table_deserialize(SerializeArchive *sa);
-gboolean nv_table_serialize(SerializeArchive *sa, NVTable *self);
+NVTable *nv_table_deserialize(LogMessageSerializationState *state);
+gboolean nv_table_serialize(LogMessageSerializationState *state, NVTable *self);
 void nv_table_update_handles(NVTable *self, NVRegistry *logmsg_registry,
                          NVHandle *handles_to_update, guint8 num_handles_to_update);
 

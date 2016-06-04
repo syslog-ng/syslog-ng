@@ -340,8 +340,9 @@ _read_payload(SerializeArchive *sa, NVTable *res)
 }
 
 NVTable *
-nv_table_deserialize(SerializeArchive *sa)
+nv_table_deserialize(LogMessageSerializationState *state)
 {
+  SerializeArchive *sa = state->sa;
   NVTableMetaData meta_data;
   NVTable *res = NULL;
 
@@ -428,9 +429,10 @@ _write_payload(SerializeArchive *sa, NVTable *self)
 }
 
 gboolean
-nv_table_serialize(SerializeArchive *sa, NVTable *self)
+nv_table_serialize(LogMessageSerializationState *state, NVTable *self)
 {
-  NVTableMetaData meta_data = {0};
+  NVTableMetaData meta_data = { 0 };
+  SerializeArchive *sa = state->sa;
 
   _fill_meta_data(self, &meta_data);
   _write_meta_data(sa, &meta_data);
