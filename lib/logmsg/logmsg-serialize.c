@@ -22,37 +22,17 @@
  *
  */
 
-#include "logmsg-serialize.h"
-#include "logmsg.h"
+#include "logmsg/logmsg-serialize.h"
+#include "logmsg/logmsg.h"
+#include "logmsg/nvtable-serialize.h"
+#include "logmsg/gsockaddr-serialize.h"
+#include "logmsg/timestamp-serialize.h"
+#include "logmsg/tags-serialize.h"
 #include "gsockaddr.h"
 #include "serialize.h"
 #include "messages.h"
-#include "nvtable-serialize.h"
-#include "gsockaddr-serialize.h"
-#include "timestamp-serialize.h"
-#include "tags-serialize.h"
 
 #include <stdlib.h>
-
-#define NV_TABLE_MAGIC_V2  "NVT2"
-#define NVT_SF_BE           0x1
-
-
-#include "logmsg-serialize.h"
-#include "logmsg.h"
-#include "gsockaddr.h"
-#include "serialize.h"
-#include "messages.h"
-#include "nvtable-serialize.h"
-#include "gsockaddr-serialize.h"
-#include "sdata-serialize.h"
-#include "timestamp-serialize.h"
-#include "tags-serialize.h"
-
-#include <stdlib.h>
-
-#define NV_TABLE_MAGIC_V2  "NVT2"
-#define NVT_SF_BE           0x1
 
 gboolean
 log_msg_serialize(LogMessage *self, SerializeArchive *sa)

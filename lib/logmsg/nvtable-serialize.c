@@ -24,12 +24,13 @@
  *
  */
 
-#include "nvtable-serialize.h"
-#include "messages.h"
-#include "stdlib.h"
-#include "string.h"
-#include "nvtable-serialize-endianutils.h"
+#include "logmsg/nvtable-serialize.h"
+#include "logmsg/nvtable-serialize-endianutils.h"
 #include "logmsg/logmsg.h"
+#include "messages.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 #define NV_TABLE_MAGIC_V2  "NVT2"
 #define NVT_SF_BE           0x1
