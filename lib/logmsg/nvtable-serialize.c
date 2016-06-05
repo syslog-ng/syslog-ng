@@ -42,6 +42,25 @@ typedef struct _NVTableMetaData
   guint8 flags;
 } NVTableMetaData;
 
+/**********************************************************************
+ * This chunk of code fixes up the NVHandle values scattered in a
+ * deserialized NVTable.
+ *
+ * The reason they need fixing is that NVHandles are allocated dynamically
+ * when they are first used in a syslog-ng process. As the serialized
+ * representation of a LogMessage can be read back by another syslog-ng
+ * process, its idea of the name-value pair handle might be different.
+ *
+ * This means that we need to iterate through the struct and change the
+ * handle values. This is not even a simple operation as handles are embedded
+ * in various locations
+ *   - in the dynamic entry table, an array sorted by handle
+ *   - as indirect values that refer to other values
+ *   - the SDATA handles array that ensures that SDATA values are ordered
+ *     the same way they were received.
+ *
+ **********************************************************************/
+
 static gint
 _dyn_entry_cmp(const void *a, const void *b)
 {
@@ -178,10 +197,6 @@ _update_dynamic_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
   g_free(updated_handles);
 }
 
-/**
- * serialize / deserialize functions
- **/
-
 static gboolean
 _update_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data)
 {
@@ -205,8 +220,8 @@ _update_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssiz
 }
 
 void
-nv_table_update_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
-                    NVHandle *handles_to_update, guint8 num_handles_to_update)
+nv_table_fixup_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
+                       NVHandle *handles_to_update, guint8 num_handles_to_update)
 {
   _update_all_indirect_entries(self, logmsg_nv_registry);
   _update_dynamic_handles(self, logmsg_nv_registry, handles_to_update, num_handles_to_update);
@@ -215,6 +230,10 @@ nv_table_update_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
       nv_table_foreach(self, logmsg_nv_registry, _update_sd_entries, NULL);
     }
 }
+
+/**********************************************************************
+ * deserialize an NVTable
+ **********************************************************************/
 
 static gboolean
 _deserialize_dyn_value(SerializeArchive *sa, NVDynValue* dyn_value)
@@ -378,6 +397,11 @@ error:
     g_free(res);
   return NULL;
 }
+
+/**********************************************************************
+ * serialize an NVTable
+ **********************************************************************/
+
 
 static void
 _serialize_nv_dyn_value(SerializeArchive *sa, NVDynValue *dyn_value)
