@@ -159,6 +159,15 @@ test_serialize(void)
   LogMessage *msg = log_msg_new_empty();
 
   assert_true(log_msg_deserialize(msg, sa), ERROR_MSG);
+
+  /* we use nv_registry_get_handle() as it will not change the name-value
+   * pair flags, whereas log_msg_get_value_handle() would */
+  NVHandle sdata_handle = nv_registry_get_handle(logmsg_registry, ".SDATA.exampleSDID@0.eventSource");
+  assert_true(sdata_handle != 0,
+              "the .SDATA.exampleSDID@0.eventSource handle was not defined during deserialization");
+  assert_true(log_msg_is_handle_sdata(sdata_handle),
+              "deserialized SDATA name-value pairs have to marked as such");
+
   _check_deserialized_message(msg, sa);
 
   indirect_handle = log_msg_get_value_handle("indirect_1");
@@ -168,6 +177,7 @@ test_serialize(void)
   log_msg_unref(msg);
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
+
 }
 
 static void
