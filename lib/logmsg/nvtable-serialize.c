@@ -198,8 +198,11 @@ _update_dynamic_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
 }
 
 static gboolean
-_update_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data)
+_fixup_sdata_entry(NVHandle handle, NVEntry *entry)
 {
+  const gchar *name;
+
+  name = nv_entry_get_name(entry);
   if (strncmp(name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && name[6])
     {
       guint16 flag;
@@ -219,16 +222,20 @@ _update_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssiz
   return FALSE;
 }
 
+static gboolean
+_fixup_entry(NVHandle handle, NVEntry *entry, gpointer user_data)
+{
+  _fixup_sdata_entry(handle, entry);
+  return FALSE;
+}
+
 void
 nv_table_fixup_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
                        NVHandle *handles_to_update, guint8 num_handles_to_update)
 {
   _update_all_indirect_entries(self, logmsg_nv_registry);
   _update_dynamic_handles(self, logmsg_nv_registry, handles_to_update, num_handles_to_update);
-  if (handles_to_update)
-    {
-      nv_table_foreach(self, logmsg_nv_registry, _update_sd_entries, NULL);
-    }
+  nv_table_foreach_entry(self, _fixup_entry, NULL);
 }
 
 /**********************************************************************
