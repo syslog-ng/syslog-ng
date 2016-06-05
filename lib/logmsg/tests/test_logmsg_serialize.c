@@ -82,7 +82,7 @@ unsigned char _serialized_pe_msg[] = {
   0x69, 0x73, 0x53, 0x79, 0x6e, 0x63, 0x65, 0x64, 0x00, 0x30, 0x00, 0x00,
   0x00
 };
-unsigned int _serialized_pe_msg_len = 517;
+unsigned int _serialized_pe_msg_len = sizeof(_serialized_pe_msg);
 
 static void
 _reset_log_msg_registry()
