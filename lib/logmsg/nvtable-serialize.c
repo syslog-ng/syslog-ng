@@ -78,60 +78,6 @@ _dyn_entry_cmp(const void *a, const void *b)
 }
 
 void
-_update_indirect_dynamic_entry(NVTable* self, NVHandle oh, const gchar* name, NVEntry* entry, NVRegistry *logmsg_nv_registry)
-{
-  NVDynValue* dyn_slot;
-  NVEntry* oe = nv_table_get_entry(self, oh, &dyn_slot);
-  const gchar* oname = nv_entry_get_name(oe);
-  if (G_UNLIKELY(oname[0] == '\0'))
-    {
-      msg_debug("nvtable: the name of the nventry referred by entry->indirect has zero length",
-                evt_tag_str("entry.name", name));
-    }
-  else
-    {
-      oh = nv_registry_alloc_handle(logmsg_nv_registry, oname);
-      if (oh != 0)
-        entry->vindirect.handle = oh;
-    }
-}
-
-static void
-_update_indirect_entry(NVTable *self, NVRegistry *logmsg_nv_registry,
-                       NVEntry* entry)
-{
-  NVHandle oh = entry->vindirect.handle;
-  const gchar *name = nv_entry_get_name(entry);
-
-  if (oh > self->num_static_entries)
-    {
-      _update_indirect_dynamic_entry(self, oh, name, entry, logmsg_nv_registry);
-    }
-  nv_registry_alloc_handle(logmsg_nv_registry, name);
-}
-
-static inline gboolean
-_is_indirect(NVEntry *entry)
-{
-  return entry && entry->indirect;
-}
-
-static void
-_update_all_indirect_entries(NVTable *self, NVRegistry *logmsg_nv_registry)
-{
-  int i;
-  NVDynValue *dyn_entries = nv_table_get_dyn_entries(self);
-
-  for (i = 0; i < self->num_dyn_entries; i++)
-    {
-      NVEntry *entry = nv_table_get_entry_at_ofs(self, NV_TABLE_DYNVALUE_OFS(dyn_entries[i]));
-
-      if (_is_indirect(entry))
-        _update_indirect_entry(self, logmsg_nv_registry, entry);
-    }
-}
-
-void
 _copy_handles(NVHandle* handles_to_update, NVHandle* new_updated_handles, guint8 num_handles_to_update)
 {
   guint16 i;
@@ -186,7 +132,7 @@ _update_dynamic_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
       if (!name)
         continue;
 
-      new_handle = nv_registry_alloc_handle(logmsg_nv_registry, name);
+      new_handle = log_msg_get_value_handle(name);
 
       _set_updated_handle(dyn_entry, new_handle, handles_to_update, updated_handles, num_handles_to_update);
     }
@@ -197,35 +143,48 @@ _update_dynamic_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
   g_free(updated_handles);
 }
 
-static gboolean
-_fixup_sdata_entry(NVHandle handle, NVEntry *entry)
+static NVHandle
+_allocate_handle_for_entry_name(NVHandle old_handle, NVEntry *entry)
 {
-  const gchar *name;
+  const gchar *name = nv_entry_get_name(entry);
 
-  name = nv_entry_get_name(entry);
-  if (strncmp(name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && name[6])
-    {
-      guint16 flag;
-      gchar *dot;
-      dot = strrchr(name,'.');
-      if (dot - name - logmsg_sd_prefix_len < 0)
-        {
-          /* Standalone SDATA */
-          flag = ((strlen(name) - logmsg_sd_prefix_len) << 8) + LM_VF_SDATA;
-        }
-      else
-        {
-          flag = ((dot - name - logmsg_sd_prefix_len) << 8) + LM_VF_SDATA;
-        }
-      nv_registry_set_handle_flags(logmsg_registry, handle, flag);
-    }
-  return FALSE;
+  if (entry->name_len != 0)
+    return log_msg_get_value_handle(name);
+  else
+    return old_handle;
+}
+
+static NVHandle
+_allocate_handle_of_referenced_entry(NVTable *self, NVHandle ref_handle)
+{
+  NVDynValue* dyn_slot;
+  NVEntry *ref_entry = nv_table_get_entry(self, ref_handle, &dyn_slot);
+
+  return _allocate_handle_for_entry_name(ref_handle, ref_entry);
+}
+
+static inline gboolean
+_is_indirect(NVEntry *entry)
+{
+  return entry && entry->indirect;
+}
+
+static void
+_fixup_handle_in_indirect_entry(NVTable *self, NVEntry *entry)
+{
+  if (_is_indirect(entry))
+    entry->vindirect.handle = _allocate_handle_of_referenced_entry(self, entry->vindirect.handle);
 }
 
 static gboolean
 _fixup_entry(NVHandle handle, NVEntry *entry, gpointer user_data)
 {
-  _fixup_sdata_entry(handle, entry);
+  gpointer *args = user_data;
+  NVTable *self = (NVTable *) args[0];
+
+  _allocate_handle_for_entry_name(handle, entry);
+  _fixup_handle_in_indirect_entry(self, entry);
+              
   return FALSE;
 }
 
@@ -233,9 +192,10 @@ void
 nv_table_fixup_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
                        NVHandle *handles_to_update, guint8 num_handles_to_update)
 {
-  _update_all_indirect_entries(self, logmsg_nv_registry);
+  gpointer args[] = { self, logmsg_nv_registry };
+
+  nv_table_foreach_entry(self, _fixup_entry, args);
   _update_dynamic_handles(self, logmsg_nv_registry, handles_to_update, num_handles_to_update);
-  nv_table_foreach_entry(self, _fixup_entry, NULL);
 }
 
 /**********************************************************************
