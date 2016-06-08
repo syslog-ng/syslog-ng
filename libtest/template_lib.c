@@ -22,12 +22,11 @@
  *
  */
 
+#include "testutils.h"
 #include "template_lib.h"
 #include "msg_parse_lib.h"
 
 #include <string.h>
-
-gboolean slng_template_lib_failure = FALSE;
 
 void
 init_template_tests(void)
@@ -39,7 +38,7 @@ void
 deinit_template_tests(void)
 {
   deinit_syslogformat_module();
-  if (slng_template_lib_failure)
+  if (!testutils_deinit())
     exit(1);
 }
 

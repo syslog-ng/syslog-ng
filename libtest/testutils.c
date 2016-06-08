@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+static gboolean testutils_global_success = TRUE;
+
 struct timeval start_time_val;
 
 GString *current_testcase_description = NULL;
@@ -41,6 +43,7 @@ GList *internal_messages = NULL;
 static void
 print_failure(const gchar *custom_template, va_list custom_args, gchar *assertion_failure_template, ...)
 {
+  testutils_global_success = FALSE;
   va_list assertion_failure_args;
   fprintf(stderr, "\n  ###########################################################################\n  #\n");
   fprintf(stderr,   "  # FAIL: ASSERTION FAILED");
@@ -495,3 +498,9 @@ assert_msg_field_equals_non_fatal(LogMessage *msg, gchar *field_name, gchar *exp
 
   return result;
 };
+
+gboolean
+testutils_deinit(void)
+{
+  return testutils_global_success;
+}
