@@ -70,14 +70,23 @@ _kv_scanner_extract_key(KVScanner *self)
   const gchar *input_ptr = &self->input[self->input_pos];
   const gchar *start_of_key;
   const gchar *separator;
+  gsize len;
 
   separator = strchr(input_ptr, self->value_separator);
-  if (!separator)
-    return FALSE;
-  start_of_key = separator;
-  while (start_of_key > input_ptr && _is_valid_key_character(*(start_of_key - 1)))
-    start_of_key--;
-  g_string_assign_len(self->key, start_of_key, separator - start_of_key);
+  do
+    {
+      if (!separator)
+        return FALSE;
+      start_of_key = separator;
+      while (start_of_key > input_ptr && _is_valid_key_character(*(start_of_key - 1)))
+        start_of_key--;
+      len = separator - start_of_key;
+      if (len < 1)
+        separator = strchr(separator + 1, self->value_separator);
+    }
+  while (len < 1);
+
+  g_string_assign_len(self->key, start_of_key, len);
   self->input_pos = separator - self->input + 1;
   return TRUE;
 }
