@@ -262,8 +262,13 @@ assert_nstring_non_fatal_va(const gchar *actual, gint actual_len, const gchar *e
       memcmp(actual, expected, actual_len) == 0)
     return TRUE;
 
-  print_failure(error_message, args, "actual=" PRETTY_NSTRING_FORMAT ", expected=" PRETTY_NSTRING_FORMAT " actual_length=%d expected_length=%d",
-                                     PRETTY_NSTRING(actual, actual_len), PRETTY_NSTRING(expected, expected_len), actual_len, expected_len);
+  print_failure(error_message, args,
+                " actual_length=%d expected_length=%d,\n"
+                "  #  actual=   " PRETTY_NSTRING_FORMAT ",\n"
+                "  #  expected= " PRETTY_NSTRING_FORMAT,
+                actual_len, expected_len,
+                PRETTY_NSTRING(actual, actual_len),
+                PRETTY_NSTRING(expected, expected_len));
 
   return FALSE;
 }
