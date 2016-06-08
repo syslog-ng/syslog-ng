@@ -482,6 +482,14 @@ _test_key_charset(void)
 }
 
 static void
+_test_key_buffer_underrun(void)
+{
+  const gchar *buffer = "ab=v";
+  const gchar *input = buffer + 2;
+  TEST_KV_SCAN(input);
+}
+
+static void
 test_kv_scanner(void)
 {
   _test_empty_keys();
@@ -508,6 +516,7 @@ test_kv_scanner(void)
   _test_comma_separator();
   _test_multiple_separators();
   _test_key_charset();
+  _test_key_buffer_underrun();
 }
 
 int main(int argc, char *argv[])
