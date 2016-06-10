@@ -89,8 +89,11 @@ rewrite_template_content
 	    GError *error = NULL;
 
 	    $$ = log_template_new(configuration, $1);
-	    CHECK_ERROR_GERROR(log_template_compile($$, $1, &error), @1, error, "error compiling replacement");
+	    gboolean ok = log_template_compile($$, $1, &error);
         free($1);
+	    if (!ok)
+	      log_template_unref($$);
+	    CHECK_ERROR_GERROR(ok, @1, error, "error compiling replacement");
 	  }
 	;
 
