@@ -31,12 +31,16 @@ install:
       libwrap0-dev
       pkg-config
       sqlite3
+      valgrind
       xsltproc
       criterion-dev
   - sudo pip install -r requirements.txt
 before_script:
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
+  - if [ "$B" = "memcheck" ]; then
+      CONFIGURE_OPTS="--enable-valgrind";
+    fi
   - ./configure
       CFLAGS=-Werror
       --prefix=$HOME/install/syslog-ng
@@ -55,6 +59,7 @@ before_script:
       --enable-manpages
       --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
       --enable-extra-warnings
+      $CONFIGURE_OPTS
 script:
   - . tests/build-log-cflags-propagation.sh;
     if [ "$CC" = "gcc" ]; then
@@ -82,6 +87,8 @@ matrix:
   fast_finish: true
   allow_failures:
     - os: osx
+    - env: B=memcheck
+      compiler: gcc
   include:
     - env: B=copyright-check
       sudo: false
@@ -91,6 +98,17 @@ matrix:
       script:
         - export COPYRIGHTVERBOSITY=2
         - tests/copyright/check.sh . .
+    - env: B=memcheck
+      compiler: gcc
+      script:
+        - make -j install || return $?;
+        - make
+            --keep-going
+            check-valgrind-tool
+            VALGRIND_TOOL=memcheck;
+          S=$?;
+          cat test-suite-memcheck.log;
+          return $S;
     - env: B=trusty-cmake
       compiler: clang
       dist: trusty
