@@ -572,21 +572,11 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
   *length = left;
 }
 
+static guint8 invalid_chars[32];
+
 static void
-log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
-                       const guchar **hostname_start, int *hostname_len,
-                       guint flags, regex_t *bad_hostname)
+_init_parse_hostname_invalid_chars(void)
 {
-  /* FIXME: support nil value support  with new protocol*/
-  const guchar *src, *oldsrc;
-  gint left, oldleft;
-  gchar hostname_buf[256];
-  gint dst = 0;
-  static guint8 invalid_chars[32];
-
-  src = *data;
-  left = *length;
-
   if ((invalid_chars[0] & 0x1) == 0)
     {
       gint i;
@@ -607,6 +597,21 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
         }
       invalid_chars[0] |= 0x1;
     }
+}
+
+static void
+log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
+                       const guchar **hostname_start, int *hostname_len,
+                       guint flags, regex_t *bad_hostname)
+{
+  /* FIXME: support nil value support  with new protocol*/
+  const guchar *src, *oldsrc;
+  gint left, oldleft;
+  gchar hostname_buf[256];
+  gint dst = 0;
+
+  src = *data;
+  left = *length;
 
   /* If we haven't already found the original hostname,
      look for it now. */
@@ -1180,4 +1185,6 @@ syslog_format_init(void)
       cisco_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
       handles_initialized = TRUE;
     }
+
+  _init_parse_hostname_invalid_chars();
 }
