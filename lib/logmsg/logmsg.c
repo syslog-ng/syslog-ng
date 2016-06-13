@@ -1050,11 +1050,6 @@ log_msg_clear(LogMessage *self)
     }
   self->saddr = NULL;
 
-  if (self->original)
-    {
-      log_msg_unref(self->original);
-      self->original = NULL;
-    }
   self->flags |= LF_STATE_OWN_MASK;
 }
 
