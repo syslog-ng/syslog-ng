@@ -151,8 +151,7 @@ _parse_number(const gchar *s, gchar **endptr, gint64 *d)
   errno = 0;
   val = strtoll(s, endptr, 10);
 
-  if ((errno == ERANGE && (val == LLONG_MAX || val == LLONG_MIN))
-      || (errno != 0 && val == 0))
+  if (errno == ERANGE || errno == EINVAL)
     return FALSE;
 
   if (*endptr == s)
