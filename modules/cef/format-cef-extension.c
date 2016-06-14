@@ -66,7 +66,7 @@ tf_cef_is_valid_key(const gchar *str)
 static inline void
 tf_cef_append_unichar(GString *string, gunichar wc)
 {
-  if (wc < 0xc0)
+  if (wc < 0x80)
     g_string_append_c(string, (gchar) wc);
   else
     g_string_append_unichar(string, wc);
