@@ -39,7 +39,7 @@ _is_character_unsafe(gunichar uchar, const gchar *unsafe_chars)
 static inline void
 _append_unichar(GString *string, gunichar wc)
 {
-  if (wc < 0xc0)
+  if (wc < 0x80)
     g_string_append_c(string, (gchar) wc);
   else
     g_string_append_unichar(string, wc);
