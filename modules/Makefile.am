@@ -33,6 +33,7 @@ include modules/date/Makefile.am
 include modules/native/Makefile.am
 include modules/cef/Makefile.am
 include modules/diskq/Makefile.am
+include modules/kvtagger/Makefile.am
 
 SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 
@@ -44,7 +45,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
 	mod-redis mod-pseudofile mod-graphite mod-riemann \
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
-	mod-native mod-cef mod-diskq
+	mod-native mod-cef mod-kvtagger mod-diskq
 
 
 modules modules/: ${SYSLOG_NG_MODULES}

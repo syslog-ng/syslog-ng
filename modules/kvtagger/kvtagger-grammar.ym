@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2002-2015 Balabit
+ * Copyright (c) 1998-2015 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "kvtagger-parser.h"
+
+}
+
+
+%code {
+
+#include "kvtagger.h"
+#include "cfg-parser.h"
+#include "cfg-grammar.h"
+#include "kvtagger-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+
+}
+
+%name-prefix "kvtagger_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogParser **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_KVTAGGER
+%token KW_KVTAGGER_DATABASE
+%token KW_KVTAGGER_SELECTOR
+
+%type	<ptr> parser_expr_csv
+
+%%
+
+start
+        : LL_CONTEXT_PARSER parser_expr_csv                  { YYACCEPT; }
+        ;
+
+
+parser_expr_csv
+        : KW_KVTAGGER '('
+          {
+            last_parser = *instance = kvtagger_parser_new(configuration);
+          }
+          parser_csv_opts
+          ')'					{ $$ = last_parser; }
+        ;
+
+
+parser_csv_opts
+        : parser_csv_opt parser_csv_opts
+        |
+        ;
+
+parser_csv_opt
+        : KW_KVTAGGER_DATABASE '(' string ')'
+        {
+            kvtagger_set_filename(last_parser, $3);
+            free($3);
+        } | KW_KVTAGGER_SELECTOR '(' string ')'
+        {
+            kvtagger_set_database_selector_template(last_parser, $3);
+            free($3);
+        };
+
+/* INCLUDE_RULES */
+
+%%
