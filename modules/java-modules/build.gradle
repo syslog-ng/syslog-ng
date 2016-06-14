@@ -5,10 +5,12 @@ subprojects {
     apply plugin: 'eclipse'
 
     repositories {
+        maven {
+          url "/usr/lib/syslog-ng-java-compile-deps-mvn-repo"
+        }
         flatDir {
             dirs syslogDepsDir
             dirs syslogBuildDir + '/common/gradle/libs'
-            dirs '/usr/lib/syslog-ng-java-module-dependency-jars/jars'
         }
       mavenCentral()
       maven {
