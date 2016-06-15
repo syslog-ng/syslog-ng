@@ -47,9 +47,18 @@ EXTRA_DIST += \
 	contrib/freebsd-packaging/syslog-ng.rc.d \
 	contrib/freebsd-packaging/syslog-ng.conf.example \
 	\
-	contrib/selinux/syslog_ng.fc \
-	contrib/selinux/syslog_ng.te \
-	contrib/selinux/README.selinux \
+	contrib/selinux/README \
+	contrib/selinux/labels.txt \
+	contrib/selinux/syslog_ng.sh \
+	contrib/selinux/src/syslog_ng.el67.te.in \
+	contrib/selinux/src/root_unsafe/syslog_ng.el7.fc.in \
+	contrib/selinux/src/root_unsafe/syslog_ng.el6.fc.in \
+	contrib/selinux/src/root_unsafe/syslog_ng.el5.fc.in \
+	contrib/selinux/src/root_safe/syslog_ng.el7.fc.in \
+	contrib/selinux/src/root_safe/syslog_ng.el6.fc.in \
+	contrib/selinux/src/root_safe/syslog_ng.el5.fc.in \
+	contrib/selinux/src/syslog_ng.el5.te.in \
+	contrib/selinux/src/syslog_ng.el6.0to4.te.in \
 	\
 	contrib/apparmor/opt.syslog-ng.sbin.syslog-ng \
 	\
