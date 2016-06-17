@@ -112,6 +112,17 @@ kv_parser_free(LogPipe *s)
   log_parser_free_method(s);
 }
 
+static gboolean
+kv_parser_process_threaded(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+{
+  LogParser *self = (LogParser *)log_pipe_clone(&s->super);
+
+  gboolean ok = kv_parser_process(self, pmsg, path_options, input, input_len);
+
+  log_pipe_unref(&self->super);
+  return ok;
+}
+
 LogParser *
 kv_parser_new(GlobalConfig *cfg, KVScanner *kv_scanner)
 {
@@ -120,7 +131,7 @@ kv_parser_new(GlobalConfig *cfg, KVScanner *kv_scanner)
   log_parser_init_instance(&self->super, cfg);
   self->super.super.free_fn = kv_parser_free;
   self->super.super.clone = kv_parser_clone;
-  self->super.process = kv_parser_process;
+  self->super.process = kv_parser_process_threaded;
 
   self->kv_scanner = kv_scanner;
   self->formatted_key = g_string_sized_new(32);
