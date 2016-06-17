@@ -1,7 +1,6 @@
 project.buildDir = syslogBuildDir + '/kafka/gradle'
 
 dependencies {
-  compile fileTree(dir: "/usr/lib/syslog-ng-java-module-dependency-jars/jars", includes: ['*.jar'])
   compile 'org.apache.kafka:kafka-clients:0.9.0.0'
   compile name: 'syslog-ng-common'
   compile name: 'syslog-ng-core'

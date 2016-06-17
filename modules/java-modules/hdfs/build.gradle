@@ -1,7 +1,6 @@
 project.buildDir = syslogBuildDir+'/hdfs/gradle'
 
 dependencies {
-    compile fileTree(dir: "/usr/lib/syslog-ng-java-module-dependency-jars/jars", includes: ['*.jar'])
     compile 'org.apache.hadoop:hadoop-hdfs:2.7.1'
     compile 'org.apache.hadoop:hadoop-common:2.7.1'
     compile name: 'syslog-ng-common'

@@ -7,6 +7,5 @@ dependencies {
     compile 'junit:junit:4.12'
     compile 'org.hamcrest:hamcrest-core:1.3'
     compile 'log4j:log4j:1.2.17'
-    compile fileTree(dir: "/usr/lib/syslog-ng-java-module-dependency-jars/jars", includes: ['*.jar'])
 }
 
