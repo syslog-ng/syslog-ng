@@ -25,7 +25,7 @@
 #define CSVPARSER_H_INCLUDED
 
 #include "parser/parser-expr.h"
-#include "csv-scanner.h"
+#include "scanner/csv-scanner/csv-scanner.h"
 
 CSVScannerOptions *csv_parser_get_scanner_options(LogParser *s);
 gboolean csv_parser_set_flags(LogParser *s, guint32 flags);

@@ -2,17 +2,18 @@
  * Copyright (c) 2002-2015 Balabit
  * Copyright (c) 1998-2015 Balázs Scheidler
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -376,18 +377,6 @@ csv_scanner_get_current_name(CSVScanner *self)
   return (const gchar *) self->current_column->data;
 }
 
-const gchar *
-csv_scanner_get_current_value(CSVScanner *self)
-{
-  return self->current_value->str;
-}
-
-gint
-csv_scanner_get_current_value_len(CSVScanner *self)
-{
-  return self->current_value->len;
-}
-
 gboolean
 csv_scanner_is_scan_finished(CSVScanner *self)
 {
@@ -422,4 +411,23 @@ void
 csv_scanner_state_clean(CSVScanner *self)
 {
   g_string_free(self->current_value, TRUE);
+}
+
+const gchar *
+csv_scanner_get_current_value(CSVScanner *self)
+{
+  return self->current_value->str;
+}
+
+gint
+csv_scanner_get_current_value_len(CSVScanner *self)
+{
+  return self->current_value->len;
+}
+
+gchar*
+csv_scanner_dup_current_value(CSVScanner *self)
+{
+  return g_strndup(csv_scanner_get_current_value(self),
+                   csv_scanner_get_current_value_len(self));
 }

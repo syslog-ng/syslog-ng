@@ -1,8 +1,6 @@
 set(CSVPARSER_SOURCES
     csvparser.c
     csvparser.h
-    csv-scanner.c
-    csv-scanner.h
     csvparser-parser.c
     csvparser-parser.h
     csvparser-plugin.c
