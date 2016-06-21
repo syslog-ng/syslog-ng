@@ -21,7 +21,7 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.messageprocessor;
+package org.syslog_ng.elasticsearch_v2.messageprocessor.esnative;
 
 import java.util.concurrent.TimeUnit;
 
@@ -31,9 +31,9 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
-public class ESBulkMessageProcessor extends ESMessageProcessor {
+public class ESBulkNativeMessageProcessor extends ESNativeMessageProcessor {
 	private BulkProcessor bulkProcessor;
 
 	private class BulkProcessorListener implements BulkProcessor.Listener {
@@ -60,12 +60,12 @@ public class ESBulkMessageProcessor extends ESMessageProcessor {
 		}
 	}
 
-	public ESBulkMessageProcessor(ElasticSearchOptions options, ESClient client) {
+	public ESBulkNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		super(options, client);
 	}
 
 	@Override
-	public boolean send(IndexRequest req) {
+	protected boolean send(IndexRequest req) {
 		bulkProcessor.add(req);
 		return true;
 	}

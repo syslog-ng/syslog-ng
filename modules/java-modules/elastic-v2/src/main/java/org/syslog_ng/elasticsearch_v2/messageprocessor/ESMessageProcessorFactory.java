@@ -24,19 +24,37 @@
 package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
+import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.DummyProcessorNative;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESBulkNativeMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESNativeMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESSingleNativeMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.http.HttpBulkMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.http.HttpMessageProcessor;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.http.HttpSingleMessageProcessor;
 
 public class ESMessageProcessorFactory {
-	public static ESMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESClient client) {
+	public static ESNativeMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		int flush_limit = options.getFlushLimit();
 		if (flush_limit > 1) {
-			return new ESBulkMessageProcessor(options, client);
+			return new ESBulkNativeMessageProcessor(options, client);
 		}
 		if (flush_limit == -1) {
-			return new DummyProcessor(options, client);
+			return new DummyProcessorNative(options, client);
 		}
 		else {
-			return new ESSingleMessageProcessor(options, client);
+			return new ESSingleNativeMessageProcessor(options, client);
+		}
+	}
+
+	public static HttpMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
+		int flush_limit = options.getFlushLimit();
+		if (flush_limit > 1) {
+			return new HttpBulkMessageProcessor(options, client);
+		}
+		else {
+			return new HttpSingleMessageProcessor(options, client);
 		}
 	}
 }

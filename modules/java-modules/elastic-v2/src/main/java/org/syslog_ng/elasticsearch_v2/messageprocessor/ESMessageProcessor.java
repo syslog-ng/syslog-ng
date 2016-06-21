@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016 Balabit
- * Copyright (c) 2016 Viktor Juhasz <viktor.juhasz@balabit.com>
+ * Copyright (c) 2016 Laszlo Budai <laszlo.budai@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -23,35 +23,6 @@
 
 package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
-import org.apache.log4j.Logger;
-import org.elasticsearch.action.index.IndexRequest;
-import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
-
-public abstract class ESMessageProcessor {
-	protected ElasticSearchOptions options;
-	protected ESClient client;
-	protected Logger logger;
-
-
-	public ESMessageProcessor(ElasticSearchOptions options, ESClient client) {
-		this.options = options;
-		this.client = client;
-		logger = Logger.getRootLogger();
-	}
-
-	public void init() {
-
-	}
-
-	public void flush() {
-
-	}
-
-	public void deinit() {
-
-	}
-
-	public abstract boolean send(IndexRequest req);
-
+public interface ESMessageProcessor {
+	boolean send(ESIndex index);
 }

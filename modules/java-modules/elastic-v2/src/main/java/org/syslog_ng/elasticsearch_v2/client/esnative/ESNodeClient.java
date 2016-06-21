@@ -21,7 +21,7 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.client;
+package org.syslog_ng.elasticsearch_v2.client.esnative;
 
 import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 
@@ -34,17 +34,13 @@ import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
-public class ESNodeClient extends ESClient {
+public class ESNodeClient extends ESNativeClient {
 	private Node node;
 
 	public ESNodeClient(ElasticSearchOptions options) {
 		super(options);
-	}
-
-	@Override
-	public void close() {
-		getClient().close();
 	}
 
 	private NodeBuilder createNodeBuilder(String cluster) {

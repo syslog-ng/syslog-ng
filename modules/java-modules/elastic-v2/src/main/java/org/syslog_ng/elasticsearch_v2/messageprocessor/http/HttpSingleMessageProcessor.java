@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2016 Balabit
- * Copyright (c) 2016 Viktor Juhasz <viktor.juhasz@balabit.com>
+ * Copyright (c) 2016 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2016 Viktor Tusa <tusavik@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,31 +22,32 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.messageprocessor;
+package org.syslog_ng.elasticsearch_v2.messageprocessor.http;
 
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
+import io.searchbox.core.Index;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 
-public class ESSingleMessageProcessor extends ESMessageProcessor {
+import java.io.IOException;
 
-	public ESSingleMessageProcessor(ElasticSearchOptions options, ESClient client) {
+public class HttpSingleMessageProcessor extends  HttpMessageProcessor {
+
+	public HttpSingleMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
 		super(options, client);
 	}
 
 	@Override
-	public boolean send(IndexRequest req) {
+	public boolean send(Index req) {
+		boolean result = true;
 		try {
-			IndexResponse response = client.getClient().index(req).actionGet();
-			logger.debug("Message inserted with id: " + response.getId());
-			return true;
+			client.getClient().execute(req);
 		}
-		catch (ElasticsearchException e) {
-			logger.error("Failed to send message: " + e.getMessage());
-			return false;
+		catch (IOException e)
+		{
+			logger.error(e.getMessage());
+			result = false;
 		}
+		return result;
 	}
 
 }

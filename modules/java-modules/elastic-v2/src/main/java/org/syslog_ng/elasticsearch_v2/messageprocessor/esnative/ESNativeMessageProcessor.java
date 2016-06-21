@@ -21,27 +21,44 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.messageprocessor;
+package org.syslog_ng.elasticsearch_v2.messageprocessor.esnative;
 
+import org.apache.log4j.Logger;
 import org.elasticsearch.action.index.IndexRequest;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
-import org.syslog_ng.elasticsearch_v2.client.ESClient;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
 
-public class DummyProcessor extends ESMessageProcessor {
+public abstract class ESNativeMessageProcessor implements ESMessageProcessor {
+	protected ElasticSearchOptions options;
+	protected ESNativeClient client;
+	protected Logger logger;
 
-	public DummyProcessor(ElasticSearchOptions options, ESClient client) {
-		super(options, client);
-		
+
+	public ESNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+		this.options = options;
+		this.client = client;
+		logger = Logger.getRootLogger();
 	}
 
-	@Override
 	public void init() {
-		logger.warn("Using option(\"flush_limit\", \"0\"), means only testing the Elasticsearch client site without sending logs to the ES");
+
 	}
+
+	public void flush() {
+
+	}
+
+	public void deinit() {
+
+	}
+
+	protected abstract boolean send(IndexRequest req);
 
 	@Override
-	public boolean send(IndexRequest req) {
-		return true;
+	public final boolean send(ESIndex index) {
+		IndexRequest req = new IndexRequest(index.getIndex(), index.getType(), index.getId()).source(index.getFormattedMessage());
+		return send(req);
 	}
-
 }

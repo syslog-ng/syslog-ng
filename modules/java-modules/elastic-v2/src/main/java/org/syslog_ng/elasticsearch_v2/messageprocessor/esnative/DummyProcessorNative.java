@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016 Balabit
- * Copyright (c) 2016 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2016 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,16 +21,27 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.client;
+package org.syslog_ng.elasticsearch_v2.messageprocessor.esnative;
 
-import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
+import org.elasticsearch.action.index.IndexRequest;
+import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
-public interface ESClient {
-	boolean open();
-	void close();
-	boolean isOpened();
-	void init();
-	void deinit();
-	boolean send(ESIndex index);
-	String getClusterName();
+public class DummyProcessorNative extends ESNativeMessageProcessor {
+
+	public DummyProcessorNative(ElasticSearchOptions options, ESNativeClient client) {
+		super(options, client);
+		
+	}
+
+	@Override
+	public void init() {
+		logger.warn("Using option(\"flush_limit\", \"0\"), means only testing the Elasticsearch client site without sending logs to the ES");
+	}
+
+	@Override
+	public boolean send(IndexRequest req) {
+		return true;
+	}
+
 }

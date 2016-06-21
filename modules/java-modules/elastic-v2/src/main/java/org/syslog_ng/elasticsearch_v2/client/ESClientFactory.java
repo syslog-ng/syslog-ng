@@ -24,11 +24,15 @@
 package org.syslog_ng.elasticsearch_v2.client;
 
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNodeClient;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESTransportClient;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESTransportShieldClient;
+import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 
 public class ESClientFactory {
 	public static ESClient getESClient(ElasticSearchOptions options) throws UnknownESClientModeException {
 		String client_type = options.getClientMode();
-		if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_TRANSPORT)) {		    
+		if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_TRANSPORT)) {
 			return new ESTransportClient(options);
 		}
 		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_NODE)) {
@@ -37,6 +41,9 @@ public class ESClientFactory {
 		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_SHIELD)) {
             return new ESTransportShieldClient(options);
         }
+		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_HTTP)) {
+			return new ESHttpClient(options);
+		}
 		throw new UnknownESClientModeException(client_type);
-	}	
+	}
 }

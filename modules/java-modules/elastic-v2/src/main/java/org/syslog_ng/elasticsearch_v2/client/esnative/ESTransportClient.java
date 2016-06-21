@@ -21,7 +21,7 @@
  *
  */
 
-package org.syslog_ng.elasticsearch_v2.client;
+package org.syslog_ng.elasticsearch_v2.client.esnative;
 
 import java.net.InetSocketAddress;
 import java.util.Iterator;
@@ -34,15 +34,22 @@ import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.plugins.Plugin;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
+import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
-public class ESTransportClient extends ESClient {
+public class ESTransportClient extends ESNativeClient {
 	private Settings settings;
 	protected TransportClient transportClient;
 
 	public ESTransportClient(ElasticSearchOptions options) {
 		super(options);
 	}
-	
+
+	private void validate() {
+		if (options.getFlushLimit() > 1) {
+			logger.warn("Using transport based client mode with bulk message processing (flush_limit > 1) can cause high message dropping rate in case of connection broken, using node client mode is suggested");
+		}
+	}
+
     @Override
     public Client createClient() {
         return createClient(null);        
@@ -63,12 +70,10 @@ public class ESTransportClient extends ESClient {
 		transportClient = transportClientBuilder.build();
 		
 		addServersToClient(transportClient);
-		return transportClient;
-	}
 
-	public void close() {
-		getClient().close();
-		resetClient();
+		validate();
+
+		return transportClient;
 	}
 
 	@Override
