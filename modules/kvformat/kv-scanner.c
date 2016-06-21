@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015-2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -70,39 +70,84 @@ _kv_scanner_extract_key(KVScanner *self)
   const gchar *input_ptr = &self->input[self->input_pos];
   const gchar *start_of_key;
   const gchar *separator;
+  gsize len;
 
   separator = strchr(input_ptr, self->value_separator);
-  if (!separator)
-    return FALSE;
-  start_of_key = separator - 1;
-  while (start_of_key > input_ptr && _is_valid_key_character(*start_of_key))
-    start_of_key--;
-  if (!_is_valid_key_character(*start_of_key))
-    start_of_key++;
-  g_string_assign_len(self->key, start_of_key, separator - start_of_key);
+  do
+    {
+      if (!separator)
+        return FALSE;
+      start_of_key = separator;
+      while (start_of_key > input_ptr && _is_valid_key_character(*(start_of_key - 1)))
+        start_of_key--;
+      len = separator - start_of_key;
+      if (len < 1)
+        separator = strchr(separator + 1, self->value_separator);
+    }
+  while (len < 1);
+
+  g_string_assign_len(self->key, start_of_key, len);
   self->input_pos = separator - self->input + 1;
   return TRUE;
+}
+
+static void
+_decode_backslash_escape(KVScanner *self, gchar ch)
+{
+  gchar control;
+  switch (ch)
+    {
+    case 'b':
+      control = '\b';
+      break;
+    case 'f':
+      control = '\f';
+      break;
+    case 'n':
+      control = '\n';
+      break;
+    case 'r':
+      control = '\r';
+      break;
+    case 't':
+      control = '\t';
+      break;
+    case '\\':
+      control = '\\';
+      break;
+    default:
+      if (self->quote_char != ch)
+        g_string_append_c(self->value, '\\');
+      control = ch;
+      break;
+    }
+  g_string_append_c(self->value, control);
+}
+
+static gboolean
+_is_delimiter(const gchar *cur)
+{
+  return (*cur == ' ') || (strncmp(cur, ", ", 2) == 0);
 }
 
 static gboolean
 _kv_scanner_extract_value(KVScanner *self)
 {
   const gchar *cur;
-  gchar control;
 
   g_string_truncate(self->value, 0);
-  self->quote_state = KV_QUOTE_INITIAL;
   self->value_was_quoted = FALSE;
   cur = &self->input[self->input_pos];
+
+  self->quote_state = KV_QUOTE_INITIAL;
   while (*cur && self->quote_state != KV_QUOTE_FINISH)
     {
       switch (self->quote_state)
         {
         case KV_QUOTE_INITIAL:
-          if (*cur == ' ' || strncmp(cur, ", ", 2) == 0)
+          if (_is_delimiter(cur))
             {
               self->quote_state = KV_QUOTE_FINISH;
-              break;
             }
           else if (*cur == '\"' || *cur == '\'')
             {
@@ -110,51 +155,22 @@ _kv_scanner_extract_value(KVScanner *self)
               self->quote_char = *cur;
               if (self->value->len == 0)
                 self->value_was_quoted = TRUE;
-              break;
             }
-          g_string_append_c(self->value, *cur);
+          else
+            {
+              g_string_append_c(self->value, *cur);
+            }
           break;
         case KV_QUOTE_STRING:
           if (*cur == self->quote_char)
-            {
-              self->quote_state = KV_QUOTE_INITIAL;
-              break;
-            }
+            self->quote_state = KV_QUOTE_INITIAL;
           else if (*cur == '\\')
-            {
-              self->quote_state = KV_QUOTE_BACKSLASH;
-              break;
-            }
-          g_string_append_c(self->value, *cur);
+            self->quote_state = KV_QUOTE_BACKSLASH;
+          else
+            g_string_append_c(self->value, *cur);
           break;
         case KV_QUOTE_BACKSLASH:
-          switch (*cur)
-            {
-            case 'b':
-              control = '\b';
-              break;
-            case 'f':
-              control = '\f';
-              break;
-            case 'n':
-              control = '\n';
-              break;
-            case 'r':
-              control = '\r';
-              break;
-            case 't':
-              control = '\t';
-              break;
-            case '\\':
-              control = '\\';
-              break;
-            default:
-              if (self->quote_char != *cur)
-                g_string_append_c(self->value, '\\');
-              control = *cur;
-              break;
-            }
-          g_string_append_c(self->value, control);
+          _decode_backslash_escape(self, *cur);
           self->quote_state = KV_QUOTE_STRING;
           break;
         }

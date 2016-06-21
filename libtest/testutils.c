@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+static gboolean testutils_global_success = TRUE;
+
 struct timeval start_time_val;
 
 GString *current_testcase_description = NULL;
@@ -41,6 +43,7 @@ GList *internal_messages = NULL;
 static void
 print_failure(const gchar *custom_template, va_list custom_args, gchar *assertion_failure_template, ...)
 {
+  testutils_global_success = FALSE;
   va_list assertion_failure_args;
   fprintf(stderr, "\n  ###########################################################################\n  #\n");
   fprintf(stderr,   "  # FAIL: ASSERTION FAILED");
@@ -259,8 +262,13 @@ assert_nstring_non_fatal_va(const gchar *actual, gint actual_len, const gchar *e
       memcmp(actual, expected, actual_len) == 0)
     return TRUE;
 
-  print_failure(error_message, args, "actual=" PRETTY_NSTRING_FORMAT ", expected=" PRETTY_NSTRING_FORMAT " actual_length=%d expected_length=%d",
-                                     PRETTY_NSTRING(actual, actual_len), PRETTY_NSTRING(expected, expected_len), actual_len, expected_len);
+  print_failure(error_message, args,
+                " actual_length=%d expected_length=%d,\n"
+                "  #  actual=   " PRETTY_NSTRING_FORMAT ",\n"
+                "  #  expected= " PRETTY_NSTRING_FORMAT,
+                actual_len, expected_len,
+                PRETTY_NSTRING(actual, actual_len),
+                PRETTY_NSTRING(expected, expected_len));
 
   return FALSE;
 }
@@ -495,3 +503,9 @@ assert_msg_field_equals_non_fatal(LogMessage *msg, gchar *field_name, gchar *exp
 
   return result;
 };
+
+gboolean
+testutils_deinit(void)
+{
+  return testutils_global_success;
+}
