@@ -146,7 +146,13 @@ _update_dynamic_handles(LogMessageSerializationState *state)
       _set_updated_handle(dyn_entry, new_handle, state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
     }
 
-  _copy_handles(state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
+}
+
+static void
+_sort_dynamic_handles(LogMessageSerializationState *state)
+{
+  NVTable *self = state->msg->payload;
+  NVDynValue *dyn_entries = nv_table_get_dyn_entries(self);
 
   qsort(dyn_entries, self->num_dyn_entries, sizeof(NVDynValue), _dyn_entry_cmp);
 }
@@ -206,6 +212,9 @@ nv_table_fixup_handles(LogMessageSerializationState *state)
 
   nv_table_foreach_entry(self, _fixup_entry, args);
   _update_dynamic_handles(state);
+
+  _copy_handles(state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
+  _sort_dynamic_handles(state);
 
   g_free(state->updated_sdata_handles);
   state->updated_sdata_handles = NULL;
