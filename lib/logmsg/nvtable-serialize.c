@@ -88,14 +88,10 @@ _dyn_entry_cmp(const void *a, const void *b)
   return (handle_a < handle_b) ? -1 : 1;
 }
 
-void
-_copy_handles(NVHandle* handles_to_update, NVHandle* new_updated_handles, guint8 num_handles_to_update)
+static void
+_copy_sdata_handles(LogMessageSerializationState *state)
 {
-  guint16 i;
-  for (i = 0; i < num_handles_to_update; i++)
-    {
-      handles_to_update[i] = new_updated_handles[i];
-    }
+  memcpy(state->msg->sdata, state->updated_sdata_handles, sizeof(state->msg->sdata[0]) * state->msg->num_sdata);
 }
 
 static void
@@ -214,7 +210,7 @@ nv_table_fixup_handles(LogMessageSerializationState *state)
 
   nv_table_foreach_entry(self, _fixup_entry, state);
 
-  _copy_handles(state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
+  _copy_sdata_handles(state);
   _sort_dynamic_handles(state);
   _copy_dyn_entries(state);
 
