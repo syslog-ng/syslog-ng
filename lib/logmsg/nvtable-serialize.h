@@ -35,16 +35,5 @@ gboolean nv_table_serialize(LogMessageSerializationState *state, NVTable *self);
 void nv_table_fixup_handles(NVTable *self, NVRegistry *logmsg_registry,
                             NVHandle *handles_to_update, guint8 num_handles_to_update);
 
-static inline gboolean
-serialize_read_nvhandle(SerializeArchive *sa, NVHandle* handle)
-{
-  return serialize_read_uint32(sa, handle);
-}
-
-static inline gboolean
-serialize_write_nvhandle(SerializeArchive *sa, NVHandle handle)
-{
-  return serialize_write_uint32(sa, handle);
-}
 
 #endif

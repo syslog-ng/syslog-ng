@@ -35,6 +35,17 @@
 #define NV_TABLE_MAGIC_V2  "NVT2"
 #define NVT_SF_BE           0x1
 
+static gboolean
+serialize_read_nvhandle(SerializeArchive *sa, NVHandle* handle)
+{
+  return serialize_read_uint32(sa, handle);
+}
+
+static gboolean
+serialize_write_nvhandle(SerializeArchive *sa, NVHandle handle)
+{
+  return serialize_write_uint32(sa, handle);
+}
 
 typedef struct _NVTableMetaData
 {
