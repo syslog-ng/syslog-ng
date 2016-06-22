@@ -126,13 +126,11 @@ _set_updated_handle(NVDynValue *dyn_entry, NVHandle new_handle, NVHandle *handle
 }
 
 static void
-_update_dynamic_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
-                        NVHandle *handles_to_update,
-                        guint8 num_handles_to_update)
+_update_dynamic_handles(LogMessageSerializationState *state)
 {
   guint16 i;
-  NVHandle *updated_handles = g_new0(NVHandle, num_handles_to_update);
-  NVDynValue* dyn_entries = nv_table_get_dyn_entries(self);
+  NVTable *self = state->msg->payload;
+  NVDynValue *dyn_entries = nv_table_get_dyn_entries(self);
 
   for (i = 0; i < self->num_dyn_entries; i++)
     {
@@ -145,13 +143,12 @@ _update_dynamic_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
 
       new_handle = log_msg_get_value_handle(name);
 
-      _set_updated_handle(dyn_entry, new_handle, handles_to_update, updated_handles, num_handles_to_update);
+      _set_updated_handle(dyn_entry, new_handle, state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
     }
 
-  _copy_handles(handles_to_update, updated_handles, num_handles_to_update);
+  _copy_handles(state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
 
   qsort(dyn_entries, self->num_dyn_entries, sizeof(NVDynValue), _dyn_entry_cmp);
-  g_free(updated_handles);
 }
 
 static NVHandle
@@ -200,13 +197,18 @@ _fixup_entry(NVHandle handle, NVEntry *entry, gpointer user_data)
 }
 
 void
-nv_table_fixup_handles(NVTable *self, NVRegistry *logmsg_nv_registry,
-                       NVHandle *handles_to_update, guint8 num_handles_to_update)
+nv_table_fixup_handles(LogMessageSerializationState *state)
 {
-  gpointer args[] = { self, logmsg_nv_registry };
+  NVTable *self = state->msg->payload;
+  gpointer args[] = { self };
+
+  state->updated_sdata_handles = g_new0(NVHandle, state->msg->num_sdata);
 
   nv_table_foreach_entry(self, _fixup_entry, args);
-  _update_dynamic_handles(self, logmsg_nv_registry, handles_to_update, num_handles_to_update);
+  _update_dynamic_handles(state);
+
+  g_free(state->updated_sdata_handles);
+  state->updated_sdata_handles = NULL;
 }
 
 /**********************************************************************

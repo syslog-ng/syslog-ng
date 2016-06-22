@@ -133,7 +133,7 @@ _deserialize_message(LogMessageSerializationState *state)
   if(!msg->payload)
     return FALSE;
 
-  nv_table_fixup_handles(msg->payload, logmsg_registry, msg->sdata, msg->num_sdata);
+  nv_table_fixup_handles(state);
   return TRUE;
 }
 

@@ -27,12 +27,14 @@
 #define LOGMSG_SERIALIZATION_H
 
 #include "serialize.h"
+#include "logmsg/logmsg.h"
 
 typedef struct _LogMessageSerializationState
 {
   guint8 version;
   SerializeArchive *sa;
   LogMessage *msg;
+  NVHandle *updated_sdata_handles;
 } LogMessageSerializationState;
 
 #endif
