@@ -191,7 +191,7 @@ _fixup_handle_in_indirect_entry(NVTable *self, NVEntry *entry)
 }
 
 static gboolean
-_fixup_entry(NVHandle handle, NVEntry *entry, gpointer user_data)
+_fixup_entry(NVHandle handle, NVEntry *entry, NVDynValue *dyn_value, gpointer user_data)
 {
   gpointer *args = user_data;
   NVTable *self = (NVTable *) args[0];

@@ -338,7 +338,7 @@ nv_table_set_table_entry(NVTable *self, NVHandle handle, guint32 ofs, NVDynValue
 }
 
 static gboolean
-nv_table_make_direct(NVHandle handle, NVEntry *entry, gpointer user_data)
+nv_table_make_direct(NVHandle handle, NVEntry *entry, NVDynValue *dyn_value, gpointer user_data)
 {
   NVTable *self = (NVTable *) (((gpointer *) user_data)[0]);
   NVHandle ref_handle = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
@@ -544,7 +544,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
 }
 
 static gboolean
-nv_table_call_foreach(NVHandle handle, NVEntry *entry, gpointer user_data)
+nv_table_call_foreach(NVHandle handle, NVEntry *entry, NVDynValue *dyn_value, gpointer user_data)
 {
   NVTable *self = (NVTable *) ((gpointer *) user_data)[0];
   NVRegistry *registry = (NVRegistry *) ((gpointer *) user_data)[1];
@@ -578,7 +578,7 @@ nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer use
       if (!entry)
         continue;
 
-      if (func(i + 1, entry, user_data))
+      if (func(i + 1, entry, NULL, user_data))
         return TRUE;
     }
 
@@ -590,7 +590,7 @@ nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer use
       if (!entry)
         continue;
 
-      if (func(dyn_entries[i].handle, entry, user_data))
+      if (func(dyn_entries[i].handle, entry, &dyn_entries[i], user_data))
         return TRUE;
     }
 
