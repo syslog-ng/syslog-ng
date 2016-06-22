@@ -240,11 +240,11 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVDynValue **dyn_slot)
   while (l <= h)
     {
       m = (l+h) >> 1;
-      mv = NV_TABLE_DYNVALUE_HANDLE(dyn_entries[m]);
+      mv = dyn_entries[m].handle;
       if (mv == handle)
         {
           *dyn_slot = &dyn_entries[m];
-          ofs = NV_TABLE_DYNVALUE_OFS(dyn_entries[m]);
+          ofs = dyn_entries[m].ofs;
           break;
         }
       else if (mv > handle)
@@ -282,7 +282,7 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVDynValue **dyn_sl
           guint16 mv;
 
           m = (l+h) >> 1;
-          mv = NV_TABLE_DYNVALUE_HANDLE(dyn_entries[m]);
+          mv = dyn_entries[m].handle;
 
           if (mv == handle)
             {
@@ -593,12 +593,12 @@ nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer use
   dyn_entries = nv_table_get_dyn_entries(self);
   for (i = 0; i < self->num_dyn_entries; i++)
     {
-      entry = nv_table_get_entry_at_ofs(self, NV_TABLE_DYNVALUE_OFS(dyn_entries[i]));
+      entry = nv_table_get_entry_at_ofs(self, dyn_entries[i].ofs);
 
       if (!entry)
         continue;
 
-      if (func(NV_TABLE_DYNVALUE_HANDLE(dyn_entries[i]), entry, user_data))
+      if (func(dyn_entries[i].handle, entry, user_data))
         return TRUE;
     }
 

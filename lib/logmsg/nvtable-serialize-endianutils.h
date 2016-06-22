@@ -84,7 +84,7 @@ nv_table_data_swap_bytes(NVTable *self)
   dyn_entries = nv_table_get_dyn_entries(self);
   for (i = 0; i < self->num_dyn_entries; i++)
     {
-      entry = nv_table_get_entry_at_ofs(self, NV_TABLE_DYNVALUE_OFS(dyn_entries[i]));
+      entry = nv_table_get_entry_at_ofs(self, dyn_entries[i].ofs);
 
       if (!entry)
         continue;

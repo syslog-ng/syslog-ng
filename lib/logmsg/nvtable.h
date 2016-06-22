@@ -208,8 +208,6 @@ struct _NVTable
 
 #define NV_TABLE_BOUND(x)  (((x) + 0x3) & ~0x3)
 #define NV_TABLE_ADDR(self, x) ((gchar *) ((self)) + ((gssize)(x)))
-#define NV_TABLE_DYNVALUE_HANDLE(x) ((x).handle)
-#define NV_TABLE_DYNVALUE_OFS(x)    ((x).ofs)
 
 /* 256MB, this is an artificial limit, but must be less than MAX_GUINT32 as
  * we want to compare a guint32 to this variable without overflow.  */

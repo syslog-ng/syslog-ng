@@ -45,10 +45,10 @@ typedef struct _NVTableMetaData
 static gint
 _dyn_entry_cmp(const void *a, const void *b)
 {
-  NVDynValue entry_a = *(NVDynValue *)a;
-  NVDynValue entry_b = *(NVDynValue *)b;
-  NVHandle handle_a = NV_TABLE_DYNVALUE_HANDLE(entry_a);
-  NVHandle handle_b = NV_TABLE_DYNVALUE_HANDLE(entry_b);
+  NVDynValue *entry_a = (NVDynValue *) a;
+  NVDynValue *entry_b = (NVDynValue *) b;
+  NVHandle handle_a = entry_a->handle;
+  NVHandle handle_b = entry_b->handle;
 
   if (handle_a == handle_b)
     {
