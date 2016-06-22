@@ -126,6 +126,20 @@ _set_updated_handle(NVDynValue *dyn_entry, NVHandle new_handle, NVHandle *handle
 }
 
 static void
+_update_dynamic_handle(LogMessageSerializationState *state, NVDynValue *dyn_entry)
+{
+  NVHandle new_handle;
+  const gchar *name = _get_entry_name(state->msg->payload, dyn_entry);
+
+  if (!name)
+    return;
+
+  new_handle = log_msg_get_value_handle(name);
+
+  _set_updated_handle(dyn_entry, new_handle, state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
+}
+
+static void
 _update_dynamic_handles(LogMessageSerializationState *state)
 {
   guint16 i;
@@ -134,18 +148,8 @@ _update_dynamic_handles(LogMessageSerializationState *state)
 
   for (i = 0; i < self->num_dyn_entries; i++)
     {
-      NVHandle new_handle;
-      NVDynValue *dyn_entry = &dyn_entries[i];
-      const gchar *name = _get_entry_name(self, dyn_entry);
-
-      if (!name)
-        continue;
-
-      new_handle = log_msg_get_value_handle(name);
-
-      _set_updated_handle(dyn_entry, new_handle, state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
+      _update_dynamic_handle(state, &dyn_entries[i]);
     }
-
 }
 
 static void
