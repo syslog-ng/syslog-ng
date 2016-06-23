@@ -267,6 +267,27 @@ nv_table_get_top(NVTable *self)
   return NV_TABLE_ADDR(self, self->size);
 }
 
+static inline gchar *
+nv_table_get_bottom(NVTable *self)
+{
+  return nv_table_get_top(self) - self->used;
+}
+
+static inline gchar *
+nv_table_get_ofs_table_top(NVTable *self)
+{
+  return (gchar *) &self->data[self->num_static_entries * sizeof(self->static_entries[0]) +
+                               self->index_size * sizeof(NVIndexEntry)];
+}
+
+static inline gboolean
+nv_table_alloc_check(NVTable *self, gsize alloc_size)
+{
+  if (nv_table_get_bottom(self) - alloc_size < nv_table_get_ofs_table_top(self))
+    return FALSE;
+  return TRUE;
+}
+
 /* private declarations for inline functions */
 NVEntry *nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry);
 const gchar *nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *len);

@@ -142,28 +142,6 @@ nv_registry_free(NVRegistry *self)
   g_free(self);
 }
 
-/* clonable LogMessage support with shared data pointers */
-
-static inline gchar *
-nv_table_get_bottom(NVTable *self)
-{
-  return nv_table_get_top(self) - self->used;
-}
-
-static inline gchar *
-nv_table_get_ofs_table_top(NVTable *self)
-{
-  return (gchar *) &self->data[self->num_static_entries * sizeof(self->static_entries[0]) +
-                               self->index_size * sizeof(NVIndexEntry)];
-}
-
-static inline gboolean
-nv_table_alloc_check(NVTable *self, gsize alloc_size)
-{
-  if (nv_table_get_bottom(self) - alloc_size < nv_table_get_ofs_table_top(self))
-    return FALSE;
-  return TRUE;
-}
 
 /* return the offset to a newly allocated payload string */
 static inline NVEntry *
