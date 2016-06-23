@@ -80,12 +80,12 @@ _index_entry_cmp(const void *a, const void *b)
   NVHandle handle_a = entry_a->handle;
   NVHandle handle_b = entry_b->handle;
 
-  if (handle_a == handle_b)
-    {
-      return 0;
-    }
-
-  return (handle_a < handle_b) ? -1 : 1;
+  if (handle_a < handle_b)
+    return -1;
+  else if (handle_a == handle_b)
+    return 0;
+  else
+    return 1;
 }
 
 static void
