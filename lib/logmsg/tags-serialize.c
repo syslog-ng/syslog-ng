@@ -23,29 +23,29 @@
  */
 
 #include "tags-serialize.h"
+#include "scratch-buffers.h"
 
 gboolean
 tags_deserialize(LogMessage *msg, SerializeArchive *sa)
 {
-  gchar *buf;
-  gsize len;
+  SBGString *sb = sb_gstring_acquire();
 
   while (1)
     {
-      if (!serialize_read_cstring(sa, &buf, &len) || !buf)
+      GString *buf = sb_gstring_string(sb);
+      if (!serialize_read_string(sa, buf))
         return FALSE;
-      if (!buf[0])
+      if (buf->len == 0)
         {
           /* "" , empty string means: last tag */
-          g_free(buf);
           break;
         }
-      log_msg_set_tag_by_name(msg, buf);
-      g_free(buf);
+      log_msg_set_tag_by_name(msg, buf->str);
     }
 
   msg->flags |= LF_STATE_OWN_TAGS;
 
+  sb_gstring_release(sb);
   return TRUE;
 }
 
