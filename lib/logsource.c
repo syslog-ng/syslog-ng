@@ -28,7 +28,7 @@
 #include "timeutils.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-syslog.h"
-#include "tags.h"
+#include "logmsg/tags.h"
 #include "ack_tracker.h"
 
 #include <string.h>

@@ -23,7 +23,6 @@
 #include "synthetic-message.h"
 #include "pdb-error.h"
 #include "template/templates.h"
-#include "tags.h"
 #include "logmsg/logmsg.h"
 #include "logpipe.h"
 

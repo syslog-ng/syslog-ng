@@ -27,7 +27,6 @@
 #include "messages.h"
 #include "logpipe.h"
 #include "timeutils.h"
-#include "tags.h"
 #include "logmsg/nvtable.h"
 #include "stats/stats-registry.h"
 #include "template/templates.h"

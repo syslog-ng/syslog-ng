@@ -32,7 +32,7 @@
 #include "logstamp.h"
 #include "logmsg/nvtable.h"
 #include "msg-format.h"
-#include "tags.h"
+#include "logmsg/tags.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>

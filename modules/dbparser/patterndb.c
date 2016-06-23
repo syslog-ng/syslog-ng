@@ -29,7 +29,6 @@
 #include "pdb-load.h"
 #include "correllation.h"
 #include "logmsg/logmsg.h"
-#include "tags.h"
 #include "template/templates.h"
 #include "str-utils.h"
 #include "filter/filter-expr-parser.h"

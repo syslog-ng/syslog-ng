@@ -7,7 +7,6 @@ tests_unit_TESTS			=  \
 	tests/unit/test_msgparse	   \
 	tests/unit/test_dnscache	   \
 	tests/unit/test_findcrlf	   \
-	tests/unit/test_tags		   \
 	tests/unit/test_logwriter	   \
 	tests/unit/test_zone		   \
 	tests/unit/test_persist_state	   \
@@ -45,9 +44,6 @@ tests_unit_test_dnscache_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_findcrlf_LDADD		= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_tags_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_logwriter_LDADD		= \

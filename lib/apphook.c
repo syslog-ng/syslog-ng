@@ -28,7 +28,6 @@
 #include "dnscache.h"
 #include "alarms.h"
 #include "stats/stats-registry.h"
-#include "tags.h"
 #include "logmsg/logmsg.h"
 #include "timeutils.h"
 #include "logsource.h"

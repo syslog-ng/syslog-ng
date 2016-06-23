@@ -7,6 +7,7 @@ set(LOGMSG_HEADERS
     logmsg/nvtable-serialize-endianutils.h
     logmsg/tags-serialize.h
     logmsg/timestamp-serialize.h
+    logmsg/tags.h
     PARENT_SCOPE)
 
 set(LOGMSG_SOURCES
@@ -17,4 +18,5 @@ set(LOGMSG_SOURCES
     logmsg/nvtable-serialize.c
     logmsg/tags-serialize.c
     logmsg/timestamp-serialize.c
+    logmsg/tags.c
     PARENT_SCOPE)

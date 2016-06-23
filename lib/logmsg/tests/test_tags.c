@@ -23,7 +23,6 @@
  */
 
 #include "apphook.h"
-#include "tags.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "filter/filter-tags.h"
@@ -151,7 +150,7 @@ test_msg_tags()
 
           if (set && i < sizeof(gulong) * 8 && msg->num_tags != 0)
             test_fail("Small IDs are set which should be stored in-line but num_tags is non-zero");
-          
+
           g_free(name);
         }
     }
@@ -197,12 +196,12 @@ int
 main(int argc, char *argv[])
 {
   app_startup();
-  
+
   if (argc > 1)
     verbose = TRUE;
 
   msg_init(TRUE);
-  
+
   test_tags();
   test_msg_tags();
   test_filters(FALSE);
@@ -211,4 +210,3 @@ main(int argc, char *argv[])
   app_shutdown();
   return  (fail ? 1 : 0);
 }
-
