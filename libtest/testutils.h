@@ -46,7 +46,7 @@
                                  basename(__FILE__), __LINE__, __FUNCTION__, ((message) ? (message) : "")
 
 void start_stopwatch();
-void stop_stopwatch_and_display_result(gchar *message_template, ...);
+void stop_stopwatch_and_display_result(gint iterations, gchar *message_template, ...);
 
 void reset_grabbed_messages(void);
 void start_grabbing_messages(void);

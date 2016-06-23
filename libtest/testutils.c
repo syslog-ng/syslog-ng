@@ -78,7 +78,7 @@ start_stopwatch(void)
 }
 
 void
-stop_stopwatch_and_display_result(gchar *message_template, ...)
+stop_stopwatch_and_display_result(gint iterations, gchar *message_template, ...)
 {
   va_list args;
   guint64 diff;
@@ -90,7 +90,8 @@ stop_stopwatch_and_display_result(gchar *message_template, ...)
   va_end(args);
 
   diff = (end_time_val.tv_sec - start_time_val.tv_sec) * 1000000 + end_time_val.tv_usec - start_time_val.tv_usec;
-  printf("; runtime=%lu.%06lu s\n", diff / 1000000, diff % 1000000);
+  printf("; %.2f iterations/sec", iterations * 1e6 / diff);
+  printf(", runtime=%lu.%06lus\n", diff / 1000000, diff % 1000000);
 }
 
 static void
