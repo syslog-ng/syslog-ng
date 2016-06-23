@@ -95,9 +95,10 @@ _fixup_sdata_handle(LogMessageSerializationState *state, NVHandle old_handle, NV
     {
       for (i = 0; i < msg->num_sdata; i++)
         {
-          if (state->updated_sdata_handles[i] == old_handle)
+          if (msg->sdata[i] == old_handle)
             {
               state->updated_sdata_handles[i] = new_handle;
+              break;
             }
         }
     }
@@ -119,13 +120,29 @@ _is_static_entry(NVEntry *entry)
   return entry->name_len == 0;
 }
 
+static gboolean
+_old_handle_has_the_same_name(NVHandle old_handle, NVEntry *entry)
+{
+  gssize old_handle_name_len = 0;
+  const gchar *old_handle_name = log_msg_get_value_name(old_handle, &old_handle_name_len);
+
+  if (!old_handle_name)
+    return FALSE;
+  if (old_handle_name_len != entry->name_len)
+    return FALSE;
+  return memcmp(nv_entry_get_name(entry), old_handle_name, old_handle_name_len) == 0;
+}
+
 static NVHandle
 _allocate_handle_for_entry_name(NVHandle old_handle, NVEntry *entry)
 {
   if (_is_static_entry(entry))
     return old_handle;
-  else
-    return log_msg_get_value_handle(nv_entry_get_name(entry));
+
+  if (_old_handle_has_the_same_name(old_handle, entry))
+    return old_handle;
+
+  return log_msg_get_value_handle(nv_entry_get_name(entry));
 }
 
 static NVHandle
@@ -202,7 +219,7 @@ _update_entry(LogMessageSerializationState *state, NVEntry *entry)
 }
 
 static gboolean
-_fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
+_fixup_entry(NVHandle old_handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
 {
   LogMessageSerializationState *state = (LogMessageSerializationState *) user_data;
   NVTable *self = state->nvtable;
@@ -215,16 +232,21 @@ _fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointe
       return TRUE;
     }
 
-  new_handle = _allocate_handle_for_entry_name(handle, entry);
+  new_handle = _allocate_handle_for_entry_name(old_handle, entry);
+
+  if (new_handle != old_handle)
+    {
+      if (index_entry)
+        _fixup_handle_in_index_entry(state, index_entry, new_handle);
+
+      if (log_msg_is_handle_sdata(new_handle))
+        _fixup_sdata_handle(state, old_handle, new_handle);
+      state->handle_changed = TRUE;
+    }
 
   if (_is_indirect(entry))
     _fixup_handle_in_indirect_entry(self, entry);
 
-  if (index_entry)
-    _fixup_handle_in_index_entry(state, index_entry, new_handle);
-
-  if (log_msg_is_handle_sdata(new_handle))
-    _fixup_sdata_handle(state, handle, new_handle);
   return FALSE;
 }
 
@@ -242,6 +264,7 @@ log_msg_fixup_handles_after_deserialization(LogMessageSerializationState *state)
 
   state->updated_sdata_handles = _updated_sdata_handles;
   state->updated_index = _updated_index;
+  state->handle_changed = FALSE;
 
   if (nv_table_foreach_entry(nvtable, _fixup_entry, state))
     {
@@ -249,8 +272,11 @@ log_msg_fixup_handles_after_deserialization(LogMessageSerializationState *state)
       return FALSE;
     }
 
-  _copy_updated_sdata_handles(state);
-  _sort_updated_index(state);
-  _copy_updated_index(state);
+  if (state->handle_changed)
+    {
+      _copy_updated_sdata_handles(state);
+      _sort_updated_index(state);
+      _copy_updated_index(state);
+    }
   return TRUE;
 }
