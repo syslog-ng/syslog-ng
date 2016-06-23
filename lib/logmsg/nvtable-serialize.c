@@ -305,13 +305,15 @@ _read_metadata(SerializeArchive *sa, NVTableMetaData *meta_data)
 static gboolean
 _read_header(SerializeArchive *sa, NVTable **nvtable)
 {
+  NVTable *res = NULL;
+  guint32 size;
   g_assert(*nvtable == NULL);
 
-  NVTable *res = (NVTable *)g_malloc(sizeof(NVTable));
-  if (!serialize_read_uint32(sa, &res->size))
-    {
-      goto error;
-    }
+  if (!serialize_read_uint32(sa, &size))
+    goto error;
+  res = (NVTable *) g_malloc(size);
+  res->size = size;
+
   if (!serialize_read_uint32(sa, &res->used))
     {
       goto error;
@@ -325,7 +327,6 @@ _read_header(SerializeArchive *sa, NVTable **nvtable)
       goto error;
     }
 
-  res = (NVTable *)g_realloc(res, res->size);
   res->borrowed = FALSE;
   res->ref_cnt = 1;
   *nvtable = res;
