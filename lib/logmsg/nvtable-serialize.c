@@ -175,11 +175,50 @@ _fixup_handle_in_indirect_entry(NVTable *self, NVEntry *entry)
 }
 
 static gboolean
+_validate_entry(LogMessageSerializationState *state, NVEntry *entry)
+{
+  NVTable *nvtable = state->msg->payload;
+
+  /* check alignment */
+  if ((GPOINTER_TO_UINT(entry) & 0x3) != 0)
+    return FALSE;
+
+  /* entry points above the start of the NVTable */
+  if (GPOINTER_TO_UINT(entry) < GPOINTER_TO_UINT(nvtable))
+    return FALSE;
+
+  /* entry header is inside the allocated NVTable */
+  if (GPOINTER_TO_UINT(entry) + NV_ENTRY_DIRECT_HDR > GPOINTER_TO_UINT(nvtable) + nvtable->size)
+    return FALSE;
+  /* entry as a whole is inside the allocated NVTable */
+  if (GPOINTER_TO_UINT(entry) + entry->alloc_len > GPOINTER_TO_UINT(nvtable) + nvtable->size)
+    return FALSE;
+
+  if (!entry->indirect)
+    {
+      if (entry->alloc_len < NV_ENTRY_DIRECT_HDR + entry->name_len + 1 + entry->vdirect.value_len + 1)
+        return FALSE;
+    }
+  else
+    {
+      if (entry->alloc_len < NV_ENTRY_INDIRECT_HDR + entry->name_len + 1)
+        return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
 _fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
 {
   LogMessageSerializationState *state = (LogMessageSerializationState *) user_data;
   NVTable *self = state->msg->payload;
   NVHandle new_handle;
+
+  if (!_validate_entry(state, entry))
+    {
+      /* this return of TRUE indicates failure, as it terminates the foreach loop */
+      return TRUE;
+    }
 
   new_handle = _allocate_handle_for_entry_name(handle, entry);
 
@@ -194,7 +233,7 @@ _fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointe
   return FALSE;
 }
 
-void
+gboolean
 nv_table_fixup_handles(LogMessageSerializationState *state)
 {
   LogMessage *msg = state->msg;
@@ -209,11 +248,16 @@ nv_table_fixup_handles(LogMessageSerializationState *state)
   state->updated_sdata_handles = _updated_sdata_handles;
   state->updated_index = _updated_index;
 
-  nv_table_foreach_entry(nvtable, _fixup_entry, state);
+  if (nv_table_foreach_entry(nvtable, _fixup_entry, state))
+    {
+      /* foreach_entry() returns TRUE if the callback returned failure */
+      return FALSE;
+    }
 
   _copy_updated_sdata_handles(state);
   _sort_updated_index(state);
   _copy_updated_index(state);
+  return TRUE;
 }
 
 /**********************************************************************

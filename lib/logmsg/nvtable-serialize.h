@@ -32,6 +32,6 @@
 
 NVTable *nv_table_deserialize(LogMessageSerializationState *state);
 gboolean nv_table_serialize(LogMessageSerializationState *state, NVTable *self);
-void nv_table_fixup_handles(LogMessageSerializationState *state);
+gboolean nv_table_fixup_handles(LogMessageSerializationState *state);
 
 #endif
