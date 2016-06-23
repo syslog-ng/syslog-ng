@@ -57,6 +57,7 @@ gboolean serialize_read_uint8(SerializeArchive *archive, guint8 *value);
 
 SerializeArchive *serialize_file_archive_new(FILE *f);
 SerializeArchive *serialize_string_archive_new(GString *str);
+void serialize_string_archive_reset(SerializeArchive *sa);
 SerializeArchive *serialize_buffer_archive_new(gchar *buff, gsize len);
 gsize serialize_buffer_archive_get_pos(SerializeArchive *self);
 void serialize_archive_free(SerializeArchive *self);

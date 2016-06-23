@@ -140,6 +140,14 @@ serialize_file_archive_new(FILE *f)
   return &self->super;
 }
 
+void
+serialize_string_archive_reset(SerializeArchive *sa)
+{
+  SerializeStringArchive *self = (SerializeStringArchive *) sa;
+
+  self->pos = 0;
+}
+
 static gboolean 
 serialize_string_archive_read_bytes(SerializeArchive *s, gchar *buf, gsize buflen, GError **error)
 {
