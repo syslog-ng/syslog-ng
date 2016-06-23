@@ -307,25 +307,38 @@ _read_header(SerializeArchive *sa, NVTable **nvtable)
 {
   NVTable *res = NULL;
   guint32 size;
+
   g_assert(*nvtable == NULL);
 
   if (!serialize_read_uint32(sa, &size))
     goto error;
+
+  if (size > NV_TABLE_MAX_BYTES)
+    goto error;
+
   res = (NVTable *) g_malloc(size);
   res->size = size;
 
   if (!serialize_read_uint32(sa, &res->used))
-    {
-      goto error;
-    }
+    goto error;
+
   if (!serialize_read_uint16(sa, &res->index_size))
-    {
-      goto error;
-    }
+    goto error;
+
   if (!serialize_read_uint8(sa, &res->num_static_entries))
-    {
-      goto error;
-    }
+    goto error;
+
+  /* static entries has to be known by this syslog-ng, if they are over
+   * LM_V_MAX, that means we have no clue how an entry is called, as static
+   * entries don't contain names.  If there are less static entries, that
+   * can be ok. */
+
+  if (res->num_static_entries > LM_V_MAX)
+    goto error;
+
+  /* validates self->used and self->index_size value as compared to "size" */
+  if (!nv_table_alloc_check(res, 0))
+    goto error;
 
   res->borrowed = FALSE;
   res->ref_cnt = 1;
