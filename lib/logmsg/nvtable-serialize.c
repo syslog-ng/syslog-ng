@@ -151,15 +151,19 @@ _fixup_handle_in_index_entry(LogMessageSerializationState *state, NVIndexEntry *
   _fixup_sdata_handle(state, index_entry->handle, new_handle);
 }
 
+static inline gboolean
+_is_static_entry(NVEntry *entry)
+{
+  return entry->name_len == 0;
+}
+
 static NVHandle
 _allocate_handle_for_entry_name(NVHandle old_handle, NVEntry *entry)
 {
-  const gchar *name = nv_entry_get_name(entry);
-
-  if (entry->name_len != 0)
-    return log_msg_get_value_handle(name);
-  else
+  if (_is_static_entry(entry))
     return old_handle;
+  else
+    return log_msg_get_value_handle(nv_entry_get_name(entry));
 }
 
 static NVHandle
