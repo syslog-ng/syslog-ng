@@ -110,15 +110,6 @@ _copy_updated_index(LogMessageSerializationState *state)
   memmove(nv_table_get_index(self), state->updated_index, sizeof(NVIndexEntry) * self->index_size);
 }
 
-const gchar *
-_get_entry_name(NVTable *self, NVIndexEntry *index_entry)
-{
-  NVEntry *entry = nv_table_get_entry_at_ofs(self, index_entry->ofs);
-  if (!entry)
-    return NULL;
-  return nv_entry_get_name(entry);
-}
-
 static void
 _fixup_sdata_handle(LogMessageSerializationState *state, NVHandle old_handle, NVHandle new_handle)
 {
@@ -141,14 +132,9 @@ static void
 _fixup_handle_in_index_entry(LogMessageSerializationState *state, NVIndexEntry *index_entry, NVHandle new_handle)
 {
   NVIndexEntry *new_index_entry = &state->updated_index[state->cur_index_entry++];
-  const gchar *name = _get_entry_name(state->msg->payload, index_entry);
-
-  if (!name)
-    return;
 
   new_index_entry->ofs = index_entry->ofs;
   new_index_entry->handle = new_handle;
-  _fixup_sdata_handle(state, index_entry->handle, new_handle);
 }
 
 static inline gboolean
@@ -202,6 +188,8 @@ _fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointe
   if (index_entry)
     _fixup_handle_in_index_entry(state, index_entry, new_handle);
               
+  if (log_msg_is_handle_sdata(new_handle))
+    _fixup_sdata_handle(state, handle, new_handle);
   return FALSE;
 }
 
