@@ -29,7 +29,6 @@
 #include "messages.h"
 #include "nvtable-serialize.h"
 #include "gsockaddr-serialize.h"
-#include "sdata-serialize.h"
 #include "timestamp-serialize.h"
 #include "tags-serialize.h"
 
