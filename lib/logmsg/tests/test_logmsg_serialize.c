@@ -127,12 +127,9 @@ _check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
   g_string_free(output, TRUE);
 }
 
-static SerializeArchive *
-_serialize_message_for_test(GString *stream)
+static LogMessage *
+_create_message_to_be_serialized(void)
 {
-
-  SerializeArchive *sa = serialize_string_archive_new(stream);
-
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
   NVHandle test_handle = log_msg_get_value_handle("aaa");
 
@@ -142,6 +139,26 @@ _serialize_message_for_test(GString *stream)
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
   log_msg_set_value_indirect(msg, indirect_handle, test_handle, 0, 5, 3);
 
+  for (int i = 0; i < 32; i++)
+    {
+      gchar value_name[64];
+
+      g_snprintf(value_name, sizeof(value_name), ".SDATA.dynamic.field%d", i);
+      log_msg_set_value_by_name(msg, value_name, "value", -1);
+
+      g_snprintf(value_name, sizeof(value_name), ".normal.dynamic.field%d", i);
+      log_msg_set_value_by_name(msg, value_name, "value", -1);
+    }
+
+  return msg;
+}
+
+static SerializeArchive *
+_serialize_message_for_test(GString *stream)
+{
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized();
   log_msg_serialize(msg, sa);
   log_msg_unref(msg);
   return sa;
@@ -200,6 +217,47 @@ test_pe_serialized_message(void)
   serialize_archive_free(sa);
 }
 
+static void
+test_serialization_performance(void)
+{
+  LogMessage *msg = _create_message_to_be_serialized();
+  GString *stream = g_string_sized_new(512);
+  const int iterations = 100000;
+
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+  start_stopwatch();
+  for (int i = 0; i < iterations; i++)
+    {
+      g_string_truncate(stream, 0);
+      log_msg_serialize(msg, sa);
+    }
+  stop_stopwatch_and_display_result(iterations, "serializing %d times took", iterations);
+  serialize_archive_free(sa);
+  log_msg_unref(msg);
+  g_string_free(stream, TRUE);
+}
+
+static void
+test_deserialization_performance(void)
+{
+  GString *stream = g_string_sized_new(512);
+  SerializeArchive *sa = _serialize_message_for_test(stream);
+  const int iterations = 100000;
+  LogMessage *msg = log_msg_new_empty();
+
+  start_stopwatch();
+  for (int i = 0; i < iterations; i++)
+    {
+      serialize_string_archive_reset(sa);
+      log_msg_clear(msg);
+      log_msg_deserialize(msg, sa);
+    }
+  stop_stopwatch_and_display_result(iterations, "serializing %d times took", iterations);
+  serialize_archive_free(sa);
+  log_msg_unref(msg);
+  g_string_free(stream, TRUE);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -210,6 +268,8 @@ main(int argc, char **argv)
   msg_format_options_init(&parse_options, cfg);
   test_serialize();
   test_pe_serialized_message();
+  test_serialization_performance();
+  test_deserialization_performance();
   cfg_free(cfg);
   app_shutdown();
   return 0;
