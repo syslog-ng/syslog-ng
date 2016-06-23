@@ -131,7 +131,8 @@ _fixup_sdata_handle(LogMessageSerializationState *state, NVHandle old_handle, NV
 static void
 _fixup_handle_in_index_entry(LogMessageSerializationState *state, NVIndexEntry *index_entry, NVHandle new_handle)
 {
-  NVIndexEntry *new_index_entry = &state->updated_index[state->cur_index_entry++];
+  gint index_slot = index_entry - nv_table_get_index(state->msg->payload);
+  NVIndexEntry *new_index_entry = &state->updated_index[index_slot];
 
   new_index_entry->ofs = index_entry->ofs;
   new_index_entry->handle = new_handle;
@@ -207,7 +208,6 @@ nv_table_fixup_handles(LogMessageSerializationState *state)
 
   state->updated_sdata_handles = _updated_sdata_handles;
   state->updated_index = _updated_index;
-  state->cur_index_entry = 0;
 
   nv_table_foreach_entry(nvtable, _fixup_entry, state);
 
