@@ -77,11 +77,10 @@ _deserialize_sdata(LogMessage *self, SerializeArchive *sa)
   if (!serialize_read_uint8(sa, &self->num_sdata))
       return FALSE;
 
-    if (!serialize_read_uint8(sa, &self->alloc_sdata))
-      return FALSE;
+  if (!serialize_read_uint8(sa, &self->alloc_sdata))
+    return FALSE;
 
-  self->sdata = (NVHandle*)g_malloc(sizeof(NVHandle)*self->alloc_sdata);
-  memset(self->sdata, 0, sizeof(NVHandle)*self->alloc_sdata);
+  self->sdata = (NVHandle*) g_malloc(sizeof(NVHandle)*self->alloc_sdata);
 
   for (i = 0; i < self->num_sdata; i++)
     {
