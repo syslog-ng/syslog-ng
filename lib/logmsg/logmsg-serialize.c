@@ -23,14 +23,11 @@
  */
 
 #include "logmsg/logmsg-serialize.h"
-#include "logmsg/serialization.h"
-#include "logmsg/logmsg.h"
+#include "logmsg/logmsg-serialize-fixup.h"
 #include "logmsg/nvtable-serialize.h"
 #include "logmsg/gsockaddr-serialize.h"
 #include "logmsg/timestamp-serialize.h"
 #include "logmsg/tags-serialize.h"
-#include "gsockaddr.h"
-#include "serialize.h"
 #include "messages.h"
 
 #include <stdlib.h>
@@ -133,7 +130,7 @@ _deserialize_message(LogMessageSerializationState *state)
   if (!msg->payload)
     return FALSE;
 
-  if (!nv_table_fixup_handles(state))
+  if (!log_msg_fixup_handles_after_deserialization(state))
     return FALSE;
   return TRUE;
 }
