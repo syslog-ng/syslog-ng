@@ -175,7 +175,7 @@ _allocate_handle_of_referenced_entry(NVTable *self, NVHandle ref_handle)
   return _allocate_handle_for_entry_name(ref_handle, ref_entry);
 }
 
-static inline gboolean
+static gboolean
 _is_indirect(NVEntry *entry)
 {
   return entry && entry->indirect;
@@ -184,8 +184,7 @@ _is_indirect(NVEntry *entry)
 static void
 _fixup_handle_in_indirect_entry(NVTable *self, NVEntry *entry)
 {
-  if (_is_indirect(entry))
-    entry->vindirect.handle = _allocate_handle_of_referenced_entry(self, entry->vindirect.handle);
+  entry->vindirect.handle = _allocate_handle_of_referenced_entry(self, entry->vindirect.handle);
 }
 
 static gboolean
@@ -196,7 +195,9 @@ _fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointe
   NVHandle new_handle;
 
   new_handle = _allocate_handle_for_entry_name(handle, entry);
-  _fixup_handle_in_indirect_entry(self, entry);
+
+  if (_is_indirect(entry))
+    _fixup_handle_in_indirect_entry(self, entry);
 
   if (index_entry)
     _fixup_handle_in_index_entry(state, index_entry, new_handle);
