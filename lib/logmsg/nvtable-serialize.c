@@ -203,22 +203,24 @@ _fixup_entry(NVHandle handle, NVEntry *entry, NVDynValue *dyn_value, gpointer us
 void
 nv_table_fixup_handles(LogMessageSerializationState *state)
 {
-  NVTable *self = state->msg->payload;
+  LogMessage *msg = state->msg;
+  NVTable *nvtable = msg->payload;
+  NVHandle _updated_sdata_handles[msg->num_sdata];
+  NVDynValue _updated_dyn_values[nvtable->num_dyn_entries];
 
-  state->updated_sdata_handles = g_new0(NVHandle, state->msg->num_sdata);
-  state->updated_dyn_values = g_new0(NVDynValue, state->msg->payload->num_dyn_entries);
+  /* NOTE: we are allocating these arrays as auto variables on the stack, so
+   * we can use some stack space here.  However, num_sdata is guint8,
+   * num_dyn_entries is guint16 */
+
+  state->updated_sdata_handles = _updated_sdata_handles;
+  state->updated_dyn_values = _updated_dyn_values;
   state->cur_dyn_value = 0;
 
-  nv_table_foreach_entry(self, _fixup_entry, state);
+  nv_table_foreach_entry(nvtable, _fixup_entry, state);
 
   _copy_sdata_handles(state);
   _sort_dynamic_handles(state);
   _copy_dyn_entries(state);
-
-  g_free(state->updated_sdata_handles);
-  state->updated_sdata_handles = NULL;
-  g_free(state->updated_dyn_values);
-  state->updated_dyn_values = NULL;
 }
 
 /**********************************************************************

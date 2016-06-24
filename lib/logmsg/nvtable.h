@@ -186,6 +186,18 @@ nv_entry_get_name(NVEntry *self)
  *
  *   - It is possible to clone an NVTable, which basically copies the
  *     underlying memory contents.
+ *
+ * Limits
+ * ======
+ * There might be various assumptions here and there in the code that fields
+ * in this structure should be limited in values.  These are as follows.
+ * (the list is not necessarily comprehensive though, so please be careful
+ * when changing types).
+ *   - num_dyn_entries is used to allocate NVDynValue arrays on the stack,
+ *     so 2^16 * sizeof(NVDynValue) is allocated at most (512k). If you
+ *     however change this limit, please be careful to audit the
+ *     deserialization code.
+ *
  */
 struct _NVTable
 {
