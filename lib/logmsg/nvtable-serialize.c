@@ -112,17 +112,18 @@ _get_entry_name(NVTable *self, NVDynValue *dyn_entry)
 }
 
 static void
-_set_updated_handle(NVHandle old_handle, NVHandle new_handle, NVHandle *handles_to_update, NVHandle *updated_handles, guint8 num_handles_to_update)
+_fixup_sdata_handle(LogMessageSerializationState *state, NVHandle old_handle, NVHandle new_handle)
 {
-  guint8 j;
+  LogMessage *msg = state->msg;
+  gint i;
 
-  if (handles_to_update)
+  if (msg->sdata)
     {
-      for (j = 0; j < num_handles_to_update; j++)
+      for (i = 0; i < msg->num_sdata; i++)
         {
-          if (handles_to_update[j] == old_handle)
+          if (state->updated_sdata_handles[i] == old_handle)
             {
-              updated_handles[j] = new_handle;
+              state->updated_sdata_handles[i] = new_handle;
             }
         }
     }
@@ -139,7 +140,7 @@ _fixup_handle_in_dynamic_entry(LogMessageSerializationState *state, NVDynValue *
 
   *new_dyn_entry = *dyn_entry;
   new_dyn_entry->handle = new_handle;
-  _set_updated_handle(dyn_entry->handle, new_handle, state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
+  _fixup_sdata_handle(state, dyn_entry->handle, new_handle);
 }
 
 static void
