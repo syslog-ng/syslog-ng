@@ -35,6 +35,8 @@ typedef struct _LogMessageSerializationState
   SerializeArchive *sa;
   LogMessage *msg;
   NVHandle *updated_sdata_handles;
+  NVDynValue *updated_dyn_values;
+  gint cur_dyn_value;
 } LogMessageSerializationState;
 
 #endif

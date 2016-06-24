@@ -98,6 +98,14 @@ _copy_handles(NVHandle* handles_to_update, NVHandle* new_updated_handles, guint8
     }
 }
 
+static void
+_copy_dyn_entries(LogMessageSerializationState *state)
+{
+  NVTable *self = state->msg->payload;
+
+  memmove(nv_table_get_dyn_entries(self), state->updated_dyn_values, sizeof(NVDynValue) * self->num_dyn_entries);
+}
+
 const gchar *
 _get_entry_name(NVTable *self, NVDynValue *dyn_entry)
 {
@@ -108,11 +116,10 @@ _get_entry_name(NVTable *self, NVDynValue *dyn_entry)
 }
 
 static void
-_set_updated_handle(NVDynValue *dyn_entry, NVHandle new_handle, NVHandle *handles_to_update, NVHandle *updated_handles, guint8 num_handles_to_update)
+_set_updated_handle(NVHandle old_handle, NVHandle new_handle, NVHandle *handles_to_update, NVHandle *updated_handles, guint8 num_handles_to_update)
 {
-  NVHandle old_handle = dyn_entry->handle;
   guint8 j;
-  dyn_entry->handle = new_handle;
+
   if (handles_to_update)
     {
       for (j = 0; j < num_handles_to_update; j++)
@@ -126,39 +133,25 @@ _set_updated_handle(NVDynValue *dyn_entry, NVHandle new_handle, NVHandle *handle
 }
 
 static void
-_update_dynamic_handle(LogMessageSerializationState *state, NVDynValue *dyn_entry)
+_fixup_handle_in_dynamic_entry(LogMessageSerializationState *state, NVDynValue *dyn_entry, NVHandle new_handle)
 {
-  NVHandle new_handle;
+  NVDynValue *new_dyn_entry = &state->updated_dyn_values[state->cur_dyn_value++];
   const gchar *name = _get_entry_name(state->msg->payload, dyn_entry);
 
   if (!name)
     return;
 
-  new_handle = log_msg_get_value_handle(name);
-
-  _set_updated_handle(dyn_entry, new_handle, state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
-}
-
-static void
-_update_dynamic_handles(LogMessageSerializationState *state)
-{
-  guint16 i;
-  NVTable *self = state->msg->payload;
-  NVDynValue *dyn_entries = nv_table_get_dyn_entries(self);
-
-  for (i = 0; i < self->num_dyn_entries; i++)
-    {
-      _update_dynamic_handle(state, &dyn_entries[i]);
-    }
+  *new_dyn_entry = *dyn_entry;
+  new_dyn_entry->handle = new_handle;
+  _set_updated_handle(dyn_entry->handle, new_handle, state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
 }
 
 static void
 _sort_dynamic_handles(LogMessageSerializationState *state)
 {
   NVTable *self = state->msg->payload;
-  NVDynValue *dyn_entries = nv_table_get_dyn_entries(self);
 
-  qsort(dyn_entries, self->num_dyn_entries, sizeof(NVDynValue), _dyn_entry_cmp);
+  qsort(state->updated_dyn_values, self->num_dyn_entries, sizeof(NVDynValue), _dyn_entry_cmp);
 }
 
 static NVHandle
@@ -197,11 +190,15 @@ _fixup_handle_in_indirect_entry(NVTable *self, NVEntry *entry)
 static gboolean
 _fixup_entry(NVHandle handle, NVEntry *entry, NVDynValue *dyn_value, gpointer user_data)
 {
-  gpointer *args = user_data;
-  NVTable *self = (NVTable *) args[0];
+  LogMessageSerializationState *state = (LogMessageSerializationState *) user_data;
+  NVTable *self = state->msg->payload;
+  NVHandle new_handle;
 
-  _allocate_handle_for_entry_name(handle, entry);
+  new_handle = _allocate_handle_for_entry_name(handle, entry);
   _fixup_handle_in_indirect_entry(self, entry);
+
+  if (dyn_value)
+    _fixup_handle_in_dynamic_entry(state, dyn_value, new_handle);
               
   return FALSE;
 }
@@ -210,18 +207,21 @@ void
 nv_table_fixup_handles(LogMessageSerializationState *state)
 {
   NVTable *self = state->msg->payload;
-  gpointer args[] = { self };
 
   state->updated_sdata_handles = g_new0(NVHandle, state->msg->num_sdata);
+  state->updated_dyn_values = g_new0(NVDynValue, state->msg->payload->num_dyn_entries);
+  state->cur_dyn_value = 0;
 
-  nv_table_foreach_entry(self, _fixup_entry, args);
-  _update_dynamic_handles(state);
+  nv_table_foreach_entry(self, _fixup_entry, state);
 
   _copy_handles(state->msg->sdata, state->updated_sdata_handles, state->msg->num_sdata);
   _sort_dynamic_handles(state);
+  _copy_dyn_entries(state);
 
   g_free(state->updated_sdata_handles);
   state->updated_sdata_handles = NULL;
+  g_free(state->updated_dyn_values);
+  state->updated_dyn_values = NULL;
 }
 
 /**********************************************************************
