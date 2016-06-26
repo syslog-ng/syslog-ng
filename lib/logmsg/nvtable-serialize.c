@@ -65,7 +65,7 @@ typedef struct _NVTableMetaData
  * This means that we need to iterate through the struct and change the
  * handle values. This is not even a simple operation as handles are embedded
  * in various locations
- *   - in the dynamic entry table, an array sorted by handle
+ *   - in the index table, an array sorted by handle
  *   - as indirect values that refer to other values
  *   - the SDATA handles array that ensures that SDATA values are ordered
  *     the same way they were received.
@@ -73,10 +73,10 @@ typedef struct _NVTableMetaData
  **********************************************************************/
 
 static gint
-_dyn_entry_cmp(const void *a, const void *b)
+_index_entry_cmp(const void *a, const void *b)
 {
-  NVDynValue *entry_a = (NVDynValue *) a;
-  NVDynValue *entry_b = (NVDynValue *) b;
+  NVIndexEntry *entry_a = (NVIndexEntry *) a;
+  NVIndexEntry *entry_b = (NVIndexEntry *) b;
   NVHandle handle_a = entry_a->handle;
   NVHandle handle_b = entry_b->handle;
 
@@ -89,23 +89,31 @@ _dyn_entry_cmp(const void *a, const void *b)
 }
 
 static void
-_copy_sdata_handles(LogMessageSerializationState *state)
+_copy_updated_sdata_handles(LogMessageSerializationState *state)
 {
   memcpy(state->msg->sdata, state->updated_sdata_handles, sizeof(state->msg->sdata[0]) * state->msg->num_sdata);
 }
 
 static void
-_copy_dyn_entries(LogMessageSerializationState *state)
+_sort_updated_index(LogMessageSerializationState *state)
 {
   NVTable *self = state->msg->payload;
 
-  memmove(nv_table_get_dyn_entries(self), state->updated_dyn_values, sizeof(NVDynValue) * self->num_dyn_entries);
+  qsort(state->updated_index, self->index_size, sizeof(NVIndexEntry), _index_entry_cmp);
+}
+
+static void
+_copy_updated_index(LogMessageSerializationState *state)
+{
+  NVTable *self = state->msg->payload;
+
+  memmove(nv_table_get_index(self), state->updated_index, sizeof(NVIndexEntry) * self->index_size);
 }
 
 const gchar *
-_get_entry_name(NVTable *self, NVDynValue *dyn_entry)
+_get_entry_name(NVTable *self, NVIndexEntry *index_entry)
 {
-  NVEntry *entry = nv_table_get_entry_at_ofs(self, dyn_entry->ofs);
+  NVEntry *entry = nv_table_get_entry_at_ofs(self, index_entry->ofs);
   if (!entry)
     return NULL;
   return nv_entry_get_name(entry);
@@ -130,25 +138,17 @@ _fixup_sdata_handle(LogMessageSerializationState *state, NVHandle old_handle, NV
 }
 
 static void
-_fixup_handle_in_dynamic_entry(LogMessageSerializationState *state, NVDynValue *dyn_entry, NVHandle new_handle)
+_fixup_handle_in_index_entry(LogMessageSerializationState *state, NVIndexEntry *index_entry, NVHandle new_handle)
 {
-  NVDynValue *new_dyn_entry = &state->updated_dyn_values[state->cur_dyn_value++];
-  const gchar *name = _get_entry_name(state->msg->payload, dyn_entry);
+  NVIndexEntry *new_index_entry = &state->updated_index[state->cur_index_entry++];
+  const gchar *name = _get_entry_name(state->msg->payload, index_entry);
 
   if (!name)
     return;
 
-  *new_dyn_entry = *dyn_entry;
-  new_dyn_entry->handle = new_handle;
-  _fixup_sdata_handle(state, dyn_entry->handle, new_handle);
-}
-
-static void
-_sort_dynamic_handles(LogMessageSerializationState *state)
-{
-  NVTable *self = state->msg->payload;
-
-  qsort(state->updated_dyn_values, self->num_dyn_entries, sizeof(NVDynValue), _dyn_entry_cmp);
+  new_index_entry->ofs = index_entry->ofs;
+  new_index_entry->handle = new_handle;
+  _fixup_sdata_handle(state, index_entry->handle, new_handle);
 }
 
 static NVHandle
@@ -165,8 +165,8 @@ _allocate_handle_for_entry_name(NVHandle old_handle, NVEntry *entry)
 static NVHandle
 _allocate_handle_of_referenced_entry(NVTable *self, NVHandle ref_handle)
 {
-  NVDynValue* dyn_slot;
-  NVEntry *ref_entry = nv_table_get_entry(self, ref_handle, &dyn_slot);
+  NVIndexEntry *index_entry;
+  NVEntry *ref_entry = nv_table_get_entry(self, ref_handle, &index_entry);
 
   return _allocate_handle_for_entry_name(ref_handle, ref_entry);
 }
@@ -185,7 +185,7 @@ _fixup_handle_in_indirect_entry(NVTable *self, NVEntry *entry)
 }
 
 static gboolean
-_fixup_entry(NVHandle handle, NVEntry *entry, NVDynValue *dyn_value, gpointer user_data)
+_fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
 {
   LogMessageSerializationState *state = (LogMessageSerializationState *) user_data;
   NVTable *self = state->msg->payload;
@@ -194,8 +194,8 @@ _fixup_entry(NVHandle handle, NVEntry *entry, NVDynValue *dyn_value, gpointer us
   new_handle = _allocate_handle_for_entry_name(handle, entry);
   _fixup_handle_in_indirect_entry(self, entry);
 
-  if (dyn_value)
-    _fixup_handle_in_dynamic_entry(state, dyn_value, new_handle);
+  if (index_entry)
+    _fixup_handle_in_index_entry(state, index_entry, new_handle);
               
   return FALSE;
 }
@@ -206,21 +206,21 @@ nv_table_fixup_handles(LogMessageSerializationState *state)
   LogMessage *msg = state->msg;
   NVTable *nvtable = msg->payload;
   NVHandle _updated_sdata_handles[msg->num_sdata];
-  NVDynValue _updated_dyn_values[nvtable->num_dyn_entries];
+  NVIndexEntry _updated_index[nvtable->index_size];
 
   /* NOTE: we are allocating these arrays as auto variables on the stack, so
    * we can use some stack space here.  However, num_sdata is guint8,
-   * num_dyn_entries is guint16 */
+   * index_size is guint16 */
 
   state->updated_sdata_handles = _updated_sdata_handles;
-  state->updated_dyn_values = _updated_dyn_values;
-  state->cur_dyn_value = 0;
+  state->updated_index = _updated_index;
+  state->cur_index_entry = 0;
 
   nv_table_foreach_entry(nvtable, _fixup_entry, state);
 
-  _copy_sdata_handles(state);
-  _sort_dynamic_handles(state);
-  _copy_dyn_entries(state);
+  _copy_updated_sdata_handles(state);
+  _sort_updated_index(state);
+  _copy_updated_index(state);
 }
 
 /**********************************************************************
@@ -228,7 +228,7 @@ nv_table_fixup_handles(LogMessageSerializationState *state)
  **********************************************************************/
 
 static gboolean
-_deserialize_dyn_value(SerializeArchive *sa, NVDynValue* dyn_value)
+_deserialize_dyn_value(SerializeArchive *sa, NVIndexEntry* dyn_value)
 {
   return serialize_read_nvhandle(sa, &(dyn_value->handle)) &&
          serialize_read_uint32(sa, &(dyn_value->ofs));
@@ -250,11 +250,11 @@ static gboolean
 _deserialize_dynamic_entries(SerializeArchive *sa, NVTable *res)
 {
   guint32 i;
-  NVDynValue *dyn_entries;
-  dyn_entries = nv_table_get_dyn_entries(res);
-  for (i = 0; i < res->num_dyn_entries; i++)
+  NVIndexEntry *index;
+  index = nv_table_get_index(res);
+  for (i = 0; i < res->index_size; i++)
     {
-      if (!_deserialize_dyn_value(sa, &dyn_entries[i]))
+      if (!_deserialize_dyn_value(sa, &index[i]))
         return FALSE;
     }
   return TRUE;
@@ -323,7 +323,7 @@ _read_header(SerializeArchive *sa, NVTable **nvtable)
     {
       goto error;
     }
-  if (!serialize_read_uint16(sa, &res->num_dyn_entries))
+  if (!serialize_read_uint16(sa, &res->index_size))
     {
       goto error;
     }
@@ -396,7 +396,7 @@ error:
 
 
 static void
-_serialize_nv_dyn_value(SerializeArchive *sa, NVDynValue *dyn_value)
+_serialize_nv_dyn_value(SerializeArchive *sa, NVIndexEntry *dyn_value)
 {
   serialize_write_nvhandle(sa, dyn_value->handle);
   serialize_write_uint32(sa, dyn_value->ofs);
@@ -406,20 +406,20 @@ static void
 _write_struct(SerializeArchive *sa, NVTable *self)
 {
   guint16 i;
-  NVDynValue *dyn_entries;
+  NVIndexEntry *index;
 
   serialize_write_uint32(sa, self->size);
   serialize_write_uint32(sa, self->used);
-  serialize_write_uint16(sa, self->num_dyn_entries);
+  serialize_write_uint16(sa, self->index_size);
   serialize_write_uint8(sa, self->num_static_entries);
   for (i = 0; i < self->num_static_entries; i++)
     {
       serialize_write_uint32(sa, self->static_entries[i]);
     }
-  dyn_entries = nv_table_get_dyn_entries(self);
-  for (i = 0; i < self->num_dyn_entries; i++)
+  index = nv_table_get_index(self);
+  for (i = 0; i < self->index_size; i++)
     {
-      _serialize_nv_dyn_value(sa, &dyn_entries[i]);
+      _serialize_nv_dyn_value(sa, &index[i]);
     }
 }
 

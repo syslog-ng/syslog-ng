@@ -60,7 +60,7 @@ nv_entry_swap_bytes(NVEntry *entry)
 }
 
 static inline void
-nv_table_dyn_value_swap_bytes(NVDynValue* self)
+nv_table_dyn_value_swap_bytes(NVIndexEntry* self)
 {
   self->handle = GUINT32_SWAP_LE_BE(self->handle);
   self->ofs = GUINT32_SWAP_LE_BE(self->handle);
@@ -69,7 +69,7 @@ nv_table_dyn_value_swap_bytes(NVDynValue* self)
 static inline void
 nv_table_data_swap_bytes(NVTable *self)
 {
-  NVDynValue *dyn_entries;
+  NVIndexEntry *index;
   NVEntry *entry;
   gint i;
 
@@ -81,10 +81,10 @@ nv_table_data_swap_bytes(NVTable *self)
       nv_entry_swap_bytes(entry);
     }
 
-  dyn_entries = nv_table_get_dyn_entries(self);
-  for (i = 0; i < self->num_dyn_entries; i++)
+  index = nv_table_get_index(self);
+  for (i = 0; i < self->index_size; i++)
     {
-      entry = nv_table_get_entry_at_ofs(self, dyn_entries[i].ofs);
+      entry = nv_table_get_entry_at_ofs(self, index[i].ofs);
 
       if (!entry)
         continue;
@@ -96,21 +96,21 @@ static inline void
 nv_table_struct_swap_bytes(NVTable *self)
 {
   guint16 i;
-  NVDynValue *dyn_entries;
+  NVIndexEntry *index;
 
   self->size = GUINT16_SWAP_LE_BE(self->size);
   self->used = GUINT16_SWAP_LE_BE(self->used);
-  self->num_dyn_entries = GUINT16_SWAP_LE_BE(self->num_dyn_entries);
+  self->index_size = GUINT16_SWAP_LE_BE(self->index_size);
 
   for (i = 0; i < self->num_static_entries; i++)
     {
       self->static_entries[i] = GUINT16_SWAP_LE_BE(self->static_entries[i]);
     }
-  dyn_entries = nv_table_get_dyn_entries(self);
+  index = nv_table_get_index(self);
 
-  for (i = 0; i < self->num_dyn_entries; i++)
+  for (i = 0; i < self->index_size; i++)
     {
-      nv_table_dyn_value_swap_bytes(&dyn_entries[i]);
+      nv_table_dyn_value_swap_bytes(&index[i]);
     }
 }
 
