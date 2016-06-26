@@ -213,6 +213,10 @@ struct _NVTable
  * we want to compare a guint32 to this variable without overflow.  */
 #define NV_TABLE_MAX_BYTES  (256*1024*1024)
 
+/* this has to be large enough to hold the NVTable struct above and the
+ * static values */
+#define NV_TABLE_MIN_BYTES  128
+
 gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len, gboolean *new_entry);
 gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint32 ofs, guint32 len, gboolean *new_entry);
 
@@ -234,8 +238,8 @@ nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_
   gsize size;
 
   size = NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + num_dyn_values * sizeof(NVDynValue));
-  if (size < 128)
-    return 128;
+  if (size < NV_TABLE_MIN_BYTES)
+    return NV_TABLE_MIN_BYTES;
   if (size > NV_TABLE_MAX_BYTES)
     size = NV_TABLE_MAX_BYTES;
   return size;
