@@ -32,6 +32,16 @@
 GString *g_string_assign_len(GString *s, const gchar *val, gint len);
 void g_string_steal(GString *s);
 
+static inline GString *
+g_string_append_unichar_optimized(GString *string, gunichar wc)
+{
+  if (wc < 0x80)
+    g_string_append_c(string, (gchar) wc);
+  else
+    g_string_append_unichar(string, wc);
+
+  return string;
+}
 
 /*
  * DO NOT USE THIS MACRO UNLESS STRICTLY NECESSARY FOR PERFORMANCE REASONS.

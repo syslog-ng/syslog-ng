@@ -36,15 +36,6 @@ _is_character_unsafe(gunichar uchar, const gchar *unsafe_chars)
   return _strchr_optimized_for_single_char_haystack(unsafe_chars, (gchar) uchar) != NULL;
 }
 
-static inline void
-_append_unichar(GString *string, gunichar wc)
-{
-  if (wc < 0x80)
-    g_string_append_c(string, (gchar) wc);
-  else
-    g_string_append_unichar(string, wc);
-}
-
 /**
  * This function escapes an unsanitized input (e.g. that can contain binary
  * characters, and produces an escaped format that can be deescaped in need,
@@ -102,7 +93,7 @@ _append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
         else if (_is_character_unsafe(uchar, unsafe_chars))
           g_string_append_printf(escaped_output, "\\%c", (gchar) uchar);
         else
-          _append_unichar(escaped_output, uchar);
+          g_string_append_unichar_optimized(escaped_output, uchar);
         break;
     }
   *raw = g_utf8_next_char(char_ptr);
