@@ -39,6 +39,7 @@ static CfgLexerKeyword kvtagger_keywords[] =
   { "kvtagger", KW_KVTAGGER},
   { "database", KW_KVTAGGER_DATABASE },
   { "selector", KW_KVTAGGER_SELECTOR },
+  { "default_selector", KW_KVTAGGER_DEFAULT_SELECTOR },
   { NULL }
 };
 

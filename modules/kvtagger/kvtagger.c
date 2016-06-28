@@ -50,6 +50,7 @@ typedef struct KVTagger
   LogParser super;
   KVTagDB tagdb;
   LogTemplate *selector_template;
+  gchar *default_selector;
   gchar *filename;
   TagRecordScanner *scanner;
 } KVTagger;
@@ -84,10 +85,48 @@ kvtagger_set_database_selector_template(LogParser *p, const gchar *selector)
   log_template_compile(self->selector_template, selector, NULL);
 }
 
-static inline element_range const *
-kvtagger_lookup_tag(KVTagger *const self, const gchar *const key)
+void
+kvtagger_set_database_default_selector(LogParser *p, const gchar *default_selector)
 {
-  return g_hash_table_lookup(self->tagdb.index, key);
+  KVTagger *self = (KVTagger *)p;
+
+  g_free(self->default_selector);
+  self->default_selector = g_strdup(default_selector);
+}
+
+static inline element_range *
+kvtagger_lookup_tag(KVTagger *const self, const gchar *const selector)
+{
+  return g_hash_table_lookup(self->tagdb.index, selector);
+}
+
+gboolean
+_is_default_selector_set(KVTagger *self)
+{
+  return (self->default_selector != NULL);
+}
+
+element_range *
+_get_range_of_tags(KVTagger *self, GString *selector)
+{
+  element_range *position_of_tags_to_be_inserted = kvtagger_lookup_tag(self, selector->str);
+  if (position_of_tags_to_be_inserted == NULL && _is_default_selector_set(self))
+    {
+      position_of_tags_to_be_inserted = kvtagger_lookup_tag(self, self->default_selector);
+    }
+  return position_of_tags_to_be_inserted;
+}
+
+void
+_tag_message(KVTagger *self, LogMessage *msg, element_range *position_of_tags_to_be_inserted)
+{
+  for (gsize i = position_of_tags_to_be_inserted->offset;
+       i < position_of_tags_to_be_inserted->offset + position_of_tags_to_be_inserted->length;
+       ++i)
+    {
+      tag_record matching_tag = g_array_index(self->tagdb.data, tag_record, i);
+      log_msg_set_value_by_name(msg, matching_tag.name, matching_tag.value, -1);
+    }
 }
 
 static gboolean
@@ -96,22 +135,13 @@ kvtagger_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *p
 {
   KVTagger *self = (KVTagger *)s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
+  GString *selector = g_string_new(NULL);
 
-  GString *str = g_string_new(NULL);
-
-  log_template_format(self->selector_template, msg, NULL, LTZ_LOCAL, 0, NULL, str);
-
-  const element_range *position_of_tags_to_be_inserted = kvtagger_lookup_tag(self, str->str);
-
+  log_template_format(self->selector_template, msg, NULL, LTZ_LOCAL, 0, NULL, selector);
+  element_range* position_of_tags_to_be_inserted = _get_range_of_tags(self, selector);
   if (position_of_tags_to_be_inserted != NULL)
     {
-      for (gsize i = position_of_tags_to_be_inserted->offset;
-           i < position_of_tags_to_be_inserted->offset + position_of_tags_to_be_inserted->length;
-           ++i)
-        {
-          tag_record matching_tag = g_array_index(self->tagdb.data, tag_record, i);
-          log_msg_set_value_by_name(msg, matching_tag.name, matching_tag.value, -1);
-        }
+      _tag_message(self, msg, position_of_tags_to_be_inserted);
     }
 
   return TRUE;
@@ -378,6 +408,7 @@ kvtagger_parser_new(GlobalConfig *cfg)
   self->super.super.free_fn = kvtagger_parser_free;
   self->super.super.init = kvtagger_parser_init;
   self->scanner = NULL;
+  self->default_selector = NULL;
 
   return &self->super;
 }
