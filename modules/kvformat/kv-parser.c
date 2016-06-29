@@ -97,6 +97,7 @@ kv_parser_clone(LogPipe *s)
 
   cloned = kv_parser_new(s->cfg, kv_scanner_clone(self->kv_scanner));
   kv_parser_set_prefix(cloned, self->prefix);
+  log_parser_set_template(cloned, log_template_ref(self->super.template));
 
   return &cloned->super;
 }
