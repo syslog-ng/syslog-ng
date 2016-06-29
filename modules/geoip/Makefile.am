@@ -37,3 +37,5 @@ EXTRA_DIST					+=	\
 	modules/geoip/tfgeoip.c
 
 .PHONY: modules/geoip/ mod-geoip
+
+include modules/geoip/tests/Makefile.am
