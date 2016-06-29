@@ -254,6 +254,7 @@ json_parser_clone(LogPipe *s)
   json_parser_set_prefix(cloned, self->prefix);
   json_parser_set_marker(cloned, self->marker);
   json_parser_set_extract_prefix(cloned, self->extract_prefix);
+  log_parser_set_template(cloned, log_template_ref(self->super.template));
 
   return &cloned->super;
 }

@@ -57,8 +57,10 @@ parse_json_into_log_message_no_check(const gchar *json)
   LogParser *cloned_parser;
 
   cloned_parser = (LogParser *) log_pipe_clone(&json_parser->super);
+
   msg = log_msg_new_empty();
-  if (!log_parser_process(cloned_parser, &msg, &path_options, json, strlen(json)))
+  log_msg_set_value(msg, LM_V_MESSAGE, json, -1);
+  if (!log_parser_process_message(cloned_parser, &msg, &path_options))
     {
       log_msg_unref(msg);
       log_pipe_unref(&cloned_parser->super);
@@ -170,6 +172,21 @@ test_json_parser_extracts_subobjects_if_extract_prefix_is_specified(void)
 }
 
 static void
+test_json_parser_works_with_templates(void)
+{
+  LogMessage *msg;
+  LogTemplate *template;
+
+  template = log_template_new(NULL, NULL);
+  log_template_compile(template, "{'foo':'bar'}", NULL);
+
+  log_parser_set_template(json_parser, template);
+  msg = parse_json_into_log_message("invalid-syntax-because-json-is-coming-from-the-template");
+  assert_log_message_value(msg, log_msg_get_value_handle("foo"), "bar");
+  log_msg_unref(msg);
+}
+
+static void
 test_json_parser(void)
 {
   JSON_PARSER_TESTCASE(test_json_parser_parses_well_formed_json_and_puts_results_in_message);
@@ -180,6 +197,7 @@ test_json_parser(void)
   JSON_PARSER_TESTCASE(test_json_parser_validate_type_representation);
   JSON_PARSER_TESTCASE(test_json_parser_fails_for_non_object_top_element);
   JSON_PARSER_TESTCASE(test_json_parser_extracts_subobjects_if_extract_prefix_is_specified);
+  JSON_PARSER_TESTCASE(test_json_parser_works_with_templates);
 }
 
 int
