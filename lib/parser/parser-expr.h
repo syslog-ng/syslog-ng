@@ -54,4 +54,6 @@ log_parser_process(LogParser *self, LogMessage **pmsg, const LogPathOptions *pat
   return self->process(self, pmsg, path_options, input, input_len);
 }
 
+gboolean log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOptions *path_options);
+
 #endif
