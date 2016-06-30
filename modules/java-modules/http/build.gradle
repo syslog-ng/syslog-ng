@@ -1,7 +1,6 @@
 project.buildDir = syslogBuildDir+'/http/gradle'
 
 dependencies {
-    compile fileTree(dir: "/usr/lib/syslog-ng-java-module-dependency-jars/jars", includes: ['*.jar'])
     compile name: 'syslog-ng-common'
     compile name: 'syslog-ng-core'
     compile 'junit:junit:4.12'
