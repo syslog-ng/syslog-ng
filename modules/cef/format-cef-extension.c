@@ -25,6 +25,7 @@
 #include "value-pairs/value-pairs.h"
 #include "value-pairs/cmdline.h"
 #include "syslog-ng.h"
+#include "str-utils.h"
 #include "format-cef-extension.h"
 
 typedef struct _TFCefState
@@ -64,15 +65,6 @@ tf_cef_is_valid_key(const gchar *str)
 }
 
 static inline void
-tf_cef_append_unichar(GString *string, gunichar wc)
-{
-  if (wc < 0xc0)
-    g_string_append_c(string, (gchar) wc);
-  else
-    g_string_append_unichar(string, wc);
-}
-
-static inline void
 tf_cef_append_escaped(GString *escaped_string, const gchar *str, gsize str_len)
 {
   const gchar *char_ptr;
@@ -106,7 +98,7 @@ tf_cef_append_escaped(GString *escaped_string, const gchar *str, gsize str_len)
           if (uchar < 32)
             g_string_append_printf(escaped_string, "\\u%04x", uchar);
           else
-            tf_cef_append_unichar(escaped_string, uchar);
+            g_string_append_unichar_optimized(escaped_string, uchar);
           break;
         }
       char_ptr = g_utf8_next_char(str);
