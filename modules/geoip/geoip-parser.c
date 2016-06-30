@@ -139,6 +139,7 @@ geoip_parser_clone(LogPipe *s)
 
   geoip_parser_set_database(&cloned->super, self->database);
   geoip_parser_set_prefix(&cloned->super, self->prefix);
+  log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
   geoip_parser_reset_fields(cloned);
 
   return &cloned->super.super;

@@ -36,10 +36,10 @@ log_parser_set_template(LogParser *self, LogTemplate *template)
   self->template = template;
 }
 
-static void
-log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+gboolean
+log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOptions *path_options)
 {
-  LogParser *self = (LogParser *) s;
+  LogMessage *msg = *pmsg;
   gboolean success;
 
   if (G_LIKELY(!self->template))
@@ -69,6 +69,17 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       success = self->process(self, &msg, path_options, input->str, input->len);
       g_string_free(input, TRUE);
     }
+
+  return success;
+}
+
+static void
+log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+{
+  LogParser *self = (LogParser *) s;
+  gboolean success;
+
+  success = log_parser_process_message(self, &msg, path_options);
   msg_debug("Message parsing complete",
             evt_tag_int("result", success),
             evt_tag_str("rule", self->name),
