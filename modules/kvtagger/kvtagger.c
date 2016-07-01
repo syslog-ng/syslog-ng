@@ -90,7 +90,7 @@ kvtagger_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *p
   KVTagger *self = (KVTagger *)s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
   GString *selector_str = g_string_new(NULL);
-  const gchar *selector;
+  const gchar *selector = NULL;
 
   log_template_format(self->selector_template, msg, NULL, LTZ_LOCAL, 0, NULL, selector_str);
 
@@ -99,7 +99,8 @@ kvtagger_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *p
   else if (_is_default_selector_set(self))
     selector = self->default_selector;
 
-  kvtagdb_foreach_tag(self->tagdb, selector, _tag_message, (gpointer)msg);
+  if (selector)
+    kvtagdb_foreach_tag(self->tagdb, selector, _tag_message, (gpointer)msg);
 
   g_string_free(selector_str, TRUE);
 
@@ -124,8 +125,9 @@ kvtagger_parser_free(LogPipe *s)
   KVTagger *self = (KVTagger *)s;
 
   kvtagdb_unref(self->tagdb);
+  tag_record_scanner_free(self->scanner);
   g_free(self->filename);
-  g_free(self->scanner);
+  log_template_unref(self->selector_template);
   log_parser_free_method(s);
 }
 

@@ -5,6 +5,7 @@ modules_kvtagger_libkvtagger_la_SOURCES	=	\
 	modules/kvtagger/csv-tagrecord-scanner.c	\
 	modules/kvtagger/csv-tagrecord-scanner.h	\
 	modules/kvtagger/tagrecord-scanner.h		\
+	modules/kvtagger/tagrecord-scanner.c		\
 	modules/kvtagger/kvtagger-grammar.y		\
 	modules/kvtagger/kvtagger-parser.c		\
 	modules/kvtagger/kvtagger-parser.h		\
