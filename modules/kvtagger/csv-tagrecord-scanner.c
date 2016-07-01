@@ -26,50 +26,38 @@
 #include <string.h>
 
 
-gboolean
-_get_next_record(CSVTagRecordScanner *self, gchar *input, tag_record *next_record)
+
+static gboolean
+_get_next_record(TagRecordScanner *s, const gchar *input, TagRecord *next_record)
 {
-  csv_scanner_input(&self->scanner, input);
-  if (!csv_scanner_scan_next(&self->scanner))
+  CSVScanner *scanner = (CSVScanner *) s->scanner;
+  csv_scanner_input(scanner, input);
+  if (!csv_scanner_scan_next(scanner))
     {
       return FALSE;
     }
-  next_record->selector = csv_scanner_dup_current_value(&self->scanner);
-  if (!csv_scanner_scan_next(&self->scanner))
+  next_record->selector = csv_scanner_dup_current_value(scanner);
+  if (!csv_scanner_scan_next(scanner))
     {
       return FALSE;
     }
-  next_record->name = csv_scanner_dup_current_value(&self->scanner);
-  if (!csv_scanner_scan_next(&self->scanner))
+  next_record->name = csv_scanner_dup_current_value(scanner);
+  if (!csv_scanner_scan_next(scanner))
     {
       return FALSE;
     }
-  next_record->value = csv_scanner_dup_current_value(&self->scanner);
+  next_record->value = csv_scanner_dup_current_value(scanner);
 
   return TRUE;
 }
 
-static GArray* csv_tagger_scanner_get_parsed_records(TagRecordScanner *s, FILE *file)
+const TagRecord*
+get_next_record(TagRecordScanner *self, const gchar *input)
 {
-  CSVTagRecordScanner *self = (CSVTagRecordScanner *) s;
-  gchar line[3072];
-  tag_record next_record;
-  GArray *nv_array = g_array_new(FALSE, FALSE, sizeof(tag_record));
-  while(fgets(line, 3072, file))
-    {
-      size_t line_length = strlen(line) - 1;
-      line[line_length] = '\0';
-      if (_get_next_record(self, line, &next_record))
-        {
-          g_array_append_val(nv_array, next_record);
-        }
-      else
-        {
-          g_array_free(nv_array, TRUE);
-          return NULL;
-        }
-    }
-  return nv_array;
+  if (!_get_next_record(self, input, &self->last_record))
+    return NULL;
+
+  return &self->last_record;
 }
 
 CSVTagRecordScanner*
@@ -83,6 +71,7 @@ csv_tagger_scanner_new()
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
   csv_scanner_state_init(&self->scanner, &self->options);
-  self->super.get_parsed_records = csv_tagger_scanner_get_parsed_records;
+  self->super.scanner = &self->scanner;
+  self->super.get_next = get_next_record;
   return self;
 }

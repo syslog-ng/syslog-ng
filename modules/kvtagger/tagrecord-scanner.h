@@ -27,19 +27,20 @@
 #include <stdio.h>
 
 
-typedef struct tag_record
+typedef struct _TagRecord
 {
   gchar *selector;
   gchar *name;
   gchar *value;
-} tag_record;
+} TagRecord;
 
 typedef struct _TagRecordScanner TagRecordScanner;
 
 struct _TagRecordScanner
 {
-    GArray* (*get_parsed_records)(TagRecordScanner *self, FILE* file);
+  TagRecord last_record;
+  gpointer scanner;
+  const TagRecord* (*get_next)(TagRecordScanner *self, const gchar *input);
 };
-
 
 #endif

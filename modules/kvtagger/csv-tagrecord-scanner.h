@@ -31,7 +31,6 @@ typedef struct _CSVTagRecordScanner
   TagRecordScanner super;
   CSVScanner scanner;
   CSVScannerOptions options;
-  tag_record last_record;
 
 } CSVTagRecordScanner;
 

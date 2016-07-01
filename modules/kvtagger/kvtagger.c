@@ -124,7 +124,7 @@ _tag_message(KVTagger *self, LogMessage *msg, element_range *position_of_tags_to
        i < position_of_tags_to_be_inserted->offset + position_of_tags_to_be_inserted->length;
        ++i)
     {
-      tag_record matching_tag = g_array_index(self->tagdb.data, tag_record, i);
+      TagRecord matching_tag = g_array_index(self->tagdb.data, TagRecord, i);
       log_msg_set_value_by_name(msg, matching_tag.name, matching_tag.value, -1);
     }
 }
@@ -172,8 +172,8 @@ kvtagger_parser_free(LogPipe *s)
 static gint
 _kv_comparer(gconstpointer k1, gconstpointer k2)
 {
-  tag_record *r1 = (tag_record *)k1;
-  tag_record *r2 = (tag_record *)k2;
+  TagRecord *r1 = (TagRecord *)k1;
+  TagRecord *r2 = (TagRecord *)k2;
   return strcmp(r1->selector, r2->selector);
 }
 
@@ -211,9 +211,22 @@ _open_data_file(const gchar *filename)
 static GArray *
 _parse_input_file(KVTagger *self, FILE *file)
 {
-  GArray *data = self->scanner->get_parsed_records(self->scanner, file);
-
-  return data;
+  gchar line[3072];
+  GArray *nv_array = g_array_new(FALSE, FALSE, sizeof(TagRecord));
+  const TagRecord *next_record;
+  while(fgets(line, 3072, file))
+    {
+      size_t line_length = strlen(line) - 1;
+      line[line_length] = '\0';
+      next_record = self->scanner->get_next(self->scanner, line);
+      if (!next_record)
+        {
+          g_array_free(nv_array, TRUE);
+          return NULL;
+        }
+      g_array_append_val(nv_array, *next_record);
+    }
+  return nv_array;
 }
 
 static void
@@ -230,11 +243,11 @@ kvtagger_classify_array(const GArray *const record_array)
   if (record_array->len > 0)
     {
       gsize range_start = 0;
-      tag_record range_start_tag = g_array_index(record_array, tag_record, 0);
+      TagRecord range_start_tag = g_array_index(record_array, TagRecord, 0);
 
       for (gsize i = 1; i < record_array->len; ++i)
         {
-          tag_record current_record = g_array_index(record_array, tag_record, i);
+          TagRecord current_record = g_array_index(record_array, TagRecord, i);
 
           if (_kv_comparer(&range_start_tag, &current_record))
             {
