@@ -97,7 +97,7 @@ _copy_updated_sdata_handles(LogMessageSerializationState *state)
 static void
 _sort_updated_index(LogMessageSerializationState *state)
 {
-  NVTable *self = state->msg->payload;
+  NVTable *self = state->nvtable;
 
   qsort(state->updated_index, self->index_size, sizeof(NVIndexEntry), _index_entry_cmp);
 }
@@ -105,7 +105,7 @@ _sort_updated_index(LogMessageSerializationState *state)
 static void
 _copy_updated_index(LogMessageSerializationState *state)
 {
-  NVTable *self = state->msg->payload;
+  NVTable *self = state->nvtable;
 
   memmove(nv_table_get_index(self), state->updated_index, sizeof(NVIndexEntry) * self->index_size);
 }
@@ -131,7 +131,7 @@ _fixup_sdata_handle(LogMessageSerializationState *state, NVHandle old_handle, NV
 static void
 _fixup_handle_in_index_entry(LogMessageSerializationState *state, NVIndexEntry *index_entry, NVHandle new_handle)
 {
-  gint index_slot = index_entry - nv_table_get_index(state->msg->payload);
+  gint index_slot = index_entry - nv_table_get_index(state->nvtable);
   NVIndexEntry *new_index_entry = &state->updated_index[index_slot];
 
   new_index_entry->ofs = index_entry->ofs;
@@ -177,7 +177,7 @@ _fixup_handle_in_indirect_entry(NVTable *self, NVEntry *entry)
 static gboolean
 _validate_entry(LogMessageSerializationState *state, NVEntry *entry)
 {
-  NVTable *nvtable = state->msg->payload;
+  NVTable *nvtable = state->nvtable;
 
   /* check alignment */
   if ((GPOINTER_TO_UINT(entry) & 0x3) != 0)
@@ -211,7 +211,7 @@ static gboolean
 _fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
 {
   LogMessageSerializationState *state = (LogMessageSerializationState *) user_data;
-  NVTable *self = state->msg->payload;
+  NVTable *self = state->nvtable;
   NVHandle new_handle;
 
   if (!_validate_entry(state, entry))
@@ -237,7 +237,7 @@ gboolean
 nv_table_fixup_handles(LogMessageSerializationState *state)
 {
   LogMessage *msg = state->msg;
-  NVTable *nvtable = msg->payload;
+  NVTable *nvtable = state->nvtable;
   NVHandle _updated_sdata_handles[msg->num_sdata];
   NVIndexEntry _updated_index[nvtable->index_size];
 
@@ -409,29 +409,21 @@ nv_table_deserialize(LogMessageSerializationState *state)
   NVTable *res = NULL;
 
   if (!_read_metadata(sa, &meta_data))
-    {
-      goto error;
-    }
+    goto error;
 
   if (!_read_header(sa, &res))
-    {
-      goto error;
-    }
+    goto error;
 
+  state->nvtable = res;
   if (!_read_struct(sa, res))
-    {
-      goto error;
-    }
+    goto error;
 
   if (!_read_payload(sa, res))
-    {
-      goto error;
-    }
+    goto error;
 
   if (_has_to_swap_bytes(meta_data.flags))
-    {
-      nv_table_data_swap_bytes(res);
-    }
+    nv_table_data_swap_bytes(res);
+
 
   return res;
 

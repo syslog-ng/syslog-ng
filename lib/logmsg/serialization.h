@@ -34,6 +34,8 @@ typedef struct _LogMessageSerializationState
   guint8 version;
   SerializeArchive *sa;
   LogMessage *msg;
+  NVTable *nvtable;
+  guint8 nvtable_flags;
   NVHandle *updated_sdata_handles;
   NVIndexEntry *updated_index;
 } LogMessageSerializationState;

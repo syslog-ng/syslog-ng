@@ -130,7 +130,7 @@ _deserialize_message(LogMessageSerializationState *state)
 
   nv_table_unref(msg->payload);
   msg->payload = nv_table_deserialize(state);
-  if(!msg->payload)
+  if (!msg->payload)
     return FALSE;
 
   if (!nv_table_fixup_handles(state))
