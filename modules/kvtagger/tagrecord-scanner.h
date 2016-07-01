@@ -25,14 +25,7 @@
 
 #include <syslog-ng.h>
 #include <stdio.h>
-
-
-typedef struct _TagRecord
-{
-  gchar *selector;
-  gchar *name;
-  gchar *value;
-} TagRecord;
+#include "kvtagdb.h"
 
 typedef struct _TagRecordScanner TagRecordScanner;
 

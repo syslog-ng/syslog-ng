@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 1998-2015 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -29,44 +28,21 @@
 #include "reloc.h"
 #include "tagrecord-scanner.h"
 #include "template/templates.h"
+#include "kvtagdb.h"
 
 #include <stdio.h>
 #include <string.h>
 
-typedef struct element_range
-{
-  gsize offset;
-  gsize length;
-} element_range;
-
-typedef struct KVTagDB
-{
-  GArray *data;
-  GHashTable *index;
-} KVTagDB;
 
 typedef struct KVTagger
 {
   LogParser super;
-  KVTagDB tagdb;
+  KVTagDB *tagdb;
   LogTemplate *selector_template;
   gchar *default_selector;
   gchar *filename;
   TagRecordScanner *scanner;
 } KVTagger;
-
-static KVTagDB
-kvtagdb_ref(KVTagDB *s)
-{
-  return (KVTagDB){.data = g_array_ref(s->data), .index = g_hash_table_ref(s->index)};
-}
-
-static void
-kvtagdb_unref(KVTagDB *s)
-{
-  g_array_unref(s->data);
-  g_hash_table_unref(s->index);
-}
 
 void
 kvtagger_set_filename(LogParser *p, const gchar *filename)
@@ -94,39 +70,17 @@ kvtagger_set_database_default_selector(LogParser *p, const gchar *default_select
   self->default_selector = g_strdup(default_selector);
 }
 
-static inline element_range *
-kvtagger_lookup_tag(KVTagger *const self, const gchar *const selector)
-{
-  return g_hash_table_lookup(self->tagdb.index, selector);
-}
-
 gboolean
 _is_default_selector_set(KVTagger *self)
 {
   return (self->default_selector != NULL);
 }
 
-element_range *
-_get_range_of_tags(KVTagger *self, GString *selector)
-{
-  element_range *position_of_tags_to_be_inserted = kvtagger_lookup_tag(self, selector->str);
-  if (position_of_tags_to_be_inserted == NULL && _is_default_selector_set(self))
-    {
-      position_of_tags_to_be_inserted = kvtagger_lookup_tag(self, self->default_selector);
-    }
-  return position_of_tags_to_be_inserted;
-}
-
 void
-_tag_message(KVTagger *self, LogMessage *msg, element_range *position_of_tags_to_be_inserted)
+_tag_message(gpointer pmsg, const TagRecord *tag)
 {
-  for (gsize i = position_of_tags_to_be_inserted->offset;
-       i < position_of_tags_to_be_inserted->offset + position_of_tags_to_be_inserted->length;
-       ++i)
-    {
-      TagRecord matching_tag = g_array_index(self->tagdb.data, TagRecord, i);
-      log_msg_set_value_by_name(msg, matching_tag.name, matching_tag.value, -1);
-    }
+  LogMessage *msg = (LogMessage *) pmsg;
+  log_msg_set_value_by_name(msg, tag->name, tag->value, -1);
 }
 
 static gboolean
@@ -135,14 +89,19 @@ kvtagger_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *p
 {
   KVTagger *self = (KVTagger *)s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  GString *selector = g_string_new(NULL);
+  GString *selector_str = g_string_new(NULL);
+  const gchar *selector;
 
-  log_template_format(self->selector_template, msg, NULL, LTZ_LOCAL, 0, NULL, selector);
-  element_range* position_of_tags_to_be_inserted = _get_range_of_tags(self, selector);
-  if (position_of_tags_to_be_inserted != NULL)
-    {
-      _tag_message(self, msg, position_of_tags_to_be_inserted);
-    }
+  log_template_format(self->selector_template, msg, NULL, LTZ_LOCAL, 0, NULL, selector_str);
+
+  if (kvtagdb_contains(self->tagdb, selector_str->str))
+    selector = selector_str->str;
+  else if (_is_default_selector_set(self))
+    selector = self->default_selector;
+
+  kvtagdb_foreach_tag(self->tagdb, selector, _tag_message, (gpointer)msg);
+
+  g_string_free(selector_str, TRUE);
 
   return TRUE;
 }
@@ -154,7 +113,7 @@ kvtagger_parser_clone(LogPipe *s)
   KVTagger *cloned = (KVTagger *)kvtagger_parser_new(s->cfg);
 
   cloned->super.template = log_template_ref(self->super.template);
-  cloned->tagdb = kvtagdb_ref(&self->tagdb);
+  cloned->tagdb = kvtagdb_ref(self->tagdb);
 
   return &cloned->super.super;
 }
@@ -164,17 +123,10 @@ kvtagger_parser_free(LogPipe *s)
 {
   KVTagger *self = (KVTagger *)s;
 
+  kvtagdb_unref(self->tagdb);
   g_free(self->filename);
   g_free(self->scanner);
   log_parser_free_method(s);
-}
-
-static gint
-_kv_comparer(gconstpointer k1, gconstpointer k2)
-{
-  TagRecord *r1 = (TagRecord *)k1;
-  TagRecord *r2 = (TagRecord *)k2;
-  return strcmp(r1->selector, r2->selector);
 }
 
 static gboolean
@@ -208,11 +160,10 @@ _open_data_file(const gchar *filename)
   return f;
 }
 
-static GArray *
+void
 _parse_input_file(KVTagger *self, FILE *file)
 {
   gchar line[3072];
-  GArray *nv_array = g_array_new(FALSE, FALSE, sizeof(TagRecord));
   const TagRecord *next_record;
   while(fgets(line, 3072, file))
     {
@@ -221,56 +172,12 @@ _parse_input_file(KVTagger *self, FILE *file)
       next_record = self->scanner->get_next(self->scanner, line);
       if (!next_record)
         {
-          g_array_free(nv_array, TRUE);
-          return NULL;
+          // Are we sure in this?
+          kvtagdb_purge(self->tagdb);
+          return;
         }
-      g_array_append_val(nv_array, *next_record);
+      kvtagdb_insert(self->tagdb, next_record);
     }
-  return nv_array;
-}
-
-static void
-kvtagger_sort_array_by_key(GArray *array)
-{
-  g_array_sort(array, _kv_comparer);
-}
-
-static GHashTable *
-kvtagger_classify_array(const GArray *const record_array)
-{
-  GHashTable *index = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
-
-  if (record_array->len > 0)
-    {
-      gsize range_start = 0;
-      TagRecord range_start_tag = g_array_index(record_array, TagRecord, 0);
-
-      for (gsize i = 1; i < record_array->len; ++i)
-        {
-          TagRecord current_record = g_array_index(record_array, TagRecord, i);
-
-          if (_kv_comparer(&range_start_tag, &current_record))
-            {
-              element_range *current_range = g_new(element_range, 1);
-              current_range->offset = range_start;
-              current_range->length = i - range_start;
-
-              g_hash_table_insert(index, range_start_tag.selector, current_range);
-
-              range_start_tag = current_record;
-              range_start = i;
-            }
-        }
-
-      {
-        element_range *last_range = g_new(element_range, 1);
-        last_range->offset = range_start;
-        last_range->length = record_array->len - range_start;
-        g_hash_table_insert(index, range_start_tag.selector, last_range);
-      }
-    }
-
-  return index;
 }
 
 static gboolean
@@ -315,21 +222,21 @@ kvtagger_create_lookup_table_from_file(KVTagger *self)
       return FALSE;
     }
 
-  self->tagdb.data = _parse_input_file(self, f);
+  _parse_input_file(self, f);
+  if (kvtagdb_is_loaded(self->tagdb))
+    kvtagdb_index(self->tagdb);
 
   fclose(f);
-  if (!self->tagdb.data)
+  if (!kvtagdb_is_indexed(self->tagdb))
     {
       msg_error("Error while parsing kvtagger database");
       return FALSE;
     }
-  kvtagger_sort_array_by_key(self->tagdb.data);
-  self->tagdb.index = kvtagger_classify_array(self->tagdb.data);
 
   return TRUE;
 }
 
-static const gchar *
+static gchar *
 _format_persist_name(const KVTagger *self)
 {
   static gchar persist_name[256];
@@ -345,8 +252,11 @@ _restore_kvtagdb_from_globalconfig(KVTagger *self, GlobalConfig *cfg)
 
   if (restored_kvtagdb)
     {
-      self->tagdb.data = restored_kvtagdb->data;
-      self->tagdb.index = restored_kvtagdb->index;
+      if (self->tagdb != restored_kvtagdb)
+        {
+          kvtagdb_unref(self->tagdb);
+          self->tagdb = restored_kvtagdb;
+        }
       return TRUE;
     }
   else
@@ -386,12 +296,15 @@ kvtagger_parser_init(LogPipe *s)
 }
 
 static void
+_destroy_notify_kvtagdb_unref(gpointer kvtagdb)
+{
+  kvtagdb_unref((KVTagDB *)kvtagdb);
+}
+
+static void
 _save_kvtagdb_to_globalconfig(KVTagger *self, GlobalConfig *cfg)
 {
-  KVTagDB *tagdb_shallow_copy = g_new0(KVTagDB, 1);
-  *tagdb_shallow_copy = kvtagdb_ref(&self->tagdb);
-
-  cfg_persist_config_add(cfg, _format_persist_name(self), tagdb_shallow_copy, kvtagdb_unref, FALSE);
+  cfg_persist_config_add(cfg, _format_persist_name(self), kvtagdb_ref(self->tagdb), _destroy_notify_kvtagdb_unref, FALSE);
 }
 
 static gboolean
@@ -415,6 +328,7 @@ kvtagger_parser_new(GlobalConfig *cfg)
   self->selector_template = log_template_new(cfg, NULL);
 
   self->super.process = kvtagger_parser_process;
+  self->tagdb = kvtagdb_new();
 
   self->super.super.clone = kvtagger_parser_clone;
   self->super.super.deinit = kvtagger_parser_deinit;

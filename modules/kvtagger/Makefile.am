@@ -8,6 +8,8 @@ modules_kvtagger_libkvtagger_la_SOURCES	=	\
 	modules/kvtagger/kvtagger-grammar.y		\
 	modules/kvtagger/kvtagger-parser.c		\
 	modules/kvtagger/kvtagger-parser.h		\
+	modules/kvtagger/kvtagdb.h			\
+	modules/kvtagger/kvtagdb.c			\
 	modules/kvtagger/kvtagger-plugin.c
 
 modules_kvtagger_libkvtagger_la_CPPFLAGS	=	\
@@ -30,3 +32,5 @@ EXTRA_DIST					+=	\
 
 modules/kvtagger modules/kvtagger/ mod-kvtagger: modules/kvtagger/libkvtagger.la
 .PHONY: modules/kvtagger/ mod-kvtagger
+
+include modules/kvtagger/tests/Makefile.am
