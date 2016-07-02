@@ -34,6 +34,7 @@
 
 #define NV_TABLE_MAGIC_V2  "NVT2"
 #define NVT_SF_BE           0x1
+#define NVT_SUPPORTS_UNSET  0x2
 
 static gboolean
 serialize_read_nvhandle(SerializeArchive *sa, NVHandle* handle)
@@ -208,13 +209,33 @@ _validate_entry(LogMessageSerializationState *state, NVEntry *entry)
 }
 
 static gboolean
+_update_entry(LogMessageSerializationState *state, NVEntry *entry)
+{
+  if ((state->nvtable_flags & NVT_SUPPORTS_UNSET) == 0)
+    {
+      /* if this was serialized with a syslog-ng that didn't support unset, make sure that:
+       *   1) unset is set to FALSE
+       *   2) the rest of the bits are cleared too
+       *
+       * This is needed as earlier syslog-ng versions unfortunately didn't
+       * set the flags to 0, so it might contain garbage.  Anything that is
+       * past NVT_SUPPORTS_UNSET however sets these bits to zero to make
+       * adding new flags easier. */
+      entry->unset = FALSE;
+      entry->__bit_padding = 0;
+    }
+  return TRUE;
+}
+
+static gboolean
 _fixup_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
 {
   LogMessageSerializationState *state = (LogMessageSerializationState *) user_data;
   NVTable *self = state->nvtable;
   NVHandle new_handle;
 
-  if (!_validate_entry(state, entry))
+  if (!_validate_entry(state, entry) ||
+      !_update_entry(state, entry))
     {
       /* this return of TRUE indicates failure, as it terminates the foreach loop */
       return TRUE;
@@ -414,6 +435,7 @@ nv_table_deserialize(LogMessageSerializationState *state)
   if (!_read_header(sa, &res))
     goto error;
 
+  state->nvtable_flags = meta_data.flags;
   state->nvtable = res;
   if (!_read_struct(sa, res))
     goto error;
@@ -479,6 +501,7 @@ _fill_meta_data(NVTable *self, NVTableMetaData *meta_data)
   memcpy((void *)&meta_data->magic,(const void *) NV_TABLE_MAGIC_V2, 4);
   if (G_BYTE_ORDER == G_BIG_ENDIAN)
      meta_data->flags |= NVT_SF_BE;
+  meta_data->flags |= NVT_SUPPORTS_UNSET;
 }
 
 static void

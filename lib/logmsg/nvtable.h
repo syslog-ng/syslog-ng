@@ -105,9 +105,12 @@ struct _NVEntry
   /* negative offset, counting from string table top, e.g. start of the string is at @top + ofs */
   union {
     struct {
+      /* make sure you don't exceed 8 bits here. So if you want to add new
+       * bits, decrease the size of __bit_padding below */
       guint8 indirect:1,
              referenced:1,
-             unset:1;
+             unset:1,
+             __bit_padding:5;
     };
     guint8 flags;
   };
