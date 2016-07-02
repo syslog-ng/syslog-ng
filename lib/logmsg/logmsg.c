@@ -312,6 +312,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
               break;
             }
         }
+      i++;
     }
   else
     i = -1;

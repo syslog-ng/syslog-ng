@@ -1,5 +1,4 @@
 tests_unit_TESTS			=  \
-	tests/unit/test_msgsdata	   \
 	tests/unit/test_logqueue	   \
 	tests/unit/test_matcher		   \
 	tests/unit/test_clone_logmsg 	   \
@@ -18,10 +17,6 @@ check_PROGRAMS				+= \
 
 unit_test_extra_modules			= \
 	$(PREOPEN_SYSLOGFORMAT)
-
-tests_unit_test_msgsdata_CFLAGS		= $(TEST_CFLAGS)
-tests_unit_test_msgsdata_LDADD		= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_logqueue_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
