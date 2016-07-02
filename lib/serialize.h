@@ -87,6 +87,43 @@ serialize_read_uint32(SerializeArchive *archive, guint32 *value)
   return FALSE;
 }
 
+/* NOTE: this function writes to the array to convert it to big endian. It
+ * is converted back to native byte order before returning */
+static inline gboolean
+serialize_write_uint32_array(SerializeArchive *archive, guint32 *values, gsize elements)
+{
+  const int buffer_size = 128;
+  guint32 converted_values[buffer_size];
+  gint converted_ndx;
+
+  while (elements > 0)
+    {
+      for (converted_ndx = 0;
+           converted_ndx < buffer_size && converted_ndx < elements;
+           converted_ndx++)
+        converted_values[converted_ndx] = GUINT32_TO_BE(values[converted_ndx]);
+
+      if (!serialize_archive_write_bytes(archive, (void *) converted_values, converted_ndx * sizeof(guint32)))
+        return FALSE;
+
+      values += converted_ndx;
+      elements -= converted_ndx;
+    }
+  return TRUE;
+}
+
+static inline gboolean
+serialize_read_uint32_array(SerializeArchive *archive, guint32 *values, gsize elements)
+{
+  if (serialize_archive_read_bytes(archive, (void *) values, elements * sizeof(guint32)))
+    {
+      for (int i = 0; i < elements; i++)
+        values[i] = GUINT32_FROM_BE(values[i]);
+      return TRUE;
+    }
+  return FALSE;
+}
+
 static inline gboolean
 serialize_write_uint64(SerializeArchive *archive, guint64 value)
 {
