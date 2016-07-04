@@ -69,7 +69,7 @@ get_next_record(TagRecordScanner *self, const gchar *input)
 }
 
 static void
-csv_tagger_scanner_free(TagRecordScanner *s)
+csv_tag_record_scanner_free(TagRecordScanner *s)
 {
   CSVTagRecordScanner *self = (CSVTagRecordScanner *)s;
   csv_scanner_options_clean(&self->options);
@@ -78,7 +78,7 @@ csv_tagger_scanner_free(TagRecordScanner *s)
 }
 
 TagRecordScanner*
-csv_tagger_scanner_new()
+csv_tag_record_scanner_new()
 {
   CSVTagRecordScanner *self = g_new0(CSVTagRecordScanner, 1);
   csv_scanner_options_set_delimiters(&self->options, ",");
@@ -90,6 +90,6 @@ csv_tagger_scanner_new()
   csv_scanner_state_init(&self->scanner, &self->options);
   self->super.scanner = &self->scanner;
   self->super.get_next = get_next_record;
-  self->super.free_fn = csv_tagger_scanner_free;
+  self->super.free_fn = csv_tag_record_scanner_free;
   return &self->super;
 }

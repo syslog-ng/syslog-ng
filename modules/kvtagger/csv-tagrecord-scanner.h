@@ -34,6 +34,6 @@ typedef struct _CSVTagRecordScanner
 
 } CSVTagRecordScanner;
 
-TagRecordScanner* csv_tagger_scanner_new(); 
+TagRecordScanner* csv_tag_record_scanner_new(); 
 
 #endif

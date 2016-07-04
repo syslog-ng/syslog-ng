@@ -23,11 +23,16 @@
 #ifndef TAGGER_SCANNER_H_INCLUDED
 #define TAGGER_SCANNER_H_INCLUDED
 
-#include <syslog-ng.h>
-#include <stdio.h>
-#include "kvtagdb.h"
+#include "syslog-ng.h"
 
 typedef struct _TagRecordScanner TagRecordScanner;
+
+typedef struct _TagRecord
+{
+  gchar *selector;
+  gchar *name;
+  gchar *value;
+} TagRecord;
 
 struct _TagRecordScanner
 {
@@ -40,5 +45,7 @@ struct _TagRecordScanner
 
 void tag_record_scanner_free(TagRecordScanner *self);
 void tag_record_scanner_set_name_prefix(TagRecordScanner *self, const gchar *prefix);
+
+TagRecordScanner* create_tag_record_scanner_by_type(const gchar *type);
 
 #endif

@@ -24,13 +24,8 @@
 #define KVTAGDB_H_INCLUDED
 
 #include "syslog-ng.h"
-
-typedef struct _TagRecord
-{
-  gchar *selector;
-  gchar *name;
-  gchar *value;
-} TagRecord;
+#include "tagrecord-scanner.h"
+#include <stdio.h>
 
 typedef struct _KVTagDB KVTagDB;
 
@@ -42,12 +37,10 @@ void kvtagdb_free(KVTagDB *self);
 KVTagDB* kvtagdb_ref(KVTagDB *self);
 void kvtagdb_unref(KVTagDB *self);
 
-//gboolean kvtagdb_import_csv(KVTagDB *self, FILE *fp);
 void kvtagdb_purge(KVTagDB *self);
 void kvtagdb_index(KVTagDB *self);
 gboolean kvtagdb_is_loaded(KVTagDB *self);
 gboolean kvtagdb_is_indexed(KVTagDB *self);
-
 
 void kvtagdb_insert(KVTagDB *self, const TagRecord *record);
 gboolean kvtagdb_contains(KVTagDB *self, const gchar *selector);
@@ -55,5 +48,7 @@ gsize kvtagdb_number_of_tags(KVTagDB *self, const gchar *selector);
 void kvtagdb_foreach_tag(KVTagDB *self, const gchar *selector, KVTAGDB_TAG_CB callback, gpointer arg);
 
 GList *kvtagdb_get_selectors(KVTagDB *self);
+
+gboolean kvtagdb_import(KVTagDB *self, FILE *fp, TagRecordScanner *scanner);
 
 #endif

@@ -174,50 +174,30 @@ _open_data_file(const gchar *filename)
   return f;
 }
 
-void
-_parse_input_file(KVTagger *self, FILE *file)
+const gchar*
+_get_filename_extension(const gchar *filename)
 {
-  gchar line[3072];
-  const TagRecord *next_record;
-  while(fgets(line, 3072, file))
-    {
-      size_t line_length = strlen(line) - 1;
-      line[line_length] = '\0';
-      next_record = self->scanner->get_next(self->scanner, line);
-      if (!next_record)
-        {
-          // Are we sure in this?
-          kvtagdb_purge(self->tagdb);
-          return;
-        }
-      kvtagdb_insert(self->tagdb, next_record);
-    }
+   gsize filename_len = strlen(filename);
+
+   if (filename_len < 3)
+     return NULL;
+
+   gsize diff = filename_len - 3;
+   const gchar *extension = filename + diff;   
+   return extension;
 }
 
 static gboolean
 _prepare_scanner(KVTagger *self)
 {
-  gsize filename_len = strlen(self->filename);
-  if (filename_len >= 3)
-    {
-      gsize diff = filename_len - 3;
-      const gchar *extension = self->filename + diff;
-      if (strcmp(extension, "csv") == 0)
-        {
+  const gchar *type = _get_filename_extension(self->filename);
+  self->scanner = create_tag_record_scanner_by_type(type);
 
-          GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
-          self->scanner = (TagRecordScanner *)csv_tagger_scanner_new(cfg);
-          tag_record_scanner_set_name_prefix(self->scanner, self->prefix);
-        }
-      else
-        {
-          return FALSE;
-        }
-    }
-  else
-    {
-      return FALSE;
-    }
+  if (!self->scanner)
+    return FALSE;
+
+  tag_record_scanner_set_name_prefix(self->scanner, self->prefix);  
+
   return TRUE;
 }
 
@@ -237,12 +217,10 @@ kvtagger_create_lookup_table_from_file(KVTagger *self)
       return FALSE;
     }
 
-  _parse_input_file(self, f);
-  if (kvtagdb_is_loaded(self->tagdb))
-    kvtagdb_index(self->tagdb);
+  gboolean tag_db_loaded = kvtagdb_import(self->tagdb, f, self->scanner);
 
   fclose(f);
-  if (!kvtagdb_is_indexed(self->tagdb))
+  if (!tag_db_loaded)
     {
       msg_error("Error while parsing kvtagger database");
       return FALSE;

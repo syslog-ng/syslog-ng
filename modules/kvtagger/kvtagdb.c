@@ -235,3 +235,24 @@ kvtagdb_get_selectors(KVTagDB *self)
   _ensure_indexed_db(self);
   return g_hash_table_get_keys(self->index);
 }
+
+gboolean
+kvtagdb_import(KVTagDB *self, FILE *fp, TagRecordScanner *scanner)
+{
+  gchar line[3072];
+  const TagRecord *next_record;
+  while(fgets(line, 3072, fp))
+    {
+      size_t line_length = strlen(line) - 1;
+      line[line_length] = '\0';
+      next_record = scanner->get_next(scanner, line);
+      if (!next_record)
+        {
+          kvtagdb_purge(self);
+          return FALSE;
+        }
+      kvtagdb_insert(self, next_record);
+    }
+  kvtagdb_index(self);
+  return TRUE;
+}
