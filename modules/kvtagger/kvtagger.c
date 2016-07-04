@@ -41,6 +41,7 @@ typedef struct KVTagger
   LogTemplate *selector_template;
   gchar *default_selector;
   gchar *filename;
+  gchar *prefix;
   TagRecordScanner *scanner;
 } KVTagger;
 
@@ -59,6 +60,15 @@ kvtagger_set_database_selector_template(LogParser *p, const gchar *selector)
   KVTagger *self = (KVTagger *)p;
 
   log_template_compile(self->selector_template, selector, NULL);
+}
+
+void
+kvtagger_set_prefix(LogParser *p, const gchar *prefix)
+{
+  KVTagger *self = (KVTagger *)p;
+
+  g_free(self->prefix);
+  self->prefix = g_strdup(prefix);
 }
 
 void
@@ -115,6 +125,7 @@ kvtagger_parser_clone(LogPipe *s)
 
   cloned->super.template = log_template_ref(self->super.template);
   cloned->tagdb = kvtagdb_ref(self->tagdb);
+  kvtagger_set_prefix(&cloned->super, self->prefix);
 
   return &cloned->super.super;
 }
@@ -127,6 +138,7 @@ kvtagger_parser_free(LogPipe *s)
   kvtagdb_unref(self->tagdb);
   tag_record_scanner_free(self->scanner);
   g_free(self->filename);
+  g_free(self->prefix);
   log_template_unref(self->selector_template);
   log_parser_free_method(s);
 }
@@ -195,6 +207,7 @@ _prepare_scanner(KVTagger *self)
 
           GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
           self->scanner = (TagRecordScanner *)csv_tagger_scanner_new(cfg);
+          tag_record_scanner_set_name_prefix(self->scanner, self->prefix);
         }
       else
         {
@@ -243,7 +256,7 @@ _format_persist_name(const KVTagger *self)
 {
   static gchar persist_name[256];
 
-  g_snprintf(persist_name, sizeof(persist_name), "kvtagger(%s)", self->filename);
+  g_snprintf(persist_name, sizeof(persist_name), "kvtagger(%s,%s)", self->filename, self->prefix);
   return persist_name;
 }
 
@@ -338,6 +351,7 @@ kvtagger_parser_new(GlobalConfig *cfg)
   self->super.super.init = kvtagger_parser_init;
   self->scanner = NULL;
   self->default_selector = NULL;
+  self->prefix = NULL;
 
   return &self->super;
 }

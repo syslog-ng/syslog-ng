@@ -33,10 +33,12 @@ struct _TagRecordScanner
 {
   TagRecord last_record;
   gpointer scanner;
+  const gchar *name_prefix;
   const TagRecord* (*get_next)(TagRecordScanner *self, const gchar *input);
   void (*free_fn)(TagRecordScanner *self);
 };
 
 void tag_record_scanner_free(TagRecordScanner *self);
+void tag_record_scanner_set_name_prefix(TagRecordScanner *self, const gchar *prefix);
 
 #endif
