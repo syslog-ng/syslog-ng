@@ -27,6 +27,7 @@ install:
       libnet1-dev
       libriemann-client-dev
       libwrap0-dev
+      libxml2-utils
       pkg-config
       sqlite3
       xsltproc
