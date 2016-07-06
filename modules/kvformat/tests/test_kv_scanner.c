@@ -46,14 +46,6 @@ _assert_no_more_tokens(KVScanner *scanner)
 }
 
 static gboolean
-_scan_next_token(KVScanner *scanner)
-{
-  gboolean ok = kv_scanner_scan_next(scanner);
-  expect_true(ok,  "kv_scanner is expected to return TRUE for scan_next");
-  return ok;
-}
-
-static gboolean
 _assert_current_key_is(KVScanner *scanner, const gchar *expected_key)
 {
   const gchar *key = kv_scanner_get_current_key(scanner);
@@ -78,10 +70,14 @@ _compare_key_value(KVScanner *scanner, va_list args, gboolean *expect_more)
   if (!kv)
     return FALSE;
 
-  if (!_scan_next_token(scanner))
+  gboolean ok = kv_scanner_scan_next(scanner);
+  if (!ok)
     {
       *expect_more = FALSE;
-      return TRUE;
+      expect_true(ok, "kv_scanner is expected to return TRUE for scan_next(), "
+                  "first unconsumed key: [%s]",
+                  kv);
+      return FALSE;
     }
 
   _assert_current_key_is(scanner, kv);
