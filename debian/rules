@@ -78,7 +78,7 @@ binary-arch: build install
 	dh_installinit -r --no-start --name syslog-ng -- defaults 10 90
 #	dh_installcron
 	dh_installlogrotate --name syslog-ng
-	dh_installman doc/man/pdbtool.1 doc/man/syslog-ng.8 doc/man/syslog-ng.conf.5
+	dh_installman doc/man/pdbtool.1.xml doc/man/syslog-ng.8.xml doc/man/syslog-ng.conf.5.xml
 #	dh_undocumented
 	dh_installchangelogs ChangeLog
 #	dh_link
