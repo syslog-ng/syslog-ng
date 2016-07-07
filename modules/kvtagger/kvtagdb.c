@@ -243,7 +243,9 @@ kvtagdb_import(KVTagDB *self, FILE *fp, TagRecordScanner *scanner)
   const TagRecord *next_record;
   while(fgets(line, 3072, fp))
     {
-      size_t line_length = strlen(line) - 1;
+      size_t line_length = strlen(line);
+      if (line[line_length-1] == '\n')
+        --line_length;
       line[line_length] = '\0';
       next_record = scanner->get_next(scanner, line);
       if (!next_record)
