@@ -4,6 +4,12 @@ set(kvtagger_SOURCES
     kvtagger-parser.c
     kvtagger-parser.h
     kvtagger-plugin.c
+    kvtagdb.h
+    kvtagdb.c
+    tagrecord-scanner.h
+    tagrecord-scanner.c
+    csv-tagrecord-scanner.h
+    csv-tagrecord-scanner.c
     ${CMAKE_CURRENT_BINARY_DIR}/kvtagger-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/kvtagger-grammar.c
 )
