@@ -21,6 +21,7 @@ add_subdirectory(stats)
 add_subdirectory(template)
 add_subdirectory(transport)
 add_subdirectory(value-pairs)
+add_subdirectory(scanner)
 
 set(LIB_SUBDIR_HEADERS
     ${COMPAT_HEADERS}
@@ -35,6 +36,7 @@ set(LIB_SUBDIR_HEADERS
     ${TEMPLATE_HEADERS}
     ${TRANSPORT_HEADERS}
     ${VALUE_PAIRS_HEADERS}
+    ${CSV_SCANNER_HEADERS}
     ${CMAKE_CURRENT_BINARY_DIR}/filter/filter-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/rewrite/rewrite-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/parser/parser-expr-grammar.h
@@ -214,6 +216,7 @@ set(LIB_SOURCES
     ${TEMPLATE_SOURCES}
     ${TRANSPORT_SOURCES}
     ${VALUE_PAIRS_SOURCES}
+    ${CSV_SCANNER_SOURCES}
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.c
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.c
     ${PROJECT_BINARY_DIR}/lib/cfg-lex.c
@@ -295,6 +298,7 @@ install(FILES ${REWRITE_HEADERS} DESTINATION include/syslog-ng/rewrite)
 install(FILES ${STATS_HEADERS} DESTINATION include/syslog-ng/stats)
 install(FILES ${TEMPLATE_HEADERS} DESTINATION include/syslog-ng/template)
 install(FILES ${TRANSPORT_HEADERS} DESTINATION include/syslog-ng/transport)
+install(FILES ${CSV_SCANNER_HEADERS} DESTINATION include/syslog-ng/scanner/csv-scanner)
 
 set(TOOLS
     merge-grammar.pl
