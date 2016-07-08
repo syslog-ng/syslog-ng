@@ -42,7 +42,6 @@ typedef struct KVTagger
   gchar *default_selector;
   gchar *filename;
   gchar *prefix;
-  TagRecordScanner *scanner;
 } KVTagger;
 
 void
@@ -117,15 +116,32 @@ kvtagger_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *p
   return TRUE;
 }
 
+static void
+_replace_template(LogTemplate **old_template, LogTemplate *new_template)
+{
+  log_template_unref(*old_template);
+  *old_template = log_template_ref(new_template);
+}
+
+static void
+_replace_tagdb(KVTagDB **old_db, KVTagDB *new_db)
+{
+  kvtagdb_unref(*old_db);
+  *old_db = kvtagdb_ref(new_db);
+}
+
 static LogPipe *
 kvtagger_parser_clone(LogPipe *s)
 {
   KVTagger *self = (KVTagger *)s;
   KVTagger *cloned = (KVTagger *)kvtagger_parser_new(s->cfg);
 
-  cloned->super.template = log_template_ref(self->super.template);
-  cloned->tagdb = kvtagdb_ref(self->tagdb);
+  log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
+  _replace_tagdb(&cloned->tagdb, self->tagdb);
+  _replace_template(&cloned->selector_template, self->selector_template);
   kvtagger_set_prefix(&cloned->super, self->prefix);
+  kvtagger_set_filename(&cloned->super, self->filename);
+  kvtagger_set_database_default_selector(&cloned->super, self->default_selector);
 
   return &cloned->super.super;
 }
@@ -136,7 +152,6 @@ kvtagger_parser_free(LogPipe *s)
   KVTagger *self = (KVTagger *)s;
 
   kvtagdb_unref(self->tagdb);
-  tag_record_scanner_free(self->scanner);
   g_free(self->filename);
   g_free(self->prefix);
   log_template_unref(self->selector_template);
@@ -187,37 +202,41 @@ _get_filename_extension(const gchar *filename)
    return extension;
 }
 
-static gboolean
-_prepare_scanner(KVTagger *self)
+static TagRecordScanner*
+_get_scanner(KVTagger *self)
 {
   const gchar *type = _get_filename_extension(self->filename);
-  self->scanner = create_tag_record_scanner_by_type(type);
+  TagRecordScanner *scanner = create_tag_record_scanner_by_type(type);
 
-  if (!self->scanner)
-    return FALSE;
+  if (!scanner)
+    {
+      msg_error("Unknown file extension", evt_tag_str("filename", self->filename));
+      return NULL;
+    }
 
-  tag_record_scanner_set_name_prefix(self->scanner, self->prefix);  
+  tag_record_scanner_set_name_prefix(scanner, self->prefix);
 
-  return TRUE;
+  return scanner;
 }
 
 static gboolean
 kvtagger_create_lookup_table_from_file(KVTagger *self)
 {
-  if (!_prepare_scanner(self))
-    {
-      msg_error("Unknown file extension", evt_tag_str("filename", self->filename));
-      return FALSE;
-    }
+  TagRecordScanner *scanner = _get_scanner(self);
+
+  if (!scanner)
+    return FALSE;
 
   FILE *f = _open_data_file(self->filename);
   if (!f)
     {
       msg_error("Error loading kvtagger database", evt_tag_str("filename", self->filename));
+      tag_record_scanner_free(scanner);
       return FALSE;
     }
 
-  gboolean tag_db_loaded = kvtagdb_import(self->tagdb, f, self->scanner);
+  gboolean tag_db_loaded = kvtagdb_import(self->tagdb, f, scanner);
+  tag_record_scanner_free(scanner);
 
   fclose(f);
   if (!tag_db_loaded)
@@ -327,7 +346,6 @@ kvtagger_parser_new(GlobalConfig *cfg)
   self->super.super.deinit = kvtagger_parser_deinit;
   self->super.super.free_fn = kvtagger_parser_free;
   self->super.super.init = kvtagger_parser_init;
-  self->scanner = NULL;
   self->default_selector = NULL;
   self->prefix = NULL;
 

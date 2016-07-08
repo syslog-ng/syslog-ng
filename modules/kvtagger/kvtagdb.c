@@ -94,9 +94,7 @@ static void
 _tag_record_free(gpointer p)
 {
   TagRecord *rec = (TagRecord *)p;
-  g_free(rec->selector);
-  g_free(rec->name);
-  g_free(rec->value);
+  tag_record_clean(rec);
 }
 
 static void

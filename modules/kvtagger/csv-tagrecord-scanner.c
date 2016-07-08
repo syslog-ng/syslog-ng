@@ -27,34 +27,49 @@
 
 
 static gchar*
-_csv_scanner_dup_current_value_with_prefix(CSVScanner *scanner, const gchar *name_prefix)
+_csv_scanner_dup_current_value_with_prefix(CSVScanner *line_scanner, const gchar *prefix)
 {
-  if (!name_prefix)
-    return csv_scanner_dup_current_value(scanner);
+  if (!prefix)
+    return csv_scanner_dup_current_value(line_scanner);
 
-  return g_strdup_printf("%s.%s", name_prefix, csv_scanner_get_current_value(scanner));
+  return g_strdup_printf("%s.%s", prefix, csv_scanner_get_current_value(line_scanner));
+}
+
+static gboolean
+_store_next_record_with_prefix(TagRecordScanner *record_scanner, gchar **lvalue, const gchar *prefix)
+{
+  CSVScanner *line_scanner = (CSVScanner *) record_scanner->scanner;
+  if (!csv_scanner_scan_next(line_scanner))
+    {
+      tag_record_clean(&record_scanner->last_record);
+      return FALSE;
+    }
+
+  *lvalue = _csv_scanner_dup_current_value_with_prefix(line_scanner, prefix);
+
+  return TRUE;
+}
+
+static gboolean
+_store_next_record_without_prefix(TagRecordScanner *record_scanner, gchar **lvalue)
+{
+  return _store_next_record_with_prefix(record_scanner, lvalue, NULL);
 }
 
 static gboolean
 _get_next_record(TagRecordScanner *s, const gchar *input, TagRecord *next_record)
 {
-  CSVScanner *scanner = (CSVScanner *) s->scanner;
-  csv_scanner_input(scanner, input);
-  if (!csv_scanner_scan_next(scanner))
-    {
-      return FALSE;
-    }
-  next_record->selector = csv_scanner_dup_current_value(scanner);
-  if (!csv_scanner_scan_next(scanner))
-    {
-      return FALSE;
-    }
-  next_record->name = _csv_scanner_dup_current_value_with_prefix(scanner, s->name_prefix);
-  if (!csv_scanner_scan_next(scanner))
-    {
-      return FALSE;
-    }
-  next_record->value = csv_scanner_dup_current_value(scanner);
+  CSVScanner *line_scanner = (CSVScanner *) s->scanner;
+  csv_scanner_input(line_scanner, input);
+
+  if (!_store_next_record_without_prefix(s, &next_record->selector))
+    return FALSE;
+
+  if (!_store_next_record_with_prefix(s, &next_record->name, s->name_prefix))
+    return FALSE;
+
+  if (!_store_next_record_without_prefix(s, &next_record->value))
+    return FALSE;
 
   return TRUE;
 }

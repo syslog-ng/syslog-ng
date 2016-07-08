@@ -16,6 +16,14 @@ tag_record_scanner_set_name_prefix(TagRecordScanner *self, const gchar *prefix)
   self->name_prefix = prefix;
 }
 
+void
+tag_record_clean(TagRecord *record)
+{
+  g_free(record->selector);
+  g_free(record->name);
+  g_free(record->value);
+}
+
 TagRecordScanner*
 create_tag_record_scanner_by_type(const gchar *type)
 {

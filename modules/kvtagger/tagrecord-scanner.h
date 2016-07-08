@@ -45,6 +45,7 @@ struct _TagRecordScanner
 
 void tag_record_scanner_free(TagRecordScanner *self);
 void tag_record_scanner_set_name_prefix(TagRecordScanner *self, const gchar *prefix);
+void tag_record_clean(TagRecord *record);
 
 TagRecordScanner* create_tag_record_scanner_by_type(const gchar *type);
 
