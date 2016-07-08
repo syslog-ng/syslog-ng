@@ -27,6 +27,6 @@
 
 #include "parser/parser-expr.h"
 
-void native_parser_set_option(LogParser *s, gchar* key, gchar* value);
+gboolean native_parser_set_option(LogParser *s, gchar* key, gchar* value);
 
 #endif
