@@ -40,9 +40,6 @@
 
 #include <string.h>
 
-gboolean native_parser_set_option(LogParser *s, gchar* key, gchar* value);
-LogParser* native_parser_new(GlobalConfig *cfg);
-
 }
 
 %name-prefix "native_"
