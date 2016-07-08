@@ -437,6 +437,9 @@ case "$ostype" in
 		LDFLAGS="$LDFLAGS -Wl,-brtl"
 		MODULE_LDFLAGS="-avoid-version -module"
 		;;
+	Darwin)
+		MODULE_LDFLAGS="-avoid-version -dylib"
+    ;;
 	OSF1)
 		CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -D_OSF_SOURCE -D_POSIX_C_SOURCE"
 		;;
