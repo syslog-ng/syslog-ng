@@ -347,20 +347,18 @@ AC_PATH_PROG(PYTHON, python)
 dnl ***************************************************************************
 dnl Validate yacc
 
-yacc_ok=1
-if echo "$YACC" | grep bison > /dev/null; then
+yacc_ok=0
+if echo "$YACC" | grep -q bison; then
 	# NOTE: m4 removes [], that's why it needs to be escaped
-	bison_version=[`$YACC --version | head -n 1 | sed -e 's/[^0-9.]*\([-0-9.]\+\)$/\1/'`]
+	bison_version=`$YACC --version | head -n 1 | sed 's/@<:@^0-9.@:>@*//'`
 	bison_version_major=`echo $bison_version | cut -d. -f1`
 	bison_version_minor=`echo $bison_version | cut -d. -f2`
-	if test "$bison_version_major" -lt 2 -o "$bison_version_minor" -lt 4; then
-		yacc_ok=0
+	if test "$bison_version_major" -ge 2 -a "$bison_version_minor" -ge 4; then
+		yacc_ok=1
 	fi
 	if test "$bison_version_major" -gt 2; then
 		yacc_ok=1
 	fi
-else
-	yacc_ok=0
 fi
 
 if test $yacc_ok = 0; then
