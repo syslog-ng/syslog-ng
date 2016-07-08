@@ -135,6 +135,7 @@ main_loop_call_thread_deinit(void)
 {
   if (call_info.cond)
     g_cond_free(call_info.cond);
+  g_static_mutex_free(&call_info.lock);
 }
 
 void
@@ -150,5 +151,6 @@ void
 main_loop_call_deinit(void)
 {
   iv_event_unregister(&main_task_posted);
+  g_static_mutex_free(&main_task_lock);
 }
 

@@ -82,6 +82,7 @@ void g_process_start(void);
 void g_process_startup_failed(guint ret_num, gboolean may_exit);
 void g_process_startup_ok(void);
 void g_process_finish(void);
+void g_process_unset_argv_space(void);
 
 void g_process_add_option_group(GOptionContext *ctx);
 

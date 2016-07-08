@@ -41,6 +41,8 @@
 #include "service-management.h"
 #include "crypto.h"
 #include "value-pairs/value-pairs.h"
+#include "reloc.h"
+#include "plugin.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -166,6 +168,7 @@ app_shutdown(void)
   log_tags_global_deinit();
   log_msg_global_deinit();
 
+  afinter_global_deinit();
   stats_destroy();
   child_manager_deinit();
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
@@ -175,7 +178,9 @@ app_shutdown(void)
   hostname_global_deinit();
   crypto_deinit();
   msg_deinit();
-
+  plugin_global_deinit();
+  timeutils_deinit();
+  reloc_deinit();
   
   /* NOTE: the iv_deinit() call should come here, but there's some exit
    * synchronization issue in libivykis that causes use-after-free with the

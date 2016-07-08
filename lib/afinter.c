@@ -453,3 +453,19 @@ afinter_global_init(void)
 {
   register_application_hook(AH_POST_CONFIG_LOADED, afinter_register_posted_hook, NULL);
 }
+
+void
+afinter_global_deinit(void)
+{
+  g_static_mutex_free(&internal_msg_lock);
+  g_static_mutex_free(&internal_mark_target_lock);
+  if (internal_msg_queue)
+    {
+      g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);
+      internal_msg_queue = NULL;
+      stats_lock();
+      stats_unregister_counter(SCS_GLOBAL, "internal_queue_length", NULL, SC_TYPE_PROCESSED, &internal_queue_length);
+      stats_unlock();
+    }
+  current_internal_source = NULL;
+}

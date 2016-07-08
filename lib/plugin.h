@@ -82,5 +82,6 @@ void plugin_list_modules(FILE *out, gboolean verbose);
 void plugin_load_candidate_modules(GlobalConfig *cfg);
 void plugin_free_candidate_modules(GlobalConfig *cfg);
 void plugin_free_plugins(GlobalConfig *cfg);
+void plugin_global_deinit(void);
 
 #endif

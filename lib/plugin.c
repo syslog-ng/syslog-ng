@@ -52,6 +52,8 @@ typedef struct _PluginCandidate
   gint preference;
 } PluginCandidate;
 
+static GModule *main_module_handle;
+
 static void
 plugin_candidate_set_preference(PluginCandidate *self, gint preference)
 {
@@ -322,7 +324,6 @@ gboolean
 plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
 {
   GModule *mod;
-  static GModule *main_module_handle;
   gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
   gchar *module_init_func;
   const gchar *mp;
@@ -567,4 +568,12 @@ plugin_free_plugins(GlobalConfig *cfg)
 {
   g_list_foreach(cfg->plugins, (GFunc) _free_plugin, NULL);
   g_list_free(cfg->plugins);
+}
+
+void
+plugin_global_deinit(void)
+{
+  if (main_module_handle)
+    if (g_module_close(main_module_handle))
+      main_module_handle = NULL;
 }

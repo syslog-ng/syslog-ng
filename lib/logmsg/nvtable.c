@@ -27,8 +27,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-GStaticMutex nv_registry_lock = G_STATIC_MUTEX_INIT;
-
 const gchar *null_string = "";
 
 NVHandle
@@ -50,7 +48,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   gsize len;
   NVHandle res = 0;
 
-  g_static_mutex_lock(&nv_registry_lock);
+  g_static_mutex_lock(&self->nv_registry_lock);
   p = g_hash_table_lookup(self->name_map, name);
   if (p)
     {
@@ -84,7 +82,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   g_hash_table_insert(self->name_map, stored.name, GUINT_TO_POINTER(self->names->len));
   res = self->names->len;
  exit:
-  g_static_mutex_unlock(&nv_registry_lock);
+  g_static_mutex_unlock(&self->nv_registry_lock);
   return res;
 }
 
@@ -96,9 +94,9 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
 void
 nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias)
 {
-  g_static_mutex_lock(&nv_registry_lock);
+  g_static_mutex_lock(&self->nv_registry_lock);
   g_hash_table_insert(self->name_map, g_strdup(alias), GUINT_TO_POINTER((glong) handle));
-  g_static_mutex_unlock(&nv_registry_lock);
+  g_static_mutex_unlock(&self->nv_registry_lock);
 }
 
 void
@@ -125,6 +123,7 @@ nv_registry_new(const gchar **static_names)
   NVRegistry *self = g_new0(NVRegistry, 1);
   gint i;
 
+  g_static_mutex_init(&self->nv_registry_lock);
   self->name_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->names = g_array_new(FALSE, FALSE, sizeof(NVHandleDesc));
   for (i = 0; static_names[i]; i++)
@@ -137,6 +136,7 @@ nv_registry_new(const gchar **static_names)
 void
 nv_registry_free(NVRegistry *self)
 {
+  g_static_mutex_free(&self->nv_registry_lock);
   g_array_free(self->names, TRUE);
   g_hash_table_destroy(self->name_map);
   g_free(self);
