@@ -95,32 +95,32 @@ _format_instance_id(LogThrDestDriver *d, const gchar *format)
   static gchar args[1024];
   static gchar id[1024];
 
-  const mongoc_host_list_t *hosts = mongoc_uri_get_hosts(self->uri_obj);
-  const gchar *first_host = "";
-  if (hosts)
+  if (((LogPipe *)d)->persist_name)
     {
-      if (hosts->family == AF_UNIX)
-        first_host = hosts->host;
-      else
-        first_host = hosts->host_and_port;
+      g_snprintf(args, sizeof(args), "%s", ((LogPipe *)d)->persist_name);
     }
+  else
+    {
+      const mongoc_host_list_t *hosts = mongoc_uri_get_hosts(self->uri_obj);
+      const gchar *first_host = "";
+      if (hosts)
+        {
+          if (hosts->family == AF_UNIX)
+            first_host = hosts->host;
+          else
+            first_host = hosts->host_and_port;
+        }
 
-  const gchar *db = self->const_db ? self->const_db : "";
+      const gchar *db = self->const_db ? self->const_db : "";
 
-  const gchar *replica_set = mongoc_uri_get_replica_set(self->uri_obj);
-  if (!replica_set)
-    replica_set = "";
+      const gchar *replica_set = mongoc_uri_get_replica_set(self->uri_obj);
+      if (!replica_set)
+        replica_set = "";
 
-  const gchar *coll = self->coll ? self->coll : "";
+      const gchar *coll = self->coll ? self->coll : "";
 
-  g_snprintf(args,
-             sizeof(args),
-             "%s,%s,%s,%s",
-             first_host,
-             db,
-             replica_set,
-             coll);
-
+      g_snprintf(args, sizeof(args), "%s,%s,%s,%s", first_host, db, replica_set, coll);
+    }
   g_snprintf(id, sizeof(id), format, args);
   return id;
 }
@@ -134,7 +134,8 @@ _format_stats_instance(LogThrDestDriver *d)
 static const gchar *
 _format_persist_name(const LogPipe *s)
 {
-  return _format_instance_id(d, "afmongodb(%s)");
+  return s->persist_name ? _format_instance_id(s, "afmongodb.%s")
+                         : _format_instance_id(s, "afmongodb(%s)");
 }
 
 static void
