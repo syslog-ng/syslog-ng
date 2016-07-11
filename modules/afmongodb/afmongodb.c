@@ -131,8 +131,8 @@ _format_stats_instance(LogThrDestDriver *d)
   return _format_instance_id(d, "mongodb,%s");
 }
 
-static gchar *
-_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+_format_persist_name(const LogPipe *s)
 {
   return _format_instance_id(d, "afmongodb(%s)");
 }
