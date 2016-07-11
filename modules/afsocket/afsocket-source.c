@@ -252,17 +252,56 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
   self->max_connections = max_connections;
 }
 
-static inline gchar *
-afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_name)
+static const gchar *
+afsocket_sd_format_name(const LogPipe *s)
 {
-  static gchar persist_name[128];
-  gchar buf[64];
+  const AFSocketSourceDriver *self = (const AFSocketSourceDriver *)s;
+  static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             listener_name ? "afsocket_sd_listen_fd(%s,%s)" : "afsocket_sd_connections(%s,%s)",
-             (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
-             g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
+  if (s->persist_name)
+    {
+      g_snprintf(persist_name, sizeof(persist_name), "afsocket_sd.%s",
+                 self->super.super.super.persist_name);
+    }
+  else
+    {
+      gchar buf[64];
+
+      g_snprintf(persist_name, sizeof(persist_name), "afsocket_sd.(%s,%s)",
+                 (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
+                 g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
+    }
+
   return persist_name;
+}
+
+static const gchar *
+afsocket_sd_format_listener_name(const AFSocketSourceDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name), "%s.listen_fd",
+             afsocket_sd_format_name((const LogPipe *)self));
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_sd_format_connections_name(const AFSocketSourceDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name), "%s.connections",
+             afsocket_sd_format_name((const LogPipe *)self));
+
+  return persist_name;
+}
+
+static inline const gchar *
+afsocket_sd_format_persist_name(const AFSocketSourceDriver *self, gboolean listener_name)
+{
+  return listener_name ? afsocket_sd_format_listener_name(self)
+                       : afsocket_sd_format_connections_name(self);
 }
 
 static gboolean
