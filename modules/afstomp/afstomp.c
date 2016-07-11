@@ -173,8 +173,12 @@ afstomp_dd_format_persist_name(const LogPipe *s)
   const STOMPDestDriver *self = (const STOMPDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "afstomp(%s,%u,%s)",
-             self->host, self->port, self->destination);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afstomp.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "afstomp(%s,%u,%s)", self->host, self->port,
+               self->destination);
+
   return persist_name;
 }
 
