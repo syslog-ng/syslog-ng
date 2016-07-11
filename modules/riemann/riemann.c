@@ -246,7 +246,10 @@ riemann_dd_format_persist_name(const LogPipe *s)
   const RiemannDestDriver *self = (const RiemannDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "riemann(%s,%u)", self->server, self->port);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "riemann.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "riemann(%s,%u)", self->server, self->port);
 
   return persist_name;
 }
