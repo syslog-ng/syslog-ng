@@ -129,12 +129,6 @@ afsocket_dd_format_connections_name(const AFSocketDestDriver *self)
 }
 
 static gchar *
-afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
-{
-  return qfile ? afsocket_dd_format_qfile_name(self) : afsocket_dd_format_connections_name(self);
-}
-
-static gchar *
 afsocket_dd_stats_instance(AFSocketDestDriver *self)
 {
   static gchar buf[256];
@@ -392,7 +386,7 @@ afsocket_dd_restore_writer(AFSocketDestDriver *self)
   g_assert(self->writer == NULL);
 
   cfg = log_pipe_get_config(&self->super.super.super);
-  item = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
+  item = cfg_persist_config_fetch(cfg, afsocket_dd_format_connections_name(self));
 
   if (item && !_is_protocol_type_changed_during_reload(self, item))
     self->writer = _reload_store_item_release_writer(item);
@@ -430,7 +424,8 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
                          self->transport_mapper->stats_source,
                          self->super.super.id,
                          afsocket_dd_stats_instance(self));
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(
+                                         &self->super, afsocket_dd_format_qfile_name(self)));
 
   if (!log_pipe_init((LogPipe *) self->writer))
     {
@@ -489,7 +484,8 @@ afsocket_dd_save_connection(AFSocketDestDriver *self)
   if (self->connections_kept_alive_accross_reloads)
     {
       ReloadStoreItem *item = _reload_store_item_new(self);
-      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, FALSE), item, (GDestroyNotify) _reload_store_item_free, FALSE);
+      cfg_persist_config_add(cfg, afsocket_dd_format_connections_name(self), item,
+                             (GDestroyNotify)_reload_store_item_free, FALSE);
       self->writer = NULL;
     }
 }
