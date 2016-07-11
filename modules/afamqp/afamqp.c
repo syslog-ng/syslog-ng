@@ -203,10 +203,10 @@ afamqp_dd_format_stats_instance(LogThrDestDriver *s)
   return persist_name;
 }
 
-static gchar *
-afamqp_dd_format_persist_name(LogThrDestDriver *s)
+static const gchar *
+afamqp_dd_format_persist_name(const LogPipe *s)
 {
-  AMQPDestDriver *self = (AMQPDestDriver *) s;
+  const AMQPDestDriver *self = (const AMQPDestDriver *)s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name), "afamqp(%s,%s,%u,%s,%s)",
