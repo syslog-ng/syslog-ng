@@ -713,6 +713,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->super.super.super.deinit = afsocket_sd_deinit_method;
   self->super.super.super.free_fn = afsocket_sd_free_method;
   self->super.super.super.notify = afsocket_sd_notify;
+  self->super.super.super.generate_persist_name = afsocket_sd_format_name;
   self->setup_addresses = afsocket_sd_setup_addresses_method;
   self->socket_options = socket_options;
   self->transport_mapper = transport_mapper;
