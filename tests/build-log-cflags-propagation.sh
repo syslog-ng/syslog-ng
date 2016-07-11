@@ -37,10 +37,12 @@ exec_prop_check() {
     build_log_cflags_propagation "$BUILDLOG"
     S=$?
     rm "$BUILDLOG"
-    return $S
+    if [ $S -ne 0 ]; then
+      return $ERROREXIT
+    fi
   else
     rm "$BUILDLOG"
-    return $ERROREXIT
+    return $S
   fi
 }
 
