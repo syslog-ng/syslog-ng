@@ -386,6 +386,7 @@ afstomp_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = afstomp_dd_init;
   self->super.super.super.super.free_fn = afstomp_dd_free;
+  self->super.super.super.super.generate_persist_name = afstomp_dd_format_persist_name;
 
   self->super.worker.thread_init = afstomp_worker_thread_init;
   self->super.worker.disconnect = afstomp_dd_disconnect;
