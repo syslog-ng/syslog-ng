@@ -134,7 +134,7 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
 }
 
 static const gint
-_determine_port(AFInetDestDriver *self)
+_determine_port(const AFInetDestDriver *self)
 {
   gint port = 0;
 
