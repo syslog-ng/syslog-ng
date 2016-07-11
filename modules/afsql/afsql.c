@@ -1144,9 +1144,12 @@ afsql_dd_format_persist_name(const LogPipe *s)
   AFSqlDestDriver *self = (AFSqlDestDriver *)s;
   static gchar persist_name[256];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "afsql_dd(%s,%s,%s,%s,%s)",
-             self->type, self->host, self->port, self->database, self->table->template);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afsql_dd.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "afsql_dd(%s,%s,%s,%s,%s)", self->type,
+               self->host, self->port, self->database, self->table->template);
+
   return persist_name;
 }
 
