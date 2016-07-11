@@ -34,9 +34,9 @@
 #include <stdlib.h>
 
 static const gchar *
-afunix_dd_get_dest_name(AFSocketDestDriver *s)
+afunix_dd_get_dest_name(const AFSocketDestDriver *s)
 {
-  AFUnixDestDriver *self = (AFUnixDestDriver *) s;
+  const AFUnixDestDriver *self = (const AFUnixDestDriver *)s;
   static gchar buf[256];
 
   g_snprintf(buf, sizeof(buf), "localhost.afunix:%s", self->filename);
