@@ -659,7 +659,6 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.worker.thread_deinit = riemann_worker_thread_deinit;
 
   self->super.format.stats_instance = riemann_dd_format_stats_instance;
-  self->super.format.persist_name = riemann_dd_format_persist_name;
   self->super.stats_source = SCS_RIEMANN;
 
   self->port = -1;

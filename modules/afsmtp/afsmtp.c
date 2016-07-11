@@ -675,7 +675,6 @@ afsmtp_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = afsmtp_worker_insert;
 
   self->super.format.stats_instance = afsmtp_dd_format_stats_instance;
-  self->super.format.persist_name = afsmtp_dd_format_persist_name;
   self->super.stats_source = SCS_SMTP;
 
   self->super.messages.retry_over = __worker_message_retry_over;

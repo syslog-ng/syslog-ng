@@ -536,7 +536,6 @@ python_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = python_dd_insert;
 
   self->super.format.stats_instance = python_dd_format_stats_instance;
-  self->super.format.persist_name = python_dd_format_persist_name;
   self->super.stats_source = SCS_PYTHON;
 
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);

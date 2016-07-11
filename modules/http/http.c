@@ -332,7 +332,6 @@ http_dd_new(GlobalConfig *cfg)
   self->super.worker.connect = _connect;
   self->super.worker.disconnect = _disconnect;
   self->super.worker.insert = _insert;
-  self->super.format.persist_name = _format_persist_name;
   self->super.format.stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_HTTP;
   self->super.super.super.super.free_fn = http_dd_free;

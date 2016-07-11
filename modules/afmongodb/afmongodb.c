@@ -592,7 +592,6 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = _worker_disconnect;
   self->super.worker.insert = _worker_insert;
   self->super.format.stats_instance = _format_stats_instance;
-  self->super.format.persist_name = _format_persist_name;
   self->super.stats_source = SCS_MONGODB;
   self->super.messages.retry_over = _worker_retry_over_message;
 
