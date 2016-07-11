@@ -135,9 +135,10 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
   return affile_open_file(name, &self->file_open_options, &self->file_perm_options, fd);
 }
 
-static inline gchar *
-affile_sd_format_persist_name(AFFileSourceDriver *self)
+static inline const gchar *
+affile_sd_format_persist_name(const LogPipe *s)
 {
+  const AFFileSourceDriver *self = (const AFFileSourceDriver *)s;
   static gchar persist_name[1024];
   
   g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
@@ -152,7 +153,7 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
   if (self->file_open_options.is_pipe || self->follow_freq <= 0)
     return;
 
-  if (!log_proto_server_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
+  if (!log_proto_server_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(s)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str));
