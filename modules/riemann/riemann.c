@@ -240,14 +240,14 @@ riemann_dd_format_stats_instance(LogThrDestDriver *s)
   return persist_name;
 }
 
-static gchar *
-riemann_dd_format_persist_name(LogThrDestDriver *s)
+static const gchar *
+riemann_dd_format_persist_name(const LogPipe *s)
 {
-  RiemannDestDriver *self = (RiemannDestDriver *)s;
+  const RiemannDestDriver *self = (const RiemannDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "riemann(%s,%u)", self->server, self->port);
+  g_snprintf(persist_name, sizeof(persist_name), "riemann(%s,%u)", self->server, self->port);
+
   return persist_name;
 }
 
