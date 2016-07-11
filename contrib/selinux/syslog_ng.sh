@@ -1,5 +1,15 @@
 #!/bin/bash
 
+### Exit error codes
+#
+# 0: everything went fine
+# 255: invalid command line-option
+# 254: no root privileges
+# 253: file or directory does not exist
+# 252: policy build failed
+# 251: policy install failed
+# 250: unsupported os/distribution/version
+
 EL_FC=
 EL_TE=
 OS_VERSION=
@@ -20,7 +30,7 @@ check_dir() {
 	if [ -d "${1}" ]; then
 		return 0
 	else
-		echo "The directory you specified does not exist!"
+		echo "The directory you specified does not exist!" >&2
 		return 1
 	fi
 }
@@ -46,7 +56,7 @@ detect_os_version() {
 			OS_VERSION=$( lsb_release -r | cut -f 2 )
 		else
 			echo "You don't seem to be running a supported Linux distribution!" >&2
-			exit 1
+			exit 250
 		fi
 	else
 		# The package redhat-lsb-core is most likely not installed...
@@ -54,7 +64,7 @@ detect_os_version() {
 			OS_VERSION=$( extract_version_string < "/etc/redhat-release" )
 		else
 			echo "You don't seem to be running a supported OS!" >&2
-			exit 1
+			exit 250
 		fi
 	fi
 }
@@ -107,7 +117,7 @@ setup_vars() {
 			;;
 		*)
 			echo "You don't seem to be running a supported version of RHEL!" >&2
-			exit 1
+			exit 250
 			;;
 	esac
 }
@@ -145,7 +155,7 @@ remove_trainling_slash() {
 
 build_module() {
 	echo "Building and Loading Policy"
-	make -f /usr/share/selinux/devel/Makefile syslog_ng.pp || exit 1
+	make -f /usr/share/selinux/devel/Makefile syslog_ng.pp || exit 252
 }
 
 
@@ -160,7 +170,7 @@ add_ports() {
 
 
 install_module() {
-	/usr/sbin/semodule -i syslog_ng.pp -v || exit 1
+	/usr/sbin/semodule -i syslog_ng.pp -v || exit 251
 
 	# set up syslog-ng specific ports
 	PORTS=
@@ -216,7 +226,7 @@ USAGE="$0\t[ --install-dir <DIRECTORY> | --remove | --help ]\n\n$0:\tA tool for 
 while [ -n "${1}" ]; do
 	case "${1}" in
 		--install-dir)
-			check_dir "${2}" || exit 1
+			check_dir "${2}" || exit 253
 			INPUT="${2}"
 			shift 2
 			;;
@@ -231,27 +241,27 @@ while [ -n "${1}" ]; do
 			;;
 		*)
 			echo -e "ERROR: Invalid option: ${1}\n${USAGE}" >&2
-			exit 1
+			exit 255
 			;;
 	esac
 
 done
 
 case "${TASK_SELECTED}" in
+	showhelp)
+		echo -e "${USAGE}"
+		exit 0
+		;;
 	remove)
 		detect_os_version
 		setup_vars
 		remove_module
 		exit 0
 		;;
-	showhelp)
-		echo -e "${USAGE}"
-		exit 1
-		;;
 	install)
 		if [ $( id -u ) != 0 ]; then
-			echo 'You must be root to run this script'
-			exit 1
+			echo 'You must be root to run this script' >&2
+			exit 254
 		fi
 		
 		if [ -z "${INPUT}" ]; then 
