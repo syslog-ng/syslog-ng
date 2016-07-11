@@ -25,12 +25,11 @@
 #include "syslog-names.h"
 #include "http-plugin.h"
 
-static gchar *
-_format_persist_name(LogThrDestDriver *s)
+static const gchar *
+_format_persist_name(const LogPipe *s)
 {
+  const HTTPDestinationDriver *self = (const HTTPDestinationDriver *)s;
   static gchar persist_name[1024];
-
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
   g_snprintf(persist_name, sizeof(persist_name), "http(%s,)", self->url);
 
