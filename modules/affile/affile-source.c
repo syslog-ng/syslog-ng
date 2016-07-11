@@ -140,8 +140,12 @@ affile_sd_format_persist_name(const LogPipe *s)
 {
   const AFFileSourceDriver *self = (const AFFileSourceDriver *)s;
   static gchar persist_name[1024];
-  
-  g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.curpos", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+
   return persist_name;
 }
  
