@@ -89,9 +89,9 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
  */
 
 static gchar *
-_format_instance_id(LogThrDestDriver *d, const gchar *format)
+_format_instance_id(const LogThrDestDriver *d, const gchar *format)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+  const MongoDBDestDriver *self = (const MongoDBDestDriver *)d;
   static gchar args[1024];
   static gchar id[1024];
 
@@ -134,8 +134,10 @@ _format_stats_instance(LogThrDestDriver *d)
 static const gchar *
 _format_persist_name(const LogPipe *s)
 {
-  return s->persist_name ? _format_instance_id(s, "afmongodb.%s")
-                         : _format_instance_id(s, "afmongodb(%s)");
+  const LogThrDestDriver *self = (const LogThrDestDriver *)s;
+
+  return s->persist_name ? _format_instance_id(self, "afmongodb.%s")
+                         : _format_instance_id(self, "afmongodb(%s)");
 }
 
 static void
