@@ -167,10 +167,10 @@ afstomp_dd_format_stats_instance(LogThrDestDriver *s)
   return persist_name;
 }
 
-static gchar *
-afstomp_dd_format_persist_name(LogThrDestDriver *s)
+static const gchar *
+afstomp_dd_format_persist_name(const LogPipe *s)
 {
-  STOMPDestDriver *self = (STOMPDestDriver *) s;
+  const STOMPDestDriver *self = (const STOMPDestDriver *)s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name), "afstomp(%s,%u,%s)",
