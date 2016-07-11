@@ -330,8 +330,11 @@ afprogram_dd_format_persist_name(const LogPipe *s)
   const AFProgramDestDriver *self = (const AFProgramDestDriver *)s;
   static gchar persist_name[256];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "afprogram_dd_name(%s,%s)", self->process_info.cmdline->str, self->super.super.id);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afprogram_dd_name.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "afprogram_dd_name(%s,%s)",
+               self->process_info.cmdline->str, self->super.super.id);
 
   return persist_name;
 }
