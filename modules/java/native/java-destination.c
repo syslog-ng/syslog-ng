@@ -196,6 +196,21 @@ java_worker_thread_deinit(LogThrDestDriver *d)
   java_machine_detach_thread();
 }
 
+static const gchar *
+java_dd_format_persist_name(const LogPipe *s)
+{
+  const JavaDestDriver *self = (const JavaDestDriver *)s;
+  static gchar persist_name[1024];
+
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "java_dst.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "java_dst(%s)",
+               java_destination_proxy_get_name_by_uniq_options(self->proxy));
+
+  return persist_name;
+}
+
 static gchar *
 java_dd_format_stats_instance(LogThrDestDriver *d)
 {
