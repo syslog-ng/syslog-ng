@@ -112,8 +112,11 @@ redis_dd_format_stats_instance(LogThrDestDriver *d)
   RedisDriver *self = (RedisDriver *)d;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "redis,%s,%u", self->host, self->port);
+  if (d->super.super.super.persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "redis,%s", d->super.super.super.persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "redis,%s,%u", self->host, self->port);
+
   return persist_name;
 }
 
