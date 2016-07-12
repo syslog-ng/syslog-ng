@@ -160,7 +160,7 @@ build_module() {
 
 
 add_ports() {
-	for entry in ${*}; do
+	for entry in ${@}; do
 		port=${entry%/*}
 		proto=${entry#*/}
 		semanage port -a -t syslogd_port_t -p ${proto} ${port} 2>/dev/null || \
@@ -188,7 +188,7 @@ install_module() {
 }
 
 remove_ports() {
-	for entry in ${*}; do
+	for entry in ${@}; do
 		port=${entry%/*}
 		proto=${entry#*/}
 		semanage port -d -t syslogd_port_t -p ${proto} ${port} 2>/dev/null
@@ -219,8 +219,8 @@ remove_module() {
 	fi
 }
 
-DIRNAME=$( dirname ${0} )
-cd ${DIRNAME}
+DIRNAME=$( dirname "${0}" )
+cd "${DIRNAME}"
 USAGE="$0\t[ --install-dir <DIRECTORY> | --remove | --help ]\n\n$0:\tA tool for building and managing the SELinux policy for the\n\t\tdefault syslog-ng installation."
 
 while [ -n "${1}" ]; do
