@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef NATIVE_PARSER_H_INCLUDED
-#define NATIVE_PARSER_H_INCLUDED
+#ifndef PARSER_H_INCLUDED
+#define PARSER_H_INCLUDED
 
 #include "parser/parser-expr.h"
 
-void native_parser_set_option(LogParser *s, gchar* key, gchar* value);
+gboolean native_parser_set_option(LogParser *s, gchar* key, gchar* value);
+LogParser* native_parser_new(GlobalConfig *cfg);
 
 #endif

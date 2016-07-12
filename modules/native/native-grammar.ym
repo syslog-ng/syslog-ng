@@ -40,9 +40,6 @@
 
 #include <string.h>
 
-void native_parser_set_option(LogParser *s, gchar* key, gchar* value);
-LogParser* native_parser_new(GlobalConfig *cfg);
-
 }
 
 %name-prefix "native_"
@@ -103,7 +100,8 @@ native_parser_options
 native_parser_option
   : KW_OPTION '(' string string ')'
     {
-      native_parser_set_option(*instance, $3, $4);
+      CHECK_ERROR(native_parser_set_option(*instance, $3, $4), @1, "Failed to set configuration option for native-parser: option(%s, %s)", $3, $4);
+
       free($3);
       free($4);
     }
