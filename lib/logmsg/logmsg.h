@@ -294,6 +294,7 @@ LogMessage *log_msg_new(const gchar *msg, gint length,
 LogMessage *log_msg_new_mark(void);
 LogMessage *log_msg_new_internal(gint prio, const gchar *msg);
 LogMessage *log_msg_new_empty(void);
+LogMessage *log_msg_new_local(void);
 
 void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options, AckType ack_type);

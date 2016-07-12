@@ -1143,6 +1143,18 @@ log_msg_new_empty(void)
   return self;
 }
 
+LogMessage *
+log_msg_new_local(void)
+{
+  LogMessage *self = log_msg_new_empty();
+
+  self->flags |= LF_LOCAL;
+
+  self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
+
+  return self;
+}
+
 static void
 log_msg_clone_ack(LogMessage *msg, AckType ack_type)
 {

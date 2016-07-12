@@ -153,10 +153,8 @@ _generate_message_inheriting_properties_from_the_last_message(LogMessage *msg)
 static LogMessage *
 _generate_new_message_with_timestamp_of_the_triggering_message(LogStamp *msgstamp)
 {
-  LogMessage *genmsg;
+  LogMessage *genmsg = log_msg_new_local();
 
-  genmsg = log_msg_new_empty();
-  genmsg->flags |= LF_LOCAL;
   genmsg->timestamps[LM_TS_STAMP] = *msgstamp;
   return genmsg;
 }

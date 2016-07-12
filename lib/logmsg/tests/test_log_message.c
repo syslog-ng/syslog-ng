@@ -303,10 +303,22 @@ test_log_msg_get_value_with_time_related_macro(void)
 }
 
 static void
+test_local_logmsg_created_with_the_right_flags_and_timestamps(void)
+{
+  LogMessage *msg = log_msg_new_local();
+
+  gboolean are_equals = log_stamp_eq(&msg->timestamps[LM_TS_STAMP], &msg->timestamps[LM_TS_RECVD]);
+
+  assert_true((msg->flags & LF_LOCAL) != 0, "LogMessage created by log_msg_new_local() should have LF_LOCAL flag set");
+  assert_true(are_equals, "The timestamps in a LogMessage created by log_msg_new_local() should be equals");
+}
+
+static void
 test_misc_stuff(void)
 {
   MSG_TESTCASE(test_log_msg_get_value_with_time_related_macro);
   MSG_TESTCASE(test_log_msg_set_value_indirect_with_self_referencing_handle_results_in_a_nonindirect_value);
+  MSG_TESTCASE(test_local_logmsg_created_with_the_right_flags_and_timestamps);
 }
 
 int
