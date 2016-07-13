@@ -213,6 +213,7 @@ struct _LogPipe
   GlobalConfig *cfg;
   LogExprNode *expr_node;
   LogPipe *pipe_next;
+  const gchar *persist_name;
 
   /* user_data pointer of the "queue" method in case it is overridden
      by a plugin, see the explanation in the comment on the top. */
@@ -220,6 +221,8 @@ struct _LogPipe
   void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
   gboolean (*init)(LogPipe *self);
   gboolean (*deinit)(LogPipe *self);
+
+  const gchar *(*generate_persist_name)(const LogPipe *self);
 
   /* clone this pipe when used in multiple locations in the processing
    * pipe-line. If it contains state, it should behave as if it was
@@ -361,6 +364,12 @@ log_pipe_append(LogPipe *s, LogPipe *next)
 {
   s->pipe_next = next;
 }
+
+void
+log_pipe_set_persist_name(LogPipe *self, const gchar *persist_name);
+
+const gchar *
+log_pipe_get_persist_name(const LogPipe *self);
 
 void log_pipe_free_method(LogPipe *s);
 

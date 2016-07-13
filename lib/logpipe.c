@@ -39,6 +39,7 @@ log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->cfg = cfg;
   self->pipe_next = NULL;
+  self->persist_name = NULL;
 
   /* NOTE: queue == NULL means that this pipe simply forwards the
    * message along the pipeline, e.g. like it has called
@@ -93,6 +94,20 @@ void
 log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data)
 {
   log_pipe_notify(self->pipe_next, notify_code, user_data);
+}
+
+void
+log_pipe_set_persist_name(LogPipe *self, const gchar *persist_name)
+{
+  g_free((gpointer)self->persist_name);
+  self->persist_name = persist_name;
+}
+
+const gchar *
+log_pipe_get_persist_name(const LogPipe *self)
+{
+  return (self->generate_persist_name != NULL) ? self->generate_persist_name(self)
+                                               : self->persist_name;
 }
 
 #ifdef __linux__

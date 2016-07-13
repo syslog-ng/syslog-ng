@@ -25,14 +25,16 @@
 #include "syslog-names.h"
 #include "http-plugin.h"
 
-static gchar *
-_format_persist_name(LogThrDestDriver *s)
+static const gchar *
+_format_persist_name(const LogPipe *s)
 {
+  const HTTPDestinationDriver *self = (const HTTPDestinationDriver *)s;
   static gchar persist_name[1024];
 
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
-
-  g_snprintf(persist_name, sizeof(persist_name), "http(%s,)", self->url);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "http.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "http(%s,)", self->url);
 
   return persist_name;
 }
@@ -332,7 +334,7 @@ http_dd_new(GlobalConfig *cfg)
   self->super.worker.connect = _connect;
   self->super.worker.disconnect = _disconnect;
   self->super.worker.insert = _insert;
-  self->super.format.persist_name = _format_persist_name;
+  self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format.stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_HTTP;
   self->super.super.super.super.free_fn = http_dd_free;

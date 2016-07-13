@@ -235,19 +235,25 @@ riemann_dd_format_stats_instance(LogThrDestDriver *s)
   RiemannDestDriver *self = (RiemannDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "riemann,%s,%u", self->server, self->port);
+  if (s->super.super.super.persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s", s->super.super.super.persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s,%u", self->server, self->port);
+
   return persist_name;
 }
 
-static gchar *
-riemann_dd_format_persist_name(LogThrDestDriver *s)
+static const gchar *
+riemann_dd_format_persist_name(const LogPipe *s)
 {
-  RiemannDestDriver *self = (RiemannDestDriver *)s;
+  const RiemannDestDriver *self = (const RiemannDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "riemann(%s,%u)", self->server, self->port);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "riemann.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "riemann(%s,%u)", self->server, self->port);
+
   return persist_name;
 }
 
@@ -653,13 +659,13 @@ riemann_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = riemann_worker_init;
   self->super.super.super.super.free_fn = riemann_dd_free;
+  self->super.super.super.super.generate_persist_name = riemann_dd_format_persist_name;
 
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
   self->super.worker.thread_deinit = riemann_worker_thread_deinit;
 
   self->super.format.stats_instance = riemann_dd_format_stats_instance;
-  self->super.format.persist_name = riemann_dd_format_persist_name;
   self->super.stats_source = SCS_RIEMANN;
 
   self->port = -1;

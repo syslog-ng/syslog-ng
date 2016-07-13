@@ -89,38 +89,38 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
  */
 
 static gchar *
-_format_instance_id(LogThrDestDriver *d, const gchar *format)
+_format_instance_id(const LogThrDestDriver *d, const gchar *format)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+  const MongoDBDestDriver *self = (const MongoDBDestDriver *)d;
   static gchar args[1024];
   static gchar id[1024];
 
-  const mongoc_host_list_t *hosts = mongoc_uri_get_hosts(self->uri_obj);
-  const gchar *first_host = "";
-  if (hosts)
+  if (((LogPipe *)d)->persist_name)
     {
-      if (hosts->family == AF_UNIX)
-        first_host = hosts->host;
-      else
-        first_host = hosts->host_and_port;
+      g_snprintf(args, sizeof(args), "%s", ((LogPipe *)d)->persist_name);
     }
+  else
+    {
+      const mongoc_host_list_t *hosts = mongoc_uri_get_hosts(self->uri_obj);
+      const gchar *first_host = "";
+      if (hosts)
+        {
+          if (hosts->family == AF_UNIX)
+            first_host = hosts->host;
+          else
+            first_host = hosts->host_and_port;
+        }
 
-  const gchar *db = self->const_db ? self->const_db : "";
+      const gchar *db = self->const_db ? self->const_db : "";
 
-  const gchar *replica_set = mongoc_uri_get_replica_set(self->uri_obj);
-  if (!replica_set)
-    replica_set = "";
+      const gchar *replica_set = mongoc_uri_get_replica_set(self->uri_obj);
+      if (!replica_set)
+        replica_set = "";
 
-  const gchar *coll = self->coll ? self->coll : "";
+      const gchar *coll = self->coll ? self->coll : "";
 
-  g_snprintf(args,
-             sizeof(args),
-             "%s,%s,%s,%s",
-             first_host,
-             db,
-             replica_set,
-             coll);
-
+      g_snprintf(args, sizeof(args), "%s,%s,%s,%s", first_host, db, replica_set, coll);
+    }
   g_snprintf(id, sizeof(id), format, args);
   return id;
 }
@@ -131,10 +131,13 @@ _format_stats_instance(LogThrDestDriver *d)
   return _format_instance_id(d, "mongodb,%s");
 }
 
-static gchar *
-_format_persist_name(LogThrDestDriver *d)
+static const gchar *
+_format_persist_name(const LogPipe *s)
 {
-  return _format_instance_id(d, "afmongodb(%s)");
+  const LogThrDestDriver *self = (const LogThrDestDriver *)s;
+
+  return s->persist_name ? _format_instance_id(self, "afmongodb.%s")
+                         : _format_instance_id(self, "afmongodb(%s)");
 }
 
 static void
@@ -585,6 +588,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = _init;
   self->super.super.super.super.free_fn = _free;
+  self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.queue_method = _logthrdest_queue_method;
 
   self->super.worker.thread_init = _worker_thread_init;
@@ -592,7 +596,6 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = _worker_disconnect;
   self->super.worker.insert = _worker_insert;
   self->super.format.stats_instance = _format_stats_instance;
-  self->super.format.persist_name = _format_persist_name;
   self->super.stats_source = SCS_MONGODB;
   self->super.messages.retry_over = _worker_retry_over_message;
 

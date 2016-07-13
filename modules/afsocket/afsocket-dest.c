@@ -82,15 +82,49 @@ afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
   self->connections_kept_alive_accross_reloads = enable;
 }
 
-static gchar *
-afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
-{
-  static gchar persist_name[256];
+static const gchar *_module_name = "afsocket_dd";
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             qfile ? "afsocket_dd_qfile(%s,%s)" : "afsocket_dd_connection(%s,%s)",
+static const gchar *
+_get_module_identifier(const AFSocketDestDriver *self)
+{
+  static gchar module_identifier[128];
+
+  g_snprintf(module_identifier, sizeof(module_identifier), "%s,%s",
              (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
              afsocket_dd_get_dest_name(self));
+
+  return self->super.super.super.persist_name ? self->super.super.super.persist_name
+                                              : module_identifier;
+}
+
+static const gchar *
+afsocket_dd_format_name(const LogPipe *s)
+{
+  const AFSocketDestDriver *self = (const AFSocketDestDriver *)s;
+  static gchar persist_name[1024];
+  g_snprintf(persist_name, sizeof(persist_name), "%s.(%s)", _module_name,
+             _get_module_identifier(self));
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_dd_format_qfile_name(const AFSocketDestDriver *self)
+{
+  static gchar persist_name[1024];
+  g_snprintf(persist_name, sizeof(persist_name), "%s_qfile(%s)", _module_name,
+             _get_module_identifier(self));
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_dd_format_connections_name(const AFSocketDestDriver *self)
+{
+  static gchar persist_name[1024];
+  g_snprintf(persist_name, sizeof(persist_name), "%s_connections(%s)", _module_name,
+             _get_module_identifier(self));
+
   return persist_name;
 }
 
@@ -352,7 +386,7 @@ afsocket_dd_restore_writer(AFSocketDestDriver *self)
   g_assert(self->writer == NULL);
 
   cfg = log_pipe_get_config(&self->super.super.super);
-  item = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
+  item = cfg_persist_config_fetch(cfg, afsocket_dd_format_connections_name(self));
 
   if (item && !_is_protocol_type_changed_during_reload(self, item))
     self->writer = _reload_store_item_release_writer(item);
@@ -390,7 +424,8 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
                          self->transport_mapper->stats_source,
                          self->super.super.id,
                          afsocket_dd_stats_instance(self));
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(
+                                         &self->super, afsocket_dd_format_qfile_name(self)));
 
   if (!log_pipe_init((LogPipe *) self->writer))
     {
@@ -449,7 +484,8 @@ afsocket_dd_save_connection(AFSocketDestDriver *self)
   if (self->connections_kept_alive_accross_reloads)
     {
       ReloadStoreItem *item = _reload_store_item_new(self);
-      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, FALSE), item, (GDestroyNotify) _reload_store_item_free, FALSE);
+      cfg_persist_config_add(cfg, afsocket_dd_format_connections_name(self), item,
+                             (GDestroyNotify)_reload_store_item_free, FALSE);
       self->writer = NULL;
     }
 }
@@ -520,6 +556,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->super.super.super.queue = NULL;
   self->super.super.super.free_fn = afsocket_dd_free;
   self->super.super.super.notify = afsocket_dd_notify;
+  self->super.super.super.generate_persist_name = afsocket_dd_format_name;
   self->setup_addresses = afsocket_dd_setup_addresses;
   self->construct_writer = afsocket_dd_construct_writer_method;
   self->transport_mapper = transport_mapper;

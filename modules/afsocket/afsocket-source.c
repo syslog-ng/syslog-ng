@@ -252,16 +252,48 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
   self->max_connections = max_connections;
 }
 
-static inline gchar *
-afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_name)
+static const gchar *
+afsocket_sd_format_name(const LogPipe *s)
 {
-  static gchar persist_name[128];
-  gchar buf[64];
+  const AFSocketSourceDriver *self = (const AFSocketSourceDriver *)s;
+  static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             listener_name ? "afsocket_sd_listen_fd(%s,%s)" : "afsocket_sd_connections(%s,%s)",
-             (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
-             g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
+  if (s->persist_name)
+    {
+      g_snprintf(persist_name, sizeof(persist_name), "afsocket_sd.%s",
+                 self->super.super.super.persist_name);
+    }
+  else
+    {
+      gchar buf[64];
+
+      g_snprintf(persist_name, sizeof(persist_name), "afsocket_sd.(%s,%s)",
+                 (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
+                 g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
+    }
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_sd_format_listener_name(const AFSocketSourceDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name), "%s.listen_fd",
+             afsocket_sd_format_name((const LogPipe *)self));
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_sd_format_connections_name(const AFSocketSourceDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name), "%s.connections",
+             afsocket_sd_format_name((const LogPipe *)self));
+
   return persist_name;
 }
 
@@ -473,7 +505,7 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
   if (self->connections_kept_alive_accross_reloads)
     {
       GList *p = NULL;
-      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE));
+      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
 
       self->num_connections = 0;
       for (p = self->connections; p; p = p->next)
@@ -510,7 +542,9 @@ afsocket_sd_open_listener(AFSocketSourceDriver *self)
         {
           /* NOTE: this assumes that fd 0 will never be used for listening fds,
            * main.c opens fd 0 so this assumption can hold */
-          sock = GPOINTER_TO_UINT(cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, TRUE))) - 1;
+          sock = GPOINTER_TO_UINT(
+                     cfg_persist_config_fetch(cfg, afsocket_sd_format_listener_name(self))) -
+                 1;
         }
 
       if (sock == -1)
@@ -579,7 +613,8 @@ afsocket_sd_save_connections(AFSocketSourceDriver *self)
         {
           log_pipe_deinit((LogPipe *) p->data);
         }
-      cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection_list, FALSE);
+      cfg_persist_config_add(cfg, afsocket_sd_format_connections_name(self), self->connections,
+                             (GDestroyNotify)afsocket_sd_kill_connection_list, FALSE);
     }
   self->connections = NULL;
 }
@@ -603,7 +638,8 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
           /* NOTE: the fd is incremented by one when added to persistent config
            * as persist config cannot store NULL */
 
-          cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd, FALSE);
+          cfg_persist_config_add(cfg, afsocket_sd_format_listener_name(self),
+                                 GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd, FALSE);
         }
     }
 }
@@ -677,6 +713,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->super.super.super.deinit = afsocket_sd_deinit_method;
   self->super.super.super.free_fn = afsocket_sd_free_method;
   self->super.super.super.notify = afsocket_sd_notify;
+  self->super.super.super.generate_persist_name = afsocket_sd_format_name;
   self->setup_addresses = afsocket_sd_setup_addresses_method;
   self->socket_options = socket_options;
   self->transport_mapper = transport_mapper;

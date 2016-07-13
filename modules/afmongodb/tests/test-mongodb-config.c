@@ -131,7 +131,7 @@ static gboolean
 _execute_compare_persist_name(const gchar *expected_name)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)mongodb;
-  const gchar *name = self->format.persist_name(self);
+  const gchar *name = log_pipe_get_persist_name((const LogPipe *)self);
   return assert_nstring_non_fatal(name, -1, expected_name, -1, "mismatch");
 }
 

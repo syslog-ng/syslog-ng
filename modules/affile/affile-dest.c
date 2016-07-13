@@ -389,12 +389,18 @@ affile_dd_set_fsync(LogDriver *s, gboolean use_fsync)
   self->use_fsync = use_fsync;
 }
 
-static inline gchar *
-affile_dd_format_persist_name(AFFileDestDriver *self)
+static inline const gchar *
+affile_dd_format_persist_name(const LogPipe *s)
 {
+  const AFFileDestDriver *self = (const AFFileDestDriver *)s;
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "affile_dd_writers(%s)", self->filename_template->template);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "affile_dd.%s.writers", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "affile_dd_writers(%s)",
+               self->filename_template->template);
+
   return persist_name;
 }
 
@@ -470,13 +476,13 @@ affile_dd_init(LogPipe *s)
               
   if (self->filename_is_a_template)
     {
-      self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
+      self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(s));
       if (self->writer_hash)
         g_hash_table_foreach(self->writer_hash, affile_dd_reuse_writer, self);
     }
   else
     {
-      self->single_writer = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
+      self->single_writer = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(s));
       if (self->single_writer)
         {
           affile_dw_set_owner(self->single_writer, self);
@@ -550,7 +556,8 @@ affile_dd_deinit(LogPipe *s)
       g_assert(self->writer_hash == NULL);
 
       log_pipe_deinit(&self->single_writer->super);
-      cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->single_writer, affile_dd_destroy_writer, FALSE);
+      cfg_persist_config_add(cfg, affile_dd_format_persist_name(s), self->single_writer,
+                             affile_dd_destroy_writer, FALSE);
       self->single_writer = NULL;
     }
   else if (self->writer_hash)
@@ -558,7 +565,8 @@ affile_dd_deinit(LogPipe *s)
       g_assert(self->single_writer == NULL);
       
       g_hash_table_foreach(self->writer_hash, affile_dd_deinit_writer, NULL);
-      cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash, FALSE);
+      cfg_persist_config_add(cfg, affile_dd_format_persist_name(s), self->writer_hash,
+                             affile_dd_destroy_writer_hash, FALSE);
       self->writer_hash = NULL;
     }
 
@@ -743,6 +751,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.deinit = affile_dd_deinit;
   self->super.super.super.queue = affile_dd_queue;
   self->super.super.super.free_fn = affile_dd_free;
+  self->super.super.super.generate_persist_name = affile_dd_format_persist_name;
   self->filename_template = log_template_new(cfg, NULL);
   log_template_compile(self->filename_template, filename, NULL);
   log_writer_options_defaults(&self->writer_options);

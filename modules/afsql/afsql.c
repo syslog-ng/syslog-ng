@@ -1138,14 +1138,18 @@ afsql_dd_format_stats_instance(AFSqlDestDriver *self)
   return persist_name;
 }
 
-static inline gchar *
-afsql_dd_format_persist_name(AFSqlDestDriver *self)
+static inline const gchar *
+afsql_dd_format_persist_name(const LogPipe *s)
 {
+  AFSqlDestDriver *self = (AFSqlDestDriver *)s;
   static gchar persist_name[256];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "afsql_dd(%s,%s,%s,%s,%s)",
-             self->type, self->host, self->port, self->database, self->table->template);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "afsql_dd.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "afsql_dd(%s,%s,%s,%s,%s)", self->type,
+               self->host, self->port, self->database, self->table->template);
+
   return persist_name;
 }
 
@@ -1187,7 +1191,8 @@ afsql_dd_init(LogPipe *s)
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
 
-  self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
+  self->queue = log_dest_driver_acquire_queue(&self->super,
+                                              afsql_dd_format_persist_name((const LogPipe *)self));
   if (self->queue == NULL)
     {
       return FALSE;
@@ -1395,6 +1400,7 @@ afsql_dd_new(GlobalConfig *cfg)
   self->super.super.super.deinit = afsql_dd_deinit;
   self->super.super.super.queue = afsql_dd_queue;
   self->super.super.super.free_fn = afsql_dd_free;
+  self->super.super.super.generate_persist_name = afsql_dd_format_persist_name;
 
   self->type = g_strdup("mysql");
   self->host = g_strdup("");

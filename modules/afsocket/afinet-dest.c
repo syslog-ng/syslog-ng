@@ -134,7 +134,7 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
 }
 
 static const gint
-_determine_port(AFInetDestDriver *self)
+_determine_port(const AFInetDestDriver *self)
 {
   gint port = 0;
 
@@ -183,9 +183,9 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
 }
 
 static const gchar *
-afinet_dd_get_dest_name(AFSocketDestDriver *s)
+afinet_dd_get_dest_name(const AFSocketDestDriver *s)
 {
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  const AFInetDestDriver *self = (const AFInetDestDriver *)s;
   static gchar buf[256];
 
   if (strchr(self->hostname, ':') != NULL)
