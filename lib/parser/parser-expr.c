@@ -58,7 +58,7 @@ log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOpti
        */
 
       value = log_msg_get_value(msg, LM_V_MESSAGE, &value_len);
-      success = self->process(self, &msg, path_options, value, value_len);
+      success = self->process(self, pmsg, path_options, value, value_len);
       nv_table_unref(payload);
     }
   else
@@ -66,7 +66,7 @@ log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOpti
       GString *input = g_string_sized_new(256);
 
       log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, input);
-      success = self->process(self, &msg, path_options, input->str, input->len);
+      success = self->process(self, pmsg, path_options, input->str, input->len);
       g_string_free(input, TRUE);
     }
 
