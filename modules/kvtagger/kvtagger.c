@@ -38,6 +38,7 @@ typedef struct KVTagger
 {
   LogParser super;
   KVTagDB *tagdb;
+  gchar *selector_template_string;
   LogTemplate *selector_template;
   gchar *default_selector;
   gchar *filename;
@@ -58,7 +59,8 @@ kvtagger_set_database_selector_template(LogParser *p, const gchar *selector)
 {
   KVTagger *self = (KVTagger *)p;
 
-  log_template_compile(self->selector_template, selector, NULL);
+  g_free(self->selector_template_string);
+  self->selector_template_string = g_strdup(selector);
 }
 
 void
@@ -156,6 +158,7 @@ kvtagger_parser_free(LogPipe *s)
   g_free(self->prefix);
   log_template_unref(self->selector_template);
   log_parser_free_method(s);
+  g_free(self->selector_template_string);
 }
 
 static gboolean
@@ -254,6 +257,27 @@ _is_initialized(KVTagger *self)
   return kvtagdb_is_loaded(self->tagdb);
 }
 
+gboolean
+_compile_selector_template(KVTagger *self)
+{
+  GError *error = NULL;
+  if (!self->selector_template_string)
+    {
+      msg_error("No selector set.");
+      return FALSE;
+    }
+
+  if (!log_template_compile(self->selector_template, self->selector_template_string, &error))
+    {
+      msg_error("Failed to compile template",
+                evt_tag_str("template", self->selector_template_string),
+                evt_tag_str("error", error->message));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 static gboolean
 _first_init(KVTagger *self)
 {
@@ -262,6 +286,9 @@ _first_init(KVTagger *self)
       msg_error("No database file set.");
       return FALSE;
     }
+
+  if (!_compile_selector_template(self))
+    return FALSE;
 
   if (!_load_tagdb(self))
     {
@@ -299,6 +326,7 @@ kvtagger_parser_new(GlobalConfig *cfg)
   self->super.super.free_fn = kvtagger_parser_free;
   self->super.super.init = kvtagger_parser_init;
   self->default_selector = NULL;
+  self->selector_template_string = NULL;
   self->prefix = NULL;
 
   return &self->super;
