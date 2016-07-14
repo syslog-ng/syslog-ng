@@ -375,7 +375,8 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
                 }
               level->file.files = g_slist_insert_sorted(level->file.files, full_filename, (GCompareFunc) strcmp);
               msg_debug("Adding include file",
-                        evt_tag_str("filename", entry));
+                        evt_tag_str("filename", entry),
+                        evt_tag_int("depth", self->include_depth));
             }
         }
       g_dir_close(dir);
@@ -465,7 +466,8 @@ cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
                                             (GCompareFunc) strcmp);
 
   msg_debug("Adding include file",
-            evt_tag_str("filename", fn));
+            evt_tag_str("filename", fn),
+            evt_tag_int("depth", self->include_depth));
 
   return TRUE;
 }
