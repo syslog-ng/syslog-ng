@@ -20,7 +20,6 @@
  */
 #include "kv-scanner.h"
 #include "testutils.h"
-#include <stdarg.h>
 
 static gboolean
 _assert_no_more_tokens(KVScanner *scanner)
@@ -46,14 +45,6 @@ _assert_no_more_tokens(KVScanner *scanner)
 }
 
 static gboolean
-_scan_next_token(KVScanner *scanner)
-{
-  gboolean ok = kv_scanner_scan_next(scanner);
-  expect_true(ok,  "kv_scanner is expected to return TRUE for scan_next");
-  return ok;
-}
-
-static gboolean
 _assert_current_key_is(KVScanner *scanner, const gchar *expected_key)
 {
   const gchar *key = kv_scanner_get_current_key(scanner);
@@ -69,122 +60,132 @@ _assert_current_value_is(KVScanner *scanner, const gchar *expected_value)
   return expect_nstring(value, -1, expected_value, -1, "current value mismatch");
 }
 
-typedef gboolean (*ScanTestFn)(KVScanner *scanner, va_list args, gboolean *expect_more);
-
 static gboolean
-_compare_key_value(KVScanner *scanner, va_list args, gboolean *expect_more)
+_compare_key_value(KVScanner *scanner, const gchar *key, const gchar *value, gboolean *expect_more)
 {
-  const gchar *kv = va_arg(args, const gchar *);
-  if (!kv)
-    return FALSE;
+  g_assert(value);
 
-  if (!_scan_next_token(scanner))
+  gboolean ok = kv_scanner_scan_next(scanner);
+  if (ok)
     {
-      *expect_more = FALSE;
+      _assert_current_key_is(scanner, key);
+      _assert_current_value_is(scanner, value);
       return TRUE;
     }
-
-  _assert_current_key_is(scanner, kv);
-
-  kv = va_arg(args, const gchar *);
-  g_assert(kv);
-  _assert_current_value_is(scanner, kv);
-
-  return TRUE;
+  else
+    {
+      *expect_more = FALSE;
+      expect_true(ok, "kv_scanner is expected to return TRUE for scan_next(), "
+                  "first unconsumed pair: [%s/%s]",
+                  key, value);
+      return FALSE;
+    }
 }
 
-static gboolean
-_value_was_quoted(KVScanner *scanner, va_list args, gboolean *expect_more)
-{
-  if (!_compare_key_value(scanner, args, expect_more))
-    return FALSE;
-
-  gboolean was_quoted = va_arg(args, gboolean);
-  g_assert((was_quoted == FALSE) ||(was_quoted == TRUE));
-
-  expect_gboolean(scanner->value_was_quoted, was_quoted, "mismatch in value_was_quoted");
-  return TRUE;
-}
+typedef const gchar *const VAElement;
 
 static void
-_scan_kv_pairs_fn(KVScanner *scanner, const gchar *input, ScanTestFn fn, va_list args)
+_scan_kv_pairs_scanner(KVScanner *scanner, const gchar *input, VAElement args[])
 {
   g_assert(input);
-
   kv_scanner_input(scanner, input);
   gboolean expect_more = TRUE;
-  while (fn(scanner, args, &expect_more))
+  const gchar *key = *(args++);
+  while (key)
     {
+      const gchar *value = *(args++);
+      if (!value || !_compare_key_value(scanner, key, value, &expect_more))
+        break;
+      key = *(args++);
     }
   if (expect_more)
     _assert_no_more_tokens(scanner);
 }
 
 static void
-_scan_kv_pairs_scanner(KVScanner *scanner, const gchar *input, ...)
+_scan_kv_pairs_implicit(const gchar *input, VAElement args[])
 {
-  va_list args;
-  va_start(args, input);
-
-  _scan_kv_pairs_fn(scanner, input, _compare_key_value, args);
-
-  va_end(args);
+  KVScanner *scanner = kv_scanner_new();
+  _scan_kv_pairs_scanner(scanner, input, args);
+  kv_scanner_free(scanner);
 }
+
+typedef struct _KVQElement
+{
+  const gchar *const key;
+  const gchar *const value;
+  gboolean quoted;
+} KVQElement;
+
+typedef struct _KVQContainer
+{
+  const gsize n;
+  const KVQElement *const arg;
+} KVQContainer;
+
+#define VARARG_STRUCT(VARARG_STRUCT_cont, VARARG_STRUCT_elem, ...) \
+  (const VARARG_STRUCT_cont) { \
+    sizeof((const VARARG_STRUCT_elem[]) { __VA_ARGS__ }) / sizeof(VARARG_STRUCT_elem), \
+    (const VARARG_STRUCT_elem[]){__VA_ARGS__}\
+  }
 
 static void
-_scan_kv_pairs_implicit(const gchar *input, ...)
+_scan_kv_pairs_quoted(const gchar *input, KVQContainer args)
 {
-  va_list args;
-  va_start(args, input);
-
   KVScanner *scanner = kv_scanner_new();
-  _scan_kv_pairs_fn(scanner, input, _compare_key_value, args);
-  kv_scanner_free(scanner);
 
-  va_end(args);
+  g_assert(input);
+  kv_scanner_input(scanner, input);
+  gboolean expect_more = TRUE;
+  for (gsize i = 0; i < args.n; i++)
+    {
+      if (!_compare_key_value(scanner, args.arg[i].key, args.arg[i].value, &expect_more))
+        break;
+      expect_gboolean(scanner->value_was_quoted, args.arg[i].quoted,
+                      "mismatch in value_was_quoted for [%s/%s]",
+                      args.arg[i].key, args.arg[i].value);
+    }
+  if (expect_more)
+    _assert_no_more_tokens(scanner);
+  kv_scanner_free(scanner);
 }
 
-static void
-_scan_kv_pairs_full(ScanTestFn fn, const gchar *input, ...)
-{
-  va_list args;
-  va_start(args, input);
-
-  KVScanner *scanner = kv_scanner_new();
-  _scan_kv_pairs_fn(scanner, input, fn, args);
-  kv_scanner_free(scanner);
-
-  va_end(args);
-}
-
-#define TEST_KV_SCAN(input, ...) \
+#define TEST_KV_SCAN(TEST_KV_SCAN_input, ...) \
   do { \
-    testcase_begin("TEST_KV_SCAN(%s, %s)", #input, #__VA_ARGS__); \
-    _scan_kv_pairs_implicit(input, ##__VA_ARGS__, NULL); \
+    testcase_begin("TEST_KV_SCAN(%s, %s)", #TEST_KV_SCAN_input, #__VA_ARGS__); \
+    _scan_kv_pairs_implicit(TEST_KV_SCAN_input, (VAElement[]){ __VA_ARGS__,  NULL }); \
     testcase_end(); \
   } while (0)
 
-#define TEST_KV_SCANNER(scanner, input, ...) \
+#define TEST_KV_SCAN0(TEST_KV_SCAN_input, ...) \
   do { \
-    testcase_begin("TEST_KV_SCANNER(%s, %s)", #input, #__VA_ARGS__); \
-    _scan_kv_pairs_scanner(scanner, input, ##__VA_ARGS__, NULL); \
+    testcase_begin("TEST_KV_SCAN(%s, %s)", #TEST_KV_SCAN_input, #__VA_ARGS__); \
+    _scan_kv_pairs_implicit(TEST_KV_SCAN_input, (VAElement[]){ NULL }); \
     testcase_end(); \
   } while (0)
 
-#define TEST_KV_SCAN_FN(fn, input, ...) \
+#define TEST_KV_SCANNER(TEST_KV_SCAN_scanner, TEST_KV_SCAN_input, ...) \
   do { \
-    testcase_begin("TEST_KV_SCAN_FN(%s, %s, %s)", #fn, #input, #__VA_ARGS__); \
-    _scan_kv_pairs_full(fn, input, ##__VA_ARGS__, NULL); \
+    testcase_begin("TEST_KV_SCANNER(%s, %s)", #TEST_KV_SCAN_input, #__VA_ARGS__); \
+    _scan_kv_pairs_scanner(TEST_KV_SCAN_scanner, TEST_KV_SCAN_input, \
+      (VAElement[]){ __VA_ARGS__,  NULL }); \
+    testcase_end(); \
+  } while (0)
+
+#define TEST_KV_SCAN_Q(TEST_KV_SCAN_input, ...) \
+  do { \
+    testcase_begin("TEST_KV_SCAN_Q(%s, %s)", #TEST_KV_SCAN_input, #__VA_ARGS__); \
+    _scan_kv_pairs_quoted(TEST_KV_SCAN_input, VARARG_STRUCT(KVQContainer, KVQElement, __VA_ARGS__)); \
     testcase_end(); \
   } while (0)
 
 static void
 _test_incomplete_string_returns_no_pairs(void)
 {
-  TEST_KV_SCAN("");
-  TEST_KV_SCAN("f");
-  TEST_KV_SCAN("fo");
-  TEST_KV_SCAN("foo");
+  TEST_KV_SCAN0("");
+  TEST_KV_SCAN0("f");
+  TEST_KV_SCAN0("fo");
+  TEST_KV_SCAN0("foo");
 }
 
 static void
@@ -348,12 +349,12 @@ _test_transforms_values_if_parse_value_is_set(void)
 static void
 _test_quotation_is_stored_in_the_was_quoted_value_member(void)
 {
-  TEST_KV_SCAN_FN(_value_was_quoted, "foo=\"bar\"", "foo", "bar", TRUE);
-  TEST_KV_SCAN_FN(_value_was_quoted, "foo='bar'", "foo", "bar", TRUE);
-  TEST_KV_SCAN_FN(_value_was_quoted, "foo=bar", "foo", "bar", FALSE);
-  TEST_KV_SCAN_FN(_value_was_quoted, "foo='bar' foo=bar",
-                  "foo", "bar", TRUE,
-                  "foo", "bar", FALSE);
+  TEST_KV_SCAN_Q("foo=\"bar\"", {"foo", "bar", TRUE});
+  TEST_KV_SCAN_Q("foo='bar'", {"foo", "bar", TRUE});
+  TEST_KV_SCAN_Q("foo=bar", {"foo", "bar", FALSE});
+  TEST_KV_SCAN_Q("foo='bar' k=v",
+                  {"foo", "bar", TRUE},
+                  {"k", "v", FALSE});
 }
 
 static void
@@ -426,15 +427,15 @@ _test_separator_in_key(void)
 static void
 _test_empty_keys(void)
 {
-  TEST_KV_SCAN("=v");
-  TEST_KV_SCAN("k*=v");
-  TEST_KV_SCAN("=");
-  TEST_KV_SCAN("==");
-  TEST_KV_SCAN("===");
-  TEST_KV_SCAN(" =");
-  TEST_KV_SCAN(" ==");
-  TEST_KV_SCAN(" ===");
-  TEST_KV_SCAN(" = =");
+  TEST_KV_SCAN0("=v");
+  TEST_KV_SCAN0("k*=v");
+  TEST_KV_SCAN0("=");
+  TEST_KV_SCAN0("==");
+  TEST_KV_SCAN0("===");
+  TEST_KV_SCAN0(" =");
+  TEST_KV_SCAN0(" ==");
+  TEST_KV_SCAN0(" ===");
+  TEST_KV_SCAN0(" = =");
   TEST_KV_SCAN(" ==k=", "k", "");
   TEST_KV_SCAN(" = =k=", "k", "");
   TEST_KV_SCAN(" =k=", "k", "");
@@ -476,9 +477,9 @@ _test_key_charset(void)
   TEST_KV_SCAN("k-j=v", "k-j", "v");
   TEST_KV_SCAN("0=v", "0", "v");
   TEST_KV_SCAN("_=v", "_", "v");
-  TEST_KV_SCAN(":=v");
+  TEST_KV_SCAN0(":=v");
   TEST_KV_SCAN("Z=v", "Z", "v");
-  TEST_KV_SCAN("á=v");
+  TEST_KV_SCAN0("á=v");
 }
 
 static void
@@ -486,7 +487,7 @@ _test_key_buffer_underrun(void)
 {
   const gchar *buffer = "ab=v";
   const gchar *input = buffer + 2;
-  TEST_KV_SCAN(input);
+  TEST_KV_SCAN0(input);
 }
 
 static void
