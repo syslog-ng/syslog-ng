@@ -23,6 +23,7 @@
 #include "kvtagdb.h"
 #include "atomic.h"
 #include <string.h>
+#include <sys/types.h>
 
 struct _KVTagDB
 {
@@ -237,22 +238,27 @@ kvtagdb_get_selectors(KVTagDB *self)
 gboolean
 kvtagdb_import(KVTagDB *self, FILE *fp, TagRecordScanner *scanner)
 {
-  gchar line[3072];
+  ssize_t n;
+  size_t line_buf_len;
+  gchar *line_buf = NULL;
   const TagRecord *next_record;
-  while(fgets(line, 3072, fp))
+
+  while ((n = getline(&line_buf, &line_buf_len, fp)) != -1)
     {
-      size_t line_length = strlen(line);
-      if (line[line_length-1] == '\n')
-        --line_length;
-      line[line_length] = '\0';
-      next_record = scanner->get_next(scanner, line);
+      if (line_buf[n-1] == '\n')
+        line_buf[n-1] = '\0';
+      next_record = scanner->get_next(scanner, line_buf);
       if (!next_record)
         {
           kvtagdb_purge(self);
+          g_free(line_buf);
           return FALSE;
         }
       kvtagdb_insert(self, next_record);
     }
+
+  g_free(line_buf);
   kvtagdb_index(self);
+
   return TRUE;
 }
