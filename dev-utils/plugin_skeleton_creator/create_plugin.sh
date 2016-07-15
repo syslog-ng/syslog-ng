@@ -42,6 +42,7 @@ template_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 help=0
 file_list="plugin_template_grammar.ym
            plugin_template_Makefile.am
+           plugin_template_CMakeLists.txt
            plugin_template_parser.c
            plugin_template_parser.h
            plugin_template_plugin.c"
@@ -106,6 +107,8 @@ for filename in ${file_list}; do
   plugin_name_under_score=`echo ${plugin_name} | sed "s/-/_/g"`
   if [ "${filename}" == "plugin_template_Makefile.am" ]; then
     dst_filename="Makefile.am"
+  elif [ "${filename}" == "plugin_template_CMakeLists.txt" ]; then
+    dst_filename="CMakeLists.txt"
   else
     dst_filename=`echo ${filename} | sed "s/plugin_template_/${plugin_name}-/g"`
   fi

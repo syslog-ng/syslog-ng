@@ -1,0 +1,30 @@
+set(@PLUGIN_NAME_US@_HEADERS
+    "@PLUGIN_NAME@-parser.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/@PLUGIN_NAME@-grammar.h"
+)
+
+set(@PLUGIN_NAME_US@_SOURCES
+    "@PLUGIN_NAME@-plugin.c"
+    "@PLUGIN_NAME@-parser.c"
+    "${CMAKE_CURRENT_BINARY_DIR}/@PLUGIN_NAME@-grammar.c"
+)
+
+generate_y_from_ym(modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar)
+
+bison_target(@PLUGIN_NAME@Grammar
+    ${CMAKE_CURRENT_BINARY_DIR}/@PLUGIN_NAME@-grammar.y
+    ${CMAKE_CURRENT_BINARY_DIR}/@PLUGIN_NAME@-grammar.c
+COMPILE_FLAGS ${BISON_FLAGS})
+
+option(ENABLE_@PLUGIN_NAME_US@ "Enable @PLUGIN_NAME@ ON")
+
+if (ENABLE_@PLUGIN_NAME_US@)
+  include_directories (${CMAKE_CURRENT_BINARY_DIR})
+  include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+  add_library(@PLUGIN_NAME_US@ MODULE ${@PLUGIN_NAME@_SOURCES})
+  target_link_libraries(@PLUGIN_NAME_US@ PRIVATE syslog-ng)
+
+  install(TARGETS @PLUGIN_NAME_US@
+  LIBRARY DESTINATION lib/syslog-ng/
+  COMPONENT @PLUGIN_NAME_US@)
+endif()
