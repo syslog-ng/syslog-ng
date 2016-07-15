@@ -22,6 +22,9 @@
 #############################################################################
 
 top_srcdir="$(git rev-parse --show-toplevel)"
+current_year="$(date +%Y)"
+git_user_name="$(git config --get user.name)"
+year_and_author="$current_year $git_user_name"
 
 function print_help {
   echo "This script helps to create new plugin by creating a skeleton"
@@ -32,6 +35,7 @@ function print_help {
   echo -e "\t-d\tPlugin root dir (default: ${top_srcdir}/modules)"
   echo -e "\t-h\tPrint this help message"
 }
+
 
 plugin_name=''
 plugin_key=''
@@ -118,5 +122,6 @@ for filename in ${file_list}; do
   sed -i "s/@PLUGIN_NAME_US@/${plugin_name_under_score}/g" "${dst_filename}"
   sed -i "s/@PLUGIN_TYPE@/${plugin_type}/g" "${dst_filename}"
   sed -i "s/@PLUGIN_KEY@/${plugin_key}/g" "${dst_filename}"
+  sed -i "s/@YEAR_AND_AUTHOR@/${year_and_author}/g" "${dst_filename}"
 done
 echo "Done: new plugin skeleton is created in ${plugin_dir}"
