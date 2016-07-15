@@ -68,7 +68,7 @@ fi
 if [ -d "${plugin_dir}" ]; then
   echo "Plugin already exists: ${plugin_dir}"
   exit 1
-fi 
+fi
 
 if [ -z "${plugin_key}" ]; then
   plugin_key=${plugin_name}
