@@ -1,0 +1,151 @@
+syslog-ng Debian sources
+========================
+
+This is the Debian packaging of syslog-ng. It is a non-trivial
+packaging, not for the faint of heart, but rest assured, every quirk,
+every strange solution is there for a reason, and this document is
+here to explain the details.
+
+There were a number of goals that influenced how the packaging was set
+up, namely:
+
+ * The packaging should be independent and separate from the upstream
+   sources. We want the `debian/` directory to be copy-able into an
+   upstream git checkout, or to an upstream dist tarball, and still
+   work.
+
+   We want merges between packaging branches to be painless, to not
+   have to worry about accidentally merging upstream changes too.
+
+ * The packaging should be generic enough to work on most Debian and
+   derived distributions, provided they have recent enough
+   build-dependencies.
+
+ * We want a branch for each Debian (or Ubuntu) release, where the
+   package is actively maintained. This includes Debian *unstable* and
+   *experimental* too.
+
+ * Running `git-buildpackage` from a freshly checked out git
+   repository should produce source and binary packages suitable for
+   the main archive.
+
+For these reasons, this repository contains the `debian/` directory
+only, which will be laid over the upstream sources using
+`git-buildpackage`. The branches are all prefixed with the vendor
+(`debian/` or `ubuntu/`), followed by the release (`unstable`,
+`experimental`, `jessie`, and so on). Any other branch that may be
+present is likely a temporary branch.
+
+Packaging quirks
+----------------
+
+Most of the quirks we do happen in `debian/rules`, and they're also
+documented there. If there is conflict between this document and
+`debian/rules`, the latter is to be trusted.
+
+### Maintainer scripts
+
+Both syslog-ng-core, and a few of the older modules have maintainer
+scripts, for various purposes.
+
+In the case of **syslog-ng-core**, the `postrm` takes care of
+disabling (on remove) or removing (on purge) the logrotate
+configuration files, and also removes the control socket and the
+persist file, along with the `/var/lib/syslog-ng` directory, if it is
+empty.
+
+The `preinst` for **syslog-ng-core** restores any disabled logrotate
+configs, and if upgrading from a version that had symlinked conffiles,
+removes those too, before unpacking the upgrade.
+
+And the last maintainer script of **syslog-ng-core**, the `prerm`
+stops the `syslog.socket` if using systemd, so that we do not get
+re-enabled by socket activation during remove.
+
+Some module packages, namely **syslog-ng-mod-json**,
+**syslog-ng-mod-sql**, and **syslog-ng-mod-mongodb** also have a
+`postinst`, which removes the old activation conffile that shipped
+with syslog-ng versions prior to 3.4
+
+### Platform-specific tweaks
+
+By default, console output shall be directed to the tenth TTY device.
+On GNU/Linux, this is `/dev/tty10`, while on GNU/kFreeBSD, it is
+`/dev/ttya`. We get around this by using a platform-specific
+configuration snippet, that declares a syslog-ng variable with the
+appropriate value.
+
+On kFreeBSD, we install one version, on Linux, another. This is done
+from debian/rules.
+
+This way, the main configuration file remains the same on all
+architectures, only this little snippet changes, which makes it easier
+to maintain the whole.
+
+### Shared library ABI versions
+
+Upstream builds a `libsyslog-ng-$MAJOR.so.$N` shared library, which we
+ship in `syslog-ng-core`, because it is not a general purpose library.
+We also want third party modules (like the ones in the Incubator) to
+not have overly strict dependencies on the syslog-ng version they were
+compiled against. Having to rebuild the Incubator on every syslog-ng
+upload would be a disaster.
+
+For this reason, `syslog-ng-core` provides
+`syslog-ng-abi-$MAJOR-$ABI`, where **$MAJOR** is the major version,
+and **$ABI** is the ABI version: the **$N** part of
+`libsyslog-ng-$MAJOR.so.$N`. Whenever upstream bumps the version, the
+**$ABI** variable in `debian/rules` needs to be bumped too.
+
+If upstream forgets to bump the version, but introduces an
+ABI-incompatible change, it should be bumped anyway, and dependent
+modules will need to be rebuilt.
+
+### Control variables
+
+We have three custom control variables, which are referenced by
+`debian/control`: **${sng:CoreModules}**, **${sng:Modules}** and
+**${sng:ABI}}**. The first two will be used for dependencies, and last
+one will be used to provide an ABI version.
+
+The `syslog-ng` meta package has to depend on core modules, because at
+some point in the future, they were part of the monolithic `syslog-ng`
+package, and for smooth upgrades, we need to keep all formerly
+installed modules installed. Being a meta package, it also recommends
+the other modules.
+
+The list of Core modules is a hard-coded list (**sql**, **mongodb**,
+**json**), but the optional modules are generated at build time, by
+looking at `debian/control` and finding all packages with names
+starting with `syslog-ng-mod-`.
+
+We use the `debian/tools/list-modules.sh` script to construct these
+lists for us, and in `debian/rules`, we override `dh_gencontrol` to
+pass these along, along with **${sng:ABI}**.
+
+The **${sng:ABI}** is used for module dependencies. To have a looser
+dependency for modules, so that third party (and Incubator) modules do
+not have to get recompiled for every single syslog-ng update, we track
+the ABI with a `Provides` field. Whenever the version of
+`libsyslog-ng.so` changes, the ABI version should be updated too.
+
+Building the package
+--------------------
+
+The easiest way is to use `debian/rules get-orig-source` followed by
+`git-buildpackage`. That will fetch the latest upstream sources, and
+then build both binary and source packages.
+
+If one wants to work with an unreleased version of syslog-ng, then
+copying the `debian/` directory over, replacing the original will
+allow one to use `dpkg-buildpackage -b` or `fakeroot debian/rules
+binary` to produce binary packages. Building source packages from this
+setup is not recommended.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 07 Nov 2014 08:44:36 +0100
+
+<!--
+Local Variables:
+mode: markdown
+End:
+-->

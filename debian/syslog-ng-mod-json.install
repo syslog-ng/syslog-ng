@@ -1,0 +1,2 @@
+usr/lib/syslog-ng/*/libjson-plugin.so
+usr/share/syslog-ng/include/scl/nodejs/*
