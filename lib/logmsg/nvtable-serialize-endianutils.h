@@ -69,7 +69,7 @@ nv_table_dyn_value_swap_bytes(NVIndexEntry* self)
 static inline void
 nv_table_data_swap_bytes(NVTable *self)
 {
-  NVIndexEntry *index;
+  NVIndexEntry *index_table;
   NVEntry *entry;
   gint i;
 
@@ -81,10 +81,10 @@ nv_table_data_swap_bytes(NVTable *self)
       nv_entry_swap_bytes(entry);
     }
 
-  index = nv_table_get_index(self);
+  index_table = nv_table_get_index(self);
   for (i = 0; i < self->index_size; i++)
     {
-      entry = nv_table_get_entry_at_ofs(self, index[i].ofs);
+      entry = nv_table_get_entry_at_ofs(self, index_table[i].ofs);
 
       if (!entry)
         continue;
@@ -96,7 +96,7 @@ static inline void
 nv_table_struct_swap_bytes(NVTable *self)
 {
   guint16 i;
-  NVIndexEntry *index;
+  NVIndexEntry *index_table;
 
   self->size = GUINT16_SWAP_LE_BE(self->size);
   self->used = GUINT16_SWAP_LE_BE(self->used);
@@ -106,11 +106,11 @@ nv_table_struct_swap_bytes(NVTable *self)
     {
       self->static_entries[i] = GUINT16_SWAP_LE_BE(self->static_entries[i]);
     }
-  index = nv_table_get_index(self);
+  index_table = nv_table_get_index(self);
 
   for (i = 0; i < self->index_size; i++)
     {
-      nv_table_dyn_value_swap_bytes(&index[i]);
+      nv_table_dyn_value_swap_bytes(&index_table[i]);
     }
 }
 

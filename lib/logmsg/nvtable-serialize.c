@@ -308,11 +308,11 @@ static gboolean
 _deserialize_dynamic_entries(SerializeArchive *sa, NVTable *res)
 {
   guint32 i;
-  NVIndexEntry *index;
-  index = nv_table_get_index(res);
+  NVIndexEntry *index_table;
+  index_table = nv_table_get_index(res);
   for (i = 0; i < res->index_size; i++)
     {
-      if (!_deserialize_dyn_value(sa, &index[i]))
+      if (!_deserialize_dyn_value(sa, &index_table[i]))
         return FALSE;
     }
   return TRUE;
@@ -471,7 +471,7 @@ static void
 _write_struct(SerializeArchive *sa, NVTable *self)
 {
   guint16 i;
-  NVIndexEntry *index;
+  NVIndexEntry *index_table;
 
   serialize_write_uint32(sa, self->size);
   serialize_write_uint32(sa, self->used);
@@ -481,10 +481,10 @@ _write_struct(SerializeArchive *sa, NVTable *self)
     {
       serialize_write_uint32(sa, self->static_entries[i]);
     }
-  index = nv_table_get_index(self);
+  index_table = nv_table_get_index(self);
   for (i = 0; i < self->index_size; i++)
     {
-      _serialize_nv_dyn_value(sa, &index[i]);
+      _serialize_nv_dyn_value(sa, &index_table[i]);
     }
 }
 

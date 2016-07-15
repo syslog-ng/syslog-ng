@@ -212,7 +212,7 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_ent
 {
   guint32 ofs;
   gint l, h, m;
-  NVIndexEntry *index = nv_table_get_index(self);
+  NVIndexEntry *index_table = nv_table_get_index(self);
   guint32 mv;
 
   if (!self->index_size)
@@ -229,11 +229,11 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_ent
   while (l <= h)
     {
       m = (l+h) >> 1;
-      mv = index[m].handle;
+      mv = index_table[m].handle;
       if (mv == handle)
         {
-          *index_entry = &index[m];
-          ofs = index[m].ofs;
+          *index_entry = &index_table[m];
+          ofs = index_table[m].ofs;
           break;
         }
       else if (mv > handle)
@@ -256,11 +256,11 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **inde
   if (G_UNLIKELY(!(*index_entry) && handle > self->num_static_entries))
     {
       /* this is a dynamic value */
-      NVIndexEntry *index = nv_table_get_index(self);;
+      NVIndexEntry *index_table = nv_table_get_index(self);;
       gint l, h, m, ndx;
       gboolean found = FALSE;
 
-      if (!nv_table_alloc_check(self, sizeof(index[0])))
+      if (!nv_table_alloc_check(self, sizeof(index_table[0])))
         return FALSE;
 
       l = 0;
@@ -271,7 +271,7 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **inde
           guint16 mv;
 
           m = (l+h) >> 1;
-          mv = index[m].handle;
+          mv = index_table[m].handle;
 
           if (mv == handle)
             {
@@ -295,10 +295,10 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **inde
       g_assert(ndx >= 0 && ndx <= self->index_size);
       if (ndx < self->index_size)
         {
-          memmove(&index[ndx + 1], &index[ndx], (self->index_size - ndx) * sizeof(index[0]));
+          memmove(&index_table[ndx + 1], &index_table[ndx], (self->index_size - ndx) * sizeof(index_table[0]));
         }
 
-      *index_entry = &index[ndx];
+      *index_entry = &index_table[ndx];
 
       /* we set ofs to zero here, which means that the NVEntry won't
          be found even if the slot is present in index */
@@ -585,7 +585,7 @@ nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, g
 gboolean
 nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data)
 {
-  NVIndexEntry *index;
+  NVIndexEntry *index_table;
   NVEntry *entry;
   gint i;
 
@@ -599,15 +599,15 @@ nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer use
         return TRUE;
     }
 
-  index = nv_table_get_index(self);
+  index_table = nv_table_get_index(self);
   for (i = 0; i < self->index_size; i++)
     {
-      entry = nv_table_get_entry_at_ofs(self, index[i].ofs);
+      entry = nv_table_get_entry_at_ofs(self, index_table[i].ofs);
 
       if (!entry)
         continue;
 
-      if (func(index[i].handle, entry, &index[i], user_data))
+      if (func(index_table[i].handle, entry, &index_table[i], user_data))
         return TRUE;
     }
 
