@@ -223,4 +223,3 @@ log_tags_global_deinit(void)
 
   g_static_mutex_unlock(&log_tags_lock);
 }
-

@@ -52,7 +52,7 @@ unsigned char _serialized_pe_msg[] = {
   0x00, 0x00, 0x00, 0x01, 0x93, 0x00, 0x00, 0x01, 0x4c, 0x00, 0x00, 0x01,
   0x94, 0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x01, 0x95, 0x00, 0x00, 0x00,
   0x58, 0x00, 0x00, 0x01, 0x96, 0x00, 0x00, 0x00, 0xbc, 0x00, 0x00, 0x01,
-  0x97, 0x00, 0x00, 0x00, 0xf8, 0x00, 0x03, 0x00, 0x00, 0x1c, 0x00, 0x00,
+  0x97, 0x00, 0x00, 0x00, 0xf8, 0xFC, 0x03, 0x00, 0x00, 0x1c, 0x00, 0x00,
   0x00, 0x0a, 0x00, 0x00, 0x00, 0x61, 0x61, 0x61, 0x00, 0x74, 0x65, 0x73,
   0x74, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x38, 0x00, 0x00, 0x00, 0x21, 0x00, 0x00, 0x00, 0x00, 0x41, 0x6e,
@@ -82,13 +82,29 @@ unsigned char _serialized_pe_msg[] = {
   0x69, 0x73, 0x53, 0x79, 0x6e, 0x63, 0x65, 0x64, 0x00, 0x30, 0x00, 0x00,
   0x00
 };
-unsigned int _serialized_pe_msg_len = 517;
+unsigned int _serialized_pe_msg_len = sizeof(_serialized_pe_msg);
+
+static void
+_alloc_dummy_values_to_change_handle_values_accross_restarts(void)
+{
+  static gint iteration = 1;
+
+  for (gint i = 0; i < iteration; i++)
+    {
+      gchar dummy_name[32];
+
+      g_snprintf(dummy_name, sizeof(dummy_name), "dummy%d", i);
+      nv_registry_alloc_handle(logmsg_registry, dummy_name);
+    }
+  iteration *= 2;
+}
 
 static void
 _reset_log_msg_registry()
 {
   log_msg_registry_deinit();
   log_msg_registry_init();
+  _alloc_dummy_values_to_change_handle_values_accross_restarts();
 }
 
 static void
@@ -105,18 +121,16 @@ _check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
   assert_string(log_msg_get_value(msg, LM_V_HOST, NULL), "mymachine", ERROR_MSG);
   assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "evntslog", ERROR_MSG);
   assert_string(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "An application event log entry...", ERROR_MSG);
+  assert_null(log_msg_get_value_if_set(msg, log_msg_get_value_handle("unset_value"), NULL), ERROR_MSG);
   assert_string(log_msg_get_value_by_name(msg, ".SDATA.exampleSDID@0.eventSource", NULL), "Application", ERROR_MSG);
   assert_guint16(msg->pri, 132, ERROR_MSG);
   log_template_unref(template);
   g_string_free(output, TRUE);
 }
 
-static SerializeArchive *
-_serialize_message_for_test(GString *stream)
+static LogMessage *
+_create_message_to_be_serialized(void)
 {
-
-  SerializeArchive *sa = serialize_string_archive_new(stream);
-
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
   NVHandle test_handle = log_msg_get_value_handle("aaa");
 
@@ -126,13 +140,36 @@ _serialize_message_for_test(GString *stream)
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
   log_msg_set_value_indirect(msg, indirect_handle, test_handle, 0, 5, 3);
 
+  log_msg_set_value_by_name(msg, "unset_value", "foobar", -1);
+  log_msg_unset_value_by_name(msg, "unset_value");
+
+  for (int i = 0; i < 32; i++)
+    {
+      gchar value_name[64];
+
+      g_snprintf(value_name, sizeof(value_name), ".SDATA.dynamic.field%d", i);
+      log_msg_set_value_by_name(msg, value_name, "value", -1);
+
+      g_snprintf(value_name, sizeof(value_name), ".normal.dynamic.field%d", i);
+      log_msg_set_value_by_name(msg, value_name, "value", -1);
+    }
+
+  return msg;
+}
+
+static SerializeArchive *
+_serialize_message_for_test(GString *stream)
+{
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized();
   log_msg_serialize(msg, sa);
   log_msg_unref(msg);
   return sa;
 }
 
 static void
-test_serialize()
+test_serialize(void)
 {
   NVHandle indirect_handle = 0;
   gssize length = 0;
@@ -143,6 +180,15 @@ test_serialize()
   LogMessage *msg = log_msg_new_empty();
 
   assert_true(log_msg_deserialize(msg, sa), ERROR_MSG);
+
+  /* we use nv_registry_get_handle() as it will not change the name-value
+   * pair flags, whereas log_msg_get_value_handle() would */
+  NVHandle sdata_handle = nv_registry_get_handle(logmsg_registry, ".SDATA.exampleSDID@0.eventSource");
+  assert_true(sdata_handle != 0,
+              "the .SDATA.exampleSDID@0.eventSource handle was not defined during deserialization");
+  assert_true(log_msg_is_handle_sdata(sdata_handle),
+              "deserialized SDATA name-value pairs have to marked as such");
+
   _check_deserialized_message(msg, sa);
 
   indirect_handle = log_msg_get_value_handle("indirect_1");
@@ -152,10 +198,11 @@ test_serialize()
   log_msg_unref(msg);
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
+
 }
 
 static void
-test_pe_serialized_message()
+test_pe_serialized_message(void)
 {
   GString serialized = {0};
   serialized.allocated_len = 0;
@@ -174,6 +221,47 @@ test_pe_serialized_message()
   serialize_archive_free(sa);
 }
 
+static void
+test_serialization_performance(void)
+{
+  LogMessage *msg = _create_message_to_be_serialized();
+  GString *stream = g_string_sized_new(512);
+  const int iterations = 100000;
+
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+  start_stopwatch();
+  for (int i = 0; i < iterations; i++)
+    {
+      g_string_truncate(stream, 0);
+      log_msg_serialize(msg, sa);
+    }
+  stop_stopwatch_and_display_result(iterations, "serializing %d times took", iterations);
+  serialize_archive_free(sa);
+  log_msg_unref(msg);
+  g_string_free(stream, TRUE);
+}
+
+static void
+test_deserialization_performance(void)
+{
+  GString *stream = g_string_sized_new(512);
+  SerializeArchive *sa = _serialize_message_for_test(stream);
+  const int iterations = 100000;
+  LogMessage *msg = log_msg_new_empty();
+
+  start_stopwatch();
+  for (int i = 0; i < iterations; i++)
+    {
+      serialize_string_archive_reset(sa);
+      log_msg_clear(msg);
+      log_msg_deserialize(msg, sa);
+    }
+  stop_stopwatch_and_display_result(iterations, "serializing %d times took", iterations);
+  serialize_archive_free(sa);
+  log_msg_unref(msg);
+  g_string_free(stream, TRUE);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -184,6 +272,8 @@ main(int argc, char **argv)
   msg_format_options_init(&parse_options, cfg);
   test_serialize();
   test_pe_serialized_message();
+  test_serialization_performance();
+  test_deserialization_performance();
   cfg_free(cfg);
   app_shutdown();
   return 0;

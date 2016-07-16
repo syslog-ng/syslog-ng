@@ -2,17 +2,18 @@
  * Copyright (c) 2014 Balabit
  * Copyright (c) 2014 Laszlo Budai
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -64,9 +65,12 @@ create_message(void)
 {
   LogMessage *msg;
   const gchar *text = "<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 _MSGID_ [origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"] ApplicationMSExchangeADAccess: message";
+  const gchar *unset_nvpair = "unset_value";
 
   msg = log_msg_new(text, strlen(text), NULL, &parse_options);
   log_msg_set_tag_by_name(msg, "almafa");
+  log_msg_set_value_by_name(msg, unset_nvpair, "value that has been unset", -1);
+  log_msg_unset_value_by_name(msg, unset_nvpair);
   return msg;
 }
 
@@ -139,15 +143,16 @@ int
 main(int argc, char *argv[])
 {
   GPtrArray *transformers;
+  GlobalConfig *cfg;
 
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
 
-  configuration = cfg_new(0x0302);
-  plugin_load_module("syslogformat", configuration, NULL);
+  cfg = cfg_new(VERSION_VALUE);
+  plugin_load_module("syslogformat", cfg, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
+  msg_format_options_init(&parse_options, cfg);
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
 
   testcase("rfc3164", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);

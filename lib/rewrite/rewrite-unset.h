@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 2015 Viktor Juhasz <viktor.juhasz@balabit.com>
+ * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,12 +22,12 @@
  *
  */
 
-#ifndef SDATA_SERIALIZE_H
-#define SDATA_SERIALIZE_H
+#ifndef REWRITE_UNSET_H_INCLUDED
+#define REWRITE_UNSET_H_INCLUDED
 
-#include "logmsg/logmsg.h"
-#include "serialize.h"
+#include "rewrite/rewrite-expr.h"
 
-gboolean sdata_deserialize(LogMessage *msg, SerializeArchive *sa);
+/* LogRewriteSet */
+LogRewrite *log_rewrite_unset_new(GlobalConfig *cfg);
 
 #endif

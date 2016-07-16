@@ -78,7 +78,7 @@ start_stopwatch(void)
 }
 
 void
-stop_stopwatch_and_display_result(gchar *message_template, ...)
+stop_stopwatch_and_display_result(gint iterations, gchar *message_template, ...)
 {
   va_list args;
   guint64 diff;
@@ -90,7 +90,8 @@ stop_stopwatch_and_display_result(gchar *message_template, ...)
   va_end(args);
 
   diff = (end_time_val.tv_sec - start_time_val.tv_sec) * 1000000 + end_time_val.tv_usec - start_time_val.tv_usec;
-  printf("; runtime=%lu.%06lu s\n", diff / 1000000, diff % 1000000);
+  printf("; %.2f iterations/sec", iterations * 1e6 / diff);
+  printf(", runtime=%lu.%06lus\n", diff / 1000000, diff % 1000000);
 }
 
 static void
@@ -394,16 +395,35 @@ assert_gboolean_non_fatal(gboolean actual, gboolean expected, const gchar *error
 }
 
 gboolean
-assert_null_non_fatal(void *pointer, const gchar *error_message, ...)
+assert_null_non_fatal_va(const void *pointer, const gchar *error_message, va_list args)
 {
-  va_list args;
-
   if (pointer == NULL)
     return TRUE;
 
-  va_start(args, error_message);
   print_failure(error_message, args, "Pointer expected to be NULL; pointer=%llx", (guint64)pointer);
+
+  return FALSE;
+}
+
+gboolean
+assert_null_non_fatal(const void *pointer, const gchar *error_message, ...)
+{
+  va_list args;
+
+  va_start(args, error_message);
+  gboolean success = assert_null_non_fatal_va(pointer, error_message, args);
   va_end(args);
+
+  return success;
+}
+
+gboolean
+assert_not_null_non_fatal_va(void *pointer, const gchar *error_message, va_list args)
+{
+  if (pointer != NULL)
+    return TRUE;
+
+  print_failure(error_message, args, "Unexpected NULL pointer");
 
   return FALSE;
 }
@@ -413,14 +433,11 @@ assert_not_null_non_fatal(void *pointer, const gchar *error_message, ...)
 {
   va_list args;
 
-  if (pointer != NULL)
-    return TRUE;
-
   va_start(args, error_message);
-  print_failure(error_message, args, "Unexpected NULL pointer");
+  gboolean success = assert_not_null_non_fatal_va(pointer, error_message, args);
   va_end(args);
 
-  return FALSE;
+  return success;
 }
 
 gboolean
@@ -502,7 +519,25 @@ assert_msg_field_equals_non_fatal(LogMessage *msg, gchar *field_name, gchar *exp
   va_end(args);
 
   return result;
-};
+}
+
+gboolean
+assert_msg_field_unset_non_fatal(LogMessage *msg, gchar *field_name, const gchar *error_message, ...)
+{
+  gssize actual_value_len;
+  const gchar *actual_value;
+  va_list args;
+
+  NVHandle handle = log_msg_get_value_handle(field_name);
+  actual_value = log_msg_get_value_if_set(msg, handle, &actual_value_len);
+
+  va_start(args, error_message);
+
+  gboolean success = assert_null_non_fatal_va(actual_value, error_message, args);
+
+  va_end(args);
+  return success;
+}
 
 gboolean
 testutils_deinit(void)

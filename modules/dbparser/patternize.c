@@ -23,7 +23,6 @@
 #include "patternize.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
-#include "tags.h"
 #include "uuid.h"
 
 #include <stdlib.h>

@@ -321,6 +321,82 @@ test_misc_stuff(void)
   MSG_TESTCASE(test_local_logmsg_created_with_the_right_flags_and_timestamps);
 }
 
+static void
+assert_sdata_value_with_seqnum_equals(LogMessage *msg, guint32 seq_num, const gchar *expected)
+{
+  GString *result = g_string_sized_new(0);
+
+  log_msg_append_format_sdata(msg, result, seq_num);
+  assert_string(result->str, expected, "SDATA value does not match");
+  g_string_free(result, TRUE);
+}
+
+static void
+assert_sdata_value_equals(LogMessage *msg, const gchar *expected)
+{
+  assert_sdata_value_with_seqnum_equals(msg, 0, expected);
+}
+
+static void
+test_sdata_value_is_updated_by_sdata_name_value_pairs(void)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar1", "value", -1);
+  assert_sdata_value_equals(msg, "[foo bar1=\"value\"]");
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar2", "value", -1);
+  assert_sdata_value_equals(msg, "[foo bar1=\"value\" bar2=\"value\"]");
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar3", "value", -1);
+  assert_sdata_value_equals(msg, "[foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
+  log_msg_set_value_by_name(msg, ".SDATA.post.value1", "value", -1);
+  assert_sdata_value_equals(msg, "[post value1=\"value\"][foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
+  log_msg_set_value_by_name(msg, ".SDATA.post.value2", "value", -1);
+  assert_sdata_value_equals(msg, "[post value1=\"value\" value2=\"value\"][foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
+  log_msg_unref(msg);
+}
+
+static void
+test_sdata_seqnum_adds_meta_sequence_id(void)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar1", "value", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar2", "value", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar3", "value", -1);
+  assert_sdata_value_with_seqnum_equals(msg, 5, "[foo bar1=\"value\" bar2=\"value\" bar3=\"value\"][meta sequenceId=\"5\"]");
+  log_msg_set_value_by_name(msg, ".SDATA.meta.foobar", "value", -1);
+  assert_sdata_value_with_seqnum_equals(msg, 6, "[meta sequenceId=\"6\" foobar=\"value\"][foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
+  log_msg_unref(msg);
+}
+
+static void
+test_sdata_value_omits_unset_values(void)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar1", "value", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar2", "value", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar3", "value", -1);
+  assert_sdata_value_equals(msg, "[foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
+  log_msg_unset_value_by_name(msg, ".SDATA.foo.bar2");
+  assert_sdata_value_equals(msg, "[foo bar1=\"value\" bar3=\"value\"]");
+  log_msg_unset_value_by_name(msg, ".SDATA.foo.bar1");
+  log_msg_unset_value_by_name(msg, ".SDATA.foo.bar3");
+  assert_sdata_value_equals(msg, "");
+  log_msg_unref(msg);
+}
+
+static void
+test_sdata_format(void)
+{
+  MSG_TESTCASE(test_sdata_value_is_updated_by_sdata_name_value_pairs);
+  MSG_TESTCASE(test_sdata_value_omits_unset_values);
+  MSG_TESTCASE(test_sdata_seqnum_adds_meta_sequence_id);
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -331,6 +407,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_log_message();
   test_log_message_merge();
   test_misc_stuff();
+  test_sdata_format();
 
   app_shutdown();
   return 0;

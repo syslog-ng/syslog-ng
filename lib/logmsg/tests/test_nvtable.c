@@ -1,18 +1,19 @@
 /*
- * Copyright (c) 2009-2014 Balabit
- * Copyright (c) 2009-2014 Balázs Scheidler
+ * Copyright (c) 2009-2016 Balabit
+ * Copyright (c) 2009-2016 Balázs Scheidler
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -898,6 +899,42 @@ test_nvtable_realloc(void)
 }
 
 static void
+test_nvtable_unset_values(void)
+{
+  NVTable *tab;
+  gssize size = 9999;
+  const gchar *value;
+  gboolean success;
+
+  tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 1024);
+  value = nv_table_get_value(tab, DYN_HANDLE, &size);
+  TEST_ASSERT(value != NULL);
+  TEST_ASSERT(value[0] == 0);
+  TEST_ASSERT(size == 0);
+
+  size = 1;
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  TEST_ASSERT(value == NULL);
+  TEST_ASSERT(size == 0);
+
+  success = nv_table_add_value(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), "foo", 3, NULL);
+  TEST_ASSERT(success == TRUE);
+  size = 1;
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  TEST_ASSERT(value != NULL);
+  TEST_ASSERT(strncmp(value, "foo", 3) == 0);
+  TEST_ASSERT(size == 3);
+
+  nv_table_unset_value(tab, DYN_HANDLE);
+  size = 1;
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  TEST_ASSERT(value == NULL);
+  TEST_ASSERT(size == 0);
+
+  nv_table_unref(tab);
+}
+
+static void
 test_nvtable(void)
 {
   test_nvtable_direct();
@@ -906,6 +943,7 @@ test_nvtable(void)
   test_nvtable_lookup();
   test_nvtable_clone();
   test_nvtable_realloc();
+  test_nvtable_unset_values();
 }
 
 int

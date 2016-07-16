@@ -1,19 +1,20 @@
 /*
- * Copyright (c) 2009-2013 Balabit
+ * Copyright (c) 2009-2016 Balabit
  * Copyright (c) 2009 Marton Illes
- * Copyright (c) 2009-2013 Balázs Scheidler
+ * Copyright (c) 2009-2016 Balázs Scheidler
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -23,7 +24,6 @@
  */
 
 #include "apphook.h"
-#include "tags.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "filter/filter-tags.h"
@@ -151,7 +151,7 @@ test_msg_tags()
 
           if (set && i < sizeof(gulong) * 8 && msg->num_tags != 0)
             test_fail("Small IDs are set which should be stored in-line but num_tags is non-zero");
-          
+
           g_free(name);
         }
     }
@@ -197,12 +197,12 @@ int
 main(int argc, char *argv[])
 {
   app_startup();
-  
+
   if (argc > 1)
     verbose = TRUE;
 
   msg_init(TRUE);
-  
+
   test_tags();
   test_msg_tags();
   test_filters(FALSE);
@@ -211,4 +211,3 @@ main(int argc, char *argv[])
   app_shutdown();
   return  (fail ? 1 : 0);
 }
-

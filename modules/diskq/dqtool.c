@@ -25,7 +25,6 @@
 #include "logqueue.h"
 #include "template/templates.h"
 #include "logmsg/logmsg.h"
-#include "tags.h"
 #include "messages.h"
 #include "logpipe.h"
 #include "logqueue-disk.h"

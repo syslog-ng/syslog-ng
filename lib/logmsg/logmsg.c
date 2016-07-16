@@ -27,7 +27,6 @@
 #include "messages.h"
 #include "logpipe.h"
 #include "timeutils.h"
-#include "tags.h"
 #include "logmsg/nvtable.h"
 #include "stats/stats-registry.h"
 #include "template/templates.h"
@@ -313,6 +312,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
               break;
             }
         }
+      i++;
     }
   else
     i = -1;
@@ -546,6 +546,18 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
     log_msg_update_sdata(self, handle, name, name_len);
   if (handle == LM_V_PROGRAM || handle == LM_V_PID)
     log_msg_unset_flag(self, LF_LEGACY_MSGHDR);
+}
+
+void
+log_msg_unset_value(LogMessage *self, NVHandle handle)
+{
+  nv_table_unset_value(self->payload, handle);
+}
+
+void
+log_msg_unset_value_by_name(LogMessage *self, const gchar *name)
+{
+  log_msg_unset_value(self, log_msg_get_value_handle(name));
 }
 
 void
@@ -850,6 +862,9 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
 
       sdata_name = log_msg_get_value_name(handle, &sdata_name_len);
       handle_flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+      value = log_msg_get_value_if_set(self, handle, &len);
+      if (!value)
+        continue;
 
       g_assert(handle_flags & LM_VF_SDATA);
 
@@ -925,12 +940,14 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
         }
       if (sdata_param_len)
         {
-          g_string_append_c(result, ' ');
-          g_string_append_len(result, sdata_param, sdata_param_len);
-          g_string_append(result, "=\"");
-          value = log_msg_get_value(self, handle, &len);
-          log_msg_sdata_append_escaped(result, value, len);
-          g_string_append_c(result, '"');
+          if (value)
+            {
+              g_string_append_c(result, ' ');
+              g_string_append_len(result, sdata_param, sdata_param_len);
+              g_string_append(result, "=\"");
+              log_msg_sdata_append_escaped(result, value, len);
+              g_string_append_c(result, '"');
+            }
         }
     }
   if (cur_elem)

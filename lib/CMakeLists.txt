@@ -107,7 +107,6 @@ set (LIB_HEADERS
     syslog-names.h
     syslog-ng.h
     string-list.h
-    tags.h
     timeutils.h
     tls-support.h
     thread-utils.h
@@ -189,7 +188,6 @@ set(LIB_SOURCES
     str-utils.c
     syslog-names.c
     string-list.c
-    tags.c
     timeutils.c
     type-hinting.c
     ringbuffer.c

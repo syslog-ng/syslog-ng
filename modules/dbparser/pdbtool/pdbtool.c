@@ -27,7 +27,6 @@
 #include "patterndb.h"
 #include "dbparser.h"
 #include "radix.h"
-#include "tags.h"
 #include "stats/stats-registry.h"
 #include "plugin.h"
 #include "filter/filter-expr-parser.h"

@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <tags.h>
 
 gboolean fail = FALSE;
 

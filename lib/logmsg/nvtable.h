@@ -29,14 +29,14 @@
 
 typedef struct _NVTable NVTable;
 typedef struct _NVRegistry NVRegistry;
-typedef struct _NVDynValue NVDynValue;
+typedef struct _NVIndexEntry NVIndexEntry;
 typedef struct _NVEntry NVEntry;
 typedef guint32 NVHandle;
 typedef struct _NVHandleDesc NVHandleDesc;
 typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data);
-typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, gpointer user_data);
+typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data);
 
-struct _NVDynValue
+struct _NVIndexEntry
 {
   NVHandle handle;
   guint32 ofs;
@@ -105,7 +105,12 @@ struct _NVEntry
   /* negative offset, counting from string table top, e.g. start of the string is at @top + ofs */
   union {
     struct {
-      guint8 indirect:1, referenced:1;
+      /* make sure you don't exceed 8 bits here. So if you want to add new
+       * bits, decrease the size of __bit_padding below */
+      guint8 indirect:1,
+             referenced:1,
+             unset:1,
+             __bit_padding:5;
     };
     guint8 flags;
   };
@@ -166,8 +171,8 @@ nv_entry_get_name(NVEntry *self)
  *   - the handles for static values have a low value and they match the index in this array
  *
  * Dynamic values:
- *   - a dynamically sized NVDynEntry array (contains ID + offset)
- *   - dynamic values are sorted by the global ID
+ *   - a dynamically sized NVIndexEntry array (contains ID + offset)
+ *   - dynamic values are sorted by the global ID to make handle->entry lookups fast
  *
  * Memory allocation
  * =================
@@ -186,13 +191,29 @@ nv_entry_get_name(NVEntry *self)
  *
  *   - It is possible to clone an NVTable, which basically copies the
  *     underlying memory contents.
+ *
+ * Limits
+ * ======
+ * There might be various assumptions here and there in the code that fields
+ * in this structure should be limited in values.  These are as follows.
+ * (the list is not necessarily comprehensive though, so please be careful
+ * when changing types).
+ *   - index_size is used to allocate NVIndexEntry arrays on the stack,
+ *     so 2^16 * sizeof(NVIndexEntry) is allocated at most (512k). If you
+ *     however change this limit, please be careful to audit the
+ *     deserialization code.
+ *
  */
 struct _NVTable
 {
   /* byte order indication, etc. */
   guint32 size;
   guint32 used;
-  guint16 num_dyn_entries;
+
+  /* this used to be called num_dyn_entries in earlier versions, it matches
+   * the type of the original type, so it is compatible with earlier
+   * versions, but index_size is a more descriptive name */
+  guint16 index_size;
   guint8 num_static_entries;
   guint8 ref_cnt:7,
     borrowed:1; /* specifies if the memory used by NVTable was borrowed from the container struct */
@@ -208,21 +229,24 @@ struct _NVTable
 
 #define NV_TABLE_BOUND(x)  (((x) + 0x3) & ~0x3)
 #define NV_TABLE_ADDR(self, x) ((gchar *) ((self)) + ((gssize)(x)))
-#define NV_TABLE_DYNVALUE_HANDLE(x) ((x).handle)
-#define NV_TABLE_DYNVALUE_OFS(x)    ((x).ofs)
 
 /* 256MB, this is an artificial limit, but must be less than MAX_GUINT32 as
  * we want to compare a guint32 to this variable without overflow.  */
 #define NV_TABLE_MAX_BYTES  (256*1024*1024)
 
+/* this has to be large enough to hold the NVTable struct above and the
+ * static values */
+#define NV_TABLE_MIN_BYTES  128
+
 gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len, gboolean *new_entry);
+void nv_table_unset_value(NVTable *self, NVHandle handle);
 gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint32 ofs, guint32 len, gboolean *new_entry);
 
 gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, gpointer user_data);
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);
 
 void nv_table_clear(NVTable *self);
-NVTable *nv_table_new(gint num_static_values, gint num_dyn_values, gint init_length);
+NVTable *nv_table_new(gint num_static_values, gint index_size_hint, gint init_length);
 NVTable *nv_table_init_borrowed(gpointer space, gsize space_len, gint num_static_entries);
 gboolean nv_table_realloc(NVTable *self, NVTable **new);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);
@@ -230,14 +254,14 @@ NVTable *nv_table_ref(NVTable *self);
 void nv_table_unref(NVTable *self);
 
 static inline gsize
-nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_length)
+nv_table_get_alloc_size(gint num_static_entries, gint index_size_hint, gint init_length)
 {
   NVTable *self G_GNUC_UNUSED = NULL;
   gsize size;
 
-  size = NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + num_dyn_values * sizeof(NVDynValue));
-  if (size < 128)
-    return 128;
+  size = NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + index_size_hint * sizeof(NVIndexEntry));
+  if (size < NV_TABLE_MIN_BYTES)
+    return NV_TABLE_MIN_BYTES;
   if (size > NV_TABLE_MAX_BYTES)
     size = NV_TABLE_MAX_BYTES;
   return size;
@@ -249,62 +273,83 @@ nv_table_get_top(NVTable *self)
   return NV_TABLE_ADDR(self, self->size);
 }
 
+static inline gchar *
+nv_table_get_bottom(NVTable *self)
+{
+  return nv_table_get_top(self) - self->used;
+}
+
+static inline gchar *
+nv_table_get_ofs_table_top(NVTable *self)
+{
+  return (gchar *) &self->data[self->num_static_entries * sizeof(self->static_entries[0]) +
+                               self->index_size * sizeof(NVIndexEntry)];
+}
+
+static inline gboolean
+nv_table_alloc_check(NVTable *self, gsize alloc_size)
+{
+  if (nv_table_get_bottom(self) - alloc_size < nv_table_get_ofs_table_top(self))
+    return FALSE;
+  return TRUE;
+}
+
 /* private declarations for inline functions */
-NVEntry *nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVDynValue **dyn_slot);
+NVEntry *nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry);
 const gchar *nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *len);
 
 
 static inline NVEntry *
-__nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries, NVDynValue **dyn_slot)
+__nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries, NVIndexEntry **index_entry)
 {
   guint32 ofs;
 
   if (G_UNLIKELY(!handle))
     {
-      *dyn_slot = NULL;
+      *index_entry = NULL;
       return NULL;
     }
 
   if (G_LIKELY(handle <= num_static_entries))
     {
       ofs = self->static_entries[handle - 1];
-      *dyn_slot = NULL;
+      *index_entry = NULL;
       if (G_UNLIKELY(!ofs))
         return NULL;
       return (NVEntry *) (nv_table_get_top(self) - ofs);
     }
   else
     {
-      return nv_table_get_entry_slow(self, handle, dyn_slot);
+      return nv_table_get_entry_slow(self, handle, index_entry);
     }
 }
 
 static inline NVEntry *
-nv_table_get_entry(NVTable *self, NVHandle handle, NVDynValue **dyn_slot)
+nv_table_get_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry)
 {
-  return __nv_table_get_entry(self, handle, self->num_static_entries, dyn_slot);
+  return __nv_table_get_entry(self, handle, self->num_static_entries, index_entry);
 }
 
 static inline gboolean
 nv_table_is_value_set(NVTable *self, NVHandle handle)
 {
-  NVDynValue *dyn_slot;
+  NVIndexEntry *index_entry;
 
-  return nv_table_get_entry(self, handle, &dyn_slot) != NULL;
+  return nv_table_get_entry(self, handle, &index_entry) != NULL;
 }
 
 static inline const gchar *
-__nv_table_get_value(NVTable *self, NVHandle handle, guint16 num_static_entries, gssize *length)
+nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length)
 {
   NVEntry *entry;
-  NVDynValue *dyn_slot;
+  NVIndexEntry *index_entry;
 
-  entry = nv_table_get_entry(self, handle, &dyn_slot);
-  if (G_UNLIKELY(!entry))
+  entry = nv_table_get_entry(self, handle, &index_entry);
+  if (!entry || entry->unset)
     {
       if (length)
         *length = 0;
-      return null_string;
+      return NULL;
     }
 
   if (!entry->indirect)
@@ -319,13 +364,17 @@ __nv_table_get_value(NVTable *self, NVHandle handle, guint16 num_static_entries,
 static inline const gchar *
 nv_table_get_value(NVTable *self, NVHandle handle, gssize *length)
 {
-  return __nv_table_get_value(self, handle, self->num_static_entries, length);
+  const gchar *value = nv_table_get_value_if_set(self, handle, length);
+
+  if (!value)
+    return null_string;
+  return value;
 }
 
-static inline NVDynValue *
-nv_table_get_dyn_entries(NVTable *self)
+static inline NVIndexEntry *
+nv_table_get_index(NVTable *self)
 {
-  return (NVDynValue *)&self->static_entries[self->num_static_entries];
+  return (NVIndexEntry *)&self->static_entries[self->num_static_entries];
 }
 
 static inline NVEntry *
@@ -337,7 +386,7 @@ nv_table_get_entry_at_ofs(NVTable *self, guint32 ofs)
 }
 
 static inline guint32
-nv_table_get_dyn_value_offset_from_nventry(NVTable *self, NVEntry *entry)
+nv_table_get_ofs_for_an_entry(NVTable *self, NVEntry *entry)
 {
   return (nv_table_get_top(self) - (gchar *) entry);
 }

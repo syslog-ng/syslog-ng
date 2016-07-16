@@ -31,6 +31,7 @@ int rewrite_expr_parse(CfgLexer *lexer, LogExprNode **node, gpointer arg);
 
 static CfgLexerKeyword rewrite_expr_keywords[] = {
   { "set",                KW_SET },
+  { "unset",              KW_UNSET },
   { "subst",              KW_SUBST },
   { "set_tag",            KW_SET_TAG },
   { "clear_tag",          KW_CLEAR_TAG },

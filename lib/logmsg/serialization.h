@@ -1,8 +1,6 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
- * Copyright (c) 2012-2015 Viktor Juhasz <viktor.juhasz@balabit.com>
- * Copyright (c) 2012-2013 Viktor Tusa
+ * Copyright (c) 2016 Balabit
+ * Copyright (c) 2016 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,14 +22,22 @@
  *
  */
 
-#ifndef _NVTABLE_SERIALIZE_H
-#define _NVTABLE_SERIALIZE_H
 
-#include "logmsg/nvtable.h"
-#include "logmsg/serialization.h"
+#ifndef LOGMSG_SERIALIZATION_H
+#define LOGMSG_SERIALIZATION_H
 
-NVTable *nv_table_deserialize(LogMessageSerializationState *state);
-gboolean nv_table_serialize(LogMessageSerializationState *state, NVTable *self);
-gboolean nv_table_fixup_handles(LogMessageSerializationState *state);
+#include "serialize.h"
+#include "logmsg/logmsg.h"
+
+typedef struct _LogMessageSerializationState
+{
+  guint8 version;
+  SerializeArchive *sa;
+  LogMessage *msg;
+  NVTable *nvtable;
+  guint8 nvtable_flags;
+  NVHandle *updated_sdata_handles;
+  NVIndexEntry *updated_index;
+} LogMessageSerializationState;
 
 #endif
