@@ -36,6 +36,8 @@ typedef struct _NVHandleDesc NVHandleDesc;
 typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data);
 typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data);
 
+#define NVHANDLE_MAX_VALUE ((NVHandle)-1)
+
 struct _NVIndexEntry
 {
   NVHandle handle;
