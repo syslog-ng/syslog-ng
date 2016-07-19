@@ -19,9 +19,6 @@ EXTRA_DIST		+= \
 		debian/tools/cleanup-upstream-debian.sh \
 		debian/syslog-ng-mod-kvformat.install \
 		debian/changelog \
-		debian/patches \
-		debian/patches/series \
-		debian/patches/debian-changes \
 		debian/syslog-ng-mod-amqp.install \
 		debian/syslog-ng-dev.install \
 		debian/syslog-ng-mod-sql.postrm \
