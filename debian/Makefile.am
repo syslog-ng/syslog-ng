@@ -19,7 +19,6 @@ EXTRA_DIST		+= \
 		debian/tools/cleanup-upstream-debian.sh \
 		debian/syslog-ng-mod-kvformat.install \
 		debian/changelog \
-		debian/changelog.in \
 		debian/patches \
 		debian/patches/series \
 		debian/patches/debian-changes \
@@ -72,7 +71,5 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-core.syslog-ng.upstart \
 		debian/syslog-ng-mod-graphite.install
 
-debian/changelog: debian/changelog.in
-	$(top_builddir)/config.status --file $@:$<
 
 MAINTAINERCLEANFILES	= debian/control debian/rules debian/copyright debian/changelog

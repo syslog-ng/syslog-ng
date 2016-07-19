@@ -1,9 +1,0 @@
-@PACKAGE_NAME@ (@PACKAGE_VERSION@) @RELEASE_TAG@; urgency=low
-
-  * New upstream version.
-
- -- BalaBit Development Team <syslog-ng-ose@balabit.com>  @CURRDATE@
-
-Local variables:
-mode: debian-changelog
-End:
