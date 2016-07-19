@@ -37,14 +37,12 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-mod-smtp.install \
 		debian/syslog-ng-core.prerm \
 		debian/syslog-ng-core.install \
-		debian/MPL \
 		debian/syslog-ng-core.manpages \
 		debian/rules \
 		debian/syslog-ng-mod-hdfs.install \
 		debian/man \
 		debian/man/update-patterndb.1 \
 		debian/syslog-ng-core.syslog-ng.logcheck.ignore.server \
-		debian/copyright \
 		debian/syslog-ng-mod-python.install \
 		debian/README.source \
 		debian/syslog-ng-mod-mongodb.install \
@@ -72,4 +70,4 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-mod-graphite.install
 
 
-MAINTAINERCLEANFILES	= debian/control debian/rules debian/copyright debian/changelog
+MAINTAINERCLEANFILES	= debian/control debian/rules debian/changelog
