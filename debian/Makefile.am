@@ -52,7 +52,6 @@ EXTRA_DIST		+= \
 		debian/gbp.conf \
 		debian/syslog-ng-mod-riemann.install \
 		debian/syslog-ng-mod-redis.install \
-		debian/syslog-ng-mod-amqp.docs \
 		debian/syslog-ng-core.syslog-ng.logcheck.violations.ignore \
 		debian/syslog-ng-mod-json.postrm \
 		debian/syslog-ng-mod-sql.install \
