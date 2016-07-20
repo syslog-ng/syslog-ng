@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 1998-2015 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,19 +20,38 @@
  *
  */
 
-#ifndef CSVPARSER_H_INCLUDED
-#define CSVPARSER_H_INCLUDED
-
+#include "kvtagger.h"
+#include "cfg-lexer.h"
+#include "cfg-parser.h"
+#include "kvtagger-grammar.h"
+#include "logpipe.h"
 #include "parser/parser-expr.h"
-#include "scanner/csv-scanner/csv-scanner.h"
+#include "syslog-ng-config.h"
+#include <glib.h>
 
-CSVScannerOptions *csv_parser_get_scanner_options(LogParser *s);
-gboolean csv_parser_set_flags(LogParser *s, guint32 flags);
-void csv_parser_set_prefix(LogParser *s, const gchar *prefix);
-LogParser *csv_parser_new(GlobalConfig *cfg);
+extern int kvtagger_debug;
 
-guint32 csv_parser_lookup_flag(const gchar *flag);
-gint csv_parser_lookup_dialect(const gchar *flag);
+int kvtagger_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
+static CfgLexerKeyword kvtagger_keywords[] =
+{
+  { "kvtagger", KW_KVTAGGER},
+  { "database", KW_KVTAGGER_DATABASE },
+  { "selector", KW_KVTAGGER_SELECTOR },
+  { "default_selector", KW_KVTAGGER_DEFAULT_SELECTOR },
+  { "prefix", KW_KVTAGGER_PREFIX },
+  { NULL }
+};
 
+CfgParser kvtagger_parser =
+{
+#if SYSLOG_NG_ENABLE_DEBUG
+  .debug_flag = &kvtagger_debug,
 #endif
+  .name = "kvtagger",
+  .keywords = kvtagger_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) kvtagger_parse,
+  .cleanup = (void (*)(gpointer)) log_pipe_unref,
+};
+
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(kvtagger_, LogParser **)

@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 1998-2015 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,19 +20,33 @@
  *
  */
 
-#ifndef CSVPARSER_H_INCLUDED
-#define CSVPARSER_H_INCLUDED
+#ifndef TAGGER_SCANNER_H_INCLUDED
+#define TAGGER_SCANNER_H_INCLUDED
 
-#include "parser/parser-expr.h"
-#include "scanner/csv-scanner/csv-scanner.h"
+#include "syslog-ng.h"
 
-CSVScannerOptions *csv_parser_get_scanner_options(LogParser *s);
-gboolean csv_parser_set_flags(LogParser *s, guint32 flags);
-void csv_parser_set_prefix(LogParser *s, const gchar *prefix);
-LogParser *csv_parser_new(GlobalConfig *cfg);
+typedef struct _TagRecordScanner TagRecordScanner;
 
-guint32 csv_parser_lookup_flag(const gchar *flag);
-gint csv_parser_lookup_dialect(const gchar *flag);
+typedef struct _TagRecord
+{
+  gchar *selector;
+  gchar *name;
+  gchar *value;
+} TagRecord;
 
+struct _TagRecordScanner
+{
+  TagRecord last_record;
+  gpointer scanner;
+  const gchar *name_prefix;
+  const TagRecord* (*get_next)(TagRecordScanner *self, const gchar *input);
+  void (*free_fn)(TagRecordScanner *self);
+};
+
+void tag_record_scanner_free(TagRecordScanner *self);
+void tag_record_scanner_set_name_prefix(TagRecordScanner *self, const gchar *prefix);
+void tag_record_clean(TagRecord *record);
+
+TagRecordScanner* create_tag_record_scanner_by_type(const gchar *type);
 
 #endif

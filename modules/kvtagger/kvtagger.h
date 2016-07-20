@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 1998-2015 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,19 +20,20 @@
  *
  */
 
-#ifndef CSVPARSER_H_INCLUDED
-#define CSVPARSER_H_INCLUDED
+#ifndef KVTAGGER_H_INCLUDED
+#define KVTAGGER_H_INCLUDED
 
 #include "parser/parser-expr.h"
-#include "scanner/csv-scanner/csv-scanner.h"
+#include "syslog-ng.h"
+#include "template/common-template-typedefs.h"
 
-CSVScannerOptions *csv_parser_get_scanner_options(LogParser *s);
-gboolean csv_parser_set_flags(LogParser *s, guint32 flags);
-void csv_parser_set_prefix(LogParser *s, const gchar *prefix);
-LogParser *csv_parser_new(GlobalConfig *cfg);
+LogParser *kvtagger_parser_new(GlobalConfig *cfg);
 
-guint32 csv_parser_lookup_flag(const gchar *flag);
-gint csv_parser_lookup_dialect(const gchar *flag);
-
+LogTemplateOptions * kvtagger_get_template_options(LogParser *d);
+void kvtagger_set_database_key_template(LogParser *p, const gchar *key);
+void kvtagger_set_filename(LogParser *p, const gchar * filename);
+void kvtagger_set_database_selector_template(LogParser *p, const gchar *selector);
+void kvtagger_set_database_default_selector(LogParser *p, const gchar *default_selector);
+void kvtagger_set_prefix(LogParser *p, const gchar *perfix);
 
 #endif

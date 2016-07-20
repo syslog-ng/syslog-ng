@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 1998-2015 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,19 +20,47 @@
  *
  */
 
-#ifndef CSVPARSER_H_INCLUDED
-#define CSVPARSER_H_INCLUDED
+#include "tagrecord-scanner.h"
+#include "csv-tagrecord-scanner.h"
+#include "messages.h"
+#include <string.h>
 
-#include "parser/parser-expr.h"
-#include "scanner/csv-scanner/csv-scanner.h"
+void
+tag_record_scanner_free(TagRecordScanner *self)
+{
+  if (self && self->free_fn)
+    self->free_fn(self);
+}
 
-CSVScannerOptions *csv_parser_get_scanner_options(LogParser *s);
-gboolean csv_parser_set_flags(LogParser *s, guint32 flags);
-void csv_parser_set_prefix(LogParser *s, const gchar *prefix);
-LogParser *csv_parser_new(GlobalConfig *cfg);
+void
+tag_record_scanner_set_name_prefix(TagRecordScanner *self, const gchar *prefix)
+{
+  self->name_prefix = prefix;
+}
 
-guint32 csv_parser_lookup_flag(const gchar *flag);
-gint csv_parser_lookup_dialect(const gchar *flag);
+void
+tag_record_clean(TagRecord *record)
+{
+  g_free(record->selector);
+  g_free(record->name);
+  g_free(record->value);
+}
 
+TagRecordScanner*
+create_tag_record_scanner_by_type(const gchar *type)
+{
+  TagRecordScanner *scanner = NULL;
 
-#endif
+  if (type == NULL)
+    return NULL;
+
+  if (!strncmp(type, "csv", 3))
+    {
+      scanner = csv_tag_record_scanner_new();
+    }
+
+  if (!scanner)
+    msg_warning("Unknown TagRecordScanner", evt_tag_str("type", type));
+
+  return scanner;
+}
