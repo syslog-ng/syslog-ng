@@ -1,0 +1,32 @@
+# syslog-ng - system logging daemon
+#
+# syslog-ng is an replacement for the traditional syslog daemon, logging messages from applications
+
+description "system logging daemon"
+
+start on filesystem
+stop on runlevel [06]
+
+expect fork
+respawn
+
+script
+  CONF="/etc/syslog-ng/syslog-ng.conf"
+  CTRL="/var/lib/syslog-ng/syslog-ng.ctl"
+  OPTS=""
+
+  # Allow override of command/conf and opts by /etc/default/syslog-ng
+  if [ -f /etc/default/$UPSTART_JOB ]; then
+    . /etc/default/$UPSTART_JOB
+  fi
+
+  if ! [ -r "$CONF" ] ; then
+    echo "Could not read ${CONF}: exiting"
+    exit 1
+  fi
+
+  exec /usr/sbin/syslog-ng --process-mode=background \
+        -f $CONF -c $CTRL \
+        -p /var/run/syslog-ng.pid $OPTS
+
+end script

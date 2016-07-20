@@ -1,98 +1,239 @@
-#!/usr/bin/make -f
-#-*- makefile -*-
-# Made with the aid of dh_make, by Craig Small
-# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
-# Some lines taken from debmake, by Christoph Lameter.
+#! /usr/bin/make -f
+## debian/rules file for syslog-ng 3.3+
+## (C) 2010-2012 Laszlo Boszormenyi (GCS) <gcs@debian.hu>
+## (C) 2011-2014 Gergely Nagy <algernon@madhouse-project.org>
+## (C) 2015-2016 Laszlo Budai <laszlo.budai@balabit.com>
+##
+## Released under the GPLv2+, see /usr/share/common-licenses/GPL-2 on
+## Debian systems.
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+# For my own sanity, when debian/rules is ran without any argument,
+# display something meaningful, instead of just running the first
+# override.
+help:
+	sensible-pager debian/README.source
 
-DDEBUG=`if (echo $(DEB_BUILD_OPTIONS) | grep -q debug) then \
-			echo "--enable-debug"; \
-		else \
-			echo "--disable-debug"; \
-		fi`
+##
+#* Environment setup
+#
+# If DEB_BUILD_OPTIONS has "debug" in it, we want to pass
+# --enable-debug to configure.
+#
+# We also want to build in a separate build directory:
+# debian/build-tree, because it's just so much easier to ignore files
+# in there.
+#
+# By the way, if one wants to pass extra flags to configure, that can
+# be done with EXTRA_CONFIGURE_OPTS, we don't override it, only append
+# to it.
+##
+ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
+EXTRA_CONFIGURE_OPTS += --enable-debug
+endif
 
-build: build-stamp
-build-stamp:
-	dh_testdir
+# We want to support building from a git tree, where the syslog-ng
+# sources are in a submodule, in syslog-ng-*. Since we do not wish to
+# update the rules for every major version if it can be helped, figure
+# it out from the changelog instead.
+UMAJOR		   = $(shell dpkg-parsechangelog | sed -n '/^Version:/s/^Version: //p' | cut -d. -f1,2)
 
-	./configure --prefix=/ \
-               $(DDEBUG) \
-               --mandir=/usr/share/man \
-               --sysconfdir=/etc/syslog-ng \
-	       --localstatedir=/var/lib/syslog-ng
-	# Add here commands to compile the package.
+# To better support the Incubator, and have looser dependencies, we
+# track the ABI version here. Whenever the soname of libsyslog-ng
+# changes, up this one too!
+ABI_VERSION	   = 3.8-0
 
-	$(MAKE) 
+export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg
 
-#	(cd doc/sgml; $(MAKE) syslog-ng.html.tar.gz)
+CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
+LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
 
-	touch build-stamp
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp
 
-	# Add here commands to clean up after the build process.
-	-$(MAKE) distclean
+# We want to enforce systemd support on Linux, but disable it
+# everywhere else.
+ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH_OS),linux)
+SYSTEMD_CONFIGURE_OPTS = --enable-systemd --with-systemd-journal=system
+else
+SYSTEMD_CONFIGURE_OPTS = --disable-systemd
+endif
 
-	dh_clean
+##
+#* Overrides for dh_auto*
+##
 
-install: build
-	dh_testdir
-	dh_testroot
-	dh_clean -k
-	dh_installdirs
+# We need to call autogen.sh instead of autoreconf.
+override_dh_autoreconf:
+	[ -e "configure" ] || dh_autoreconf -- sh -c "autoreconf --force -i && ./autogen.sh"
 
-	# Add here commands to install the package into debian/tmp.
-	$(MAKE) install DESTDIR=`pwd`/debian/tmp
+# Oh, the joys of configure!
+# We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
+# This also sets SOURCE_REVISION to the debian package version.
+override_dh_auto_configure:
+	install -d debian/build-tree
+	SOURCE_REVISION="$(shell dpkg-parsechangelog | \
+			  sed -n '/^Version:/s/^Version: //p')"; \
+	dh_auto_configure -- \
+		--build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--sysconfdir=/etc/syslog-ng \
+		--localstatedir=/var/lib/syslog-ng \
+		--datadir=/usr/share \
+		--libdir=/usr/lib/syslog-ng \
+		--disable-silent-rules \
+		--enable-dynamic-linking \
+		--enable-ssl \
+		--enable-spoof-source \
+		--enable-tcp-wrapper \
+		--enable-sql \
+		--enable-mongodb \
+		--enable-json \
+		--enable-riemann \
+		--enable-manpages \
+		--enable-python \
+		--enable-java \
+		--with-libmongo-client=system \
+		--with-ivykis=system \
+		--with-module-dir='$${exec_prefix}/lib/syslog-ng/${UMAJOR}' \
+		--with-systemdsystemunitdir="/lib/systemd/system" \
+		SOURCE_REVISION="$${SOURCE_REVISION}" \
+		${SYSTEMD_CONFIGURE_OPTS} \
+		${EXTRA_CONFIGURE_OPTS}
 
-	dh_movefiles
+override_dh_installman:
+	echo "1"
 
-	install -d -m 755 debian/syslog-ng/etc/default
-	install -m 644 debian/syslog-ng.default debian/syslog-ng/etc/default/syslog-ng
-	install -d -m 700 debian/syslog-ng/etc/syslog-ng
-	install -m 644 debian/syslog-ng.conf debian/syslog-ng/etc/syslog-ng
 
-#	install -d -m 700 debian/syslog-ng/etc/logcheck/ignore.d.paranoid
-#	install -m 644 debian/syslog-ng.logcheck.ignore debian/syslog-ng/etc/logcheck/ignore.d.paranoid/syslog-ng
-#	install -d -m 700 debian/syslog-ng/etc/logcheck/ignore.d.server
-#	install -m 644 debian/syslog-ng.logcheck.ignore debian/syslog-ng/etc/logcheck/ignore.d.server/syslog-ng
-#	install -d -m 700 debian/syslog-ng/etc/logcheck/ignore.d.workstation
-#	install -m 644 debian/syslog-ng.logcheck.ignore debian/syslog-ng/etc/logcheck/ignore.d.workstation/syslog-ng
+# Building is fine, but the manpages need some sed work, to replace
+# /opt/syslog-ng with something sensible. And unfortunately,
+# rabbitmq-c is a bit broken, so we need to create a directory for it
+# too.
+override_dh_auto_build:
+	install -d debian/build-tree/modules/afamqp/rabbitmq-c/librabbitmq
+	dh_auto_build -- V=1
+	-for f in debian/build-tree/doc/man/*; do \
+		sed -e "s#/opt/syslog\\\-ng/etc#/etc/syslog-ng#g" \
+		    -e "s#/opt/syslog\\\-ng##g" \
+		    -e "/affile/{s#,#, #g}" \
+		    -e 's#^/$$##' <$$f >$$f.new && \
+		rm $$f && mv $$f.new $$f; \
+	done
 
-# Build architecture-independent files here.
-binary-indep: build install
-# We have nothing to do by default.
+# The pkg-config .pc file is installed into ${libdir}/pkgconfig, but
+# we override libdir above to place everything useful there. We want
+# the .pc file elsewhere, though, so do that here at install time.
+override_dh_auto_install:
+	dh_auto_install -- pkgconfigdir=/usr/lib/pkgconfig
 
-# Build architecture-dependent files here.
-binary-arch: build install
-#	dh_testversion
-	dh_testdir
-	dh_testroot
-	dh_installdocs
-	dh_installexamples
-#	dh_installmenu
-#	dh_installemacsen
-	dh_installinit -r --no-start --name syslog-ng -- defaults 10 90
-#	dh_installcron
+# To get better test results, and actually see failing tests, we need
+# to pass VERBOSE=1 to make when running the tests. Do that here.
+override_dh_auto_test:
+	dh_auto_test -- VERBOSE=1
+
+##
+#* Overrides for other debhelper commands
+#
+# Below are overrides for individual debhelper commands.
+##
+
+# On kFreeBSD, d_console_all should log to /dev/ttyva, everywhere
+# else, to tty10. To keep the config as simple as possible, this is
+# accomplished by pulling the target device out of syslog-ng.conf,
+# into `scl-root`/system/tty10.conf.
+#
+# On kFreeBSD, this defines the `tty10` variable to /dev/ttyva,
+# everywhere else to /dev/tty10.
+#
+# It will be installed into the syslog-ng-core package by the
+# override_dh_install target.
+ifeq (${DEB_HOST_ARCH_OS},kfreebsd)
+TTY10_CONF = tty10.kfreebsd.conf
+else
+TTY10_CONF = tty10.linux.conf
+endif
+
+# Upstream installs the merge-grammar.pl as data, thus not
+# executable. Yet, it needs to be, since the Makefiles that upstream
+# also installs expect it so.
+#
+# So we simply flip a few bits after dh_install, and we're good to go!
+#
+# We also want to install the tty10.conf file into syslog-ng-core.
+# Since that depends on the architecture, we're installing it from
+# here.
+override_dh_install:
+	dh_install
+ifneq (,$(filter syslog-ng-dev,$(shell dh_listpackages)))
+	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
+endif
+ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
+	install -m 0644 debian/${TTY10_CONF} \
+			debian/syslog-ng-core/usr/share/syslog-ng/include/scl/system/tty10.conf
+endif
+
+# Install the NEWS file as upstream changelog.
+# Rationale: the ChangeLog file is an old artifact from the Arch
+# times. It is not updated, and is obsolete.
+override_dh_installchangelogs:
+	dh_installchangelogs NEWS.md
+
+# Init files and whatnot were moved to syslog-ng-core, but we want to
+# retain the old filenames.
+override_dh_installinit:
+	dh_installinit --name syslog-ng --restart-after-upgrade
+
+# Logrotate and Logcheck files were moved from syslog-ng to
+# syslog-ng-core too, and like in init's case, we want to keep the old
+# name.
+override_dh_installlogrotate:
 	dh_installlogrotate --name syslog-ng
-	dh_installman doc/man/pdbtool.1 doc/man/syslog-ng.8 doc/man/syslog-ng.conf.5
-#	dh_undocumented
-	dh_installchangelogs ChangeLog
-#	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-	# You may want to make some executables suid here
-#	dh_suidregister
-	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
 
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary
+override_dh_installlogcheck:
+	dh_installlogcheck --name syslog-ng
+
+# dh_makeshlibs wants to be clever and treat plugins as shared libs.
+# Slap it in the face, and tell it not to. We also do not need any
+# script modifications, as our single shared lib is in a private
+# directory. On the other hand, we do want correct dependencies on
+# anything that build-depends on syslog-ng-dev, so lets make a correct
+# shlibs file for that, shall we?
+#
+# See the comment at the top of this file about ABI_VERSION, which
+# explains how the dependency is calculated.
+override_dh_makeshlibs:
+ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
+	dh_makeshlibs -V "syslog-ng-abi-${ABI_VERSION}" \
+		      -n -Xusr/lib/syslog-ng/${UMAJOR}
+else
+	dh_makeshlibs -n -Xusr/lib/syslog-ng/${UMAJOR}
+endif
+
+# Since syslog-ng depends on all the modules, and syslog-ng-core
+# suggests the same set, and modules can come and go as new versions
+# of syslog-ng come out, lets make our life easy, and provide a custom
+# sng:Modules substvar, which has all the module packages listed. We
+# also provide sng:CoreModules, which lists core modules that were
+# part of syslog-ng (or it depended on them) previously, in 3.3.
+override_dh_gencontrol:
+	dh_gencontrol -- -Vsng:Modules=$(shell debian/tools/list-modules.sh optional) \
+			 -Vsng:CoreModules=$(shell debian/tools/list-modules.sh core) \
+			 -Vsng:ABI=${ABI_VERSION}
+
+##
+#* Other, non-override targets
+##
+
+# By default, the arch:all syslog-ng package does not need anything
+# built, so build-indep shall be empty. This avoids triggering another
+# build attempt, which would fail due to autoreconf being run
+# twice. It would also fail if no build-deps were installed (since the
+# package has no build-dep-indeps, rightly so).
+build-indep: ;
+
+# Because debian/rules get-orig-source is easier to type than uscan,
+# and is less scary because of using no force...:
+get-orig-source:
+	uscan --force-download --verbose
+
+# And for the rest, there is debhelper!
+%:
+	dh $@ --with autoreconf,systemd --parallel
