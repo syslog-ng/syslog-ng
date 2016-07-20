@@ -375,7 +375,8 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
                 }
               level->file.files = g_slist_insert_sorted(level->file.files, full_filename, (GCompareFunc) strcmp);
               msg_debug("Adding include file",
-                        evt_tag_str("filename", entry));
+                        evt_tag_str("filename", entry),
+                        evt_tag_int("depth", self->include_depth));
             }
         }
       g_dir_close(dir);
@@ -465,7 +466,8 @@ cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
                                             (GCompareFunc) strcmp);
 
   msg_debug("Adding include file",
-            evt_tag_str("filename", fn));
+            evt_tag_str("filename", fn),
+            evt_tag_int("depth", self->include_depth));
 
   return TRUE;
 }
@@ -487,7 +489,6 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 #ifndef SYSLOG_NG_HAVE_GLOB_NOMAGIC
           if (!__glob_pattern_p (pattern))
             {
-              self->include_depth++;
               return cfg_lexer_include_file_add(self, pattern);
             }
 #endif
@@ -496,7 +497,6 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
       return TRUE;
     }
 
-  self->include_depth++;
   for (i = 0; i < globbuf.gl_pathc; i++)
     {
       cfg_lexer_include_file_add(self, globbuf.gl_pathv[i]);
@@ -512,6 +512,8 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
 {
   const gchar *path = cfg_args_get(self->globals, "include-path");
   gboolean process = FALSE;
+
+  self->include_depth++;
 
   if (filename_[0] == '/' || !path)
     process = cfg_lexer_include_file_glob_at(self, filename_);
@@ -532,9 +534,14 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
       g_strfreev(dirs);
     }
   if (process)
-    return cfg_lexer_start_next_include(self);
+    {
+      return cfg_lexer_start_next_include(self);
+    }
   else
-    return TRUE;
+    {
+      self->include_depth--;
+      return TRUE;
+    }
 }
 
 gboolean
