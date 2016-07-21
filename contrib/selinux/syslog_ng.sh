@@ -231,7 +231,7 @@ while [ -n "${1}" ]; do
 		--help)
 			# if --help is supplied, the help message will be printed independently of any other options being specified
 			TASK_SELECTED="showhelp"
-			shift
+			break
 			;;
 		--install-dir)
 			[ "${TASK_SELECTED}" = "remove" ] && echo -e "ERROR: Conflicting options!\n\n${USAGE}" >&2 && exit 249
