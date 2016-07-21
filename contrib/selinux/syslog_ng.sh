@@ -9,6 +9,8 @@
 # 252: policy build failed
 # 251: policy install failed
 # 250: unsupported os/distribution/version
+# 249: conflicting parameters
+# 248: internal error at task selection
 
 EL_FC=
 EL_TE=
@@ -18,7 +20,7 @@ INSTALL_PATH="/opt/syslog-ng"
 # if you wish to add further ports, just add them to the end of the list
 SYSLOG_NG_TCP_PORTS="601"
 SYSLOG_NG_UDP_PORTS="601"
-TASK_SELECTED="install"
+TASK_SELECTED="install_default"
 INPUT=
 
 query_install_path() {
@@ -221,26 +223,30 @@ remove_module() {
 
 DIRNAME=$( dirname "${0}" )
 cd "${DIRNAME}"
-USAGE="$0\t[ --install-dir <DIRECTORY> | --remove | --help ]\n\n$0:\tA tool for building and managing the SELinux policy for the\n\t\tdefault syslog-ng installation."
+USAGE="Usage: $0\t[ --install-dir <DIRECTORY> | --remove | --help ]\n\n$0:\tA tool for building and managing the SELinux policy for the\n\t\tdefault syslog-ng installation."
+
 
 while [ -n "${1}" ]; do
 	case "${1}" in
-		--install-dir)
-			check_dir "${2}" || exit 253
-			INPUT="${2}"
-			shift 2
-			;;
-		--remove)
-			[ "${TASK_SELECTED}" = "install" ] && TASK_SELECTED="remove"
-			shift
-			;;
 		--help)
 			# if --help is supplied, the help message will be printed independently of any other options being specified
 			TASK_SELECTED="showhelp"
 			shift
 			;;
+		--install-dir)
+			[ "${TASK_SELECTED}" = "remove" ] && echo -e "ERROR: Conflicting options!\n\n${USAGE}" >&2 && exit 249
+			TASK_SELECTED="install"
+			check_dir "${2}" || exit 253
+			INPUT="${2}"
+			shift 2
+			;;
+		--remove)
+			[ "${TASK_SELECTED}" = "install" ] && echo -e "ERROR: Conflicting options!\n\n${USAGE}" >&2 && exit 249
+			TASK_SELECTED="remove"
+			shift
+			;;
 		*)
-			echo -e "ERROR: Invalid option: ${1}\n${USAGE}" >&2
+			echo -e "ERROR: Invalid option: '${1}'\n${USAGE}" >&2
 			exit 255
 			;;
 	esac
@@ -258,9 +264,9 @@ case "${TASK_SELECTED}" in
 		remove_module
 		exit 0
 		;;
-	install)
+	install|install_default)
 		if [ $( id -u ) != 0 ]; then
-			echo 'You must be root to run this script' >&2
+			echo 'You must be root to run this script!' >&2
 			exit 254
 		fi
 		
@@ -278,5 +284,9 @@ case "${TASK_SELECTED}" in
 		prepare_files
 		build_module
 		install_module
+		;;
+	*)
+		echo -e "ERROR: Invalid task: '${TASK_SELECTED}'!" >&2
+		exit 248
 		;;
 esac
