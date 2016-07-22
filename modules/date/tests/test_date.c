@@ -73,7 +73,7 @@ setup(void)
   app_startup();
 
   setlocale (LC_ALL, "C");
-  putenv("TZ=CET-1");
+  setenv("TZ", "CET-1", TRUE);
   tzset();
 
   configuration = cfg_new_snippet();

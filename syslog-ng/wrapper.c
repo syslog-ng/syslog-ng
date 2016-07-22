@@ -43,8 +43,8 @@ main(int argc, char *argv[])
 #endif
 
     cur_ldlibpath = getenv(ldlibpath_name);
-    snprintf(ldlibpath, sizeof(ldlibpath), "%s=%s%s%s", ldlibpath_name, ENV_LD_LIBRARY_PATH, cur_ldlibpath ? ":" : "", cur_ldlibpath ? cur_ldlibpath : "");
-    putenv(ldlibpath);
+    snprintf(ldlibpath, sizeof(ldlibpath), "%s%s%s", ENV_LD_LIBRARY_PATH, cur_ldlibpath ? ":" : "", cur_ldlibpath ? cur_ldlibpath : "");
+    setenv(ldlibpath_name, ldlibpath, TRUE);
   }
 #endif
   execv(PATH_SYSLOGNG, argv);
