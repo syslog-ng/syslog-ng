@@ -352,11 +352,10 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
     case M_SOURCE_IP:
     {
       gchar *ip;
+      gchar buf[MAX_SOCKADDR_STRING];
 
-      if(_is_message_source_an_ip_address(msg))
+      if (_is_message_source_an_ip_address(msg))
         {
-          gchar buf[MAX_SOCKADDR_STRING];
-
           g_sockaddr_format(msg->saddr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
           ip = buf;
         }
@@ -605,10 +604,10 @@ log_macros_global_init(void)
   g_get_current_time(&app_uptime);
   log_template_options_defaults(&template_options_for_macro_expand);
 
-  macro_hash = g_hash_table_new(g_str_hash, g_str_equal);
+  macro_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   for (i = 0; macros[i].name; i++)
     {
-      g_hash_table_insert(macro_hash, macros[i].name,
+      g_hash_table_insert(macro_hash, g_strdup(macros[i].name),
                           GINT_TO_POINTER(macros[i].id));
     }
   return;
