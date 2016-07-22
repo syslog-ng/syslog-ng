@@ -34,7 +34,7 @@ typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
 
 typedef struct _LogQueue LogQueue;
 
-typedef char *QueueType;
+typedef const char *QueueType;
 
 struct _LogQueue
 {
