@@ -62,7 +62,7 @@ java_machine_ref(void)
   return g_jvm_s;
 }
 
-static void inline
+static inline void
 __jvm_free(JavaVMSingleton *self)
 {
   msg_debug("Java machine free");
