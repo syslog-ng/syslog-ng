@@ -73,7 +73,7 @@ filter_netmask_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 }
 
 FilterExprNode *
-filter_netmask_new(gchar *cidr)
+filter_netmask_new(const gchar *cidr)
 {
   FilterNetmask *self = g_new0(FilterNetmask, 1);
   gchar buf[32];

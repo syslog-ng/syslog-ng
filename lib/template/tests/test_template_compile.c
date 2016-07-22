@@ -155,10 +155,10 @@ get_template_function_ops(const gchar *name)
 static void
 test_simple_string_literal(void)
 {
-  gchar *text = "Test String";
+  const gchar *text_ = "Test String";
 
-  assert_template_compile(text);
-  assert_compiled_template(text = text, default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+  assert_template_compile(text_);
+  assert_compiled_template(text = text_, default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
 static void

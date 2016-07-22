@@ -199,7 +199,7 @@ _set_value_in_message(JournalReaderOptions *options, LogMessage *msg, gchar *key
 }
 
 static const gchar *
-_get_value_from_message(JournalReaderOptions *options, LogMessage *msg,  gchar *key, gssize *value_length)
+_get_value_from_message(JournalReaderOptions *options, LogMessage *msg,  const gchar *key, gssize *value_length)
 {
   gchar name_with_prefix[256];
 
@@ -669,7 +669,7 @@ journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, co
 
   if (options->prefix == NULL)
     {
-      gchar *default_prefix = ".journald.";
+      const gchar *default_prefix = ".journald.";
       if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_8))
         {
           msg_warning("WARNING: Default value changed for the prefix() option of systemd-journal source in " VERSION_3_8,

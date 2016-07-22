@@ -27,6 +27,6 @@
 
 #include "filter-expr.h"
 
-FilterExprNode *filter_netmask_new(gchar *cidr);
+FilterExprNode *filter_netmask_new(const gchar *cidr);
 
 #endif

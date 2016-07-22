@@ -133,7 +133,7 @@ _eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 }
 
 FilterExprNode *
-filter_netmask6_new(gchar *cidr)
+filter_netmask6_new(const gchar *cidr)
 {
   FilterNetmask6 *self = g_new0(FilterNetmask6, 1);
   struct in6_addr packet_addr;

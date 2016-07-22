@@ -38,7 +38,7 @@ typedef struct _FilterRE
 
 typedef struct _FilterMatch FilterMatch;
 
-gboolean filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, gchar *re, GError **error);
+gboolean filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, const gchar *re, GError **error);
 
 FilterRE *filter_re_new(NVHandle value_handle);
 FilterRE *filter_source_new(void);

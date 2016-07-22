@@ -35,7 +35,7 @@ start_stopwatch(void)
 }
 
 void
-stop_stopwatch_and_display_result(gint iterations, gchar *message_template, ...)
+stop_stopwatch_and_display_result(gint iterations, const gchar *message_template, ...)
 {
   va_list args;
   guint64 diff;

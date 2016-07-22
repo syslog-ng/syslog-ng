@@ -79,7 +79,7 @@ filter_re_init(FilterExprNode *s, GlobalConfig *cfg)
 }
 
 gboolean
-filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, gchar *re, GError **error)
+filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, const gchar *re, GError **error)
 {
   log_matcher_options_init(&self->matcher_options, cfg);
   self->matcher = log_matcher_new(cfg, &self->matcher_options);

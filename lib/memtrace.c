@@ -603,7 +603,7 @@ calloc(size_t nmemb, size_t size)
 #else
 
 void
-z_mem_trace_init(gchar *memtrace_file)
+z_mem_trace_init(const gchar *memtrace_file)
 {
 }
 

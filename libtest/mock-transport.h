@@ -35,15 +35,15 @@
 #define LTM_PADDING   "padd", -1, "padd", -1, "padd", -1, "padd", -1, "padd", -1
 
 LogTransport *
-log_transport_mock_stream_new(gchar *read_buffer1, gssize read_buffer_length1, ...);
+log_transport_mock_stream_new(const gchar *read_buffer1, gssize read_buffer_length1, ...);
 
 LogTransport *
-log_transport_mock_endless_stream_new(gchar *read_buffer1, gssize read_buffer_length1, ...);
+log_transport_mock_endless_stream_new(const gchar *read_buffer1, gssize read_buffer_length1, ...);
 
 LogTransport *
-log_transport_mock_records_new(gchar *read_buffer1, gssize read_buffer_length1, ...);
+log_transport_mock_records_new(const gchar *read_buffer1, gssize read_buffer_length1, ...);
 
 LogTransport *
-log_transport_mock_endless_records_new(gchar *read_buffer1, gssize read_buffer_length1, ...);
+log_transport_mock_endless_records_new(const gchar *read_buffer1, gssize read_buffer_length1, ...);
 
 #endif

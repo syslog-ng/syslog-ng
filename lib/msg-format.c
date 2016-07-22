@@ -136,7 +136,7 @@ CfgFlagHandler msg_format_flag_handlers[] =
 };
 
 gboolean
-msg_format_options_process_flag(MsgFormatOptions *options, gchar *flag)
+msg_format_options_process_flag(MsgFormatOptions *options, const gchar *flag)
 {
   return cfg_process_flag(msg_format_flag_handlers, options, flag);
 }

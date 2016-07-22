@@ -55,7 +55,7 @@
 
 #define BOOL(x) ((x) ? "TRUE" : "FALSE")
 
-static gchar *full_colors[] =
+static const gchar *full_colors[] =
 {
   "\33[01;34m", /* blue */
   "\33[0;33m", /* brown */
@@ -63,7 +63,7 @@ static gchar *full_colors[] =
   "\33[01;31m"  /* red */
 };
 
-static gchar *empty_colors[] =
+static const gchar *empty_colors[] =
 {
   "", "", "", ""
 };
@@ -73,11 +73,11 @@ static gchar *empty_colors[] =
 #define COLOR_LITERAL 2
 #define COLOR_PARTIAL 3
 
-static gchar *no_color = "\33[01;0m";
-static gchar **colors = empty_colors;
+static const gchar *no_color = "\33[01;0m";
+static const gchar **colors = empty_colors;
 
 
-static gchar *patterndb_file = PATH_PATTERNDB_FILE;
+static const gchar *patterndb_file = PATH_PATTERNDB_FILE;
 static gboolean color_out = FALSE;
 
 typedef struct _PdbToolMergeState
@@ -1033,7 +1033,7 @@ static gdouble support_treshold = 4.0;
 static gboolean iterate_outliers = FALSE;
 static gboolean named_parsers = FALSE;
 static gint num_of_samples = 1;
-static gchar *delimiters = " :&~?![]=,;()'\"";
+static const gchar *delimiters = " :&~?![]=,;()'\"";
 
 static gint
 pdbtool_patternize(int argc, char *argv[])
