@@ -544,3 +544,12 @@ testutils_deinit(void)
 {
   return testutils_global_success;
 }
+
+gchar *
+basename_const(const gchar *file)
+{
+  gchar *dup_file = g_strdup(file);
+  gchar *base = g_strdup(basename(dup_file));
+  g_free(dup_file);
+  return base;
+}
