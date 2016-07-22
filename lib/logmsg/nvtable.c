@@ -196,7 +196,7 @@ nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
   return referenced_value + entry->vindirect.ofs;
 }
 
-static const inline gchar *
+static inline const gchar *
 nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length)
 {
   if (entry->unset)
