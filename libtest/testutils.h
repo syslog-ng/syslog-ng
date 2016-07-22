@@ -73,7 +73,8 @@ gboolean assert_no_error_non_fatal(GError *error, const gchar *error_message, ..
 gboolean assert_guint32_set_non_fatal(guint32 *actual, guint32 actual_length, guint32 *expected,
                                       guint32 expected_length, const gchar *error_message, ...);
 gboolean assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gchar *error_message, ...);
-gboolean assert_msg_field_equals_non_fatal(LogMessage *msg, const gchar *field_name, const gchar *expected_value, gssize expected_value_len, const gchar *error_message, ...);
+gboolean assert_msg_field_equals_non_fatal(LogMessage *msg, const gchar *field_name, const gchar *expected_value,
+                                           gssize expected_value_len, const gchar *error_message, ...);
 gboolean assert_msg_field_unset_non_fatal(LogMessage *msg, const gchar *field_name, const gchar *error_message, ...);
 gboolean expect_not_reached(const gchar *error_message, ...);
 
@@ -140,7 +141,7 @@ gboolean testutils_deinit(void);
       current_testcase_description = g_string_sized_new(0); \
       g_string_printf(current_testcase_description, description_template, ##__VA_ARGS__); \
       current_testcase_function = __FUNCTION__; \
-      current_testcase_file = basename(__FILE__); \
+      current_testcase_file = g_path_get_basename(__FILE__); \
     } while (0)
 
 #define testcase_end() \
@@ -148,6 +149,7 @@ gboolean testutils_deinit(void);
       g_string_free(current_testcase_description, TRUE); \
       current_testcase_description = NULL; \
       current_testcase_function = NULL; \
+      g_free(current_testcase_file); \
       current_testcase_file = NULL; \
     } while (0)
 

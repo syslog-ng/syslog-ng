@@ -497,8 +497,8 @@ assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gchar *error
 }
 
 gboolean
-assert_msg_field_equals_non_fatal(LogMessage *msg, const gchar *field_name, const gchar *expected_value, gssize expected_value_len,
-                                  const gchar *error_message, ...)
+assert_msg_field_equals_non_fatal(LogMessage *msg, const gchar *field_name, const gchar *expected_value,
+                                  gssize expected_value_len, const gchar *error_message, ...)
 {
   gssize actual_value_len;
   const gchar *actual_value;
