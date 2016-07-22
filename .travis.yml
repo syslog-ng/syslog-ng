@@ -43,6 +43,12 @@ before_script:
   - sudo dpkg-reconfigure --frontend noninteractive tzdata
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
+  - if [ "$CC" = "gcc" ]; then
+      EXTRA_WARN="--enable-extra-warnings";
+    fi
+  - if [ "$CC" = "clang" ]; then
+      DISABLE_MONGODB="--disable-mongodb";
+    fi
   - CONFIGURE_FLAGS="
       CFLAGS=-Werror
       --prefix=$HOME/install/syslog-ng
@@ -61,11 +67,9 @@ before_script:
       --enable-manpages
       --with-python=2
       --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
-      --enable-extra-warnings
+      $EXTRA_WARN
+      $DISABLE_MONGODB
       "
-  - if [ "$CC" = "clang" ]; then
-      CONFIGURE_FLAGS="$CONFIGURE_FLAGS --disable-mongodb" ;
-    fi
   - ./configure $CONFIGURE_FLAGS
 script:
   - . tests/build-log-cflags-propagation.sh;
