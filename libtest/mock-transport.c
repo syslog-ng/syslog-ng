@@ -34,10 +34,16 @@ typedef enum data_type
   DATA_ERROR,
 } data_type_t;
 
+struct iovec_const
+{
+  const gchar *iov_base;     /* Pointer to data.  */
+  gsize iov_len;     /* Length of data.  */
+};
+
 typedef struct data
 {
   data_type_t type;
-  struct iovec iov;
+  struct iovec_const iov;
   guint error_code;
 } data_t;
 
@@ -60,7 +66,7 @@ gssize
 log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
   LogTransportMock *self = (LogTransportMock *) s;
-  struct iovec *current_iov;
+  struct iovec_const *current_iov;
 
   if (self->current_value_ndx >= self->value_cnt)
     {
