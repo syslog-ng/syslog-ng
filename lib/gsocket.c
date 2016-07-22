@@ -50,7 +50,7 @@ g_inet_ntoa(char *buf, size_t bufsize, struct in_addr a)
 }
 
 gint
-g_inet_aton(char *buf, struct in_addr *a)
+g_inet_aton(const char *buf, struct in_addr *a)
 {
   return inet_aton(buf, a);
 }

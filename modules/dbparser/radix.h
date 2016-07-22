@@ -108,7 +108,7 @@ typedef struct _RDebugInfo
   gint match_len;
 } RDebugInfo;
 
-static inline gchar *
+static inline const gchar *
 r_parser_type_name(guint8 type)
 {
   switch (type)
@@ -146,7 +146,7 @@ r_parser_type_name(guint8 type)
     }
 }
 
-RNode *r_new_node(guint8 *key, gpointer value);
+RNode *r_new_node(const guint8 *key, gpointer value);
 void r_free_node(RNode *node, void (*free_fn)(gpointer data));
 void r_insert_node(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc value_func);
 RNode *r_find_node(RNode *root, guint8 *key, gint keylen, GArray *matches);

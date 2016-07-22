@@ -78,8 +78,8 @@ enum
 
 typedef struct
 {
-  gchar *name;
-  gchar *alt_name;
+  const gchar *name;
+  const gchar *alt_name;
   gint type;
   gint id;
 } ValuePairSpec;
@@ -173,7 +173,7 @@ vp_pair_conf_free(VPPairConf *vpc)
 
 
 static gchar *
-vp_transform_apply (ValuePairs *vp, gchar *key)
+vp_transform_apply (ValuePairs *vp, const gchar *key)
 {
   gchar *ckey, *okey = g_strdup(key);
   gint i;
@@ -250,7 +250,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 }
 
 static gboolean
-vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
+vp_find_in_set(ValuePairs *vp, const gchar *name, gboolean exclude)
 {
   guint j;
   gboolean included = exclude;
@@ -897,7 +897,7 @@ value_pairs_init_set(ValuePairSpec *set)
   for (i = 0; set[i].name; i++)
     {
       guint id;
-      gchar *name;
+      const gchar *name;
 
       name = set[i].alt_name ? set[i].alt_name : set[i].name;
 

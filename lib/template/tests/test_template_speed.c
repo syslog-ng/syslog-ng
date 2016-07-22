@@ -45,7 +45,7 @@ MsgFormatOptions parse_options;
 #define BENCHMARK_COUNT 10000
 
 void
-testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
+testcase(const gchar *msg_str, gboolean syslog_proto, const gchar *template)
 {
   LogTemplate *templ;
   LogMessage *msg;

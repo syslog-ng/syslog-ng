@@ -70,7 +70,7 @@ ptz_str2hash(gchar *string, guint modulo, guint seed)
 }
 
 gchar *
-ptz_find_delimiters(gchar *str, gchar *delimdef)
+ptz_find_delimiters(gchar *str, const gchar *delimdef)
 {
   gchar *remainder;
   GString *delimiters = g_string_sized_new(32);
@@ -96,7 +96,7 @@ ptz_find_frequent_words_remove_key_predicate(gpointer key, gpointer value, gpoin
 }
 
 GHashTable *
-ptz_find_frequent_words(GPtrArray *logs, guint support, gchar *delimiters, gboolean two_pass)
+ptz_find_frequent_words(GPtrArray *logs, guint support, const gchar *delimiters, gboolean two_pass)
 {
   int i, j, pass;
   guint *curr_count;
@@ -230,7 +230,7 @@ cluster_free(Cluster *cluster)
 }
 
 GHashTable *
-ptz_find_clusters_slct(GPtrArray *logs, guint support, gchar *delimiters, guint num_of_samples)
+ptz_find_clusters_slct(GPtrArray *logs, guint support, const gchar *delimiters, guint num_of_samples)
 {
   GHashTable *wordlist;
   GHashTable *clusters;
@@ -550,7 +550,7 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
 }
 
 void
-ptz_print_patterndb(GHashTable *clusters, gchar *delimiters, gboolean named_parsers)
+ptz_print_patterndb(GHashTable *clusters, const gchar *delimiters, gboolean named_parsers)
 {
   char date[12], uuid_string[37];
   time_t currtime;
@@ -624,7 +624,7 @@ ptz_load_file(Patternizer *self, gchar *input_file, gboolean no_parse, GError **
 }
 
 Patternizer *
-ptz_new(gdouble support_treshold, guint algo, guint iterate, guint num_of_samples, gchar *delimiters)
+ptz_new(gdouble support_treshold, guint algo, guint iterate, guint num_of_samples, const gchar *delimiters)
 {
   Patternizer *self = g_new0(Patternizer, 1);
 
