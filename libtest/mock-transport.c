@@ -28,11 +28,17 @@
 #include <string.h>
 #include <errno.h>
 
+struct iovec_const
+  {
+    const gchar *iov_base;     /* Pointer to data.  */
+    gsize iov_len;     /* Length of data.  */
+  };
+
 typedef struct
 {
   LogTransport super;
   /* data is stored in a series of data chunks, that are going to be returned as individual reads */
-  struct iovec iov[32];
+  struct iovec_const iov[32];
   gint iov_cnt;
   /* index currently read i/o chunk */
   gint current_iov_ndx;
@@ -47,7 +53,7 @@ gssize
 log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
   LogTransportMock *self = (LogTransportMock *) s;
-  struct iovec *current_iov;
+  struct iovec_const *current_iov;
 
   if (self->current_iov_ndx >= self->iov_cnt)
     {
