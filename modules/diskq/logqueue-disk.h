@@ -53,7 +53,7 @@ struct _LogQueueDisk
   void (*restart_corrupted)(LogQueueDisk *self);
 };
 
-extern const QueueType log_queue_disk_type;
+extern QueueType log_queue_disk_type;
 
 gboolean log_queue_disk_is_reliable(LogQueue *s);
 const gchar *log_queue_disk_get_filename(LogQueue *self);
