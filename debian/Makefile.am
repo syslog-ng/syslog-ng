@@ -63,7 +63,9 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-core.preinst \
 		debian/syslog-ng-core.dirs \
 		debian/syslog-ng-core.syslog-ng.upstart \
-		debian/syslog-ng-mod-graphite.install
+		debian/syslog-ng-mod-graphite.install \
+		debian/syslog-ng-mod-add-contextual-data.install
+
 
 
 MAINTAINERCLEANFILES	= debian/control debian/rules debian/changelog

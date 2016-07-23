@@ -628,3 +628,32 @@ Description: Enhanced system logging daemon (kvformat)
  whitespace or comma-separated key=value pairs (for example, Postfix log messages)
  into name-value pairs.
 
+Package: syslog-ng-mod-add-contextual-data
+Architecture: any  
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (add-contextual-data)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data 
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the add-contextual-data module for syslog-ng.
+ With this module syslog-ng can use an external database file to
+ append custom name-value pairs on incoming logs (to enrich messages). 
+ The database is a file that containing `<selector, name, value>` records.
+ Currently only `CSV` format is supported. It is like `geoip parser` 
+ where the selector is `$HOST`, but the user can define
+ the selector, and also the database contents.
+
+
