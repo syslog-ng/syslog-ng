@@ -1672,7 +1672,7 @@ log_msg_registry_init(void)
 {
   gint i;
 
-  logmsg_registry = nv_registry_new(builtin_value_names);
+  logmsg_registry = nv_registry_new(builtin_value_names, NVHANDLE_MAX_VALUE);
   nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSG");
   nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSGONLY");
   nv_registry_add_alias(logmsg_registry, LM_V_HOST, "FULLHOST");

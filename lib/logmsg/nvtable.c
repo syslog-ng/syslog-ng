@@ -69,10 +69,10 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
                 evt_tag_str("value", name));
       goto exit;
     }
-  else if (self->names->len >= NVHANDLE_MAX_VALUE)
+  else if (self->names->len >= self->nvhandle_max_value)
     {
       msg_error("Hard wired limit of name-value pairs have been reached, all further name-value pair will expand to nothing",
-                evt_tag_printf("limit", "%"G_GUINT32_FORMAT, NVHANDLE_MAX_VALUE),
+                evt_tag_printf("limit", "%"G_GUINT32_FORMAT, self->nvhandle_max_value),
                 evt_tag_str("value", name));
       goto exit;
     }
@@ -121,11 +121,12 @@ nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data)
 }
 
 NVRegistry *
-nv_registry_new(const gchar **static_names)
+nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value)
 {
   NVRegistry *self = g_new0(NVRegistry, 1);
   gint i;
 
+  self->nvhandle_max_value = nvhandle_max_value;
   self->name_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->names = g_array_new(FALSE, FALSE, sizeof(NVHandleDesc));
   for (i = 0; static_names[i]; i++)
