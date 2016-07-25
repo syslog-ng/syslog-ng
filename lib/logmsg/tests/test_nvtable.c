@@ -30,7 +30,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 /* NVRegistry */
 /* testcases:
  *
@@ -39,7 +38,6 @@
  *   - adding an alias and looking up an NV pair by alias should return the same handle
  *   - NV pairs cannot have the zero-length string as a name
  *   - NV pairs cannot have names longer than 255 characters
- *   - no more than 65535 NV pairs are supported
  *   -
  */
 
@@ -53,77 +51,6 @@
         }                                                               \
     }                                                                   \
   while (0)
-
-static void
-test_nv_registry()
-{
-  NVRegistry *reg;
-  gint i, j;
-  NVHandle handle, prev_handle;
-  const gchar *name;
-  gssize len;
-  const gchar *builtins[] = { "BUILTIN1", "BUILTIN2", "BUILTIN3", NULL };
-
-  reg = nv_registry_new(builtins);
-
-  for (i = 0; builtins[i]; i++)
-    {
-      handle = nv_registry_alloc_handle(reg, builtins[i]);
-      TEST_ASSERT(handle == (i+1));
-      name = nv_registry_get_handle_name(reg, handle, &len);
-      TEST_ASSERT(strcmp(name, builtins[i]) == 0);
-      TEST_ASSERT(strlen(name) == len);
-    }
-
-  for (i = 4; i < 65536; i++)
-    {
-      gchar dyn_name[16];
-
-      g_snprintf(dyn_name, sizeof(dyn_name), "DYN%05d", i);
-
-      /* try to look up the same name multiple times */
-      prev_handle = 0;
-      for (j = 0; j < 4; j++)
-        {
-          handle = nv_registry_alloc_handle(reg, dyn_name);
-          TEST_ASSERT(prev_handle == 0 || (handle == prev_handle));
-          prev_handle = handle;
-        }
-      name = nv_registry_get_handle_name(reg, handle, &len);
-      TEST_ASSERT(strcmp(name, dyn_name) == 0);
-      TEST_ASSERT(strlen(name) == len);
-
-      g_snprintf(dyn_name, sizeof(dyn_name), "ALIAS%05d", i);
-      nv_registry_add_alias(reg, handle, dyn_name);
-      handle = nv_registry_alloc_handle(reg, dyn_name);
-      TEST_ASSERT(handle == prev_handle);
-    }
-
-  for (i = 65534; i >= 4; i--)
-    {
-      gchar dyn_name[16];
-
-      g_snprintf(dyn_name, sizeof(dyn_name), "DYN%05d", i);
-
-      /* try to look up the same name multiple times */
-      prev_handle = 0;
-      for (j = 0; j < 4; j++)
-        {
-          handle = nv_registry_alloc_handle(reg, dyn_name);
-          TEST_ASSERT(prev_handle == 0 || (handle == prev_handle));
-          prev_handle = handle;
-        }
-      name = nv_registry_get_handle_name(reg, handle, &len);
-      TEST_ASSERT(strcmp(name, dyn_name) == 0);
-      TEST_ASSERT(strlen(name) == len);
-    }
-
-  fprintf(stderr, "One error message about too many values is to be expected\n");
-  handle = nv_registry_alloc_handle(reg, "too-many-values");
-  TEST_ASSERT(handle == 0);
-
-  nv_registry_free(reg);
-}
 
 /*
  * NVTable:
@@ -950,7 +877,6 @@ int
 main(int argc, char *argv[])
 {
   app_startup();
-  test_nv_registry();
   test_nvtable();
   app_shutdown();
   return 0;
