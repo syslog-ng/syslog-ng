@@ -1,0 +1,74 @@
+SELINUX SUPPORT FOR SYSLOG-NG
+
+  This directory contains syslog-ng's SELinux policy files. By compiling and
+  loading them into your kernel, your syslog-ng will be able to work with its
+  default configuration in a SELinux enabled environment.
+
+  SELinux support was added in syslog-ng 5.2 on the following platforms:
+
+    Red Hat Enterprise Linux/CentOS/Oracle Linux 5
+    Red Hat Enterprise Linux/CentOS/Oracle Linux 6
+    Red Hat Enterprise Linux/CentOS/Oracle Linux 7
+
+  The installation steps may differ on these operating systems, so you will find
+  RHEL version specific information, too. Root permission is needed to run most
+  commands.
+
+  You need the following RPM packages preinstalled to be able to compile and
+  load SELinux policy modules:
+
+    policycoreutils
+    policycoreutils-python
+    policycoreutils-devel (only available on RHEL/CentOS/Oracle Linux 7)
+
+  If they are not installed on your system, you can install them by the
+  following command:
+
+    yum install policycoreutils policycoreutils-devel policycoreutils-python 
+
+  The SELinux policy works only if syslog-ng is started by the init daemon.
+
+INSTALLATION
+
+  To compile and load this module, you have to run the 'syslog_ng.sh' script.
+  It compiles and loads the syslog_ng module and restores the right file contexts
+  in syslog-ng's install directory. The changes will be effective after restarting
+  syslog-ng:
+
+    cd /opt/syslog-ng/share/doc/selinux
+    ./syslog_ng.sh
+
+  For information about restarting syslog-ng, please read the RESTARTING SYSLOG-NG
+  section.
+
+UNINSTALL
+
+  The module will be active, until you remove it. Then you have to restart syslog-ng.
+
+    ./syslog_ng.sh --remove
+
+  For information about restarting syslog-ng, please read the RESTARTING SYSLOG-NG
+  section.
+
+RESTARTING SYSLOG-NG
+
+  You can restart syslog-ng on RHEL5 and RHEL6 by:
+
+    service syslog-ng restart
+
+  On RHEL/CentOS/Oracle Linux 7 you have to run:
+
+    systemctl restart syslog-ng
+
+ADDITIONAL INFORMATION
+
+  Syslog-ng is able to create coredumps and it's disabled by default. You can
+  enable coredumps by
+
+    setsebool -P daemons_dump_core 1
+
+  Please note, that this command enables core dumping for all daemons on your sysmtem,
+  not just for syslog-ng. There is no way to enable per application core dumps in SELinux.
+
+  If you have problems with SELinux and syslog-ng, you can turn to BalaBit's support team.
+
