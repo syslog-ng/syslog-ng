@@ -36,6 +36,8 @@ typedef struct _NVHandleDesc NVHandleDesc;
 typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data);
 typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data);
 
+#define NVHANDLE_MAX_VALUE ((NVHandle)-1)
+
 struct _NVIndexEntry
 {
   NVHandle handle;
@@ -55,6 +57,7 @@ struct _NVRegistry
   gint num_static_names;
   GArray *names;
   GHashTable *name_map;
+  guint32 nvhandle_max_value;
 };
 
 extern const gchar *null_string;
@@ -64,7 +67,7 @@ NVHandle nv_registry_get_handle(NVRegistry *self, const gchar *name);
 NVHandle nv_registry_alloc_handle(NVRegistry *self, const gchar *name);
 void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags);
 void nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data);
-NVRegistry *nv_registry_new(const gchar **static_names);
+NVRegistry *nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value);
 void nv_registry_free(NVRegistry *self);
 
 static inline guint16

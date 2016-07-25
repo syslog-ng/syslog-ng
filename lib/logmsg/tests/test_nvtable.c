@@ -39,7 +39,7 @@
  *   - adding an alias and looking up an NV pair by alias should return the same handle
  *   - NV pairs cannot have the zero-length string as a name
  *   - NV pairs cannot have names longer than 255 characters
- *   - no more than 65535 NV pairs are supported
+ *   - no more than predefined number of NV pairs are supported
  *   -
  */
 
@@ -48,11 +48,13 @@
     {                                                                   \
       if (!(cond))                                                      \
         {                                                               \
-          fprintf(stderr, "Assertion %s failed at line %d", #cond, __LINE__); \
+          fprintf(stderr, "Assertion %s failed at line %d\n", #cond, __LINE__); \
           exit(1);                                                      \
         }                                                               \
     }                                                                   \
   while (0)
+
+#define TEST_NVHANDLE_MAX_VALUE 10
 
 static void
 test_nv_registry()
@@ -64,7 +66,7 @@ test_nv_registry()
   gssize len;
   const gchar *builtins[] = { "BUILTIN1", "BUILTIN2", "BUILTIN3", NULL };
 
-  reg = nv_registry_new(builtins);
+  reg = nv_registry_new(builtins, TEST_NVHANDLE_MAX_VALUE);
 
   for (i = 0; builtins[i]; i++)
     {
@@ -75,7 +77,7 @@ test_nv_registry()
       TEST_ASSERT(strlen(name) == len);
     }
 
-  for (i = 4; i < 65536; i++)
+  for (i = 4; i < TEST_NVHANDLE_MAX_VALUE + 1; i++)
     {
       gchar dyn_name[16];
 
@@ -99,7 +101,7 @@ test_nv_registry()
       TEST_ASSERT(handle == prev_handle);
     }
 
-  for (i = 65534; i >= 4; i--)
+  for (i = TEST_NVHANDLE_MAX_VALUE; i >= 4; i--)
     {
       gchar dyn_name[16];
 
