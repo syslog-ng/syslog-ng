@@ -25,6 +25,7 @@
 
 #include "pathutils.h"
 #include <sys/stat.h>
+#include <string.h>
 
 gboolean
 is_file_directory(const char *filename)
@@ -76,4 +77,18 @@ find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
     }
   g_strfreev(dirs);
   return fullname;
+}
+
+const gchar*
+get_filename_extension(const gchar *filename)
+{
+  if (!filename)
+    return NULL;
+
+  const gchar* start_ext = strrchr(filename, '.');
+
+  if (!start_ext || start_ext[1] == '\0' || start_ext == filename)
+    return NULL;
+
+  return start_ext + 1;
 }

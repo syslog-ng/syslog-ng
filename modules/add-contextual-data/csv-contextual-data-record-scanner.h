@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 1998-2015 Balázs Scheidler
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,19 +20,20 @@
  *
  */
 
-#ifndef CSVPARSER_H_INCLUDED
-#define CSVPARSER_H_INCLUDED
+#ifndef CSV_CONTEXTUAL_DATA_RECORD_H_INCLUDED
+#define CSV_CONTEXTUAL_DATA_RECORD_H_INCLUDED
 
-#include "parser/parser-expr.h"
+#include "contextual-data-record-scanner.h"
 #include "scanner/csv-scanner/csv-scanner.h"
 
-CSVScannerOptions *csv_parser_get_scanner_options(LogParser *s);
-gboolean csv_parser_set_flags(LogParser *s, guint32 flags);
-void csv_parser_set_prefix(LogParser *s, const gchar *prefix);
-LogParser *csv_parser_new(GlobalConfig *cfg);
+typedef struct _CSVContextualDataRecordScanner
+{
+  ContextualDataRecordScanner super;
+  CSVScanner scanner;
+  CSVScannerOptions options;
 
-guint32 csv_parser_lookup_flag(const gchar *flag);
-gint csv_parser_lookup_dialect(const gchar *flag);
+} CSVContextualDataRecordScanner;
 
+ContextualDataRecordScanner *csv_contextual_data_record_scanner_new();
 
 #endif

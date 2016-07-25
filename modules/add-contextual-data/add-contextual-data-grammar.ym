@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2016 Balabit
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "add-contextual-data-parser.h"
+
+}
+
+
+%code {
+
+#include "add-contextual-data.h"
+#include "cfg-parser.h"
+#include "cfg-grammar.h"
+#include "add-contextual-data-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+
+}
+
+%name-prefix "add_contextual_data_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogParser **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_ADD_CONTEXTUAL_DATA
+%token KW_ADD_CONTEXTUAL_DATA_DATABASE
+%token KW_ADD_CONTEXTUAL_DATA_SELECTOR
+%token KW_ADD_CONTEXTUAL_DATA_DEFAULT_SELECTOR
+%token KW_ADD_CONTEXTUAL_DATA_PREFIX
+
+%type	<ptr> parser_expr_add_contextual_data
+
+%%
+
+start
+        : LL_CONTEXT_PARSER parser_expr_add_contextual_data                  { YYACCEPT; }
+        ;
+
+
+parser_expr_add_contextual_data
+        : KW_ADD_CONTEXTUAL_DATA '('
+          {
+            last_parser = *instance = add_contextual_data_parser_new(configuration);
+          }
+          parser_add_contextual_data_opts
+          ')'
+          { $$ = last_parser; }
+        ;
+
+
+parser_add_contextual_data_opts
+        : parser_add_contextual_data_opt parser_add_contextual_data_opts
+        |
+        ;
+
+parser_add_contextual_data_opt
+        : KW_ADD_CONTEXTUAL_DATA_DATABASE '(' string ')'
+        {
+            add_contextual_data_set_filename(last_parser, $3);
+            free($3);
+        } | KW_ADD_CONTEXTUAL_DATA_SELECTOR '(' string ')'
+        {
+            add_contextual_data_set_database_selector_template(last_parser, $3);
+            free($3);
+        } | KW_ADD_CONTEXTUAL_DATA_DEFAULT_SELECTOR '(' string ')'
+        {
+            add_contextual_data_set_database_default_selector(last_parser, $3);
+            free($3);
+        } | KW_ADD_CONTEXTUAL_DATA_PREFIX '(' string ')'
+        {
+            add_contextual_data_set_prefix(last_parser, $3);
+            free($3);
+        };
+
+/* INCLUDE_RULES */
+
+%%
