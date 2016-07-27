@@ -10,6 +10,7 @@ modules/afamqp/rabbitmq-c
 modules/afmongodb/mongo-c-driver
 modules/java/org_syslog_ng_[^./_-]+\.h$
 modules/(afmongodb|afamqp)/dummy\.c$
+dev-utils/plugin_skeleton_creator/plugin_template.*
 (lib|modules)/.*\.conf$
 dist\.conf$
 .*/\.gradle
@@ -46,6 +47,7 @@ modules/java-modules/common
 modules/java/(native|proxies|src)
 modules/native
  GPLv2+_SSL
+dev-utils/plugin_skeleton_creator/create_plugin.sh
 tests
 modules/java/(tools|[^/]*$)
 modules/java-modules/(dummy|elastic|elastic-v2|hdfs|http|kafka|[^/]*$)
