@@ -1,456 +1,738 @@
-3.7.2
-=====
-
-<!-- Mon, 26 Oct 2015 11:18:07 +0100 -->
-
-This is the first maintenance release for the 3.7.x series.
-
-Changes compared to 3.7.1:
-
-Improvements
-------------
-
- * Added mbox() source.
-   This source can be used to fetch emails from local mbox files:
-   source { mbox("/var/spool/mail/root"); };
-   This will fetch root emails and parse them into a multiline $MSG.
-   Original implementation by Fabien Wernli, I only converted it into
-   an SCL.
-
- * It is possible to append dynamically options into SCL blocks from now.
-
- * `concurrent_request` option added to ElasticSearch with default value 1.
-
- * In elasticsearch destinaton, message_template() argument renamed to 
-   template().
-
- * SCL added to every Java module (ElasticSearch, Kafka, HDFS).
-
- * Linux Audit Parser added for parsing key-value pairs produced by 
-   the Linux Audit subsystem.
-
- * HTTP destination is now able to receive HTTP method as an option.
-   All the supported methods are available
-   (POST, PUT, HEAD, OPTIONS, DELETE, TRACE, GET). 
-
-
-Fixes
------
-
- * In some circumstances syslog-ng mod-journal re-read every already
-   processed messages.
-
- * When syslog-ng got a reload and the reload process done within 1 second then
-   mafter the reload, syslog-ng stop generating mark-messages.
-
- * When initialization of a network destination in syslog-ng failed (eg. due to
-   DNS resolution failure) we didn't create a queue which caused message loss.
-
- * syslog-ng segfaulted on TLS errors when wrong certs was provided
-  (eg.: CA cert with the cert-file directive instead of the server cert).
-
- * Fixed a continuous spinning case in the file driver, when the
-   destination file is a device (e.g. /dev/stdout).
-
- * A memory leak in around template functions in grammar fixed.
-
- * Fixed Python3 support.
-
- * Fixed Python GIL issue in python destination.
-
- * From now, instead of skipping doc/ alltogether when ENABLE_MANPAGES is
-   not set, only skip the actual man pages, but handle the rest properly.
-
- *  Allow overriding the python setup.py options.
-
-    When installing the python modules, allow overriding the options. This
-    is useful for distributions that want to pass extra options. For
-    example, on Debian, we want --install-layout="deb" instead of the
-    --prefix and --root options.
-
-    With this change, the previous behaviour remains the default, but one
-    can supply PYSETUP_OPTIONS on the make command-line to override it.
-
- * The systemd service file read /etc/default/syslog-ng and /etc/sysconfig/syslog-ng,
-   but didn't do anything with their contents. $SYSLOGNG_OPTS added to ExecStart, so 
-   that the EnvironmentFiles have an effect (at least on Debian).
-
- * Java support checking fixed (not only jdk is required but also gradle).
-
- * Memory leak around ping() in Redis fixed.
-
- * A crash in pdbtool fixed around r_parser_email().
-
- * Removed cygwin fdlimit statement.
-   Make the default for RLIMIT_NOFILE equal to the current system limits.
-   --fd-limit can still override this, but the default will be configured 
-   based on existing system limits.
-
- * Fixed BSD year inference.
-   Fixed logic and made clearer the inference of year from bsd-style
-   rfc3164 syslog-messages, which do not include a year.
-
- * Handle correctly the epoch 0 timestamp.
-   (Previously, syslog-ng cached the zero timestamp and treated 1970 as it was
-    1900.)
- 
-Credits
--------
-
-syslog-ng is developed as a community project, and as such it relies
-on volunteers, to do the work necessarily to produce syslog-ng.
-
-Reporting bugs, testing changes, writing code or simply providing
-feedback are all important contributions, so please if you are a user
-of syslog-ng, contribute.
-
-We would like to thank the following people for their contribution:
-
-Adam Arsenault, Adam Istvan Mozes, Andras Mitzki, Avleen Vig,
-Balazs Scheidler, Fabien Wernli, Gergely Czuczy, Gergely Nagy, Gergo Nagy,
-Laszlo Budai, Peter Czanik, Robert Fekete, Saurabh Shukla, Tamas Nagy,
-Tibor Benke, Viktor Juhasz, Vincent Bernat, Wang Long, Zdenek Styblik,
-Zoltan Pallagi.
-
-
-3.7.1
-=====
-
-<!-- Mon, 17 Aug 2015 09:42:17 +0200 -->
-
-
-New dependencies
-----------------
-
-OpenSSL is now a required dependency for syslog-ng because the newly added 
-`hostid` and `uniqid` features requires a CPRNG provided by OpenSSL.
-Therefore non-embedded crypto lib is not a real option, so the support of 
-having such a crypto lib discontinued and all SSL-dependent features enabled
-by default.
-
-Library updates
----------------
-
-* Minimal libriemann-client version bumped from 1.0.0 to 1.6.0.
-* Added support for the monolithic libsystemd library (systemd 209).
-* RabbitMQ submodule upgraded.
-
-Features
---------
-
-### Language bindings
-
- * Java-destination driver ported from syslog-ng-incubator.
-   Purpose of having Java destination driver is to make it possible
-   to implement destination drivers in the Java language (and using
-   'official' Java client libraries).
-
- * Python language support is ported from syslog-ng incubator and 
-   has been completely reworked. Now, it is possible to implement template
-   functions in Python language and also destination drivers.
-   Main purpose of supporting Python language is to implement a nice
-   interactive syslog-ng config debugger for syslog-ng.
-
-### New drivers
-
-#### New Java destination drivers
-
-ElastiSearch, Kafka and HDFS destination drivers are implemented by using
-the 'official' Java client libraries and syslog-ng provides a way to set
-their own, native configuration file. Log messages generated by the client 
-Java libraries are redirected to syslog-ng via our own Log4JAppender which
-means that those logs are available as internal syslog-ng messages.
-
- * ElasticSearch
- * Kafka
- * Hadoop/HDFS
- * HTTP
-
-### Parsers
-
-* Added a `geoip()` parser, that can look up the country code and
-  latitude/longitude information from an IPv4 address. For lat/long to
-  work, one will need the City database.
-
-* New parser, `extract-solaris-msgid()` added for automatically extracts
-  (parses & removes) the msgid portion of Solaris messages.
-
-* Extended the set of supported characters to every printable ASCII's except
-   `.`, `[` and `]` in `extract-prefix` for `json-parser()`.
-
-* Added string-delimiters option to csvparser to support multi character
-  delimiters in CSV parsing.
-
-* A kv-parser() introduced for WELF (WebTrens Enhanced Log Format) that 
-  implements key=value parsing. The kv-parser() tries to extract 
-  key=value formatted name-value pairs from  the input string.
-
-
-* value-pairs: make it possible to pass --key as a positional argument
-  From now it is possible to use value-pairs expressions like this:    
-      $(format-json MSG DATE)    
-  instead of    
-      $(format-json --key MSG --key DATE)
-
-
-### Filters
-
-* Added IPv6 netmask filter for selecting only messages sent by a host whose
-  IP address belongs to the specified IPv6 subnet.
-
-### Macros
-
- * Added a new macro, called HOSTID which is a 32-bit number generated by
-   a cryptographically secure PRNG. Its purpose is to identify the
-   syslog-ng host, thus it is the same for every message generated on the same
-   host.
-
- * Added a new macro, called UNIQID which is a practically unique ID generated
-   from the `HOSTID` and the `RCPTID` in the format of `HOSTID@RCPTID`. 
-   Uniqid is a derived value: it is built up from the always available hostid
-   and the optional rcptid. In other words: uniqid is an extension over rcptid.
-   For that reason `use-rcptid` has been deprecated and `use-uniqid` could be
-   use instead.
-
-### Templates
-
-* welf was renamed to kvformat
-  As this reflects the purpose of this module much better, WELF is just
-  one of the format it has support for.
-
-* $(format-cim) template function added into an SCL module.
-* It is possible to create templates without braces.
-
-
-### SMTP destination
-
-* The `afsmtp` driver now supports templatable recipients field.
-  Just like the subject() and body() fields, now the address containing
-  parameters of to(), from(), cc() and bcc() can contain macros.
-
-### Unix Domain Sockets
-
-* Added pass-unix-credentials() global option for enabling/disabling unix 
-  credentials passing on those platforms which has this feature. By default
-  it is enabled.
-
-* Added create-dirs() option to unix-*() sources for creating the
-  containing directories for Unix domain sockets.
-
-### Riemann destination
-
-* Added batched event sending support for riemann destination driver which
-  makes the riemann destination respect flush-lines(), and send event
-  in batches of configurable amount (defaults to 1). In case of an error,
-  all messages within the batch will be dropped. Dropped messages, and
-  messages that result in formatting errors do not count towards the batch
-  size. There is no timeout, but messages will be flushed upon deinit.
-
-* A timeout() option added to the Riemann destination.
-
-### PatternDB
-
-* Earlier, in patterndb, the first applicable rule won, even if it was
-  only a partial match. This means that when rules overlapped, the shorter 
-  match would have been found, if it was the first to be loaded.
-  A strong preference introduced for rules that match the input string 
-  completely. The load order is still applicable though, it is possible to
-  create two distinct rules that would match the same input, in those cases
-  the first one to be loaded wins.
-
-### Miscellaneous features
-
-* New builtin interactive syslog-ng.conf debugger implemented for syslog-ng.
-  The debugger has a Python frontend which contains a full Completer
-  (just press TABs and works like bash)
-
-* Added a reset option to syslog-ng-ctl stats. With this option the non-stored
-  stats counters can be zeroed.
-
-* New parameter added to loggen: --permanent (-T) wich is for sending logs 
-   indefinitely.
-
-* Loggen uses the proper timezone offset in generated message.
-
-* The ssl_options inside tls() extended with the following set:
-  no-sslv2, no-sslv3, no-tlsv1, no-tlsv11, no-tlsv12.
-
-* Added syslog-debug bundle generator script to make it easier to reproduce bugs
-  by collecting debug related information, like:
-    * process information gathering
-    * syscall tracing (strace/truss)
-    * configuration gathering
-    * selinux related information gathering
-    * solaris information gathering (sysdef, kstat, showrev, release)
-    * get information about syslog-ng svr4 solaris packages, if possible
-
-
-Bugfixes
---------
-
-* New utf8 string sanitizers instead of old broken one.
-
-* syslog-ng won't send SIGTERM when `getpgid()` fails in program destination
-  (`afprog`).
-
-* In some cases program destination respawned during syslog-ng stop/restart
-  (`afprog`).
-
-* syslog-ng generates mark messages when `mark-mode` is set
-  to `host-idle`.
-
-* Using msg_control only when credential passing is supported in socket 
-  destination (`afsocket`).
-
-* Writer is replaced only when protocol changed during reload in socket
-  destination (`afsocket`).
-
-* Fix spinning on EOF for `unix-stream()` sockets. Root cause of the spinning
-  was that a unix-dgram socket was created even in case of unix-stream.
-
-* When the configured host was not available during the initialization of
-  `afsocket` destination syslog-ng just didn't start. From now, syslog-ng
-  starts in that case and will retry connecting to the host periodically.
-
-* Fixed BSD year inference in syslogformat. When the difference between the
-  current month and the month part of the timestamp of an incoming logmessage
-  in BSD format (which has no year part) was greater than 1 then syslog-ng
-  computed the year badly.
-
-* In some cases, localtime related macros had a wrong value(eg.:$YEAR).
-
-* TLS support added to Riemann destination
-
-* Excluded "tags" from Riemann destination driver as an attribute which 
-  conflicts with reserved keyword
-
-* When a not writeable/non-existent file becomes writeable/exists later,
-  syslog-ng recognize it (with the help of reopen-timer) and delivers messages
-  to the file without dropping those which were received while the file was
-  not available (`affile`).
-
-* Fixed a crash around affile at the first message delivery when templates
-  were used (`affile`).
-
-* Fixed a configure error around libsystemd-journal.
-
-* Removed syslog.socket from service file on systems using systemd.
-  Syslog-ng reads the messages directly from journal on systems with systemd.
-
-* Fixed compilation where the monolitic libsystemd was not available.
-
-* Fixed compilation failure on OpenBSD.
-
-* AMQP connection process fixed.
-
-* Added DOS/Windows line ending support in config.
-
-* Retries fixed in SQL destination. In some circumstances when
-  `retry_sql_inserts` was set to 1, after an insertion failure all incoming
-  messages were dropped.
-
-* Transaction handling fixed in SQL destination. In some circumstances when
-  both select and insert commands were run within a single transaction and
-  the select failed (eg.: in case of mssql), the log messages related to
-  the insert commands, broken by the invalid transaction, were lost.
-
-* Fixed a memleak in SQL destination driver.
-  The memleak occured during one of the transaction failures.
-
-* Memory leak around reload and internal queueing mechanism has been fixed.
-
-* Fixed a potential abort when the localhost name cannot be detected.
-
-* Security issue fixed around $HOST.
-  Tech details:
-  When the name of the host is too long, the buffer we use to format the
-  chained hostname is truncated. However snprintf() returns the length the
-  result would be if no truncation happened, thus we will read uninitialized
-  bytes off the stack when we use that pointer to set $HOST
-  with log_msg_set_value().
-
-  There can be some security implications, like reading values from the stack
-  that can help to craft further exploits, especially in the presense of
-  address space randomization. It can also cause a DoS if the hostname length
-  is soo large that we would read over the top-of-the-stack, which is probably
-  not mmapped causing a SIGSEGV.
-
-* Journal entries containing name-value pairs without '=' caused syslog-ng
-  to crash. Instead of crashing, syslog-ng just drop these nv pairs.
-
-* Fixed the encoding of characters below 32 if escaping is enabled in 
-  templates. Templated outputs never contained references to characters below
-  32, essentially they were dropped from the output for two reasons:
-
-    - the prefixing backslash was removed from the code
-    - the format_uint32_padded() function produced no outputs in base 8
-
-* Fixed afstomp destination port issue. It always tried to connect to the port 0.
-
-* Fixed memleak in db-parser which could happen at every reload.
-
-* Fixed a class of rule conflicts in db-parser:
-  Because an error in the pdb load algorithms, some rules would conflict which
-  shouldn't have done that. The problem was that several programs would use 
-  the same RADIX tree to store their patterns. Merging independent programs 
-  meant that if they the same pattern listed, it would clash, even though     
-  their $PROGRAM is different.
-
-  There were multiple issues:
-    * we looked up pattern string directly, even they might have contained
-      @parser@ references. It was simply not designed that way and only   
-      worked as long as we didn't have the possibility to use parsers     
-      in program names
-
-    * we could merge programs with the same prefix, e.g.
-      su, supervise/syslog-ng and supervise/logindexd would clash, on "su",
-      which is a common prefix for all three.
-
-  The solution involved in using a separate hash table for loading, which
-  at the end is turned into the radix tree.
-
-* pdbtool match when used with the --debug-pattern option used a low-level
-  lookup function, that didn't perform all the db-parser actions specified
-  in the rule
-
-* Max packet length for spoof source is set to 1024 (previously : 256).
-
-* A certificate which is not contained by the list of fingerprints is
-  rejected from now.
-
-* Hostname check in tls certificate is case insensitive from now.
-
-* There is a use-case where user wants to ignore an assignment to a name-value
-  pair. (eg.: when using `csv-parser()`, sometimes we get a column we really
-  want to drop instead of adding it to the message). In previous versions an
-  error message was printed out:
-  'Name-value pairs cannot have a zero-length name'.
-  That error message has been removed.
-
-* Fixed a docbook related compilation error: there was a hardcoded path that
-  caused build to fail  if docbook is not on that path. Debian based
-  platforms did not affected by this problem.
-  Now a new option was created for `./configure` that is `--enable-manpages`
-  that enables the generation of manpages using docbook from online source.
-  '--with-docbook=PATH' gives you the opportunity to specify the path for
-  your own installed docbook.
-
-
-Credits
--------
-
-syslog-ng is developed as a community project, and as such it relies
-on volunteers, to do the work necessarily to produce syslog-ng.
-
-Reporting bugs, testing changes, writing code or simply providing
-feedback are all important contributions, so please if you are a user
-of syslog-ng, contribute.
-
-We would like to thank the following people for their contribution:
-
-Adam Arsenault, Adam Istvan Mozes, Alex Badics, Andras Mitzki, 
-Balazs Scheidler, Bence Tamas Gedai, Ben Kibbey, Botond Borsits, Fabien Wernli,
-Gergely Nagy, Gergo Nagy, Gyorgy Pasztor, Kristof Havasi, Laszlo Budai,
-Manikandan-Selvaganesh, Michael Sterrett, Peter Czanik, Robert Fekete, 
-Sean Hussey, Tibor Benke, Toralf Förster, Viktor Juhasz, Viktor Tusa, 
-Vincent Bernat, Zdenek Styblik, Zoltan Fried, Zoltan Pallagi.
+3.8.0beta1
+==========
+
+<!-- Thu, 28 Jul 2016 12:57:02 +0200 -->
+
+This is the first beta release for the 3.8.x series.
+
+Changes compared to 3.7.x:
+Note, that for beta release we generate the changes with
+a tool. Final changelog will be more sophisticated (and will
+ include Credits section).
+
+
+**Implemented enhancements:**
+
+- Support encoding on glib compiled with libiconv [\#1048](https://github.com/balabit/syslog-ng/issues/1048)
+- Separator option for key-value parser [\#1014](https://github.com/balabit/syslog-ng/issues/1014)
+- Support an alternative build system: CMake [\#966](https://github.com/balabit/syslog-ng/issues/966)
+- Enhancement: Support running func-test in parallel [\#964](https://github.com/balabit/syslog-ng/issues/964)
+- 3.7/master: --disable-mongodb option does not work [\#958](https://github.com/balabit/syslog-ng/issues/958)
+- Verify that CFLAGS is propagated down to all of our sources [\#903](https://github.com/balabit/syslog-ng/issues/903)
+- Copyright policy/checker [\#824](https://github.com/balabit/syslog-ng/issues/824)
+- SCL for Logmatic format and destination [\#799](https://github.com/balabit/syslog-ng/issues/799)
+- SCL for Loggly format and destination [\#798](https://github.com/balabit/syslog-ng/issues/798)
+- Feature: multiline timeout [\#690](https://github.com/balabit/syslog-ng/issues/690)
+- create a syslog-ng-incubator metapackage [\#687](https://github.com/balabit/syslog-ng/issues/687)
+- support multiple drivers with the same name in syslog-ng config [\#661](https://github.com/balabit/syslog-ng/issues/661)
+- loggen: support unix credentials passing [\#577](https://github.com/balabit/syslog-ng/issues/577)
+- HTTP destination driver in Java [\#539](https://github.com/balabit/syslog-ng/issues/539)
+- HTTP destination driver in Python [\#534](https://github.com/balabit/syslog-ng/issues/534)
+- drone.yml configuration file for drone.io build [\#485](https://github.com/balabit/syslog-ng/issues/485)
+- Enhancement: geoip support for lon/lat [\#467](https://github.com/balabit/syslog-ng/issues/467)
+- osquery "source" for syslog-ng [\#418](https://github.com/balabit/syslog-ng/issues/418)
+- Please do not chown/chmod if the log file is a device like e.g. /dev/null [\#383](https://github.com/balabit/syslog-ng/issues/383)
+- Enhancement: riemann destination: support for batching / pipelining [\#284](https://github.com/balabit/syslog-ng/issues/284)
+- loggen: --loop-reading broken? [\#281](https://github.com/balabit/syslog-ng/issues/281)
+- create log\_msg\_set\_value\_by\_name helper function [\#261](https://github.com/balabit/syslog-ng/issues/261)
+- riemann: empty string metric results in casting error [\#258](https://github.com/balabit/syslog-ng/issues/258)
+- riemann: additional default fields [\#257](https://github.com/balabit/syslog-ng/issues/257)
+- detecting if inside an lxc [\#254](https://github.com/balabit/syslog-ng/issues/254)
+- docbugs: Specifying data types in value-pairs [\#219](https://github.com/balabit/syslog-ng/issues/219)
+- Add a CONTRIBUTORS.md file [\#205](https://github.com/balabit/syslog-ng/issues/205)
+- LogThrDestDriver: Centralize message accept / drop [\#201](https://github.com/balabit/syslog-ng/issues/201)
+- Enhancement: afsmtp: make to\(\) templateable [\#197](https://github.com/balabit/syslog-ng/issues/197)
+- libsyslog-ng versioning [\#190](https://github.com/balabit/syslog-ng/issues/190)
+- Enhancement: csv-parser multichar delimiter [\#168](https://github.com/balabit/syslog-ng/issues/168)
+- Enhancement: separate actions from rules in patterndb [\#131](https://github.com/balabit/syslog-ng/issues/131)
+- pdbtool merge generates XML with version 3 [\#109](https://github.com/balabit/syslog-ng/issues/109)
+- Enhancement: PRI template function [\#102](https://github.com/balabit/syslog-ng/issues/102)
+- Support mongodb connection over SSL [\#75](https://github.com/balabit/syslog-ng/issues/75)
+- F/fix test kv parser va arg portability [\#1117](https://github.com/balabit/syslog-ng/pull/1117) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- F/unset value [\#1108](https://github.com/balabit/syslog-ng/pull/1108) ([bazsi](https://github.com/bazsi))
+- F/kv parser robustness improvements, drop empty keys, better test coverage [\#1079](https://github.com/balabit/syslog-ng/pull/1079) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- F/elasticsearch v2 mode http [\#1053](https://github.com/balabit/syslog-ng/pull/1053) ([lbudai](https://github.com/lbudai))
+- Add experimental CMake build scripts [\#1051](https://github.com/balabit/syslog-ng/pull/1051) ([ihrwein](https://github.com/ihrwein))
+- lib/logproto/logproto-server.c: refer to utf8 as utf-8 [\#1049](https://github.com/balabit/syslog-ng/pull/1049) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Add $\(sum\), $\(min\) and $\(max\) template functions [\#1037](https://github.com/balabit/syslog-ng/pull/1037) ([MrAnno](https://github.com/MrAnno))
+- Add ability to use templates in both url and message format [\#1033](https://github.com/balabit/syslog-ng/pull/1033) ([avcbvamorec](https://github.com/avcbvamorec))
+- F/remove msg error etc null sentinel.sh, run on http module [\#1021](https://github.com/balabit/syslog-ng/pull/1021) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Update native parser bindings [\#995](https://github.com/balabit/syslog-ng/pull/995) ([ihrwein](https://github.com/ihrwein))
+- F/missing py license \(Python, Perl and Bash scripts were missing declarations\) [\#985](https://github.com/balabit/syslog-ng/pull/985) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- F/libmongo client compatibility over mongo c driver [\#981](https://github.com/balabit/syslog-ng/pull/981) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Improve "curl" module [\#978](https://github.com/balabit/syslog-ng/pull/978) ([litterbear](https://github.com/litterbear))
+- F/propagate cflags to tests [\#976](https://github.com/balabit/syslog-ng/pull/976) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Prepare OS X support [\#953](https://github.com/balabit/syslog-ng/pull/953) ([MrAnno](https://github.com/MrAnno))
+- Update debian example configuration file [\#950](https://github.com/balabit/syslog-ng/pull/950) ([shivamMg](https://github.com/shivamMg))
+- F/remove msg error etc null sentinel [\#941](https://github.com/balabit/syslog-ng/pull/941) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Build Java language bindings without Gradle [\#928](https://github.com/balabit/syslog-ng/pull/928) ([ihrwein](https://github.com/ihrwein))
+- Check copyright headers during the execution of make check [\#918](https://github.com/balabit/syslog-ng/pull/918) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Add Elasticsearch 2 destination with Shield support [\#912](https://github.com/balabit/syslog-ng/pull/912) ([lbudai](https://github.com/lbudai))
+- configure.ac: link against sasl2 lib only when it is available [\#907](https://github.com/balabit/syslog-ng/pull/907) ([lbudai](https://github.com/lbudai))
+- Add --keep-going to make in Travis builds [\#895](https://github.com/balabit/syslog-ng/pull/895) ([dnsjts](https://github.com/dnsjts))
+- Use official MongoDB C Driver instead of libmongo-client [\#891](https://github.com/balabit/syslog-ng/pull/891) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Support native Elasticsearch configuration for transport mode [\#890](https://github.com/balabit/syslog-ng/pull/890) ([lbudai](https://github.com/lbudai))
+- Set 0.11.0 as the minimal required version of hiredis to avoid possible deadlocks [\#887](https://github.com/balabit/syslog-ng/pull/887) ([ihrwein](https://github.com/ihrwein))
+- Improve the performance of utf8-utils by using an optimized implementation of strchr\(\) [\#885](https://github.com/balabit/syslog-ng/pull/885) ([bazsi](https://github.com/bazsi))
+- Enable -Wshadow compiler flag [\#884](https://github.com/balabit/syslog-ng/pull/884) ([bazsi](https://github.com/bazsi))
+- Turn on -Werror compiler flag [\#871](https://github.com/balabit/syslog-ng/pull/871) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Refactor misc functions [\#866](https://github.com/balabit/syslog-ng/pull/866) ([bazsi](https://github.com/bazsi))
+- Add inherit-environment\(\) option to program driver [\#861](https://github.com/balabit/syslog-ng/pull/861) ([MrAnno](https://github.com/MrAnno))
+- Remove fix relative path of syslog-ng in func test [\#858](https://github.com/balabit/syslog-ng/pull/858) ([bazsi](https://github.com/bazsi))
+- Add support of Kafka 0.9.0.0 [\#856](https://github.com/balabit/syslog-ng/pull/856) ([ihrwein](https://github.com/ihrwein))
+- Log HTTP response error codes in HTTP destination [\#855](https://github.com/balabit/syslog-ng/pull/855) ([MrAnno](https://github.com/MrAnno))
+- F/java modpath cleanups [\#852](https://github.com/balabit/syslog-ng/pull/852) ([bazsi](https://github.com/bazsi))
+- Improve the performance of value-pairs [\#851](https://github.com/balabit/syslog-ng/pull/851) ([bazsi](https://github.com/bazsi))
+- Format CEF extension [\#842](https://github.com/balabit/syslog-ng/pull/842) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Implement serialization of log messages [\#834](https://github.com/balabit/syslog-ng/pull/834) ([juhaszviktor](https://github.com/juhaszviktor))
+- Export GRADLE\_OPTS environment variable to enable to pass options from command line to Gradle [\#832](https://github.com/balabit/syslog-ng/pull/832) ([ihrwein](https://github.com/ihrwein))
+- F/copyright review 2015 extended [\#823](https://github.com/balabit/syslog-ng/pull/823) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- scl: add logmatic\(\) destination [\#812](https://github.com/balabit/syslog-ng/pull/812) ([bazsi](https://github.com/bazsi))
+- cfg-lex.l: don't report yy\_fatal\_error\(\) as an unused symbol [\#802](https://github.com/balabit/syslog-ng/pull/802) ([bazsi](https://github.com/bazsi))
+- F/scl varargs refined [\#699](https://github.com/balabit/syslog-ng/pull/699) ([ihrwein](https://github.com/ihrwein))
+- F/unix socket source creates dir [\#632](https://github.com/balabit/syslog-ng/pull/632) ([ihrwein](https://github.com/ihrwein))
+- F/some polishments [\#426](https://github.com/balabit/syslog-ng/pull/426) ([ihrwein](https://github.com/ihrwein))
+- Change control socket message from notice to debug [\#262](https://github.com/balabit/syslog-ng/pull/262) ([bldewolf](https://github.com/bldewolf))
+- F/rewrite groupset [\#256](https://github.com/balabit/syslog-ng/pull/256) ([talien](https://github.com/talien))
+- system-source: Linux Containers should not touch /\*/kmsg [\#255](https://github.com/balabit/syslog-ng/pull/255) ([algernon](https://github.com/algernon))
+- Support for loading certificate chains in TLS context [\#246](https://github.com/balabit/syslog-ng/pull/246) ([pasztor](https://github.com/pasztor))
+- system-source: Use systemd-journal\(\) if appropriate [\#243](https://github.com/balabit/syslog-ng/pull/243) ([algernon](https://github.com/algernon))
+- F/systemd syslog source refactor [\#236](https://github.com/balabit/syslog-ng/pull/236) ([ihrwein](https://github.com/ihrwein))
+- geoip: Fix local state initialisation [\#230](https://github.com/balabit/syslog-ng/pull/230) ([algernon](https://github.com/algernon))
+- journald-source: New source module is implemented [\#229](https://github.com/balabit/syslog-ng/pull/229) ([juhaszviktor](https://github.com/juhaszviktor))
+- F/lib template split [\#223](https://github.com/balabit/syslog-ng/pull/223) ([bazsi](https://github.com/bazsi))
+- value-pairs: Support string list in key\(\) and exclude\(\) [\#220](https://github.com/balabit/syslog-ng/pull/220) ([algernon](https://github.com/algernon))
+- Graduate a few things from the Incubator [\#217](https://github.com/balabit/syslog-ng/pull/217) ([algernon](https://github.com/algernon))
+- F/add format cim template function [\#216](https://github.com/balabit/syslog-ng/pull/216) ([algernon](https://github.com/algernon))
+- system-source: Bump the version in system-expand [\#212](https://github.com/balabit/syslog-ng/pull/212) ([algernon](https://github.com/algernon))
+- Add a contributors guide [\#211](https://github.com/balabit/syslog-ng/pull/211) ([algernon](https://github.com/algernon))
+- F/parse cim json messages in system [\#210](https://github.com/balabit/syslog-ng/pull/210) ([bazsi](https://github.com/bazsi))
+- F/location tag refactor [\#209](https://github.com/balabit/syslog-ng/pull/209) ([bazsi](https://github.com/bazsi))
+- F/msg warning refactor [\#208](https://github.com/balabit/syslog-ng/pull/208) ([bazsi](https://github.com/bazsi))
+- F/template related refactors [\#207](https://github.com/balabit/syslog-ng/pull/207) ([bazsi](https://github.com/bazsi))
+- Centralised retries\(\) for LogThrDestDriver [\#204](https://github.com/balabit/syslog-ng/pull/204) ([algernon](https://github.com/algernon))
+- SEQNUM persistence for LogThreadedDestDriver modules [\#200](https://github.com/balabit/syslog-ng/pull/200) ([algernon](https://github.com/algernon))
+- F/add tf template [\#196](https://github.com/balabit/syslog-ng/pull/196) ([bazsi](https://github.com/bazsi))
+- lib/Makefile.am: Change how libsyslog-ng.so is versioned [\#191](https://github.com/balabit/syslog-ng/pull/191) ([algernon](https://github.com/algernon))
+- F/afsmtp pe [\#177](https://github.com/balabit/syslog-ng/pull/177) ([lbudai](https://github.com/lbudai))
+
+**Fixed bugs:**
+
+- The output of pdbtool is scrambled [\#1043](https://github.com/balabit/syslog-ng/issues/1043)
+- jni.h: No such file or directory [\#1002](https://github.com/balabit/syslog-ng/issues/1002)
+- 3.7.2 tries to use systemd journal on Ubuntu Trusty by default [\#987](https://github.com/balabit/syslog-ng/issues/987)
+- 3.7/master: --disable-mongodb option does not work [\#958](https://github.com/balabit/syslog-ng/issues/958)
+- @ in format json is absorbed [\#949](https://github.com/balabit/syslog-ng/issues/949)
+- IPv6 Pattern Parser and trailing colons [\#931](https://github.com/balabit/syslog-ng/issues/931)
+- 3.8 journal source problem [\#914](https://github.com/balabit/syslog-ng/issues/914)
+- Global option inheritance problem in afunix-source [\#894](https://github.com/balabit/syslog-ng/issues/894)
+- Deprecate old configuration parameters in MongoDB destination [\#893](https://github.com/balabit/syslog-ng/issues/893)
+- "make check" of 3.7.2 fails on Fedora Rawhide [\#859](https://github.com/balabit/syslog-ng/issues/859)
+- Memory leak leading to OOM killer every day or 2 days [\#848](https://github.com/balabit/syslog-ng/issues/848)
+- Duplicate symbols \(\_TLSSslOptions and \_last\_parser\) break build of syslog-ng 3.7.2 on OS X [\#807](https://github.com/balabit/syslog-ng/issues/807)
+- Deadlock in redis destination [\#792](https://github.com/balabit/syslog-ng/issues/792)
+- Deadlock with suppress option [\#781](https://github.com/balabit/syslog-ng/issues/781)
+- Eliminate compiler warnings and turn on -Werr [\#776](https://github.com/balabit/syslog-ng/issues/776)
+- Possible Memory leak in 3.7.1 [\#753](https://github.com/balabit/syslog-ng/issues/753)
+- tests/unit/test\_zone fails on Unix epoch [\#726](https://github.com/balabit/syslog-ng/issues/726)
+- Every second config reload kills marking [\#701](https://github.com/balabit/syslog-ng/issues/701)
+- Runs in a different $CWD when foregrounding via "-F" [\#700](https://github.com/balabit/syslog-ng/issues/700)
+- Segfault on TLS errors [\#695](https://github.com/balabit/syslog-ng/issues/695)
+- Compile error related to python module [\#674](https://github.com/balabit/syslog-ng/issues/674)
+- syslog-ng is stuck in an infinite loop of setsockopt\(\) returning ENOTSOCK [\#670](https://github.com/balabit/syslog-ng/issues/670)
+- 3.7.1 fails to compile on SLES11 [\#645](https://github.com/balabit/syslog-ng/issues/645)
+- afsmtp: fix whitespaces in the grammar file [\#638](https://github.com/balabit/syslog-ng/issues/638)
+- syslog-ng 3.6 may kill init process [\#586](https://github.com/balabit/syslog-ng/issues/586)
+- message formatting on remote destinations did not follow the switch to legacy from IETF syslog format [\#570](https://github.com/balabit/syslog-ng/issues/570)
+- Missing mark message on TCP destination in case of mark\_mode\(dst\_idle\) [\#547](https://github.com/balabit/syslog-ng/issues/547)
+- Missing mark message on TCP destination in case of mark\_mode\(host\_idle\) [\#545](https://github.com/balabit/syslog-ng/issues/545)
+- Problems trying to compile syslog-ng 3.6.4 on Solaris 11.2 \(SPARC\) [\#542](https://github.com/balabit/syslog-ng/issues/542)
+- ./lib/.libs/libsyslog-ng.so: undefined reference to `sd\_notify' [\#515](https://github.com/balabit/syslog-ng/issues/515)
+- problem with commiting transactions in SQL backend after upgrade to 3.6 [\#469](https://github.com/balabit/syslog-ng/issues/469)
+- stats --reset do not reset stored counters [\#441](https://github.com/balabit/syslog-ng/issues/441)
+- Cannot write filter plugins [\#427](https://github.com/balabit/syslog-ng/issues/427)
+- AMQP dest: host is available but server is not present. Assertion error. [\#402](https://github.com/balabit/syslog-ng/issues/402)
+- loggen timezone ietf [\#362](https://github.com/balabit/syslog-ng/issues/362)
+- Fails to start if destination host unreachable [\#318](https://github.com/balabit/syslog-ng/issues/318)
+- 3.7 alpha1 does not compile on earlier FreeBSD releases [\#317](https://github.com/balabit/syslog-ng/issues/317)
+- Wrong year \(random value\) for logs directory [\#304](https://github.com/balabit/syslog-ng/issues/304)
+- Fails to build on hurd-i386 and GNU/kFreeBSD [\#298](https://github.com/balabit/syslog-ng/issues/298)
+- Bug: syntax check breaks Unix socket on running instance [\#276](https://github.com/balabit/syslog-ng/issues/276)
+- spinlock on 3.6 when using unix-stream \("/dev/log"\) [\#273](https://github.com/balabit/syslog-ng/issues/273)
+- UNIX credentials info on FreeBSD [\#271](https://github.com/balabit/syslog-ng/issues/271)
+- riemann: setting ttl field from macro fails [\#260](https://github.com/balabit/syslog-ng/issues/260)
+- syslog-ng 3.6beta1 does not compile on FreeBSD 8.4 [\#249](https://github.com/balabit/syslog-ng/issues/249)
+- parallel build does not wokr with 3.6beta1 [\#248](https://github.com/balabit/syslog-ng/issues/248)
+- \[3.5.6\] ERROR:lib/logmsg.c:535:void log\_msg\_set\_value\_indirect [\#242](https://github.com/balabit/syslog-ng/issues/242)
+- \[3.6.a3\] - Error parsing filter expression, unknown matcher flag [\#241](https://github.com/balabit/syslog-ng/issues/241)
+- beware - AMQP module may and possibly will cause issues [\#240](https://github.com/balabit/syslog-ng/issues/240)
+- GeoIP: segfault when threaded\(yes\) [\#228](https://github.com/balabit/syslog-ng/issues/228)
+- program source does not maintain the $FULLHOST from the incomming message [\#225](https://github.com/balabit/syslog-ng/issues/225)
+- docbugs: Specifying data types in value-pairs [\#219](https://github.com/balabit/syslog-ng/issues/219)
+- 3.5 branch doesn't compile on Solaris 10 [\#213](https://github.com/balabit/syslog-ng/issues/213)
+- SIGSEGV when trying to revert to old config [\#203](https://github.com/balabit/syslog-ng/issues/203)
+- mongodb: retries\(\) and failure [\#202](https://github.com/balabit/syslog-ng/issues/202)
+- reloading configuration leads to duplicating messages when tailing a file [\#192](https://github.com/balabit/syslog-ng/issues/192)
+- afsocket source does not set SOURCE [\#186](https://github.com/balabit/syslog-ng/issues/186)
+- mongodb: Support for throttle\(\)? [\#180](https://github.com/balabit/syslog-ng/issues/180)
+- Sequence numbering restarts on reload [\#178](https://github.com/balabit/syslog-ng/issues/178)
+- syslog-ng v3.4.8 issue on solaris sparc 8 [\#174](https://github.com/balabit/syslog-ng/issues/174)
+- docbug: log\_fetch\_limit cannot be global [\#150](https://github.com/balabit/syslog-ng/issues/150)
+- patterndb parser: bug in condition [\#146](https://github.com/balabit/syslog-ng/issues/146)
+- statistics: stored should mean queued [\#142](https://github.com/balabit/syslog-ng/issues/142)
+- file\_destination is not reopened after error [\#138](https://github.com/balabit/syslog-ng/issues/138)
+- test\_basicfuncs cause SIGSEGV on ubuntu trusty [\#132](https://github.com/balabit/syslog-ng/issues/132)
+- Kernel log message time drift [\#121](https://github.com/balabit/syslog-ng/issues/121)
+- Embedded template functions don't work [\#59](https://github.com/balabit/syslog-ng/issues/59)
+- parser: fix invalid pointer usage in log\_parser\_process\_message\(\) [\#1120](https://github.com/balabit/syslog-ng/pull/1120) ([MrAnno](https://github.com/MrAnno))
+- F/json parser clone misses template [\#1102](https://github.com/balabit/syslog-ng/pull/1102) ([bazsi](https://github.com/bazsi))
+- Fix relative path canonicalization in check\_java\_support.m4 [\#1100](https://github.com/balabit/syslog-ng/pull/1100) ([MrAnno](https://github.com/MrAnno))
+- Fix invalid handling of UTF-8 strings [\#1088](https://github.com/balabit/syslog-ng/pull/1088) ([MrAnno](https://github.com/MrAnno))
+- Fix incorrectly checked integer underflow/overflow [\#1084](https://github.com/balabit/syslog-ng/pull/1084) ([MrAnno](https://github.com/MrAnno))
+- Fix a linker related problem in systemd-journal's tests [\#1058](https://github.com/balabit/syslog-ng/pull/1058) ([ihrwein](https://github.com/ihrwein))
+- Fix basicfuncs tests compatibility with GLIB\_MIN\_VERSION [\#1046](https://github.com/balabit/syslog-ng/pull/1046) ([MrAnno](https://github.com/MrAnno))
+- Fix the ordering of the debug-info list in PatternDB [\#1045](https://github.com/balabit/syslog-ng/pull/1045) ([MrAnno](https://github.com/MrAnno))
+- Fix dbparser grouping-by keywords [\#1015](https://github.com/balabit/syslog-ng/pull/1015) ([MrAnno](https://github.com/MrAnno))
+- Fix finding JNI library [\#1003](https://github.com/balabit/syslog-ng/pull/1003) ([MrAnno](https://github.com/MrAnno))
+- Update libmongo-client library to upstream master [\#997](https://github.com/balabit/syslog-ng/pull/997) ([MrAnno](https://github.com/MrAnno))
+- 3.7/f/file source reopen on error [\#992](https://github.com/balabit/syslog-ng/pull/992) ([bazsi](https://github.com/bazsi))
+- Fix defines in diskq [\#977](https://github.com/balabit/syslog-ng/pull/977) ([ihrwein](https://github.com/ihrwein))
+- Fix value-pairs tokenizer [\#969](https://github.com/balabit/syslog-ng/pull/969) ([MrAnno](https://github.com/MrAnno))
+- Fix IPv6 pattern parser [\#965](https://github.com/balabit/syslog-ng/pull/965) ([MrAnno](https://github.com/MrAnno))
+- Backport of "Fix java logger" [\#963](https://github.com/balabit/syslog-ng/pull/963) ([ihrwein](https://github.com/ihrwein))
+- Fix disabling MongoDB destination support in syslog-ng 3.8 [\#962](https://github.com/balabit/syslog-ng/pull/962) ([ihrwein](https://github.com/ihrwein))
+- Fix Java's internal logger [\#961](https://github.com/balabit/syslog-ng/pull/961) ([MrAnno](https://github.com/MrAnno))
+- Fix disabling MongoDB destination support in syslog-ng 3.7 [\#960](https://github.com/balabit/syslog-ng/pull/960) ([ihrwein](https://github.com/ihrwein))
+- Fix automake warnings in native and diskq modules [\#955](https://github.com/balabit/syslog-ng/pull/955) ([ihrwein](https://github.com/ihrwein))
+- Fix systemd-journal source [\#954](https://github.com/balabit/syslog-ng/pull/954) ([ihrwein](https://github.com/ihrwein))
+- F/remove msg error etc null sentinel [\#941](https://github.com/balabit/syslog-ng/pull/941) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Export GRADLE\_OPTS environment variable in java-modules so Gradle can use it [\#939](https://github.com/balabit/syslog-ng/pull/939) ([ihrwein](https://github.com/ihrwein))
+- F/fix dup last parser tlsssloptions [\#938](https://github.com/balabit/syslog-ng/pull/938) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Minor linker/include fixes related to OS X build [\#937](https://github.com/balabit/syslog-ng/pull/937) ([MrAnno](https://github.com/MrAnno))
+- Fix diskq linking [\#936](https://github.com/balabit/syslog-ng/pull/936) ([ihrwein](https://github.com/ihrwein))
+- Don't fail during cleanup if there are no copyright-\* logs [\#929](https://github.com/balabit/syslog-ng/pull/929) ([ihrwein](https://github.com/ihrwein))
+- Fix java version check \('test' has '=', not '==' as operator\) [\#927](https://github.com/balabit/syslog-ng/pull/927) ([MrAnno](https://github.com/MrAnno))
+- Fix program driver keep-alive\(\) option linkage [\#926](https://github.com/balabit/syslog-ng/pull/926) ([MrAnno](https://github.com/MrAnno))
+- Fix possible deadlock in patterndb [\#925](https://github.com/balabit/syslog-ng/pull/925) ([MrAnno](https://github.com/MrAnno))
+- Fix byteorder handling on bigendian systems in netmask6 filter [\#924](https://github.com/balabit/syslog-ng/pull/924) ([MrAnno](https://github.com/MrAnno))
+- afsocket: Fix an integer underflow. [\#922](https://github.com/balabit/syslog-ng/pull/922) ([MrAnno](https://github.com/MrAnno))
+- F/fix suppress deadlock [\#921](https://github.com/balabit/syslog-ng/pull/921) ([MrAnno](https://github.com/MrAnno))
+- Fix create-dirs\(\) inheritance in file destinations [\#905](https://github.com/balabit/syslog-ng/pull/905) ([MrAnno](https://github.com/MrAnno))
+- Fix Travis' python related issues in syslog-ng 3.7 [\#902](https://github.com/balabit/syslog-ng/pull/902) ([MrAnno](https://github.com/MrAnno))
+- Fix global option inheritance in unix socket sources [\#900](https://github.com/balabit/syslog-ng/pull/900) ([MrAnno](https://github.com/MrAnno))
+- Fix create-dirs\(\) inheritance in file destinations [\#898](https://github.com/balabit/syslog-ng/pull/898) ([MrAnno](https://github.com/MrAnno))
+- Fix java version check \('test' has '=', not '==' as operator\) [\#897](https://github.com/balabit/syslog-ng/pull/897) ([schweikert](https://github.com/schweikert))
+- Fix global option inheritance in unix socket sources [\#896](https://github.com/balabit/syslog-ng/pull/896) ([MrAnno](https://github.com/MrAnno))
+- Fix journald program name flapping [\#886](https://github.com/balabit/syslog-ng/pull/886) ([ihrwein](https://github.com/ihrwein))
+- Clean up configure directory [\#882](https://github.com/balabit/syslog-ng/pull/882) ([bazsi](https://github.com/bazsi))
+- Fix possible double-frees in yydestruct \(lib\) [\#872](https://github.com/balabit/syslog-ng/pull/872) ([ihrwein](https://github.com/ihrwein))
+- Fix program driver keep-alive\(\) option linkage [\#864](https://github.com/balabit/syslog-ng/pull/864) ([MrAnno](https://github.com/MrAnno))
+- Fix possible deadlock in patterndb [\#844](https://github.com/balabit/syslog-ng/pull/844) ([juhaszviktor](https://github.com/juhaszviktor))
+- Fix byteorder handling on bigendian systems in netmask6 filter [\#838](https://github.com/balabit/syslog-ng/pull/838) ([ihrwein](https://github.com/ihrwein))
+- .travis.yml: unset PYTHON\_CFLAGS [\#837](https://github.com/balabit/syslog-ng/pull/837) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- Fix compile error in Travis [\#825](https://github.com/balabit/syslog-ng/pull/825) ([ihrwein](https://github.com/ihrwein))
+- syslog-format: fix BSD timestamp parsing [\#818](https://github.com/balabit/syslog-ng/pull/818) ([ihrwein](https://github.com/ihrwein))
+- Fix double-free in yydestruct \(modules\) [\#817](https://github.com/balabit/syslog-ng/pull/817) ([ihrwein](https://github.com/ihrwein))
+- Fix pylint errors [\#815](https://github.com/balabit/syslog-ng/pull/815) ([ihrwein](https://github.com/ihrwein))
+- F/fix suppress deadlock [\#790](https://github.com/balabit/syslog-ng/pull/790) ([bazsi](https://github.com/bazsi))
+- redis: Return error result when redis command is failed [\#756](https://github.com/balabit/syslog-ng/pull/756) ([deirf](https://github.com/deirf))
+- logmsg: Fix a logmsg\_cached\_abort assignment [\#751](https://github.com/balabit/syslog-ng/pull/751) ([dnsjts](https://github.com/dnsjts))
+- Fix \#695: Segfault on TLS errors [\#705](https://github.com/balabit/syslog-ng/pull/705) ([u2yg](https://github.com/u2yg))
+- make install fails to install patterndb xsds [\#684](https://github.com/balabit/syslog-ng/pull/684) ([algernon](https://github.com/algernon))
+- systemd service file only half-respects /etc/default/syslog-ng [\#683](https://github.com/balabit/syslog-ng/pull/683) ([algernon](https://github.com/algernon))
+- java: Fixed libjvm linking [\#615](https://github.com/balabit/syslog-ng/pull/615) ([aneutrals](https://github.com/aneutrals))
+- requirements: add logilab-common as a dependency [\#601](https://github.com/balabit/syslog-ng/pull/601) ([ihrwein](https://github.com/ihrwein))
+- Fix: missing GStaticMutex deallocations [\#447](https://github.com/balabit/syslog-ng/pull/447) ([dnsjts](https://github.com/dnsjts))
+- filter: fix external filter plugin lookup [\#433](https://github.com/balabit/syslog-ng/pull/433) ([ihrwein](https://github.com/ihrwein))
+- logthrdestdrv: Fixes for centralized retries\(\) functionality [\#264](https://github.com/balabit/syslog-ng/pull/264) ([lbudai](https://github.com/lbudai))
+- filter: fix using only the last inserted item in in-list filter [\#250](https://github.com/balabit/syslog-ng/pull/250) ([ihrwein](https://github.com/ihrwein))
+- system-source: Allow messages to flow through JSON [\#245](https://github.com/balabit/syslog-ng/pull/245) ([algernon](https://github.com/algernon))
+- Fix a few compiler warnings [\#234](https://github.com/balabit/syslog-ng/pull/234) ([algernon](https://github.com/algernon))
+- F/cryptofuncs fix [\#224](https://github.com/balabit/syslog-ng/pull/224) ([talien](https://github.com/talien))
+- driver.h: add declaration of log\_src\_driver\_queue\_method\(\) to fix compil... [\#222](https://github.com/balabit/syslog-ng/pull/222) ([bazsi](https://github.com/bazsi))
+- Stricter type hint parsing [\#215](https://github.com/balabit/syslog-ng/pull/215) ([algernon](https://github.com/algernon))
+- lib/compat/time.h: CLOCK\_MONOTONIC compatibility [\#214](https://github.com/balabit/syslog-ng/pull/214) ([algernon](https://github.com/algernon))
+- modules: Do not count inserted/sent messages as stored ones. [\#198](https://github.com/balabit/syslog-ng/pull/198) ([talien](https://github.com/talien))
+- logwriter: throttle bug fixed [\#188](https://github.com/balabit/syslog-ng/pull/188) ([lbudai](https://github.com/lbudai))
+- affile, afsocket: Properly call the LogSrcDriver queue method [\#187](https://github.com/balabit/syslog-ng/pull/187) ([algernon](https://github.com/algernon))
+
+**Closed issues:**
+
+- missing directories in tarball [\#1132](https://github.com/balabit/syslog-ng/issues/1132)
+- Numerical operator does not work on re-written values [\#1105](https://github.com/balabit/syslog-ng/issues/1105)
+- Certain combination of configuration will sometimes generate incorrect unparseable JSON errors [\#1101](https://github.com/balabit/syslog-ng/issues/1101)
+- SIGSEGV: log\_proto\_buffered\_server\_prepare \(\) from /usr/lib/libsyslog-ng-3.6.so.0 [\#1099](https://github.com/balabit/syslog-ng/issues/1099)
+- tailing a process with `logger` always emits the same timestamp [\#1098](https://github.com/balabit/syslog-ng/issues/1098)
+- basicfuncs unit test seems to be buggy on 32bit systems [\#1083](https://github.com/balabit/syslog-ng/issues/1083)
+- Forward messages to ordinary syslogd [\#1078](https://github.com/balabit/syslog-ng/issues/1078)
+- Difficulty with reusing configuration blocks [\#1076](https://github.com/balabit/syslog-ng/issues/1076)
+- Unable to initialize database access with sqlite3: File not found [\#1074](https://github.com/balabit/syslog-ng/issues/1074)
+- Debian Build -- modules/kvformat ? [\#1068](https://github.com/balabit/syslog-ng/issues/1068)
+- Aborting during configuration loading [\#1065](https://github.com/balabit/syslog-ng/issues/1065)
+- With an \<url\> tag in patterndb.xml db-parser did not parse [\#1063](https://github.com/balabit/syslog-ng/issues/1063)
+- brucemetallians [\#1057](https://github.com/balabit/syslog-ng/issues/1057)
+- Problems parsing PROGRAM with TCP [\#1056](https://github.com/balabit/syslog-ng/issues/1056)
+- Null pointer dereference when parsing malformed config [\#1055](https://github.com/balabit/syslog-ng/issues/1055)
+- Mispeling in lib/cfg.c - convinience -\> convenience [\#1034](https://github.com/balabit/syslog-ng/issues/1034)
+- Submit mappings to Elasticsearch from syslog-ng [\#1009](https://github.com/balabit/syslog-ng/issues/1009)
+- syslog-ng-ctl stats –reset isn't documented [\#1001](https://github.com/balabit/syslog-ng/issues/1001)
+- Eating CPU after a big block of kernel messages [\#990](https://github.com/balabit/syslog-ng/issues/990)
+- Add $\(pwuid\_to\_nam\) and $\(grgid\_to\_nam\) functions [\#979](https://github.com/balabit/syslog-ng/issues/979)
+- elasticsearch destination fails to index documents when global ES cluster state is not green [\#968](https://github.com/balabit/syslog-ng/issues/968)
+- 3.7/master compile problems on FreeBSD [\#957](https://github.com/balabit/syslog-ng/issues/957)
+- igure [\#945](https://github.com/balabit/syslog-ng/issues/945)
+- CMake [\#933](https://github.com/balabit/syslog-ng/issues/933)
+- Handle option names with hyphen \(-\) characters in java scls [\#910](https://github.com/balabit/syslog-ng/issues/910)
+- docbug: elasticsearch client\_lib\_dir [\#888](https://github.com/balabit/syslog-ng/issues/888)
+- Remove autoconf-archive dependency [\#878](https://github.com/balabit/syslog-ng/issues/878)
+- SIGABRT: using \("\) around macros in format-json type-hinting [\#865](https://github.com/balabit/syslog-ng/issues/865)
+- Undefined symbol when using keep-alive option in program source/destination [\#863](https://github.com/balabit/syslog-ng/issues/863)
+- Upgrade of the Kafka destination module to support Kafka 0.9.0.0 \(with SSL\) [\#839](https://github.com/balabit/syslog-ng/issues/839)
+- Source statistics counters not updated [\#833](https://github.com/balabit/syslog-ng/issues/833)
+- flapping ${PROGRAM} using systemd [\#831](https://github.com/balabit/syslog-ng/issues/831)
+- elastic java module fails using shield plugin [\#826](https://github.com/balabit/syslog-ng/issues/826)
+- OS X ld does not support --whole-archive option, thus breaking the build of 3.7.2 on OS X [\#808](https://github.com/balabit/syslog-ng/issues/808)
+- Absence of clock\_gettime\(\) on OS X breaks build of lib/timeutils.c on 3.7.2 [\#806](https://github.com/balabit/syslog-ng/issues/806)
+- lib/logmsg.c weak alias error breaks build of 3.7.2 on OS X 10.11 [\#805](https://github.com/balabit/syslog-ng/issues/805)
+- add --disable-werr option [\#804](https://github.com/balabit/syslog-ng/issues/804)
+- template-function is an unknown keyword with `@version: 3.6` [\#796](https://github.com/balabit/syslog-ng/issues/796)
+- Revert PR \#740 on 3.7/master [\#788](https://github.com/balabit/syslog-ng/issues/788)
+- double-free because of the yydestruct [\#786](https://github.com/balabit/syslog-ng/issues/786)
+- Invalid error check due to signed/unsigned confusion [\#780](https://github.com/balabit/syslog-ng/issues/780)
+- Integer overflow in numerical operations template function [\#773](https://github.com/balabit/syslog-ng/issues/773)
+- lib/filter/filter-cmp.c:116: missing break ? [\#772](https://github.com/balabit/syslog-ng/issues/772)
+- some logging stops working [\#766](https://github.com/balabit/syslog-ng/issues/766)
+- multi-line-prefix matches regex anywhere in log message not only at the beginning [\#765](https://github.com/balabit/syslog-ng/issues/765)
+- sigsegv in redis module when restart redis server [\#754](https://github.com/balabit/syslog-ng/issues/754)
+- Support Rust modules [\#746](https://github.com/balabit/syslog-ng/issues/746)
+- distribute `config.h` [\#745](https://github.com/balabit/syslog-ng/issues/745)
+- syslog-ng-3.7.1 build errors [\#742](https://github.com/balabit/syslog-ng/issues/742)
+- plugin loading anomalies [\#714](https://github.com/balabit/syslog-ng/issues/714)
+- syslog-ng reload causes mod-journal to re-read all messages ever since [\#713](https://github.com/balabit/syslog-ng/issues/713)
+- syslog-ng doesn't send new lines to remote host [\#712](https://github.com/balabit/syslog-ng/issues/712)
+- syslog-ng config : conditional include  [\#710](https://github.com/balabit/syslog-ng/issues/710)
+- docbug: 3.7 python copy-paste [\#697](https://github.com/balabit/syslog-ng/issues/697)
+- got SIGABRT for SIGHUP while using python parser [\#693](https://github.com/balabit/syslog-ng/issues/693)
+- docbug: elasicsearch [\#688](https://github.com/balabit/syslog-ng/issues/688)
+- Can't connect to MongoDB when starting syslog-ng as a service [\#685](https://github.com/balabit/syslog-ng/issues/685)
+- regexp: flags\(store-matches\) seems to be the default [\#680](https://github.com/balabit/syslog-ng/issues/680)
+- Proposal: VARARGS support in blocks [\#679](https://github.com/balabit/syslog-ng/issues/679)
+- Meta packages for syslog-ng and syslog-ng incubator [\#677](https://github.com/balabit/syslog-ng/issues/677)
+- Missing native incubator packages for syslog-ng incubator 3.7 [\#676](https://github.com/balabit/syslog-ng/issues/676)
+- HTTP destination does not log any server side error [\#669](https://github.com/balabit/syslog-ng/issues/669)
+- HTTP destination can use only PUT method [\#668](https://github.com/balabit/syslog-ng/issues/668)
+- Still need of documentation to new geoip parser. [\#662](https://github.com/balabit/syslog-ng/issues/662)
+- Network destination queues are not created if DNS resolution fails [\#659](https://github.com/balabit/syslog-ng/issues/659)
+- patterndb pdbtool segfault when test\_message contains &lt; [\#658](https://github.com/balabit/syslog-ng/issues/658)
+- MARK message should have PID and PROGRAM set [\#653](https://github.com/balabit/syslog-ng/issues/653)
+- rewrite rules don't honor time-zone [\#652](https://github.com/balabit/syslog-ng/issues/652)
+- java module: segfault when reloading syslog-ng [\#651](https://github.com/balabit/syslog-ng/issues/651)
+- docbug: geoip parser: there is no documentation [\#648](https://github.com/balabit/syslog-ng/issues/648)
+- systemd unit for syslog-ng 3.6.4-1 at Debian should have `Alias=` [\#647](https://github.com/balabit/syslog-ng/issues/647)
+- Make fd-limit default to getrlimit\(RLIMIT\_NOFILE\) [\#646](https://github.com/balabit/syslog-ng/issues/646)
+- misleading message when gradle is not found [\#644](https://github.com/balabit/syslog-ng/issues/644)
+- Incorrect GRADLE\_VERSION check [\#643](https://github.com/balabit/syslog-ng/issues/643)
+- Source file\(\) split long rows [\#641](https://github.com/balabit/syslog-ng/issues/641)
+- environment variables not passed on to gradle in 3.7.1 [\#640](https://github.com/balabit/syslog-ng/issues/640)
+- specifing the same @include leads to segfault [\#639](https://github.com/balabit/syslog-ng/issues/639)
+- Make the Administrator Guide open source [\#631](https://github.com/balabit/syslog-ng/issues/631)
+- compiling with Java support fails on Fedora 22 [\#624](https://github.com/balabit/syslog-ng/issues/624)
+- SSLv3 should not be supported [\#623](https://github.com/balabit/syslog-ng/issues/623)
+-  Can't find class; class\_name='org/syslog\_ng/SyslogNgClassLoader' [\#620](https://github.com/balabit/syslog-ng/issues/620)
+- Could not find :syslog-ng-common:. [\#617](https://github.com/balabit/syslog-ng/issues/617)
+- Enable java build in Travis/Drone.io [\#612](https://github.com/balabit/syslog-ng/issues/612)
+- Assertion error in log\_msg\_refcache\_stop with an empty channel [\#610](https://github.com/balabit/syslog-ng/issues/610)
+- elasticsearch: provide scl wrapper [\#605](https://github.com/balabit/syslog-ng/issues/605)
+- python and sql functional tests are not running in drone.io [\#600](https://github.com/balabit/syslog-ng/issues/600)
+- port fixes between syslog-ng-3.6 and syslog-ng-3.7 before final 3.7 is released [\#599](https://github.com/balabit/syslog-ng/issues/599)
+- java destination: does not run using openjdk-1.7 [\#597](https://github.com/balabit/syslog-ng/issues/597)
+- java destination: LD\_PRELOAD [\#596](https://github.com/balabit/syslog-ng/issues/596)
+- java destination: duplicate \*.jar files [\#595](https://github.com/balabit/syslog-ng/issues/595)
+- java destination: missing syslog-ng-core.jar [\#594](https://github.com/balabit/syslog-ng/issues/594)
+- java build fails out of tree [\#593](https://github.com/balabit/syslog-ng/issues/593)
+- flush-lines\(\), flush-timeout\(\) does not agree about deprecation [\#591](https://github.com/balabit/syslog-ng/issues/591)
+- make dist fails to copy some needed files for java-modules e.g. `modules/java/build.gradle` [\#589](https://github.com/balabit/syslog-ng/issues/589)
+- java destination: undefined symbol: JNI\_CreateJavaVM [\#588](https://github.com/balabit/syslog-ng/issues/588)
+- Question: $PREFIX/share/tools/ [\#587](https://github.com/balabit/syslog-ng/issues/587)
+- java build: `make install` should not rebuild at every run [\#585](https://github.com/balabit/syslog-ng/issues/585)
+- Extracting log file content [\#584](https://github.com/balabit/syslog-ng/issues/584)
+- unix socket source should create directory tree if it doesn't exist [\#583](https://github.com/balabit/syslog-ng/issues/583)
+- iptables rules are not working [\#576](https://github.com/balabit/syslog-ng/issues/576)
+- Proposal about our Docker images [\#573](https://github.com/balabit/syslog-ng/issues/573)
+- --with-docbook-dir= does not seem to have an effect [\#572](https://github.com/balabit/syslog-ng/issues/572)
+- Difference between tcp\(\), syslog\(\) and netwrok\(\) in syslog-ng.conf [\#560](https://github.com/balabit/syslog-ng/issues/560)
+- syslog-ng fails to start if a target cannot be resolved [\#553](https://github.com/balabit/syslog-ng/issues/553)
+- Export \_\_log\_msg\_get\_value\(\) and \_\_log\_msg\_get\_value\_by\_name\(\) [\#551](https://github.com/balabit/syslog-ng/issues/551)
+- Running syslog-ng as non-root user [\#549](https://github.com/balabit/syslog-ng/issues/549)
+- 3.7 beta2 and --disable-python on FreeBSD [\#537](https://github.com/balabit/syslog-ng/issues/537)
+- python: passing arguments from config to init\(\) [\#535](https://github.com/balabit/syslog-ng/issues/535)
+- coredump after 3.6.3 on FreeBSD [\#525](https://github.com/balabit/syslog-ng/issues/525)
+- 3.6.3 unable to find json-c on CentOS 6.6 ? [\#521](https://github.com/balabit/syslog-ng/issues/521)
+- post build checks fail for afamqp for 3.6.3 on openSUSE [\#514](https://github.com/balabit/syslog-ng/issues/514)
+- SyslogNg.jar should not come pre-built in the release tgz [\#513](https://github.com/balabit/syslog-ng/issues/513)
+- afsocket connection reopen mechanism [\#506](https://github.com/balabit/syslog-ng/issues/506)
+- riemann: support TLS [\#504](https://github.com/balabit/syslog-ng/issues/504)
+- Riemann destination does not handle closing TCP connection very well [\#498](https://github.com/balabit/syslog-ng/issues/498)
+- modules/java build issues [\#495](https://github.com/balabit/syslog-ng/issues/495)
+- syslog-ng cannot create file if macro in filename [\#487](https://github.com/balabit/syslog-ng/issues/487)
+- forwardport file reopen timer [\#484](https://github.com/balabit/syslog-ng/issues/484)
+- geoip segfault [\#478](https://github.com/balabit/syslog-ng/issues/478)
+- test issue [\#477](https://github.com/balabit/syslog-ng/issues/477)
+- Fix netmask6 filter on bigendian systems [\#476](https://github.com/balabit/syslog-ng/issues/476)
+- \[openbsd\] build problem - error: expected specifier-qualifier-list before 'time\_t' [\#470](https://github.com/balabit/syslog-ng/issues/470)
+- "make check" fails on fedora [\#465](https://github.com/balabit/syslog-ng/issues/465)
+- Too much "Error opening file for writing" [\#464](https://github.com/balabit/syslog-ng/issues/464)
+- Segfault when reading journald log files [\#459](https://github.com/balabit/syslog-ng/issues/459)
+- syslog-ng asserts in on certain systems when hostname is blank [\#458](https://github.com/balabit/syslog-ng/issues/458)
+- Documentation: cipher-suite [\#454](https://github.com/balabit/syslog-ng/issues/454)
+- Issue with name of tar.gz file "syslog-ng\_3.7.0alpha2.tar.gz" and spec file expectation. [\#450](https://github.com/balabit/syslog-ng/issues/450)
+- error: redefinition of typedef 'LogTemplateOptions' [\#449](https://github.com/balabit/syslog-ng/issues/449)
+- 3.6.2 consumes all available memory over a few hours [\#446](https://github.com/balabit/syslog-ng/issues/446)
+- Indentation problem in modules/python/sngexample.py file [\#439](https://github.com/balabit/syslog-ng/issues/439)
+- Document --control option in syslog-ng man page [\#436](https://github.com/balabit/syslog-ng/issues/436)
+- syslog-ng 3.5: system\(\) opens both /dev/log and /run/systemd/journal/syslog [\#434](https://github.com/balabit/syslog-ng/issues/434)
+- How to enable debug symbols \(enable -g in Makefile\) to syslog-ng [\#430](https://github.com/balabit/syslog-ng/issues/430)
+- docbook.xsl \(Man page error\) issue on fedora [\#428](https://github.com/balabit/syslog-ng/issues/428)
+- Syslog-ng splits message on wrong boundary [\#424](https://github.com/balabit/syslog-ng/issues/424)
+- Error when binding syslog source on same port via ip4 and ipv6 [\#421](https://github.com/balabit/syslog-ng/issues/421)
+- snmp traps in binary format [\#420](https://github.com/balabit/syslog-ng/issues/420)
+- compiling with redis support on FreeBSD fails [\#414](https://github.com/balabit/syslog-ng/issues/414)
+- afamqp: change depecrated functions to new ones, correcting some small bugs [\#407](https://github.com/balabit/syslog-ng/issues/407)
+- Please backport \#320 to 3.6/master [\#406](https://github.com/balabit/syslog-ng/issues/406)
+- riemann: protocol errors [\#401](https://github.com/balabit/syslog-ng/issues/401)
+- Remove RabbitMQ submodule from 3.7  [\#396](https://github.com/balabit/syslog-ng/issues/396)
+- when log threaded dest driver not available, on SIGTERM syslog-ng segfaults [\#395](https://github.com/balabit/syslog-ng/issues/395)
+- riemann destination without attributes\(\) option segfaults [\#394](https://github.com/balabit/syslog-ng/issues/394)
+- syslog-ng-3.7.0alpha2 segfaults upon receiving a message via tcp [\#390](https://github.com/balabit/syslog-ng/issues/390)
+- patterndb duplicate parser node in radix tree [\#384](https://github.com/balabit/syslog-ng/issues/384)
+-   Allow special chars to be escaped again with template\_escape\(yes\) [\#372](https://github.com/balabit/syslog-ng/issues/372)
+- Question: behaviour of patterndb correlation timeout+condition [\#365](https://github.com/balabit/syslog-ng/issues/365)
+- mongodb: moving to official C mongo client library [\#361](https://github.com/balabit/syslog-ng/issues/361)
+- syslog-ng produces binary log files [\#360](https://github.com/balabit/syslog-ng/issues/360)
+- syslog-ng 3.6.1 and journald without journal files. [\#357](https://github.com/balabit/syslog-ng/issues/357)
+- make UNIX credential collection opt-in [\#353](https://github.com/balabit/syslog-ng/issues/353)
+- make check false positive [\#352](https://github.com/balabit/syslog-ng/issues/352)
+- mistake in documentation - section 6.4? [\#339](https://github.com/balabit/syslog-ng/issues/339)
+- silence two annoying startup messages [\#329](https://github.com/balabit/syslog-ng/issues/329)
+- netmask filter with ipv6 protocol [\#323](https://github.com/balabit/syslog-ng/issues/323)
+- An idea to ease startup debugging [\#319](https://github.com/balabit/syslog-ng/issues/319)
+- systemd-journal\(\) source vs syslog forwarding [\#314](https://github.com/balabit/syslog-ng/issues/314)
+- SEQNUM is not persisted for riemann destination [\#306](https://github.com/balabit/syslog-ng/issues/306)
+- libsystemd-{daemon,journal} =\> libsystemd [\#299](https://github.com/balabit/syslog-ng/issues/299)
+- json-parser triggers segfault [\#290](https://github.com/balabit/syslog-ng/issues/290)
+- 3.6.0rc2 tarball is missing riemann grammar files [\#283](https://github.com/balabit/syslog-ng/issues/283)
+- should it be possible to tail one file more than once? [\#266](https://github.com/balabit/syslog-ng/issues/266)
+- Segfault in perl plugin [\#221](https://github.com/balabit/syslog-ng/issues/221)
+- Urgent: syslog-ng v3.4.8 issue on AIX 5.3 [\#176](https://github.com/balabit/syslog-ng/issues/176)
+- Add configure option to enable all modules [\#149](https://github.com/balabit/syslog-ng/issues/149)
+
+**Merged pull requests:**
+
+- 32bit wide NVHandle with unittests [\#1130](https://github.com/balabit/syslog-ng/pull/1130) ([kvch](https://github.com/kvch))
+- F/add contextual data [\#1129](https://github.com/balabit/syslog-ng/pull/1129) ([lbudai](https://github.com/lbudai))
+- debian: port Debian packaging from my OBS repository [\#1125](https://github.com/balabit/syslog-ng/pull/1125) ([lbudai](https://github.com/lbudai))
+- Fix segmentation fault when including SCLs [\#1121](https://github.com/balabit/syslog-ng/pull/1121) ([ihrwein](https://github.com/ihrwein))
+- Native parser: fail-fast when configuration setting failed [\#1119](https://github.com/balabit/syslog-ng/pull/1119) ([ihrwein](https://github.com/ihrwein))
+- logmsg: add log\_msg\_new\_local\(\) function [\#1115](https://github.com/balabit/syslog-ng/pull/1115) ([ihrwein](https://github.com/ihrwein))
+- include geoip tests only when geoip is enabled [\#1109](https://github.com/balabit/syslog-ng/pull/1109) ([kvch](https://github.com/kvch))
+- Implement deinit\(\) for native parsers [\#1103](https://github.com/balabit/syslog-ng/pull/1103) ([ihrwein](https://github.com/ihrwein))
+- java-modules: gradle: removed unnecessary dependency [\#1097](https://github.com/balabit/syslog-ng/pull/1097) ([lbudai](https://github.com/lbudai))
+- Replaced the old selinux policy installer script with a new one [\#1096](https://github.com/balabit/syslog-ng/pull/1096) ([jszigetvari](https://github.com/jszigetvari))
+- logmpx: remove last\_delivery logic [\#1094](https://github.com/balabit/syslog-ng/pull/1094) ([bazsi](https://github.com/bazsi))
+- logmsg: don't release "original" from the cleared message [\#1086](https://github.com/balabit/syslog-ng/pull/1086) ([bazsi](https://github.com/bazsi))
+- Remove unused syslog-ng.conf file [\#1085](https://github.com/balabit/syslog-ng/pull/1085) ([MrAnno](https://github.com/MrAnno))
+- java-modules: use local maven repository instead of flat dir [\#1082](https://github.com/balabit/syslog-ng/pull/1082) ([lbudai](https://github.com/lbudai))
+- java-modules: removed gradle cache property file [\#1081](https://github.com/balabit/syslog-ng/pull/1081) ([lbudai](https://github.com/lbudai))
+- Create libsyslog-ng.so symlink on installation with CMake [\#1075](https://github.com/balabit/syslog-ng/pull/1075) ([ihrwein](https://github.com/ihrwein))
+- F/fix make func-test typos that keeps us from enabling it in CI [\#1070](https://github.com/balabit/syslog-ng/pull/1070) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- cfg-tree: fix a potential crash in reload logic [\#1069](https://github.com/balabit/syslog-ng/pull/1069) ([bazsi](https://github.com/bazsi))
+- cfg-lex: initialize yylloc even if we are returning YYEOF [\#1067](https://github.com/balabit/syslog-ng/pull/1067) ([bazsi](https://github.com/bazsi))
+- F/dbparser load fixes [\#1066](https://github.com/balabit/syslog-ng/pull/1066) ([bazsi](https://github.com/bazsi))
+- Add missing free to native parser's grammar [\#1062](https://github.com/balabit/syslog-ng/pull/1062) ([ihrwein](https://github.com/ihrwein))
+- Fix LL\_IDENTIFIER double frees in the grammar [\#1061](https://github.com/balabit/syslog-ng/pull/1061) ([ihrwein](https://github.com/ihrwein))
+- F/dbparser pdbload refact [\#1059](https://github.com/balabit/syslog-ng/pull/1059) ([lbudai](https://github.com/lbudai))
+- Quickstart section [\#1052](https://github.com/balabit/syslog-ng/pull/1052) ([bazsi](https://github.com/bazsi))
+- F/ctx template funcs2 - mean operator, further stylistic improvements to \#1037 [\#1041](https://github.com/balabit/syslog-ng/pull/1041) ([bkil-syslogng](https://github.com/bkil-syslogng))
+- F/dbparser action create context [\#1032](https://github.com/balabit/syslog-ng/pull/1032) ([bazsi](https://github.com/bazsi))
+- Pass a GlobalConfig pointer to native\_parser\_proxy\_new\(\) [\#1031](https://github.com/balabit/syslog-ng/pull/1031) ([ihrwein](https://github.com/ihrwein))
+- afprog: Don't kill our own process group [\#1030](https://github.com/balabit/syslog-ng/pull/1030) ([hbakken](https://github.com/hbakken))
+- scl: handle option names with both hyphen\(-\) and underscore \(-\) in SCLs [\#1024](https://github.com/balabit/syslog-ng/pull/1024) ([lbudai](https://github.com/lbudai))
+- PatternDB: fixed fastpath of empty patterndb [\#1023](https://github.com/balabit/syslog-ng/pull/1023) ([juhaszviktor](https://github.com/juhaszviktor))
+- F/kvscanner separator [\#1016](https://github.com/balabit/syslog-ng/pull/1016) ([bazsi](https://github.com/bazsi))
+- F/dbparser convert pdbload to state machine [\#1012](https://github.com/balabit/syslog-ng/pull/1012) ([bazsi](https://github.com/bazsi))
+- F/mongodb makefile cleanup [\#1010](https://github.com/balabit/syslog-ng/pull/1010) ([bazsi](https://github.com/bazsi))
+- dbparser: add XML validation in test\_patterndb [\#1007](https://github.com/balabit/syslog-ng/pull/1007) ([bazsi](https://github.com/bazsi))
+- split test\_patterndb\_rule testcase [\#1004](https://github.com/balabit/syslog-ng/pull/1004) ([bazsi](https://github.com/bazsi))
+- elasticsearch: Added 2.2 support [\#996](https://github.com/balabit/syslog-ng/pull/996) ([pzoleex](https://github.com/pzoleex))
+- F/file source reopen on error [\#993](https://github.com/balabit/syslog-ng/pull/993) ([bazsi](https://github.com/bazsi))
+- service-management: if previous code was compiled with ENABLE\_SYSTEMD, [\#989](https://github.com/balabit/syslog-ng/pull/989) ([juhaszviktor](https://github.com/juhaszviktor))
+- service-management: if previous code was compiled with ENABLE\_SYSTEMD, [\#988](https://github.com/balabit/syslog-ng/pull/988) ([juhaszviktor](https://github.com/juhaszviktor))
+- elasticsearch2: added an option for skipping cluster health check [\#986](https://github.com/balabit/syslog-ng/pull/986) ([lbudai](https://github.com/lbudai))
+- F/file perms extract from cfg [\#984](https://github.com/balabit/syslog-ng/pull/984) ([bazsi](https://github.com/bazsi))
+- README: Corrects and updates links [\#983](https://github.com/balabit/syslog-ng/pull/983) ([fekete-robert](https://github.com/fekete-robert))
+- README: fix release download link [\#972](https://github.com/balabit/syslog-ng/pull/972) ([ihrwein](https://github.com/ihrwein))
+- java-modules.Makefile: do not copy the jar files from .gradle dir to … [\#948](https://github.com/balabit/syslog-ng/pull/948) ([pzoleex](https://github.com/pzoleex))
+- DNS cache refactor and recycling [\#947](https://github.com/balabit/syslog-ng/pull/947) ([bazsi](https://github.com/bazsi))
+- systemd-journal: fix segmentation fault in g\_module\_symbol\(\) on startup [\#944](https://github.com/balabit/syslog-ng/pull/944) ([bazsi](https://github.com/bazsi))
+- Improve error handling in amqp [\#923](https://github.com/balabit/syslog-ng/pull/923) ([MrAnno](https://github.com/MrAnno))
+- make sure all path/dir variables are defined in a single location, by configure.ac [\#911](https://github.com/balabit/syslog-ng/pull/911) ([bazsi](https://github.com/bazsi))
+- F/diskq [\#909](https://github.com/balabit/syslog-ng/pull/909) ([juhaszviktor](https://github.com/juhaszviktor))
+- Suspend source if queue is full [\#857](https://github.com/balabit/syslog-ng/pull/857) ([juhaszviktor](https://github.com/juhaszviktor))
+- functest: bump config version numbers to 3.8 [\#853](https://github.com/balabit/syslog-ng/pull/853) ([bazsi](https://github.com/bazsi))
+- macros: remove lurking semicolon after if statement [\#845](https://github.com/balabit/syslog-ng/pull/845) ([ihrwein](https://github.com/ihrwein))
+- templates: clean up $SOURCEIP macro expansion [\#830](https://github.com/balabit/syslog-ng/pull/830) ([bazsi](https://github.com/bazsi))
+- F/afsql warning fixes rebased to master [\#829](https://github.com/balabit/syslog-ng/pull/829) ([lbudai](https://github.com/lbudai))
+- F/allow new keywords with old config versions rebased to master [\#828](https://github.com/balabit/syslog-ng/pull/828) ([lbudai](https://github.com/lbudai))
+- afstreams: get rid of superfluous conditional compilation [\#819](https://github.com/balabit/syslog-ng/pull/819) ([ihrwein](https://github.com/ihrwein))
+- improve error handling in amqp [\#811](https://github.com/balabit/syslog-ng/pull/811) ([bazsi](https://github.com/bazsi))
+- scl: add loggly\(\) destination [\#803](https://github.com/balabit/syslog-ng/pull/803) ([bazsi](https://github.com/bazsi))
+- F/unit test cleanups [\#797](https://github.com/balabit/syslog-ng/pull/797) ([bazsi](https://github.com/bazsi))
+- F/date parser stamp [\#795](https://github.com/balabit/syslog-ng/pull/795) ([bazsi](https://github.com/bazsi))
+- F/minor fixes [\#794](https://github.com/balabit/syslog-ng/pull/794) ([bazsi](https://github.com/bazsi))
+- F/native parser [\#791](https://github.com/balabit/syslog-ng/pull/791) ([ihrwein](https://github.com/ihrwein))
+- Revert 740 f/fix lexer [\#789](https://github.com/balabit/syslog-ng/pull/789) ([ihrwein](https://github.com/ihrwein))
+- F/whitespace fixes [\#787](https://github.com/balabit/syslog-ng/pull/787) ([bazsi](https://github.com/bazsi))
+- F/groupingby parser [\#785](https://github.com/balabit/syslog-ng/pull/785) ([bazsi](https://github.com/bazsi))
+- F/value pairs cleanups [\#784](https://github.com/balabit/syslog-ng/pull/784) ([bazsi](https://github.com/bazsi))
+- Fix an integer underflow. [\#783](https://github.com/balabit/syslog-ng/pull/783) ([hannob](https://github.com/hannob))
+- F/prefix defines [\#782](https://github.com/balabit/syslog-ng/pull/782) ([ihrwein](https://github.com/ihrwein))
+- Fix warning messages in afprog [\#779](https://github.com/balabit/syslog-ng/pull/779) ([dnsjts](https://github.com/dnsjts))
+- linux-audit-scanner: recognize a0-a9\* as fields to be decoded [\#778](https://github.com/balabit/syslog-ng/pull/778) ([bazsi](https://github.com/bazsi))
+- scl: add apache-accesslog-parser\(\) [\#777](https://github.com/balabit/syslog-ng/pull/777) ([bazsi](https://github.com/bazsi))
+- F/fix formatting results [\#775](https://github.com/balabit/syslog-ng/pull/775) ([ihrwein](https://github.com/ihrwein))
+- F/fix filter numeric ops [\#774](https://github.com/balabit/syslog-ng/pull/774) ([bazsi](https://github.com/bazsi))
+- system: use keep-timestamp\(no\) in case of Linux kernel log messages [\#771](https://github.com/balabit/syslog-ng/pull/771) ([ihrwein](https://github.com/ihrwein))
+- system: use keep-timestamp\(no\) in case of Linux kernel log messages [\#769](https://github.com/balabit/syslog-ng/pull/769) ([ihrwein](https://github.com/ihrwein))
+- F/dbparser multiline patterns [\#768](https://github.com/balabit/syslog-ng/pull/768) ([bazsi](https://github.com/bazsi))
+- func\_test: fix up test\_python [\#767](https://github.com/balabit/syslog-ng/pull/767) ([bazsi](https://github.com/bazsi))
+- F/opening 3.8 branch [\#763](https://github.com/balabit/syslog-ng/pull/763) ([lbudai](https://github.com/lbudai))
+- contrib/syslog-debun: portability improvements and fixes [\#757](https://github.com/balabit/syslog-ng/pull/757) ([pasztor](https://github.com/pasztor))
+- port date-parser\(\) from incubator [\#755](https://github.com/balabit/syslog-ng/pull/755) ([bazsi](https://github.com/bazsi))
+- afamqp: support systemwide librabbitmq-c [\#752](https://github.com/balabit/syslog-ng/pull/752) ([dnsjts](https://github.com/dnsjts))
+- F/introduce template options in rewrite rules [\#750](https://github.com/balabit/syslog-ng/pull/750) ([ihrwein](https://github.com/ihrwein))
+- elasticsearch: Change default value of flush\_limit and concurrent\_req… [\#749](https://github.com/balabit/syslog-ng/pull/749) ([pzoleex](https://github.com/pzoleex))
+- csvparser refactor, prefix\(\) and dialect\(\) options [\#747](https://github.com/balabit/syslog-ng/pull/747) ([bazsi](https://github.com/bazsi))
+- syslog-ng.pc: add eventlog as a required package [\#744](https://github.com/balabit/syslog-ng/pull/744) ([ihrwein](https://github.com/ihrwein))
+- python: support python3 library [\#743](https://github.com/balabit/syslog-ng/pull/743) ([dnsjts](https://github.com/dnsjts))
+- F/csvparser refinements [\#741](https://github.com/balabit/syslog-ng/pull/741) ([bazsi](https://github.com/bazsi))
+- F/fix lexer bazsi [\#740](https://github.com/balabit/syslog-ng/pull/740) ([ihrwein](https://github.com/ihrwein))
+- logsource: validate hostname length in log\_source\_mangle\_hostname\(\) [\#739](https://github.com/balabit/syslog-ng/pull/739) ([ihrwein](https://github.com/ihrwein))
+- F/elastic bulk concurrent request option [\#738](https://github.com/balabit/syslog-ng/pull/738) ([lbudai](https://github.com/lbudai))
+- scl: fixed comment marks in java SCLs copyright headers [\#737](https://github.com/balabit/syslog-ng/pull/737) ([lbudai](https://github.com/lbudai))
+- 3.6/f/fix journal replay [\#736](https://github.com/balabit/syslog-ng/pull/736) ([lbudai](https://github.com/lbudai))
+- F/fix journal replay [\#735](https://github.com/balabit/syslog-ng/pull/735) ([bazsi](https://github.com/bazsi))
+- modules/python/python-dest.c: always release GIL [\#731](https://github.com/balabit/syslog-ng/pull/731) ([u2yg](https://github.com/u2yg))
+- modules/python: acquire GIL for calls to the C API [\#730](https://github.com/balabit/syslog-ng/pull/730) ([u2yg](https://github.com/u2yg))
+- F/tidy proto const redund void semi [\#729](https://github.com/balabit/syslog-ng/pull/729) ([u2yg](https://github.com/u2yg))
+- tests: unit/test\_zone.c LogStamp uninitialized field fixed [\#727](https://github.com/balabit/syslog-ng/pull/727) ([u2yg](https://github.com/u2yg))
+- F/java scls [\#725](https://github.com/balabit/syslog-ng/pull/725) ([ihrwein](https://github.com/ihrwein))
+- F/dbparser code refinements [\#723](https://github.com/balabit/syslog-ng/pull/723) ([bazsi](https://github.com/bazsi))
+- Keep the program destination open between configuration reloads [\#722](https://github.com/balabit/syslog-ng/pull/722) ([dnsjts](https://github.com/dnsjts))
+- ssl-options backport for 3.6 [\#720](https://github.com/balabit/syslog-ng/pull/720) ([algernon](https://github.com/algernon))
+- periodical-mark-mode: cancel the mark\_timer instead of unregister it [\#718](https://github.com/balabit/syslog-ng/pull/718) ([juhaszviktor](https://github.com/juhaszviktor))
+- F/linux audit parser [\#715](https://github.com/balabit/syslog-ng/pull/715) ([bazsi](https://github.com/bazsi))
+- Fix python module compilation with python3.4 [\#711](https://github.com/balabit/syslog-ng/pull/711) ([dnsjts](https://github.com/dnsjts))
+- cfg: initialize global options [\#709](https://github.com/balabit/syslog-ng/pull/709) ([bazsi](https://github.com/bazsi))
+- cfg-grammar: fix template\_fn memory leak [\#708](https://github.com/balabit/syslog-ng/pull/708) ([bazsi](https://github.com/bazsi))
+- afsocket: fix use-of-uninitialized data [\#707](https://github.com/balabit/syslog-ng/pull/707) ([bazsi](https://github.com/bazsi))
+- afsmtp: fix grammar inconsistencies in the grammar [\#706](https://github.com/balabit/syslog-ng/pull/706) ([ihrwein](https://github.com/ihrwein))
+- scl: add mbox\(\) source [\#703](https://github.com/balabit/syslog-ng/pull/703) ([bazsi](https://github.com/bazsi))
+- F/fix logwriter spinning on partial writes [\#702](https://github.com/balabit/syslog-ng/pull/702) ([bazsi](https://github.com/bazsi))
+- logmsg: make log\_msg\_values\_foreach\(\) take the receiver as const pointer [\#691](https://github.com/balabit/syslog-ng/pull/691) ([ihrwein](https://github.com/ihrwein))
+- java-modules: http destination improvements [\#689](https://github.com/balabit/syslog-ng/pull/689) ([ngergo](https://github.com/ngergo))
+- Allow overriding the python setup.py options [\#686](https://github.com/balabit/syslog-ng/pull/686) ([algernon](https://github.com/algernon))
+- afsocket: replace writer only when protocol changed during reload [\#682](https://github.com/balabit/syslog-ng/pull/682) ([lbudai](https://github.com/lbudai))
+- F/decouple logwriter setup [\#681](https://github.com/balabit/syslog-ng/pull/681) ([lbudai](https://github.com/lbudai))
+- gradle\_checking: use the first line of the result of the grep [\#672](https://github.com/balabit/syslog-ng/pull/672) ([juhaszviktor](https://github.com/juhaszviktor))
+- configure.ac: print out that gradle not found instead of misleading J… [\#671](https://github.com/balabit/syslog-ng/pull/671) ([juhaszviktor](https://github.com/juhaszviktor))
+- redis: free reply object after a succesful ping [\#666](https://github.com/balabit/syslog-ng/pull/666) ([lbudai](https://github.com/lbudai))
+- Make it possible to override persist id [\#665](https://github.com/balabit/syslog-ng/pull/665) ([dnsjts](https://github.com/dnsjts))
+- 3.6/f/decouple logwriter creation from connection setup [\#664](https://github.com/balabit/syslog-ng/pull/664) ([lbudai](https://github.com/lbudai))
+- dbparser: handle NULL value for the match parameter in r\_parser\_email\(\) [\#660](https://github.com/balabit/syslog-ng/pull/660) ([ihrwein](https://github.com/ihrwein))
+- cfg.c: call destroy\(\) only when it is set in cfg\_persist\_config\_add\(\) [\#657](https://github.com/balabit/syslog-ng/pull/657) ([lbudai](https://github.com/lbudai))
+- transport-mapper-unix: remove the second typedef of \_TransportMapperUnix [\#654](https://github.com/balabit/syslog-ng/pull/654) ([ihrwein](https://github.com/ihrwein))
+- Make the default for RLIMIT\_NOFILE equal to the current system limits. [\#649](https://github.com/balabit/syslog-ng/pull/649) ([avleen](https://github.com/avleen))
+- timeutils: Fix the cached\_gmtime error [\#642](https://github.com/balabit/syslog-ng/pull/642) ([datawolf](https://github.com/datawolf))
+- syslogformat: Fixed bsd year inference [\#637](https://github.com/balabit/syslog-ng/pull/637) ([aneutrals](https://github.com/aneutrals))
+- logthreadeddestination: add connect function to make the interface sy… [\#636](https://github.com/balabit/syslog-ng/pull/636) ([lbudai](https://github.com/lbudai))
+- afsocket: replace writer only when protocol changed during reload [\#635](https://github.com/balabit/syslog-ng/pull/635) ([lbudai](https://github.com/lbudai))
+- F/set target jvm [\#634](https://github.com/balabit/syslog-ng/pull/634) ([ihrwein](https://github.com/ihrwein))
+- configure.ac: 'with-docbook' option renamed [\#633](https://github.com/balabit/syslog-ng/pull/633) ([ngergo](https://github.com/ngergo))
+- F/java fixes [\#629](https://github.com/balabit/syslog-ng/pull/629) ([lbudai](https://github.com/lbudai))
+- F/fix compiler warning [\#627](https://github.com/balabit/syslog-ng/pull/627) ([ihrwein](https://github.com/ihrwein))
+- Forward fixes from the maintenance branch [\#626](https://github.com/balabit/syslog-ng/pull/626) ([ihrwein](https://github.com/ihrwein))
+- F/fix java runtime deps [\#625](https://github.com/balabit/syslog-ng/pull/625) ([aneutrals](https://github.com/aneutrals))
+- F/gradle build fixes [\#621](https://github.com/balabit/syslog-ng/pull/621) ([lbudai](https://github.com/lbudai))
+- mainloop: automatically load the python module in case the debugger i… [\#618](https://github.com/balabit/syslog-ng/pull/618) ([bazsi](https://github.com/bazsi))
+- .travis.yml: Java support added [\#613](https://github.com/balabit/syslog-ng/pull/613) ([lbudai](https://github.com/lbudai))
+- F/java http dst fix [\#611](https://github.com/balabit/syslog-ng/pull/611) ([lbudai](https://github.com/lbudai))
+- java: install all \*.jar files under lib/syslog-ng/java-modules [\#609](https://github.com/balabit/syslog-ng/pull/609) ([ihrwein](https://github.com/ihrwein))
+- F/dbparser split into smaller modules [\#608](https://github.com/balabit/syslog-ng/pull/608) ([bazsi](https://github.com/bazsi))
+- Read configuration variables from sysconfig [\#607](https://github.com/balabit/syslog-ng/pull/607) ([faxm0dem](https://github.com/faxm0dem))
+- fix typo in elasticsearch log message [\#606](https://github.com/balabit/syslog-ng/pull/606) ([faxm0dem](https://github.com/faxm0dem))
+- java: set GRADLE\_USER\_HOME in Makefile.am for java-modules [\#604](https://github.com/balabit/syslog-ng/pull/604) ([lbudai](https://github.com/lbudai))
+- java: modified java modules to allow local caching of jar files [\#602](https://github.com/balabit/syslog-ng/pull/602) ([aneutrals](https://github.com/aneutrals))
+- F/java fixes [\#598](https://github.com/balabit/syslog-ng/pull/598) ([lbudai](https://github.com/lbudai))
+- afprog: do not send SIGTERM when getpgid\(\) fails [\#590](https://github.com/balabit/syslog-ng/pull/590) ([lbudai](https://github.com/lbudai))
+- F/kv parser [\#581](https://github.com/balabit/syslog-ng/pull/581) ([bazsi](https://github.com/bazsi))
+- F/format welf [\#580](https://github.com/balabit/syslog-ng/pull/580) ([bazsi](https://github.com/bazsi))
+- value-pairs: make it possible to pass --key as a positional argument [\#579](https://github.com/balabit/syslog-ng/pull/579) ([bazsi](https://github.com/bazsi))
+- json: do not rely on json\_object\_is\_type\(\) accepting NULL [\#578](https://github.com/balabit/syslog-ng/pull/578) ([vincentbernat](https://github.com/vincentbernat))
+- configure.ac: docbook dir option name corrected [\#574](https://github.com/balabit/syslog-ng/pull/574) ([ngergo](https://github.com/ngergo))
+- utf8 sanitization [\#571](https://github.com/balabit/syslog-ng/pull/571) ([bazsi](https://github.com/bazsi))
+- Porting java modules [\#569](https://github.com/balabit/syslog-ng/pull/569) ([aneutrals](https://github.com/aneutrals))
+- F/missing idle mark messages [\#568](https://github.com/balabit/syslog-ng/pull/568) ([deirf](https://github.com/deirf))
+- F/opt in unix creds [\#567](https://github.com/balabit/syslog-ng/pull/567) ([ihrwein](https://github.com/ihrwein))
+- contrib/syslog-debun: portability improvements and fixes [\#566](https://github.com/balabit/syslog-ng/pull/566) ([pasztor](https://github.com/pasztor))
+- Ported java-common library to OSE from PE [\#565](https://github.com/balabit/syslog-ng/pull/565) ([aneutrals](https://github.com/aneutrals))
+- grammar: apply configured mark mode on options section [\#563](https://github.com/balabit/syslog-ng/pull/563) ([deirf](https://github.com/deirf))
+- systemd-journal: ensure tests are run only when enabled [\#562](https://github.com/balabit/syslog-ng/pull/562) ([vincentbernat](https://github.com/vincentbernat))
+- afstomp: don't run tests when disabled [\#561](https://github.com/balabit/syslog-ng/pull/561) ([vincentbernat](https://github.com/vincentbernat))
+- Refactor of syslog-format [\#557](https://github.com/balabit/syslog-ng/pull/557) ([dnsjts](https://github.com/dnsjts))
+- contrib/syslog-debun: minor fix [\#555](https://github.com/balabit/syslog-ng/pull/555) ([pasztor](https://github.com/pasztor))
+- F/export functions for parsers [\#552](https://github.com/balabit/syslog-ng/pull/552) ([ihrwein](https://github.com/ihrwein))
+- file: avoid change file permission if file is device [\#550](https://github.com/balabit/syslog-ng/pull/550) ([deirf](https://github.com/deirf))
+- syslog-debun: several enhancements [\#546](https://github.com/balabit/syslog-ng/pull/546) ([pasztor](https://github.com/pasztor))
+- Java http dest [\#544](https://github.com/balabit/syslog-ng/pull/544) ([aneutrals](https://github.com/aneutrals))
+- afsocket: using msg\_control only when credential passing is supported [\#543](https://github.com/balabit/syslog-ng/pull/543) ([aneutrals](https://github.com/aneutrals))
+- python: passing arguments from `syslog-ng.conf` [\#541](https://github.com/balabit/syslog-ng/pull/541) ([ngergo](https://github.com/ngergo))
+- configure.ac: Fix a syntax error in module support expansion [\#540](https://github.com/balabit/syslog-ng/pull/540) ([algernon](https://github.com/algernon))
+- loggen: use the proper timezone offset in the generated message [\#538](https://github.com/balabit/syslog-ng/pull/538) ([ihrwein](https://github.com/ihrwein))
+- jave: Makefile.am fixed [\#533](https://github.com/balabit/syslog-ng/pull/533) ([lbudai](https://github.com/lbudai))
+- docs: manpage entry for --control option [\#527](https://github.com/balabit/syslog-ng/pull/527) ([ngergo](https://github.com/ngergo))
+- configure: fix python related make distcheck problems [\#526](https://github.com/balabit/syslog-ng/pull/526) ([ihrwein](https://github.com/ihrwein))
+- Startup debugging implemented [\#524](https://github.com/balabit/syslog-ng/pull/524) ([beng94](https://github.com/beng94))
+- geoip parser [\#523](https://github.com/balabit/syslog-ng/pull/523) ([algernon](https://github.com/algernon))
+- python: Fix the automake warnings in the Python module [\#522](https://github.com/balabit/syslog-ng/pull/522) ([algernon](https://github.com/algernon))
+- java: do not build the SyslogNg.jar into the pre-built release tgz. [\#519](https://github.com/balabit/syslog-ng/pull/519) ([juhaszviktor](https://github.com/juhaszviktor))
+- afamqp: correction of 3 compile warnings. The amqp\_tcp\_socket\_new is … [\#517](https://github.com/balabit/syslog-ng/pull/517) ([juhaszviktor](https://github.com/juhaszviktor))
+- configure: systemd support fixed [\#516](https://github.com/balabit/syslog-ng/pull/516) ([lbudai](https://github.com/lbudai))
+- affile: reopen timer added to logwriter [\#512](https://github.com/balabit/syslog-ng/pull/512) ([lbudai](https://github.com/lbudai))
+- affile: reopen timer added to logwriter [\#511](https://github.com/balabit/syslog-ng/pull/511) ([lbudai](https://github.com/lbudai))
+- configure: fix syntax error around libsystemd-journal handling [\#510](https://github.com/balabit/syslog-ng/pull/510) ([lbudai](https://github.com/lbudai))
+- AFInter: Proper wakeup function handling for deinitialized AFInterSou… [\#509](https://github.com/balabit/syslog-ng/pull/509) ([juhaszviktor](https://github.com/juhaszviktor))
+- AFInter: Proper wakeup function handling for deinitialized AFInterSou… [\#508](https://github.com/balabit/syslog-ng/pull/508) ([juhaszviktor](https://github.com/juhaszviktor))
+- riemann: Add support for TLS connections [\#505](https://github.com/balabit/syslog-ng/pull/505) ([algernon](https://github.com/algernon))
+- afsocket: initialization phase was refactored. [\#503](https://github.com/balabit/syslog-ng/pull/503) ([ngergo](https://github.com/ngergo))
+- configure: add --disable-python option to configure [\#502](https://github.com/balabit/syslog-ng/pull/502) ([ihrwein](https://github.com/ihrwein))
+- configure: fix syntax error in configure [\#501](https://github.com/balabit/syslog-ng/pull/501) ([ihrwein](https://github.com/ihrwein))
+- java: fixed Makefile.am: resolve dependencies by hand [\#500](https://github.com/balabit/syslog-ng/pull/500) ([lbudai](https://github.com/lbudai))
+- F/rimemann timeout [\#499](https://github.com/balabit/syslog-ng/pull/499) ([ihrwein](https://github.com/ihrwein))
+- cfg-lex: exclude the '\r' character from word declaration [\#497](https://github.com/balabit/syslog-ng/pull/497) ([lbudai](https://github.com/lbudai))
+- cfg-lex: exclude the '\r' character from word declaration [\#496](https://github.com/balabit/syslog-ng/pull/496) ([lbudai](https://github.com/lbudai))
+- system: use keep-timestamp\(no\) in case of Linux kernel log messages [\#493](https://github.com/balabit/syslog-ng/pull/493) ([ihrwein](https://github.com/ihrwein))
+- afsql: fixed retry\_sql\_inserts\(1\) isssue [\#492](https://github.com/balabit/syslog-ng/pull/492) ([lbudai](https://github.com/lbudai))
+- afsql: fixed retry\_sql\_inserts\(1\) isssue [\#491](https://github.com/balabit/syslog-ng/pull/491) ([lbudai](https://github.com/lbudai))
+- afsocket: initialization phase was refactored.  [\#490](https://github.com/balabit/syslog-ng/pull/490) ([ngergo](https://github.com/ngergo))
+- pylib: Makefile.am fixed [\#489](https://github.com/balabit/syslog-ng/pull/489) ([lbudai](https://github.com/lbudai))
+- Revert "affile: fix crash at the first message delivery when template… [\#488](https://github.com/balabit/syslog-ng/pull/488) ([juhaszviktor](https://github.com/juhaszviktor))
+- python: requirements file was added  [\#486](https://github.com/balabit/syslog-ng/pull/486) ([ngergo](https://github.com/ngergo))
+- afamqp: fix in the connect process [\#483](https://github.com/balabit/syslog-ng/pull/483) ([dnsjts](https://github.com/dnsjts))
+- completerlang: quick fix for PLY-3.6 [\#482](https://github.com/balabit/syslog-ng/pull/482) ([lbudai](https://github.com/lbudai))
+- Gitter integration added to syslog-ng to make it easier to [\#481](https://github.com/balabit/syslog-ng/pull/481) ([ngergo](https://github.com/ngergo))
+- afamqp: fix in the connect process [\#479](https://github.com/balabit/syslog-ng/pull/479) ([dnsjts](https://github.com/dnsjts))
+- F/memleak fix ported from 3.6 [\#474](https://github.com/balabit/syslog-ng/pull/474) ([lbudai](https://github.com/lbudai))
+- F/queue mem leak fix [\#473](https://github.com/balabit/syslog-ng/pull/473) ([juhaszviktor](https://github.com/juhaszviktor))
+- F/fix compile error on openbsd [\#471](https://github.com/balabit/syslog-ng/pull/471) ([bazsi](https://github.com/bazsi))
+- F/fix host size checking [\#468](https://github.com/balabit/syslog-ng/pull/468) ([bazsi](https://github.com/bazsi))
+- F/freebsd9 fixes [\#466](https://github.com/balabit/syslog-ng/pull/466) ([bazsi](https://github.com/bazsi))
+- hostname: fix potential abort in case the localhost name cannot be detected [\#463](https://github.com/balabit/syslog-ng/pull/463) ([bazsi](https://github.com/bazsi))
+- systemd-journal: drop name-value pairs without an equal sign [\#462](https://github.com/balabit/syslog-ng/pull/462) ([bazsi](https://github.com/bazsi))
+- riemann: also exclude "tags" as attribute which conflicts with reserved [\#460](https://github.com/balabit/syslog-ng/pull/460) ([faxm0dem](https://github.com/faxm0dem))
+- ssl\_options\(\) option inside tls\(\) [\#457](https://github.com/balabit/syslog-ng/pull/457) ([pasztor](https://github.com/pasztor))
+- 3.6/backports from 3.7 [\#445](https://github.com/balabit/syslog-ng/pull/445) ([ngergo](https://github.com/ngergo))
+- stats-counter: reset will not affect the stored counters [\#443](https://github.com/balabit/syslog-ng/pull/443) ([dnsjts](https://github.com/dnsjts))
+- F/debugger cli in python [\#442](https://github.com/balabit/syslog-ng/pull/442) ([bazsi](https://github.com/bazsi))
+- 3.6/f/docbook xsl enable option [\#440](https://github.com/balabit/syslog-ng/pull/440) ([ngergo](https://github.com/ngergo))
+- python: fixed sngexample.py indentation [\#438](https://github.com/balabit/syslog-ng/pull/438) ([borsitsb](https://github.com/borsitsb))
+- Docbook: the lack of `--enable-manpages` option [\#435](https://github.com/balabit/syslog-ng/pull/435) ([ngergo](https://github.com/ngergo))
+- Docbook: there was a hardcoded path that caused build to fail if docbook is not on that path. [\#431](https://github.com/balabit/syslog-ng/pull/431) ([ngergo](https://github.com/ngergo))
+- F/debugger cli delegated to python [\#425](https://github.com/balabit/syslog-ng/pull/425) ([bazsi](https://github.com/bazsi))
+- syslog-ng-ctl: added counter reset capability  [\#422](https://github.com/balabit/syslog-ng/pull/422) ([dnsjts](https://github.com/dnsjts))
+- afsmtp: recipients are templatable now. [\#419](https://github.com/balabit/syslog-ng/pull/419) ([hkrist](https://github.com/hkrist))
+- 3.7/queue full message fix [\#416](https://github.com/balabit/syslog-ng/pull/416) ([juhaszviktor](https://github.com/juhaszviktor))
+- 3.6/queue full message fix [\#415](https://github.com/balabit/syslog-ng/pull/415) ([juhaszviktor](https://github.com/juhaszviktor))
+- f/riemann-attribute-option-fix-patchport [\#413](https://github.com/balabit/syslog-ng/pull/413) ([ngergo](https://github.com/ngergo))
+- java-dest: do not cause confguration error if older java version was fou... [\#412](https://github.com/balabit/syslog-ng/pull/412) ([juhaszviktor](https://github.com/juhaszviktor))
+- java-version: because of dron.io we should agree jdk 1.6 [\#411](https://github.com/balabit/syslog-ng/pull/411) ([juhaszviktor](https://github.com/juhaszviktor))
+- F/java dest [\#409](https://github.com/balabit/syslog-ng/pull/409) ([juhaszviktor](https://github.com/juhaszviktor))
+- Origin/issue\#402 [\#408](https://github.com/balabit/syslog-ng/pull/408) ([ngergo](https://github.com/ngergo))
+- logmsg: when ack is not requested do not call the ack function [\#405](https://github.com/balabit/syslog-ng/pull/405) ([lbudai](https://github.com/lbudai))
+- external\_input\_thread: add possibility to create logthreaded source [\#404](https://github.com/balabit/syslog-ng/pull/404) ([dnsjts](https://github.com/dnsjts))
+- F/uniqid [\#400](https://github.com/balabit/syslog-ng/pull/400) ([lbudai](https://github.com/lbudai))
+- log\_threaded\_destination: initialize watches before worker\_thread\_init\(\) [\#399](https://github.com/balabit/syslog-ng/pull/399) ([juhaszviktor](https://github.com/juhaszviktor))
+- syslog-ng-ctl/Makefile.am: Add \_DEPENDENCIES for parallel build [\#397](https://github.com/balabit/syslog-ng/pull/397) ([algernon](https://github.com/algernon))
+- RabbitMQ submodule changed to the upstream. [\#393](https://github.com/balabit/syslog-ng/pull/393) ([ngergo](https://github.com/ngergo))
+- F/python template functions [\#392](https://github.com/balabit/syslog-ng/pull/392) ([bazsi](https://github.com/bazsi))
+- affile: fix crash at the first message delivery when templates are used ... [\#391](https://github.com/balabit/syslog-ng/pull/391) ([bazsi](https://github.com/bazsi))
+- RabbitMQ module changed to the upstream. [\#389](https://github.com/balabit/syslog-ng/pull/389) ([ngergo](https://github.com/ngergo))
+- F/python [\#387](https://github.com/balabit/syslog-ng/pull/387) ([bazsi](https://github.com/bazsi))
+- F/dbparser load fixes [\#386](https://github.com/balabit/syslog-ng/pull/386) ([bazsi](https://github.com/bazsi))
+- configure.ac: fix compilation where the monolitic libsystemd is not avai... [\#382](https://github.com/balabit/syslog-ng/pull/382) ([bazsi](https://github.com/bazsi))
+- f/debugger [\#381](https://github.com/balabit/syslog-ng/pull/381) ([bazsi](https://github.com/bazsi))
+- csvparser: add missing | to `csvparser-grammar.ym`, because the delimiters\(","\) syntax didn't work [\#380](https://github.com/balabit/syslog-ng/pull/380) ([ihrwein](https://github.com/ihrwein))
+- F/fix base8 encoding for chars below 32 [\#377](https://github.com/balabit/syslog-ng/pull/377) ([bazsi](https://github.com/bazsi))
+- afstomp: fix destination port [\#376](https://github.com/balabit/syslog-ng/pull/376) ([bazsi](https://github.com/bazsi))
+- F/csv string delimeter [\#373](https://github.com/balabit/syslog-ng/pull/373) ([ihrwein](https://github.com/ihrwein))
+- json: accept more characters in `extract-prefix` for `json-parser\(\)` [\#371](https://github.com/balabit/syslog-ng/pull/371) ([vincentbernat](https://github.com/vincentbernat))
+- syslog-ng: set OpenSSL as a hard dependency [\#368](https://github.com/balabit/syslog-ng/pull/368) ([lbudai](https://github.com/lbudai))
+- F/syslog debun [\#364](https://github.com/balabit/syslog-ng/pull/364) ([pasztor](https://github.com/pasztor))
+- syslog-ng debug bundle generator script & README [\#363](https://github.com/balabit/syslog-ng/pull/363) ([pasztor](https://github.com/pasztor))
+- redis: free reply object after a succesful ping [\#359](https://github.com/balabit/syslog-ng/pull/359) ([ihrwein](https://github.com/ihrwein))
+- scl/scl.conf: Do not force "plugin.conf" when including [\#358](https://github.com/balabit/syslog-ng/pull/358) ([algernon](https://github.com/algernon))
+- systemd-journal: Fix the failing test cases [\#354](https://github.com/balabit/syslog-ng/pull/354) ([algernon](https://github.com/algernon))
+- F/fixes from 3.6 [\#351](https://github.com/balabit/syslog-ng/pull/351) ([lbudai](https://github.com/lbudai))
+- 3.6/f/3.7 backports [\#350](https://github.com/balabit/syslog-ng/pull/350) ([lbudai](https://github.com/lbudai))
+- travis: run 'make distcheck' instead of 'make check' [\#349](https://github.com/balabit/syslog-ng/pull/349) ([lbudai](https://github.com/lbudai))
+- template: added common-template-typedefs.h to lib/template/Makefile.am [\#348](https://github.com/balabit/syslog-ng/pull/348) ([lbudai](https://github.com/lbudai))
+- Fix typo [\#347](https://github.com/balabit/syslog-ng/pull/347) ([seanhussey](https://github.com/seanhussey))
+- templates: common typedef\(s\) moved to common-template-typedefs.h [\#346](https://github.com/balabit/syslog-ng/pull/346) ([lbudai](https://github.com/lbudai))
+- afsql: Fixed memleak in `afsql\_dd\_insert\_db\(\)`. [\#343](https://github.com/balabit/syslog-ng/pull/343) ([lbudai](https://github.com/lbudai))
+- afprog: kill program destination before stopping syslog-ng [\#342](https://github.com/balabit/syslog-ng/pull/342) ([lbudai](https://github.com/lbudai))
+- afinet: max packet length for spoof source is set to 1024 [\#341](https://github.com/balabit/syslog-ng/pull/341) ([lbudai](https://github.com/lbudai))
+- filter: add new ipv6 netmask filter by "netmask6" tag [\#338](https://github.com/balabit/syslog-ng/pull/338) ([deirf](https://github.com/deirf))
+- logmsg: added HOSTID [\#337](https://github.com/balabit/syslog-ng/pull/337) ([lbudai](https://github.com/lbudai))
+- F/control socket refactor [\#336](https://github.com/balabit/syslog-ng/pull/336) ([juhaszviktor](https://github.com/juhaszviktor))
+- 3.6/f/fix warnings [\#335](https://github.com/balabit/syslog-ng/pull/335) ([bazsi](https://github.com/bazsi))
+- Makefile: remove explicit libsyslog-ng-crypto references [\#334](https://github.com/balabit/syslog-ng/pull/334) ([bazsi](https://github.com/bazsi))
+- 3.6/f/unix stream spinning fix [\#332](https://github.com/balabit/syslog-ng/pull/332) ([bazsi](https://github.com/bazsi))
+- Silence two annoying startup messages [\#330](https://github.com/balabit/syslog-ng/pull/330) ([algernon](https://github.com/algernon))
+- F/fix segfault for self referencing values [\#328](https://github.com/balabit/syslog-ng/pull/328) ([bazsi](https://github.com/bazsi))
+- service-management: if previous code was compiled with ENABLE\_SYSTEMD, [\#327](https://github.com/balabit/syslog-ng/pull/327) ([juhaszviktor](https://github.com/juhaszviktor))
+- systemd-journal: Prefer SYSLOG\_IDENTIFIER over \_COMM [\#325](https://github.com/balabit/syslog-ng/pull/325) ([algernon](https://github.com/algernon))
+- configure.ac: Add an --enable-all-modules option [\#324](https://github.com/balabit/syslog-ng/pull/324) ([algernon](https://github.com/algernon))
+- riemann: Add batched event sending support [\#322](https://github.com/balabit/syslog-ng/pull/322) ([algernon](https://github.com/algernon))
+- riemann: Do not crash without attributes\(\) set [\#321](https://github.com/balabit/syslog-ng/pull/321) ([algernon](https://github.com/algernon))
+- Add support for the monolithic libsystemd library [\#320](https://github.com/balabit/syslog-ng/pull/320) ([algernon](https://github.com/algernon))
+- systemd: remove syslog.socket references from service file [\#316](https://github.com/balabit/syslog-ng/pull/316) ([ihrwein](https://github.com/ihrwein))
+- F/unix stream spinning fix [\#313](https://github.com/balabit/syslog-ng/pull/313) ([bazsi](https://github.com/bazsi))
+- F/fix warnings [\#310](https://github.com/balabit/syslog-ng/pull/310) ([bazsi](https://github.com/bazsi))
+- Makefile: remove explicit libsyslog-ng-crypto references [\#309](https://github.com/balabit/syslog-ng/pull/309) ([bazsi](https://github.com/bazsi))
+- timeutils: fix bad pointer cast that leads to timestamp overwriting [\#305](https://github.com/balabit/syslog-ng/pull/305) ([lbudai](https://github.com/lbudai))
+- afsocket: fix for platforms which not support credential passing [\#303](https://github.com/balabit/syslog-ng/pull/303) ([lbudai](https://github.com/lbudai))
+- F/solaris msg id parsing [\#302](https://github.com/balabit/syslog-ng/pull/302) ([bazsi](https://github.com/bazsi))
+- db-parser: use additional \<value\> tags in pdbtool match --debug-pattern [\#301](https://github.com/balabit/syslog-ng/pull/301) ([bazsi](https://github.com/bazsi))
+- F/patterndb prefer complete match [\#300](https://github.com/balabit/syslog-ng/pull/300) ([bazsi](https://github.com/bazsi))
+- F/patterndb lookup refactor [\#297](https://github.com/balabit/syslog-ng/pull/297) ([bazsi](https://github.com/bazsi))
+- scl/scl.conf: Use a wildcard to include SCL snippets [\#296](https://github.com/balabit/syslog-ng/pull/296) ([algernon](https://github.com/algernon))
+- afsmtp: linkage order fixed [\#295](https://github.com/balabit/syslog-ng/pull/295) ([lbudai](https://github.com/lbudai))
+- 3.6/tlscontext fix [\#293](https://github.com/balabit/syslog-ng/pull/293) ([lbudai](https://github.com/lbudai))
+- 3.6/f/afsql transaction fixes [\#292](https://github.com/balabit/syslog-ng/pull/292) ([lbudai](https://github.com/lbudai))
+- F/inherit property context [\#291](https://github.com/balabit/syslog-ng/pull/291) ([bazsi](https://github.com/bazsi))
+- F/dbparser testing [\#289](https://github.com/balabit/syslog-ng/pull/289) ([bazsi](https://github.com/bazsi))
+- loggen: add --permanent \(-T\) parameter to send logs indefinitely [\#285](https://github.com/balabit/syslog-ng/pull/285) ([ihrwein](https://github.com/ihrwein))
+- logpipe: do not reset config when pipe is deinited [\#282](https://github.com/balabit/syslog-ng/pull/282) ([lbudai](https://github.com/lbudai))
+- dbparser: If there is no context, we should apply conditions as well for... [\#280](https://github.com/balabit/syslog-ng/pull/280) ([talien](https://github.com/talien))
+- riemann: Always exclude attributes that conflict with properties [\#279](https://github.com/balabit/syslog-ng/pull/279) ([algernon](https://github.com/algernon))
+- riemann: Skip empty fields [\#278](https://github.com/balabit/syslog-ng/pull/278) ([talien](https://github.com/talien))
+- main: do not intialize mainloop when only syntax-check is required [\#277](https://github.com/balabit/syslog-ng/pull/277) ([lbudai](https://github.com/lbudai))
+- rewrite: Only ref condition filter, if it is not NULL. [\#269](https://github.com/balabit/syslog-ng/pull/269) ([talien](https://github.com/talien))
+- F/reach value by name [\#267](https://github.com/balabit/syslog-ng/pull/267) ([juhaszviktor](https://github.com/juhaszviktor))
+- F/journald fixes [\#263](https://github.com/balabit/syslog-ng/pull/263) ([juhaszviktor](https://github.com/juhaszviktor))
+- 3.5/f/filter abort fix [\#252](https://github.com/balabit/syslog-ng/pull/252) ([bazsi](https://github.com/bazsi))
+- filters: Make in-list\(\) more portable [\#239](https://github.com/balabit/syslog-ng/pull/239) ([algernon](https://github.com/algernon))
+- systemd-journal: if prefix is set, do not set prefixed key as link to th... [\#238](https://github.com/balabit/syslog-ng/pull/238) ([juhaszviktor](https://github.com/juhaszviktor))
+- cryptofuncs: Changed hash template function default algorithm to sha256. [\#237](https://github.com/balabit/syslog-ng/pull/237) ([talien](https://github.com/talien))
+- systemd-journal: make log\_fetch\_limit option available via config file [\#233](https://github.com/balabit/syslog-ng/pull/233) ([juhaszviktor](https://github.com/juhaszviktor))
+- systemd-journald: remove reference to non-existing header file [\#232](https://github.com/balabit/syslog-ng/pull/232) ([juhaszviktor](https://github.com/juhaszviktor))
+- afsocket: syslog-ng receives credentials via UDS only on FreeBSD and on ... [\#231](https://github.com/balabit/syslog-ng/pull/231) ([lbudai](https://github.com/lbudai))
