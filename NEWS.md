@@ -29,7 +29,6 @@ a tool. Final changelog will be more sophisticated (and will
 - HTTP destination driver in Java [\#539](https://github.com/balabit/syslog-ng/issues/539)
 - HTTP destination driver in Python [\#534](https://github.com/balabit/syslog-ng/issues/534)
 - drone.yml configuration file for drone.io build [\#485](https://github.com/balabit/syslog-ng/issues/485)
-- Enhancement: geoip support for lon/lat [\#467](https://github.com/balabit/syslog-ng/issues/467)
 - osquery "source" for syslog-ng [\#418](https://github.com/balabit/syslog-ng/issues/418)
 - Please do not chown/chmod if the log file is a device like e.g. /dev/null [\#383](https://github.com/balabit/syslog-ng/issues/383)
 - Enhancement: riemann destination: support for batching / pipelining [\#284](https://github.com/balabit/syslog-ng/issues/284)
