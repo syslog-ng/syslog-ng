@@ -4,3 +4,5 @@ usr/lib/syslog-ng/syslog-ng/libtest/libsyslog-ng-test.a
 usr/lib/**/syslog-ng.pc
 usr/lib/**/syslog-ng-test.pc
 usr/share/syslog-ng/tools
+usr/lib/syslog-ng/libsyslog-ng-native-connector.a
+usr/lib/**/syslog-ng-native-connector.pc
