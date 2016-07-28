@@ -41,7 +41,6 @@ a tool. Final changelog will be more sophisticated (and will
 - docbugs: Specifying data types in value-pairs [\#219](https://github.com/balabit/syslog-ng/issues/219)
 - Add a CONTRIBUTORS.md file [\#205](https://github.com/balabit/syslog-ng/issues/205)
 - LogThrDestDriver: Centralize message accept / drop [\#201](https://github.com/balabit/syslog-ng/issues/201)
-- Enhancement: afsmtp: make to\(\) templateable [\#197](https://github.com/balabit/syslog-ng/issues/197)
 - libsyslog-ng versioning [\#190](https://github.com/balabit/syslog-ng/issues/190)
 - Enhancement: csv-parser multichar delimiter [\#168](https://github.com/balabit/syslog-ng/issues/168)
 - Enhancement: separate actions from rules in patterndb [\#131](https://github.com/balabit/syslog-ng/issues/131)
