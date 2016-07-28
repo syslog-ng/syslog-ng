@@ -39,7 +39,6 @@ a tool. Final changelog will be more sophisticated (and will
 - LogThrDestDriver: Centralize message accept / drop [\#201](https://github.com/balabit/syslog-ng/issues/201)
 - libsyslog-ng versioning [\#190](https://github.com/balabit/syslog-ng/issues/190)
 - Enhancement: csv-parser multichar delimiter [\#168](https://github.com/balabit/syslog-ng/issues/168)
-- pdbtool merge generates XML with version 3 [\#109](https://github.com/balabit/syslog-ng/issues/109)
 - Enhancement: PRI template function [\#102](https://github.com/balabit/syslog-ng/issues/102)
 - Support mongodb connection over SSL [\#75](https://github.com/balabit/syslog-ng/issues/75)
 - F/fix test kv parser va arg portability [\#1117](https://github.com/balabit/syslog-ng/pull/1117) ([bkil-syslogng](https://github.com/bkil-syslogng))
