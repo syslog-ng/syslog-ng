@@ -62,6 +62,13 @@ _fetch_next_without_prefix(ContextualDataRecordScanner *
 }
 
 static gboolean
+_is_whole_record_parsed(CSVScanner *line_scanner)
+{
+  csv_scanner_scan_next(line_scanner);
+  return csv_scanner_is_scan_finished(line_scanner);
+}
+
+static gboolean
 _get_next_record(ContextualDataRecordScanner *s, const gchar *input,
                  ContextualDataRecord *next_record)
 {
@@ -77,7 +84,7 @@ _get_next_record(ContextualDataRecordScanner *s, const gchar *input,
   if (!_fetch_next_without_prefix(s, &next_record->value))
     return FALSE;
 
-  return TRUE;
+  return _is_whole_record_parsed(line_scanner);
 }
 
 const ContextualDataRecord *
@@ -108,12 +115,12 @@ csv_contextual_data_record_scanner_new()
   const gchar *column_array[] = { "selector", "name", "value", NULL };
   csv_scanner_options_set_columns(&self->options,
                                   string_array_to_list(column_array));
-  csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
+  csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE | CSV_SCANNER_DROP_INVALID);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
   csv_scanner_state_init(&self->scanner, &self->options);
   self->super.scanner = &self->scanner;
   self->super.get_next = get_next_record;
   self->super.free_fn = csv_contextual_data_record_scanner_free;
-  
+
   return &self->super;
 }
