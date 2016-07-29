@@ -288,6 +288,29 @@ test_import_with_invalid_csv_content(void)
   contextual_data_record_scanner_free(scanner);
 }
 
+static void
+test_import_with_csv_contains_invalid_line(void)
+{
+  gchar csv_content[] = "selector1,name1,value1\n"
+                        ",,value1.1\n";
+  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  ContextInfoDB *db = context_info_db_new();
+
+  ContextualDataRecordScanner *scanner =
+    create_contextual_data_record_scanner_by_type("csv");
+
+  assert_false(context_info_db_import(db, fp, scanner),
+               "Sucessfully import an invalid CSV file.");
+  assert_false(context_info_db_is_loaded(db),
+               "The context_info_db_is_loaded reports True after a failing import operation. ");
+  assert_false(context_info_db_is_indexed(db),
+               "The context_info_db_is_indexed reports True after failing import&load operations.");
+
+  fclose(fp);
+  context_info_db_free(db);
+  contextual_data_record_scanner_free(scanner);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -299,6 +322,7 @@ main(int argc, char **argv)
   CONTEXT_INFO_DB_TESTCASE(test_inserted_nv_pairs);
   CONTEXT_INFO_DB_TESTCASE(test_import_with_valid_csv);
   CONTEXT_INFO_DB_TESTCASE(test_import_with_invalid_csv_content);
+  CONTEXT_INFO_DB_TESTCASE(test_import_with_csv_contains_invalid_line);
 
   return 0;
 }

@@ -44,10 +44,9 @@ _fetch_next_with_prefix(ContextualDataRecordScanner *record_scanner,
   CSVScanner *line_scanner = (CSVScanner *) record_scanner->scanner;
   if (!csv_scanner_scan_next(line_scanner))
     {
-      contextual_data_record_clean(&record_scanner->last_record);
       return FALSE;
     }
-  gchar* next = _csv_scanner_dup_current_value_with_prefix(line_scanner, prefix);
+  gchar *next = _csv_scanner_dup_current_value_with_prefix(line_scanner, prefix);
   *target = g_string_new(next);
   g_free(next);
 
@@ -56,7 +55,7 @@ _fetch_next_with_prefix(ContextualDataRecordScanner *record_scanner,
 
 static gboolean
 _fetch_next_without_prefix(ContextualDataRecordScanner *
-                                  record_scanner, GString **target)
+                           record_scanner, GString **target)
 {
   return _fetch_next_with_prefix(record_scanner, target, NULL);
 }
@@ -68,32 +67,22 @@ _is_whole_record_parsed(CSVScanner *line_scanner)
   return csv_scanner_is_scan_finished(line_scanner);
 }
 
-static gboolean
-_get_next_record(ContextualDataRecordScanner *s, const gchar *input,
-                 ContextualDataRecord *next_record)
+const gboolean
+get_next_record(ContextualDataRecordScanner *s, const gchar *input, ContextualDataRecord *record)
 {
   CSVScanner *line_scanner = (CSVScanner *) s->scanner;
   csv_scanner_input(line_scanner, input);
 
-  if (!_fetch_next_without_prefix(s, &next_record->selector))
+  if (!_fetch_next_without_prefix(s, &record->selector))
     return FALSE;
 
-  if (!_fetch_next_with_prefix(s, &next_record->name, s->name_prefix))
+  if (!_fetch_next_with_prefix(s, &record->name, s->name_prefix))
     return FALSE;
 
-  if (!_fetch_next_without_prefix(s, &next_record->value))
+  if (!_fetch_next_without_prefix(s, &record->value))
     return FALSE;
 
   return _is_whole_record_parsed(line_scanner);
-}
-
-const ContextualDataRecord *
-get_next_record(ContextualDataRecordScanner *self, const gchar *input)
-{
-  if (!_get_next_record(self, input, &self->last_record))
-    return NULL;
-
-  return &self->last_record;
 }
 
 static void
