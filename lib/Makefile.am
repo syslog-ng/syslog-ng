@@ -46,7 +46,7 @@ if IVYKIS_INTERNAL
 lib_libsyslog_ng_la_DEPENDENCIES	= lib/ivykis/src/libivykis.la
 
 lib/ivykis/src/libivykis.la:
-	${MAKE} CFLAGS="${CFLAGS} -Wno-error=unused-result" -C lib/ivykis
+	${MAKE} CFLAGS="${CFLAGS} -Wno-error" -C lib/ivykis
 
 CLEAN_SUBDIRS				+= @IVYKIS_SUBDIRS@
 
