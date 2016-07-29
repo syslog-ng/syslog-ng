@@ -37,7 +37,6 @@ _serialize_message(LogMessageSerializationState *state)
 {
   LogMessage *msg = state->msg;
   SerializeArchive *sa = state->sa;
-  gint i = 0;
 
   serialize_write_uint8(sa, state->version);
   serialize_write_uint64(sa, msg->rcptid);
@@ -52,8 +51,7 @@ _serialize_message(LogMessageSerializationState *state)
   serialize_write_uint8(sa, msg->num_matches);
   serialize_write_uint8(sa, msg->num_sdata);
   serialize_write_uint8(sa, msg->alloc_sdata);
-  for (i = 0; i < msg->num_sdata; i++)
-    serialize_write_uint32(sa, msg->sdata[i]);
+  serialize_write_uint32_array(sa, (guint32 *) msg->sdata, msg->num_sdata);
   nv_table_serialize(state, msg->payload);
   return TRUE;
 }
@@ -72,8 +70,6 @@ log_msg_serialize(LogMessage *self, SerializeArchive *sa)
 static gboolean
 _deserialize_sdata(LogMessage *self, SerializeArchive *sa)
 {
-  gint i;
-
   if (!serialize_read_uint8(sa, &self->num_sdata))
       return FALSE;
 
@@ -81,12 +77,7 @@ _deserialize_sdata(LogMessage *self, SerializeArchive *sa)
     return FALSE;
 
   self->sdata = (NVHandle*) g_malloc(sizeof(NVHandle)*self->alloc_sdata);
-
-  for (i = 0; i < self->num_sdata; i++)
-    {
-      if (!serialize_read_uint32(sa, (guint32 *)(&self->sdata[i])))
-        return FALSE;
-    }
+  serialize_read_uint32_array(sa, (guint32 *) self->sdata, self->num_sdata);
   return TRUE;
 }
 

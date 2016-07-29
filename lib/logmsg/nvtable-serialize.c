@@ -33,18 +33,6 @@
 #include <string.h>
 
 
-static gboolean
-serialize_read_nvhandle(SerializeArchive *sa, NVHandle* handle)
-{
-  return serialize_read_uint32(sa, handle);
-}
-
-static gboolean
-serialize_write_nvhandle(SerializeArchive *sa, NVHandle handle)
-{
-  return serialize_write_uint32(sa, handle);
-}
-
 typedef struct _NVTableMetaData
 {
   guint32 magic;
@@ -56,35 +44,21 @@ typedef struct _NVTableMetaData
  **********************************************************************/
 
 static gboolean
-_deserialize_dyn_value(SerializeArchive *sa, NVIndexEntry* dyn_value)
-{
-  return serialize_read_nvhandle(sa, &(dyn_value->handle)) &&
-         serialize_read_uint32(sa, &(dyn_value->ofs));
-};
-
-static gboolean
 _deserialize_static_entries(SerializeArchive *sa, NVTable *res)
 {
-  guint32 i;
-  for (i = 0; i < res->num_static_entries; i++)
-     {
-       if (!serialize_read_uint32(sa, &res->static_entries[i]))
-         return FALSE;
-     }
+  if (!serialize_read_uint32_array(sa, res->static_entries, res->num_static_entries))
+    return FALSE;
   return TRUE;
 }
 
 static gboolean
 _deserialize_dynamic_entries(SerializeArchive *sa, NVTable *res)
 {
-  guint32 i;
   NVIndexEntry *index_table;
+
   index_table = nv_table_get_index(res);
-  for (i = 0; i < res->index_size; i++)
-    {
-      if (!_deserialize_dyn_value(sa, &index_table[i]))
-        return FALSE;
-    }
+  if (!serialize_read_uint32_array(sa, (guint32 *) index_table, res->index_size * 2))
+    return FALSE;
   return TRUE;
 }
 
@@ -229,33 +203,15 @@ error:
  * serialize an NVTable
  **********************************************************************/
 
-
-static void
-_serialize_nv_dyn_value(SerializeArchive *sa, NVIndexEntry *dyn_value)
-{
-  serialize_write_nvhandle(sa, dyn_value->handle);
-  serialize_write_uint32(sa, dyn_value->ofs);
-};
-
 static void
 _write_struct(SerializeArchive *sa, NVTable *self)
 {
-  guint16 i;
-  NVIndexEntry *index_table;
-
   serialize_write_uint32(sa, self->size);
   serialize_write_uint32(sa, self->used);
   serialize_write_uint16(sa, self->index_size);
   serialize_write_uint8(sa, self->num_static_entries);
-  for (i = 0; i < self->num_static_entries; i++)
-    {
-      serialize_write_uint32(sa, self->static_entries[i]);
-    }
-  index_table = nv_table_get_index(self);
-  for (i = 0; i < self->index_size; i++)
-    {
-      _serialize_nv_dyn_value(sa, &index_table[i]);
-    }
+  serialize_write_uint32_array(sa, self->static_entries, self->num_static_entries);
+  serialize_write_uint32_array(sa, (guint32 *) nv_table_get_index(self), self->index_size * 2);
 }
 
 static void
