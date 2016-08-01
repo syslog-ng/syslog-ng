@@ -40,6 +40,14 @@ contextual_data_record_scanner_set_name_prefix(ContextualDataRecordScanner *
 }
 
 void
+contextual_data_record_init(ContextualDataRecord *record)
+{
+  record->selector = NULL;
+  record->name = NULL;
+  record->value = NULL;
+}
+
+void
 contextual_data_record_clean(ContextualDataRecord *record)
 {
   if (record->selector)
@@ -50,6 +58,8 @@ contextual_data_record_clean(ContextualDataRecord *record)
 
   if (record->value)
     g_string_free(record->value, TRUE);
+
+  contextual_data_record_init(record);
 }
 
 ContextualDataRecordScanner *
@@ -69,5 +79,22 @@ create_contextual_data_record_scanner_by_type(const gchar *type)
     msg_warning("Unknown ContextualDataRecordScanner",
                 evt_tag_str("type", type));
 
+
   return scanner;
+}
+
+ContextualDataRecord *
+contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const gchar *input)
+{
+  if (!self->get_next)
+    return NULL;
+
+  contextual_data_record_init(&self->last_record);
+  if (!self->get_next(self, input, &self->last_record))
+    {
+      contextual_data_record_clean(&self->last_record);
+      return NULL;
+    }
+
+  return &self->last_record;
 }

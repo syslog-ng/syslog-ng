@@ -257,7 +257,7 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
     {
       if (line_buf[n - 1] == '\n')
         line_buf[n - 1] = '\0';
-      next_record = scanner->get_next(scanner, line_buf);
+      next_record = contextual_data_record_scanner_get_next(scanner, line_buf);
       if (!next_record)
         {
           context_info_db_purge(self);
