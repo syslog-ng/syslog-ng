@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 gint
 pdb_file_detect_version(const gchar *pdbfile, GError **error)
