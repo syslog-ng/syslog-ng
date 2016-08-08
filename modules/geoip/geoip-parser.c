@@ -168,7 +168,10 @@ geoip_parser_init(LogPipe *s)
 
   geoip_parser_reset_fields(self);
 
-  self->gi = GeoIP_open(self->database, GEOIP_MMAP_CACHE);
+  if (self->database)
+    self->gi = GeoIP_open(self->database, GEOIP_MMAP_CACHE);
+  else
+    self->gi = GeoIP_new(GEOIP_MMAP_CACHE);
 
   if (!self->gi)
     return FALSE;
@@ -186,7 +189,6 @@ geoip_parser_new(GlobalConfig *cfg)
   self->super.super.clone = geoip_parser_clone;
   self->super.process = geoip_parser_process;
 
-  geoip_parser_set_database(&self->super, "/usr/share/GeoIP/GeoIP.dat");
   geoip_parser_set_prefix(&self->super, ".geoip.");
 
   return &self->super;

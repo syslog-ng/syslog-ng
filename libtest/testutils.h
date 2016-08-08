@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <libgen.h>
 #include "logmsg/logmsg.h"
 
 #define PRETTY_STRING_FORMAT "%s%s%s"
