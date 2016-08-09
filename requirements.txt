@@ -4,3 +4,15 @@ pep8==1.6.2
 pylint==1.5.0
 astroid==1.4.0
 logilab-common<=0.63.0
+coloredlogs
+pystache
+pytest
+datadiff
+psutil
+pytest-cov
+pytest-mock
+pytest-xdist
+coverage
+clonedigger-jl
+pyreverse
+pycallgraph
