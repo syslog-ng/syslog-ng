@@ -43,3 +43,4 @@ m4/ax*.m4
 .pyc
 .idea
 __pycache__
+tests/pytest/testdb_configuration.ini
