@@ -9,7 +9,7 @@ class ConfigGenerator(object):
     def __init__(self):
         testdb_config_reader = TestdbConfigReader()
         self.config = {
-            "version": "%s" % testdb_config_reader.get_testdb_version(),
+            "version": "%s" % testdb_config_reader.get_config_version(),
             "global_options": [],
             "source_groups": [],
             "parser_groups": [],
