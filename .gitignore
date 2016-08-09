@@ -38,3 +38,8 @@ m4/ax*.m4
 /test-driver
 .deps
 /lib/cfg-grammar.h
+.coverage
+.cache
+.pyc
+.idea
+__pycache__
