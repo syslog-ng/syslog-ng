@@ -88,15 +88,6 @@ typedef unsigned int _uint;
 #define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
 #define isleap_sum(a, b)	isleap((a) % 400 + (b) % 400)
 
-#define GET_OFFSET_FROM_UTC *tm_gmtoff = -(timezone)
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <sys/param.h>
-#if defined(BSD)
-#define GET_OFFSET_FROM_UTC -(tm->tm_gmtoff)
-#else
-#endif
-#endif
-
 
 typedef struct {
         const char *abday[7];
@@ -520,7 +511,9 @@ literal:
 				ep = find_string(bp, &i, (const char * const *)tzname, NULL, 2);
                 if (ep != NULL) {
 					tm->tm_isdst = i;
-					GET_OFFSET_FROM_UTC;
+					#ifdef SYSLOG_NG_HAVE_TIMEZONE
+					*tm_gmtoff = -(timezone);
+					#endif
 					*tm_zone = tzname[i];
 				}
 				bp = ep;
