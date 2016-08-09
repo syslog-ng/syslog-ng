@@ -9,45 +9,65 @@ class FileBasedProcessor(object):
     def __init__(self):
         self.monitoring_time = 2  # 1 sec
         self.poll_freq = 0.001  # 0.001 sec
-        self.path_handler = SyslogNgPathHandler()
+        # self.path_handler = SyslogNgPathHandler()
         self.global_config = None
         self.written_files = []
 
     def set_global_config(self, global_config):
         self.global_config = global_config
 
-    def write_message_to_file(self, file_path, input_message, driver_name=None):
-        file_path = file_path.replace('"', '')
+    def create_file_with_content(self, file_path, content):
         self.written_files.append(file_path)
-        if driver_name == "program":
+        logging.info("Write file: [%s] with content: [%s]" % (file_path, content))
+        with open(file_path, "w") as file_object:
+            file_object.write(content)
+            file_object.flush()
+
+    def delete_file(self, path):
+        logging.info("Deleting file: [%s]" % path)
+        if os.path.exists(path):
             try:
-                with open(file_path, "a") as file_object:
-                    file_object.write("#!/bin/bash\necho '%s'\n" % input_message)
-                    file_object.flush()
-                file_object.close()
-                os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
-            except IOError as error:
-                pass
-        else:
-            if "@version" in input_message:
-                with open(file_path, 'w') as file_object:
-                    file_object.write("%s\n" % input_message)
-                    file_object.flush()
-            else:
-                with open(file_path, 'a') as file_object:
-                    file_object.write("%s\n" % input_message)
-                    file_object.flush()
-        logging.info("Message written to file. Message: [%s], File: [%s]" % (input_message, file_path))
+                os.remove(path)
+            except OSError as error:
+                logging.error("File can not be deleted: [%s], error: [%s]" % (path, error))
 
-    def count_lines_in_file(self, file_path):
-        pass
 
-    def dump_file_content(self, file_path, mode=None):
-        file_path = file_path.replace('"', '')
-        logging.warning("Dumped file content: %s" % file_path)
-        with open(file_path) as file_object:
-            for line in file_object.readlines():
-                print(line.strip())
+    def delete_written_files(self):
+        for written_file in self.written_files:
+            self.delete_file(path=written_file)
+
+    # def write_message_to_file(self, file_path, input_message, driver_name=None):
+    #     file_path = file_path.replace('"', '')
+    #     self.written_files.append(file_path)
+    #     if driver_name == "program":
+    #         try:
+    #             with open(file_path, "a") as file_object:
+    #                 file_object.write("#!/bin/bash\necho '%s'\n" % input_message)
+    #                 file_object.flush()
+    #             file_object.close()
+    #             os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
+    #         except IOError as error:
+    #             pass
+    #     else:
+    #         if "@version" in input_message:
+    #             with open(file_path, 'w') as file_object:
+    #                 file_object.write("%s\n" % input_message)
+    #                 file_object.flush()
+    #         else:
+    #             with open(file_path, 'a') as file_object:
+    #                 file_object.write("%s\n" % input_message)
+    #                 file_object.flush()
+    #     logging.info("Message written to file. Message: [%s], File: [%s]" % (input_message, file_path))
+
+    # def count_lines_in_file(self, file_path):
+    #     pass
+
+    # def dump_file_content(self, file_path, mode=None):
+    #     file_path = file_path.replace('"', '')
+    #     logging.warning("Dumped file content: %s" % file_path)
+    #     with open(file_path) as file_object:
+    #         for line in file_object.readlines():
+    #             print(line.strip())
 
     def get_messages_from_file(self, file_path):
         file_path = file_path.replace('"', '')
