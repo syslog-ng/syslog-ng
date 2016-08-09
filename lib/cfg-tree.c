@@ -1074,7 +1074,7 @@ _verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
 
       if (current_pipe_name != NULL)
         {
-          if (g_hash_table_contains(pipe_persist_names, current_pipe_name))
+          if (g_hash_table_lookup_extended(pipe_persist_names, current_pipe_name, NULL, NULL))
             {
               msg_error("Error checking the uniqueness of the persist names, please override it "
                         "with persist-name option. Shutting down.",
@@ -1084,7 +1084,9 @@ _verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
             }
           else
             {
-              g_hash_table_add(pipe_persist_names, (gpointer)current_pipe_name);
+              g_hash_table_replace(pipe_persist_names,
+                                   (gpointer)current_pipe_name,
+                                   (gpointer)current_pipe_name);
             }
         }
     }

@@ -23,6 +23,7 @@
 #include "context-info-db.h"
 #include "atomic.h"
 #include <string.h>
+#include <sys/types.h>
 
 struct _ContextInfoDB
 {
@@ -106,19 +107,34 @@ static void
 _new(ContextInfoDB *self)
 {
   self->data = g_array_new(FALSE, FALSE, sizeof(ContextualDataRecord));
-  g_array_set_clear_func(self->data, _record_free);
   self->index = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
   self->is_data_indexed = FALSE;
   g_atomic_counter_set(&self->ref_cnt, 1);
 }
 
 static void
+_free_array(GArray *array)
+{
+  for (gsize i = 0; i < array->len; ++i)
+    {
+      ContextualDataRecord current_record =
+        g_array_index(array, ContextualDataRecord, i);
+      _record_free(&current_record);
+    }
+  g_array_free(array, TRUE);
+}
+
+static void
 _free(ContextInfoDB *self)
 {
   if (self->index)
-    g_hash_table_unref(self->index);
+    {
+      g_hash_table_unref(self->index);
+    }
   if (self->data)
-    g_array_unref(self->data);
+    {
+      _free_array(self->data);
+    }
 }
 
 ContextInfoDB *
