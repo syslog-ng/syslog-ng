@@ -58,8 +58,8 @@
 #include <string.h>
 #include <stdint.h>
 
-typedef unsigned char u_char;
-typedef unsigned int uint;
+typedef unsigned char _u_char;
+typedef unsigned int _uint;
 
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 
@@ -135,8 +135,8 @@ static const _TimeLocale _DefaultTimeLocale =
 #define _TIME_LOCALE(loc) \
 	(&_DefaultTimeLocale)
 
-static const u_char *conv_num(const unsigned char *, int *, uint, uint);
-static const u_char *find_string(const u_char *, int *, const char * const *,
+static const _u_char *conv_num(const unsigned char *, int *, _uint, _uint);
+static const _u_char *find_string(const _u_char *, int *, const char * const *,
 	const char * const *, int);
 
 
@@ -210,7 +210,7 @@ strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtof
 	    day_offset = -1, week_offset = 0, offs;
 	const char *new_fmt;
 
-	bp = (const u_char *)buf;
+	bp = (const _u_char *)buf;
 
 	while (bp != NULL && (c = *fmt++) != '\0') {
 		/* Clear `alternate' modifier prior to new conversion. */
@@ -293,7 +293,7 @@ literal:
 			new_fmt = _TIME_LOCALE(loc)->d_fmt;
 			state |= S_MON | S_MDAY | S_YEAR;
 		    recurse:
-			bp = (const u_char *)strptime_with_tz((const char *)bp,
+			bp = (const _u_char *)strptime_with_tz((const char *)bp,
 							      new_fmt, tm, tm_gmtoff, tm_zone);
 			LEGAL_ALT(ALT_E);
 			continue;
@@ -508,12 +508,12 @@ literal:
 				*tm_zone = gmt;
 				bp += 3;
 			} else {
-				ep = find_string(bp, &i,
-                                                 (const char * const *)tzname,
-                                                 NULL, 2);
-                                if (ep != NULL) {
+				ep = find_string(bp, &i, (const char * const *)tzname, NULL, 2);
+                if (ep != NULL) {
 					tm->tm_isdst = i;
+					#ifdef SYSLOG_NG_HAVE_TIMEZONE
 					*tm_gmtoff = -(timezone);
+					#endif
 					*tm_zone = tzname[i];
 				}
 				bp = ep;
@@ -711,14 +711,14 @@ literal:
 }
 
 
-static const u_char *
-conv_num(const unsigned char *buf, int *dest, uint llim, uint ulim)
+static const _u_char *
+conv_num(const unsigned char *buf, int *dest, _uint llim, _uint ulim)
 {
-	uint result = 0;
+	_uint result = 0;
 	unsigned char ch;
 
 	/* The limit also determines the number of valid digits. */
-	uint rulim = ulim;
+	_uint rulim = ulim;
 
 	ch = *buf;
 	if (ch < '0' || ch > '9')
@@ -738,8 +738,8 @@ conv_num(const unsigned char *buf, int *dest, uint llim, uint ulim)
 	return buf;
 }
 
-static const u_char *
-find_string(const u_char *bp, int *tgt, const char * const *n1,
+static const _u_char *
+find_string(const _u_char *bp, int *tgt, const char * const *n1,
 		const char * const *n2, int c)
 {
 	int i;

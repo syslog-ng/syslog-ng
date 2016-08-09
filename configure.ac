@@ -1382,6 +1382,11 @@ fi
 PKG_CHECK_MODULES(UUID, uuid, enable_libuuid="yes", enable_libuuid="no")
 
 dnl ***************************************************************************
+dnl check if we have timezone variable in <time.h>
+dnl ***************************************************************************
+AC_VAR_TIMEZONE_EXTERNALS
+
+dnl ***************************************************************************
 dnl default modules to be loaded
 dnl ***************************************************************************
 
