@@ -1,3 +1,6 @@
+sudo: required
+dist: trusty
+
 language: c
 git:
   submodules: false
@@ -35,10 +38,12 @@ install:
       pkg-config
       python3
       python3-setuptools
-      python3-pip
       sqlite3
       xsltproc
-  - sudo pip install -r requirements.txt
+#~  - sudo easy_install3 pip
+#~ - sudo pip install -r requirements.txt
+  - sudo easy_install `cat requirements.txt`; true
+  - sudo easy_install3 `cat requirements.txt`; true
 before_script:
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
@@ -88,6 +93,8 @@ matrix:
   allow_failures:
     - os: osx
     - env: B=trusty-pytest
+  exclude:
+    - env: B=autotools
   include:
     - env: B=copyright-check
       sudo: false
@@ -97,19 +104,21 @@ matrix:
       script:
         - export COPYRIGHTVERBOSITY=2
         - tests/copyright/check.sh . .
-    - env: B=trusty-cmake
-      compiler: clang
-      dist: trusty
-      sudo: required
-      before_script:
-      script:
-        - mkdir build
-        - cd build
-        - cmake
-            -DCMAKE_C_FLAGS=-Werror
-            -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
-            ..
-        - make -j install
+
+    #~ - env: B=trusty-cmake
+      #~ compiler: clang
+      #~ dist: trusty
+      #~ sudo: required
+      #~ before_script:
+      #~ script:
+        #~ - mkdir build
+        #~ - cd build
+        #~ - cmake
+            #~ -DCMAKE_C_FLAGS=-Werror
+            #~ -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
+            #~ ..
+        #~ - make -j install
+
     - env: B=trusty-pytest
       compiler: clang
       dist: trusty
@@ -117,53 +126,54 @@ matrix:
       script:
         - make -j install
         - make pytest V=1
-    - env: B=check
-      os: osx
-      osx_image: xcode8
-      compiler: clang
-      install:
-        - brew update
-        - brew install
-            autoconf-archive
-            binutils
-            bison
-            eventlog
-            geoip
-            geoipupdate
-            glib
-            gradle
-            hiredis
-            libdbi
-            libnet
-            python
-            riemann-client
-        - geoipupdate
-        - pip install -r requirements.txt
-        - export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PATH
-        - export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
-      before_script:
-        - ./autogen.sh
-        - ./configure
-            --disable-sun-streams
-            --disable-systemd
-            --disable-pacct
-            --enable-all-modules
-            --disable-smtp
-        - make --keep-going -j 3 ||
-          {
-            S=$?;
-            make V=1;
-            return $S;
-          }
-      script:
-        - make --keep-going check ||
-          {
-            S=$?;
-            make V=1 check;
-            find . -name test-suite.log |
-            xargs cat;
-            return $S;
-          }
+
+    #~ - env: B=check
+      #~ os: osx
+      #~ osx_image: xcode8
+      #~ compiler: clang
+      #~ install:
+        #~ - brew update
+        #~ - brew install
+            #~ autoconf-archive
+            #~ binutils
+            #~ bison
+            #~ eventlog
+            #~ geoip
+            #~ geoipupdate
+            #~ glib
+            #~ gradle
+            #~ hiredis
+            #~ libdbi
+            #~ libnet
+            #~ python
+            #~ riemann-client
+        #~ - geoipupdate
+        #~ - pip install -r requirements.txt
+        #~ - export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PATH
+        #~ - export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+      #~ before_script:
+        #~ - ./autogen.sh
+        #~ - ./configure
+            #~ --disable-sun-streams
+            #~ --disable-systemd
+            #~ --disable-pacct
+            #~ --enable-all-modules
+            #~ --disable-smtp
+        #~ - make --keep-going -j 3 ||
+          #~ {
+            #~ S=$?;
+            #~ make V=1;
+            #~ return $S;
+          #~ }
+      #~ script:
+        #~ - make --keep-going check ||
+          #~ {
+            #~ S=$?;
+            #~ make V=1 check;
+            #~ find . -name test-suite.log |
+            #~ xargs cat;
+            #~ return $S;
+          #~ }
 
 branches:
   except:
