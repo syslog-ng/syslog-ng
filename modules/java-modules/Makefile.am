@@ -4,6 +4,7 @@ export GRADLE_OPTS
 
 JAVA_MOD_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar' -not -path "$(abs_top_builddir)/modules/java-modules/.gradle/*")
+JAVA_MODULES_INSTALLED_JARS=$(shell find $(JAVA_MOD_DST_DIR) -name '*.jar')
 GRADLE_WORKDIR=$(abs_top_builddir)/modules/java-modules/.gradle
 
 java-modules: $(SYSLOG_NG_CORE_JAR)
@@ -22,7 +23,7 @@ java-modules-install-exec-hook: log4j-copy-jar jest-copy-jar
 	cp $(MOD_JARS) $(JAVA_MOD_DST_DIR)
 
 java-modules-uninstall-exec-hook:
-	rm -f $(JAVA_MOD_DST_DIR)/*.jar
+	rm -f $(JAVA_MODULES_INSTALLED_JARS)
 
 java-modules-clean-hook:
 	rm -rf $(abs_top_builddir)/modules/java-modules/*.log
