@@ -47,6 +47,7 @@ typedef struct _AFStreamsSourceDriver
 #include <sys/strlog.h>
 #include <fcntl.h>
 #include <string.h>
+#include <errno.h>
 
 #if SYSLOG_NG_HAVE_DOOR_H
 #include <door.h>
