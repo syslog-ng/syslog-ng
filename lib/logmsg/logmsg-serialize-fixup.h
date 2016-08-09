@@ -1,8 +1,6 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
- * Copyright (c) 2012-2015 Viktor Juhasz <viktor.juhasz@balabit.com>
- * Copyright (c) 2012-2013 Viktor Tusa
+ * Copyright (c) 2016 Balabit
+ * Copyright (c) 2016 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,18 +22,11 @@
  *
  */
 
-#ifndef _NVTABLE_SERIALIZE_H
-#define _NVTABLE_SERIALIZE_H
+#ifndef _LOGMSG_SERIALIZE_FIXUP_H_INCLUDED
+#define _LOGMSG_SERIALIZE_FIXUP_H_INCLUDED
 
-#include "logmsg/nvtable.h"
 #include "logmsg/serialization.h"
 
-#define NV_TABLE_MAGIC_V2  "NVT2"
-#define NVT_SF_BE           0x1
-#define NVT_SUPPORTS_UNSET  0x2
-
-NVTable *nv_table_deserialize(LogMessageSerializationState *state);
-gboolean nv_table_serialize(LogMessageSerializationState *state, NVTable *self);
-gboolean nv_table_fixup_handles(LogMessageSerializationState *state);
+gboolean log_msg_fixup_handles_after_deserialization(LogMessageSerializationState *state);
 
 #endif

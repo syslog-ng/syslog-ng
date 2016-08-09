@@ -218,7 +218,6 @@ gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);
-const gchar *log_msg_get_value_name(NVHandle handle, gssize *name_len);
 gboolean log_msg_is_value_name_valid(const gchar *value);
 
 gboolean log_msg_is_handle_macro(NVHandle handle);
@@ -262,6 +261,12 @@ log_msg_get_value_by_name(const LogMessage *self, const gchar *name, gssize *val
 {
   NVHandle handle = log_msg_get_value_handle(name);
   return log_msg_get_value(self, handle, value_len);
+}
+
+static inline const gchar *
+log_msg_get_value_name(NVHandle handle, gssize *name_len)
+{
+  return nv_registry_get_handle_name(logmsg_registry, handle, name_len);
 }
 
 typedef gboolean (*LogMessageTagsForeachFunc)(const LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data);

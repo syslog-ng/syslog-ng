@@ -23,14 +23,11 @@
  */
 
 #include "logmsg/logmsg-serialize.h"
-#include "logmsg/serialization.h"
-#include "logmsg/logmsg.h"
+#include "logmsg/logmsg-serialize-fixup.h"
 #include "logmsg/nvtable-serialize.h"
 #include "logmsg/gsockaddr-serialize.h"
 #include "logmsg/timestamp-serialize.h"
 #include "logmsg/tags-serialize.h"
-#include "gsockaddr.h"
-#include "serialize.h"
 #include "messages.h"
 
 #include <stdlib.h>
@@ -40,7 +37,6 @@ _serialize_message(LogMessageSerializationState *state)
 {
   LogMessage *msg = state->msg;
   SerializeArchive *sa = state->sa;
-  gint i = 0;
 
   serialize_write_uint8(sa, state->version);
   serialize_write_uint64(sa, msg->rcptid);
@@ -55,8 +51,7 @@ _serialize_message(LogMessageSerializationState *state)
   serialize_write_uint8(sa, msg->num_matches);
   serialize_write_uint8(sa, msg->num_sdata);
   serialize_write_uint8(sa, msg->alloc_sdata);
-  for (i = 0; i < msg->num_sdata; i++)
-    serialize_write_uint32(sa, msg->sdata[i]);
+  serialize_write_uint32_array(sa, (guint32 *) msg->sdata, msg->num_sdata);
   nv_table_serialize(state, msg->payload);
   return TRUE;
 }
@@ -75,22 +70,14 @@ log_msg_serialize(LogMessage *self, SerializeArchive *sa)
 static gboolean
 _deserialize_sdata(LogMessage *self, SerializeArchive *sa)
 {
-  gint i;
-
   if (!serialize_read_uint8(sa, &self->num_sdata))
       return FALSE;
 
-    if (!serialize_read_uint8(sa, &self->alloc_sdata))
-      return FALSE;
+  if (!serialize_read_uint8(sa, &self->alloc_sdata))
+    return FALSE;
 
-  self->sdata = (NVHandle*)g_malloc(sizeof(NVHandle)*self->alloc_sdata);
-  memset(self->sdata, 0, sizeof(NVHandle)*self->alloc_sdata);
-
-  for (i = 0; i < self->num_sdata; i++)
-    {
-      if (!serialize_read_uint32(sa, (guint32 *)(&self->sdata[i])))
-        return FALSE;
-    }
+  self->sdata = (NVHandle*) g_malloc(sizeof(NVHandle)*self->alloc_sdata);
+  serialize_read_uint32_array(sa, (guint32 *) self->sdata, self->num_sdata);
   return TRUE;
 }
 
@@ -133,7 +120,7 @@ _deserialize_message(LogMessageSerializationState *state)
   if (!msg->payload)
     return FALSE;
 
-  if (!nv_table_fixup_handles(state))
+  if (!log_msg_fixup_handles_after_deserialization(state))
     return FALSE;
   return TRUE;
 }

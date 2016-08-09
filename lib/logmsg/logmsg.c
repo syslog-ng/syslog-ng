@@ -355,12 +355,6 @@ log_msg_get_value_handle(const gchar *value_name)
   return handle;
 }
 
-const gchar *
-log_msg_get_value_name(NVHandle handle, gssize *name_len)
-{
-  return nv_registry_get_handle_name(logmsg_registry, handle, name_len);
-}
-
 gboolean
 log_msg_is_value_name_valid(const gchar *value)
 {

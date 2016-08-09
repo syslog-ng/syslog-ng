@@ -5,6 +5,7 @@ logmsginclude_HEADERS =     \
  lib/logmsg/logmsg.h                        \
  lib/logmsg/serialization.h                 \
  lib/logmsg/logmsg-serialize.h              \
+ lib/logmsg/logmsg-serialize-fixup.h        \
  lib/logmsg/nvtable.h                       \
  lib/logmsg/nvtable-serialize.h             \
  lib/logmsg/nvtable-serialize-endianutils.h \
@@ -16,6 +17,7 @@ logmsg_sources =             \
  lib/logmsg/gsockaddr-serialize.c \
  lib/logmsg/logmsg.c              \
  lib/logmsg/logmsg-serialize.c    \
+ lib/logmsg/logmsg-serialize-fixup.c \
  lib/logmsg/nvtable.c             \
  lib/logmsg/nvtable-serialize.c   \
  lib/logmsg/tags-serialize.c      \

@@ -38,6 +38,15 @@ typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVI
 
 #define NVHANDLE_MAX_VALUE ((NVHandle)-1)
 
+/* NVIndexEntry
+ *   this represents an entry in the handle based lookup index, embedded in an NVTable.
+ *
+ * NOTE:
+ *   The deserialization code (at least version 26) assumes that this can be
+ *   represented by a pair of guint32 instances.  It is reading the entire
+ *   array back as such.  Should you need to change the types here, please
+ *   ensure that you also update the nvtable deserialization code.
+ */
 struct _NVIndexEntry
 {
   NVHandle handle;
@@ -93,6 +102,9 @@ nv_registry_get_handle_name(NVRegistry *self, NVHandle handle, gssize *length)
         *length = 4;
       return "None";
     }
+
+  if (handle - 1 >= self->names->len)
+    return NULL;
 
   stored = &g_array_index(self->names, NVHandleDesc, handle - 1);
   if (G_LIKELY(length))
