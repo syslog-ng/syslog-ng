@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Balabit
+ * Copyright (c) 2016 Balabit
  * Copyright (c) 2014 Laszlo Budai
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,14 +21,12 @@
  *
  */
 
+#include <criterion/criterion.h>
 #include <string.h>
 
-#include "testutils.h"
 #include "ringbuffer.h"
 
-#define RINGBUFFER_TESTCASE(testfunc, ...) { testcase_begin("%s(%s)", #testfunc, #__VA_ARGS__); testfunc(__VA_ARGS__); testcase_end(); }
-
-static const size_t capacity = 47;
+static const guint32 capacity = 47;
 
 typedef struct _TestData
 {
@@ -67,7 +65,7 @@ _ringbuffer_fill2(RingBuffer *rb, size_t n, int start_idx, gboolean ack)
       td = ring_buffer_tail(rb);
       td->idx = start_idx + i;
       td->ack = ack;
-      assert_true(ring_buffer_push(rb) == td, "Push should return last tail.");
+      cr_assert_eq(ring_buffer_push(rb), td, "Push should return last tail.");
     }
 }
 
@@ -83,7 +81,7 @@ static void
 assert_continual_range_length_equals(RingBuffer *rb, size_t expected)
 {
   size_t range_len = ring_buffer_get_continual_range_length(rb, _is_continual);
-  assert_true(range_len == expected, "actual=%d, expected=%d", range_len, expected);
+  cr_assert_eq(range_len, expected);
 }
 
 static void
@@ -92,55 +90,54 @@ assert_test_data_idx_range_in(RingBuffer *rb, int start, int end)
   TestData *td;
   int i;
 
-  assert_true(ring_buffer_count(rb) == end-start+1, "invalid ringbuffer size; actual:%d, expected: %d", ring_buffer_count(rb), end-start);
+  cr_assert_eq(ring_buffer_count(rb), end-start + 1,
+    "invalid ringbuffer size; actual:%d, expected: %d",
+    ring_buffer_count(rb), end-start+1);
 
   for (i = start; i <= end; i++)
     {
       td = ring_buffer_element_at(rb, i - start);
-      assert_true(td->idx == i, "wrong order: idx:(%d) <-> td->idx(%d)", i, td->idx);
+      cr_assert_eq(td->idx, i, "wrong order: idx:(%d) <-> td->idx(%d)", i, td->idx);
     }
 }
 
-static void
-test_init_buffer_state()
+
+Test(ringbuffer, test_init_buffer_state)
 {
   RingBuffer rb;
 
   _ringbuffer_init(&rb);
 
-  assert_false(ring_buffer_is_full(&rb), "buffer should not be full");
-  assert_true(ring_buffer_is_empty(&rb), "buffer should be empty");
-  assert_true(ring_buffer_count(&rb) == 0, "buffer should be empty");
-  assert_true(ring_buffer_capacity(&rb) == capacity, "invalid buffer capacity");
+  cr_assert_not(ring_buffer_is_full(&rb), "buffer should not be full");
+  cr_assert(ring_buffer_is_empty(&rb), "buffer should be empty");
+  cr_assert_eq(ring_buffer_count(&rb), 0, "buffer should be empty");
+  cr_assert_eq(ring_buffer_capacity(&rb), capacity, "invalid buffer capacity");
 
   ring_buffer_free(&rb);
 }
 
-static void
-test_pop_from_empty_buffer()
+Test(ringbuffer, test_pop_from_empty_buffer)
 {
   RingBuffer rb;
 
   _ringbuffer_init(&rb);
-  assert_true(ring_buffer_pop(&rb) == NULL, "cannot pop from empty buffer");
+  cr_assert_null(ring_buffer_pop(&rb), "cannot pop from empty buffer");
 
   ring_buffer_free(&rb);
 }
 
-static void
-test_push_to_full_buffer()
+Test(ringbuffer, test_push_to_full_buffer)
 {
   RingBuffer rb;
 
   _ringbuffer_init(&rb);
   _ringbuffer_fill(&rb, capacity, 1, TRUE);
-  assert_true(ring_buffer_push(&rb) == NULL, "cannot push to a full buffer");
+  cr_assert_null(ring_buffer_push(&rb), "cannot push to a full buffer");
 
   ring_buffer_free(&rb);
 }
 
-static void
-test_ring_buffer_is_full()
+Test(ringbuffer, test_ring_buffer_is_full)
 {
   RingBuffer rb;
   int i;
@@ -151,19 +148,18 @@ test_ring_buffer_is_full()
   for (i = 1; !ring_buffer_is_full(&rb); i++)
     {
       TestData *td = ring_buffer_push(&rb);
-      assert_true(td != NULL, "ring_buffer_push failed");
+      cr_assert_not_null(td, "ring_buffer_push failed");
       td->idx = i;
       last = td;
     }
 
-  assert_true(ring_buffer_count(&rb) == capacity, "buffer count(%d) is not equal to capacity(%d)", ring_buffer_count(&rb), capacity);
-  assert_true(last->idx == capacity, "buffer is not full, number of inserted items: %d, capacity: %d", last->idx, capacity);
+  cr_assert_eq(ring_buffer_count(&rb), capacity, "buffer count(%d) is not equal to capacity(%d)", ring_buffer_count(&rb), capacity);
+  cr_assert_eq(last->idx, capacity, "buffer is not full, number of inserted items: %d, capacity: %d", last->idx, capacity);
 
   ring_buffer_free(&rb);
 }
 
-static void
-test_pop_all_pushed_element_in_correct_order()
+Test(ringbuffer, test_pop_all_pushed_element_in_correct_order)
 {
   RingBuffer rb;
   int cnt = 0;
@@ -176,17 +172,16 @@ test_pop_all_pushed_element_in_correct_order()
 
   while ((td = ring_buffer_pop(&rb)))
     {
-      assert_true((cnt+start_from) == td->idx, "wrong order; %d != %d", td->idx, cnt);
+      cr_assert_eq((cnt+start_from), td->idx, "wrong order; %d != %d", td->idx, cnt);
       ++cnt;
     }
 
-  assert_true(cnt == capacity, "cannot read all element, %d < %d", cnt, capacity);
+  cr_assert_eq(cnt, capacity, "cannot read all element, %d < %d", cnt, capacity);
 
   ring_buffer_free(&rb);
 }
 
-static void
-test_drop_elements()
+Test(ringbuffer, test_drop_elements)
 {
   RingBuffer rb;
   const int rb_capacity = 103;
@@ -197,13 +192,12 @@ test_drop_elements()
   _ringbuffer_fill(&rb, rb_capacity, 1, TRUE);
 
   ring_buffer_drop(&rb, drop);
-  assert_true(ring_buffer_count(&rb) == (rb_capacity - drop), "drop failed");
+  cr_assert_eq(ring_buffer_count(&rb), (rb_capacity - drop), "drop failed");
 
   ring_buffer_free(&rb);
 }
 
-static void
-test_elements_ordering()
+Test(ringbuffer, test_elements_ordering)
 {
   RingBuffer rb;
   TestData *td;
@@ -216,18 +210,17 @@ test_elements_ordering()
 
   while ( (td = ring_buffer_pop(&rb)) )
     {
-      assert_true((cnt + start_from) == td->idx, "wrong order; %d != %d", cnt, td->idx);
+      cr_assert_eq((cnt + start_from), td->idx, "wrong order; %d != %d", cnt, td->idx);
       ++cnt;
     }
 
   ring_buffer_free(&rb);
 }
 
-static void
-test_element_at()
+Test(ringbuffer, test_element_at)
 {
   RingBuffer rb;
-  size_t i;
+  guint32 i;
   TestData *td;
 
   _ringbuffer_init(&rb);
@@ -237,15 +230,14 @@ test_element_at()
   for ( i = 0; i < ring_buffer_count(&rb); i++ )
     {
       td = ring_buffer_element_at(&rb, i);
-      assert_true(td != NULL, "invalid element, i=%d", i);
-      assert_true(td->idx == i, "invalid order, actual=%d, expected=%d", td->idx, i);
+      cr_assert_not_null(td, "invalid element, i=%d", i);
+      cr_assert_eq(td->idx, i, "invalid order, actual=%d, expected=%d", td->idx, i);
     }
 
   ring_buffer_free(&rb);
 }
 
-static void
-test_continual_range()
+Test(ringbuffer, test_continual_range)
 {
   RingBuffer rb;
 
@@ -257,8 +249,7 @@ test_continual_range()
   ring_buffer_free(&rb);
 }
 
-static void
-test_zero_length_continual_range()
+Test(ringbuffer, test_zero_length_continual_range)
 {
   RingBuffer rb;
   TestData *td;
@@ -275,8 +266,7 @@ test_zero_length_continual_range()
   ring_buffer_free(&rb);
 }
 
-static void
-test_broken_continual_range()
+Test(ringbuffer, test_broken_continual_range)
 {
   RingBuffer rb;
 
@@ -294,14 +284,11 @@ test_broken_continual_range()
   ring_buffer_free(&rb);
 }
 
-
-static void
-test_push_after_pop()
+Test(ringbuffer, test_push_after_pop)
 {
 }
 
-static void
-test_tail()
+Test(ringbuffer, test_tail)
 {
   RingBuffer rb;
   TestData *td_tail;
@@ -314,28 +301,9 @@ test_tail()
   td_tail = ring_buffer_tail(&rb);
   td_tail->idx = 103;
 
-  assert_true(ring_buffer_push(&rb) == td_tail, "Push should return last tail.");
+  cr_assert_eq(ring_buffer_push(&rb), td_tail, "Push should return last tail.");
 
   assert_test_data_idx_range_in(&rb, 1, 103);
 
   ring_buffer_free(&rb);
-}
-
-int main(int argc, char **argv)
-{
-  RINGBUFFER_TESTCASE(test_init_buffer_state);
-  RINGBUFFER_TESTCASE(test_pop_from_empty_buffer);
-  RINGBUFFER_TESTCASE(test_push_to_full_buffer);
-  RINGBUFFER_TESTCASE(test_ring_buffer_is_full);
-  RINGBUFFER_TESTCASE(test_pop_all_pushed_element_in_correct_order);
-  RINGBUFFER_TESTCASE(test_drop_elements);
-  RINGBUFFER_TESTCASE(test_elements_ordering);
-  RINGBUFFER_TESTCASE(test_element_at);
-  RINGBUFFER_TESTCASE(test_continual_range);
-  RINGBUFFER_TESTCASE(test_zero_length_continual_range);
-  RINGBUFFER_TESTCASE(test_broken_continual_range);
-  RINGBUFFER_TESTCASE(test_push_after_pop);
-  RINGBUFFER_TESTCASE(test_tail);
-
-  return 0;
 }
