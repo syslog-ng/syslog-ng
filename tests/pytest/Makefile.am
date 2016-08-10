@@ -62,10 +62,10 @@ EXTRA_DIST	+= \
 		./src/work_with_sockets/network_based_processor.py
 
 pytest:
-	$(shell \
+	sh -c "\
    cd $(top_srcdir)/tests/pytest && \
    PATH=$PATH:${exec_prefix}/sbin \
    ./run_tests.py \
-   )
+   "
 
 .PHONY: pytest
