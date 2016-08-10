@@ -1,5 +1,4 @@
 tests_unit_TESTS			=  \
-	tests/unit/test_logqueue	   \
 	tests/unit/test_matcher		   \
 	tests/unit/test_clone_logmsg 	   \
 	tests/unit/test_serialize 	   \
@@ -11,15 +10,12 @@ tests_unit_TESTS			=  \
 	tests/unit/test_persist_state	   \
 	tests/unit/test_hostid             \
 	tests/unit/test_pathutils
- 
+
 check_PROGRAMS				+= \
 	${tests_unit_TESTS}
 
 unit_test_extra_modules			= \
 	$(PREOPEN_SYSLOGFORMAT)
-
-tests_unit_test_logqueue_LDADD		= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_matcher_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
@@ -62,7 +58,12 @@ tests_unit_test_pathutils_LDADD	= \
 if ENABLE_CRITERION
 
 tests_unit_TESTS			+= \
+	tests/unit/test_logqueue	   \
 	tests/unit/test_ringbuffer
+
+tests_unit_test_logqueue_CFLAGS		= $(TEST_CFLAGS)
+tests_unit_test_logqueue_LDADD		= \
+	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_ringbuffer_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_ringbuffer_LDADD	= \
