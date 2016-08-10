@@ -1,7 +1,6 @@
 tests_unit_TESTS			=  \
 	tests/unit/test_logwriter	   \
 	tests/unit/test_zone		   \
-	tests/unit/test_hostid             \
 	tests/unit/test_pathutils
 
 check_PROGRAMS				+= \
@@ -14,10 +13,6 @@ tests_unit_test_logwriter_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_zone_LDADD		= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_hostid_CFLAGS	= $(TEST_CFLAGS)
-tests_unit_test_hostid_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
@@ -36,7 +31,8 @@ tests_unit_TESTS			+= \
 	tests/unit/test_dnscache	   \
 	tests/unit/test_findcrlf	   \
 	tests/unit/test_persist_state	   \
-	tests/unit/test_ringbuffer
+	tests/unit/test_ringbuffer	   \
+	tests/unit/test_hostid
 
 tests_unit_test_logqueue_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_logqueue_LDADD		= \
@@ -72,6 +68,10 @@ tests_unit_test_persist_state_LDADD	= \
 
 tests_unit_test_ringbuffer_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_ringbuffer_LDADD	= \
+	$(TEST_LDADD) $(unit_test_extra_modules)
+
+tests_unit_test_hostid_CFLAGS		= $(TEST_CFLAGS)
+tests_unit_test_hostid_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 endif
