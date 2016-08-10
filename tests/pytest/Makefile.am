@@ -65,7 +65,7 @@ pytest:
   $(shell \
    cd $(top_srcdir)/tests/pytest && \
    PATH=$PATH:${exec_prefix}/sbin \
-   ./run_tests.py
+   ./run_tests.py \
    )
 
 .PHONY: pytest
