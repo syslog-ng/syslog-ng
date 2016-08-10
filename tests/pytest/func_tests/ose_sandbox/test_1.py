@@ -118,3 +118,4 @@ def test_valami():
     import time
     time.sleep(1)
     tc.syslog_ng.stop()
+    assert 1==2
