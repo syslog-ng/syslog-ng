@@ -62,7 +62,9 @@ EXTRA_DIST	+= \
 		./src/work_with_sockets/network_based_processor.py
 
 pytest:
-	cd $(top_srcdir)/tests/pytest
-	@./run_tests.py -f -t custom -i ${exec_prefix}
+  $(shell \
+   cd $(top_srcdir)/tests/pytest && \
+   ./run_tests.py -f -t custom -i ${exec_prefix} \
+   )
 
 .PHONY: pytest
