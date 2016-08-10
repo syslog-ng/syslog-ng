@@ -42,8 +42,8 @@ install:
       xsltproc
 #~  - sudo easy_install3 pip
 #~ - sudo pip install -r requirements.txt
-  - sudo easy_install `cat requirements.txt`; true
-  - sudo easy_install3 `cat requirements.txt`; true
+  - sudo easy_install `cat requirements.txt`; echo "easy_install $?"; true
+  - sudo easy_install3 `cat requirements.txt`; echo "easy_install $?"; true
 before_script:
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
@@ -120,7 +120,7 @@ matrix:
         #~ - make -j install
 
     - env: B=trusty-pytest
-      compiler: clang
+      compiler: gcc
       dist: trusty
       sudo: required
       script:
