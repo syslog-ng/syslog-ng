@@ -1,0 +1,12 @@
+coloredlogs
+pystache
+pytest
+datadiff
+psutil
+pytest-cov
+pytest-mock
+pytest-xdist
+coverage
+clonedigger-jl
+pyreverse
+pycallgraph
