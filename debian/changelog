@@ -1,3 +1,10 @@
+syslog-ng (3.8.0beta2-1) experimental; urgency=low
+
+  [ Laszlo Budai <laszlo.budai@balabit.com> ]
+  * 3.8.0beta2 release 1st revision
+
+ -- Laszlo Budai <laszlo.budai@balabit.com>  Wed, 10 Aug 2016 15:29:54 +0200 
+
 syslog-ng (3.8.0beta1-1) experimental; urgency=low
 
   [ Laszlo Budai <laszlo.budai@balabit.com> ]
