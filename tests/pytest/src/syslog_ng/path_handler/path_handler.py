@@ -9,11 +9,11 @@ class SyslogNgPathHandler(object):
         self.install_dir = testdb_config_reader.get_install_dir()
         self.balabitpkg_install_path = "/opt/syslog-ng"
         self.temporary_working_dir = "/tmp"
-        self.config_file = os.path.join(self.temporary_working_dir, "/syslog-ng.conf")
-        self.control_socket = os.path.join(self.temporary_working_dir, "/syslog-ng.ctl")
-        self.console_log = os.path.join(self.temporary_working_dir, "/console.log")
-        self.syslog_ng_pid = os.path.join(self.temporary_working_dir, "/syslog-ng.pid")
-        self.syslog_ng_persist = os.path.join(self.temporary_working_dir, "/syslog-ng.persist")
+        self.config_file = os.path.join(self.temporary_working_dir, "syslog-ng.conf")
+        self.control_socket = os.path.join(self.temporary_working_dir, "syslog-ng.ctl")
+        self.console_log = os.path.join(self.temporary_working_dir, "console.log")
+        self.syslog_ng_pid = os.path.join(self.temporary_working_dir, "syslog-ng.pid")
+        self.syslog_ng_persist = os.path.join(self.temporary_working_dir, "syslog-ng.persist")
 
         self.syslog_ng_file_paths = {
             "syslog_ng_binary": {
