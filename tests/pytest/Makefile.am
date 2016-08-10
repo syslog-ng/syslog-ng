@@ -64,7 +64,8 @@ EXTRA_DIST	+= \
 pytest:
   $(shell \
    cd $(top_srcdir)/tests/pytest && \
-   ./run_tests.py -f -t custom -i ${exec_prefix} \
+   PATH=$PATH:${exec_prefix}/sbin \
+   ./run_tests.py
    )
 
 .PHONY: pytest
