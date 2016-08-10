@@ -40,11 +40,7 @@ install:
       python3-setuptools
       sqlite3
       xsltproc
-  - sudo easy_install3 pip; echo "exit $?"; true
   - sudo pip install -r requirements.txt; echo "exit $?"; true
-  - sudo pip3 install -r requirements.txt; echo "exit $?"; true
-  - sudo easy_install `cat requirements.txt`; echo "exit $?"; true
-  - sudo easy_install3 `cat requirements.txt`; echo "exit $?"; true
 before_script:
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
@@ -125,6 +121,9 @@ matrix:
       dist: trusty
       sudo: required
       script:
+        - sudo easy_install3 pip; echo "exit $?"; true
+        - sudo pip3 install -r requirements3.txt; echo "exit $?"; true
+        - sudo easy_install3 `cat requirements3.txt`; echo "exit $?"; true
         - make -j install
         - make pytest V=1
 
