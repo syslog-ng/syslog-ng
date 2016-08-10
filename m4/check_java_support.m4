@@ -43,6 +43,10 @@ AC_DEFUN([AX_CHECK_GRADLE_VERSION],
 ])
 AC_DEFUN([AX_CHECK_JAVA_VERSION],
 [AC_MSG_CHECKING([for JAVA_VERSION])
+  case $host_os in
+    freebsd*) DONT_RESOLVE_JAVA_BIN_LINKS="YES" ;;
+    *) ;;
+  esac
   JAVA_VERSION=[$1]
   JAVAC_BIN=`which javac`
   JAVAH_BIN=`which javah`
@@ -50,9 +54,11 @@ AC_DEFUN([AX_CHECK_JAVA_VERSION],
   JAVA_HOME_CHECKER="/usr/libexec/java_home"
 
   if test "x$JAVAC_BIN" != "x"; then
-    JAVAC_BIN=`AX_READLINK([$JAVAC_BIN])`
-    JAVAH_BIN=`AX_READLINK([$JAVAH_BIN])`
-    JAR_BIN=`AX_READLINK([$JAR_BIN])`
+    if test "x$DONT_RESOLVE_JAVA_BIN_LINKS" == "x"; then
+      JAVAC_BIN=`AX_READLINK([$JAVAC_BIN])`
+      JAVAH_BIN=`AX_READLINK([$JAVAH_BIN])`
+      JAR_BIN=`AX_READLINK([$JAR_BIN])`
+    fi
     JAVAC_VERSION=`$JAVAC_BIN -version 2>&1 | sed "s/.*\ \(.*\)/\1/"`
     SHORT_VERSION=${JAVAC_VERSION%.*}
     MAJOR_VERSION=${SHORT_VERSION%.*}
