@@ -32,6 +32,7 @@ install:
       pkg-config
       sqlite3
       xsltproc
+      criterion-dev
   - sudo pip install -r requirements.txt
 before_script:
   - ./autogen.sh
