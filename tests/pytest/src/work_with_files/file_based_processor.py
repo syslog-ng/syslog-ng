@@ -36,38 +36,38 @@ class FileBasedProcessor(object):
         for written_file in self.written_files:
             self.delete_file(path=written_file)
 
-    # def write_message_to_file(self, file_path, input_message, driver_name=None):
-    #     file_path = file_path.replace('"', '')
-    #     self.written_files.append(file_path)
-    #     if driver_name == "program":
-    #         try:
-    #             with open(file_path, "a") as file_object:
-    #                 file_object.write("#!/bin/bash\necho '%s'\n" % input_message)
-    #                 file_object.flush()
-    #             file_object.close()
-    #             os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
-    #         except IOError as error:
-    #             pass
-    #     else:
-    #         if "@version" in input_message:
-    #             with open(file_path, 'w') as file_object:
-    #                 file_object.write("%s\n" % input_message)
-    #                 file_object.flush()
-    #         else:
-    #             with open(file_path, 'a') as file_object:
-    #                 file_object.write("%s\n" % input_message)
-    #                 file_object.flush()
-    #     logging.info("Message written to file. Message: [%s], File: [%s]" % (input_message, file_path))
+    def write_message_to_file(self, file_path, input_message, driver_name=None):
+        file_path = file_path.replace('"', '')
+        self.written_files.append(file_path)
+        if driver_name == "program":
+            try:
+                with open(file_path, "a") as file_object:
+                    file_object.write("#!/bin/bash\necho '%s'\n" % input_message)
+                    file_object.flush()
+                file_object.close()
+                os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
+            except IOError as error:
+                pass
+        else:
+            if "@version" in input_message:
+                with open(file_path, 'w') as file_object:
+                    file_object.write("%s\n" % input_message)
+                    file_object.flush()
+            else:
+                with open(file_path, 'a') as file_object:
+                    file_object.write("%s\n" % input_message)
+                    file_object.flush()
+        logging.info("Message written to file. Message: [%s], File: [%s]" % (input_message, file_path))
 
-    # def count_lines_in_file(self, file_path):
-    #     pass
+    def count_lines_in_file(self, file_path):
+        pass
 
-    # def dump_file_content(self, file_path, mode=None):
-    #     file_path = file_path.replace('"', '')
-    #     logging.warning("Dumped file content: %s" % file_path)
-    #     with open(file_path) as file_object:
-    #         for line in file_object.readlines():
-    #             print(line.strip())
+    def dump_file_content(self, file_path, mode=None):
+        file_path = file_path.replace('"', '')
+        logging.warning("Dumped file content: %s" % file_path)
+        with open(file_path) as file_object:
+            for line in file_object.readlines():
+                print(line.strip())
 
     def get_messages_from_file(self, file_path):
         file_path = file_path.replace('"', '')

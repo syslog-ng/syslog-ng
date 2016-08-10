@@ -67,7 +67,7 @@ def setup_for_parser_options(request):
 def setup_parser_acd(request):
     global preconditions
     print("\n-->SETUP")
-    testrun_validator.is_concurrent_syslog_daemon_running()
+    # testrun_validator.is_concurrent_syslog_daemon_running()
 
     preconditions = request.getfuncargvalue("preconditions")
 
