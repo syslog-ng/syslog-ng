@@ -1,5 +1,4 @@
 tests_unit_TESTS			=  \
-	tests/unit/test_serialize 	   \
 	tests/unit/test_msgparse	   \
 	tests/unit/test_dnscache	   \
 	tests/unit/test_findcrlf	   \
@@ -14,9 +13,6 @@ check_PROGRAMS				+= \
 
 unit_test_extra_modules			= \
 	$(PREOPEN_SYSLOGFORMAT)
-
-tests_unit_test_serialize_LDADD		= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_msgparse_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_msgparse_LDADD		= \
@@ -52,6 +48,7 @@ tests_unit_TESTS			+= \
 	tests/unit/test_logqueue	   \
 	tests/unit/test_matcher		   \
 	tests/unit/test_clone_logmsg 	   \
+	tests/unit/test_serialize 	   \
 	tests/unit/test_ringbuffer
 
 tests_unit_test_logqueue_CFLAGS		= $(TEST_CFLAGS)
@@ -64,6 +61,10 @@ tests_unit_test_matcher_LDADD		= \
 
 tests_unit_test_clone_logmsg_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_clone_logmsg_LDADD	= \
+	$(TEST_LDADD) $(unit_test_extra_modules)
+
+tests_unit_test_serialize_CFLAGS	= $(TEST_CFLAGS)
+tests_unit_test_serialize_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_ringbuffer_CFLAGS	= $(TEST_CFLAGS)
