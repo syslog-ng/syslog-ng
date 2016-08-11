@@ -21,7 +21,6 @@ class FileBasedProcessor(object):
         logging.info("Write file: [%s] with content: [%s]" % (file_path, content))
         with open(file_path, "w") as file_object:
             file_object.write(content)
-            file_object.flush()
 
     def delete_file(self, path):
         logging.info("Deleting file: [%s]" % path)
@@ -43,8 +42,6 @@ class FileBasedProcessor(object):
             try:
                 with open(file_path, "a") as file_object:
                     file_object.write("#!/bin/bash\necho '%s'\n" % input_message)
-                    file_object.flush()
-                file_object.close()
                 os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
             except IOError as error:
                 pass
@@ -52,11 +49,9 @@ class FileBasedProcessor(object):
             if "@version" in input_message:
                 with open(file_path, 'w') as file_object:
                     file_object.write("%s\n" % input_message)
-                    file_object.flush()
             else:
                 with open(file_path, 'a') as file_object:
                     file_object.write("%s\n" % input_message)
-                    file_object.flush()
         logging.info("Message written to file. Message: [%s], File: [%s]" % (input_message, file_path))
 
     def count_lines_in_file(self, file_path):
