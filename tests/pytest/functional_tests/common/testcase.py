@@ -7,6 +7,7 @@ from src.send_receive_logs.log_receiver.log_receiver import LogReceiver
 from src.syslog_ng.binary_syslog_ng.syslog_ng_utils import SyslogNgUtils
 from src.testrun.testrun_configuration_reader.testrun_configuration_reader import TestdbConfigReader
 from src.syslog_ng.binary_syslog_ng_ctl.binary_syslog_ng_ctl import SyslogNgCtl
+from src.global_register.global_register import GlobalRegister
 
 class TC(object):
     def __init__(self):
@@ -19,6 +20,7 @@ class TC(object):
         self.syslog_ng = SyslogNg()
         self.syslog_ng_utils = SyslogNgUtils()
         self.syslog_ng_ctl = SyslogNgCtl()
+        self.global_register = GlobalRegister()
         self.global_config = {
             "config": self.config,
             "file_based_processor": self.file_based_processor,
