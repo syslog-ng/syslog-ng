@@ -8,14 +8,14 @@ def get_config(input_file):
     return """@version: 3.8
 
 source s_int { internal(); };
-source s_file { file(%(input_file)s)); };
+source s_file { file('%(input_file)s'); };
 
 destination d_python {
     python(class(sngtestmod.DestTest)
-           value-pairs(key('MSG') pair('HOST', 'bzorp') pair('DATE', '$ISODATE') key('MSGHDR')));
+           value-pairs(key('MSG') pair('HOST', 'bzorp') pair('DATE', '1970-04-01T13:37') key('MSGHDR')));
 };
 
-log { source(s_tcp); destination(d_python); };
+log { source(s_file); destination(d_python); };
 """ % {'input_file': input_file}
 
 
@@ -28,7 +28,7 @@ UNIQID = 0
 
 def registry_new_file(content):
     global UNIQID
-    filename = "in.%d.tmp.txt" % UNIQID
+    filename = "/tmp/slng-func-in.%d.tmp.txt" % UNIQID
     UNIQID += 1
     with open(filename, 'w') as file_object:
         file_object.write("%s\n" % content)
@@ -53,8 +53,8 @@ def test_destination():
 
     os.chdir(output_dir)
     tc.syslog_ng.start()
-    time.sleep(1)
+    time.sleep(4)
     tc.syslog_ng.stop()
 
     result = tc.file_based_processor.get_messages_from_file('test-python.log')
-    assert result == 'x'
+    assert result == ['1970-04-01T13:37 bzorp input message 2 PYTHON!']

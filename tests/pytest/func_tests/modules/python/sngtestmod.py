@@ -38,7 +38,7 @@ class DestTest(object):
         return True
 
     def send(self, msg):
-        with open('test-python.log', 'a') as f:
-            f.write('{DATE} {HOST} {MSGHDR}{MSG}\n'.format(**msg))
+        with open('test-python.log', 'w') as f:
+            f.write('{DATE} {HOST} {MSGHDR}{MSG} PYTHON!\n'.format(**msg))
 
         return True
