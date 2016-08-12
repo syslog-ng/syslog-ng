@@ -13,6 +13,7 @@ def get_parser():
     parser.add_argument("-c", "--config-version", dest="config_version", default="3.8", help="Set config version: [3.8]")
     parser.add_argument("-i", "--install-dir", dest="install_dir", help="Custom install path for syslog-ng, under this directory should be exist: [bin/, etc/, sbin/, var/]")
     parser.add_argument("-l", "--log-level", dest="log_level", default="INFO", help="Set minimum debug log level: [INFO, ERROR]")
+    parser.add_argument("-d", "--test-subdir", dest="test_subdir", default="functional_tests", help="Query tests from subdir")
     return parser
 
 
@@ -31,7 +32,7 @@ def main():
     parser = get_parser()
     opts = parser.parse_args(sys.argv[1:])
 
-    test_directory = "func_tests/"
+    test_directory = opts.test_subdir
     if opts.running_test == "unit":
         test_directory = "src/"
 

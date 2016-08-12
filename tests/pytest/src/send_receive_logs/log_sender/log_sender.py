@@ -1,10 +1,11 @@
 from src.send_receive_logs.log_generator.log_generator import MessageGenerator
-from src.work_with_sockets import network_based_processor
+from src.work_with_sockets.socket_sender import SocketSender
 from src.options_and_drivers.driver_data_provider import DriverDataProvider
 
 class LogSender(object):
     def __init__(self):
         self.global_config = None
+        self.socket_sender = SocketSender()
 
     def set_global_config(self, global_config):
         self.global_config = global_config
@@ -45,16 +46,18 @@ class LogSender(object):
                                                                                  connected_config_element['source_driver_name'])
             elif connected_config_element['source_driver_name'] in driver_data_provider.get_all_drivers_for_working_type("socket-stream"):
                 if "unix" in connected_config_element['source_driver_name']:
-                    network_based_processor.send_message_to_stream_socket(connected_config_element['source_driver_name'], input_message,
-                                                                          connected_config_element['source_file_path'])
+                    pass
+                    # network_based_processor.send_message_to_stream_socket(connected_config_element['source_driver_name'], input_message, connected_config_element['source_file_path'])
                 else:
-                    network_based_processor.send_message_to_stream_socket(connected_config_element['source_driver_name'], input_message)
+                    pass
+                    # network_based_processor.send_message_to_stream_socket(connected_config_element['source_driver_name'], input_message)
             elif connected_config_element['source_driver_name'] in driver_data_provider.get_all_drivers_for_working_type("socket-dgram"):
                 if "unix" in connected_config_element['source_driver_name']:
-                    network_based_processor.send_message_to_dgram_socket(connected_config_element['source_driver_name'], input_message,
-                                                                         connected_config_element['source_file_path'])
+                    pass
+                    # network_based_processor.send_message_to_dgram_socket(connected_config_element['source_driver_name'], input_message, connected_config_element['source_file_path'])
                 else:
-                    network_based_processor.send_message_to_dgram_socket(connected_config_element['source_driver_name'], input_message)
+                    pass
+                    # network_based_processor.send_message_to_dgram_socket(connected_config_element['source_driver_name'], input_message)
             else:
                 print("unknown driver: %s" % connected_config_element['driver_name'])
                 assert False

@@ -1,10 +1,11 @@
 from src.send_receive_logs.log_generator.log_generator import MessageGenerator
-from src.work_with_sockets import network_based_processor
+from src.work_with_sockets.socket_listener import SocketListener
 from src.options_and_drivers.driver_data_provider import DriverDataProvider
 
 class LogReceiver(object):
     def __init__(self, ):
         self.global_config = None
+        self.socket_listener = SocketListener()
 
     def set_global_config(self, global_config):
         self.global_config = global_config
@@ -33,13 +34,15 @@ class LogReceiver(object):
                         pass
                         # actual_output_messages = network_based_processor.start_stream_listener(destination_driver_name, destination_group['file_path'])
                     else:
-                        actual_output_messages = network_based_processor.start_stream_listener(destination_driver_name)
+                        pass
+                        # actual_output_messages = network_based_processor.start_stream_listener(destination_driver_name)
                 elif destination_driver_name in driver_data_provider.get_all_drivers_for_working_type("socket-dgram"):
                     if "unix" in destination_driver_name:
                         pass
                         # actual_output_messages = network_based_processor.start_dgram_listener(destination_driver_name, destination_group['file_path'])
                     else:
-                        actual_output_messages = network_based_processor.start_dgram_listener(destination_driver_name)
+                        pass
+                        # actual_output_messages = network_based_processor.start_dgram_listener(destination_driver_name)
                 else:
                     print("unknown driver_name: %s" % destination_driver_name)
                     assert False
