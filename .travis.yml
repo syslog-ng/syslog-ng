@@ -86,7 +86,7 @@ matrix:
   fast_finish: true
   allow_failures:
     - os: osx
-    - env: B=trusty-pytest
+    - env: B=copyright-check
   exclude:
     - env: B=autotools
   include:
