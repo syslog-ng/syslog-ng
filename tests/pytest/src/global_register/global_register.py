@@ -22,7 +22,7 @@ class GlobalRegister(object):
 
     ### FILE
 
-    def get_uniq_filename(self, prefix, extension="txt", under_subdir=None):
+    def get_uniq_filename(self, prefix="", extension="txt", under_subdir=None):
         if not under_subdir:
             under_subdir = self.global_rootdir
         else:
@@ -36,7 +36,7 @@ class GlobalRegister(object):
                 break
         return unique_file_name
 
-    def get_uniq_dirname(self, prefix, under_subdir=None):
+    def get_uniq_dirname(self, prefix="", under_subdir=None):
         if not under_subdir:
             under_subdir = self.global_rootdir
         else:
