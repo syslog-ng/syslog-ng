@@ -25,6 +25,7 @@ def get_source_dir():
 
 tc = TC()
 
+
 def registry_new_file(content):
     global tc
     filename = tc.global_register.get_uniq_filename()
@@ -44,6 +45,7 @@ def consume_message_from_file(file):
     messages = tc.file_based_processor.get_messages_from_file(file)
     os.remove(file)
     return messages
+
 
 def test_destination():
     input_file = registry_new_file("input message 1\ninput message 2")
