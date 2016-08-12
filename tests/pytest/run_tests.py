@@ -41,7 +41,7 @@ def main():
         sys.exit(1)
 
     save_testdb_configuration(opts)
-    pytest.main(test_directory)
+    sys.exit(pytest.main(test_directory))
 
 if __name__ == "__main__":
     main()
