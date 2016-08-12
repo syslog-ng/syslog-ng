@@ -1,4 +1,3 @@
-import re
 from src.global_register.global_register import GlobalRegister
 
 def test_get_uniq_tcp_port():
