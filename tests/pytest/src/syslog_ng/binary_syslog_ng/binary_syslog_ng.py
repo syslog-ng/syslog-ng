@@ -37,6 +37,7 @@ class SyslogNg(SyslogNgPathHandler):
             self.process_pid = None
         else:
             logging.info("syslog_ng can not stopped with pid: %s" % self.process_pid)
+            self.global_config['syslog_ng_utils'].dump_syslog_ng_console_log()
             sys.exit(1)
 
     def reload(self):
