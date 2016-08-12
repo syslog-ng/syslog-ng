@@ -55,6 +55,10 @@ Check where exit code gets lost
     # send messages
     # destructor could close it
 
+# GlobalRegister.is_available_port() could simply check a counter
+
+initialized to max-min+1 and decremented on each allocation
+
 # Scratch notes
 
 ...
