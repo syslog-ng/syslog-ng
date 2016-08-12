@@ -109,7 +109,7 @@ class GlobalRegister(object):
 
     def is_available_port(self, port_group):
         is_available_port = False
-        for i in range(self.min_port, self.max_port):
+        for i in range(self.min_port, self.max_port+1):
             if i not in port_group.values():
                 is_available_port = True
                 break
