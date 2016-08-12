@@ -61,11 +61,21 @@ EXTRA_DIST	+= \
 		./src/work_with_sockets/__init__.py \
 		./src/work_with_sockets/network_based_processor.py
 
-pytest:
+pytest-func:
 	sh -c "\
    cd $(top_srcdir)/tests/pytest && \
    PATH=$PATH:${exec_prefix}/sbin \
    ./run_tests.py \
    "
+
+pytest-unit:
+	sh -c "\
+   cd $(top_srcdir)/tests/pytest && \
+   PATH=$PATH:${exec_prefix}/sbin \
+   ./run_tests.py \
+    -r unit \
+   "
+
+pytest: pytest-unit pytest-func
 
 .PHONY: pytest
