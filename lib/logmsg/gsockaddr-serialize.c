@@ -24,6 +24,8 @@
 
 #include "gsockaddr-serialize.h"
 
+#include <string.h>
+
 static gboolean
 _serialize_ipv4(GSockAddr* addr, SerializeArchive* sa)
 {
@@ -84,6 +86,7 @@ static gboolean
 _deserialize_ipv4(SerializeArchive *sa, GSockAddr **addr)
 {
   struct sockaddr_in sin;
+  memset(&sin, 0, sizeof(sin));
 
   sin.sin_family = AF_INET;
   if (!serialize_read_blob(sa, (gchar *) &sin.sin_addr, sizeof(sin.sin_addr)) ||
@@ -101,6 +104,7 @@ _deserialize_ipv6(SerializeArchive *sa, GSockAddr **addr)
 {
   gboolean result = FALSE;
   struct sockaddr_in6 sin6;
+  memset(&sin6, 0, sizeof(sin6));
 
   sin6.sin6_family = AF_INET6;
   if (serialize_read_blob(sa, (gchar *) &sin6.sin6_addr, sizeof(sin6.sin6_addr)) &&
