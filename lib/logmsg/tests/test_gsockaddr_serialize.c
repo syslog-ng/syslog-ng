@@ -58,7 +58,7 @@ test_inet()
   assert_true(g_sockaddr_deserialize(sa, &read_addr), "FAILED TO READ BACK");
 
   assert_nstring((const gchar *)g_sockaddr_inet_get_sa(addr), addr->salen,
-                 (const gchar *)g_sockaddr_inet_get_sa(addr), read_addr->salen,
+                 (const gchar *)g_sockaddr_inet_get_sa(read_addr), read_addr->salen,
                  "Bad read struct");
 
   serialize_archive_free(sa);
@@ -82,7 +82,7 @@ test_inet6()
   assert_true(g_sockaddr_deserialize(sa, &read_addr), "FAILED TO READ BACK");
 
   assert_nstring((const gchar *)g_sockaddr_inet6_get_sa(addr), addr->salen,
-                 (const gchar *)g_sockaddr_inet6_get_sa(addr), read_addr->salen,
+                 (const gchar *)g_sockaddr_inet6_get_sa(read_addr), read_addr->salen,
                  "Bad read struct");
 
   serialize_archive_free(sa);
