@@ -12,7 +12,7 @@ def get_parser():
     parser.add_argument("-s", "--syslog-ng-install", dest="syslog_ng_install", default="path", help="Set running syslog-ng type: [path, ospkg, balabitpkg, custom]")
     parser.add_argument("-c", "--config-version", dest="config_version", default="3.8", help="Set config version: [3.8]")
     parser.add_argument("-i", "--install-dir", dest="install_dir", help="Custom install path for syslog-ng, under this directory should be exist: [bin/, etc/, sbin/, var/]")
-    parser.add_argument("-l", "--log-level", dest="log_level", default="ERROR", help="Set minimum debug log level: [INFO, ERROR]")
+    parser.add_argument("-l", "--log-level", dest="log_level", default="INFO", help="Set minimum debug log level: [INFO, ERROR]")
     return parser
 
 
