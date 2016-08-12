@@ -1,4 +1,4 @@
-from func_tests.testcase import Testcase
+from functional_tests.common.testcase import TC
 import time
 import os
 from shutil import copyfile
@@ -23,26 +23,29 @@ def get_source_dir():
     return os.path.abspath(os.path.dirname(__file__))
 
 
-UNIQID = 0
-
+tc = TC()
 
 def registry_new_file(content):
-    global UNIQID
-    filename = "/tmp/slng-func-in.%d.tmp.txt" % UNIQID
-    UNIQID += 1
+    global tc
+    filename = tc.global_register.get_uniq_filename()
     with open(filename, 'w') as file_object:
         file_object.write("%s\n" % content)
     return filename
 
 
 def registry_new_dir():
-    name = 'pytest.tmp'
+    global tc
+    name = tc.global_register.get_uniq_dirname()
     os.mkdir(name)
     return name
 
 
+def consume_message_from_file(file):
+    messages = tc.file_based_processor.get_messages_from_file(file)
+    os.remove(file)
+    return messages
+
 def test_destination():
-    tc = Testcase()
     input_file = registry_new_file("input message 1\ninput message 2")
     output_dir = registry_new_dir()
     src_dir = get_source_dir()
@@ -56,5 +59,5 @@ def test_destination():
     time.sleep(4)
     tc.syslog_ng.stop()
 
-    result = tc.file_based_processor.get_messages_from_file('test-python.log')
+    result = consume_message_from_file('test-python.log')
     assert result == ['1970-04-01T13:37 bzorp input message 2 PYTHON!']
