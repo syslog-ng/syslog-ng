@@ -1,7 +1,6 @@
-from src.syslog_ng.path_handler.path_handler import SyslogNgPathHandler
 from src.work_with_process import run_command
 
-class SyslogNgCtl():
+class SyslogNgCtl(object):
     def __init__(self):
         self.global_config = None
 
@@ -26,5 +25,5 @@ class SyslogNgCtl():
         return run_command.run_command_for_exit_code(command) == 0
 
     def is_syslog_ng_running(self):
-        command = "%s stats --control=%s" % (self.syslog_ng_path.get_syslog_ng_control_tool(), self.syslog_ng_path.get_syslog_ng_control_socket())
+        command = "%s stats --control=%s" % (self.global_config['syslog_ng_path'].get_syslog_ng_control_tool(), self.global_config['syslog_ng_path'].get_syslog_ng_control_socket())
         return run_command.run_command_for_exit_code(command) == 0
