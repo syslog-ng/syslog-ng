@@ -7,6 +7,7 @@ from src.send_receive_logs.log_receiver.log_receiver import LogReceiver
 from src.syslog_ng.binary_syslog_ng.syslog_ng_utils import SyslogNgUtils
 from src.testrun.testrun_configuration_reader.testrun_configuration_reader import TestdbConfigReader
 from src.syslog_ng.binary_syslog_ng_ctl.binary_syslog_ng_ctl import SyslogNgCtl
+from src.syslog_ng.binary_syslog_ng_ctl.syslog_ng_ctl_utils import SyslogNgCtlUtils
 from src.global_register.global_register import GlobalRegister
 from src.syslog_ng.path_handler.path_handler import SyslogNgPathHandler
 from src.send_receive_logs.log_generator.log_generator import MessageGenerator
@@ -23,6 +24,7 @@ class TC(object):
         self.syslog_ng = SyslogNg()
         self.syslog_ng_utils = SyslogNgUtils()
         self.syslog_ng_ctl = SyslogNgCtl()
+        self.syslog_ng_ctl_utils = SyslogNgCtlUtils()
         self.global_register = GlobalRegister()
         self.syslog_ng_path = SyslogNgPathHandler()
         self.message_generator = MessageGenerator()
@@ -35,6 +37,7 @@ class TC(object):
             "syslog_ng": self.syslog_ng,
             "syslog_ng_utils": self.syslog_ng_utils,
             "syslog_ng_ctl": self.syslog_ng_ctl,
+            "syslog_ng_ctl_utils": self.syslog_ng_ctl_utils,
             "syslog_ng_path": self.syslog_ng_path,
             "global_register": self.global_register,
             "message_generator": self.message_generator
@@ -51,3 +54,4 @@ class TC(object):
         self.global_register.set_global_config(self.global_config)
         self.message_generator.set_global_config(self.global_config)
         self.syslog_ng_path.set_global_config(self.global_config)
+        self.syslog_ng_ctl_utils.set_global_config(self.global_config)

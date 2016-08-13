@@ -1,6 +1,4 @@
 import pytest
-from src.syslog_ng.binary_syslog_ng_ctl import syslog_ng_ctl_utils
-
 
 class SyslogNgUtils(object):
     def __init__(self):
@@ -18,6 +16,7 @@ class SyslogNgUtils(object):
         self.config = self.global_config['config']
         self.syslog_ng = self.global_config['syslog_ng']
         self.syslog_ng_path = self.global_config['syslog_ng_path']
+        self.syslog_ng_ctl_utils = self.global_config["syslog_ng_ctl_utils"]
 
     def wait_for_starting_up(self):
         internal_log = self.config.get_internal_log_output_path()
@@ -29,7 +28,7 @@ class SyslogNgUtils(object):
 
         self.filemanager.wait_for_expected_message_in_file(file_path=internal_log, expected_message=self.starting_up_message)
 
-        if not syslog_ng_ctl_utils.wait_for_starting_control_socket():
+        if not self.syslog_ng_ctl_utils.wait_for_starting_control_socket():
             self.dump_syslog_ng_console_log()
             self.dump_syslog_ng_internal_log()
             pytest.skip()
@@ -38,7 +37,7 @@ class SyslogNgUtils(object):
         internal_log = self.config.get_internal_log_output_path()
 
         self.filemanager.wait_for_expected_message_in_file(file_path=internal_log, expected_message=self.shutting_down_message)
-        syslog_ng_ctl_utils.wait_for_stopping_control_socket()
+        self.syslog_ng_ctl_utils.wait_for_stopping_control_socket()
 
     def wait_for_reloading(self):
         internal_log = self.config.get_internal_log_output_path()
