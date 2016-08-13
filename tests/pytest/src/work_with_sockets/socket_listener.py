@@ -1,5 +1,7 @@
 import os
 import socket
+import threading
+
 
 
 class SocketListener(object):
@@ -7,13 +9,20 @@ class SocketListener(object):
         self.received_messsages = {"tcp": [], "network": [], "syslog": [], "udp": [], "unix_stream": [], "unix_dgram": [], "tcp6": [], "udp6": []}
         self.current_driver = None
         self.socket_timeout = 5
+        self.tcp_thread = None
 
     def get_received_messages(self):
         return self.received_messsages
 
     def tcp_listener(self, ip, port):
         self.current_driver = "tcp"
-        self.socket_stream_listener(socket.AF_INET, ip=ip, port=port)
+        self.tcp_thread = threading.Thread(target=self.socket_stream_listener, kwargs={"address_family":socket.AF_INET, "ip":ip, "port":port})
+        self.tcp_thread.daemon = True
+        self.tcp_thread.start()
+
+    def tcp_listener_stop(self):
+        pass
+        # self.tcp_thread.set()
 
     def udp_listener(self, ip, port):
         self.current_driver = "udp"
