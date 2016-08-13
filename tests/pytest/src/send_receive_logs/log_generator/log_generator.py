@@ -97,15 +97,15 @@ class MessageGenerator(object):
         return "%s - source_driver: %s - destination_driver: %s - counter: %s" % (
         self.bsd_message_parts['message'], source_driver, destination_driver, counter)
 
-    def generate_input_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=2):
+    def generate_input_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=1, with_new_line=True):
         self.counter_start = counter_start
         self.counter_end = counter_end
-        return self.generate_messages(source_driver_name, destination_driver_name, "source", with_new_line=True)
+        return self.generate_messages(source_driver_name, destination_driver_name, "source", with_new_line=with_new_line)
 
-    def generate_output_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=2):
+    def generate_output_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=1, with_new_line=False):
         self.counter_start = counter_start
         self.counter_end = counter_end
-        return self.generate_messages(source_driver_name, destination_driver_name, "destination", with_new_line=False)
+        return self.generate_messages(source_driver_name, destination_driver_name, "destination", with_new_line=with_new_line)
 
     def generate_messages(self, source_driver, destination_driver, message_side, with_new_line):
         messages = []
@@ -121,6 +121,8 @@ class MessageGenerator(object):
             elif message_side == "destination" and destination_driver in self.driver_category_1:
                 if source_driver == "syslog":
                     message = self.create_bsd_message_without_priority_with_pid(formatted_message)
+                elif destination_driver == "tcp":
+                    message = self.create_bsd_message(formatted_message)
                 else:
                     message = self.create_bsd_message_without_priority(formatted_message)
             elif message_side == "destination" and destination_driver in self.driver_category_2:
