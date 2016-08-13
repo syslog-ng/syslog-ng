@@ -9,11 +9,6 @@ class SyslogNgPathHandler(object):
         self.install_dir = testdb_config_reader.get_install_dir()
         self.balabitpkg_install_path = "/opt/syslog-ng"
         self.temporary_working_dir = "/tmp"
-        self.config_file = os.path.join(self.temporary_working_dir, "syslog-ng.conf")
-        self.control_socket = os.path.join(self.temporary_working_dir, "syslog-ng.ctl")
-        self.console_log = os.path.join(self.temporary_working_dir, "console.log")
-        self.syslog_ng_pid = os.path.join(self.temporary_working_dir, "syslog-ng.pid")
-        self.syslog_ng_persist = os.path.join(self.temporary_working_dir, "syslog-ng.persist")
 
         self.syslog_ng_file_paths = {
             "syslog_ng_binary": {
@@ -43,19 +38,19 @@ class SyslogNgPathHandler(object):
         return self.syslog_ng_file_paths["syslog_ng_control_tool"][self.syslog_ng_install]
 
     def get_syslog_ng_config_path(self):
-        return self.config_file
+        return self.global_register.get_uniq_filename(prefix="config", extension="conf")
 
     def get_syslog_ng_console_log(self):
-        return self.console_log
+        return self.global_register.get_uniq_filename(prefix="console_log", extension="log")
 
     def get_syslog_ng_pid(self):
-        return self.syslog_ng_pid
+        return self.global_register.get_uniq_filename(prefix="pid", extension="pid")
 
     def get_syslog_ng_persist(self):
-        return self.syslog_ng_persist
+        return self.global_register.get_uniq_filename(prefix="persist", extension="persist")
 
     def get_syslog_ng_control_socket(self):
-        return self.control_socket
+        return self.global_register.get_uniq_filename(prefix="control_socket", extension="ctl")
 
     def get_session_files(self):
         return [
