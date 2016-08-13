@@ -1,4 +1,5 @@
-from func_tests.testcase import Testcase
+# from func_tests.testcase import Testcase
+from functional_tests.common.testcase import TC
 
 port_number = 1111
 src_dir = "ose_sandbox/"
@@ -112,7 +113,7 @@ log { filter(f_catchall); destination(d_catchall); flags(catch-all); };
 """ % locals()
 
 def test_valami():
-    tc = Testcase()
+    tc = TC()
     tc.config.from_raw(config)
     tc.syslog_ng.start()
     import time
