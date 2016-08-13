@@ -1,29 +1,21 @@
 from functional_tests.common.setup_and_teardown import *
-# tc = TestCase()
-#
-# slng = tc.syslog-ng
-# config = tc.config
-# filemanager = tc.file_manager
-# message_generator = tc.message_generator
-# receiver = tc.receiver
-# global_registry = tc.global_registry
 
 def test_egyedi(setup_testcase):
-    print("AAAAAAAAA")
-    # src_file = global_registry.get_uniq_filepath()
-    # dst_file = global_registry.get_uniq_filepath()
-    # src_group = config.add_file_source(path=src_file, src_content="", options="")
-    # dst_group = config.add_file_destination(path=dst_file)
-    # config.render_config(logpath_management="auto")
-    # # custom_logpath = [[src_group1, filter_group1, dest_group1], [src_group2, filter_group2, dest_group2]]
-    # # config.render_config(logpath_management="custom", logpath=custom_logpath)
-    # # config.connect_drivers(src=src_group, dst=dst_group)
-    #
-    # src_file_content = message_generator.get_bsd_message()
-    # filemanager.create_file_with_content(group=src_file, content=src_file_content)
-    # # filemanager.append_content_to_file(group=src_file, content=src_file_content)
-    # expected_message = "aaa"
-    #
-    # slng.start()
-    # assert filemanager.get_file_content(path=dst_file) == expected_message
-    # slng.stop()
+
+    testcase = setup_testcase
+    src_file = testcase.global_register.get_uniq_filename(prefix="src_file")
+    dst_file = testcase.global_register.get_uniq_filename(prefix="dst_file")
+
+    src_group = testcase.config.add_file_source(file_path=src_file)
+    dst_group = testcase.config.add_file_destination(file_path=dst_file)
+    testcase.config.render_config(logpath_management="auto")
+
+    src_file_content = testcase.message_generator.generate_input_messages("file", "file", counter_start=1, counter_end=5)
+    testcase.filemanager.create_file_with_content(file_path=src_file, content=src_file_content)
+
+    expected_message2 = testcase.message_generator.generate_output_messages("file", "file", counter_start=1, counter_end=5)
+
+    testcase.syslog_ng.start()
+    file_content = testcase.filemanager.get_file_content(file_path=dst_file)
+    assert file_content == expected_message2
+    testcase.syslog_ng.stop()
