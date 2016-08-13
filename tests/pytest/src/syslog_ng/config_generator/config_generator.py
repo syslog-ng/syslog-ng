@@ -19,6 +19,9 @@ class ConfigGenerator(object):
         self.global_config = None
         self.connected_config_elements = None
         self.added_internal_source = False
+        self.registered_source_groups = []
+        self.registered_parser_groups = []
+        self.registered_destination_groups = []
 
     def set_global_config(self, global_config):
         self.global_config = global_config
@@ -43,6 +46,7 @@ class ConfigGenerator(object):
 
     def add_group(self, group_type, driver_name, file_path=None, options=None, **kwargs):
         group_name = self.generate_unique_group_name(group_type, driver_name)
+        self.register_group(group_type=group_type, group=group_name)
         self.create_empty_group(group_type, group_name, driver_name)
         generated_options = self.generate_options(options, driver_name, group_type, file_path=file_path, **kwargs)
         self.add_options_to_existing_driver(group_type, group_name, generated_options)
@@ -201,8 +205,13 @@ class ConfigGenerator(object):
             })
         return self.connected_config_elements
 
-    def render_config(self, config_path):
+    def render_config(self, logpath_management="auto", logpath=None):
+        # custom_logpath = [[src_group1, filter_group1, dest_group1], [src_group2, filter_group2, dest_group2]]
+        # config.render_config(logpath_management="custom", logpath=custom_logpath)
         config_template = "%s/config_template.pystache" % os.path.dirname(os.path.abspath(__file__))
+        config_path = self.syslog_ng_path.get_syslog_ng_config_path()
+        if logpath_management == "auto":
+            self.connect_drivers_in_logpath(sources=self.registered_source_groups, parsers=self.registered_parser_groups, destinations=self.registered_destination_groups)
         renderer = pystache.Renderer()
         with open(config_path, mode='wb') as config_file:
             config_file.write(bytes(renderer.render_path(config_template, self.config), 'utf-8'))
@@ -259,3 +268,11 @@ class ConfigGenerator(object):
     def from_raw(self, config):
         config_path = self.syslog_ng_path.get_syslog_ng_config_path()
         self.filemanager.create_file_with_content(config_path, config)
+
+    def register_group(self, group_type, group):
+        if group_type == "source":
+            self.registered_source_groups.append(group)
+        elif group_type == "parser":
+            self.registered_parser_groups.append(group)
+        elif group_type == "destination":
+            self.registered_destination_groups.append(group)
