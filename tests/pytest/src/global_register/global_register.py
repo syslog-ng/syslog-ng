@@ -20,6 +20,7 @@ class GlobalRegister(object):
         self.delete_registered_dirs()
         self.delete_registered_tcp_ports()
         self.delete_registered_udp_ports()
+
     def set_global_config(self, global_config):
         self.global_config = global_config
 
@@ -78,8 +79,8 @@ class GlobalRegister(object):
 
     def delete_registered_files(self):
         for registered_file in self.registered_files:
-            if os.path.exists(registered_file):
-                os.unlink(registered_file)
+            if os.path.exists(self.registered_files[registered_file]):
+                os.unlink(self.registered_files[registered_file])
         self.registered_files = []
 
     def delete_registered_dirs(self):
