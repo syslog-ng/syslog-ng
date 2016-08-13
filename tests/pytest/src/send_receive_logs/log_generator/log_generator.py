@@ -97,17 +97,17 @@ class MessageGenerator(object):
         return "%s - source_driver: %s - destination_driver: %s - counter: %s" % (
         self.bsd_message_parts['message'], source_driver, destination_driver, counter)
 
-        return self.generate_messages(source_driver_name, destination_driver_name, "source")
     def generate_input_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=2):
         self.counter_start = counter_start
         self.counter_end = counter_end
+        return self.generate_messages(source_driver_name, destination_driver_name, "source", with_new_line=True)
 
-        return self.generate_messages(source_driver_name, destination_driver_name, "destination")
     def generate_output_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=2):
         self.counter_start = counter_start
         self.counter_end = counter_end
+        return self.generate_messages(source_driver_name, destination_driver_name, "destination", with_new_line=False)
 
-    def generate_messages(self, source_driver, destination_driver, message_side):
+    def generate_messages(self, source_driver, destination_driver, message_side, with_new_line):
         messages = []
         for i_counter in range(self.counter_start, self.counter_end + 1):
             formatted_message = self.format_message_part(source_driver, destination_driver, i_counter)
@@ -130,7 +130,10 @@ class MessageGenerator(object):
             else:
                 assert False
 
-            messages.append(message)
+            if with_new_line:
+                messages.append("%s\n" % message)
+            else:
+                messages.append(message)
         return messages
 
     def create_bsd_message(self, formatted_message):
