@@ -1,6 +1,5 @@
 import time
 import os
-import stat
 import logging
 
 
@@ -9,48 +8,31 @@ class FileBasedProcessor(object):
         self.monitoring_time = 2  # 1 sec
         self.poll_freq = 0.001  # 0.001 sec
         self.global_config = None
-        self.written_files = []
 
     def set_global_config(self, global_config):
         self.global_config = global_config
 
     def create_file_with_content(self, file_path, content):
-        self.written_files.append(file_path)
+        file_path = file_path.replace('"', '')
         logging.info("Write file: [%s] with content: [%s]" % (file_path, content))
         with open(file_path, "w") as file_object:
-            file_object.write(content)
+            for item in content:
+                file_object.write(item)
+
+    def append_file_with_content(self, file_path, content):
+        file_path = file_path.replace('"', '')
+        logging.info("Append file: [%s] with content: [%s]" % (file_path, content))
+        with open(file_path, "a") as file_object:
+            for item in content:
+                file_object.write(item)
 
     def delete_file(self, path):
         logging.info("Deleting file: [%s]" % path)
         if os.path.exists(path):
             try:
-                os.remove(path)
+                os.unlink(path)
             except OSError as error:
                 logging.error("File can not be deleted: [%s], error: [%s]" % (path, error))
-
-
-    def delete_written_files(self):
-        for written_file in self.written_files:
-            self.delete_file(path=written_file)
-
-    def write_message_to_file(self, file_path, input_message, driver_name=None):
-        file_path = file_path.replace('"', '')
-        self.written_files.append(file_path)
-        if driver_name == "program":
-            try:
-                with open(file_path, "a") as file_object:
-                    file_object.write("#!/bin/bash\necho '%s'\n" % input_message)
-                os.chmod(file_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
-            except IOError as error:
-                pass
-        else:
-            if "@version" in input_message:
-                with open(file_path, 'w') as file_object:
-                    file_object.write("%s\n" % input_message)
-            else:
-                with open(file_path, 'a') as file_object:
-                    file_object.write("%s\n" % input_message)
-        logging.info("Message written to file. Message: [%s], File: [%s]" % (input_message, file_path))
 
     def count_lines_in_file(self, file_path):
         pass
@@ -60,22 +42,25 @@ class FileBasedProcessor(object):
         logging.warning("Dumped file content: %s" % file_path)
         with open(file_path) as file_object:
             for line in file_object.readlines():
-                print(line.strip())
+                logging.info(line.strip())
 
-    def get_messages_from_file(self, file_path):
+    def get_file_content(self, file_path):
         file_path = file_path.replace('"', '')
+        self.wait_for_file_creation(file_path=file_path)
+        self.wait_for_file_not_change(file_path=file_path)
         with open(file_path) as file_object:
             file_content = file_object.read().splitlines()
         logging.info("Lines are readed from file. Lines: [%s], File: [%s]" % (file_content, file_path))
         return file_content
 
     def dump_actual_information(self, file_path):
-        file_path = file_path.replace('"', '')
-        self.global_config['testrun_reporter'].dump_testrun_information_on_failed()
-        print("\n########### Print Testrun Information: ###########")
-        print(self.written_files)
-        print("\n########### syslog-ng console log: ###########")
-        self.dump_file_content(self.path_handler.get_syslog_ng_console_log(), "raw")
+        pass
+        # file_path = file_path.replace('"', '')
+        # self.global_config['testrun_reporter'].dump_testrun_information_on_failed()
+        # print("\n########### Print Testrun Information: ###########")
+        # print(self.written_files)
+        # print("\n########### syslog-ng console log: ###########")
+        # self.dump_file_content(self.path_handler.get_syslog_ng_console_log(), "raw")
         # print("############ DUMP Statistics ##############")
         # print(self.slng_controll_tool.get_stats())
         # print("############ DUMP Logpath info ##############")
@@ -83,8 +68,8 @@ class FileBasedProcessor(object):
         # print("############ DUMP Logpath info ##############")
         # self.group_data_provider.dump_logpath_info_for_missed_file_path(file_path)
         # internal_file_path = self.group_data_provider.get_destination_group_data_for_connected_source("internal", "file_path")
-        print("############ DUMP Internal log: %s ##############" % self.global_config['config'].get_internal_log_output_path())
-        self.dump_file_content(self.global_config['config'].get_internal_log_output_path(), "raw")
+        # print("############ DUMP Internal log: %s ##############" % self.global_config['config'].get_internal_log_output_path())
+        # self.dump_file_content(self.global_config['config'].get_internal_log_output_path(), "raw")
         # print("############ DUMP File content: %s ##############" % file_path)
         # self.dump_file_content(file_path)
 

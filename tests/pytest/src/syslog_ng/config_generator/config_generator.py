@@ -65,7 +65,7 @@ class ConfigGenerator(object):
             if not file_path:
                 file_path = self.global_config['global_register'].get_uniq_filename(prefix="%s_%s" % (group_type, driver_name), extension="csv")
             if "database_content" in kwargs.keys():
-                self.global_config['file_based_processor'].write_message_to_file(path, kwargs['database_content'])
+                self.filemanager.create_file_with_content(file_path, kwargs['database_content'])
             # WORKAROUND: @@ -> will be replaced in config render time to "'"
             generated_options.append({"option_name": "database", "option_value": "@@%s@@" % file_path})
         for option_name, option_value in options.items():
