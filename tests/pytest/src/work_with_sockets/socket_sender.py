@@ -32,13 +32,14 @@ class SocketSender(object):
             server_address = socket_file_path
         sock.connect(server_address)
 
-        try:
-            if sock.sendall(message) is not None:
-                logging.error("Cannot send message: [%s], to server address: [%s]" % (message, server_address))
-            else:
-                logging.info("Message sent: [%s], to server address: [%s]" % (message, server_address))
-        finally:
-            sock.close()
+        for item in message:
+            try:
+                if sock.sendall(str.encode(item)) is not None:
+                    logging.error("Cannot send message: [%s], to server address: [%s]" % (message, server_address))
+                else:
+                    logging.info("Message sent: [%s], to server address: [%s]" % (message, server_address))
+            finally:
+                sock.close()
 
     def socket_dgram_sender(self, address_family, message, ip=None, port=None, socket_file_path=None):
         sock = socket.socket(address_family, socket.SOCK_DGRAM)
