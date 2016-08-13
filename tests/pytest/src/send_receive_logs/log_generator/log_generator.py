@@ -2,9 +2,10 @@ import socket
 
 
 class MessageGenerator(object):
-    def __init__(self, customized_message_parts=None, counter=1):
+    def __init__(self, customized_message_parts=None, counter_start=1, counter_end=2):
         self.customized_message_parts = customized_message_parts
-        self.counter = counter
+        self.counter_start = counter_start
+        self.counter_end = counter_end
         self.driver_category_1 = ["file", "tcp", "tcp6", "udp", "program", "network", "udp6"]
         self.driver_category_2 = ["pipe", "unix_dgram", "unix_stream"]
         self.driver_category_3 = ["syslog"]
@@ -96,15 +97,19 @@ class MessageGenerator(object):
         return "%s - source_driver: %s - destination_driver: %s - counter: %s" % (
         self.bsd_message_parts['message'], source_driver, destination_driver, counter)
 
-    def generate_input_messages(self, source_driver_name, destination_driver_name):
         return self.generate_messages(source_driver_name, destination_driver_name, "source")
+    def generate_input_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=2):
+        self.counter_start = counter_start
+        self.counter_end = counter_end
 
-    def generate_output_messages(self, source_driver_name, destination_driver_name):
         return self.generate_messages(source_driver_name, destination_driver_name, "destination")
+    def generate_output_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=2):
+        self.counter_start = counter_start
+        self.counter_end = counter_end
 
     def generate_messages(self, source_driver, destination_driver, message_side):
         messages = []
-        for i_counter in range(1, self.counter + 1):
+        for i_counter in range(self.counter_start, self.counter_end + 1):
             formatted_message = self.format_message_part(source_driver, destination_driver, i_counter)
             if message_side == "source" and source_driver in self.driver_category_1:
                 message = self.create_bsd_message(formatted_message)
