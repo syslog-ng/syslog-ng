@@ -30,6 +30,12 @@ class SyslogNgPathHandler(object):
             },
         }
 
+        self.global_config = None
+
+    def set_global_config(self, global_config):
+        self.global_config = global_config
+        self.global_register = self.global_config['global_register']
+
     def get_syslog_ng_binary(self):
         return self.syslog_ng_file_paths["syslog_ng_binary"][self.syslog_ng_install]
 

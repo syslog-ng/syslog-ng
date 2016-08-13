@@ -8,11 +8,14 @@ from src.syslog_ng.binary_syslog_ng.syslog_ng_utils import SyslogNgUtils
 from src.testrun.testrun_configuration_reader.testrun_configuration_reader import TestdbConfigReader
 from src.syslog_ng.binary_syslog_ng_ctl.binary_syslog_ng_ctl import SyslogNgCtl
 from src.global_register.global_register import GlobalRegister
+from src.syslog_ng.path_handler.path_handler import SyslogNgPathHandler
+from src.send_receive_logs.log_generator.log_generator import MessageGenerator
+
 
 class TC(object):
     def __init__(self):
         TestdbConfigReader()
-        self.file_based_processor = FileBasedProcessor()
+        self.filemanager = FileBasedProcessor()
         self.config = ConfigGenerator()
         self.test_reporter = TestrunReporter()
         self.sender = LogSender()
@@ -21,18 +24,23 @@ class TC(object):
         self.syslog_ng_utils = SyslogNgUtils()
         self.syslog_ng_ctl = SyslogNgCtl()
         self.global_register = GlobalRegister()
+        self.syslog_ng_path = SyslogNgPathHandler()
+        self.message_generator = MessageGenerator()
         self.global_config = {
             "config": self.config,
-            "file_based_processor": self.file_based_processor,
+            "filemanager": self.filemanager,
             "testrun_reporter": self.test_reporter,
             "sender": self.sender,
             "receiver": self.receiver,
             "syslog_ng": self.syslog_ng,
             "syslog_ng_utils": self.syslog_ng_utils,
-            "syslog_ng_ctl": self.syslog_ng_ctl
+            "syslog_ng_ctl": self.syslog_ng_ctl,
+            "syslog_ng_path": self.syslog_ng_path,
+            "global_register": self.global_register,
+            "message_generator": self.message_generator
         }
 
-        self.file_based_processor.set_global_config(self.global_config)
+        self.filemanager.set_global_config(self.global_config)
         self.config.set_global_config(self.global_config)
         self.test_reporter.set_global_config(self.global_config)
         self.sender.set_global_config(self.global_config)
@@ -40,3 +48,6 @@ class TC(object):
         self.syslog_ng.set_global_config(self.global_config)
         self.syslog_ng_utils.set_global_config(self.global_config)
         self.syslog_ng_ctl.set_global_config(self.global_config)
+        self.global_register.set_global_config(self.global_config)
+        self.message_generator.set_global_config(self.global_config)
+        self.syslog_ng_path.set_global_config(self.global_config)

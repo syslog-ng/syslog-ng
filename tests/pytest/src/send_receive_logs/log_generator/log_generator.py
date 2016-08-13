@@ -11,6 +11,10 @@ class MessageGenerator(object):
 
         self.bsd_message_parts = self.create_bsd_message_parts()
         self.syslog_message_parts = self.create_syslog_message_parts()
+        self.global_config = None
+
+    def set_global_config(self, global_config):
+        self.global_config = global_config
 
     def create_bsd_message_parts(self):
         bsd_message_parts = {

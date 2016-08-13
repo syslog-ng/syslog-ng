@@ -22,6 +22,9 @@ class ConfigGenerator(object):
 
     def set_global_config(self, global_config):
         self.global_config = global_config
+        self.filemanager = self.global_config['filemanager']
+        self.syslog_ng = self.global_config['syslog_ng']
+        self.syslog_ng_path = self.global_config['syslog_ng_path']
 
     def add_source_group(self, driver_name, options=None, file_content=None):
         return self.add_group(group_type="source", driver_name=driver_name, options=options, file_content=file_content)
@@ -198,7 +201,7 @@ class ConfigGenerator(object):
         with open(config_path, mode='r') as config_file:
             contents = config_file.read()
             replaced_contents = contents.replace("@@", "'")
-        self.global_config['file_based_processor'].write_message_to_file(config_path, replaced_contents)
+        self.filemanager.create_file_with_content(config_path, replaced_contents)
 
     def add_internal_source_to_config(self):
         self.added_internal_source = True
@@ -246,5 +249,5 @@ class ConfigGenerator(object):
                 return group["%s_drivers" % group_type][0]["driver_options"][0]["non_tls_options"][0]["without_option_name"][0]["option_value"].replace("@@", '"')
 
     def from_raw(self, config):
-        config_path = self.global_config['syslog_ng'].get_syslog_ng_config_path()
-        self.global_config['file_based_processor'].write_message_to_file(config_path, config)
+        config_path = self.syslog_ng_path.get_syslog_ng_config_path()
+        self.filemanager.create_file_with_content(config_path, config)

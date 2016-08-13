@@ -25,10 +25,10 @@ class LogReceiver(object):
             if source_driver_name != "internal":
                 if destination_driver_name in driver_data_provider.get_all_drivers_for_working_type("file"):
                     destination_file_path = connected_config_element['destination_file_path']
-                    self.global_config['file_based_processor'].wait_for_file_creation(destination_file_path)
-                    self.global_config['file_based_processor'].wait_for_file_not_change(destination_file_path)
+                    self.global_config['filemanager'].wait_for_file_creation(destination_file_path)
+                    self.global_config['filemanager'].wait_for_file_not_change(destination_file_path)
 
-                    actual_output_messages = self.global_config['file_based_processor'].get_messages_from_file(destination_file_path)
+                    actual_output_messages = self.global_config['filemanager'].get_messages_from_file(destination_file_path)
                 elif destination_driver_name in driver_data_provider.get_all_drivers_for_working_type("socket-stream"):
                     if "unix" in destination_driver_name:
                         pass

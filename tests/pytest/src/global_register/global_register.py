@@ -13,12 +13,15 @@ class GlobalRegister(object):
         self.max_port = 65535
         self.global_prefix = "pytest"
         self.global_rootdir = "/tmp"
+        self.global_config = None
 
     def __del__(self):
         self.delete_registered_files()
         self.delete_registered_dirs()
         self.delete_registered_tcp_ports()
         self.delete_registered_udp_ports()
+    def set_global_config(self, global_config):
+        self.global_config = global_config
 
     ### FILE
 

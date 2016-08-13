@@ -2,14 +2,12 @@ import time
 import os
 import stat
 import logging
-from src.syslog_ng.path_handler.path_handler import SyslogNgPathHandler
 
 
 class FileBasedProcessor(object):
     def __init__(self):
         self.monitoring_time = 2  # 1 sec
         self.poll_freq = 0.001  # 0.001 sec
-        # self.path_handler = SyslogNgPathHandler()
         self.global_config = None
         self.written_files = []
 
