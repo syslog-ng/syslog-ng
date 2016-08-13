@@ -35,6 +35,12 @@ class ConfigGenerator(object):
     def add_file_destination(self, file_path, options=None):
         return self.add_destination_group(driver_name="file", options=options, file_path=file_path)
 
+    def add_tcp_source(self, options=None):
+        return self.add_source_group(driver_name="tcp", options=options)
+
+    def add_tcp_destination(self, options=None):
+        return self.add_destination_group(driver_name="tcp", options=options)
+
     def add_source_group(self, driver_name, file_path=None, options=None, file_content=None):
         return self.add_group(group_type="source", driver_name=driver_name, options=options, file_content=file_content, file_path=file_path)
 
@@ -78,13 +84,23 @@ class ConfigGenerator(object):
 
     def add_options_to_existing_driver(self, group_type, group_name, options):
         group_node = self.find_group_node(group_type, group_name)
+
         for option in options:
-                # NOTE: without option name, e.g: "/tmp/input.log"
-                if option['option_name'] == "file_path":
-                    self.add_option_to_node(node="without_option_name", group_node=group_node, group_type=group_type, option_value=option['option_value'], option_name=option['option_name'])
-                # NOTE: with option name, e.g: keep_hostname(yes)
-                else:
-                    self.add_option_to_node(node="with_option_name", group_node=group_node, group_type=group_type, option_value=option['option_value'], option_name=option['option_name'])
+            # NOTE: without option name, e.g: "/tmp/input.log"
+            if option["option_name"] == "file_path":
+                self.add_option_to_node(node="without_option_name", group_node=group_node, group_type=group_type,
+                                        option_value=option['option_value'], option_name=option['option_name'])
+
+            if (option['option_name'] == "ip") and (group_type == "destination"):
+                self.add_option_to_node(node="without_option_name", group_node=group_node, group_type=group_type,
+                                        option_value=option['option_value'], option_name=option['option_name'])
+
+        for option in options:
+            if (option['option_name'] == "file_path") or (option['option_name'] == "ip" and group_type == "destination"):
+                pass
+            else:
+            # NOTE: with option name, e.g: keep_hostname(yes)
+                self.add_option_to_node(node="with_option_name", group_node=group_node, group_type=group_type, option_value=option['option_value'], option_name=option['option_name'])
 
     def is_options_already_added(self, group_type, group_node):
         if group_type == "parser":
@@ -208,6 +224,7 @@ class ConfigGenerator(object):
     def render_config(self, logpath_management="auto", logpath=None):
         # custom_logpath = [[src_group1, filter_group1, dest_group1], [src_group2, filter_group2, dest_group2]]
         # config.render_config(logpath_management="custom", logpath=custom_logpath)
+        self.add_internal_source_to_config()
         config_template = "%s/config_template.pystache" % os.path.dirname(os.path.abspath(__file__))
         config_path = self.syslog_ng_path.get_syslog_ng_config_path()
         if logpath_management == "auto":
