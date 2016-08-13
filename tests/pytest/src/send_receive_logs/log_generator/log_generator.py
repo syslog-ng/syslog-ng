@@ -43,25 +43,25 @@ class MessageGenerator(object):
         return syslog_message_parts
 
     def get_priority_field(self):
-        if "priority" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "priority" in self.customized_message_parts.keys():
             return self.customized_message_parts['priority']
         else:
             return "13"
 
     def get_bsd_timestamp_field(self):
-        if "bsd_timestamp" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "bsd_timestamp" in self.customized_message_parts.keys():
             return self.customized_message_parts['bsd_timestamp']
         else:
             return "Oct 11 22:14:15"
 
     def get_iso_timestamp_field(self):
-        if "iso_timestamp" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "iso_timestamp" in self.customized_message_parts.keys():
             return self.customized_message_parts['iso_timestamp']
         else:
             return "2003-10-11T22:14:15.003Z"
 
     def get_hostname_field(self):
-        if "hostname" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "hostname" in self.customized_message_parts.keys():
             if "self" in self.customized_message_parts['hostname']:
                 return self.customized_message_parts['hostname'].replace("self", socket.gethostname())
             else:
@@ -70,25 +70,25 @@ class MessageGenerator(object):
             return socket.gethostname()
 
     def get_program_field(self):
-        if "program" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "program" in self.customized_message_parts.keys():
             return self.customized_message_parts['program']
         else:
             return "test-program"
 
     def get_pid_field(self):
-        if "pid" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "pid" in self.customized_message_parts.keys():
             return self.customized_message_parts['pid']
         else:
             return "9999"
 
     def get_sdata_field(self):
-        if "sdata" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "sdata" in self.customized_message_parts.keys():
             return self.customized_message_parts['sdata']
         else:
             return "-"
 
     def get_message_field(self):
-        if "message" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "message" in self.customized_message_parts.keys():
             return self.customized_message_parts['message']
         else:
             return "test message"
