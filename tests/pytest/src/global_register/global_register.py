@@ -91,7 +91,7 @@ class GlobalRegister(object):
 
     ### PORT
 
-    def get_uniq_tcp_port(self, group_name):
+    def get_uniq_tcp_port(self, group_name=None):
         return self.get_uniq_port(group_name=group_name, port_group=self.registered_tcp_ports)
 
     def get_uniq_udp_port(self, group_name):
