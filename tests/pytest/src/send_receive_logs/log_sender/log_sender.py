@@ -42,8 +42,7 @@ class LogSender(object):
         driver_data_provider = DriverDataProvider()
         for input_message in input_messages:
             if connected_config_element['source_driver_name'] in driver_data_provider.get_all_drivers_for_working_type("file"):
-                self.global_config['file_based_processor'].write_message_to_file(connected_config_element['source_file_path'], input_message,
-                                                                                 connected_config_element['source_driver_name'])
+                self.global_config['filemanager'].create_file_with_content(connected_config_element['source_file_path'], input_message,)
             elif connected_config_element['source_driver_name'] in driver_data_provider.get_all_drivers_for_working_type("socket-stream"):
                 if "unix" in connected_config_element['source_driver_name']:
                     pass

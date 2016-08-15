@@ -1,6 +1,5 @@
 import logging
 from datadiff.tools import assert_equal
-from src.syslog_ng.binary_syslog_ng_ctl.binary_syslog_ng_ctl import SyslogNgCtl
 
 class TestrunReporter(object):
     def __init__(self):

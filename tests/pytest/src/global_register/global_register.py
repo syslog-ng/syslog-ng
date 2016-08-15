@@ -6,13 +6,14 @@ class GlobalRegister(object):
     def __init__(self):
         self.registered_tcp_ports = {}
         self.registered_udp_ports = {}
-        self.registered_files = []
+        self.registered_files = {}
         self.registered_dirs = []
         # contains dynamic or private ports that cannot be registered with IANA
         self.min_port = 49152
         self.max_port = 65535
         self.global_prefix = "pytest"
         self.global_rootdir = "/tmp"
+        self.global_config = None
 
     def __del__(self):
         self.delete_registered_files()
@@ -20,9 +21,14 @@ class GlobalRegister(object):
         self.delete_registered_tcp_ports()
         self.delete_registered_udp_ports()
 
+    def set_global_config(self, global_config):
+        self.global_config = global_config
+
     ### FILE
 
     def get_uniq_filename(self, prefix="", extension="txt", under_subdir=None):
+        if self.is_prefix_exist(prefix):
+            return self.get_prefixed_filename(prefix)
         if not under_subdir:
             under_subdir = self.global_rootdir
         else:
@@ -32,7 +38,7 @@ class GlobalRegister(object):
         while True:
             unique_file_name = os.path.join(under_subdir, "%s_%s_%s.%s" % (self.global_prefix, prefix, str(uuid.uuid4()), extension))
             if (not self.is_filename_registered(unique_file_name)) and (not self.is_file_exist(unique_file_name)):
-                self.register_filename(unique_file_name)
+                self.register_filename(unique_file_name, prefix)
                 break
         return unique_file_name
 
@@ -59,16 +65,22 @@ class GlobalRegister(object):
     def is_dirname_registered(self, dir_name):
         return dir_name in self.registered_dirs
 
-    def register_filename(self, file_name):
-        self.registered_files.append(file_name)
+    def register_filename(self, file_name, prefix):
+        self.registered_files[prefix] = file_name
 
     def register_dirname(self, dir_name):
         self.registered_dirs.append(dir_name)
 
+    def is_prefix_exist(self, prefix):
+        return prefix in self.registered_files.keys()
+
+    def get_prefixed_filename(self, prefix):
+        return self.registered_files[prefix]
+
     def delete_registered_files(self):
         for registered_file in self.registered_files:
-            if os.path.exists(registered_file):
-                os.unlink(registered_file)
+            if os.path.exists(self.registered_files[registered_file]):
+                os.unlink(self.registered_files[registered_file])
         self.registered_files = []
 
     def delete_registered_dirs(self):
@@ -79,7 +91,7 @@ class GlobalRegister(object):
 
     ### PORT
 
-    def get_uniq_tcp_port(self, group_name):
+    def get_uniq_tcp_port(self, group_name=None):
         return self.get_uniq_port(group_name=group_name, port_group=self.registered_tcp_ports)
 
     def get_uniq_udp_port(self, group_name):

@@ -42,7 +42,7 @@ def registry_new_dir():
 
 
 def consume_message_from_file(file):
-    messages = tc.file_based_processor.get_messages_from_file(file)
+    messages = tc.filemanager.get_file_content(file)
     os.remove(file)
     return messages
 

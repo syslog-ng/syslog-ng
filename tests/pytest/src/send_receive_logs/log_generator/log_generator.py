@@ -2,15 +2,20 @@ import socket
 
 
 class MessageGenerator(object):
-    def __init__(self, customized_message_parts=None, counter=1):
+    def __init__(self, customized_message_parts=None, counter_start=1, counter_end=2):
         self.customized_message_parts = customized_message_parts
-        self.counter = counter
+        self.counter_start = counter_start
+        self.counter_end = counter_end
         self.driver_category_1 = ["file", "tcp", "tcp6", "udp", "program", "network", "udp6"]
         self.driver_category_2 = ["pipe", "unix_dgram", "unix_stream"]
         self.driver_category_3 = ["syslog"]
 
         self.bsd_message_parts = self.create_bsd_message_parts()
         self.syslog_message_parts = self.create_syslog_message_parts()
+        self.global_config = None
+
+    def set_global_config(self, global_config):
+        self.global_config = global_config
 
     def create_bsd_message_parts(self):
         bsd_message_parts = {
@@ -38,25 +43,25 @@ class MessageGenerator(object):
         return syslog_message_parts
 
     def get_priority_field(self):
-        if "priority" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "priority" in self.customized_message_parts.keys():
             return self.customized_message_parts['priority']
         else:
             return "13"
 
     def get_bsd_timestamp_field(self):
-        if "bsd_timestamp" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "bsd_timestamp" in self.customized_message_parts.keys():
             return self.customized_message_parts['bsd_timestamp']
         else:
             return "Oct 11 22:14:15"
 
     def get_iso_timestamp_field(self):
-        if "iso_timestamp" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "iso_timestamp" in self.customized_message_parts.keys():
             return self.customized_message_parts['iso_timestamp']
         else:
             return "2003-10-11T22:14:15.003Z"
 
     def get_hostname_field(self):
-        if "hostname" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "hostname" in self.customized_message_parts.keys():
             if "self" in self.customized_message_parts['hostname']:
                 return self.customized_message_parts['hostname'].replace("self", socket.gethostname())
             else:
@@ -65,25 +70,25 @@ class MessageGenerator(object):
             return socket.gethostname()
 
     def get_program_field(self):
-        if "program" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "program" in self.customized_message_parts.keys():
             return self.customized_message_parts['program']
         else:
             return "test-program"
 
     def get_pid_field(self):
-        if "pid" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "pid" in self.customized_message_parts.keys():
             return self.customized_message_parts['pid']
         else:
             return "9999"
 
     def get_sdata_field(self):
-        if "sdata" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "sdata" in self.customized_message_parts.keys():
             return self.customized_message_parts['sdata']
         else:
             return "-"
 
     def get_message_field(self):
-        if "message" in self.customized_message_parts.keys():
+        if self.customized_message_parts and "message" in self.customized_message_parts.keys():
             return self.customized_message_parts['message']
         else:
             return "test message"
@@ -92,15 +97,19 @@ class MessageGenerator(object):
         return "%s - source_driver: %s - destination_driver: %s - counter: %s" % (
         self.bsd_message_parts['message'], source_driver, destination_driver, counter)
 
-    def generate_input_messages(self, source_driver_name, destination_driver_name):
-        return self.generate_messages(source_driver_name, destination_driver_name, "source")
+    def generate_input_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=1, with_new_line=True):
+        self.counter_start = counter_start
+        self.counter_end = counter_end
+        return self.generate_messages(source_driver_name, destination_driver_name, "source", with_new_line=with_new_line)
 
-    def generate_output_messages(self, source_driver_name, destination_driver_name):
-        return self.generate_messages(source_driver_name, destination_driver_name, "destination")
+    def generate_output_messages(self, source_driver_name, destination_driver_name, counter_start=1, counter_end=1, with_new_line=False):
+        self.counter_start = counter_start
+        self.counter_end = counter_end
+        return self.generate_messages(source_driver_name, destination_driver_name, "destination", with_new_line=with_new_line)
 
-    def generate_messages(self, source_driver, destination_driver, message_side):
+    def generate_messages(self, source_driver, destination_driver, message_side, with_new_line):
         messages = []
-        for i_counter in range(1, self.counter + 1):
+        for i_counter in range(self.counter_start, self.counter_end + 1):
             formatted_message = self.format_message_part(source_driver, destination_driver, i_counter)
             if message_side == "source" and source_driver in self.driver_category_1:
                 message = self.create_bsd_message(formatted_message)
@@ -112,6 +121,8 @@ class MessageGenerator(object):
             elif message_side == "destination" and destination_driver in self.driver_category_1:
                 if source_driver == "syslog":
                     message = self.create_bsd_message_without_priority_with_pid(formatted_message)
+                elif destination_driver == "tcp":
+                    message = self.create_bsd_message(formatted_message)
                 else:
                     message = self.create_bsd_message_without_priority(formatted_message)
             elif message_side == "destination" and destination_driver in self.driver_category_2:
@@ -121,7 +132,10 @@ class MessageGenerator(object):
             else:
                 assert False
 
-            messages.append(message)
+            if with_new_line:
+                messages.append("%s\n" % message)
+            else:
+                messages.append(message)
         return messages
 
     def create_bsd_message(self, formatted_message):

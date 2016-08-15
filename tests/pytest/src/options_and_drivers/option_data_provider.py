@@ -33,8 +33,6 @@ class OptionDataProvider(object):
             opposite_driver_type = "source"
             used_drivers_list_for_target_driver_type = self.option_database[self.option_name]['destination_drivers']
 
-        print("WWWWWWWWWWWW: %s" % used_drivers_list_for_target_driver_type)
-
         if "all_available" in used_drivers_list_for_target_driver_type:
             return self.driver_data_provider.get_all_drivers_for_a_product_version(self.product_version, target_driver_type)
         elif "fill_up_with" in used_drivers_list_for_target_driver_type[0]:
@@ -74,7 +72,6 @@ class OptionDataProvider(object):
 
     def validate_option_keys(self):
         for key in self.option_database[self.option_name].keys():
-            print("key :%s" % key)
             if key not in ['option_values', 'destination_drivers', 'parser_drivers', 'source_drivers', 'product_versions', 'further_global_options', 'further_destination_options', 'further_source_options']:
                 logging.error("option key value: [%s] unknown value.")
                 raise SystemExit(1)

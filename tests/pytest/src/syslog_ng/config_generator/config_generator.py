@@ -19,40 +19,61 @@ class ConfigGenerator(object):
         self.global_config = None
         self.connected_config_elements = None
         self.added_internal_source = False
+        self.registered_source_groups = []
+        self.registered_parser_groups = []
+        self.registered_destination_groups = []
 
     def set_global_config(self, global_config):
         self.global_config = global_config
+        self.filemanager = self.global_config['filemanager']
+        self.syslog_ng = self.global_config['syslog_ng']
+        self.syslog_ng_path = self.global_config['syslog_ng_path']
 
-    def add_source_group(self, driver_name, options=None, file_content=None):
-        return self.add_group(group_type="source", driver_name=driver_name, options=options, file_content=file_content)
+    def add_file_source(self, file_path, file_content=None, options=None):
+        return self.add_source_group(driver_name="file", options=options, file_content=file_content, file_path=file_path)
 
-    def add_destination_group(self, driver_name, options=None):
-        return self.add_group(group_type="destination", driver_name=driver_name, options=options)
+    def add_file_destination(self, file_path, options=None):
+        return self.add_destination_group(driver_name="file", options=options, file_path=file_path)
+
+    def add_tcp_source(self, options=None):
+        return self.add_source_group(driver_name="tcp", options=options)
+
+    def add_tcp_destination(self, options=None):
+        return self.add_destination_group(driver_name="tcp", options=options)
+
+    def add_source_group(self, driver_name, file_path=None, options=None, file_content=None):
+        return self.add_group(group_type="source", driver_name=driver_name, options=options, file_content=file_content, file_path=file_path)
+
+    def add_destination_group(self, driver_name, file_path=None, options=None):
+        return self.add_group(group_type="destination", driver_name=driver_name, options=options, file_path=file_path)
 
     def add_parser_group(self, driver_name, options=None, database_content=None):
         return self.add_group(group_type="parser", driver_name=driver_name, options=options, database_content=database_content)
 
-    def add_group(self, group_type, driver_name, options=None, **kwargs):
+    def add_group(self, group_type, driver_name, file_path=None, options=None, **kwargs):
         group_name = self.generate_unique_group_name(group_type, driver_name)
+        self.register_group(group_type=group_type, group=group_name)
         self.create_empty_group(group_type, group_name, driver_name)
-        generated_options = self.generate_options(options, driver_name, group_type, **kwargs)
+        generated_options = self.generate_options(options, driver_name, group_type, file_path=file_path, **kwargs)
         self.add_options_to_existing_driver(group_type, group_name, generated_options)
         return group_name
 
-    def generate_options(self, options, driver_name, group_type, **kwargs):
+    def generate_options(self, options, driver_name, group_type, file_path, **kwargs):
         generated_options = []
         if not options:
             options = {}
         if (driver_name in ["file", "pipe", "program"]) and (not options) or (driver_name in ["file", "pipe", "program"]) and ("path" not in options):
-            path = self.generate_unique_file_path(group_type, driver_name)
+            if not file_path:
+                file_path = self.global_config['global_register'].get_uniq_filename(prefix="%s_%s" % (group_type, driver_name))
             # WORKAROUND: @@ -> will be replaced in config render time to "'"
-            generated_options.append({"option_name": "file_path", "option_value": "@@%s@@" % path})
+            generated_options.append({"option_name": "file_path", "option_value": "@@%s@@" % file_path})
         elif (driver_name in ["add_contextual_data"]) and ("database" not in options):
-            path = self.generate_unique_file_path(group_type, driver_name, extension="csv")
+            if not file_path:
+                file_path = self.global_config['global_register'].get_uniq_filename(prefix="%s_%s" % (group_type, driver_name), extension="csv")
             if "database_content" in kwargs.keys():
-                self.global_config['file_based_processor'].write_message_to_file(path, kwargs['database_content'])
+                self.filemanager.create_file_with_content(file_path, kwargs['database_content'])
             # WORKAROUND: @@ -> will be replaced in config render time to "'"
-            generated_options.append({"option_name": "database", "option_value": "@@%s@@" % path})
+            generated_options.append({"option_name": "database", "option_value": "@@%s@@" % file_path})
         for option_name, option_value in options.items():
             if option_value == "not-set":
                 # skip adding option
@@ -63,13 +84,23 @@ class ConfigGenerator(object):
 
     def add_options_to_existing_driver(self, group_type, group_name, options):
         group_node = self.find_group_node(group_type, group_name)
+
         for option in options:
-                # NOTE: without option name, e.g: "/tmp/input.log"
-                if option['option_name'] == "file_path":
-                    self.add_option_to_node(node="without_option_name", group_node=group_node, group_type=group_type, option_value=option['option_value'], option_name=option['option_name'])
-                # NOTE: with option name, e.g: keep_hostname(yes)
-                else:
-                    self.add_option_to_node(node="with_option_name", group_node=group_node, group_type=group_type, option_value=option['option_value'], option_name=option['option_name'])
+            # NOTE: without option name, e.g: "/tmp/input.log"
+            if option["option_name"] == "file_path":
+                self.add_option_to_node(node="without_option_name", group_node=group_node, group_type=group_type,
+                                        option_value=option['option_value'], option_name=option['option_name'])
+
+            if (option['option_name'] == "ip") and (group_type == "destination"):
+                self.add_option_to_node(node="without_option_name", group_node=group_node, group_type=group_type,
+                                        option_value=option['option_value'], option_name=option['option_name'])
+
+        for option in options:
+            if (option['option_name'] == "file_path") or (option['option_name'] == "ip" and group_type == "destination"):
+                pass
+            else:
+            # NOTE: with option name, e.g: keep_hostname(yes)
+                self.add_option_to_node(node="with_option_name", group_node=group_node, group_type=group_type, option_value=option['option_value'], option_name=option['option_name'])
 
     def is_options_already_added(self, group_type, group_node):
         if group_type == "parser":
@@ -190,15 +221,21 @@ class ConfigGenerator(object):
             })
         return self.connected_config_elements
 
-    def render_config(self, config_path):
+    def render_config(self, logpath_management="auto", logpath=None):
+        # custom_logpath = [[src_group1, filter_group1, dest_group1], [src_group2, filter_group2, dest_group2]]
+        # config.render_config(logpath_management="custom", logpath=custom_logpath)
+        self.add_internal_source_to_config()
         config_template = "%s/config_template.pystache" % os.path.dirname(os.path.abspath(__file__))
+        config_path = self.syslog_ng_path.get_syslog_ng_config_path()
+        if logpath_management == "auto":
+            self.connect_drivers_in_logpath(sources=self.registered_source_groups, parsers=self.registered_parser_groups, destinations=self.registered_destination_groups)
         renderer = pystache.Renderer()
         with open(config_path, mode='wb') as config_file:
             config_file.write(bytes(renderer.render_path(config_template, self.config), 'utf-8'))
         with open(config_path, mode='r') as config_file:
             contents = config_file.read()
             replaced_contents = contents.replace("@@", "'")
-        self.global_config['file_based_processor'].write_message_to_file(config_path, replaced_contents)
+        self.filemanager.create_file_with_content(config_path, replaced_contents)
 
     def add_internal_source_to_config(self):
         self.added_internal_source = True
@@ -246,5 +283,13 @@ class ConfigGenerator(object):
                 return group["%s_drivers" % group_type][0]["driver_options"][0]["non_tls_options"][0]["without_option_name"][0]["option_value"].replace("@@", '"')
 
     def from_raw(self, config):
-        config_path = self.global_config['syslog_ng'].get_syslog_ng_config_path()
-        self.global_config['file_based_processor'].write_message_to_file(config_path, config)
+        config_path = self.syslog_ng_path.get_syslog_ng_config_path()
+        self.filemanager.create_file_with_content(config_path, config)
+
+    def register_group(self, group_type, group):
+        if group_type == "source":
+            self.registered_source_groups.append(group)
+        elif group_type == "parser":
+            self.registered_parser_groups.append(group)
+        elif group_type == "destination":
+            self.registered_destination_groups.append(group)

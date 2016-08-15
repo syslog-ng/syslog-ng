@@ -4,23 +4,23 @@ from src.syslog_ng.binary_syslog_ng_ctl.syslog_ng_ctl_utils import *
 from src.work_with_process import run_command
 
 
-class SyslogNg(SyslogNgPathHandler):
+class SyslogNg(object):
     def __init__(self):
-        SyslogNgPathHandler.__init__(self)
         self.process_pid = None
         self.global_config = None
 
     def set_global_config(self, global_config):
         self.global_config = global_config
+        self.syslog_ng_path = self.global_config['syslog_ng_path']
 
     def start(self):
-        start_command = "%s " % self.get_syslog_ng_binary()
+        start_command = "%s " % self.syslog_ng_path.get_syslog_ng_binary()
         start_command += "-Ftv --no-caps --enable-core "
-        start_command += "-f %s " % self.get_syslog_ng_config_path()
-        start_command += "-R %s " % self.get_syslog_ng_persist()
-        start_command += "-p %s " % self.get_syslog_ng_pid()
-        start_command += "-c %s " % self.get_syslog_ng_control_socket()
-        start_command += "2> %s " % self.get_syslog_ng_console_log()
+        start_command += "-f %s " % self.syslog_ng_path.get_syslog_ng_config_path()
+        start_command += "-R %s " % self.syslog_ng_path.get_syslog_ng_persist()
+        start_command += "-p %s " % self.syslog_ng_path.get_syslog_ng_pid()
+        start_command += "-c %s " % self.syslog_ng_path.get_syslog_ng_control_socket()
+        start_command += "> %s " % self.syslog_ng_path.get_syslog_ng_console_log()
 
         process = run_command.run_command_for_pid(start_command)
         self.process_pid = process.pid
