@@ -40,7 +40,8 @@ aaa: aaa
 
 
 def teardown_testdb_config_reader():
-    fbp.delete_written_files()
+    #    fbp.delete_written_files()
+    pass
 
 
 def test_get_running_test(setup_testdb_config_reader):

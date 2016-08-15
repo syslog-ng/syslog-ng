@@ -52,7 +52,7 @@ def test_get_uniq_filename():
     expected_filename2 = "/%s/%s/%s_%s_%s.%s" % (global_root_dir, under_subdir2, global_prefix, prefix2, uniq_id_from_generated_file_name2, extension2)
     expected_registered_files.append(expected_filename2)
 
-    assert expected_registered_files == gr.registered_files
+    assert expected_registered_files.sort() == list(gr.registered_files.values()).sort()
 
 def test_get_uniq_dirname():
     gr = GlobalRegister()
