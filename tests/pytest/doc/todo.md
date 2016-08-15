@@ -4,6 +4,12 @@
 
 # Ideas
 
+# Throw away /tmp/testdb_configuration.ini
+
+## Solution
+
+Pass to each test via hooks
+
 # Make lots of member functions static
 
 ## Reason
