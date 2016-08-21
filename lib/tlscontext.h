@@ -57,6 +57,10 @@ typedef enum
 typedef gint (*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
 typedef struct _TLSContext TLSContext;
 
+#define X509_MAX_CN_LEN 64
+#define X509_MAX_O_LEN 64
+#define X509_MAX_OU_LEN 32
+
 typedef struct _TLSSession
 {
   SSL *ssl;
@@ -64,6 +68,13 @@ typedef struct _TLSSession
   TLSSessionVerifyFunc verify_func;
   gpointer verify_data;
   GDestroyNotify verify_data_destroy;
+  struct
+  {
+    int found;
+    gchar o[X509_MAX_O_LEN];
+    gchar ou[X509_MAX_OU_LEN];
+    gchar cn[X509_MAX_CN_LEN];
+  } peer_info;
 } TLSSession;
 
 void tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data, GDestroyNotify verify_destroy);

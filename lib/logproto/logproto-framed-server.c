@@ -69,7 +69,7 @@ log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond)
 }
 
 static LogProtoStatus
-log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_read)
+log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_read, LogTransportAuxData *aux)
 {
   gint rc;
 
@@ -91,7 +91,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
     return LPS_SUCCESS;
 
   rc = log_transport_read(self->super.transport, &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end,
-                          NULL);
+                          aux);
 
   if (rc < 0)
     {
@@ -176,13 +176,17 @@ read_frame:
       if (!log_proto_framed_server_extract_frame_length(self, &need_more_data))
         {
           /* invalid frame header */
+          log_transport_aux_data_reinit(aux);
           return LPS_ERROR;
         }
       if (need_more_data && try_read)
         {
-          status = log_proto_framed_server_fetch_data(self, may_read);
+          status = log_proto_framed_server_fetch_data(self, may_read, aux);
           if (status != LPS_SUCCESS)
-            return status;
+            {
+              log_transport_aux_data_reinit(aux);
+              return status;
+            }
           try_read = FALSE;
           goto read_frame;
         }
@@ -195,6 +199,7 @@ read_frame:
               msg_error("Incoming frame larger than log_msg_size()",
                         evt_tag_int("log_msg_size", self->super.options->max_msg_size),
                         evt_tag_int("frame_length", self->frame_len));
+              log_transport_aux_data_reinit(aux);
               return LPS_ERROR;
             }
           if (self->buffer_size < self->super.options->max_buffer_size &&
@@ -247,9 +252,12 @@ read_message:
         }
       if (try_read)
         {
-          status = log_proto_framed_server_fetch_data(self, may_read);
+          status = log_proto_framed_server_fetch_data(self, may_read, aux);
           if (status != LPS_SUCCESS)
-            return status;
+            {
+              log_transport_aux_data_reinit(aux);
+              return status;
+            }
           try_read = FALSE;
           goto read_message;
         }

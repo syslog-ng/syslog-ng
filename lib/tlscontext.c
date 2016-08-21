@@ -238,6 +238,28 @@ tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpoin
   self->verify_data_destroy = verify_destroy;
 }
 
+void
+tls_session_info_callback(const SSL *ssl, int where, int ret)
+{
+  TLSSession *self = (TLSSession *)SSL_get_app_data(ssl);
+  if( !self->peer_info.found && where == (SSL_ST_ACCEPT|SSL_CB_LOOP) )
+    {
+      X509 *cert = SSL_get_peer_certificate(ssl);
+
+      if(cert)
+        {
+          self->peer_info.found = 1; /* mark this found so we don't keep checking on every callback */
+          X509_NAME *name = X509_get_subject_name(cert);
+
+          X509_NAME_get_text_by_NID( name, NID_commonName, self->peer_info.cn, X509_MAX_CN_LEN );
+          X509_NAME_get_text_by_NID( name, NID_organizationName, self->peer_info.o, X509_MAX_O_LEN );
+          X509_NAME_get_text_by_NID( name, NID_organizationalUnitName, self->peer_info.ou, X509_MAX_OU_LEN );
+
+          X509_free(cert);
+        }
+    }
+}
+
 static TLSSession *
 tls_session_new(SSL *ssl, TLSContext *ctx)
 {
@@ -248,6 +270,9 @@ tls_session_new(SSL *ssl, TLSContext *ctx)
 
   /* to set verify callback */
   tls_session_set_verify(self, NULL, NULL, NULL);
+
+  SSL_set_info_callback(ssl, tls_session_info_callback);
+
   return self;
 }
 
@@ -257,6 +282,7 @@ tls_session_free(TLSSession *self)
   if (self->verify_data && self->verify_data_destroy)
     self->verify_data_destroy(self->verify_data);
   SSL_free(self->ssl);
+
   g_free(self);
 }
 
