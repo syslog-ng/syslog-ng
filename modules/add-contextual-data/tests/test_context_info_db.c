@@ -190,6 +190,28 @@ _assert_context_info_db_contains_name_value_pairs_by_selector(ContextInfoDB *
     }
 }
 
+static void
+_assert_import_csv_with_single_selector(gchar *csv_content, gchar *selector_to_check,
+                                        TestNVPair *expected_nvpairs, gsize expected_nvpairs_size)
+{
+  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  ContextInfoDB *db = context_info_db_new();
+  ContextualDataRecordScanner *scanner =
+    create_contextual_data_record_scanner_by_type("csv");
+
+  cr_assert(context_info_db_import(db, fp, scanner),
+            "Failed to import valid CSV file.");
+  fclose(fp);
+
+  _assert_context_info_db_contains_name_value_pairs_by_selector(db,
+      selector_to_check,
+      expected_nvpairs,
+      expected_nvpairs_size);
+
+  context_info_db_free(db);
+  contextual_data_record_scanner_free(scanner);
+}
+
 Test(add_contextual_data, test_inserted_nv_pairs)
 {
   ContextInfoDB *context_info_db = context_info_db_new();
@@ -256,6 +278,20 @@ Test(add_contextual_data, test_import_with_valid_csv)
 
   context_info_db_free(db);
   contextual_data_record_scanner_free(scanner);
+}
+
+Test(add_contextual_data, test_import_with_valid_csv_crlf)
+{
+  gchar csv_content[] = "selector1,name1,value1\r\n"
+                        "selector1,name1.1,value1.1";
+
+  TestNVPair expected_nvpairs[] =
+  {
+    {.name = "name1",.value = "value1"},
+    {.name = "name1.1",.value = "value1.1"},
+  };
+
+  _assert_import_csv_with_single_selector(csv_content, "selector1", expected_nvpairs, ARRAY_SIZE(expected_nvpairs));
 }
 
 Test(add_contextual_data, test_import_with_invalid_csv_content)
