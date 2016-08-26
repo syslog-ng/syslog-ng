@@ -31,8 +31,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-MsgFormatOptions parse_options;
-
 static LogMessage *
 _create_log_message(const gchar *log)
 {
