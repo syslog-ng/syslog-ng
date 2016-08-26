@@ -84,7 +84,7 @@ void msg_format_options_defaults(MsgFormatOptions *options);
 void msg_format_options_init(MsgFormatOptions *parse_options, GlobalConfig *cfg);
 void msg_format_options_destroy(MsgFormatOptions *parse_options);
 
-gboolean msg_format_options_process_flag(MsgFormatOptions *options, gchar *flag);
+gboolean msg_format_options_process_flag(MsgFormatOptions *options, const gchar *flag);
 
 void msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length);
 

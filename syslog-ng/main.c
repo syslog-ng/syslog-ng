@@ -125,7 +125,7 @@ version(void)
 {
   if (!get_installer_version(&installer_version) || installer_version == NULL)
     {
-      installer_version = SYSLOG_NG_VERSION;
+      installer_version = g_strdup(SYSLOG_NG_VERSION);
     }
   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_VERSION "\n"
          "Installer-Version: %s\n"

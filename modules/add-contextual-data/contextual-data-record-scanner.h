@@ -39,7 +39,7 @@ struct _ContextualDataRecordScanner
   ContextualDataRecord last_record;
   gpointer scanner;
   const gchar *name_prefix;
-  const gboolean (*get_next) (ContextualDataRecordScanner *self,
+  gboolean (*get_next) (ContextualDataRecordScanner *self,
                               const gchar *input,
                               ContextualDataRecord *record);
   void (*free_fn) (ContextualDataRecordScanner *self);

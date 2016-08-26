@@ -141,7 +141,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   configuration = cfg_new(0x0300);
   app_startup();
-  putenv("TZ=MET-1METDST");
+  setenv("TZ", "MET-1METDST", TRUE);
   tzset();
 
   plugin_load_module("syslogformat", configuration, NULL);

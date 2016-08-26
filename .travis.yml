@@ -37,6 +37,9 @@ install:
 before_script:
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
+  - if [ "$CC" = "gcc" ]; then
+      EXTRA_WARN="--enable-extra-warnings";
+    fi
   - ./configure
       CFLAGS=-Werror
       --prefix=$HOME/install/syslog-ng
@@ -54,7 +57,7 @@ before_script:
       --enable-pacct
       --enable-manpages
       --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
-      --enable-extra-warnings
+      $EXTRA_WARN
 script:
   - . tests/build-log-cflags-propagation.sh;
     if [ "$CC" = "gcc" ]; then

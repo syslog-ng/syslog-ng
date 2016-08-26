@@ -36,7 +36,7 @@
 #include <string.h>
 #include <iv_thread.h>
 
-const QueueType log_queue_fifo_type = "FIFO";
+QueueType log_queue_fifo_type = "FIFO";
 
 /*
  * LogFifo is a scalable first-in-first-output queue implementation, that:

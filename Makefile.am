@@ -42,8 +42,52 @@ AM_CPPFLAGS		= -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I$(top_builddir)/lib
 AM_CFLAGS =
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
-	-Wshadow
-
+	-fno-common \
+	-W \
+	-Wabi \
+	-Wall \
+	-Wcast-align \
+	-Wdeprecated \
+	-Wdeprecated-declarations \
+	-Wextra \
+	-Wimplicit-function-declaration \
+	-Winvalid-pch \
+	-Wmissing-format-attribute \
+	-Woverflow \
+	-Wshadow \
+	-Wstrict-overflow=2 \
+	\
+	-Wno-error=aggregate-return -Waggregate-return \
+	-Wno-error=bad-function-cast -Wbad-function-cast \
+	-Wno-error=cast-qual -Wcast-qual \
+	-Wno-error=conversion -Wconversion \
+	-Wno-error=double-promotion -Wdouble-promotion \
+	-Wno-error=float-equal -Wfloat-equal \
+	-Wno-error=format-nonliteral -Wformat=2 \
+	-Wno-error=inline -Winline \
+	-Wno-error=missing-declarations -Wmissing-declarations \
+	-Wno-error=missing-format-attribute \
+	-Wno-error=missing-prototypes -Wmissing-prototypes \
+	-Wno-error=nested-externs -Wnested-externs \
+	-Wno-error=pointer-arith -Wpointer-arith \
+	-Wno-error=pointer-sign -Wpointer-sign \
+	-Wno-error=redundant-decls -Wredundant-decls \
+	-Wno-error=sign-compare \
+	-Wno-error=sign-conversion -Wsign-conversion \
+	-Wno-error=strict-overflow \
+	-Wno-error=strict-prototypes -Wstrict-prototypes \
+	-Wno-error=suggest-attribute=const -Wsuggest-attribute=const \
+	-Wno-error=suggest-attribute=noreturn -Wsuggest-attribute=noreturn \
+	-Wno-error=suggest-attribute=pure -Wsuggest-attribute=pure \
+	-Wno-error=switch-default -Wswitch-default \
+	-Wno-error=type-limits \
+	-Wno-error=undef -Wundef \
+	-Wno-error=write-strings \
+	\
+	-Wno-missing-field-initializers \
+	-Wno-stack-protector \
+	-Wno-unused-parameter \
+	-Wno-variadic-macros
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)

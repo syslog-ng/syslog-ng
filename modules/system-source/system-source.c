@@ -190,9 +190,9 @@ system_sysblock_add_systemd_source(GString *sysblock)
 static void
 system_sysblock_add_linux_kmsg(GString *sysblock)
 {
-  gchar *kmsg = "/proc/kmsg";
+  const gchar *kmsg = "/proc/kmsg";
   int fd;
-  gchar *format = NULL;
+  const gchar *format = NULL;
 
   if ((fd = open("/dev/kmsg", O_RDONLY)) != -1)
     {

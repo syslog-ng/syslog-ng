@@ -49,19 +49,19 @@ GSockAddr *sender_saddr;
 MsgFormatOptions parse_options;
 
 static gint
-facility_bits(gchar *fac)
+facility_bits(const gchar *fac)
 {
   return 1 << (syslog_name_lookup_facility_by_name(fac) >> 3);
 }
 
 static gint
-level_bits(gchar *lev)
+level_bits(const gchar *lev)
 {
   return 1 << syslog_name_lookup_level_by_name(lev);
 }
 
 static gint
-level_range(gchar *from, gchar *to)
+level_range(const gchar *from, const gchar *to)
 {
   int r1, r2;
 
@@ -71,7 +71,7 @@ level_range(gchar *from, gchar *to)
 }
 
 FilterExprNode *
-compile_pattern(FilterRE *f, gchar *regexp, const gchar *type, gint flags)
+compile_pattern(FilterRE *f, const gchar *regexp, const gchar *type, gint flags)
 {
   gboolean result;
 
@@ -89,25 +89,25 @@ compile_pattern(FilterRE *f, gchar *regexp, const gchar *type, gint flags)
 }
 
 FilterExprNode *
-create_posix_regexp_filter(NVHandle handle, gchar *regexp, gint flags)
+create_posix_regexp_filter(NVHandle handle, const gchar *regexp, gint flags)
 {
   return compile_pattern(filter_re_new(handle), regexp, "posix", flags);
 }
 
 FilterExprNode *
-create_posix_regexp_match(gchar* regexp, gint flags)
+create_posix_regexp_match(const gchar* regexp, gint flags)
 {
   return compile_pattern(filter_match_new(), regexp, "posix", flags);
 }
 
 FilterExprNode *
-create_pcre_regexp_filter(gint field, gchar* regexp, gint flags)
+create_pcre_regexp_filter(gint field, const gchar* regexp, gint flags)
 {
   return compile_pattern(filter_re_new(field), regexp, "pcre", flags);
 }
 
 FilterExprNode *
-create_pcre_regexp_match(gchar* regexp, gint flags)
+create_pcre_regexp_match(const gchar* regexp, gint flags)
 {
   return compile_pattern(filter_match_new(), regexp, "pcre", flags);
 }
@@ -124,7 +124,7 @@ create_template(const gchar *template)
 
 
 void
-testcase(gchar *msg,
+testcase(const gchar *msg,
          FilterExprNode *f,
          gboolean expected_result)
 {
@@ -158,7 +158,7 @@ testcase(gchar *msg,
 }
 
 void
-testcase_with_backref_chk(gchar *msg,
+testcase_with_backref_chk(const gchar *msg,
          FilterExprNode *f,
          gboolean expected_result,
          const gchar *name,

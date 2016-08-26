@@ -79,7 +79,7 @@ typedef union _QDiskFileHeader
 struct _QDisk
 {
   gchar *filename;
-  gchar *file_id;
+  const gchar *file_id;
   gint fd;
   gint64 read_qout_ofs; /* the size in bytes between read_head and qout_ofs */
   gint64 prev_read_head;
@@ -140,7 +140,7 @@ _next_filename(QDisk *self)
     {
       struct stat st;
 
-      gchar *format = "%s/syslog-ng-%05d.qf";
+      const gchar *format = "%s/syslog-ng-%05d.qf";
       if (self->options->reliable)
         format = "%s/syslog-ng-%05d.rqf";
       g_snprintf(tmpfname, sizeof(tmpfname), format, qdir, i);

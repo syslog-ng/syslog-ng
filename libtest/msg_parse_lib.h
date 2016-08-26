@@ -30,7 +30,7 @@
 #include "cfg.h"
 #include "logmsg/logmsg.h"
 
-MsgFormatOptions parse_options;
+extern MsgFormatOptions parse_options;
 
 #define MSG_TESTCASE(x, ...) do { log_message_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); log_message_testcase_end(); } while(0)
 

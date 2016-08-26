@@ -45,7 +45,7 @@ MsgFormatOptions parse_options;
 #define BENCHMARK_COUNT 10000
 
 void
-testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
+testcase(const gchar *msg_str, gboolean syslog_proto, const gchar *template)
 {
   LogTemplate *templ;
   LogMessage *msg;
@@ -108,7 +108,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   app_startup();
 
-  putenv("TZ=MET-1METDST");
+  setenv("TZ", "MET-1METDST", TRUE);
   tzset();
 
   plugin_load_module("syslogformat", configuration, NULL);

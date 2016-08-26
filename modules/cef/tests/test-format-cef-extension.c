@@ -218,7 +218,7 @@ int
 main(int argc, char *argv[])
 {
   app_startup();
-  putenv("TZ=UTC");
+  setenv("TZ", "UTC", TRUE);
   tzset();
   init_template_tests();
   plugin_load_module("cef", configuration, NULL);
