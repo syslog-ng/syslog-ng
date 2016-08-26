@@ -105,7 +105,7 @@ csv_contextual_data_record_scanner_new()
   csv_scanner_options_set_columns(&self->options,
                                   string_array_to_list(column_array));
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE | CSV_SCANNER_DROP_INVALID);
-  csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
+  csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
   csv_scanner_state_init(&self->scanner, &self->options);
   self->super.scanner = &self->scanner;
   self->super.get_next = get_next_record;
