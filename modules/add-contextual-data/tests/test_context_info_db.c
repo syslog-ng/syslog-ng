@@ -280,7 +280,8 @@ Test(add_contextual_data, test_import_with_valid_csv)
   contextual_data_record_scanner_free(scanner);
 }
 
-Test(add_contextual_data, test_import_with_valid_csv_crlf)
+Test(add_contextual_data, test_import_from_csv_with_crlf_line_ending,
+     .description = "RFC 4180: Each record should be located on a separate line, delimited by a line break (CRLF).")
 {
   gchar csv_content[] = "selector1,name1,value1\r\n"
                         "selector1,name1.1,value1.1";
@@ -289,6 +290,20 @@ Test(add_contextual_data, test_import_with_valid_csv_crlf)
   {
     {.name = "name1",.value = "value1"},
     {.name = "name1.1",.value = "value1.1"},
+  };
+
+  _assert_import_csv_with_single_selector(csv_content, "selector1", expected_nvpairs, ARRAY_SIZE(expected_nvpairs));
+}
+
+Test(add_contextual_data, test_import_from_csv_with_escaped_double_quote,
+     .description = "RFC 4180: If double-quotes are used to enclose fields, then a double-quote appearing inside a "
+                    "field must be escaped by preceding it with another double quote.")
+{
+  gchar csv_content[] = "selector1,name1,\"c\"\"cc\"";
+
+  TestNVPair expected_nvpairs[] =
+  {
+    {.name = "name1",.value = "c\"cc"},
   };
 
   _assert_import_csv_with_single_selector(csv_content, "selector1", expected_nvpairs, ARRAY_SIZE(expected_nvpairs));
