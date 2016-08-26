@@ -38,8 +38,6 @@
 #include <iv_list.h>
 #include <iv_thread.h>
 
-MsgFormatOptions parse_options;
-
 #define OVERFLOW_SIZE 10000
 #define FEEDERS 1
 #define MESSAGES_PER_FEEDER 30000
