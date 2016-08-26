@@ -219,7 +219,7 @@ assert_template_failure(const gchar *template, const gchar *expected_error)
                "compilation failure expected to template,"
                " but success was returned, template=%s, expected_error=%s\n",
                template, expected_error);
-  expect_true(strstr(error->message, expected_error) != NULL,
+  expect_true(strstr(error ? error->message : "", expected_error) != NULL,
               "FAIL: compilation error doesn't match, error=%s, expected_error=%s\n",
               error->message, expected_error);
   g_clear_error(&error);
