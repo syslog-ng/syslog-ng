@@ -31,6 +31,7 @@ struct _LogProtoREMultiLineServer
   /* these are borrowed */
   regex_t *prefix;
   regex_t *garbage;
+  gint (*get_offset_of_garbage)(LogProtoREMultiLineServer *self, const guchar* line, gsize line_len);
 };
 
 /* LogProtoREMultiLineServer
@@ -40,14 +41,19 @@ struct _LogProtoREMultiLineServer
  * zero or more lines starting with whitespace. A record is terminated
  * when we reach a line that starts with non-whitespace, or EOF.
  */
-LogProtoServer *log_proto_regexp_multiline_server_new(LogTransport *transport,
+LogProtoServer *log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
                                                       const LogProtoServerOptions *options,
                                                       regex_t *prefix,
                                                       regex_t *garbage);
+LogProtoServer *log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
+                                                      const LogProtoServerOptions *options,
+                                                      regex_t *prefix,
+                                                      regex_t *suffix);
+
 void log_proto_regexp_multiline_server_init(LogProtoREMultiLineServer *self,
                                             LogTransport *transport,
                                             const LogProtoServerOptions *options,
                                             regex_t *prefix,
-                                            regex_t *garbage);
+                                            regex_t *garbage_or_suffix);
 
 #endif

@@ -32,7 +32,8 @@ enum
 {
   MLM_NONE,
   MLM_INDENTED,
-  MLM_REGEXP,
+  MLM_PREFIX_GARBAGE,
+  MLM_PREFIX_SUFFIX,
 };
 
 typedef struct _AFFileSourceDriver

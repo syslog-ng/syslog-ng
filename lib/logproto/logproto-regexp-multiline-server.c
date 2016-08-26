@@ -23,29 +23,47 @@
 
 #include <string.h>
 
-static gint
-_find_regexp(regex_t *re, const guchar *str, gsize len)
+static int
+_find_regexp(regex_t *re, const guchar *str, gsize len, regmatch_t *matches, gint matches_num)
 {
   gint rc;
   gchar *buf;
-  regmatch_t matches[1];
 
   if (!re)
     return -1;
 
   APPEND_ZERO(buf, str, len);
-  rc = regexec(re, buf, sizeof(matches) / sizeof(matches[0]), matches, 0);
-  if (rc == 0)
-    return matches[0].rm_so;
-  return -1;
-
+  rc = regexec(re, buf, matches_num, matches, 0);
+  return rc;
 }
 
 static gboolean
 _regexp_matches(regex_t *re, const guchar *str, gsize len)
 {
-  return _find_regexp(re, str, len) >= 0;
+  regmatch_t match;
+  if (_find_regexp(re, str, len, &match, 1) != 0)
+    return FALSE;
+  return match.rm_so >= 0;
 }
+
+gint
+log_proto_prefix_garbage_multiline_get_offset_of_garbage(LogProtoREMultiLineServer *self, const guchar* line, gsize line_len)
+{
+  regmatch_t match;
+  if (_find_regexp(self->garbage, line, line_len, &match, 1) != 0)
+    return -1;
+  return match.rm_so;
+};
+
+gint
+log_proto_prefix_suffix_multiline_get_offset_of_garbage(LogProtoREMultiLineServer *self, const guchar* line, gsize line_len)
+{
+  regmatch_t match;
+  if (_find_regexp(self->garbage, line, line_len, &match, 1) != 0)
+    return -1;
+  return match.rm_eo;
+};
+
 
 static gint
 _accumulate_initial_line(LogProtoREMultiLineServer *self,
@@ -53,9 +71,7 @@ _accumulate_initial_line(LogProtoREMultiLineServer *self,
                                                    gsize line_len,
                                                    gssize consumed_len)
 {
-  gint offset_of_garbage;
-
-  offset_of_garbage = _find_regexp(self->garbage, line, line_len);
+  gint offset_of_garbage = self->get_offset_of_garbage(self, line, line_len);
   if (offset_of_garbage >= 0)
     return LPT_CONSUME_PARTIALLY(line_len - offset_of_garbage) | LPT_EXTRACTED;
   else
@@ -69,9 +85,7 @@ _accumulate_continuation_line(LogProtoREMultiLineServer *self,
                                                         gsize line_len,
                                                         gssize consumed_len)
 {
-  gint offset_of_garbage;
-
-  offset_of_garbage = _find_regexp(self->garbage, line, line_len);
+  gint offset_of_garbage = self->get_offset_of_garbage(self, line, line_len);
   if (offset_of_garbage >= 0)
     return LPT_CONSUME_PARTIALLY(line_len - offset_of_garbage) | LPT_EXTRACTED;
   else if (_regexp_matches(self->prefix, line, line_len))
@@ -125,16 +139,16 @@ log_proto_regexp_multiline_server_init(LogProtoREMultiLineServer *self,
                                        LogTransport *transport,
                                        const LogProtoServerOptions *options,
                                        regex_t *prefix,
-                                       regex_t *garbage)
+                                       regex_t *garbage_or_suffix)
 {
   log_proto_text_server_init(&self->super, transport, options);
   self->super.accumulate_line = log_proto_regexp_multiline_accumulate_line;
   self->prefix = prefix;
-  self->garbage = garbage;
+  self->garbage = garbage_or_suffix;
 }
 
 LogProtoServer *
-log_proto_regexp_multiline_server_new(LogTransport *transport,
+log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
                                       const LogProtoServerOptions *options,
                                       regex_t *prefix,
                                       regex_t *garbage)
@@ -142,5 +156,19 @@ log_proto_regexp_multiline_server_new(LogTransport *transport,
   LogProtoREMultiLineServer *self = g_new0(LogProtoREMultiLineServer, 1);
 
   log_proto_regexp_multiline_server_init(self, transport, options, prefix, garbage);
+  self->get_offset_of_garbage = log_proto_prefix_garbage_multiline_get_offset_of_garbage;
+  return &self->super.super.super;
+}
+
+LogProtoServer *
+log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
+                                      const LogProtoServerOptions *options,
+                                      regex_t *prefix,
+                                      regex_t *suffix)
+{
+  LogProtoREMultiLineServer *self = g_new0(LogProtoREMultiLineServer, 1);
+
+  log_proto_regexp_multiline_server_init(self, transport, options, prefix, suffix);
+  self->get_offset_of_garbage = log_proto_prefix_suffix_multiline_get_offset_of_garbage;
   return &self->super.super.super;
 }
