@@ -119,6 +119,12 @@ uninstall-hook: ${UNINSTALL_HOOKS}
 populate-makefiles:
 	$(top_srcdir)/Mk/populate-makefiles.sh
 
+style-check:
+	$(top_srcdir)/scripts/style-checker.sh check $(top_srcdir)
+
+style-format:
+	$(top_srcdir)/scripts/style-checker.sh format $(top_srcdir)
+
 help:
 	@echo "Welcome to the syslog-ng build system!"
 	@echo

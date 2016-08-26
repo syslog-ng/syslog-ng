@@ -83,6 +83,18 @@ matrix:
   allow_failures:
     - os: osx
   include:
+    - env: B=style-check
+      dist: trusty
+      sudo: required
+      install:
+      - curl http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04/Release.key | sudo apt-key add -
+      - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04 ./" | sudo tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
+      - sudo apt-get update -qq
+      - sudo apt-get install -qq
+          astyle
+      before_script:
+      script:
+      - scripts/style-checker.sh check
     - env: B=copyright-check
       sudo: false
       compiler: gcc
