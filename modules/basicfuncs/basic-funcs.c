@@ -81,7 +81,9 @@ static Plugin basicfuncs_plugins[] =
   /* misc funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_context_length, "context-length"),
   TEMPLATE_FUNCTION_PLUGIN(tf_env, "env"),
-  TEMPLATE_FUNCTION_PLUGIN(tf_template, "template")
+  TEMPLATE_FUNCTION_PLUGIN(tf_template, "template"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_pwuid_to_nam, "pwuid-to-nam"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_grgid_to_nam, "grgid-to-nam"),
 };
 
 gboolean
