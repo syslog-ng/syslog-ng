@@ -301,7 +301,19 @@ test_import_with_valid_csv_crlf(void)
   };
 
   _assert_import_csv_with_single_selector(csv_content, "selector1", expected_nvpairs_selector1, 2);
+}
 
+static void
+test_import_with_valid_csv_rfc4180_escape(void)
+{
+  gchar csv_content[] = "selector1,name1,\"c\"\"cc\"";
+
+  TestNVPair expected_nvpairs_selector1[1] =
+  {
+    {.name = "name1",.value = "c\"cc"},
+  };
+
+  _assert_import_csv_with_single_selector(csv_content, "selector1", expected_nvpairs_selector1, 1);
 }
 
 static void
@@ -360,6 +372,7 @@ main(int argc, char **argv)
   CONTEXT_INFO_DB_TESTCASE(test_inserted_nv_pairs);
   CONTEXT_INFO_DB_TESTCASE(test_import_with_valid_csv);
   CONTEXT_INFO_DB_TESTCASE(test_import_with_valid_csv_crlf);
+  CONTEXT_INFO_DB_TESTCASE(test_import_with_valid_csv_rfc4180_escape);
   CONTEXT_INFO_DB_TESTCASE(test_import_with_invalid_csv_content);
   CONTEXT_INFO_DB_TESTCASE(test_import_with_csv_contains_invalid_line);
 
