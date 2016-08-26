@@ -20,33 +20,20 @@
  *
  */
 
+#include <criterion/criterion.h>
 #include "serialize.h"
 #include "apphook.h"
-#include <string.h>
 
-#define TEST_ASSERT(x)  \
-  do { \
-   if (!(x)) \
-     { \
-       fprintf(stderr, "test assertion failed: " #x " line: %d\n", __LINE__); \
-       return 1; \
-     } \
-  } while (0)
+TestSuite(serialize, .init = app_startup, .fini = app_shutdown);
 
-int
-main()
+Test(serialize, test_serialize)
 {
-  GString *stream;
-  GString *value;
-  SerializeArchive *a;
+  GString *stream = g_string_new("");
+  GString *value = g_string_new("");
   gchar buf[256];
   guint32 num;
 
-  app_startup();
-
-  stream = g_string_new("");
-  value = g_string_new("");
-  a = serialize_string_archive_new(stream);
+  SerializeArchive *a = serialize_string_archive_new(stream);
 
   serialize_write_blob(a, "MAGIC", 5);
   serialize_write_uint32(a, 0xdeadbeaf);
@@ -56,15 +43,16 @@ main()
   serialize_archive_free(a);
 
   a = serialize_string_archive_new(stream);
-  serialize_read_blob(a, buf, 5);
-  TEST_ASSERT(memcmp(buf, "MAGIC", 5) == 0);
-  serialize_read_uint32(a, &num);
-  TEST_ASSERT(num == 0xdeadbeaf);
-  serialize_read_string(a, value);
-  TEST_ASSERT(strcmp(value->str, "kismacska") == 0);
-  serialize_read_string(a, value);
-  TEST_ASSERT(strcmp(value->str, "tarkabarka") == 0);
 
-  app_shutdown();
-  return 0;
+  serialize_read_blob(a, buf, 5);
+  cr_assert_arr_eq(buf, "MAGIC", 5);
+
+  serialize_read_uint32(a, &num);
+  cr_assert_eq(num, 0xdeadbeaf);
+
+  serialize_read_string(a, value);
+  cr_assert_str_eq(value->str, "kismacska");
+
+  serialize_read_string(a, value);
+  cr_assert_str_eq(value->str, "tarkabarka");
 }

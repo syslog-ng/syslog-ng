@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Balabit
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,9 @@
  *
  */
 
-#include "testutils.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
 #include "msg_parse_lib.h"
 #include "syslog-ng.h"
 #include "logmsg/logmsg.h"
@@ -62,15 +64,39 @@ set_new_log_message_attributes(LogMessage *log_message)
   log_msg_set_value_by_name(log_message, "newvalue", "newvalue", -1);
 }
 
+
 void
-test_cloning_with_log_message(gchar *msg)
+setup(void)
+{
+  app_startup();
+  init_and_load_syslogformat_module();
+}
+
+void
+teardown(void)
+{
+  deinit_syslogformat_module();
+  app_shutdown();
+}
+
+TestSuite(clone_logmsg, .init = setup, .fini = teardown);
+
+ParameterizedTestParameters(clone_logmsg, test_cloning_with_log_message)
+{
+  const gchar *messages[] = {
+    "<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...",
+    "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\"] [eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...",
+  };
+
+  return cr_make_param_array(const gchar *, messages, sizeof(messages) / sizeof(const gchar *));
+}
+
+ParameterizedTest(const gchar *msg, clone_logmsg, test_cloning_with_log_message)
 {
   LogMessage *original_log_message, *log_message, *cloned_log_message;
   regex_t bad_hostname;
   GSockAddr *addr = g_sockaddr_inet_new("10.10.10.10", 1010);
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-  testcase_begin("Testing log message cloning; msg='%s'", msg);
 
   parse_options.flags = LP_SYSLOG_PROTOCOL;
   parse_options.bad_hostname = &bad_hostname;
@@ -93,23 +119,4 @@ test_cloning_with_log_message(gchar *msg)
   log_msg_unref(cloned_log_message);
   log_msg_unref(log_message);
   log_msg_unref(original_log_message);
-
-  testcase_end();
-}
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-
-  init_and_load_syslogformat_module();
-
-  test_cloning_with_log_message(
-      "<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...");
-  test_cloning_with_log_message(
-      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\"] [eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...");
-
-  deinit_syslogformat_module();
-  app_shutdown();
-  return 0;
 }

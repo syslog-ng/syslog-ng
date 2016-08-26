@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 Balabit
+ * Copyright (c) 2002-2016 Balabit
  * Copyright (c) 2015 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,44 +22,40 @@
  *
  */
 
-#include "testutils.h"
+#include <criterion/criterion.h>
+
 #include "apphook.h"
 #include "logmsg/gsockaddr-serialize.h"
 
-static void
-test_empty()
+#include <string.h>
+
+TestSuite(gsockaddr_serialize, .init = app_startup, .fini = app_shutdown);
+
+Test(gsockaddr_serialize, test_empty)
 {
   GString *stream = g_string_new("");
-
   SerializeArchive *sa = serialize_string_archive_new(stream);
-
   GSockAddr *read_addr = NULL;
 
-  assert_true(g_sockaddr_serialize(sa, NULL), "FAILED TO SERIALIZE");
-  assert_true(g_sockaddr_deserialize(sa, &read_addr), "FAILED TO READ BACK");
-
-  assert_null(read_addr, "Should be null pointer");
+  cr_assert(g_sockaddr_serialize(sa, NULL), "failed to serialize empty GSockAddr");
+  cr_assert(g_sockaddr_deserialize(sa, &read_addr), "failed to read back empty GSockAddr");
+  cr_assert_null(read_addr, "deserialized GSockAddr should be empty (NULL)");
 
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
 }
 
-static void
-test_inet()
+Test(gsockaddr_serialize, test_inet)
 {
   GSockAddr *addr = g_sockaddr_inet_new("127.0.0.1", 5555);
   GSockAddr *read_addr = NULL;
-
   GString *stream = g_string_new("");
-
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
-  assert_true(g_sockaddr_deserialize(sa, &read_addr), "FAILED TO READ BACK");
+  cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize inet GSockAddr");
+  cr_assert(g_sockaddr_deserialize(sa, &read_addr), "failed to read back inet GSockAddr");
 
-  assert_nstring((const gchar *)g_sockaddr_inet_get_sa(addr), addr->salen,
-                 (const gchar *)g_sockaddr_inet_get_sa(read_addr), read_addr->salen,
-                 "Bad read struct");
+  cr_assert_arr_eq(g_sockaddr_inet_get_sa(addr), g_sockaddr_inet_get_sa(read_addr), addr->salen);
 
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
@@ -67,43 +63,35 @@ test_inet()
   g_sockaddr_unref(read_addr);
 }
 
-static void
-test_inet6()
-{
 #if SYSLOG_NG_ENABLE_IPV6
+Test(gsockaddr_serialize, test_inet6)
+{
   GSockAddr *addr = g_sockaddr_inet6_new("::1", 5555);
   GSockAddr *read_addr = NULL;
-
   GString *stream = g_string_new("");
-
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
-  assert_true(g_sockaddr_deserialize(sa, &read_addr), "FAILED TO READ BACK");
+  cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize inet6 GSockAddr");
+  cr_assert(g_sockaddr_deserialize(sa, &read_addr), "failed to read back inet6 GSockAddr");
 
-  assert_nstring((const gchar *)g_sockaddr_inet6_get_sa(addr), addr->salen,
-                 (const gchar *)g_sockaddr_inet6_get_sa(read_addr), read_addr->salen,
-                 "Bad read struct");
+  cr_assert_arr_eq(g_sockaddr_inet6_get_sa(addr), g_sockaddr_inet6_get_sa(read_addr), addr->salen);
 
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
   g_sockaddr_unref(addr);
   g_sockaddr_unref(read_addr);
-#endif
 }
+#endif
 
-static void
-test_unix()
+Test(gsockaddr_serialize, test_unix)
 {
   GSockAddr *addr = g_sockaddr_unix_new("testpath");
   GSockAddr *read_addr = NULL;
-
   GString *stream = g_string_new("");
-
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
-  assert_true(g_sockaddr_deserialize(sa, &read_addr), "FAILED TO READ BACK");
+  cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize unix GSockAddr");
+  cr_assert(g_sockaddr_deserialize(sa, &read_addr), "failed to read back unix GSockAddr");
 
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
@@ -111,27 +99,23 @@ test_unix()
   g_sockaddr_unref(read_addr);
 }
 
-static void
-test_inet_false()
+Test(gsockaddr_serialize, test_inet_false)
 {
   GSockAddr *addr = g_sockaddr_inet_new("127.0.0.1", 5555);
   GSockAddr *read_addr = NULL;
-
   GString *stream = g_string_new("");
-
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
+  cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize inet GSockAddr");
 
   g_string_truncate(stream, 0);
-  assert_false(g_sockaddr_deserialize(sa, &read_addr), "SHOULD HAVE FAILED HERE");
-
+  cr_assert_not(g_sockaddr_deserialize(sa, &read_addr), "SHOULD HAVE FAILED HERE");
   serialize_archive_free(sa);
-  sa = serialize_string_archive_new(stream);
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
-  g_string_truncate(stream, 2);
-  assert_false(g_sockaddr_deserialize(sa, &read_addr), "SHOULD BE FAILED_HERE");
 
+  sa = serialize_string_archive_new(stream);
+  cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize inet GSockAddr");
+  g_string_truncate(stream, 2);
+  cr_assert_not(g_sockaddr_deserialize(sa, &read_addr), "SHOULD BE FAILED_HERE");
 
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
@@ -139,78 +123,47 @@ test_inet_false()
   g_sockaddr_unref(read_addr);
 }
 
-static void
-test_inet6_false()
-{
 #if ENABLE_IPV6
+Test(gsockaddr_serialize, test_inet6_false)
+{
   GSockAddr *addr = g_sockaddr_inet6_new("::1", 5555);
   GSockAddr *read_addr = NULL;
-
   GString *stream = g_string_new("");
-
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
-
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
+  cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize inet6 GSockAddr");
 
   g_string_truncate(stream, 0);
-  assert_false(g_sockaddr_deserialize(sa, &read_addr), "SHOULD HAVE FAILED HERE");
-
+  cr_assert_not(g_sockaddr_deserialize(sa, &read_addr), "SHOULD HAVE FAILED HERE");
   serialize_archive_free(sa);
+
   sa = serialize_string_archive_new(stream);
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
+  cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize inet6 GSockAddr");
   g_string_truncate(stream, 2);
-  assert_false(g_sockaddr_deserialize(sa, &read_addr), "SHOULD BE FAILED_HERE");
+  cr_assert_not(g_sockaddr_deserialize(sa, &read_addr), "SHOULD BE FAILED_HERE");
 
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
   g_sockaddr_unref(addr);
   g_sockaddr_unref(read_addr);
-#endif
 }
+#endif
 
-static void
-test_bad_family()
+Test(gsockaddr_serialize, test_bad_family)
 {
   GSockAddr *addr = g_sockaddr_inet_new("127.0.0.1", 5555);
   GSockAddr *read_addr = NULL;
-
   guint16 bad_family = 0xFFFF;
-
   GString *stream = g_string_new("");
-
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  assert_true(g_sockaddr_serialize(sa, addr), "FAILED TO SERIALIZE");
+  cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize GSockAddr");
 
   g_string_overwrite(stream, 0, (const gchar *)&bad_family);
-  assert_false(g_sockaddr_deserialize(sa, &read_addr), "SHOULD HAVE FAILED HERE");
+  cr_assert_not(g_sockaddr_deserialize(sa, &read_addr), "SHOULD HAVE FAILED HERE");
 
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
   g_sockaddr_unref(addr);
   g_sockaddr_unref(read_addr);
 }
-
-int
-main(int argc, char **argv)
-{
-  app_startup();
-
-  test_empty();
-
-  test_inet();
-  test_inet6();
-  test_unix();
-
-  start_grabbing_messages();
-  test_inet_false();
-  test_inet6_false();
-  test_bad_family();
-  stop_grabbing_messages();
-
-  app_shutdown();
-  return 0;
-}
-

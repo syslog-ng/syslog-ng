@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2013 Balabit
+ * Copyright (c) 2007-2016 Balabit
  * Copyright (c) 2007-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,6 +21,8 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "dnscache.h"
 #include "apphook.h"
 #include "timeutils.h"
@@ -34,13 +36,131 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+static const char *positive_hostname = "hostname";
+static const char *negative_hostname = "negative";
+
+static void
+_fill_dns_cache(DNSCache *cache, gint cache_size)
+{
+  gint i;
+  for (i = 0; i < cache_size; i++)
+    {
+      guint32 ni = htonl(i);
+      gboolean positive = i < (cache_size / 2);
+      dns_cache_store_dynamic(cache, AF_INET, (void *) &ni,
+        positive ? positive_hostname : negative_hostname, positive);
+    }
+}
+
+static void
+_fill_benchmark_dns_cache(DNSCache *cache, gint cache_size)
+{
+  gint i;
+  for (i = 0; i < cache_size; i++)
+    {
+      guint32 ni = htonl(i);
+      dns_cache_store_dynamic(cache, AF_INET, (void *) &ni, positive_hostname, TRUE);
+    }
+}
+
+static void
+_invalidate_with_sleep(guint seconds)
+{
+  sleep(seconds);
+  invalidate_cached_time();
+}
+
 void
-test_expiration(void)
+assert_no_forget(DNSCache *cache, gint cache_size)
 {
   gint i;
   const gchar *hn = NULL;
   gsize hn_len;
   gboolean positive;
+  gint positive_limit = cache_size / 2;
+
+  for (i = 0; i < cache_size; i++)
+    {
+      guint32 ni = htonl(i);
+
+      hn = NULL;
+      positive = FALSE;
+
+      cr_assert(dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive),
+        "hmmm cache forgot the cache entry too early, i=%d, hn=%s\n",
+        i, hn);
+
+      if (i < positive_limit)
+        {
+          cr_assert(positive && strcmp(hn, "hostname") == 0,
+            "hmm, cached returned an positive match, but cached name invalid, i=%d, hn=%s\n",
+            i, hn);
+        }
+      else
+        {
+          cr_assert(!positive && strcmp(hn, "negative") == 0,
+            "hmm, cache returned a positive match, where a negative match was expected, i=%d, hn=%s\n",
+            i, hn);
+        }
+
+    }
+}
+
+void
+assert_forget_negative(DNSCache *cache, gint cache_size)
+{
+  gint i;
+  const gchar *hn = NULL;
+  gsize hn_len;
+  gboolean positive;
+  gint positive_limit = cache_size / 2;
+
+  for (i = 0; i < cache_size; i++)
+    {
+      guint32 ni = htonl(i);
+
+      hn = NULL;
+      positive = FALSE;
+      if (i < positive_limit)
+        {
+          cr_assert(dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive) || !positive,
+            "hmmm cache forgot positive entries too early, i=%d\n",
+            i);
+        }
+      else
+        {
+          cr_assert_not(dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive) || positive,
+            "hmmm cache didn't forget negative entries in time, i=%d\n",
+            i);
+        }
+    }
+}
+
+void
+assert_forget_all(DNSCache *cache, gint cache_size)
+{
+  gint i;
+  const gchar *hn = NULL;
+  gsize hn_len;
+  gboolean positive;
+
+  for (i = 0; i < cache_size; i++)
+    {
+      guint32 ni = htonl(i);
+
+      hn = NULL;
+      positive = FALSE;
+      cr_assert_not(dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive),
+        "hmmm cache did not forget an expired entry, i=%d\n",
+        i);
+    }
+}
+
+
+TestSuite(dnscache, .init = app_startup, .fini = app_shutdown);
+
+Test(dnscache, test_expiration)
+{
   DNSCacheOptions options =
   {
     .cache_size = 50000,
@@ -48,105 +168,26 @@ test_expiration(void)
     .expire_failed = 1,
     .hosts = NULL
   };
+
   DNSCache *cache = dns_cache_new(&options);
+  gint cache_size = 10000;
+  _fill_dns_cache(cache, cache_size);
 
-  for (i = 0; i < 10000; i++)
-    {
-      guint32 ni = htonl(i);
-
-      dns_cache_store_dynamic(cache, AF_INET, (void *) &ni, i < 5000 ? "hostname" : "negative", i < 5000);
-    }
-
-  for (i = 0; i < 10000; i++)
-    {
-      guint32 ni = htonl(i);
-
-      hn = NULL;
-      positive = FALSE;
-      if (!dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive))
-        {
-          fprintf(stderr, "hmmm cache forgot the cache entry too early, i=%d, hn=%s\n", i, hn);
-          exit(1);
-        }
-      else
-        {
-          if (i < 5000)
-            {
-              if (!positive || strcmp(hn, "hostname") != 0)
-                {
-                  fprintf(stderr, "hmm, cached returned an positive match, but cached name invalid, i=%d, hn=%s\n", i, hn);
-                  exit(1);
-                }
-            }
-          else
-            {
-              if (positive || strcmp(hn, "negative") != 0)
-                {
-                  fprintf(stderr, "hmm, cache returned a positive match, where a negative match was expected, i=%d, hn=%s\n", i, hn);
-                  exit(1);
-                }
-            }
-
-        }
-    }
+  assert_no_forget(cache, cache_size);
 
   /* negative entries should expire by now, positive ones still present */
-  sleep(2);
-  invalidate_cached_time();
-
-  for (i = 0; i < 10000; i++)
-    {
-      guint32 ni = htonl(i);
-
-      hn = NULL;
-      positive = FALSE;
-      if (i < 5000)
-        {
-          if (!dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive) || !positive)
-            {
-              fprintf(stderr, "hmmm cache forgot positive entries too early, i=%d\n", i);
-              exit(1);
-            }
-        }
-      else
-        {
-          if (dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive) || positive)
-            {
-              fprintf(stderr, "hmmm cache didn't forget negative entries in time, i=%d\n", i);
-              exit(1);
-            }
-        }
-    }
+  _invalidate_with_sleep(2);
+  assert_forget_negative(cache, cache_size);
 
   /* everything should be expired by now */
-
-  sleep(2);
-  invalidate_cached_time();
-
-  for (i = 0; i < 10000; i++)
-    {
-      guint32 ni = htonl(i);
-
-      hn = NULL;
-      positive = FALSE;
-      if (dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive))
-        {
-          fprintf(stderr, "hmmm cache did not forget an expired entry, i=%d\n", i);
-          exit(1);
-        }
-    }
+  _invalidate_with_sleep(2);
+  assert_forget_all(cache, cache_size);
 
   dns_cache_free(cache);
 }
 
-void
-test_dns_cache_benchmark(void)
+Test(dnscache, test_run_benchmark)
 {
-  GTimeVal start, end;
-  const gchar *hn;
-  gsize hn_len;
-  gboolean positive;
-  gint i;
   DNSCacheOptions options =
   {
     .cache_size = 50000,
@@ -154,40 +195,28 @@ test_dns_cache_benchmark(void)
     .expire_failed = 300,
     .hosts = NULL
   };
+
   DNSCache *cache = dns_cache_new(&options);
+  GTimeVal start, end;
+  const gchar *hn;
+  gsize hn_len;
+  gboolean positive;
+  gint i;
 
-  for (i = 0; i < 10000; i++)
-    {
-      guint32 ni = htonl(i);
-
-      dns_cache_store_dynamic(cache, AF_INET, (void *) &ni, "hostname", TRUE);
-    }
+  gint cache_size = 10000;
+  _fill_benchmark_dns_cache(cache, cache_size);
 
   g_get_current_time(&start);
   /* run benchmarks */
-  for (i = 0; i < 10000; i++)
+  for (i = 0; i < cache_size; i++)
     {
-      guint32 ni = htonl(i % 10000);
+      guint32 ni = htonl(i % cache_size);
 
       hn = NULL;
-      if (!dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive))
-        {
-          fprintf(stderr, "hmm, dns cache entries expired during benchmarking, this is unexpected\n, i=%d", i);
-        }
+      dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive);
     }
   g_get_current_time(&end);
   printf("DNS cache speed: %12.3f iters/sec\n", i * 1e6 / g_time_val_diff(&end, &start));
+
   dns_cache_free(cache);
-}
-
-int
-main()
-{
-  app_startup();
-
-  test_expiration();
-  test_dns_cache_benchmark();
-
-  app_shutdown();
-  return 0;
 }

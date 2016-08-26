@@ -56,6 +56,7 @@ LIBSYSTEMD_MIN_VERSION="209"
 JAVA_MIN_VERSION="1.7"
 GRADLE_MIN_VERSION="2.2"
 HIREDIS_MIN_VERSION="0.11.0"
+CRITERION_MIN_VERSION="2.2.1"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -922,6 +923,14 @@ elif test "x$enable_spoof_source" != "xyes"; then
 fi
 
 dnl ***************************************************************************
+dnl Criterion headers/libraries
+dnl ***************************************************************************
+
+PKG_CHECK_MODULES(CRITERION, criterion >= $CRITERION_MIN_VERSION,
+  [with_criterion="system"],
+  [AC_MSG_WARN([pkg-config was not able to find Criterion >= $CRITERION_MIN_VERSION]); with_criterion="no"])
+
+dnl ***************************************************************************
 dnl ivykis headers/libraries
 dnl ***************************************************************************
 
@@ -1573,6 +1582,7 @@ AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_LEGACY_MONGODB_OPTIONS, [test x"$enable_legacy_mongodb_options" != x"no"])
+AM_CONDITIONAL(ENABLE_CRITERION, [test "$with_criterion" != "no"])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
@@ -1649,6 +1659,8 @@ echo "  prefix                      : $prefix"
 echo "  linking mode                : $linking_mode"
 echo "  embedded crypto             : ${with_embedded_crypto:=no}"
 echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
+echo " Test dependencies:"
+echo "  Criterion                   : ${with_criterion:=no}"
 echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
 echo "  mongoc                      : $with_mongoc"
