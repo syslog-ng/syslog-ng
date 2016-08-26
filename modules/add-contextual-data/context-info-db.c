@@ -260,19 +260,37 @@ context_info_db_get_selectors(ContextInfoDB *self)
   return g_hash_table_get_keys(self->index);
 }
 
+static void
+_truncate_eol(gchar *line, gsize line_len)
+{
+  if (line[line_len - 2] == '\r')
+    line[line_len - 2] = '\0';
+  else if (line[line_len - 1] == '\n')
+    line[line_len - 1] = '\0';
+}
+
+static gboolean
+_get_line_without_eol(gchar **line_buf, gsize *line_buf_len, FILE *fp)
+{
+  gssize n;
+  if ((n = getline(line_buf, line_buf_len, fp)) == -1)
+    return FALSE;
+
+  _truncate_eol(*line_buf, n);
+
+  return TRUE;
+}
+
 gboolean
 context_info_db_import(ContextInfoDB *self, FILE *fp,
                        ContextualDataRecordScanner *scanner)
 {
-  ssize_t n;
   size_t line_buf_len;
   gchar *line_buf = NULL;
   const ContextualDataRecord *next_record;
 
-  while ((n = getline(&line_buf, &line_buf_len, fp)) != -1)
+  while (_get_line_without_eol(&line_buf, &line_buf_len, fp))
     {
-      if (line_buf[n - 1] == '\n')
-        line_buf[n - 1] = '\0';
       next_record = contextual_data_record_scanner_get_next(scanner, line_buf);
       if (!next_record)
         {
