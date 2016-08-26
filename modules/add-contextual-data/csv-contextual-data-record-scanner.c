@@ -67,8 +67,8 @@ _is_whole_record_parsed(CSVScanner *line_scanner)
   return csv_scanner_is_scan_finished(line_scanner);
 }
 
-const gboolean
-get_next_record(ContextualDataRecordScanner *s, const gchar *input, ContextualDataRecord *record)
+static gboolean
+_get_next_record(ContextualDataRecordScanner *s, const gchar *input, ContextualDataRecord *record)
 {
   CSVScanner *line_scanner = (CSVScanner *) s->scanner;
   csv_scanner_input(line_scanner, input);
@@ -108,7 +108,7 @@ csv_contextual_data_record_scanner_new()
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
   csv_scanner_state_init(&self->scanner, &self->options);
   self->super.scanner = &self->scanner;
-  self->super.get_next = get_next_record;
+  self->super.get_next = _get_next_record;
   self->super.free_fn = csv_contextual_data_record_scanner_free;
 
   return &self->super;

@@ -94,7 +94,7 @@ _add_context_data_to_message(gpointer pmsg,
                              const ContextualDataRecord *record)
 {
   LogMessage *msg = (LogMessage *) pmsg;
-  log_msg_set_value_by_name(msg, record->name->str, record->value->str, record->value->len);
+  log_msg_set_value_by_name(msg, record->name->str, record->value->str, (gssize)record->value->len);
 }
 
 static gboolean
@@ -261,7 +261,7 @@ _is_initialized(AddContextualData *self)
   return context_info_db_is_loaded(self->context_info_db);
 }
 
-gboolean
+static gboolean
 _compile_selector_template(AddContextualData *self)
 {
   GError *error = NULL;
