@@ -217,7 +217,7 @@ g_sockaddr_inet_format(GSockAddr *addr, gchar *text, gulong n, gint format)
  * Returns: the port in host byte order
  *
  **/
-static guint16
+guint16
 g_sockaddr_inet_get_port(GSockAddr *s)
 {
   return ntohs(g_sockaddr_inet_get_sa(s)->sin_port);

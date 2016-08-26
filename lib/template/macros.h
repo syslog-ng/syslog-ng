@@ -48,6 +48,7 @@ enum
   M_MSGHDR,
   M_MESSAGE,
   M_SOURCE_IP,
+  M_SOURCE_PORT,
   M_SEQNUM,
   M_CONTEXT_ID,
 
