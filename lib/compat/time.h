@@ -28,7 +28,7 @@
 #include "compat/compat.h"
 #include <time.h>
 
-#ifdef __MACH__
+#if !defined(SYSLOG_NG_HAVE_CLOCK_GETTIME) && defined(__APPLE__) && defined(__MACH__)
 
 #include <mach/clock.h>
 #include <mach/mach.h>
@@ -44,6 +44,6 @@ int clock_gettime(clock_t clock_id, struct timespec *timestamp);
 #define CLOCK_MONOTONIC CLOCK_REALTIME
 #endif
 
-#endif /* __MACH__ */
+#endif /* !SYSLOG_NG_HAVE_CLOCK_GETTIME && __APPLE__ && __MACH__ */
 
 #endif /* COMPAT_TIME_H_INCLUDED */
