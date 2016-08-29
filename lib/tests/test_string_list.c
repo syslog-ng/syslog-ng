@@ -27,7 +27,8 @@
 static void
 test_string_array_to_list_converts_to_an_equivalent_glist(void)
 {
-  const gchar *arr[] = {
+  const gchar *arr[] =
+  {
     "foo",
     "bar",
     "baz",
@@ -46,7 +47,8 @@ test_string_array_to_list_converts_to_an_equivalent_glist(void)
 static void
 test_clone_string_array_duplicates_elements_while_leaving_token_values_intact(void)
 {
-  const gchar *arr[] = {
+  const gchar *arr[] =
+  {
     "foo",
     "bar",
     "baz",
@@ -64,8 +66,10 @@ test_clone_string_array_duplicates_elements_while_leaving_token_values_intact(vo
   assert_string(l2->data, "foo", "first element is expected to be foo");
   assert_string(l2->next->data, "bar", "second element is expected to be bar");
   assert_string(l2->next->next->data, "baz", "third element is expected to be baz");
-  assert_gint(GPOINTER_TO_UINT(l2->next->next->next->data), 1, "fourth element is expected to be a token, with a value of 1");
-  assert_gint(GPOINTER_TO_UINT(l2->next->next->next->next->data), 2, "fifth element is expected to be a token, with a value of 2");
+  assert_gint(GPOINTER_TO_UINT(l2->next->next->next->data), 1,
+              "fourth element is expected to be a token, with a value of 1");
+  assert_gint(GPOINTER_TO_UINT(l2->next->next->next->next->data), 2,
+              "fifth element is expected to be a token, with a value of 2");
 
   string_list_free(l2);
 }

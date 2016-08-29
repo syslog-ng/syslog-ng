@@ -148,7 +148,7 @@ affile_sd_format_persist_name(const LogPipe *s)
 
   return persist_name;
 }
- 
+
 static void
 affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
@@ -247,9 +247,11 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
         case MLM_INDENTED:
           return log_proto_indented_multiline_server_new(transport, proto_options);
         case MLM_PREFIX_GARBAGE:
-          return log_proto_prefix_garbage_multiline_server_new(transport, proto_options, self->multi_line_prefix, self->multi_line_garbage);
+          return log_proto_prefix_garbage_multiline_server_new(transport, proto_options, self->multi_line_prefix,
+                 self->multi_line_garbage);
         case MLM_PREFIX_SUFFIX:
-          return log_proto_prefix_suffix_multiline_server_new(transport, proto_options, self->multi_line_prefix, self->multi_line_garbage);
+          return log_proto_prefix_suffix_multiline_server_new(transport, proto_options, self->multi_line_prefix,
+                 self->multi_line_garbage);
         default:
           return log_proto_text_server_new(transport, proto_options);
         }
@@ -313,23 +315,23 @@ static void
 affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  
+
   switch (notify_code)
     {
     case NC_FILE_MOVED:
-      { 
-        msg_verbose("Follow-mode file source moved, tracking of the new file is started",
-                    evt_tag_str("filename", self->filename->str));
-        affile_sd_reopen_on_notify(s, TRUE);
-        break;
-      }
+    {
+      msg_verbose("Follow-mode file source moved, tracking of the new file is started",
+                  evt_tag_str("filename", self->filename->str));
+      affile_sd_reopen_on_notify(s, TRUE);
+      break;
+    }
     case NC_READ_ERROR:
-      {
-        msg_verbose("Error while following source file, reopening in the hope it would work",
-                    evt_tag_str("filename", self->filename->str));
-        affile_sd_reopen_on_notify(s, FALSE);
-        break;
-      }
+    {
+      msg_verbose("Error while following source file, reopening in the hope it would work",
+                  evt_tag_str("filename", self->filename->str));
+      affile_sd_reopen_on_notify(s, FALSE);
+      break;
+    }
     default:
       break;
     }
@@ -343,7 +345,7 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 
   if (!filename_handle)
     filename_handle = log_msg_get_value_handle("FILE_NAME");
-  
+
   log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
 
   log_src_driver_queue_method(s, msg, path_options, user_data);
@@ -362,7 +364,8 @@ affile_sd_init(LogPipe *s)
 
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
+  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX )
+      && (self->multi_line_prefix || self->multi_line_garbage))
     {
       msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
       return FALSE;
@@ -403,7 +406,7 @@ affile_sd_init(LogPipe *s)
       /* NOTE: if the file could not be opened, we ignore the last
        * remembered file position, if the file is created in the future
        * we're going to read from the start. */
-      
+
       log_pipe_append((LogPipe *) self->reader, s);
       if (!log_pipe_init((LogPipe *) self->reader))
         {
@@ -465,7 +468,7 @@ static AFFileSourceDriver *
 affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = g_new0(AFFileSourceDriver, 1);
-  
+
   log_src_driver_init_instance(&self->super, cfg);
   self->filename = g_string_new(filename);
   self->super.super.super.init = affile_sd_init;
@@ -493,7 +496,8 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
-      msg_warning_once("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0 " to '1' for all files except /proc/kmsg");
+      msg_warning_once("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0
+                       " to '1' for all files except /proc/kmsg");
       self->follow_freq = -1;
     }
   else

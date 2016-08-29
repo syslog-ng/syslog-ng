@@ -51,16 +51,16 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
 
   if (!stats_check_level(stats_level))
     return NULL;
-  
+
   if (!id)
     id = "";
   if (!instance)
     instance = "";
-  
+
   key.component = component;
   key.id = (gchar *) id;
   key.instance = (gchar *) instance;
-  
+
   sc = g_hash_table_lookup(counter_hash, &key);
   if (!sc)
     {
@@ -83,7 +83,8 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
 }
 
 static StatsCluster *
-_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, gboolean dynamic, StatsCounterItem **counter)
+_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type,
+                  gboolean dynamic, StatsCounterItem **counter)
 {
   StatsCluster *sc;
 
@@ -114,13 +115,15 @@ _register_counter(gint stats_level, gint component, const gchar *id, const gchar
  * freed when all of these uses are unregistered.
  **/
 void
-stats_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
+stats_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type,
+                       StatsCounterItem **counter)
 {
   _register_counter(stats_level, component, id, instance, type, FALSE, counter);
 }
 
 StatsCluster *
-stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
+stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance,
+                               StatsCounterType type, StatsCounterItem **counter)
 {
   return _register_counter(stats_level, component, id, instance, type, TRUE, counter);
 }
@@ -132,7 +135,8 @@ stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id
  * Instantly create (if not exists) and increment a dynamic counter.
  */
 void
-stats_register_and_increment_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, time_t timestamp)
+stats_register_and_increment_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance,
+    time_t timestamp)
 {
   StatsCounterItem *counter, *stamp;
   StatsCluster *handle;
@@ -172,11 +176,12 @@ stats_register_associated_counter(StatsCluster *sc, StatsCounterType type, Stats
 }
 
 void
-stats_unregister_counter(gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
+stats_unregister_counter(gint component, const gchar *id, const gchar *instance, StatsCounterType type,
+                         StatsCounterItem **counter)
 {
   StatsCluster *sc;
   StatsCluster key;
-  
+
   g_assert(stats_locked);
 
   if (*counter == NULL)
@@ -186,13 +191,13 @@ stats_unregister_counter(gint component, const gchar *id, const gchar *instance,
     id = "";
   if (!instance)
     instance = "";
-  
+
   key.component = component;
   key.id = (gchar *) id;
   key.instance = (gchar *) instance;
 
   sc = g_hash_table_lookup(counter_hash, &key);
-  
+
   stats_cluster_untrack_counter(sc, type, counter);
 }
 
@@ -212,7 +217,7 @@ _foreach_cluster_helper(gpointer key, gpointer value, gpointer user_data)
   StatsForeachClusterFunc func = args[0];
   gpointer func_data = args[1];
   StatsCluster *sc = (StatsCluster *) value;
-  
+
   func(sc, func_data);
 }
 
@@ -232,7 +237,7 @@ _foreach_cluster_remove_helper(gpointer key, gpointer value, gpointer user_data)
   StatsForeachClusterRemoveFunc func = args[0];
   gpointer func_data = args[1];
   StatsCluster *sc = (StatsCluster *) value;
-  
+
   return func(sc, func_data);
 }
 
@@ -249,7 +254,7 @@ _foreach_counter_helper(StatsCluster *sc, gpointer user_data)
   gpointer *args = (gpointer *) user_data;
   StatsForeachCounterFunc func = args[0];
   gpointer func_data = args[1];
-  
+
   stats_cluster_foreach_counter(sc, func, func_data);
 }
 
@@ -265,7 +270,8 @@ stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data)
 void
 stats_registry_init(void)
 {
-  counter_hash = g_hash_table_new_full((GHashFunc) stats_cluster_hash, (GEqualFunc) stats_cluster_equal, NULL, (GDestroyNotify) stats_cluster_free);
+  counter_hash = g_hash_table_new_full((GHashFunc) stats_cluster_hash, (GEqualFunc) stats_cluster_equal, NULL,
+                                       (GDestroyNotify) stats_cluster_free);
   g_static_mutex_init(&stats_mutex);
 }
 

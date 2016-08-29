@@ -175,11 +175,13 @@ log_db_parser_deinit(LogPipe *s)
 }
 
 static gboolean
-log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const char *input, gsize input_len)
+log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const char *input,
+                      gsize input_len)
 {
   LogDBParser *self = (LogDBParser *) s;
 
-  if (G_UNLIKELY(!self->db_file_reloading && (self->db_file_last_check == 0 || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5)))
+  if (G_UNLIKELY(!self->db_file_reloading && (self->db_file_last_check == 0
+                 || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5)))
     {
       /* first check if we need to reload without doing a lock, then grab
        * the lock, recheck the condition to rule out parallel database
@@ -187,7 +189,8 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
 
       g_static_mutex_lock(&self->lock);
 
-      if (!self->db_file_reloading && (self->db_file_last_check == 0 || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5))
+      if (!self->db_file_reloading && (self->db_file_last_check == 0
+                                       || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5))
         {
           self->db_file_last_check = (*pmsg)->timestamps[LM_TS_RECVD].tv_sec;
           self->db_file_reloading = TRUE;
@@ -265,7 +268,8 @@ log_db_parser_new(GlobalConfig *cfg)
   g_static_mutex_init(&self->lock);
   if (cfg_is_config_version_older(cfg, 0x0303))
     {
-      msg_warning_once("WARNING: The default behaviour for injecting messages in db-parser() has changed in " VERSION_3_3 " from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour");
+      msg_warning_once("WARNING: The default behaviour for injecting messages in db-parser() has changed in " VERSION_3_3
+                       " from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour");
       self->super.inject_mode = LDBP_IM_INTERNAL;
     }
   return &self->super.super;

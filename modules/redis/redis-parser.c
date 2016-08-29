@@ -28,11 +28,12 @@
 extern int redis_debug;
 int redis_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword redis_keywords[] = {
-  { "redis",			KW_REDIS },
-  { "command",			KW_COMMAND },
-  { "host",			KW_HOST },
-  { "port",			KW_PORT },
+static CfgLexerKeyword redis_keywords[] =
+{
+  { "redis",      KW_REDIS },
+  { "command",      KW_COMMAND },
+  { "host",     KW_HOST },
+  { "port",     KW_PORT },
   { NULL }
 };
 

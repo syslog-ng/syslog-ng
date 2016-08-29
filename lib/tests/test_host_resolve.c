@@ -39,21 +39,21 @@
 
 
 #define host_resolve_testcase_begin(domain_override, func, args)    \
-  do                                                            	\
-    {                                                           	\
-      testcase_begin("%s(%s)", func, args);                     	\
-      dns_caching_thread_init();					\
-      host_resolve_options_defaults(&host_resolve_options);		\
-      host_resolve_options_init(&host_resolve_options, configuration);	\
-      hostname_reinit(NULL);						\
-    }                                                           	\
+  do                                                              \
+    {                                                             \
+      testcase_begin("%s(%s)", func, args);                       \
+      dns_caching_thread_init();          \
+      host_resolve_options_defaults(&host_resolve_options);   \
+      host_resolve_options_init(&host_resolve_options, configuration);  \
+      hostname_reinit(NULL);            \
+    }                                                             \
   while (0)
 
 #define host_resolve_testcase_end()                             \
   do                                                            \
     {                                                           \
-      host_resolve_options_destroy(&host_resolve_options);	\
-      dns_caching_thread_deinit();				\
+      host_resolve_options_destroy(&host_resolve_options);  \
+      dns_caching_thread_deinit();        \
       testcase_end();                                           \
     }                                                           \
   while (0)
@@ -162,8 +162,8 @@ assert_hostname_to_hostname(const gchar *hostname, const gchar *expected)
   assert_hostname_to_hostname_len(256, hostname, expected);
 }
 
-#define for_all_resolve_cases() 												\
-  for (host_resolve_options.use_dns_cache = 0; host_resolve_options.use_dns_cache < 2; host_resolve_options.use_dns_cache++)	\
+#define for_all_resolve_cases()                         \
+  for (host_resolve_options.use_dns_cache = 0; host_resolve_options.use_dns_cache < 2; host_resolve_options.use_dns_cache++)  \
     for (host_resolve_options.normalize_hostnames = 0; host_resolve_options.normalize_hostnames < 2; host_resolve_options.normalize_hostnames++)
 
 static void
@@ -171,41 +171,41 @@ test_resolvable_ip_results_in_hostname(void)
 {
   host_resolve_options.use_dns = TRUE;
   for_all_resolve_cases()
-    {
-      /* a.root-servers.net, will probably not go away as its IP is registered to bind hints file */
-      assert_ip_to_short_hostname("198.41.0.4", "a");
-      assert_ip_to_fqdn_hostname("198.41.0.4", "a.root-servers.net");
-      assert_ip6_to_short_hostname("2001:503:ba3e::2:30", "a");
-      assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:30", "a.root-servers.net");
-    }
+  {
+    /* a.root-servers.net, will probably not go away as its IP is registered to bind hints file */
+    assert_ip_to_short_hostname("198.41.0.4", "a");
+    assert_ip_to_fqdn_hostname("198.41.0.4", "a.root-servers.net");
+    assert_ip6_to_short_hostname("2001:503:ba3e::2:30", "a");
+    assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:30", "a.root-servers.net");
+  }
 }
 
 static void
 test_unresolvable_ip_results_in_ip(void)
 {
   fprintf(stderr, "The testcase %s takes a lot of time, it is advisable to turn it\n"
-                  "off for short iterations and reenable it at the end of the session.\n"
-                  "The easiest way to disable it is to comment out its invocation that\n"
-                  "looks like HOST_RESOLVE_TESTCASE(test_unresolvable_ip_results_in_ip);\n"
-                  "But please, please, please don't commit the disabling of that testcase.\n",
-                  __FUNCTION__);
+          "off for short iterations and reenable it at the end of the session.\n"
+          "The easiest way to disable it is to comment out its invocation that\n"
+          "looks like HOST_RESOLVE_TESTCASE(test_unresolvable_ip_results_in_ip);\n"
+          "But please, please, please don't commit the disabling of that testcase.\n",
+          __FUNCTION__);
 
   host_resolve_options.use_dns = TRUE;
   for_all_resolve_cases()
-    {
-      /* 198.41.0.251 is on the same network as a.root-servers.net, but is
-       * not resolvable as of now. It is a good candidate for the negative tests
-       * as it responds quite fast.
-       *
-       * NOTE: this might become resolve once in the future, in that case
-       * this testcase will fail.  Search for an IP address that has a
-       * responding DNS server but has no A record.
-       */
-      assert_ip_to_short_hostname("198.41.0.251", "198.41.0.251");
-      assert_ip_to_fqdn_hostname("198.41.0.251", "198.41.0.251");
-      assert_ip6_to_short_hostname("2001:503:ba3e::2:31", "2001:503:ba3e::2:31");
-      assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:31", "2001:503:ba3e::2:31");
-    }
+  {
+    /* 198.41.0.251 is on the same network as a.root-servers.net, but is
+     * not resolvable as of now. It is a good candidate for the negative tests
+     * as it responds quite fast.
+     *
+     * NOTE: this might become resolve once in the future, in that case
+     * this testcase will fail.  Search for an IP address that has a
+     * responding DNS server but has no A record.
+     */
+    assert_ip_to_short_hostname("198.41.0.251", "198.41.0.251");
+    assert_ip_to_fqdn_hostname("198.41.0.251", "198.41.0.251");
+    assert_ip6_to_short_hostname("2001:503:ba3e::2:31", "2001:503:ba3e::2:31");
+    assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:31", "2001:503:ba3e::2:31");
+  }
 }
 
 static void
@@ -213,13 +213,13 @@ test_sockaddr_without_dns_resolution_results_in_ip(void)
 {
   host_resolve_options.use_dns = FALSE;
   for_all_resolve_cases()
-    {
-      /* a.root-servers.net, will probably not go away as its IP is registered to bind hints file */
-      assert_ip_to_short_hostname("198.41.0.4", "198.41.0.4");
-      assert_ip_to_fqdn_hostname("198.41.0.4", "198.41.0.4");
-      assert_ip6_to_short_hostname("2001:503:ba3e::2:30", "2001:503:ba3e::2:30");
-      assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:30", "2001:503:ba3e::2:30");
-    }
+  {
+    /* a.root-servers.net, will probably not go away as its IP is registered to bind hints file */
+    assert_ip_to_short_hostname("198.41.0.4", "198.41.0.4");
+    assert_ip_to_fqdn_hostname("198.41.0.4", "198.41.0.4");
+    assert_ip6_to_short_hostname("2001:503:ba3e::2:30", "2001:503:ba3e::2:30");
+    assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:30", "2001:503:ba3e::2:30");
+  }
 }
 
 static void

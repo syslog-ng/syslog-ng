@@ -51,7 +51,8 @@ log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
   {
     const gchar *prefix;
     gint scale;
-  } fixed_encodings[] = {
+  } fixed_encodings[] =
+  {
     { "ascii", 1 },
     { "us-ascii", 1 },
     { "iso-8859", 1 },
@@ -71,13 +72,13 @@ log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
   gint i;
 
   for (i = 0; fixed_encodings[i].prefix; i++)
-   {
-     if (strncasecmp(encoding, fixed_encodings[i].prefix, strlen(fixed_encodings[i].prefix)) == 0)
-       {
-         scale = fixed_encodings[i].scale;
-         break;
-       }
-   }
+    {
+      if (strncasecmp(encoding, fixed_encodings[i].prefix, strlen(fixed_encodings[i].prefix)) == 0)
+        {
+          scale = fixed_encodings[i].scale;
+          break;
+        }
+    }
   return scale;
 }
 
@@ -182,13 +183,15 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
 }
 
 static gint
-log_proto_text_server_accumulate_line_method(LogProtoTextServer *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+log_proto_text_server_accumulate_line_method(LogProtoTextServer *self, const guchar *msg, gsize msg_len,
+    gssize consumed_len)
 {
   return LPT_CONSUME_LINE | LPT_EXTRACTED;
 }
 
 static void
-log_proto_text_server_split_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes)
+log_proto_text_server_split_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *state,
+                                   const guchar *buffer_start, gsize buffer_bytes)
 {
   gsize raw_split_size;
 
@@ -224,7 +227,8 @@ log_proto_text_server_split_buffer(LogProtoTextServer *self, LogProtoBufferedSer
 }
 
 static gboolean
-log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes, const guchar *eol, const guchar **msg, gsize *msg_len)
+log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServerState *state,
+                                  const guchar *buffer_start, gsize buffer_bytes, const guchar *eol, const guchar **msg, gsize *msg_len)
 {
   gint verdict;
   guint32 next_line_pos;
@@ -297,7 +301,8 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
 }
 
 static gboolean
-log_proto_text_server_extract(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes, const guchar *eol, const guchar **msg, gsize *msg_len)
+log_proto_text_server_extract(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start,
+                              gsize buffer_bytes, const guchar *eol, const guchar **msg, gsize *msg_len)
 {
   do
     {
@@ -325,7 +330,8 @@ log_proto_text_server_remove_trailing_newline(const guchar **msg, gsize *msg_len
 
 
 static inline void
-log_proto_text_server_yield_whole_buffer_as_message(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
+log_proto_text_server_yield_whole_buffer_as_message(LogProtoTextServer *self, LogProtoBufferedServerState *state,
+    const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
 {
   /* no EOL, our buffer is full, no way to move forward, return
    * everything we have in our buffer. */
@@ -337,7 +343,8 @@ log_proto_text_server_yield_whole_buffer_as_message(LogProtoTextServer *self, Lo
 }
 
 static inline const guchar *
-log_proto_text_server_locate_next_eol(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes)
+log_proto_text_server_locate_next_eol(LogProtoTextServer *self, LogProtoBufferedServerState *state,
+                                      const guchar *buffer_start, gsize buffer_bytes)
 {
   const guchar *eol;
 
@@ -366,7 +373,8 @@ log_proto_text_server_locate_next_eol(LogProtoTextServer *self, LogProtoBuffered
  * Returns TRUE if a message was found in the buffer, FALSE if we need to read again.
  **/
 static gboolean
-log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
+log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes,
+                                        const guchar **msg, gsize *msg_len)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
   const guchar *eol;
@@ -393,11 +401,11 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
         goto exit;
     }
 
- success:
+success:
   log_proto_text_server_remove_trailing_newline(msg, msg_len);
   result = TRUE;
 
- exit:
+exit:
   log_proto_buffered_server_put_state(&self->super);
   return result;
 }

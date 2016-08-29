@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "driver.h"
 #include "logqueue-fifo.h"
 #include "afinter.h"
@@ -86,7 +86,7 @@ log_driver_free(LogPipe *s)
 {
   LogDriver *self = (LogDriver *) s;
   GList *l;
-  
+
   for (l = self->plugins; l; l = l->next)
     {
       log_driver_plugin_free((LogDriverPlugin *) l->data);
@@ -131,7 +131,8 @@ log_src_driver_init_method(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, SCS_SOURCE | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED, &self->super.processed_group_messages);
+  stats_register_counter(0, SCS_SOURCE | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED,
+                         &self->super.processed_group_messages);
   stats_register_counter(0, SCS_CENTER, NULL, "received", SC_TYPE_PROCESSED, &self->received_global_messages);
   stats_unlock();
 
@@ -147,7 +148,8 @@ log_src_driver_deinit_method(LogPipe *s)
     return FALSE;
 
   stats_lock();
-  stats_unregister_counter(SCS_SOURCE | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED, &self->super.processed_group_messages);
+  stats_unregister_counter(SCS_SOURCE | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED,
+                           &self->super.processed_group_messages);
   stats_unregister_counter(SCS_CENTER, NULL, "received", SC_TYPE_PROCESSED, &self->received_global_messages);
   stats_unlock();
   return TRUE;
@@ -252,7 +254,8 @@ log_dest_driver_init_method(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED, &self->super.processed_group_messages);
+  stats_register_counter(0, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED,
+                         &self->super.processed_group_messages);
   stats_register_counter(0, SCS_CENTER, NULL, "queued", SC_TYPE_PROCESSED, &self->queued_global_messages);
   stats_unlock();
 
@@ -279,7 +282,8 @@ log_dest_driver_deinit_method(LogPipe *s)
   g_assert(self->queues == NULL);
 
   stats_lock();
-  stats_unregister_counter(SCS_DESTINATION | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED, &self->super.processed_group_messages);
+  stats_unregister_counter(SCS_DESTINATION | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED,
+                           &self->super.processed_group_messages);
   stats_unregister_counter(SCS_CENTER, NULL, "queued", SC_TYPE_PROCESSED, &self->queued_global_messages);
   stats_unlock();
 

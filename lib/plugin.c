@@ -374,15 +374,15 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
       return FALSE;
     }
 
- call_init:
+call_init:
   g_free(module_init_func);
   result = (*init_func)(cfg, args);
   if (result)
     msg_verbose("Module loaded and initialized successfully",
-               evt_tag_str("module", module_name));
+                evt_tag_str("module", module_name));
   else
     msg_error("Module initialization failed",
-               evt_tag_str("module", module_name));
+              evt_tag_str("module", module_name));
   return result;
 }
 
@@ -446,7 +446,8 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
                         }
                       else
                         {
-                          cfg->candidate_plugins = g_list_prepend(cfg->candidate_plugins, plugin_candidate_new(plugin->type, plugin->name, module_name, module_info->preference));
+                          cfg->candidate_plugins = g_list_prepend(cfg->candidate_plugins, plugin_candidate_new(plugin->type, plugin->name,
+                                                                  module_name, module_info->preference));
                         }
                     }
                 }
@@ -514,9 +515,9 @@ plugin_list_modules(FILE *out, gboolean verbose)
                           gchar **lines;
 
                           fprintf(out, "Status: ok\n"
-                                       "Version: %s\n"
-                                       "Core-Revision: %s\n"
-                                       "Description:\n", module_info->version, module_info->core_revision);
+                                  "Version: %s\n"
+                                  "Core-Revision: %s\n"
+                                  "Description:\n", module_info->version, module_info->core_revision);
 
                           lines = g_strsplit(module_info->description, "\n", 0);
                           for (k = 0; lines[k]; k++)

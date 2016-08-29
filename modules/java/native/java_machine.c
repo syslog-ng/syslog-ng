@@ -93,28 +93,29 @@ java_machine_unref(JavaVMSingleton *self)
 }
 
 gboolean
-java_machine_start(JavaVMSingleton* self)
+java_machine_start(JavaVMSingleton *self)
 {
   g_assert(self == g_jvm_s);
   if (!self->jvm)
     {
       long status;
       self->options[0].optionString = g_strdup_printf(
-          "-Djava.class.path=%s", self->class_path->str);
+                                        "-Djava.class.path=%s", self->class_path->str);
 
       self->options[1].optionString = g_strdup_printf(
-          "-Djava.library.path=%s", resolvedConfigurablePaths.initial_module_path);
+                                        "-Djava.library.path=%s", resolvedConfigurablePaths.initial_module_path);
 
       self->options[2].optionString = g_strdup("-Xrs");
 
       self->vm_args.version = JNI_VERSION_1_6;
       self->vm_args.nOptions = 3;
       self->vm_args.options = self->options;
-      status = JNI_CreateJavaVM(&self->jvm, (void**) &self->env,
+      status = JNI_CreateJavaVM(&self->jvm, (void **) &self->env,
                                 &self->vm_args);
-      if (status == JNI_ERR) {
+      if (status == JNI_ERR)
+        {
           return FALSE;
-      }
+        }
     }
   return TRUE;
 }
@@ -132,7 +133,7 @@ java_machine_get_class_loader(JavaVMSingleton *self)
 }
 
 void
-java_machine_attach_thread(JavaVMSingleton* self, JNIEnv **penv)
+java_machine_attach_thread(JavaVMSingleton *self, JNIEnv **penv)
 {
   g_assert(self == g_jvm_s);
   if ((*(self->jvm))->AttachCurrentThread(self->jvm, (void **)penv, &self->vm_args) == JNI_OK)
@@ -152,7 +153,8 @@ jclass
 java_machine_load_class(JavaVMSingleton *self, const gchar *class_name, const gchar *class_path)
 {
   JNIEnv *env;
-  return class_loader_load_class(java_machine_get_class_loader(self), java_machine_get_env(self, &env), class_name, class_path);
+  return class_loader_load_class(java_machine_get_class_loader(self), java_machine_get_env(self, &env), class_name,
+                                 class_path);
 }
 
 JNIEnv *

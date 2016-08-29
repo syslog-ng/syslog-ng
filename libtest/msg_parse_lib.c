@@ -113,11 +113,11 @@ void
 assert_log_messages_equal(LogMessage *log_message_a, LogMessage *log_message_b)
 {
   assert_gint(log_message_a->timestamps[LM_TS_STAMP].tv_sec, log_message_b->timestamps[LM_TS_STAMP].tv_sec,
-      "Timestamps are not the same");
+              "Timestamps are not the same");
   assert_guint32(log_message_a->timestamps[LM_TS_STAMP].tv_usec, log_message_b->timestamps[LM_TS_STAMP].tv_usec,
-      "Timestamps usec are not the same");
+                 "Timestamps usec are not the same");
   assert_guint32(log_message_a->timestamps[LM_TS_STAMP].zone_offset, log_message_b->timestamps[LM_TS_STAMP].zone_offset,
-      "Timestamp offset are not the same");
+                 "Timestamp offset are not the same");
 
   assert_guint16(log_message_a->pri, log_message_b->pri, "Priorities are not the same");
 

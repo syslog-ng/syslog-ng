@@ -37,7 +37,7 @@ log_rewrite_groupset_foreach_func(const gchar *name, TypeHint type,
                                   const gchar *value, gsize value_len,
                                   gpointer user_data)
 {
-  LogRewriteGroupSetCallbackData *callback_data = (LogRewriteGroupSetCallbackData*) user_data;
+  LogRewriteGroupSetCallbackData *callback_data = (LogRewriteGroupSetCallbackData *) user_data;
   LogMessage *msg = callback_data->msg;
   LogTemplate *template = callback_data->template;
   GString *result;
@@ -85,15 +85,16 @@ log_rewrite_groupset_add_fields(LogRewrite *rewrite, GList *fields)
 static LogPipe *
 log_rewrite_groupset_clone(LogPipe *s)
 {
-   LogRewriteGroupSet *self = (LogRewriteGroupSet *) s;
-   LogRewriteGroupSet *cloned = (LogRewriteGroupSet *)log_rewrite_groupset_new(self->replacement, log_pipe_get_config(&self->super.super) );
-   value_pairs_unref(cloned->query);
-   cloned->query = value_pairs_ref(self->query);
+  LogRewriteGroupSet *self = (LogRewriteGroupSet *) s;
+  LogRewriteGroupSet *cloned = (LogRewriteGroupSet *)log_rewrite_groupset_new(self->replacement,
+      log_pipe_get_config(&self->super.super) );
+  value_pairs_unref(cloned->query);
+  cloned->query = value_pairs_ref(self->query);
 
-   if (self->super.condition)
-     cloned->super.condition = filter_expr_ref(self->super.condition);
+  if (self->super.condition)
+    cloned->super.condition = filter_expr_ref(self->super.condition);
 
-   return &cloned->super.super;
+  return &cloned->super.super;
 };
 
 void

@@ -87,7 +87,7 @@ typedef struct _PdbToolMergeState
 
 void
 pdbtool_merge_start_element(GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
-                                        const gchar **attribute_values, gpointer user_data, GError **error)
+                            const gchar **attribute_values, gpointer user_data, GError **error)
 {
   PdbToolMergeState *state = (PdbToolMergeState *) user_data;
   gchar *buff;
@@ -178,7 +178,7 @@ pdbtool_merge_file(const gchar *filename, GString *merged)
   if (!g_file_get_contents(filename, &buff, &buff_len, &error))
     {
       fprintf(stderr, "Error reading pattern database file; filename='%s', error='%s'\n",
-            filename, error ? error->message : "Unknown error");
+              filename, error ? error->message : "Unknown error");
       success = FALSE;
       goto error;
     }
@@ -191,7 +191,7 @@ pdbtool_merge_file(const gchar *filename, GString *merged)
   if (!g_markup_parse_context_parse(parse_ctx, buff, buff_len, &error))
     {
       fprintf(stderr, "Error parsing pattern database file; filename='%s', error='%s'\n",
-            filename, error ? error->message : "Unknown error");
+              filename, error ? error->message : "Unknown error");
       success = FALSE;
       goto error;
     }
@@ -199,7 +199,7 @@ pdbtool_merge_file(const gchar *filename, GString *merged)
   if (!g_markup_parse_context_end_parse(parse_ctx, &error))
     {
       fprintf(stderr, "Error parsing pattern database file; filename='%s', error='%s'\n",
-            filename, error ? error->message : "Unknown error");
+              filename, error ? error->message : "Unknown error");
       success = FALSE;
       goto error;
     }
@@ -277,7 +277,7 @@ pdbtool_merge(int argc, char *argv[])
   g_date_set_time_t(&date, time (NULL));
 
   buff = g_markup_printf_escaped("<?xml version='1.0' encoding='UTF-8'?>\n<patterndb version='4' pub_date='%04d-%02d-%02d'>",
-                                    g_date_get_year(&date), g_date_get_month(&date), g_date_get_day(&date));
+                                 g_date_get_year(&date), g_date_get_month(&date), g_date_get_day(&date));
   g_string_append(merged, buff);
   g_free(buff);
 
@@ -287,7 +287,8 @@ pdbtool_merge(int argc, char *argv[])
 
   if (ok && !g_file_set_contents(patterndb_file, merged->str, merged->len, &error))
     {
-      fprintf(stderr, "Error storing patterndb; filename='%s', errror='%s'\n", patterndb_file, error ? error->message : "Unknown error");
+      fprintf(stderr, "Error storing patterndb; filename='%s', errror='%s'\n", patterndb_file,
+              error ? error->message : "Unknown error");
       ok = FALSE;
     }
 
@@ -298,14 +299,22 @@ pdbtool_merge(int argc, char *argv[])
 
 static GOptionEntry merge_options[] =
 {
-  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
-    "Name of the patterndb output file", "<patterndb_file>" },
-  { "recursive", 'r', 0, G_OPTION_ARG_NONE, &merge_recursive,
-    "Recurse into subdirectories", NULL },
-  { "glob",      'G', 0, G_OPTION_ARG_STRING, &merge_glob,
-     "Filenames to consider for merging", "<pattern>" },
-  { "directory", 'D', 0, G_OPTION_ARG_STRING, &merge_dir,
-    "Directory from merge pattern databases", "<directory>" },
+  {
+    "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb output file", "<patterndb_file>"
+  },
+  {
+    "recursive", 'r', 0, G_OPTION_ARG_NONE, &merge_recursive,
+    "Recurse into subdirectories", NULL
+  },
+  {
+    "glob",      'G', 0, G_OPTION_ARG_STRING, &merge_glob,
+    "Filenames to consider for merging", "<pattern>"
+  },
+  {
+    "directory", 'D', 0, G_OPTION_ARG_STRING, &merge_dir,
+    "Directory from merge pattern databases", "<directory>"
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -507,13 +516,13 @@ pdbtool_match(int argc, char *argv[])
                       name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
 
                       printf("%s@%s:%s=%.*s@%s",
-                            colors[COLOR_PARSER],
-                            r_parser_type_name(dbg_info->pnode->type),
-                            name_len ? name : "",
-                            name_len ? dbg_info->match_len : 0,
-                            name_len ? msg_string + dbg_info->match_off : "",
-                            no_color
-                          );
+                             colors[COLOR_PARSER],
+                             r_parser_type_name(dbg_info->pnode->type),
+                             name_len ? name : "",
+                             name_len ? dbg_info->match_len : 0,
+                             name_len ? msg_string + dbg_info->match_off : "",
+                             no_color
+                            );
                     }
                   else if (dbg_info->i == dbg_info->node->keylen)
                     {
@@ -521,7 +530,8 @@ pdbtool_match(int argc, char *argv[])
                     }
                   else
                     {
-                      printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->node->key ? dbg_info->i : 0, dbg_info->node->key ? (gchar *) dbg_info->node->key : "", no_color);
+                      printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->node->key ? dbg_info->i : 0,
+                             dbg_info->node->key ? (gchar *) dbg_info->node->key : "", no_color);
                     }
 
                 }
@@ -546,15 +556,16 @@ pdbtool_match(int argc, char *argv[])
                     name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
 
                   printf("PDBTOOL_DEBUG=%d:%d:%d:%d:%d:%s:%s\n",
-                        i, dbg_info->i, dbg_info->node->keylen, dbg_info->match_off, dbg_info->match_len,
-                        dbg_info->pnode ? r_parser_type_name(dbg_info->pnode->type) : "",
-                        dbg_info->pnode && name_len ? name : ""
+                         i, dbg_info->i, dbg_info->node->keylen, dbg_info->match_off, dbg_info->match_len,
+                         dbg_info->pnode ? r_parser_type_name(dbg_info->pnode->type) : "",
+                         dbg_info->pnode && name_len ? name : ""
                         );
                 }
               else
                 {
                   if (dbg_info->i == dbg_info->node->keylen || dbg_info->pnode)
-                    printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_PARSER] : colors[COLOR_LITERAL], dbg_info->i, msg_string + pos, no_color);
+                    printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_PARSER] : colors[COLOR_LITERAL], dbg_info->i, msg_string + pos,
+                           no_color);
                   else
                     printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->i, msg_string + pos, no_color);
                   pos += dbg_info->i;
@@ -583,7 +594,7 @@ pdbtool_match(int argc, char *argv[])
         }
     }
   pattern_db_expire_state(patterndb);
- error:
+error:
   if (proto)
     log_proto_server_free(proto);
   if (template)
@@ -600,24 +611,42 @@ pdbtool_match(int argc, char *argv[])
 
 static GOptionEntry match_options[] =
 {
-  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
-    "Name of the patterndb file", "<patterndb_file>" },
-  { "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
-    "Program name to match as $PROGRAM", "<program>" },
-  { "message", 'M', 0, G_OPTION_ARG_STRING, &match_message,
-    "Message to match as $MSG", "<message>" },
-  { "debug-pattern", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
-    "Print debuging information on pattern matching", NULL },
-  { "debug-csv", 'C', 0, G_OPTION_ARG_NONE, &debug_pattern_parse,
-    "Output debuging information in parseable format", NULL },
-  { "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,
-    "Color terminal output", NULL },
-  { "template", 'T', 0, G_OPTION_ARG_STRING, &template_string,
-    "Template string to be used to format the output", "template" },
-  { "file", 'f', 0, G_OPTION_ARG_STRING, &match_file,
-    "Read the messages from the file specified", NULL },
-  { "filter", 'F', 0, G_OPTION_ARG_STRING, &filter_string,
-    "Only print messages matching the specified syslog-ng filter", "expr" },
+  {
+    "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb file", "<patterndb_file>"
+  },
+  {
+    "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
+    "Program name to match as $PROGRAM", "<program>"
+  },
+  {
+    "message", 'M', 0, G_OPTION_ARG_STRING, &match_message,
+    "Message to match as $MSG", "<message>"
+  },
+  {
+    "debug-pattern", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
+    "Print debuging information on pattern matching", NULL
+  },
+  {
+    "debug-csv", 'C', 0, G_OPTION_ARG_NONE, &debug_pattern_parse,
+    "Output debuging information in parseable format", NULL
+  },
+  {
+    "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,
+    "Color terminal output", NULL
+  },
+  {
+    "template", 'T', 0, G_OPTION_ARG_STRING, &template_string,
+    "Template string to be used to format the output", "template"
+  },
+  {
+    "file", 'f', 0, G_OPTION_ARG_STRING, &match_file,
+    "Read the messages from the file specified", NULL
+  },
+  {
+    "filter", 'F', 0, G_OPTION_ARG_STRING, &filter_string,
+    "Only print messages matching the specified syslog-ng filter", "expr"
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -664,7 +693,8 @@ pdbtool_test_find_conflicts(PatternDB *patterndb, LogMessage *msg)
       gchar **matching_ids;
       gint matching_ids_len;
 
-      matching_ids = r_find_all_applicable_nodes(program_rules->rules, (guint8 *) message, strlen(message), (RNodeGetValueFunc) pdb_rule_get_name);
+      matching_ids = r_find_all_applicable_nodes(program_rules->rules, (guint8 *) message, strlen(message),
+          (RNodeGetValueFunc) pdb_rule_get_name);
       matching_ids_len = g_strv_length(matching_ids);
 
       if (matching_ids_len > 1)
@@ -699,11 +729,11 @@ pdbtool_test(int argc, char *argv[])
   for (arg_pos = 1; arg_pos < argc; arg_pos++)
     {
       if (access(argv[arg_pos], R_OK) == -1)
-	{
-	  fprintf(stderr, "%s: Unable to access the patterndb file\n", argv[arg_pos]);
-	  failed_to_validate = TRUE;
-	  continue;
-	}
+        {
+          fprintf(stderr, "%s: Unable to access the patterndb file\n", argv[arg_pos]);
+          failed_to_validate = TRUE;
+          continue;
+        }
 
       if (test_validate)
         {
@@ -714,7 +744,7 @@ pdbtool_test(int argc, char *argv[])
               fprintf(stderr, "%s: error validating pdb file: %s\n", argv[arg_pos], error->message);
               g_clear_error(&error);
               failed_to_validate = TRUE;
-	      continue;
+              continue;
             }
         }
 
@@ -803,14 +833,22 @@ pdbtool_test(int argc, char *argv[])
 
 static GOptionEntry test_options[] =
 {
-  { "validate", 0, 0, G_OPTION_ARG_NONE, &test_validate,
-    "Validate the pdb file against the xsd (requires xmllint from libxml2)", NULL },
-  { "rule-id", 'r', 0, G_OPTION_ARG_STRING, &test_ruleid,
-    "Rule ID of the patterndb rule to be tested against its example", NULL },
-  { "debug", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
-    "Print debuging information on non-matching patterns", NULL },
-  { "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,
-    "Color terminal output", NULL },
+  {
+    "validate", 0, 0, G_OPTION_ARG_NONE, &test_validate,
+    "Validate the pdb file against the xsd (requires xmllint from libxml2)", NULL
+  },
+  {
+    "rule-id", 'r', 0, G_OPTION_ARG_STRING, &test_ruleid,
+    "Rule ID of the patterndb rule to be tested against its example", NULL
+  },
+  {
+    "debug", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
+    "Print debuging information on non-matching patterns", NULL
+  },
+  {
+    "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,
+    "Color terminal output", NULL
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -822,7 +860,7 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
   gint i;
 
   for (i = 0; i < level; i++)
-    printf(" ");
+         printf(" ");
 
   if (root->parser)
     printf("@%s:%s@ ", r_parser_type_name(root->parser->type), log_msg_get_value_name(root->parser->handle, NULL));
@@ -839,10 +877,10 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
   printf("\n");
 
   for (i = 0; i < root->num_children; i++)
-    pdbtool_walk_tree(root->children[i], level + 1, program);
+         pdbtool_walk_tree(root->children[i], level + 1, program);
 
   for (i = 0; i < root->num_pchildren; i++)
-    pdbtool_walk_tree(root->pchildren[i], level + 1, program);
+         pdbtool_walk_tree(root->pchildren[i], level + 1, program);
 }
 
 static gint
@@ -878,12 +916,18 @@ pdbtool_dump(int argc, char *argv[])
 
 static GOptionEntry dump_options[] =
 {
-  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
-    "Name of the patterndb file", "<patterndb_file>" },
-  { "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
-    "Program name ($PROGRAM) to dump", "<program>" },
-  { "program-tree", 'T', 0, G_OPTION_ARG_NONE, &dump_program_tree,
-    "Dump the program ($PROGRAM) tree", NULL },
+  {
+    "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb file", "<patterndb_file>"
+  },
+  {
+    "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
+    "Program name ($PROGRAM) to dump", "<program>"
+  },
+  {
+    "program-tree", 'T', 0, G_OPTION_ARG_NONE, &dump_program_tree,
+    "Dump the program ($PROGRAM) tree", NULL
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -930,20 +974,26 @@ pdbtool_dictionary_walk(RNode *root, const gchar *progname)
     }
 
   for (i = 0; i < root->num_children; i++)
-    pdbtool_dictionary_walk(root->children[i], progname);
+         pdbtool_dictionary_walk(root->children[i], progname);
 
   for (i = 0; i < root->num_pchildren; i++)
-    pdbtool_dictionary_walk(root->pchildren[i], progname);
+         pdbtool_dictionary_walk(root->pchildren[i], progname);
 }
 
 static GOptionEntry dictionary_options[] =
 {
-  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
-    "Name of the patterndb file", "<patterndb_file>" },
-  { "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
-    "Program name ($PROGRAM) to dump", "<program>" },
-  { "dump-tags", 'T', 0, G_OPTION_ARG_NONE, &dictionary_tags,
-    "Dump the tags in the rules instead of the value names", NULL },
+  {
+    "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb file", "<patterndb_file>"
+  },
+  {
+    "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
+    "Program name ($PROGRAM) to dump", "<program>"
+  },
+  {
+    "dump-tags", 'T', 0, G_OPTION_ARG_NONE, &dictionary_tags,
+    "Dump the tags in the rules instead of the value names", NULL
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -1025,7 +1075,7 @@ pdbtool_patternize(int argc, char *argv[])
   ptz_print_patterndb(clusters, delimiters, named_parsers);
   g_hash_table_destroy(clusters);
 
- exit:
+exit:
   ptz_free(ptz);
 
   return 0;
@@ -1033,20 +1083,34 @@ pdbtool_patternize(int argc, char *argv[])
 
 static GOptionEntry patternize_options[] =
 {
-  { "file",             'f', 0, G_OPTION_ARG_STRING, &input_logfile,
-    "Logfile to create pattern database from, use '-' for stdin", "<path>" },
-  { "no-parse", 'p', 0, G_OPTION_ARG_NONE, &no_parse,
-    "Do try to parse the input file, consider the whole lines as the message part of the log", NULL},
-  { "support",          'S', 0, G_OPTION_ARG_DOUBLE, &support_treshold,
-    "Percentage of lines that have to support a pattern (default: 4.0)", "<support>" },
-  { "iterate-outliers", 'o', 0, G_OPTION_ARG_NONE, &iterate_outliers,
-    "Recursively iterate on the log lines that do not make it into a cluster in the previous step", NULL},
-  { "named-parsers",    'n', 0, G_OPTION_ARG_NONE, &named_parsers,
-      "Give the parsers a name in the patterns, eg.: .dict.string1, .dict.string2... (default: no)", NULL},
-  { "delimiters",       'd', 0, G_OPTION_ARG_STRING, &delimiters,
-    "Set of characters based on which the log messages are tokenized, defaults to :&~?![]=,;()'\"", "<delimiters>" },
-  { "samples",           0, 0, G_OPTION_ARG_INT, &num_of_samples,
-    "Number of example lines to add for the patterns (default: 1)", "<samples>" },
+  {
+    "file",             'f', 0, G_OPTION_ARG_STRING, &input_logfile,
+    "Logfile to create pattern database from, use '-' for stdin", "<path>"
+  },
+  {
+    "no-parse", 'p', 0, G_OPTION_ARG_NONE, &no_parse,
+    "Do try to parse the input file, consider the whole lines as the message part of the log", NULL
+  },
+  {
+    "support",          'S', 0, G_OPTION_ARG_DOUBLE, &support_treshold,
+    "Percentage of lines that have to support a pattern (default: 4.0)", "<support>"
+  },
+  {
+    "iterate-outliers", 'o', 0, G_OPTION_ARG_NONE, &iterate_outliers,
+    "Recursively iterate on the log lines that do not make it into a cluster in the previous step", NULL
+  },
+  {
+    "named-parsers",    'n', 0, G_OPTION_ARG_NONE, &named_parsers,
+    "Give the parsers a name in the patterns, eg.: .dict.string1, .dict.string2... (default: no)", NULL
+  },
+  {
+    "delimiters",       'd', 0, G_OPTION_ARG_STRING, &delimiters,
+    "Set of characters based on which the log messages are tokenized, defaults to :&~?![]=,;()'\"", "<delimiters>"
+  },
+  {
+    "samples",           0, 0, G_OPTION_ARG_INT, &num_of_samples,
+    "Number of example lines to add for the patterns (default: 1)", "<samples>"
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -1072,14 +1136,22 @@ pdbtool_mode(int *argc, char **argv[])
 
 static GOptionEntry pdbtool_options[] =
 {
-  { "debug",     'd', 0, G_OPTION_ARG_NONE, &debug_flag,
-    "Enable debug/diagnostic messages on stderr", NULL },
-  { "verbose",   'v', 0, G_OPTION_ARG_NONE, &verbose_flag,
-    "Enable verbose messages on stderr", NULL },
-  { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
-    "Load the module specified as parameter", "<module>" },
-  { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path,
-    "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+  {
+    "debug",     'd', 0, G_OPTION_ARG_NONE, &debug_flag,
+    "Enable debug/diagnostic messages on stderr", NULL
+  },
+  {
+    "verbose",   'v', 0, G_OPTION_ARG_NONE, &verbose_flag,
+    "Enable verbose messages on stderr", NULL
+  },
+  {
+    "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
+    "Load the module specified as parameter", "<module>"
+  },
+  {
+    "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path,
+    "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>"
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 

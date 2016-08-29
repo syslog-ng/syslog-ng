@@ -91,8 +91,8 @@ assert_test_data_idx_range_in(RingBuffer *rb, int start, int end)
   int i;
 
   cr_assert_eq(ring_buffer_count(rb), end-start + 1,
-    "invalid ringbuffer size; actual:%d, expected: %d",
-    ring_buffer_count(rb), end-start+1);
+               "invalid ringbuffer size; actual:%d, expected: %d",
+               ring_buffer_count(rb), end-start+1);
 
   for (i = start; i <= end; i++)
     {
@@ -153,8 +153,10 @@ Test(ringbuffer, test_ring_buffer_is_full)
       last = td;
     }
 
-  cr_assert_eq(ring_buffer_count(&rb), capacity, "buffer count(%d) is not equal to capacity(%d)", ring_buffer_count(&rb), capacity);
-  cr_assert_eq(last->idx, capacity, "buffer is not full, number of inserted items: %d, capacity: %d", last->idx, capacity);
+  cr_assert_eq(ring_buffer_count(&rb), capacity, "buffer count(%d) is not equal to capacity(%d)", ring_buffer_count(&rb),
+               capacity);
+  cr_assert_eq(last->idx, capacity, "buffer is not full, number of inserted items: %d, capacity: %d", last->idx,
+               capacity);
 
   ring_buffer_free(&rb);
 }

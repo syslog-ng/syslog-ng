@@ -79,7 +79,7 @@ static guint64
 kmsg_timeval_diff(struct timeval *t1, struct timeval *t2)
 {
   return ((guint64)t1->tv_sec - (guint64)t2->tv_sec) * G_USEC_PER_SEC +
-    ((guint64)t1->tv_usec - (guint64)t2->tv_usec);
+         ((guint64)t1->tv_usec - (guint64)t2->tv_usec);
 }
 #endif
 
@@ -89,7 +89,7 @@ kmsg_to_absolute_time(guint64 timestamp, LogStamp *dest)
   guint64 t;
 
   t = (boot_time.tv_sec + (timestamp / G_USEC_PER_SEC)) * G_USEC_PER_SEC +
-    boot_time.tv_usec + (timestamp % G_USEC_PER_SEC);
+      boot_time.tv_usec + (timestamp % G_USEC_PER_SEC);
 
   dest->tv_sec = t / G_USEC_PER_SEC;
   dest->tv_usec = t % G_USEC_PER_SEC;

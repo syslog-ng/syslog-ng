@@ -36,8 +36,8 @@ typedef struct _TFCefState
 
 static gboolean
 tf_cef_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
-		gint argc, gchar *argv[],
-		GError **error)
+               gint argc, gchar *argv[],
+               GError **error)
 {
   TFCefState *state = (TFCefState *)s;
 
@@ -59,8 +59,8 @@ static gboolean
 tf_cef_is_valid_key(const gchar *str)
 {
   size_t end = strspn(str, "0123456789"
-                       "abcdefghijklmnopqrstuvwxyz"
-                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+                      "abcdefghijklmnopqrstuvwxyz"
+                      "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
   return str[end] == '\0';
 }
 
@@ -109,7 +109,7 @@ tf_cef_append_escaped(GString *escaped_string, const gchar *str, gsize str_len)
 
 static gboolean
 tf_cef_append_value(const gchar *name, const gchar *value, gsize value_len,
-                     CefWalkerState *state)
+                    CefWalkerState *state)
 {
   if (state->need_separator)
     g_string_append_c(state->buffer, ' ');
@@ -155,7 +155,7 @@ tf_cef_walker(const gchar *name, TypeHint type, const gchar *value, gsize value_
 
 static gboolean
 tf_cef_append(GString *result, ValuePairs *vp, LogMessage *msg,
-               const LogTemplateOptions *template_options, gint32 seq_num, gint time_zone_mode)
+              const LogTemplateOptions *template_options, gint32 seq_num, gint time_zone_mode)
 {
   CefWalkerState state;
 
@@ -164,14 +164,14 @@ tf_cef_append(GString *result, ValuePairs *vp, LogMessage *msg,
   state.template_options = template_options;
 
   return value_pairs_foreach_sorted(vp, tf_cef_walker,
-                                     (GCompareDataFunc) tf_cef_walk_cmp, msg,
-                                     seq_num, time_zone_mode, template_options,
-                                     &state);
+                                    (GCompareDataFunc) tf_cef_walk_cmp, msg,
+                                    seq_num, time_zone_mode, template_options,
+                                    &state);
 }
 
 static void
 tf_cef_call(LogTemplateFunction *self, gpointer s,
-	     const LogTemplateInvokeArgs *args, GString *result)
+            const LogTemplateInvokeArgs *args, GString *result)
 {
   TFCefState *state = (TFCefState *)s;
   gint i;
@@ -196,4 +196,4 @@ tf_cef_free_state(gpointer s)
 }
 
 TEMPLATE_FUNCTION(TFCefState, tf_cef, tf_cef_prepare, NULL, tf_cef_call,
-		  tf_cef_free_state, NULL);
+                  tf_cef_free_state, NULL);

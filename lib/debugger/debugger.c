@@ -100,7 +100,7 @@ _display_source_line(LogExprNode *expr_node)
   if (f)
     {
       while (fgets(buf, sizeof(buf), f) && lineno < expr_node->line)
-        lineno++;
+               lineno++;
       if (lineno != expr_node->line)
         buf[0] = 0;
       fclose(f);
@@ -121,7 +121,7 @@ _cmd_help(Debugger *self, gint argc, gchar *argv[])
          "  print, p                 Print the current log message\n"
          "  drop, d                  Drop the current message\n"
          "  quit, q                  Tell syslog-ng to exit\n"
-         );
+        );
   return TRUE;
 }
 
@@ -184,10 +184,12 @@ _cmd_quit(Debugger *self, gint argc, gchar *argv[])
 
 typedef gboolean (*DebuggerCommandFunc)(Debugger *self, gint argc, gchar *argv[]);
 
-struct {
+struct
+{
   const gchar *name;
   DebuggerCommandFunc command;
-} command_table[] = {
+} command_table[] =
+{
   { "help",     _cmd_help },
   { "h",        _cmd_help },
   { "?",        _cmd_help },

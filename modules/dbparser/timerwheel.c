@@ -116,10 +116,10 @@ tw_level_free(TWLevel *self)
       struct iv_list_head *lh, *lh_next;
 
       iv_list_for_each_safe(lh, lh_next, &self->slots[i])
-        {
-          entry = iv_list_entry(lh, TWEntry, list);
-          tw_entry_free(entry);
-        }
+      {
+        entry = iv_list_entry(lh, TWEntry, list);
+        tw_entry_free(entry);
+      }
     }
   g_free(self);
 }
@@ -179,7 +179,8 @@ timer_wheel_add_timer_entry(TimerWheel *self, TWEntry *entry)
 }
 
 TWEntry *
-timer_wheel_add_timer(TimerWheel *self, gint timeout, TWCallbackFunc cb, gpointer user_data, GDestroyNotify user_data_free)
+timer_wheel_add_timer(TimerWheel *self, gint timeout, TWCallbackFunc cb, gpointer user_data,
+                      GDestroyNotify user_data_free)
 {
   TWEntry *entry;
 
@@ -240,17 +241,17 @@ timer_wheel_cascade(TimerWheel *self)
 
       source_head = &source_level->slots[source_slot];
       iv_list_for_each_safe(lh, lh_next, source_head)
-        {
-          entry = iv_list_entry(lh, TWEntry, list);
+      {
+        entry = iv_list_entry(lh, TWEntry, list);
 
-          target_slot = (entry->target & target_level->mask) >> target_level->shift;
-          target_head = &target_level->slots[target_slot];
+        target_slot = (entry->target & target_level->mask) >> target_level->shift;
+        target_head = &target_level->slots[target_slot];
 
-          tw_entry_unlink(entry);
-          tw_entry_list_validate(source_head);
-          tw_entry_add(target_head, entry);
-          tw_entry_list_validate(target_head);
-        }
+        tw_entry_unlink(entry);
+        tw_entry_list_validate(source_head);
+        tw_entry_add(target_head, entry);
+        tw_entry_list_validate(target_head);
+      }
 
       if (source_slot < source_level->num - 1)
         break;
@@ -262,22 +263,22 @@ timer_wheel_cascade(TimerWheel *self)
 
       source_head = &self->future;
       iv_list_for_each_safe(lh, lh_next, source_head)
-        {
-          entry = iv_list_entry(lh, TWEntry, list);
+      {
+        entry = iv_list_entry(lh, TWEntry, list);
 
-          target_level_base = self->base & ~target_level->slot_mask & ~target_level->mask;
-          if (entry->target < target_level_base + 2 * (target_level->num << target_level->shift))
-            {
-              target_slot = (entry->target & target_level->mask) >> target_level->shift;
-              target_head = &target_level->slots[target_slot];
+        target_level_base = self->base & ~target_level->slot_mask & ~target_level->mask;
+        if (entry->target < target_level_base + 2 * (target_level->num << target_level->shift))
+          {
+            target_slot = (entry->target & target_level->mask) >> target_level->shift;
+            target_head = &target_level->slots[target_slot];
 
-              /* unlink current entry */
-              tw_entry_unlink(entry);
-              tw_entry_list_validate(source_head);
-              tw_entry_add(target_head, entry);
-              tw_entry_list_validate(target_head);
-            }
-        }
+            /* unlink current entry */
+            tw_entry_unlink(entry);
+            tw_entry_list_validate(source_head);
+            tw_entry_add(target_head, entry);
+            tw_entry_list_validate(target_head);
+          }
+      }
     }
 
   self->base += self->levels[0]->num;
@@ -315,14 +316,14 @@ timer_wheel_set_time(TimerWheel *self, guint64 new_now)
 
       head = &self->levels[0]->slots[slot];
       iv_list_for_each_safe(lh, lh_next, head)
-        {
-          entry = iv_list_entry(lh, TWEntry, list);
+      {
+        entry = iv_list_entry(lh, TWEntry, list);
 
-          tw_entry_unlink(entry);
-          entry->callback(self, self->now, entry->user_data);
-          tw_entry_free(entry);
-          self->num_timers--;
-        }
+        tw_entry_unlink(entry);
+        entry->callback(self, self->now, entry->user_data);
+        tw_entry_free(entry);
+        self->num_timers--;
+      }
 
       if (self->num_timers == 0)
         {

@@ -92,8 +92,8 @@ static inline gboolean
 _has_movable_message(LogQueueDiskNonReliable *self)
 {
   return self->qoverflow->length > 0
-      && ((HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length (self->super.qdisk) == 0)
-          || qdisk_is_space_avail (self->super.qdisk, 4096));
+         && ((HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length (self->super.qdisk) == 0)
+             || qdisk_is_space_avail (self->super.qdisk, 4096));
 }
 
 static void

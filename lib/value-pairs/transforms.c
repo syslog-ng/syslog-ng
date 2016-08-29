@@ -131,7 +131,7 @@ value_pairs_new_transform_add_prefix (const gchar *prefix)
 /* shift() */
 
 static void
-vp_trans_shift(ValuePairsTransform *t, SBGString* key)
+vp_trans_shift(ValuePairsTransform *t, SBGString *key)
 {
   VPTransShift *self = (VPTransShift *)t;
 

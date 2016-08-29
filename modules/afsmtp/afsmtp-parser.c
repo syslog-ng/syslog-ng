@@ -28,19 +28,20 @@
 extern int afsmtp_debug;
 int afsmtp_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword afsmtp_keywords[] = {
-  { "smtp",			KW_SMTP },
-  { "host",			KW_HOST },
-  { "port",			KW_PORT },
-  { "subject",			KW_SUBJECT },
-  { "from",			KW_FROM },
-  { "to",			KW_TO },
-  { "cc",			KW_CC },
-  { "bcc",			KW_BCC },
-  { "reply_to",			KW_REPLY_TO },
-  { "sender",			KW_SENDER },
-  { "body",			KW_BODY },
-  { "header",			KW_HEADER },
+static CfgLexerKeyword afsmtp_keywords[] =
+{
+  { "smtp",     KW_SMTP },
+  { "host",     KW_HOST },
+  { "port",     KW_PORT },
+  { "subject",      KW_SUBJECT },
+  { "from",     KW_FROM },
+  { "to",     KW_TO },
+  { "cc",     KW_CC },
+  { "bcc",      KW_BCC },
+  { "reply_to",     KW_REPLY_TO },
+  { "sender",     KW_SENDER },
+  { "body",     KW_BODY },
+  { "header",     KW_HEADER },
   { NULL }
 };
 

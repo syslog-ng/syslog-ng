@@ -79,13 +79,13 @@ find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
   return fullname;
 }
 
-const gchar*
+const gchar *
 get_filename_extension(const gchar *filename)
 {
   if (!filename)
     return NULL;
 
-  const gchar* start_ext = strrchr(filename, '.');
+  const gchar *start_ext = strrchr(filename, '.');
 
   if (!start_ext || start_ext[1] == '\0' || start_ext == filename)
     return NULL;

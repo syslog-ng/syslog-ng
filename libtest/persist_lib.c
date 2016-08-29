@@ -52,7 +52,7 @@ restart_persist_state(PersistState *state)
 {
   PersistState *new_state;
 
-  gchar* name = g_strdup(persist_state_get_filename(state));
+  gchar *name = g_strdup(persist_state_get_filename(state));
 
   persist_state_commit(state);
   persist_state_free(state);

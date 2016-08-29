@@ -160,9 +160,10 @@ control_connection_io_input(void *s)
 
   for (iter = self->server->control_commands; iter != NULL; iter = iter->next)
     {
-      if (strncmp(((ControlCommand*)iter->data)->command_name, command->str, strlen(((ControlCommand*)iter->data)->command_name)) == 0)
+      if (strncmp(((ControlCommand *)iter->data)->command_name, command->str,
+                  strlen(((ControlCommand *)iter->data)->command_name)) == 0)
         {
-          reply = ((ControlCommand*)iter->data)->func(command);
+          reply = ((ControlCommand *)iter->data)->func(command);
           control_connection_send_reply(self, reply);
           break;
         }
@@ -177,7 +178,7 @@ control_connection_io_input(void *s)
   control_connection_update_watches(self);
   g_string_free(command, TRUE);
   return;
- destroy_connection:
+destroy_connection:
   control_connection_stop_watches(self);
   control_connection_free(self);
 }

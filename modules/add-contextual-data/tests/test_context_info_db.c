@@ -37,11 +37,11 @@ static void
 _test_empty_db(ContextInfoDB *context_info_db)
 {
   cr_assert_not(context_info_db_is_loaded(context_info_db) == TRUE,
-               "Empty ContextInfoDB should be in unloaded state.");
+                "Empty ContextInfoDB should be in unloaded state.");
   cr_assert_not(context_info_db_is_indexed(context_info_db) == TRUE,
-               "Empty ContextInfoDB should be in un-indexed state.");
+                "Empty ContextInfoDB should be in un-indexed state.");
   cr_assert_not(context_info_db_contains(context_info_db, "selector") == TRUE,
-               "Method context_info_db_contains should work with empty ContextInfoDB.");
+                "Method context_info_db_contains should work with empty ContextInfoDB.");
   cr_assert_eq(context_info_db_number_of_records(context_info_db, "selector"), 0,
                "Method context_info_db_number should work with empty ContextInfoDB.");
   int ctr = 0;
@@ -166,13 +166,13 @@ _foreach_get_nvpairs(gpointer arg, const ContextualDataRecord *record)
 
 static void
 _assert_context_info_db_contains_name_value_pairs_by_selector(ContextInfoDB *
-                                                              context_info_db,
-                                                              const gchar *
-                                                              selector,
-                                                              TestNVPair *
-                                                              expected_nvpairs,
-                                                              guint
-                                                              number_of_expected_nvpairs)
+    context_info_db,
+    const gchar *
+    selector,
+    TestNVPair *
+    expected_nvpairs,
+    guint
+    number_of_expected_nvpairs)
 {
   TestNVPair result[number_of_expected_nvpairs];
   TestNVPairStore result_store = {.pairs = result,.ctr = 0 };
@@ -241,17 +241,17 @@ Test(add_contextual_data, test_import_with_valid_csv)
   };
 
   _assert_context_info_db_contains_name_value_pairs_by_selector(db,
-                                                                "selector1",
-                                                                expected_nvpairs_selector1,
-                                                                2);
+      "selector1",
+      expected_nvpairs_selector1,
+      2);
   _assert_context_info_db_contains_name_value_pairs_by_selector(db,
-                                                                "selector2",
-                                                                expected_nvpairs_selector2,
-                                                                1);
+      "selector2",
+      expected_nvpairs_selector2,
+      1);
   _assert_context_info_db_contains_name_value_pairs_by_selector(db,
-                                                                "selector3",
-                                                                expected_nvpairs_selector3,
-                                                                1);
+      "selector3",
+      expected_nvpairs_selector3,
+      1);
 
   context_info_db_free(db);
   contextual_data_record_scanner_free(scanner);
@@ -267,11 +267,11 @@ Test(add_contextual_data, test_import_with_invalid_csv_content)
     create_contextual_data_record_scanner_by_type("csv");
 
   cr_assert_not(context_info_db_import(db, fp, scanner),
-               "Sucessfully import an invalid CSV file.");
+                "Sucessfully import an invalid CSV file.");
   cr_assert_not(context_info_db_is_loaded(db),
-               "The context_info_db_is_loaded reports True after a failing import operation. ");
+                "The context_info_db_is_loaded reports True after a failing import operation. ");
   cr_assert_not(context_info_db_is_indexed(db),
-               "The context_info_db_is_indexed reports True after failing import&load operations.");
+                "The context_info_db_is_indexed reports True after failing import&load operations.");
 
   fclose(fp);
   context_info_db_free(db);
@@ -289,11 +289,11 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
     create_contextual_data_record_scanner_by_type("csv");
 
   cr_assert_not(context_info_db_import(db, fp, scanner),
-               "Sucessfully import an invalid CSV file.");
+                "Sucessfully import an invalid CSV file.");
   cr_assert_not(context_info_db_is_loaded(db),
-               "The context_info_db_is_loaded reports True after a failing import operation. ");
+                "The context_info_db_is_loaded reports True after a failing import operation. ");
   cr_assert_not(context_info_db_is_indexed(db),
-               "The context_info_db_is_indexed reports True after failing import&load operations.");
+                "The context_info_db_is_indexed reports True after failing import&load operations.");
 
   fclose(fp);
   context_info_db_free(db);

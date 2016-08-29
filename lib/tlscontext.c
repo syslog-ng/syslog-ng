@@ -74,7 +74,7 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
     {
       do
         {
-          if (strcmp((const gchar*)(current_fingerprint->data), hash->str) == 0)
+          if (strcmp((const gchar *)(current_fingerprint->data), hash->str) == 0)
             {
               match = TRUE;
               break;
@@ -95,7 +95,8 @@ tls_x509_format_dn(X509_NAME *name, GString *dn)
   long len;
 
   bio = BIO_new(BIO_s_mem());
-  X509_NAME_print_ex(bio, name, 0, ASN1_STRFLGS_ESC_2253 | ASN1_STRFLGS_UTF8_CONVERT | XN_FLAG_SEP_CPLUS_SPC | XN_FLAG_DN_REV);
+  X509_NAME_print_ex(bio, name, 0, ASN1_STRFLGS_ESC_2253 | ASN1_STRFLGS_UTF8_CONVERT | XN_FLAG_SEP_CPLUS_SPC |
+                     XN_FLAG_DN_REV);
   len = BIO_get_mem_data(bio, &buf);
   g_string_assign_len(dn, buf, len);
   BIO_free(bio);
@@ -184,21 +185,21 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
    */
   if (X509_STORE_CTX_get_current_cert(ctx) == NULL)
     {
-    switch (ctx->error)
-      {
-      case X509_V_ERR_NO_EXPLICIT_POLICY:
-        /* NOTE: Because we set the CHECK_POLICY_FLAG if the
-           certificate contains ExplicitPolicy constraint
-           we would get this error. But this error is because
-           we do not set the policy what we want to check for.
-         */
-        ok = 1;
-        break;
-      default:
-        msg_notice("Error occured during certificate validation",
-                    evt_tag_int("error", ctx->error));
-        break;
-      }
+      switch (ctx->error)
+        {
+        case X509_V_ERR_NO_EXPLICIT_POLICY:
+          /* NOTE: Because we set the CHECK_POLICY_FLAG if the
+             certificate contains ExplicitPolicy constraint
+             we would get this error. But this error is because
+             we do not set the policy what we want to check for.
+           */
+          ok = 1;
+          break;
+        default:
+          msg_notice("Error occured during certificate validation",
+                     evt_tag_int("error", ctx->error));
+          break;
+        }
     }
   else
     {
@@ -229,7 +230,8 @@ tls_session_set_trusted_dn(TLSContext *self, GList *dn)
 }
 
 void
-tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data, GDestroyNotify verify_destroy)
+tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data,
+                       GDestroyNotify verify_destroy)
 {
   self->verify_func = verify_func;
   self->verify_data = verify_data;
@@ -353,7 +355,7 @@ tls_context_setup_session(TLSContext *self)
           SSL_CTX_set_options(self->ssl_ctx, ssl_options);
         }
       else
-	msg_debug("empty ssl options");
+        msg_debug("empty ssl options");
       if (self->cipher_suite)
         {
           if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
@@ -372,10 +374,11 @@ tls_context_setup_session(TLSContext *self)
   SSL_set_app_data(ssl, session);
   return session;
 
- error:
+error:
   ssl_error = ERR_get_error();
   msg_error("Error setting up TLS session context",
-            evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)));
+            evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error),
+                           ERR_reason_error_string(ssl_error)));
   ERR_clear_error();
   if (self->ssl_ctx)
     {
@@ -470,8 +473,8 @@ tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
   if (ok)
     {
       msg_debug("Certificate validation progress",
-                  evt_tag_str("subject", subject_name->str),
-                  evt_tag_str("issuer", issuer_name->str));
+                evt_tag_str("subject", subject_name->str),
+                evt_tag_str("issuer", issuer_name->str));
     }
   else
     {
@@ -515,7 +518,7 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
         goto exit;
     }
   success = TRUE;
- exit:
+exit:
   g_free(lower_pattern);
   g_free(lower_hostname);
   g_strfreev(pattern_parts);
@@ -600,8 +603,8 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
   else
     {
       msg_verbose("Certificate subject matches configured hostname",
-                evt_tag_str("hostname", host_name),
-                evt_tag_str("certificate", pattern_buf));
+                  evt_tag_str("hostname", host_name),
+                  evt_tag_str("certificate", pattern_buf));
     }
 
   return result;

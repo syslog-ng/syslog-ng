@@ -73,7 +73,8 @@ log_queue_reset_parallel_push(LogQueue *self)
 }
 
 void
-log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy)
+log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data,
+                            GDestroyNotify user_data_destroy)
 {
   g_static_mutex_lock(&self->lock);
   self->parallel_push_notify = parallel_push_notify;
@@ -89,7 +90,8 @@ log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push
  * @timeout: the number of milliseconds that the consumer needs to wait before we can possibly proceed
  */
 gboolean
-log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy)
+log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data,
+                      GDestroyNotify user_data_destroy)
 {
   gint64 num_elements;
 

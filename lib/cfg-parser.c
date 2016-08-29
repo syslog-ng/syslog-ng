@@ -46,7 +46,8 @@ int main_parse(CfgLexer *lexer, gpointer *dummy, gpointer arg);
  * listed here) should be declared only once and only in cfg-grammar.y
  * and NOT in external modules.
  */
-static CfgLexerKeyword main_keywords[] = {
+static CfgLexerKeyword main_keywords[] =
+{
   /* statements */
   { "source",             KW_SOURCE },
   { "filter",             KW_FILTER },
@@ -261,7 +262,8 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
   from = level - 1;
   while (from >= lexer->include_stack)
     {
-      fprintf(stderr, "%*sincluded from %s line %d, column %d\n", MAX(file_pos - 14, 0), "", from->name, from->lloc.first_line, from->lloc.first_column);
+      fprintf(stderr, "%*sincluded from %s line %d, column %d\n", MAX(file_pos - 14, 0), "", from->name,
+              from->lloc.first_line, from->lloc.first_column);
       from--;
     }
 
@@ -275,7 +277,7 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
     }
 
   fprintf(stderr, "\nsyslog-ng documentation: http://www.balabit.com/support/documentation/?product=syslog-ng\n"
-                  "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n");
+          "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n");
 
 }
 

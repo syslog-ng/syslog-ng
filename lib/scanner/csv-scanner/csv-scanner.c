@@ -65,7 +65,8 @@ csv_scanner_options_set_string_delimiters(CSVScannerOptions *options, GList *str
 }
 
 void
-csv_scanner_options_set_quotes_start_and_end(CSVScannerOptions *options, const gchar *quotes_start, const gchar *quotes_end)
+csv_scanner_options_set_quotes_start_and_end(CSVScannerOptions *options, const gchar *quotes_start,
+    const gchar *quotes_end)
 {
   g_free(options->quotes_start);
   g_free(options->quotes_end);
@@ -250,8 +251,8 @@ _parse_string_delimiters_at_current_position(CSVScanner *self)
     return FALSE;
 
   if (_match_string_delimiters_at_current_position(self->src,
-                                                   self->options->string_delimiters,
-                                                   &delim_len))
+      self->options->string_delimiters,
+      &delim_len))
     {
       self->src += delim_len;
       return TRUE;
@@ -425,7 +426,7 @@ csv_scanner_get_current_value_len(CSVScanner *self)
   return self->current_value->len;
 }
 
-gchar*
+gchar *
 csv_scanner_dup_current_value(CSVScanner *self)
 {
   return g_strndup(csv_scanner_get_current_value(self),

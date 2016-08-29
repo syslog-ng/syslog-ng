@@ -42,15 +42,15 @@ timer_callback(TimerWheel *self, guint64 now, gpointer user_data)
   if (now != expires)
     {
       fprintf(stderr, "Expected time is not matching current time in callback, "
-                      "now=%" G_GUINT64_FORMAT ", expires=%" G_GUINT64_FORMAT "\n",
-                      now, expires);
+              "now=%" G_GUINT64_FORMAT ", expires=%" G_GUINT64_FORMAT "\n",
+              now, expires);
       exit(1);
     }
   if (prev_now > now)
     {
       fprintf(stderr, "Callback current time is not monotonically increasing, "
-                      "prev_now=%" G_GUINT64_FORMAT ", now=%" G_GUINT64_FORMAT "\n",
-                      prev_now, now);
+              "prev_now=%" G_GUINT64_FORMAT ", now=%" G_GUINT64_FORMAT "\n",
+              prev_now, now);
     }
   prev_now = now;
   num_callbacks++;
@@ -65,7 +65,7 @@ _test_assoc_data(TimerWheel *wheel)
   if (strcmp(timer_wheel_get_associated_data(wheel), ASSOC_DATA_STRING) != 0)
     {
       fprintf(stderr, "Associated data mismatch, found=%s, expected=%s",
-                      (gchar *) timer_wheel_get_associated_data(wheel), ASSOC_DATA_STRING);
+              (gchar *) timer_wheel_get_associated_data(wheel), ASSOC_DATA_STRING);
       exit(1);
     }
 }
@@ -98,11 +98,11 @@ test_wheel(gint seed)
       if (expires > latest)
         latest = expires;
       timer1 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
-                                    g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
+                                     g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
       timer2 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
-                                    g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
+                                     g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
       timer3 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
-                                    g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
+                                     g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
       expected_callbacks += 3;
       r = rand() & 0xFF;
       if (r < 64)
@@ -128,8 +128,8 @@ test_wheel(gint seed)
   if (num_callbacks != expected_callbacks)
     {
       fprintf(stderr, "Error: not enough callbacks received, "
-                      "num_callbacks=%d, expected=%d\n",
-                      num_callbacks, expected_callbacks);
+              "num_callbacks=%d, expected=%d\n",
+              num_callbacks, expected_callbacks);
       exit(1);
     }
   timer_wheel_free(wheel);

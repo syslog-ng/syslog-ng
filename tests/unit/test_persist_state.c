@@ -44,7 +44,7 @@ _write_test_file_for_test_in_use_handle(gboolean in_use_handle, const gchar *fil
 {
   PersistState *state = clean_and_create_persist_state_for_test(filename);
   PersistEntryHandle handle = persist_state_alloc_entry(state, "alma", sizeof(TestState));
-  TestState *test_state = (TestState*) persist_state_map_entry(state, handle);
+  TestState *test_state = (TestState *) persist_state_map_entry(state, handle);
   test_state->value = 0xDEADBEEF;
   persist_state_unmap_entry(state, handle);
 
@@ -55,7 +55,7 @@ _write_test_file_for_test_in_use_handle(gboolean in_use_handle, const gchar *fil
 }
 
 static void
-_foreach_callback_assertions(gchar* name, gint size, gpointer entry, gpointer userdata)
+_foreach_callback_assertions(gchar *name, gint size, gpointer entry, gpointer userdata)
 {
   cr_assert_str_eq((gchar *) userdata, "test_userdata", "Userdata is not passed correctly to foreach func!");
   cr_assert_str_eq(name, "test", "Name of persist entry does not match!");
@@ -99,7 +99,7 @@ Test(persist_state, test_persist_state_open_fails_on_invalid_file_with_dump)
 
   state = persist_state_new(persist_file);
   cr_assert_not(persist_state_start_dump(state),
-    "persist_state_start_dump returned with success when persist file was invalid!");
+                "persist_state_start_dump returned with success when persist file was invalid!");
 
   cancel_and_destroy_persist_state(state);
 }
@@ -113,7 +113,7 @@ Test(persist_state, test_persist_state_open_failes_when_file_open_fails)
   state = persist_state_new(persist_file);
 
   cr_assert_not(persist_state_start_dump(state),
-    "persist_state_start_dump returned with success when persist file open failed!");
+                "persist_state_start_dump returned with success when persist file open failed!");
 
   cancel_and_destroy_persist_state(state);
 }
@@ -283,7 +283,8 @@ Test(persist_state, test_values)
         }
       if (size != 128 || version != 4)
         {
-          fprintf(stderr, "Error retrieving value from the persist file: %s, invalid size (%d) or version (%d)\n", buf, (gint) size, version);
+          fprintf(stderr, "Error retrieving value from the persist file: %s, invalid size (%d) or version (%d)\n", buf,
+                  (gint) size, version);
           exit(1);
         }
       data = persist_state_map_entry(state, handle);
@@ -307,21 +308,22 @@ Test(persist_state, test_persist_state_temp_file_cleanup_on_cancel)
   cancel_and_destroy_persist_state(state);
 
   cr_assert(access("test_persist_state_temp_file_cleanup_on_cancel.persist", F_OK) != 0,
-    "persist file is removed on destroy()");
+            "persist file is removed on destroy()");
   cr_assert(access("test_persist_state_temp_file_cleanup_on_cancel.persist-", F_OK) != 0,
-    "backup persist file is removed on destroy()");
+            "backup persist file is removed on destroy()");
 }
 
 Test(persist_state, test_persist_state_temp_file_cleanup_on_commit_destroy)
 {
-  PersistState *state = clean_and_create_persist_state_for_test("test_persist_state_temp_file_cleanup_on_commit_destroy.persist");
+  PersistState *state =
+    clean_and_create_persist_state_for_test("test_persist_state_temp_file_cleanup_on_commit_destroy.persist");
 
   commit_and_destroy_persist_state(state);
 
   cr_assert(access("test_persist_state_temp_file_cleanup_on_commit_destroy.persist", F_OK) != 0,
-    "persist file is removed on destroy(), even after commit");
+            "persist file is removed on destroy(), even after commit");
   cr_assert(access("test_persist_state_temp_file_cleanup_on_commit_destroy.persist-", F_OK) != 0,
-    "backup persist file is removed on destroy(), even after commit");
+            "backup persist file is removed on destroy(), even after commit");
 }
 
 #endif

@@ -30,7 +30,8 @@ static void
 add_dummy_template_to_configuration(void)
 {
   LogTemplate *dummy = log_template_new(configuration, "dummy");
-  assert_true(log_template_compile(dummy, "dummy template expanded $HOST", NULL), "Unexpected error compiling dummy template");
+  assert_true(log_template_compile(dummy, "dummy template expanded $HOST", NULL),
+              "Unexpected error compiling dummy template");
   cfg_tree_add_template(&configuration->tree, dummy);
 }
 
@@ -92,7 +93,8 @@ test_cond_funcs(void)
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" != \"19\"' alma korte)", "korte");
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" > \"19\"' alma korte)", "korte");
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\"' alma korte)", "alma");
-  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" eq \"nagy\"' alma korte)", "korte");
+  assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" eq \"nagy\"' alma korte)",
+                                      "korte");
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" eq \"nagy\"' alma korte)", "alma");
 
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@0", "23323");
@@ -125,7 +127,8 @@ test_str_funcs(void)
   assert_template_format("$(strip ${APP.STRIP4})", "value");
   assert_template_format("$(strip ${APP.STRIP5})", "");
 
-  assert_template_format("$(strip ${APP.STRIP1} ${APP.STRIP2} ${APP.STRIP3} ${APP.STRIP4} ${APP.STRIP5})", "value value value value ");
+  assert_template_format("$(strip ${APP.STRIP1} ${APP.STRIP2} ${APP.STRIP3} ${APP.STRIP4} ${APP.STRIP5})",
+                         "value value value value ");
 
   assert_template_format("$(sanitize alma/bela)", "alma_bela");
   assert_template_format("$(sanitize -r @ alma/bela)", "alma@bela");
@@ -181,8 +184,8 @@ _test_macros_with_context(const gchar *id, const gchar *numbers[], const MacroAn
 
   for (const MacroAndResult *test_case = test_cases; test_case->macro; test_case++)
     assert_template_format_with_context_msgs(
-        test_case->macro, test_case->result,
-        (LogMessage **)messages->pdata, messages->len);
+      test_case->macro, test_case->result,
+      (LogMessage **)messages->pdata, messages->len);
 
   free_log_message_array(messages);
 }
@@ -191,45 +194,51 @@ void
 test_numeric_aggregate_simple(void)
 {
   _test_macros_with_context(
-      "NUMBER", (const gchar *[]) { "1", "-1", "3", NULL },
-      (const MacroAndResult[])
-      {
-        { "$(sum ${NUMBER})", "3" },
-        { "$(min ${NUMBER})", "-1" },
-        { "$(max ${NUMBER})", "3" },
-        { "$(average ${NUMBER})", "1" },
-        { }
-      });
+    "NUMBER", (const gchar *[])
+  { "1", "-1", "3", NULL
+  },
+  (const MacroAndResult[])
+  {
+    { "$(sum ${NUMBER})", "3" },
+    { "$(min ${NUMBER})", "-1" },
+    { "$(max ${NUMBER})", "3" },
+    { "$(average ${NUMBER})", "1" },
+    { }
+  });
 }
 
 void
 test_numeric_aggregate_invalid_values(void)
 {
   _test_macros_with_context(
-      "NUMBER", (const gchar *[]) { "abc", "1", "c", "2", "", NULL },
-      (const MacroAndResult[])
-      {
-        { "$(sum ${NUMBER})", "3" },
-        { "$(min ${NUMBER})", "1" },
-        { "$(max ${NUMBER})", "2" },
-        { "$(average ${NUMBER})", "1" },
-        { }
-      });
+    "NUMBER", (const gchar *[])
+  { "abc", "1", "c", "2", "", NULL
+  },
+  (const MacroAndResult[])
+  {
+    { "$(sum ${NUMBER})", "3" },
+    { "$(min ${NUMBER})", "1" },
+    { "$(max ${NUMBER})", "2" },
+    { "$(average ${NUMBER})", "1" },
+    { }
+  });
 }
 
 void
 test_numeric_aggregate_full_invalid_values(void)
 {
   _test_macros_with_context(
-      "NUMBER", (const gchar *[]) { "abc", "184467440737095516160", "c", "", NULL },
-      (const MacroAndResult[])
-      {
-        { "$(sum ${NUMBER})", "" },
-        { "$(min ${NUMBER})", "" },
-        { "$(max ${NUMBER})", "" },
-        { "$(average ${NUMBER})", "" },
-        { }
-      });
+    "NUMBER", (const gchar *[])
+  { "abc", "184467440737095516160", "c", "", NULL
+  },
+  (const MacroAndResult[])
+  {
+    { "$(sum ${NUMBER})", "" },
+    { "$(min ${NUMBER})", "" },
+    { "$(max ${NUMBER})", "" },
+    { "$(average ${NUMBER})", "" },
+    { }
+  });
 }
 
 void

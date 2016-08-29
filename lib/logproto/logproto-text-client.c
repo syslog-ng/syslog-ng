@@ -89,7 +89,8 @@ log_proto_text_client_flush(LogProtoClient *s)
 }
 
 LogProtoStatus
-log_proto_text_client_submit_write(LogProtoClient *s, guchar *msg, gsize msg_len, GDestroyNotify msg_free, gint next_state)
+log_proto_text_client_submit_write(LogProtoClient *s, guchar *msg, gsize msg_len, GDestroyNotify msg_free,
+                                   gint next_state)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
 

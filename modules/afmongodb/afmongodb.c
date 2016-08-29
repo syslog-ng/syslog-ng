@@ -137,7 +137,7 @@ _format_persist_name(const LogPipe *s)
   const LogThrDestDriver *self = (const LogThrDestDriver *)s;
 
   return s->persist_name ? _format_instance_id(self, "afmongodb.%s")
-                         : _format_instance_id(self, "afmongodb(%s)");
+         : _format_instance_id(self, "afmongodb(%s)");
 }
 
 static void
@@ -185,7 +185,7 @@ _connect(MongoDBDestDriver *self, gboolean reconnect)
   bson_error_t error;
   const mongoc_read_prefs_t *read_prefs = mongoc_collection_get_read_prefs(self->coll_obj);
   gboolean ok = mongoc_client_get_server_status(self->client, (mongoc_read_prefs_t *)read_prefs,
-                                                status, &error);
+                status, &error);
   bson_destroy(status);
   if (!ok)
     {
@@ -209,9 +209,9 @@ _connect(MongoDBDestDriver *self, gboolean reconnect)
  */
 static gboolean
 _vp_obj_start(const gchar *name,
-                 const gchar *prefix, gpointer *prefix_data,
-                 const gchar *prev, gpointer *prev_data,
-                 gpointer user_data)
+              const gchar *prefix, gpointer *prefix_data,
+              const gchar *prev, gpointer *prev_data,
+              gpointer user_data)
 {
   bson_t *o;
 
@@ -225,9 +225,9 @@ _vp_obj_start(const gchar *name,
 
 static gboolean
 _vp_obj_end(const gchar *name,
-               const gchar *prefix, gpointer *prefix_data,
-               const gchar *prev, gpointer *prev_data,
-               gpointer user_data)
+            const gchar *prefix, gpointer *prefix_data,
+            const gchar *prev, gpointer *prev_data,
+            gpointer user_data)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)user_data;
   bson_t *root;
@@ -263,92 +263,92 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
   switch (type)
     {
     case TYPE_HINT_BOOLEAN:
-      {
-        gboolean b;
+    {
+      gboolean b;
 
-        if (type_cast_to_boolean(value, &b, NULL))
-          bson_append_bool(o, name, -1, b);
-        else
-          {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "boolean");
+      if (type_cast_to_boolean(value, &b, NULL))
+        bson_append_bool(o, name, -1, b);
+      else
+        {
+          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "boolean");
 
-            if (fallback)
-              bson_append_utf8(o, name, -1, value, value_len);
-            else
-              return r;
-          }
-        break;
-      }
+          if (fallback)
+            bson_append_utf8(o, name, -1, value, value_len);
+          else
+            return r;
+        }
+      break;
+    }
     case TYPE_HINT_INT32:
-      {
-        gint32 i;
+    {
+      gint32 i;
 
-        if (type_cast_to_int32(value, &i, NULL))
-          bson_append_int32(o, name, -1, i);
-        else
-          {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "int32");
+      if (type_cast_to_int32(value, &i, NULL))
+        bson_append_int32(o, name, -1, i);
+      else
+        {
+          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "int32");
 
-            if (fallback)
-              bson_append_utf8(o, name, -1, value, value_len);
-            else
-              return r;
-          }
-        break;
-      }
+          if (fallback)
+            bson_append_utf8(o, name, -1, value, value_len);
+          else
+            return r;
+        }
+      break;
+    }
     case TYPE_HINT_INT64:
-      {
-        gint64 i;
+    {
+      gint64 i;
 
-        if (type_cast_to_int64(value, &i, NULL))
-          bson_append_int64(o, name, -1, i);
-        else
-          {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "int64");
+      if (type_cast_to_int64(value, &i, NULL))
+        bson_append_int64(o, name, -1, i);
+      else
+        {
+          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "int64");
 
-            if (fallback)
-              bson_append_utf8(o, name, -1, value, value_len);
-            else
-              return r;
-          }
+          if (fallback)
+            bson_append_utf8(o, name, -1, value, value_len);
+          else
+            return r;
+        }
 
-        break;
-      }
+      break;
+    }
     case TYPE_HINT_DOUBLE:
-      {
-        gdouble d;
+    {
+      gdouble d;
 
-        if (type_cast_to_double(value, &d, NULL))
-          bson_append_double(o, name, -1, d);
-        else
-          {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "double");
-            if (fallback)
-              bson_append_utf8(o, name, -1, value, value_len);
-            else
-              return r;
-          }
+      if (type_cast_to_double(value, &d, NULL))
+        bson_append_double(o, name, -1, d);
+      else
+        {
+          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "double");
+          if (fallback)
+            bson_append_utf8(o, name, -1, value, value_len);
+          else
+            return r;
+        }
 
-        break;
-      }
+      break;
+    }
     case TYPE_HINT_DATETIME:
-      {
-        guint64 i;
+    {
+      guint64 i;
 
-        if (type_cast_to_datetime_int(value, &i, NULL))
-          bson_append_date_time(o, name, -1, (gint64)i);
-        else
-          {
-            gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "datetime");
+      if (type_cast_to_datetime_int(value, &i, NULL))
+        bson_append_date_time(o, name, -1, (gint64)i);
+      else
+        {
+          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "datetime");
 
-            if (fallback)
-              bson_append_utf8(o, name, -1, value, value_len);
-            else
-              return r;
-          }
+          if (fallback)
+            bson_append_utf8(o, name, -1, value, value_len);
+          else
+            return r;
+        }
 
-        break;
-      }
+      break;
+    }
     case TYPE_HINT_STRING:
     case TYPE_HINT_LITERAL:
       bson_append_utf8(o, name, -1, value, value_len);
@@ -366,12 +366,12 @@ _worker_retry_over_message(LogThrDestDriver *s, LogMessage *msg)
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
   msg_error(
-      "Multiple failures while inserting this record into the database, "
-      "message dropped",
-      evt_tag_str("driver", self->super.super.super.id),
-      evt_tag_int("number_of_retries", s->retries.max),
-      evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num,
-                          LTZ_SEND, &self->template_options));
+    "Multiple failures while inserting this record into the database, "
+    "message dropped",
+    evt_tag_str("driver", self->super.super.super.id),
+    evt_tag_int("number_of_retries", s->retries.max),
+    evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num,
+                        LTZ_SEND, &self->template_options));
 }
 
 static worker_insert_result_t

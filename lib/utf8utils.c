@@ -63,38 +63,38 @@ _append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
   gunichar uchar = g_utf8_get_char_validated(char_ptr, raw_len);
   switch (uchar)
     {
-      case (gunichar) -1:
-      case (gunichar) -2:
-        g_string_append_printf(escaped_output, invalid_format, *(guint8 *) char_ptr);
-        (*raw)++;
-        return 1;
-        break;
-      case '\b':
-        g_string_append(escaped_output, "\\b");
-        break;
-      case '\f':
-        g_string_append(escaped_output, "\\f");
-        break;
-      case '\n':
-        g_string_append(escaped_output, "\\n");
-        break;
-      case '\r':
-        g_string_append(escaped_output, "\\r");
-        break;
-      case '\t':
-        g_string_append(escaped_output, "\\t");
-        break;
-      case '\\':
-        g_string_append(escaped_output, "\\\\");
-        break;
-      default:
-        if (uchar < 32)
-          g_string_append_printf(escaped_output, control_format, uchar);
-        else if (_is_character_unsafe(uchar, unsafe_chars))
-          g_string_append_printf(escaped_output, "\\%c", (gchar) uchar);
-        else
-          g_string_append_unichar_optimized(escaped_output, uchar);
-        break;
+    case (gunichar) -1:
+    case (gunichar) -2:
+      g_string_append_printf(escaped_output, invalid_format, *(guint8 *) char_ptr);
+      (*raw)++;
+      return 1;
+      break;
+    case '\b':
+      g_string_append(escaped_output, "\\b");
+      break;
+    case '\f':
+      g_string_append(escaped_output, "\\f");
+      break;
+    case '\n':
+      g_string_append(escaped_output, "\\n");
+      break;
+    case '\r':
+      g_string_append(escaped_output, "\\r");
+      break;
+    case '\t':
+      g_string_append(escaped_output, "\\t");
+      break;
+    case '\\':
+      g_string_append(escaped_output, "\\\\");
+      break;
+    default:
+      if (uchar < 32)
+        g_string_append_printf(escaped_output, control_format, uchar);
+      else if (_is_character_unsafe(uchar, unsafe_chars))
+        g_string_append_printf(escaped_output, "\\%c", (gchar) uchar);
+      else
+        g_string_append_unichar_optimized(escaped_output, uchar);
+      break;
     }
   *raw = g_utf8_next_char(char_ptr);
   return *raw - char_ptr;
@@ -110,13 +110,13 @@ _append_unsafe_utf8_as_escaped(GString *escaped_output, const gchar *raw,
                                const gchar *invalid_format)
 {
   if (raw_len < 0)
-      while (*raw)
-        _append_escaped_utf8_character(escaped_output, &raw, -1, unsafe_chars,
-                                       control_format, invalid_format);
+    while (*raw)
+      _append_escaped_utf8_character(escaped_output, &raw, -1, unsafe_chars,
+                                     control_format, invalid_format);
   else
-      while (raw_len)
-        raw_len -= _append_escaped_utf8_character(escaped_output, &raw, raw_len, unsafe_chars,
-                                                  control_format, invalid_format);
+    while (raw_len)
+      raw_len -= _append_escaped_utf8_character(escaped_output, &raw, raw_len, unsafe_chars,
+                 control_format, invalid_format);
 }
 
 /**
@@ -182,7 +182,7 @@ convert_unsafe_utf8_to_escaped_binary(const gchar *str, gssize str_len,
  */
 void
 append_unsafe_utf8_as_escaped_text(GString *escaped_string, const gchar *str,
-                                    gssize str_len, const gchar *unsafe_chars)
+                                   gssize str_len, const gchar *unsafe_chars)
 {
   _append_unsafe_utf8_as_escaped(escaped_string, str, str_len, unsafe_chars,
                                  "\\u%04x", "\\\\x%02x");

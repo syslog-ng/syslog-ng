@@ -60,14 +60,14 @@ system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
                                const gchar *perms, const gchar *recvbuf_size)
 {
   GString *unix_driver = g_string_sized_new(0);
-  
+
   system_sysblock_add_unix_dgram_driver(unix_driver, path, perms, recvbuf_size);
 
-  g_string_append_printf(sysblock, 
-"channel {\n"
-"    source { %s };\n"
-"    rewrite { set(\"${.unix.pid}\" value(\"PID\") condition(\"${.unix.pid}\" ne \"\")); };\n"
-"};\n", unix_driver->str);
+  g_string_append_printf(sysblock,
+                         "channel {\n"
+                         "    source { %s };\n"
+                         "    rewrite { set(\"${.unix.pid}\" value(\"PID\") condition(\"${.unix.pid}\" ne \"\")); };\n"
+                         "};\n", unix_driver->str);
 
   g_string_free(unix_driver, TRUE);
 }
@@ -113,10 +113,10 @@ system_sysblock_add_sun_streams(GString *sysblock, const gchar *path,
 
 
   g_string_append_printf(sysblock,
-"channel {\n"
-"    source { %s };\n"
-"    parser { extract-solaris-msgid(); };\n"
-"};\n", solaris_driver->str);
+                         "channel {\n"
+                         "    source { %s };\n"
+                         "    parser { extract-solaris-msgid(); };\n"
+                         "};\n", solaris_driver->str);
   g_string_free(solaris_driver, TRUE);
 }
 
@@ -327,7 +327,8 @@ system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
 {
   if (cfg_is_config_version_older(cfg, 0x0306))
     {
-      msg_warning_once("WARNING: Starting with " VERSION_3_6 ", the system() source performs JSON parsing of messages starting with the '@cim:' prefix. No additional action is needed");
+      msg_warning_once("WARNING: Starting with " VERSION_3_6
+                       ", the system() source performs JSON parsing of messages starting with the '@cim:' prefix. No additional action is needed");
       return;
     }
 
@@ -377,7 +378,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
 
   g_string_append(sysblock, "}; # channel\n");
   result = cfg_lexer_include_buffer(lexer, buf, sysblock->str, sysblock->len);
- exit:
+exit:
   g_string_free(sysblock, TRUE);
   return result;
 }

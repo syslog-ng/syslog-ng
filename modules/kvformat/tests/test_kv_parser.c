@@ -41,7 +41,7 @@
 
 #define KV_PARSER_TESTCASE(x, ...) \
   do {                                                          \
-      kv_parser_testcase_begin(#x, #__VA_ARGS__);  		\
+      kv_parser_testcase_begin(#x, #__VA_ARGS__);     \
       x(__VA_ARGS__);                                           \
       kv_parser_testcase_end();                               \
   } while(0)
@@ -126,12 +126,13 @@ test_kv_parser_audit(void)
 
   msg = parse_kv_into_log_message("type=LOGIN msg=audit(1437419821.034:2972): pid=4160 uid=0 auid=0 ses=221 msg='op=PAM:session_close acct=\"root\" exe=\"/usr/sbin/cron\" hostname=? addr=? terminal=cron res=success'");
   assert_log_message_value_by_name(msg, "type", "LOGIN");
-/*  assert_log_message_value_by_name(msg, "msg", "audit(1437419821.034:2972):"); */
+  /*  assert_log_message_value_by_name(msg, "msg", "audit(1437419821.034:2972):"); */
   assert_log_message_value_by_name(msg, "pid", "4160");
   assert_log_message_value_by_name(msg, "uid", "0");
   assert_log_message_value_by_name(msg, "auid", "0");
   assert_log_message_value_by_name(msg, "ses", "221");
-  assert_log_message_value_by_name(msg, "msg", "op=PAM:session_close acct=\"root\" exe=\"/usr/sbin/cron\" hostname=? addr=? terminal=cron res=success");
+  assert_log_message_value_by_name(msg, "msg",
+                                   "op=PAM:session_close acct=\"root\" exe=\"/usr/sbin/cron\" hostname=? addr=? terminal=cron res=success");
   log_msg_unref(msg);
 }
 

@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "compat/getutent.h"
 
 #include <sys/types.h>
@@ -39,31 +39,35 @@ static int utent_fd = -1;
 
 struct utmp *getutent(void)
 {
-	static struct utmp ut;
-	int rc;
+  static struct utmp ut;
+  int rc;
 
-	if (utent_fd == -1) {
-		utent_fd = open(_PATH_UTMP, O_RDONLY | O_NOCTTY);
-	}
-	if (utent_fd == -1)
-		return NULL;
-	rc = read(utent_fd, &ut, sizeof(ut));
-	if (rc <= 0) {
-		close(utent_fd);
-		utent_fd = -1;
-		return NULL;
-	}
-	else {
-		return &ut;
-	}
+  if (utent_fd == -1)
+    {
+      utent_fd = open(_PATH_UTMP, O_RDONLY | O_NOCTTY);
+    }
+  if (utent_fd == -1)
+    return NULL;
+  rc = read(utent_fd, &ut, sizeof(ut));
+  if (rc <= 0)
+    {
+      close(utent_fd);
+      utent_fd = -1;
+      return NULL;
+    }
+  else
+    {
+      return &ut;
+    }
 }
 
 void endutent(void)
 {
-	if (utent_fd != -1) {
-		close(utent_fd);
-		utent_fd = -1;
-	}
+  if (utent_fd != -1)
+    {
+      close(utent_fd);
+      utent_fd = -1;
+    }
 }
 
 #endif

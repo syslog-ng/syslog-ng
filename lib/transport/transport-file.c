@@ -31,7 +31,7 @@ log_transport_file_read_method(LogTransport *s, gpointer buf, gsize buflen, LogT
 {
   LogTransportFile *self = (LogTransportFile *) s;
   gint rc;
-  
+
   do
     {
       rc = read(self->super.fd, buf, buflen);
@@ -52,7 +52,7 @@ log_transport_file_write_method(LogTransport *s, const gpointer buf, gsize bufle
 {
   LogTransportFile *self = (LogTransportFile *) s;
   gint rc;
-  
+
   do
     {
       rc = write(self->super.fd, buf, buflen);

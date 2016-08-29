@@ -29,8 +29,8 @@
 /* TODO escape '\0' when passing down the value */
 static gboolean
 python_worker_vp_add_one(const gchar *name,
-                       TypeHint type, const gchar *value, gsize value_len,
-                       gpointer user_data)
+                         TypeHint type, const gchar *value, gsize value_len,
+                         gpointer user_data)
 {
   const LogTemplateOptions *template_options = (const LogTemplateOptions *)((gpointer *)user_data)[0];
   PyObject *dict = (PyObject *)((gpointer *)user_data)[1];
@@ -41,21 +41,21 @@ python_worker_vp_add_one(const gchar *name,
     {
     case TYPE_HINT_INT32:
     case TYPE_HINT_INT64:
-      {
-        gint64 i;
+    {
+      gint64 i;
 
-        if (type_cast_to_int64(value, &i, NULL))
-          PyDict_SetItemString(dict, name, PyLong_FromLong(i));
-        else
-          {
-            need_drop = type_cast_drop_helper(template_options->on_error,
-                                              value, "int");
+      if (type_cast_to_int64(value, &i, NULL))
+        PyDict_SetItemString(dict, name, PyLong_FromLong(i));
+      else
+        {
+          need_drop = type_cast_drop_helper(template_options->on_error,
+                                            value, "int");
 
-            if (fallback)
-              PyDict_SetItemString(dict, name, PyUnicode_FromString(value));
-          }
-        break;
-      }
+          if (fallback)
+            PyDict_SetItemString(dict, name, PyUnicode_FromString(value));
+        }
+      break;
+    }
     case TYPE_HINT_STRING:
       PyDict_SetItemString(dict, name, PyUnicode_FromString(value));
       break;
@@ -70,7 +70,8 @@ python_worker_vp_add_one(const gchar *name,
 /** Main code **/
 
 gboolean
-py_value_pairs_apply(ValuePairs *vp, const LogTemplateOptions *template_options, guint32 seq_num, LogMessage *msg, PyObject **dict)
+py_value_pairs_apply(ValuePairs *vp, const LogTemplateOptions *template_options, guint32 seq_num, LogMessage *msg,
+                     PyObject **dict)
 {
   gpointer args[2];
   gboolean vp_ok;

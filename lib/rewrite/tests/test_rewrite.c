@@ -36,7 +36,8 @@ expect_config_parse_failure(const char *raw_rewrite_rule)
 
   configuration = cfg_new(VERSION_VALUE);
   snprintf(raw_config, sizeof(raw_config), "rewrite s_test{ %s };", raw_rewrite_rule);
-  assert_false(parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL), ASSERTION_ERROR("Parsing the given configuration failed"));
+  assert_false(parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL),
+               ASSERTION_ERROR("Parsing the given configuration failed"));
   cfg_free(configuration);
 };
 
@@ -47,7 +48,8 @@ create_rewrite_rule(const char *raw_rewrite_rule)
 
   configuration = cfg_new(VERSION_VALUE);
   snprintf(raw_config, sizeof(raw_config), "rewrite s_test{ %s }; log{ rewrite(s_test); };", raw_rewrite_rule);
-  assert_true(parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL), ASSERTION_ERROR("Parsing the given configuration failed"));
+  assert_true(parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL),
+              ASSERTION_ERROR("Parsing the given configuration failed"));
   assert_true(cfg_init(configuration), ASSERTION_ERROR("Config initialization failed"));
 
   LogExprNode *expr_node = cfg_tree_get_object(&configuration->tree, ENC_REWRITE, "s_test");
@@ -58,16 +60,16 @@ LogMessage *
 create_message_with_fields(const char *field_name, ...)
 {
   va_list args;
-  const char* arg;
+  const char *arg;
   LogMessage *msg = log_msg_new_empty();
   arg = field_name;
   va_start(args, field_name);
   while (arg != NULL)
     {
       NVHandle handle = log_msg_get_value_handle(arg);
-      arg = va_arg(args, char*);
+      arg = va_arg(args, char *);
       log_msg_set_value(msg, handle, arg, -1);
-      arg = va_arg(args, char*);
+      arg = va_arg(args, char *);
     }
   va_end(args);
   return msg;
@@ -87,7 +89,7 @@ invoke_rewrite_rule(LogRewrite *pipe_, LogMessage *msg)
 };
 
 void
-rewrite_teardown(LogMessage* msg)
+rewrite_teardown(LogMessage *msg)
 {
   log_msg_unref(msg);
   cfg_free(configuration);
@@ -128,7 +130,8 @@ void test_set_field_not_exist_and_set_literal_string()
   LogRewrite *test_rewrite = create_rewrite_rule("set(\"value\" value(\"field1\") );");
   LogMessage *msg = log_msg_new_empty();
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "field1", "value", -1, ASSERTION_ERROR("Couldn't set message field when it doesn't exists"));
+  assert_msg_field_equals(msg, "field1", "value", -1,
+                          ASSERTION_ERROR("Couldn't set message field when it doesn't exists"));
   rewrite_teardown(msg);
 }
 
@@ -137,7 +140,8 @@ void test_set_field_exist_and_set_template_string()
   LogRewrite *test_rewrite = create_rewrite_rule("set(\"$field2\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2","newvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "field1", "newvalue", -1, ASSERTION_ERROR("Couldn't set message field with template value"));
+  assert_msg_field_equals(msg, "field1", "newvalue", -1,
+                          ASSERTION_ERROR("Couldn't set message field with template value"));
   rewrite_teardown(msg);
 }
 
@@ -146,7 +150,8 @@ void test_subst_field_exist_and_substring_substituted()
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"substitute\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "asubstringb", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "field1", "asubstituteb", -1, ASSERTION_ERROR("Couldn't subst message field with literal"));
+  assert_msg_field_equals(msg, "field1", "asubstituteb", -1,
+                          ASSERTION_ERROR("Couldn't subst message field with literal"));
   rewrite_teardown(msg);
 }
 
@@ -155,7 +160,8 @@ void test_subst_field_exist_and_substring_substituted_with_template()
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"$field2\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "asubstringb", "field2","substitute", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "field1", "asubstituteb", -1, ASSERTION_ERROR("Couldn't subst message field with template"));
+  assert_msg_field_equals(msg, "field1", "asubstituteb", -1,
+                          ASSERTION_ERROR("Couldn't subst message field with template"));
   rewrite_teardown(msg);
 }
 
@@ -164,7 +170,8 @@ void test_subst_field_exist_and_substring_substituted_only_once_without_global()
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"substitute\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "substring substring", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "field1", "substitute substring", -1, ASSERTION_ERROR("Field substituted more than once without global flag"));
+  assert_msg_field_equals(msg, "field1", "substitute substring", -1,
+                          ASSERTION_ERROR("Field substituted more than once without global flag"));
   rewrite_teardown(msg);
 }
 
@@ -173,7 +180,8 @@ void test_subst_field_exist_and_substring_substituted_every_occurence_with_globa
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"substitute\" value(\"field1\") flags(global) );");
   LogMessage *msg = create_message_with_fields("field1", "substring substring", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "field1", "substitute substitute", -1, ASSERTION_ERROR("Field substituted less than every occurence with global flag"));
+  assert_msg_field_equals(msg, "field1", "substitute substitute", -1,
+                          ASSERTION_ERROR("Field substituted less than every occurence with global flag"));
   rewrite_teardown(msg);
 }
 
@@ -182,7 +190,8 @@ void test_subst_field_exist_and_substring_substituted_when_regexp_matched()
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"[0-9]+\" \"substitute\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "a123b", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "field1", "asubstituteb", -1, ASSERTION_ERROR("Couldn't subst message field with literal"));
+  assert_msg_field_equals(msg, "field1", "asubstituteb", -1,
+                          ASSERTION_ERROR("Couldn't subst message field with literal"));
   rewrite_teardown(msg);
 }
 
@@ -200,7 +209,8 @@ void test_set_field_honors_time_zone()
   LogRewrite *test_rewrite = create_rewrite_rule("set('${ISODATE}' value('UTCDATE') time-zone('Asia/Tokyo'));");
   LogMessage *msg = create_message_with_fields("field1", "a123b", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "UTCDATE", "1970-01-01T08:59:59+09:00", -1, ASSERTION_ERROR("Couldn't use time-zone option in rewrite-set"));
+  assert_msg_field_equals(msg, "UTCDATE", "1970-01-01T08:59:59+09:00", -1,
+                          ASSERTION_ERROR("Couldn't use time-zone option in rewrite-set"));
   rewrite_teardown(msg);
 }
 
@@ -254,16 +264,19 @@ void test_set_field_exist_and_group_set_template_string_with_old_value()
 
 void test_set_field_exist_and_group_set_when_condition_doesnt_match()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program1\") ) );");
+  LogRewrite *test_rewrite =
+    create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program1\") ) );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "PROGRAM", "program2", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "field1", "oldvalue", -1, ASSERTION_ERROR("Shouldn't rewrite when condition doesn't match"));
+  assert_msg_field_equals(msg, "field1", "oldvalue", -1,
+                          ASSERTION_ERROR("Shouldn't rewrite when condition doesn't match"));
   rewrite_teardown(msg);
 }
 
 void test_set_field_exist_and_group_set_when_condition_matches()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program\") ) );");
+  LogRewrite *test_rewrite =
+    create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program\") ) );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "PROGRAM", "program", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "value", -1, ASSERTION_ERROR("Shouldn't rewrite when condition doesn't match"));
@@ -272,7 +285,8 @@ void test_set_field_exist_and_group_set_when_condition_matches()
 
 void test_set_field_cloned()
 {
-  LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program\") ) );");
+  LogRewrite *test_rewrite =
+    create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program\") ) );");
   LogPipe *cloned_rule = log_pipe_clone(&test_rewrite->super);
   assert_true(cloned_rule != NULL, ASSERTION_ERROR("Can't cloned the rewrite"));
   log_pipe_unref(cloned_rule);

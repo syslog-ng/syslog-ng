@@ -36,7 +36,7 @@ log_multiplexer_init(LogPipe *s)
 {
   LogMultiplexer *self = (LogMultiplexer *) s;
   gint i;
-  
+
   for (i = 0; i < self->next_hops->len; i++)
     {
       LogPipe *branch_head = g_ptr_array_index(self->next_hops, i);
@@ -46,7 +46,7 @@ log_multiplexer_init(LogPipe *s)
         {
           branch_head->flags |= (p->flags & PIF_BRANCH_PROPERTIES);
         }
-          
+
       if (branch_head->flags & PIF_BRANCH_FALLBACK)
         {
           self->fallback_exists = TRUE;
@@ -55,7 +55,7 @@ log_multiplexer_init(LogPipe *s)
   return TRUE;
 }
 
-static gboolean 
+static gboolean
 log_multiplexer_deinit(LogPipe *self)
 {
   return TRUE;
@@ -70,7 +70,7 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   gboolean matched;
   gboolean delivered = FALSE;
   gint fallback;
-  
+
   local_options.matched = &matched;
   for (fallback = 0; (fallback == 0) || (fallback == 1 && self->fallback_exists && !delivered); fallback++)
     {
@@ -90,10 +90,10 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
           matched = TRUE;
           log_msg_add_ack(msg, &local_options);
           log_pipe_queue(next_hop, log_msg_ref(msg), &local_options);
-          
+
           if (matched)
             {
-              delivered = TRUE; 
+              delivered = TRUE;
               if (G_UNLIKELY(next_hop->flags & PIF_BRANCH_FINAL))
                 break;
             }
@@ -115,7 +115,7 @@ LogMultiplexer *
 log_multiplexer_new(GlobalConfig *cfg)
 {
   LogMultiplexer *self = g_new0(LogMultiplexer, 1);
-  
+
   log_pipe_init_instance(&self->super, cfg);
   self->super.init = log_multiplexer_init;
   self->super.deinit = log_multiplexer_deinit;

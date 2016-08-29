@@ -71,7 +71,8 @@ _get_formatted_key(KVParser *self, const gchar *key)
 }
 
 static gboolean
-kv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+kv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
+                  gsize input_len)
 {
   KVParser *self = (KVParser *) s;
 
@@ -114,7 +115,8 @@ kv_parser_free(LogPipe *s)
 }
 
 static gboolean
-kv_parser_process_threaded(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+kv_parser_process_threaded(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
+                           gsize input_len)
 {
   LogParser *self = (LogParser *)log_pipe_clone(&s->super);
 

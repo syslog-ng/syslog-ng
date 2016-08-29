@@ -47,12 +47,12 @@ assert_nvtable(NVTable *tab, NVHandle handle, gchar *expected_value, gssize expe
   value = nv_table_get_value(tab, handle, &length);
 
   cr_assert_eq(length, expected_length,
-    "NVTable value mismatch, value=%.*s, expected=%.*s\n",
-    (gint) length, value, (gint) expected_length, expected_value);
+               "NVTable value mismatch, value=%.*s, expected=%.*s\n",
+               (gint) length, value, (gint) expected_length, expected_value);
 
   cr_assert_arr_eq(value, expected_value, expected_length,
-    "NVTable value mismatch, value=%.*s, expected=%.*s\n",
-    (gint) length, value, (gint) expected_length, expected_value);
+                   "NVTable value mismatch, value=%.*s, expected=%.*s\n",
+                   (gint) length, value, (gint) expected_length, expected_value);
 }
 
 

@@ -70,28 +70,33 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
    * completely wrong calculations, so we'll just return nothing (alternative
    * would be to return original string and perhaps print an error...)
    */
-  if (argv[0]->len >= G_MAXLONG) {
-    msg_error("$(substr) error: string is too long");
-    return;
-  }
+  if (argv[0]->len >= G_MAXLONG)
+    {
+      msg_error("$(substr) error: string is too long");
+      return;
+    }
 
   /* check number of arguments */
   if (argc < 2 || argc > 3)
     return;
 
   /* get offset position from second argument */
-  if (!parse_number(argv[1]->str, &start)) {
-    msg_error("$(substr) parsing failed, start could not be parsed", evt_tag_str("start", argv[1]->str));
-    return;
-  }
-
-  /* if we were called with >2 arguments, third was desired length */
-  if (argc > 2) {
-    if (!parse_number(argv[2]->str, &len)) {
-      msg_error("$(substr) parsing failed, length could not be parsed", evt_tag_str("length", argv[2]->str));
+  if (!parse_number(argv[1]->str, &start))
+    {
+      msg_error("$(substr) parsing failed, start could not be parsed", evt_tag_str("start", argv[1]->str));
       return;
     }
-  } else
+
+  /* if we were called with >2 arguments, third was desired length */
+  if (argc > 2)
+    {
+      if (!parse_number(argv[2]->str, &len))
+        {
+          msg_error("$(substr) parsing failed, length could not be parsed", evt_tag_str("length", argv[2]->str));
+          return;
+        }
+    }
+  else
     len = (glong)argv[0]->len;
 
   /*
@@ -115,31 +120,33 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   /* with negative length, see if we don't end up with start > end */
   if (len < 0 && ((start < 0 && start > len) ||
-		  (start >= 0 && (len + ((glong)argv[0]->len) - start) < 0)))
+                  (start >= 0 && (len + ((glong)argv[0]->len) - start) < 0)))
     return;
 
   /* if requested offset is negative, move start it accordingly */
-  if (start < 0) {
-    start = start + (glong)argv[0]->len;
-    /*
-     * this shouldn't actually happen, as earlier we tested for
-     * (start < 0 && -start > argv0len), but better safe than sorry
-     */
-    if (start < 0)
-      start = 0;
-  }
+  if (start < 0)
+    {
+      start = start + (glong)argv[0]->len;
+      /*
+       * this shouldn't actually happen, as earlier we tested for
+       * (start < 0 && -start > argv0len), but better safe than sorry
+       */
+      if (start < 0)
+        start = 0;
+    }
 
   /*
    * if requested length is negative, "resize" len to include exactly as many
    * characters as needed from the end of the string, given our start position.
    * (start is always non-negative here already)
    */
-  if (len < 0) {
-    len = ((glong)argv[0]->len) - start + len;
-    /* this also shouldn't happen, but - again - better safe than sorry */
-    if (len < 0)
-      return;
-  }
+  if (len < 0)
+    {
+      len = ((glong)argv[0]->len) - start + len;
+      /* this also shouldn't happen, but - again - better safe than sorry */
+      if (len < 0)
+        return;
+    }
 
   /* if we're beyond string end, do nothing */
   if (start >= (glong)argv[0]->len)
@@ -212,14 +219,16 @@ typedef struct _TFSanitizeState
 } TFSanitizeState;
 
 static gboolean
-tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
+tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[],
+                    GError **error)
 {
   TFSanitizeState *state = (TFSanitizeState *) s;
   gboolean ctrl_chars = TRUE;
   gchar *invalid_chars = NULL;
   gchar *replacement = NULL;
   GOptionContext *ctx;
-  GOptionEntry stize_options[] = {
+  GOptionEntry stize_options[] =
+  {
     { "ctrl-chars", 'c', 0, G_OPTION_ARG_NONE, &ctrl_chars, NULL, NULL },
     { "no-ctrl-chars", 'C', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &ctrl_chars, NULL, NULL },
     { "invalid-chars", 'i', 0, G_OPTION_ARG_STRING, &invalid_chars, NULL, NULL },
@@ -251,7 +260,7 @@ tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, 
   state->replacement = replacement[0];
   result = TRUE;
 
- exit:
+exit:
   /* glib supplies us with duplicated strings that we are responsible for! */
   g_free(invalid_chars);
   g_free(replacement);
@@ -294,7 +303,8 @@ tf_sanitize_free_state(gpointer s)
   tf_simple_func_free_state(&state->super);
 }
 
-TEMPLATE_FUNCTION(TFSanitizeState, tf_sanitize, tf_sanitize_prepare, tf_simple_func_eval, tf_sanitize_call, tf_sanitize_free_state, NULL);
+TEMPLATE_FUNCTION(TFSanitizeState, tf_sanitize, tf_sanitize_prepare, tf_simple_func_eval, tf_sanitize_call,
+                  tf_sanitize_free_state, NULL);
 
 
 static void

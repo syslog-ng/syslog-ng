@@ -37,29 +37,29 @@ int root_test_data = 2;
 
 static gboolean
 test_vp_obj_start(const gchar *name,
-                       const gchar *prefix, gpointer *prefix_data,
-                       const gchar *prev, gpointer *prev_data,
-                       gpointer user_data)
+                  const gchar *prefix, gpointer *prefix_data,
+                  const gchar *prev, gpointer *prev_data,
+                  gpointer user_data)
 {
   static int times_called = 0;
 
   switch(times_called)
     {
-      case 0:
-         assert_true(prefix == 0, "First vp_obj_start but prefix is not NULL!");
-         break;
-      case 1:
-         assert_string(prefix, "root", "Second vp_obj_start but prefix is not 'root'!");
-         *prefix_data = &root_data;
-         break;
-      case 2:
-         assert_string(prefix, "root.test", "Third vp_obj_start but prefix is not 'root.test'!");
-         assert_string(prev, "root", "Wrong previous prefix");
-         assert_gint(*((gint*)(*prev_data)), root_data, "Wrong previous data");
-         *prefix_data = &root_test_data;
-         break;
-      default:
-         assert_false(TRUE, "vp_obj_start called more times than number of path elements!");
+    case 0:
+      assert_true(prefix == 0, "First vp_obj_start but prefix is not NULL!");
+      break;
+    case 1:
+      assert_string(prefix, "root", "Second vp_obj_start but prefix is not 'root'!");
+      *prefix_data = &root_data;
+      break;
+    case 2:
+      assert_string(prefix, "root.test", "Third vp_obj_start but prefix is not 'root.test'!");
+      assert_string(prev, "root", "Wrong previous prefix");
+      assert_gint(*((gint *)(*prev_data)), root_data, "Wrong previous data");
+      *prefix_data = &root_test_data;
+      break;
+    default:
+      assert_false(TRUE, "vp_obj_start called more times than number of path elements!");
     }
   times_called++;
   return FALSE;
@@ -67,27 +67,27 @@ test_vp_obj_start(const gchar *name,
 
 static gboolean
 test_vp_obj_stop(const gchar *name,
-                       const gchar *prefix, gpointer *prefix_data,
-                       const gchar *prev, gpointer *prev_data,
-                       gpointer user_data)
+                 const gchar *prefix, gpointer *prefix_data,
+                 const gchar *prev, gpointer *prev_data,
+                 gpointer user_data)
 {
   static int times_called = 0;
 
   switch(times_called)
     {
-      case 0:
-         assert_string(prefix, "root.test", "First vp_obj_stop but prefix is not 'root.test'!");
-         assert_string(prev, "root", "Wrong previous prefix");
-         assert_gint(*((gint*)(*prev_data)), root_data, "Wrong previous data");
-         break;
-      case 1:
-         assert_string(prefix, "root", "Second vp_obj_stop but prefix is not 'root'!");
-         break;
-      case 2:
-         assert_true(prefix == 0, "Third vp_obj_stop but prefix is not NULL!");
-         break;
-      default:
-         assert_false(TRUE, "vp_obj_stop called more times than number of path elements!");
+    case 0:
+      assert_string(prefix, "root.test", "First vp_obj_stop but prefix is not 'root.test'!");
+      assert_string(prev, "root", "Wrong previous prefix");
+      assert_gint(*((gint *)(*prev_data)), root_data, "Wrong previous data");
+      break;
+    case 1:
+      assert_string(prefix, "root", "Second vp_obj_stop but prefix is not 'root'!");
+      break;
+    case 2:
+      assert_true(prefix == 0, "Third vp_obj_stop but prefix is not NULL!");
+      break;
+    default:
+      assert_false(TRUE, "vp_obj_stop called more times than number of path elements!");
     }
   times_called++;
   return FALSE;
@@ -96,12 +96,12 @@ test_vp_obj_stop(const gchar *name,
 
 static gboolean
 test_vp_value(const gchar *name, const gchar *prefix,
-                           TypeHint type, const gchar *value, gsize value_len,
-                           gpointer *prefix_data, gpointer user_data)
+              TypeHint type, const gchar *value, gsize value_len,
+              gpointer *prefix_data, gpointer user_data)
 {
   assert_string(prefix, "root.test", "Wrong prefix");
   assert_nstring(value, value_len, "value", -1, "Wrong value");
-  assert_gint(*((gint*)(*prefix_data)), root_test_data, "Wrong prefix data");
+  assert_gint(*((gint *)(*prefix_data)), root_test_data, "Wrong prefix data");
 
   return FALSE;
 }
@@ -111,7 +111,7 @@ test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
 {
   ValuePairs *vp;
   LogMessage *msg;
-  const char* value = "value";
+  const char *value = "value";
 
   log_template_options_init(&template_options, cfg);
   msg_format_options_init(&parse_options, cfg);

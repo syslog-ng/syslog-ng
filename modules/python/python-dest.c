@@ -71,7 +71,7 @@ void
 python_dd_set_option(LogDriver *d, gchar *key, gchar *value)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  gchar* normalized_key = __normalize_key(key);
+  gchar *normalized_key = __normalize_key(key);
   g_hash_table_insert(self->options, normalized_key, g_strdup(value));
 }
 
@@ -96,12 +96,12 @@ python_dd_set_imports(LogDriver *d, GList *imports)
 void
 python_dd_insert_to_dict(gpointer key, gpointer value, gpointer dict)
 {
-  PyObject *key_pyobj = PyBytes_FromStringAndSize((gchar*) key, strlen((gchar*) key));
-  PyObject *value_pyobj = PyBytes_FromStringAndSize((gchar*) value, strlen((gchar*) value));
-  PyDict_SetItem( (PyObject*) dict, key_pyobj, value_pyobj);
+  PyObject *key_pyobj = PyBytes_FromStringAndSize((gchar *) key, strlen((gchar *) key));
+  PyObject *value_pyobj = PyBytes_FromStringAndSize((gchar *) value, strlen((gchar *) value));
+  PyDict_SetItem( (PyObject *) dict, key_pyobj, value_pyobj);
 }
 
-PyObject*
+PyObject *
 python_dd_create_arg_dict(PythonDestDriver *self)
 {
   PyObject *arg_dict = PyDict_New();
@@ -234,7 +234,8 @@ _py_invoke_void_method_by_name(PythonDestDriver *self, PyObject *instance, const
 }
 
 static gboolean
-_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, PyObject *instance, const gchar *method_name, PyObject* args)
+_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, PyObject *instance, const gchar *method_name,
+    PyObject *args)
 {
   gboolean result = FALSE;
   PyObject *method = _py_get_method(self, instance, method_name);
@@ -282,7 +283,7 @@ _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 static gboolean
 _py_invoke_init(PythonDestDriver *self)
 {
-  PyObject* args = python_dd_create_arg_dict(self);
+  PyObject *args = python_dd_create_arg_dict(self);
   return _py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init", args);
 }
 
@@ -395,7 +396,7 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
     }
   Py_DECREF(msg_object);
 
- exit:
+exit:
   PyGILState_Release(gstate);
   return result;
 }
@@ -482,7 +483,7 @@ python_dd_init(LogPipe *d)
 
   return log_threaded_dest_driver_start(d);
 
- fail:
+fail:
   PyGILState_Release(gstate);
   return FALSE;
 }

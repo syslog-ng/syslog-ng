@@ -45,7 +45,8 @@
 
 static gboolean journal_reader_initialized = FALSE;
 
-typedef struct _JournalReaderState {
+typedef struct _JournalReaderState
+{
   PersistableStateHeader header;
   gchar cursor[MAX_CURSOR_LENGTH];
 } JournalReaderState;
@@ -56,7 +57,8 @@ typedef struct _JournalBookmarkData
   gchar *cursor;
 } JournalBookmarkData;
 
-struct _JournalReader {
+struct _JournalReader
+{
   LogSource super;
   LogPipe *control;
   JournalReaderOptions *options;
@@ -196,7 +198,7 @@ _set_value_in_message(JournalReaderOptions *options, LogMessage *msg, gchar *key
   log_msg_set_value_by_name(msg, name_with_prefix, value, value_len);
 }
 
-static const gchar*
+static const gchar *
 _get_value_from_message(JournalReaderOptions *options, LogMessage *msg,  gchar *key, gssize *value_length)
 {
   gchar name_with_prefix[256];
@@ -243,7 +245,8 @@ _set_message_timestamp(JournalReader *self, LogMessage *msg)
   journald_get_realtime_usec(self->journal, &ts);
   msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
   msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
-  msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(self->options->recv_time_zone_info, msg->timestamps[LM_TS_STAMP].tv_sec);
+  msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(self->options->recv_time_zone_info,
+      msg->timestamps[LM_TS_STAMP].tv_sec);
   if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
     {
       msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
@@ -288,7 +291,8 @@ _load_state(JournalReader *self)
   guint8 persist_version;
 
   self->persist_state = cfg->state;
-  self->persist_handle = persist_state_lookup_entry(self->persist_state, self->persist_name, &state_size, &persist_version);
+  self->persist_handle = persist_state_lookup_entry(self->persist_state, self->persist_name, &state_size,
+                         &persist_version);
   return !!(self->persist_handle);
 }
 
@@ -407,7 +411,7 @@ _fetch_log(JournalReader *self)
             }
           break;
         }
-   }
+    }
   return result;
 }
 
@@ -557,11 +561,13 @@ _free(LogPipe *s)
 }
 
 void
-journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
+journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options, gint stats_level,
+                           gint stats_source, const gchar *stats_id, const gchar *stats_instance)
 {
   JournalReader *self = (JournalReader *) s;
 
-  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & JR_THREADED), TRUE, control->expr_node);
+  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance,
+                         (options->flags & JR_THREADED), TRUE, control->expr_node);
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);

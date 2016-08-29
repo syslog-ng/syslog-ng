@@ -48,7 +48,8 @@ multi_line_regexp_compile(const gchar *regexp, GError **error)
   self->pattern = pcre_compile2(regexp, 0, &rc, &errptr, &erroffset, NULL);
   if (!self->pattern)
     {
-      g_set_error(error, 0, 0, "Error while compiling multi-line regexp as a PCRE expression, error=%s, error_at=%d", errptr, erroffset);
+      g_set_error(error, 0, 0, "Error while compiling multi-line regexp as a PCRE expression, error=%s, error_at=%d", errptr,
+                  erroffset);
       goto error;
     }
 
@@ -65,7 +66,7 @@ multi_line_regexp_compile(const gchar *regexp, GError **error)
     }
 
   return self;
- error:
+error:
   if (self->pattern)
     pcre_free(self->pattern);
   g_free(self);
@@ -91,7 +92,7 @@ struct _LogProtoREMultiLineServer
   /* these are borrowed */
   MultiLineRegexp *prefix;
   MultiLineRegexp *garbage;
-  gint (*get_offset_of_garbage)(LogProtoREMultiLineServer *self, const guchar* line, gsize line_len);
+  gint (*get_offset_of_garbage)(LogProtoREMultiLineServer *self, const guchar *line, gsize line_len);
 };
 
 static int
@@ -116,7 +117,8 @@ _regexp_matches(MultiLineRegexp *re, const guchar *str, gsize len)
 }
 
 gint
-log_proto_prefix_garbage_multiline_get_offset_of_garbage(LogProtoREMultiLineServer *self, const guchar* line, gsize line_len)
+log_proto_prefix_garbage_multiline_get_offset_of_garbage(LogProtoREMultiLineServer *self, const guchar *line,
+    gsize line_len)
 {
   gint match[3];
   if (_find_regexp(self->garbage, line, line_len, match, 1) < 0)
@@ -125,7 +127,8 @@ log_proto_prefix_garbage_multiline_get_offset_of_garbage(LogProtoREMultiLineServ
 };
 
 gint
-log_proto_prefix_suffix_multiline_get_offset_of_garbage(LogProtoREMultiLineServer *self, const guchar* line, gsize line_len)
+log_proto_prefix_suffix_multiline_get_offset_of_garbage(LogProtoREMultiLineServer *self, const guchar *line,
+    gsize line_len)
 {
   gint match[3];
   if (_find_regexp(self->garbage, line, line_len, match, 1) < 0)
@@ -165,9 +168,9 @@ _accumulate_continuation_line(LogProtoREMultiLineServer *self,
 
 static gint
 log_proto_regexp_multiline_accumulate_line(LogProtoTextServer *s,
-                                           const guchar *msg,
-                                           gsize msg_len,
-                                           gssize consumed_len)
+    const guchar *msg,
+    gsize msg_len,
+    gssize consumed_len)
 {
   LogProtoREMultiLineServer *self = (LogProtoREMultiLineServer *) s;
   gboolean initial_line;
@@ -218,9 +221,9 @@ log_proto_regexp_multiline_server_init(LogProtoREMultiLineServer *self,
 
 LogProtoServer *
 log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
-                                      const LogProtoServerOptions *options,
-                                      MultiLineRegexp *prefix,
-                                      MultiLineRegexp *garbage)
+    const LogProtoServerOptions *options,
+    MultiLineRegexp *prefix,
+    MultiLineRegexp *garbage)
 {
   LogProtoREMultiLineServer *self = g_new0(LogProtoREMultiLineServer, 1);
 
@@ -231,9 +234,9 @@ log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
 
 LogProtoServer *
 log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
-                                      const LogProtoServerOptions *options,
-                                      MultiLineRegexp *prefix,
-                                      MultiLineRegexp *suffix)
+    const LogProtoServerOptions *options,
+    MultiLineRegexp *prefix,
+    MultiLineRegexp *suffix)
 {
   LogProtoREMultiLineServer *self = g_new0(LogProtoREMultiLineServer, 1);
 

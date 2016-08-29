@@ -51,7 +51,7 @@ struct _JavaDestinationProxy
   jclass loaded_class;
   JavaDestinationImpl dest_impl;
   LogTemplate *template;
-  GString *formatted_message; 
+  GString *formatted_message;
   JavaLogMessageProxy *msg_builder;
   gchar *name_by_uniq_options;
 };
@@ -62,37 +62,43 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
   JNIEnv *java_env = NULL;
   java_env = java_machine_get_env(self->java_machine, &java_env);
   self->loaded_class = java_machine_load_class(self->java_machine, class_name, class_path);
-  if (!self->loaded_class) {
+  if (!self->loaded_class)
+    {
       msg_error("Can't find class",
                 evt_tag_str("class_name", class_name));
       return FALSE;
-  }
+    }
 
   self->dest_impl.mi_constructor = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "<init>", "(J)V");
-  if (!self->dest_impl.mi_constructor) {
+  if (!self->dest_impl.mi_constructor)
+    {
       msg_error("Can't find default constructor for class",
                 evt_tag_str("class_name", class_name));
       return FALSE;
-  }
+    }
 
   self->dest_impl.mi_init = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "initProxy", "()Z");
-  if (!self->dest_impl.mi_init) {
+  if (!self->dest_impl.mi_init)
+    {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
                 evt_tag_str("method", "boolean init(SyslogNg)"));
       return FALSE;
-  }
+    }
 
   self->dest_impl.mi_deinit = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "deinitProxy", "()V");
-  if (!self->dest_impl.mi_deinit) {
+  if (!self->dest_impl.mi_deinit)
+    {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
                 evt_tag_str("method", "void deinit()"));
       return FALSE;
-  }
+    }
 
-  self->dest_impl.mi_send = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy", "(Ljava/lang/String;)Z");
-  self->dest_impl.mi_send_msg = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy", "(Lorg/syslog_ng/LogMessage;)Z");
+  self->dest_impl.mi_send = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy",
+      "(Ljava/lang/String;)Z");
+  self->dest_impl.mi_send_msg = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy",
+      "(Lorg/syslog_ng/LogMessage;)Z");
 
   if (!self->dest_impl.mi_send_msg && !self->dest_impl.mi_send)
     {
@@ -101,7 +107,8 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
                 evt_tag_str("method", "boolean send(String) or boolean send(LogMessage)"));
     }
 
-  self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "onMessageQueueEmptyProxy", "()V");
+  self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class,
+      "onMessageQueueEmptyProxy", "()V");
   if (!self->dest_impl.mi_on_message_queue_empty)
     {
       msg_error("Can't find method in class",
@@ -130,10 +137,11 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
   if (!self->dest_impl.mi_is_opened)
     {
       msg_error("Can't find method in class", evt_tag_str("class_name", class_name),
-          evt_tag_str("method", "boolean isOpened()"));
+                evt_tag_str("method", "boolean isOpened()"));
     }
 
-  self->dest_impl.dest_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->loaded_class, self->dest_impl.mi_constructor, handle);
+  self->dest_impl.dest_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->loaded_class,
+      self->dest_impl.mi_constructor, handle);
   if (!self->dest_impl.dest_object)
     {
       msg_error("Can't create object",
@@ -142,10 +150,10 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     }
 
   self->dest_impl.mi_get_name_by_uniq_options = CALL_JAVA_FUNCTION(java_env,
-                                                                   GetMethodID,
-                                                                   self->loaded_class,
-                                                                   "getNameByUniqOptionsProxy",
-                                                                   "()Ljava/lang/String;"
+      GetMethodID,
+      self->loaded_class,
+      "getNameByUniqOptionsProxy",
+      "()Ljava/lang/String;"
                                                                   );
   if (!self->dest_impl.mi_get_name_by_uniq_options)
     {
@@ -192,7 +200,7 @@ java_destination_proxy_new(const gchar *class_name, const gchar *class_path, gpo
   self->template = log_template_ref(template);
 
   if (!java_machine_start(self->java_machine))
-      goto error;
+    goto error;
 
   if (!__load_destination_object(self, class_name, class_path, handle))
     {
@@ -230,7 +238,8 @@ __queue_formatted_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *m
 {
   log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, self->formatted_message);
   jstring message = CALL_JAVA_FUNCTION(env, NewStringUTF, self->formatted_message->str);
-  jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_send, message);
+  jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_send,
+                                    message);
   CALL_JAVA_FUNCTION(env, DeleteLocalRef, message);
   return !!(res);
 }
@@ -279,7 +288,8 @@ __get_name_by_uniq_options(JavaDestinationProxy *self)
   JNIEnv *env = java_machine_get_env(self->java_machine, &env);
   jstring java_string;
 
-  java_string = (jstring) CALL_JAVA_FUNCTION(env, CallObjectMethod, self->dest_impl.dest_object, self->dest_impl.mi_get_name_by_uniq_options);
+  java_string = (jstring) CALL_JAVA_FUNCTION(env, CallObjectMethod, self->dest_impl.dest_object,
+      self->dest_impl.mi_get_name_by_uniq_options);
   if (!java_string)
     {
       msg_error("Can't get name by unique options");

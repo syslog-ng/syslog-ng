@@ -138,7 +138,7 @@ static gboolean
 redis_dd_connect(RedisDriver *self, gboolean reconnect)
 {
   redisReply *reply;
-  
+
   if (reconnect && (self->c != NULL))
     {
       reply = redisCommand(self->c, "ping");

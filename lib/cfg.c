@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "cfg.h"
 #include "module-config.h"
 #include "cfg-tree.h"
@@ -75,7 +75,8 @@ persist_config_new(void)
 {
   PersistConfig *self = g_new0(PersistConfig, 1);
 
-  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free, (GDestroyNotify) persist_config_entry_free);
+  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free,
+                                     (GDestroyNotify) persist_config_entry_free);
   return self;
 }
 
@@ -110,7 +111,7 @@ cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re)
 {
   if (self->bad_hostname_re)
     g_free(self->bad_hostname_re);
-  self->bad_hostname_re = g_strdup(bad_hostname_re);  
+  self->bad_hostname_re = g_strdup(bad_hostname_re);
 }
 
 gint
@@ -176,26 +177,26 @@ gboolean
 cfg_init(GlobalConfig *cfg)
 {
   gint regerr;
-  
+
   if (cfg->file_template_name && !(cfg->file_template = cfg_tree_lookup_template(&cfg->tree, cfg->file_template_name)))
     msg_error("Error resolving file template",
-               evt_tag_str("name", cfg->file_template_name));
+              evt_tag_str("name", cfg->file_template_name));
   if (cfg->proto_template_name && !(cfg->proto_template = cfg_tree_lookup_template(&cfg->tree, cfg->proto_template_name)))
     msg_error("Error resolving protocol template",
-               evt_tag_str("name", cfg->proto_template_name));
+              evt_tag_str("name", cfg->proto_template_name));
 
   if (cfg->bad_hostname_re)
     {
       if ((regerr = regcomp(&cfg->bad_hostname, cfg->bad_hostname_re, REG_NOSUB | REG_EXTENDED)) != 0)
         {
           gchar buf[256];
-          
+
           regerror(regerr, &cfg->bad_hostname, buf, sizeof(buf));
           msg_error("Error compiling bad_hostname regexp",
                     evt_tag_str("error", buf));
         }
       else
-        { 
+        {
           cfg->bad_hostname_compiled = TRUE;
         }
     }
@@ -246,12 +247,14 @@ cfg_set_version(GlobalConfig *self, gint version)
 
   if (cfg_is_config_version_older(self, 0x0300))
     {
-      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in " VERSION_3_0 ", please update your configuration accordingly");
+      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in " VERSION_3_0
+                  ", please update your configuration accordingly");
       self->chain_hostnames = TRUE;
     }
   if (cfg_is_config_version_older(self, 0x0303))
     {
-      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3 " to reflect log_iw_size() changes for tcp()/udp() window size changes");
+      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3
+                  " to reflect log_iw_size() changes for tcp()/udp() window size changes");
     }
 
 }
@@ -293,7 +296,7 @@ cfg_new(gint version)
 
   self->flush_lines = 100;
   self->flush_timeout = 10000;  /* 10 seconds */
-  self->mark_freq = 1200;	/* 20 minutes */
+  self->mark_freq = 1200; /* 20 minutes */
   self->mark_mode = MM_HOST_IDLE;
   self->chain_hostnames = 0;
   self->time_reopen = 60;
@@ -307,7 +310,7 @@ cfg_new(gint version)
   dns_cache_options_defaults(&self->dns_cache_options);
   self->threaded = TRUE;
   self->pass_unix_credentials = TRUE;
-  
+
   log_template_options_defaults(&self->template_options);
   self->template_options.ts_format = TS_FMT_BSD;
   self->template_options.frac_digits = 0;
@@ -323,7 +326,7 @@ cfg_new(gint version)
   self->keep_timestamp = TRUE;
 
   self->use_uniqid = FALSE;
-  
+
   stats_options_defaults(&self->stats_options);
 
   cfg_tree_init_instance(&self->tree, self);
@@ -380,7 +383,7 @@ cfg_load_candidate_modules(GlobalConfig *self)
    * auto-load (the default) */
 
   if ((cfg_is_config_version_older(self, 0x0302) ||
-      atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))) && !self->candidate_plugins)
+       atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))) && !self->candidate_plugins)
     {
       plugin_load_candidate_modules(self);
     }
@@ -455,7 +458,7 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gc
                 evt_tag_str(EVT_TAG_FILENAME, fname),
                 evt_tag_errno(EVT_TAG_OSERROR, errno));
     }
-  
+
   return FALSE;
 }
 
@@ -467,7 +470,7 @@ cfg_free(GlobalConfig *self)
     persist_state_free(self->state);
 
   g_free(self->file_template_name);
-  g_free(self->proto_template_name);  
+  g_free(self->proto_template_name);
   log_template_unref(self->file_template);
   log_template_unref(self->proto_template);
   log_template_options_destroy(&self->template_options);
@@ -501,23 +504,23 @@ cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDe
                        gboolean force)
 {
   PersistConfigEntry *p;
-  
+
   if (cfg->persist && value)
     {
       if (g_hash_table_lookup(cfg->persist->keys, name))
         {
           if (!force)
             {
-              msg_error("Internal error, duplicate configuration elements refer to the same persistent config", 
+              msg_error("Internal error, duplicate configuration elements refer to the same persistent config",
                         evt_tag_str("name", name));
               if (destroy)
                 destroy(value);
               return;
             }
         }
-  
+
       p = g_new0(PersistConfigEntry, 1);
-  
+
       p->value = value;
       p->destroy = destroy;
       g_hash_table_insert(cfg->persist->keys, g_strdup(name), p);
@@ -564,7 +567,7 @@ cfg_get_parsed_version(const GlobalConfig *cfg)
   return cfg->parsed_version;
 }
 
-const gchar*
+const gchar *
 cfg_get_filename(const GlobalConfig *cfg)
 {
   return cfg->filename;

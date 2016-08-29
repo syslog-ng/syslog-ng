@@ -29,7 +29,7 @@
 typedef struct _EarlyAckRecord
 {
   AckRecord super;
-  void* padding;
+  void *padding;
   /* bookmark contains a binary container which has to be aligned */
   Bookmark bookmark;
 } EarlyAckRecord;
@@ -82,7 +82,7 @@ early_ack_tracker_init_instance(EarlyAckTracker *self, LogSource *source)
   self->ack_record_storage.super.tracker = (AckTracker *)self;
 }
 
-AckTracker*
+AckTracker *
 early_ack_tracker_new(LogSource *source)
 {
   EarlyAckTracker *self = (EarlyAckTracker *)g_new0(EarlyAckTracker, 1);

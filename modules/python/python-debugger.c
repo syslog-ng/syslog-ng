@@ -58,7 +58,8 @@ static PyMethodDef _syslogngdbg_functions[] =
 
 #if PY_MAJOR_VERSION >= 3
 
-static struct PyModuleDef syslogngdbgmodule = {
+static struct PyModuleDef syslogngdbgmodule =
+{
   .m_base    = PyModuleDef_HEAD_INIT,
   .m_name    = "syslogngdbg",
   .m_size    = -1,
@@ -129,7 +130,7 @@ python_fetch_debugger_command(void)
     }
   command = g_strdup(PyBytes_AsString(ret));
   Py_DECREF(ret);
- exit:
+exit:
   PyGILState_Release(gstate);
   if (!command)
     return debugger_builtin_fetch_command();

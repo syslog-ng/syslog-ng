@@ -33,7 +33,8 @@ typedef struct _UserTemplateFunction
 } UserTemplateFunction;
 
 static gboolean
-user_template_function_prepare(LogTemplateFunction *s, gpointer state, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
+user_template_function_prepare(LogTemplateFunction *s, gpointer state, LogTemplate *parent, gint argc, gchar *argv[],
+                               GError **error)
 {
   UserTemplateFunction *self = (UserTemplateFunction *) s;
 
@@ -41,7 +42,8 @@ user_template_function_prepare(LogTemplateFunction *s, gpointer state, LogTempla
 
   if (argc != 1)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "User defined template function $(%s) cannot have arguments", self->name);
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "User defined template function $(%s) cannot have arguments", self->name);
       return FALSE;
     }
   return TRUE;
@@ -52,7 +54,8 @@ user_template_function_call(LogTemplateFunction *s, gpointer state, const LogTem
 {
   UserTemplateFunction *self = (UserTemplateFunction *) s;
 
-  log_template_append_format_with_context(self->template, args->messages, args->num_messages, args->opts, args->tz, args->seq_num, args->context_id, result);
+  log_template_append_format_with_context(self->template, args->messages, args->num_messages, args->opts, args->tz,
+                                          args->seq_num, args->context_id, result);
 }
 
 static void

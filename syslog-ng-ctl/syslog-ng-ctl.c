@@ -77,7 +77,7 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
     snprintf(buff, 255, "LOG %s\n", mode);
   else
     snprintf(buff, 255, "LOG %s %s\n", mode,
-        strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
+             strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
 
   g_strup(buff);
 
@@ -105,8 +105,10 @@ static GOptionEntry stats_options[] =
 
 static GOptionEntry verbose_options[] =
 {
-  { "set", 's', 0, G_OPTION_ARG_STRING, &verbose_set,
-    "enable/disable messages", "<on|off|0|1>" },
+  {
+    "set", 's', 0, G_OPTION_ARG_STRING, &verbose_set,
+    "enable/disable messages", "<on|off|0|1>"
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -188,8 +190,10 @@ get_mode(int *argc, char **argv[])
 
 static GOptionEntry slng_options[] =
 {
-  { "control", 'c', 0, G_OPTION_ARG_STRING, &control_name,
-    "syslog-ng control socket", "<socket>" },
+  {
+    "control", 'c', 0, G_OPTION_ARG_STRING, &control_name,
+    "syslog-ng control socket", "<socket>"
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -246,9 +250,9 @@ main(int argc, char *argv[])
       if (strcmp(modes[mode].mode, mode_string) == 0)
         {
           ctx = g_option_context_new(mode_string);
-          #if GLIB_CHECK_VERSION (2, 12, 0)
+#if GLIB_CHECK_VERSION (2, 12, 0)
           g_option_context_set_summary(ctx, modes[mode].description);
-          #endif
+#endif
           g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
           g_option_context_add_main_entries(ctx, slng_options, NULL);
           break;

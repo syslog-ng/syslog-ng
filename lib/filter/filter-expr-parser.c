@@ -29,7 +29,8 @@
 extern int filter_expr_debug;
 int filter_expr_parse(CfgLexer *lexer, FilterExprNode **node, gpointer arg);
 
-static CfgLexerKeyword filter_expr_keywords[] = {
+static CfgLexerKeyword filter_expr_keywords[] =
+{
   { "or",                 KW_OR },
   { "and",                KW_AND },
   { "not",                KW_NOT },
@@ -49,12 +50,12 @@ static CfgLexerKeyword filter_expr_keywords[] = {
   { "level",              KW_LEVEL },
   { "priority",           KW_LEVEL },
   { "facility",           KW_FACILITY },
-  { "program",		  KW_PROGRAM },
+  { "program",      KW_PROGRAM },
   { "host",               KW_HOST },
   { "message",            KW_MESSAGE },
-  { "match",		  KW_MATCH },
-  { "netmask",		  KW_NETMASK },
-  { "tags",		  KW_TAGS },
+  { "match",      KW_MATCH },
+  { "netmask",      KW_NETMASK },
+  { "tags",     KW_TAGS },
   { "in_list",            KW_IN_LIST },
 #if SYSLOG_NG_ENABLE_IPV6
   { "netmask6",     KW_NETMASK6 },

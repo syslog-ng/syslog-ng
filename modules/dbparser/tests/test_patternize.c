@@ -37,12 +37,12 @@ MsgFormatOptions parse_options;
 
 static void _debug_print(gpointer key, gpointer value, gpointer dummy)
 {
-  fprintf(stderr, "%s: %d\n", (gchar*) key, *((guint*) value));
+  fprintf(stderr, "%s: %d\n", (gchar *) key, *((guint *) value));
 }
 
 static void _debug_print2(gpointer key, gpointer value, gpointer dummy)
 {
-  fprintf(stderr, "%s: %d\n", (gchar*) key, ((Cluster *) value)->loglines->len);
+  fprintf(stderr, "%s: %d\n", (gchar *) key, ((Cluster *) value)->loglines->len);
 }
 
 typedef struct _loglinesType
@@ -68,17 +68,17 @@ testcase_get_logmessages(gchar *logs)
   input_lines = g_strsplit(logs, "\n", 0);
 
   for (i = 0; input_lines[i]; ++i)
-     {
-       logline = g_strdup_printf("Jul 29 06:25:41 vav zorp/inter_http[27940]: %s", input_lines[i]);
-       len = strlen(logline);
-       if (logline[len-1] == '\n')
-         logline[len-1] = 0;
+    {
+      logline = g_strdup_printf("Jul 29 06:25:41 vav zorp/inter_http[27940]: %s", input_lines[i]);
+      len = strlen(logline);
+      if (logline[len-1] == '\n')
+        logline[len-1] = 0;
 
-       msg = log_msg_new(logline, len, addr, &parse_options);
-       g_ptr_array_add(self->logmessages, msg);
-       ++(self->num_of_logs);
-       g_free(logline);
-     }
+      msg = log_msg_new(logline, len, addr, &parse_options);
+      g_ptr_array_add(self->logmessages, msg);
+      ++(self->num_of_logs);
+      g_free(logline);
+    }
 
   msg_format_options_destroy(&parse_options);
   g_strfreev(input_lines);
@@ -86,7 +86,7 @@ testcase_get_logmessages(gchar *logs)
 }
 
 void
-testcase_frequent_words(gchar* logs, guint support, gchar *expected)
+testcase_frequent_words(gchar *logs, guint support, gchar *expected)
 {
   int i, twopass;
   gchar **expecteds;
@@ -118,7 +118,7 @@ testcase_frequent_words(gchar* logs, guint support, gchar *expected)
           retp = g_hash_table_lookup(wordlist, expected_word);
           if (retp)
             {
-              ret = *((guint*) retp);
+              ret = *((guint *) retp);
             }
           else
             {
@@ -129,7 +129,7 @@ testcase_frequent_words(gchar* logs, guint support, gchar *expected)
             {
               fail = TRUE;
               fprintf(stderr, "Frequent words test case failed; word: '%s', expected=%d, got=%d, support=%d\n",
-                  expected_word, expected_occurance, ret, support);
+                      expected_word, expected_occurance, ret, support);
 
               fprintf(stderr, "Input:\n%s\n", logs);
               fprintf(stderr, "Full results:\n");
@@ -157,53 +157,53 @@ frequent_words_tests()
   /* simple tests */
 
   testcase_frequent_words(
-      "a\n", 0,
-      "0 a:1");
+    "a\n", 0,
+    "0 a:1");
 
   testcase_frequent_words(
-      "a b\n", 0,
-      "0 a:1,"
-      "1 b:1");
+    "a b\n", 0,
+    "0 a:1,"
+    "1 b:1");
 
   testcase_frequent_words(
-      "a a\n"
-      "b b", 0,
-      "0 a:1,1 a:1,"
-      "0 b:1,1 b:1");
+    "a a\n"
+    "b b", 0,
+    "0 a:1,1 a:1,"
+    "0 b:1,1 b:1");
 
   testcase_frequent_words(
-      "a b\n"
-      "b a", 0,
-      "0 a:1,1 a:1,"
-      "0 b:1,1 b:1");
+    "a b\n"
+    "b a", 0,
+    "0 a:1,1 a:1,"
+    "0 b:1,1 b:1");
 
   testcase_frequent_words(
-      "a b\n"
-      "a b", 0,
-      "0 a:2,"
-      "1 b:2");
+    "a b\n"
+    "a b", 0,
+    "0 a:2,"
+    "1 b:2");
 
   /* support threshold tests */
 
   testcase_frequent_words(
-      "a\n", 1,
-      "");
+    "a\n", 1,
+    "");
 
   testcase_frequent_words(
-      "a b\n", 1,
-      "");
+    "a b\n", 1,
+    "");
 
   testcase_frequent_words(
-      "a b\n"
-      "b a", 1,
-      "0 a:1,1 a:1,"
-      "0 b:1,1 b:1");
+    "a b\n"
+    "b a", 1,
+    "0 a:1,1 a:1,"
+    "0 b:1,1 b:1");
 
   testcase_frequent_words(
-      "a b\n"
-      "b a\n"
-      "a c", 2,
-      "0 a:2");
+    "a b\n"
+    "b a\n"
+    "a c", 2,
+    "0 a:2");
 }
 
 typedef struct _clusterfindData
@@ -258,7 +258,8 @@ test_clusters_find(gpointer key, gpointer value, gpointer user_data)
   for (i = 0; i < data->num_of_lines; ++i)
     {
 
-      line = g_strdup((gchar *) log_msg_get_value((LogMessage *) g_ptr_array_index(data->logs, data->lines[i]), LM_V_MESSAGE, &msglen));
+      line = g_strdup((gchar *) log_msg_get_value((LogMessage *) g_ptr_array_index(data->logs, data->lines[i]), LM_V_MESSAGE,
+                      &msglen));
 
       find_data = g_new(clusterfind2Data, 1);
       find_data->search_line = line;
@@ -296,7 +297,7 @@ test_clusters_find(gpointer key, gpointer value, gpointer user_data)
 }
 
 void
-testcase_find_clusters_slct(gchar* logs, guint support, gchar *expected)
+testcase_find_clusters_slct(gchar *logs, guint support, gchar *expected)
 {
   int i,j;
   gchar **expecteds;
@@ -369,27 +370,27 @@ void
 find_clusters_slct_tests()
 {
   testcase_find_clusters_slct(
-      "a\n", 0,
-      "0:1");
+    "a\n", 0,
+    "0:1");
 
   testcase_find_clusters_slct(
-      "a\n"
-      "b\n", 0,
-      "0:1|1:1");
+    "a\n"
+    "b\n", 0,
+    "0:1|1:1");
 
   testcase_find_clusters_slct(
-      "a\n"
-      "b\n"
-      "a\n"
-      "b\n", 2,
-      "0,2:2|1,3:2");
+    "a\n"
+    "b\n"
+    "a\n"
+    "b\n", 2,
+    "0,2:2|1,3:2");
 
   testcase_find_clusters_slct(
-      "alma korte korte alma\n"
-      "alma korte\n"
-      "bela korte\n"
-      "alma\n", 1,
-      "0:1|1:1|2:1|3:1");
+    "alma korte korte alma\n"
+    "alma korte\n"
+    "bela korte\n"
+    "alma\n", 1,
+    "0:1|1:1|2:1|3:1");
 
   /*
   testcase_find_clusters_slct(
@@ -409,38 +410,38 @@ find_clusters_slct_tests()
       */
 
   testcase_find_clusters_slct(
-      "alma korte\n"
-      "alma korte\n"
-      "alma korte\n"
-      "alma korte\n"
-      "bela korte\n"
-      "bela korte\n"
-      "alma\n", 2,
-      "0,1,2,3:4|4,5:2");
+    "alma korte\n"
+    "alma korte\n"
+    "alma korte\n"
+    "alma korte\n"
+    "bela korte\n"
+    "bela korte\n"
+    "alma\n", 2,
+    "0,1,2,3:4|4,5:2");
 
   testcase_find_clusters_slct(
-      "alma korte\n"
-      "alma korte\n"
-      "alma korte\n"
-      "alma korte\n"
-      "bela korte\n"
-      "bela korte\n"
-      "alma\n", 3,
-      "0,1,2,3:4");
+    "alma korte\n"
+    "alma korte\n"
+    "alma korte\n"
+    "alma korte\n"
+    "bela korte\n"
+    "bela korte\n"
+    "alma\n", 3,
+    "0,1,2,3:4");
 
   testcase_find_clusters_slct(
-      "alma korte asdf1 labda\n"
-      "alma korte asdf2 labda\n"
-      "alma korte asdf3 labda\n"
-      "sallala\n", 3,
-      "0,1,2:3");
+    "alma korte asdf1 labda\n"
+    "alma korte asdf2 labda\n"
+    "alma korte asdf3 labda\n"
+    "sallala\n", 3,
+    "0,1,2:3");
 
   testcase_find_clusters_slct(
-      "alma korte asdf1 labda qwe1\n"
-      "alma korte asdf2 labda qwe2\n"
-      "alma korte asdf3 labda qwe3\n"
-      "sallala\n", 3,
-      "0,1,2:3");
+    "alma korte asdf1 labda qwe1\n"
+    "alma korte asdf2 labda qwe2\n"
+    "alma korte asdf3 labda qwe3\n"
+    "sallala\n", 3,
+    "0,1,2:3");
 }
 
 int

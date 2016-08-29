@@ -37,7 +37,8 @@ _assert_no_more_tokens(KVScanner *scanner)
           if (!value)
             value = "";
           g_string_append_printf(msg, "[%s/%s]", key, value);
-        } while (kv_scanner_scan_next(scanner));
+        }
+      while (kv_scanner_scan_next(scanner));
       expect_false(ok, msg->str);
       g_string_free(msg, TRUE);
     }
@@ -353,8 +354,8 @@ _test_quotation_is_stored_in_the_was_quoted_value_member(void)
   TEST_KV_SCAN_Q("foo='bar'", {"foo", "bar", TRUE});
   TEST_KV_SCAN_Q("foo=bar", {"foo", "bar", FALSE});
   TEST_KV_SCAN_Q("foo='bar' k=v",
-                  {"foo", "bar", TRUE},
-                  {"k", "v", FALSE});
+  {"foo", "bar", TRUE},
+  {"k", "v", FALSE});
 }
 
 static void

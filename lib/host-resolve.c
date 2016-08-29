@@ -65,7 +65,8 @@ bounce_to_hostname_buffer(const gchar *hname)
 }
 
 static const gchar *
-hostname_apply_options(gssize result_len_orig, gsize *result_len, const gchar *hname, const HostResolveOptions *host_resolve_options)
+hostname_apply_options(gssize result_len_orig, gsize *result_len, const gchar *hname,
+                       const HostResolveOptions *host_resolve_options)
 {
   if (host_resolve_options->normalize_hostnames)
     {
@@ -81,7 +82,8 @@ hostname_apply_options(gssize result_len_orig, gsize *result_len, const gchar *h
 }
 
 static const gchar *
-hostname_apply_options_fqdn(gssize result_len_orig, gsize *result_len, const gchar *hname, gboolean positive, const HostResolveOptions *host_resolve_options)
+hostname_apply_options_fqdn(gssize result_len_orig, gsize *result_len, const gchar *hname, gboolean positive,
+                            const HostResolveOptions *host_resolve_options)
 {
   if (positive && !host_resolve_options->use_fqdn)
     {
@@ -180,15 +182,15 @@ resolve_hostname_to_sockaddr_using_gethostbyname(GSockAddr **addr, gint family, 
       switch (family)
         {
         case AF_INET:
-          {
-            struct sockaddr_in sin;
+        {
+          struct sockaddr_in sin;
 
-            sin.sin_family = AF_INET;
-            sin.sin_addr = *(struct in_addr *) he->h_addr;
-            sin.sin_port = htons(0);
-            *addr = g_sockaddr_inet_new2(&sin);
-            break;
-          }
+          sin.sin_family = AF_INET;
+          sin.sin_addr = *(struct in_addr *) he->h_addr;
+          sin.sin_port = htons(0);
+          *addr = g_sockaddr_inet_new2(&sin);
+          break;
+        }
         default:
           g_assert_not_reached();
           break;
@@ -295,7 +297,8 @@ sockaddr_to_dnscache_key(GSockAddr *saddr)
 }
 
 static const gchar *
-resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
+resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr,
+    const HostResolveOptions *host_resolve_options)
 {
   const gchar *hname;
   gsize hname_len;

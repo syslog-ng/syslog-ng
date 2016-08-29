@@ -102,7 +102,7 @@ _parse_log_message(gchar *raw_message_str, gint parse_flags, gchar *bad_hostname
   if (bad_hostname_re)
     {
       cr_assert_eq(regcomp(&bad_hostname, bad_hostname_re, REG_NOSUB | REG_EXTENDED), 0,
-        "Unexpected failure of regcomp(); bad_hostname_re='%s'", bad_hostname_re);
+                   "Unexpected failure of regcomp(); bad_hostname_re='%s'", bad_hostname_re);
       parse_options.bad_hostname = &bad_hostname;
     }
 
@@ -189,8 +189,8 @@ test_log_messages_can_be_parsed(struct msgparse_params *param)
     {
       time(&now);
       cr_assert(_absolute_value(parsed_timestamp->tv_sec - now) <= 5,
-        "Expected parsed message timestamp to be set to now; now='%d', timestamp->tv_sec='%d'",
-        (gint)now, (gint)parsed_timestamp->tv_sec);
+                "Expected parsed message timestamp to be set to now; now='%d', timestamp->tv_sec='%d'",
+                (gint)now, (gint)parsed_timestamp->tv_sec);
     }
 
   cr_assert_eq(parsed_message->pri, param->expected_pri, "Unexpected message priority");
@@ -273,7 +273,8 @@ Test(msgparse, test_timestamp)
 {
   struct msgparse_params params[] =
   {
-    {"<15> openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<15> openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       15,             // pri
       0, 0, 0,        // timestamp (sec/usec/zone)
       "",        // host
@@ -281,7 +282,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<15>Jan  1 01:00:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<15>Jan  1 01:00:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       15,             // pri
       _get_bsd_year_utc(0) + 3600, 0, 3600,        // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -289,7 +291,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<15>Jan 10 01:00:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<15>Jan 10 01:00:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       15,             // pri
       _get_bsd_year_utc(0) + 3600 + 9 * 24 * 3600, 0, 3600,        // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -297,7 +300,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<13>Jan  1 14:40:51 alma korte: message", 0, NULL,
+    {
+      "<13>Jan  1 14:40:51 alma korte: message", 0, NULL,
       13,
       _get_bsd_year_utc(0) + 60 * 60 * 14 + 40 * 60 + 51, 0, 3600,
       "",
@@ -305,7 +309,8 @@ Test(msgparse, test_timestamp)
       "korte: message",
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7>2006-11-10T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-11-10T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1163148201, 156000, 7200,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -313,7 +318,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-11-10T10:43:21.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-11-10T10:43:21.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1163151801, 156000, 3600,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -321,7 +327,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-11-10T10:43:21.15600000000000000000000000000000000000000000000000000000000000+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-11-10T10:43:21.15600000000000000000000000000000000000000000000000000000000000+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1163151801, 156000, 3600,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -329,7 +336,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-11-10T10:43:21.15600000000 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-11-10T10:43:21.15600000000 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1163151801, 156000, 3600,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -337,7 +345,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-03-26T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-03-26T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1143334799, 156000, 3600,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -345,7 +354,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-03-26T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-03-26T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1143334800, 156000, 3600,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -353,7 +363,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-03-26T03:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-03-26T03:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1143334800, 156000, 7200,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -361,7 +372,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-10-29T01:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T01:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162076400, 156000, 7200,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -369,7 +381,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-10-29T01:59:59.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T01:59:59.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162079999, 156000, 7200,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -377,7 +390,8 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-10-29T02:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T02:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162080000, 156000, 7200,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -395,7 +409,8 @@ Test(msgparse, test_foreign_timezone)
 {
   struct msgparse_params params[] =
   {
-    {"<7>2006-10-29T01:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T01:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162080000, 156000, 3600,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -403,7 +418,8 @@ Test(msgparse, test_foreign_timezone)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-10-29T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -411,7 +427,8 @@ Test(msgparse, test_foreign_timezone)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162083600, 156000, 3600,    // timestamp (sec/usec/zone)
       "bzorp",        // host
@@ -429,7 +446,8 @@ Test(msgparse, test_hostname)
 {
   struct msgparse_params params[] =
   {
-    {"<7>2006-10-29T02:00:00.156+01:00 %bzorp openvpn[2499]: PTHREAD support initialized", LP_CHECK_HOSTNAME | LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T02:00:00.156+01:00 %bzorp openvpn[2499]: PTHREAD support initialized", LP_CHECK_HOSTNAME | LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162083600, 156000, 3600,    // timestamp (sec/usec/zone)
       "",                // host
@@ -447,7 +465,8 @@ Test(msgparse, test_timestamp_others)
 {
   struct msgparse_params params[] =
   {
-    {"<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+    {
+      "<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
       7,             // pri
       1162083600, 156000, 3600,    // timestamp (sec/usec/zone)
       "",                // host
@@ -455,7 +474,8 @@ Test(msgparse, test_timestamp_others)
       "openvpn[2499]: PTHREAD support initialized", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7>2006-10-29T02:00:00.156+01:00 ", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T02:00:00.156+01:00 ", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162083600, 156000, 3600,    // timestamp (sec/usec/zone)
       "",                // host
@@ -463,7 +483,8 @@ Test(msgparse, test_timestamp_others)
       "", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7>2006-10-29T02:00:00.156+01:00", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>2006-10-29T02:00:00.156+01:00", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1162083600, 156000, 3600,    // timestamp (sec/usec/zone)
       "",                // host
@@ -471,7 +492,8 @@ Test(msgparse, test_timestamp_others)
       "", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
+    {
+      "<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
       7,             // pri
       1162083600, 156000, 3600,    // timestamp (sec/usec/zone)
       "",                // host
@@ -479,7 +501,8 @@ Test(msgparse, test_timestamp_others)
       "snmpd[2499]: PTHREAD support initialized", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7> Aug 29 02:00:00.156 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
+    {
+      "<7> Aug 29 02:00:00.156 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
       7,             // pri
       1, 156000, 7200,    // timestamp (sec/usec/zone)
       "",                // host
@@ -487,7 +510,8 @@ Test(msgparse, test_timestamp_others)
       "snmpd[2499]: PTHREAD support initialized", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7> Aug 29 02:00:00.156789 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
+    {
+      "<7> Aug 29 02:00:00.156789 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
       7,             // pri
       1, 156789, 7200,    // timestamp (sec/usec/zone)
       "",                // host
@@ -495,7 +519,8 @@ Test(msgparse, test_timestamp_others)
       "snmpd[2499]: PTHREAD support initialized", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7> Aug 29 02:00:00. ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
+    {
+      "<7> Aug 29 02:00:00. ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
       7,             // pri
       1, 0, 7200,            // timestamp (sec/usec/zone)
       "",                // host
@@ -503,7 +528,8 @@ Test(msgparse, test_timestamp_others)
       "snmpd[2499]: PTHREAD support initialized", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7> Aug 29 02:00:00 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
+    {
+      "<7> Aug 29 02:00:00 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
       7,             // pri
       1, 0, 7200,            // timestamp (sec/usec/zone)
       "",                // host
@@ -511,7 +537,8 @@ Test(msgparse, test_timestamp_others)
       "snmpd[2499]: PTHREAD support initialized", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       7,             // pri
       1, 0, 7200,            // timestamp (sec/usec/zone)
       "bzorp",            // host
@@ -519,7 +546,8 @@ Test(msgparse, test_timestamp_others)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
-    {"<190>Apr 15 2007 21:28:13: %PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs", LP_EXPECT_HOSTNAME, "^%",
+    {
+      "<190>Apr 15 2007 21:28:13: %PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs", LP_EXPECT_HOSTNAME, "^%",
       190,
       1176665293, 0, 7200,
       "",
@@ -543,7 +571,8 @@ Test(msgparse, test_expected_sd_pairs_0)
 
   struct msgparse_params params[] =
   {
-    {"<190>.Apr 15 2007 21:28:13: %PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs", LP_EXPECT_HOSTNAME, "^%",
+    {
+      "<190>.Apr 15 2007 21:28:13: %PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs", LP_EXPECT_HOSTNAME, "^%",
       190,
       1176665293, 0, 7200,
       "",
@@ -551,7 +580,8 @@ Test(msgparse, test_expected_sd_pairs_0)
       "Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs",
       NULL, NULL, NULL, expected_sd_pairs_test_0
     },
-    {"<190>Apr 15 2007 21:28:13 %ASA: this is a Cisco ASA timestamp", LP_EXPECT_HOSTNAME, "^%",
+    {
+      "<190>Apr 15 2007 21:28:13 %ASA: this is a Cisco ASA timestamp", LP_EXPECT_HOSTNAME, "^%",
       190,
       1176665293, 0, 7200,
       "",
@@ -559,7 +589,8 @@ Test(msgparse, test_expected_sd_pairs_0)
       "this is a Cisco ASA timestamp",
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<190>Apr 15 21:28:13 2007 linksys app: msg", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<190>Apr 15 21:28:13 2007 linksys app: msg", LP_EXPECT_HOSTNAME, NULL,
       190,
       1176665293, 0, 7200,
       "linksys",
@@ -567,7 +598,8 @@ Test(msgparse, test_expected_sd_pairs_0)
       "msg",
       NULL, NULL, NULL, ignore_sdata_pairs
     },
-    {"<38>Sep 22 10:11:56 Message forwarded from cdaix66: sshd[679960]: Accepted publickey for nagios from 1.9.1.1 port 42096 ssh2", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<38>Sep 22 10:11:56 Message forwarded from cdaix66: sshd[679960]: Accepted publickey for nagios from 1.9.1.1 port 42096 ssh2", LP_EXPECT_HOSTNAME, NULL,
       38,
       1, 0, 7200,
       "cdaix66",
@@ -594,7 +626,8 @@ Test(msgparse, test_expected_sd_pairs_1)
 
   struct msgparse_params params[] =
   {
-    {"<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...", LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...", LP_SYSLOG_PROTOCOL, NULL,
       7,             // pri
       1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
       "mymachine.example.com",        // host
@@ -605,7 +638,8 @@ Test(msgparse, test_expected_sd_pairs_1)
       "ID47",//msgid
       expected_sd_pairs_test_1
     },
-    {"<7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       7,             // pri
       1162087199, 156000, 0,    // timestamp (sec/usec/zone)
       "mymachine.example.com",        // host
@@ -616,7 +650,8 @@ Test(msgparse, test_expected_sd_pairs_1)
       "ID47",//msgid
       expected_sd_pairs_test_1
     },
-    {"<7>1 2006-10-29T01:59:59.156123Z mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<7>1 2006-10-29T01:59:59.156123Z mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       7,             // pri
       1162087199, 156123, 0,    // timestamp (sec/usec/zone)
       "mymachine.example.com",        // host
@@ -627,7 +662,8 @@ Test(msgparse, test_expected_sd_pairs_1)
       "ID47",//msgid
       expected_sd_pairs_test_1
     },
-    {"<7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 [ exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 [ exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",        // host
@@ -638,7 +674,8 @@ Test(msgparse, test_expected_sd_pairs_1)
       NULL,//msgid
       empty_sdata_pairs
     },
-    {"<34>1 1987-01-01T12:00:27.000087+00:20 192.0.2.1 myproc 8710 - - %% It's time to make the do-nuts.", LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<34>1 1987-01-01T12:00:27.000087+00:20 192.0.2.1 myproc 8710 - - %% It's time to make the do-nuts.", LP_SYSLOG_PROTOCOL, NULL,
       34,
       536499627, 87, 1200,
       "192.0.2.1",
@@ -665,7 +702,8 @@ Test(msgparse, test_expected_sd_pairs_2)
 
   struct msgparse_params params[] =
   {
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\"] [eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\"] [eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       132,       // pri
       1162083599, 156000, 3600,  // timestamp (sec/usec/zone)
       "mymachine",   // host
@@ -676,7 +714,8 @@ Test(msgparse, test_expected_sd_pairs_2)
       "",//msgid
       expected_sd_pairs_test_2
     },
-    {"<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]:", LP_EXPECT_HOSTNAME, NULL,
+    {
+      "<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]:", LP_EXPECT_HOSTNAME, NULL,
       7,           // pri
       1, 0, 7200,          // timestamp (sec/usec/zone)
       "bzorp",         // host
@@ -702,7 +741,8 @@ Test(msgparse, test_expected_sd_pairs_3)
 
   struct msgparse_params params[] =
   {
-    {"<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"] ApplicationMSExchangeADAccess: message",
+    {
+      "<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"] ApplicationMSExchangeADAccess: message",
       LP_SYSLOG_PROTOCOL, NULL,
       134,             // pri
       1255686716, 0, 7200,    // timestamp (sec/usec/zone)
@@ -730,7 +770,8 @@ Test(msgparse, test_expected_sd_pairs_4)
 
   struct msgparse_params params[] =
   {
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"ok_32\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"ok_32\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       132,             // pri
       1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
       "mymachine",        // host
@@ -741,7 +782,8 @@ Test(msgparse, test_expected_sd_pairs_4)
       "",//msgid
       expected_sd_pairs_test_4
     },
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,                         // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",         // host
@@ -774,7 +816,8 @@ Test(msgparse, test_expected_sd_pairs_too_long)
 
   struct msgparse_params params[] =
   {
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\\]\\\"\\\\\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\\]\\\"\\\\\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       132,             // pri
       1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
       "mymachine",        // host
@@ -787,7 +830,8 @@ Test(msgparse, test_expected_sd_pairs_too_long)
     },
 
     // failed to parse to long sd name
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",        // host
@@ -800,7 +844,8 @@ Test(msgparse, test_expected_sd_pairs_too_long)
     },
 
     // too long sdata value gets truncated
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       132,             // pri
       1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
       "mymachine",        // host
@@ -828,7 +873,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
   struct msgparse_params params[] =
   {
     // too long hostname
-    {"<132>1 2006-10-29T01:59:59.156+01:00 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,        // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       "", //host
@@ -841,7 +887,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
     },
 
     // failed to parse to long appname
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa - - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa - - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       132,             // pri
       1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
       "mymachine",        // host
@@ -854,7 +901,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
     },
 
     // failed to parse to long procid
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       132,             // pri
       1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
       "mymachine",        // host
@@ -867,7 +915,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
     },
 
     // failed to parse to long msgid
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       132,     // pri
       1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
       "mymachine",        // host
@@ -880,7 +929,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
     },
 
     // unescaped ]
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",        // host
@@ -894,7 +944,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
     // unescaped '\'
 
     // bad sd data unescaped "
-    {"<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,      // pri
       0, 0, 0, // timestamp (sec/usec/zone)
       "",    // host
@@ -923,7 +974,8 @@ Test(msgparse, test_expected_sd_pairs_tz_known)
   struct msgparse_params params[] =
   {
     //Testing syslog protocol message parsing if tzKnown=0 because there is no timezone information
-    {"<134>1 2009-10-16T11:51:56 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - - An application event log entry...",
+    {
+      "<134>1 2009-10-16T11:51:56 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - - An application event log entry...",
       LP_SYSLOG_PROTOCOL, NULL,
       134,                         // pri
       1255686716, 0, 7200, // timestamp (sec/usec/zone)
@@ -953,7 +1005,8 @@ Test(msgparse, test_expected_sd_pairs_enterprise_id)
 
   struct msgparse_params params[] =
   {
-    {"<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin enterpriseId=\"1.3.6.1.4.1\"] An application event log entry...",
+    {
+      "<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin enterpriseId=\"1.3.6.1.4.1\"] An application event log entry...",
       LP_SYSLOG_PROTOCOL, NULL,
       134,                         // pri
       1255686716, 0, 7200, // timestamp (sec/usec/zone)
@@ -985,7 +1038,8 @@ Test(msgparse, test_expected_sd_pairs_without_sd_param)
   {
     //Testing syslog protocol message parsing if SDATA contains only SD-ID without SD-PARAM
     //KNOWN BUG: 20459
-    {"<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin enterpriseId=\"1.3.6.1.4.1\"][nosdnvpair] An application event log entry...",
+    {
+      "<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin enterpriseId=\"1.3.6.1.4.1\"][nosdnvpair] An application event log entry...",
       LP_SYSLOG_PROTOCOL, NULL,
       134,                         // pri
       1255686716, 0, 7200, // timestamp (sec/usec/zone)

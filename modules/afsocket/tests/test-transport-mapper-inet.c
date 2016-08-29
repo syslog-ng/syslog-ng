@@ -33,11 +33,11 @@
 
 TransportMapper *transport_mapper;
 
-#define transport_mapper_inet_testcase_begin(init_name, func, args) 	        \
+#define transport_mapper_inet_testcase_begin(init_name, func, args)           \
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      transport_mapper = transport_mapper_ ## init_name ## _new();	        \
+      transport_mapper = transport_mapper_ ## init_name ## _new();          \
     }                                                           \
   while (0)
 

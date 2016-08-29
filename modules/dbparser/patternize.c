@@ -46,12 +46,12 @@ static LogTagId cluster_tag_id;
 #if 0
 static void _ptz_debug_print_word(gpointer key, gpointer value, gpointer dummy)
 {
-  fprintf(stderr, "%d: %s\n", *((guint*) value), (gchar*) key);
+  fprintf(stderr, "%d: %s\n", *((guint *) value), (gchar *) key);
 }
 
 static void _ptz_debug_print_cluster(gpointer key, gpointer value, gpointer dummy)
 {
-  fprintf(stderr, "%s: %s\n", (gchar*) key, ((Cluster *) value)->words[0]);
+  fprintf(stderr, "%s: %s\n", (gchar *) key, ((Cluster *) value)->words[0]);
 }
 #endif
 
@@ -243,7 +243,7 @@ ptz_find_clusters_slct(GPtrArray *logs, guint support, gchar *delimiters, guint 
   gboolean is_candidate;
   Cluster *cluster;
   GString *cluster_key;
-  gchar * msgdelimiters;
+  gchar *msgdelimiters;
 
   /* get the frequent word list */
   wordlist = ptz_find_frequent_words(logs, support, delimiters, TRUE);
@@ -290,31 +290,31 @@ ptz_find_clusters_slct(GPtrArray *logs, guint support, gchar *delimiters, guint 
 
       if (is_candidate)
         {
-          cluster = (Cluster*) g_hash_table_lookup(clusters, cluster_key->str);
+          cluster = (Cluster *) g_hash_table_lookup(clusters, cluster_key->str);
 
           if (!cluster)
-             {
-               cluster = g_new0(Cluster, 1);
+            {
+              cluster = g_new0(Cluster, 1);
 
-               if (num_of_samples > 0)
-                 {
-                   cluster->samples = g_ptr_array_sized_new(5);
-                   g_ptr_array_add(cluster->samples, g_strdup(msgstr));
-                 }
-               cluster->loglines = g_ptr_array_sized_new(64);
-               g_ptr_array_add(cluster->loglines, (gpointer) msg);
-               cluster->words = g_strdupv(words);
+              if (num_of_samples > 0)
+                {
+                  cluster->samples = g_ptr_array_sized_new(5);
+                  g_ptr_array_add(cluster->samples, g_strdup(msgstr));
+                }
+              cluster->loglines = g_ptr_array_sized_new(64);
+              g_ptr_array_add(cluster->loglines, (gpointer) msg);
+              cluster->words = g_strdupv(words);
 
-               g_hash_table_insert(clusters, g_strdup(cluster_key->str), (gpointer) cluster);
-             }
-           else
-             {
-               g_ptr_array_add(cluster->loglines, (gpointer) msg);
-               if (cluster->samples && cluster->samples->len < num_of_samples)
-                 {
-                   g_ptr_array_add(cluster->samples, g_strdup(msgstr));
-                 }
-             }
+              g_hash_table_insert(clusters, g_strdup(cluster_key->str), (gpointer) cluster);
+            }
+          else
+            {
+              g_ptr_array_add(cluster->loglines, (gpointer) msg);
+              if (cluster->samples && cluster->samples->len < num_of_samples)
+                {
+                  g_ptr_array_add(cluster->samples, g_strdup(msgstr));
+                }
+            }
           log_msg_set_tag_by_id(msg, cluster_tag_id);
         }
 
@@ -438,7 +438,7 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   gchar *escapedstr;
   gchar **escapedparts;
   gchar *samplestr, *samplestr_escaped;
-  gboolean named_parsers = *((gboolean*) user_data);
+  gboolean named_parsers = *((gboolean *) user_data);
   guint parser_counts[PTZ_NUM_OF_PARSERS];
   int i;
   Cluster *cluster;
@@ -477,7 +477,7 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   delimiters = words[wordcount-1];
   words[wordcount-1] = 0;
 
-   for (i = 0; words[i]; ++i)
+  for (i = 0; words[i]; ++i)
     {
       g_string_truncate(pattern, 0);
 

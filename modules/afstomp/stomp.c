@@ -60,8 +60,8 @@ stomp_frame_add_header(stomp_frame *frame, const char *name, const char *value)
 void
 stomp_frame_add_header_len(stomp_frame *frame, const char *name, int name_len, const char *value, int value_len)
 {
-  char* name_slice = g_strndup(name, name_len);
-  char* value_slice = g_strndup(value, value_len);
+  char *name_slice = g_strndup(name, name_len);
+  char *value_slice = g_strndup(value, value_len);
   msg_debug("Adding header",
             evt_tag_str("name",name_slice),
             evt_tag_str("value",value_slice));
@@ -189,7 +189,7 @@ stomp_read_data(stomp_connection *connection, GString *buffer)
 
   res = read(connection->socket, tmp_buf, sizeof(tmp_buf));
   if (res < 0)
-     return FALSE;
+    return FALSE;
 
   g_string_assign_len(buffer, tmp_buf, res);
   while (res == sizeof(tmp_buf))
@@ -235,7 +235,7 @@ stomp_parse_header(char *buffer, int buflen, stomp_frame *frame, char **out_pos)
 
   colon = g_strstr_len(buffer, pos - buffer, ":");
   stomp_frame_add_header_len(frame, buffer, colon - buffer,
-                         colon + 1, pos - colon - 1);
+                             colon + 1, pos - colon - 1);
   *out_pos = pos + 1;
 
   return STOMP_PARSE_HEADER;
@@ -263,7 +263,7 @@ stomp_parse_frame(GString *data, stomp_frame *frame)
 int
 stomp_receive_frame(stomp_connection *connection, stomp_frame *frame)
 {
-  GString* data = g_string_sized_new(4096);
+  GString *data = g_string_sized_new(4096);
   int res;
 
   if (!stomp_read_data(connection, data))
@@ -293,7 +293,7 @@ stomp_check_for_frame(stomp_connection *connection)
       stomp_frame frame;
 
       if (!stomp_receive_frame(connection, &frame))
-          return FALSE;
+        return FALSE;
       if (!strcmp(frame.command, "ERROR"))
         {
           msg_error("ERROR frame received from stomp_server");
@@ -306,7 +306,7 @@ stomp_check_for_frame(stomp_connection *connection)
          bad. */
       stomp_frame_deinit(&frame);
       return TRUE;
-  }
+    }
 
   return TRUE;
 }
@@ -314,7 +314,7 @@ stomp_check_for_frame(stomp_connection *connection)
 GString *
 create_gstring_from_frame(stomp_frame *frame)
 {
-  GString* data = g_string_new("");
+  GString *data = g_string_new("");
 
   g_string_append(data, frame->command);
   g_string_append_c(data, '\n');

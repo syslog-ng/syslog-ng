@@ -143,7 +143,7 @@ assert_template_format(const gchar *template, const gchar *expected)
 
 void
 assert_template_format_msg(const gchar *template, const gchar *expected,
-                            LogMessage *msg)
+                           LogMessage *msg)
 {
   assert_template_format_with_escaping_msg(template, FALSE, expected, msg);
 }
@@ -151,7 +151,7 @@ assert_template_format_msg(const gchar *template, const gchar *expected,
 
 void
 assert_template_format_with_escaping_msg(const gchar *template, gboolean escaping,
-                                     const gchar *expected, LogMessage *msg)
+    const gchar *expected, LogMessage *msg)
 {
   LogTemplate *templ = compile_template(template, escaping);
   if (!templ)
@@ -194,7 +194,7 @@ assert_template_format_with_context(const gchar *template, const gchar *expected
 
 void
 assert_template_format_with_context_msgs(const gchar *template, const gchar *expected,
-                                         LogMessage **msgs, gint num_messages)
+    LogMessage **msgs, gint num_messages)
 {
   LogTemplate *templ = compile_template(template, FALSE);
   if (!templ)

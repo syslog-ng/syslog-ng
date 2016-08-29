@@ -67,7 +67,7 @@ typedef struct _PDBStateStack
 {
   gint stack[PDB_STATE_STACK_MAX_DEPTH];
   gint top;
-}PDBStateStack;
+} PDBStateStack;
 
 /* arguments passed to the markup parser functions */
 typedef struct _PDBLoader
@@ -155,8 +155,8 @@ _pop_state(PDBLoader *state)
 
 static gboolean
 _pop_state_for_closing_tag_with_alternatives(PDBLoader *state, const gchar *element_name,
-                                             const gchar *expected_element, const gchar *alternatives,
-                                             GError **error)
+    const gchar *expected_element, const gchar *alternatives,
+    GError **error)
 {
   if (strcmp(element_name, expected_element) != 0)
     {
@@ -282,7 +282,7 @@ _process_create_context_element(PDBLoader *state,
 
 static void
 _pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
-              const gchar **attribute_values, GError **error)
+                    const gchar **attribute_values, GError **error)
 {
   gint i;
 
@@ -302,12 +302,14 @@ _pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **a
         }
       else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
         {
-          pdb_loader_set_error(state, error, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
+          pdb_loader_set_error(state, error,
+                               "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
           return;
         }
       else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
         {
-          pdb_loader_set_error(state, error, "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
+          pdb_loader_set_error(state, error,
+                               "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
           return;
         }
       _push_state(state, PDBL_PATTERNDB);
@@ -387,7 +389,8 @@ _pdbl_ruleset_start(PDBLoader *state, const gchar *element_name, GError **error)
     }
   else
     {
-      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <rules>, <urls>, <url>, <description>, <patterns> or <pattern>", element_name);
+      pdb_loader_set_error(state, error,
+                           "Unexpected <%s> tag, expected a <rules>, <urls>, <url>, <description>, <patterns> or <pattern>", element_name);
     }
 }
 
@@ -468,7 +471,7 @@ _pdbl_ruleset_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, 
 
 static void
 _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
-            const gchar **attribute_values, GError **error)
+                  const gchar **attribute_values, GError **error)
 {
   gint i;
 
@@ -527,7 +530,7 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
 
 static void
 _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
-           const gchar **attribute_values, GError **error)
+                 const gchar **attribute_values, GError **error)
 {
   if (strcmp(element_name, "patterns") == 0)
     {
@@ -575,7 +578,8 @@ _pdbl_rule_start(PDBLoader *state, const gchar *element_name, const gchar **attr
     }
   else
     {
-      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <patterns>, <pattern>, <tags>, <tag> or <actions>", element_name);
+      pdb_loader_set_error(state, error, "Unexpected <%s> tag, expected a <patterns>, <pattern>, <tags>, <tag> or <actions>",
+                           element_name);
     }
 }
 
@@ -602,7 +606,8 @@ _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
     {
       /* valid, but we don't do anything */
     }
-  else if (_pop_state_for_closing_tag_with_alternatives(state, element_name, "rule", "</patterns>, </description>, </tags>, </urls>, </values>", error) == 0)
+  else if (_pop_state_for_closing_tag_with_alternatives(state, element_name, "rule",
+           "</patterns>, </description>, </tags>, </urls>, </values>", error) == 0)
     {
       if (state->current_rule)
         {
@@ -776,7 +781,7 @@ _pdbl_rule_actions_start(PDBLoader *state, const gchar *element_name, const gcha
 
 static void
 _pdbl_rule_action_start(PDBLoader *state, const gchar *element_name, const gchar **attribute_names,
-                         const gchar **attribute_values, GError **error)
+                        const gchar **attribute_values, GError **error)
 {
   if (strcmp(element_name, "message") == 0)
     {
@@ -786,7 +791,8 @@ _pdbl_rule_action_start(PDBLoader *state, const gchar *element_name, const gchar
   else if (strcmp(element_name, "create-context") == 0)
     {
       state->current_action->content_type = RAC_CREATE_CONTEXT;
-      _process_create_context_element(state, attribute_names, attribute_values, &state->current_action->content.create_context.context, error);
+      _process_create_context_element(state, attribute_names, attribute_values,
+                                      &state->current_action->content.create_context.context, error);
     }
   else
     {
@@ -802,7 +808,8 @@ _pdbl_rule_action_create_context_start(PDBLoader *state, const gchar *element_na
 {
   if (strcmp(element_name, "message") == 0)
     {
-      _process_message_element(state, attribute_names, attribute_values, &state->current_action->content.create_context.message, error);
+      _process_message_element(state, attribute_names, attribute_values,
+                               &state->current_action->content.create_context.message, error);
     }
   else
     {
@@ -999,7 +1006,7 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
       break;
     case PDBL_RULESET_DESCRIPTION:
       _pop_state_for_closing_tag(state, element_name, "description", error);
-      break;    
+      break;
     case PDBL_RULES:
       _pop_state_for_closing_tag(state, element_name, "rules", error);
       break;
@@ -1135,8 +1142,8 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
   if ((dbfile = fopen(config, "r")) == NULL)
     {
       msg_error("Error opening classifier configuration file",
-                 evt_tag_str(EVT_TAG_FILENAME, config),
-                 evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_str(EVT_TAG_FILENAME, config),
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
       goto error;
     }
 
@@ -1178,7 +1185,7 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
 
   success = TRUE;
 
- error:
+error:
   if (dbfile)
     fclose(dbfile);
   if (parse_ctx)

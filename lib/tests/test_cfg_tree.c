@@ -182,7 +182,7 @@ test_pipe_init_multi_with_bad_node (void)
   pipe3 = create_and_attach_almighty_pipe (&tree, TRUE);
 
   assert_false (cfg_tree_start (&tree),
-               "Starting a tree of all-good nodes works");
+                "Starting a tree of all-good nodes works");
   assert_true (cfg_tree_stop (&tree),
                "Stopping a tree of all-good nodes works");
 
@@ -196,9 +196,9 @@ test_pipe_init_multi_with_bad_node (void)
   assert_true (pipe1->deinit_called,
                "The deinitializer of the first good pipe is called");
   assert_false (pipe2->deinit_called,
-               "The deinitializer of the bad pipe is NOT called");
+                "The deinitializer of the bad pipe is NOT called");
   assert_false (pipe3->deinit_called,
-               "The deinitializer of the second good pipe is NOT called");
+                "The deinitializer of the second good pipe is NOT called");
 
   cfg_tree_free_instance (&tree);
 

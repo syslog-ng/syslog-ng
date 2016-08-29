@@ -70,7 +70,8 @@ log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **e
 
 
 void
-log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
+                                        const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
 {
   GList *p;
   LogTemplateElem *e;
@@ -105,80 +106,84 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
       switch (e->type)
         {
         case LTE_VALUE:
-          {
-            const gchar *value = NULL;
-            gssize value_len = -1;
+        {
+          const gchar *value = NULL;
+          gssize value_len = -1;
 
-            value = log_msg_get_value(messages[msg_ndx], e->value_handle, &value_len);
-            if (value && value[0])
-              result_append(result, value, value_len, self->escape);
-            else if (e->default_value)
-              result_append(result, e->default_value, -1, self->escape);
-            break;
-          }
+          value = log_msg_get_value(messages[msg_ndx], e->value_handle, &value_len);
+          if (value && value[0])
+            result_append(result, value, value_len, self->escape);
+          else if (e->default_value)
+            result_append(result, e->default_value, -1, self->escape);
+          break;
+        }
         case LTE_MACRO:
-          {
-            gint len = result->len;
+        {
+          gint len = result->len;
 
-            if (e->macro)
-              {
-                log_macro_expand(result, e->macro, self->escape, opts ? opts : &self->cfg->template_options, tz, seq_num, context_id, messages[msg_ndx]);
-                if (len == result->len && e->default_value)
-                  g_string_append(result, e->default_value);
-              }
-            break;
-          }
+          if (e->macro)
+            {
+              log_macro_expand(result, e->macro, self->escape, opts ? opts : &self->cfg->template_options, tz, seq_num, context_id,
+                               messages[msg_ndx]);
+              if (len == result->len && e->default_value)
+                g_string_append(result, e->default_value);
+            }
+          break;
+        }
         case LTE_FUNC:
-          {
-            g_static_mutex_lock(&self->arg_lock);
-            if (!self->arg_bufs)
-              self->arg_bufs = g_ptr_array_sized_new(0);
+        {
+          g_static_mutex_lock(&self->arg_lock);
+          if (!self->arg_bufs)
+            self->arg_bufs = g_ptr_array_sized_new(0);
 
-            if (1)
+          if (1)
+            {
+              LogTemplateInvokeArgs args =
               {
-                LogTemplateInvokeArgs args =
-                  {
-                    self->arg_bufs,
-                    e->msg_ref ? &messages[msg_ndx] : messages,
-                    e->msg_ref ? 1 : num_messages,
-                    opts,
-                    tz,
-                    seq_num,
-                    context_id
-                  };
+                self->arg_bufs,
+                e->msg_ref ? &messages[msg_ndx] : messages,
+                e->msg_ref ? 1 : num_messages,
+                opts,
+                tz,
+                seq_num,
+                context_id
+              };
 
 
-                /* if a function call is called with an msg_ref, we only
-                 * pass that given logmsg to argument resolution, otherwise
-                 * we pass the whole set so the arguments can individually
-                 * specify which message they want to resolve from
-                 */
-                if (e->func.ops->eval)
-                  e->func.ops->eval(e->func.ops, e->func.state, &args);
-                e->func.ops->call(e->func.ops, e->func.state, &args, result);
-              }
-            g_static_mutex_unlock(&self->arg_lock);
-            break;
-          }
+              /* if a function call is called with an msg_ref, we only
+               * pass that given logmsg to argument resolution, otherwise
+               * we pass the whole set so the arguments can individually
+               * specify which message they want to resolve from
+               */
+              if (e->func.ops->eval)
+                e->func.ops->eval(e->func.ops, e->func.state, &args);
+              e->func.ops->call(e->func.ops, e->func.state, &args, result);
+            }
+          g_static_mutex_unlock(&self->arg_lock);
+          break;
+        }
         }
     }
 }
 
 void
-log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
+                                 const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
 {
   g_string_truncate(result, 0);
   log_template_append_format_with_context(self, messages, num_messages, opts, tz, seq_num, context_id, result);
 }
 
 void
-log_template_append_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+log_template_append_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num,
+                           const gchar *context_id, GString *result)
 {
   log_template_append_format_with_context(self, &lm, 1, opts, tz, seq_num, context_id, result);
 }
 
 void
-log_template_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+log_template_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num,
+                    const gchar *context_id, GString *result)
 {
   g_string_truncate(result, 0);
   log_template_append_format(self, lm, opts, tz, seq_num, context_id, result);
@@ -227,7 +232,8 @@ log_template_new(GlobalConfig *cfg, const gchar *name)
   g_static_mutex_init(&self->arg_lock);
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
-      msg_warning_once("WARNING: template: the default value for template-escape has changed to 'no' from " VERSION_3_0 ", please update your configuration file accordingly");
+      msg_warning_once("WARNING: template: the default value for template-escape has changed to 'no' from " VERSION_3_0
+                       ", please update your configuration file accordingly");
       self->escape = TRUE;
     }
   return self;

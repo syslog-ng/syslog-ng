@@ -26,7 +26,8 @@
 #include "string-list.h"
 
 LogParser *
-_construct_parser(gint max_columns, gint dialect, gchar *delimiters, gchar *quotes, gchar *null_value, const gchar *string_delims[])
+_construct_parser(gint max_columns, gint dialect, gchar *delimiters, gchar *quotes, gchar *null_value,
+                  const gchar *string_delims[])
 {
   LogParser *p;
 

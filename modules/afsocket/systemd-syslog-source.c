@@ -37,7 +37,7 @@
 
 static gboolean
 systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
-                          gint *acquired_fd)
+                                 gint *acquired_fd)
 {
   gint fd, number_of_fds;
 
@@ -94,7 +94,7 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
 #else
 static gboolean
 systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
-                          gint *acquired_fd)
+                                 gint *acquired_fd)
 {
   return TRUE;
 }
@@ -104,7 +104,7 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
 static gboolean
 systemd_syslog_sd_init_method(LogPipe *s)
 {
-  SystemDSyslogSourceDriver *self = (SystemDSyslogSourceDriver*) s;
+  SystemDSyslogSourceDriver *self = (SystemDSyslogSourceDriver *) s;
 
   if (service_management_get_type() != SMT_SYSTEMD)
     {
@@ -124,10 +124,10 @@ systemd_syslog_sd_init_method(LogPipe *s)
 
 
 
-  return afsocket_sd_init_method((LogPipe*) &self->super);
+  return afsocket_sd_init_method((LogPipe *) &self->super);
 }
 
-SystemDSyslogSourceDriver*
+SystemDSyslogSourceDriver *
 systemd_syslog_sd_new(GlobalConfig *cfg, gboolean fallback)
 {
   SystemDSyslogSourceDriver *self;
@@ -154,15 +154,16 @@ static gboolean
 should_use_systemd_syslog_instead_of_unix_socket(gchar *filename)
 {
   return (service_management_get_type() == SMT_SYSTEMD &&
-     (strncmp("/dev/log", filename, 9) == 0 || strncmp("/run/systemd/journal/syslog", filename, 28) == 0))? TRUE : FALSE;
+          (strncmp("/dev/log", filename, 9) == 0 || strncmp("/run/systemd/journal/syslog", filename, 28) == 0))? TRUE : FALSE;
 }
 
-typedef enum _SocketType {
+typedef enum _SocketType
+{
   ST_DGRAM,
   ST_STREAM
 } SocketType;
 
-AFSocketSourceDriver*
+AFSocketSourceDriver *
 create_afunix_sd(gchar *filename, GlobalConfig *cfg, SocketType socket_type)
 {
   AFUnixSourceDriver *ud = NULL;
@@ -180,7 +181,7 @@ create_afunix_sd(gchar *filename, GlobalConfig *cfg, SocketType socket_type)
   return &ud->super;
 }
 
-static AFSocketSourceDriver*
+static AFSocketSourceDriver *
 create_and_set_unix_socket_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg, SocketType socket_type)
 {
   SystemDSyslogSourceDriver *sd;
@@ -188,9 +189,9 @@ create_and_set_unix_socket_or_systemd_syslog_source(gchar *filename, GlobalConfi
   if (should_use_systemd_syslog_instead_of_unix_socket(filename))
     {
       msg_warning("Using /dev/log Unix socket with systemd is not"
-                " possible. Changing to systemd-syslog source, which supports"
-                " socket activation.");
-      
+                  " possible. Changing to systemd-syslog source, which supports"
+                  " socket activation.");
+
       sd = systemd_syslog_sd_new(configuration, TRUE);
       systemd_syslog_grammar_set_source_driver(sd);
       return &sd->super;
@@ -198,18 +199,18 @@ create_and_set_unix_socket_or_systemd_syslog_source(gchar *filename, GlobalConfi
   else return create_afunix_sd(filename, cfg, socket_type);
 }
 
-AFSocketSourceDriver*
+AFSocketSourceDriver *
 create_and_set_unix_dgram_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg)
 {
   return create_and_set_unix_socket_or_systemd_syslog_source(filename,
-                                                      cfg,
-                                                      ST_DGRAM);
+         cfg,
+         ST_DGRAM);
 }
 
-AFSocketSourceDriver*
+AFSocketSourceDriver *
 create_and_set_unix_stream_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg)
 {
   return create_and_set_unix_socket_or_systemd_syslog_source(filename,
-                                                      cfg,
-                                                      ST_STREAM);
+         cfg,
+         ST_STREAM);
 }

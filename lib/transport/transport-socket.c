@@ -90,7 +90,7 @@ LogTransport *
 log_transport_dgram_socket_new(gint fd)
 {
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
-  
+
   log_transport_dgram_socket_init_instance(self, fd);
   return &self->super;
 }

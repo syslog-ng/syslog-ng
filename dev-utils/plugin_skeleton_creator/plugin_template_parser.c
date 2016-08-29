@@ -28,7 +28,8 @@ extern int @PLUGIN_NAME_US@_debug;
 
 int @PLUGIN_NAME_US@_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword @PLUGIN_NAME_US@_keywords[] = {
+static CfgLexerKeyword @PLUGIN_NAME_US@_keywords[] =
+{
   { NULL }
 };
 

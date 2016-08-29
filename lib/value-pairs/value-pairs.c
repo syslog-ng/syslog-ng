@@ -227,8 +227,8 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   SBTHGString *sb;
 
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
-        (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
-        (log_msg_is_handle_sdata(handle) && (vp->scopes & (VPS_SDATA + VPS_RFC5424)));
+  (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
+  (log_msg_is_handle_sdata(handle) && (vp->scopes & (VPS_SDATA + VPS_RFC5424)));
 
   for (j = 0; j < vp->patterns->len; j++)
     {
@@ -317,7 +317,8 @@ vp_update_builtin_list_of_values(ValuePairs *vp)
 }
 
 static void
-vp_merge_builtins(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, GTree *dest, const LogTemplateOptions *template_options)
+vp_merge_builtins(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, GTree *dest,
+                  const LogTemplateOptions *template_options)
 {
   gint i;
   SBTHGString *sb;
@@ -335,14 +336,14 @@ vp_merge_builtins(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zon
                            template_options, time_zone_mode, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
-          {
-            const gchar *nv;
-            gssize len;
+        {
+          const gchar *nv;
+          gssize len;
 
-            nv = log_msg_get_value(msg, (NVHandle) spec->id, &len);
-            g_string_append_len(sb_th_gstring_string(sb), nv, len);
-            break;
-          }
+          nv = log_msg_get_value(msg, (NVHandle) spec->id, &len);
+          g_string_append_len(sb_th_gstring_string(sb), nv, len);
+          break;
+        }
         default:
           g_assert_not_reached();
         }
@@ -844,7 +845,7 @@ value_pairs_free (ValuePairs *vp)
   guint i;
 
   for (i = 0; i < vp->vpairs->len; i++)
-    vp_pair_conf_free(g_ptr_array_index(vp->vpairs, i));
+         vp_pair_conf_free(g_ptr_array_index(vp->vpairs, i));
 
   g_ptr_array_free(vp->vpairs, TRUE);
 

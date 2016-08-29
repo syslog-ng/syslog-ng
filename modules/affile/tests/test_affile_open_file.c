@@ -106,7 +106,8 @@ test_spurious_path()
   gint fd;
   gchar fname[] = "./../test.fname";
 
-  assert_false(open_file(fname, REGULAR_FILE_OPEN_FLAGS, 0, &fd), "affile_open_file should not be able to open: %s", fname);
+  assert_false(open_file(fname, REGULAR_FILE_OPEN_FLAGS, 0, &fd), "affile_open_file should not be able to open: %s",
+               fname);
 }
 
 static void

@@ -53,7 +53,7 @@ afmongodb_dd_set_user(LogDriver *d, const gchar *user)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   msg_warning_once("WARNING: Using username() option is deprecated in mongodb driver,"
-      " please use uri() instead");
+                   " please use uri() instead");
 
   g_free(self->user);
   self->user = g_strdup(user);
@@ -66,7 +66,7 @@ afmongodb_dd_set_password(LogDriver *d, const gchar *password)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   msg_warning_once("WARNING: Using password() option is deprecated in mongodb driver,"
-      " please use uri() instead");
+                   " please use uri() instead");
 
   g_free(self->password);
   self->password = g_strdup(password);
@@ -79,7 +79,7 @@ afmongodb_dd_set_host(LogDriver *d, const gchar *host)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   msg_warning_once(
-      "WARNING: Using host() option is deprecated in mongodb driver, please use uri() instead");
+    "WARNING: Using host() option is deprecated in mongodb driver, please use uri() instead");
 
   g_free(self->address);
   self->address = g_strdup(host);
@@ -92,7 +92,7 @@ afmongodb_dd_set_port(LogDriver *d, gint port)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   msg_warning_once(
-      "WARNING: Using port() option is deprecated in mongodb driver, please use uri() instead");
+    "WARNING: Using port() option is deprecated in mongodb driver, please use uri() instead");
 
   self->port = port;
   self->is_legacy = TRUE;
@@ -104,7 +104,7 @@ afmongodb_dd_set_servers(LogDriver *d, GList *servers)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   msg_warning_once(
-      "WARNING: Using servers() option is deprecated in mongodb driver, please use uri() instead");
+    "WARNING: Using servers() option is deprecated in mongodb driver, please use uri() instead");
 
   string_list_free(self->servers);
   self->servers = servers;
@@ -117,7 +117,7 @@ afmongodb_dd_set_path(LogDriver *d, const gchar *path)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   msg_warning_once(
-      "WARNING: Using path() option is deprecated in mongodb driver, please use uri() instead");
+    "WARNING: Using path() option is deprecated in mongodb driver, please use uri() instead");
 
   g_free(self->address);
   self->address = g_strdup(path);
@@ -131,7 +131,7 @@ afmongodb_dd_set_database(LogDriver *d, const gchar *database)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   msg_warning_once("WARNING: Using database() option is deprecated in mongodb driver,"
-      " please use uri() instead");
+                   " please use uri() instead");
 
   g_free(self->db);
   self->db = g_strdup(database);
@@ -144,7 +144,7 @@ afmongodb_dd_set_safe_mode(LogDriver *d, gboolean state)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   msg_warning_once("WARNING: Using safe_mode() option is deprecated in mongodb driver,"
-      " please use uri() instead");
+                   " please use uri() instead");
 
   self->safe_mode = state;
   self->is_legacy = TRUE;

@@ -61,14 +61,14 @@ Plugin hello_plugin = TEMPLATE_FUNCTION_PLUGIN(hello, "hello");
 
 #define assert_compiled_template(text, default_value, spec, type, msg_ref) \
   do { \
-    LogTemplateElem expected_elem; 																\
+    LogTemplateElem expected_elem;                                \
                                                                                                                                                                 \
-    fill_expected_template_element(expected_elem, text, default_value, spec, type, msg_ref); 									\
-    assert_gint((current_elem->type), (expected_elem.type), ASSERTION_ERROR("Bad compiled template type")); 							\
-    assert_common_element(expected_elem); 															\
-    if ((expected_elem.type) == LTE_MACRO) assert_gint(current_elem->macro, expected_elem.macro, ASSERTION_ERROR("Bad compiled template macro")); 		\
+    fill_expected_template_element(expected_elem, text, default_value, spec, type, msg_ref);                  \
+    assert_gint((current_elem->type), (expected_elem.type), ASSERTION_ERROR("Bad compiled template type"));               \
+    assert_common_element(expected_elem);                               \
+    if ((expected_elem.type) == LTE_MACRO) assert_gint(current_elem->macro, expected_elem.macro, ASSERTION_ERROR("Bad compiled template macro"));     \
     if ((expected_elem.type) == LTE_VALUE) assert_gint(current_elem->value_handle, expected_elem.value_handle, ASSERTION_ERROR("Bad compiled template macro")); \
-    if ((expected_elem.type) == LTE_FUNC) assert_gpointer(current_elem->func.ops, expected_elem.func.ops, ASSERTION_ERROR("Bad compiled template macro")); 	\
+    if ((expected_elem.type) == LTE_FUNC) assert_gpointer(current_elem->func.ops, expected_elem.func.ops, ASSERTION_ERROR("Bad compiled template macro"));  \
   } while (0)
 
 
@@ -78,16 +78,16 @@ Plugin hello_plugin = TEMPLATE_FUNCTION_PLUGIN(hello, "hello");
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      template = log_template_new(configuration, NULL);		\
-      start_grabbing_messages();				\
+      template = log_template_new(configuration, NULL);   \
+      start_grabbing_messages();        \
     }                                                           \
   while (0)
 
 #define template_testcase_end()                                \
   do                                                            \
     {                                                           \
-      log_template_unref(template);				\
-      template = NULL;						\
+      log_template_unref(template);       \
+      template = NULL;            \
       testcase_end();                                           \
     }                                                           \
   while (0)
@@ -234,7 +234,8 @@ test_dollar_prefixed_with_backslash_is_a_literal_dollar(void)
 
   cfg_set_version(configuration, 0x305);
   assert_template_compile("Test \\$STRING");
-  assert_compiled_template(text = "Test \\", default_value = NULL, value_handle = log_msg_get_value_handle("STRING"), type = LTE_VALUE, msg_ref = 0);
+  assert_compiled_template(text = "Test \\", default_value = NULL, value_handle = log_msg_get_value_handle("STRING"),
+                           type = LTE_VALUE, msg_ref = 0);
 }
 
 static void
@@ -313,28 +314,32 @@ static void
 test_simple_value(void)
 {
   assert_template_compile("${VALUE_NAME}");
-  assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE_NAME"), type = LTE_VALUE, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE_NAME"),
+                           type = LTE_VALUE, msg_ref = 0);
 }
 
 static void
 test_value_without_braces(void)
 {
   assert_template_compile("$VALUE_NAME");
-  assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE_NAME"), type = LTE_VALUE, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE_NAME"),
+                           type = LTE_VALUE, msg_ref = 0);
 }
 
 static void
 test_backslash_within_braces_is_taken_literally(void)
 {
   assert_template_compile("${VALUE\\}NAME}");
-  assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE\\"), type = LTE_VALUE, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE\\"),
+                           type = LTE_VALUE, msg_ref = 0);
 }
 
 static void
 test_value_name_can_be_the_empty_string_when_referenced_using_braces(void)
 {
   assert_template_compile("${}");
-  assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle(""), type = LTE_VALUE, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle(""), type = LTE_VALUE,
+                           msg_ref = 0);
 }
 
 static void
@@ -350,21 +355,24 @@ static void
 test_simple_template_function(void)
 {
   assert_template_compile("$(hello)");
-  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"), type = LTE_FUNC, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"),
+                           type = LTE_FUNC, msg_ref = 0);
 }
 
 static void
 test_complicated_template_function(void)
 {
   assert_template_compile("$( hello \\tes\t\t\t value(xyz) \"value with spaces\" 'test value with spa\"ces')@2");
-  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"), type = LTE_FUNC, msg_ref = 3);
+  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"),
+                           type = LTE_FUNC, msg_ref = 3);
 }
 
 static void
 test_simple_template_function_with_additional_text(void)
 {
   assert_template_compile("$(hello)test value");
-  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"), type = LTE_FUNC, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"),
+                           type = LTE_FUNC, msg_ref = 0);
 
   select_next_element();
   assert_compiled_template(text = "test value", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
@@ -374,7 +382,8 @@ static void
 test_qouted_string_in_name_template_function(void)
 {
   assert_template_compile("$(he\"ll\"o)");
-  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"), type = LTE_FUNC, msg_ref = 0);
+  assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"),
+                           type = LTE_FUNC, msg_ref = 0);
 }
 
 static void
@@ -390,14 +399,16 @@ static void
 test_invalid_macro(void)
 {
   assert_failed_template_compile("${MESSAGE", "Invalid macro, '}' is missing, error_pos='9'");
-  assert_compiled_template(text = "error in template: ${MESSAGE", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+  assert_compiled_template(text = "error in template: ${MESSAGE", default_value = NULL, macro = M_NONE, type = LTE_MACRO,
+                           msg_ref = 0);
 }
 
 static void
 test_invalid_subst(void)
 {
   assert_failed_template_compile("${MESSAGE:1}", "Unknown substitution function, error_pos='10'");
-  assert_compiled_template(text = "error in template: ${MESSAGE:1}", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+  assert_compiled_template(text = "error in template: ${MESSAGE:1}", default_value = NULL, macro = M_NONE,
+                           type = LTE_MACRO, msg_ref = 0);
 }
 
 static void
@@ -405,7 +416,9 @@ test_template_function_bad1(void)
 {
   assert_failed_template_compile("$( hello \\tes\t\t\t value(xyz \"value with spaces\" 'test value with spa\"ces')",
                                  "Invalid template function reference, missing function name or inbalanced '(', error_pos='73'");
-  assert_compiled_template(text = "error in template: $( hello \\tes\t\t\t value(xyz \"value with spaces\" 'test value with spa\"ces')", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+  assert_compiled_template(text =
+                           "error in template: $( hello \\tes\t\t\t value(xyz \"value with spaces\" 'test value with spa\"ces')",
+                           default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
 static void
@@ -413,21 +426,26 @@ test_template_function_bad2(void)
 {
   assert_failed_template_compile("$( hello \\tes\t\t\t value xyz \"value with spaces\" 'test value with spa\"ces'",
                                  "Invalid template function reference, missing function name or inbalanced '(', error_pos='72'");
-  assert_compiled_template(text = "error in template: $( hello \\tes\t\t\t value xyz \"value with spaces\" 'test value with spa\"ces'", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+  assert_compiled_template(text =
+                           "error in template: $( hello \\tes\t\t\t value xyz \"value with spaces\" 'test value with spa\"ces'",
+                           default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
 static void
 test_template_function_bad3(void)
 {
-  assert_failed_template_compile("$(hello \"This is an unclosed quoted string)", "Invalid template function reference, missing function name or inbalanced '(', error_pos='8'");
-  assert_compiled_template(text = "error in template: $(hello \"This is an unclosed quoted string)", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+  assert_failed_template_compile("$(hello \"This is an unclosed quoted string)",
+                                 "Invalid template function reference, missing function name or inbalanced '(', error_pos='8'");
+  assert_compiled_template(text = "error in template: $(hello \"This is an unclosed quoted string)", default_value = NULL,
+                           macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
 static void
 test_unknown_function(void)
 {
   assert_failed_template_compile("$(unknown function)", "Unknown template function \"unknown\"");
-  assert_compiled_template(text = "error in template: $(unknown function)", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+  assert_compiled_template(text = "error in template: $(unknown function)", default_value = NULL, macro = M_NONE,
+                           type = LTE_MACRO, msg_ref = 0);
 }
 
 static void

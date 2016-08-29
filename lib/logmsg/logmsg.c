@@ -445,7 +445,7 @@ log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPat
  * LogQueue.
  *
  * NOTE: Assumed to be runnning in the source thread, and that the same
- * LogMessage instance is only put into queue from the same thread (e.g. 
+ * LogMessage instance is only put into queue from the same thread (e.g.
  * the related fields are _NOT_ locked).
  */
 LogMessageQueueNode *
@@ -502,7 +502,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   const gchar *name;
   gssize name_len;
   gboolean new_entry = FALSE;
-  
+
   g_assert(!log_msg_is_write_protected(self));
 
   if (handle == LM_V_NONE)
@@ -555,7 +555,8 @@ log_msg_unset_value_by_name(LogMessage *self, const gchar *name)
 }
 
 void
-log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
+log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs,
+                           guint16 len)
 {
   const gchar *name;
   gssize name_len;
@@ -647,7 +648,8 @@ log_msg_clear_matches(LogMessage *self)
 #endif
 
 static inline void
-log_msg_tags_foreach_item(const LogMessage *self, gint base, gulong item, LogMessageTagsForeachFunc callback, gpointer user_data)
+log_msg_tags_foreach_item(const LogMessage *self, gint base, gulong item, LogMessageTagsForeachFunc callback,
+                          gpointer user_data)
 {
   gint i;
 
@@ -998,7 +1000,7 @@ log_msg_print_tags(const LogMessage *self, GString *result)
 /**
  * log_msg_init:
  * @self: LogMessage instance
- * @saddr: sender address 
+ * @saddr: sender address
  *
  * This function initializes a LogMessage instance without allocating it
  * first. It is used internally by the log_msg_new function.
@@ -1016,7 +1018,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].tv_sec);
   self->timestamps[LM_TS_STAMP].tv_sec = -1;
   self->timestamps[LM_TS_STAMP].zone_offset = -1;
- 
+
   self->sdata = NULL;
   self->saddr = g_sockaddr_ref(saddr);
 
@@ -1149,7 +1151,7 @@ LogMessage *
 log_msg_new_empty(void)
 {
   LogMessage *self = log_msg_alloc(256);
-  
+
   log_msg_init(self, NULL);
   return self;
 }
@@ -1187,7 +1189,8 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   LogMessage *self = log_msg_alloc(0);
 
   stats_counter_inc(count_msg_clones);
-  if ((msg->flags & LF_STATE_OWN_MASK) == 0 || ((msg->flags & LF_STATE_OWN_MASK) == LF_STATE_OWN_TAGS && msg->num_tags == 0))
+  if ((msg->flags & LF_STATE_OWN_MASK) == 0 || ((msg->flags & LF_STATE_OWN_MASK) == LF_STATE_OWN_TAGS
+      && msg->num_tags == 0))
     {
       /* the message we're cloning has no original content, everything
        * is referenced from its "original", use that with this clone
@@ -1204,7 +1207,8 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 
   /* reference the original message */
   self->original = log_msg_ref(msg);
-  self->ack_and_ref_and_abort_and_suspended = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(0) + LOGMSG_REFCACHE_ABORT_TO_VALUE(0);
+  self->ack_and_ref_and_abort_and_suspended = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(
+        0) + LOGMSG_REFCACHE_ABORT_TO_VALUE(0);
   self->cur_node = 0;
   self->protect_cnt = 0;
 
@@ -1231,7 +1235,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
  * @msg: message text
  * @flags: parse flags (LP_*)
  *
- * This function creates a new log message for messages originating 
+ * This function creates a new log message for messages originating
  * internally to syslog-ng
  **/
 LogMessage *
@@ -1239,7 +1243,7 @@ log_msg_new_internal(gint prio, const gchar *msg)
 {
   gchar buf[32];
   LogMessage *self;
-  
+
   g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
   self = log_msg_new_empty();
   log_msg_set_value(self, LM_V_PROGRAM, "syslog-ng", 9);
@@ -1253,7 +1257,7 @@ log_msg_new_internal(gint prio, const gchar *msg)
 
 /**
  * log_msg_new_mark:
- * 
+ *
  * This function returns a new MARK message. MARK messages have the LF_MARK
  * flag set.
  **/
@@ -1329,16 +1333,21 @@ _ack_and_ref_and_abort_and_suspend_to_acktype(gint value)
 
 /* Function to update the combined ACK (with the abort flag) and REF counter. */
 static inline gint
-log_msg_update_ack_and_ref_and_abort_and_suspended(LogMessage *self, gint add_ref, gint add_ack, gint add_abort, gint add_suspend)
+log_msg_update_ack_and_ref_and_abort_and_suspended(LogMessage *self, gint add_ref, gint add_ack, gint add_abort,
+    gint add_suspend)
 {
   gint old_value, new_value;
   do
     {
       new_value = old_value = (volatile gint) self->ack_and_ref_and_abort_and_suspended;
-      new_value = (new_value & ~LOGMSG_REFCACHE_REF_MASK)   + LOGMSG_REFCACHE_REF_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_REF(old_value)   + add_ref));
-      new_value = (new_value & ~LOGMSG_REFCACHE_ACK_MASK)   + LOGMSG_REFCACHE_ACK_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value)   + add_ack));
-      new_value = (new_value & ~LOGMSG_REFCACHE_ABORT_MASK) + LOGMSG_REFCACHE_ABORT_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value) | add_abort));
-      new_value = (new_value & ~LOGMSG_REFCACHE_SUSPEND_MASK) + LOGMSG_REFCACHE_SUSPEND_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_SUSPEND(old_value) | add_suspend));
+      new_value = (new_value & ~LOGMSG_REFCACHE_REF_MASK)   + LOGMSG_REFCACHE_REF_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_REF(
+                    old_value)   + add_ref));
+      new_value = (new_value & ~LOGMSG_REFCACHE_ACK_MASK)   + LOGMSG_REFCACHE_ACK_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_ACK(
+                    old_value)   + add_ack));
+      new_value = (new_value & ~LOGMSG_REFCACHE_ABORT_MASK) + LOGMSG_REFCACHE_ABORT_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ABORT(
+                    old_value) | add_abort));
+      new_value = (new_value & ~LOGMSG_REFCACHE_SUSPEND_MASK) + LOGMSG_REFCACHE_SUSPEND_TO_VALUE((
+                    LOGMSG_REFCACHE_VALUE_TO_SUSPEND(old_value) | add_suspend));
     }
   while (!g_atomic_int_compare_and_exchange(&self->ack_and_ref_and_abort_and_suspended, old_value, new_value));
 
@@ -1458,7 +1467,8 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options, AckType ack_ty
           logmsg_cached_suspend |= IS_ACK_SUSPENDED(ack_type);
           return;
         }
-      old_value = log_msg_update_ack_and_ref_and_abort_and_suspended(self, 0, -1, IS_ACK_ABORTED(ack_type), IS_ACK_SUSPENDED(ack_type));
+      old_value = log_msg_update_ack_and_ref_and_abort_and_suspended(self, 0, -1, IS_ACK_ABORTED(ack_type),
+                  IS_ACK_SUSPENDED(ack_type));
       if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == 1)
         {
           if (ack_type == AT_SUSPENDED)
@@ -1519,8 +1529,12 @@ log_msg_refcache_start_producer(LogMessage *self)
 
   /* we don't need to be thread-safe here, as a producer has just created this message and no parallel access is yet possible */
 
-  self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort_and_suspended) + LOGMSG_REFCACHE_BIAS));
-  self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort_and_suspended) + LOGMSG_REFCACHE_BIAS));
+  self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_REF_MASK) +
+      LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort_and_suspended) +
+                                    LOGMSG_REFCACHE_BIAS));
+  self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_ACK_MASK) +
+      LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort_and_suspended) +
+                                    LOGMSG_REFCACHE_BIAS));
 
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
@@ -1628,19 +1642,20 @@ log_msg_refcache_stop(void)
   current_cached_suspend = logmsg_cached_suspend;
   logmsg_cached_suspend = FALSE;
 
-  old_value = log_msg_update_ack_and_ref_and_abort_and_suspended(logmsg_current, 0, current_cached_acks, current_cached_abort, current_cached_suspend);
-  
+  old_value = log_msg_update_ack_and_ref_and_abort_and_suspended(logmsg_current, 0, current_cached_acks,
+              current_cached_abort, current_cached_suspend);
+
   if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -current_cached_acks) && logmsg_cached_ack_needed)
     {
       AckType ack_type_cumulated = _ack_and_ref_and_abort_and_suspend_to_acktype(old_value);
-      
+
       if (current_cached_suspend)
         ack_type_cumulated = AT_SUSPENDED;
       else if (current_cached_abort)
         ack_type_cumulated = AT_ABORTED;
-      
+
       /* 3) call the ack handler */
-      
+
       logmsg_current->ack_func(logmsg_current, ack_type_cumulated);
 
       /* the ack callback may not change the ack counters, it already

@@ -200,12 +200,12 @@ dns_cache_cleanup_persistent_hosts(DNSCache *self)
   struct iv_list_head *ilh, *ilh2;
 
   iv_list_for_each_safe(ilh, ilh2, &self->persist_list)
-    {
-      DNSCacheEntry *entry = iv_list_entry(ilh, DNSCacheEntry, list);
+  {
+    DNSCacheEntry *entry = iv_list_entry(ilh, DNSCacheEntry, list);
 
-      g_hash_table_remove(self->cache, &entry->key);
-      self->persistent_count--;
-    }
+    g_hash_table_remove(self->cache, &entry->key);
+    self->persistent_count--;
+  }
 }
 
 static void
@@ -294,7 +294,8 @@ dns_cache_check_hosts(DNSCache *self, glong t)
  * matching entry at all).
  */
 gboolean
-dns_cache_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
+dns_cache_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *hostname_len,
+                 gboolean *positive)
 {
   DNSCacheKey key;
   DNSCacheEntry *entry;
@@ -331,7 +332,8 @@ dns_cache_new(const DNSCacheOptions *options)
 {
   DNSCache *self = g_new0(DNSCache, 1);
 
-  self->cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
+  self->cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL,
+                                      (GDestroyNotify) dns_cache_entry_free);
   INIT_IV_LIST_HEAD(&self->cache_list);
   INIT_IV_LIST_HEAD(&self->persist_list);
   self->hosts_mtime = -1;

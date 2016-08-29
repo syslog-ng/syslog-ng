@@ -75,7 +75,7 @@ const QueueType log_queue_fifo_type = "FIFO";
 typedef struct _LogQueueFifo
 {
   LogQueue super;
-  
+
   /* scalable qoverflow implementation */
   struct iv_list_head qoverflow_output;
   struct iv_list_head qoverflow_wait;
@@ -257,7 +257,8 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
    * the "wait" queue.
    */
 
-  if (thread_id >= 0) {
+  if (thread_id >= 0)
+    {
       /* fastpath, use per-thread input FIFOs */
       if (!self->qoverflow_input[thread_id].finish_cb_registered)
         {
@@ -279,10 +280,10 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   /* slow path, put the pending item and the whole input queue to the wait_queue */
 
   g_static_mutex_lock(&self->super.lock);
-  
+
   if (thread_id >= 0)
     log_queue_fifo_move_input_unlocked(self, thread_id);
-  
+
   if (log_queue_fifo_get_length(s) < self->qoverflow_size)
     {
       node = log_msg_alloc_queue_node(msg, path_options);
@@ -533,7 +534,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   self->super.rewind_backlog_all = log_queue_fifo_rewind_backlog_all;
 
   self->super.free_fn = log_queue_fifo_free;
-  
+
   for (i = 0; i < log_queue_max_threads; i++)
     {
       INIT_IV_LIST_HEAD(&self->qoverflow_input[i].items);

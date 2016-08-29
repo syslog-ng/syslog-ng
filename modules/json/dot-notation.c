@@ -25,8 +25,8 @@
 typedef struct _JSONDotNotationElem
 {
   gboolean used;
-  
-  enum 
+
+  enum
   {
     JS_MEMBER_REF,
     JS_ARRAY_REF
@@ -123,7 +123,7 @@ _split_dot_notation(const gchar *dot_notation)
 {
   GPtrArray *array;
   const gchar *p, *last;
-  
+
   array = g_ptr_array_new();
   p = last = dot_notation;
   while (*p)
@@ -146,7 +146,7 @@ _split_dot_notation(const gchar *dot_notation)
         }
     }
   g_ptr_array_add(array, g_strndup(last, p - last));
-  g_ptr_array_add(array, NULL);  
+  g_ptr_array_add(array, NULL);
   return (gchar **) g_ptr_array_free(array, FALSE);
 }
 
@@ -170,7 +170,7 @@ _compile_dot_notation(const gchar *dot_notation)
   g_strfreev(levels);
   return (JSONDotNotationElem *) g_array_free(compiled, FALSE);
 
- error:
+error:
   g_strfreev(levels);
   _free_compiled_dot_notation((JSONDotNotationElem *) g_array_free(compiled, FALSE));
   return NULL;
@@ -180,7 +180,7 @@ static void
 _free_compiled_dot_notation(JSONDotNotationElem *compiled)
 {
   gint i;
-  
+
   i = -1;
   for (i = 0; compiled && compiled[i].used; i++)
     {
@@ -204,7 +204,7 @@ json_dot_notation_compile(JSONDotNotation *self, const gchar *dot_notation)
 
 #ifdef JSON_C_VERSION
 struct json_object *
-_json_object_object_get(struct json_object* obj, const char *key)
+_json_object_object_get(struct json_object *obj, const char *key)
 {
   struct json_object *value;
 
@@ -230,7 +230,7 @@ json_dot_notation_eval(JSONDotNotation *self, struct json_object *jso)
       if (1)
         {
           const gchar *name;
-          
+
           if (compiled[i].type == JS_MEMBER_REF)
             {
               name = compiled[i].member_ref.name;
@@ -254,7 +254,7 @@ json_dot_notation_eval(JSONDotNotation *self, struct json_object *jso)
             }
         }
     }
- error:
+error:
   return jso;
 }
 
@@ -277,7 +277,7 @@ struct json_object *
 json_extract(struct json_object *jso, const gchar *dot_notation)
 {
   JSONDotNotation *self = json_dot_notation_new();
-  
+
   if (!json_dot_notation_compile(self, dot_notation))
     {
       jso = NULL;
@@ -285,7 +285,7 @@ json_extract(struct json_object *jso, const gchar *dot_notation)
     }
 
   jso = json_dot_notation_eval(self, jso);
- error:
+error:
   json_dot_notation_free(self);
   return jso;
 }

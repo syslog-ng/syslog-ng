@@ -204,7 +204,8 @@ test_macros(void)
 static void
 test_nvpairs(void)
 {
-  assert_template_format("$PROGRAM/var/log/messages/$HOST/$HOST_FROM/$MONTH$DAY${QQQQQ}valami", "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
+  assert_template_format("$PROGRAM/var/log/messages/$HOST/$HOST_FROM/$MONTH$DAY${QQQQQ}valami",
+                         "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
   assert_template_format("${APP.VALUE}", "value");
   assert_template_format("${APP.VALUE:-ures}", "value");
   assert_template_format("${APP.VALUE2:-ures}", "ures");
@@ -271,7 +272,8 @@ test_multi_thread(void)
   /* name-value pair */
   assert_template_format_multi_thread("alma $HOST bela", "alma bzorp bela");
   assert_template_format_multi_thread("kukac $DATE mukac", "kukac Feb 11 10:34:56.000 mukac");
-  assert_template_format_multi_thread("dani $(echo $HOST $DATE $(echo huha)) balint", "dani bzorp Feb 11 10:34:56.000 huha balint");
+  assert_template_format_multi_thread("dani $(echo $HOST $DATE $(echo huha)) balint",
+                                      "dani bzorp Feb 11 10:34:56.000 huha balint");
 }
 
 static void

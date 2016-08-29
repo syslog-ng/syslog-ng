@@ -29,17 +29,18 @@
 extern int afstomp_debug;
 int afstomp_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword afstomp_keywords[] = {
-  { "stomp",			KW_STOMP },
-  { "host",			KW_HOST },
-  { "port",			KW_PORT },
-  { "destination",		KW_STOMP_DESTINATION },
-  { "persistent",		KW_PERSISTENT },
-  { "ack",			KW_ACK },
-  { "username",			KW_USERNAME },
-  { "password",			KW_PASSWORD },
-  { "log_fifo_size",		KW_LOG_FIFO_SIZE  },
-  { "body",			KW_BODY },
+static CfgLexerKeyword afstomp_keywords[] =
+{
+  { "stomp",      KW_STOMP },
+  { "host",     KW_HOST },
+  { "port",     KW_PORT },
+  { "destination",    KW_STOMP_DESTINATION },
+  { "persistent",   KW_PERSISTENT },
+  { "ack",      KW_ACK },
+  { "username",     KW_USERNAME },
+  { "password",     KW_PASSWORD },
+  { "log_fifo_size",    KW_LOG_FIFO_SIZE  },
+  { "body",     KW_BODY },
   { NULL }
 };
 

@@ -38,7 +38,7 @@ strtok_r(char *str, const char *delim, char **saveptr)
 
   it = *saveptr;
 
- /*find the first non-delimiter*/
+  /*find the first non-delimiter*/
   it += strspn(it, delim);
 
   head = it;

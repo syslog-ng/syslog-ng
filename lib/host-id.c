@@ -31,7 +31,8 @@ guint32 global_host_id = 0;
 static guint32
 _create_host_id()
 {
-  union {
+  union
+  {
     unsigned char _raw[sizeof(guint32)];
     guint32 id;
   } host_id;
@@ -42,7 +43,7 @@ _create_host_id()
 }
 
 void
-host_id_init(PersistState* state)
+host_id_init(PersistState *state)
 {
   gsize size;
   guint8 version;
@@ -59,17 +60,17 @@ host_id_init(PersistState* state)
     }
 
   host_id_state = persist_state_map_entry(state, handle);
-    {
-      if (new_host_id_required)
-        {
-          global_host_id = _create_host_id();
-          host_id_state->host_id = global_host_id;
-        }
-      else
-        {
-          global_host_id = host_id_state->host_id;
-        }
-    }
+  {
+    if (new_host_id_required)
+      {
+        global_host_id = _create_host_id();
+        host_id_state->host_id = global_host_id;
+      }
+    else
+      {
+        global_host_id = host_id_state->host_id;
+      }
+  }
   persist_state_unmap_entry(state, handle);
 }
 

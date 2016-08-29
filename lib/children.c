@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "children.h"
 
 typedef struct _ChildEntry
@@ -43,7 +43,8 @@ child_manager_child_entry_free(ChildEntry *ce)
 }
 
 void
-child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpointer user_data, GDestroyNotify callback_data_destroy)
+child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpointer user_data,
+                       GDestroyNotify callback_data_destroy)
 {
   ChildEntry *ce = g_new0(ChildEntry, 1);
 

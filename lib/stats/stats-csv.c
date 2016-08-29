@@ -67,7 +67,7 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
 
   s_id = stats_format_csv_escapevar(sc->id);
   s_instance = stats_format_csv_escapevar(sc->instance);
-  
+
   if (sc->dynamic)
     state = 'd';
   else if (sc->use_count == 0)
@@ -90,7 +90,8 @@ stats_generate_csv(void)
 {
   GString *csv = g_string_sized_new(1024);
 
-  g_string_append_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type", "Number");
+  g_string_append_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type",
+                         "Number");
   stats_lock();
   stats_foreach_counter(stats_format_csv, csv);
   stats_unlock();

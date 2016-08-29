@@ -30,12 +30,14 @@ typedef struct _TFTemplateState
 } TFTemplateState;
 
 static gboolean
-tf_template_lookup_invoked_template(TFTemplateState *state, GlobalConfig *cfg, const gchar *function_name, GError **error)
+tf_template_lookup_invoked_template(TFTemplateState *state, GlobalConfig *cfg, const gchar *function_name,
+                                    GError **error)
 {
   state->invoked_template = cfg_tree_lookup_template(&cfg->tree, function_name);
   if (!state->invoked_template)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function or template \"%s\"", function_name);
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function or template \"%s\"",
+                  function_name);
       return FALSE;
     }
   return TRUE;
@@ -50,7 +52,8 @@ tf_template_extract_invoked_template_name_from_args(gint argc, gchar *argv[])
 }
 
 static gboolean
-tf_template_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
+tf_template_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[],
+                    GError **error)
 {
   TFTemplateState *state = (TFTemplateState *) s;
   const gchar *invoked_template_name;
@@ -59,7 +62,8 @@ tf_template_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, 
   invoked_template_name = tf_template_extract_invoked_template_name_from_args(argc, argv);
   if (!invoked_template_name)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(template) requires one argument, that specifies the template name to be invoked");
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "$(template) requires one argument, that specifies the template name to be invoked");
       return FALSE;
     }
 
@@ -71,7 +75,8 @@ tf_template_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeA
 {
   TFTemplateState *state = (TFTemplateState *) s;
 
-  log_template_append_format_with_context(state->invoked_template, args->messages, args->num_messages, args->opts, args->tz, args->seq_num, args->context_id, result);
+  log_template_append_format_with_context(state->invoked_template, args->messages, args->num_messages, args->opts,
+                                          args->tz, args->seq_num, args->context_id, result);
 }
 
 static void
@@ -82,4 +87,5 @@ tf_template_free_state(gpointer s)
   log_template_unref(state->invoked_template);
 }
 
-TEMPLATE_FUNCTION(TFTemplateState, tf_template, tf_template_prepare, NULL, tf_template_call, tf_template_free_state, NULL);
+TEMPLATE_FUNCTION(TFTemplateState, tf_template, tf_template_prepare, NULL, tf_template_call, tf_template_free_state,
+                  NULL);

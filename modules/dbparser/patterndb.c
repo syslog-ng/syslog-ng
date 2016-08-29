@@ -219,7 +219,7 @@ pdb_check_action_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
 
           rl->buckets = MIN(rl->buckets + new_credits, self->rate);
           rl->last_check = now;
-      }
+        }
     }
   if (rl->buckets)
     {
@@ -230,14 +230,17 @@ pdb_check_action_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
 }
 
 gboolean
-pdb_is_action_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_is_action_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
+                        LogMessage *msg, GString *buffer)
 {
   if (self->trigger != trigger)
     return FALSE;
 
   if (self->condition)
     {
-      if (context && !filter_expr_eval_with_context(self->condition, (LogMessage **) context->super.messages->pdata, context->super.messages->len))
+      if (context
+          && !filter_expr_eval_with_context(self->condition, (LogMessage **) context->super.messages->pdata,
+                                            context->super.messages->len))
         return FALSE;
       if (!context && !filter_expr_eval(self->condition, msg))
         return FALSE;
@@ -271,7 +274,8 @@ pdb_execute_action_message(PDBAction *self, PatternDB *db, PDBContext *context, 
 static void pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data);
 
 void
-pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *triggering_context, LogMessage *triggering_msg, GString *buffer)
+pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *triggering_context,
+                                  LogMessage *triggering_msg, GString *buffer)
 {
   CorrellationKey key;
   PDBContext *new_context;
@@ -310,8 +314,8 @@ pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule,
   g_ptr_array_add(new_context->super.messages, context_msg);
 
   new_context->super.timer = timer_wheel_add_timer(db->timer_wheel, rule->context.timeout, pattern_db_expire_entry,
-                                                   correllation_context_ref(&new_context->super),
-                                                   (GDestroyNotify) correllation_context_unref);
+                             correllation_context_ref(&new_context->super),
+                             (GDestroyNotify) correllation_context_unref);
   new_context->rule = pdb_rule_ref(rule);
 }
 
@@ -335,14 +339,16 @@ pdb_execute_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *co
 }
 
 void
-pdb_trigger_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_trigger_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
+                   LogMessage *msg, GString *buffer)
 {
   if (pdb_is_action_triggered(self, db, rule, trigger, context, msg, buffer))
     pdb_execute_action(self, db, rule, context, msg, buffer);
 }
 
 void
-pdb_run_rule_actions(PDBRule *self, PatternDB *db, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_run_rule_actions(PDBRule *self, PatternDB *db, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg,
+                     GString *buffer)
 {
   gint i;
 
@@ -688,8 +694,8 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBRule *rule, LogMessage *ms
       else
         {
           context->super.timer = timer_wheel_add_timer(self->timer_wheel, rule->context.timeout, pattern_db_expire_entry,
-                                                 correllation_context_ref(&context->super),
-                                                 (GDestroyNotify) correllation_context_unref);
+                                 correllation_context_ref(&context->super),
+                                 (GDestroyNotify) correllation_context_unref);
         }
       if (context->rule != rule)
         {
@@ -801,7 +807,8 @@ pattern_db_expire_state(PatternDB *self)
 static void
 _init_state(PatternDB *self)
 {
-  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) pdb_rate_limit_free);
+  self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL,
+                      (GDestroyNotify) pdb_rate_limit_free);
   correllation_state_init_instance(&self->correllation);
   self->timer_wheel = timer_wheel_new();
   timer_wheel_set_associated_data(self->timer_wheel, self, NULL);

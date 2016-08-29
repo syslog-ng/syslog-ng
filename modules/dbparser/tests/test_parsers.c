@@ -30,14 +30,14 @@
 
 #define PARSER_TESTCASE(x, ...) do { parser_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); parser_testcase_end(); } while(0)
 
-#define parser_testcase_begin(func, args)                    	\
+#define parser_testcase_begin(func, args)                     \
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
     }                                                           \
   while (0)
 
-#define parser_testcase_end()                                	\
+#define parser_testcase_end()                                 \
   do                                                            \
     {                                                           \
       testcase_end();                                           \
@@ -47,7 +47,8 @@
 
 
 static gboolean
-_invoke_parser(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match), const gchar *str, gpointer param, gpointer state, gchar **result_string)
+_invoke_parser(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match),
+               const gchar *str, gpointer param, gpointer state, gchar **result_string)
 {
   gboolean result;
   gint len = 0;
@@ -74,7 +75,8 @@ _invoke_parser(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gp
 }
 
 static void
-assert_parser_success(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match), const gchar *str, gpointer param, gpointer state, const gchar *expected_string)
+assert_parser_success(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state,
+                      RParserMatch *match), const gchar *str, gpointer param, gpointer state, const gchar *expected_string)
 {
   gchar *result_string = NULL;
   gboolean result;
@@ -86,7 +88,8 @@ assert_parser_success(gboolean (*parser)(guint8 *str, gint *len, const gchar *pa
 }
 
 static void
-assert_parser_failure(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match), const gchar *str, gpointer param, gpointer state)
+assert_parser_failure(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state,
+                      RParserMatch *match), const gchar *str, gpointer param, gpointer state)
 {
   gboolean result;
 

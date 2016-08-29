@@ -60,7 +60,8 @@ filter_expr_eval(FilterExprNode *self, LogMessage *msg)
 }
 
 gboolean
-filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg, const LogPathOptions *path_options)
+filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg,
+                                   const LogPathOptions *path_options)
 {
   if (self->modify)
     log_msg_make_writable(&msg[0], path_options);

@@ -48,7 +48,7 @@ log_stamp_append_frac_digits(const LogStamp *stamp, GString *target, gint frac_d
     }
 }
 
-/** 
+/**
  * log_stamp_format:
  * @stamp: Timestamp to format
  * @target: Target storage for formatted timestamp
@@ -56,7 +56,7 @@ log_stamp_append_frac_digits(const LogStamp *stamp, GString *target, gint frac_d
  * @zone_offset: Specifies custom zone offset if @tz_convert == TZ_CNV_CUSTOM
  *
  * Emits the formatted version of @stamp into @target as specified by
- * @ts_format and @tz_convert. 
+ * @ts_format and @tz_convert.
  **/
 void
 log_stamp_append_format(const LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
@@ -65,7 +65,7 @@ log_stamp_append_format(const LogStamp *stamp, GString *target, gint ts_format, 
   struct tm *tm, tm_storage;
   char buf[8];
   time_t t;
-  
+
   if (zone_offset != -1)
     target_zone_offset = zone_offset;
   else

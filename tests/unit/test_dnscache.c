@@ -48,7 +48,7 @@ _fill_dns_cache(DNSCache *cache, gint cache_size)
       guint32 ni = htonl(i);
       gboolean positive = i < (cache_size / 2);
       dns_cache_store_dynamic(cache, AF_INET, (void *) &ni,
-        positive ? positive_hostname : negative_hostname, positive);
+                              positive ? positive_hostname : negative_hostname, positive);
     }
 }
 
@@ -87,20 +87,20 @@ assert_no_forget(DNSCache *cache, gint cache_size)
       positive = FALSE;
 
       cr_assert(dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive),
-        "hmmm cache forgot the cache entry too early, i=%d, hn=%s\n",
-        i, hn);
+                "hmmm cache forgot the cache entry too early, i=%d, hn=%s\n",
+                i, hn);
 
       if (i < positive_limit)
         {
           cr_assert(positive && strcmp(hn, "hostname") == 0,
-            "hmm, cached returned an positive match, but cached name invalid, i=%d, hn=%s\n",
-            i, hn);
+                    "hmm, cached returned an positive match, but cached name invalid, i=%d, hn=%s\n",
+                    i, hn);
         }
       else
         {
           cr_assert(!positive && strcmp(hn, "negative") == 0,
-            "hmm, cache returned a positive match, where a negative match was expected, i=%d, hn=%s\n",
-            i, hn);
+                    "hmm, cache returned a positive match, where a negative match was expected, i=%d, hn=%s\n",
+                    i, hn);
         }
 
     }
@@ -124,14 +124,14 @@ assert_forget_negative(DNSCache *cache, gint cache_size)
       if (i < positive_limit)
         {
           cr_assert(dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive) || !positive,
-            "hmmm cache forgot positive entries too early, i=%d\n",
-            i);
+                    "hmmm cache forgot positive entries too early, i=%d\n",
+                    i);
         }
       else
         {
           cr_assert_not(dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive) || positive,
-            "hmmm cache didn't forget negative entries in time, i=%d\n",
-            i);
+                        "hmmm cache didn't forget negative entries in time, i=%d\n",
+                        i);
         }
     }
 }
@@ -151,8 +151,8 @@ assert_forget_all(DNSCache *cache, gint cache_size)
       hn = NULL;
       positive = FALSE;
       cr_assert_not(dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive),
-        "hmmm cache did not forget an expired entry, i=%d\n",
-        i);
+                    "hmmm cache did not forget an expired entry, i=%d\n",
+                    i);
     }
 }
 

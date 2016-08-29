@@ -66,13 +66,13 @@ log_threaded_dest_driver_wake_up(gpointer data)
 }
 
 static void
-log_threaded_dest_driver_start_watches(LogThrDestDriver* self)
+log_threaded_dest_driver_start_watches(LogThrDestDriver *self)
 {
   iv_task_register(&self->do_work);
 }
 
 static void
-log_threaded_dest_driver_stop_watches(LogThrDestDriver* self)
+log_threaded_dest_driver_stop_watches(LogThrDestDriver *self)
 {
   if (iv_task_registered(&self->do_work))
     {
@@ -220,8 +220,8 @@ log_threaded_dest_driver_do_work(gpointer data)
     }
 
   else if (log_queue_check_items(self->queue, &timeout_msec,
-                                        log_threaded_dest_driver_message_became_available_in_the_queue,
-                                        self, NULL))
+                                 log_threaded_dest_driver_message_became_available_in_the_queue,
+                                 self, NULL))
     {
       log_threaded_dest_driver_do_insert(self);
       if (!self->suspended)
@@ -238,7 +238,7 @@ log_threaded_dest_driver_do_work(gpointer data)
 }
 
 static void
-log_threaded_dest_driver_init_watches(LogThrDestDriver* self)
+log_threaded_dest_driver_init_watches(LogThrDestDriver *self)
 {
   IV_EVENT_INIT(&self->wake_up_event);
   self->wake_up_event.cookie = self;
@@ -320,7 +320,7 @@ log_threaded_dest_driver_start(LogPipe *s)
     self->time_reopen = cfg->time_reopen;
 
   self->queue = log_dest_driver_acquire_queue(
-      &self->super, self->super.super.super.generate_persist_name((const LogPipe *)self));
+                  &self->super, self->super.super.super.generate_persist_name((const LogPipe *)self));
 
   if (self->queue == NULL)
     {
@@ -351,7 +351,8 @@ log_threaded_dest_driver_start(LogPipe *s)
   log_queue_set_counters(self->queue, self->stored_messages,
                          self->dropped_messages);
 
-  self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, log_threaded_dest_driver_format_seqnum_for_persist(self)));
+  self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
+                                  log_threaded_dest_driver_format_seqnum_for_persist(self)));
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
 

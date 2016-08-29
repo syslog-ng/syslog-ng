@@ -28,7 +28,7 @@
 
 static gchar *
 _csv_scanner_dup_current_value_with_prefix(CSVScanner *line_scanner,
-                                           const gchar *prefix)
+    const gchar *prefix)
 {
   if (!prefix)
     return csv_scanner_dup_current_value(line_scanner);

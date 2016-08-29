@@ -44,7 +44,7 @@
 
 #define OVERFLOW_SIZE 10000
 #ifdef PATH_QDISK
-  #undef PATH_QDISK
+#undef PATH_QDISK
 #endif
 #define PATH_QDISK "./"
 
@@ -74,7 +74,9 @@ testcase_zero_diskbuf_and_normal_acks()
 
   send_some_messages(q, fed_messages);
   app_ack_some_messages(q, fed_messages);
-  assert_gint(fed_messages, acked_messages, "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages, acked_messages);
+  assert_gint(fed_messages, acked_messages,
+              "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages,
+              acked_messages);
 
   log_queue_unref(q);
   unlink(filename->str);
@@ -108,7 +110,9 @@ testcase_zero_diskbuf_alternating_send_acks()
       app_ack_some_messages(q, 10);
     }
 
-  assert_gint(fed_messages, acked_messages, "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages, acked_messages);
+  assert_gint(fed_messages, acked_messages,
+              "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages,
+              acked_messages);
   log_queue_unref(q);
   unlink(filename->str);
   g_string_free(filename,TRUE);
@@ -275,16 +279,16 @@ testcase_with_threads()
       thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
 
       for (j = 0; j < FEEDERS; j++)
-      {
-        g_thread_join(thread_feed[j]);
-      }
+        {
+          g_thread_join(thread_feed[j]);
+        }
       g_thread_join(thread_consume);
 
       log_queue_unref(q);
       unlink(filename->str);
       g_string_free(filename,TRUE);
       disk_queue_options_destroy(&options);
-      
+
     }
   fprintf(stderr, "Feed speed: %.2lf\n", (double) TEST_RUNS * MESSAGES_SUM * 1000000 / sum_time);
 }
@@ -293,7 +297,8 @@ int
 main()
 {
 #if _AIX
-  fprintf(stderr,"On AIX this testcase can't executed, because the overriding of main_loop_io_worker_register_finish_callback does not work\n");
+  fprintf(stderr,
+          "On AIX this testcase can't executed, because the overriding of main_loop_io_worker_register_finish_callback does not work\n");
   return 0;
 #endif
   app_startup();

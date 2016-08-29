@@ -25,7 +25,8 @@
 
 #include <string.h>
 
-enum {
+enum
+{
   KV_QUOTE_INITIAL = 0,
   KV_QUOTE_STRING,
   KV_QUOTE_BACKSLASH,

@@ -86,13 +86,14 @@ main_loop_io_worker_init(void)
 {
   if (main_loop_io_workers.max_threads == 0)
     {
-      main_loop_io_workers.max_threads = MIN(MAX(MAIN_LOOP_MIN_WORKER_THREADS, get_processor_count()), MAIN_LOOP_MAX_WORKER_THREADS);
+      main_loop_io_workers.max_threads = MIN(MAX(MAIN_LOOP_MIN_WORKER_THREADS, get_processor_count()),
+                                             MAIN_LOOP_MAX_WORKER_THREADS);
     }
 
   main_loop_io_workers.thread_start = (void (*)(void *)) main_loop_worker_thread_start;
   main_loop_io_workers.thread_stop = (void (*)(void *)) main_loop_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
-  
+
   log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
 }
 
