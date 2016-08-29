@@ -202,6 +202,9 @@ context_info_db_insert(ContextInfoDB *self,
 gboolean
 context_info_db_contains(ContextInfoDB *self, const gchar *selector)
 {
+  if (!selector)
+    return FALSE;
+
   _ensure_indexed_db(self);
   return (_get_range_of_records(self, selector) != NULL);
 }
