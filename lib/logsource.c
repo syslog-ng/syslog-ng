@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "logsource.h"
 #include "messages.h"
 #include "host-resolve.h"
@@ -152,7 +152,7 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
   const gchar *resolved_name;
   gsize resolved_name_len;
   const gchar *orig_host;
-  
+
   resolved_name = resolve_sockaddr_to_hostname(&resolved_name_len, msg->saddr, &self->options->host_resolve_options);
   log_msg_set_value(msg, LM_V_HOST_FROM, resolved_name, resolved_name_len);
 
@@ -161,39 +161,39 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
     {
       gchar host[256];
       gint host_len = -1;
-      if (G_UNLIKELY(self->options->chain_hostnames)) 
-	{
+      if (G_UNLIKELY(self->options->chain_hostnames))
+        {
           msg->flags |= LF_CHAINED_HOSTNAME;
-	  if (msg->flags & LF_LOCAL) 
-	    {
-	      /* local */
-	      host_len = g_snprintf(host, sizeof(host), "%s@%s", self->options->group_name, resolved_name);
-	    }
-	  else if (!orig_host || !orig_host[0])
-	    {
-	      /* remote && no hostname */
-	      host_len = g_snprintf(host, sizeof(host), "%s/%s", resolved_name, resolved_name);
-	    } 
-	  else 
-	    {
-	      /* everything else, append source hostname */
-	      if (orig_host && orig_host[0])
-		host_len = g_snprintf(host, sizeof(host), "%s/%s", orig_host, resolved_name);
-	      else
+          if (msg->flags & LF_LOCAL)
+            {
+              /* local */
+              host_len = g_snprintf(host, sizeof(host), "%s@%s", self->options->group_name, resolved_name);
+            }
+          else if (!orig_host || !orig_host[0])
+            {
+              /* remote && no hostname */
+              host_len = g_snprintf(host, sizeof(host), "%s/%s", resolved_name, resolved_name);
+            }
+          else
+            {
+              /* everything else, append source hostname */
+              if (orig_host && orig_host[0])
+                host_len = g_snprintf(host, sizeof(host), "%s/%s", orig_host, resolved_name);
+              else
                 {
                   strncpy(host, resolved_name, sizeof(host));
                   /* just in case it is not zero terminated */
                   host[255] = 0;
                 }
-	    }
+            }
           if (host_len >= sizeof(host))
             host_len = sizeof(host) - 1;
           log_msg_set_value(msg, LM_V_HOST, host, host_len);
-	}
+        }
       else
-	{
+        {
           log_msg_set_value(msg, LM_V_HOST, resolved_name, resolved_name_len);
-	}
+        }
     }
 }
 
@@ -203,8 +203,10 @@ log_source_init(LogPipe *s)
   LogSource *self = (LogSource *) s;
 
   stats_lock();
-  stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->recvd_messages);
-  stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP, &self->last_message_seen);
+  stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance,
+                         SC_TYPE_PROCESSED, &self->recvd_messages);
+  stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance,
+                         SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
   return TRUE;
 }
@@ -213,10 +215,12 @@ gboolean
 log_source_deinit(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
-  
+
   stats_lock();
-  stats_unregister_counter(self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->recvd_messages);
-  stats_unregister_counter(self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP, &self->last_message_seen);
+  stats_unregister_counter(self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED,
+                           &self->recvd_messages);
+  stats_unregister_counter(self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP,
+                           &self->last_message_seen);
   stats_unlock();
   return TRUE;
 }
@@ -254,12 +258,12 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 {
   LogSource *self = (LogSource *) s;
   gint i;
-  
+
   msg_set_context(msg);
 
   if (msg->timestamps[LM_TS_STAMP].tv_sec == -1 || !self->options->keep_timestamp)
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
-    
+
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
 
   /* $HOST setup */
@@ -297,11 +301,14 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       stats_lock();
 
-      stats_register_and_increment_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
+      stats_register_and_increment_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL),
+          msg->timestamps[LM_TS_RECVD].tv_sec);
       if (stats_check_level(3))
         {
-          stats_register_and_increment_dynamic_counter(3, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
-          stats_register_and_increment_dynamic_counter(3, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_register_and_increment_dynamic_counter(3, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM,
+              NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_register_and_increment_dynamic_counter(3, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM,
+              NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
         }
 
       stats_unlock();
@@ -342,12 +349,13 @@ _create_ack_tracker_if_not_exists(LogSource *self, gboolean pos_tracked)
 }
 
 void
-log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node)
+log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source,
+                       const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node)
 {
   /* NOTE: we don't adjust window_size even in case it was changed in the
    * configuration and we received a SIGHUP.  This means that opened
    * connections will not have their window_size changed. */
-  
+
   if (g_atomic_counter_get(&self->window_size) == -1)
     g_atomic_counter_set(&self->window_size, options->init_window_size);
   self->options = options;
@@ -381,7 +389,7 @@ void
 log_source_free(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
-  
+
   g_free(self->stats_id);
   g_free(self->stats_instance);
   log_pipe_free_method(s);

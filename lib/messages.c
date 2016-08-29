@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "messages.h"
 #include "logmsg/logmsg.h"
 
@@ -80,7 +80,7 @@ void
 msg_set_context(LogMessage *msg)
 {
   MsgContext *context = msg_get_context();
-  
+
   if (msg && (msg->flags & LF_INTERNAL))
     {
       if (msg->recursed)
@@ -98,18 +98,19 @@ static gboolean
 msg_limit_internal_message(const gchar *msg)
 {
   MsgContext *context;
-  
+
   if (!evt_context)
     return FALSE;
 
   context = msg_get_context();
-  
+
   if (context->recurse_state >= RECURSE_STATE_SUPPRESS)
     {
       if (!context->recurse_warning)
         {
           msg_event_send(
-            msg_event_create(EVT_PRI_WARNING, "internal() messages are looping back, preventing loop by suppressing all internal messages until the current message is processed",
+            msg_event_create(EVT_PRI_WARNING,
+                             "internal() messages are looping back, preventing loop by suppressing all internal messages until the current message is processed",
                              evt_tag_str("trigger-msg", context->recurse_trigger),
                              evt_tag_str("first-suppressed-msg", msg),
                              NULL));
@@ -158,7 +159,7 @@ msg_send_formatted_message(int prio, const char *msg)
   else if (msg_post_func)
     {
       LogMessage *m;
-      
+
       MsgContext *context = msg_get_context();
 
       if (context->recurse_state == RECURSE_STATE_OK)
@@ -201,7 +202,7 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
 {
   EVTREC *e;
   va_list va;
-  
+
   g_static_mutex_lock(&evtlog_lock);
   e = evt_rec_init(evt_context, prio, desc);
   if (tag1)
@@ -215,7 +216,7 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
   return e;
 }
 
-EVTREC*
+EVTREC *
 msg_event_create_from_desc(gint prio, const char *desc)
 {
   return msg_event_create(prio, desc, NULL);
@@ -233,14 +234,14 @@ void
 msg_log_func(const gchar *log_domain, GLogLevelFlags log_flags, const gchar *msg, gpointer user_data)
 {
   int pri = EVT_PRI_INFO;
-  
+
   if (log_flags & G_LOG_LEVEL_DEBUG)
     pri = EVT_PRI_DEBUG;
   else if (log_flags & G_LOG_LEVEL_WARNING)
     pri = EVT_PRI_WARNING;
   else if (log_flags & G_LOG_LEVEL_ERROR)
     pri = EVT_PRI_ERR;
-    
+
   pri |= EVT_FAC_SYSLOG;
   msg_send_formatted_message(pri, msg);
 }

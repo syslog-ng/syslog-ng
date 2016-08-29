@@ -35,7 +35,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-static const gchar* spurious_paths[] = {"../", "/..", NULL};
+static const gchar *spurious_paths[] = {"../", "/..", NULL};
 
 static inline gboolean
 _string_contains_fragment(const gchar *str, const gchar *fragments[])
@@ -99,7 +99,7 @@ _open_fd(const gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_op
 {
   int fd;
   int mode = (perm_opts && (perm_opts->file_perm >= 0))
-    ? perm_opts->file_perm : 0600;
+             ? perm_opts->file_perm : 0600;
 
   fd = open(name, open_opts->open_flags, mode);
 

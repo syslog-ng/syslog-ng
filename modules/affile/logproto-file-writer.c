@@ -129,7 +129,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
 
   return LPS_SUCCESS;
 
- write_error:
+write_error:
   if (errno != EINTR && errno != EAGAIN)
     {
       msg_error("I/O error occurred while writing",
@@ -219,7 +219,8 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
 #endif
 
   /* allocate the structure with the proper number of items at the end */
-  LogProtoFileWriter *self = (LogProtoFileWriter *)g_malloc0(sizeof(LogProtoFileWriter) + sizeof(struct iovec)*flush_lines);
+  LogProtoFileWriter *self = (LogProtoFileWriter *)g_malloc0(sizeof(LogProtoFileWriter) + sizeof(
+                               struct iovec)*flush_lines);
 
   log_proto_client_init(&self->super, transport, options);
   self->fd = transport->fd;

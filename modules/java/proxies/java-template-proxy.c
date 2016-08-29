@@ -37,7 +37,8 @@ Java_org_syslog_1ng_LogTemplate_create_1new_1template_1instance(JNIEnv *env, job
 
 
 JNIEXPORT jboolean
-JNICALL Java_org_syslog_1ng_LogTemplate_compile(JNIEnv *env, jobject obj, jlong template_handle, jstring template_string)
+JNICALL Java_org_syslog_1ng_LogTemplate_compile(JNIEnv *env, jobject obj, jlong template_handle,
+    jstring template_string)
 {
   LogTemplate *template = (LogTemplate *)template_handle;
   GError *error = NULL;
@@ -54,7 +55,8 @@ JNICALL Java_org_syslog_1ng_LogTemplate_compile(JNIEnv *env, jobject obj, jlong 
 }
 
 JNIEXPORT jstring JNICALL
-Java_org_syslog_1ng_LogTemplate_format(JNIEnv *env, jobject obj, jlong template_handle, jlong msg_handle, jlong logtemplate_options_handle, jint tz)
+Java_org_syslog_1ng_LogTemplate_format(JNIEnv *env, jobject obj, jlong template_handle, jlong msg_handle,
+                                       jlong logtemplate_options_handle, jint tz)
 {
   LogTemplate *template = (LogTemplate *)template_handle;
   LogTemplateOptions *template_options = (LogTemplateOptions *)logtemplate_options_handle;

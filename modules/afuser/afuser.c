@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "afuser.h"
 #include "messages.h"
 #include "compat/getutent.h"
@@ -102,11 +102,11 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   GString *timestamp;
   UtmpEntry *ut;
   time_t now;
-  
+
   now = msg->timestamps[LM_TS_RECVD].tv_sec;
   if (self->disable_until && self->disable_until > now)
     goto finish;
-  
+
   timestamp = g_string_sized_new(0);
   log_stamp_format(&msg->timestamps[LM_TS_STAMP], timestamp, TS_FMT_FULL, -1, 0);
   g_snprintf(buf, sizeof(buf), "%s %s %s\n",
@@ -114,7 +114,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
              log_msg_get_value(msg, LM_V_HOST, NULL),
              log_msg_get_value(msg, LM_V_MESSAGE, NULL));
   g_string_free(timestamp, TRUE);
-  
+
   G_LOCK(utmp_lock);
   while ((ut = _fetch_utmp_entry()))
     {
@@ -140,12 +140,12 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 #endif
                     evt_tag_str("line", line));
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
-          if (fd != -1) 
+          if (fd != -1)
             {
               if (write(fd, buf, strlen(buf)) < 0 && errno == EAGAIN)
                 {
                   msg_notice("Writing to the user terminal has blocked for writing, disabling for 10 minutes",
-                            evt_tag_str("user", self->username->str));
+                             evt_tag_str("user", self->username->str));
                   self->disable_until = now + 600;
                 }
               close(fd);
@@ -171,7 +171,7 @@ LogDriver *
 afuser_dd_new(gchar *user, GlobalConfig *cfg)
 {
   AFUserDestDriver *self = g_new0(AFUserDestDriver, 1);
-  
+
   log_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.queue = afuser_dd_queue;
   self->super.super.super.free_fn = afuser_dd_free;

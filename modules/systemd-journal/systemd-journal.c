@@ -51,7 +51,8 @@ __init(LogPipe *s)
 
   journal_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  journal_reader_set_options((LogPipe *)self->reader, &self->super.super.super,  &self->reader_options, 0, SCS_JOURNALD, self->super.super.id, "journal");
+  journal_reader_set_options((LogPipe *)self->reader, &self->super.super.super,  &self->reader_options, 0, SCS_JOURNALD,
+                             self->super.super.id, "journal");
 
   log_pipe_append((LogPipe *)self->reader, &self->super.super.super);
   if (!log_pipe_init((LogPipe *)self->reader))

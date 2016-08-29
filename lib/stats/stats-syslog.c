@@ -69,7 +69,8 @@ stats_syslog_reinit(void)
           g_snprintf(name, sizeof(name), "%d", i);
           stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
-      stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
+      stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED,
+                             &facility_counters[FACILITY_MAX - 1]);
     }
   else
     {
@@ -85,7 +86,8 @@ stats_syslog_reinit(void)
           g_snprintf(name, sizeof(name), "%d", i);
           stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
-      stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
+      stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED,
+                               &facility_counters[FACILITY_MAX - 1]);
     }
   stats_unlock();
 }

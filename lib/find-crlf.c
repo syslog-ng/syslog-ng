@@ -56,7 +56,7 @@ find_cr_or_lf(gchar *s, gsize n)
 #elif GLIB_SIZEOF_LONG == 4
   magic_bits = 0x7efefeffL;
 #else
-  #error "unknown architecture"
+#error "unknown architecture"
 #endif
   memset(&cr_charmask, CR, sizeof(cr_charmask));
   memset(&lf_charmask, LF, sizeof(lf_charmask));

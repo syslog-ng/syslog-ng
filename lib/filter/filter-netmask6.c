@@ -84,7 +84,7 @@ get_network_address(unsigned char *ipv6, int prefix, struct in6_addr *network)
 }
 
 static inline gboolean
-_in6_addr_compare(const struct in6_addr* address1, const struct in6_addr* address2)
+_in6_addr_compare(const struct in6_addr *address1, const struct in6_addr *address2)
 {
   return memcmp(address1, address2, sizeof(struct in6_addr)) == 0;
 }

@@ -64,7 +64,8 @@ tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   GOptionContext *ctx;
   gint length = 0;
   const EVP_MD *md;
-  GOptionEntry hash_options[] = {
+  GOptionEntry hash_options[] =
+  {
     { "length", 'l', 0, G_OPTION_ARG_INT, &length, NULL, NULL },
     { NULL }
   };
@@ -81,7 +82,8 @@ tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   if (argc < 2)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(hash) parsing failed, invalid number of arguments");
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "$(hash) parsing failed, invalid number of arguments");
       return FALSE;
     }
 
@@ -141,7 +143,8 @@ tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
     }
 }
 
-TEMPLATE_FUNCTION(TFHashState, tf_hash, tf_hash_prepare, tf_simple_func_eval, tf_hash_call, tf_simple_func_free_state, NULL);
+TEMPLATE_FUNCTION(TFHashState, tf_hash, tf_hash_prepare, tf_simple_func_eval, tf_hash_call, tf_simple_func_free_state,
+                  NULL);
 
 
 static Plugin cryptofuncs_plugins[] =

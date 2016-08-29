@@ -41,7 +41,7 @@ g_string_steal(GString *s)
 }
 
 static gchar *
-str_replace_char(const gchar* str, const gchar from, const gchar to)
+str_replace_char(const gchar *str, const gchar from, const gchar to)
 {
   gchar *p;
   gchar *ret = g_strdup(str);
@@ -56,7 +56,7 @@ str_replace_char(const gchar* str, const gchar from, const gchar to)
 }
 
 gchar *
-__normalize_key(const gchar* buffer)
+__normalize_key(const gchar *buffer)
 {
   return str_replace_char(buffer, '-', '_');
 }

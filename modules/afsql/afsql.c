@@ -286,7 +286,7 @@ afsql_dd_commit_transaction(AFSqlDestDriver *self)
 {
   gboolean success;
 
- if (!self->transaction_active)
+  if (!self->transaction_active)
     return TRUE;
 
   success = afsql_dd_run_query(self, "COMMIT", FALSE, NULL);
@@ -426,11 +426,11 @@ afsql_dd_create_index(AFSqlDestDriver *self, const gchar *table, const gchar *co
           format_hex_string(hash, sizeof(hash), hash_str, sizeof(hash_str));
           hash_str[0] = 'i';
           g_string_printf(query_string, "CREATE INDEX %s ON %s (%s)",
-              hash_str, table, column);
+                          hash_str, table, column);
         }
       else
         g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",
-            table, column, table, column);
+                        table, column, table, column);
     }
   else
     g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",
@@ -790,14 +790,14 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
     {
       if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
         {
-           g_string_append(insert_command, self->fields[i].name);
+          g_string_append(insert_command, self->fields[i].name);
 
-           j = i + 1;
-           while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
-             j++;
+          j = i + 1;
+          while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
+            j++;
 
-           if (j < self->fields_len)
-             g_string_append(insert_command, ", ");
+          if (j < self->fields_len)
+            g_string_append(insert_command, ", ");
         }
     }
 
@@ -824,7 +824,7 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
                 }
               else
                 {
-                 g_string_append(insert_command, "''");
+                  g_string_append(insert_command, "''");
                 }
             }
 
@@ -872,8 +872,8 @@ afsql_dd_rollback_msg(AFSqlDestDriver *self, LogMessage *msg, LogPathOptions *pa
 
 static inline gboolean
 afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestDriver *self,
-                                                                      LogMessage *msg,
-                                                                      LogPathOptions *path_options)
+    LogMessage *msg,
+    LogPathOptions *path_options)
 {
   const gchar *dbi_error, *error_message;
 
@@ -967,7 +967,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
         }
     }
 
- out:
+out:
 
   if (table != NULL)
     g_string_free(table, TRUE);
@@ -1160,7 +1160,7 @@ afsql_dd_format_persist_sequence_number(AFSqlDestDriver *self)
 
   g_snprintf(persist_name, sizeof(persist_name),
              "afsql_dd_sequence_number(%s,%s,%s,%s,%s)",
-              self->type,self->host, self->port, self->database, self->table->template);
+             self->type,self->host, self->port, self->database, self->table->template);
 
   return persist_name;
 }
@@ -1183,8 +1183,10 @@ afsql_dd_init(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+                         SC_TYPE_STORED, &self->stored_messages);
+  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+                         SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, afsql_dd_format_persist_sequence_number(self)));
@@ -1192,7 +1194,7 @@ afsql_dd_init(LogPipe *s)
     init_sequence_number(&self->seq_num);
 
   self->queue = log_dest_driver_acquire_queue(&self->super,
-                                              afsql_dd_format_persist_name((const LogPipe *)self));
+                afsql_dd_format_persist_name((const LogPipe *)self));
   if (self->queue == NULL)
     {
       return FALSE;
@@ -1306,11 +1308,13 @@ afsql_dd_init(LogPipe *s)
   afsql_dd_start_thread(self);
   return TRUE;
 
- error:
+error:
 
   stats_lock();
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+                           SC_TYPE_STORED, &self->stored_messages);
+  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+                           SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
   return FALSE;
@@ -1324,11 +1328,14 @@ afsql_dd_deinit(LogPipe *s)
   log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
-  cfg_persist_config_add(log_pipe_get_config(s), afsql_dd_format_persist_sequence_number(self), GINT_TO_POINTER(self->seq_num), NULL, FALSE);
+  cfg_persist_config_add(log_pipe_get_config(s), afsql_dd_format_persist_sequence_number(self),
+                         GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
   stats_lock();
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+                           SC_TYPE_STORED, &self->stored_messages);
+  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+                           SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))

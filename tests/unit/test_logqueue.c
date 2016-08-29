@@ -63,7 +63,7 @@ _threaded_feed(gpointer args)
   glong diff;
 
   iv_init();
-  
+
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(NULL);
 
@@ -79,7 +79,7 @@ _threaded_feed(gpointer args)
       msg->ack_func = test_ack;
 
       log_queue_push_tail(q, msg, &path_options);
-      
+
       if ((i & 0xFF) == 0)
         main_loop_worker_invoke_batch_callbacks();
     }
@@ -199,8 +199,8 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   app_ack_some_messages(q, fed_messages);
 
   cr_assert_eq(fed_messages, acked_messages,
-    "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
-    fed_messages, acked_messages);
+               "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
+               fed_messages, acked_messages);
 
   log_queue_unref(q);
 }
@@ -223,8 +223,8 @@ Test(logqueue, test_zero_diskbuf_alternating_send_acks)
     }
 
   cr_assert_eq(fed_messages, acked_messages,
-    "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
-    fed_messages, acked_messages);
+               "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
+               fed_messages, acked_messages);
 
   log_queue_unref(q);
 }
@@ -253,11 +253,11 @@ Test(logqueue, test_with_threads)
       thread_consume = g_thread_create(_threaded_consume, q, TRUE, NULL);
 
       for (j = 0; j < FEEDERS; j++)
-      {
-        fprintf(stderr,"waiting for feed thread %d\n",j);
-        g_thread_join(thread_feed[j]);
-        g_thread_join(other_threads[j]);
-      }
+        {
+          fprintf(stderr,"waiting for feed thread %d\n",j);
+          g_thread_join(thread_feed[j]);
+          g_thread_join(other_threads[j]);
+        }
       g_thread_join(thread_consume);
 
       log_queue_unref(q);

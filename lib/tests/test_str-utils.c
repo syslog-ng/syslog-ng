@@ -42,8 +42,10 @@ assert_strchr_finds_character_at(const gchar *str, int c, int ofs)
   char *result = strchr_under_test(str, c);
 
   assert_not_null(result, "expected a non-NULL return");
-  assert_true(result - str <= strlen(str), "Expected the strchr() return value to point into the input string or the terminating NUL, it points past the NUL");
-  assert_true(result >= str, "Expected the strchr() return value to point into the input string or the terminating NUL, it points before the start of the string");
+  assert_true(result - str <= strlen(str),
+              "Expected the strchr() return value to point into the input string or the terminating NUL, it points past the NUL");
+  assert_true(result >= str,
+              "Expected the strchr() return value to point into the input string or the terminating NUL, it points before the start of the string");
   assert_gint((result - str), ofs, "Expected the strchr() return value to point right to the specified offset");
 }
 

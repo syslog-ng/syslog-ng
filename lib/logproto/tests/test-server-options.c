@@ -33,9 +33,12 @@ test_log_proto_server_options_limits(void)
 
   log_proto_server_options_defaults(&opts);
   log_proto_server_options_init(&opts, configuration);
-  assert_true(opts.max_msg_size > 0, "LogProtoServerOptions.max_msg_size is not initialized properly, max_msg_size=%d", opts.max_msg_size);
-  assert_true(opts.init_buffer_size > 0, "LogProtoServerOptions.init_buffer_size is not initialized properly, init_buffer_size=%d", opts.init_buffer_size);
-  assert_true(opts.max_buffer_size > 0, "LogProtoServerOptions.max_buffer_size is not initialized properly, max_buffer_size=%d", opts.max_buffer_size);
+  assert_true(opts.max_msg_size > 0, "LogProtoServerOptions.max_msg_size is not initialized properly, max_msg_size=%d",
+              opts.max_msg_size);
+  assert_true(opts.init_buffer_size > 0,
+              "LogProtoServerOptions.init_buffer_size is not initialized properly, init_buffer_size=%d", opts.init_buffer_size);
+  assert_true(opts.max_buffer_size > 0,
+              "LogProtoServerOptions.max_buffer_size is not initialized properly, max_buffer_size=%d", opts.max_buffer_size);
   log_proto_server_options_destroy(&opts);
 }
 
@@ -60,7 +63,8 @@ test_log_proto_server_options_invalid_encoding(void)
   log_proto_server_options_defaults(&opts);
 
   success = log_proto_server_options_set_encoding(&opts, "never-ever-is-going-to-be-such-an-encoding");
-  assert_string(opts.encoding, "never-ever-is-going-to-be-such-an-encoding", "LogProtoServerOptions.encoding was not properly set");
+  assert_string(opts.encoding, "never-ever-is-going-to-be-such-an-encoding",
+                "LogProtoServerOptions.encoding was not properly set");
 
   log_proto_server_options_init(&opts, configuration);
   assert_false(success, "Successfully set a bogus encoding, which is insane");

@@ -90,7 +90,7 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
   if (aux)
     aux->peer_addr = g_sockaddr_inet_new("1.2.3.4", 5555);
 
- exit:
+exit:
   if (count == 0 && self->eof_is_eagain)
     {
       errno = EAGAIN;

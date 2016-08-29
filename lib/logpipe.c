@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "logpipe.h"
 #include "cfg-tree.h"
 
@@ -69,7 +69,7 @@ LogPipe *
 log_pipe_ref(LogPipe *self)
 {
   g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-  
+
   if (self)
     {
       g_atomic_counter_inc(&self->ref_cnt);
@@ -77,11 +77,11 @@ log_pipe_ref(LogPipe *self)
   return self;
 }
 
-void 
+void
 log_pipe_unref(LogPipe *self)
 {
   g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-    
+
   if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
     {
       if (self->free_fn)
@@ -107,7 +107,7 @@ const gchar *
 log_pipe_get_persist_name(const LogPipe *self)
 {
   return (self->generate_persist_name != NULL) ? self->generate_persist_name(self)
-                                               : self->persist_name;
+         : self->persist_name;
 }
 
 #ifdef __linux__

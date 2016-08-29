@@ -127,7 +127,8 @@ control_connection_reload(GString *command)
   return result;
 }
 
-ControlCommand default_commands[] = {
+ControlCommand default_commands[] =
+{
   { "STATS", NULL, control_connection_send_stats },
   { "RESET_STATS", NULL, control_connection_reset_stats },
   { "LOG", NULL, control_connection_message_log },

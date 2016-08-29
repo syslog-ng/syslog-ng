@@ -25,7 +25,8 @@
 #include "testutils.h"
 #include "stats/stats.h"
 
-struct _TestSource {
+struct _TestSource
+{
   LogPipe super;
   JournalReaderOptions options;
   JournalReader *reader;

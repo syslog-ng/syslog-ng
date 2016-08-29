@@ -29,7 +29,8 @@ extern int afsql_debug;
 
 int afsql_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword afsql_keywords[] = {
+static CfgLexerKeyword afsql_keywords[] =
+{
   { "sql",                KW_SQL },
   { "username",           KW_USERNAME },
   { "password",           KW_PASSWORD },

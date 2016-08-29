@@ -47,7 +47,7 @@ _create_persist_state(const gchar *persist_file)
   PersistState *state = persist_state_new(persist_file);
 
   cr_assert(persist_state_start(state),
-    "Error starting persist state object [%s]", persist_file);
+            "Error starting persist state object [%s]", persist_file);
 
   return state;
 }
@@ -77,7 +77,7 @@ _init_mainloop_with_persist_file(const gchar *persist_file)
   GlobalConfig *cfg = _create_cfg();
 
   cr_assert(main_loop_initialize_state(cfg, persist_file),
-    "main_loop_initialize_state failed");
+            "main_loop_initialize_state failed");
 
   cfg_free(cfg);
 }
@@ -119,8 +119,8 @@ Test(hostid, test_if_hostid_generated_when_persist_file_not_exists)
   hostid = _load_hostid_from_persist(persist_file);
 
   cr_assert_eq(hostid, host_id_get(),
-    "read hostid(%u) differs from the newly generated hostid(%u)",
-    hostid, host_id_get());
+               "read hostid(%u) differs from the newly generated hostid(%u)",
+               hostid, host_id_get());
 
   unlink(persist_file);
 }
@@ -134,8 +134,8 @@ Test(hostid, test_if_hostid_remain_unchanged_when_persist_file_exists)
   _init_mainloop_with_persist_file(persist_file);
 
   cr_assert_eq(host_id_get(), hostid,
-    "loaded hostid(%d) differs from expected (%d)",
-    host_id_get(), hostid);
+               "loaded hostid(%d) differs from expected (%d)",
+               host_id_get(), hostid);
 
   unlink(persist_file);
 }

@@ -43,7 +43,7 @@
 
 #define DOT_NOTATION_TESTCASE(x, ...) \
   do {                                                          \
-      dot_notation_testcase_begin(#x, #__VA_ARGS__);  		\
+      dot_notation_testcase_begin(#x, #__VA_ARGS__);      \
       x(__VA_ARGS__);                                           \
       dot_notation_testcase_end();                              \
   } while(0)
@@ -66,7 +66,7 @@ static void
 assert_json_equals(struct json_object *a, struct json_object *b, const gchar *subscript)
 {
   const gchar *a_str, *b_str;
-  
+
   a_str = json_object_to_json_string(a);
   b_str = json_object_to_json_string(b);
   assert_string(a_str, b_str, "extraction didn't return the expected subscript of the object: %s", subscript);
@@ -79,7 +79,7 @@ assert_dot_notation_eval_equals(const gchar *input_json, const gchar *subscript,
 
   input = compile_json(input_json);
   expected = compile_json(expected_json);
-  
+
   sub = json_extract(input, subscript);
   assert_json_equals(sub, expected, subscript);
   json_object_put(expected);
@@ -175,11 +175,11 @@ static void
 test_dot_notation_eval_multi_array_item_by_multiple_indexes(void)
 {
   assert_dot_notation_eval_equals("{'foo': 'bar', 'baz':"
-"["
-  "[ '1', '2', '3' ],"
-  "[ '4', '5', '6' ],"
-  "[ '7', '8', '9' ]"
-"]}", "baz[0][2]", "'3'");
+                                  "["
+                                  "[ '1', '2', '3' ],"
+                                  "[ '4', '5', '6' ],"
+                                  "[ '7', '8', '9' ]"
+                                  "]}", "baz[0][2]", "'3'");
 }
 
 static void

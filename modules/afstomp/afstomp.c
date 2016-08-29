@@ -37,7 +37,8 @@
 #include <stomp.h>
 #include "logthrdestdrv.h"
 
-typedef struct {
+typedef struct
+{
   LogThrDestDriver super;
 
   gchar *destination;
@@ -187,7 +188,7 @@ afstomp_dd_format_persist_name(const LogPipe *s)
 }
 
 static void
-afstomp_create_connect_frame(STOMPDestDriver *self, stomp_frame* frame)
+afstomp_create_connect_frame(STOMPDestDriver *self, stomp_frame *frame)
 {
   stomp_frame_init(frame, "CONNECT", sizeof("CONNECT"));
   stomp_frame_add_header(frame, "login", self->user);
@@ -200,7 +201,7 @@ static gboolean afstomp_try_connect(STOMPDestDriver *self)
 };
 
 static gboolean
-afstomp_send_frame(STOMPDestDriver *self, stomp_frame* frame)
+afstomp_send_frame(STOMPDestDriver *self, stomp_frame *frame)
 {
   return stomp_write(self->conn, frame);
 }
@@ -230,7 +231,7 @@ afstomp_dd_connect(STOMPDestDriver *self, gboolean reconnect)
       stomp_frame_deinit(&frame);
 
       return FALSE;
-  }
+    }
   msg_debug("Connecting to STOMP succeeded",
             evt_tag_str("driver", self->super.super.super.id));
 
@@ -261,7 +262,7 @@ afstomp_vp_foreach(const gchar *name, TypeHint type, const gchar *value, gsize v
 }
 
 static void
-afstomp_set_frame_body(STOMPDestDriver *self, SBGString *body, stomp_frame* frame, LogMessage* msg)
+afstomp_set_frame_body(STOMPDestDriver *self, SBGString *body, stomp_frame *frame, LogMessage *msg)
 {
   if (self->body_template)
     {
@@ -336,7 +337,7 @@ afstomp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 static void
 afstomp_worker_thread_init(LogThrDestDriver *s)
 {
-  STOMPDestDriver *self = (STOMPDestDriver*) s;
+  STOMPDestDriver *self = (STOMPDestDriver *) s;
 
   afstomp_dd_connect(self, FALSE);
 }

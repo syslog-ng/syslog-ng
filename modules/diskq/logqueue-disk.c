@@ -241,14 +241,14 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
   *msg = log_msg_new_empty();
 
   if (!log_msg_deserialize(*msg, sa))
-  {
+    {
       g_string_free(serialized, TRUE);
       serialize_archive_free(sa);
       log_msg_unref(*msg);
       *msg = NULL;
       msg_error("Can't read correct message from disk-queue file",evt_tag_str("filename",qdisk_get_filename(self->qdisk)));
       return TRUE;
-  }
+    }
 
   serialize_archive_free(sa);
 

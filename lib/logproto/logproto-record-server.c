@@ -73,7 +73,8 @@ log_proto_record_server_read_data(LogProtoBufferedServer *s, guchar *buf, gsize 
 }
 
 static void
-log_proto_record_server_init(LogProtoRecordServer *self, LogTransport *transport, const LogProtoServerOptions *options, gint record_size)
+log_proto_record_server_init(LogProtoRecordServer *self, LogTransport *transport, const LogProtoServerOptions *options,
+                             gint record_size)
 {
   log_proto_buffered_server_init(&self->super, transport, options);
   self->super.super.validate_options = log_proto_record_server_validate_options;
@@ -83,7 +84,8 @@ log_proto_record_server_init(LogProtoRecordServer *self, LogTransport *transport
 }
 
 static gboolean
-log_proto_binary_record_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
+log_proto_binary_record_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start,
+    gsize buffer_bytes, const guchar **msg, gsize *msg_len)
 {
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(s);
 
@@ -106,7 +108,8 @@ log_proto_binary_record_server_new(LogTransport *transport, const LogProtoServer
 }
 
 static gboolean
-log_proto_padded_record_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
+log_proto_padded_record_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start,
+    gsize buffer_bytes, const guchar **msg, gsize *msg_len)
 {
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(s);
   const guchar *eol;

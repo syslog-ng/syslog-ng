@@ -28,36 +28,38 @@
 struct NativeParserProxy;
 
 __attribute__((visibility("hidden"))) void
-native_parser_proxy_free(struct NativeParserProxy* this);
+native_parser_proxy_free(struct NativeParserProxy *this);
 
 __attribute__((visibility("hidden"))) gboolean
-native_parser_proxy_set_option(struct NativeParserProxy* self, const gchar* key, const gchar* value);
+native_parser_proxy_set_option(struct NativeParserProxy *self, const gchar *key, const gchar *value);
 
 __attribute__((visibility("hidden"))) gboolean
-native_parser_proxy_process(struct NativeParserProxy* this, LogParser *super, LogMessage *pmsg, const gchar *input);
+native_parser_proxy_process(struct NativeParserProxy *this, LogParser *super, LogMessage *pmsg, const gchar *input);
 
 __attribute__((visibility("hidden"))) int
-native_parser_proxy_init(struct NativeParserProxy* s);
+native_parser_proxy_init(struct NativeParserProxy *s);
 
 __attribute__((visibility("hidden"))) int
-native_parser_proxy_deinit(struct NativeParserProxy* s);
+native_parser_proxy_deinit(struct NativeParserProxy *s);
 
-__attribute__((visibility("hidden"))) struct NativeParserProxy*
+__attribute__((visibility("hidden"))) struct NativeParserProxy *
 native_parser_proxy_new(GlobalConfig *cfg);
 
-__attribute__((visibility("hidden"))) struct NativeParserProxy*
+__attribute__((visibility("hidden"))) struct NativeParserProxy *
 native_parser_proxy_clone(struct NativeParserProxy *self);
 
-typedef struct _ParserNative {
+typedef struct _ParserNative
+{
   LogParser super;
-  struct NativeParserProxy* native_object;
+  struct NativeParserProxy *native_object;
 } ParserNative;
 
-static LogPipe*
+static LogPipe *
 native_parser_clone(LogPipe *s);
 
 static gboolean
-native_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+native_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
+                      gsize input_len)
 {
   ParserNative *self = (ParserNative *) s;
 
@@ -66,8 +68,8 @@ native_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
 }
 
 gboolean
-native_parser_set_option(LogParser *s, gchar* key, gchar* value)
-{    
+native_parser_set_option(LogParser *s, gchar *key, gchar *value)
+{
   ParserNative *self = (ParserNative *)s;
 
   return native_parser_proxy_set_option(self->native_object, key, value);
@@ -108,13 +110,13 @@ __setup_callback_methods(ParserNative *self)
   self->super.super.deinit = native_parser_deinit;
 }
 
-static LogPipe*
+static LogPipe *
 native_parser_clone(LogPipe *s)
 {
-  ParserNative *self = (ParserNative*) s;
+  ParserNative *self = (ParserNative *) s;
   ParserNative *cloned;
-  
-  cloned = (ParserNative*) g_new0(ParserNative, 1);
+
+  cloned = (ParserNative *) g_new0(ParserNative, 1);
   log_parser_init_instance(&cloned->super, s->cfg);
   cloned->native_object = native_parser_proxy_clone(self->native_object);
   assert(self != cloned);
@@ -126,14 +128,14 @@ native_parser_clone(LogPipe *s)
     }
 
   __setup_callback_methods(cloned);
-  
-  return &cloned->super.super; 
+
+  return &cloned->super.super;
 }
 
-__attribute__((visibility("hidden"))) LogParser*
+__attribute__((visibility("hidden"))) LogParser *
 native_parser_new(GlobalConfig *cfg)
 {
-  ParserNative *self = (ParserNative*) g_new0(ParserNative, 1);
+  ParserNative *self = (ParserNative *) g_new0(ParserNative, 1);
 
   log_parser_init_instance(&self->super, cfg);
   self->native_object = native_parser_proxy_new(cfg);

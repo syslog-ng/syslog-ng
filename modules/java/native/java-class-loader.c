@@ -66,7 +66,8 @@ class_loader_new(JNIEnv *java_env)
       goto error;
     }
 
-  self->mi_loadclass = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "loadClass", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Class;");
+  self->mi_loadclass = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "loadClass",
+                                          "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Class;");
   if (!self->mi_loadclass)
     {
       msg_error("Can't find method in class",
@@ -75,7 +76,8 @@ class_loader_new(JNIEnv *java_env)
       goto error;
     }
 
-  self->mi_init_current_thread = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "initCurrentThread", "()V");
+  self->mi_init_current_thread = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader,
+                                 "initCurrentThread", "()V");
   if (!self->mi_init_current_thread)
     {
       msg_error("Can't find method in class",
@@ -122,7 +124,8 @@ class_loader_load_class(ClassLoader *self, JNIEnv *java_env, const gchar *class_
   jstring str_class_path = __create_class_path(self, java_env, class_path);
 
 
-  result = CALL_JAVA_FUNCTION(java_env, CallObjectMethod, self->loader_object, self->mi_loadclass, str_class_name, str_class_path);
+  result = CALL_JAVA_FUNCTION(java_env, CallObjectMethod, self->loader_object, self->mi_loadclass, str_class_name,
+                              str_class_path);
 
   CALL_JAVA_FUNCTION(java_env, DeleteLocalRef, str_class_name);
   CALL_JAVA_FUNCTION(java_env, DeleteLocalRef, str_class_path);

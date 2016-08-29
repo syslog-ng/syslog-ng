@@ -265,7 +265,7 @@ _test_legacy_error(void)
   afmongodb_dd_set_safe_mode(mongodb, FALSE);
   afmongodb_dd_set_uri(mongodb, "mongodb://127.0.0.1:27017/syslog");
   _expect_error_in_log("uri_safe_mode", "Error: either specify a MongoDB URI "
-                      "(and optional collection) or only legacy options;");
+                       "(and optional collection) or only legacy options;");
 
   afmongodb_dd_set_host(mongodb, "?");
   _expect_error_in_log("host_invalid", "Cannot parse MongoDB URI; uri=");

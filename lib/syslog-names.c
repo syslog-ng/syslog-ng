@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "syslog-names.h"
 #include "syslog-ng.h"
 #include <string.h>
@@ -30,7 +30,8 @@
 #define FACILITY_CODE(n) ((n) << 3)
 
 
-struct sl_name sl_levels[] = {
+struct sl_name sl_levels[] =
+{
   {"emerg",     LEVEL_CODE(0) },
   {"panic",     LEVEL_CODE(0) },
   {"alert",     LEVEL_CODE(1) },
@@ -46,7 +47,8 @@ struct sl_name sl_levels[] = {
 };
 
 
-struct sl_name sl_facilities[] = {
+struct sl_name sl_facilities[] =
+{
   {"kern",      FACILITY_CODE(0)  },
   {"user",      FACILITY_CODE(1)  },
   {"mail",      FACILITY_CODE(2)  },
@@ -80,13 +82,13 @@ static inline int
 syslog_name_find_name(const char *name, struct sl_name names[])
 {
   int i;
-  
+
   for (i = 0; names[i].name; i++)
     {
       if (strcasecmp(name, names[i].name) == 0)
-	{
-	  return i;
-	}
+        {
+          return i;
+        }
     }
   return -1;
 }
@@ -101,7 +103,7 @@ int
 syslog_name_lookup_value_by_name(const char *name, struct sl_name names[])
 {
   int i;
-  
+
   i = syslog_name_find_name(name, names);
   if (i != -1)
     {
@@ -118,9 +120,9 @@ syslog_name_lookup_name_by_value(int value, struct sl_name names[])
   for (i = 0; names[i].name; i++)
     {
       if (names[i].value == value)
-	{
-	  return names[i].name;
-	}
+        {
+          return names[i].name;
+        }
     }
   return NULL;
 }

@@ -37,10 +37,10 @@ struct _LogRewriteSet
   LogTemplateOptions template_options;
 };
 
-LogTemplateOptions*
+LogTemplateOptions *
 log_rewrite_set_get_template_options(LogRewrite *s)
 {
-  LogRewriteSet *self = (LogRewriteSet*) s;
+  LogRewriteSet *self = (LogRewriteSet *) s;
   return &self->template_options;
 }
 

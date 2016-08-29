@@ -74,64 +74,64 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
   switch (addr->sa.sa_family)
     {
     case AF_INET:
-      {
-        struct ip_mreq mreq;
+    {
+      struct ip_mreq mreq;
 
-        if (IN_MULTICAST(ntohl(g_sockaddr_inet_get_address(addr).s_addr)))
-          {
-            if (dir & AFSOCKET_DIR_RECV)
-              {
-                memset(&mreq, 0, sizeof(mreq));
-                mreq.imr_multiaddr = g_sockaddr_inet_get_address(addr);
-                mreq.imr_interface.s_addr = INADDR_ANY;
-                setsockopt(fd, SOL_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
-                setsockopt(fd, SOL_IP, IP_MULTICAST_LOOP, &off, sizeof(off));
-              }
-            if (dir & AFSOCKET_DIR_SEND)
-              {
-                if (self->ip_ttl)
-                  setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &self->ip_ttl, sizeof(self->ip_ttl));
-              }
+      if (IN_MULTICAST(ntohl(g_sockaddr_inet_get_address(addr).s_addr)))
+        {
+          if (dir & AFSOCKET_DIR_RECV)
+            {
+              memset(&mreq, 0, sizeof(mreq));
+              mreq.imr_multiaddr = g_sockaddr_inet_get_address(addr);
+              mreq.imr_interface.s_addr = INADDR_ANY;
+              setsockopt(fd, SOL_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+              setsockopt(fd, SOL_IP, IP_MULTICAST_LOOP, &off, sizeof(off));
+            }
+          if (dir & AFSOCKET_DIR_SEND)
+            {
+              if (self->ip_ttl)
+                setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &self->ip_ttl, sizeof(self->ip_ttl));
+            }
 
-          }
-        else
-          {
-            if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
-              setsockopt(fd, SOL_IP, IP_TTL, &self->ip_ttl, sizeof(self->ip_ttl));
-          }
-        if (self->ip_tos && (dir & AFSOCKET_DIR_SEND))
-          setsockopt(fd, SOL_IP, IP_TOS, &self->ip_tos, sizeof(self->ip_tos));
+        }
+      else
+        {
+          if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
+            setsockopt(fd, SOL_IP, IP_TTL, &self->ip_ttl, sizeof(self->ip_ttl));
+        }
+      if (self->ip_tos && (dir & AFSOCKET_DIR_SEND))
+        setsockopt(fd, SOL_IP, IP_TOS, &self->ip_tos, sizeof(self->ip_tos));
 
-        break;
-      }
+      break;
+    }
 #if SYSLOG_NG_ENABLE_IPV6
     case AF_INET6:
-      {
-        struct ipv6_mreq mreq6;
+    {
+      struct ipv6_mreq mreq6;
 
-        if (IN6_IS_ADDR_MULTICAST(&g_sockaddr_inet6_get_sa(addr)->sin6_addr))
-          {
-            if (dir & AFSOCKET_DIR_RECV)
-              {
-                memset(&mreq6, 0, sizeof(mreq6));
-                mreq6.ipv6mr_multiaddr = *g_sockaddr_inet6_get_address(addr);
-                mreq6.ipv6mr_interface = 0;
-                setsockopt(fd, SOL_IPV6, IPV6_JOIN_GROUP, &mreq6, sizeof(mreq6));
-                setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_LOOP, &off, sizeof(off));
-              }
-            if (dir & AFSOCKET_DIR_SEND)
-              {
-                if (self->ip_ttl)
-                  setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
-              }
-          }
-        else
-          {
-            if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
-              setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
-          }
-        break;
-      }
+      if (IN6_IS_ADDR_MULTICAST(&g_sockaddr_inet6_get_sa(addr)->sin6_addr))
+        {
+          if (dir & AFSOCKET_DIR_RECV)
+            {
+              memset(&mreq6, 0, sizeof(mreq6));
+              mreq6.ipv6mr_multiaddr = *g_sockaddr_inet6_get_address(addr);
+              mreq6.ipv6mr_interface = 0;
+              setsockopt(fd, SOL_IPV6, IPV6_JOIN_GROUP, &mreq6, sizeof(mreq6));
+              setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_LOOP, &off, sizeof(off));
+            }
+          if (dir & AFSOCKET_DIR_SEND)
+            {
+              if (self->ip_ttl)
+                setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
+            }
+        }
+      else
+        {
+          if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
+            setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
+        }
+      break;
+    }
 #endif
     }
   return TRUE;

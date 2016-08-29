@@ -71,7 +71,7 @@ pdb_file_detect_version(const gchar *pdbfile, GError **error)
           break;
         }
     }
- exit:
+exit:
   fclose(pdb);
   if (!result)
     {

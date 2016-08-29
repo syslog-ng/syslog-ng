@@ -84,8 +84,8 @@ testcase_match(const gchar *log, const gchar *pattern, gboolean expected_result,
   result = log_matcher_match(m, msg, nonasciiz, value, msglen);
 
   cr_assert_eq(result, expected_result,
-    "pattern=%s, result=%d, expected=%d\n",
-    pattern, result, expected_result);
+               "pattern=%s, result=%d, expected=%d\n",
+               pattern, result, expected_result);
 
   log_matcher_unref(m);
   log_msg_unref(msg);
@@ -115,8 +115,8 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
   nv_table_unref(nv_table);
 
   cr_assert_arr_eq((result ? result : value), expected_result, (result ? length : msglen),
-    "pattern=%s, result=%.*s, expected=%s\n",
-    re, (int) length, (result ? result : value), expected_result);
+                   "pattern=%s, result=%.*s, expected=%s\n",
+                   re, (int) length, (result ? result : value), expected_result);
 
   g_free(result);
 
@@ -142,85 +142,127 @@ teardown(void)
 
 TestSuite(matcher, .init = setup, .fini = teardown);
 
-Test(matcher, posix_regexp, .description = "POSIX regexp") 
+Test(matcher, posix_regexp, .description = "POSIX regexp")
 {
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz", "favíz", "favíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "^tűrő", "faró", "árvíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "", "árvíztükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "", "kiki", _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "kuku", "kukukikukuki", _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz",
+                   "favíz", "favíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "^tűrő",
+                   "faró", "árvíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "",
+                   "árvíztükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "", "kiki",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "kuku", "kukukikukuki",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
 }
 
 Test(matcher, back_ref, .description = "back references are not portable, they work only on Linux")
 {
 #if __linux__
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "(wiki)\\1", "", "", _construct_matcher(LMF_STORE_MATCHES, log_matcher_posix_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "(wiki)\\1", "", "",
+                   _construct_matcher(LMF_STORE_MATCHES, log_matcher_posix_re_new));
 #endif
 }
 
 Test(matcher, empty_global, .description = "empty match with global flag")
 {
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "c*", "#", "#a#a# #b#b#", _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "a*", "#", "# #b#b#", _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "c*", "#", "#a#a# #b#b#",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "a*", "#", "# #b#b#",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
 
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "c*", "#", "#a#a# #b#b#", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "a*", "?", "?? ?b?b?", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "aa|b*", "@", "@@", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "aa|b*", "@", "@", _construct_matcher(0, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "b*|aa", "@", "@@@", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "b*|aa", "@", "@aa", _construct_matcher(0, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "c*", "#", "#a#a# #b#b#",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "a*", "?", "?? ?b?b?",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "aa|b*", "@", "@@",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "aa|b*", "@", "@", _construct_matcher(0,
+                   log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "b*|aa", "@", "@@@",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "b*|aa", "@", "@aa", _construct_matcher(0,
+                   log_matcher_pcre_re_new));
 
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "", "kiki", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "kuku", "kukukikukuki", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "", "kiki",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "kuku", "kukukikukuki",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
 }
 
 Test(matcher, string_match)
 {
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz", "favíz", "favíztűrőtükörfúrógép", _construct_matcher(LMF_PREFIX, log_matcher_string_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "faró", "árvízfarótükörfúrógép", _construct_matcher(LMF_SUBSTRING, log_matcher_string_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "", "árvíztükörfúrógép", _construct_matcher(LMF_SUBSTRING, log_matcher_string_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíztűrőtükörfúrógép", "almafa", "almafa", _construct_matcher(0, log_matcher_string_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", "valami-amivel-nem-szabadna-matchelni", "almafa", "", _construct_matcher(0, log_matcher_string_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz",
+                   "favíz", "favíztűrőtükörfúrógép", _construct_matcher(LMF_PREFIX, log_matcher_string_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő",
+                   "faró", "árvízfarótükörfúrógép", _construct_matcher(LMF_SUBSTRING, log_matcher_string_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "",
+                   "árvíztükörfúrógép", _construct_matcher(LMF_SUBSTRING, log_matcher_string_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép",
+                   "árvíztűrőtükörfúrógép", "almafa", "almafa", _construct_matcher(0, log_matcher_string_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", "valami-amivel-nem-szabadna-matchelni",
+                   "almafa", "", _construct_matcher(0, log_matcher_string_new));
 
 
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: val", "valami-amivel-nem-szabadna-matchelni", FALSE, _construct_matcher(0, log_matcher_string_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", "valami-amivel-nem-szabadna-matchelni", FALSE, _construct_matcher(0, log_matcher_string_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", "valami-amivel-nem-szabadna-matchelni", 0, _construct_matcher(LMF_PREFIX, log_matcher_string_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", "valami-amivel-nem-szabadna-matchelni", 0, _construct_matcher(LMF_SUBSTRING, log_matcher_string_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: val", "valami-amivel-nem-szabadna-matchelni",
+                 FALSE, _construct_matcher(0, log_matcher_string_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", "valami-amivel-nem-szabadna-matchelni", FALSE,
+                 _construct_matcher(0, log_matcher_string_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", "valami-amivel-nem-szabadna-matchelni", 0,
+                 _construct_matcher(LMF_PREFIX, log_matcher_string_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", "valami-amivel-nem-szabadna-matchelni", 0,
+                 _construct_matcher(LMF_SUBSTRING, log_matcher_string_new));
 
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", "match", TRUE, _construct_matcher(0, log_matcher_string_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", "ma", TRUE, _construct_matcher(LMF_PREFIX, log_matcher_string_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", "tch", TRUE, _construct_matcher(LMF_SUBSTRING, log_matcher_string_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", "match", TRUE, _construct_matcher(0,
+                 log_matcher_string_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", "ma", TRUE,
+                 _construct_matcher(LMF_PREFIX, log_matcher_string_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", "tch", TRUE,
+                 _construct_matcher(LMF_SUBSTRING, log_matcher_string_new));
 
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: abcdef", "ABCDEF", "qwerty", "qwerty", _construct_matcher(LMF_PREFIX | LMF_ICASE, log_matcher_string_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: abcdef", "BCD", "qwerty", "aqwertyef", _construct_matcher(LMF_SUBSTRING | LMF_ICASE, log_matcher_string_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: abcdef", "ABCDEF", "qwerty", "qwerty",
+                   _construct_matcher(LMF_PREFIX | LMF_ICASE, log_matcher_string_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: abcdef", "BCD", "qwerty", "aqwertyef",
+                   _construct_matcher(LMF_SUBSTRING | LMF_ICASE, log_matcher_string_new));
 }
 
 Test(matcher, glob_match)
 {
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz*", TRUE, _construct_matcher(0, log_matcher_glob_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "*fúrógép", TRUE, _construct_matcher(0, log_matcher_glob_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "*fúró*", TRUE, _construct_matcher(0, log_matcher_glob_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tükör", FALSE, _construct_matcher(0, log_matcher_glob_new));
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "viziló", FALSE, _construct_matcher(0, log_matcher_glob_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz*",
+                 TRUE, _construct_matcher(0, log_matcher_glob_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "*fúrógép",
+                 TRUE, _construct_matcher(0, log_matcher_glob_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "*fúró*",
+                 TRUE, _construct_matcher(0, log_matcher_glob_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tükör",
+                 FALSE, _construct_matcher(0, log_matcher_glob_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "viziló",
+                 FALSE, _construct_matcher(0, log_matcher_glob_new));
 }
 
 Test(matcher, iso88592_never, .description = "match in iso-8859-2 never matches")
 {
-  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: \xe1rv\xedzt\xfbr\xf5t\xfck\xf6rf\xfar\xf3g\xe9p", "\xe1rv\xed*", FALSE, _construct_matcher(0, log_matcher_glob_new));
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: \xe1rv\xedzt\xfbr\xf5t\xfck\xf6rf\xfar\xf3g\xe9p",
+                 "\xe1rv\xed*", FALSE, _construct_matcher(0, log_matcher_glob_new));
 }
 
 Test(matcher, replace)
 {
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz", "favíz", "favíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "^tűrő", "faró", "árvíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "", "árvíztükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "(wiki)\\1", "", "", _construct_matcher(0, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz",
+                   "favíz", "favíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "^tűrő",
+                   "faró", "árvíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "",
+                   "árvíztükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "(wiki)\\1", "", "",
+                   _construct_matcher(0, log_matcher_pcre_re_new));
   /* back ref with perl style $1 */
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "(wiki).+", "#$1#", "#wiki#", _construct_matcher(0, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "(wiki).+", "#$1#", "#wiki#",
+                   _construct_matcher(0, log_matcher_pcre_re_new));
 }
 
 Test(matcher, pcre812_incompatibility, .description = "tests a pcre 8.12 incompatibility")
 {
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "([[:digit:]]{1,3}\\.){3}[[:digit:]]{1,3}", "foo", "wikiwiki", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki",
+                   "([[:digit:]]{1,3}\\.){3}[[:digit:]]{1,3}", "foo", "wikiwiki", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
 }

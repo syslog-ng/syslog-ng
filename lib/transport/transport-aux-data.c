@@ -46,7 +46,7 @@ log_transport_aux_data_add_nv_pair(LogTransportAuxData *self, const gchar *name,
   else
     {
       static gboolean warned = FALSE;
-      
+
       if (!warned)
         {
           msg_notice("Transport aux data overflow, some fields may not be associated with the message, please increase aux buffer size",
@@ -57,10 +57,11 @@ log_transport_aux_data_add_nv_pair(LogTransportAuxData *self, const gchar *name,
 }
 
 void
-log_transport_aux_data_foreach(LogTransportAuxData *self, void (*func)(const gchar *, const gchar *, gsize, gpointer), gpointer user_data)
+log_transport_aux_data_foreach(LogTransportAuxData *self, void (*func)(const gchar *, const gchar *, gsize, gpointer),
+                               gpointer user_data)
 {
   const gchar *p;
-  
+
   p = self->data;
   while (*p)
     {

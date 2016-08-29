@@ -27,14 +27,14 @@
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      geoip_parser = geoip_parser_new(configuration); 		\
+      geoip_parser = geoip_parser_new(configuration);     \
     }                                                           \
   while (0)
 
 #define geoip_parser_testcase_end()                           \
   do                                                            \
     {                                                           \
-      log_pipe_deinit(&geoip_parser->super);			\
+      log_pipe_deinit(&geoip_parser->super);      \
       log_pipe_unref(&geoip_parser->super);                     \
       testcase_end();                                           \
     }                                                           \
@@ -42,7 +42,7 @@
 
 #define KV_PARSER_TESTCASE(x, ...) \
   do {                                                          \
-      geoip_parser_testcase_begin(#x, #__VA_ARGS__);  		\
+      geoip_parser_testcase_begin(#x, #__VA_ARGS__);      \
       x(__VA_ARGS__);                                           \
       geoip_parser_testcase_end();                              \
   } while(0)

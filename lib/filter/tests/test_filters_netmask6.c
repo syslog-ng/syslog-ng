@@ -44,8 +44,8 @@ _replace_last_zero_with_wildcard(gchar *ipv6)
     ipv6[n-1] = ':';
 }
 
-gchar*
-calculate_network6(const gchar* ipv6, int prefix, gchar *calculated_network)
+gchar *
+calculate_network6(const gchar *ipv6, int prefix, gchar *calculated_network)
 {
   struct in6_addr network;
   struct in6_addr address;
@@ -60,7 +60,7 @@ calculate_network6(const gchar* ipv6, int prefix, gchar *calculated_network)
 }
 
 void
-assert_netmask6(const gchar* ipv6, gint prefix, gchar* expected_network)
+assert_netmask6(const gchar *ipv6, gint prefix, gchar *expected_network)
 {
   char error_msg[64];
   sprintf(error_msg, "prefix: %d", prefix);
@@ -74,7 +74,7 @@ assert_netmask6(const gchar* ipv6, gint prefix, gchar* expected_network)
 int
 main()
 {
-  const gchar* ipv6 = "2001:db80:85a3:8d30:1319:8a2e:3700:7348";
+  const gchar *ipv6 = "2001:db80:85a3:8d30:1319:8a2e:3700:7348";
 
   assert_netmask6(ipv6, 1,   "::");
   assert_netmask6(ipv6, 3,   "2000::");

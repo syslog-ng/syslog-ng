@@ -99,4 +99,5 @@ tf_format_welf_free_state(gpointer s)
   tf_simple_func_free_state(s);
 }
 
-TEMPLATE_FUNCTION(TFWelfState, tf_format_welf, tf_format_welf_prepare, NULL, tf_format_welf_call, tf_format_welf_free_state, NULL);
+TEMPLATE_FUNCTION(TFWelfState, tf_format_welf, tf_format_welf_prepare, NULL, tf_format_welf_call,
+                  tf_format_welf_free_state, NULL);

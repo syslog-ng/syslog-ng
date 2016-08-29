@@ -29,7 +29,8 @@ extern int afuser_debug;
 
 int afuser_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword afuser_keywords[] = {
+static CfgLexerKeyword afuser_keywords[] =
+{
   { "usertty",               KW_USERTTY },
 
   { NULL }

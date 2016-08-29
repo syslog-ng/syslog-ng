@@ -105,7 +105,8 @@ confgen_module_init(GlobalConfig *cfg, CfgArgs *args)
       msg_error("confgen: exec argument expected");
       return FALSE;
     }
-  cfg_lexer_register_block_generator(cfg->lexer, cfg_lexer_lookup_context_type_by_name(context), name, confgen_generate, g_strdup(exec), g_free);
+  cfg_lexer_register_block_generator(cfg->lexer, cfg_lexer_lookup_context_type_by_name(context), name, confgen_generate,
+                                     g_strdup(exec), g_free);
   return TRUE;
 }
 

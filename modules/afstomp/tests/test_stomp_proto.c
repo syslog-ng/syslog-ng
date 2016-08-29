@@ -25,21 +25,21 @@
 #include "testutils.h"
 
 void
-assert_stomp_header(stomp_frame* frame, char* key, char* value)
+assert_stomp_header(stomp_frame *frame, char *key, char *value)
 {
-  char* myvalue = g_hash_table_lookup(frame->headers, key);
+  char *myvalue = g_hash_table_lookup(frame->headers, key);
 
   assert_string(myvalue, value, "Stomp header assertion failed!");
 }
 
 void
-assert_stomp_command(stomp_frame* frame, char* command)
+assert_stomp_command(stomp_frame *frame, char *command)
 {
   assert_string(frame->command, command, "Stomp command assertion failed");
 }
 
 void
-assert_stomp_body(stomp_frame* frame, char* body)
+assert_stomp_body(stomp_frame *frame, char *body)
 {
   assert_string(frame->body, body, "Stomp body assertion failed");
 }
@@ -92,7 +92,7 @@ void
 test_generate_gstring_from_frame()
 {
   stomp_frame frame;
-  GString* actual;
+  GString *actual;
 
   stomp_frame_init(&frame, "SEND", sizeof("SEND"));
   stomp_frame_add_header(&frame, "header_name", "header_value");

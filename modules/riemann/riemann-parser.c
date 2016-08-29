@@ -28,7 +28,8 @@
 extern int riemann_debug;
 int riemann_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword riemann_keywords[] = {
+static CfgLexerKeyword riemann_keywords[] =
+{
   { "riemann",                  KW_RIEMANN },
   { "server",                   KW_SERVER },
   { "port",                     KW_PORT },

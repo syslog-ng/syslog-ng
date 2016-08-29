@@ -58,7 +58,7 @@ assert_pdb_file_valid(const gchar *filename_, const gchar *pdb)
 {
   GError *error = NULL;
   gboolean success;
-  
+
   success = pdb_file_validate(filename_, &error);
   assert_true(success, "Error validating patterndb, error=%s\n>>>\n%s\n<<<", error ? error->message : "unknown", pdb);
   g_clear_error(&error);
@@ -74,7 +74,7 @@ _load_pattern_db_from_string(const gchar *pdb)
 
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);
-  
+
   assert_pdb_file_valid(filename, pdb);
 
   assert_true(pattern_db_reload_ruleset(patterndb, configuration, filename), "Error loading ruleset [[[%s]]]", pdb);
@@ -126,7 +126,8 @@ static void
 _advance_time(gint timeout)
 {
   if (timeout)
-    timer_wheel_set_time(pattern_db_get_timer_wheel(patterndb), timer_wheel_get_time(pattern_db_get_timer_wheel(patterndb)) + timeout + 1);
+    timer_wheel_set_time(pattern_db_get_timer_wheel(patterndb),
+                         timer_wheel_get_time(pattern_db_get_timer_wheel(patterndb)) + timeout + 1);
 }
 
 static LogMessage *
@@ -173,7 +174,7 @@ _feed_message_to_correllation_state(const gchar *program, const gchar *message, 
 
 static void
 assert_msg_with_program_matches_and_nvpair_equals(const gchar *program, const gchar *message,
-                                                  const gchar *name, const gchar *expected_value)
+    const gchar *name, const gchar *expected_value)
 {
   LogMessage *msg;
   gboolean result;
@@ -229,7 +230,8 @@ assert_output_message_nvpair_equals(gint ndx, const gchar *name, const gchar *va
 }
 
 void
-assert_msg_matches_and_output_message_nvpair_equals_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *name, const gchar *value)
+assert_msg_matches_and_output_message_nvpair_equals_with_timeout(const gchar *pattern, gint timeout, gint ndx,
+    const gchar *name, const gchar *value)
 {
   LogMessage *msg;
 
@@ -260,7 +262,8 @@ assert_msg_matches_and_no_such_output_message(const gchar *pattern, gint ndx)
 }
 
 void
-assert_msg_matches_and_output_message_nvpair_equals(const gchar *pattern, gint ndx, const gchar *name, const gchar *value)
+assert_msg_matches_and_output_message_nvpair_equals(const gchar *pattern, gint ndx, const gchar *name,
+    const gchar *value)
 {
   assert_msg_matches_and_output_message_nvpair_equals_with_timeout(pattern, 0, ndx, name, value);
 }
@@ -275,7 +278,8 @@ assert_output_message_has_tag(gint ndx, const gchar *tag, gboolean set)
 }
 
 void
-assert_msg_matches_and_output_message_has_tag_with_timeout(const gchar *pattern, gint timeout, gint ndx, const gchar *tag, gboolean set)
+assert_msg_matches_and_output_message_has_tag_with_timeout(const gchar *pattern, gint timeout, gint ndx,
+    const gchar *tag, gboolean set)
 {
   LogMessage *msg;
 
@@ -625,9 +629,11 @@ test_correllation_rule_with_action_on_match(void)
   /* tag assigned based on "class" */
   assert_msg_matches_and_has_tag("correllated-message-with-action-on-match", ".classifier.violation", TRUE);
 
-  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-on-match", 1, "MESSAGE", "generated-message-on-match");
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-on-match", 1, "MESSAGE",
+      "generated-message-on-match");
   assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-on-match", 1, "context-id", "999");
-  assert_msg_matches_and_output_message_has_tag("correllated-message-with-action-on-match", 1, "correllated-msg-tag", TRUE);
+  assert_msg_matches_and_output_message_has_tag("correllated-message-with-action-on-match", 1, "correllated-msg-tag",
+      TRUE);
 }
 
 static void
@@ -636,7 +642,8 @@ test_correllation_rule_with_action_on_timeout(void)
   /* tag assigned based on "class" */
   assert_msg_matches_and_has_tag("correllated-message-with-action-on-timeout", ".classifier.violation", TRUE);
 
-  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("correllated-message-with-action-on-timeout", 60, 1, "MESSAGE", "generated-message-on-timeout");
+  assert_msg_matches_and_output_message_nvpair_equals_with_timeout("correllated-message-with-action-on-timeout", 60, 1,
+      "MESSAGE", "generated-message-on-timeout");
 }
 
 static void
@@ -645,7 +652,8 @@ test_correllation_rule_with_action_condition(void)
   /* tag assigned based on "class" */
   assert_msg_matches_and_has_tag("correllated-message-with-action-condition", ".classifier.violation", TRUE);
 
-  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-condition", 1, "MESSAGE", "generated-message-on-condition");
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-action-condition", 1, "MESSAGE",
+      "generated-message-on-condition");
 }
 
 static void
@@ -662,14 +670,16 @@ test_correllation_rule_with_rate_limited_action(void)
    * [4] trigger
    * [5] GENERATED (as rate limit was met again due to advance time */
 
-  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-rate-limited-action", 1, "MESSAGE", "generated-message-rate-limit");
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-rate-limited-action", 1, "MESSAGE",
+      "generated-message-rate-limit");
   _dont_reset_patterndb_state_for_the_next_call();
   assert_msg_matches_and_no_such_output_message("correllated-message-with-rate-limited-action", 3);
   _dont_reset_patterndb_state_for_the_next_call();
   assert_msg_matches_and_no_such_output_message("correllated-message-with-rate-limited-action", 4);
   _dont_reset_patterndb_state_for_the_next_call();
   _advance_time(120);
-  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-rate-limited-action", 5, "MESSAGE", "generated-message-rate-limit");
+  assert_msg_matches_and_output_message_nvpair_equals("correllated-message-with-rate-limited-action", 5, "MESSAGE",
+      "generated-message-rate-limit");
 }
 
 static void
@@ -678,7 +688,8 @@ test_simple_rule_with_action_on_match(void)
   /* tag assigned based on "class" */
   assert_msg_matches_and_has_tag("simple-message-with-action-on-match", ".classifier.violation", TRUE);
 
-  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-action-on-match", 1, "MESSAGE", "generated-message-on-match");
+  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-action-on-match", 1, "MESSAGE",
+      "generated-message-on-match");
   assert_msg_matches_and_output_message_has_tag("simple-message-with-action-on-match", 1, "simple-msg-tag", TRUE);
 }
 
@@ -696,14 +707,16 @@ test_simple_rule_with_rate_limited_action(void)
    * [4] trigger
    * [5] GENERATED (as rate limit was met again due to advance time */
 
-  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-rate-limited-action", 1, "MESSAGE", "generated-message-rate-limit");
+  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-rate-limited-action", 1, "MESSAGE",
+      "generated-message-rate-limit");
   _dont_reset_patterndb_state_for_the_next_call();
   assert_msg_matches_and_no_such_output_message("simple-message-with-rate-limited-action", 3);
   _dont_reset_patterndb_state_for_the_next_call();
   assert_msg_matches_and_no_such_output_message("simple-message-with-rate-limited-action", 4);
   _dont_reset_patterndb_state_for_the_next_call();
   _advance_time(120);
-  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-rate-limited-action", 5, "MESSAGE", "generated-message-rate-limit");
+  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-rate-limited-action", 5, "MESSAGE",
+      "generated-message-rate-limit");
 }
 
 
@@ -713,7 +726,8 @@ test_simple_rule_with_action_condition(void)
   /* tag assigned based on "class" */
   assert_msg_matches_and_has_tag("simple-message-with-action-condition", ".classifier.violation", TRUE);
 
-  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-action-condition", 1, "MESSAGE", "generated-message-on-condition");
+  assert_msg_matches_and_output_message_nvpair_equals("simple-message-with-action-condition", 1, "MESSAGE",
+      "generated-message-on-condition");
 }
 
 static void
@@ -721,18 +735,21 @@ test_correllation_rule_with_create_context(void)
 {
   assert_msg_matches_and_nvpair_equals("simple-message-with-action-to-create-context", ".classifier.rule_id", "12");
   _dont_reset_patterndb_state_for_the_next_call();
-  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#12", "triggering-message", "context message assd");
+  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#12",
+                                       "triggering-message", "context message assd");
   _dont_reset_patterndb_state_for_the_next_call();
   assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#12", "PROGRAM", "prog1");
 
 
   assert_msg_matches_and_nvpair_equals("correllated-message-with-action-to-create-context", ".classifier.rule_id", "14");
   _dont_reset_patterndb_state_for_the_next_call();
-  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#14", "triggering-message", "context message 1001 assd");
+  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#14",
+                                       "triggering-message", "context message 1001 assd");
   _dont_reset_patterndb_state_for_the_next_call();
   assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#14", "PROGRAM", "prog1");
   _dont_reset_patterndb_state_for_the_next_call();
-  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#14", "triggering-message-context-id", "1001");
+  assert_msg_matches_and_nvpair_equals("correllated-message-that-uses-context-created-by-rule-id#14",
+                                       "triggering-message-context-id", "1001");
 }
 
 static void
@@ -879,7 +896,8 @@ test_patterndb_message_property_inheritance_enabled()
 {
   _load_pattern_db_from_string(pdb_inheritance_enabled_skeleton);
 
-  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "MESSAGE", "pattern-with-inheritance-enabled");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern-with-inheritance-enabled", 1, "MESSAGE",
+      "pattern-with-inheritance-enabled");
   assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag1", TRUE);
   assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "basetag2", TRUE);
   assert_msg_matches_and_output_message_has_tag("pattern-with-inheritance-enabled", 1, "actiontag", TRUE);
@@ -1087,7 +1105,8 @@ test_patterndb_tags_outside_of_rule()
   g_file_set_contents(filename, tag_outside_of_rule_skeleton,
                       strlen(tag_outside_of_rule_skeleton), NULL);
 
-  assert_false(pattern_db_reload_ruleset(patterndb, configuration, filename), "successfully loaded an invalid patterndb file");
+  assert_false(pattern_db_reload_ruleset(patterndb, configuration, filename),
+               "successfully loaded an invalid patterndb file");
   _destroy_pattern_db();
 }
 

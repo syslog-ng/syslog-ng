@@ -58,9 +58,9 @@ typedef char *(STRTOK_R_FUN)(char *str, const char *delim, char **saveptr);
 
 void
 assert_if_tokenizer_concatenated_result_not_match(STRTOK_R_FUN tokenizer,
-                                                  const char *delim,
-                                                  const char *input,
-                                                  const char *expected)
+    const char *delim,
+    const char *input,
+    const char *expected)
 {
   gchar *token;
   gchar *saveptr;
@@ -94,40 +94,40 @@ void
 test_strtok_with_literals(STRTOK_R_FUN tokenizer_func)
 {
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, ".",
-                                                    "token1.token2",
-                                                    "token1token2");
+      "token1.token2",
+      "token1token2");
 
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, ".",
-                                                    ".token",
-                                                    "token");
+      ".token",
+      "token");
 
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, ".",
-                                                    "token.",
-                                                    "token");
+      "token.",
+      "token");
 
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, ".",
-                                                    ".",
-                                                    NULL);
+      ".",
+      NULL);
 
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "...",
-                                                    ".",
-                                                    NULL);
+      ".",
+      NULL);
 
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "... ",
-                                                    "      ",
-                                                    NULL);
+      "      ",
+      NULL);
 
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "..*,;-",
-                                                    ";-*token1...*****token2**,;;;.",
-                                                    "token1token2");
+      ";-*token1...*****token2**,;;;.",
+      "token1token2");
 
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "..*,;- ",
-                                                    ";-*token1...*****token2**,;;;.token3",
-                                                    "token1token2token3");
+      ";-*token1...*****token2**,;;;.token3",
+      "token1token2token3");
 
   assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "..*,;- ",
-                                                    ";-*token1...*****token2**,;;;.token3 ",
-                                                    "token1token2token3");
+      ";-*token1...*****token2**,;;;.token3 ",
+      "token1token2token3");
 }
 
 int

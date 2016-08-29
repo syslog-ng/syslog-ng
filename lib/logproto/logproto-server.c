@@ -64,7 +64,7 @@ find_eom(const guchar *s, gsize n)
 #elif GLIB_SIZEOF_LONG == 4
   magic_bits = 0x7efefeffL;
 #else
-  #error "unknown architecture"
+#error "unknown architecture"
 #endif
   memset(&charmask, c, sizeof(charmask));
 

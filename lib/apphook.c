@@ -55,24 +55,24 @@ typedef struct _ApplicationHookEntry
 static GList *application_hooks = NULL;
 static gint current_state = AH_STARTUP;
 
-void 
+void
 register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data)
 {
   if (current_state < type)
     {
       ApplicationHookEntry *entry = g_new0(ApplicationHookEntry, 1);
-      
+
       entry->type = type;
       entry->func = func;
       entry->user_data = user_data;
-      
+
       application_hooks = g_list_append(application_hooks, entry);
     }
   else
     {
       /* the requested hook has already passed, call the requested function immediately */
-      msg_debug("Application hook registered after the given point passed", 
-                evt_tag_int("current", current_state), 
+      msg_debug("Application hook registered after the given point passed",
+                evt_tag_int("current", current_state),
                 evt_tag_int("hook", type));
       func(type, user_data);
     }
@@ -82,15 +82,15 @@ static void
 run_application_hook(gint type)
 {
   GList *l, *l_next;
-  
+
   g_assert(current_state <= type);
-  
+
   msg_debug("Running application hooks", evt_tag_int("hook", type));
   current_state = type;
   for (l = application_hooks; l; l = l_next)
     {
       ApplicationHookEntry *e = l->data;
-      
+
       if (e->type == type)
         {
           l_next = l->next;
@@ -113,7 +113,7 @@ app_fatal(const char *msg)
   fprintf(stderr, "%s\n", msg);
 }
 
-void 
+void
 app_startup(void)
 {
   msg_init(FALSE);
@@ -156,7 +156,7 @@ app_post_config_loaded(void)
   res_init();
 }
 
-void 
+void
 app_shutdown(void)
 {
   run_application_hook(AH_SHUTDOWN);
@@ -175,10 +175,10 @@ app_shutdown(void)
   crypto_deinit();
   msg_deinit();
 
-  
+
   /* NOTE: the iv_deinit() call should come here, but there's some exit
    * synchronization issue in libivykis that causes use-after-free with the
-   * thread-local-state for the main thread and iv_work_pool worker threads. 
+   * thread-local-state for the main thread and iv_work_pool worker threads.
    * I've dropped a mail to Lennert about the issue, but I'm commenting this
    * out for now to avoid it biting someone. Bazsi, 2013/12/23.
    *

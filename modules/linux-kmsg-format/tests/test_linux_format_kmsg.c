@@ -46,15 +46,16 @@ assert_log_kmsg_value(LogMessage *message, const gchar *key,
                       const gchar *expected_value)
 {
   const gchar *actual_value = log_msg_get_value(message,
-                                                log_msg_get_value_handle(key),
-                                                NULL);
+                              log_msg_get_value_handle(key),
+                              NULL);
   assert_string(actual_value, expected_value, NULL);
 }
 
 void
 test_kmsg_single_line(void)
 {
-  gchar msg[] = "5,2,1;Linux version 3.5-trunk-amd64 (Debian 3.5.2-1~experimental.1) (debian-kernel@lists.debian.org) (gcc version 4.6.3 (Debian 4.6.3-1) ) #1 SMP Mon Aug 20 04:17:46 UTC 2012\n";
+  gchar msg[] =
+    "5,2,1;Linux version 3.5-trunk-amd64 (Debian 3.5.2-1~experimental.1) (debian-kernel@lists.debian.org) (gcc version 4.6.3 (Debian 4.6.3-1) ) #1 SMP Mon Aug 20 04:17:46 UTC 2012\n";
   LogMessage *parsed_message;
 
   testcase_begin("Testing single-line /dev/kmsg parsing; msg='%s'", msg);
@@ -76,8 +77,8 @@ void
 test_kmsg_multi_line(void)
 {
   gchar msg[] = "6,202,98513;pci_root PNP0A08:00: host bridge window [io  0x0000-0x0cf7]\n" \
-    " SUBSYSTEM=acpi\n" \
-    " DEVICE=+acpi:PNP0A08:00\n";
+                " SUBSYSTEM=acpi\n" \
+                " DEVICE=+acpi:PNP0A08:00\n";
   LogMessage *parsed_message;
 
   testcase_begin("Testing multi-line /dev/kmsg parsing; msg='%s'", msg);
@@ -118,16 +119,16 @@ void
 test_kmsg_device_parsing(void)
 {
   gchar msg_subsys[] = "6,202,98513;pci_root PNP0A08:00: host bridge window [io  0x0000-0x0cf7]\n" \
-    " SUBSYSTEM=acpi\n" \
-    " DEVICE=+acpi:PNP0A08:00\n";
+                       " SUBSYSTEM=acpi\n" \
+                       " DEVICE=+acpi:PNP0A08:00\n";
   gchar msg_block[] = "6,202,98513;Fake message\n" \
-    " DEVICE=b12:1\n";
+                      " DEVICE=b12:1\n";
   gchar msg_char[] = "6,202,98513;Fake message\n" \
-    " DEVICE=c3:4\n";
+                     " DEVICE=c3:4\n";
   gchar msg_netdev[] = "6,202,98513;Fake message\n" \
-    " DEVICE=n8\n";
+                       " DEVICE=n8\n";
   gchar msg_unknown[] = "6,202,98513;Fake message\n" \
-    " DEVICE=w12345\n";
+                        " DEVICE=w12345\n";
   LogMessage *parsed_message;
 
   testcase_begin("Testing /dev/kmsg DEVICE= parsing");

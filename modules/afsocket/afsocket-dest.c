@@ -38,7 +38,7 @@ typedef struct _ReloadStoreItem
   LogWriter *writer;
 } ReloadStoreItem;
 
-static ReloadStoreItem*
+static ReloadStoreItem *
 _reload_store_item_new(AFSocketDestDriver *afsocket_dd)
 {
   ReloadStoreItem *item = g_new(ReloadStoreItem, 1);
@@ -59,7 +59,7 @@ _reload_store_item_free(ReloadStoreItem *self)
   g_free(self);
 }
 
-static LogWriter*
+static LogWriter *
 _reload_store_item_release_writer(ReloadStoreItem *self)
 {
   LogWriter *writer = self->writer;
@@ -94,7 +94,7 @@ _get_module_identifier(const AFSocketDestDriver *self)
              afsocket_dd_get_dest_name(self));
 
   return self->super.super.super.persist_name ? self->super.super.super.persist_name
-                                              : module_identifier;
+         : module_identifier;
 }
 
 static const gchar *
@@ -240,9 +240,9 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         }
     }
   msg_notice("Syslog connection established",
-              evt_tag_int("fd", self->fd),
-              evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
-              evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)));
+             evt_tag_int("fd", self->fd),
+             evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
+             evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)));
 
   transport = afsocket_dd_construct_transport(self, self->fd);
   if (!transport)
@@ -252,7 +252,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 
   log_writer_reopen(self->writer, proto);
   return TRUE;
- error_reconnect:
+error_reconnect:
   close(self->fd);
   self->fd = -1;
   afsocket_dd_start_reconnect_timer(self);
@@ -270,7 +270,8 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   g_assert(self->transport_mapper->transport);
   g_assert(self->bind_addr);
 
-  if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_SEND, &sock))
+  if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_SEND,
+                                    &sock))
     {
       return FALSE;
     }
@@ -425,7 +426,7 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
                          self->super.super.id,
                          afsocket_dd_stats_instance(self));
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(
-                                         &self->super, afsocket_dd_format_qfile_name(self)));
+                         &self->super, afsocket_dd_format_qfile_name(self)));
 
   if (!log_pipe_init((LogPipe *) self->writer))
     {

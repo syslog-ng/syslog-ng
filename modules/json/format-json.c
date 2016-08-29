@@ -39,8 +39,8 @@ typedef struct _TFJsonState
 
 static gboolean
 tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
-		gint argc, gchar *argv[],
-		GError **error)
+                gint argc, gchar *argv[],
+                GError **error)
 {
   TFJsonState *state = (TFJsonState *)s;
   ValuePairsTransformSet *vpts;
@@ -155,41 +155,43 @@ tf_json_value(const gchar *name, const gchar *prefix,
     case TYPE_HINT_INT64:
     case TYPE_HINT_DOUBLE:
     case TYPE_HINT_BOOLEAN:
-      {
-        gint32 i32;
-        gint64 i64;
-        gdouble d;
-        gboolean b;
-        gboolean r = FALSE, fail = FALSE;
-        const gchar *v = value;
-        gsize v_len = value_len;
+    {
+      gint32 i32;
+      gint64 i64;
+      gdouble d;
+      gboolean b;
+      gboolean r = FALSE, fail = FALSE;
+      const gchar *v = value;
+      gsize v_len = value_len;
 
-        if (type == TYPE_HINT_INT32 &&
-            (fail = !type_cast_to_int32(value, &i32 , NULL)) == TRUE)
-          r = type_cast_drop_helper(on_error, value, "int32");
-        else if (type == TYPE_HINT_INT64 &&
-            (fail = !type_cast_to_int64(value, &i64 , NULL)) == TRUE)
-          r = type_cast_drop_helper(on_error, value, "int64");
-        else if (type == TYPE_HINT_DOUBLE &&
-            (fail = !type_cast_to_double(value, &d, NULL)) == TRUE)
-          r = type_cast_drop_helper(on_error, value, "double");
-        else if (type == TYPE_HINT_BOOLEAN)
-          {
-            if ((fail = !type_cast_to_boolean(value, &b, NULL)) == TRUE)
+      if (type == TYPE_HINT_INT32 &&
+          (fail = !type_cast_to_int32(value, &i32 , NULL)) == TRUE)
+        r = type_cast_drop_helper(on_error, value, "int32");
+      else if (type == TYPE_HINT_INT64 &&
+               (fail = !type_cast_to_int64(value, &i64 , NULL)) == TRUE)
+        r = type_cast_drop_helper(on_error, value, "int64");
+      else if (type == TYPE_HINT_DOUBLE &&
+               (fail = !type_cast_to_double(value, &d, NULL)) == TRUE)
+        r = type_cast_drop_helper(on_error, value, "double");
+      else if (type == TYPE_HINT_BOOLEAN)
+        {
+          if ((fail = !type_cast_to_boolean(value, &b, NULL)) == TRUE)
             {
               r = type_cast_drop_helper(on_error, value, "boolean");
-            } else {
+            }
+          else
+            {
               v = b ? "true" : "false";
               v_len = -1;
             }
-          }
-        if (fail &&
-            !(on_error & ON_ERROR_FALLBACK_TO_STRING))
-          return r;
+        }
+      if (fail &&
+          !(on_error & ON_ERROR_FALLBACK_TO_STRING))
+        return r;
 
-        tf_json_append_value(name, v, v_len, state, fail);
-        break;
-      }
+      tf_json_append_value(name, v, v_len, state, fail);
+      break;
+    }
     }
 
   state->need_comma = TRUE;
@@ -216,7 +218,7 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg,
 
 static void
 tf_json_call(LogTemplateFunction *self, gpointer s,
-	     const LogTemplateInvokeArgs *args, GString *result)
+             const LogTemplateInvokeArgs *args, GString *result)
 {
   TFJsonState *state = (TFJsonState *)s;
   gint i;
@@ -240,4 +242,4 @@ tf_json_free_state(gpointer s)
 }
 
 TEMPLATE_FUNCTION(TFJsonState, tf_json, tf_json_prepare, NULL, tf_json_call,
-		  tf_json_free_state, NULL);
+                  tf_json_free_state, NULL);

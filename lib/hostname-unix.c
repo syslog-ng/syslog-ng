@@ -36,7 +36,7 @@ _resolve_localhost_from_dns(void)
   local_host = get_local_hostname_from_system();
   host = gethostbyname(local_host);
   g_free(local_host);
-  
+
   return host;
 }
 

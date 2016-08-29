@@ -149,7 +149,8 @@ cfg_lexer_get_context_description(CfgLexer *self)
 }
 
 gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length, gsize *output_length, GError **error)
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length,
+                     gsize *output_length, GError **error)
 {
   CfgLexerSubst *subst = cfg_lexer_subst_new(cfg_args_ref(globals), cfg_args_ref(defs), cfg_args_ref(args));
   gchar *result;
@@ -337,8 +338,8 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
       if (!dir)
         {
           msg_error("Error opening directory for reading",
-                evt_tag_str("filename", filename),
-                evt_tag_str("error", error->message));
+                    evt_tag_str("filename", filename),
+                    evt_tag_str("error", error->message));
           goto drop_level;
         }
       while ((entry = g_dir_read_name(dir)))
@@ -353,9 +354,9 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
           for (p = entry; *p; p++)
             {
               if (!((*p >= 'a' && *p <= 'z') ||
-                   (*p >= 'A' && *p <= 'Z') ||
-                   (*p >= '0' && *p <= '9') ||
-                   (*p == '_') || (*p == '-') || (*p == '.')))
+                    (*p >= 'A' && *p <= 'Z') ||
+                    (*p >= '0' && *p <= '9') ||
+                    (*p == '_') || (*p == '-') || (*p == '.')))
                 {
                   msg_debug("Skipping include file, does not match pattern [\\-_a-zA-Z0-9]+",
                             evt_tag_str("filename", entry));
@@ -395,7 +396,7 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
       level->file.files = g_slist_prepend(level->file.files, g_strdup(filename));
     }
   return cfg_lexer_start_next_include(self);
- drop_level:
+drop_level:
   g_slist_foreach(level->file.files, (GFunc) g_free, NULL);
   g_slist_free(level->file.files);
   level->file.files = NULL;
@@ -462,8 +463,8 @@ cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
   level->include_type = CFGI_FILE;
 
   level->file.files = g_slist_insert_sorted(level->file.files,
-                                            strdup(fn),
-                                            (GCompareFunc) strcmp);
+                      strdup(fn),
+                      (GCompareFunc) strcmp);
 
   msg_debug("Adding include file",
             evt_tag_str("filename", fn),
@@ -581,12 +582,13 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 }
 
 gboolean
-cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name, const gchar *buffer, gsize length)
+cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name, const gchar *buffer,
+    gsize length)
 {
   CfgIncludeLevel *level;
   gchar *lexer_buffer;
   gsize lexer_buffer_len;
-  
+
   g_assert(length >= 0);
 
   if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
@@ -664,7 +666,8 @@ cfg_lexer_find_generator(CfgLexer *self, gint context, const gchar *name)
 }
 
 gboolean
-cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer generator_data, GDestroyNotify generator_data_free)
+cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator,
+                                   gpointer generator_data, GDestroyNotify generator_data_free)
 {
   CfgBlockGenerator *gen;
   gboolean res = FALSE;
@@ -708,8 +711,8 @@ cfg_lexer_copy_token(const YYSTYPE *original)
       dest.token = original->token;
     }
   else if (type == LL_IDENTIFIER ||
-          type == LL_STRING ||
-          type == LL_BLOCK)
+           type == LL_STRING ||
+           type == LL_BLOCK)
     {
       dest.cptr = strdup(original->cptr);
     }
@@ -769,7 +772,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   gint tok;
   gboolean injected;
 
- relex:
+relex:
 
   injected = FALSE;
   while (self->token_blocks)
@@ -813,7 +816,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 
   if (self->preprocess_output)
     g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
- exit:
+exit:
 
   if (self->ignore_pragma)
     {

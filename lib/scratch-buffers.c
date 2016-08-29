@@ -75,7 +75,8 @@ sb_gstring_free_stack(void)
     }
 }
 
-ScratchBufferStack SBGStringStack = {
+ScratchBufferStack SBGStringStack =
+{
   .acquire_buffer = sb_gstring_acquire_buffer,
   .release_buffer = sb_gstring_release_buffer,
   .free_stack = sb_gstring_free_stack
@@ -121,7 +122,8 @@ sb_th_gstring_free_stack(void)
     }
 }
 
-ScratchBufferStack SBTHGStringStack = {
+ScratchBufferStack SBTHGStringStack =
+{
   .acquire_buffer = sb_th_gstring_acquire_buffer,
   .release_buffer = sb_th_gstring_release_buffer,
   .free_stack = sb_th_gstring_free_stack

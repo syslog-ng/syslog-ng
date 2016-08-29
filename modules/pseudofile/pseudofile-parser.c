@@ -29,7 +29,8 @@ extern int pseudofile_debug;
 
 int pseudofile_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword pseudofile_keywords[] = {
+static CfgLexerKeyword pseudofile_keywords[] =
+{
   { "pseudofile",               KW_PSEUDOFILE },
 
   { NULL }

@@ -37,7 +37,7 @@ struct _TransportMapperUnix
   gboolean pass_unix_credentials;
 };
 
-static LogTransport*
+static LogTransport *
 _create_log_transport(TransportMapper *s, gint fd)
 {
   if (s->sock_type == SOCK_DGRAM)
@@ -49,7 +49,7 @@ _create_log_transport(TransportMapper *s, gint fd)
 static LogTransport *
 _construct_log_transport(TransportMapper *s, gint fd)
 {
-  TransportMapperUnix *self = (TransportMapperUnix*) s;
+  TransportMapperUnix *self = (TransportMapperUnix *) s;
   LogTransport *transport = _create_log_transport(s, fd);
 
   if (self->pass_unix_credentials)
@@ -73,7 +73,7 @@ transport_mapper_unix_new_instance(const gchar *transport, gint sock_type)
 void
 transport_mapper_unix_set_pass_unix_credentials(TransportMapper *s, gboolean pass)
 {
-  TransportMapperUnix *self = (TransportMapperUnix*) s;
+  TransportMapperUnix *self = (TransportMapperUnix *) s;
   self->pass_unix_credentials = pass;
 }
 

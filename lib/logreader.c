@@ -305,8 +305,8 @@ static gboolean
 log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTransportAuxData *aux)
 {
   LogMessage *m;
-  
-  msg_debug("Incoming log entry", 
+
+  msg_debug("Incoming log entry",
             evt_tag_printf("line", "%.*s", length, line));
   /* use the current time to get the time zone offset */
   m = log_msg_new((gchar *) line, length,
@@ -314,7 +314,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
                   &self->options->parse_options);
 
   log_msg_refcache_start_producer(m);
-  
+
   log_transport_aux_data_foreach(aux, _add_aux_nvpair, m);
 
   log_source_post(&self->super, m);
@@ -433,7 +433,7 @@ static gboolean
 log_reader_deinit(LogPipe *s)
 {
   LogReader *self = (LogReader *) s;
-  
+
   main_loop_assert_main_thread();
 
   iv_event_unregister(&self->schedule_wakeup);
@@ -465,13 +465,15 @@ log_reader_free(LogPipe *s)
 }
 
 void
-log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
+log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source,
+                       const gchar *stats_id, const gchar *stats_instance)
 {
   LogReader *self = (LogReader *) s;
 
   gboolean pos_tracked = ((self->proto != NULL) && log_proto_server_is_position_tracked(self->proto));
 
-  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & LR_THREADED), pos_tracked, control->expr_node);
+  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance,
+                         (options->flags & LR_THREADED), pos_tracked, control->expr_node);
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);
@@ -554,11 +556,11 @@ log_reader_new(GlobalConfig *cfg)
   return self;
 }
 
-void 
+void
 log_reader_set_immediate_check(LogReader *s)
 {
-  LogReader *self = (LogReader*) s;
-  
+  LogReader *self = (LogReader *) s;
+
   self->immediate_check = TRUE;
 }
 
@@ -571,7 +573,8 @@ log_reader_options_defaults(LogReaderOptions *options)
   options->fetch_limit = 10;
   if (configuration && cfg_is_config_version_older(configuration, 0x0300))
     {
-      msg_warning_once("WARNING: input: sources do not remove new-line characters from messages by default from " VERSION_3_0 ", please add 'no-multi-line' flag to your configuration if you want to retain this functionality");
+      msg_warning_once("WARNING: input: sources do not remove new-line characters from messages by default from " VERSION_3_0
+                       ", please add 'no-multi-line' flag to your configuration if you want to retain this functionality");
       options->parse_options.flags |= LP_NO_MULTI_LINE;
     }
 }
@@ -580,7 +583,7 @@ log_reader_options_defaults(LogReaderOptions *options)
  * NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy
  *
  * Rationale:
- *   - init is called from driver init (e.g. affile_sd_init), 
+ *   - init is called from driver init (e.g. affile_sd_init),
  *   - destroy is called from driver free method (e.g. affile_sd_free, NOT affile_sd_deinit)
  *
  * The reason:

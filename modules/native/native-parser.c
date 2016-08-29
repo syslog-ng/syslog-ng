@@ -31,11 +31,12 @@ extern int native_debug;
 
 __attribute__((__visibility__("hidden"))) int native_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
-static CfgLexerKeyword native_keywords[] = {
+static CfgLexerKeyword native_keywords[] =
+{
   { "option",   KW_OPTION },
   { NULL }
 };
- 
+
 __attribute__((__visibility__("hidden"))) CfgParser native_parser =
 {
 #if ENABLE_DEBUG

@@ -56,7 +56,7 @@ synthetic_message_set_inherit_properties_string(SyntheticMessage *self, const gc
       inherit_mode = RAC_MSG_INHERIT_CONTEXT;
     }
   else if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
-      inherit_properties[0] == '1')
+           inherit_properties[0] == '1')
     {
       inherit_mode = RAC_MSG_INHERIT_LAST_MESSAGE;
     }
@@ -85,7 +85,8 @@ synthetic_message_add_tag(SyntheticMessage *self, const gchar *text)
 }
 
 gboolean
-synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error)
+synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name,
+    const gchar *value, GError **error)
 {
   LogTemplate *value_template;
   gboolean result = FALSE;
@@ -161,7 +162,8 @@ _generate_new_message_with_timestamp_of_the_triggering_message(LogStamp *msgstam
 LogMessage *
 _generate_message_inheriting_properties_from_the_entire_context(CorrellationContext *context)
 {
-  LogMessage *genmsg = _generate_message_inheriting_properties_from_the_last_message(correllation_context_get_last_message(context));
+  LogMessage *genmsg = _generate_message_inheriting_properties_from_the_last_message(
+                         correllation_context_get_last_message(context));
 
   log_msg_merge_context(genmsg, (LogMessage **) context->messages->pdata, context->messages->len);
   return genmsg;
@@ -201,16 +203,16 @@ synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationCont
   genmsg = _generate_default_message_from_context(self->inherit_mode, context);
   switch (context->key.scope)
     {
-      case RCS_PROCESS:
-        log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
-      case RCS_PROGRAM:
-        log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
-      case RCS_HOST:
-        log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
-      case RCS_GLOBAL:
-        break;
-      default:
-        g_assert_not_reached();
+    case RCS_PROCESS:
+      log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
+    case RCS_PROGRAM:
+      log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
+    case RCS_HOST:
+      log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
+    case RCS_GLOBAL:
+      break;
+    default:
+      g_assert_not_reached();
       break;
     }
   g_ptr_array_add(context->messages, genmsg);

@@ -84,9 +84,9 @@ transport_mapper_open_socket(TransportMapper *self,
   *fd = sock;
   return TRUE;
 
- error_close:
+error_close:
   close(sock);
- error:
+error:
   *fd = -1;
   return FALSE;
 }

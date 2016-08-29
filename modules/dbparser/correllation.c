@@ -27,7 +27,8 @@
 void
 correllation_state_init_instance(CorrellationState *self)
 {
-  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL, (GDestroyNotify) correllation_context_unref);
+  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL,
+                                      (GDestroyNotify) correllation_context_unref);
 }
 
 void

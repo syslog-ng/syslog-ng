@@ -42,7 +42,7 @@
 
 #define JSON_PARSER_TESTCASE(x, ...) \
   do {                                                          \
-      json_parser_testcase_begin(#x, #__VA_ARGS__);  		\
+      json_parser_testcase_begin(#x, #__VA_ARGS__);     \
       x(__VA_ARGS__);                                           \
       json_parser_testcase_end();                               \
   } while(0)
@@ -93,7 +93,7 @@ static void
 test_json_parser_parses_well_formed_json_and_puts_results_in_message(void)
 {
   LogMessage *msg;
-  
+
   msg = parse_json_into_log_message("{'foo': 'bar'}");
   assert_log_message_value(msg, log_msg_get_value_handle("foo"), "bar");
   log_msg_unref(msg);

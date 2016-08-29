@@ -132,7 +132,8 @@ test_reset_stats()
 
   g_string_assign(command, "STATS");
   reply = control_connection_send_stats(command);
-  assert_string(reply->str, "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n", "Bad reply");
+  assert_string(reply->str, "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n",
+                "Bad reply");
   g_string_free(reply, TRUE);
 
   stats_destroy();

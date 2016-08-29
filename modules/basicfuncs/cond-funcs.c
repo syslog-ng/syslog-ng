@@ -67,7 +67,8 @@ tf_grep_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   TFCondState *state = (TFCondState *) s;
   GOptionContext *ctx;
   gint max_count = 0;
-  GOptionEntry grep_options[] = {
+  GOptionEntry grep_options[] =
+  {
     { "max-count", 'm', 0, G_OPTION_ARG_INT, &max_count, NULL, NULL },
     { NULL }
   };
@@ -152,11 +153,13 @@ tf_if_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *a
 
   if (filter_expr_eval_with_context(state->filter, args->messages, args->num_messages))
     {
-      log_template_append_format_with_context(state->super.argv[0], args->messages, args->num_messages, args->opts, args->tz, args->seq_num, args->context_id, result);
+      log_template_append_format_with_context(state->super.argv[0], args->messages, args->num_messages, args->opts, args->tz,
+                                              args->seq_num, args->context_id, result);
     }
   else
     {
-      log_template_append_format_with_context(state->super.argv[1], args->messages, args->num_messages, args->opts, args->tz, args->seq_num, args->context_id, result);
+      log_template_append_format_with_context(state->super.argv[1], args->messages, args->num_messages, args->opts, args->tz,
+                                              args->seq_num, args->context_id, result);
     }
 }
 

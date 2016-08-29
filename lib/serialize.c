@@ -71,35 +71,37 @@ serialize_archive_free(SerializeArchive *self)
   g_slice_free1(self->len, self);
 }
 
-static gboolean 
+static gboolean
 serialize_file_archive_read_bytes(SerializeArchive *s, gchar *buf, gsize buflen, GError **error)
 {
   SerializeFileArchive *self = (SerializeFileArchive *) s;
   gssize bytes_read;
-  
+
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
-  
+
   bytes_read = fread(buf, 1, buflen, self->f);
   if (bytes_read < 0 || bytes_read != buflen)
     {
-      g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error reading file (%s)", bytes_read < 0 ? g_strerror(errno) : "short read");
+      g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error reading file (%s)",
+                  bytes_read < 0 ? g_strerror(errno) : "short read");
       return FALSE;
     }
   return TRUE;
 }
 
-static gboolean 
+static gboolean
 serialize_file_archive_write_bytes(SerializeArchive *s, const gchar *buf, gsize buflen, GError **error)
 {
   SerializeFileArchive *self = (SerializeFileArchive *) s;
   gssize bytes_written;
-  
+
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
-  
+
   bytes_written = fwrite(buf, 1, buflen, self->f);
   if (bytes_written < 0 || bytes_written != buflen)
     {
-      g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error writing file (%s)", bytes_written < 0 ? g_strerror(errno) : "short write");
+      g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error writing file (%s)",
+                  bytes_written < 0 ? g_strerror(errno) : "short write");
       return FALSE;
     }
   return TRUE;
@@ -109,7 +111,7 @@ SerializeArchive *
 serialize_file_archive_new(FILE *f)
 {
   SerializeFileArchive *self = g_slice_new0(SerializeFileArchive);
-  
+
   self->super.read_bytes = serialize_file_archive_read_bytes;
   self->super.write_bytes = serialize_file_archive_write_bytes;
   self->super.len = sizeof(SerializeFileArchive);
@@ -125,13 +127,13 @@ serialize_string_archive_reset(SerializeArchive *sa)
   self->pos = 0;
 }
 
-static gboolean 
+static gboolean
 serialize_string_archive_read_bytes(SerializeArchive *s, gchar *buf, gsize buflen, GError **error)
 {
   SerializeStringArchive *self = (SerializeStringArchive *) s;
-  
+
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
-  
+
   if ((gssize) self->pos + buflen > (gssize) self->string->len)
     {
       g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error reading from string, stored data too short");
@@ -142,13 +144,13 @@ serialize_string_archive_read_bytes(SerializeArchive *s, gchar *buf, gsize bufle
   return TRUE;
 }
 
-static gboolean 
+static gboolean
 serialize_string_archive_write_bytes(SerializeArchive *s, const gchar *buf, gsize buflen, GError **error)
 {
   SerializeStringArchive *self = (SerializeStringArchive *) s;
-  
+
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
-  
+
   g_string_append_len(self->string, buf, buflen);
   return TRUE;
 }

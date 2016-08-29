@@ -38,12 +38,12 @@ typedef struct _RunIDState
 } RunIDState;
 
 void
-run_id_init(PersistState* state)
+run_id_init(PersistState *state)
 {
   gsize size;
   guint8 version;
   PersistEntryHandle handle;
-  RunIDState* run_id_state;
+  RunIDState *run_id_state;
 
   handle = persist_state_lookup_entry(state, RUN_ID_PERSIST_KEY, &size, &version);
 

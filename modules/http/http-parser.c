@@ -28,7 +28,8 @@ extern int http_debug;
 
 int http_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword http_keywords[] = {
+static CfgLexerKeyword http_keywords[] =
+{
   { "http",         KW_HTTP },
   { "user",         KW_USER },
   { "password",     KW_PASSWORD },

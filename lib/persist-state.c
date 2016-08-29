@@ -165,7 +165,7 @@ typedef struct _PersistValueHeader
 /* lowest layer, "store" functions manage the file on disk */
 
 static void
-_wait_until_map_release(PersistState* self)
+_wait_until_map_release(PersistState *self)
 {
   g_mutex_lock(self->mapped_lock);
   if (self->mapped_counter != 0)
@@ -368,7 +368,8 @@ _add_key(PersistState *self, const gchar *key, PersistEntryHandle handle)
       key_area = persist_state_map_entry(self, self->current_key_block);
 
       /* we reserve space for the next area pointer */
-      sa = serialize_buffer_archive_new(key_area + self->current_key_ofs, self->current_key_size - self->current_key_ofs - chain_size);
+      sa = serialize_buffer_archive_new(key_area + self->current_key_ofs,
+                                        self->current_key_size - self->current_key_ofs - chain_size);
       sa->silent = TRUE;
       success =
         serialize_write_cstring(sa, key, -1) &&
@@ -609,7 +610,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
         }
       serialize_archive_free(sa);
     }
- free_and_exit:
+free_and_exit:
   munmap(map, file_size);
   return TRUE;
 }
@@ -650,19 +651,19 @@ _load(PersistState *self, gboolean all_errors_are_fatal, gboolean load_all_entri
                     evt_tag_int("version", version));
           success = TRUE;
         }
-    close_and_exit:
+close_and_exit:
       fclose(persist_file);
       serialize_archive_free(sa);
     }
   else
     {
       if (all_errors_are_fatal)
-      {
-        msg_error("Failed to open persist file!",
+        {
+          msg_error("Failed to open persist file!",
                     evt_tag_str("filename", self->commited_filename),
                     evt_tag_str("error", strerror(errno)));
-        success = FALSE;
-      }
+          success = FALSE;
+        }
       else
         success = TRUE;
     }
@@ -772,9 +773,9 @@ persist_state_remove_entry(PersistState *self, const gchar *key)
 
 typedef struct _PersistStateKeysForeachData
 {
-   PersistStateForeachFunc func;
-   gpointer userdata;
-   PersistState* storage;
+  PersistStateForeachFunc func;
+  gpointer userdata;
+  PersistState *storage;
 } PersistStateKeysForeachData;
 
 static void
@@ -932,7 +933,7 @@ _destroy(PersistState *self)
 }
 
 static void
-_init(PersistState* self, gchar* commited_filename, gchar* temp_filename)
+_init(PersistState *self, gchar *commited_filename, gchar *temp_filename)
 {
   self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->current_ofs = sizeof(PersistFileHeader);

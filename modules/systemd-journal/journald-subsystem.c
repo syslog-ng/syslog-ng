@@ -152,7 +152,8 @@ load_journald_subsystem()
         }
     }
   return TRUE;
-  error: g_module_close(journald_module);
+error:
+  g_module_close(journald_module);
   journald_module = NULL;
   return FALSE;
 }

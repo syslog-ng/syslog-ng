@@ -151,7 +151,7 @@ _py_resolve_qualified_name(const gchar *name)
   value = _py_get_attr_or_null(module, attribute_name);
   Py_DECREF(module);
 
- exit:
+exit:
   g_free(module_name);
   g_free(attribute_name);
   return value;

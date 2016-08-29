@@ -62,11 +62,13 @@ test_log_proto_dgram_server_no_encoding(void)
   assert_proto_server_fetch(proto, "árvíztűrőtükörfúrógép\n\n", -1);
 
   /* no encoding: iso-8859-2 remains iso-8859-2 */
-  assert_proto_server_fetch(proto, "\xe1\x72\x76\xed\x7a\x74\xfb\x72\xf5\x74\xfc\x6b\xf6\x72\x66\xfa" /*  |.rv.zt.r.t.k.rf.| */
+  assert_proto_server_fetch(proto,
+                            "\xe1\x72\x76\xed\x7a\x74\xfb\x72\xf5\x74\xfc\x6b\xf6\x72\x66\xfa" /*  |.rv.zt.r.t.k.rf.| */
                             "\x72\xf3\x67\xe9\x70\n",                                          /*  |r.g.p|            */
                             -1);
   /* no encoding, ucs4 becomes a string with embedded NULs */
-  assert_proto_server_fetch(proto, "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"       /* |...á...r...v...í| */
+  assert_proto_server_fetch(proto,
+                            "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"       /* |...á...r...v...í| */
                             "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72", 32); /* |...z...t...ű...r|  */
 
   assert_proto_server_fetch(proto, "01234", -1);
@@ -114,7 +116,8 @@ test_log_proto_dgram_server_invalid_ucs4(void)
               "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00", 31, /* |...z...t...ű...r|  */
               LTM_EOF),
             get_inited_proto_server_options());
-  assert_proto_server_fetch_failure(proto, LPS_ERROR, "Byte sequence too short, cannot convert an individual frame in its entirety");
+  assert_proto_server_fetch_failure(proto, LPS_ERROR,
+                                    "Byte sequence too short, cannot convert an individual frame in its entirety");
   log_proto_server_free(proto);
 }
 

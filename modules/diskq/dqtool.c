@@ -44,8 +44,10 @@ gboolean verbose_flag;
 
 static GOptionEntry cat_options[] =
 {
-  { "template",  't', 0, G_OPTION_ARG_STRING, &template_string,
-    "Template to format the serialized messages", "<template>" },
+  {
+    "template",  't', 0, G_OPTION_ARG_STRING, &template_string,
+    "Template to format the serialized messages", "<template>"
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -172,12 +174,18 @@ dqtool_info(int argc, char *argv[])
 
 static GOptionEntry dqtool_options[] =
 {
-  { "debug",     'd', 0, G_OPTION_ARG_NONE, &debug_flag,
-    "Enable debug/diagnostic messages on stderr", NULL },
-  { "verbose",   'v', 0, G_OPTION_ARG_NONE, &verbose_flag,
-    "Enable verbose messages on stderr", NULL },
-  { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version,
-    "Display version number (" SYSLOG_NG_VERSION ")", NULL },
+  {
+    "debug",     'd', 0, G_OPTION_ARG_NONE, &debug_flag,
+    "Enable debug/diagnostic messages on stderr", NULL
+  },
+  {
+    "verbose",   'v', 0, G_OPTION_ARG_NONE, &verbose_flag,
+    "Enable verbose messages on stderr", NULL
+  },
+  {
+    "version",   'V', 0, G_OPTION_ARG_NONE, &display_version,
+    "Display version number (" SYSLOG_NG_VERSION ")", NULL
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 

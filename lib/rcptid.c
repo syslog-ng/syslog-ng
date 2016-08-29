@@ -31,7 +31,7 @@ static struct _RcptidService
   PersistState *persist_state;
   PersistEntryHandle persist_handle;
   GStaticMutex lock;
-} rcptid_service = 
+} rcptid_service =
 {
   .lock = G_STATIC_MUTEX_INIT
 };
@@ -86,7 +86,8 @@ rcptid_create_new_entry(void)
 {
   RcptidState *data;
 
-  rcptid_service.persist_handle = persist_state_alloc_entry(rcptid_service.persist_state, "next.rcptid", sizeof(RcptidState));
+  rcptid_service.persist_handle = persist_state_alloc_entry(rcptid_service.persist_state, "next.rcptid",
+                                  sizeof(RcptidState));
   if (!rcptid_service.persist_handle)
     {
       msg_error("Error allocating RCPTID structure in persist-state");

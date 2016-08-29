@@ -133,7 +133,7 @@ poll_file_changes_check_file(gpointer s)
                       evt_tag_str("filename", self->follow_filename));
         }
     }
- reschedule:
+reschedule:
   poll_events_update_watches(s, G_IO_IN);
 }
 

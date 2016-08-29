@@ -76,18 +76,20 @@ __load_object(JavaLogMessageProxy *self)
   JNIEnv *java_env = NULL;
   java_env = java_machine_get_env(self->java_machine, &java_env);
   self->loaded_class = java_machine_load_class(self->java_machine, LOG_MESSAGE, NULL);
-  if (!self->loaded_class) {
+  if (!self->loaded_class)
+    {
       msg_error("Can't find class",
                 evt_tag_str("class_name", LOG_MESSAGE));
       return FALSE;
-  }
+    }
 
   self->mi_constructor = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "<init>", "(J)V");
-  if (!self->mi_constructor) {
+  if (!self->mi_constructor)
+    {
       msg_error("Can't find default constructor for class",
                 evt_tag_str("class_name", LOG_MESSAGE));
       return FALSE;
-  }
+    }
 
   return TRUE;
 }

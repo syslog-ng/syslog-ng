@@ -128,13 +128,13 @@ ParameterizedTest(struct findcrlf_params *params, findcrlf, test)
   gchar *eom = find_cr_or_lf(params->msg, params->msg_len);
 
   cr_expect_not(params->eom_ofs == -1 && eom != NULL,
-    "EOM returned is not NULL, which was expected. eom_ofs=%d, eom=%s\n",
-    (gint) params->eom_ofs, eom);
+                "EOM returned is not NULL, which was expected. eom_ofs=%d, eom=%s\n",
+                (gint) params->eom_ofs, eom);
 
   if (params->eom_ofs == -1)
     return;
 
   cr_expect_not(eom - params->msg != params->eom_ofs,
-    "EOM is at wrong location. msg=%s, eom_ofs=%d, eom=%s\n",
-    params->msg, (gint) params->eom_ofs, eom);
+                "EOM is at wrong location. msg=%s, eom_ofs=%d, eom=%s\n",
+                params->msg, (gint) params->eom_ofs, eom);
 }

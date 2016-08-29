@@ -56,7 +56,7 @@ add_contextual_data_set_filename(LogParser *p, const gchar *filename)
 
 void
 add_contextual_data_set_database_selector_template(LogParser *p,
-                                                   const gchar *selector)
+    const gchar *selector)
 {
   AddContextualData *self = (AddContextualData *) p;
   g_free(self->selector_template_string);
@@ -74,8 +74,8 @@ add_contextual_data_set_prefix(LogParser *p, const gchar *prefix)
 
 void
 add_contextual_data_set_database_default_selector(LogParser *p,
-                                                  const gchar *
-                                                  default_selector)
+    const gchar *
+    default_selector)
 {
   AddContextualData *self = (AddContextualData *) p;
 
@@ -153,7 +153,7 @@ _clone(LogPipe *s)
   add_contextual_data_set_prefix(&cloned->super, self->prefix);
   add_contextual_data_set_filename(&cloned->super, self->filename);
   add_contextual_data_set_database_default_selector(&cloned->super,
-                                                    self->default_selector);
+      self->default_selector);
 
   return &cloned->super.super;
 }

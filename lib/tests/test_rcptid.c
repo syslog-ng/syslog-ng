@@ -58,7 +58,7 @@ test_rcptid_is_persistent_across_persist_backend_reinits(void)
   rcptid = rcptid_generate_id();
 
   assert_guint64(rcptid, 0xFFFFFFFFFFFFFFFE, "Rcptid initialization to specific value failed!");
-  
+
   state = restart_persist_state(state);
 
   rcptid_deinit();
@@ -75,7 +75,7 @@ static void
 test_rcptid_overflows_at_64bits_and_is_reset_to_one(void)
 {
   guint64 rcptid;
-  
+
   setup_persist_id_test();
 
   rcptid_set_id(0xFFFFFFFFFFFFFFFF);

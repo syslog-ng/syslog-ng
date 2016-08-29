@@ -32,18 +32,20 @@
 #include <stdio.h>
 
 
-struct _Journald {
-    int fds[2];
-    GList *entries;
-    GList *current_pos;
-    GList *next_element;
-    gboolean opened;
+struct _Journald
+{
+  int fds[2];
+  GList *entries;
+  GList *current_pos;
+  GList *next_element;
+  gboolean opened;
 };
 
-struct _MockEntry {
-    GPtrArray *data;
-    gint index;
-    gchar *cursor;
+struct _MockEntry
+{
+  GPtrArray *data;
+  gint index;
+  gchar *cursor;
 };
 
 int

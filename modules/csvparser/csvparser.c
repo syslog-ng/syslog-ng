@@ -111,7 +111,8 @@ _get_formatted_key(CSVParser *self, const gchar *key)
 }
 
 static gboolean
-csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
+                   gsize input_len)
 {
   CSVParser *self = (CSVParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);

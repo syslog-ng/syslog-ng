@@ -107,11 +107,11 @@ late_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
   msg->ack_record = (AckRecord *)self->pending_ack_record;
 
   _late_tracker_lock(self);
-    {
-      LateAckRecord *ack_rec;
-      ack_rec = (LateAckRecord *)ring_buffer_push(&self->ack_record_storage);
-      g_assert(ack_rec == self->pending_ack_record);
-    }
+  {
+    LateAckRecord *ack_rec;
+    ack_rec = (LateAckRecord *)ring_buffer_push(&self->ack_record_storage);
+    g_assert(ack_rec == self->pending_ack_record);
+  }
   _late_tracker_unlock(self);
 
   self->pending_ack_record = NULL;
@@ -128,24 +128,24 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
   ack_rec->acked = TRUE;
 
   _late_tracker_lock(self);
-    {
-      ack_range_length = _get_continuous_range_length(self);
-      if (ack_range_length > 0)
-        {
-          last_in_range = ring_buffer_element_at(&self->ack_record_storage, ack_range_length - 1);
-          if (ack_type != AT_ABORTED)
-            {
-              Bookmark *bookmark = &(last_in_range->bookmark);
-              bookmark->save(bookmark);
-            }
-          _drop_range(self, ack_range_length);
+  {
+    ack_range_length = _get_continuous_range_length(self);
+    if (ack_range_length > 0)
+      {
+        last_in_range = ring_buffer_element_at(&self->ack_record_storage, ack_range_length - 1);
+        if (ack_type != AT_ABORTED)
+          {
+            Bookmark *bookmark = &(last_in_range->bookmark);
+            bookmark->save(bookmark);
+          }
+        _drop_range(self, ack_range_length);
 
-          if (ack_type == AT_SUSPENDED)
-            log_source_flow_control_suspend(self->super.source);
-          else
-            log_source_flow_control_adjust(self->super.source, ack_range_length);
-        }
-    }
+        if (ack_type == AT_SUSPENDED)
+          log_source_flow_control_suspend(self->super.source);
+        else
+          log_source_flow_control_adjust(self->super.source, ack_range_length);
+      }
+  }
   _late_tracker_unlock(self);
 
   log_msg_unref(msg);
@@ -158,9 +158,9 @@ late_ack_tracker_request_bookmark(AckTracker *s)
   LateAckTracker *self = (LateAckTracker *)s;
 
   _late_tracker_lock(self);
-    {
-      self->pending_ack_record = ring_buffer_tail(&self->ack_record_storage);
-    }
+  {
+    self->pending_ack_record = ring_buffer_tail(&self->ack_record_storage);
+  }
   _late_tracker_unlock(self);
 
   if (self->pending_ack_record)
@@ -188,7 +188,7 @@ late_ack_tracker_init_instance(LateAckTracker *self, LogSource *source)
   g_static_mutex_init(&self->storage_mutex);
 }
 
-AckTracker*
+AckTracker *
 late_ack_tracker_new(LogSource *source)
 {
   LateAckTracker *self = g_new0(LateAckTracker, 1);

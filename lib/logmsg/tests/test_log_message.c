@@ -75,7 +75,7 @@ _construct_merged_message(const gchar *name, const gchar *value)
 
 static void
 assert_log_msg_clear_clears_all_properties(LogMessage *message, NVHandle nv_handle,
-                                            NVHandle sd_handle, const gchar *tag_name)
+    NVHandle sd_handle, const gchar *tag_name)
 {
   log_msg_clear(message);
 
@@ -175,9 +175,9 @@ Test(log_message, test_log_message_can_be_cleared)
   log_message_test_params_clone_message(params);
 
   assert_log_msg_clear_clears_all_properties(params->message, params->nv_handle,
-    params->sd_handle, params->tag_name);
+      params->sd_handle, params->tag_name);
   assert_log_msg_clear_clears_all_properties(params->cloned_message, params->nv_handle,
-    params->sd_handle, params->tag_name);
+      params->sd_handle, params->tag_name);
 
   log_message_test_params_free(params);
 }
@@ -298,7 +298,7 @@ Test(log_message, test_log_msg_set_value_indirect_with_self_referencing_handle_r
 
   log_msg_set_value_indirect(params->message, params->nv_handle, params->nv_handle, 0, 0, 5);
   cr_assert_str_eq(log_msg_get_value(params->message, params->nv_handle, &value_len), "value",
-    "indirect self-reference value doesn't match");
+                   "indirect self-reference value doesn't match");
 
   log_message_test_params_free(params);
 }
@@ -344,7 +344,8 @@ Test(log_message, test_sdata_value_is_updated_by_sdata_name_value_pairs)
   log_msg_set_value_by_name(msg, ".SDATA.post.value1", "value", -1);
   assert_sdata_value_equals(msg, "[post value1=\"value\"][foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
   log_msg_set_value_by_name(msg, ".SDATA.post.value2", "value", -1);
-  assert_sdata_value_equals(msg, "[post value1=\"value\" value2=\"value\"][foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
+  assert_sdata_value_equals(msg,
+                            "[post value1=\"value\" value2=\"value\"][foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
   log_msg_unref(msg);
 }
 
@@ -356,9 +357,11 @@ Test(log_message, test_sdata_seqnum_adds_meta_sequence_id)
   log_msg_set_value_by_name(msg, ".SDATA.foo.bar1", "value", -1);
   log_msg_set_value_by_name(msg, ".SDATA.foo.bar2", "value", -1);
   log_msg_set_value_by_name(msg, ".SDATA.foo.bar3", "value", -1);
-  assert_sdata_value_with_seqnum_equals(msg, 5, "[foo bar1=\"value\" bar2=\"value\" bar3=\"value\"][meta sequenceId=\"5\"]");
+  assert_sdata_value_with_seqnum_equals(msg, 5,
+                                        "[foo bar1=\"value\" bar2=\"value\" bar3=\"value\"][meta sequenceId=\"5\"]");
   log_msg_set_value_by_name(msg, ".SDATA.meta.foobar", "value", -1);
-  assert_sdata_value_with_seqnum_equals(msg, 6, "[meta sequenceId=\"6\" foobar=\"value\"][foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
+  assert_sdata_value_with_seqnum_equals(msg, 6,
+                                        "[meta sequenceId=\"6\" foobar=\"value\"][foo bar1=\"value\" bar2=\"value\" bar3=\"value\"]");
   log_msg_unref(msg);
 }
 

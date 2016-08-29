@@ -22,7 +22,7 @@
  */
 
 #include "gsocket.h"
- 
+
 #include <iv.h>
 
 typedef struct _ControlServerUnix
@@ -130,7 +130,7 @@ control_socket_accept(void *cookie)
   /* NOTE: the connection will free itself if the peer terminates */
   control_connection_new(&self->super, conn_socket);
   g_sockaddr_unref(peer_addr);
- error:
+error:
   ;
 }
 
@@ -145,21 +145,21 @@ control_server_start(ControlServer *s)
   if (self->control_socket == -1)
     {
       msg_error("Error opening control socket, external controls will not be available",
-               evt_tag_str("socket", self->super.control_socket_name));
+                evt_tag_str("socket", self->super.control_socket_name));
       return;
     }
   if (g_bind(self->control_socket, saddr) != G_IO_STATUS_NORMAL)
     {
       msg_error("Error opening control socket, bind() failed",
-               evt_tag_str("socket", self->super.control_socket_name),
-               evt_tag_errno("error", errno));
+                evt_tag_str("socket", self->super.control_socket_name),
+                evt_tag_errno("error", errno));
       goto error;
     }
   if (listen(self->control_socket, 255) < 0)
     {
       msg_error("Error opening control socket, listen() failed",
-               evt_tag_str("socket", self->super.control_socket_name),
-               evt_tag_errno("error", errno));
+                evt_tag_str("socket", self->super.control_socket_name),
+                evt_tag_errno("error", errno));
       goto error;
     }
 
@@ -170,7 +170,7 @@ control_server_start(ControlServer *s)
 
   g_sockaddr_unref(saddr);
   return;
- error:
+error:
   if (self->control_socket != -1)
     {
       close(self->control_socket);

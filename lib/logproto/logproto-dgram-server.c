@@ -33,7 +33,8 @@ struct _LogProtoDGramServer
 };
 
 static gboolean
-log_proto_dgram_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
+log_proto_dgram_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes,
+    const guchar **msg, gsize *msg_len)
 {
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(s);
 

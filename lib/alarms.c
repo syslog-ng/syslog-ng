@@ -69,7 +69,7 @@ void
 alarm_init()
 {
   struct sigaction sa;
-  
+
   memset(&sa, 0, sizeof(sa));
   sa.sa_handler = sig_alarm_handler;
   sigaction(SIGALRM, &sa, NULL);

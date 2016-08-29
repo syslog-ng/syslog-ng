@@ -118,7 +118,8 @@ crypto_init(void)
         }
 
       if (RAND_status() < 0)
-        fprintf(stderr, "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
+        fprintf(stderr,
+                "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
     }
 }
 

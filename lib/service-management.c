@@ -77,15 +77,15 @@ service_management_systemd_is_active()
   struct stat st;
 
   if (lstat("/run/systemd/system/", &st) < 0 || !S_ISDIR(st.st_mode))
-  {
-    msg_debug("Systemd is not detected as the running init system");
-    return FALSE;
-  }
+    {
+      msg_debug("Systemd is not detected as the running init system");
+      return FALSE;
+    }
   else
-  {
-    msg_debug("Systemd is detected as the running init system");
-    return TRUE;
-  }
+    {
+      msg_debug("Systemd is detected as the running init system");
+      return TRUE;
+    }
 }
 
 #endif
@@ -135,7 +135,8 @@ service_management_dummy_is_active()
   return TRUE;
 }
 
-ServiceManagement service_managements[] = {
+ServiceManagement service_managements[] =
+{
   {
     .type = SMT_NONE,
     .publish_status = service_management_dummy_publish_status,

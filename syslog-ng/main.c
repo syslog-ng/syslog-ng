@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "syslog-ng.h"
 #include "cfg.h"
 #include "messages.h"
@@ -68,7 +68,7 @@ static gboolean dummy = FALSE;
 extern int cfg_parser_debug;
 #endif
 
-static GOptionEntry syslogng_options[] = 
+static GOptionEntry syslogng_options[] =
 {
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_VERSION ")", NULL },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
@@ -185,7 +185,7 @@ setup_caps (void)
 
 #endif
 
-int 
+int
 main(int argc, char *argv[])
 {
   gint rc;
@@ -251,7 +251,7 @@ main(int argc, char *argv[])
       g_process_set_mode(G_PM_FOREGROUND);
     }
   g_process_set_name("syslog-ng");
-  
+
   /* in this case we switch users early while retaining a limited set of
    * credentials in order to initialize/reinitialize the configuration.
    */
@@ -259,7 +259,7 @@ main(int argc, char *argv[])
   app_startup();
   main_loop_init();
   rc = main_loop_read_and_init_config();
-  
+
   if (rc)
     {
       g_process_startup_failed(rc, TRUE);
@@ -285,7 +285,7 @@ main(int argc, char *argv[])
     }
 
   /* from now on internal messages are written to the system log as well */
-  
+
   main_loop_run();
   main_loop_deinit();
 

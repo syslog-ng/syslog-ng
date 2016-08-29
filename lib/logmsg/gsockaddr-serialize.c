@@ -27,21 +27,21 @@
 #include <string.h>
 
 static gboolean
-_serialize_ipv4(GSockAddr* addr, SerializeArchive* sa)
+_serialize_ipv4(GSockAddr *addr, SerializeArchive *sa)
 {
   struct in_addr ina;
   ina = g_sockaddr_inet_get_address(addr);
-  return serialize_write_blob(sa, (gchar*) &ina, sizeof(ina)) &&
+  return serialize_write_blob(sa, (gchar *) &ina, sizeof(ina)) &&
          serialize_write_uint16(sa, htons(g_sockaddr_get_port(addr)));
 }
 
 #if SYSLOG_NG_ENABLE_IPV6
 static gboolean
-_serialize_ipv6(GSockAddr* addr, SerializeArchive* sa)
+_serialize_ipv6(GSockAddr *addr, SerializeArchive *sa)
 {
-  struct in6_addr* in6a;
+  struct in6_addr *in6a;
   in6a = g_sockaddr_inet6_get_address(addr);
-  return serialize_write_blob(sa, (gchar*) in6a, sizeof(*in6a)) &&
+  return serialize_write_blob(sa, (gchar *) in6a, sizeof(*in6a)) &&
          serialize_write_uint16(sa, htons(g_sockaddr_get_port(addr)));
 }
 #endif
@@ -58,26 +58,26 @@ g_sockaddr_serialize(SerializeArchive *sa, GSockAddr *addr)
   switch (addr->sa.sa_family)
     {
     case AF_INET:
-      {
-        result &= _serialize_ipv4(addr, sa);
-        break;
-      }
+    {
+      result &= _serialize_ipv4(addr, sa);
+      break;
+    }
 #if SYSLOG_NG_ENABLE_IPV6
     case AF_INET6:
-      {
-        result &= _serialize_ipv6(addr, sa);
-        break;
-      }
+    {
+      result &= _serialize_ipv6(addr, sa);
+      break;
+    }
 #endif
     case AF_UNIX:
-      {
-        break;
-      }
+    {
+      break;
+    }
     default:
-      {
-        result = FALSE;
-        break;
-      }
+    {
+      result = FALSE;
+      break;
+    }
     }
   return result;
 }
@@ -133,16 +133,16 @@ g_sockaddr_deserialize(SerializeArchive *sa, GSockAddr **addr)
       *addr = NULL;
       break;
     case AF_INET:
-      {
-        result = _deserialize_ipv4(sa, addr);
-        break;
-      }
+    {
+      result = _deserialize_ipv4(sa, addr);
+      break;
+    }
 #if SYSLOG_NG_ENABLE_IPV6
     case AF_INET6:
-      {
-        result = _deserialize_ipv6(sa, addr);
-        break;
-      }
+    {
+      result = _deserialize_ipv6(sa, addr);
+      break;
+    }
 #endif
     case AF_UNIX:
       *addr = g_sockaddr_unix_new(NULL);

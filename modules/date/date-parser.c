@@ -111,9 +111,9 @@ static void
 _adjust_tvsec_to_move_it_into_given_timezone(LogStamp *timestamp, gint normalized_hour, gint unnormalized_hour)
 {
   timestamp->tv_sec = timestamp->tv_sec
-    + get_local_timezone_ofs(timestamp->tv_sec)
-    - (normalized_hour - unnormalized_hour) * 3600
-    - timestamp->zone_offset;
+                      + get_local_timezone_ofs(timestamp->tv_sec)
+                      - (normalized_hour - unnormalized_hour) * 3600
+                      - timestamp->zone_offset;
 }
 
 static glong

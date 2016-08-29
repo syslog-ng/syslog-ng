@@ -90,7 +90,8 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
   if (!(*may_read))
     return LPS_SUCCESS;
 
-  rc = log_transport_read(self->super.transport, &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end, NULL);
+  rc = log_transport_read(self->super.transport, &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end,
+                          NULL);
 
   if (rc < 0)
     {
@@ -152,7 +153,8 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
 }
 
 static LogProtoStatus
-log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark)
+log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
+                              LogTransportAuxData *aux, Bookmark *bookmark)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
   LogProtoStatus status;
@@ -170,7 +172,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
 
       try_read = TRUE;
 
-    read_frame:
+read_frame:
       if (!log_proto_framed_server_extract_frame_length(self, &need_more_data))
         {
           /* invalid frame header */
@@ -226,7 +228,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
     case LPFSS_MESSAGE_READ:
 
       try_read = TRUE;
-    read_message:
+read_message:
       /* NOTE: here we can assume that the complete message fits into
        * the buffer because of the checks/move operation in the
        * LPFSS_FRAME_READ state */

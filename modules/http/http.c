@@ -54,8 +54,8 @@ _format_stats_instance(LogThrDestDriver *s)
 static size_t
 _http_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-    // Discard response content
-    return nmemb * size;
+  // Discard response content
+  return nmemb * size;
 }
 
 static void
@@ -66,7 +66,7 @@ _thread_init(LogThrDestDriver *s)
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
   if (!self->user_agent)
     self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
-                                        SYSLOG_NG_VERSION, curl_info->version);
+                                       SYSLOG_NG_VERSION, curl_info->version);
 }
 
 static void
@@ -96,26 +96,27 @@ _get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
   gchar header_level[32] = {0};
 
   g_snprintf(header_host, sizeof(header_host),
-    "X-Syslog-Host: %s", log_msg_get_value(msg, LM_V_HOST, NULL));
+             "X-Syslog-Host: %s", log_msg_get_value(msg, LM_V_HOST, NULL));
   curl_headers = curl_slist_append(curl_headers, header_host);
 
   g_snprintf(header_program, sizeof(header_program),
-    "X-Syslog-Program: %s", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+             "X-Syslog-Program: %s", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
   curl_headers = curl_slist_append(curl_headers, header_program);
 
   g_snprintf(header_facility, sizeof(header_facility),
-    "X-Syslog-Facility: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+             "X-Syslog-Facility: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
   curl_headers = curl_slist_append(curl_headers, header_facility);
 
   g_snprintf(header_level, sizeof(header_level),
-    "X-Syslog-Level: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+             "X-Syslog-Level: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
   curl_headers = curl_slist_append(curl_headers, header_level);
 
   header = self->headers;
-  while (header != NULL) {
-    curl_headers = curl_slist_append(curl_headers, (gchar *)header->data);
-    header = g_list_next(header);
-  }
+  while (header != NULL)
+    {
+      curl_headers = curl_slist_append(curl_headers, (gchar *)header->data);
+      header = g_list_next(header);
+    }
 
   return curl_headers;
 }
@@ -125,11 +126,12 @@ _get_body_rendered(HTTPDestinationDriver *self, LogMessage *msg)
 {
   GString *body_rendered = NULL;
 
-  if (self->body_template) {
-    body_rendered = g_string_new(NULL);
-    log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
-                        self->super.seq_num, NULL, body_rendered);
-  }
+  if (self->body_template)
+    {
+      body_rendered = g_string_new(NULL);
+      log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
+                          self->super.seq_num, NULL, body_rendered);
+    }
   return body_rendered;
 }
 
@@ -168,12 +170,13 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  struct curl_slist * curl_headers = _get_curl_headers(self, msg);
+  struct curl_slist *curl_headers = _get_curl_headers(self, msg);
   GString *body_rendered = _get_body_rendered(self, msg);
 
   _set_curl_opt(self, msg, curl_headers, body_rendered);
 
-  if ((ret = curl_easy_perform(self->curl)) != CURLE_OK) {
+  if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
+    {
       msg_error("curl: error sending HTTP request",
                 evt_tag_str("error", curl_easy_strerror(ret)));
 
@@ -183,7 +186,7 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
       curl_slist_free_all(curl_headers);
 
       return WORKER_INSERT_RESULT_ERROR;
-  }
+    }
 
   if (body_rendered)
     g_string_free(body_rendered, TRUE);
@@ -238,10 +241,11 @@ http_dd_set_headers(LogDriver *d, GList *headers)
   self->headers = g_list_copy(headers);
 
   GList *header = self->headers;
-  while (header != NULL) {
-    header->data = g_strdup(header->data);
-    header = g_list_next(header);
-  }
+  while (header != NULL)
+    {
+      header->data = g_strdup(header->data);
+      header = g_list_next(header);
+    }
 }
 
 void
@@ -289,9 +293,10 @@ http_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
 
-  if (!self->url) {
-    self->url = g_strdup(HTTP_DEFAULT_URL);
-  }
+  if (!self->url)
+    {
+      self->url = g_strdup(HTTP_DEFAULT_URL);
+    }
 
   return log_threaded_dest_driver_start(s);
 }
@@ -341,11 +346,12 @@ http_dd_new(GlobalConfig *cfg)
 
   curl_global_init(CURL_GLOBAL_ALL);
 
-  if (!(self->curl = curl_easy_init())) {
-    msg_error("curl: cannot initialize libcurl", NULL);
+  if (!(self->curl = curl_easy_init()))
+    {
+      msg_error("curl: cannot initialize libcurl", NULL);
 
-    return NULL;
-  }
+      return NULL;
+    }
 
   return &self->super.super.super;
 }

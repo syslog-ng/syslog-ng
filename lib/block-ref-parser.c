@@ -28,7 +28,8 @@
 extern int block_ref_debug;
 int block_ref_parse(CfgLexer *lexer, CfgArgs **node, gpointer arg);
 
-static CfgLexerKeyword block_ref_keywords[] = {
+static CfgLexerKeyword block_ref_keywords[] =
+{
   { CFG_KEYWORD_STOP },
 };
 

@@ -188,7 +188,8 @@ _evaluate_having(GroupingBy *self, CorrellationContext *context)
   if (!self->having_condition_expr)
     return TRUE;
 
-  return filter_expr_eval_with_context(self->having_condition_expr, (LogMessage **) context->messages->pdata, context->messages->len);
+  return filter_expr_eval_with_context(self->having_condition_expr, (LogMessage **) context->messages->pdata,
+                                       context->messages->len);
 }
 
 static void
@@ -213,7 +214,7 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
                 evt_tag_str("key", context->key.session_id),
                 evt_tag_str("location",
                             log_expr_node_format_location(self->super.super.super.expr_node,
-                                                          buf, sizeof(buf))));
+                                buf, sizeof(buf))));
     }
 }
 
@@ -229,7 +230,7 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
             evt_tag_str("context-id", context->key.session_id),
             evt_tag_str("location",
                         log_expr_node_format_location(self->super.super.super.expr_node,
-                                                      buf, sizeof(buf))));
+                            buf, sizeof(buf))));
   grouping_by_emit_synthetic(self, context);
   g_hash_table_remove(self->correllation->state, &context->key);
 
@@ -274,7 +275,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                     evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
                     evt_tag_str("location",
                                 log_expr_node_format_location(self->super.super.super.expr_node,
-                                                              buf, sizeof(buf))));
+                                    buf, sizeof(buf))));
           context = correllation_context_new(&key);
           g_hash_table_insert(self->correllation->state, &context->key, context);
           g_string_steal(buffer);
@@ -288,7 +289,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                     evt_tag_int("num_messages", context->messages->len),
                     evt_tag_str("location",
                                 log_expr_node_format_location(self->super.super.super.expr_node,
-                                                              buf, sizeof(buf))));
+                                    buf, sizeof(buf))));
         }
 
       g_ptr_array_add(context->messages, log_msg_ref(msg));
@@ -297,12 +298,12 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
           filter_expr_eval(self->trigger_condition_expr, msg))
         {
           msg_verbose("Correllation close-condition() met, closing state",
-                    evt_tag_str("key", context->key.session_id),
-                    evt_tag_int("timeout", self->timeout),
-                    evt_tag_int("num_messages", context->messages->len),
-                    evt_tag_str("location",
-                                log_expr_node_format_location(self->super.super.super.expr_node,
-                                                              buf, sizeof(buf))));
+                      evt_tag_str("key", context->key.session_id),
+                      evt_tag_int("timeout", self->timeout),
+                      evt_tag_int("num_messages", context->messages->len),
+                      evt_tag_str("location",
+                                  log_expr_node_format_location(self->super.super.super.expr_node,
+                                      buf, sizeof(buf))));
           /* close down state */
           if (context->timer)
             timer_wheel_del_timer(self->timer_wheel, context->timer);
@@ -317,7 +318,8 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
             }
           else
             {
-              context->timer = timer_wheel_add_timer(self->timer_wheel, self->timeout, grouping_by_expire_entry, correllation_context_ref(context), (GDestroyNotify) correllation_context_unref);
+              context->timer = timer_wheel_add_timer(self->timer_wheel, self->timeout, grouping_by_expire_entry,
+                                                     correllation_context_ref(context), (GDestroyNotify) correllation_context_unref);
             }
         }
     }
@@ -345,7 +347,8 @@ _evaluate_where(GroupingBy *self, LogMessage **pmsg, const LogPathOptions *path_
 }
 
 static gboolean
-grouping_by_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const char *input, gsize input_len)
+grouping_by_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const char *input,
+                    gsize input_len)
 {
   GroupingBy *self = (GroupingBy *) s;
 
@@ -387,7 +390,8 @@ grouping_by_deinit(LogPipe *s)
       iv_timer_unregister(&self->tick);
     }
 
-  cfg_persist_config_add(cfg, grouping_by_format_persist_name(self), self->correllation, (GDestroyNotify) correllation_state_free, FALSE);
+  cfg_persist_config_add(cfg, grouping_by_format_persist_name(self), self->correllation,
+                         (GDestroyNotify) correllation_state_free, FALSE);
   self->correllation = NULL;
   return TRUE;
 }

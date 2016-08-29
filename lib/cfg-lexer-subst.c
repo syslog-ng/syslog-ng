@@ -158,7 +158,8 @@ _encode_as_qstring(CfgLexerSubst *self, const gchar *value, GError **error)
 
       if (p == '\'')
         {
-          g_set_error(error, CFG_LEXER_ERROR, CFG_LEXER_CANNOT_REPRESENT_APOSTROPHES_IN_QSTRINGS, "cannot represent apostrophes within apostroph-enclosed string");
+          g_set_error(error, CFG_LEXER_ERROR, CFG_LEXER_CANNOT_REPRESENT_APOSTROPHES_IN_QSTRINGS,
+                      "cannot represent apostrophes within apostroph-enclosed string");
           return FALSE;
         }
       g_string_append_c(self->result_buffer, p);
@@ -226,7 +227,8 @@ cfg_lexer_subst_invoke(CfgLexerSubst *self, const gchar *input, gssize input_len
         {
           if (self->string_state == CLS_WITHIN_STRING_QUOTED_CHARACTER)
             {
-              g_set_error(error, CFG_LEXER_ERROR, CFG_LEXER_BACKTICKS_CANT_BE_SUBSTITUTED_AFTER_BACKSLASH, "cannot subsitute backticked values right after a string quote character");
+              g_set_error(error, CFG_LEXER_ERROR, CFG_LEXER_BACKTICKS_CANT_BE_SUBSTITUTED_AFTER_BACKSLASH,
+                          "cannot subsitute backticked values right after a string quote character");
               goto error;
             }
           /* start of reference */
@@ -270,7 +272,7 @@ cfg_lexer_subst_invoke(CfgLexerSubst *self, const gchar *input, gssize input_len
 
   *output_length = result->len;
   return g_string_free(result, FALSE);
- error:
+error:
   g_string_free(result, TRUE);
   return NULL;
 

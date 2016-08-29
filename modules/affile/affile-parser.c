@@ -29,7 +29,8 @@ extern int affile_debug;
 
 int affile_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword affile_keywords[] = {
+static CfgLexerKeyword affile_keywords[] =
+{
   { "file",               KW_FILE },
   { "fifo",               KW_PIPE },
   { "pipe",               KW_PIPE },

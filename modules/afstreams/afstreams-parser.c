@@ -29,7 +29,8 @@ extern int afstreams_debug;
 
 int afstreams_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword afstreams_keywords[] = {
+static CfgLexerKeyword afstreams_keywords[] =
+{
   { "sun_stream",         KW_SUN_STREAMS },
   { "sun_streams",        KW_SUN_STREAMS },
   { "door",               KW_DOOR },

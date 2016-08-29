@@ -439,7 +439,8 @@ cfg_tree_add_all_sources(gpointer key, gpointer value, gpointer user_data)
     return;
 
   /* prepend a source reference */
-  referring_rule->children = log_expr_node_append_tail(log_expr_node_new_source_reference(rule->name, NULL), referring_rule->children);
+  referring_rule->children = log_expr_node_append_tail(log_expr_node_new_source_reference(rule->name, NULL),
+                             referring_rule->children);
 }
 
 static gboolean
@@ -484,7 +485,7 @@ cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
   *outer_pipe_tail = pipe;
   return TRUE;
 
- error:
+error:
   return FALSE;
 }
 
@@ -516,89 +517,89 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
   switch (referenced_node->content)
     {
     case ENC_SOURCE:
-      {
-        LogMultiplexer *mpx;
-        LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
-        LogPipe *attach_pipe = NULL;
+    {
+      LogMultiplexer *mpx;
+      LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
+      LogPipe *attach_pipe = NULL;
 
-        if (!referenced_node->aux)
-          {
-            if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail))
-              goto error;
-            log_expr_node_set_aux(referenced_node, log_pipe_ref(sub_pipe_tail), (GDestroyNotify) log_pipe_unref);
-          }
-        else
-          {
-            sub_pipe_tail = referenced_node->aux;
-          }
+      if (!referenced_node->aux)
+        {
+          if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail))
+            goto error;
+          log_expr_node_set_aux(referenced_node, log_pipe_ref(sub_pipe_tail), (GDestroyNotify) log_pipe_unref);
+        }
+      else
+        {
+          sub_pipe_tail = referenced_node->aux;
+        }
 
-        attach_pipe = cfg_tree_new_pipe(self, node);
+      attach_pipe = cfg_tree_new_pipe(self, node);
 
-        if (sub_pipe_tail)
-          {
-            /* when the source is empty, we'll get a NULL tail in
-             * sub_pipe_tail.  We handle that by simply not connecting
-             * anything to the attachment point */
+      if (sub_pipe_tail)
+        {
+          /* when the source is empty, we'll get a NULL tail in
+           * sub_pipe_tail.  We handle that by simply not connecting
+           * anything to the attachment point */
 
-            if (!sub_pipe_tail->pipe_next)
-              {
-                mpx = cfg_tree_new_mpx(self, referenced_node);
-                log_pipe_append(sub_pipe_tail, &mpx->super);
-              }
-            else
-              {
-                mpx = (LogMultiplexer *) sub_pipe_tail->pipe_next;
-              }
-            log_multiplexer_add_next_hop(mpx, attach_pipe);
-          }
-        *outer_pipe_head = NULL;
-        *outer_pipe_tail = attach_pipe;
-        break;
-      }
+          if (!sub_pipe_tail->pipe_next)
+            {
+              mpx = cfg_tree_new_mpx(self, referenced_node);
+              log_pipe_append(sub_pipe_tail, &mpx->super);
+            }
+          else
+            {
+              mpx = (LogMultiplexer *) sub_pipe_tail->pipe_next;
+            }
+          log_multiplexer_add_next_hop(mpx, attach_pipe);
+        }
+      *outer_pipe_head = NULL;
+      *outer_pipe_tail = attach_pipe;
+      break;
+    }
     case ENC_DESTINATION:
-      {
-        LogMultiplexer *mpx;
-        LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
+    {
+      LogMultiplexer *mpx;
+      LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
 
-        if (!referenced_node->aux)
-          {
-            if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail))
-              goto error;
-            log_expr_node_set_aux(referenced_node, log_pipe_ref(sub_pipe_head), (GDestroyNotify) log_pipe_unref);
-          }
-        else
-          {
-            sub_pipe_head = referenced_node->aux;
-          }
+      if (!referenced_node->aux)
+        {
+          if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail))
+            goto error;
+          log_expr_node_set_aux(referenced_node, log_pipe_ref(sub_pipe_head), (GDestroyNotify) log_pipe_unref);
+        }
+      else
+        {
+          sub_pipe_head = referenced_node->aux;
+        }
 
-        /* We need a new LogMultiplexer instance for two reasons:
+      /* We need a new LogMultiplexer instance for two reasons:
 
-           1) we need to link something into the sequence, all
-           reference based destination invocations need a separate
-           LogPipe
+         1) we need to link something into the sequence, all
+         reference based destination invocations need a separate
+         LogPipe
 
-           2) we have to fork downwards to the destination, it may
-           change the message but we need the original one towards
-           our next chain
-        */
+         2) we have to fork downwards to the destination, it may
+         change the message but we need the original one towards
+         our next chain
+      */
 
-        mpx = cfg_tree_new_mpx(self, node);
+      mpx = cfg_tree_new_mpx(self, node);
 
-        if (sub_pipe_head)
-          {
-            /* when the destination is empty */
-            log_multiplexer_add_next_hop(mpx, sub_pipe_head);
-          }
-        *outer_pipe_head = &mpx->super;
-        *outer_pipe_tail = NULL;
-        break;
-      }
+      if (sub_pipe_head)
+        {
+          /* when the destination is empty */
+          log_multiplexer_add_next_hop(mpx, sub_pipe_head);
+        }
+      *outer_pipe_head = &mpx->super;
+      *outer_pipe_tail = NULL;
+      break;
+    }
     default:
       return cfg_tree_compile_node(self, referenced_node, outer_pipe_head, outer_pipe_tail);
     }
   return TRUE;
 
- error:
+error:
   return FALSE;
 }
 
@@ -653,8 +654,8 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 {
   LogExprNode *ep;
   LogPipe
-    *first_pipe,   /* the head of the constructed pipeline */
-    *last_pipe;    /* the current tail of the constructed pipeline */
+  *first_pipe,   /* the head of the constructed pipeline */
+  *last_pipe;    /* the current tail of the constructed pipeline */
   LogPipe *source_join_pipe = NULL;
   gboolean node_properties_propagated = FALSE;
 
@@ -758,17 +759,17 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
    */
 
   g_assert(((node->flags & LC_FLOW_CONTROL) && (first_pipe || source_join_pipe)) ||
-            !(node->flags & LC_FLOW_CONTROL));
+           !(node->flags & LC_FLOW_CONTROL));
 
   if (!first_pipe && !last_pipe)
     {
       /* this is an empty sequence, insert a do-nothing LogPipe */
       first_pipe = last_pipe = cfg_tree_new_pipe(self, node);
     }
-  
+
   if (!node_properties_propagated)
     {
-      /* we never encountered anything that would produce a head_pipe, e.g. 
+      /* we never encountered anything that would produce a head_pipe, e.g.
        * this sequence only contains a source and nothing else.  In that
        * case, apply node flags to the last pipe.  It should be picked up
        * when LogMultiplexer iterates over the branch in
@@ -783,7 +784,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
   *outer_pipe_tail = last_pipe;
   *outer_pipe_head = first_pipe;
   return TRUE;
- error:
+error:
 
   /* we don't need to free anything, everything we allocated is recorded in
    * @self, thus will be freed whenever cfg_tree_free is called */
@@ -869,7 +870,7 @@ cfg_tree_compile_junction(CfgTree *self,
   if (outer_pipe_tail)
     *outer_pipe_tail = join_pipe;
   return TRUE;
- error:
+error:
 
   /* we don't need to free anything, everything we allocated is recorded in
    * @self, thus will be freed whenever cfg_tree_free is called */
@@ -898,11 +899,11 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
       indent++;
       g_snprintf(compile_message, sizeof(compile_message),
                  "%-*sCompiling %s %s [%s] at [%s]",
-                  indent * 2, "",
-                  node->name ? : "#unnamed",
-                  log_expr_node_get_layout_name(node->layout),
-                  log_expr_node_get_content_name(node->content),
-                  log_expr_node_format_location(node, buf, sizeof(buf)));
+                 indent * 2, "",
+                 node->name ? : "#unnamed",
+                 log_expr_node_get_layout_name(node->layout),
+                 log_expr_node_get_content_name(node->content),
+                 log_expr_node_format_location(node, buf, sizeof(buf)));
       msg_send_formatted_message(EVT_PRI_DEBUG, compile_message);
     }
 
@@ -1144,7 +1145,8 @@ cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg)
 {
   memset(self, 0, sizeof(*self));
   self->initialized_pipes = g_ptr_array_new();
-  self->objects = g_hash_table_new_full(cfg_tree_objects_hash, cfg_tree_objects_equal, NULL, (GDestroyNotify) log_expr_node_free);
+  self->objects = g_hash_table_new_full(cfg_tree_objects_hash, cfg_tree_objects_equal, NULL,
+                                        (GDestroyNotify) log_expr_node_free);
   self->templates = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_template_unref);
   self->rules = g_ptr_array_new();
   self->cfg = cfg;

@@ -273,7 +273,7 @@ afinter_source_init(LogPipe *s)
 {
   AFInterSource *self = (AFInterSource *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  
+
   if (!log_source_init(s))
     return FALSE;
 
@@ -299,7 +299,7 @@ static gboolean
 afinter_source_deinit(LogPipe *s)
 {
   AFInterSource *self = (AFInterSource *) s;
-  
+
   g_static_mutex_lock(&internal_msg_lock);
   current_internal_source = NULL;
   g_static_mutex_unlock(&internal_msg_lock);
@@ -318,9 +318,10 @@ static LogSource *
 afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
 {
   AFInterSource *self = g_new0(AFInterSource, 1);
-  
+
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
-  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE, FALSE, owner->super.super.super.expr_node);
+  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE, FALSE,
+                         owner->super.super.super.expr_node);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
@@ -381,7 +382,7 @@ static void
 afinter_sd_free(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
-  
+
   g_assert(!self->source);
   log_src_driver_free(s);
 }

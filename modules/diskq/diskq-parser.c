@@ -28,7 +28,8 @@
 extern int diskq_debug;
 int diskq_parse(CfgLexer *lexer, LogDriverPlugin **instance, gpointer arg);
 
-static CfgLexerKeyword diskq_keywords[] = {
+static CfgLexerKeyword diskq_keywords[] =
+{
   { "disk_buffer",       KW_DISK_BUFFER },
   { "mem_buf_length",    KW_MEM_BUF_LENGTH },
   { "disk_buf_size",     KW_DISK_BUF_SIZE },

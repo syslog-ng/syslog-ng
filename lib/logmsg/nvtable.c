@@ -84,7 +84,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   g_array_append_val(self->names, stored);
   g_hash_table_insert(self->name_map, stored.name, GUINT_TO_POINTER(self->names->len));
   res = self->names->len;
- exit:
+exit:
   g_static_mutex_unlock(&nv_registry_lock);
   return res;
 }
@@ -176,11 +176,12 @@ nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
   gssize referenced_length;
 
   referenced_value = nv_table_get_value(self, entry->vindirect.handle, &referenced_length);
-  if (entry->vindirect.ofs > referenced_length) {
-    if (length)
-      *length = 0;
-    return null_string;
-  }
+  if (entry->vindirect.ofs > referenced_length)
+    {
+      if (length)
+        *length = 0;
+      return null_string;
+    }
 
   /* here we assume that indirect references are only looked up with
    * non-zero terminated strings properly handled, thus the caller has
@@ -353,7 +354,8 @@ nv_table_make_direct(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
 }
 
 gboolean
-nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len, gboolean *new_entry)
+nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value,
+                   gsize value_len, gboolean *new_entry)
 {
   NVEntry *entry;
   guint32 ofs;
@@ -457,7 +459,8 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
 }
 
 gboolean
-nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint32 rofs, guint32 rlen, gboolean *new_entry)
+nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle,
+                            guint8 type, guint32 rofs, guint32 rlen, gboolean *new_entry)
 {
   NVEntry *entry, *ref_entry;
   NVIndexEntry *index_entry;
@@ -692,7 +695,8 @@ nv_table_realloc(NVTable *self, NVTable **new)
       *new = g_malloc(new_size);
 
       /* we only copy the header first */
-      memcpy(*new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->index_size * sizeof(NVIndexEntry));
+      memcpy(*new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->index_size *
+             sizeof(NVIndexEntry));
       (*new)->ref_cnt = 1;
       (*new)->borrowed = FALSE;
       (*new)->size = new_size;
@@ -744,14 +748,15 @@ nv_table_clone(NVTable *self, gint additional_space)
     new_size = NV_TABLE_MAX_BYTES;
 
   new = g_malloc(new_size);
-  memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->index_size * sizeof(NVIndexEntry));
+  memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->index_size *
+         sizeof(NVIndexEntry));
   new->size = new_size;
   new->ref_cnt = 1;
   new->borrowed = FALSE;
 
   memcpy(NV_TABLE_ADDR(new, new->size - new->used),
-          NV_TABLE_ADDR(self, self->size - self->used),
-          self->used);
+         NV_TABLE_ADDR(self, self->size - self->used),
+         self->used);
 
   return new;
 }

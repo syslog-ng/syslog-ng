@@ -38,9 +38,9 @@ create_persist_state(void)
 };
 
 PersistState *
-restart_persist_state_with_cancel(PersistState* state)
+restart_persist_state_with_cancel(PersistState *state)
 {
-  PersistState* new_state;
+  PersistState *new_state;
 
   persist_state_cancel(state);
   persist_state_free(state);
@@ -50,7 +50,7 @@ restart_persist_state_with_cancel(PersistState* state)
 };
 
 void
-destroy_persist_state(PersistState* state)
+destroy_persist_state(PersistState *state)
 {
   cancel_and_destroy_persist_state(state);
 };
@@ -125,7 +125,7 @@ void
 test_run_id_macro__macro_has_the_same_value_as_run_id(void)
 {
   PersistState *state;
-  GString* res = g_string_sized_new(0);
+  GString *res = g_string_sized_new(0);
 
   state = create_persist_state();
   run_id_init(state);
@@ -140,7 +140,7 @@ test_run_id_macro__macro_has_the_same_value_as_run_id(void)
 void
 test_run_id_macro__macro_is_empty_if_run_id_is_not_inited(void)
 {
-  GString* res = g_string_sized_new(0);
+  GString *res = g_string_sized_new(0);
 
   run_id_deinit();
 

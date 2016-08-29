@@ -58,7 +58,7 @@ transport_mapper_inet_validate_tls_options(TransportMapperInet *self)
   if (!self->tls_context && _is_tls_required(self))
     {
       msg_error("transport(tls) was specified, but tls() options missing");
-                // evt_tag_str("id", self->super.super.super.id),
+      // evt_tag_str("id", self->super.super.super.id),
       return FALSE;
     }
   else if (self->tls_context && !_is_tls_allowed(self))
@@ -78,7 +78,7 @@ transport_mapper_inet_apply_transport_method(TransportMapper *s, GlobalConfig *c
 
   if (!transport_mapper_apply_transport_method(s, cfg))
     return FALSE;
-  
+
   return transport_mapper_inet_validate_tls_options(self);
 }
 
@@ -254,7 +254,8 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
     {
       if (cfg_is_config_version_older(cfg, 0x0303))
         {
-          self->server_port_change_warning = "WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in " VERSION_3_3 ", please update your configuration";
+          self->server_port_change_warning = "WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in "
+                                             VERSION_3_3 ", please update your configuration";
           self->server_port = 601;
         }
       else
@@ -275,7 +276,8 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
     {
       if (cfg_is_config_version_older(cfg, 0x0303))
         {
-          self->server_port_change_warning = "WARNING: Default port for syslog(transport(tls))  has changed from 601 to 6514 in " VERSION_3_3 ", please update your configuration";
+          self->server_port_change_warning = "WARNING: Default port for syslog(transport(tls))  has changed from 601 to 6514 in "
+                                             VERSION_3_3 ", please update your configuration";
           self->server_port = 601;
         }
       else

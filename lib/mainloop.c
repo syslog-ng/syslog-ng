@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
@@ -234,7 +234,7 @@ main_loop_reload_config_apply(void)
   app_post_config_loaded();
   msg_notice("Configuration reload request received, reloading configuration");
 
- finish:
+finish:
   main_loop_new_config = NULL;
   main_loop_old_config = NULL;
 

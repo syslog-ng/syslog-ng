@@ -117,8 +117,8 @@ assert_short_conversion(gchar *hostname, const gchar *expected)
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      wrap_gethostname();					\
-      hostname_reinit(domain_override);				\
+      wrap_gethostname();         \
+      hostname_reinit(domain_override);       \
     }                                                           \
   while (0)
 
@@ -195,13 +195,15 @@ _invoke_extract_fqdn_from_hostent(gchar *primary_host, gchar **aliases)
 static void
 assert_extract_fqdn_from_hostent(gchar *primary_host, gchar **aliases, const gchar *expected)
 {
-  assert_string(_invoke_extract_fqdn_from_hostent(primary_host, aliases), expected, "_extract_fqdn didn't return the requested hostname");
+  assert_string(_invoke_extract_fqdn_from_hostent(primary_host, aliases), expected,
+                "_extract_fqdn didn't return the requested hostname");
 }
 
 static void
 assert_extract_fqdn_from_hostent_fails(gchar *primary_host, gchar **aliases)
 {
-  assert_null(_invoke_extract_fqdn_from_hostent(primary_host, aliases), "_extract_fqdn returned non-NULL when we expected failure");
+  assert_null(_invoke_extract_fqdn_from_hostent(primary_host, aliases),
+              "_extract_fqdn returned non-NULL when we expected failure");
 }
 
 static void

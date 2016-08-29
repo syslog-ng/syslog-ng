@@ -97,7 +97,8 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) user_data;
   TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
 
-  if (ok && ctx->current_cert == ctx->cert && self->hostname && (transport_mapper_inet->tls_context->verify_mode & TVM_TRUSTED))
+  if (ok && ctx->current_cert == ctx->cert && self->hostname
+      && (transport_mapper_inet->tls_context->verify_mode & TVM_TRUSTED))
     {
       ok = tls_verify_certificate_name(ctx->cert, self->hostname);
     }
@@ -109,7 +110,8 @@ void
 afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, afinet_dd_verify_callback, self);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context,
+                                        afinet_dd_verify_callback, self);
 }
 
 static LogWriter *
@@ -355,7 +357,8 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   /* NOTE: this code should probably become a LogTransport instance so that
    * spoofed packets are also going through the LogWriter queue */
 
-  if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened(self->super.writer))
+  if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET
+      || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened(self->super.writer))
     {
       gboolean success = FALSE;
 
@@ -367,7 +370,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
         self->lnet_buffer = g_string_sized_new(self->spoof_source_maxmsglen);
 
       log_writer_format_log(self->super.writer, msg, self->lnet_buffer);
-      
+
       if (self->lnet_buffer->len > self->spoof_source_maxmsglen)
         g_string_truncate(self->lnet_buffer, self->spoof_source_maxmsglen);
 

@@ -96,8 +96,8 @@ static void
 _test_multiple_properties_with_space(void)
 {
   _EXPECT_CEF_RESULT("act=c:/program files dst=10.0.0.1",
-      ".cef.act", "c:/program files",
-      ".cef.dst", "10.0.0.1");
+                     ".cef.act", "c:/program files",
+                     ".cef.dst", "10.0.0.1");
 }
 
 static void
@@ -112,9 +112,9 @@ static void
 _test_drop_property(void)
 {
   _EXPECT_SKIP_BAD_PROPERTY("kkk=v",
-                           ".cef.a|b", "c",
-                           ".cef.kkk", "v",
-                           ".cef.x=y", "w");
+                            ".cef.a|b", "c",
+                            ".cef.kkk", "v",
+                            ".cef.x=y", "w");
 }
 
 static void
@@ -171,7 +171,7 @@ _test_escaping(void)
   _EXPECT_CEF_RESULT("act=\\r\\n", ".cef.act", "\r\n");
   _EXPECT_CEF_RESULT("act=\\n\\r", ".cef.act", "\n\r");
   _EXPECT_CEF_RESULT("act=this is a long value \\= something",
-       ".cef.act", "this is a long value = something");
+                     ".cef.act", "this is a long value = something");
 
   _EXPECT_DROP_MESSAGE(".cef.k=w", "v");
   _EXPECT_DROP_MESSAGE(".cef.k|w", "v");
@@ -195,11 +195,11 @@ _test_prefix(void)
   _EXPECT_CEF_RESULT_FORMAT("$(format-cef-extension)", "", "k", "v");
 
   assert_template_failure("$(format-cef-extension --subkeys)",
-                         "Missing argument for --subkeys");
+                          "Missing argument for --subkeys");
   assert_template_failure("$(format-cef-extension --subkeys '')",
-                         "Error parsing value-pairs: --subkeys requires a non-empty argument");
+                          "Error parsing value-pairs: --subkeys requires a non-empty argument");
   assert_template_failure("$(format-cef-extension --subkeys \"\")",
-                         "Error parsing value-pairs: --subkeys requires a non-empty argument");
+                          "Error parsing value-pairs: --subkeys requires a non-empty argument");
 }
 
 static void

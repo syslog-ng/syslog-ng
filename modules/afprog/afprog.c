@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "afprog.h"
 #include "driver.h"
 #include "messages.h"
@@ -92,12 +92,12 @@ _exec_program(const gchar *cmdline)
 }
 
 static gboolean
-afprogram_popen(AFProgramProcessInfo* process_info, GIOCondition cond, gint *fd)
+afprogram_popen(AFProgramProcessInfo *process_info, GIOCondition cond, gint *fd)
 {
   int msg_pipe[2];
-  
+
   g_return_val_if_fail(cond == G_IO_IN || cond == G_IO_OUT, FALSE);
-  
+
   if (pipe(msg_pipe) == -1)
     {
       msg_error("Error creating program pipe",
@@ -123,12 +123,12 @@ afprogram_popen(AFProgramProcessInfo* process_info, GIOCondition cond, gint *fd)
       setpgid(0, 0);
 
       devnull = open("/dev/null", O_WRONLY);
-      
+
       if (devnull == -1)
         {
           _exit(127);
         }
-        
+
       if (cond == G_IO_IN)
         {
           dup2(msg_pipe[1], 1);
@@ -218,7 +218,8 @@ afprogram_sd_init(LogPipe *s)
     return FALSE;
 
   /* parent */
-  child_manager_register(self->process_info.pid, afprogram_sd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify) log_pipe_unref);
+  child_manager_register(self->process_info.pid, afprogram_sd_exit, log_pipe_ref(&self->super.super.super),
+                         (GDestroyNotify) log_pipe_unref);
 
   g_fd_set_nonblock(fd, TRUE);
   g_fd_set_cloexec(fd, TRUE);
@@ -228,7 +229,8 @@ afprogram_sd_init(LogPipe *s)
 
       transport = log_transport_pipe_new(fd);
       self->reader = log_reader_new(s->cfg);
-      log_reader_reopen(self->reader, log_proto_text_server_new(transport, &self->reader_options.proto_options.super), poll_fd_events_new(fd));
+      log_reader_reopen(self->reader, log_proto_text_server_new(transport, &self->reader_options.proto_options.super),
+                        poll_fd_events_new(fd));
       log_reader_set_options(self->reader,
                              s,
                              &self->reader_options,
@@ -284,11 +286,11 @@ afprogram_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   switch (notify_code)
     {
-      case NC_CLOSE:
-      case NC_READ_ERROR:
-        afprogram_sd_deinit(s);
-        afprogram_sd_init(s);
-        break;
+    case NC_CLOSE:
+    case NC_READ_ERROR:
+      afprogram_sd_deinit(s);
+      afprogram_sd_init(s);
+      break;
     }
 }
 
@@ -366,7 +368,8 @@ afprogram_dd_open_program(AFProgramDestDriver *self, int *fd)
       g_fd_set_nonblock(*fd, TRUE);
     }
 
-  child_manager_register(self->process_info.pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify)log_pipe_unref);
+  child_manager_register(self->process_info.pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super),
+                         (GDestroyNotify)log_pipe_unref);
 
   return TRUE;
 }
@@ -381,7 +384,8 @@ afprogram_dd_reopen(AFProgramDestDriver *self)
   if (!afprogram_dd_open_program(self, &fd))
     return FALSE;
 
-  log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_pipe_new(fd), &self->writer_options.proto_options.super));
+  log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_pipe_new(fd),
+                    &self->writer_options.proto_options.super));
   return TRUE;
 }
 
@@ -408,14 +412,15 @@ afprogram_dd_restore_reload_store_item(AFProgramDestDriver *self, GlobalConfig *
 {
   const gchar *persist_name = afprogram_dd_format_persist_name((const LogPipe *)self);
   AFProgramReloadStoreItem *restored_info =
-      (AFProgramReloadStoreItem *)cfg_persist_config_fetch(cfg, persist_name);
+    (AFProgramReloadStoreItem *)cfg_persist_config_fetch(cfg, persist_name);
 
   if (restored_info)
     {
       self->process_info.pid = restored_info->pid;
       self->writer = restored_info->writer;
 
-      child_manager_register(self->process_info.pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify)log_pipe_unref);
+      child_manager_register(self->process_info.pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super),
+                             (GDestroyNotify)log_pipe_unref);
       g_free(restored_info);
     }
 
@@ -445,7 +450,8 @@ afprogram_dd_init(LogPipe *s)
                          SCS_PROGRAM,
                          self->super.super.id,
                          self->process_info.cmdline->str);
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_queue_persist_name(self)));
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super,
+                       afprogram_dd_format_queue_persist_name(self)));
 
   if (!log_pipe_init((LogPipe *) self->writer))
     {

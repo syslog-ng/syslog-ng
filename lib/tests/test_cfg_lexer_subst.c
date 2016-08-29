@@ -192,7 +192,8 @@ test_backtick_as_a_quoted_character_in_a_string_results_in_failure(void)
 {
   CfgLexerSubst *subst = construct_object();
 
-  assert_invoke_failure(subst, "foo \"string \\`arg`\" bar", "cannot subsitute backticked values right after a string quote character");
+  assert_invoke_failure(subst, "foo \"string \\`arg`\" bar",
+                        "cannot subsitute backticked values right after a string quote character");
   cfg_lexer_subst_free(subst);
 }
 
@@ -233,7 +234,8 @@ test_values_are_inserted_within_strings(void)
 static void
 test_string_literals_are_inserted_into_strings_without_quotes(void)
 {
-  const gchar *additional_values[] = {
+  const gchar *additional_values[] =
+  {
     "simple_string_with_whitespace", "  \"string_with_whitespace\"   ",
     NULL, NULL
   };
@@ -243,14 +245,16 @@ test_string_literals_are_inserted_into_strings_without_quotes(void)
   assert_invoke_result(subst, "foo \"x `simple_string` y\" bar", "foo \"x simple_string_value y\" bar");
   /* apostrophes */
   assert_invoke_result(subst, "foo 'x `simple_string` y' bar", "foo 'x simple_string_value y' bar");
-  assert_invoke_result(subst, "foo \"x `simple_string_with_whitespace` y\" bar", "foo \"x string_with_whitespace y\" bar");
+  assert_invoke_result(subst, "foo \"x `simple_string_with_whitespace` y\" bar",
+                       "foo \"x string_with_whitespace y\" bar");
   cfg_lexer_subst_free(subst);
 }
 
 static void
 test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim(void)
 {
-  const gchar *additional_values[] = {
+  const gchar *additional_values[] =
+  {
     "half_string", "\"halfstring",
     "tokens_that_start_with_string", "\"str\", token",
     "tokens_enclosed_in_strings", "\"str1\", token, \"str2\"",
@@ -261,34 +265,39 @@ test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim(void)
   assert_invoke_result(subst, "foo \"x `simple_string` y\" bar", "foo \"x simple_string_value y\" bar");
   assert_invoke_result(subst, "foo \"x `half_string` y\" bar", "foo \"x \"halfstring y\" bar");
   assert_invoke_result(subst, "foo \"x `tokens_that_start_with_string` y\" bar", "foo \"x \"str\", token y\" bar");
-  assert_invoke_result(subst, "foo \"x `tokens_enclosed_in_strings` y\" bar", "foo \"x \"str1\", token, \"str2\" y\" bar");
+  assert_invoke_result(subst, "foo \"x `tokens_enclosed_in_strings` y\" bar",
+                       "foo \"x \"str1\", token, \"str2\" y\" bar");
   cfg_lexer_subst_free(subst);
 }
 
 static void
 test_strings_with_special_chars_are_properly_encoded_in_strings(void)
 {
-  const gchar *additional_values[] = {
+  const gchar *additional_values[] =
+  {
     "string_with_characters_that_need_quoting", "\"quote: \\\", newline: \\r\\n, backslash: \\\\\"",
     NULL, NULL
   };
   CfgLexerSubst *subst = construct_object_with_values(additional_values);
 
-  assert_invoke_result(subst, "foo \"x `string_with_characters_that_need_quoting` y\" bar", "foo \"x quote: \\\", newline: \\r\\n, backslash: \\\\ y\" bar");
+  assert_invoke_result(subst, "foo \"x `string_with_characters_that_need_quoting` y\" bar",
+                       "foo \"x quote: \\\", newline: \\r\\n, backslash: \\\\ y\" bar");
   cfg_lexer_subst_free(subst);
 }
 
 static void
 test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring(void)
 {
-  const gchar *additional_values[] = {
+  const gchar *additional_values[] =
+  {
     "string_with_apostrophe", "\"'foo'\"",
     NULL, NULL
   };
   CfgLexerSubst *subst = construct_object_with_values(additional_values);
 
   assert_invoke_result(subst, "foo \"x `string_with_apostrophe` y\" bar", "foo \"x 'foo' y\" bar");
-  assert_invoke_failure(subst, "foo 'x `string_with_apostrophe` y' bar", "cannot represent apostrophes within apostroph-enclosed string");
+  assert_invoke_failure(subst, "foo 'x `string_with_apostrophe` y' bar",
+                        "cannot represent apostrophes within apostroph-enclosed string");
   cfg_lexer_subst_free(subst);
 }
 

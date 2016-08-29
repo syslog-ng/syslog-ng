@@ -71,12 +71,12 @@ static gboolean
 _deserialize_sdata(LogMessage *self, SerializeArchive *sa)
 {
   if (!serialize_read_uint8(sa, &self->num_sdata))
-      return FALSE;
+    return FALSE;
 
   if (!serialize_read_uint8(sa, &self->alloc_sdata))
     return FALSE;
 
-  self->sdata = (NVHandle*) g_malloc(sizeof(NVHandle)*self->alloc_sdata);
+  self->sdata = (NVHandle *) g_malloc(sizeof(NVHandle)*self->alloc_sdata);
   serialize_read_uint32_array(sa, (guint32 *) self->sdata, self->num_sdata);
   return TRUE;
 }
@@ -89,14 +89,14 @@ _deserialize_message(LogMessageSerializationState *state)
   SerializeArchive *sa = state->sa;
 
   if (!serialize_read_uint64(sa, &msg->rcptid))
-     return FALSE;
+    return FALSE;
   if (!serialize_read_uint32(sa, &msg->flags))
-     return FALSE;
+    return FALSE;
   msg->flags |= LF_STATE_MASK;
   if (!serialize_read_uint16(sa, &msg->pri))
-     return FALSE;
+    return FALSE;
   if (!g_sockaddr_deserialize(sa, &msg->saddr))
-     return FALSE;
+    return FALSE;
   if (!timestamp_deserialize(sa, msg->timestamps))
     return FALSE;
   if (!serialize_read_uint32(sa, &msg->host_id))

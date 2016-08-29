@@ -101,137 +101,149 @@ test_parser(gchar **test)
   _destroy_pattern_db();
 }
 
-gchar * test1 [] = {
-"@ANYSTRING:TEST@",
-"ab ba ab",
-"ab ba ab",
-"1234ab",
-"ab1234",
-"1.2.3.4",
-"ab  1234  ba",
-"&lt;ab ba&gt;",
-NULL,
-NULL
+gchar *test1 [] =
+{
+  "@ANYSTRING:TEST@",
+  "ab ba ab",
+  "ab ba ab",
+  "1234ab",
+  "ab1234",
+  "1.2.3.4",
+  "ab  1234  ba",
+  "&lt;ab ba&gt;",
+  NULL,
+  NULL
 };
 
-gchar * test2 [] = {
-"@DOUBLE:TEST@",
-"1234",
-"1234.567",
-"1.2.3.4",
-"1234ab",
-NULL, // not match
-"ab1234",NULL
+gchar *test2 [] =
+{
+  "@DOUBLE:TEST@",
+  "1234",
+  "1234.567",
+  "1.2.3.4",
+  "1234ab",
+  NULL, // not match
+  "ab1234",NULL
 };
 
-gchar * test3 [] = {
-"@ESTRING:TEST:endmark@",
-"ab ba endmark",
-NULL,
-"ab ba",NULL
+gchar *test3 [] =
+{
+  "@ESTRING:TEST:endmark@",
+  "ab ba endmark",
+  NULL,
+  "ab ba",NULL
 };
 
-gchar * test4 [] = {
-"@ESTRING:TEST:&gt;@",
-"ab ba > ab",
-NULL,
-"ab ba",NULL
+gchar *test4 [] =
+{
+  "@ESTRING:TEST:&gt;@",
+  "ab ba > ab",
+  NULL,
+  "ab ba",NULL
 };
 
-gchar * test5 [] = {
-"@FLOAT:TEST@",
-"1234",
-"1234.567",
-"1.2.3.4",
-"1234ab",
-NULL, // not match
-"ab1234",NULL
+gchar *test5 [] =
+{
+  "@FLOAT:TEST@",
+  "1234",
+  "1234.567",
+  "1.2.3.4",
+  "1234ab",
+  NULL, // not match
+  "ab1234",NULL
 };
 
-gchar * test6 [] = {
-"@SET:TEST: 	@",
-" a ",
-"  a ",
-" 	a ",
-" 	 a ",
-NULL, // not match
-"ab1234",NULL
+gchar *test6 [] =
+{
+  "@SET:TEST: 	@",
+  " a ",
+  "  a ",
+  " 	a ",
+  " 	 a ",
+  NULL, // not match
+  "ab1234",NULL
 };
 
-gchar * test7 [] = {
-"@IPv4:TEST@",
-"1.2.3.4",
-"0.0.0.0",
-"255.255.255.255",
-NULL,
-"256.256.256.256",
-"1234",
-"ab1234",
-"ab1.2.3.4",
-"1,2,3,4",NULL
+gchar *test7 [] =
+{
+  "@IPv4:TEST@",
+  "1.2.3.4",
+  "0.0.0.0",
+  "255.255.255.255",
+  NULL,
+  "256.256.256.256",
+  "1234",
+  "ab1234",
+  "ab1.2.3.4",
+  "1,2,3,4",NULL
 };
 
-gchar * test8 [] = {
-"@IPv6:TEST@",
-"2001:0db8:0000:0000:0000:0000:1428:57ab",
-"2001:0db8:0000:0000:0000::1428:57ab",
-"2001:0db8:0:0:0:0:1428:57ab",
-"2001:0db8:0:0::1428:57ab",
-"2001:0db8::1428:57ab",
-"2001:db8::1428:57ab",
-NULL,
-"2001:0db8::34d2::1428:57ab",NULL
+gchar *test8 [] =
+{
+  "@IPv6:TEST@",
+  "2001:0db8:0000:0000:0000:0000:1428:57ab",
+  "2001:0db8:0000:0000:0000::1428:57ab",
+  "2001:0db8:0:0:0:0:1428:57ab",
+  "2001:0db8:0:0::1428:57ab",
+  "2001:0db8::1428:57ab",
+  "2001:db8::1428:57ab",
+  NULL,
+  "2001:0db8::34d2::1428:57ab",NULL
 };
 
-gchar * test9 [] = {
-"@IPvANY:TEST@",
-"1.2.3.4",
-"0.0.0.0",
-"255.255.255.255",
-"2001:0db8:0000:0000:0000:0000:1428:57ab",
-"2001:0db8:0000:0000:0000::1428:57ab",
-"2001:0db8:0:0:0:0:1428:57ab",
-"2001:0db8:0:0::1428:57ab",
-"2001:0db8::1428:57ab",
-"2001:db8::1428:57ab",
-NULL,
-"256.256.256.256",
-"1234",
-"ab1234",
-"ab1.2.3.4",
-"1,2,3,4",
-"2001:0db8::34d2::1428:57ab",NULL
+gchar *test9 [] =
+{
+  "@IPvANY:TEST@",
+  "1.2.3.4",
+  "0.0.0.0",
+  "255.255.255.255",
+  "2001:0db8:0000:0000:0000:0000:1428:57ab",
+  "2001:0db8:0000:0000:0000::1428:57ab",
+  "2001:0db8:0:0:0:0:1428:57ab",
+  "2001:0db8:0:0::1428:57ab",
+  "2001:0db8::1428:57ab",
+  "2001:db8::1428:57ab",
+  NULL,
+  "256.256.256.256",
+  "1234",
+  "ab1234",
+  "ab1.2.3.4",
+  "1,2,3,4",
+  "2001:0db8::34d2::1428:57ab",NULL
 };
 
-gchar * test10 [] = {
-"@NUMBER:TEST@",
-"1234",
-"1.2",
-"1.2.3.4",
-"1234ab",
-NULL,
-"ab1234",
-NULL
+gchar *test10 [] =
+{
+  "@NUMBER:TEST@",
+  "1234",
+  "1.2",
+  "1.2.3.4",
+  "1234ab",
+  NULL,
+  "ab1234",
+  NULL
 };
 
-gchar * test11 [] = {
-"@QSTRING:TEST:&lt;&gt;@",
-"<aa bb>",
-"< aabb >",
-NULL,
-"aabb>",
-"<aabb",NULL
+gchar *test11 [] =
+{
+  "@QSTRING:TEST:&lt;&gt;@",
+  "<aa bb>",
+  "< aabb >",
+  NULL,
+  "aabb>",
+  "<aabb",NULL
 };
 
-gchar * test12 [] = {
-"@STRING:TEST@",
-"aabb",
-"aa bb",
-"1234",
-"ab1234",
-"1234bb",
-"1.2.3.4",
-NULL,NULL
+gchar *test12 [] =
+{
+  "@STRING:TEST@",
+  "aabb",
+  "aa bb",
+  "1234",
+  "ab1234",
+  "1234bb",
+  "1.2.3.4",
+  NULL,NULL
 };
 
 gchar **parsers[] = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10, test11, test12, NULL};

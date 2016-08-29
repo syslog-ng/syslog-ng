@@ -26,9 +26,10 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 
-typedef struct {
+typedef struct
+{
   YYSTYPE *yylval;
-  YYLTYPE * yylloc;
+  YYLTYPE *yylloc;
   CfgLexer *lexer;
 } TestParser;
 
@@ -86,20 +87,20 @@ test_parser_free(TestParser *self)
 
 TestParser *parser = NULL;
 
-#define lexer_testcase_begin(func, args) 			\
-  do                                          			\
-    {                                         			\
+#define lexer_testcase_begin(func, args)      \
+  do                                                \
+    {                                               \
       testcase_begin("%s(%s)", func, args);                     \
       parser = test_parser_new();                               \
-    }                                         			\
+    }                                               \
   while (0)
 
-#define lexer_testcase_end()				        \
-  do								\
-    {								\
+#define lexer_testcase_end()                \
+  do                \
+    {               \
       test_parser_free(parser);                                 \
-      testcase_end();						\
-    }								\
+      testcase_end();           \
+    }               \
   while (0)
 
 static void

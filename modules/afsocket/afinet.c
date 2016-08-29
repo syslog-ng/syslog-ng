@@ -66,7 +66,7 @@ afinet_lookup_proto(gint protocol_number, gint sock_type)
   struct protoent *ipproto_ent = getprotobynumber(protocol_number);
 
   return ipproto_ent ? ipproto_ent->p_name
-                     : ((sock_type == SOCK_STREAM) ? "tcp" : "udp");
+         : ((sock_type == SOCK_STREAM) ? "tcp" : "udp");
 }
 
 guint16

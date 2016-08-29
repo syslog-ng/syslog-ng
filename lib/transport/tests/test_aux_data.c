@@ -33,11 +33,11 @@
     }                                                                   \
   while (0)
 
-#define aux_data_testcase_end()                             		\
-  do                                                            	\
-    {                                                           	\
-      testcase_end();                                           	\
-    }                                                           	\
+#define aux_data_testcase_end()                                 \
+  do                                                              \
+    {                                                             \
+      testcase_end();                                             \
+    }                                                             \
   while (0)
 
 
@@ -45,7 +45,7 @@ static LogTransportAuxData *
 construct_empty_aux(void)
 {
   LogTransportAuxData *aux = g_new(LogTransportAuxData, 1);
-  
+
   log_transport_aux_data_init(aux);
   return aux;
 }
@@ -76,7 +76,7 @@ test_aux_data_reinit_returns_aux_into_initial_state_without_leaks(void)
 
   log_transport_aux_data_reinit(aux);
   assert_null(aux->peer_addr, "aux->peer_addr is not NULL after reinit");
-  
+
   free_aux(aux);
 }
 
@@ -84,7 +84,7 @@ static void
 _concat_nvpairs_helper(const gchar *name, const gchar *value, gsize value_len, gpointer user_data)
 {
   GString *concatenated = (GString *) user_data;
-  
+
   g_string_sprintfa(concatenated, "%s=%s\n", name, value);
   assert_gint(value_len, strlen(value), "foreach() length mismatch");
 }
@@ -123,9 +123,9 @@ test_aux_data_copy_creates_an_identical_copy(void)
   LogTransportAuxData *aux = construct_aux_with_some_data();
   LogTransportAuxData aux_copy;
   gchar *orig, *copy;
-  
+
   log_transport_aux_data_copy(&aux_copy, aux);
-  
+
   orig = _concat_nvpairs(aux);
   copy = _concat_nvpairs(&aux_copy);
   assert_string(orig, copy, "copy incorrectly copied aux->nvpairs");
@@ -141,13 +141,14 @@ test_aux_data_copy_separates_the_copies(void)
   LogTransportAuxData *aux = construct_aux_with_some_data();
   LogTransportAuxData aux_copy;
   gchar *orig, *copy;
-  
+
   log_transport_aux_data_copy(&aux_copy, aux);
   log_transport_aux_data_add_nv_pair(aux, "super", "lativus");
-  
+
   orig = _concat_nvpairs(aux);
   copy = _concat_nvpairs(&aux_copy);
-  assert_false(strcmp(orig, copy) == 0, "copy incorrectly copied aux->nvpairs as change to one of them affected the other, orig=%s, copy=%s", orig, copy);
+  assert_false(strcmp(orig, copy) == 0,
+               "copy incorrectly copied aux->nvpairs as change to one of them affected the other, orig=%s, copy=%s", orig, copy);
   g_free(orig);
   g_free(copy);
   log_transport_aux_data_destroy(&aux_copy);

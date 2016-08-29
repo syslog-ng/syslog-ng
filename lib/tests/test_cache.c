@@ -68,7 +68,8 @@ assert_cache_lookup_uncached(Cache *c, const gchar *key)
 {
   fetch_count = 0;
   assert_cache_lookup(c, key);
-  assert_gint(fetch_count, 1, "Cache lookup expected when looking up uncached elements, but one didn't arrive key=\"%s\"", key);
+  assert_gint(fetch_count, 1, "Cache lookup expected when looking up uncached elements, but one didn't arrive key=\"%s\"",
+              key);
 }
 
 static void
@@ -76,7 +77,8 @@ assert_cache_lookup_cached(Cache *c, const gchar *key)
 {
   fetch_count = 0;
   assert_cache_lookup(c, key);
-  assert_gint(fetch_count, 0, "Cache lookup unexpected when looking up cached elements, but one did arrive key=\"%s\"", key);
+  assert_gint(fetch_count, 0, "Cache lookup unexpected when looking up cached elements, but one did arrive key=\"%s\"",
+              key);
 }
 
 void
