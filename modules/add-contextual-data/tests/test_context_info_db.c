@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 static void
 _count_records(gpointer arg, const ContextualDataRecord *record)
@@ -194,7 +195,7 @@ Test(add_contextual_data, test_inserted_nv_pairs)
   ContextInfoDB *context_info_db = context_info_db_new();
   _fill_context_info_db(context_info_db, "selector", "name", "value", 1, 3);
 
-  TestNVPair expected_nvpairs[3] =
+  TestNVPair expected_nvpairs[] =
   {
     {.name = "name-0.0",.value = "value-0.0"},
     {.name = "name-0.1",.value = "value-0.1"},
@@ -202,7 +203,7 @@ Test(add_contextual_data, test_inserted_nv_pairs)
   };
 
   _assert_context_info_db_contains_name_value_pairs_by_selector
-  (context_info_db, "selector-0", expected_nvpairs, 3);
+  (context_info_db, "selector-0", expected_nvpairs, ARRAY_SIZE(expected_nvpairs));
   context_info_db_unref(context_info_db);
 }
 
@@ -224,18 +225,18 @@ Test(add_contextual_data, test_import_with_valid_csv)
             "The context_info_db_is_indexed reports False after successful import&load operations.");
   fclose(fp);
 
-  TestNVPair expected_nvpairs_selector1[2] =
+  TestNVPair expected_nvpairs_selector1[] =
   {
     {.name = "name1",.value = "value1"},
     {.name = "name1.1",.value = "value1.1"},
   };
 
-  TestNVPair expected_nvpairs_selector2[1] =
+  TestNVPair expected_nvpairs_selector2[] =
   {
     {.name = "name2",.value = "value2"},
   };
 
-  TestNVPair expected_nvpairs_selector3[1] =
+  TestNVPair expected_nvpairs_selector3[] =
   {
     {.name = "name3",.value = "value3"},
   };
@@ -243,15 +244,15 @@ Test(add_contextual_data, test_import_with_valid_csv)
   _assert_context_info_db_contains_name_value_pairs_by_selector(db,
       "selector1",
       expected_nvpairs_selector1,
-      2);
+      ARRAY_SIZE(expected_nvpairs_selector1));
   _assert_context_info_db_contains_name_value_pairs_by_selector(db,
       "selector2",
       expected_nvpairs_selector2,
-      1);
+      ARRAY_SIZE(expected_nvpairs_selector2));
   _assert_context_info_db_contains_name_value_pairs_by_selector(db,
       "selector3",
       expected_nvpairs_selector3,
-      1);
+      ARRAY_SIZE(expected_nvpairs_selector3));
 
   context_info_db_free(db);
   contextual_data_record_scanner_free(scanner);
