@@ -88,6 +88,8 @@ guint64 sum_count;
 struct timeval sum_time;
 gint raw_message_length;
 
+SSL_CTX *ssl_ctx;
+
 typedef ssize_t (*send_data_t)(void *user_data, void *buf, size_t length);
 
 static ssize_t
@@ -559,20 +561,10 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
 {
   int ret = 0;
   int err;
-  SSL_CTX *ctx;
   SSL *ssl;
 
-  /* Initialize SSL library */
-  OpenSSL_add_ssl_algorithms();
-
-  if (NULL == (ctx = SSL_CTX_new(SSLv23_client_method())))
+  if (NULL == (ssl = SSL_new(ssl_ctx)))
     return 1;
-
-  if (NULL == (ssl = SSL_new(ctx)))
-    return 1;
-
-  SSL_load_error_strings();
-  ERR_load_crypto_strings();
 
   SSL_set_fd (ssl, sock);
   if (-1 == (err = SSL_connect(ssl)))
@@ -588,7 +580,6 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
 
   /* Clean up. */
   SSL_free (ssl);
-  SSL_CTX_free (ctx);
 
   return ret;
 }
@@ -608,6 +599,49 @@ gboolean threads_stop;
 gint active_finished;
 gint connect_finished;
 guint64 sum_count;
+
+/* Multithreaded OpenSSL */
+GMutex **ssl_lock_cs;
+
+static void
+ssl_threadid_callback(CRYPTO_THREADID *tid)
+{
+  CRYPTO_THREADID_set_pointer(tid, g_thread_self());
+}
+
+static void
+ssl_locking_callback(int mode, int n, const char *file, int line)
+{
+  if (mode & CRYPTO_LOCK)
+    g_mutex_lock(ssl_lock_cs[n]);
+  else
+    g_mutex_unlock(ssl_lock_cs[n]);
+}
+
+static void
+ssl_thread_setup(void)
+{
+  int i;
+  ssl_lock_cs = g_malloc(CRYPTO_num_locks() * sizeof(GMutex *));
+
+  for (i = 0; i < CRYPTO_num_locks(); ++i)
+    ssl_lock_cs[i] = g_mutex_new();
+
+  CRYPTO_THREADID_set_callback(ssl_threadid_callback);
+  CRYPTO_set_locking_callback(ssl_locking_callback);
+}
+
+static void
+ssl_thread_cleanup(void)
+{
+  int i;
+  CRYPTO_set_locking_callback(NULL);
+
+  for (i = 0; i < CRYPTO_num_locks(); ++i)
+    g_mutex_free(ssl_lock_cs[i]);
+
+  g_free(ssl_lock_cs);
+}
 
 gpointer
 idle_thread(gpointer st)
@@ -908,6 +942,19 @@ main(int argc, char *argv[])
       return 2;
     }
 
+  if (usessl)
+    {
+      /* Initialize SSL library */
+      OpenSSL_add_ssl_algorithms();
+      if (NULL == (ssl_ctx = SSL_CTX_new(SSLv23_client_method())))
+        return 1;
+
+      SSL_load_error_strings();
+      ERR_load_crypto_strings();
+
+      ssl_thread_setup();
+    }
+
   /* used for startup & to signal inactive threads to exit */
   thread_cond = g_cond_new();
   /* active threads signal when they are ready */
@@ -959,6 +1006,12 @@ main(int argc, char *argv[])
           (double) sum_count * raw_message_length * (USEC_PER_SEC / 1024) / diff_usec);
 
 stop_and_exit:
+  if (usessl)
+    {
+      SSL_CTX_free(ssl_ctx);
+      ssl_thread_cleanup();
+    }
+
   threads_start = TRUE;
   threads_stop = TRUE;
   g_mutex_lock(thread_lock);
