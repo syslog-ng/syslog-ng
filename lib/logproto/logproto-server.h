@@ -44,6 +44,7 @@ struct _LogProtoServerOptions
   gint max_msg_size;
   gint max_buffer_size;
   gint init_buffer_size;
+  gboolean position_tracking_enabled;
 };
 
 typedef union LogProtoServerOptionsStorage

@@ -152,6 +152,7 @@ log_proto_server_options_defaults(LogProtoServerOptions *options)
   options->max_msg_size = -1;
   options->init_buffer_size = -1;
   options->max_buffer_size = -1;
+  options->position_tracking_enabled = FALSE;
 }
 
 void

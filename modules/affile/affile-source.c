@@ -233,17 +233,22 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
   format_handler = self->reader_options.parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
     {
+      proto_options->position_tracking_enabled = TRUE;
       return format_handler->construct_proto(&self->reader_options.parse_options, transport, proto_options);
     }
 
   if (self->pad_size)
-    return log_proto_padded_record_server_new(transport, proto_options, self->pad_size);
+    {
+      proto_options->position_tracking_enabled = TRUE;
+      return log_proto_padded_record_server_new(transport, proto_options, self->pad_size);
+    }
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
   else if (affile_is_linux_dev_kmsg(self->filename->str))
     return log_proto_dgram_server_new(transport, proto_options);
   else
     {
+      proto_options->position_tracking_enabled = TRUE;
       switch (self->multi_line_mode)
         {
         case MLM_INDENTED:
