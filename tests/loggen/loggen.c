@@ -22,6 +22,7 @@
  */
 
 #include "syslog-ng.h"
+#include "crypto.h"
 
 #include <syslog-ng-config.h>
 #include <stdio.h>
@@ -562,17 +563,11 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
   SSL_CTX *ctx;
   SSL *ssl;
 
-  /* Initialize SSL library */
-  OpenSSL_add_ssl_algorithms();
-
   if (NULL == (ctx = SSL_CTX_new(SSLv23_client_method())))
     return 1;
 
   if (NULL == (ssl = SSL_new(ctx)))
     return 1;
-
-  SSL_load_error_strings();
-  ERR_load_crypto_strings();
 
   SSL_set_fd (ssl, sock);
   if (-1 == (err = SSL_connect(ssl)))
@@ -908,6 +903,9 @@ main(int argc, char *argv[])
       return 2;
     }
 
+  if (usessl)
+    crypto_init();
+
   /* used for startup & to signal inactive threads to exit */
   thread_cond = g_cond_new();
   /* active threads signal when they are ready */
@@ -959,6 +957,9 @@ main(int argc, char *argv[])
           (double) sum_count * raw_message_length * (USEC_PER_SEC / 1024) / diff_usec);
 
 stop_and_exit:
+  if (usessl)
+    crypto_deinit();
+
   threads_start = TRUE;
   threads_stop = TRUE;
   g_mutex_lock(thread_lock);
