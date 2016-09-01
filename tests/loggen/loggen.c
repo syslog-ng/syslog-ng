@@ -248,24 +248,28 @@ parse_line(const char *line, char *host, char *program, char *pid, char **msg)
   return 1;
 }
 
+static size_t
+_get_now_timestamp(char *stamp, gsize stamp_size)
+{
+  struct timeval now;
+  struct tm tm;
+
+  gettimeofday(&now, NULL);
+  localtime_r(&now.tv_sec, &tm);
+  return strftime(stamp, stamp_size, "%Y-%m-%dT%H:%M:%S", &tm);
+}
+
 static int
 gen_next_message(FILE *source, char *buf, int buflen)
 {
   static int lineno = 0;
-  struct tm tm;
-  struct timeval now;
-  char line[MAX_MESSAGE_LENGTH+1];
-  char stamp[32];
   int linelen;
-  int tslen;
-  char *temp;
 
   char host[128], program[128], pid[16];
   char *msg = NULL;
 
   while (1)
     {
-      temp = NULL;
       if (feof(source))
         {
           if (loop_reading)
@@ -276,14 +280,14 @@ gen_next_message(FILE *source, char *buf, int buflen)
           else
             return -1;
         }
-      temp = fgets(line, sizeof(line), source);
+      char *temp = fgets(buf, buflen, source);
       if (!temp)
         {
           if (loop_reading)
             {
               // Restart reading from the beginning of the file
               rewind(source);
-              temp = fgets(line, sizeof(line), source);
+              temp = fgets(buf, buflen, source);
             }
           else
             return -1;
@@ -291,20 +295,20 @@ gen_next_message(FILE *source, char *buf, int buflen)
       if (dont_parse)
         break;
 
-      if (parse_line(line, host, program, pid, &msg) > 0)
+      if (parse_line(buf, host, program, pid, &msg) > 0)
         break;
 
       fprintf(stderr, "\rInvalid line %d                  \n", ++lineno);
     }
-  gettimeofday(&now, NULL);
-  localtime_r(&now.tv_sec, &tm);
-  tslen = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", &tm);
 
   if (dont_parse)
     {
-      linelen = snprintf(buf, buflen-1, "%s", line);
+      linelen = strnlen(buf, buflen);
       return linelen;
     }
+
+  char stamp[32];
+  int tslen = _get_now_timestamp(stamp, sizeof(stamp));
 
   if (syslog_proto)
     {
