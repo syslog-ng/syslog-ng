@@ -1008,9 +1008,9 @@ AC_DEFINE_UNQUOTED(ENABLE_LEGACY_MONGODB_OPTIONS, [$enable_legacy_mongodb_option
 
 if test "x$with_mongoc" = "xauto"; then
   with_mongoc="system"
-  PKG_CHECK_MODULES(LIBMONGO, libmongoc >= $LMC_MIN_VERSION,,with_mongoc="auto-internal")
+  PKG_CHECK_MODULES(LIBMONGO, libmongoc-1.0 >= $LMC_MIN_VERSION,,with_mongoc="auto-internal")
 elif test "x$with_mongoc" = "xsystem"; then
-  PKG_CHECK_MODULES(LIBMONGO, libmongoc >= $LMC_MIN_VERSION)
+  PKG_CHECK_MODULES(LIBMONGO, libmongoc-1.0 >= $LMC_MIN_VERSION)
 fi
 
 if test "x$with_mongoc" = "xinternal" || test "x$with_mongoc" = "xauto-internal"; then
