@@ -1166,7 +1166,7 @@ if test "x$with_librabbitmq_client" = "xinternal"; then
         with_librabbitmq_client="no"
     fi
 elif test "x$with_librabbitmq_client" = "xsystem"; then
-    PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LIBRABBITMQ_MIN_VERSION, , enable_amqp = "no")
+    PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LIBRABBITMQ_MIN_VERSION,, enable_amqp="no")
 fi
 
 if test "x$with_librabbitmq_client" = "xno"; then
