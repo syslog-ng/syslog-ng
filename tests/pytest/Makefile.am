@@ -1,65 +1,80 @@
 EXTRA_DIST	+= \
-		./bash_scripts/check_for_code_duplication.sh \
-		./bash_scripts/create_class_diagram.sh \
-		./bash_scripts/create_or_update_syslog_ng_ose_test_envs.sh \
-		./bash_scripts/find_unused_functions.sh \
-		./bash_scripts/run_callgraph_on_selftest.sh \
-		./bash_scripts/run_coverage_on_selftest.sh \
-		./bash_scripts/run_coverage_on_slng_code_base_when_running_testdb.sh \
-		./bash_scripts/run_profiler_on_selftest.sh \
-		./bash_scripts/run_profiler_on_syslog_ng_test.sh \
-		./func_tests/generate_tests_for_options.py \
-		./func_tests/__init__.py \
-		./func_tests/ose_sandbox/__init__.py \
-		./func_tests/ose_sandbox/ssl.crt \
-		./func_tests/ose_sandbox/ssl.key \
-		./func_tests/ose_sandbox/test_1.py \
-		./func_tests/parser_tests/__init__.py \
-		./func_tests/parser_tests/setup_parser.py \
-		./func_tests/parser_tests/test_database.py \
-		./func_tests/parser_tests/test_default_acd.py \
-		./func_tests/testcase.py \
-		./run_tests.py \
-		./src/__init__.py \
-		./src/options_and_drivers/db_drivers.py \
-		./src/options_and_drivers/db_parser_options.py \
-		./src/options_and_drivers/driver_data_provider.py \
-		./src/options_and_drivers/__init__.py \
-		./src/options_and_drivers/option_data_provider.py \
-		./src/send_receive_logs/__init__.py \
-		./src/send_receive_logs/log_generator/__init__.py \
-		./src/send_receive_logs/log_generator/log_generator.py \
-		./src/send_receive_logs/log_receiver/__init__.py \
-		./src/send_receive_logs/log_receiver/log_receiver.py \
-		./src/send_receive_logs/log_sender/__init__.py \
-		./src/send_receive_logs/log_sender/log_sender.py \
-		./src/syslog_ng/binary_syslog_ng/binary_syslog_ng.py \
-		./src/syslog_ng/binary_syslog_ng_ctl/binary_syslog_ng_ctl.py \
-		./src/syslog_ng/binary_syslog_ng_ctl/__init__.py \
-		./src/syslog_ng/binary_syslog_ng_ctl/syslog_ng_ctl_utils.py \
-		./src/syslog_ng/binary_syslog_ng/__init__.py \
-		./src/syslog_ng/binary_syslog_ng/syslog_ng_utils.py \
-		./src/syslog_ng/config_generator/config_generator.py \
-		./src/syslog_ng/config_generator/config_template.pystache \
-		./src/syslog_ng/config_generator/__init__.py \
-		./src/syslog_ng/config_generator/selftest/__init__.py \
-		./src/syslog_ng/config_generator/selftest/test_config_generator.py \
-		./src/syslog_ng/__init__.py \
-		./src/syslog_ng/path_handler/__init__.py \
-		./src/syslog_ng/path_handler/path_handler.py \
-		./src/testrun/__init__.py \
-		./src/testrun/testrun_configuration_reader/__init__.py \
-		./src/testrun/testrun_configuration_reader/testrun_configuration_reader.py \
-		./src/testrun/testrun_reporter/__init__.py \
-		./src/testrun/testrun_reporter/testrun_reporter.py \
-		./src/testrun/testrun_validator/__init__.py \
-		./src/testrun/testrun_validator/testrun_validator.py \
-		./src/work_with_files/file_based_processor.py \
-		./src/work_with_files/__init__.py \
-		./src/work_with_process/__init__.py \
-		./src/work_with_process/run_command.py \
-		./src/work_with_sockets/__init__.py \
-		./src/work_with_sockets/network_based_processor.py
+./bash_scripts/check_for_code_duplication.sh \
+./bash_scripts/create_class_diagram.sh \
+./bash_scripts/create_or_update_syslog_ng_ose_test_envs.sh \
+./bash_scripts/find_unused_functions.sh \
+./bash_scripts/run_callgraph_on_selftest.sh \
+./bash_scripts/run_coverage_on_selftest.sh \
+./bash_scripts/run_coverage_on_slng_code_base_when_running_testdb.sh \
+./bash_scripts/run_profiler_on_selftest.sh \
+./bash_scripts/run_profiler_on_syslog_ng_test.sh \
+./func_tests/generate_tests_for_options.py \
+./func_tests/__init__.py \
+./func_tests/modules/__init__.py \
+./func_tests/ose_sandbox/__init__.py \
+./func_tests/ose_sandbox/test_1.py \
+./functional_tests/common/__init__.py \
+./functional_tests/common/setup_and_teardown.py \
+./functional_tests/common/testcase.py \
+./functional_tests/common/test_parametrization.py \
+./functional_tests/individual_tests/destination/python/__init__.py \
+./functional_tests/individual_tests/destination/python/sngtestmod.py \
+./functional_tests/individual_tests/destination/python/test_ok_vp_file.py \
+./functional_tests/individual_tests/__init__.py \
+./functional_tests/individual_tests/source_drivers/file_source/__init__.py \
+./functional_tests/individual_tests/source_drivers/file_source/test_default_work.py \
+./functional_tests/individual_tests/source_drivers/__init__.py \
+./functional_tests/individual_tests/source_drivers/tcp_source/__init__.py \
+./functional_tests/individual_tests/source_drivers/tcp_source/test_default_work.py \
+./functional_tests/__init__.py \
+./functional_tests/option_related_tests/__init__.py \
+./run_tests.py \
+./src/common/__init__.py \
+./src/common/run_command.py \
+./src/common/singleton.py \
+./src/common/waiters.py \
+./src/drivers/file/file_driver.py \
+./src/drivers/file/file_reader.py \
+./src/drivers/file/file_writer.py \
+./src/drivers/file/__init__.py \
+./src/drivers/__init__.py \
+./src/drivers/socket/__init__.py \
+./src/drivers/socket/selftest/__init__.py \
+./src/drivers/socket/selftest/test_socket_reader.py \
+./src/drivers/socket/socket_driver.py \
+./src/drivers/socket/socket_reader.py \
+./src/drivers/socket/socket_writer.py \
+./src/__init__.py \
+./src/message/generator/generator.py \
+./src/message/generator/__init__.py \
+./src/message/__init__.py \
+./src/message/receiver/__init__.py \
+./src/message/receiver/receiver.py \
+./src/message/sender/__init__.py \
+./src/message/sender/sender.py \
+./src/registers/file_register.py \
+./src/registers/global_register.py \
+./src/registers/__init__.py \
+./src/registers/port_register.py \
+./src/syslog_ng/configuration/config.py \
+./src/syslog_ng/configuration/__init__.py \
+./src/syslog_ng/configuration/selftest/__init__.py \
+./src/syslog_ng/configuration/selftest/test_generator.py \
+./src/syslog_ng/configuration/selftest/test_syslog_ng_start_with_config.py \
+./src/syslog_ng/configuration/writer.py \
+./src/syslog_ng/driver_database/__init__.py \
+./src/syslog_ng/__init__.py \
+./src/syslog_ng/option_database/__init__.py \
+./src/syslog_ng/syslog_ng_binary/__init__.py \
+./src/syslog_ng/syslog_ng_binary/syslog_ng.py \
+./src/syslog_ng/syslog_ng_ctl/__init__.py \
+./src/syslog_ng/syslog_ng_ctl/syslog_ng_ctl.py \
+./src/syslog_ng/syslog_ng_path/__init__.py \
+./src/syslog_ng/syslog_ng_path/path.py \
+./src/syslog_ng/syslog_ng_utils/__init__.py \
+./src/syslog_ng/syslog_ng_utils/utils.py \
+./src/test_configuration/__init__.py \
+./src/test_configuration/testrun_configuration.py
 
 pytest:
 	sh -c "\
