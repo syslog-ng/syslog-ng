@@ -619,6 +619,10 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     {
       options->parse_options.flags |= LP_CHECK_HOSTNAME;
     }
+  if (!options->super.keep_timestamp)
+    {
+      options->parse_options.flags |= LP_NO_PARSE_DATE;
+    }
   if (options->parse_options.default_pri == 0xFFFF)
     {
       if (options->flags & LR_KERNEL)
