@@ -305,7 +305,7 @@
         <filename moreinfo="none">/opt/syslog-ng/bin/pdbtool</filename>
       </para>
       <para>
-        <filename moreinfo="none">/opt/syslog-ng/etc/syslog-ng/syslog-ng.conf</filename>
+        <filename moreinfo="none">/opt/syslog-ng/etc/syslog-ng.conf</filename>
       </para>
     </refsect1>
     <refsect1>
