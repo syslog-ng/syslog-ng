@@ -82,6 +82,18 @@ msg_format_options_init(MsgFormatOptions *options, GlobalConfig *cfg)
 }
 
 void
+msg_format_options_copy(MsgFormatOptions *options, MsgFormatOptions *source)
+{
+  g_assert(!options->initialized);
+
+  options->format = g_strdup(source->format);
+  options->flags = source->flags;
+  options->default_pri = source->default_pri;
+  options->recv_time_zone = g_strdup(source->recv_time_zone);
+  options->sdata_param_value_max = source->sdata_param_value_max;
+}
+
+void
 msg_format_options_destroy(MsgFormatOptions *options)
 {
   if (options->format)
