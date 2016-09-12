@@ -1314,6 +1314,8 @@ if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
         if test "x$enable_linux_caps" = "xyes" -a "x$has_linux_caps" = "xno"; then
            AC_MSG_ERROR([Cannot enable Linux capability support.])
         fi
+
+        enable_linux_caps="$has_linux_caps"
 fi
 
 if test "x$enable_mongodb" = "xauto"; then
