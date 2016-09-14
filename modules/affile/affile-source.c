@@ -190,7 +190,9 @@ affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
     return poll_fd_events_new(fd);
   else
     {
-      msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it with the current ivykis polling method. Set follow-freq() for regular files or change IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
+      msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it "
+                "with the current ivykis polling method. Set follow-freq() for regular files or change "
+                "IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_int("fd", fd));
       return NULL;
@@ -352,6 +354,15 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 }
 
 static gboolean
+_are_multi_line_settings_invalid(AFFileSourceDriver *self)
+{
+  gboolean is_garbage_mode = self->multi_line_mode == MLM_PREFIX_GARBAGE;
+  gboolean is_suffix_mode = self->multi_line_mode == MLM_PREFIX_SUFFIX;
+
+  return (!is_garbage_mode && !is_suffix_mode) && (self->multi_line_prefix || self->multi_line_garbage);
+}
+
+static gboolean
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
@@ -364,10 +375,10 @@ affile_sd_init(LogPipe *s)
 
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX )
-      && (self->multi_line_prefix || self->multi_line_garbage))
+  if (_are_multi_line_settings_invalid(self))
     {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based "
+                "(prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
       return FALSE;
     }
 
@@ -502,8 +513,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
     }
   else
     {
-      if (affile_is_device_node(filename) ||
-          affile_is_linux_proc_kmsg(filename))
+      if (affile_is_device_node(filename) || affile_is_linux_proc_kmsg(filename))
         self->follow_freq = 0;
       else
         self->follow_freq = 1000;
