@@ -134,9 +134,9 @@ _parse_linux_audit_style_hexdump(KVScanner *self)
 }
 
 KVScanner *
-linux_audit_scanner_new(void)
+linux_audit_scanner_new(KVScanner *base)
 {
-  KVScanner *self = kv_scanner_new();
+  KVScanner *self = base;
   self->parse_value = _parse_linux_audit_style_hexdump;
   return self;
 }

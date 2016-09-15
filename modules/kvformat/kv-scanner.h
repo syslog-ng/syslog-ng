@@ -23,35 +23,75 @@
 #define KV_SCANNER_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "str-utils.h"
+
 
 typedef struct _KVScanner KVScanner;
+
+typedef gboolean KVParseValue(KVScanner *);
+
 struct _KVScanner
 {
   const gchar *input;
   gsize input_pos;
-  gsize input_len;
   GString *key;
   GString *value;
   GString *decoded_value;
   gboolean value_was_quoted;
   gchar value_separator;
   gchar quote_char;
-  gint quote_state;
-  gint next_quote_state;
-  gboolean (*parse_value)(KVScanner *self);
-  void (*free_fn)(KVScanner *self);
+  KVParseValue *parse_value;
+  gboolean (*scan_next)(KVScanner *self);
+  KVScanner* (*clone)(KVScanner *self);
 };
 
-void kv_scanner_set_value_separator(KVScanner *self, gchar value_separator);
-void kv_scanner_input(KVScanner *self, const gchar *input);
-gboolean kv_scanner_scan_next(KVScanner *self);
-const gchar *kv_scanner_get_current_key(KVScanner *self);
-const gchar *kv_scanner_get_current_value(KVScanner *self);
-KVScanner *kv_scanner_clone(KVScanner *self);
-void kv_scanner_free_method(KVScanner *self);
-void kv_scanner_init(KVScanner *self);
-
-KVScanner *kv_scanner_new(void);
+void kv_scanner_init(KVScanner *self, gchar value_separator, KVParseValue *parse_value);
 void kv_scanner_free(KVScanner *self);
+
+static inline void
+kv_scanner_input(KVScanner *self, const gchar *input)
+{
+  self->input = input;
+  self->input_pos = 0;
+}
+
+static inline KVScanner *
+kv_scanner_clone(KVScanner *self)
+{
+  return self->clone(self);
+}
+
+static inline const gchar *
+kv_scanner_get_current_key(KVScanner *self)
+{
+  return self->key->str;
+}
+
+static inline const gchar *
+kv_scanner_get_current_value(KVScanner *self)
+{
+  return self->value->str;
+}
+
+static inline gboolean
+kv_scanner_is_valid_key_character(gchar c)
+{
+  return (c >= 'a' && c <= 'z') ||
+         (c >= 'A' && c <= 'Z') ||
+         (c >= '0' && c <= '9') ||
+         (c == '_') ||
+         (c == '-');
+}
+
+static inline void
+kv_scanner_decode_value(KVScanner *self)
+{
+  if (self->parse_value)
+    {
+      g_string_truncate(self->decoded_value, 0);
+      if (self->parse_value(self))
+        g_string_assign_len(self->value, self->decoded_value->str, self->decoded_value->len);
+    }
+}
 
 #endif

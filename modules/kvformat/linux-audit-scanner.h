@@ -24,6 +24,6 @@
 
 #include "kv-scanner.h"
 
-KVScanner *linux_audit_scanner_new(void);
+KVScanner *linux_audit_scanner_new(KVScanner* base);
 
 #endif

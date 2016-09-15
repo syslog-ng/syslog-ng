@@ -21,15 +21,28 @@
 
 #include "kv-parser.h"
 #include "kv-scanner.h"
+#include "kv-scanner-simple.h"
+#include "kv-scanner-generic.h"
+#include "linux-audit-scanner.h"
 
 typedef struct _KVParser
 {
   LogParser super;
+  gboolean allow_pair_separator_in_value;
+  gchar value_separator;
   gchar *prefix;
   gsize prefix_len;
   GString *formatted_key;
   KVScanner *kv_scanner;
 } KVParser;
+
+gboolean
+kv_parser_is_valid_separator_character(char c)
+{
+  return (c != ' '  &&
+          c != '\'' &&
+          c != '\"' );
+}
 
 void
 kv_parser_set_prefix(LogParser *p, const gchar *prefix)
@@ -50,11 +63,17 @@ kv_parser_set_prefix(LogParser *p, const gchar *prefix)
 }
 
 void
+kv_parser_set_allow_pair_separator_in_value(LogParser *s, gboolean allow_pair_separator_in_value)
+{
+  KVParser *self = (KVParser *) s;
+  self->allow_pair_separator_in_value = allow_pair_separator_in_value;
+}
+
+void
 kv_parser_set_value_separator(LogParser *s, gchar value_separator)
 {
   KVParser *self = (KVParser *) s;
-
-  kv_scanner_set_value_separator(self->kv_scanner, value_separator);
+  self->value_separator = value_separator;
 }
 
 static const gchar *
@@ -71,15 +90,15 @@ _get_formatted_key(KVParser *self, const gchar *key)
 }
 
 static gboolean
-kv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
-                  gsize input_len)
+_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
+         gsize input_len)
 {
   KVParser *self = (KVParser *) s;
 
   log_msg_make_writable(pmsg, path_options);
   /* FIXME: input length */
   kv_scanner_input(self->kv_scanner, input);
-  while (kv_scanner_scan_next(self->kv_scanner))
+  while (self->kv_scanner->scan_next(self->kv_scanner))
     {
 
       /* FIXME: value length */
@@ -91,20 +110,44 @@ kv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_op
 }
 
 static LogPipe *
-kv_parser_clone(LogPipe *s)
+_set_cloned_fields(LogParser *cloned, KVParser *self)
 {
-  KVParser *self = (KVParser *) s;
-  LogParser *cloned;
+  KVParser *cloned_kvparser = (KVParser *)cloned;
 
-  cloned = kv_parser_new(s->cfg, kv_scanner_clone(self->kv_scanner));
   kv_parser_set_prefix(cloned, self->prefix);
   log_parser_set_template(cloned, log_template_ref(self->super.template));
+  kv_parser_set_allow_pair_separator_in_value(cloned, self->allow_pair_separator_in_value);
+  kv_parser_set_value_separator(cloned, self->value_separator);
+  log_parser_set_template(cloned, log_template_ref(self->super.template));
+
+  if (self->kv_scanner)
+    {
+      cloned_kvparser->kv_scanner = kv_scanner_clone(self->kv_scanner);
+    }
 
   return &cloned->super;
 }
 
+static LogPipe *
+_clone(LogPipe *s)
+{
+  KVParser *self = (KVParser *) s;
+  LogParser *cloned = kv_parser_new(s->cfg);
+
+  return _set_cloned_fields(cloned, self);
+}
+
+static LogPipe *
+_clone_linux_audit(LogPipe *s)
+{
+  KVParser *self = (KVParser *) s;
+  LogParser *cloned = kv_parser_linux_audit_new(s->cfg);
+
+  return _set_cloned_fields(cloned, self);
+}
+
 static void
-kv_parser_free(LogPipe *s)
+_free(LogPipe *s)
 {
   KVParser *self = (KVParser *)s;
 
@@ -115,28 +158,89 @@ kv_parser_free(LogPipe *s)
 }
 
 static gboolean
-kv_parser_process_threaded(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
-                           gsize input_len)
+_process_threaded(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
+                  gsize input_len)
 {
   LogParser *self = (LogParser *)log_pipe_clone(&s->super);
 
-  gboolean ok = kv_parser_process(self, pmsg, path_options, input, input_len);
+  gboolean ok = _process(self, pmsg, path_options, input, input_len);
 
   log_pipe_unref(&self->super);
   return ok;
 }
 
-LogParser *
-kv_parser_new(GlobalConfig *cfg, KVScanner *kv_scanner)
+static gboolean
+_init(LogPipe *s)
+{
+  KVParser *self = (KVParser *)s;
+  g_assert(self->kv_scanner == NULL);
+
+  if (self->allow_pair_separator_in_value)
+    {
+      self->kv_scanner = kv_scanner_generic_new(self->value_separator, NULL);
+    }
+  else
+    {
+      self->kv_scanner = kv_scanner_simple_new(self->value_separator, NULL);
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_init_linux_audit(LogPipe *s)
+{
+  KVParser *self = (KVParser *)s;
+  g_assert(self->kv_scanner == NULL);
+  _init(s);
+  self->kv_scanner = linux_audit_scanner_new(self->kv_scanner);
+  return TRUE;
+}
+
+static gboolean
+_deinit(LogPipe *s)
+{
+  KVParser *self = (KVParser *)s;
+  kv_scanner_free(self->kv_scanner);
+  self->kv_scanner = NULL;
+  return TRUE;
+}
+
+static KVParser *
+_create_common(GlobalConfig *cfg)
 {
   KVParser *self = g_new0(KVParser, 1);
 
   log_parser_init_instance(&self->super, cfg);
-  self->super.super.free_fn = kv_parser_free;
-  self->super.super.clone = kv_parser_clone;
-  self->super.process = kv_parser_process_threaded;
-
-  self->kv_scanner = kv_scanner;
+  self->super.super.deinit = _deinit;
+  self->super.super.free_fn = _free;
+  self->super.process = _process_threaded;
+  self->kv_scanner = NULL;
+  self->value_separator = '=';
+  self->allow_pair_separator_in_value = FALSE;
   self->formatted_key = g_string_sized_new(32);
+
+  return self;
+}
+
+LogParser *
+kv_parser_new(GlobalConfig *cfg)
+{
+  KVParser *self = _create_common(cfg);
+
+  self->super.super.init = _init;
+  self->super.super.clone = _clone;
+
+  return &self->super;
+}
+
+LogParser *
+kv_parser_linux_audit_new(GlobalConfig *cfg)
+{
+  KVParser *self = _create_common(cfg);
+
+  self->super.super.init = _init_linux_audit;
+  self->super.super.clone = _clone_linux_audit;
+
   return &self->super;
 }
