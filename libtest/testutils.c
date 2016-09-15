@@ -389,6 +389,18 @@ assert_string_array_non_fatal(gchar **actual, guint32 actual_length, gchar **exp
 }
 
 gboolean
+expect_not_reached(const gchar *error_message, ...)
+{
+  va_list args;
+
+  va_start(args, error_message);
+  print_failure(error_message, args, "execution was not expected to reach this point");
+  va_end(args);
+
+  return FALSE;
+}
+
+gboolean
 assert_gboolean_non_fatal(gboolean actual, gboolean expected, const gchar *error_message, ...)
 {
   va_list args;
