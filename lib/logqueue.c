@@ -179,7 +179,7 @@ log_queue_set_counters(LogQueue *self, StatsCounterItem *stored_messages, StatsC
 void
 log_queue_init_instance(LogQueue *self, const gchar *persist_name)
 {
-  self->ref_cnt = 1;
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->free_fn = log_queue_free_method;
 
   self->persist_name = persist_name ? g_strdup(persist_name) : NULL;
