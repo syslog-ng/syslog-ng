@@ -46,6 +46,14 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
    * SSL_ERROR_WANT_WRITE is specified by libssl */
   self->super.cond = G_IO_IN;
 
+  /* if we have found the peer has a certificate */
+  if( self->tls_session->peer_info.found )
+    {
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn );
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o );
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou );
+    }
+
   do
     {
       rc = SSL_read(self->tls_session->ssl, buf, buflen);
