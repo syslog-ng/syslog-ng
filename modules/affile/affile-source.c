@@ -130,7 +130,7 @@ affile_is_device_node(const gchar *filename)
 }
 
 gboolean
-affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
+_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
 {
   return affile_open_file(name, &self->file_open_options, &self->file_perm_options, fd);
 }
@@ -190,7 +190,9 @@ affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
     return poll_fd_events_new(fd);
   else
     {
-      msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it with the current ivykis polling method. Set follow-freq() for regular files or change IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
+      msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it "
+                "with the current ivykis polling method. Set follow-freq() for regular files or change "
+                "IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_int("fd", fd));
       return NULL;
@@ -259,55 +261,107 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
 }
 
 static void
-affile_sd_reopen_on_notify(LogPipe *s, gboolean recover_state)
+_deinit_sd_logreader(AFFileSourceDriver *self)
+{
+  log_pipe_deinit((LogPipe *) self->reader);
+  log_pipe_unref((LogPipe *) self->reader);
+  self->reader = NULL;
+}
+
+static void
+_setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  self->reader = log_reader_new(self->super.super.super.cfg);
+  log_reader_reopen(self->reader, proto, poll_events);
+
+  log_reader_set_options(self->reader,
+                         s,
+                         &self->reader_options,
+                         STATS_LEVEL1,
+                         SCS_FILE,
+                         self->super.super.id,
+                         self->filename->str);
+  if (check_immediately)
+    log_reader_set_immediate_check(self->reader);
+
+  /* NOTE: if the file could not be opened, we ignore the last
+   * remembered file position, if the file is created in the future
+   * we're going to read from the start. */
+  log_pipe_append((LogPipe *) self->reader, s);
+}
+
+static gboolean
+_is_immediate_check_needed(gboolean file_opened, gboolean open_deferred)
+{
+  if (file_opened)
+    return TRUE;
+  else if (open_deferred)
+    return FALSE;
+  return FALSE;
+}
+
+static gboolean
+affile_sd_open_file(LogPipe *s, gboolean recover_state)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint fd;
+  gboolean file_opened, open_deferred = FALSE;
 
-  log_pipe_deinit((LogPipe *) self->reader);
-  log_pipe_unref((LogPipe *) self->reader);
-  self->reader = NULL;
+  file_opened = _sd_open_file(self, self->filename->str, &fd);
+  if (!file_opened && self->follow_freq > 0)
+    {
+      msg_info("Follow-mode file source not found, deferring open", evt_tag_str("filename", self->filename->str));
+      open_deferred = TRUE;
+      fd = -1;
+    }
 
-  if (affile_sd_open_file(self, self->filename->str, &fd))
+  if (file_opened || open_deferred)
     {
       LogProtoServer *proto;
       PollEvents *poll_events;
+      gboolean check_immediately;
 
       poll_events = affile_sd_construct_poll_events(self, fd);
       if (!poll_events)
         {
           close(fd);
-          return;
+          return FALSE;
         }
-
       proto = affile_sd_construct_proto(self, fd);
 
-      self->reader = log_reader_new(self->super.super.super.cfg);
-      log_reader_reopen(self->reader, proto, poll_events);
-
-      log_reader_set_options(self->reader,
-                             s,
-                             &self->reader_options,
-                             STATS_LEVEL1,
-                             SCS_FILE,
-                             self->super.super.id,
-                             self->filename->str);
-      log_reader_set_immediate_check(self->reader);
-
-      log_pipe_append((LogPipe *) self->reader, s);
+      check_immediately = _is_immediate_check_needed(file_opened, open_deferred);
+      _setup_logreader(s, poll_events, proto, check_immediately);
       if (!log_pipe_init((LogPipe *) self->reader))
         {
-          msg_error("Error initializing log_reader, closing fd",
-                    evt_tag_int("fd", fd));
+          msg_error("Error initializing log_reader, closing fd", evt_tag_int("fd", fd));
           log_pipe_unref((LogPipe *) self->reader);
           self->reader = NULL;
           close(fd);
-          return;
+          return FALSE;
         }
       if (recover_state)
         affile_sd_recover_state(s, cfg, proto);
     }
+  else
+    {
+      msg_error("Error opening file for reading",
+                evt_tag_str("filename", self->filename->str),
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
+      return self->super.super.optional;
+    }
+  return TRUE;
+
+}
+
+static void
+affile_sd_reopen_on_notify(LogPipe *s, gboolean recover_state)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  _deinit_sd_logreader(self);
+  affile_sd_open_file(s, recover_state);
 }
 
 /* NOTE: runs in the main thread */
@@ -352,82 +406,33 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 }
 
 static gboolean
+_are_multi_line_settings_invalid(AFFileSourceDriver *self)
+{
+  gboolean is_garbage_mode = self->multi_line_mode == MLM_PREFIX_GARBAGE;
+  gboolean is_suffix_mode = self->multi_line_mode == MLM_PREFIX_SUFFIX;
+
+  return (!is_garbage_mode && !is_suffix_mode) && (self->multi_line_prefix || self->multi_line_garbage);
+}
+
+static gboolean
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
-  gboolean file_opened, open_deferred = FALSE;
 
   if (!log_src_driver_init_method(s))
     return FALSE;
 
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX )
-      && (self->multi_line_prefix || self->multi_line_garbage))
+  if (_are_multi_line_settings_invalid(self))
     {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based "
+                "(prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
       return FALSE;
     }
 
-  file_opened = affile_sd_open_file(self, self->filename->str, &fd);
-  if (!file_opened && self->follow_freq > 0)
-    {
-      msg_info("Follow-mode file source not found, deferring open",
-               evt_tag_str("filename", self->filename->str));
-      open_deferred = TRUE;
-      fd = -1;
-    }
-
-  if (file_opened || open_deferred)
-    {
-      LogProtoServer *proto;
-      PollEvents *poll_events;
-
-      poll_events = affile_sd_construct_poll_events(self, fd);
-      if (!poll_events)
-        {
-          close(fd);
-          return FALSE;
-        }
-
-      proto = affile_sd_construct_proto(self, fd);
-      self->reader = log_reader_new(self->super.super.super.cfg);
-      log_reader_reopen(self->reader, proto, poll_events);
-
-      log_reader_set_options(self->reader,
-                             s,
-                             &self->reader_options,
-                             STATS_LEVEL1,
-                             SCS_FILE,
-                             self->super.super.id,
-                             self->filename->str);
-      /* NOTE: if the file could not be opened, we ignore the last
-       * remembered file position, if the file is created in the future
-       * we're going to read from the start. */
-
-      log_pipe_append((LogPipe *) self->reader, s);
-      if (!log_pipe_init((LogPipe *) self->reader))
-        {
-          msg_error("Error initializing log_reader, closing fd",
-                    evt_tag_int("fd", fd));
-          log_pipe_unref((LogPipe *) self->reader);
-          self->reader = NULL;
-          close(fd);
-          return FALSE;
-        }
-      affile_sd_recover_state(s, cfg, proto);
-    }
-  else
-    {
-      msg_error("Error opening file for reading",
-                evt_tag_str("filename", self->filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
-      return self->super.super.optional;
-    }
-  return TRUE;
-
+  return affile_sd_open_file(s, TRUE);
 }
 
 static gboolean
@@ -436,11 +441,7 @@ affile_sd_deinit(LogPipe *s)
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
   if (self->reader)
-    {
-      log_pipe_deinit((LogPipe *) self->reader);
-      log_pipe_unref((LogPipe *) self->reader);
-      self->reader = NULL;
-    }
+    _deinit_sd_logreader(self);
 
   if (!log_src_driver_deinit_method(s))
     return FALSE;
@@ -502,8 +503,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
     }
   else
     {
-      if (affile_is_device_node(filename) ||
-          affile_is_linux_proc_kmsg(filename))
+      if (affile_is_device_node(filename) || affile_is_linux_proc_kmsg(filename))
         self->follow_freq = 0;
       else
         self->follow_freq = 1000;
