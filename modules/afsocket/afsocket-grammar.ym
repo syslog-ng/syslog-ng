@@ -145,6 +145,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TCP_KEEPALIVE_TIME
 %token KW_TCP_KEEPALIVE_PROBES
 %token KW_TCP_KEEPALIVE_INTVL
+%token KW_LISTEN_BACKLOG
 %token KW_SPOOF_SOURCE
 
 %token KW_KEEP_ALIVE
@@ -358,6 +359,7 @@ source_afinet_tcp_option
 source_afsocket_stream_params
 	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive(last_driver, $3); }
 	| KW_MAX_CONNECTIONS '(' LL_NUMBER ')'	{ afsocket_sd_set_max_connections(last_driver, $3); }
+	| KW_LISTEN_BACKLOG '(' LL_NUMBER ')'	{ afsocket_sd_set_listen_backlog(last_driver, $3); }
 	;
 
 source_afsyslog

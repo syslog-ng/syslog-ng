@@ -30,12 +30,12 @@ config = """@version: 3.8
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); threaded(yes); };
 
 source s_int { internal(); };
-source s_unix { unix-stream("log-stream" flags(expect-hostname)); unix-dgram("log-dgram" flags(expect-hostname));  };
-source s_inet { tcp(port(%(port_number)d)); udp(port(%(port_number)d) so_rcvbuf(131072)); };
+source s_unix { unix-stream("log-stream" flags(expect-hostname) listen-backlog(64)); unix-dgram("log-dgram" flags(expect-hostname));  };
+source s_inet { tcp(port(%(port_number)d) listen-backlog(64)); udp(port(%(port_number)d) so_rcvbuf(131072)); };
 source s_inetssl { tcp(port(%(ssl_port_number)d) tls(peer-verify(none) cert-file("%(src_dir)s/ssl.crt") key-file("%(src_dir)s/ssl.key"))); };
 source s_pipe { pipe("log-pipe" flags(expect-hostname)); pipe("log-padded-pipe" pad_size(2048) flags(expect-hostname)); };
 source s_file { file("log-file"); };
-source s_network { network(transport(udp) port(%(port_number_network)s)); network(transport(tcp) port(%(port_number_network)s)); };
+source s_network { network(transport(udp) port(%(port_number_network)s)); network(transport(tcp) listen-backlog(64) port(%(port_number_network)s)); };
 source s_catchall { unix-stream("log-stream-catchall" flags(expect-hostname)); };
 
 source s_syslog { syslog(port(%(port_number_syslog)d) transport("tcp") so_rcvbuf(131072)); syslog(port(%(port_number_syslog)d) transport("udp") so_rcvbuf(131072)); };
