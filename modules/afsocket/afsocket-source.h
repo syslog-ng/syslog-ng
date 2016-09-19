@@ -73,6 +73,7 @@ struct _AFSocketSourceDriver
 
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
 void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
+void afsocket_sd_set_listen_backlog(LogDriver *self, gint listen_backlog);
 
 static inline gboolean
 afsocket_sd_acquire_socket(AFSocketSourceDriver *s, gint *fd)

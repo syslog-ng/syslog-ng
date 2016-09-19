@@ -253,6 +253,14 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
   self->max_connections = max_connections;
 }
 
+void
+afsocket_sd_set_listen_backlog(LogDriver *s, gint listen_backlog)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  self->listen_backlog = listen_backlog;
+}
+
 static const gchar *
 afsocket_sd_format_name(const LogPipe *s)
 {
