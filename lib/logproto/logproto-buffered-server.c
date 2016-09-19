@@ -428,7 +428,6 @@ log_proto_buffered_server_restart_with_state(LogProtoServer *s, PersistState *pe
   gpointer new_state = NULL;
   gboolean success;
 
-  self->pos_tracking = TRUE;
   self->persist_state = persist_state;
   old_state_handle = persist_state_lookup_entry(persist_state, persist_name, &old_state_size, &persist_version);
   if (!old_state_handle)
@@ -887,4 +886,5 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   else
     self->convert = (GIConv) -1;
   self->stream_based = TRUE;
+  self->pos_tracking = options->position_tracking_enabled;
 }
