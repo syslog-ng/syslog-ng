@@ -221,7 +221,7 @@ log_queue_fifo_move_input(gpointer user_data)
   log_queue_push_notify(&self->super);
   g_static_mutex_unlock(&self->super.lock);
   self->qoverflow_input[thread_id].finish_cb_registered = FALSE;
-  log_queue_unref((LogQueue *)self->qoverflow_input[thread_id].cb.user_data);
+  log_queue_unref(&self->super);
   return NULL;
 }
 
