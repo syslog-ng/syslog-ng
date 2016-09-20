@@ -144,3 +144,11 @@ log_stamp_eq(const LogStamp *a, const LogStamp *b)
          a->tv_usec == b->tv_usec &&
          a->zone_offset == b->zone_offset;
 }
+
+void
+log_stamp_unset(LogStamp *stamp)
+{
+  stamp->tv_sec = -1;
+  stamp->tv_usec = -1;
+  stamp->zone_offset = -1;
+}
