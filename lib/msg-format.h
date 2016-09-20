@@ -85,7 +85,7 @@ struct _MsgFormatHandler
 void msg_format_options_defaults(MsgFormatOptions *options);
 void msg_format_options_init(MsgFormatOptions *parse_options, GlobalConfig *cfg);
 void msg_format_options_destroy(MsgFormatOptions *parse_options);
-void msg_format_options_copy(MsgFormatOptions *options, MsgFormatOptions *source);
+void msg_format_options_copy(MsgFormatOptions *options, const MsgFormatOptions *source);
 
 gboolean msg_format_options_process_flag(MsgFormatOptions *options, gchar *flag);
 

@@ -82,7 +82,7 @@ msg_format_options_init(MsgFormatOptions *options, GlobalConfig *cfg)
 }
 
 void
-msg_format_options_copy(MsgFormatOptions *options, MsgFormatOptions *source)
+msg_format_options_copy(MsgFormatOptions *options, const MsgFormatOptions *source)
 {
   g_assert(!options->initialized);
 
