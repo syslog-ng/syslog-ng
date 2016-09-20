@@ -32,9 +32,8 @@ syslog_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   LogMessage *msg;
 
   msg = log_msg_make_writable(pmsg, path_options);
+  log_stamp_unset(&msg->timestamps[LM_TS_STAMP]);
 
-  msg->timestamps[LM_TS_STAMP].tv_sec = -1;
-  msg->timestamps[LM_TS_STAMP].zone_offset = -1;
   syslog_format_handler(&self->parse_options, (guchar *) input, strlen(input), msg);
   return TRUE;
 }
