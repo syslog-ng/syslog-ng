@@ -193,7 +193,8 @@ _init_linux_audit(LogPipe *s)
   KVParser *self = (KVParser *)s;
   g_assert(self->kv_scanner == NULL);
   _init(s);
-  self->kv_scanner = linux_audit_scanner_new(self->kv_scanner);
+  kv_scanner_set_parse_value(self->kv_scanner, parse_linux_audit_style_hexdump);
+
   return TRUE;
 }
 

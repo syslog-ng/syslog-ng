@@ -24,6 +24,7 @@
 
 #include "kv-scanner.h"
 
-KVScanner *linux_audit_scanner_new(KVScanner* base);
+gboolean
+parse_linux_audit_style_hexdump(KVScanner *self);
 
 #endif

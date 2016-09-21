@@ -84,7 +84,7 @@ kv_scanner_is_valid_key_character(gchar c)
 }
 
 static inline void
-kv_scanner_decode_value(KVScanner *self)
+kv_scanner_parse_value(KVScanner *self)
 {
   if (self->parse_value)
     {
@@ -92,6 +92,12 @@ kv_scanner_decode_value(KVScanner *self)
       if (self->parse_value(self))
         g_string_assign_len(self->value, self->decoded_value->str, self->decoded_value->len);
     }
+}
+
+static inline void
+kv_scanner_set_parse_value(KVScanner *self, KVParseValue *parse_value)
+{
+  self->parse_value = parse_value;
 }
 
 #endif

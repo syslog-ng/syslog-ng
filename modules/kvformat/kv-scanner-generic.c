@@ -420,7 +420,7 @@ _scan_next(KVScanner *s)
     }
 
   _extract_value(self);
-  kv_scanner_decode_value(s);
+  kv_scanner_parse_value(s);
 
   return TRUE;
 }

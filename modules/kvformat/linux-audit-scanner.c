@@ -114,8 +114,8 @@ _is_field_hex_encoded(const gchar *field)
   return FALSE;
 }
 
-static gboolean
-_parse_linux_audit_style_hexdump(KVScanner *self)
+gboolean
+parse_linux_audit_style_hexdump(KVScanner *self)
 {
   if (!self->value_was_quoted &&
       (self->value->len % 2) == 0 &&
@@ -133,10 +133,3 @@ _parse_linux_audit_style_hexdump(KVScanner *self)
   return FALSE;
 }
 
-KVScanner *
-linux_audit_scanner_new(KVScanner *base)
-{
-  KVScanner *self = base;
-  self->parse_value = _parse_linux_audit_style_hexdump;
-  return self;
-}
