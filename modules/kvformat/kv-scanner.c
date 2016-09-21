@@ -24,7 +24,6 @@
 void
 kv_scanner_init(KVScanner *self, gchar value_separator, KVParseValue *parse_value)
 {
-  memset(self, 0, sizeof(*self));
   self->key = g_string_sized_new(32);
   self->value = g_string_sized_new(64);
   self->decoded_value = g_string_sized_new(64);
