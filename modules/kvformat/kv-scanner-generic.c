@@ -153,12 +153,12 @@ _init_state(KVScannerGeneric *self, gchar ch)
 static inline void
 _separator_after_init_state(KVScannerGeneric *self, gchar ch)
 {
+  if (ch == ' ')
+    return;
+
   if (ch == '\0')
     {
       self->state = KV_EOL;
-    }
-  else if (ch == ' ')
-    {
     }
   else if (ch == '\'' || ch == '\"')
     {
@@ -197,6 +197,9 @@ _in_value_state(KVScannerGeneric *self, gchar ch)
 static inline void
 _in_key_or_value_state(KVScannerGeneric *self, gchar ch)
 {
+  if (kv_scanner_is_valid_key_character(ch))
+    return ;
+
   if (ch == '\0')
     {
       _end_next_key(self);
@@ -212,9 +215,6 @@ _in_key_or_value_state(KVScannerGeneric *self, gchar ch)
     {
       _end_next_key(self);
       self->state = KV_KEY_FOUND;
-    }
-  else if (kv_scanner_is_valid_key_character(ch))
-    {
     }
   else
     {
@@ -269,13 +269,13 @@ _after_quote_state(KVScannerGeneric *self, gchar ch)
 static inline void
 _in_separator_state(KVScannerGeneric *self, gchar ch)
 {
+  if (ch == ' ')
+    return;
+
   if (ch == '\0')
     {
       _extend_value_with_next_key(self);
       self->state = KV_EOL;
-    }
-  else if (ch == ' ')
-    {
     }
   else if (ch == self->super.value_separator)
     {

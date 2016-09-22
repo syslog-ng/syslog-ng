@@ -109,6 +109,44 @@ _is_delimiter(const gchar *cur)
 }
 
 static void
+_on_kv_quote_initial(KVScannerSimple *self, const gchar *cur)
+{
+  if (_is_delimiter(cur))
+    {
+      self->quote_state = KV_QUOTE_FINISH;
+    }
+  else if (*cur == '\"' || *cur == '\'')
+    {
+      self->quote_state = KV_QUOTE_STRING;
+      self->super.quote_char = *cur;
+      if (self->super.value->len == 0)
+        self->super.value_was_quoted = TRUE;
+    }
+  else
+    {
+      g_string_append_c(self->super.value, *cur);
+    }
+}
+
+static void
+_on_kv_quote_string(KVScannerSimple *self, const gchar *cur)
+{
+  if (*cur == self->super.quote_char)
+    self->quote_state = KV_QUOTE_INITIAL;
+  else if (*cur == '\\')
+    self->quote_state = KV_QUOTE_BACKSLASH;
+  else
+    g_string_append_c(self->super.value, *cur);
+}
+
+static void
+_on_kv_quote_backslash(KVScannerSimple *self, const gchar *cur)
+{
+  _decode_backslash_escape(self, *cur);
+  self->quote_state = KV_QUOTE_STRING;
+}
+
+static void
 _extract_value(KVScannerSimple *self)
 {
   const gchar *cur;
@@ -123,33 +161,13 @@ _extract_value(KVScannerSimple *self)
       switch (self->quote_state)
         {
         case KV_QUOTE_INITIAL:
-          if (_is_delimiter(cur))
-            {
-              self->quote_state = KV_QUOTE_FINISH;
-            }
-          else if (*cur == '\"' || *cur == '\'')
-            {
-              self->quote_state = KV_QUOTE_STRING;
-              self->super.quote_char = *cur;
-              if (self->super.value->len == 0)
-                self->super.value_was_quoted = TRUE;
-            }
-          else
-            {
-              g_string_append_c(self->super.value, *cur);
-            }
+          _on_kv_quote_initial(self, cur);
           break;
         case KV_QUOTE_STRING:
-          if (*cur == self->super.quote_char)
-            self->quote_state = KV_QUOTE_INITIAL;
-          else if (*cur == '\\')
-            self->quote_state = KV_QUOTE_BACKSLASH;
-          else
-            g_string_append_c(self->super.value, *cur);
+          _on_kv_quote_string(self, cur);
           break;
         case KV_QUOTE_BACKSLASH:
-          _decode_backslash_escape(self, *cur);
-          self->quote_state = KV_QUOTE_STRING;
+          _on_kv_quote_backslash(self, cur);
           break;
         }
       cur++;
