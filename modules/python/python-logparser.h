@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2014-2015 Balabit
- * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
- * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,17 +20,16 @@
  *
  */
 
-#ifndef SNG_PYTHON_PARSER_H_INCLUDED
-#define SNG_PYTHON_PARSER_H_INCLUDED
+#ifndef _SNG_PYTHON_LOGPARSER_H
+#define _SNG_PYTHON_LOGPARSER_H
 
 #include "python-module.h"
-#include "driver.h"
 #include "parser/parser-expr.h"
-#include "cfg-parser.h"
-#include "cfg-lexer.h"
+#include "value-pairs/value-pairs.h"
 
-extern CfgParser python_parser;
-
-CFG_PARSER_DECLARE_LEXER_BINDING(python_, LogDriver **)
+LogParser *python_parser_new(GlobalConfig *cfg);
+void python_parser_set_imports(LogParser *s, GList *imports);
+void python_parser_set_class(LogParser *s, gchar *class_name);
+void python_parser_set_option(LogParser*  s, gchar* key, gchar* value);
 
 #endif

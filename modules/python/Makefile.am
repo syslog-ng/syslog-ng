@@ -40,8 +40,13 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-parser.h	          \
 	modules/python/python-logmsg.h		  \
 	modules/python/python-logmsg.c	          \
+	modules/python/python-debugger.h	  \
 	modules/python/python-debugger.c	  \
-	modules/python/python-debugger.h
+	modules/python/python-parser-parser.h	  \
+	modules/python/python-parser-parser.c	  \
+	modules/python/python-logparser.h	  \
+	modules/python/python-logparser.c	\
+	modules/python/python-parser-grammar.y
 
 
 modules_python_libmod_python_la_LDFLAGS		 = \
@@ -54,7 +59,10 @@ modules_python_libmod_python_la_DEPENDENCIES=	\
 BUILT_SOURCES					+= \
 	modules/python/python-grammar.y		   \
 	modules/python/python-grammar.c		   \
-	modules/python/python-grammar.h
+	modules/python/python-grammar.h		   \
+	modules/python/python-parser-grammar.y	   \
+	modules/python/python-parser-grammar.h	\
+	modules/python/python-parser-grammar.c
 
 modules/python mod-python: modules/python/libmod-python.la
 else
@@ -66,7 +74,8 @@ include modules/python/pylib/Makefile.am
 EXTRA_DIST					+= \
 	modules/python/python-grammar.ym	   \
 	modules/python/python-example.conf	   \
-	modules/python/sngexample.py
+	modules/python/sngexample.py		   \
+	modules/python/python-parser-grammar.ym
 
 .PHONY: modules/python mod-python
 

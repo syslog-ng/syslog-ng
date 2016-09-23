@@ -49,6 +49,14 @@ py_log_message_getattr(PyLogMessage *self, gchar *name)
 }
 
 static void
+py_log_message_setattr(PyLogMessage *self, gchar *name, PyObject *value)
+{
+  NVHandle handle = log_msg_get_value_handle(name);
+  PyObject *value_as_strobj = PyObject_Str(value);
+  log_msg_set_value(self->msg, handle, PyBytes_AsString(value_as_strobj), -1);
+}
+
+static void
 py_log_message_free(PyLogMessage *self)
 {
   log_msg_unref(self->msg);
@@ -75,7 +83,7 @@ static PyTypeObject py_log_message_type =
   .tp_basicsize = sizeof(PyLogMessage),
   .tp_dealloc = (destructor) py_log_message_free,
   .tp_getattr = (getattrfunc) py_log_message_getattr,
-  .tp_setattr = (setattrfunc) NULL,
+  .tp_setattr = (setattrfunc) py_log_message_setattr,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "LogMessage class encapsulating a syslog-ng log message",
   .tp_new = PyType_GenericNew,

@@ -28,11 +28,13 @@
 #include "python-tf.h"
 #include "python-logmsg.h"
 #include "python-debugger.h"
+#include "python-parser-parser.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
 
 extern CfgParser python_parser;
+extern CfgParser python_parser_parser;
 
 static Plugin python_plugins[] =
 {
@@ -45,6 +47,11 @@ static Plugin python_plugins[] =
     .type = LL_CONTEXT_ROOT,
     .name = "python",
     .parser = &python_parser,
+  },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "python-parser",
+    .parser = &python_parser_parser,
   },
   TEMPLATE_FUNCTION_PLUGIN(tf_python, "python"),
 };
