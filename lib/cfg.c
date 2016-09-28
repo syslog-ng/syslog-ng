@@ -481,6 +481,8 @@ cfg_free(GlobalConfig *self)
 
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);
+  if (self->source_mangle_callback_list)
+    g_list_free(self->source_mangle_callback_list);
   g_free(self->bad_hostname_re);
   dns_cache_options_destroy(&self->dns_cache_options);
   g_free(self->custom_domain);
@@ -568,6 +570,16 @@ gint
 cfg_get_parsed_version(const GlobalConfig *cfg)
 {
   return cfg->parsed_version;
+}
+
+void register_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
+{
+  src->source_mangle_callback_list = g_list_append(src->source_mangle_callback_list,cb);
+}
+
+void uregister_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
+{
+  src->source_mangle_callback_list = g_list_remove(src->source_mangle_callback_list,cb);
 }
 
 const gchar *
