@@ -3,7 +3,6 @@ lib_tests_TESTS		= \
 	lib/tests/test_cfg_tree		\
 	lib/tests/test_type_hints	\
 	lib/tests/test_parse_number	\
-	lib/tests/test_cache		\
 	lib/tests/test_reloc		\
 	lib/tests/test_hostname		\
 	lib/tests/test_rcptid		\
@@ -39,11 +38,6 @@ lib_tests_test_type_hints_LDADD	=	\
 lib_tests_test_parse_number_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_parse_number_LDADD	=	\
-	$(TEST_LDADD)
-
-lib_tests_test_cache_CFLAGS	=	\
-	$(TEST_CFLAGS)
-lib_tests_test_cache_LDADD	=	\
 	$(TEST_LDADD)
 
 lib_tests_test_reloc_CFLAGS	=	\
@@ -108,3 +102,15 @@ CLEANFILES				+= \
 
 lib_tests_test_userdb_LDADD	= \
 	$(TEST_LDADD)
+
+if ENABLE_CRITERION
+
+lib_tests_TESTS		+= \
+	lib/tests/test_cache
+
+lib_tests_test_cache_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_cache_LDADD	=	\
+	$(TEST_LDADD)
+
+endif
