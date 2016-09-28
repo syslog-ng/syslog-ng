@@ -1,5 +1,4 @@
 tests_unit_TESTS			=  \
-	tests/unit/test_logwriter	   \
 	tests/unit/test_pathutils
 
 check_PROGRAMS				+= \
@@ -7,9 +6,6 @@ check_PROGRAMS				+= \
 
 unit_test_extra_modules			= \
 	$(PREOPEN_SYSLOGFORMAT)
-
-tests_unit_test_logwriter_LDADD		= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_pathutils_LDADD	= \
@@ -30,6 +26,10 @@ tests_unit_TESTS			+= \
 	tests/unit/test_ringbuffer	   \
 	tests/unit/test_hostid		   \
 	tests/unit/test_zone		   \
+	tests/unit/test_logwriter
+
+tests_unit_test_logwriter_LDADD		= \
+	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_logqueue_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_logqueue_LDADD		= \
