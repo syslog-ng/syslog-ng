@@ -157,7 +157,6 @@ include tests/Makefile.am
 include doc/Makefile.am
 include contrib/Makefile.am
 include scl/Makefile.am
-include debian/Makefile.am
 include tgz2build/Makefile.am
 
 TEST_EXTENSIONS = .sh
