@@ -25,6 +25,7 @@
 #include "messages.h"
 
 #include <string.h>
+#include <netinet/tcp.h>
 
 #ifndef SOL_IP
 #define SOL_IP IPPROTO_IP
