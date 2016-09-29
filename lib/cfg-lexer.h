@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "cfg-args.h"
+#include "messages.h"
 
 #include <stdio.h>
 #include <setjmp.h>
@@ -169,6 +170,7 @@ int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, c
 gboolean cfg_lexer_start_next_include(CfgLexer *self);
 gboolean cfg_lexer_include_file(CfgLexer *self, const gchar *filename);
 gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer, gssize length);
+EVTTAG *cfg_lexer_format_location_tag(CfgLexer *self, YYLTYPE *yylloc);
 
 /* context tracking */
 void cfg_lexer_push_context(CfgLexer *self, gint context, CfgLexerKeyword *keywords, const gchar *desc);

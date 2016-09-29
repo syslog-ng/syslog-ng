@@ -160,6 +160,37 @@ cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar
   return result;
 }
 
+/* this can only be called from the grammar */
+static CfgIncludeLevel *
+_find_closest_file_inclusion(CfgLexer *self, YYLTYPE *yylloc)
+{
+  for (gint level_ndx = self->include_depth; level_ndx >= 0; level_ndx--)
+    {
+      CfgIncludeLevel *level = &self->include_stack[level_ndx];
+
+      if (level->include_type == CFGI_FILE)
+        return level;
+    }
+  return NULL;
+}
+
+EVTTAG *
+cfg_lexer_format_location_tag(CfgLexer *self, YYLTYPE *yylloc)
+{
+  gchar buf[256];
+  CfgIncludeLevel *level;
+
+  level = _find_closest_file_inclusion(self, yylloc);
+  if (level)
+    g_snprintf(buf, sizeof(buf), "%s:%d:%d",
+               level->name,
+               level->lloc.first_line, level->lloc.first_column);
+  else
+    g_snprintf(buf, sizeof(buf), "%s:%d:%d", "#buffer", yylloc->first_line, yylloc->first_column);
+
+  return evt_tag_str("location", buf);
+}
+
 int
 cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const char *token)
 {
