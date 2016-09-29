@@ -435,7 +435,7 @@ source_systemd_syslog_params
 #if ! SYSLOG_NG_ENABLE_SYSTEMD
             msg_error("systemd-syslog() source cannot be enabled and it is not"
                       " functioning. Please compile your syslog-ng with --enable-systemd"
-                      " flag");
+                      " flag", cfg_lexer_format_location_tag(lexer, &@0));
             YYERROR;
 #else
             SystemDSyslogSourceDriver *d = systemd_syslog_sd_new(configuration, FALSE);

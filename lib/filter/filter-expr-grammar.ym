@@ -118,7 +118,8 @@ filter_simple_expr
             if (p[0] == '$')
               {
                 msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
-                            evt_tag_str("value", $4));
+                            evt_tag_str("value", $4),
+                            cfg_lexer_format_location_tag(lexer, &@4));
                 p++;
               }
             $$ = filter_in_list_new($3, p);
@@ -131,7 +132,8 @@ filter_simple_expr
             if (p[0] == '$')
               {
                 msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
-                            evt_tag_str("value", $6));
+                            evt_tag_str("value", $6),
+                            cfg_lexer_format_location_tag(lexer, &@6));
                 p++;
               }
             $$ = filter_in_list_new($3, p);
@@ -238,7 +240,10 @@ filter_match_params
 
                 if (!warn_written)
                   {
-                    msg_warning("WARNING: the match() filter without the use of the value() option is deprecated and hinders performance, please use a more specific filter like message() and/or program() instead.");
+                    msg_warning("WARNING: the match() filter without the use of the value() "
+                                "option is deprecated and hinders performance, please use a "
+                                "more specific filter like message() and/or program() instead",
+                                cfg_lexer_format_location_tag(lexer, &@0));
                     warn_written = TRUE;
                   }
               }
@@ -257,7 +262,8 @@ filter_match_opt
             if (p[0] == '$')
               {
                 msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
-                            evt_tag_str("value", $3));
+                            evt_tag_str("value", $3),
+                            cfg_lexer_format_location_tag(lexer, &@3));
                 p++;
               }
             last_re_filter->value_handle = log_msg_get_value_handle(p);

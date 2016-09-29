@@ -190,7 +190,8 @@ rewrite_expr_opt
             if (p[0] == '$')
               {
                 msg_warning("Value references in rewrite rules should not use the '$' prefix, those are only needed in templates",
-                            evt_tag_str("value", $3));
+                            evt_tag_str("value", $3),
+                            cfg_lexer_format_location_tag(lexer, &@3));
                 p++;
               }
             last_rewrite->value_handle = log_msg_get_value_handle(p);
