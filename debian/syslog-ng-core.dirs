@@ -1,3 +1,0 @@
-/etc/syslog-ng/conf.d/
-/var/lib/syslog-ng/
-/lib/systemd/system
