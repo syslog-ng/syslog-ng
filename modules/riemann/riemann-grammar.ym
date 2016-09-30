@@ -171,6 +171,10 @@ riemann_type_option
 	 * options */
         | KW_KEY '(' string ')'
           {
+            msg_warning("WARNING: your riemann configuration uses the key() "
+                        "option which was obsoleted in favour of key-file(), "
+                        "please update your configuration",
+                        cfg_lexer_format_location_tag(lexer, &@1));
             riemann_dd_set_tls_key(last_driver, $3); free($3);
           }
         ;
