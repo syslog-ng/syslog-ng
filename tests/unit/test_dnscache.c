@@ -220,3 +220,21 @@ Test(dnscache, test_run_benchmark)
 
   dns_cache_free(cache);
 }
+
+/* test case to check the LRU expiration functionality */
+Test(dnscache, test_lru_lists)
+{
+  DNSCacheOptions options =
+  {
+    .cache_size = 10,
+    .expire = 600,
+    .expire_failed = 300,
+    .hosts = NULL
+  };
+
+
+  DNSCache *cache = dns_cache_new(&options);
+  gint cache_size = 100;
+  _fill_dns_cache(cache, cache_size);
+  dns_cache_free(cache);
+}

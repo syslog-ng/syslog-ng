@@ -159,12 +159,12 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
   if (!persistent)
     {
       entry->resolved = cached_g_current_time_sec();
-      iv_list_add(&self->cache_list, &entry->list);
+      iv_list_add(&entry->list, &self->cache_list);
     }
   else
     {
       entry->resolved = 0;
-      iv_list_add(&self->persist_list, &entry->list);
+      iv_list_add(&entry->list, &self->persist_list);
     }
   hash_size = g_hash_table_size(self->cache);
   g_hash_table_replace(self->cache, &entry->key, entry);
@@ -175,7 +175,7 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
   /* persistent elements are not counted */
   if ((gint) (g_hash_table_size(self->cache) - self->persistent_count) > self->options->cache_size)
     {
-      DNSCacheEntry *entry_to_remove = iv_list_entry(&self->cache_list, DNSCacheEntry, list);
+      DNSCacheEntry *entry_to_remove = iv_list_entry(self->cache_list.next, DNSCacheEntry, list);
 
       /* remove oldest element */
       g_hash_table_remove(self->cache, &entry_to_remove->key);
