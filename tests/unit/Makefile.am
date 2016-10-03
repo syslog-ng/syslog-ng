@@ -1,20 +1,6 @@
-tests_unit_TESTS			=  \
-	tests/unit/test_pathutils
-
-check_PROGRAMS				+= \
-	${tests_unit_TESTS}
-
-unit_test_extra_modules			= \
-	$(PREOPEN_SYSLOGFORMAT)
-
-tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
-tests_unit_test_pathutils_LDADD	= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-
 if ENABLE_CRITERION
 
-tests_unit_TESTS			+= \
+tests_unit_TESTS			= \
 	tests/unit/test_logqueue	   \
 	tests/unit/test_matcher		   \
 	tests/unit/test_clone_logmsg   \
@@ -26,7 +12,14 @@ tests_unit_TESTS			+= \
 	tests/unit/test_ringbuffer	   \
 	tests/unit/test_hostid		   \
 	tests/unit/test_zone		   \
+	tests/unit/test_pathutils	   \
 	tests/unit/test_logwriter
+
+check_PROGRAMS				+= \
+	${tests_unit_TESTS}
+
+unit_test_extra_modules			= \
+	$(PREOPEN_SYSLOGFORMAT)
 
 tests_unit_test_logwriter_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
@@ -72,6 +65,10 @@ tests_unit_test_hostid_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_zone_LDADD		= \
+	$(TEST_LDADD) $(unit_test_extra_modules)
+
+tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
+tests_unit_test_pathutils_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 endif
