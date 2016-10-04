@@ -62,7 +62,7 @@ public class ElasticSearchOptions {
 	public static final HashMap<String, Integer> DEFAULT_PORTS_BY_MODE = new HashMap<String, Integer>() {
 		{
 			this.put(CLIENT_MODE_HTTP, 9200);
-			this.put(CLIENT_MODE_NODE, 9200);
+			this.put(CLIENT_MODE_NODE, 9300);
 			this.put(CLIENT_MODE_TRANSPORT, 9300);
 		}
 	};
