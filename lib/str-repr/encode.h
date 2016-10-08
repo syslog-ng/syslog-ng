@@ -26,7 +26,7 @@
 
 #include "syslog-ng.h"
 
-void str_repr_encode(GString *escaped_string, const gchar *str, gssize str_len);
-void str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len);
+void str_repr_encode(GString *escaped_string, const gchar *str, gssize str_len, const gchar *forbidden_chars);
+void str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len, const gchar *forbidden_chars);
 
 #endif

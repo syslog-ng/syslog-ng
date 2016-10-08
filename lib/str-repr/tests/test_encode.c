@@ -30,10 +30,20 @@ assert_encode_equals(const gchar *input, const gchar *expected)
 {
   GString *str = g_string_new("");
 
-  str_repr_encode(str, input, -1);
+  str_repr_encode(str, input, -1, NULL);
   assert_string(str->str, expected, "Encoded value does not match expected");
 
-  str_repr_encode(str, input, strlen(input));
+  str_repr_encode(str, input, strlen(input), NULL);
+  assert_string(str->str, expected, "Encoded value does not match expected");
+  g_string_free(str, TRUE);
+}
+
+static void
+assert_encode_with_forbidden_equals(const gchar *input, const gchar *forbidden_chars, const gchar *expected)
+{
+  GString *str = g_string_new("");
+
+  str_repr_encode(str, input, -1, forbidden_chars);
   assert_string(str->str, expected, "Encoded value does not match expected");
   g_string_free(str, TRUE);
 }
@@ -58,10 +68,17 @@ test_encode_strings_that_need_quotation(void)
   assert_encode_equals("\b \f \n \r \t \\", "\"\\b \\f \\n \\r \\t \\\\\"");
 }
 
+static void
+test_encode_strings_with_forbidden_chars(void)
+{
+  assert_encode_with_forbidden_equals("foo,", ",", "\"foo,\"");
+}
+
 int
 main(int argc, char *argv[])
 {
   STR_REPR_ENCODE_TESTCASE(test_encode_simple_strings);
   STR_REPR_ENCODE_TESTCASE(test_encode_strings_that_need_quotation);
+  STR_REPR_ENCODE_TESTCASE(test_encode_strings_with_forbidden_chars);
   return 0;
 }

@@ -26,7 +26,7 @@
 #include <string.h>
 
 void
-str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len)
+str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len, const gchar *forbidden_chars)
 {
   const gchar *apostrophe, *quote;
 
@@ -44,7 +44,11 @@ str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len
 
   if (!apostrophe && !quote)
     {
-      gboolean quoting_needed = strcspn(str, "\b\f\n\r\t\\ ") != str_len;
+      gboolean quoting_needed = FALSE;
+
+      if ((strcspn(str, "\b\f\n\r\t\\ ")) != str_len ||
+          (forbidden_chars && strcspn(str, forbidden_chars) != str_len))
+        quoting_needed = TRUE;
 
       if (!quoting_needed)
         {
@@ -74,8 +78,8 @@ str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len
 }
 
 void
-str_repr_encode(GString *escaped_string, const gchar *str, gssize str_len)
+str_repr_encode(GString *escaped_string, const gchar *str, gssize str_len, const gchar *forbidden_chars)
 {
   g_string_truncate(escaped_string, 0);
-  str_repr_encode_append(escaped_string, str, str_len);
+  str_repr_encode_append(escaped_string, str, str_len, forbidden_chars);
 }
