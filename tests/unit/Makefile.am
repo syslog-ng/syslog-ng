@@ -1,7 +1,19 @@
-tests_unit_TESTS			=  \
-	tests/unit/test_logwriter	   \
+if ENABLE_CRITERION
+
+tests_unit_TESTS			= \
+	tests/unit/test_logqueue	   \
+	tests/unit/test_matcher		   \
+	tests/unit/test_clone_logmsg   \
+	tests/unit/test_serialize 	   \
+	tests/unit/test_msgparse	   \
+	tests/unit/test_dnscache	   \
+	tests/unit/test_findcrlf	   \
+	tests/unit/test_persist_state  \
+	tests/unit/test_ringbuffer	   \
+	tests/unit/test_hostid		   \
 	tests/unit/test_zone		   \
-	tests/unit/test_pathutils
+	tests/unit/test_pathutils	   \
+	tests/unit/test_logwriter
 
 check_PROGRAMS				+= \
 	${tests_unit_TESTS}
@@ -11,28 +23,6 @@ unit_test_extra_modules			= \
 
 tests_unit_test_logwriter_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_zone_LDADD		= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
-tests_unit_test_pathutils_LDADD	= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-
-if ENABLE_CRITERION
-
-tests_unit_TESTS			+= \
-	tests/unit/test_logqueue	   \
-	tests/unit/test_matcher		   \
-	tests/unit/test_clone_logmsg 	   \
-	tests/unit/test_serialize 	   \
-	tests/unit/test_msgparse	   \
-	tests/unit/test_dnscache	   \
-	tests/unit/test_findcrlf	   \
-	tests/unit/test_persist_state	   \
-	tests/unit/test_ringbuffer	   \
-	tests/unit/test_hostid
 
 tests_unit_test_logqueue_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_logqueue_LDADD		= \
@@ -72,6 +62,13 @@ tests_unit_test_ringbuffer_LDADD	= \
 
 tests_unit_test_hostid_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_hostid_LDADD		= \
+	$(TEST_LDADD) $(unit_test_extra_modules)
+
+tests_unit_test_zone_LDADD		= \
+	$(TEST_LDADD) $(unit_test_extra_modules)
+
+tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
+tests_unit_test_pathutils_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 endif
