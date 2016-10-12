@@ -266,9 +266,9 @@ main_loop_worker_invoke_batch_callbacks(void)
   iv_list_for_each_safe(lh, lh2, &batch_callbacks)
   {
     WorkerBatchCallback *cb = iv_list_entry(lh, WorkerBatchCallback, list);
+    iv_list_del_init(&cb->list);
 
     cb->func(cb->user_data);
-    iv_list_del_init(&cb->list);
   }
 }
 

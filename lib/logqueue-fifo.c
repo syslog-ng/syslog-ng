@@ -221,6 +221,7 @@ log_queue_fifo_move_input(gpointer user_data)
   log_queue_push_notify(&self->super);
   g_static_mutex_unlock(&self->super.lock);
   self->qoverflow_input[thread_id].finish_cb_registered = FALSE;
+  log_queue_unref(&self->super);
   return NULL;
 }
 
@@ -264,10 +265,14 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
         {
           /* this is the first item in the input FIFO, register a finish
            * callback to make sure it gets moved to the wait_queue if the
-           * input thread finishes */
+           * input thread finishes
+           * One reference should be held, while the callback is registered
+           * avoiding use-after-free situation
+           */
 
           main_loop_worker_register_batch_callback(&self->qoverflow_input[thread_id].cb);
           self->qoverflow_input[thread_id].finish_cb_registered = TRUE;
+          log_queue_ref(&self->super);
         }
 
       node = log_msg_alloc_queue_node(msg, path_options);
@@ -504,7 +509,10 @@ log_queue_fifo_free(LogQueue *s)
   gint i;
 
   for (i = 0; i < log_queue_max_threads; i++)
-    log_queue_fifo_free_queue(&self->qoverflow_input[i].items);
+    {
+      g_assert(self->qoverflow_input[i].finish_cb_registered == FALSE);
+      log_queue_fifo_free_queue(&self->qoverflow_input[i].items);
+    }
 
   log_queue_fifo_free_queue(&self->qoverflow_wait);
   log_queue_fifo_free_queue(&self->qoverflow_output);
@@ -539,8 +547,8 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
     {
       INIT_IV_LIST_HEAD(&self->qoverflow_input[i].items);
       worker_batch_callback_init(&self->qoverflow_input[i].cb);
-      self->qoverflow_input[i].cb.user_data = self;
       self->qoverflow_input[i].cb.func = log_queue_fifo_move_input;
+      self->qoverflow_input[i].cb.user_data = self;
     }
   INIT_IV_LIST_HEAD(&self->qoverflow_wait);
   INIT_IV_LIST_HEAD(&self->qoverflow_output);
