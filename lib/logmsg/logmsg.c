@@ -1118,56 +1118,6 @@ log_msg_merge_context(LogMessage *self, LogMessage **context, gsize context_len)
     }
 }
 
-/**
- * log_msg_new:
- * @msg: message to parse
- * @length: length of @msg
- * @saddr: sender address
- * @flags: parse flags (LP_*)
- *
- * This function allocates, parses and returns a new LogMessage instance.
- **/
-LogMessage *
-log_msg_new(const gchar *msg, gint length,
-            GSockAddr *saddr,
-            MsgFormatOptions *parse_options)
-{
-  LogMessage *self = log_msg_alloc(length == 0 ? 256 : length * 2);
-
-  log_msg_init(self, saddr);
-
-  if (G_LIKELY(parse_options->format_handler))
-    {
-      parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
-    }
-  else
-    {
-      log_msg_set_value(self, LM_V_MESSAGE, "Error parsing message, format module is not loaded", -1);
-    }
-  return self;
-}
-
-LogMessage *
-log_msg_new_empty(void)
-{
-  LogMessage *self = log_msg_alloc(256);
-
-  log_msg_init(self, NULL);
-  return self;
-}
-
-LogMessage *
-log_msg_new_local(void)
-{
-  LogMessage *self = log_msg_new_empty();
-
-  self->flags |= LF_LOCAL;
-
-  self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-
-  return self;
-}
-
 static void
 log_msg_clone_ack(LogMessage *msg, AckType ack_type)
 {
@@ -1228,6 +1178,57 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
     self->flags |= LF_STATE_OWN_TAGS;
   return self;
 }
+
+/**
+ * log_msg_new:
+ * @msg: message to parse
+ * @length: length of @msg
+ * @saddr: sender address
+ * @flags: parse flags (LP_*)
+ *
+ * This function allocates, parses and returns a new LogMessage instance.
+ **/
+LogMessage *
+log_msg_new(const gchar *msg, gint length,
+            GSockAddr *saddr,
+            MsgFormatOptions *parse_options)
+{
+  LogMessage *self = log_msg_alloc(length == 0 ? 256 : length * 2);
+
+  log_msg_init(self, saddr);
+
+  if (G_LIKELY(parse_options->format_handler))
+    {
+      parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
+    }
+  else
+    {
+      log_msg_set_value(self, LM_V_MESSAGE, "Error parsing message, format module is not loaded", -1);
+    }
+  return self;
+}
+
+LogMessage *
+log_msg_new_empty(void)
+{
+  LogMessage *self = log_msg_alloc(256);
+
+  log_msg_init(self, NULL);
+  return self;
+}
+
+LogMessage *
+log_msg_new_local(void)
+{
+  LogMessage *self = log_msg_new_empty();
+
+  self->flags |= LF_LOCAL;
+
+  self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
+
+  return self;
+}
+
 
 /**
  * log_msg_new_internal:
