@@ -180,7 +180,9 @@ test_log_messages_can_be_parsed(struct msgparse_params *param)
   if (param->expected_stamp_sec)
     {
       if (param->expected_stamp_sec != 1)
-        cr_assert_eq(parsed_timestamp->tv_sec, param->expected_stamp_sec, "Unexpected timestamp");
+        cr_assert_eq(parsed_timestamp->tv_sec, param->expected_stamp_sec,
+                     "Unexpected timestamp, value=%ld, expected=%ld, msg=%s",
+                     parsed_timestamp->tv_sec, param->expected_stamp_sec, param->msg);
 
       cr_assert_eq(parsed_timestamp->tv_usec, param->expected_stamp_usec, "Unexpected microseconds");
       cr_assert_eq(parsed_timestamp->zone_offset, param->expected_stamp_ofs, "Unexpected timezone offset");
