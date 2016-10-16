@@ -757,9 +757,6 @@ log_writer_mark_timeout(void *cookie)
 
   log_msg_set_value(msg, LM_V_HOST, hostname, hostname_len);
 
-  /* set the current time in the message stamp */
-  msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
-
   if (!log_writer_is_msg_suppressed(self, msg))
     {
       log_queue_push_tail(self->queue, msg, &path_options);
