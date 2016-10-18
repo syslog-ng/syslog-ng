@@ -53,6 +53,19 @@ log_rewrite_groupset_foreach_func(const gchar *name, TypeHint type,
   return FALSE;
 }
 
+static gboolean
+log_rewrite_groupunset_foreach_func(const gchar *name, TypeHint type,
+                                    const gchar *value, gsize value_len,
+                                    gpointer user_data)
+{
+  LogRewriteGroupSetCallbackData *callback_data = (LogRewriteGroupSetCallbackData *) user_data;
+  LogMessage *msg = callback_data->msg;
+
+  NVHandle handle = log_msg_get_value_handle(name);
+  log_msg_unset_value(msg, handle);
+  return FALSE;
+}
+
 static void
 log_rewrite_groupset_process(LogRewrite *s, LogMessage **msg, const LogPathOptions *path_options)
 {
@@ -60,7 +73,7 @@ log_rewrite_groupset_process(LogRewrite *s, LogMessage **msg, const LogPathOptio
   LogRewriteGroupSetCallbackData userdata;
   userdata.msg = *msg;
   userdata.template = self->replacement;
-  value_pairs_foreach(self->query, log_rewrite_groupset_foreach_func, *msg, 0, LTZ_LOCAL, NULL, &userdata);
+  value_pairs_foreach(self->query, self->vp_func, *msg, 0, LTZ_LOCAL, NULL, &userdata);
 }
 
 static void
@@ -119,6 +132,15 @@ log_rewrite_groupset_new(LogTemplate *template, GlobalConfig *cfg)
 
   self->replacement = log_template_ref(template);
   self->query = value_pairs_new();
+  self->vp_func = log_rewrite_groupset_foreach_func;
 
+  return &self->super;
+}
+
+LogRewrite *
+log_rewrite_groupunset_new(GlobalConfig *cfg)
+{
+  LogRewriteGroupSet *self = (LogRewriteGroupSet *)log_rewrite_groupset_new(NULL, cfg);
+  self->vp_func = log_rewrite_groupunset_foreach_func;
   return &self->super;
 }

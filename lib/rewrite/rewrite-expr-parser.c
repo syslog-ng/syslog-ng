@@ -39,6 +39,7 @@ static CfgLexerKeyword rewrite_expr_keywords[] =
 
   { "condition",          KW_CONDITION },
   { "groupset",           KW_GROUP_SET },
+  { "groupunset",         KW_GROUP_UNSET },
   { "value",              KW_VALUE },
   { "values",             KW_VALUES },
 

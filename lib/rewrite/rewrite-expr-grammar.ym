@@ -64,6 +64,7 @@ LogRewrite *last_rewrite;
 %token KW_SET_TAG
 %token KW_CLEAR_TAG
 %token KW_GROUP_SET
+%token KW_GROUP_UNSET
 %token KW_SET
 %token KW_UNSET
 %token KW_SUBST
@@ -126,7 +127,10 @@ rewrite_expr
             log_template_unref($3);
             }
         rewrite_groupset_opts ')' { $$ = last_rewrite; }
-
+        | KW_GROUP_UNSET '('
+        {
+            last_rewrite = log_rewrite_groupunset_new(configuration);
+        } rewrite_groupset_opts ')' { $$ = last_rewrite; }
         | LL_IDENTIFIER
           {
             Plugin *p;
