@@ -1189,15 +1189,6 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   LogMessage *self = log_msg_alloc(0);
 
   stats_counter_inc(count_msg_clones);
-  if ((msg->flags & LF_STATE_OWN_MASK) == 0 || ((msg->flags & LF_STATE_OWN_MASK) == LF_STATE_OWN_TAGS
-      && msg->num_tags == 0))
-    {
-      /* the message we're cloning has no original content, everything
-       * is referenced from its "original", use that with this clone
-       * as well, effectively avoiding the "referenced" flag on the
-       * clone. */
-      msg = msg->original;
-    }
   log_msg_write_protect(msg);
 
   memcpy(self, msg, sizeof(*msg));

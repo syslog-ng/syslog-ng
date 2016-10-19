@@ -20,7 +20,8 @@ if ENABLE_CRITERION
 lib_logmsg_tests_TESTS +=				\
 	lib/logmsg/tests/test_nvtable			\
 	lib/logmsg/tests/test_gsockaddr_serialize	\
-	lib/logmsg/tests/test_log_message
+	lib/logmsg/tests/test_log_message \
+	lib/logmsg/tests/test_logmsg_ack
 
 lib_logmsg_tests_test_nvtable_CFLAGS			= $(TEST_CFLAGS)
 lib_logmsg_tests_test_nvtable_LDADD			= $(TEST_LDADD)
@@ -30,5 +31,9 @@ lib_logmsg_tests_test_gsockaddr_serialize_LDADD		= $(TEST_LDADD)
 
 lib_logmsg_tests_test_log_message_CFLAGS		= $(TEST_CFLAGS)
 lib_logmsg_tests_test_log_message_LDADD			= $(TEST_LDADD)
+
+lib_logmsg_tests_test_logmsg_ack_LDADD = $(TEST_LDADD)
+lib_logmsg_tests_test_logmsg_ack_CFLAGS = $(TEST_CFLAGS)
+
 
 endif
