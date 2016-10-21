@@ -1,0 +1,659 @@
+Source: syslog-ng
+Section: admin
+Priority: extra
+Maintainer: Laszlo Budai <laszlo.budai@balabit.com>
+Uploaders: Laszlo Boszormenyi (GCS) <gcs@debian.org>,
+           SZALAY Attila <sasa@debian.org>
+Build-Depends: debhelper (>= 9~),
+               dh-autoreconf,
+               automake (>= 1:1.11.1),
+               pkg-config, flex, bison,
+               xsltproc, docbook-xsl, docbook,
+               libevtlog-dev (>= 0.2.12-5~),
+               libesmtp-dev,
+               libivykis-dev (>= 0.36.1~),
+               libnet1-dev,
+               libglib2.0-dev,
+               libdbi-dev | libdbi0-dev,
+               libssl-dev,
+               libmongo-client-dev (>= 0.1.8~),
+               libjson-c-dev | libjson0-dev,
+               libwrap0-dev,
+               libpcre3-dev,
+               libcap-dev [linux-any],
+               dh-systemd (>= 1.3),
+               libsystemd-daemon-dev [linux-any] | libsystemd-dev [linux-any],
+               libsystemd-journal-dev (>= 195) | libsystemd-dev [linux-any],
+               libgeoip-dev,
+               geoip-database,
+               libhiredis-dev,
+               libssl-dev,
+               libriemann-client-dev,
+               python2.7,
+               python-dev,
+               python-setuptools,
+	       python-nose,
+	       pep8|python-pep8,
+	       python-ply,
+	       pylint (>= 1.5.0),
+	       openjdk-7-jdk | openjdk-8-jdk,
+	       gradle (>=2.2.1),
+	       libcurl4-openssl-dev,
+	       libxml2-utils
+Build-Conflicts: autoconf2.13
+Standards-Version: 3.9.6
+Homepage: http://www.syslog-ng.org/
+Vcs-Git: git://anonscm.debian.org/syslog-ng/syslog-ng-debian.git
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=syslog-ng/syslog-ng-debian.git
+
+Package: syslog-ng
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}, syslog-ng-core (>= ${source:Upstream-Version}), ${sng:CoreModules}
+Recommends: ${sng:Modules}
+Description: Enhanced system logging daemon (metapackage)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package is a metapackage, depending on the rest of syslog-ng,
+ including all available plugins. It can be safely removed, if only
+ parts of syslog-ng need to be installed.
+
+Package: syslog-ng-dbg
+Architecture: any
+Multi-Arch: same
+Section: debug
+Depends: syslog-ng-core (= ${binary:Version}), ${misc:Depends}
+Description: Enhanced system logging daemon (debug symbols)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package contains debug symbols for the whole of syslog-ng,
+ including the modules.
+
+Package: syslog-ng-dev
+Section: libdevel
+Architecture: any
+Depends: syslog-ng-core (= ${binary:Version}),
+ ${misc:Depends}, ${perl:Depends},
+ pkg-config, perl, flex, bison,
+ libevtlog-dev (>= 0.2.12), libglib2.0-dev, libivykis-dev (>= 0.30)
+Description: Enhanced system logging daemon (development files)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package contains the headers and tools needed to build
+ third-party plugins against syslog-ng, the next generation system
+ logging daemon.
+
+Package: syslog-ng-core
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-mod-journal [linux-any], util-linux (>= 2.12-10)
+Recommends: logrotate
+Suggests: ${sng:CoreModules}, ${sng:Modules}
+Provides: system-log-daemon, linux-kernel-log-daemon, libsyslog-ng-dev,
+ syslog-ng-abi-${sng:ABI}
+Conflicts: system-log-daemon, linux-kernel-log-daemon
+Replaces: syslog-ng (<< 3.3.0~), libsyslog-ng-dev
+Breaks: syslog-ng (<< 3.3.0~), libsyslog-ng-dev
+Description: Enhanced system logging daemon (core)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the core syslog-ng, with all the plugins
+ required for a standard installation.
+
+Package: syslog-ng-mod-journal
+Architecture: linux-any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: systemd
+Replaces: syslog-ng-core (<= 3.8.0)
+Description: Enhanced system logging daemon (systemd journal plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the systemd-journal() source plugin, which
+ allows syslog-ng to read directly from the systemd Journal.
+
+Package: syslog-ng-mod-json
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (JSON plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the $(format-json) template function plugin,
+ which makes it possible to conveniently serialize system log messages
+ to JSON. Along with the template function, this module also provides
+ a json-parser plugin, allowing syslog-ng to parse JSON input.
+
+Package: syslog-ng-mod-mongodb
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: mongodb-server
+Description: Enhanced system logging daemon (MongoDB plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the MongoDB destination plugin, which allows
+ one to log system messages to MongoDB.
+
+Package: syslog-ng-mod-sql
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
+Description: Enhanced system logging daemon (SQL plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the SQL destination plugin, which allows one to
+ log system messages to a multitude of SQL databases (including, but
+ not limited to MySQL, PostgreSQL and SQLite).
+
+Package: syslog-ng-mod-smtp
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (SMTP plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the SMTP destination plugin, which allows one
+ to send email messages from within syslog-ng itself.
+
+Package: syslog-ng-mod-amqp
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: rabbitmq-server
+Description: Enhanced system logging daemon (AMQP plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the AMQP destination plugin, which allows one
+ to publish log messages through the AMQP protocol.
+
+Package: syslog-ng-mod-geoip
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: geoip-database
+Description: Enhanced system logging daemon (GeoIP plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the GeoIP template function plugin, which
+ allows one to do non-DNS IP-to-country resolving from syslog-ng
+ templates.
+
+Package: syslog-ng-mod-redis
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (Redis plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the Redis destination plugin, which allows one
+ to issue Redis commands from within syslog-ng.
+
+Package: syslog-ng-mod-stomp
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: activemq
+Description: Enhanced system logging daemon (STOMP plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the STOMP destination plugin, which allows one
+ to publish log messages through the STOMP protocol.
+
+Package: syslog-ng-mod-riemann
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (Riemann destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the Riemann destination, allowing one to push
+ events to a Riemann server from within syslog-ng.
+
+Package: syslog-ng-mod-graphite
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: graphite-web
+Description: Enhanced system logging daemon (graphite plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the graphite plugin, that adds a new template
+ function, $(graphite-output), which makes it possible to easily send
+ metrics to Graphite from within syslog-ng.
+
+Package: syslog-ng-mod-python
+Architecture: any  
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (Python destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data 
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the Python destination, allowing one to write
+ destination drivers without having to touch C, in Python.
+
+Package: syslog-ng-mod-java
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, default-jre
+Recommends: syslog-ng-mod-java-common-lib
+Description: Enhanced system logging daemon (Java destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the Java destination, allowing one to write
+ destination drivers without having to touch C, in Java.
+
+Package: syslog-ng-mod-java-common-lib
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-mod-java
+Description: Enhanced system logging daemon (Java module common library)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides common libraries for simplifying the creation
+ of Java destinations.
+
+Package: syslog-ng-mod-elastic
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-mod-java-common-lib, syslog-ng-mod-java, syslog-ng-mod-json
+Description: Enhanced system logging daemon (Elasticsearch destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the Elasticsearch destination, allowing one to 
+ send syslog messages to Elasticsearch.
+
+Package: syslog-ng-mod-hdfs
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-mod-java-common-lib, syslog-ng-mod-java
+Description: Enhanced system logging daemon (HDFS destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the HDFS destination, allowing one to send
+ messages to HDFS.
+ 
+
+Package: syslog-ng-mod-kafka
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-mod-java-common-lib, syslog-ng-mod-java
+Description: Enhanced system logging daemon (Kafka destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the Apache Kafka destination, allowing one to send
+ messages to Kafka.
+
+Package: syslog-ng-mod-http
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-mod-java-common-lib, syslog-ng-mod-java
+Description: Enhanced system logging daemon (HTTP destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides an HTTP destination, allowing one to send syslog messages as HTTP 
+ PUT messages to an http server.
+
+Package: syslog-ng-mod-curl
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (HTTP CURL destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides an HTTP destination, allowing one to send syslog messages as HTTP 
+ PUT messages to an http server.
+
+Package: syslog-ng-mod-kvformat
+Architecture: any  
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (kvformat)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data 
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the kvparser parser for separating a message consisting of 
+ whitespace or comma-separated key=value pairs (for example, Postfix log messages)
+ into name-value pairs.
+
+Package: syslog-ng-mod-add-contextual-data
+Architecture: any  
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (add-contextual-data)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data 
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the add-contextual-data module for syslog-ng.
+ With this module syslog-ng can use an external database file to
+ append custom name-value pairs on incoming logs (to enrich messages). 
+ The database is a file that containing `<selector, name, value>` records.
+ Currently only `CSV` format is supported. It is like `geoip parser` 
+ where the selector is `$HOST`, but the user can define
+ the selector, and also the database contents.
+
+

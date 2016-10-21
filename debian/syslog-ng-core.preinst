@@ -1,0 +1,31 @@
+#! /bin/sh
+
+set -e
+
+if [ "$1" = "install" ]; then
+        if [ -f /etc/logrotate.d/syslog-ng.disabled ]; then
+                if [ -n "$2" ]; then
+                        mv -f /etc/logrotate.d/syslog-ng.disabled /etc/logrotate.d/syslog-ng
+                elif [ ! -f /etc/logrotate.d/syslog-ng ]; then
+                        mv -f /etc/logrotate.d/syslog-ng.disabled /etc/logrotate.d/syslog-ng
+                fi
+        fi
+fi
+
+if [ "$1" = "upgrade" ] &&
+   (dpkg --compare-versions "$2" lt "3.3.5-3" ||
+    (dpkg --compare-versions "$2" gt "3.3.5-4" &&
+     (dpkg --compare-versions "$2" lt "3.3.9-1~" || dpkg --compare-versions "$2" lt "3.4.2-1~")))
+then
+        # Some versions of the package installed symlink conffiles
+        # which don't work (#690067)
+        for file_to_remove in /etc/systemd/system/multi-user.target.wants/syslog-ng.service /etc/systemd/system/syslog.service; do
+                if [ -L $file_to_remove ]; then
+                        rm $file_to_remove
+                fi
+        done
+fi
+
+#DEBHELPER#
+
+exit 0
