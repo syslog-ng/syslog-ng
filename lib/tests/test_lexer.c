@@ -121,6 +121,12 @@ _current_token(void)
   return parser->yylval;
 }
 
+static YYLTYPE *
+_current_lloc(void)
+{
+  return parser->yylloc;
+}
+
 #define assert_token_type(expected)                                     \
   assert_gint(_current_token()->type, expected, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
 
@@ -160,6 +166,42 @@ _current_token(void)
 #define assert_parser_char(expected) \
   _next_token();                                                        \
   assert_gint(_current_token()->type, expected, "Bad character value at %s:%d", __FUNCTION__, __LINE__);
+
+#define assert_location(line, column) \
+  assert_gint(_current_lloc()->first_line, line,          \
+              "The line number in the location information "        \
+              "does not match the expected value at %s:%d", __FUNCTION__, __LINE__);  \
+  assert_gint(_current_lloc()->first_column, column,          \
+              "The column number in the location information "        \
+              "does not match the expected value at %s:%d", __FUNCTION__, __LINE__);
+
+
+static gchar *
+_format_location_tag_message(void)
+{
+  EVTCONTEXT *ctx;
+  EVTREC *rec;
+  char *msg;
+
+  ctx = evt_ctx_init("test", EVT_FAC_USER);
+  rec = evt_rec_init(ctx, EVT_PRI_WARNING, "test");
+  evt_rec_add_tag(rec, cfg_lexer_format_location_tag(parser->lexer, _current_lloc()));
+  msg = evt_format(rec);
+  evt_rec_free(rec);
+  evt_ctx_free(ctx);
+
+  return msg;
+}
+
+#define assert_location_tag(expected) \
+  ({                      \
+    char *msg = _format_location_tag_message(); \
+    const gchar *tag_repr;        \
+    tag_repr = strstr(msg, "; ");                 \
+    assert_string(tag_repr ? tag_repr + 2 : NULL, expected, "Formatted location tag does not match");  \
+    free(msg);                    \
+                                                                                        \
+  })
 
 static void
 test_lexer_string(void)
@@ -227,6 +269,23 @@ test_lexer_others(void)
   assert_parser_identifier("test_value");
 }
 
+static void
+test_location_tracking(void)
+{
+
+  _input("test another\nfoo\nbar\n");
+  _next_token();
+  assert_location(1, 1);
+  _next_token();
+  assert_location(1, 6);
+  _next_token();
+  assert_location(2, 1);
+  _next_token();
+  assert_location(3, 1);
+
+  assert_location_tag("location='#buffer:3:1'");
+}
+
 int
 main(int argc, char **argv)
 {
@@ -234,5 +293,6 @@ main(int argc, char **argv)
   LEXER_TESTCASE(test_lexer_qstring);
   LEXER_TESTCASE(test_lexer_block);
   LEXER_TESTCASE(test_lexer_others);
+  LEXER_TESTCASE(test_location_tracking);
   return 0;
 }

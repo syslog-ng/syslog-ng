@@ -47,13 +47,8 @@ static CfgLexerKeyword riemann_keywords[] =
   { "key_file",                 KW_KEY_FILE },
 
   /* compatibility with original but inconsistent option naming */
-  { "cacert",                   KW_CA_FILE },
-  { "cert",                     KW_CERT_FILE },
-
-  /* this one overrides the token in the core set (cfg-parser.c), but
-   * we use it for compatibility reasons, and I didn't want duplicate
-   * rules in the grammar just for this */
-  { "key",                      KW_KEY_FILE },
+  { "cacert",                   KW_CA_FILE, KWS_OBSOLETE, "The cacert() option is deprecated in favour of ca-file()" },
+  { "cert",                     KW_CERT_FILE, KWS_OBSOLETE, "The cert() option is deprecated in favour of cert-file()" },
 
   { NULL }
 };

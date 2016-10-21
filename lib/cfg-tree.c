@@ -143,7 +143,7 @@ log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len)
     {
       if (node->line || node->column)
         {
-          g_snprintf(buf, buf_len, "%s:%d:%d", self->filename ? : "#buffer", self->line, self->column);
+          g_snprintf(buf, buf_len, "%s:%d:%d", self->filename ? : "#buffer", node->line, node->column);
           break;
         }
       node = node->parent;
