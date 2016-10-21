@@ -309,6 +309,18 @@ test_unset_field_disappears(void)
   rewrite_teardown(msg);
 }
 
+static void
+test_groupunset_field_disappears(void)
+{
+  LogRewrite *test_rewrite = create_rewrite_rule("groupunset(values('field?'));");
+  LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "oldvalue2", "PROGRAM", "foobar", NULL);
+  invoke_rewrite_rule(test_rewrite, msg);
+  assert_msg_field_unset(msg, "field1", ASSERTION_ERROR("field1 should be unset"));
+  assert_msg_field_unset(msg, "field2", ASSERTION_ERROR("field2 should be unset"));
+  assert_msg_field_equals(msg, "PROGRAM", "foobar", -1, ASSERTION_ERROR("field1 should be unset"));
+  rewrite_teardown(msg);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -339,5 +351,6 @@ main(int argc, char **argv)
   test_set_field_exist_and_group_set_when_condition_matches();
   test_set_field_cloned();
   test_unset_field_disappears();
+  test_groupunset_field_disappears();
   stop_grabbing_messages();
 }
