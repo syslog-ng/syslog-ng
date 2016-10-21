@@ -1,0 +1,31 @@
+.TH "UPDATE\-PATTERNDB" "1" "September 2011" "syslog-ng" "syslog-ng manual"
+.SH "NAME"
+update\-patterndb \- Merge patterndb files into a single database.
+.SH "SYNOPSIS"
+\fBupdate\-patterndb\fR
+.SH "DESCRIPTION"
+.PP
+This program can be used to merge the various patterndb files under
+\fI/etc/syslog\-ng/patterndb.d\fR into a system\-wide patterndb file,
+\fI/var/lib/syslog\-ng/patterndb.xml\fR.
+
+It is a thin wrapper around
+.BR pdbtool "(1)'s merge command."
+.SH "SEE ALSO"
+.BR pdbtool (1)
+
+For the full documentation of \fBsyslog-ng\fR, see \fBThe syslog-ng
+Administrator Guide\fR, available from
+.IP
+.B http://www.balabit.com/support/documentation/
+.PP
+.SH "AUTHOR"
+.PP
+This manual page was written by Gergely Nagy
+<algernon@madhouse-project.org>.
+.SH "COPYRIGHT"
+.PP
+Copyright \(co 2011 Gergely Nagy
+<algernon@madhouse-project.org>. Published under the GNU General
+Public License version 3, or at your opinion, any later version as
+published by the FSF.

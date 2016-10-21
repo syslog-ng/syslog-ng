@@ -1,0 +1,37 @@
+syslog-ng (3.8.1-1) experimental; urgency=low
+
+  [ Laszlo Budai <laszlo.budai@balabit.com> ]
+  * 3.8.1 release
+  * Added the long-waited disk-buffer.
+  * date-parser ported from incubator to upstream
+  * New template functions: min, max, sum, average
+  * Added Apache-accesslog-parser
+  * Added loggly destination
+  * Added logmatic destination
+  * Added template function for supporting CEF.
+  * cURL-based HTTP destination driver added (implemented in C 
+    programming language)
+  * SELinux policy installer script now has support for Red Hat Enterprise
+    Linux/CentOS/Oracle Linux 5, 6 and 7.
+  * Implemented add-contextual-data
+  * Added new mode (HTTP) to ElasticSearch-v2 driver that can work 
+    with ElasticSearch 1.x, ElasticSearch 2.x, and even with Elastic 5.
+  * Replaced limongo-client with mongo-c-driver in MongoDB destination driver
+  * Added groupingby() parser, create-context action to PatternDB
+  * Several bugfixes
+
+ -- Laszlo Budai <laszlo.budai@balabit.com>  Fri, 19 Aug 2016 10:07:25 +0200 
+
+syslog-ng (3.8.0beta2-1) experimental; urgency=low
+
+  [ Laszlo Budai <laszlo.budai@balabit.com> ]
+  * 3.8.0beta2 release 1st revision
+
+ -- Laszlo Budai <laszlo.budai@balabit.com>  Wed, 10 Aug 2016 15:29:54 +0200 
+
+syslog-ng (3.8.0beta1-1) experimental; urgency=low
+
+  [ Laszlo Budai <laszlo.budai@balabit.com> ]
+  * 3.8.0beta1 release 1st revision
+
+ -- Laszlo Budai <laszlo.budai@balabit.com>  Thu, 28 Jul 2016 13:14:59 +0200
