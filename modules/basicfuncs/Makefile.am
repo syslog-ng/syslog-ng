@@ -19,6 +19,7 @@ EXTRA_DIST					+=	\
 	modules/basicfuncs/str-funcs.c			\
 	modules/basicfuncs/ip-funcs.c			\
 	modules/basicfuncs/misc-funcs.c			\
+	modules/basicfuncs/list-funcs.c			\
 	modules/basicfuncs/tf-template.c
 
 modules/basicfuncs modules/basicfuncs/ mod-basicfuncs: modules/basicfuncs/libbasicfuncs.la
