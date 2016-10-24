@@ -57,6 +57,7 @@ static Plugin basicfuncs_plugins[] =
   /* context related funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_context_lookup, "context-lookup"),
   TEMPLATE_FUNCTION_PLUGIN(tf_context_length, "context-length"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_context_values, "context-values"),
 
   /* str-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_echo, "echo"),
