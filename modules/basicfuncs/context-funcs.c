@@ -43,3 +43,47 @@ tf_context_length_free_state(gpointer s)
 TEMPLATE_FUNCTION(NULL, tf_context_length,
                   tf_context_length_prepare, NULL, tf_context_length_call,
                   tf_context_length_free_state, NULL);
+
+/*
+ * $(context-lookup [opts] filter $nv1 $n2 ...)
+ *
+ * Options:
+ *  --max-count or -m          The maximum number of matches, 0 for unlimited
+ *
+ * Returns in a syslog-ng style list of all elements
+ */
+void
+tf_context_lookup_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+{
+  gint i, msg_ndx;
+  gboolean first = TRUE;
+  TFCondState *state = (TFCondState *) s;
+  gint count = 0;
+  GString *buf = g_string_sized_new(64);
+
+  for (msg_ndx = 0; msg_ndx < args->num_messages; msg_ndx++)
+    {
+      LogMessage *msg = args->messages[msg_ndx];
+
+      if (filter_expr_eval(state->filter, msg))
+        {
+          count++;
+          for (i = 0; i < state->super.argc; i++)
+            {
+              if (!first)
+                g_string_append_c(result, ',');
+
+              /* NOTE: not recursive, as the message context is just one message */
+              log_template_format(state->super.argv[i], msg, args->opts, args->tz, args->seq_num, args->context_id, buf);
+              str_repr_encode_append(result, buf->str, buf->len, ",");
+
+              first = FALSE;
+            }
+          if (state->grep_max_count && count >= state->grep_max_count)
+            break;
+        }
+    }
+  g_string_free(buf, TRUE);
+}
+
+TEMPLATE_FUNCTION(TFCondState, tf_context_lookup, tf_grep_prepare, NULL, tf_context_lookup_call, tf_cond_free_state, NULL);

@@ -55,6 +55,7 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_or, "or"),
 
   /* context related funcs */
+  TEMPLATE_FUNCTION_PLUGIN(tf_context_lookup, "context-lookup"),
   TEMPLATE_FUNCTION_PLUGIN(tf_context_length, "context-length"),
 
   /* str-funcs */
