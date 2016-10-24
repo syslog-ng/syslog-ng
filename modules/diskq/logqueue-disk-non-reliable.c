@@ -368,7 +368,7 @@ log_queue_disk_non_reliable_new(DiskQueueOptions *options)
   self->qout = g_queue_new ();
   self->qoverflow = g_queue_new ();
   self->qout_size = options->qout_size;
-  self->qoverflow_size = options->mem_buf_size;
+  self->qoverflow_size = options->mem_buf_length;
   _set_virtual_functions (&self->super);
   return &self->super.super;
 }
