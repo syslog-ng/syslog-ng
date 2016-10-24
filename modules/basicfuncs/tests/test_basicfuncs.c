@@ -349,6 +349,9 @@ void
 test_context_funcs(void)
 {
   assert_template_format_with_context("$(context-length)", "2");
+
+  assert_template_format_with_context("$(context-lookup 'facility(local3)' $PID)", "23323,23323");
+  assert_template_format_with_context("$(context-lookup 'facility(local3)' ${comma_value})", "\"value,with,a,comma\",\"value,with,a,comma\"");
 }
 
 int
