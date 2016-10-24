@@ -345,6 +345,12 @@ test_list_funcs(void)
   assert_template_format("$(list-count foo,bar,xxx, baz bad)", "5");
 }
 
+void
+test_context_funcs(void)
+{
+  assert_template_format_with_context("$(context-length)", "2");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -360,6 +366,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_misc_funcs();
   test_tf_template();
   test_list_funcs();
+  test_context_funcs();
 
   deinit_template_tests();
   app_shutdown();

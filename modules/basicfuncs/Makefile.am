@@ -15,6 +15,7 @@ modules_basicfuncs_libbasicfuncs_la_DEPENDENCIES=	\
 
 EXTRA_DIST					+=	\
 	modules/basicfuncs/cond-funcs.c 		\
+	modules/basicfuncs/context-funcs.c 		\
 	modules/basicfuncs/numeric-funcs.c 		\
 	modules/basicfuncs/str-funcs.c			\
 	modules/basicfuncs/ip-funcs.c			\
