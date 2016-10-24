@@ -87,3 +87,37 @@ tf_context_lookup_call(LogTemplateFunction *self, gpointer s, const LogTemplateI
 }
 
 TEMPLATE_FUNCTION(TFCondState, tf_context_lookup, tf_grep_prepare, NULL, tf_context_lookup_call, tf_cond_free_state, NULL);
+
+/*
+ * $(context-values $nv1 $n2 ...)
+ *
+ * Returns in a syslog-ng style list of all specified name value pairs in the entire context.
+ */
+void
+tf_context_values_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+{
+  gint i, msg_ndx;
+  gboolean first = TRUE;
+  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
+  GString *buf = g_string_sized_new(64);
+
+  for (msg_ndx = 0; msg_ndx < args->num_messages; msg_ndx++)
+    {
+      LogMessage *msg = args->messages[msg_ndx];
+
+      for (i = 0; i < state->argc; i++)
+        {
+          if (!first)
+            g_string_append_c(result, ',');
+
+          /* NOTE: not recursive, as the message context is just one message */
+          log_template_format(state->argv[i], msg, args->opts, args->tz, args->seq_num, args->context_id, buf);
+          str_repr_encode_append(result, buf->str, buf->len, ",");
+
+          first = FALSE;
+        }
+    }
+  g_string_free(buf, TRUE);
+}
+
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_context_values, tf_simple_func_prepare, tf_simple_func_eval, tf_context_values_call, tf_simple_func_free_state, NULL);
