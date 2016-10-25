@@ -22,6 +22,7 @@
 
 #include "context-info-db.h"
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -350,4 +351,72 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
   fclose(fp);
   context_info_db_free(db);
   contextual_data_record_scanner_free(scanner);
+}
+
+struct TestNVPairPrefix {
+  TestNVPair expected;
+  const gchar *prefix;
+};
+
+ParameterizedTestParameters(add_contextual_data, test_import_with_prefix)
+{
+  static struct TestNVPairPrefix params[] =
+  {
+    {
+      .expected = {.name = "name1",.value = "value1"},
+      .prefix = NULL
+    },
+    {
+      .expected = {.name = "name1",.value = "value1"},
+      .prefix = ""
+    },
+    {
+      .expected = {.name = "aaaname1",.value = "value1"},
+      .prefix = "aaa"
+    },
+    {
+      .expected = {.name = "aaa.name1",.value = "value1"},
+      .prefix = "aaa."
+    },
+    {
+      .expected = {.name = ".aaa.name1",.value = "value1"},
+      .prefix = ".aaa."
+    },
+    {
+      .expected = {.name = ".name1",.value = "value1"},
+      .prefix = "."
+    },
+    {
+      .expected = {.name = "....name1",.value = "value1"},
+      .prefix = "...."
+    }
+  };
+  size_t nb_params = sizeof (params) / sizeof (struct TestNVPairPrefix);
+  return cr_make_param_array(struct TestNVPairPrefix, params, nb_params);
+}
+
+
+ParameterizedTest(struct TestNVPairPrefix *param, add_contextual_data, test_import_with_prefix)
+{
+  gchar csv_content[] = "selector1,name1,value1";
+
+  FILE *fp = fmemopen(csv_content, sizeof(csv_content), "r");
+  ContextInfoDB *db = context_info_db_new();
+  ContextualDataRecordScanner *scanner =
+    create_contextual_data_record_scanner_by_type("csv");
+
+  contextual_data_record_scanner_set_name_prefix(scanner, param->prefix);
+
+  cr_assert(context_info_db_import(db, fp, scanner),
+            "Failed to import valid CSV file.");
+  cr_assert(context_info_db_is_loaded(db),
+            "The context_info_db_is_loaded reports False after a successful import operation. ");
+  cr_assert(context_info_db_is_indexed(db),
+            "The context_info_db_is_indexed reports False after successful import&load operations.");
+  fclose(fp);
+
+  _assert_context_info_db_contains_name_value_pairs_by_selector(db,
+      "selector1",
+      &param->expected,
+      1);
 }
