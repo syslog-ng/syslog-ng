@@ -124,6 +124,8 @@ Test(add_contextual_data, test_insert)
   context_info_db_foreach_record(context_info_db, "selector-0", _count_records,
                                  (gpointer) & ctr);
   cr_assert_eq(ctr, 5, "foreach should find 5 nv-pairs for selector-0");
+  cr_assert_eq(g_list_length(context_info_db_ordered_selectors(context_info_db)), 2,
+               "2 different selectors were saved to the ordered list");
 
   context_info_db_unref(context_info_db);
 }
@@ -353,7 +355,8 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
   contextual_data_record_scanner_free(scanner);
 }
 
-struct TestNVPairPrefix {
+struct TestNVPairPrefix
+{
   TestNVPair expected;
   const gchar *prefix;
 };

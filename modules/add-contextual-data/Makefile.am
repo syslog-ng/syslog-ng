@@ -30,8 +30,8 @@ add_contextual_data_include_HEADERS = 							\
 	modules/add-contextual-data/add-contextual-data-selector.h		\
 	modules/add-contextual-data/add-contextual-data-template-selector.h
 
-modules_add_contextual_data_libadd_contextual_data_la_CPPFLAGS	=		\
-	$(AM_CPPFLAGS)								\
+modules_add_contextual_data_libadd_contextual_data_la_CFLAGS	=		\
+	$(AM_CFLAGS)								\
 	-I$(top_srcdir)/modules/add-contextual-data				\
 	-I$(top_builddir)/modules/add-contextual-data
 modules_add_contextual_data_libadd_contextual_data_la_LIBADD	=		\

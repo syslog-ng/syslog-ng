@@ -25,6 +25,7 @@
 #include "logpipe.h"
 #include "parser/parser-expr.h"
 #include "reloc.h"
+#include "cfg.h"
 #include "contextual-data-record-scanner.h"
 #include "add-contextual-data-selector.h"
 #include "add-contextual-data-template-selector.h"
@@ -55,10 +56,10 @@ add_contextual_data_set_filename(LogParser *p, const gchar *filename)
 }
 
 void
-add_contextual_data_set_database_selector_template(LogParser *p,
-    const gchar *selector)
+add_contextual_data_set_database_selector_template(LogParser *p, const gchar *selector)
 {
   AddContextualData *self = (AddContextualData *) p;
+  add_contextual_data_selector_free(self->selector);
   self->selector = add_contextual_data_template_selector_new(log_pipe_get_config(&p->super), selector);
 }
 
@@ -72,14 +73,20 @@ add_contextual_data_set_prefix(LogParser *p, const gchar *prefix)
 }
 
 void
-add_contextual_data_set_database_default_selector(LogParser *p,
-    const gchar *
-    default_selector)
+add_contextual_data_set_database_default_selector(LogParser *p, const gchar *default_selector)
 {
   AddContextualData *self = (AddContextualData *) p;
 
   g_free(self->default_selector);
   self->default_selector = g_strdup(default_selector);
+}
+
+void
+add_contextual_data_set_selector(LogParser *p, AddContextualDataSelector *selector)
+{
+  AddContextualData *self = (AddContextualData *) p;
+
+  self->selector = selector;
 }
 
 static gboolean
@@ -89,8 +96,7 @@ _is_default_selector_set(const AddContextualData *self)
 }
 
 static void
-_add_context_data_to_message(gpointer pmsg,
-                             const ContextualDataRecord *record)
+_add_context_data_to_message(gpointer pmsg, const ContextualDataRecord *record)
 {
   LogMessage *msg = (LogMessage *) pmsg;
   log_msg_set_value_by_name(msg, record->name->str, record->value->str, record->value->len);
@@ -139,7 +145,7 @@ _clone(LogPipe *s)
   add_contextual_data_set_prefix(&cloned->super, self->prefix);
   add_contextual_data_set_filename(&cloned->super, self->filename);
   add_contextual_data_set_database_default_selector(&cloned->super,
-                                                    self->default_selector);
+      self->default_selector);
   self->selector = add_contextual_data_selector_clone(self->selector, s->cfg);
 
   return &cloned->super.super;
@@ -153,8 +159,9 @@ _free(LogPipe *s)
   context_info_db_unref(self->context_info_db);
   g_free(self->filename);
   g_free(self->prefix);
-  log_parser_free_method(s);
+  g_free(self->default_selector);
   add_contextual_data_selector_free(self->selector);
+  log_parser_free_method(s);
 }
 
 static gboolean
@@ -256,14 +263,14 @@ _first_init(AddContextualData *self)
       return FALSE;
     }
 
-  if (!add_contextual_data_selector_init(self->selector))
-    return FALSE;
-
   if (!_load_context_info_db(self))
     {
       msg_error("Failed to load the database file.");
       return FALSE;
     }
+
+  if (!add_contextual_data_selector_init(self->selector))
+    return FALSE;
 
   return TRUE;
 }
@@ -271,7 +278,7 @@ _first_init(AddContextualData *self)
 static gboolean
 _init(LogPipe *s)
 {
-  AddContextualData *self = (AddContextualData *) s;
+  AddContextualData *self = (AddContextualData *)s;
 
   if (_is_initialized(self) || _first_init(self))
     return log_parser_init_method(s);
@@ -287,6 +294,7 @@ add_contextual_data_parser_new(GlobalConfig *cfg)
   log_parser_init_instance(&self->super, cfg);
 
   self->super.process = _process;
+  self->selector = NULL;
   self->context_info_db = context_info_db_new();
 
   self->super.super.clone = _clone;
@@ -294,7 +302,6 @@ add_contextual_data_parser_new(GlobalConfig *cfg)
   self->super.super.init = _init;
   self->default_selector = NULL;
   self->prefix = NULL;
-  self->selector = NULL;
 
   return &self->super;
 }
