@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -17,19 +17,14 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
+ *
  */
+#ifndef KV_SCANNER_SIMPLE_H_INCLUDED
+#define KV_SCANNER_SIMPLE_H_INCLUDED
 
-#ifndef KVPARSER_H_INCLUDED
-#define KVPARSER_H_INCLUDED
-
-#include "parser/parser-expr.h"
+#include "syslog-ng.h"
 #include "kv-scanner.h"
 
-void kv_parser_set_prefix(LogParser *p, const gchar *prefix);
-void kv_parser_set_allow_pair_separator_in_value(LogParser *p, gboolean allow_pair_separator_in_value);
-void kv_parser_set_value_separator(LogParser *p, gchar value_separator);
-LogParser *kv_parser_new(GlobalConfig *cfg);
-LogParser *kv_parser_linux_audit_new(GlobalConfig *cfg);
-gboolean kv_parser_is_valid_separator_character(gchar c);
+KVScanner* kv_scanner_simple_new(gchar value_separator, KVParseValue *parse_value);
 
 #endif

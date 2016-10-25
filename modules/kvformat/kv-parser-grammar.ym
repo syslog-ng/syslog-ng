@@ -51,6 +51,7 @@
 %token KW_LINUX_AUDIT_PARSER
 %token KW_PREFIX
 %token KW_VALUE_SEPARATOR
+%token KW_ALLOW_PAIR_SEPARATOR_OPTION
 
 %type	<ptr> parser_expr_kv
 
@@ -64,13 +65,13 @@ start
 parser_expr_kv
 	: KW_KV_PARSER '('
 	  {
-	    last_parser = *instance = (LogParser *) kv_parser_new(configuration, kv_scanner_new());
+	    last_parser = *instance = (LogParser *) kv_parser_new(configuration);
 	  }
 	  parser_kv_opts
 	  ')'					{ $$ = last_parser; }
 	| KW_LINUX_AUDIT_PARSER '('
 	  {
-	    last_parser = *instance = (LogParser *) kv_parser_new(configuration, linux_audit_scanner_new());
+	    last_parser = *instance = (LogParser *) kv_parser_linux_audit_new(configuration);
 	  }
 	  parser_kv_opts
 	  ')'					{ $$ = last_parser; }
@@ -83,12 +84,14 @@ parser_kv_opts
 
 parser_kv_opt
 	: KW_PREFIX '(' string ')'		{ kv_parser_set_prefix(last_parser, $3); free($3); }
+	| KW_ALLOW_PAIR_SEPARATOR_OPTION '(' yesno ')'		{ kv_parser_set_allow_pair_separator_in_value(last_parser, $3); }
 	| KW_VALUE_SEPARATOR '(' string ')'
 	  {
 	    CHECK_ERROR((strlen($3) == 1), @3, "kv-parser() only supports single-character values for value-separator()");
+	    CHECK_ERROR((kv_parser_is_valid_separator_character($3[0])), @3, "kv-parser() unsupported character for value-separator()");
             kv_parser_set_value_separator(last_parser, $3[0]);
             free($3);
-          }
+	  }
 	| parser_opt
 	;
 
