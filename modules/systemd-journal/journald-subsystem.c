@@ -44,6 +44,9 @@ load_journald_subsystem()
 #define LOAD_SYMBOL(library, symbol) g_module_symbol(library, #symbol, (gpointer*)&symbol)
 
 #define JOURNAL_LIBRARY_NAME "libsystemd-journal.so.0"
+#define SYSTEMD_LIBRARY_NAME "libsystemd.so.0"
+
+const char *journald_libraries[] = {JOURNAL_LIBRARY_NAME, SYSTEMD_LIBRARY_NAME, NULL};
 
 static GModule *journald_module;
 
@@ -92,73 +95,79 @@ static SD_JOURNAL_GET_FD sd_journal_get_fd;
 static SD_JOURNAL_PROCESS sd_journal_process;
 static SD_JOURNAL_GET_REALTIME_USEC sd_journal_get_realtime_usec;
 
+static GModule *
+_journald_module_open()
+{
+  for (gint i = 0; (journald_libraries[i] != NULL) && !journald_module; i++)
+    journald_module = g_module_open(journald_libraries[i], 0);
+
+  return journald_module;
+}
+
+static gboolean
+_load_journald_symbols()
+{
+  if (!LOAD_SYMBOL(journald_module, sd_journal_open))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_close))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_seek_head))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_seek_tail))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_get_cursor))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_next))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_restart_data))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_enumerate_data))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_seek_cursor))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_get_fd))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_process))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_get_realtime_usec))
+    return FALSE;
+
+  return TRUE;
+}
+
 gboolean
 load_journald_subsystem()
 {
   if (!journald_module)
     {
-      journald_module = g_module_open(JOURNAL_LIBRARY_NAME, 0);
+      journald_module = _journald_module_open();
       if (!journald_module)
         {
           return FALSE;
         }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_open))
+      if (!_load_journald_symbols())
         {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_close))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_seek_head))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_seek_tail))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_get_cursor))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_next))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_restart_data))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_enumerate_data))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_seek_cursor))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_get_fd))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_process))
-        {
-          goto error;
-        }
-      if (!LOAD_SYMBOL(journald_module, sd_journal_get_realtime_usec))
-        {
-          goto error;
+          g_module_close(journald_module);
+          journald_module = NULL;
+          return FALSE;
         }
     }
   return TRUE;
-error:
-  g_module_close(journald_module);
-  journald_module = NULL;
-  return FALSE;
 }
 
 #endif
+
 
 int
 journald_open(Journald *self, int flags)
