@@ -38,7 +38,6 @@ public class SyslogNgInternalLogger extends AppenderSkeleton {
         if (logger.getAppender(SyslogNgInternalLogger.NAME) == null) {
             logger.removeAllAppenders();
             logger.addAppender(new SyslogNgInternalLogger());
-            logger.setLevel(Level.DEBUG);
         }
     }
 
@@ -58,15 +57,24 @@ public class SyslogNgInternalLogger extends AppenderSkeleton {
 
     @Override
     protected void append(LoggingEvent event) {
-        StringBuilder formatedMessage = new StringBuilder();
-        formatedMessage.append(event.getLocationInformation().getClassName());
-        formatedMessage.append(".");
-        formatedMessage.append(event.getLocationInformation().getMethodName());
-        formatedMessage.append(":");
-        formatedMessage.append(event.getLocationInformation().getLineNumber());
-        formatedMessage.append(" - ");
-        formatedMessage.append(event.getMessage().toString());
-        String message = formatedMessage.toString();
+
+        String message = null;
+        String internalMessageBody = event.getMessage().toString();
+
+        if (event.getLevel().isGreaterOrEqual(Level.INFO)) {
+            message = internalMessageBody;
+        }
+        else {
+            StringBuilder formatedMessage = new StringBuilder();
+            formatedMessage.append(event.getLocationInformation().getClassName());
+            formatedMessage.append(".");
+            formatedMessage.append(event.getLocationInformation().getMethodName());
+            formatedMessage.append(":");
+            formatedMessage.append(event.getLocationInformation().getLineNumber());
+            formatedMessage.append(" - ");
+            formatedMessage.append(internalMessageBody);
+            message = formatedMessage.toString();
+        }
 
         switch(event.getLevel().toInt()) {
         case Level.INFO_INT:
