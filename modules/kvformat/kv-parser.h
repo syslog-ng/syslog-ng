@@ -25,11 +25,27 @@
 #include "parser/parser-expr.h"
 #include "kv-scanner.h"
 
+/* base class */
+typedef struct _KVParser
+{
+  LogParser super;
+  gboolean allow_pair_separator_in_value;
+  gchar value_separator;
+  gchar *prefix;
+  gsize prefix_len;
+  GString *formatted_key;
+  KVScanner *kv_scanner;
+} KVParser;
+
 void kv_parser_set_prefix(LogParser *p, const gchar *prefix);
 void kv_parser_set_allow_pair_separator_in_value(LogParser *p, gboolean allow_pair_separator_in_value);
 void kv_parser_set_value_separator(LogParser *p, gchar value_separator);
-LogParser *kv_parser_new(GlobalConfig *cfg);
-LogParser *kv_parser_linux_audit_new(GlobalConfig *cfg);
 gboolean kv_parser_is_valid_separator_character(gchar c);
+
+gboolean kv_parser_init_method(LogPipe *s);
+gboolean kv_parser_deinit_method(LogPipe *s);
+LogPipe *kv_parser_clone_fields(LogParser *cloned, KVParser *self);
+KVParser *kv_parser_init_instance(GlobalConfig *cfg);
+LogParser *kv_parser_new(GlobalConfig *cfg);
 
 #endif

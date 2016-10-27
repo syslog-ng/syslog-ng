@@ -28,7 +28,8 @@
 %code {
 
 #include "kv-parser.h"
-#include "linux-audit-scanner.h"
+#include "kv-parser-parser.h"
+#include "linux-audit-parser.h"
 #include "cfg-parser.h"
 #include "kv-parser-grammar.h"
 #include "cfg-grammar.h"
@@ -71,7 +72,7 @@ parser_expr_kv
 	  ')'					{ $$ = last_parser; }
 	| KW_LINUX_AUDIT_PARSER '('
 	  {
-	    last_parser = *instance = (LogParser *) kv_parser_linux_audit_new(configuration);
+	    last_parser = *instance = (LogParser *) linux_audit_parser_new(configuration);
 	  }
 	  parser_kv_opts
 	  ')'					{ $$ = last_parser; }

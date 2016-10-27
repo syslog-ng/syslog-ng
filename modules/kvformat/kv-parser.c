@@ -25,17 +25,6 @@
 #include "kv-scanner-generic.h"
 #include "linux-audit-scanner.h"
 
-typedef struct _KVParser
-{
-  LogParser super;
-  gboolean allow_pair_separator_in_value;
-  gchar value_separator;
-  gchar *prefix;
-  gsize prefix_len;
-  GString *formatted_key;
-  KVScanner *kv_scanner;
-} KVParser;
-
 gboolean
 kv_parser_is_valid_separator_character(char c)
 {
@@ -109,8 +98,8 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   return TRUE;
 }
 
-static LogPipe *
-_set_cloned_fields(LogParser *cloned, KVParser *self)
+LogPipe *
+kv_parser_clone_fields(LogParser *cloned, KVParser *self)
 {
   KVParser *cloned_kvparser = (KVParser *)cloned;
 
@@ -134,16 +123,7 @@ _clone(LogPipe *s)
   KVParser *self = (KVParser *) s;
   LogParser *cloned = kv_parser_new(s->cfg);
 
-  return _set_cloned_fields(cloned, self);
-}
-
-static LogPipe *
-_clone_linux_audit(LogPipe *s)
-{
-  KVParser *self = (KVParser *) s;
-  LogParser *cloned = kv_parser_linux_audit_new(s->cfg);
-
-  return _set_cloned_fields(cloned, self);
+  return kv_parser_clone_fields(cloned, self);
 }
 
 static void
@@ -169,8 +149,8 @@ _process_threaded(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_op
   return ok;
 }
 
-static gboolean
-_init(LogPipe *s)
+gboolean
+kv_parser_init_method(LogPipe *s)
 {
   KVParser *self = (KVParser *)s;
   g_assert(self->kv_scanner == NULL);
@@ -187,19 +167,8 @@ _init(LogPipe *s)
   return TRUE;
 }
 
-static gboolean
-_init_linux_audit(LogPipe *s)
-{
-  KVParser *self = (KVParser *)s;
-  g_assert(self->kv_scanner == NULL);
-  _init(s);
-  kv_scanner_set_parse_value(self->kv_scanner, parse_linux_audit_style_hexdump);
-
-  return TRUE;
-}
-
-static gboolean
-_deinit(LogPipe *s)
+gboolean
+kv_parser_deinit_method(LogPipe *s)
 {
   KVParser *self = (KVParser *)s;
   kv_scanner_free(self->kv_scanner);
@@ -207,13 +176,14 @@ _deinit(LogPipe *s)
   return TRUE;
 }
 
-static KVParser *
-_create_common(GlobalConfig *cfg)
+KVParser *
+kv_parser_init_instance(GlobalConfig *cfg)
 {
   KVParser *self = g_new0(KVParser, 1);
 
   log_parser_init_instance(&self->super, cfg);
-  self->super.super.deinit = _deinit;
+  self->super.super.init = kv_parser_init_method;
+  self->super.super.deinit = kv_parser_deinit_method;
   self->super.super.free_fn = _free;
   self->super.process = _process_threaded;
   self->kv_scanner = NULL;
@@ -227,21 +197,9 @@ _create_common(GlobalConfig *cfg)
 LogParser *
 kv_parser_new(GlobalConfig *cfg)
 {
-  KVParser *self = _create_common(cfg);
+  KVParser *self = kv_parser_init_instance(cfg);
 
-  self->super.super.init = _init;
   self->super.super.clone = _clone;
-
-  return &self->super;
-}
-
-LogParser *
-kv_parser_linux_audit_new(GlobalConfig *cfg)
-{
-  KVParser *self = _create_common(cfg);
-
-  self->super.super.init = _init_linux_audit;
-  self->super.super.clone = _clone_linux_audit;
 
   return &self->super;
 }

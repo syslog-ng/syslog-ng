@@ -13,6 +13,8 @@ modules_kvformat_libkvformat_la_SOURCES=	\
 	modules/kvformat/kv-scanner-simple.h \
 	modules/kvformat/linux-audit-scanner.c	\
 	modules/kvformat/linux-audit-scanner.h	\
+	modules/kvformat/linux-audit-parser.c	\
+	modules/kvformat/linux-audit-parser.h	\
 	modules/kvformat/kv-parser-grammar.y	\
 	modules/kvformat/kv-parser-parser.c		\
 	modules/kvformat/kv-parser-parser.h		\
