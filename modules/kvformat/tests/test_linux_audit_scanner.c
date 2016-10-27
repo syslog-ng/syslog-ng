@@ -19,7 +19,7 @@
  * COPYING for details.
  */
 #include "kv-scanner-simple.h"
-#include "linux-audit-scanner.h"
+#include "linux-audit-parser.h"
 #include "testutils.h"
 
 #define kv_scanner_testcase_begin(func, args)             \

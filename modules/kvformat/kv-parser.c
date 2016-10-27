@@ -23,7 +23,6 @@
 #include "kv-scanner.h"
 #include "kv-scanner-simple.h"
 #include "kv-scanner-generic.h"
-#include "linux-audit-scanner.h"
 
 gboolean
 kv_parser_is_valid_separator_character(char c)

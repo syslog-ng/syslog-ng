@@ -23,6 +23,7 @@
 
 #include "kv-parser.h"
 
+gboolean parse_linux_audit_style_hexdump(KVScanner *self);
 LogParser *linux_audit_parser_new(GlobalConfig *cfg);
 
 #endif
