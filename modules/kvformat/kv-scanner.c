@@ -22,13 +22,13 @@
 #include "kv-scanner.h"
 
 void
-kv_scanner_init(KVScanner *self, gchar value_separator, KVParseValue *parse_value)
+kv_scanner_init(KVScanner *self, gchar value_separator, KVTransformValueFunc transform_value)
 {
   self->key = g_string_sized_new(32);
   self->value = g_string_sized_new(64);
   self->decoded_value = g_string_sized_new(64);
   self->value_separator = value_separator;
-  self->parse_value = parse_value;
+  self->transform_value = transform_value;
 }
 
 void

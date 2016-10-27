@@ -141,7 +141,7 @@ _init_linux_audit(LogPipe *s)
 
   if (!kv_parser_init_method(s))
     return FALSE;
-  kv_scanner_set_parse_value(self->kv_scanner, parse_linux_audit_style_hexdump);
+  kv_scanner_set_transform_value(self->kv_scanner, parse_linux_audit_style_hexdump);
 
   return TRUE;
 }
