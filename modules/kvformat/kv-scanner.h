@@ -61,6 +61,12 @@ kv_scanner_clone(KVScanner *self)
   return self->clone(self);
 }
 
+static inline gboolean
+kv_scanner_scan_next(KVScanner *self)
+{
+  return self->scan_next(self);
+}
+
 static inline const gchar *
 kv_scanner_get_current_key(KVScanner *self)
 {

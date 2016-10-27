@@ -88,7 +88,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   log_msg_make_writable(pmsg, path_options);
   /* FIXME: input length */
   kv_scanner_input(self->kv_scanner, input);
-  while (self->kv_scanner->scan_next(self->kv_scanner))
+  while (kv_scanner_scan_next(self->kv_scanner))
     {
 
       /* FIXME: value length */
