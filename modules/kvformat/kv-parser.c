@@ -106,7 +106,6 @@ kv_parser_clone_fields(LogParser *cloned, KVParser *self)
   log_parser_set_template(cloned, log_template_ref(self->super.template));
   kv_parser_set_allow_pair_separator_in_value(cloned, self->allow_pair_separator_in_value);
   kv_parser_set_value_separator(cloned, self->value_separator);
-  log_parser_set_template(cloned, log_template_ref(self->super.template));
 
   if (self->kv_scanner)
     {
