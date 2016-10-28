@@ -76,9 +76,7 @@ _resolve(AddContextualDataSelector *s, LogMessage *msg)
   log_template_format(self->selector_template, msg, NULL, LTZ_LOCAL, 0, NULL,
                       selector_str);
 
-  gchar *resolved_template = selector_str->str;
-
-  return resolved_template;
+  return g_string_free(selector_str, FALSE);
 }
 
 static void

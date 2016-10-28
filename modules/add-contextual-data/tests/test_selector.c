@@ -28,6 +28,8 @@
 #include <criterion/criterion.h>
 #include <unistd.h>
 
+TestSuite(add_contextual_data_template_selector, .init = app_startup, .fini = app_shutdown);
+
 static LogMessage *
 _create_log_msg(const gchar *message, const gchar *host)
 {
@@ -80,16 +82,4 @@ Test(add_contextual_data_template_selector, test_template_selector_cannot_be_res
   cr_assert_str_eq(resolved_selector, "", "No template should be resolved.");
   log_msg_unref(msg);
   add_contextual_data_selector_free(selector);
-}
-
-__attribute__((constructor))
-static void global_test_init(void)
-{
-  app_startup();
-}
-
-__attribute__((destructor))
-static void global_test_deinit(void)
-{
-  app_shutdown();
 }

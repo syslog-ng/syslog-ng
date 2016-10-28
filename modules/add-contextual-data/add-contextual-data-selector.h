@@ -69,7 +69,7 @@ add_contextual_data_selector_init(AddContextualDataSelector *self)
 static inline AddContextualDataSelector *
 add_contextual_data_selector_clone(AddContextualDataSelector *self, GlobalConfig *cfg)
 {
-  if (self->clone)
+  if (self && self->clone)
     {
       return self->clone(self, cfg);
     }
