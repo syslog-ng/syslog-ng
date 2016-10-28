@@ -26,6 +26,7 @@
 #include "parser/parser-expr.h"
 #include "syslog-ng.h"
 #include "template/common-template-typedefs.h"
+#include "add-contextual-data-selector.h"
 
 LogParser *add_contextual_data_parser_new(GlobalConfig *cfg);
 
@@ -45,5 +46,8 @@ void add_contextual_data_set_database_default_selector(LogParser *p,
                                                        default_selector);
 
 void add_contextual_data_set_prefix(LogParser *p, const gchar *perfix);
+void add_contextual_data_set_filters_path(LogParser *p, const gchar *filename);
+
+void add_contextual_data_set_selector(LogParser *p, AddContextualDataSelector *selector);
 
 #endif

@@ -31,11 +31,12 @@
 #include "add-contextual-data.h"
 #include "cfg-parser.h"
 #include "cfg-grammar.h"
-#include "add-contextual-data-grammar.h"
+#include "add-contextual-data-selector.h"
 #include "syslog-names.h"
 #include "messages.h"
-
+#include "plugin.h"
 }
+
 
 %name-prefix "add_contextual_data_"
 
@@ -85,11 +86,9 @@ parser_add_contextual_data_opt
         {
             add_contextual_data_set_filename(last_parser, $3);
             free($3);
-        } | KW_ADD_CONTEXTUAL_DATA_SELECTOR '(' string ')'
-        {
-            add_contextual_data_set_database_selector_template(last_parser, $3);
-            free($3);
-        } | KW_ADD_CONTEXTUAL_DATA_DEFAULT_SELECTOR '(' string ')'
+        } 
+        | KW_ADD_CONTEXTUAL_DATA_SELECTOR '(' parser_add_contextual_data_selector ')'
+        | KW_ADD_CONTEXTUAL_DATA_DEFAULT_SELECTOR '(' string ')'
         {
             add_contextual_data_set_database_default_selector(last_parser, $3);
             free($3);
@@ -97,6 +96,31 @@ parser_add_contextual_data_opt
         {
             add_contextual_data_set_prefix(last_parser, $3);
             free($3);
+        };
+
+parser_add_contextual_data_selector
+        : LL_IDENTIFIER
+        {
+            Plugin *p;
+            gint context = LL_CONTEXT_SELECTOR;
+            gpointer value;
+
+            p = plugin_find(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            value = plugin_parse_config(p, configuration, &@1, NULL);
+
+            free($1);
+            if (!value)
+              {
+                YYERROR;
+              }
+            add_contextual_data_set_selector(last_parser, (AddContextualDataSelector *) value);
+         }
+        | LL_STRING
+        {
+            add_contextual_data_set_database_selector_template(last_parser, $1);
+            free($1);
         };
 
 /* INCLUDE_RULES */

@@ -32,6 +32,7 @@ typedef struct _ContextInfoDB ContextInfoDB;
 typedef void (*ADD_CONTEXT_INFO_CB) (gpointer arg,
                                      const ContextualDataRecord *record);
 
+GList * context_info_db_ordered_selectors(ContextInfoDB *self);
 ContextInfoDB *context_info_db_new();
 void context_info_db_free(ContextInfoDB *self);
 

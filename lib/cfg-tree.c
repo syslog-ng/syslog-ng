@@ -996,6 +996,12 @@ cfg_tree_get_object(CfgTree *self, gint content, const gchar *name)
   return g_hash_table_lookup(self->objects, &lookup_node);
 }
 
+GList *
+cfg_tree_get_objects(CfgTree *self)
+{
+  return g_hash_table_get_values(self->objects);
+}
+
 gboolean
 cfg_tree_add_template(CfgTree *self, LogTemplate *template)
 {

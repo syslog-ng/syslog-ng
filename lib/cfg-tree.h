@@ -162,6 +162,7 @@ typedef struct _CfgTree
 
 gboolean cfg_tree_add_object(CfgTree *self, LogExprNode *rule);
 LogExprNode *cfg_tree_get_object(CfgTree *self, gint type, const gchar *name);
+GList *cfg_tree_get_objects(CfgTree *self);
 
 gboolean cfg_tree_add_template(CfgTree *self, LogTemplate *template);
 LogTemplate *cfg_tree_lookup_template(CfgTree *self, const gchar *name);

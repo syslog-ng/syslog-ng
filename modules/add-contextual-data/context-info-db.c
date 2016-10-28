@@ -22,7 +22,9 @@
 
 #include "context-info-db.h"
 #include "atomic.h"
+#include "messages.h"
 #include <string.h>
+#include <stdio.h>
 #include <sys/types.h>
 
 struct _ContextInfoDB
@@ -31,6 +33,7 @@ struct _ContextInfoDB
   GArray *data;
   GHashTable *index;
   gboolean is_data_indexed;
+  GList *ordered_selectors;
 };
 
 typedef struct _element_range
@@ -46,6 +49,12 @@ _contextual_data_record_cmp(gconstpointer k1, gconstpointer k2)
   ContextualDataRecord *r2 = (ContextualDataRecord *) k2;
 
   return strcmp(r1->selector->str, r2->selector->str);
+}
+
+GList *
+context_info_db_ordered_selectors(ContextInfoDB *self)
+{
+  return self->ordered_selectors;
 }
 
 void
@@ -109,6 +118,7 @@ _new(ContextInfoDB *self)
   self->data = g_array_new(FALSE, FALSE, sizeof(ContextualDataRecord));
   self->index = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
   self->is_data_indexed = FALSE;
+  self->ordered_selectors = NULL;
   g_atomic_counter_set(&self->ref_cnt, 1);
 }
 
@@ -134,6 +144,10 @@ _free(ContextInfoDB *self)
   if (self->data)
     {
       _free_array(self->data);
+    }
+  if (self->ordered_selectors)
+    {
+      g_list_free(self->ordered_selectors);
     }
 }
 
@@ -191,17 +205,28 @@ context_info_db_free(ContextInfoDB *self)
     }
 }
 
+static gint
+_g_strcmp(const gconstpointer a, gconstpointer b)
+{
+  return g_strcmp0((const gchar *) a, (const gchar *) b);
+}
+
 void
 context_info_db_insert(ContextInfoDB *self,
                        const ContextualDataRecord *record)
 {
   g_array_append_val(self->data, *record);
   self->is_data_indexed = FALSE;
+  if (!g_list_find_custom(self->ordered_selectors, record->selector->str, _g_strcmp))
+    self->ordered_selectors = g_list_append(self->ordered_selectors, record->selector->str);
 }
 
 gboolean
 context_info_db_contains(ContextInfoDB *self, const gchar *selector)
 {
+  if (!selector)
+    return FALSE;
+
   _ensure_indexed_db(self);
   return (_get_range_of_records(self, selector) != NULL);
 }
