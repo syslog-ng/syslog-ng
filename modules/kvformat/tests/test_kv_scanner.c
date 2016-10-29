@@ -23,10 +23,10 @@
 #include "testutils.h"
 
 static void
-_assert_no_more_tokens(KVScanner *scanner)
+_expect_no_more_tokens(KVScanner *scanner)
 {
   GString *msg;
-  gboolean ok = scanner->scan_next(scanner);
+  gboolean ok = kv_scanner_scan_next(scanner);
 
   if (ok)
     {
@@ -48,7 +48,7 @@ _assert_no_more_tokens(KVScanner *scanner)
 }
 
 static gboolean
-_assert_current_key_is(KVScanner *scanner, const gchar *expected_key)
+_expect_current_key_equals(KVScanner *scanner, const gchar *expected_key)
 {
   const gchar *key = kv_scanner_get_current_key(scanner);
 
@@ -56,7 +56,7 @@ _assert_current_key_is(KVScanner *scanner, const gchar *expected_key)
 }
 
 static gboolean
-_assert_current_value_is(KVScanner *scanner, const gchar *expected_value)
+_expect_current_value_equals(KVScanner *scanner, const gchar *expected_value)
 {
   const gchar *value = kv_scanner_get_current_value(scanner);
 
@@ -64,15 +64,15 @@ _assert_current_value_is(KVScanner *scanner, const gchar *expected_value)
 }
 
 static gboolean
-_compare_key_value(KVScanner *scanner, const gchar *key, const gchar *value)
+_expect_next_key_value(KVScanner *scanner, const gchar *key, const gchar *value)
 {
   g_assert(value);
 
   gboolean ok = scanner->scan_next(scanner);
   if (ok)
     {
-      _assert_current_key_is(scanner, key);
-      _assert_current_value_is(scanner, value);
+      _expect_current_key_equals(scanner, key);
+      _expect_current_value_equals(scanner, value);
       return TRUE;
     }
   else
@@ -113,13 +113,13 @@ _scan_kv_pairs_quoted(KVScanner *scanner, const gchar *input, KVQContainer args)
   kv_scanner_input(scanner, input);
   for (gsize i = 0; i < args.n; i++)
     {
-      if (!_compare_key_value(scanner, args.arg[i].key, args.arg[i].value))
+      if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value))
         break;
       expect_gboolean(scanner->value_was_quoted, args.arg[i].quoted,
                       "mismatch in value_was_quoted for [%s/%s]",
                       args.arg[i].key, args.arg[i].value);
     }
-  _assert_no_more_tokens(scanner);
+  _expect_no_more_tokens(scanner);
   kv_scanner_free(scanner);
 }
 
@@ -167,11 +167,11 @@ _scan_kv_pairs_scanner(KVScanner *scanner, const gchar *input, const KV kvs[])
 
   while (kvs->key)
     {
-      if (!kvs->value || !_compare_key_value(scanner, kvs->key, kvs->value))
+      if (!kvs->value || !_expect_next_key_value(scanner, kvs->key, kvs->value))
         break;
       kvs++;
     }
-  _assert_no_more_tokens(scanner);
+  _expect_no_more_tokens(scanner);
   kv_scanner_free(scanner);
 }
 
