@@ -211,6 +211,11 @@ _expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args)
     _IMPL_EXPECT_KV(((ScannerConfig) {'=', FALSE}), __VA_ARGS__); \
   } while (0)
 
+#define _EXPECT_KV_PAIRS_WITHSPACE(...) \
+  do { \
+    _IMPL_EXPECT_KV(((ScannerConfig) {'=', TRUE}), __VA_ARGS__); \
+  } while (0)
+
 #define _EXPECT_KV_PAIRS(...) \
   do { \
     _IMPL_EXPECT_KV(((ScannerConfig) {'=', FALSE}), __VA_ARGS__); \
@@ -244,18 +249,31 @@ Test(kv_scanner, name_equals_value_returns_a_pair)
 
 Test(kv_scanner, stray_words_are_ignored)
 {
-  _EXPECT_KV_PAIRS_NOSPACE("lorem ipsum foo=bar",
+  _EXPECT_KV_PAIRS("lorem ipsum foo=bar",
                { "foo", "bar" });
-  _EXPECT_KV_PAIRS_NOSPACE("lorem ipsum/dolor @sitamen foo=bar",
+  _EXPECT_KV_PAIRS("lorem ipsum/dolor @sitamen foo=bar",
                { "foo", "bar" });
+
+  /* FIXME: this difference can be explained by the allow-space option */
+  _EXPECT_KV_PAIRS_WITHSPACE("lorem ipsum/dolor = foo=bar\"",
+               { "dolor", "" },
+               { "foo", "bar\"" });
   _EXPECT_KV_PAIRS_NOSPACE("lorem ipsum/dolor = foo=bar\"",
                { "foo", "bar" });
+
+  /* FIXME: this difference can be explained by the allow-space option */
+
   _EXPECT_KV_PAIRS_NOSPACE("foo=bar lorem ipsum key=value some more values",
                { "foo", "bar" },
                { "key", "value" });
-  _EXPECT_KV_PAIRS_NOSPACE("*k=v",
+
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=bar lorem ipsum key=value some more values",
+               { "foo", "bar lorem ipsum" },
+               { "key", "value some more values" });
+
+  _EXPECT_KV_PAIRS("*k=v",
                { "k", "v" });
-  _EXPECT_KV_PAIRS_NOSPACE("x *k=v",
+  _EXPECT_KV_PAIRS("x *k=v",
                { "k", "v" });
 }
 
@@ -277,6 +295,7 @@ Test(kv_scanner, spaces_between_values_are_ignored)
 
 Test(kv_scanner, comma_separated_values)
 {
+  /* FIXME: this should be fixed up by adding ", " separator to the generic parser */
   _EXPECT_KV_PAIRS_NOSPACE("key1=value1, key2=value2, key3=value3",
                { "key1", "value1" },
                { "key2", "value2" },
@@ -285,6 +304,7 @@ Test(kv_scanner, comma_separated_values)
 
 Test(kv_scanner, comma_separated_values_and_multiple_spaces)
 {
+  /* FIXME: this should be fixed up by adding ", " separator to the generic parser */
   _EXPECT_KV_PAIRS_NOSPACE("key1=value1,   key2=value2  ,    key3=value3",
                { "key1", "value1" },
                { "key2", "value2" },
@@ -293,7 +313,7 @@ Test(kv_scanner, comma_separated_values_and_multiple_spaces)
 
 Test(kv_scanner, comma_without_space_is_not_a_separator)
 {
-  _EXPECT_KV_PAIRS_NOSPACE("key1=value1,key2=value2,key3=value3",
+  _EXPECT_KV_PAIRS("key1=value1,key2=value2,key3=value3",
                { "key1", "value1,key2=value2,key3=value3" });
 }
 
@@ -318,14 +338,15 @@ Test(kv_scanner, tab_is_not_considered_a_separator)
 
 Test(kv_scanner, quoted_values_are_unquoted_like_c_strings)
 {
-  _EXPECT_KV_PAIRS_NOSPACE("foo=\"bar\"",
+  _EXPECT_KV_PAIRS("foo=\"bar\"",
                { "foo", "bar" });
 
-  _EXPECT_KV_PAIRS_NOSPACE("key1=\"value1\", key2=\"value2\"",
+  _EXPECT_KV_PAIRS("key1=\"value1\" key2=\"value2\"",
                { "key1", "value1" },
                { "key2", "value2" });
 
   /* embedded quote */
+  /* FIXME: this should be fixed up by adding backslash support to the generic parser! */
   _EXPECT_KV_PAIRS_NOSPACE("key1=\"\\\"value1\"",
                { "key1", "\"value1" });
 
@@ -337,11 +358,12 @@ Test(kv_scanner, quoted_values_are_unquoted_like_c_strings)
   _EXPECT_KV_PAIRS_NOSPACE("key1=\"\\p\"",
                { "key1", "\\p" });
 
-  _EXPECT_KV_PAIRS_NOSPACE("key1='value1', key2='value2'",
+  _EXPECT_KV_PAIRS("key1='value1' key2='value2'",
                { "key1", "value1" },
                { "key2", "value2" });
 
   /* embedded quote */
+  /* FIXME: this should be fixed up by adding backslash support to the generic parser! */
   _EXPECT_KV_PAIRS_NOSPACE("key1='\\'value1'",
                { "key1", "'value1" });
 
@@ -353,19 +375,23 @@ Test(kv_scanner, quoted_values_are_unquoted_like_c_strings)
   _EXPECT_KV_PAIRS_NOSPACE("key1='\\p'",
                { "key1", "\\p" });
 
-  _EXPECT_KV_PAIRS_NOSPACE("key1=\\b\\f\\n\\r\\t\\\\",
+  _EXPECT_KV_PAIRS("key1=\\b\\f\\n\\r\\t\\\\",
                { "key1", "\\b\\f\\n\\r\\t\\\\" });
-  _EXPECT_KV_PAIRS_NOSPACE("key1=\b\f\n\r\\",
+  _EXPECT_KV_PAIRS("key1=\b\f\n\r\\",
                { "key1", "\b\f\n\r\\" });
 }
 
 Test(kv_scanner, keys_without_value_separator_are_ignored)
 {
-  _EXPECT_KV_PAIRS_NOSPACE("key1 key2=value2, key3, key4=value4",
+  /* FIXME: different is explained using space in value */
+  _EXPECT_KV_PAIRS_NOSPACE("key1 key2=value2 key3 key4=value4",
                { "key2", "value2" },
                { "key4", "value4" });
+  _EXPECT_KV_PAIRS_WITHSPACE("key1 key2=value2 key3 key4=value4",
+               { "key2", "value2 key3" },
+               { "key4", "value4" });
 
-  _EXPECT_KV_PAIRS_NOSPACE("key1= key2=value2, key3=, key4=value4 key5= , key6=value6",
+  _EXPECT_KV_PAIRS("key1= key2=value2 key3= key4=value4 key5= key6=value6",
                { "key1", "" },
                { "key2", "value2" },
                { "key3", "" },
@@ -376,7 +402,7 @@ Test(kv_scanner, keys_without_value_separator_are_ignored)
 
 Test(kv_scanner, quoted_values_with_special_characters)
 {
-  _EXPECT_KV_PAIRS_NOSPACE("key1=\"value foo, foo2 =@,\\\"\" key2='value foo,  a='",
+  _EXPECT_KV_PAIRS("key1='value foo, foo2 =@,\"' key2='value foo,  a='",
                { "key1", "value foo, foo2 =@,\"" },
                { "key2", "value foo,  a=" });
 }
@@ -424,8 +450,7 @@ Test(kv_scanner, value_separator_with_whitespaces_around)
     ':',
     FALSE
   };
-  _IMPL_EXPECT_KV(config,
-                           "key1: value1 key2 : value2 key3 :value3 ",
+  _IMPL_EXPECT_KV(config, "key1: value1 key2 : value2 key3 :value3 ",
                            {"key1", "" });
 }
 
@@ -453,13 +478,13 @@ Test(kv_scanner, invalid_encoding)
   _EXPECT_KV_PAIRS("k=\xffv",
                { "k", "\xffv" });
 
-  _EXPECT_KV_PAIRS_NOSPACE("k=\"\xc3",
+  _EXPECT_KV_PAIRS("k=\"\xc3\"",
                { "k", "\xc3" });
-  _EXPECT_KV_PAIRS_NOSPACE("k=\"\xc3v",
+  _EXPECT_KV_PAIRS("k=\"\xc3v\"",
                { "k", "\xc3v" });
-  _EXPECT_KV_PAIRS_NOSPACE("k=\"\xff",
+  _EXPECT_KV_PAIRS("k=\"\xff\"",
                { "k", "\xff" });
-  _EXPECT_KV_PAIRS_NOSPACE(" k=\"\xffv",
+  _EXPECT_KV_PAIRS(" k=\"\xffv\"",
                { "k", "\xffv" });
 }
 
@@ -495,6 +520,7 @@ Test(kv_scanner, empty_keys)
 
 Test(kv_scanner, unclosed_quotes)
 {
+  /* FIXME: NOSPACE & WITHSPACE are different wrt unclosed quote characters */
   _EXPECT_KV_PAIRS_NOSPACE("k=\"a",  { "k", "a" });
   _EXPECT_KV_PAIRS_NOSPACE("k=\\",   { "k", "\\" });
   _EXPECT_KV_PAIRS_NOSPACE("k=\"\\", { "k", "" });
@@ -506,35 +532,36 @@ Test(kv_scanner, unclosed_quotes)
 
 Test(kv_scanner, comma_separator)
 {
-  _EXPECT_KV_PAIRS_NOSPACE(", k=v",  { "k", "v" });
-  _EXPECT_KV_PAIRS_NOSPACE(",k=v",   { "k", "v" });
-  _EXPECT_KV_PAIRS_NOSPACE("k=v,",   { "k", "v," });
+  _EXPECT_KV_PAIRS(", k=v",  { "k", "v" });
+  _EXPECT_KV_PAIRS(",k=v",   { "k", "v" });
+  _EXPECT_KV_PAIRS("k=v,",   { "k", "v," });
+  /* FIXME: separator can be a ", " */
   _EXPECT_KV_PAIRS_NOSPACE("k=v, ",  { "k", "v" });
 }
 
 Test(kv_scanner, multiple_separators)
 {
-  _EXPECT_KV_PAIRS_NOSPACE("k==", { "k", "=" });
-  _EXPECT_KV_PAIRS_NOSPACE("k===", { "k", "==" });
+  _EXPECT_KV_PAIRS("k==", { "k", "=" });
+  _EXPECT_KV_PAIRS("k===", { "k", "==" });
 }
 
 Test(kv_scanner, key_charset)
 {
-  _EXPECT_KV_PAIRS_NOSPACE("k-j=v", { "k-j", "v" });
-  _EXPECT_KV_PAIRS_NOSPACE("0=v", { "0", "v" });
-  _EXPECT_KV_PAIRS_NOSPACE("_=v", { "_", "v" });
-  _EXPECT_KV_PAIRS_NOSPACE(":=v");
-  _EXPECT_KV_PAIRS_NOSPACE("Z=v", { "Z", "v" });
+  _EXPECT_KV_PAIRS("k-j=v", { "k-j", "v" });
+  _EXPECT_KV_PAIRS("0=v", { "0", "v" });
+  _EXPECT_KV_PAIRS("_=v", { "_", "v" });
+  _EXPECT_KV_PAIRS(":=v");
+  _EXPECT_KV_PAIRS("Z=v", { "Z", "v" });
 
   /* no value, as the key is not in [a-zA-Z0-9-_] */
-  _EXPECT_KV_PAIRS_NOSPACE("á=v");
+  _EXPECT_KV_PAIRS("á=v");
 }
 
 Test(kv_scanner, key_buffer_underrun)
 {
   const gchar *buffer = "ab=v";
   const gchar *input = buffer + 2;
-  _EXPECT_KV_PAIRS_NOSPACE(input);
+  _EXPECT_KV_PAIRS(input);
 }
 
 #define TEST_KV_SCAN_ARRAY(SCANNER_config, TEST_KV_SCAN_input, TEST_KV_SCAN_expected) \
@@ -1106,6 +1133,7 @@ _provide_cases_with_allow_pair_separator_in_value(void)
 {
   Testcase tc[] =
   {
+    /* FIXME: do we really want spaces to be trimmed from key names like this ? */
     {
       TC_HEAD,
       .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
@@ -1184,6 +1212,8 @@ _provide_cases_with_allow_pair_separator_in_value(void)
       .input = "foo=a \"bar baz",
       .expected = INIT_KVCONTAINER({"foo", "a \"bar baz"}),
     },
+
+    /* FIXME: why a single quote handled differently? */
     {
       TC_HEAD,
       .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
