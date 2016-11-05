@@ -36,6 +36,24 @@ assert_decode_equals(const gchar *input, const gchar *expected)
   g_string_free(str, TRUE);
 }
 
+static gboolean
+_match_three_tabs_as_delimiter(const gchar *cur, const gchar **new_cur)
+{
+  *new_cur = cur + 3;
+  return (strncmp(cur, "\t\t\t", 3) == 0);
+}
+
+static void
+assert_decode_with_three_tabs_as_delimiter_equals(const gchar *input, const gchar *expected)
+{
+  GString *str = g_string_new("");
+  const gchar *end;
+
+  str_repr_decode_until_delimiter(str, input, &end, _match_three_tabs_as_delimiter);
+  assert_string(str->str, expected, "Decoded value does not match expected");
+  g_string_free(str, TRUE);
+}
+
 static void
 test_decode_unquoted_strings(void)
 {
@@ -69,11 +87,38 @@ test_decode_apostrophe_quoted_strings(void)
   assert_decode_equals("'\\p\'", "\\p");
 }
 
+static void
+test_decode_malformed_strings(void)
+{
+  assert_decode_equals("'alma", "alma");
+  assert_decode_equals("\"alma", "alma");
+  assert_decode_equals("alma'", "alma");
+  assert_decode_equals("alma\"", "alma");
+  assert_decode_equals("alma\"korte", "almakorte");
+  assert_decode_equals("alma\"korte\"", "almakorte");
+}
+
+static void
+test_decode_delimited_strings(void)
+{
+  assert_decode_with_three_tabs_as_delimiter_equals("alma\t\t\tkorte", "alma");
+
+  assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'", "alma\t\t\tkorte");
+  assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'\t\t", "alma\t\t\tkorte\t\t");
+  assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'\t\t\t", "alma\t\t\tkorte");
+  assert_decode_with_three_tabs_as_delimiter_equals("alma\t\t", "alma\t\t");
+
+  assert_decode_with_three_tabs_as_delimiter_equals("\t\t\tfoobar", "");
+
+}
+
 int
 main(int argc, char *argv[])
 {
   STR_REPR_DECODE_TESTCASE(test_decode_unquoted_strings);
   STR_REPR_DECODE_TESTCASE(test_decode_double_quoted_strings);
   STR_REPR_DECODE_TESTCASE(test_decode_apostrophe_quoted_strings);
+  STR_REPR_DECODE_TESTCASE(test_decode_malformed_strings);
+  STR_REPR_DECODE_TESTCASE(test_decode_delimited_strings);
   return 0;
 }

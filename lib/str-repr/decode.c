@@ -66,28 +66,23 @@ _decode_backslash_escape(GString *value, gchar quote_char, gchar ch)
   g_string_append_c(value, control);
 }
 
-static gboolean
-_is_delimiter(const gchar *cur)
-{
-  return (*cur == ' ') || (strncmp(cur, ", ", 2) == 0);
-}
-
 gboolean
-str_repr_decode_append(GString *value, const gchar *input, const gchar **end)
+str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter)
 {
-  const gchar *cur = input;
+  const gchar *cur = input, *new_cur;
   gchar quote_char;
   gint quote_state;
 
   quote_state = KV_QUOTE_INITIAL;
-  while (*cur && quote_state != KV_QUOTE_FINISH)
+  while (*cur)
     {
       switch (quote_state)
         {
         case KV_QUOTE_INITIAL:
-          if (_is_delimiter(cur))
+          if (match_delimiter && match_delimiter(cur, &new_cur))
             {
-              quote_state = KV_QUOTE_FINISH;
+              cur = new_cur;
+              goto finish;
             }
           else if (*cur == '\"' || *cur == '\'')
             {
@@ -114,8 +109,22 @@ str_repr_decode_append(GString *value, const gchar *input, const gchar **end)
         }
       cur++;
     }
+ finish:
   *end = cur;
   return TRUE;
+}
+
+static gboolean
+_match_space_delimiter(const gchar *cur, const gchar **new_cur)
+{
+  *new_cur = cur + 1;
+  return *cur == ' ';
+}
+
+gboolean
+str_repr_decode_append(GString *value, const gchar *input, const gchar **end)
+{
+  return str_repr_decode_until_delimiter_append(value, input, end, _match_space_delimiter);
 }
 
 gboolean
@@ -123,4 +132,11 @@ str_repr_decode(GString *value, const gchar *input, const gchar **end)
 {
   g_string_truncate(value, 0);
   return str_repr_decode_append(value, input, end);
+}
+
+gboolean
+str_repr_decode_until_delimiter(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter)
+{
+  g_string_truncate(value, 0);
+  return str_repr_decode_until_delimiter_append(value, input, end, match_delimiter);
 }
