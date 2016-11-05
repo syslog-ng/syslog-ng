@@ -35,6 +35,10 @@
 #define SOL_IPV6 IPPROTO_IPV6
 #endif
 
+#ifndef SOL_TCP
+#define SOL_TCP IPPROTO_TCP
+#endif
+
 static gboolean
 socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFSocketDirection dir)
 {
