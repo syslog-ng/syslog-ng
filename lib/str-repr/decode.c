@@ -111,7 +111,8 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
     }
  finish:
   *end = cur;
-  return TRUE;
+  /* check if quotation was not finished, return FALSE */
+  return quote_state == KV_QUOTE_INITIAL;
 }
 
 static gboolean
