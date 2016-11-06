@@ -32,7 +32,7 @@ struct _AddContextualDataSelector{
   gchar *(*resolve)(AddContextualDataSelector *self, LogMessage *msg);
   void (*free)(AddContextualDataSelector *self);
   AddContextualDataSelector*(*clone)(AddContextualDataSelector *self, GlobalConfig *cfg);
-  gboolean (*init)(AddContextualDataSelector *self);
+  gboolean (*init)(AddContextualDataSelector *self, GList *ordered_selectors);
 };
 
 static inline gchar*
@@ -56,11 +56,11 @@ add_contextual_data_selector_free(AddContextualDataSelector *self)
 }
 
 static inline gboolean
-add_contextual_data_selector_init(AddContextualDataSelector *self)
+add_contextual_data_selector_init(AddContextualDataSelector *self, GList *ordered_selectors)
 {
   if (self && self->init)
     {
-      return self->init(self);
+      return self->init(self, ordered_selectors);
     }
 
   return FALSE;

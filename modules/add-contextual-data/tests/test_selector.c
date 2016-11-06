@@ -56,7 +56,7 @@ _create_template_selector(const gchar *template_string)
 {
   GlobalConfig *cfg = cfg_new(VERSION_VALUE);
   AddContextualDataSelector *selector = add_contextual_data_template_selector_new(cfg, template_string);
-  add_contextual_data_selector_init(selector);
+  add_contextual_data_selector_init(selector, NULL);
 
   return selector;
 }

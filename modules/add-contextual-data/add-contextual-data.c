@@ -269,7 +269,7 @@ _first_init(AddContextualData *self)
       return FALSE;
     }
 
-  if (!add_contextual_data_selector_init(self->selector))
+  if (!add_contextual_data_selector_init(self->selector, context_info_db_ordered_selectors(self->context_info_db)))
     return FALSE;
 
   return TRUE;
