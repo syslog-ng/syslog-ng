@@ -61,7 +61,7 @@ _replace_template(LogTemplate **old_template, LogTemplate *new_template)
 }
 
 static gboolean
-_init(AddContextualDataSelector *s)
+_init(AddContextualDataSelector *s, GList *ordered_selectors)
 {
   AddContextualDataTemplateSelector *self = (AddContextualDataTemplateSelector *)s;
   return _compile_selector_template(self);
