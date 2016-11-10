@@ -312,10 +312,11 @@ Test(log_message, test_log_msg_get_value_with_time_related_macro)
 
   msg = log_msg_new_empty();
   msg->timestamps[LM_TS_STAMP].tv_sec = 1389783444;
+  msg->timestamps[LM_TS_STAMP].zone_offset = 3600;
 
   handle = log_msg_get_value_handle("ISODATE");
   date_value = log_msg_get_value(msg, handle, &value_len);
-  cr_assert_str_eq(date_value, "2014-01-15T10:57:23-00:00", "ISODATE macro value does not match!");
+  cr_assert_str_eq(date_value, "2014-01-15T11:57:24+01:00", "ISODATE macro value does not match! value=%s", date_value);
 
   log_msg_unref(msg);
 }

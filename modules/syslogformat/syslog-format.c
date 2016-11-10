@@ -308,8 +308,11 @@ __parse_iso_stamp(const GTimeVal *now, LogMessage *self, struct tm *tm, const gu
     }
   else if (__has_iso_timezone(src, *length))
     {
-
       self->timestamps[LM_TS_STAMP].zone_offset = __parse_iso_timezone(&src, length);
+    }
+  else
+    {
+      self->timestamps[LM_TS_STAMP].zone_offset = -1;
     }
 
   *data = src;
@@ -500,15 +503,18 @@ static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
 {
   struct tm tm;
-  if (!log_msg_parse_date_unnormalized(self, data, length, parse_flags, &tm))
-    return FALSE;
 
   LogStamp *stamp = &self->timestamps[LM_TS_STAMP];
+  stamp->tv_sec = -1;
+  stamp->tv_usec = 0;
+  stamp->zone_offset = -1;
+
+  if (!log_msg_parse_date_unnormalized(self, data, length, parse_flags, &tm))
+    *stamp = self->timestamps[LM_TS_RECVD];
+
   if (parse_flags & LP_NO_PARSE_DATE)
     {
-      *stamp = (const LogStamp) {};
-      stamp->tv_sec = -1;
-      stamp->zone_offset = -1;
+      *stamp = self->timestamps[LM_TS_RECVD];
     }
   else
     {

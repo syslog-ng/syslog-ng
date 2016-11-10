@@ -146,6 +146,9 @@ _convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, glon
   unnormalized_hour = tm->tm_hour;
   target->tv_sec = cached_mktime(tm);
 
+  /* we can't parse USEC value, as strptime() does not support that */
+  target->tv_usec = 0;
+
   /* SECOND: adjust tv_sec as if we converted it according to our timezone. */
   _adjust_tvsec_to_move_it_into_given_timezone(target, tm->tm_hour, unnormalized_hour);
   return TRUE;

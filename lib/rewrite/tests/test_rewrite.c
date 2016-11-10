@@ -62,6 +62,8 @@ create_message_with_fields(const char *field_name, ...)
   va_list args;
   const char *arg;
   LogMessage *msg = log_msg_new_empty();
+
+  msg->timestamps[LM_TS_STAMP].tv_sec = 365 * 24 * 3600;
   arg = field_name;
   va_start(args, field_name);
   while (arg != NULL)
@@ -209,7 +211,7 @@ void test_set_field_honors_time_zone()
   LogRewrite *test_rewrite = create_rewrite_rule("set('${ISODATE}' value('UTCDATE') time-zone('Asia/Tokyo'));");
   LogMessage *msg = create_message_with_fields("field1", "a123b", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_msg_field_equals(msg, "UTCDATE", "1970-01-01T08:59:59+09:00", -1,
+  assert_msg_field_equals(msg, "UTCDATE", "1971-01-01T09:00:00+09:00", -1,
                           ASSERTION_ERROR("Couldn't use time-zone option in rewrite-set"));
   rewrite_teardown(msg);
 }

@@ -261,7 +261,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   msg_set_context(msg);
 
-  if (msg->timestamps[LM_TS_STAMP].tv_sec == -1 || !self->options->keep_timestamp)
+  if (!self->options->keep_timestamp)
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
 
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
