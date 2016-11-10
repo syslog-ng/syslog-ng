@@ -30,7 +30,9 @@ enum
   KV_QUOTE_INITIAL = 0,
   KV_QUOTE_STRING,
   KV_QUOTE_BACKSLASH,
-  KV_QUOTE_FINISH
+  KV_QUOTE_FINISH,
+  KV_EXPECT_DELIMITER,
+  KV_QUOTE_ERROR
 };
 
 static void
@@ -96,7 +98,7 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
           break;
         case KV_QUOTE_STRING:
           if (*cur == quote_char)
-            quote_state = KV_QUOTE_INITIAL;
+            quote_state = KV_EXPECT_DELIMITER;
           else if (*cur == '\\')
             quote_state = KV_QUOTE_BACKSLASH;
           else
@@ -106,13 +108,28 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
           _decode_backslash_escape(value, quote_char, *cur);
           quote_state = KV_QUOTE_STRING;
           break;
+        case KV_EXPECT_DELIMITER:
+          if (match_delimiter && match_delimiter(cur, &new_cur, user_data))
+            {
+              cur = new_cur;
+              quote_state = KV_QUOTE_INITIAL;
+              goto finish;
+            }
+          else
+            {
+              quote_state = KV_QUOTE_ERROR;
+            }
+          break;
+        case KV_QUOTE_ERROR:
+          break;
         }
       cur++;
     }
  finish:
   *end = cur;
-  /* check if quotation was not finished, return FALSE */
-  return quote_state == KV_QUOTE_INITIAL;
+  /* check if quotation was not finished or we had extra characters, return FALSE */
+  return quote_state == KV_QUOTE_INITIAL ||
+         quote_state == KV_EXPECT_DELIMITER;
 }
 
 static gboolean

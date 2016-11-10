@@ -32,6 +32,15 @@ assert_decode_equals(const gchar *input, const gchar *expected)
   const gchar *end;
 
   str_repr_decode(str, input, &end);
+}
+
+static void
+assert_decode_equals_and_fails(const gchar *input, const gchar *expected)
+{
+  GString *str = g_string_new("");
+  const gchar *end;
+
+  assert_false(str_repr_decode(str, input, &end), "Decode operation succeeded while failure was expected, input=%s", input);
   assert_string(str->str, expected, "Decoded value does not match expected");
   g_string_free(str, TRUE);
 }
@@ -90,12 +99,13 @@ test_decode_apostrophe_quoted_strings(void)
 static void
 test_decode_malformed_strings(void)
 {
-  assert_decode_equals("'alma", "alma");
-  assert_decode_equals("\"alma", "alma");
-  assert_decode_equals("alma'", "alma");
-  assert_decode_equals("alma\"", "alma");
-  assert_decode_equals("alma\"korte", "almakorte");
+  assert_decode_equals_and_fails("'alma", "alma");
+  assert_decode_equals_and_fails("\"alma", "alma");
+  assert_decode_equals_and_fails("alma'", "alma");
+  assert_decode_equals_and_fails("alma\"", "alma");
+  assert_decode_equals_and_fails("alma\"korte", "almakorte");
   assert_decode_equals("alma\"korte\"", "almakorte");
+  assert_decode_equals_and_fails("'alma'@korte", "alma");
 }
 
 static void
@@ -104,7 +114,7 @@ test_decode_delimited_strings(void)
   assert_decode_with_three_tabs_as_delimiter_equals("alma\t\t\tkorte", "alma");
 
   assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'", "alma\t\t\tkorte");
-  assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'\t\t", "alma\t\t\tkorte\t\t");
+  assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'\t\t", "alma\t\t\tkorte");
   assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'\t\t\t", "alma\t\t\tkorte");
   assert_decode_with_three_tabs_as_delimiter_equals("alma\t\t", "alma\t\t");
 
