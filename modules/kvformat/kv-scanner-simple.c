@@ -119,8 +119,6 @@ _on_kv_quote_initial(KVScannerSimple *self, const gchar *cur)
     {
       self->quote_state = KV_QUOTE_STRING;
       self->super.quote_char = *cur;
-      if (self->super.value->len == 0)
-        self->super.value_was_quoted = TRUE;
     }
   else
     {
@@ -152,8 +150,8 @@ _extract_value(KVScannerSimple *self)
   const gchar *cur;
 
   g_string_truncate(self->super.value, 0);
-  self->super.value_was_quoted = FALSE;
   cur = &self->super.input[self->super.input_pos];
+  self->super.value_was_quoted = *cur == '\'' || *cur == '\"';
 
   self->quote_state = KV_QUOTE_INITIAL;
   while (*cur && self->quote_state != KV_QUOTE_FINISH)
