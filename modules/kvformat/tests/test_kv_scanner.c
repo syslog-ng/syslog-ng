@@ -259,7 +259,7 @@ Test(kv_scanner, stray_words_are_ignored)
                { "dolor", "" },
                { "foo", "bar\"" });
   _EXPECT_KV_PAIRS_NOSPACE("lorem ipsum/dolor = foo=bar\"",
-               { "foo", "bar" });
+               { "foo", "bar\"" });
 
   /* FIXME: this difference can be explained by the allow-space option */
 
@@ -520,13 +520,12 @@ Test(kv_scanner, empty_keys)
 
 Test(kv_scanner, unclosed_quotes)
 {
-  /* FIXME: NOSPACE & WITHSPACE are different wrt unclosed quote characters */
-  _EXPECT_KV_PAIRS_NOSPACE("k=\"a",  { "k", "a" });
-  _EXPECT_KV_PAIRS_NOSPACE("k=\\",   { "k", "\\" });
-  _EXPECT_KV_PAIRS_NOSPACE("k=\"\\", { "k", "" });
+  _EXPECT_KV_PAIRS("k=\"a",  { "k", "\"a" });
+  _EXPECT_KV_PAIRS("k=\\",   { "k", "\\" });
+  _EXPECT_KV_PAIRS("k=\"\\", { "k", "\"\\" });
 
-  _EXPECT_KV_PAIRS_NOSPACE("k='a",   { "k", "a" });
-  _EXPECT_KV_PAIRS_NOSPACE("k='\\",  { "k", "" });
+  _EXPECT_KV_PAIRS("k='a",   { "k", "'a" });
+  _EXPECT_KV_PAIRS("k='\\",  { "k", "'\\" });
 }
 
 
@@ -940,25 +939,25 @@ _provide_cases_without_allow_pair_separator_in_value(void)
       TC_HEAD,
       .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "k=\"a",
-      .expected = INIT_KVCONTAINER({"k", "a"}),
+      .expected = INIT_KVCONTAINER({"k", "\"a"}),
     },
     {
       TC_HEAD,
       .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "k=\"\\",
-      .expected = INIT_KVCONTAINER({"k", ""}),
+      .expected = INIT_KVCONTAINER({"k", "\"\\"}),
     },
     {
       TC_HEAD,
       .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "k='a",
-      .expected = INIT_KVCONTAINER({"k", "a"}),
+      .expected = INIT_KVCONTAINER({"k", "'a"}),
     },
     {
       TC_HEAD,
       .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "k='\\",
-      .expected = INIT_KVCONTAINER({"k", ""}),
+      .expected = INIT_KVCONTAINER({"k", "'\\"}),
     },
     {
       TC_HEAD,
@@ -970,19 +969,19 @@ _provide_cases_without_allow_pair_separator_in_value(void)
       TC_HEAD,
       .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "k=\"\xc3v",
-      .expected = INIT_KVCONTAINER({"k", "\xc3v"}),
+      .expected = INIT_KVCONTAINER({"k", "\"\xc3v"}),
     },
     {
       TC_HEAD,
       .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "k=\"\xff",
-      .expected = INIT_KVCONTAINER({"k", "\xff"}),
+      .expected = INIT_KVCONTAINER({"k", "\"\xff"}),
     },
     {
       TC_HEAD,
       .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "k=\"\xffv",
-      .expected = INIT_KVCONTAINER({"k", "\xffv"}),
+      .expected = INIT_KVCONTAINER({"k", "\"\xffv"}),
     },
     {
       TC_HEAD,

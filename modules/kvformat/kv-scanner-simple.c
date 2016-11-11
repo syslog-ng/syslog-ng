@@ -22,6 +22,7 @@
 #include "kv-scanner-simple.h"
 #include "utf8utils.h"
 #include "kv-scanner.h"
+#include "str-repr/decode.h"
 
 #include <string.h>
 
@@ -29,15 +30,6 @@ typedef struct _KVScannerSimple KVScannerSimple;
 struct _KVScannerSimple
 {
   KVScanner super;
-  gint quote_state;
-};
-
-enum
-{
-  KV_QUOTE_INITIAL = 0,
-  KV_QUOTE_STRING,
-  KV_QUOTE_BACKSLASH,
-  KV_QUOTE_FINISH
 };
 
 static gboolean
@@ -67,110 +59,34 @@ _extract_key(KVScannerSimple *self)
   return TRUE;
 }
 
-static void
-_decode_backslash_escape(KVScannerSimple *self, gchar ch)
+static gboolean
+_is_c_literal_quoted(const gchar *input)
 {
-  gchar control;
-  switch (ch)
-    {
-    case 'b':
-      control = '\b';
-      break;
-    case 'f':
-      control = '\f';
-      break;
-    case 'n':
-      control = '\n';
-      break;
-    case 'r':
-      control = '\r';
-      break;
-    case 't':
-      control = '\t';
-      break;
-    case '\\':
-      control = '\\';
-      break;
-    default:
-      if (self->super.quote_char != ch)
-        {
-          g_string_append_c(self->super.value, '\\');
-        }
-      control = ch;
-      break;
-    }
-  g_string_append_c(self->super.value, control);
+  return *input == '\'' || *input == '\"';
 }
 
 static gboolean
-_is_delimiter(const gchar *cur)
+_match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 {
-  return (*cur == ' ') || (strncmp(cur, ", ", 2) == 0);
-}
+  gboolean result;
 
-static void
-_on_kv_quote_initial(KVScannerSimple *self, const gchar *cur)
-{
-  if (_is_delimiter(cur))
-    {
-      self->quote_state = KV_QUOTE_FINISH;
-    }
-  else if (*cur == '\"' || *cur == '\'')
-    {
-      self->quote_state = KV_QUOTE_STRING;
-      self->super.quote_char = *cur;
-    }
-  else
-    {
-      g_string_append_c(self->super.value, *cur);
-    }
-}
-
-static void
-_on_kv_quote_string(KVScannerSimple *self, const gchar *cur)
-{
-  if (*cur == self->super.quote_char)
-    self->quote_state = KV_QUOTE_INITIAL;
-  else if (*cur == '\\')
-    self->quote_state = KV_QUOTE_BACKSLASH;
-  else
-    g_string_append_c(self->super.value, *cur);
-}
-
-static void
-_on_kv_quote_backslash(KVScannerSimple *self, const gchar *cur)
-{
-  _decode_backslash_escape(self, *cur);
-  self->quote_state = KV_QUOTE_STRING;
+  result = (*cur == ' ') || (strncmp(cur, ", ", 2) == 0);
+  *new_cur = cur + 1;
+  return result;
 }
 
 static void
 _extract_value(KVScannerSimple *self)
 {
-  const gchar *cur;
+  const gchar *input = &self->super.input[self->super.input_pos];
+  StrReprDecodeOptions options = {
+    .match_delimiter = _match_delimiter
+  };
+  const gchar *end;
 
-  g_string_truncate(self->super.value, 0);
-  cur = &self->super.input[self->super.input_pos];
-  self->super.value_was_quoted = *cur == '\'' || *cur == '\"';
-
-  self->quote_state = KV_QUOTE_INITIAL;
-  while (*cur && self->quote_state != KV_QUOTE_FINISH)
-    {
-      switch (self->quote_state)
-        {
-        case KV_QUOTE_INITIAL:
-          _on_kv_quote_initial(self, cur);
-          break;
-        case KV_QUOTE_STRING:
-          _on_kv_quote_string(self, cur);
-          break;
-        case KV_QUOTE_BACKSLASH:
-          _on_kv_quote_backslash(self, cur);
-          break;
-        }
-      cur++;
-    }
-  self->super.input_pos = cur - self->super.input;
+  self->super.value_was_quoted = _is_c_literal_quoted(input);
+  str_repr_decode_with_options(self->super.value, input, &end, &options);
+  self->super.input_pos = end - self->super.input;
 }
 
 static gboolean
@@ -179,9 +95,7 @@ _scan_next(KVScanner *s)
   KVScannerSimple *self = (KVScannerSimple *)s;
 
   if (!_extract_key(self))
-    {
-      return FALSE;
-    }
+    return FALSE;
 
   _extract_value(self);
   kv_scanner_transform_value(s);
