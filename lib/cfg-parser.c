@@ -112,14 +112,14 @@ static CfgLexerKeyword main_keywords[] =
   { "use_dns",            KW_USE_DNS },
   { "time_reopen",        KW_TIME_REOPEN },
   { "time_reap",          KW_TIME_REAP },
-  { "time_sleep",         KW_TIME_SLEEP, KWS_OBSOLETE, "time_sleep() has been deprecated since " VERSION_3_3 },
+  { "time_sleep",         KW_TIME_SLEEP, KWS_OBSOLETE, "time_sleep() has been deprecated" },
   { "file_template",      KW_FILE_TEMPLATE },
   { "proto_template",     KW_PROTO_TEMPLATE },
   { "default_level",      KW_DEFAULT_LEVEL },
   { "default_priority",   KW_DEFAULT_LEVEL },
   { "default_facility",   KW_DEFAULT_FACILITY },
   { "threaded",           KW_THREADED },
-  { "use_rcptid",         KW_USE_RCPTID, KWS_OBSOLETE, "This has been deprecated since " VERSION_3_7  ", try use_uniqid() instead" },
+  { "use_rcptid",         KW_USE_RCPTID, KWS_OBSOLETE, "This has been deprecated, try use_uniqid() instead" },
   { "use_uniqid",         KW_USE_UNIQID },
 
   { "log_fifo_size",      KW_LOG_FIFO_SIZE },
@@ -151,7 +151,7 @@ static CfgLexerKeyword main_keywords[] =
   { "dns_cache_expire",   KW_DNS_CACHE_EXPIRE },
   { "dns_cache_expire_failed", KW_DNS_CACHE_EXPIRE_FAILED },
   { "pass_unix_credentials",   KW_PASS_UNIX_CREDENTIALS },
-  { "persist_name",            KW_PERSIST_NAME, 0x0308 },
+  { "persist_name",            KW_PERSIST_NAME, VERSION_VALUE_3_8 },
 
   { "retries",            KW_RETRIES },
 

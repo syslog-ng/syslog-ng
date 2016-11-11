@@ -149,9 +149,9 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
       break;
     }
 
-  if (self->cmp_op & FCMP_NUM && cfg_is_config_version_older(left->cfg, 0x0308))
+  if (self->cmp_op & FCMP_NUM && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))
     {
-      msg_warning("WARNING: due to a bug in " VERSION_3_7 " and earlier, "
+      msg_warning("WARNING: due to a bug in versions before " VERSION_3_8
                   "numeric comparison operators like '!=' in filter "
                   "expressions were evaluated as string operators. This is fixed in " VERSION_3_8 ". "
                   "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
