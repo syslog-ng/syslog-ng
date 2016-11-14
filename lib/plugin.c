@@ -310,7 +310,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
   g_free(plugin_module_name);
   if (!mod)
     {
-      msg_error("Error opening plugin module",
+      msg_debug("Error opening plugin module",
                 evt_tag_str("module", module_name),
                 evt_tag_str("error", g_module_error()));
       return NULL;
