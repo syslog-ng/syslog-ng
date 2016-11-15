@@ -54,10 +54,11 @@ public class ElasticSearchOptions {
 	public static String CLIENT_MODE_TRANSPORT = "transport";
 	public static String CLIENT_MODE_NODE = "node";
 	public static String CLIENT_MODE_SHIELD = "shield";
+	public static String CLIENT_MODE_SEARCHGUARD = "searchguard";
 	public static String CLIENT_MODE_HTTP = "http";
 	public static String SKIP_CLUSTER_HEALTH_CHECK = "skip_cluster_health_check";
 	public static String SKIP_CLUSTER_HEALTH_CHECK_DEFAULT = "false";
-	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD, CLIENT_MODE_HTTP));
+	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD, CLIENT_MODE_HTTP, CLIENT_MODE_SEARCHGUARD));
 	public static final HashMap<String, Integer> DEFAULT_PORTS_BY_MODE = new HashMap<String, Integer>() {
 		{
 			this.put(CLIENT_MODE_HTTP, 9200);
