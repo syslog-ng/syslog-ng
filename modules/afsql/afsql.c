@@ -1123,6 +1123,7 @@ afsql_dd_stop_thread(gpointer s)
 static void
 afsql_dd_start_thread(AFSqlDestDriver *self)
 {
+  self->db_thread_terminate = FALSE;
   main_loop_create_worker_thread(afsql_dd_database_thread, afsql_dd_stop_thread, self, &self->worker_options);
 }
 
