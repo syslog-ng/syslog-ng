@@ -255,11 +255,17 @@ test_compat(void)
 
   start_grabbing_messages();
   assert_template_format("$MSGHDR", "syslog-ng[23323]:");
-  assert_grabbed_messages_contain("the default value for template-escape has changed to 'no' from syslog-ng 3.0", NULL);
+  gchar *expected_msg_default_value_changed =
+    g_strdup_printf("the default value for template-escape has changed to 'no' from %s", VERSION_3_0);
+  assert_grabbed_messages_contain(expected_msg_default_value_changed, NULL);
   reset_grabbed_messages();
   assert_template_format("$MSG", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
-  assert_grabbed_messages_contain("the meaning of the $MSG/$MESSAGE macros has changed from syslog-ng 3.0", NULL);
+  gchar *expected_msg_macros_changed = g_strdup_printf("the meaning of the $MSG/$MESSAGE macros has changed from %s",
+                                       VERSION_3_0);
+  assert_grabbed_messages_contain(expected_msg_macros_changed, NULL);
   stop_grabbing_messages();
+  g_free(expected_msg_default_value_changed);
+  g_free(expected_msg_macros_changed);
   assert_template_format("$MSGONLY", "árvíztűrőtükörfúrógép");
   assert_template_format("$MESSAGE", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
 
