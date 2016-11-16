@@ -85,6 +85,41 @@ if test -n "$SNAPSHOT_VERSION"; then
 	PACKAGE_VERSION=$PACKAGE_VERSION+$SNAPSHOT_VERSION
 fi
 
+dnl ***************************************************************************
+dnl script snippet to generate user friendly version strings according to the
+dnl new versioning policy. All needed code are here to allow easy moving
+dnl between projects.
+if test -z "$RELEASE_TYPE"; then
+    RELEASE_TYPE=stable
+fi
+
+if test -z "$BROCHURE_VERSION"; then
+    _MAJOR=`echo $VERSION | cut -f1 -d'.'`
+    _MINOR=`echo $VERSION | cut -f2 -d'.'`
+    case "$RELEASE_TYPE" in
+        stable) BROCHURE_VERSION="$_MAJOR";;
+        feature) BROCHURE_VERSION="$_MAJOR F$_MINOR";;
+        *) BROCHURE_VERSION="$VERSION dogfood edition. Please contact your syslog-ng release manager to fix the configure scritpt";;
+    esac
+fi
+
+if test -z "$COMBINED_VERSION"; then
+    COMBINED_VERSION="$BROCHURE_VERSION ($VERSION)"
+fi
+
+TECHNICAL_VERSION=$VERSION
+
+AC_DEFINE_UNQUOTED(RELEASE_TYPE, "$RELEASE_TYPE", [type of syslog-ng release. stable or feature])
+AC_DEFINE_UNQUOTED(BROCHURE_VERSION, "$BROCHURE_VERSION", [pretty version for users depends on the release type])
+AC_DEFINE_UNQUOTED(COMBINED_VERSION, "$COMBINED_VERSION", [normal and brochure version combined])
+AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
+AC_SUBST(RELEASE_TYPE)
+AC_SUBST(BROCHURE_VERSION)
+AC_SUBST(COMBINED_VERSION)
+AC_SUBST(TECHNICAL_VERSION)
+dnl ***************************************************************************
+
+
 if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
 fi
@@ -132,6 +167,11 @@ AC_ARG_WITH(ld-library-path,
 
 AC_ARG_WITH([systemdsystemunitdir],
    AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]))
+
+AC_ARG_WITH(package_name,
+   [  --with-package-name=package name Package name is printed out when syslog-ng started with --version],
+   PACKAGE_NAME=$with_package_name)
+
 
 AC_ARG_ENABLE(debug,
               [  --enable-debug      Enable debugging code.],, enable_debug="no")
@@ -1550,7 +1590,6 @@ AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, ["Disable systemd-journal source"])
 AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, ["Enable systemd-journal source if journald is available"])
 AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, ["Force systemd-journal source to use system's journald"])
 
-AC_DEFINE_UNQUOTED(PACKAGE_NAME, "$PACKAGE_NAME", [package name])
 AC_DEFINE_UNQUOTED(VERSION, "$PACKAGE_VERSION", [version number])
 AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
 AC_DEFINE_UNQUOTED(LICENSE_VERSION, "$LICENSE_VERSION", [Required license version])
@@ -1577,6 +1616,7 @@ AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory]
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 AC_DEFINE_UNQUOTED(JAVA_MODULE_PATH, "$java_module_path", [java module search path])
 AC_DEFINE_UNQUOTED(PATH_TOPSRC_DIR, "$abs_topsrcdir", [self-defined top_srcdir path])
+AC_DEFINE_UNQUOTED(PACKAGE_NAME, "$PACKAGE_NAME", [package name])
 
 
 AC_DEFINE_UNQUOTED(WITH_COMPILE_DATE, $wcmp_date, [Include the compile date in the binary])
@@ -1693,6 +1733,11 @@ AC_OUTPUT(dist.conf
 
 echo
 echo "syslog-ng Open Source Edition $PACKAGE_VERSION configured"
+echo " Edition settings:"
+echo "  Release type                : $RELEASE_TYPE"
+echo "  Pretty version              : $BROCHURE_VERSION"
+echo "  Combined vers.              : $COMBINED_VERSION"
+echo "  Package name                : $PACKAGE_NAME"
 echo " Compiler options:"
 echo "  compiler                    : $CC"
 echo "  compiler options            : $CFLAGS $CPPFLAGS"
