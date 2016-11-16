@@ -1305,6 +1305,7 @@ afsql_dd_init(LogPipe *s)
         }
     }
 
+  self->db_thread_terminate = FALSE;
   afsql_dd_start_thread(self);
   return TRUE;
 
