@@ -510,7 +510,10 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
   stamp->zone_offset = -1;
 
   if (!log_msg_parse_date_unnormalized(self, data, length, parse_flags, &tm))
-    *stamp = self->timestamps[LM_TS_RECVD];
+    {
+      *stamp = self->timestamps[LM_TS_RECVD];
+      return FALSE;
+    }
 
   if (parse_flags & LP_NO_PARSE_DATE)
     {
