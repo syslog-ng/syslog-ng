@@ -1058,3 +1058,25 @@ Test(msgparse, test_expected_sd_pairs_without_sd_param)
 
   run_parameterized_test(params);
 }
+
+Test(msgparse, test_simple_message)
+{
+  struct msgparse_params params[] =
+  {
+    {
+      "some message",
+      LP_EXPECT_HOSTNAME, NULL,
+      13,
+      0, 0, 0,
+      "",
+      "some",
+      "message",
+      "",
+      0,
+      0,
+      empty_sdata_pairs
+    },
+    {NULL}
+  };
+  run_parameterized_test(params);
+}
