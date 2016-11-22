@@ -557,6 +557,17 @@ Test(msgparse, test_timestamp_others)
       "Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs",
       NULL, NULL, NULL, ignore_sdata_pairs
     },
+
+    /* Dell switch */
+    {
+      "<190>NOV 22 00:00:33 192.168.33.8-1 CMDLOGGER[165319912]: cmd_logger_api.c(83) 13518 %% CLI:192.168.32.100:root:User  logged in", LP_EXPECT_HOSTNAME, NULL,
+      190,
+      _get_bsd_year_utc(10) + 28166433, 0, 3600,
+      "192.168.33.8-1",
+      "CMDLOGGER",
+      "cmd_logger_api.c(83) 13518 %% CLI:192.168.32.100:root:User  logged in",
+      NULL, NULL, NULL, ignore_sdata_pairs
+    },
     {NULL}
   };
 
