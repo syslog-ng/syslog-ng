@@ -89,7 +89,7 @@ java_dest_custom_options
   ;
 
 java_dest_custom_option
-  : LL_STRING LL_STRING { java_dd_set_option(last_driver, $1, $2); free($1); free($2); }
+  : string string_or_number { java_dd_set_option(last_driver, $1, $2); free($1); free($2); }
 
 /* INCLUDE_RULES */
 
