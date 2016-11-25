@@ -712,8 +712,16 @@ tls_option
 
 
 socket_option
-	: KW_SO_SNDBUF '(' LL_NUMBER ')'            { last_sock_options->so_sndbuf = $3; }
-	| KW_SO_RCVBUF '(' LL_NUMBER ')'            { last_sock_options->so_rcvbuf = $3; }
+	: KW_SO_SNDBUF '(' LL_NUMBER ')'
+	{
+		CHECK_ERROR($3 >= 0 && $3 <= G_MAXINT, @3, "Invalid so_sndbuf, it has to be between 0 and %d", G_MAXINT);
+		last_sock_options->so_sndbuf = $3;
+	}
+	| KW_SO_RCVBUF '(' LL_NUMBER ')'
+	{
+		CHECK_ERROR($3 >= 0 && $3 <= G_MAXINT, @3, "Invalid so_rcvbuf, it has to be between 0 and %d", G_MAXINT);
+		last_sock_options->so_rcvbuf = $3;
+	}
 	| KW_SO_BROADCAST '(' yesno ')'             { last_sock_options->so_broadcast = $3; }
 	| KW_SO_KEEPALIVE '(' yesno ')'             { last_sock_options->so_keepalive = $3; }
 	;
