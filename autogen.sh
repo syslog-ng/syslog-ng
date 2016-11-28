@@ -73,6 +73,10 @@ autogen_submodules()
 	done
 }
 
+if [ -e "Mk/autogen-extras.sh" ]; then
+        . Mk/autogen-extras.sh
+fi
+
 if [ -z "$skip_submodules" ] || [ "$skip_modules" = 0 ]; then
 	autogen_submodules
 fi
