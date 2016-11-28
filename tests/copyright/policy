@@ -51,7 +51,7 @@ modules/native
 dev-utils/plugin_skeleton_creator/create_plugin.sh
 tests
 modules/java/(tools|[^/]*$)
-modules/java-modules/(dummy|elastic|elastic-v2|hdfs|http|kafka|[^/]*$)
+modules/java-modules/(dummy|elastic|elastic-v2|hdfs|http|kafka|elastic-http|[^/]*$)
 modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|basicfuncs|cef|confgen|cryptofuncs|csvparser|date|diskq|dbparser|geoip|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|system-source|[^/]*$)
 modules/add-contextual-data
 scl
