@@ -117,7 +117,7 @@ _is_quoted(const gchar *input)
 }
 
 static gboolean
-_seems_to_be_a_key_following(KVScannerSimple *self, const gchar *cur)
+_key_follows(KVScannerSimple *self, const gchar *cur)
 {
   const gchar *key = cur;
 
@@ -132,51 +132,61 @@ _seems_to_be_a_key_following(KVScannerSimple *self, const gchar *cur)
   return (key != cur) && (*key == self->super.value_separator);
 }
 
+static inline void
+_skip_spaces(const gchar **input)
+{
+  const gchar *cur = *input;
+
+  while (*cur == ' ')
+    cur++;
+  *input = cur;
+}
+
+static inline gboolean
+_end_of_string(const gchar *cur)
+{
+  return *cur == 0;
+}
+
 static gboolean
 _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 {
   KVScannerSimple *self = (gpointer) user_data;
-  gboolean result;
+  gboolean result = FALSE;
 
-  if (!self->super.value_was_quoted && self->allow_space)
+  if (!self->super.value_was_quoted &&
+      self->allow_space &&
+      *cur == ' ')
     {
-      if (*cur == ' ')
-        {
-          while (*cur == ' ')
-            cur++;
+      _skip_spaces(&cur);
 
-          if (*cur == 0 ||
-              _seems_to_be_a_key_following(self, cur))
-            {
-              *new_cur = cur;
-              return TRUE;
-            }
-          else
-            {
-              /* no this is still part of the value */
-              return FALSE;
-            }
+      if (_end_of_string(cur) ||
+          _key_follows(self, cur))
+        {
+          *new_cur = cur;
+          result = TRUE;
         }
     }
-
-  result = (*cur == ' ') || (strncmp(cur, ", ", 2) == 0);
-  *new_cur = cur + 1;
+  else
+    {
+      result = (*cur == ' ') || (strncmp(cur, ", ", 2) == 0);
+      *new_cur = cur + 1;
+    }
   return result;
 }
 
 static inline void
 _skip_initial_spaces(KVScannerSimple *self)
 {
-  const gchar *input = &self->super.input[self->super.input_pos];
-
   if (self->allow_space)
     {
+      const gchar *input = &self->super.input[self->super.input_pos];
       const gchar *end;
 
       while (*input == ' ' && !_match_delimiter(input, &end, self))
         input++;
+      self->super.input_pos = input - self->super.input;
     }
-  self->super.input_pos = input - self->super.input;
 }
 
 static inline void
