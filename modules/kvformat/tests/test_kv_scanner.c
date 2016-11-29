@@ -131,7 +131,7 @@ typedef struct Testcase_t
 KVScanner *
 create_kv_scanner(const ScannerConfig config)
 {
-  KVScanner *scanner = kv_scanner_simple_new(config.kv_separator, NULL, config.allow_pair_separator_in_value);
+  KVScanner *scanner = kv_scanner_new(config.kv_separator, NULL, config.allow_pair_separator_in_value);
   scanner->transform_value = config.transform_value;
 
   KVScanner *clone = kv_scanner_clone(scanner);

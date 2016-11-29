@@ -23,44 +23,17 @@
 #include "str-repr/decode.h"
 #include <string.h>
 
-void
-kv_scanner_init(KVScanner *self, gchar value_separator, KVTransformValueFunc transform_value)
-{
-  self->key = g_string_sized_new(32);
-  self->value = g_string_sized_new(64);
-  self->decoded_value = g_string_sized_new(64);
-  self->value_separator = value_separator;
-  self->transform_value = transform_value;
-}
-
-void
-kv_scanner_free(KVScanner *self)
-{
-  if (!self)
-    return;
-  g_string_free(self->key, TRUE);
-  g_string_free(self->value, TRUE);
-  g_string_free(self->decoded_value, TRUE);
-  g_free(self);
-}
-
-typedef struct _KVScannerSimple KVScannerSimple;
-struct _KVScannerSimple
-{
-  KVScanner super;
-  gboolean allow_space;
-};
 
 static inline const gchar *
-_locate_separator(KVScannerSimple *self, const gchar *start)
+_locate_separator(KVScanner *self, const gchar *start)
 {
-  return strchr(start, self->super.value_separator);
+  return strchr(start, self->value_separator);
 }
 
 static inline void
-_locate_start_of_key(KVScannerSimple *self, const gchar *end_of_key, const gchar **start_of_key)
+_locate_start_of_key(KVScanner *self, const gchar *end_of_key, const gchar **start_of_key)
 {
-  const gchar *input = &self->super.input[self->super.input_pos];
+  const gchar *input = &self->input[self->input_pos];
   const gchar *cur;
 
   cur = end_of_key;
@@ -70,9 +43,9 @@ _locate_start_of_key(KVScannerSimple *self, const gchar *end_of_key, const gchar
 }
 
 static inline void
-_locate_end_of_key(KVScannerSimple *self, const gchar *separator, const gchar **end_of_key)
+_locate_end_of_key(KVScanner *self, const gchar *separator, const gchar **end_of_key)
 {
-  const gchar *input = &self->super.input[self->super.input_pos];
+  const gchar *input = &self->input[self->input_pos];
   const gchar *cur;
 
   /* this function locates the character pointing right next to the end of
@@ -92,22 +65,22 @@ _locate_end_of_key(KVScannerSimple *self, const gchar *separator, const gchar **
 }
 
 static inline gboolean
-_extract_key_from_positions(KVScannerSimple *self, const gchar *start_of_key, const gchar *end_of_key)
+_extract_key_from_positions(KVScanner *self, const gchar *start_of_key, const gchar *end_of_key)
 {
   gint len = end_of_key - start_of_key;
 
   if (len >= 1)
     {
-      g_string_assign_len(self->super.key, start_of_key, len);
+      g_string_assign_len(self->key, start_of_key, len);
       return TRUE;
     }
   return FALSE;
 }
 
 static gboolean
-_extract_key(KVScannerSimple *self)
+_extract_key(KVScanner *self)
 {
-  const gchar *input = &self->super.input[self->super.input_pos];
+  const gchar *input = &self->input[self->input_pos];
   const gchar *start_of_key, *end_of_key;
   const gchar *separator;
 
@@ -119,7 +92,7 @@ _extract_key(KVScannerSimple *self)
 
       if (_extract_key_from_positions(self, start_of_key, end_of_key))
         {
-          self->super.input_pos = separator - self->super.input + 1;
+          self->input_pos = separator - self->input + 1;
           return TRUE;
         }
       separator = _locate_separator(self, separator + 1);
@@ -135,7 +108,7 @@ _is_quoted(const gchar *input)
 }
 
 static gboolean
-_key_follows(KVScannerSimple *self, const gchar *cur)
+_key_follows(KVScanner *self, const gchar *cur)
 {
   const gchar *key = cur;
 
@@ -147,7 +120,7 @@ _key_follows(KVScannerSimple *self, const gchar *cur)
       while (*key == ' ')
         key++;
     }
-  return (key != cur) && (*key == self->super.value_separator);
+  return (key != cur) && (*key == self->value_separator);
 }
 
 static inline void
@@ -169,10 +142,10 @@ _end_of_string(const gchar *cur)
 static gboolean
 _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 {
-  KVScannerSimple *self = (gpointer) user_data;
+  KVScanner *self = (gpointer) user_data;
   gboolean result = FALSE;
 
-  if (!self->super.value_was_quoted &&
+  if (!self->value_was_quoted &&
       self->allow_space &&
       *cur == ' ')
     {
@@ -194,23 +167,23 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 }
 
 static inline void
-_skip_initial_spaces(KVScannerSimple *self)
+_skip_initial_spaces(KVScanner *self)
 {
   if (self->allow_space)
     {
-      const gchar *input = &self->super.input[self->super.input_pos];
+      const gchar *input = &self->input[self->input_pos];
       const gchar *end;
 
       while (*input == ' ' && !_match_delimiter(input, &end, self))
         input++;
-      self->super.input_pos = input - self->super.input;
+      self->input_pos = input - self->input;
     }
 }
 
 static inline void
-_decode_value(KVScannerSimple *self)
+_decode_value(KVScanner *self)
 {
-  const gchar *input = &self->super.input[self->super.input_pos];
+  const gchar *input = &self->input[self->input_pos];
   const gchar *end;
   StrReprDecodeOptions options = {
     0,
@@ -218,20 +191,20 @@ _decode_value(KVScannerSimple *self)
     .match_delimiter_data = self,
   };
 
-  self->super.value_was_quoted = _is_quoted(input);
-  if (str_repr_decode_with_options(self->super.value, input, &end, &options))
+  self->value_was_quoted = _is_quoted(input);
+  if (str_repr_decode_with_options(self->value, input, &end, &options))
     {
-      self->super.input_pos = end - self->super.input;
+      self->input_pos = end - self->input;
     }
   else
     {
       /* quotation error, set was_quoted to FALSE */
-      self->super.value_was_quoted = FALSE;
+      self->value_was_quoted = FALSE;
     }
 }
 
 static void
-_extract_value(KVScannerSimple *self)
+_extract_value(KVScanner *self)
 {
   _skip_initial_spaces(self);
   _decode_value(self);
@@ -240,7 +213,7 @@ _extract_value(KVScannerSimple *self)
 static gboolean
 _scan_next(KVScanner *s)
 {
-  KVScannerSimple *self = (KVScannerSimple *)s;
+  KVScanner *self = (KVScanner *)s;
 
   if (!_extract_key(self))
     return FALSE;
@@ -254,19 +227,40 @@ _scan_next(KVScanner *s)
 static KVScanner *
 _clone(KVScanner *s)
 {
-  KVScannerSimple *self = (KVScannerSimple *) s;
-  return kv_scanner_simple_new(s->value_separator, s->transform_value, self->allow_space);
+  KVScanner *self = (KVScanner *) s;
+  return kv_scanner_new(s->value_separator, s->transform_value, self->allow_space);
+}
+
+void
+kv_scanner_init(KVScanner *self, gchar value_separator, KVTransformValueFunc transform_value)
+{
+  self->key = g_string_sized_new(32);
+  self->value = g_string_sized_new(64);
+  self->decoded_value = g_string_sized_new(64);
+  self->value_separator = value_separator;
+  self->transform_value = transform_value;
+}
+
+void
+kv_scanner_free(KVScanner *self)
+{
+  if (!self)
+    return;
+  g_string_free(self->key, TRUE);
+  g_string_free(self->value, TRUE);
+  g_string_free(self->decoded_value, TRUE);
+  g_free(self);
 }
 
 KVScanner *
-kv_scanner_simple_new(gchar value_separator, KVTransformValueFunc transform_value, gboolean allow_space)
+kv_scanner_new(gchar value_separator, KVTransformValueFunc transform_value, gboolean allow_space)
 {
-  KVScannerSimple *self = g_new0(KVScannerSimple, 1);
+  KVScanner *self = g_new0(KVScanner, 1);
 
-  kv_scanner_init(&self->super, value_separator, transform_value);
-  self->super.scan_next = _scan_next;
-  self->super.clone = _clone;
+  kv_scanner_init(self, value_separator, transform_value);
+  self->scan_next = _scan_next;
+  self->clone = _clone;
   self->allow_space = allow_space;
 
-  return &self->super;
+  return self;
 }
