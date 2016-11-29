@@ -226,27 +226,34 @@ Test(kv_scanner, name_equals_value_returns_a_pair)
   _EXPECT_KV_PAIRS("foo=barbar", { "foo", "barbar" });
 }
 
-Test(kv_scanner, stray_words_are_ignored)
+Test(kv_scanner, initial_stray_words_are_ignored)
 {
   _EXPECT_KV_PAIRS("lorem ipsum foo=bar",
                { "foo", "bar" });
+
   _EXPECT_KV_PAIRS("lorem ipsum/dolor @sitamen foo=bar",
                { "foo", "bar" });
 
   _EXPECT_KV_PAIRS("lorem ipsum/dolor = foo=bar\"",
                { "dolor", "" },
                { "foo", "bar\"" });
-  _EXPECT_KV_PAIRS("foo=bar lorem ipsum key=value some more values",
-               { "foo", "bar lorem ipsum" },
-               { "key", "value some more values" });
-
-  _EXPECT_KV_PAIRS("*k=v",
-               { "k", "v" });
-  _EXPECT_KV_PAIRS("x *k=v",
-               { "k", "v" });
 
   _EXPECT_KV_PAIRS("a b c=d",
                    {"c", "d"});
+
+  _EXPECT_KV_PAIRS("x *k=v",
+               { "k", "v" });
+}
+
+Test(kv_scanner, non_initial_stray_words_are_added_to_the_last_value)
+{
+  _EXPECT_KV_PAIRS("foo=bar lorem ipsum key=value some more values",
+               { "foo", "bar lorem ipsum" },
+               { "key", "value some more values" });
+}
+
+Test(kv_scanner, empty_values_in_a_series_of_key_values)
+{
   _EXPECT_KV_PAIRS("k= a=b c=d",
                    {"k", ""},
                    {"a", "b"},
@@ -256,6 +263,11 @@ Test(kv_scanner, stray_words_are_ignored)
                    {"k", "v"},
                    {"a", ""},
                    {"c", "d"});
+
+  _EXPECT_KV_PAIRS("k=v a=b c=",
+                   {"k", "v"},
+                   {"a", "b"},
+                   {"c", ""});
 
 }
 
@@ -281,24 +293,17 @@ Test(kv_scanner, comma_separated_values)
                { "key1", "value1" },
                { "key2", "value2" },
                { "key3", "value3" });
-  _EXPECT_KV_PAIRS("k1=v1,k2=v2,k3=v3",
-                   {"k1", "v1,k2=v2,k3=v3"});
-}
 
-Test(kv_scanner, comma_separated_values_and_multiple_spaces)
-{
+  /* NOTE: comma on its own is not a delimiter */
+  _EXPECT_KV_PAIRS("key1=value1,key2=value2,key3=value3",
+               { "key1", "value1,key2=value2,key3=value3" });
+
   /* In value2 the spaces are considered part of the value as we don't have
    * a delimiter and spaces get concatenated into the value */
   _EXPECT_KV_PAIRS("key1=value1,   key2=value2  ,    key3=value3",
                { "key1", "value1" },
                { "key2", "value2  " },
                { "key3", "value3" });
-}
-
-Test(kv_scanner, comma_without_space_is_not_a_separator)
-{
-  _EXPECT_KV_PAIRS("key1=value1,key2=value2,key3=value3",
-               { "key1", "value1,key2=value2,key3=value3" });
 }
 
 Test(kv_scanner, tab_is_not_considered_a_separator)
@@ -374,7 +379,7 @@ Test(kv_scanner, quoted_values_are_unquoted_like_c_strings)
                    {"foo", "bar baz"});
 }
 
-Test(kv_scanner, quotes_embedded_in_an_unquoted_are_left_intact)
+Test(kv_scanner, quotes_embedded_in_an_unquoted_value_are_left_intact)
 {
   _EXPECT_KV_PAIRS("foo=a \"bar baz\" ",
                              {"foo", "a \"bar baz\""});
@@ -456,7 +461,7 @@ _parse_value_by_incrementing_all_bytes(KVScanner *self)
   return TRUE;
 }
 
-Test(kv_scanner, transforms_values_if_parse_value_is_set)
+Test(kv_scanner, transforms_values_if_transform_value_is_set)
 {
   ScannerConfig config = {
     .kv_separator = '=',
@@ -482,7 +487,7 @@ Test(kv_scanner, quotation_is_stored_in_the_was_quoted_value_member)
                  {"k", "v", FALSE});
 }
 
-Test(kv_scanner, value_separator_with_whitespaces_around)
+Test(kv_scanner, spaces_around_value_separator_are_ignored)
 {
   ScannerConfig config= {
     .kv_separator=':',
@@ -506,7 +511,7 @@ Test(kv_scanner, value_separator_is_used_to_separate_key_from_value)
                            { "key3", "value3" });
 }
 
-Test(kv_scanner, invalid_encoding)
+Test(kv_scanner, invalid_value_encoding_is_copied_literally)
 {
   _EXPECT_KV_PAIRS("k=\xc3",
                { "k", "\xc3" });
@@ -591,7 +596,7 @@ Test(kv_scanner, multiple_separators)
   _EXPECT_KV_PAIRS("k===a=b", {"k", "==a=b"});
 }
 
-Test(kv_scanner, key_charset)
+Test(kv_scanner, keys_only_use_a_restricted_set_of_characters)
 {
   _EXPECT_KV_PAIRS("k-j=v", { "k-j", "v" });
   _EXPECT_KV_PAIRS("0=v", { "0", "v" });
@@ -602,6 +607,8 @@ Test(kv_scanner, key_charset)
 
   /* no value, as the key is not in [a-zA-Z0-9-_] */
   _EXPECT_KV_PAIRS("á=v");
+  _EXPECT_KV_PAIRS("*k=v",
+               { "k", "v" });
 }
 
 Test(kv_scanner, unquoted_values_can_have_embedded_control_characters)
@@ -620,7 +627,7 @@ Test(kv_scanner, spaces_are_trimmed_between_key_and_separator)
                              {"foo", "bar"});
 }
 
-Test(kv_scanner, allow_space_causes_the_concatenation_of_multiple_tokens)
+Test(kv_scanner, space_is_only_a_delimiter_if_a_key_follows)
 {
   _EXPECT_KV_PAIRS("foo=bar ggg",
                              {"foo", "bar ggg"});
@@ -631,7 +638,7 @@ Test(kv_scanner, allow_space_causes_the_concatenation_of_multiple_tokens)
 }
 
 
-Test(kv_scanner, allow_space_causes_spaces_to_be_trimmed_from_key_names)
+Test(kv_scanner, spaces_are_trimmed_from_key_names)
 {
   _EXPECT_KV_PAIRS(" foo =bar ggg baz=ez",
                              {"foo", "bar ggg"},
@@ -654,7 +661,7 @@ Test(kv_scanner, allow_space_causes_spaces_to_be_trimmed_from_key_names)
 
 }
 
-Test(kv_scanner, allow_space_causes_spaces_to_be_trimmed_from_values)
+Test(kv_scanner, initial_spaces_are_trimmed_from_values)
 {
   _EXPECT_KV_PAIRS(" k= b",
                    {"k", "b"});
