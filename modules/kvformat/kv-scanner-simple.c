@@ -33,37 +33,81 @@ struct _KVScannerSimple
   gboolean allow_space;
 };
 
+static inline const gchar *
+_locate_separator(KVScannerSimple *self, const gchar *start)
+{
+  return strchr(start, self->super.value_separator);
+}
+
+static inline void
+_locate_start_of_key(KVScannerSimple *self, const gchar *end_of_key, const gchar **start_of_key)
+{
+  const gchar *input = &self->super.input[self->super.input_pos];
+  const gchar *cur;
+
+  cur = end_of_key;
+  while (cur > input && kv_scanner_is_valid_key_character(*(cur - 1)))
+    cur--;
+  *start_of_key = cur;
+}
+
+static inline void
+_locate_end_of_key(KVScannerSimple *self, const gchar *separator, const gchar **end_of_key)
+{
+  const gchar *input = &self->super.input[self->super.input_pos];
+  const gchar *cur;
+
+  /* this function locates the character pointing right next to the end of
+   * the key, e.g. with this input
+   *   foo   = bar
+   *
+   * it would start with the '=' sign and skip spaces backwards, to locate
+   * the space right next to "foo" */
+
+  cur = separator;
+  if (self->allow_space)
+    {
+      while (cur > input && (*(cur - 1)) == ' ')
+        cur--;
+    }
+  *end_of_key = cur;
+}
+
+static inline gboolean
+_extract_key_from_positions(KVScannerSimple *self, const gchar *start_of_key, const gchar *end_of_key)
+{
+  gint len = end_of_key - start_of_key;
+
+  if (len >= 1)
+    {
+      g_string_assign_len(self->super.key, start_of_key, len);
+      return TRUE;
+    }
+  return FALSE;
+}
+
 static gboolean
 _extract_key(KVScannerSimple *self)
 {
-  const gchar *input_ptr = &self->super.input[self->super.input_pos];
+  const gchar *input = &self->super.input[self->super.input_pos];
   const gchar *start_of_key, *end_of_key;
   const gchar *separator;
-  gsize len;
 
-  separator = strchr(input_ptr, self->super.value_separator);
-  do
+  separator = _locate_separator(self, input);
+  while (separator)
     {
-      if (!separator)
-        return FALSE;
-      end_of_key = separator;
-      if  (self->allow_space)
-        {
-          while (end_of_key > input_ptr && (*(end_of_key - 1)) == ' ')
-            end_of_key--;
-        }
-      start_of_key = end_of_key;
-      while (start_of_key > input_ptr && kv_scanner_is_valid_key_character(*(start_of_key - 1)))
-        start_of_key--;
-      len = end_of_key - start_of_key;
-      if (len < 1)
-        separator = strchr(separator + 1, self->super.value_separator);
-    }
-  while (len < 1);
+      _locate_end_of_key(self, separator, &end_of_key);
+      _locate_start_of_key(self, end_of_key, &start_of_key);
 
-  g_string_assign_len(self->super.key, start_of_key, len);
-  self->super.input_pos = separator - self->super.input + 1;
-  return TRUE;
+      if (_extract_key_from_positions(self, start_of_key, end_of_key))
+        {
+          self->super.input_pos = separator - self->super.input + 1;
+          return TRUE;
+        }
+      separator = _locate_separator(self, separator + 1);
+    }
+
+  return FALSE;
 }
 
 static gboolean
