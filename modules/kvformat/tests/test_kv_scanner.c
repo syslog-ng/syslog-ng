@@ -269,6 +269,19 @@ Test(kv_scanner, stray_words_are_ignored)
                { "k", "v" });
   _EXPECT_KV_PAIRS("x *k=v",
                { "k", "v" });
+
+  _EXPECT_KV_PAIRS("a b c=d",
+                   {"c", "d"});
+  _EXPECT_KV_PAIRS("k= a=b c=d",
+                   {"k", ""},
+                   {"a", "b"},
+                   {"c", "d"});
+
+  _EXPECT_KV_PAIRS("k=v a= c=d",
+                   {"k", "v"},
+                   {"a", ""},
+                   {"c", "d"});
+
 }
 
 Test(kv_scanner, multiple_key_values_return_multiple_pairs)
@@ -293,6 +306,8 @@ Test(kv_scanner, comma_separated_values)
                { "key1", "value1" },
                { "key2", "value2" },
                { "key3", "value3" });
+  _EXPECT_KV_PAIRS("k1=v1,k2=v2,k3=v3",
+                   {"k1", "v1,k2=v2,k3=v3"});
 }
 
 Test(kv_scanner, comma_separated_values_and_multiple_spaces)
@@ -331,6 +346,7 @@ Test(kv_scanner, tab_is_not_considered_a_separator)
                { "key1", "value1\t" },
                { "key2", "value2" },
                { "key3", "value3" });
+
   _EXPECT_KV_PAIRS("k=\t",
                { "k", "\t" });
   _EXPECT_KV_PAIRS("k=,\t",
@@ -387,6 +403,36 @@ Test(kv_scanner, quoted_values_are_unquoted_like_c_strings)
                { "key1", "\\b\\f\\n\\r\\t\\\\" });
   _EXPECT_KV_PAIRS("key1=\b\f\n\r\\",
                { "key1", "\b\f\n\r\\" });
+  _EXPECT_KV_PAIRS("foo=\"bar baz\"",
+                   {"foo", "bar baz"});
+}
+
+Test(kv_scanner, quotes_embedded_in_an_unquoted_are_left_intact)
+{
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=a \"bar baz\" ",
+                             {"foo", "a \"bar baz\""});
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=a \"bar baz",
+                             {"foo", "a \"bar baz"});
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=a \"bar baz c=d",
+                             {"foo", "a \"bar baz"}, {"c", "d"});
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=a \"bar baz\"=f c=d a",
+                             {"foo", "a \"bar baz\"=f"}, {"c", "d a"});
+
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=\\\"bar baz\\\"",
+                             {"foo", "\\\"bar baz\\\""});
+
+}
+
+Test(kv_scanner, separator_in_an_unquoted_value_is_taken_literally)
+{
+  _EXPECT_KV_PAIRS("k=a=b c=d",
+                   {"k", "a=b"}, {"c", "d"});
+  _EXPECT_KV_PAIRS("a==b=",
+                   {"a", "=b="});
+  _EXPECT_KV_PAIRS("a=,=b=a",
+                   {"a", ",=b=a"});
+  _EXPECT_KV_PAIRS_WITHSPACE("a= =a",
+                             {"a", "=a"});
 }
 
 Test(kv_scanner, keys_without_value_separator_are_ignored)
@@ -429,6 +475,10 @@ Test(kv_scanner, quoted_values_are_considered_one_token_thus_space_based_concate
   _EXPECT_KV_PAIRS("key1=\"value foo, foo2 =@,\\\"\" key2='value foo,  a='",
                { "key1", "value foo, foo2 =@,\"" },
                { "key2", "value foo,  a=" });
+
+  /* NOTE: baz is not added to the value, it is a stray word */
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=\"bar\" baz c=d",
+                             {"foo", "bar"}, {"c", "d"});
 }
 
 static gboolean
@@ -556,6 +606,13 @@ Test(kv_scanner, unclosed_quotes)
 
   _EXPECT_KV_PAIRS("k='a",   { "k", "'a" });
   _EXPECT_KV_PAIRS("k='\\",  { "k", "'\\" });
+
+  /* backslash is not special if not within quotes */
+  _EXPECT_KV_PAIRS("k=\\",   {"k", "\\"});
+  _EXPECT_KV_PAIRS("foo=bar\"",
+                   {"foo", "bar\""});
+  _EXPECT_KV_PAIRS("foo='bar",
+                   {"foo", "'bar"});
 }
 
 
@@ -571,6 +628,8 @@ Test(kv_scanner, multiple_separators)
 {
   _EXPECT_KV_PAIRS("k==", { "k", "=" });
   _EXPECT_KV_PAIRS("k===", { "k", "==" });
+  _EXPECT_KV_PAIRS("k===a", {"k", "==a"});
+  _EXPECT_KV_PAIRS("k===a=b", {"k", "==a=b"});
 }
 
 Test(kv_scanner, key_charset)
@@ -579,10 +638,68 @@ Test(kv_scanner, key_charset)
   _EXPECT_KV_PAIRS("0=v", { "0", "v" });
   _EXPECT_KV_PAIRS("_=v", { "_", "v" });
   _EXPECT_KV_PAIRS(":=v");
+  _EXPECT_KV_PAIRS(":=");
   _EXPECT_KV_PAIRS("Z=v", { "Z", "v" });
 
   /* no value, as the key is not in [a-zA-Z0-9-_] */
   _EXPECT_KV_PAIRS("á=v");
+}
+
+Test(kv_scanner, unquoted_values_can_have_embedded_control_characters)
+{
+  _EXPECT_KV_PAIRS("k1=\\b\\f\\n\\r\\t\\\\",
+                   {"k1", "\\b\\f\\n\\r\\t\\\\"});
+  _EXPECT_KV_PAIRS("k1=\b\f\n\r\\",
+                   {"k1", "\b\f\n\r\\"});
+}
+
+Test(kv_scanner, spaces_are_trimmed_between_key_and_separator)
+{
+  _EXPECT_KV_PAIRS_WITHSPACE("foo =bar",
+                             {"foo", "bar"});
+  _EXPECT_KV_PAIRS_WITHSPACE("foo= bar",
+                             {"foo", "bar"});
+}
+
+Test(kv_scanner, allow_space_causes_the_concatenation_of_multiple_tokens)
+{
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=bar ggg",
+                             {"foo", "bar ggg"});
+
+  _EXPECT_KV_PAIRS_WITHSPACE("foo=bar ggg baz=ez",
+                             {"foo", "bar ggg"},
+                             {"baz", "ez"});
+}
+
+
+Test(kv_scanner, allow_space_causes_spaces_to_be_trimmed_from_key_names)
+{
+  _EXPECT_KV_PAIRS_WITHSPACE(" foo =bar ggg baz=ez",
+                             {"foo", "bar ggg"},
+                             {"baz", "ez"});
+
+  _EXPECT_KV_PAIRS_WITHSPACE("foo =bar ggg baz=ez",
+                             {"foo", "bar ggg"},
+                             {"baz", "ez"});
+
+  _EXPECT_KV_PAIRS_WITHSPACE(" foo=bar ggg baz=ez",
+                             {"foo", "bar ggg"},
+                             {"baz", "ez"});
+
+  _EXPECT_KV_PAIRS_WITHSPACE("foo =  bar ggg baz   =   ez",
+                             {"foo", "bar ggg"},
+                             {"baz", "ez"});
+
+  _EXPECT_KV_PAIRS_WITHSPACE("k===  a",
+                             {"k", "==  a"});
+
+}
+
+Test(kv_scanner, allow_space_causes_spaces_to_be_trimmed_from_values)
+{
+  _EXPECT_KV_PAIRS_WITHSPACE(" k= b",
+                             {"k", "b"});
+
 }
 
 Test(kv_scanner, key_buffer_underrun)
@@ -610,727 +727,6 @@ Test(kv_scanner, key_buffer_underrun)
 
 
 #define CONFIG_LIST(...) { __VA_ARGS__, {} }
-
-static Testcase *
-_provide_common_cases(void)
-{
-  Testcase tc[] =
-  {
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "foo=bar",
-      .expected = INIT_KVCONTAINER({ "foo", "bar" }),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k-j=v",
-      .expected = INIT_KVCONTAINER({ "k-j", "v" }),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "0=v",
-      .expected = INIT_KVCONTAINER({"0", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "_=v",
-      .expected = INIT_KVCONTAINER({"_", "v"})
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "Z=v",
-      .expected = INIT_KVCONTAINER({"Z", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k==",
-      .expected = INIT_KVCONTAINER({"k", "="}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k===",
-      .expected = INIT_KVCONTAINER({"k", "=="}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k===a",
-      .expected = INIT_KVCONTAINER({"k", "==a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k===a=b",
-      .expected = INIT_KVCONTAINER({"k", "==a=b"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " ==k=",
-      .expected = INIT_KVCONTAINER({"k", ""}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " = =k=",
-      .expected = INIT_KVCONTAINER({"k", ""}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " =k=",
-      .expected = INIT_KVCONTAINER({"k", ""}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " =k=v",
-      .expected = INIT_KVCONTAINER({"k", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " ==k=v",
-      .expected = INIT_KVCONTAINER({"k", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\xc3",
-      .expected = INIT_KVCONTAINER({"k", "\xc3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\xc3v",
-      .expected = INIT_KVCONTAINER({"k", "\xc3v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\xff",
-      .expected = INIT_KVCONTAINER({"k", "\xff"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\xffv",
-      .expected = INIT_KVCONTAINER({"k", "\xffv"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "foo=",
-      .expected = INIT_KVCONTAINER({"foo", ""}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "foo=b",
-      .expected = INIT_KVCONTAINER({"foo", "b"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "lorem ipsum foo=bar",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "lorem ipsum/dolor @sitamen foo=bar",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "*k=v",
-      .expected = INIT_KVCONTAINER({"k", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "x *k=v",
-      .expected = INIT_KVCONTAINER({"k", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=v1 k2=v2 k3=v3",
-      .expected = INIT_KVCONTAINER({"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k= a=b c=d",
-      .expected = INIT_KVCONTAINER({"k", ""}, {"a", "b"}, {"c", "d"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=v arg= code=27",
-      .expected = INIT_KVCONTAINER({"k", "v"}, {"arg", ""}, {"code", "27"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=a=b c=d",
-      .expected = INIT_KVCONTAINER({"k", "a=b"}, {"c", "d"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=v1    k2=v2     k3=v3 ",
-      .expected = INIT_KVCONTAINER({"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=v1,k2=v2,k3=v3",
-      .expected = INIT_KVCONTAINER({"k1", "v1,k2=v2,k3=v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\\",
-      .expected = INIT_KVCONTAINER({"k", "\\"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=v1\tk2=v2 k3=v3",
-      .expected = INIT_KVCONTAINER({"k1", "v1\tk2=v2"}, {"k3", "v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=v1,\tk2=v2 k3=v3",
-      .expected = INIT_KVCONTAINER({"k1", "v1,\tk2=v2"}, {"k3", "v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=v1\t k2=v2 k3=v3",
-      .expected = INIT_KVCONTAINER({"k1", "v1\t"}, {"k2", "v2"}, {"k3", "v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\t",
-      .expected = INIT_KVCONTAINER({"k", "\t"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=,\t",
-      .expected = INIT_KVCONTAINER({"k", ",\t"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "foo=\"bar\"",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=\\b\\f\\n\\r\\t\\\\",
-      .expected = INIT_KVCONTAINER({"k1", "\\b\\f\\n\\r\\t\\\\"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=\b\f\n\r\\",
-      .expected = INIT_KVCONTAINER({"k1", "\b\f\n\r\\"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "=v",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k*=v",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "=",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "==",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "===",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " =",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " ==",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " ===",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " = =",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = ":=",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "á=v",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "f",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "fo",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "foo",
-      .expected = INIT_KVCONTAINER(),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = ", k=v",
-      .expected = INIT_KVCONTAINER({"k", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = ",k=v",
-      .expected = INIT_KVCONTAINER({"k", "v"}),
-    },
-
-    {}
-  };
-
-  return g_memdup(tc, sizeof(tc));
-}
-
-static Testcase *
-_provide_cases_without_allow_pair_separator_in_value(void)
-{
-  Testcase tc[] =
-  {
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\"a",
-      .expected = INIT_KVCONTAINER({"k", "\"a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\"\\",
-      .expected = INIT_KVCONTAINER({"k", "\"\\"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k='a",
-      .expected = INIT_KVCONTAINER({"k", "'a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k='\\",
-      .expected = INIT_KVCONTAINER({"k", "'\\"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = " =k=v=w",
-      .expected = INIT_KVCONTAINER({"k", "v=w"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\"\xc3v",
-      .expected = INIT_KVCONTAINER({"k", "\"\xc3v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\"\xff",
-      .expected = INIT_KVCONTAINER({"k", "\"\xff"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k=\"\xffv",
-      .expected = INIT_KVCONTAINER({"k", "\"\xffv"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "lorem ipsum/dolor = foo=bar",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "k1=\"v1\", k2=\"v2\"",
-      .expected = INIT_KVCONTAINER({"k1", "v1"}, {"k2", "v2"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=\"\\\"v1\"",
-      .expected = INIT_KVCONTAINER({"k1", "\"v1"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=\"\\b \\f \\n \\r \\t \\\\\"",
-      .expected = INIT_KVCONTAINER({"k1", "\b \f \n \r \t \\"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=\"\\p\"",
-      .expected = INIT_KVCONTAINER({"k1", "\\p"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1='\\'v1'",
-      .expected = INIT_KVCONTAINER({"k1", "'v1"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1='\\b \\f \\n \\r \\t \\\\'",
-      .expected = INIT_KVCONTAINER({"k1", "\b \f \n \r \t \\"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1='\\p'",
-      .expected = INIT_KVCONTAINER({"k1", "\\p"}),
-    },
-
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=\"v foo, foo2 =@,\\\"\" k2='v foo,  a='",
-      .expected = INIT_KVCONTAINER({"k1", "v foo, foo2 =@,\""}, {"k2", "v foo,  a="}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
-      .input = "k1=v1, k2=v2, k3=v3",
-      .expected = INIT_KVCONTAINER({"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "foo=bar lorem ipsum key=value some more values",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}, {"key", "value"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "k1=v1,   k2=v2  ,    k3=v3",
-      .expected = INIT_KVCONTAINER({"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "k1 k2=v2, k3, k4=v4",
-      .expected = INIT_KVCONTAINER({"k2", "v2"}, {"k4", "v4"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "k1= k2=v2, k3=, k4=v4 k5= , k6=v6",
-      .expected = INIT_KVCONTAINER({"k1", ""}, {"k2", "v2"}, {"k3", ""}, {"k4", "v4"}, {"k5", ""}, {"k6", "v6"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "k1= v1 k2 = v2 k3 =v3 ",
-      .expected = INIT_KVCONTAINER({"k1", ""}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "k1='v1', k2='v2'",
-      .expected = INIT_KVCONTAINER({"k1", "v1"}, {"k2", "v2"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "k=v,",
-      .expected = INIT_KVCONTAINER({"k", "v,"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
-      .input = "k=v, ",
-      .expected = INIT_KVCONTAINER({"k", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(COLON_CONFIG),
-      .input = "k1:v1 k2:v2 k3:v3 ",
-      .expected = INIT_KVCONTAINER({"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(COLON_CONFIG),
-      .input = "k1: v1 k2 : v2 k3 :v3 ",
-      .expected = INIT_KVCONTAINER({"k1", ""}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DASH_CONFIG),
-      .input = "k-v",
-      .expected = INIT_KVCONTAINER({"k", "v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DASH_CONFIG),
-      .input = "k--v",
-      .expected = INIT_KVCONTAINER({"k", "-v"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(DASH_CONFIG),
-      .input = "---",
-      .expected = INIT_KVCONTAINER({"-", "-"}),
-    },
-    {}
-  };
-
-  return g_memdup(tc, sizeof(tc));
-}
-
-static Testcase *
-_provide_cases_with_allow_pair_separator_in_value(void)
-{
-  Testcase tc[] =
-  {
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo =bar",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo= bar",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo =bar",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=bar ggg",
-      .expected = INIT_KVCONTAINER({"foo", "bar ggg"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=bar ggg baz=ez",
-      .expected = INIT_KVCONTAINER({"foo", "bar ggg"}, {"baz", "ez"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = " foo =bar ggg baz=ez",
-      .expected = INIT_KVCONTAINER({"foo", "bar ggg"}, {"baz", "ez"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo =bar ggg baz =ez",
-      .expected = INIT_KVCONTAINER({"foo", "bar ggg"}, {"baz", "ez"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo =bar ggg baz   =ez",
-      .expected = INIT_KVCONTAINER({"foo", "bar ggg"}, {"baz", "ez"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo =  bar ggg baz   =   ez",
-      .expected = INIT_KVCONTAINER({"foo", "bar ggg"}, {"baz", "ez"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "k===  a",
-      .expected = INIT_KVCONTAINER({"k", "==  a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "a b c=d",
-      .expected = INIT_KVCONTAINER({"c", "d"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = " k= b",
-      .expected = INIT_KVCONTAINER({"k", "b"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=a \"bar baz\" ",
-      .expected = INIT_KVCONTAINER({"foo", "a \"bar baz\""}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=a \"bar baz",
-      .expected = INIT_KVCONTAINER({"foo", "a \"bar baz"}),
-    },
-
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=a \"bar baz c=d",
-      .expected = INIT_KVCONTAINER({"foo", "a \"bar baz"}, {"c", "d"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=a \"bar baz\"=f c=d a",
-      .expected = INIT_KVCONTAINER({"foo", "a \"bar baz\"=f"}, {"c", "d a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=\\\"bar baz\\\"",
-      .expected = INIT_KVCONTAINER({"foo", "\\\"bar baz\\\""}),
-    },
-    /* NOTE: foo is quoted, and thus space based concatenation is not at play. baz is just a stray word */
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=\"bar\" baz c=d",
-      .expected = INIT_KVCONTAINER({"foo", "bar"}, {"c", "d"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=bar\"",
-      .expected = INIT_KVCONTAINER({"foo", "bar\""}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "k===a",
-      .expected = INIT_KVCONTAINER({"k", "==a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "k===  a",
-      .expected = INIT_KVCONTAINER({"k", "==  a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "k===a=b",
-      .expected = INIT_KVCONTAINER({"k", "==a=b"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "a==b=",
-      .expected = INIT_KVCONTAINER({"a", "=b="}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "a=,=b=a",
-      .expected = INIT_KVCONTAINER({"a", ",=b=a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "a= =a",
-      .expected = INIT_KVCONTAINER({"a", "=a"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo=\"bar baz\"",
-      .expected = INIT_KVCONTAINER({"foo", "bar baz"}),
-    },
-    {
-      TC_HEAD,
-      .config = CONFIG_LIST(SPACE_HANDLING_CONFIG),
-      .input = "foo='bar",
-      .expected = INIT_KVCONTAINER({"foo", "'bar"}),
-    },
-    {}
-  };
-
-  return g_memdup(tc, sizeof(tc));
-}
 
 static Testcase *
 _provide_cases_for_performance_test_nothing_to_parse(void)
@@ -1542,21 +938,11 @@ _test_performance(Testcase *tcs, gchar *title)
   g_free(tcs);
 }
 
-
-
-Test(kv_scanner, array_based_tests)
-{
-  _run_testcases(_provide_common_cases());
-  _run_testcases(_provide_cases_without_allow_pair_separator_in_value());
-  _run_testcases(_provide_cases_with_allow_pair_separator_in_value());
-}
-
 Test(kv_scanner, performance_tests)
 {
   /* with criterion asserts are slow, so it's not suitable for perf testing */
   if (0)
     {
-      _test_performance(_provide_common_cases(), "Common test cases");
       _test_performance(_provide_cases_for_performance_test_nothing_to_parse(), "Nothing to parse in the message");
       _test_performance(_provide_cases_for_performance_test_parse_long_msg(), "Parse long strings");
     }
