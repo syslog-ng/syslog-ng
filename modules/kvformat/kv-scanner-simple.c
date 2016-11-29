@@ -67,7 +67,7 @@ _extract_key(KVScannerSimple *self)
 }
 
 static gboolean
-_is_c_literal_quoted(const gchar *input)
+_is_quoted(const gchar *input)
 {
   return *input == '\'' || *input == '\"';
 }
@@ -120,8 +120,23 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
   return result;
 }
 
-static void
-_extract_value(KVScannerSimple *self)
+static inline void
+_skip_initial_spaces(KVScannerSimple *self)
+{
+  const gchar *input = &self->super.input[self->super.input_pos];
+
+  if (self->allow_space)
+    {
+      const gchar *end;
+
+      while (*input == ' ' && !_match_delimiter(input, &end, self))
+        input++;
+    }
+  self->super.input_pos = input - self->super.input;
+}
+
+static inline void
+_decode_value(KVScannerSimple *self)
 {
   const gchar *input = &self->super.input[self->super.input_pos];
   const gchar *end;
@@ -131,13 +146,7 @@ _extract_value(KVScannerSimple *self)
     .match_delimiter_data = self,
   };
 
-  self->super.value_was_quoted = _is_c_literal_quoted(input);
-
-  if (self->allow_space)
-    {
-      while (*input == ' ' && !_match_delimiter(input, &end, self))
-        input++;
-    }
+  self->super.value_was_quoted = _is_quoted(input);
   if (str_repr_decode_with_options(self->super.value, input, &end, &options))
     {
       self->super.input_pos = end - self->super.input;
@@ -147,6 +156,13 @@ _extract_value(KVScannerSimple *self)
       /* quotation error, set was_quoted to FALSE */
       self->super.value_was_quoted = FALSE;
     }
+}
+
+static void
+_extract_value(KVScannerSimple *self)
+{
+  _skip_initial_spaces(self);
+  _decode_value(self);
 }
 
 static gboolean
