@@ -26,12 +26,12 @@
 
 #include "syslog-ng.h"
 
-typedef gboolean (*MatchDelimiterFunc)(const gchar *cur, const gchar **new_cur);
+typedef gboolean (*MatchDelimiterFunc)(const gchar *cur, const gchar **new_cur, gpointer user_data);
 
 gboolean str_repr_decode(GString *value, const gchar *input, const gchar **end);
 gboolean str_repr_decode_append(GString *value, const gchar *input, const gchar **end);
 
-gboolean str_repr_decode_until_delimiter(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter);
-gboolean str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc);
+gboolean str_repr_decode_until_delimiter(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter, gpointer user_data);
+gboolean str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc, gpointer user_data);
 
 #endif

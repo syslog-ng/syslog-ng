@@ -37,7 +37,7 @@ assert_decode_equals(const gchar *input, const gchar *expected)
 }
 
 static gboolean
-_match_three_tabs_as_delimiter(const gchar *cur, const gchar **new_cur)
+_match_three_tabs_as_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 {
   *new_cur = cur + 3;
   return (strncmp(cur, "\t\t\t", 3) == 0);
@@ -49,7 +49,7 @@ assert_decode_with_three_tabs_as_delimiter_equals(const gchar *input, const gcha
   GString *str = g_string_new("");
   const gchar *end;
 
-  str_repr_decode_until_delimiter(str, input, &end, _match_three_tabs_as_delimiter);
+  str_repr_decode_until_delimiter(str, input, &end, _match_three_tabs_as_delimiter, NULL);
   assert_string(str->str, expected, "Decoded value does not match expected");
   g_string_free(str, TRUE);
 }

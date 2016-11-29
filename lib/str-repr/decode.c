@@ -67,7 +67,7 @@ _decode_backslash_escape(GString *value, gchar quote_char, gchar ch)
 }
 
 gboolean
-str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter)
+str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter, gpointer user_data)
 {
   const gchar *cur = input, *new_cur;
   gchar quote_char;
@@ -79,7 +79,7 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
       switch (quote_state)
         {
         case KV_QUOTE_INITIAL:
-          if (match_delimiter && match_delimiter(cur, &new_cur))
+          if (match_delimiter && match_delimiter(cur, &new_cur, user_data))
             {
               cur = new_cur;
               goto finish;
@@ -116,7 +116,7 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
 }
 
 static gboolean
-_match_space_delimiter(const gchar *cur, const gchar **new_cur)
+_match_space_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 {
   *new_cur = cur + 1;
   return *cur == ' ';
@@ -125,7 +125,7 @@ _match_space_delimiter(const gchar *cur, const gchar **new_cur)
 gboolean
 str_repr_decode_append(GString *value, const gchar *input, const gchar **end)
 {
-  return str_repr_decode_until_delimiter_append(value, input, end, _match_space_delimiter);
+  return str_repr_decode_until_delimiter_append(value, input, end, _match_space_delimiter, NULL);
 }
 
 gboolean
@@ -136,8 +136,8 @@ str_repr_decode(GString *value, const gchar *input, const gchar **end)
 }
 
 gboolean
-str_repr_decode_until_delimiter(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter)
+str_repr_decode_until_delimiter(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter, gpointer user_data)
 {
   g_string_truncate(value, 0);
-  return str_repr_decode_until_delimiter_append(value, input, end, match_delimiter);
+  return str_repr_decode_until_delimiter_append(value, input, end, match_delimiter, user_data);
 }
