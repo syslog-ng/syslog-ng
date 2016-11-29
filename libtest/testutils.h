@@ -46,9 +46,6 @@
 #define ASSERTION_ERROR(message) "%s:%d/%s\n  #       %s", \
                                  basename(__FILE__), __LINE__, __FUNCTION__, ((message) ? (message) : "")
 
-void start_stopwatch();
-void stop_stopwatch_and_display_result(gint iterations, gchar *message_template, ...);
-
 void reset_grabbed_messages(void);
 void start_grabbing_messages(void);
 void stop_grabbing_messages(void);
