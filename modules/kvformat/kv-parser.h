@@ -44,7 +44,7 @@ gboolean kv_parser_is_valid_separator_character(gchar c);
 
 gboolean kv_parser_init_method(LogPipe *s);
 gboolean kv_parser_deinit_method(LogPipe *s);
-LogPipe *kv_parser_clone_fields(LogParser *cloned, KVParser *self);
+LogPipe *kv_parser_clone_method(KVParser *dst, KVParser *src);
 KVParser *kv_parser_init_instance(GlobalConfig *cfg);
 LogParser *kv_parser_new(GlobalConfig *cfg);
 

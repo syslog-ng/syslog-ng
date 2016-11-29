@@ -134,11 +134,11 @@ parse_linux_audit_style_hexdump(KVScanner *self)
 }
 
 static gboolean
-_init_linux_audit(LogPipe *s)
+_init(LogPipe *s)
 {
-  KVParser *self = (KVParser *)s;
-  g_assert(self->kv_scanner == NULL);
+  KVParser *self = (KVParser *) s;
 
+  g_assert(self->kv_scanner == NULL);
   if (!kv_parser_init_method(s))
     return FALSE;
   kv_scanner_set_transform_value(self->kv_scanner, parse_linux_audit_style_hexdump);
@@ -147,12 +147,12 @@ _init_linux_audit(LogPipe *s)
 }
 
 static LogPipe *
-_clone_linux_audit(LogPipe *s)
+_clone(LogPipe *s)
 {
   KVParser *self = (KVParser *) s;
-  LogParser *cloned = linux_audit_parser_new(s->cfg);
+  KVParser *cloned = (KVParser *) linux_audit_parser_new(s->cfg);
 
-  return kv_parser_clone_fields(cloned, self);
+  return kv_parser_clone_method(cloned, self);
 }
 
 LogParser *
@@ -160,8 +160,8 @@ linux_audit_parser_new(GlobalConfig *cfg)
 {
   KVParser *self = kv_parser_init_instance(cfg);
 
-  self->super.super.init = _init_linux_audit;
-  self->super.super.clone = _clone_linux_audit;
+  self->super.super.init = _init;
+  self->super.super.clone = _clone;
 
   return &self->super;
 }
