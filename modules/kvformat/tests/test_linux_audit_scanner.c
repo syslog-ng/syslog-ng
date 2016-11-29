@@ -51,13 +51,13 @@ KVScanner *kv_scanner;
 static void
 assert_no_more_tokens(void)
 {
-  assert_false(kv_scanner->scan_next(kv_scanner), "kv_scanner is expected to return no more key-value pairs");
+  assert_false(kv_scanner_scan_next(kv_scanner), "kv_scanner is expected to return no more key-value pairs");
 }
 
 static void
 scan_next_token(void)
 {
-  assert_true(kv_scanner->scan_next(kv_scanner),  "kv_scanner is expected to return TRUE for scan_next");
+  assert_true(kv_scanner_scan_next(kv_scanner),  "kv_scanner is expected to return TRUE for scan_next");
 }
 
 static void

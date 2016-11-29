@@ -42,7 +42,6 @@ struct _KVScanner
   gchar quote_char;
   gboolean allow_space;
   KVTransformValueFunc transform_value;
-  gboolean (*scan_next)(KVScanner *self);
   KVScanner* (*clone)(KVScanner *self);
 };
 
@@ -60,12 +59,6 @@ static inline KVScanner *
 kv_scanner_clone(KVScanner *self)
 {
   return self->clone(self);
-}
-
-static inline gboolean
-kv_scanner_scan_next(KVScanner *self)
-{
-  return self->scan_next(self);
 }
 
 static inline const gchar *
@@ -107,6 +100,7 @@ kv_scanner_set_transform_value(KVScanner *self, KVTransformValueFunc transform_v
   self->transform_value = transform_value;
 }
 
+gboolean kv_scanner_scan_next(KVScanner *self);
 KVScanner* kv_scanner_new(gchar value_separator, KVTransformValueFunc transform_value, gboolean allow_space);
 
 #endif

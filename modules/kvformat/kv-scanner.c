@@ -210,8 +210,8 @@ _extract_value(KVScanner *self)
   _decode_value(self);
 }
 
-static gboolean
-_scan_next(KVScanner *s)
+gboolean
+kv_scanner_scan_next(KVScanner *s)
 {
   KVScanner *self = (KVScanner *)s;
 
@@ -258,7 +258,6 @@ kv_scanner_new(gchar value_separator, KVTransformValueFunc transform_value, gboo
   KVScanner *self = g_new0(KVScanner, 1);
 
   kv_scanner_init(self, value_separator, transform_value);
-  self->scan_next = _scan_next;
   self->clone = _clone;
   self->allow_space = allow_space;
 

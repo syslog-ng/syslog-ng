@@ -43,7 +43,7 @@ _expect_no_more_tokens(KVScanner *scanner)
             value = "";
           g_string_append_printf(msg, "[%s/%s]", key, value);
         }
-      while (scanner->scan_next(scanner));
+      while (kv_scanner_scan_next(scanner));
 
       cr_expect(FALSE, "%s", msg->str);
       g_string_free(msg, TRUE);
@@ -71,7 +71,7 @@ _expect_next_key_value(KVScanner *scanner, const gchar *key, const gchar *value)
 {
   g_assert(value);
 
-  gboolean ok = scanner->scan_next(scanner);
+  gboolean ok = kv_scanner_scan_next(scanner);
   if (ok)
     {
       _expect_current_key_equals(scanner, key);
