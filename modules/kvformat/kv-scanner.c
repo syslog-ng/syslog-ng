@@ -23,6 +23,15 @@
 #include "str-repr/decode.h"
 #include <string.h>
 
+static inline gboolean
+_is_valid_key_character(gchar c)
+{
+  return (c >= 'a' && c <= 'z') ||
+         (c >= 'A' && c <= 'Z') ||
+         (c >= '0' && c <= '9') ||
+         (c == '_') ||
+         (c == '-');
+}
 
 static inline const gchar *
 _locate_separator(KVScanner *self, const gchar *start)
@@ -37,7 +46,7 @@ _locate_start_of_key(KVScanner *self, const gchar *end_of_key, const gchar **sta
   const gchar *cur;
 
   cur = end_of_key;
-  while (cur > input && kv_scanner_is_valid_key_character(*(cur - 1)))
+  while (cur > input && _is_valid_key_character(*(cur - 1)))
     cur--;
   *start_of_key = cur;
 }
@@ -112,7 +121,7 @@ _key_follows(KVScanner *self, const gchar *cur)
 {
   const gchar *key = cur;
 
-  while (kv_scanner_is_valid_key_character(*key))
+  while (_is_valid_key_character(*key))
     key++;
 
   if (self->allow_space)
@@ -210,6 +219,17 @@ _extract_value(KVScanner *self)
   _decode_value(self);
 }
 
+static inline void
+_transform_value(KVScanner *self)
+{
+  if (self->transform_value)
+    {
+      g_string_truncate(self->decoded_value, 0);
+      if (self->transform_value(self))
+        g_string_assign_len(self->value, self->decoded_value->str, self->decoded_value->len);
+    }
+}
+
 gboolean
 kv_scanner_scan_next(KVScanner *s)
 {
@@ -219,7 +239,7 @@ kv_scanner_scan_next(KVScanner *s)
     return FALSE;
 
   _extract_value(self);
-  kv_scanner_transform_value(s);
+  _transform_value(s);
 
   return TRUE;
 }

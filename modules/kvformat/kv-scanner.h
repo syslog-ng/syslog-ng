@@ -73,27 +73,6 @@ kv_scanner_get_current_value(KVScanner *self)
   return self->value->str;
 }
 
-static inline gboolean
-kv_scanner_is_valid_key_character(gchar c)
-{
-  return (c >= 'a' && c <= 'z') ||
-         (c >= 'A' && c <= 'Z') ||
-         (c >= '0' && c <= '9') ||
-         (c == '_') ||
-         (c == '-');
-}
-
-static inline void
-kv_scanner_transform_value(KVScanner *self)
-{
-  if (self->transform_value)
-    {
-      g_string_truncate(self->decoded_value, 0);
-      if (self->transform_value(self))
-        g_string_assign_len(self->value, self->decoded_value->str, self->decoded_value->len);
-    }
-}
-
 static inline void
 kv_scanner_set_transform_value(KVScanner *self, KVTransformValueFunc transform_value)
 {
