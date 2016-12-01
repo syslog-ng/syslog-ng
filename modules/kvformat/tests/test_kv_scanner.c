@@ -24,8 +24,8 @@
 
 #include "kv-scanner.h"
 
-static void
-_expect_no_more_tokens(KVScanner *scanner)
+static gboolean
+_expect_no_more_tokens(KVScanner *scanner, gchar **error)
 {
   GString *msg;
   gboolean ok = kv_scanner_scan_next(scanner);
@@ -45,46 +45,56 @@ _expect_no_more_tokens(KVScanner *scanner)
         }
       while (kv_scanner_scan_next(scanner));
 
-      cr_expect(FALSE, "%s", msg->str);
-      g_string_free(msg, TRUE);
+      *error = g_string_free(msg, FALSE);
+      return FALSE;
     }
-}
-
-static void
-_expect_current_key_equals(KVScanner *scanner, const gchar *expected_key)
-{
-  const gchar *key = kv_scanner_get_current_key(scanner);
-
-  cr_expect_str_eq(key, expected_key, "expected key mismatch key=%s, expected=%s", key, expected_key);
-}
-
-static void
-_expect_current_value_equals(KVScanner *scanner, const gchar *expected_value)
-{
-  const gchar *value = kv_scanner_get_current_value(scanner);
-
-  cr_expect_str_eq(value, expected_value, "expected value mismatch value=%s, expected=%s", value, expected_value);
+  return TRUE;
 }
 
 static gboolean
-_expect_next_key_value(KVScanner *scanner, const gchar *key, const gchar *value)
+_expect_current_key_equals(KVScanner *scanner, const gchar *expected_key, gchar **error)
+{
+  const gchar *key = kv_scanner_get_current_key(scanner);
+
+  if (strcmp(key, expected_key) != 0)
+    {
+      *error = g_strdup_printf("expected key mismatch key=%s, expected=%s", key, expected_key);
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
+_expect_current_value_equals(KVScanner *scanner, const gchar *expected_value, gchar **error)
+{
+  const gchar *value = kv_scanner_get_current_value(scanner);
+
+  if (strcmp(value, expected_value) != 0)
+    {
+      *error = g_strdup_printf("expected value mismatch value=%s, expected=%s", value, expected_value);
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
+_expect_next_key_value(KVScanner *scanner, const gchar *key, const gchar *value, gchar **error)
 {
   g_assert(value);
 
   gboolean ok = kv_scanner_scan_next(scanner);
   if (ok)
     {
-      _expect_current_key_equals(scanner, key);
-      _expect_current_value_equals(scanner, value);
-      return TRUE;
+      return _expect_current_key_equals(scanner, key, error) &&
+             _expect_current_value_equals(scanner, value, error);
     }
   else
     {
-      cr_expect(ok, "kv_scanner is expected to return TRUE for scan_next(), "
-                  "first unconsumed pair: [%s/%s]",
-                  key, value);
-      return FALSE;
+      *error = g_strdup_printf("kv_scanner is expected to return TRUE for scan_next(), "
+                               "first unconsumed pair: [%s/%s]",
+                               key, value);
     }
+  return FALSE;
 }
 
 typedef struct _ScannerConfig
@@ -146,31 +156,37 @@ create_kv_scanner(const ScannerConfig config)
   }
 
 
-static void
-_expect_kv_pairs(KVScanner *scanner, const gchar *input, KVContainer args)
+static gboolean
+_expect_kv_pairs(KVScanner *scanner, const gchar *input, KVContainer args, gchar **error)
 {
   g_assert(input);
   for (gsize i = 0; i < args.n; i++)
     {
-      if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value))
-        break;
+      if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value, error))
+        {
+          return FALSE;
+        }
     }
-  _expect_no_more_tokens(scanner);
+  return _expect_no_more_tokens(scanner, error);
 }
 
-static void
-_expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args)
+static gboolean
+_expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args, gchar **error)
 {
   g_assert(input);
   for (gsize i = 0; i < args.n; i++)
     {
-      if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value))
-        break;
-      cr_expect(scanner->value_was_quoted == args.arg[i].quoted,
-                         "mismatch in value_was_quoted for [%s/%s]",
-                         args.arg[i].key, args.arg[i].value);
+      if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value, error))
+        return FALSE;
+
+      if (scanner->value_was_quoted != args.arg[i].quoted)
+        {
+          *error = g_strdup_printf("mismatch in value_was_quoted for [%s/%s]",
+                                   args.arg[i].key, args.arg[i].value);
+          return FALSE;
+        }
     }
-  _expect_no_more_tokens(scanner);
+  return _expect_no_more_tokens(scanner, error);
 }
 
 #define INIT_KVQCONTAINER(...)  VARARG_STRUCT(KVQContainer, KVQElement, __VA_ARGS__)
@@ -178,9 +194,14 @@ _expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args)
 #define _IMPL_EXPECT_KVQ(SCANNER_config, TEST_KV_SCAN_input, ...) \
   do { \
     KVScanner *scanner = create_kv_scanner(SCANNER_config); \
+    gchar *error = NULL; \
     \
     kv_scanner_input(scanner, TEST_KV_SCAN_input);						\
-    _expect_kvq_triplets(scanner, TEST_KV_SCAN_input, INIT_KVQCONTAINER(__VA_ARGS__)); \
+    if (!_expect_kvq_triplets(scanner, TEST_KV_SCAN_input, INIT_KVQCONTAINER(__VA_ARGS__), &error)) \
+      { \
+        cr_expect(FALSE, "%s", error); \
+        g_free(error);\
+      } \
     kv_scanner_free(scanner); \
   } while (0)
 
@@ -194,9 +215,14 @@ _expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args)
 #define _IMPL_EXPECT_KV(TEST_KV_SCAN_config, TEST_KV_SCAN_input, ...) \
   do { \
     KVScanner *scanner = create_kv_scanner(TEST_KV_SCAN_config); \
+    gchar *error = NULL; \
     \
     kv_scanner_input(scanner, TEST_KV_SCAN_input);						\
-    _expect_kv_pairs(scanner, TEST_KV_SCAN_input, INIT_KVCONTAINER(__VA_ARGS__)); \
+    if (!_expect_kv_pairs(scanner, TEST_KV_SCAN_input, INIT_KVCONTAINER(__VA_ARGS__), &error))  \
+      { \
+        cr_expect(FALSE, "%s", error); \
+        g_free(error);\
+      } \
     kv_scanner_free(scanner); \
   } while (0)
 
@@ -704,9 +730,14 @@ Test(kv_scanner, key_buffer_underrun)
 #define TEST_KV_SCAN_ARRAY(SCANNER_config, TEST_KV_SCAN_input, TEST_KV_SCAN_expected) \
   do { \
     KVScanner *scanner = create_kv_scanner(SCANNER_config); \
+    gchar *error = NULL; \
     \
     kv_scanner_input(scanner, TEST_KV_SCAN_input);						\
-    _expect_kv_pairs(scanner, TEST_KV_SCAN_input, TEST_KV_SCAN_expected); \
+    if (!_expect_kv_pairs(scanner, TEST_KV_SCAN_input, TEST_KV_SCAN_expected, &error))  \
+      { \
+        cr_expect(FALSE, "%s", error); \
+        g_free(error); \
+      } \
     kv_scanner_free(scanner); \
   } while (0)
 
