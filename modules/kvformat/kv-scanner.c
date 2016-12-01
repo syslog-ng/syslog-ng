@@ -142,6 +142,12 @@ _end_of_string(const gchar *cur)
   return *cur == 0;
 }
 
+static inline gboolean
+_pair_separator(KVScanner *self, const gchar *cur)
+{
+  return (self->pair_separator && (strncmp(cur, self->pair_separator, self->pair_separator_len) == 0));
+}
+
 static gboolean
 _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 {
@@ -154,16 +160,22 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
       _skip_spaces(&cur);
 
       if (_end_of_string(cur) ||
+          _pair_separator(self, cur) ||
           _key_follows(self, cur))
         {
           *new_cur = cur;
           result = TRUE;
         }
     }
+  else if (*cur == ' ')
+    {
+      result = TRUE;
+      *new_cur = cur + 1;
+    }
   else
     {
-      result = (*cur == ' ') || (strncmp(cur, ", ", 2) == 0);
-      *new_cur = cur + 1;
+      result = _pair_separator(self, cur);
+      *new_cur = cur + self->pair_separator_len;
     }
   return result;
 }
@@ -237,17 +249,7 @@ kv_scanner_scan_next(KVScanner *s)
 static KVScanner *
 _clone(KVScanner *s)
 {
-  return kv_scanner_new(s->value_separator, s->transform_value);
-}
-
-void
-kv_scanner_init(KVScanner *self, gchar value_separator, KVTransformValueFunc transform_value)
-{
-  self->key = g_string_sized_new(32);
-  self->value = g_string_sized_new(64);
-  self->decoded_value = g_string_sized_new(64);
-  self->value_separator = value_separator;
-  self->transform_value = transform_value;
+  return kv_scanner_new(s->value_separator, s->pair_separator, s->transform_value);
 }
 
 void
@@ -258,15 +260,22 @@ kv_scanner_free(KVScanner *self)
   g_string_free(self->key, TRUE);
   g_string_free(self->value, TRUE);
   g_string_free(self->decoded_value, TRUE);
+  g_free(self->pair_separator);
   g_free(self);
 }
 
 KVScanner *
-kv_scanner_new(gchar value_separator, KVTransformValueFunc transform_value)
+kv_scanner_new(gchar value_separator, const gchar *pair_separator, KVTransformValueFunc transform_value)
 {
   KVScanner *self = g_new0(KVScanner, 1);
 
-  kv_scanner_init(self, value_separator, transform_value);
+  self->key = g_string_sized_new(32);
+  self->value = g_string_sized_new(64);
+  self->decoded_value = g_string_sized_new(64);
+  self->value_separator = value_separator;
+  self->pair_separator = g_strdup(pair_separator ? : ", ");
+  self->pair_separator_len = self->pair_separator ? strlen(self->pair_separator) : 0;
+  self->transform_value = transform_value;
   self->clone = _clone;
 
   return self;
