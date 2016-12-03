@@ -157,9 +157,8 @@ create_kv_scanner(const ScannerConfig config)
 
 
 static gboolean
-_expect_kv_pairs(KVScanner *scanner, const gchar *input, KVContainer args, gchar **error)
+_expect_kv_pairs(KVScanner *scanner, KVContainer args, gchar **error)
 {
-  g_assert(input);
   for (gsize i = 0; i < args.n; i++)
     {
       if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value, error))
@@ -171,9 +170,8 @@ _expect_kv_pairs(KVScanner *scanner, const gchar *input, KVContainer args, gchar
 }
 
 static gboolean
-_expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args, gchar **error)
+_expect_kvq_triplets(KVScanner *scanner, KVQContainer args, gchar **error)
 {
-  g_assert(input);
   for (gsize i = 0; i < args.n; i++)
     {
       if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value, error))
@@ -197,7 +195,7 @@ _expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args, 
     gchar *error = NULL; \
     \
     kv_scanner_input(scanner, TEST_KV_SCAN_input);						\
-    if (!_expect_kvq_triplets(scanner, TEST_KV_SCAN_input, INIT_KVQCONTAINER(__VA_ARGS__), &error)) \
+    if (!_expect_kvq_triplets(scanner, INIT_KVQCONTAINER(__VA_ARGS__), &error)) \
       { \
         cr_expect(FALSE, "%s", error); \
         g_free(error);\
@@ -218,7 +216,7 @@ _expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args, 
     gchar *error = NULL; \
     \
     kv_scanner_input(scanner, TEST_KV_SCAN_input);						\
-    if (!_expect_kv_pairs(scanner, TEST_KV_SCAN_input, INIT_KVCONTAINER(__VA_ARGS__), &error))  \
+    if (!_expect_kv_pairs(scanner, INIT_KVCONTAINER(__VA_ARGS__), &error))  \
       { \
         cr_expect(FALSE, "%s", error); \
         g_free(error);\
@@ -733,7 +731,7 @@ Test(kv_scanner, key_buffer_underrun)
     gchar *error = NULL; \
     \
     kv_scanner_input(scanner, TEST_KV_SCAN_input);						\
-    if (!_expect_kv_pairs(scanner, TEST_KV_SCAN_input, TEST_KV_SCAN_expected, &error))  \
+    if (!_expect_kv_pairs(scanner, TEST_KV_SCAN_expected, &error))  \
       { \
         cr_expect(FALSE, "%s", error); \
         g_free(error); \
