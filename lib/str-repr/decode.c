@@ -69,6 +69,14 @@ _decode_backslash_escape(GString *value, gchar quote_char, gchar ch)
   g_string_append_c(value, control);
 }
 
+static inline gboolean
+_invoke_match_delimiter(const gchar *cur, const gchar **new_cur, MatchDelimiterFunc match_delimiter, gpointer user_data)
+{
+  if (match_delimiter && match_delimiter(cur, new_cur, user_data))
+    return TRUE;
+  return FALSE;
+}
+
 gboolean
 str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter, gpointer user_data)
 {
@@ -82,7 +90,7 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
       switch (quote_state)
         {
         case KV_QUOTE_INITIAL:
-          if (match_delimiter && match_delimiter(cur, &new_cur, user_data))
+          if (_invoke_match_delimiter(cur, &new_cur, match_delimiter, user_data))
             {
               cur = new_cur;
               goto finish;
@@ -111,7 +119,7 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
           quote_state = KV_QUOTE_STRING;
           break;
         case KV_EXPECT_DELIMITER:
-          if (match_delimiter && match_delimiter(cur, &new_cur, user_data))
+          if (_invoke_match_delimiter(cur, &new_cur, match_delimiter, user_data))
             {
               cur = new_cur;
               quote_state = KV_QUOTE_INITIAL;
@@ -123,14 +131,14 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
             }
           break;
         case KV_QUOTE_ERROR:
-          if (match_delimiter && match_delimiter(cur, &new_cur, user_data))
+          if (_invoke_match_delimiter(cur, &new_cur, match_delimiter, user_data))
             {
               cur = new_cur;
               goto finish;
             }
           break;
         case KV_UNQUOTED_CHARACTERS:
-          if (match_delimiter && match_delimiter(cur, &new_cur, user_data))
+          if (_invoke_match_delimiter(cur, &new_cur, match_delimiter, user_data))
             {
               cur = new_cur;
               goto finish;
