@@ -21,8 +21,6 @@
 
 #include "kv-parser.h"
 #include "kv-scanner.h"
-#include "kv-scanner-simple.h"
-#include "kv-scanner-generic.h"
 
 gboolean
 kv_parser_is_valid_separator_character(char c)
@@ -152,14 +150,7 @@ kv_parser_init_method(LogPipe *s)
   KVParser *self = (KVParser *)s;
   g_assert(self->kv_scanner == NULL);
 
-  if (self->allow_pair_separator_in_value)
-    {
-      self->kv_scanner = kv_scanner_generic_new(self->value_separator, NULL);
-    }
-  else
-    {
-      self->kv_scanner = kv_scanner_simple_new(self->value_separator, NULL, FALSE);
-    }
+  self->kv_scanner = kv_scanner_simple_new(self->value_separator, NULL, self->allow_pair_separator_in_value);
 
   return TRUE;
 }

@@ -106,4 +106,6 @@ kv_scanner_set_transform_value(KVScanner *self, KVTransformValueFunc transform_v
   self->transform_value = transform_value;
 }
 
+KVScanner* kv_scanner_simple_new(gchar value_separator, KVTransformValueFunc transform_value, gboolean allow_space);
+
 #endif

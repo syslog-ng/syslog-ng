@@ -22,8 +22,7 @@
 #include <stdio.h>
 #include "stopwatch.h"
 
-#include "kv-scanner-generic.h"
-#include "kv-scanner-simple.h"
+#include "kv-scanner.h"
 
 static void
 _expect_no_more_tokens(KVScanner *scanner)
