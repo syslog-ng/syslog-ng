@@ -52,6 +52,7 @@
 %token KW_LINUX_AUDIT_PARSER
 %token KW_PREFIX
 %token KW_VALUE_SEPARATOR
+%token KW_PAIR_SEPARATOR
 %token KW_ALLOW_PAIR_SEPARATOR_OPTION
 
 %type	<ptr> parser_expr_kv
@@ -93,6 +94,11 @@ parser_kv_opt
             kv_parser_set_value_separator(last_parser, $3[0]);
             free($3);
 	  }
+	| KW_PAIR_SEPARATOR '(' string ')'
+          {
+            kv_parser_set_pair_separator(last_parser, $3);
+            free($3);
+          }
 	| parser_opt
 	;
 

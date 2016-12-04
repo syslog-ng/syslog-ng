@@ -200,6 +200,7 @@ _decode_value(KVScanner *self)
     0,
     .match_delimiter = _match_delimiter,
     .match_delimiter_data = self,
+    .delimiter_chars = { ' ', self->pair_separator[0] },
   };
 
   self->value_was_quoted = _is_quoted(input);

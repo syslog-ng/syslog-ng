@@ -30,6 +30,7 @@ typedef struct _KVParser
 {
   LogParser super;
   gchar value_separator;
+  gchar *pair_separator;
   gchar *prefix;
   gsize prefix_len;
   GString *formatted_key;
@@ -38,6 +39,7 @@ typedef struct _KVParser
 
 void kv_parser_set_prefix(LogParser *p, const gchar *prefix);
 void kv_parser_set_value_separator(LogParser *p, gchar value_separator);
+void kv_parser_set_pair_separator(LogParser *p, const gchar *pair_separator);
 gboolean kv_parser_is_valid_separator_character(gchar c);
 
 gboolean kv_parser_init_method(LogPipe *s);

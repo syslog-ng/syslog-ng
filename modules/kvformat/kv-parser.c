@@ -56,6 +56,15 @@ kv_parser_set_value_separator(LogParser *s, gchar value_separator)
   self->value_separator = value_separator;
 }
 
+void
+kv_parser_set_pair_separator(LogParser *s, const gchar *pair_separator)
+{
+  KVParser *self = (KVParser *) s;
+
+  g_free(self->pair_separator);
+  self->pair_separator = g_strdup(pair_separator);
+}
+
 static const gchar *
 _get_formatted_key(KVParser *self, const gchar *key)
 {
@@ -95,6 +104,7 @@ kv_parser_clone_method(KVParser *dst, KVParser *src)
   kv_parser_set_prefix(&dst->super, src->prefix);
   log_parser_set_template(&dst->super, log_template_ref(src->super.template));
   kv_parser_set_value_separator(&dst->super, src->value_separator);
+  kv_parser_set_pair_separator(&dst->super, src->pair_separator);
 
   if (src->kv_scanner)
     dst->kv_scanner = kv_scanner_clone(src->kv_scanner);
@@ -119,6 +129,7 @@ _free(LogPipe *s)
   kv_scanner_free(self->kv_scanner);
   g_string_free(self->formatted_key, TRUE);
   g_free(self->prefix);
+  g_free(self->pair_separator);
   log_parser_free_method(s);
 }
 
@@ -140,7 +151,7 @@ kv_parser_init_method(LogPipe *s)
   KVParser *self = (KVParser *)s;
   g_assert(self->kv_scanner == NULL);
 
-  self->kv_scanner = kv_scanner_new(self->value_separator, NULL, NULL);
+  self->kv_scanner = kv_scanner_new(self->value_separator, self->pair_separator, NULL);
 
   return TRUE;
 }
@@ -167,6 +178,7 @@ kv_parser_init_instance(GlobalConfig *cfg)
   self->super.process = _process_threaded;
   self->kv_scanner = NULL;
   self->value_separator = '=';
+  self->pair_separator = g_strdup(", ");
   self->formatted_key = g_string_sized_new(32);
 
   return self;
