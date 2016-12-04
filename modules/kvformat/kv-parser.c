@@ -158,7 +158,7 @@ kv_parser_init_method(LogPipe *s)
     }
   else
     {
-      self->kv_scanner = kv_scanner_simple_new(self->value_separator, NULL);
+      self->kv_scanner = kv_scanner_simple_new(self->value_separator, NULL, FALSE);
     }
 
   return TRUE;

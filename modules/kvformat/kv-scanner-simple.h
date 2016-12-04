@@ -25,6 +25,6 @@
 #include "syslog-ng.h"
 #include "kv-scanner.h"
 
-KVScanner* kv_scanner_simple_new(gchar value_separator, KVTransformValueFunc transform_value);
+KVScanner* kv_scanner_simple_new(gchar value_separator, KVTransformValueFunc transform_value, gboolean allow_space);
 
 #endif
