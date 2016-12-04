@@ -70,15 +70,31 @@ _decode_backslash_escape(GString *value, gchar quote_char, gchar ch)
 }
 
 static inline gboolean
-_invoke_match_delimiter(const gchar *cur, const gchar **new_cur, MatchDelimiterFunc match_delimiter, gpointer user_data)
+_invoke_match_delimiter(const gchar *cur, const gchar **new_cur, const StrReprDecodeOptions *options)
 {
-  if (match_delimiter && match_delimiter(cur, new_cur, user_data))
-    return TRUE;
+  if (options->delimiter_chars[0])
+    {
+      if (*cur == options->delimiter_chars[0] || *cur == options->delimiter_chars[1])
+        {
+          if (options->match_delimiter)
+            return options->match_delimiter(cur, new_cur, options->match_delimiter_data);
+          else
+            {
+              *new_cur = cur + 1;
+              return TRUE;
+            }
+        }
+    }
+  else
+    {
+      if (options->match_delimiter)
+        return options->match_delimiter(cur, new_cur, options->match_delimiter_data);
+    }
   return FALSE;
 }
 
 gboolean
-str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter, gpointer user_data)
+str_repr_decode_append_with_options(GString *value, const gchar *input, const gchar **end, const StrReprDecodeOptions *options)
 {
   const gchar *cur = input, *new_cur;
   gchar quote_char;
@@ -90,7 +106,7 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
       switch (quote_state)
         {
         case KV_QUOTE_INITIAL:
-          if (_invoke_match_delimiter(cur, &new_cur, match_delimiter, user_data))
+          if (_invoke_match_delimiter(cur, &new_cur, options))
             {
               cur = new_cur;
               goto finish;
@@ -119,7 +135,7 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
           quote_state = KV_QUOTE_STRING;
           break;
         case KV_EXPECT_DELIMITER:
-          if (_invoke_match_delimiter(cur, &new_cur, match_delimiter, user_data))
+          if (_invoke_match_delimiter(cur, &new_cur, options))
             {
               cur = new_cur;
               quote_state = KV_QUOTE_INITIAL;
@@ -131,14 +147,14 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
             }
           break;
         case KV_QUOTE_ERROR:
-          if (_invoke_match_delimiter(cur, &new_cur, match_delimiter, user_data))
+          if (_invoke_match_delimiter(cur, &new_cur, options))
             {
               cur = new_cur;
               goto finish;
             }
           break;
         case KV_UNQUOTED_CHARACTERS:
-          if (_invoke_match_delimiter(cur, &new_cur, match_delimiter, user_data))
+          if (_invoke_match_delimiter(cur, &new_cur, options))
             {
               cur = new_cur;
               goto finish;
@@ -159,17 +175,14 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
          quote_state == KV_UNQUOTED_CHARACTERS;
 }
 
-static gboolean
-_match_space_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
-{
-  *new_cur = cur + 1;
-  return *cur == ' ';
-}
-
 gboolean
 str_repr_decode_append(GString *value, const gchar *input, const gchar **end)
 {
-  return str_repr_decode_until_delimiter_append(value, input, end, _match_space_delimiter, NULL);
+  StrReprDecodeOptions options = {
+    0,
+    .delimiter_chars = " ",
+  };
+  return str_repr_decode_append_with_options(value, input, end, &options);
 }
 
 gboolean
@@ -180,8 +193,8 @@ str_repr_decode(GString *value, const gchar *input, const gchar **end)
 }
 
 gboolean
-str_repr_decode_until_delimiter(GString *value, const gchar *input, const gchar **end, MatchDelimiterFunc match_delimiter, gpointer user_data)
+str_repr_decode_with_options(GString *value, const gchar *input, const gchar **end, const StrReprDecodeOptions *options)
 {
   g_string_truncate(value, 0);
-  return str_repr_decode_until_delimiter_append(value, input, end, match_delimiter, user_data);
+  return str_repr_decode_append_with_options(value, input, end, options);
 }

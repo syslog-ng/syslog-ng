@@ -57,10 +57,14 @@ _match_three_tabs_as_delimiter(const gchar *cur, const gchar **new_cur, gpointer
 static void
 assert_decode_with_three_tabs_as_delimiter_equals(const gchar *input, const gchar *expected)
 {
+  StrReprDecodeOptions options = {
+    0,
+    .match_delimiter = _match_three_tabs_as_delimiter,
+  };
   GString *str = g_string_new("");
   const gchar *end;
 
-  str_repr_decode_until_delimiter(str, input, &end, _match_three_tabs_as_delimiter, NULL);
+  str_repr_decode_with_options(str, input, &end, &options);
   assert_string(str->str, expected, "Decoded value does not match expected");
   g_string_free(str, TRUE);
 }
