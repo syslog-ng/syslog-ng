@@ -42,6 +42,7 @@ configure\.ac$
 Makefile\.am$
 lib/(compat|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|[^/]*$)
 lib/scanner/csv-scanner
+lib/str-repr
 libtest
 syslog-ng(-ctl)?
 modules/java-modules/common
