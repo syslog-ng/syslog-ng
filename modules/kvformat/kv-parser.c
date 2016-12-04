@@ -49,14 +49,6 @@ kv_parser_set_prefix(LogParser *p, const gchar *prefix)
 }
 
 void
-kv_parser_set_allow_pair_separator_in_value(LogParser *s, gboolean allow_pair_separator_in_value)
-{
-  KVParser *self = (KVParser *) s;
-
-  self->allow_pair_separator_in_value = allow_pair_separator_in_value;
-}
-
-void
 kv_parser_set_value_separator(LogParser *s, gchar value_separator)
 {
   KVParser *self = (KVParser *) s;
@@ -102,8 +94,6 @@ kv_parser_clone_method(KVParser *dst, KVParser *src)
 {
   kv_parser_set_prefix(&dst->super, src->prefix);
   log_parser_set_template(&dst->super, log_template_ref(src->super.template));
-
-  kv_parser_set_allow_pair_separator_in_value(&dst->super, src->allow_pair_separator_in_value);
   kv_parser_set_value_separator(&dst->super, src->value_separator);
 
   if (src->kv_scanner)
@@ -150,7 +140,7 @@ kv_parser_init_method(LogPipe *s)
   KVParser *self = (KVParser *)s;
   g_assert(self->kv_scanner == NULL);
 
-  self->kv_scanner = kv_scanner_new(self->value_separator, NULL, self->allow_pair_separator_in_value);
+  self->kv_scanner = kv_scanner_new(self->value_separator, NULL);
 
   return TRUE;
 }
@@ -177,7 +167,6 @@ kv_parser_init_instance(GlobalConfig *cfg)
   self->super.process = _process_threaded;
   self->kv_scanner = NULL;
   self->value_separator = '=';
-  self->allow_pair_separator_in_value = FALSE;
   self->formatted_key = g_string_sized_new(32);
 
   return self;

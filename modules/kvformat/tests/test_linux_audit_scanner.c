@@ -26,7 +26,7 @@
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      kv_scanner = kv_scanner_new('=', NULL, FALSE);     \
+      kv_scanner = kv_scanner_new('=', NULL); 			\
       kv_scanner_set_transform_value(kv_scanner, parse_linux_audit_style_hexdump); \
     }                                                           \
   while (0)

@@ -65,11 +65,8 @@ _locate_end_of_key(KVScanner *self, const gchar *separator, const gchar **end_of
    * the space right next to "foo" */
 
   cur = separator;
-  if (self->allow_space)
-    {
-      while (cur > input && (*(cur - 1)) == ' ')
-        cur--;
-    }
+  while (cur > input && (*(cur - 1)) == ' ')
+    cur--;
   *end_of_key = cur;
 }
 
@@ -124,11 +121,8 @@ _key_follows(KVScanner *self, const gchar *cur)
   while (_is_valid_key_character(*key))
     key++;
 
-  if (self->allow_space)
-    {
-      while (*key == ' ')
-        key++;
-    }
+  while (*key == ' ')
+    key++;
   return (key != cur) && (*key == self->value_separator);
 }
 
@@ -155,7 +149,6 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
   gboolean result = FALSE;
 
   if (!self->value_was_quoted &&
-      self->allow_space &&
       *cur == ' ')
     {
       _skip_spaces(&cur);
@@ -178,15 +171,12 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 static inline void
 _skip_initial_spaces(KVScanner *self)
 {
-  if (self->allow_space)
-    {
-      const gchar *input = &self->input[self->input_pos];
-      const gchar *end;
+  const gchar *input = &self->input[self->input_pos];
+  const gchar *end;
 
-      while (*input == ' ' && !_match_delimiter(input, &end, self))
-        input++;
-      self->input_pos = input - self->input;
-    }
+  while (*input == ' ' && !_match_delimiter(input, &end, self))
+    input++;
+  self->input_pos = input - self->input;
 }
 
 static inline void
@@ -247,8 +237,7 @@ kv_scanner_scan_next(KVScanner *s)
 static KVScanner *
 _clone(KVScanner *s)
 {
-  KVScanner *self = (KVScanner *) s;
-  return kv_scanner_new(s->value_separator, s->transform_value, self->allow_space);
+  return kv_scanner_new(s->value_separator, s->transform_value);
 }
 
 void
@@ -273,13 +262,12 @@ kv_scanner_free(KVScanner *self)
 }
 
 KVScanner *
-kv_scanner_new(gchar value_separator, KVTransformValueFunc transform_value, gboolean allow_space)
+kv_scanner_new(gchar value_separator, KVTransformValueFunc transform_value)
 {
   KVScanner *self = g_new0(KVScanner, 1);
 
   kv_scanner_init(self, value_separator, transform_value);
   self->clone = _clone;
-  self->allow_space = allow_space;
 
   return self;
 }

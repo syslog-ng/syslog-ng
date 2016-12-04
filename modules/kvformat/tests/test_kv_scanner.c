@@ -90,7 +90,6 @@ _expect_next_key_value(KVScanner *scanner, const gchar *key, const gchar *value)
 typedef struct _ScannerConfig
 {
   gchar kv_separator;
-  gboolean allow_pair_separator_in_value;
   KVTransformValueFunc transform_value;
 } ScannerConfig;
 
@@ -131,7 +130,7 @@ typedef struct Testcase_t
 KVScanner *
 create_kv_scanner(const ScannerConfig config)
 {
-  KVScanner *scanner = kv_scanner_new(config.kv_separator, NULL, config.allow_pair_separator_in_value);
+  KVScanner *scanner = kv_scanner_new(config.kv_separator, NULL);
   scanner->transform_value = config.transform_value;
 
   KVScanner *clone = kv_scanner_clone(scanner);
@@ -186,8 +185,7 @@ _expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args)
 
 #define _EXPECT_KVQ_TRIPLETS(...) \
   do {										\
-    _IMPL_EXPECT_KVQ(((ScannerConfig) {'=', FALSE}), __VA_ARGS__);	\
-    _IMPL_EXPECT_KVQ(((ScannerConfig) {'=', TRUE}), __VA_ARGS__);	\
+    _IMPL_EXPECT_KVQ(((ScannerConfig) {'='}), __VA_ARGS__);	\
   } while(0)
 
 #define INIT_KVCONTAINER(...)  VARARG_STRUCT(KVContainer, KVElement, __VA_ARGS__)
@@ -201,28 +199,13 @@ _expect_kvq_triplets(KVScanner *scanner, const gchar *input, KVQContainer args)
     kv_scanner_free(scanner); \
   } while (0)
 
-
-#define _EXPECT_KV_PAIRS_NOSPACE(...) \
-  do { \
-    _IMPL_EXPECT_KV(((ScannerConfig) {'=', FALSE}), __VA_ARGS__); \
-  } while (0)
-
-#define _EXPECT_KV_PAIRS_WITHSPACE(...) \
-  do { \
-    _IMPL_EXPECT_KV(((ScannerConfig) {'=', TRUE}), __VA_ARGS__); \
-  } while (0)
-
 #define _EXPECT_KV_PAIRS(...) \
   do { \
-    _IMPL_EXPECT_KV(((ScannerConfig) {'=', FALSE}), __VA_ARGS__); \
-    _IMPL_EXPECT_KV(((ScannerConfig) {'=', TRUE}), __VA_ARGS__); \
+    _IMPL_EXPECT_KV(((ScannerConfig) {'='}), __VA_ARGS__); \
   } while (0)
 
 #define _EXPECT_KV_PAIRS_WITH_CONFIG(TEST_KV_SCAN_config, ...) \
   do {	\
-    TEST_KV_SCAN_config.allow_pair_separator_in_value = FALSE;		\
-    _IMPL_EXPECT_KV(TEST_KV_SCAN_config, __VA_ARGS__);		\
-    TEST_KV_SCAN_config.allow_pair_separator_in_value = TRUE;		\
     _IMPL_EXPECT_KV(TEST_KV_SCAN_config, __VA_ARGS__);		\
   } while (0)
 
@@ -250,17 +233,10 @@ Test(kv_scanner, stray_words_are_ignored)
   _EXPECT_KV_PAIRS("lorem ipsum/dolor @sitamen foo=bar",
                { "foo", "bar" });
 
-  _EXPECT_KV_PAIRS_WITHSPACE("lorem ipsum/dolor = foo=bar\"",
+  _EXPECT_KV_PAIRS("lorem ipsum/dolor = foo=bar\"",
                { "dolor", "" },
                { "foo", "bar\"" });
-  _EXPECT_KV_PAIRS_NOSPACE("lorem ipsum/dolor = foo=bar\"",
-               { "foo", "bar\"" });
-
-  _EXPECT_KV_PAIRS_NOSPACE("foo=bar lorem ipsum key=value some more values",
-               { "foo", "bar" },
-               { "key", "value" });
-
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=bar lorem ipsum key=value some more values",
+  _EXPECT_KV_PAIRS("foo=bar lorem ipsum key=value some more values",
                { "foo", "bar lorem ipsum" },
                { "key", "value some more values" });
 
@@ -311,17 +287,9 @@ Test(kv_scanner, comma_separated_values)
 
 Test(kv_scanner, comma_separated_values_and_multiple_spaces)
 {
-  /* spaces are ignored here at the end of the value, as the first space is
-   * the separator and ',' is the next stray word */
-
-  _EXPECT_KV_PAIRS_NOSPACE("key1=value1,   key2=value2  ,    key3=value3",
-               { "key1", "value1" },
-               { "key2", "value2" },
-               { "key3", "value3" });
-
   /* In value2 the spaces are considered part of the value as we don't have
    * a delimiter and spaces get concatenated into the value */
-  _EXPECT_KV_PAIRS_WITHSPACE("key1=value1,   key2=value2  ,    key3=value3",
+  _EXPECT_KV_PAIRS("key1=value1,   key2=value2  ,    key3=value3",
                { "key1", "value1" },
                { "key2", "value2  " },
                { "key3", "value3" });
@@ -408,16 +376,16 @@ Test(kv_scanner, quoted_values_are_unquoted_like_c_strings)
 
 Test(kv_scanner, quotes_embedded_in_an_unquoted_are_left_intact)
 {
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=a \"bar baz\" ",
+  _EXPECT_KV_PAIRS("foo=a \"bar baz\" ",
                              {"foo", "a \"bar baz\""});
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=a \"bar baz",
+  _EXPECT_KV_PAIRS("foo=a \"bar baz",
                              {"foo", "a \"bar baz"});
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=a \"bar baz c=d",
+  _EXPECT_KV_PAIRS("foo=a \"bar baz c=d",
                              {"foo", "a \"bar baz"}, {"c", "d"});
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=a \"bar baz\"=f c=d a",
+  _EXPECT_KV_PAIRS("foo=a \"bar baz\"=f c=d a",
                              {"foo", "a \"bar baz\"=f"}, {"c", "d a"});
 
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=\\\"bar baz\\\"",
+  _EXPECT_KV_PAIRS("foo=\\\"bar baz\\\"",
                              {"foo", "\\\"bar baz\\\""});
 
 }
@@ -430,16 +398,13 @@ Test(kv_scanner, separator_in_an_unquoted_value_is_taken_literally)
                    {"a", "=b="});
   _EXPECT_KV_PAIRS("a=,=b=a",
                    {"a", ",=b=a"});
-  _EXPECT_KV_PAIRS_WITHSPACE("a= =a",
+  _EXPECT_KV_PAIRS("a= =a",
                              {"a", "=a"});
 }
 
 Test(kv_scanner, keys_without_value_separator_are_ignored)
 {
-  _EXPECT_KV_PAIRS_NOSPACE("key1 key2=value2 key3 key4=value4",
-               { "key2", "value2" },
-               { "key4", "value4" });
-  _EXPECT_KV_PAIRS_WITHSPACE("key1 key2=value2 key3 key4=value4",
+  _EXPECT_KV_PAIRS("key1 key2=value2 key3 key4=value4",
                { "key2", "value2 key3" },
                { "key4", "value4" });
 
@@ -476,7 +441,7 @@ Test(kv_scanner, quoted_values_are_considered_one_token_thus_space_based_concate
                { "key2", "value foo,  a=" });
 
   /* NOTE: baz is not added to the value, it is a stray word */
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=\"bar\" baz c=d",
+  _EXPECT_KV_PAIRS("foo=\"bar\" baz c=d",
                              {"foo", "bar"}, {"c", "d"});
 }
 
@@ -522,11 +487,6 @@ Test(kv_scanner, value_separator_with_whitespaces_around)
   ScannerConfig config= {
     .kv_separator=':',
   };
-  config.allow_pair_separator_in_value = FALSE;
-  _IMPL_EXPECT_KV(config, "key1: value1 key2 : value2 key3 :value3 ",
-                           {"key1", "" });
-
-  config.allow_pair_separator_in_value = TRUE;
   _IMPL_EXPECT_KV(config, "key1: value1 key2 : value2 key3 :value3 ",
                            {"key1", "value1"},
                            {"key2", "value2"},
@@ -654,18 +614,18 @@ Test(kv_scanner, unquoted_values_can_have_embedded_control_characters)
 
 Test(kv_scanner, spaces_are_trimmed_between_key_and_separator)
 {
-  _EXPECT_KV_PAIRS_WITHSPACE("foo =bar",
+  _EXPECT_KV_PAIRS("foo =bar",
                              {"foo", "bar"});
-  _EXPECT_KV_PAIRS_WITHSPACE("foo= bar",
+  _EXPECT_KV_PAIRS("foo= bar",
                              {"foo", "bar"});
 }
 
 Test(kv_scanner, allow_space_causes_the_concatenation_of_multiple_tokens)
 {
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=bar ggg",
+  _EXPECT_KV_PAIRS("foo=bar ggg",
                              {"foo", "bar ggg"});
 
-  _EXPECT_KV_PAIRS_WITHSPACE("foo=bar ggg baz=ez",
+  _EXPECT_KV_PAIRS("foo=bar ggg baz=ez",
                              {"foo", "bar ggg"},
                              {"baz", "ez"});
 }
@@ -673,31 +633,31 @@ Test(kv_scanner, allow_space_causes_the_concatenation_of_multiple_tokens)
 
 Test(kv_scanner, allow_space_causes_spaces_to_be_trimmed_from_key_names)
 {
-  _EXPECT_KV_PAIRS_WITHSPACE(" foo =bar ggg baz=ez",
+  _EXPECT_KV_PAIRS(" foo =bar ggg baz=ez",
                              {"foo", "bar ggg"},
                              {"baz", "ez"});
 
-  _EXPECT_KV_PAIRS_WITHSPACE("foo =bar ggg baz=ez",
+  _EXPECT_KV_PAIRS("foo =bar ggg baz=ez",
                              {"foo", "bar ggg"},
                              {"baz", "ez"});
 
-  _EXPECT_KV_PAIRS_WITHSPACE(" foo=bar ggg baz=ez",
+  _EXPECT_KV_PAIRS(" foo=bar ggg baz=ez",
                              {"foo", "bar ggg"},
                              {"baz", "ez"});
 
-  _EXPECT_KV_PAIRS_WITHSPACE("foo =  bar ggg baz   =   ez",
+  _EXPECT_KV_PAIRS("foo =  bar ggg baz   =   ez",
                              {"foo", "bar ggg"},
                              {"baz", "ez"});
 
-  _EXPECT_KV_PAIRS_WITHSPACE("k===  a",
+  _EXPECT_KV_PAIRS("k===  a",
                              {"k", "==  a"});
 
 }
 
 Test(kv_scanner, allow_space_causes_spaces_to_be_trimmed_from_values)
 {
-  _EXPECT_KV_PAIRS_WITHSPACE(" k= b",
-                             {"k", "b"});
+  _EXPECT_KV_PAIRS(" k= b",
+                   {"k", "b"});
 
 }
 
@@ -717,10 +677,9 @@ Test(kv_scanner, key_buffer_underrun)
     kv_scanner_free(scanner); \
   } while (0)
 
-#define DEFAULT_CONFIG ((const ScannerConfig) {.kv_separator='=', .allow_pair_separator_in_value=FALSE})
-#define COLON_CONFIG ((const ScannerConfig) {.kv_separator=':', .allow_pair_separator_in_value=FALSE})
-#define DASH_CONFIG ((const ScannerConfig) {.kv_separator='-', .allow_pair_separator_in_value=FALSE})
-#define SPACE_HANDLING_CONFIG ((const ScannerConfig) {.kv_separator='=', .allow_pair_separator_in_value=TRUE})
+#define DEFAULT_CONFIG ((const ScannerConfig) {.kv_separator='='})
+#define COLON_CONFIG ((const ScannerConfig) {.kv_separator=':'})
+#define DASH_CONFIG ((const ScannerConfig) {.kv_separator='-'})
 
 #define TC_HEAD .line=__LINE__, .function=__FUNCTION__
 
@@ -734,20 +693,20 @@ _provide_cases_for_performance_test_nothing_to_parse(void)
   {
     {
       TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
+      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "Reducing the compressed framebuffer size. This may lead to less power savings than a non-reduced-size. \
 Try to increase stolen memory size if available in BIOS.",
       .expected = INIT_KVCONTAINER(),
     },
     {
       TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
+      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "interrupt took too long (3136 > 3127), lowering kernel.perf_event_max_sample_rate to 63750",
       .expected = INIT_KVCONTAINER(),
     },
     {
       TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
+      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "Linux version 4.6.3-040603-generic (kernel@gomeisa) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-4ubuntu1) ) \
 #201606241434 SMP Fri Jun 24 18:36:33 UTC 2016",
       .expected = INIT_KVCONTAINER(),
@@ -765,7 +724,7 @@ _provide_cases_for_performance_test_parse_long_msg(void)
   {
     {
       TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
+      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "PF: filter/forward DROP \
       IN=15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843 \
       OUT=980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d \
@@ -797,7 +756,7 @@ _provide_cases_for_performance_test_parse_long_msg(void)
     },
     {
       TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
+      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "fw=108.53.156.38 pri=6 c=262144 m=98 msg=\"Connection Opened\" f=2 sess=\"None\" \
       n=16351474 src=10.0.5.200:57719:X0:MOGWAI dst=71.250.0.14:53:X1 dstMac=f8:c0:01:73:c7:c1 proto=udp/dns sent=66",
       .expected = INIT_KVCONTAINER(
@@ -817,7 +776,7 @@ _provide_cases_for_performance_test_parse_long_msg(void)
     },
     {
       TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG, SPACE_HANDLING_CONFIG),
+      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "sn=C0EAE484E43E time=\"2016-07-08 13:42:58\" fw=132.237.143.192 pri=5 c=4 m=16 msg=\"Web site access allowed\" \
       app=11 sess=\"Auto\" n=5086 usr=\"DEMO\\primarystudent\" src=10.2.3.64:50682:X2-V3023 dst=157.55.240.220:443:X1 \
       srcMac=00:50:56:8e:55:8e dstMac=c0:ea:e4:84:e4:40 proto=tcp/https dstname=sls.update.microsoft.com arg= code=27 \
@@ -929,8 +888,7 @@ _test_performance(Testcase *tcs, gchar *title)
 
       if (cfg != NULL)
         {
-          stop_stopwatch_and_display_result(1, "Is pair-separator allowed in values: %s KV-separator: '%c' ",
-                                            cfg->allow_pair_separator_in_value?"YES":"NO ",
+          stop_stopwatch_and_display_result(1, "KV-separator: '%c' ",
                                             cfg->kv_separator);
         }
     }

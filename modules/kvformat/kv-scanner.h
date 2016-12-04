@@ -40,7 +40,6 @@ struct _KVScanner
   gboolean value_was_quoted;
   gchar value_separator;
   gchar quote_char;
-  gboolean allow_space;
   KVTransformValueFunc transform_value;
   KVScanner* (*clone)(KVScanner *self);
 };
@@ -80,6 +79,6 @@ kv_scanner_set_transform_value(KVScanner *self, KVTransformValueFunc transform_v
 }
 
 gboolean kv_scanner_scan_next(KVScanner *self);
-KVScanner* kv_scanner_new(gchar value_separator, KVTransformValueFunc transform_value, gboolean allow_space);
+KVScanner *kv_scanner_new(gchar value_separator, KVTransformValueFunc transform_value);
 
 #endif
