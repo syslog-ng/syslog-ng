@@ -94,7 +94,8 @@ _invoke_match_delimiter(const gchar *cur, const gchar **new_cur, const StrReprDe
 }
 
 gboolean
-str_repr_decode_append_with_options(GString *value, const gchar *input, const gchar **end, const StrReprDecodeOptions *options)
+str_repr_decode_append_with_options(GString *value, const gchar *input, const gchar **end,
+                                    const StrReprDecodeOptions *options)
 {
   const gchar *cur = input, *new_cur;
   gchar quote_char;
@@ -168,7 +169,7 @@ str_repr_decode_append_with_options(GString *value, const gchar *input, const gc
         }
       cur++;
     }
- finish:
+finish:
   *end = cur;
   /* check if quotation was not finished or we had extra characters, return FALSE */
   if (quote_state == KV_QUOTE_INITIAL ||
@@ -188,7 +189,8 @@ str_repr_decode_append_with_options(GString *value, const gchar *input, const gc
 gboolean
 str_repr_decode_append(GString *value, const gchar *input, const gchar **end)
 {
-  StrReprDecodeOptions options = {
+  StrReprDecodeOptions options =
+  {
     0,
     .delimiter_chars = " ",
   };

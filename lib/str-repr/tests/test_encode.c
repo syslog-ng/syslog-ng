@@ -17,7 +17,7 @@
 
 #define STR_REPR_ENCODE_TESTCASE(x, ...) \
   do {                                                          \
-      str_repr_encode_testcase_begin(#x, #__VA_ARGS__);  		\
+      str_repr_encode_testcase_begin(#x, #__VA_ARGS__);     \
       x(__VA_ARGS__);                                           \
       str_repr_encode_testcase_end();                                \
   } while(0)

@@ -34,10 +34,12 @@ static CfgLexerKeyword kv_parser_keywords[] =
   { "prefix",                        KW_PREFIX,  },
   { "value_separator",               KW_VALUE_SEPARATOR,  },
   { "pair_separator",                KW_PAIR_SEPARATOR,  },
-  { "allow_pair_separator_in_value", KW_ALLOW_PAIR_SEPARATOR_OPTION,
-                                     .kw_status = KWS_OBSOLETE,
-                                     .kw_explain = "The allow-pair-separator-in-value(yes) has become the default behavior of kv-parser(), "
-                                     "and the option does nothing, you can safely remove it from your configuration." },
+  {
+    "allow_pair_separator_in_value", KW_ALLOW_PAIR_SEPARATOR_OPTION,
+    .kw_status = KWS_OBSOLETE,
+    .kw_explain = "The allow-pair-separator-in-value(yes) has become the default behavior of kv-parser(), "
+    "and the option does nothing, you can safely remove it from your configuration."
+  },
   { NULL }
 };
 
