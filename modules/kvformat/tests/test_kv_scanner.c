@@ -131,9 +131,6 @@ typedef struct _KVContainer
 
 typedef struct Testcase_t
 {
-  gint line;
-  const gchar *function;
-  ScannerConfig config[5];
   gchar *input;
   KVContainer expected;
 } Testcase;
@@ -725,50 +722,21 @@ Test(kv_scanner, key_buffer_underrun)
   _EXPECT_KV_PAIRS(input);
 }
 
-#define TEST_KV_SCAN_ARRAY(SCANNER_config, TEST_KV_SCAN_input, TEST_KV_SCAN_expected) \
-  do { \
-    KVScanner *scanner = create_kv_scanner(SCANNER_config); \
-    gchar *error = NULL; \
-    \
-    kv_scanner_input(scanner, TEST_KV_SCAN_input);						\
-    if (!_expect_kv_pairs(scanner, TEST_KV_SCAN_expected, &error))  \
-      { \
-        cr_expect(FALSE, "%s", error); \
-        g_free(error); \
-      } \
-    kv_scanner_free(scanner); \
-  } while (0)
-
-#define DEFAULT_CONFIG ((const ScannerConfig) {.kv_separator='='})
-#define COLON_CONFIG ((const ScannerConfig) {.kv_separator=':'})
-#define DASH_CONFIG ((const ScannerConfig) {.kv_separator='-'})
-
-#define TC_HEAD .line=__LINE__, .function=__FUNCTION__
-
-
-#define CONFIG_LIST(...) { __VA_ARGS__, {} }
-
 static Testcase *
 _provide_cases_for_performance_test_nothing_to_parse(void)
 {
   Testcase tc[] =
   {
     {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "Reducing the compressed framebuffer size. This may lead to less power savings than a non-reduced-size. \
 Try to increase stolen memory size if available in BIOS.",
       .expected = INIT_KVCONTAINER(),
     },
     {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "interrupt took too long (3136 > 3127), lowering kernel.perf_event_max_sample_rate to 63750",
       .expected = INIT_KVCONTAINER(),
     },
     {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "Linux version 4.6.3-040603-generic (kernel@gomeisa) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-4ubuntu1) ) \
 #201606241434 SMP Fri Jun 24 18:36:33 UTC 2016",
       .expected = INIT_KVCONTAINER(),
@@ -785,8 +753,6 @@ _provide_cases_for_performance_test_parse_long_msg(void)
   Testcase tc[] =
   {
     {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "PF: filter/forward DROP \
       IN=15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843 \
       OUT=980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d \
@@ -817,8 +783,36 @@ _provide_cases_for_performance_test_parse_long_msg(void)
         {"LEN", "c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db"}),
     },
     {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
+      .input = "PF: filter/forward DROP \
+      IN='15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843' \
+      OUT='980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d' \
+      SRC='cc8177fc0c8681d3d5d2a42bc1ed86990f773589592fa3100c23fae445f8a260' \
+      DST='5fee25396500fc798e10b4dcb0b3fb315618ff11843be59978c0d5b41cd9f12c' \
+      LEN='71ee45a3c0db9a9865f7313dd3372cf60dca6479d46261f3542eb9346e4a04d6' \
+      TOS='c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7' \
+      PREC='c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7' \
+      TTL='da4ea2a5506f2693eae190d9360a1f31793c98a1adade51d93533a6f520ace1c' \
+      ID='242a9377518dd1afaf021b2d0bfe6484e3fe48a878152f76dec99a396160022c' \
+      PROTO='dc4030f9688d6e67dfc4c5f8f7afcbdbf5c30de866d8a3c6e1dd038768ab91c3' \
+      SPT='1e7996c7b0181429bba237ac2799ee5edc31aca2d5d90c39a48f9e9a3d4078bd' \
+      DPT='ca902d4a8acbdea132ada81a004081f51c5c9279d409cee414de5a39a139fab6' \
+      LEN='c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db'",
+      .expected = INIT_KVCONTAINER(
+        {"IN", "15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843"},
+        {"OUT", "980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d"},
+        {"SRC", "cc8177fc0c8681d3d5d2a42bc1ed86990f773589592fa3100c23fae445f8a260"},
+        {"DST", "5fee25396500fc798e10b4dcb0b3fb315618ff11843be59978c0d5b41cd9f12c"},
+        {"LEN", "71ee45a3c0db9a9865f7313dd3372cf60dca6479d46261f3542eb9346e4a04d6"},
+        {"TOS", "c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7"},
+        {"PREC", "c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7"},
+        {"TTL", "da4ea2a5506f2693eae190d9360a1f31793c98a1adade51d93533a6f520ace1c"},
+        {"ID", "242a9377518dd1afaf021b2d0bfe6484e3fe48a878152f76dec99a396160022c"},
+        {"PROTO", "dc4030f9688d6e67dfc4c5f8f7afcbdbf5c30de866d8a3c6e1dd038768ab91c3"},
+        {"SPT", "1e7996c7b0181429bba237ac2799ee5edc31aca2d5d90c39a48f9e9a3d4078bd"},
+        {"DPT", "ca902d4a8acbdea132ada81a004081f51c5c9279d409cee414de5a39a139fab6"},
+        {"LEN", "c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db"}),
+    },
+    {
       .input = "fw=108.53.156.38 pri=6 c=262144 m=98 msg=\"Connection Opened\" f=2 sess=\"None\" \
       n=16351474 src=10.0.5.200:57719:X0:MOGWAI dst=71.250.0.14:53:X1 dstMac=f8:c0:01:73:c7:c1 proto=udp/dns sent=66",
       .expected = INIT_KVCONTAINER(
@@ -837,8 +831,6 @@ _provide_cases_for_performance_test_parse_long_msg(void)
         {"sent", "66"}),
     },
     {
-      TC_HEAD,
-      .config = CONFIG_LIST(DEFAULT_CONFIG),
       .input = "sn=C0EAE484E43E time=\"2016-07-08 13:42:58\" fw=132.237.143.192 pri=5 c=4 m=16 msg=\"Web site access allowed\" \
       app=11 sess=\"Auto\" n=5086 usr=\"DEMO\\primarystudent\" src=10.2.3.64:50682:X2-V3023 dst=157.55.240.220:443:X1 \
       srcMac=00:50:56:8e:55:8e dstMac=c0:ea:e4:84:e4:40 proto=tcp/https dstname=sls.update.microsoft.com arg= code=27 \
@@ -871,58 +863,11 @@ _provide_cases_for_performance_test_parse_long_msg(void)
   return g_memdup(tc, sizeof(tc));
 }
 
-static GString *
-_expected_to_string(const KVContainer kvs)
-{
-  GString *result = g_string_new("");
-  gboolean first = TRUE;
-  for (gint i = 0; i < kvs.n; i++)
-    {
-      if (!first)
-        {
-          g_string_append_c(result, ' ');
-        }
-      first = FALSE;
-      g_string_append_printf(result, "%s=%s", kvs.arg[i].key, kvs.arg[i].value);
-    }
-
-  return result;
-}
-
-static void
-_run_testcase(const Testcase tc)
-{
-  GString *pretty_expected;
-  const ScannerConfig *cfg = tc.config;
-  while (cfg->kv_separator != 0)
-    {
-      pretty_expected = _expected_to_string(tc.expected);
-      TEST_KV_SCAN_ARRAY(*cfg, tc.input, tc.expected);
-      g_string_free(pretty_expected, TRUE);
-      cfg++;
-    }
-}
-
-static void
-_run_testcases(Testcase *cases)
-{
-  const Testcase *tc = cases;
-  while (tc->input)
-    {
-      _run_testcase(*tc);
-      tc++;
-    }
-  g_free(cases);
-}
-
-#define ITERATION_NUMBER 10
+#define ITERATION_NUMBER 100000
 
 static void
 _test_performance(Testcase *tcs, gchar *title)
 {
-  GString *pretty_expected;
-  const ScannerConfig *cfg = NULL;
-  gint cfg_index = 0;
   const Testcase *tc;
   gint iteration_index = 0;
 
@@ -931,38 +876,30 @@ _test_performance(Testcase *tcs, gchar *title)
       printf("Performance test: %s\n", title);
     }
 
-  for (cfg_index = 0; tcs->config[cfg_index].kv_separator != 0; cfg_index++)
+  for (tc = tcs; tc->input; tc++)
     {
-
+      KVScanner *scanner = create_kv_scanner(((ScannerConfig) {'='}));
       start_stopwatch();
-
       for (iteration_index = 0; iteration_index < ITERATION_NUMBER; iteration_index++)
         {
-          for (tc = tcs; tc->input; tc++)
-            {
-              cfg = &tc->config[cfg_index];
+            gchar *error = NULL;
 
-              pretty_expected = _expected_to_string(tc->expected);
-              TEST_KV_SCAN_ARRAY(*cfg, tc->input, tc->expected);
-              g_string_free(pretty_expected, TRUE);
-            }
+            kv_scanner_input(scanner, tc->input);
+            if (!_expect_kv_pairs(scanner, tc->expected, &error))
+              {
+                cr_expect(FALSE, "%s", error);
+                g_free(error);
+              }
         }
-
-      if (cfg != NULL)
-        {
-          stop_stopwatch_and_display_result(1, "KV-separator: '%c' ",
-                                            cfg->kv_separator);
-        }
+      stop_stopwatch_and_display_result(iteration_index, "%.64s...",
+                                        tc->input);
+      kv_scanner_free(scanner);
     }
   g_free(tcs);
 }
 
 Test(kv_scanner, performance_tests)
 {
-  /* with criterion asserts are slow, so it's not suitable for perf testing */
-  if (0)
-    {
-      _test_performance(_provide_cases_for_performance_test_nothing_to_parse(), "Nothing to parse in the message");
-      _test_performance(_provide_cases_for_performance_test_parse_long_msg(), "Parse long strings");
-    }
+  _test_performance(_provide_cases_for_performance_test_nothing_to_parse(), "Nothing to parse in the message");
+  _test_performance(_provide_cases_for_performance_test_parse_long_msg(), "Parse long strings");
 }
