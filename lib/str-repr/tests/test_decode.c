@@ -31,7 +31,9 @@ assert_decode_equals(const gchar *input, const gchar *expected)
   GString *str = g_string_new("");
   const gchar *end;
 
-  str_repr_decode(str, input, &end);
+  assert_true(str_repr_decode(str, input, &end), "Decode operation failed while success was expected, input=%s", input);
+  assert_string(str->str, expected, "Decoded value does not match expected");
+  g_string_free(str, TRUE);
 }
 
 static void
