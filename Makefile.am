@@ -43,7 +43,8 @@ AM_CPPFLAGS		= -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I$(top_builddir)/lib
 AM_CFLAGS =
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
-	-Wshadow
+	-Wshadow	\
+	-Wno-initializer-overrides
 
 endif
 
