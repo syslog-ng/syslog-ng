@@ -141,9 +141,9 @@ create_kv_scanner(const ScannerConfig config)
   KVScanner *scanner = kv_scanner_new(config.kv_separator, config.pair_separator, NULL);
   scanner->transform_value = config.transform_value;
 
-  KVScanner *clone = kv_scanner_clone(scanner);
+  KVScanner *cloned = kv_scanner_clone(scanner);
   kv_scanner_free(scanner);
-  return clone;
+  return cloned;
 }
 
 #define VARARG_STRUCT(VARARG_STRUCT_cont, VARARG_STRUCT_elem, ...) \
