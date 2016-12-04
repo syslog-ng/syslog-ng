@@ -32,7 +32,8 @@ enum
   KV_QUOTE_BACKSLASH,
   KV_QUOTE_FINISH,
   KV_EXPECT_DELIMITER,
-  KV_QUOTE_ERROR
+  KV_QUOTE_ERROR,
+  KV_UNQUOTED_CHARACTERS,
 };
 
 static void
@@ -94,6 +95,7 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
           else
             {
               g_string_append_c(value, *cur);
+              quote_state = KV_UNQUOTED_CHARACTERS;
             }
           break;
         case KV_QUOTE_STRING:
@@ -121,6 +123,22 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
             }
           break;
         case KV_QUOTE_ERROR:
+          if (match_delimiter && match_delimiter(cur, &new_cur, user_data))
+            {
+              cur = new_cur;
+              goto finish;
+            }
+          break;
+        case KV_UNQUOTED_CHARACTERS:
+          if (match_delimiter && match_delimiter(cur, &new_cur, user_data))
+            {
+              cur = new_cur;
+              goto finish;
+            }
+          else
+            {
+              g_string_append_c(value, *cur);
+            }
           break;
         }
       cur++;
@@ -129,7 +147,8 @@ str_repr_decode_until_delimiter_append(GString *value, const gchar *input, const
   *end = cur;
   /* check if quotation was not finished or we had extra characters, return FALSE */
   return quote_state == KV_QUOTE_INITIAL ||
-         quote_state == KV_EXPECT_DELIMITER;
+         quote_state == KV_EXPECT_DELIMITER ||
+         quote_state == KV_UNQUOTED_CHARACTERS;
 }
 
 static gboolean

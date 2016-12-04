@@ -103,10 +103,10 @@ test_decode_malformed_strings(void)
 {
   assert_decode_equals_and_fails("'alma", "alma");
   assert_decode_equals_and_fails("\"alma", "alma");
-  assert_decode_equals_and_fails("alma'", "alma");
-  assert_decode_equals_and_fails("alma\"", "alma");
-  assert_decode_equals_and_fails("alma\"korte", "almakorte");
-  assert_decode_equals("alma\"korte\"", "almakorte");
+  assert_decode_equals("alma'", "alma'");
+  assert_decode_equals("alma\"", "alma\"");
+  assert_decode_equals("alma\"korte", "alma\"korte");
+  assert_decode_equals("alma\"korte\"", "alma\"korte\"");
   assert_decode_equals_and_fails("'alma'@korte", "alma");
 }
 
