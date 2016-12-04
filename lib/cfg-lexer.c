@@ -233,7 +233,8 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
                     case KWS_OBSOLETE:
                       msg_warning("WARNING: Your configuration file uses an obsoleted keyword, please update your configuration",
                                   evt_tag_str("keyword", keywords[i].kw_name),
-                                  evt_tag_str("change", keywords[i].kw_explain));
+                                  evt_tag_str("change", keywords[i].kw_explain),
+                                  cfg_lexer_format_location_tag(self, yylloc));
                       break;
                     default:
                       break;
