@@ -105,13 +105,13 @@ test_decode_apostrophe_quoted_strings(void)
 static void
 test_decode_malformed_strings(void)
 {
-  assert_decode_equals_and_fails("'alma", "alma");
-  assert_decode_equals_and_fails("\"alma", "alma");
+  assert_decode_equals_and_fails("'alma", "'alma");
+  assert_decode_equals_and_fails("\"alma", "\"alma");
   assert_decode_equals("alma'", "alma'");
   assert_decode_equals("alma\"", "alma\"");
   assert_decode_equals("alma\"korte", "alma\"korte");
   assert_decode_equals("alma\"korte\"", "alma\"korte\"");
-  assert_decode_equals_and_fails("'alma'@korte", "alma");
+  assert_decode_equals_and_fails("'alma'@korte", "'alma'@korte");
 }
 
 static void
@@ -120,7 +120,7 @@ test_decode_delimited_strings(void)
   assert_decode_with_three_tabs_as_delimiter_equals("alma\t\t\tkorte", "alma");
 
   assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'", "alma\t\t\tkorte");
-  assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'\t\t", "alma\t\t\tkorte");
+  assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'\t\t", "'alma\t\t\tkorte'\t\t");
   assert_decode_with_three_tabs_as_delimiter_equals("'alma\t\t\tkorte'\t\t\t", "alma\t\t\tkorte");
   assert_decode_with_three_tabs_as_delimiter_equals("alma\t\t", "alma\t\t");
 

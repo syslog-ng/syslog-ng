@@ -99,6 +99,7 @@ str_repr_decode_append_with_options(GString *value, const gchar *input, const gc
   const gchar *cur = input, *new_cur;
   gchar quote_char;
   gint quote_state;
+  gsize initial_len = value->len;
 
   quote_state = KV_QUOTE_INITIAL;
   while (*cur)
@@ -170,9 +171,18 @@ str_repr_decode_append_with_options(GString *value, const gchar *input, const gc
  finish:
   *end = cur;
   /* check if quotation was not finished or we had extra characters, return FALSE */
-  return quote_state == KV_QUOTE_INITIAL ||
-         quote_state == KV_EXPECT_DELIMITER ||
-         quote_state == KV_UNQUOTED_CHARACTERS;
+  if (quote_state == KV_QUOTE_INITIAL ||
+      quote_state == KV_EXPECT_DELIMITER ||
+      quote_state == KV_UNQUOTED_CHARACTERS)
+    {
+      return TRUE;
+    }
+  else
+    {
+      g_string_truncate(value, initial_len);
+      g_string_append_len(value, input, cur - input);
+      return FALSE;
+    }
 }
 
 gboolean
