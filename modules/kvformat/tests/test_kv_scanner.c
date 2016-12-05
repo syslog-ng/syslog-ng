@@ -248,6 +248,11 @@ Test(kv_scanner, name_equals_value_returns_a_pair)
   _EXPECT_KV_PAIRS("foo=barbar", { "foo", "barbar" });
 }
 
+Test(kv_scanner, allowed_characters_in_a_key_are_letters_digits_dash_underscore_and_dot)
+{
+  _EXPECT_KV_PAIRS("FOOfoo123-_._-321oofOOF=value", {"FOOfoo123-_._-321oofOOF", "value"});
+}
+
 Test(kv_scanner, initial_stray_words_are_ignored)
 {
   _EXPECT_KV_PAIRS("lorem ipsum foo=bar",

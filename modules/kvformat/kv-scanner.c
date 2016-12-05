@@ -30,6 +30,7 @@ _is_valid_key_character(gchar c)
          (c >= 'A' && c <= 'Z') ||
          (c >= '0' && c <= '9') ||
          (c == '_') ||
+         (c == '.') ||
          (c == '-');
 }
 
