@@ -58,6 +58,13 @@ assert_encode_equals(const gchar *input, const gchar *expected)
 
   str_repr_encode(str, input, strlen(input), NULL);
   assert_string(str->str, expected, "Encoded value does not match expected");
+
+  gchar *space_ended_input = g_strdup_printf("%s ", input);
+  str_repr_encode(str, space_ended_input, strlen(input), ",");
+  assert_string(str->str, expected, "Encoded value does not match expected");
+
+  g_free(space_ended_input);
+
   g_string_free(str, TRUE);
 }
 
