@@ -101,6 +101,7 @@ typedef struct _ScannerConfig
 {
   gchar kv_separator;
   const gchar *pair_separator;
+  gboolean extract_stray_words;
   KVTransformValueFunc transform_value;
 } ScannerConfig;
 
@@ -138,7 +139,7 @@ typedef struct Testcase_t
 KVScanner *
 create_kv_scanner(const ScannerConfig config)
 {
-  KVScanner *scanner = kv_scanner_new(config.kv_separator, config.pair_separator, NULL);
+  KVScanner *scanner = kv_scanner_new(config.kv_separator, config.pair_separator, config.extract_stray_words);
   scanner->transform_value = config.transform_value;
 
   KVScanner *cloned = kv_scanner_clone(scanner);
@@ -218,6 +219,8 @@ _expect_kvq_triplets(KVScanner *scanner, KVQContainer args, gchar **error)
         cr_expect(FALSE, "%s", error); \
         g_free(error);\
       } \
+    cr_expect_eq(kv_scanner_get_stray_words(scanner), NULL, \
+                     "stray words are not expected but still returned");   \
     kv_scanner_free(scanner); \
   } while (0)
 
@@ -231,6 +234,24 @@ _expect_kvq_triplets(KVScanner *scanner, KVQContainer args, gchar **error)
     _IMPL_EXPECT_KV(TEST_KV_SCAN_config, __VA_ARGS__);    \
   } while (0)
 
+#define _EXPECT_KV_AND_STRAY_WORDS(INPUT, STRAY, ...) \
+  do { \
+    KVScanner *scanner = create_kv_scanner(((ScannerConfig) {			\
+      .kv_separator = '=', 							\
+      .extract_stray_words=TRUE})); \
+    gchar *error = NULL; \
+    \
+    kv_scanner_input(scanner, INPUT);            \
+    if (!_expect_kv_pairs(scanner, INIT_KVCONTAINER(__VA_ARGS__), &error))  \
+      { \
+        cr_expect(FALSE, "%s", error); \
+        g_free(error);\
+      } \
+    cr_expect_str_eq(kv_scanner_get_stray_words(scanner), STRAY, \
+                     "Stray words mismatch, value=%s, expected=%s", \
+                     kv_scanner_get_stray_words(scanner), STRAY); \
+    kv_scanner_free(scanner); \
+  } while (0)
 
 Test(kv_scanner, incomplete_string_returns_no_pairs)
 {
@@ -725,6 +746,21 @@ Test(kv_scanner, initial_spaces_are_trimmed_from_values)
   _EXPECT_KV_PAIRS(" k= b",
   {"k", "b"});
 
+}
+
+Test(kv_scanner, stray_words_are_stored)
+{
+  _EXPECT_KV_AND_STRAY_WORDS("foo=bar", "", {"foo", "bar"});
+  _EXPECT_KV_AND_STRAY_WORDS("alma foo=bar", "alma", {"foo", "bar"});
+  _EXPECT_KV_AND_STRAY_WORDS("alma foo=bar, korte bar=foo",
+                             "alma,korte",
+  {"foo", "bar"},
+  {"bar", "foo"});
+
+  _EXPECT_KV_AND_STRAY_WORDS("alma foo=bar, korte bar=foo, narancs",
+                             "alma,korte,narancs",
+  {"foo", "bar"},
+  {"bar", "foo"});
 }
 
 Test(kv_scanner, key_buffer_underrun)
