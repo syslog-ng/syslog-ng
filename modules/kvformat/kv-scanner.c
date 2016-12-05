@@ -170,9 +170,14 @@ _end_of_string(const gchar *cur)
 }
 
 static inline gboolean
-_pair_separator(KVScanner *self, const gchar *cur)
+_pair_separator(KVScanner *self, const gchar *cur, const gchar **new_cur)
 {
-  return (self->pair_separator && (strncmp(cur, self->pair_separator, self->pair_separator_len) == 0));
+  if (self->pair_separator && (strncmp(cur, self->pair_separator, self->pair_separator_len) == 0))
+    {
+      *new_cur = cur + self->pair_separator_len;
+      return TRUE;
+    }
+  return FALSE;
 }
 
 static gboolean
@@ -187,12 +192,16 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
       _skip_spaces(&cur);
 
       if (_end_of_string(cur) ||
-          _pair_separator(self, cur) ||
           _key_follows(self, cur))
         {
           *new_cur = cur;
           result = TRUE;
         }
+      else if (_pair_separator(self, cur, new_cur))
+        {
+          result = TRUE;
+        }
+
     }
   else if (*cur == ' ')
     {
@@ -201,8 +210,7 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
     }
   else
     {
-      result = _pair_separator(self, cur);
-      *new_cur = cur + self->pair_separator_len;
+      result = _pair_separator(self, cur, new_cur);
     }
   return result;
 }
