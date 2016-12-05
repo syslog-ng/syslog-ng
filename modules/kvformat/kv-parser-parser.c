@@ -34,6 +34,7 @@ static CfgLexerKeyword kv_parser_keywords[] =
   { "prefix",                        KW_PREFIX,  },
   { "value_separator",               KW_VALUE_SEPARATOR,  },
   { "pair_separator",                KW_PAIR_SEPARATOR,  },
+  { "extract_stray_words_into",      KW_EXTRACT_STRAY_WORDS_INTO,  },
   {
     "allow_pair_separator_in_value", KW_ALLOW_PAIR_SEPARATOR_OPTION,
     .kw_status = KWS_OBSOLETE,

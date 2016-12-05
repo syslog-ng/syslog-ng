@@ -65,6 +65,15 @@ kv_parser_set_pair_separator(LogParser *s, const gchar *pair_separator)
   self->pair_separator = g_strdup(pair_separator);
 }
 
+void
+kv_parser_set_stray_words_value_name(LogParser *s, const gchar *value_name)
+{
+  KVParser *self = (KVParser *) s;
+
+  g_free(self->stray_words_value_name);
+  self->stray_words_value_name = g_strdup(value_name);
+}
+
 static const gchar *
 _get_formatted_key(KVParser *self, const gchar *key)
 {
@@ -95,6 +104,11 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
                                 _get_formatted_key(self, kv_scanner_get_current_key(self->kv_scanner)),
                                 kv_scanner_get_current_value(self->kv_scanner), -1);
     }
+  if (self->stray_words_value_name)
+    log_msg_set_value_by_name(*pmsg,
+                              self->stray_words_value_name,
+                              kv_scanner_get_stray_words(self->kv_scanner), -1);
+
   return TRUE;
 }
 
@@ -105,6 +119,7 @@ kv_parser_clone_method(KVParser *dst, KVParser *src)
   log_parser_set_template(&dst->super, log_template_ref(src->super.template));
   kv_parser_set_value_separator(&dst->super, src->value_separator);
   kv_parser_set_pair_separator(&dst->super, src->pair_separator);
+  kv_parser_set_stray_words_value_name(&dst->super, src->stray_words_value_name);
 
   if (src->kv_scanner)
     dst->kv_scanner = kv_scanner_clone(src->kv_scanner);
