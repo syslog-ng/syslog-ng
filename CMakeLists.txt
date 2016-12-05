@@ -19,6 +19,8 @@ set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 set (CMAKE_POSITION_INDEPENDENT_CODE 1)
 set (BISON_FLAGS "-Wno-other")
 
+add_compile_options("-Wno-initializer-overrides")
+
 include (CheckIncludeFiles)
 
 set (SYSLOG_NG_VERSION_MAJOR 3)
