@@ -32,6 +32,7 @@ typedef struct _KVParser
   gchar value_separator;
   gchar *pair_separator;
   gchar *prefix;
+  gchar *stray_words_value_name;
   gsize prefix_len;
   GString *formatted_key;
   KVScanner *kv_scanner;
@@ -40,6 +41,7 @@ typedef struct _KVParser
 void kv_parser_set_prefix(LogParser *p, const gchar *prefix);
 void kv_parser_set_value_separator(LogParser *p, gchar value_separator);
 void kv_parser_set_pair_separator(LogParser *p, const gchar *pair_separator);
+void kv_parser_set_stray_words_value_name(LogParser *s, const gchar *value_name);
 gboolean kv_parser_is_valid_separator_character(gchar c);
 
 gboolean kv_parser_init_method(LogPipe *s);
