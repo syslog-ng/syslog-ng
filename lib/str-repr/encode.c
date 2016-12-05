@@ -46,8 +46,12 @@ str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len
     {
       gboolean quoting_needed = FALSE;
 
-      if ((strcspn(str, "\b\f\n\r\t\\ ")) != str_len ||
-          (forbidden_chars && strcspn(str, forbidden_chars) != str_len))
+      /* NOTE: for non-NUL terminated strings, this would go over the end of
+       * the string until the first NUL character.  It is not ideal at all,
+       * but there's no strncspn() */
+
+      if ((strcspn(str, "\b\f\n\r\t\\ ")) < str_len ||
+          (forbidden_chars && strcspn(str, forbidden_chars) < str_len))
         quoting_needed = TRUE;
 
       if (!quoting_needed)
