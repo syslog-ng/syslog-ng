@@ -151,7 +151,7 @@ kv_parser_init_method(LogPipe *s)
   KVParser *self = (KVParser *)s;
   g_assert(self->kv_scanner == NULL);
 
-  self->kv_scanner = kv_scanner_new(self->value_separator, self->pair_separator, NULL);
+  self->kv_scanner = kv_scanner_new(self->value_separator, self->pair_separator, self->stray_words_value_name != NULL);
 
   return TRUE;
 }
