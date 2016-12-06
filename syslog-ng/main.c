@@ -246,7 +246,8 @@ main(int argc, char *argv[])
       log_stderr = TRUE;
     }
 
-  if (syntax_only || debug_flag)
+  gboolean exit_before_main_loop_run = syntax_only || preprocess_into;
+  if (debug_flag || exit_before_main_loop_run)
     {
       g_process_set_mode(G_PM_FOREGROUND);
     }
@@ -267,7 +268,7 @@ main(int argc, char *argv[])
     }
   else
     {
-      if (syntax_only)
+      if (exit_before_main_loop_run)
         g_process_startup_failed(0, TRUE);
       else
         g_process_startup_ok();
