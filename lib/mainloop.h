@@ -27,7 +27,7 @@
 #include "syslog-ng.h"
 #include "thread-utils.h"
 
-
+extern gchar *preprocess_into;
 extern gboolean syntax_only;
 extern gboolean __main_loop_is_terminating;
 extern ThreadId main_thread_handle;
