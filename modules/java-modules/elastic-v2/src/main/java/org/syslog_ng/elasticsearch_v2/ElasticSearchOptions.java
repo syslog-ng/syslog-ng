@@ -64,6 +64,7 @@ public class ElasticSearchOptions {
 			this.put(CLIENT_MODE_HTTP, 9200);
 			this.put(CLIENT_MODE_NODE, 9300);
 			this.put(CLIENT_MODE_TRANSPORT, 9300);
+			this.put(CLIENT_MODE_SEARCHGUARD, 9300);
 		}
 	};
 
