@@ -144,14 +144,15 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   if (self->ctx->verify_mode & TVM_UNTRUSTED)
     return 1;
 
+  int ctx_error_depth = X509_STORE_CTX_get_error_depth(ctx);
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
-  if (ok && ctx->error_depth == 0 && !tls_session_verify_fingerprint(ctx))
+  if (ok && ctx_error_depth == 0 && !tls_session_verify_fingerprint(ctx))
     {
       msg_notice("Certificate valid, but fingerprint constraints were not met, rejecting");
       return 0;
     }
 
-  if (ok && ctx->error_depth != 0 && (ctx->current_cert->ex_flags & EXFLAG_CA) == 0)
+  if (ok && ctx_error_depth != 0 && (ctx->current_cert->ex_flags & EXFLAG_CA) == 0)
     {
       msg_notice("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate");
       ctx->error = X509_V_ERR_INVALID_CA;
@@ -159,7 +160,7 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
     }
 
   /* reject certificate if it is valid, but its DN is not trusted */
-  if (ok && ctx->error_depth == 0 && !tls_session_verify_dn(ctx))
+  if (ok && ctx_error_depth == 0 && !tls_session_verify_dn(ctx))
     {
       msg_notice("Certificate valid, but DN constraints were not met, rejecting");
       ctx->error = X509_V_ERR_CERT_UNTRUSTED;
