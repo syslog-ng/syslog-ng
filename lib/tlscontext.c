@@ -32,6 +32,13 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
 
+#ifndef SYSLOG_NG_HAVE_SSL_CTX_GET0_PARAM
+X509_VERIFY_PARAM *SSL_CTX_get0_param(SSL_CTX *ctx)
+{
+  return ctx->param;
+}
+#endif
+
 gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
 {
@@ -338,7 +345,7 @@ tls_context_setup_session(TLSContext *self)
       if (self->crl_dir)
         verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
 
-      X509_VERIFY_PARAM_set_flags(self->ssl_ctx->param, verify_flags);
+      X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
 
       switch (self->verify_mode)
         {

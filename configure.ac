@@ -872,6 +872,8 @@ if test -n "$OPENSSL_LIBS" -a "$linking_mode" != "dynamic"; then
 	LIBS=$old_LIBS
 fi
 
+AC_CHECK_FUNC(SSL_CTX_get0_param, AC_DEFINE(HAVE_SSL_CTX_GET0_PARAM, 1, [SSL_CTX_get0_param is present]))
+
 
 dnl
 dnl Right now, openssl is never linked statically as it is only used by the
