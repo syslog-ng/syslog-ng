@@ -321,7 +321,9 @@ Test(kv_scanner, comma_separated_values)
   { "key2", "value2" },
   { "key3", "value3" });
 
-  /* NOTE: comma on its own is not a delimiter */
+  /* NOTE: comma on its own is not a delimiter, as the default delimiter is ", "
+   * A testcase below would test single character separator with ';' */
+
   _EXPECT_KV_PAIRS("key1=value1,key2=value2,key3=value3",
   { "key1", "value1,key2=value2,key3=value3" });
 
