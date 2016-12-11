@@ -166,11 +166,9 @@ kv_parser_deinit_method(LogPipe *s)
   return TRUE;
 }
 
-KVParser *
-kv_parser_init_instance(GlobalConfig *cfg)
+void
+kv_parser_init_instance(KVParser *self, GlobalConfig *cfg)
 {
-  KVParser *self = g_new0(KVParser, 1);
-
   log_parser_init_instance(&self->super, cfg);
   self->super.super.init = kv_parser_init_method;
   self->super.super.deinit = kv_parser_deinit_method;
@@ -180,15 +178,14 @@ kv_parser_init_instance(GlobalConfig *cfg)
   self->value_separator = '=';
   self->pair_separator = g_strdup(", ");
   self->formatted_key = g_string_sized_new(32);
-
-  return self;
 }
 
 LogParser *
 kv_parser_new(GlobalConfig *cfg)
 {
-  KVParser *self = kv_parser_init_instance(cfg);
+  KVParser *self = g_new0(KVParser, 1);
 
+  kv_parser_init_instance(self, cfg);
   self->super.super.clone = _clone;
 
   return &self->super;

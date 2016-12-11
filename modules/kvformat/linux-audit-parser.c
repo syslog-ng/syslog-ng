@@ -158,8 +158,9 @@ _clone(LogPipe *s)
 LogParser *
 linux_audit_parser_new(GlobalConfig *cfg)
 {
-  KVParser *self = kv_parser_init_instance(cfg);
+  KVParser *self = g_new0(KVParser, 1);
 
+  kv_parser_init_instance(self, cfg);
   self->super.super.init = _init;
   self->super.super.clone = _clone;
 
