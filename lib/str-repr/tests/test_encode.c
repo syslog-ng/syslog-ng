@@ -23,6 +23,7 @@
  */
 #include "str-repr/encode.h"
 #include "testutils.h"
+#include "stopwatch.h"
 
 #define str_repr_encode_testcase_begin(func, args)             \
   do                                                            \
@@ -102,6 +103,33 @@ static void
 test_encode_strings_with_forbidden_chars(void)
 {
   assert_encode_with_forbidden_equals("foo,", ",", "\"foo,\"");
+  assert_encode_with_forbidden_equals("\"'foo,", ",", "\"\\\"'foo,\"");
+}
+#define ITERATION_NUMBER 100000
+
+static void
+_perftest(const gchar *value_to_encode)
+{
+  gint iteration_index = 0;
+  GString *result = g_string_sized_new(64);
+  gsize value_len = strlen(value_to_encode);
+
+  start_stopwatch();
+  for (iteration_index = 0; iteration_index < ITERATION_NUMBER; iteration_index++)
+    {
+      str_repr_encode(result, value_to_encode, value_len, ",");
+    }
+  stop_stopwatch_and_display_result(iteration_index, "%.64s...");
+  g_string_free(result, TRUE);
+}
+
+static void
+test_performance(void)
+{
+  _perftest("This is a long value with spaces and control characters\n"
+            "                                                         ");
+  _perftest("This is 'a long' value with spaces and control characters\n");
+  _perftest("This is \"a long\" value with spaces and control characters\n");
 }
 
 int
@@ -110,5 +138,6 @@ main(int argc, char *argv[])
   STR_REPR_ENCODE_TESTCASE(test_encode_simple_strings);
   STR_REPR_ENCODE_TESTCASE(test_encode_strings_that_need_quotation);
   STR_REPR_ENCODE_TESTCASE(test_encode_strings_with_forbidden_chars);
+  STR_REPR_ENCODE_TESTCASE(test_performance);
   return 0;
 }
