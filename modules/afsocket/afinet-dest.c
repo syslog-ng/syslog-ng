@@ -26,6 +26,7 @@
 #include "socket-options-inet.h"
 #include "messages.h"
 #include "gprocess.h"
+#include "compat/openssl_support.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -97,10 +98,13 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) user_data;
   TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
 
-  if (ok && ctx->current_cert == ctx->cert && self->hostname
+  X509 *current_cert = X509_STORE_CTX_get_current_cert(ctx);
+  X509 *cert = X509_STORE_CTX_get0_cert(ctx);
+
+  if (ok && current_cert == cert && self->hostname
       && (transport_mapper_inet->tls_context->verify_mode & TVM_TRUSTED))
     {
-      ok = tls_verify_certificate_name(ctx->cert, self->hostname);
+      ok = tls_verify_certificate_name(cert, self->hostname);
     }
 
   return ok;
