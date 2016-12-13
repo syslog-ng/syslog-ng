@@ -50,8 +50,10 @@ public class TemplateOption extends OptionDecorator {
 	}
 
 	public void deinit() {
-		if (template != null)
+		if (template != null) {
 			template.release();
+			template = null;
+		}
 	}
 
 	public String getResolvedString(LogMessage msg) {
