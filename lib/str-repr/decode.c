@@ -34,6 +34,8 @@ enum
   KV_EXPECT_DELIMITER,
   KV_QUOTE_ERROR,
   KV_UNQUOTED_CHARACTERS,
+  KV_FINISH_SUCCESS,
+  KV_FINISH_FAILURE,
 };
 
 static void
@@ -69,18 +71,28 @@ _decode_backslash_escape(GString *value, gchar quote_char, gchar ch)
   g_string_append_c(value, control);
 }
 
-static inline gboolean
-_invoke_match_delimiter(const gchar *cur, const gchar **new_cur, const StrReprDecodeOptions *options)
+typedef struct _StrReprDecodeState
 {
+  GString *value;
+  const gchar *cur;
+  gchar quote_char;
+  const StrReprDecodeOptions *options;
+} StrReprDecodeState;
+
+static gboolean
+_invoke_match_delimiter(StrReprDecodeState *state, const gchar **new_cur)
+{
+  const StrReprDecodeOptions *options = state->options;
+
   if (options->delimiter_chars[0])
     {
-      if (*cur == options->delimiter_chars[0] || *cur == options->delimiter_chars[1])
+      if (*state->cur == options->delimiter_chars[0] || *state->cur == options->delimiter_chars[1])
         {
           if (options->match_delimiter)
-            return options->match_delimiter(cur, new_cur, options->match_delimiter_data);
+            return options->match_delimiter(state->cur, new_cur, options->match_delimiter_data);
           else
             {
-              *new_cur = cur + 1;
+              *new_cur = state->cur + 1;
               return TRUE;
             }
         }
@@ -88,8 +100,124 @@ _invoke_match_delimiter(const gchar *cur, const gchar **new_cur, const StrReprDe
   else
     {
       if (options->match_delimiter)
-        return options->match_delimiter(cur, new_cur, options->match_delimiter_data);
+        return options->match_delimiter(state->cur, new_cur, options->match_delimiter_data);
     }
+  return FALSE;
+}
+
+static gboolean
+_match_and_skip_delimiter(StrReprDecodeState *state)
+{
+  const gchar *new_cur;
+
+  if (_invoke_match_delimiter(state, &new_cur))
+    {
+      state->cur = new_cur;
+      return TRUE;
+    }
+  return FALSE;
+}
+
+
+static gint
+_process_initial_character(StrReprDecodeState *state)
+{
+  if (_match_and_skip_delimiter(state))
+    {
+      return KV_FINISH_SUCCESS;
+    }
+  else if (*state->cur == '\"' || *state->cur == '\'')
+    {
+      state->quote_char = *state->cur;
+      return KV_QUOTE_STRING;
+    }
+  else
+    {
+      g_string_append_c(state->value, *state->cur);
+      return KV_UNQUOTED_CHARACTERS;
+    }
+}
+
+static gint
+_process_quoted_string_characters(StrReprDecodeState *state)
+{
+  if (*state->cur == state->quote_char)
+    return KV_EXPECT_DELIMITER;
+  else if (*state->cur == '\\')
+    return KV_QUOTE_BACKSLASH;
+
+  g_string_append_c(state->value, *state->cur);
+  return KV_QUOTE_STRING;
+}
+
+static gint
+_process_backslash_escaped_character_in_strings(StrReprDecodeState *state)
+{
+  _decode_backslash_escape(state->value, state->quote_char, *state->cur);
+  return KV_QUOTE_STRING;
+}
+
+static gint
+_process_delimiter_characters_after_a_quoted_string(StrReprDecodeState *state)
+{
+  if (_match_and_skip_delimiter(state))
+    return KV_FINISH_SUCCESS;
+  return KV_QUOTE_ERROR;
+}
+
+static gint
+_process_junk_after_closing_quote(StrReprDecodeState *state)
+{
+  if (_match_and_skip_delimiter(state))
+    return KV_FINISH_FAILURE;
+  return KV_QUOTE_ERROR;
+}
+
+static gint
+_process_unquoted_characters(StrReprDecodeState *state)
+{
+  if (_match_and_skip_delimiter(state))
+    return KV_FINISH_SUCCESS;
+  g_string_append_c(state->value, *state->cur);
+  return KV_UNQUOTED_CHARACTERS;
+}
+
+static gboolean
+_decode(StrReprDecodeState *state)
+{
+  gint quote_state = KV_QUOTE_INITIAL;
+  while (*state->cur)
+    {
+      switch (quote_state)
+        {
+        case KV_QUOTE_INITIAL:
+          quote_state = _process_initial_character(state);
+          break;
+        case KV_QUOTE_STRING:
+          quote_state = _process_quoted_string_characters(state);
+          break;
+        case KV_QUOTE_BACKSLASH:
+          quote_state = _process_backslash_escaped_character_in_strings(state);
+          break;
+        case KV_EXPECT_DELIMITER:
+          quote_state = _process_delimiter_characters_after_a_quoted_string(state);
+          break;
+        case KV_QUOTE_ERROR:
+          quote_state = _process_junk_after_closing_quote(state);
+          break;
+        case KV_UNQUOTED_CHARACTERS:
+          quote_state = _process_unquoted_characters(state);
+          break;
+        }
+      if (quote_state == KV_FINISH_SUCCESS || quote_state == KV_FINISH_FAILURE)
+        break;
+      state->cur++;
+    }
+  if (quote_state == KV_QUOTE_INITIAL ||
+      quote_state == KV_EXPECT_DELIMITER ||
+      quote_state == KV_UNQUOTED_CHARACTERS ||
+      quote_state == KV_FINISH_SUCCESS)
+    return TRUE;
   return FALSE;
 }
 
@@ -97,93 +225,24 @@ gboolean
 str_repr_decode_append_with_options(GString *value, const gchar *input, const gchar **end,
                                     const StrReprDecodeOptions *options)
 {
-  const gchar *cur = input, *new_cur;
-  gchar quote_char;
-  gint quote_state;
+  StrReprDecodeState state = {
+    .value = value,
+    .cur = input,
+    .quote_char = 0,
+    .options = options,
+  };
   gsize initial_len = value->len;
 
-  quote_state = KV_QUOTE_INITIAL;
-  while (*cur)
-    {
-      switch (quote_state)
-        {
-        case KV_QUOTE_INITIAL:
-          if (_invoke_match_delimiter(cur, &new_cur, options))
-            {
-              cur = new_cur;
-              goto finish;
-            }
-          else if (*cur == '\"' || *cur == '\'')
-            {
-              quote_state = KV_QUOTE_STRING;
-              quote_char = *cur;
-            }
-          else
-            {
-              g_string_append_c(value, *cur);
-              quote_state = KV_UNQUOTED_CHARACTERS;
-            }
-          break;
-        case KV_QUOTE_STRING:
-          if (*cur == quote_char)
-            quote_state = KV_EXPECT_DELIMITER;
-          else if (*cur == '\\')
-            quote_state = KV_QUOTE_BACKSLASH;
-          else
-            g_string_append_c(value, *cur);
-          break;
-        case KV_QUOTE_BACKSLASH:
-          _decode_backslash_escape(value, quote_char, *cur);
-          quote_state = KV_QUOTE_STRING;
-          break;
-        case KV_EXPECT_DELIMITER:
-          if (_invoke_match_delimiter(cur, &new_cur, options))
-            {
-              cur = new_cur;
-              quote_state = KV_QUOTE_INITIAL;
-              goto finish;
-            }
-          else
-            {
-              quote_state = KV_QUOTE_ERROR;
-            }
-          break;
-        case KV_QUOTE_ERROR:
-          if (_invoke_match_delimiter(cur, &new_cur, options))
-            {
-              cur = new_cur;
-              goto finish;
-            }
-          break;
-        case KV_UNQUOTED_CHARACTERS:
-          if (_invoke_match_delimiter(cur, &new_cur, options))
-            {
-              cur = new_cur;
-              goto finish;
-            }
-          else
-            {
-              g_string_append_c(value, *cur);
-            }
-          break;
-        }
-      cur++;
-    }
-finish:
-  *end = cur;
-  /* check if quotation was not finished or we had extra characters, return FALSE */
-  if (quote_state == KV_QUOTE_INITIAL ||
-      quote_state == KV_EXPECT_DELIMITER ||
-      quote_state == KV_UNQUOTED_CHARACTERS)
-    {
-      return TRUE;
-    }
-  else
+  gboolean success = _decode(&state);
+  *end = state.cur;
+
+  if (!success)
     {
       g_string_truncate(value, initial_len);
-      g_string_append_len(value, input, cur - input);
+      g_string_append_len(value, input, state.cur - input);
       return FALSE;
     }
+  return TRUE;
 }
 
 gboolean
