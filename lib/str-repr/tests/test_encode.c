@@ -74,7 +74,7 @@ assert_encode_with_forbidden_equals(const gchar *input, const gchar *forbidden_c
 static void
 test_encode_simple_strings(void)
 {
-  assert_encode_equals("", "''");
+  assert_encode_equals("", "\"\"");
   assert_encode_equals("a", "a");
   assert_encode_equals("alma", "alma");
   assert_encode_equals("al\nma", "\"al\\nma\"");

@@ -35,7 +35,7 @@ str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len
 
   if (str_len == 0)
     {
-      g_string_append_len(escaped_string, "''", 2);
+      g_string_append_len(escaped_string, "\"\"", 2);
       return;
     }
 
