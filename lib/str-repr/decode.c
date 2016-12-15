@@ -186,9 +186,9 @@ static gboolean
 _is_an_ending_string_acceptable_in_this_state(gint quote_state)
 {
   return quote_state == KV_QUOTE_INITIAL ||
-      quote_state == KV_EXPECT_DELIMITER ||
-      quote_state == KV_UNQUOTED_CHARACTERS ||
-      quote_state == KV_FINISH_SUCCESS;
+         quote_state == KV_EXPECT_DELIMITER ||
+         quote_state == KV_UNQUOTED_CHARACTERS ||
+         quote_state == KV_FINISH_SUCCESS;
 }
 
 static gboolean
@@ -231,7 +231,8 @@ gboolean
 str_repr_decode_append_with_options(GString *value, const gchar *input, const gchar **end,
                                     const StrReprDecodeOptions *options)
 {
-  StrReprDecodeState state = {
+  StrReprDecodeState state =
+  {
     .value = value,
     .cur = input,
     .quote_char = 0,
