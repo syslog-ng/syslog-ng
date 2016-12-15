@@ -18,16 +18,16 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#include "kv-scanner-simple.h"
-#include "linux-audit-scanner.h"
+#include "kv-scanner.h"
+#include "linux-audit-parser.h"
 #include "testutils.h"
 
 #define kv_scanner_testcase_begin(func, args)             \
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      kv_scanner = kv_scanner_simple_new('=', NULL);            \
-      kv_scanner_set_parse_value(kv_scanner, parse_linux_audit_style_hexdump); \
+      kv_scanner = kv_scanner_new('=', 0, NULL);      \
+      kv_scanner_set_transform_value(kv_scanner, parse_linux_audit_style_hexdump); \
     }                                                           \
   while (0)
 
@@ -51,13 +51,13 @@ KVScanner *kv_scanner;
 static void
 assert_no_more_tokens(void)
 {
-  assert_false(kv_scanner->scan_next(kv_scanner), "kv_scanner is expected to return no more key-value pairs");
+  assert_false(kv_scanner_scan_next(kv_scanner), "kv_scanner is expected to return no more key-value pairs");
 }
 
 static void
 scan_next_token(void)
 {
-  assert_true(kv_scanner->scan_next(kv_scanner),  "kv_scanner is expected to return TRUE for scan_next");
+  assert_true(kv_scanner_scan_next(kv_scanner),  "kv_scanner is expected to return TRUE for scan_next");
 }
 
 static void

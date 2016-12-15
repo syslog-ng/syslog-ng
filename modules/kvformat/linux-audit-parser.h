@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015-2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -17,14 +17,13 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
-#ifndef LINUX_AUDIT_SCANNER_H_INCLUDED
-#define LINUX_AUDIT_SCANNER_H_INCLUDED
+#ifndef LINUX_AUDIT_PARSER_H_INCLUDED
+#define LINUX_AUDIT_PARSER_H_INCLUDED
 
-#include "kv-scanner.h"
+#include "kv-parser.h"
 
-gboolean
-parse_linux_audit_style_hexdump(KVScanner *self);
+gboolean parse_linux_audit_style_hexdump(KVScanner *self);
+LogParser *linux_audit_parser_new(GlobalConfig *cfg);
 
 #endif

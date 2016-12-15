@@ -5,8 +5,8 @@ set(KVFORMAT_SOURCES
     kv-parser.h
     kv-scanner.c
     kv-scanner.h
-    linux-audit-scanner.c
-    linux-audit-scanner.h
+    linux-audit-parser.c
+    linux-audit-parser.h
     kv-parser-parser.c
     kv-parser-parser.h
     kvformat-plugin.c

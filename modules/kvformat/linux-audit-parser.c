@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015-2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -17,8 +17,8 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
+#include "linux-audit-parser.h"
 #include "kv-scanner.h"
 #include "utf8utils.h"
 
@@ -133,3 +133,36 @@ parse_linux_audit_style_hexdump(KVScanner *self)
   return FALSE;
 }
 
+static gboolean
+_init(LogPipe *s)
+{
+  KVParser *self = (KVParser *) s;
+
+  g_assert(self->kv_scanner == NULL);
+  if (!kv_parser_init_method(s))
+    return FALSE;
+  kv_scanner_set_transform_value(self->kv_scanner, parse_linux_audit_style_hexdump);
+
+  return TRUE;
+}
+
+static LogPipe *
+_clone(LogPipe *s)
+{
+  KVParser *self = (KVParser *) s;
+  KVParser *cloned = (KVParser *) linux_audit_parser_new(s->cfg);
+
+  return kv_parser_clone_method(cloned, self);
+}
+
+LogParser *
+linux_audit_parser_new(GlobalConfig *cfg)
+{
+  KVParser *self = g_new0(KVParser, 1);
+
+  kv_parser_init_instance(self, cfg);
+  self->super.super.init = _init;
+  self->super.super.clone = _clone;
+
+  return &self->super;
+}

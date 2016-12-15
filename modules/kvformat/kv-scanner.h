@@ -28,7 +28,7 @@
 
 typedef struct _KVScanner KVScanner;
 
-typedef gboolean KVParseValue(KVScanner *);
+typedef gboolean (*KVTransformValueFunc)(KVScanner *);
 
 struct _KVScanner
 {
@@ -39,13 +39,14 @@ struct _KVScanner
   GString *decoded_value;
   gboolean value_was_quoted;
   gchar value_separator;
+  gchar *pair_separator;
+  gsize pair_separator_len;
   gchar quote_char;
-  KVParseValue *parse_value;
-  gboolean (*scan_next)(KVScanner *self);
+  KVTransformValueFunc transform_value;
   KVScanner* (*clone)(KVScanner *self);
 };
 
-void kv_scanner_init(KVScanner *self, gchar value_separator, KVParseValue *parse_value);
+void kv_scanner_init(KVScanner *self, gchar value_separator, KVTransformValueFunc transform_value);
 void kv_scanner_free(KVScanner *self);
 
 static inline void
@@ -73,31 +74,13 @@ kv_scanner_get_current_value(KVScanner *self)
   return self->value->str;
 }
 
-static inline gboolean
-kv_scanner_is_valid_key_character(gchar c)
+static inline void
+kv_scanner_set_transform_value(KVScanner *self, KVTransformValueFunc transform_value)
 {
-  return (c >= 'a' && c <= 'z') ||
-         (c >= 'A' && c <= 'Z') ||
-         (c >= '0' && c <= '9') ||
-         (c == '_') ||
-         (c == '-');
+  self->transform_value = transform_value;
 }
 
-static inline void
-kv_scanner_parse_value(KVScanner *self)
-{
-  if (self->parse_value)
-    {
-      g_string_truncate(self->decoded_value, 0);
-      if (self->parse_value(self))
-        g_string_assign_len(self->value, self->decoded_value->str, self->decoded_value->len);
-    }
-}
-
-static inline void
-kv_scanner_set_parse_value(KVScanner *self, KVParseValue *parse_value)
-{
-  self->parse_value = parse_value;
-}
+gboolean kv_scanner_scan_next(KVScanner *self);
+KVScanner *kv_scanner_new(gchar value_separator, const gchar *pair_separator, KVTransformValueFunc transform_value);
 
 #endif

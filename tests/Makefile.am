@@ -8,7 +8,7 @@ EXTRA_DIST += \
 	tests/copyright/license.text.LGPLv2.1+_SSL.txt
 
 check-copyright:
-	@$(top_srcdir)/tests/copyright/check.sh $(top_srcdir) $(top_builddir) policy
+	@cd $(top_srcdir) && ./tests/copyright/check.sh . $(abs_builddir) policy
 
 CLEAN_HOOKS += clean-check-copyright
 

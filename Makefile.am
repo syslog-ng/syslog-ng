@@ -43,7 +43,8 @@ AM_CPPFLAGS		= -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I$(top_builddir)/lib
 AM_CFLAGS =
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
-	-Wshadow
+	-Wshadow	\
+	-Wno-initializer-overrides
 
 endif
 
@@ -135,9 +136,12 @@ help:
 	@echo "Apart from these, the build system supports various other,"
 	@echo "special targets:"
 	@echo
-	@echo " modules  : Builds all syslog-ng modules."
-	@echo " syslog-ng: Build syslog-ng itself, only."
-	@echo " populate-makefiles : populate build directory with stub Makefiles"
+	@echo " modules              Builds all syslog-ng modules."
+	@echo " syslog-ng            Build syslog-ng itself, only."
+	@echo " populate-makefiles   populate build directory with stub Makefiles"
+	@echo " check-copyright      check copyright/license statements in files"
+	@echo " style-check          check formatting of source files (astyle)"
+	@echo " style-format         reformat source files (astyle)"
 	@echo
 	@echo "One can also build individual modules (and their dependencies),"
 	@echo "using any of the following shortcuts:"

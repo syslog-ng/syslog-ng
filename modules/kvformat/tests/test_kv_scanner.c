@@ -18,15 +18,17 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#include "kv-scanner-generic.h"
-#include "kv-scanner-simple.h"
-#include "testutils.h"
+#include <criterion/criterion.h>
+#include <stdio.h>
+#include "stopwatch.h"
 
-static void
-_assert_no_more_tokens(KVScanner *scanner)
+#include "kv-scanner.h"
+
+static gboolean
+_expect_no_more_tokens(KVScanner *scanner, gchar **error)
 {
   GString *msg;
-  gboolean ok = scanner->scan_next(scanner);
+  gboolean ok = kv_scanner_scan_next(scanner);
 
   if (ok)
     {
@@ -41,51 +43,66 @@ _assert_no_more_tokens(KVScanner *scanner)
             value = "";
           g_string_append_printf(msg, "[%s/%s]", key, value);
         }
-      while (scanner->scan_next(scanner));
-      expect_not_reached(msg->str);
-      g_string_free(msg, TRUE);
+      while (kv_scanner_scan_next(scanner));
+
+      *error = g_string_free(msg, FALSE);
+      return FALSE;
     }
+  return TRUE;
 }
 
 static gboolean
-_assert_current_key_is(KVScanner *scanner, const gchar *expected_key)
+_expect_current_key_equals(KVScanner *scanner, const gchar *expected_key, gchar **error)
 {
   const gchar *key = kv_scanner_get_current_key(scanner);
 
-  return expect_nstring(key, -1, expected_key, -1, "current key mismatch");
+  if (strcmp(key, expected_key) != 0)
+    {
+      *error = g_strdup_printf("expected key mismatch key=%s, expected=%s", key, expected_key);
+      return FALSE;
+    }
+  return TRUE;
 }
 
 static gboolean
-_assert_current_value_is(KVScanner *scanner, const gchar *expected_value)
+_expect_current_value_equals(KVScanner *scanner, const gchar *expected_value, gchar **error)
 {
   const gchar *value = kv_scanner_get_current_value(scanner);
 
-  return expect_nstring(value, -1, expected_value, -1, "current value mismatch");
+  if (strcmp(value, expected_value) != 0)
+    {
+      *error = g_strdup_printf("expected value mismatch value=%s, expected=%s", value, expected_value);
+      return FALSE;
+    }
+  return TRUE;
 }
 
 static gboolean
-_compare_key_value(KVScanner *scanner, const gchar *key, const gchar *value)
+_expect_next_key_value(KVScanner *scanner, const gchar *key, const gchar *value, gchar **error)
 {
   g_assert(value);
 
-  gboolean ok = scanner->scan_next(scanner);
+  gboolean ok = kv_scanner_scan_next(scanner);
   if (ok)
     {
-      _assert_current_key_is(scanner, key);
-      _assert_current_value_is(scanner, value);
-      return TRUE;
+      return _expect_current_key_equals(scanner, key, error) &&
+             _expect_current_value_equals(scanner, value, error);
     }
   else
     {
-      expect_true(ok, "kv_scanner is expected to return TRUE for scan_next(), "
-                  "first unconsumed pair: [%s/%s]",
-                  key, value);
-      return FALSE;
+      *error = g_strdup_printf("kv_scanner is expected to return TRUE for scan_next(), "
+                               "first unconsumed pair: [%s/%s]",
+                               key, value);
     }
+  return FALSE;
 }
 
-typedef const gchar *const VAElement;
-
+typedef struct _ScannerConfig
+{
+  gchar kv_separator;
+  const gchar *pair_separator;
+  KVTransformValueFunc transform_value;
+} ScannerConfig;
 
 typedef struct _KVQElement
 {
@@ -97,120 +114,369 @@ typedef struct _KVQElement
 typedef struct _KVQContainer
 {
   const gsize n;
-  const KVQElement *const arg;
+  const KVQElement arg[8];
 } KVQContainer;
 
-#define VARARG_STRUCT(VARARG_STRUCT_cont, VARARG_STRUCT_elem, ...) \
-  (const VARARG_STRUCT_cont) { \
-    sizeof((const VARARG_STRUCT_elem[]) { __VA_ARGS__ }) / sizeof(VARARG_STRUCT_elem), \
-    (const VARARG_STRUCT_elem[]){__VA_ARGS__}\
-  }
-
-static void
-_scan_kv_pairs_quoted(KVScanner *scanner, const gchar *input, KVQContainer args)
+typedef struct _KVElement
 {
-  g_assert(input);
-  kv_scanner_input(scanner, input);
-  for (gsize i = 0; i < args.n; i++)
-    {
-      if (!_compare_key_value(scanner, args.arg[i].key, args.arg[i].value))
-        break;
-      expect_gboolean(scanner->value_was_quoted, args.arg[i].quoted,
-                      "mismatch in value_was_quoted for [%s/%s]",
-                      args.arg[i].key, args.arg[i].value);
-    }
-  _assert_no_more_tokens(scanner);
-  kv_scanner_free(scanner);
-}
+  const gchar *key;
+  const gchar *value;
+} KVElement;
 
-#define TEST_KV_SCAN_Q(SCANNER_input, TEST_KV_SCAN_input, ...) \
-  do { \
-    testcase_begin("TEST_KV_SCAN_Q(%s, %s)", #TEST_KV_SCAN_input, #__VA_ARGS__); \
-    _scan_kv_pairs_quoted(SCANNER_input, TEST_KV_SCAN_input, VARARG_STRUCT(KVQContainer, KVQElement, __VA_ARGS__)); \
-    testcase_end(); \
-  } while (0)
-
-typedef struct _ScannerConfig
+typedef struct _KVContainer
 {
-  gchar kv_separator;
-  gboolean allow_pair_separator_in_value;
-} ScannerConfig;
-
-typedef struct _KV
-{
-  gchar *key;
-  gchar *value;
-} KV;
+  gsize n;
+  const KVElement arg[32];
+} KVContainer;
 
 typedef struct Testcase_t
 {
-  gint line;
-  const gchar *function;
-  ScannerConfig config[5];
   gchar *input;
-  KV expected[25];
+  KVContainer expected;
 } Testcase;
 
 KVScanner *
 create_kv_scanner(const ScannerConfig config)
 {
-  return (config.allow_pair_separator_in_value ?
-          kv_scanner_generic_new(config.kv_separator, NULL) :
-          kv_scanner_simple_new(config.kv_separator, NULL));
-}
+  KVScanner *scanner = kv_scanner_new(config.kv_separator, config.pair_separator, NULL);
+  scanner->transform_value = config.transform_value;
 
-static void
-_scan_kv_pairs_scanner(KVScanner *scanner, const gchar *input, const KV kvs[])
-{
-  g_assert(input);
-  kv_scanner_input(scanner, input);
-
-  while (kvs->key)
-    {
-      if (!kvs->value || !_compare_key_value(scanner, kvs->key, kvs->value))
-        break;
-      kvs++;
-    }
-  _assert_no_more_tokens(scanner);
+  KVScanner *cloned = kv_scanner_clone(scanner);
   kv_scanner_free(scanner);
+  return cloned;
 }
 
-static void
-_test_key_buffer_underrun(void)
+#define VARARG_STRUCT(VARARG_STRUCT_cont, VARARG_STRUCT_elem, ...) \
+  (const VARARG_STRUCT_cont) { \
+    .n = sizeof((const VARARG_STRUCT_elem[]) { __VA_ARGS__ }) / sizeof(VARARG_STRUCT_elem), \
+    .arg = {__VA_ARGS__}\
+  }
+
+
+static gboolean
+_expect_kv_pairs(KVScanner *scanner, KVContainer args, gchar **error)
 {
-  const gchar *buffer = "ab=v";
-  const gchar *input = buffer + 2;
-
-  KV expect_nothing[] =
-  {
-    {}
-  };
-
-  _scan_kv_pairs_scanner(create_kv_scanner((ScannerConfig)
-  {'=', FALSE
-  }), input, expect_nothing);
+  for (gsize i = 0; i < args.n; i++)
+    {
+      if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value, error))
+        {
+          return FALSE;
+        }
+    }
+  return _expect_no_more_tokens(scanner, error);
 }
 
-static void
-_test_quotation_is_stored_in_the_was_quoted_value_member(void)
+static gboolean
+_expect_kvq_triplets(KVScanner *scanner, KVQContainer args, gchar **error)
 {
-  ScannerConfig config = {'=', FALSE};
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo=\"bar\"", {"foo", "bar", TRUE});
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo='bar'", {"foo", "bar", TRUE});
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo=bar", {"foo", "bar", FALSE});
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo='bar", {"foo", "bar", TRUE});
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo='bar' k=v", {"foo", "bar", TRUE}, {"k", "v", FALSE});
+  for (gsize i = 0; i < args.n; i++)
+    {
+      if (!_expect_next_key_value(scanner, args.arg[i].key, args.arg[i].value, error))
+        return FALSE;
+
+      if (scanner->value_was_quoted != args.arg[i].quoted)
+        {
+          *error = g_strdup_printf("mismatch in value_was_quoted for [%s/%s]",
+                                   args.arg[i].key, args.arg[i].value);
+          return FALSE;
+        }
+    }
+  return _expect_no_more_tokens(scanner, error);
 }
 
-static void
-_test_quotation_is_stored_in_the_was_quoted_value_member_with_space_separator_option(void)
+#define INIT_KVQCONTAINER(...)  VARARG_STRUCT(KVQContainer, KVQElement, __VA_ARGS__)
+
+#define _IMPL_EXPECT_KVQ(SCANNER_config, TEST_KV_SCAN_input, ...) \
+  do { \
+    KVScanner *scanner = create_kv_scanner(SCANNER_config); \
+    gchar *error = NULL; \
+    \
+    kv_scanner_input(scanner, TEST_KV_SCAN_input);            \
+    if (!_expect_kvq_triplets(scanner, INIT_KVQCONTAINER(__VA_ARGS__), &error)) \
+      { \
+        cr_expect(FALSE, "%s", error); \
+        g_free(error);\
+      } \
+    kv_scanner_free(scanner); \
+  } while (0)
+
+#define _EXPECT_KVQ_TRIPLETS(...) \
+  do {                    \
+    _IMPL_EXPECT_KVQ(((ScannerConfig) {'='}), __VA_ARGS__); \
+  } while(0)
+
+#define INIT_KVCONTAINER(...)  VARARG_STRUCT(KVContainer, KVElement, __VA_ARGS__)
+
+#define _IMPL_EXPECT_KV(TEST_KV_SCAN_config, TEST_KV_SCAN_input, ...) \
+  do { \
+    KVScanner *scanner = create_kv_scanner(TEST_KV_SCAN_config); \
+    gchar *error = NULL; \
+    \
+    kv_scanner_input(scanner, TEST_KV_SCAN_input);            \
+    if (!_expect_kv_pairs(scanner, INIT_KVCONTAINER(__VA_ARGS__), &error))  \
+      { \
+        cr_expect(FALSE, "%s", error); \
+        g_free(error);\
+      } \
+    kv_scanner_free(scanner); \
+  } while (0)
+
+#define _EXPECT_KV_PAIRS(...) \
+  do { \
+    _IMPL_EXPECT_KV(((ScannerConfig) {'='}), __VA_ARGS__); \
+  } while (0)
+
+#define _EXPECT_KV_PAIRS_WITH_CONFIG(TEST_KV_SCAN_config, ...) \
+  do {  \
+    _IMPL_EXPECT_KV(TEST_KV_SCAN_config, __VA_ARGS__);    \
+  } while (0)
+
+
+Test(kv_scanner, incomplete_string_returns_no_pairs)
 {
-  ScannerConfig config = {'=', TRUE};
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo=\"bar\"", {"foo", "bar", TRUE});
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo='bar'", {"foo", "bar", TRUE});
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo=bar", {"foo", "bar", FALSE});
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo='bar", {"foo", "'bar", FALSE});
-  TEST_KV_SCAN_Q(create_kv_scanner(config), "foo='bar' k=v", {"foo", "bar", TRUE}, {"k", "v", FALSE});
+  _EXPECT_KV_PAIRS("");
+  _EXPECT_KV_PAIRS("f");
+  _EXPECT_KV_PAIRS("fo");
+  _EXPECT_KV_PAIRS("foo");
+}
+
+Test(kv_scanner, name_equals_value_returns_a_pair)
+{
+  _EXPECT_KV_PAIRS("foo=", { "foo", "" });
+  _EXPECT_KV_PAIRS("foo=b", { "foo", "b" });
+  _EXPECT_KV_PAIRS("foo=bar", { "foo", "bar" });
+  _EXPECT_KV_PAIRS("foo=barbar", { "foo", "barbar" });
+}
+
+Test(kv_scanner, allowed_characters_in_a_key_are_letters_digits_dash_underscore_and_dot)
+{
+  _EXPECT_KV_PAIRS("FOOfoo123-_._-321oofOOF=value", {"FOOfoo123-_._-321oofOOF", "value"});
+}
+
+Test(kv_scanner, initial_stray_words_are_ignored)
+{
+  _EXPECT_KV_PAIRS("lorem ipsum foo=bar",
+  { "foo", "bar" });
+
+  _EXPECT_KV_PAIRS("lorem ipsum/dolor @sitamen foo=bar",
+  { "foo", "bar" });
+
+  _EXPECT_KV_PAIRS("lorem ipsum/dolor = foo=bar\"",
+  { "dolor", "" },
+  { "foo", "bar\"" });
+
+  _EXPECT_KV_PAIRS("a b c=d",
+  {"c", "d"});
+
+  _EXPECT_KV_PAIRS("x *k=v",
+  { "k", "v" });
+}
+
+Test(kv_scanner, non_initial_stray_words_are_added_to_the_last_value)
+{
+  _EXPECT_KV_PAIRS("foo=bar lorem ipsum key=value some more values",
+  { "foo", "bar lorem ipsum" },
+  { "key", "value some more values" });
+}
+
+Test(kv_scanner, empty_values_in_a_series_of_key_values)
+{
+  _EXPECT_KV_PAIRS("k= a=b c=d",
+  {"k", ""},
+  {"a", "b"},
+  {"c", "d"});
+
+  _EXPECT_KV_PAIRS("k=v a= c=d",
+  {"k", "v"},
+  {"a", ""},
+  {"c", "d"});
+
+  _EXPECT_KV_PAIRS("k=v a=b c=",
+  {"k", "v"},
+  {"a", "b"},
+  {"c", ""});
+
+}
+
+Test(kv_scanner, multiple_key_values_return_multiple_pairs)
+{
+  _EXPECT_KV_PAIRS("key1=value1 key2=value2 key3=value3 ",
+  { "key1", "value1" },
+  { "key2", "value2" },
+  { "key3", "value3" });
+}
+
+Test(kv_scanner, spaces_between_values_are_ignored)
+{
+  _EXPECT_KV_PAIRS("key1=value1    key2=value2     key3=value3 ",
+  { "key1", "value1" },
+  { "key2", "value2" },
+  { "key3", "value3" });
+}
+
+Test(kv_scanner, comma_separated_values)
+{
+  _EXPECT_KV_PAIRS("key1=value1, key2=value2, key3=value3",
+  { "key1", "value1" },
+  { "key2", "value2" },
+  { "key3", "value3" });
+
+  /* NOTE: comma on its own is not a delimiter, as the default delimiter is ", "
+   * A testcase below would test single character separator with ';' */
+
+  _EXPECT_KV_PAIRS("key1=value1,key2=value2,key3=value3",
+  { "key1", "value1,key2=value2,key3=value3" });
+
+  /* In value2 the spaces are considered part of the value as we don't have
+   * a delimiter and spaces get concatenated into the value */
+  _EXPECT_KV_PAIRS("key1=value1,   key2=value2  ,    key3=value3",
+  { "key1", "value1" },
+  { "key2", "value2" },
+  { "key3", "value3" });
+}
+
+Test(kv_scanner, tab_is_not_considered_a_separator)
+{
+  _EXPECT_KV_PAIRS("key1=value1\tkey2=value2 key3=value3",
+  { "key1", "value1\tkey2=value2" },
+  { "key3", "value3" });
+  _EXPECT_KV_PAIRS("key1=value1,\tkey2=value2 key3=value3",
+  { "key1", "value1,\tkey2=value2" },
+  { "key3", "value3" });
+  _EXPECT_KV_PAIRS("key1=value1\t key2=value2 key3=value3",
+  { "key1", "value1\t" },
+  { "key2", "value2" },
+  { "key3", "value3" });
+
+  _EXPECT_KV_PAIRS("k=\t",
+  { "k", "\t" });
+  _EXPECT_KV_PAIRS("k=,\t",
+  { "k", ",\t" });
+}
+
+
+Test(kv_scanner, quoted_values_are_unquoted_like_c_strings)
+{
+  _EXPECT_KV_PAIRS("foo=\"\\\"\" bar=baz",
+  { "foo", "\"" },
+  { "bar", "baz"});
+
+  _EXPECT_KV_PAIRS("foo='\"' bar=baz",
+  { "foo", "\"" },
+  { "bar", "baz"});
+
+  _EXPECT_KV_PAIRS("foo=\"bar\"",
+  { "foo", "bar" });
+
+  _EXPECT_KV_PAIRS("key1=\"value1\" key2=\"value2\"",
+  { "key1", "value1" },
+  { "key2", "value2" });
+
+  /* embedded quote */
+  _EXPECT_KV_PAIRS("key1=\"\\\"value1\"",
+  { "key1", "\"value1" });
+
+  /* control sequences */
+  _EXPECT_KV_PAIRS("key1=\"\\b \\f \\n \\r \\t \\\\\"",
+  { "key1", "\b \f \n \r \t \\" });
+
+  /* unknown backslash escape is left as is */
+  _EXPECT_KV_PAIRS("key1=\"\\p\"",
+  { "key1", "\\p" });
+
+  _EXPECT_KV_PAIRS("key1='value1' key2='value2'",
+  { "key1", "value1" },
+  { "key2", "value2" });
+
+  /* embedded quote */
+  _EXPECT_KV_PAIRS("key1='\\'value1'",
+  { "key1", "'value1" });
+
+  /* control sequences */
+  _EXPECT_KV_PAIRS("key1='\\b \\f \\n \\r \\t \\\\'",
+  { "key1", "\b \f \n \r \t \\" });
+
+  /* unknown backslash escape is left as is */
+  _EXPECT_KV_PAIRS("key1='\\p'",
+  { "key1", "\\p" });
+
+  _EXPECT_KV_PAIRS("key1=\\b\\f\\n\\r\\t\\\\",
+  { "key1", "\\b\\f\\n\\r\\t\\\\" });
+  _EXPECT_KV_PAIRS("key1=\b\f\n\r\\",
+  { "key1", "\b\f\n\r\\" });
+  _EXPECT_KV_PAIRS("foo=\"bar baz\"",
+  {"foo", "bar baz"});
+}
+
+Test(kv_scanner, quotes_embedded_in_an_unquoted_value_are_left_intact)
+{
+  _EXPECT_KV_PAIRS("foo=a \"bar baz\" ",
+  {"foo", "a \"bar baz\""});
+  _EXPECT_KV_PAIRS("foo=a \"bar baz",
+  {"foo", "a \"bar baz"});
+  _EXPECT_KV_PAIRS("foo=a \"bar baz c=d",
+  {"foo", "a \"bar baz"}, {"c", "d"});
+  _EXPECT_KV_PAIRS("foo=a \"bar baz\"=f c=d a",
+  {"foo", "a \"bar baz\"=f"}, {"c", "d a"});
+
+  _EXPECT_KV_PAIRS("foo=\\\"bar baz\\\"",
+  {"foo", "\\\"bar baz\\\""});
+
+}
+
+Test(kv_scanner, separator_in_an_unquoted_value_is_taken_literally)
+{
+  _EXPECT_KV_PAIRS("k=a=b c=d",
+  {"k", "a=b"}, {"c", "d"});
+  _EXPECT_KV_PAIRS("a==b=",
+  {"a", "=b="});
+  _EXPECT_KV_PAIRS("a=,=b=a",
+  {"a", ",=b=a"});
+  _EXPECT_KV_PAIRS("a= =a",
+  {"a", "=a"});
+}
+
+Test(kv_scanner, keys_without_value_separator_are_ignored)
+{
+  _EXPECT_KV_PAIRS("key1 key2=value2 key3 key4=value4",
+  { "key2", "value2 key3" },
+  { "key4", "value4" });
+
+  _EXPECT_KV_PAIRS("key1= key2=value2 key3= key4=value4 key5= key6=value6",
+  { "key1", "" },
+  { "key2", "value2" },
+  { "key3", "" },
+  { "key4", "value4" },
+  { "key5", "" },
+  { "key6", "value6" });
+}
+
+Test(kv_scanner, quoted_values_are_considered_one_token_thus_space_based_concatenation_does_not_happen)
+{
+  _EXPECT_KV_PAIRS("key1=\"value foo\" key2=marker",
+  { "key1", "value foo" },
+  { "key2", "marker" });
+
+  _EXPECT_KV_PAIRS("key1=\"value foo embedded_key=emb_value\" key2=marker",
+  { "key1", "value foo embedded_key=emb_value" },
+  { "key2", "marker" });
+
+  /* embedded quote */
+  _EXPECT_KV_PAIRS("key1=\"value foo\\\"\" key2=marker",
+  { "key1", "value foo\"" },
+  { "key2", "marker" });
+
+  _EXPECT_KV_PAIRS("key1='value foo\\'' key2=marker",
+  { "key1", "value foo'" },
+  { "key2", "marker" });
+
+  _EXPECT_KV_PAIRS("key1=\"value foo, foo2 =@,\\\"\" key2='value foo,  a='",
+  { "key1", "value foo, foo2 =@,\"" },
+  { "key2", "value foo,  a=" });
+
+  /* NOTE: baz is not added to the value, it is a stray word */
+  _EXPECT_KV_PAIRS("foo=\"bar\" baz c=d",
+  {"foo", "bar"}, {"c", "d"});
 }
 
 static gboolean
@@ -224,821 +490,282 @@ _parse_value_by_incrementing_all_bytes(KVScanner *self)
   return TRUE;
 }
 
-static void
-_test_transforms_values_if_parse_value_is_set(void)
+Test(kv_scanner, transforms_values_if_transform_value_is_set)
 {
-  KVScanner *scanner = create_kv_scanner((ScannerConfig)
-  {'=', FALSE
-  });
-  scanner->parse_value = _parse_value_by_incrementing_all_bytes;
-
-  _scan_kv_pairs_scanner(scanner, "foo=\"bar\"", (KV[])
-  { {"foo", "cbs"}, {}
-  });
-}
-
-static void
-_test_transforms_values_if_parse_value_is_set_with_space_separator_option(void)
-{
-  KVScanner *scanner = create_kv_scanner((ScannerConfig)
-  {'=', TRUE
-  });
-  scanner->parse_value = _parse_value_by_incrementing_all_bytes;
-
-  _scan_kv_pairs_scanner(scanner, "foo=\"bar\"", (KV[])
-  { {"foo", "cbs"}, {}
-  });
-}
-
-static void
-_test_value_separator_clone(void)
-{
-  KVScanner *scanner = kv_scanner_simple_new(':', NULL);
-  KVScanner *cloned_scanner = scanner->clone(scanner);
-  kv_scanner_free(scanner);
-
-  _scan_kv_pairs_scanner(
-    cloned_scanner,
-    "key1:value1 key2:value2 key3:value3 ",
-    (KV[])
-  { {"key1", "value1"}, {"key2", "value2"}, {"key3", "value3"}, {}
-  }
-  );
-}
-
-static void
-_test_parse_value_clone(void)
-{
-  KVScanner *scanner = kv_scanner_simple_new('=', _parse_value_by_incrementing_all_bytes);
-  KVScanner *cloned_scanner = scanner->clone(scanner);
-  kv_scanner_free(scanner);
-
-  _scan_kv_pairs_scanner(cloned_scanner, "foo=\"hal\"", (KV[])
-  { {"foo", "ibm"}, {}
-  }
-                        );
-}
-
-#define DEFAULT_CONFIG {.kv_separator='=', .allow_pair_separator_in_value=FALSE}
-#define SPACE_HANDLING_CONFIG {.kv_separator='=', .allow_pair_separator_in_value=TRUE}
-
-#define TC_HEAD .line=__LINE__, .function=__FUNCTION__
-
-static const Testcase *
-_provide_common_cases(void)
-{
-  static const Testcase common_cases[] =
+  ScannerConfig config =
   {
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "foo=bar",
-      { {"foo", "bar"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k-j=v",
-      { {"k-j", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "0=v",
-      { {"0", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "_=v",
-      { {"_", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "Z=v",
-      { {"Z", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k==",
-      { {"k", "="}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k===",
-      { {"k", "=="}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k===a",
-      { {"k", "==a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k===a=b",
-      { {"k", "==a=b"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " ==k=",
-      { {"k", ""}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " = =k=",
-      { {"k", ""}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " =k=",
-      { {"k", ""}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " =k=v",
-      { {"k", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " ==k=v",
-      { {"k", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=\xc3",
-      { {"k", "\xc3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=\xc3v",
-      { {"k", "\xc3v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=\xff",
-      { {"k", "\xff"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=\xffv",
-      { {"k", "\xffv"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "foo=",
-      { {"foo", ""}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "foo=b",
-      { {"foo", "b"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "lorem ipsum foo=bar",
-      { {"foo", "bar"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "lorem ipsum/dolor @sitamen foo=bar",
-      { {"foo", "bar"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "*k=v",
-      { {"k", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "x *k=v",
-      { {"k", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k1=v1 k2=v2 k3=v3",
-      { {"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k= a=b c=d",
-      { {"k", ""}, {"a", "b"}, {"c", "d"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=v arg= code=27",
-      { {"k", "v"}, {"arg", ""}, {"code", "27"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=a=b c=d",
-      { {"k", "a=b"}, {"c", "d"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k1=v1    k2=v2     k3=v3 ",
-      { {"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k1=v1,k2=v2,k3=v3",
-      { {"k1", "v1,k2=v2,k3=v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=\\",
-      { {"k", "\\"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k1=v1\tk2=v2 k3=v3",
-      { {"k1", "v1\tk2=v2"}, {"k3", "v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k1=v1,\tk2=v2 k3=v3",
-      { {"k1", "v1,\tk2=v2"}, {"k3", "v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k1=v1\t k2=v2 k3=v3",
-      { {"k1", "v1\t"}, {"k2", "v2"}, {"k3", "v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=\t",
-      { {"k", "\t"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k=,\t",
-      { {"k", ",\t"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "foo=\"bar\"",
-      { {"foo", "bar"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k1=\\b\\f\\n\\r\\t\\\\",
-      { {"k1", "\\b\\f\\n\\r\\t\\\\"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k1=\b\f\n\r\\",
-      { {"k1", "\b\f\n\r\\"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "=v",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "k*=v",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "=",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "==",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "===",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " =",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " ==",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " ===",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      " = =",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      ":=",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "á=v",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "f",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "fo",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "foo",
-      { {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      ", k=v",
-      { {"k", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      ",k=v",
-      { {"k", "v"}, {} }
-    },
-
-    {}
+    .kv_separator = '=',
+    .transform_value = _parse_value_by_incrementing_all_bytes
   };
 
-  return common_cases;
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config,
+                               "foo=\"bar\"",
+  { "foo", "cbs" });
 }
 
-static const Testcase *
-_provide_cases_without_allow_pair_separator_in_value(void)
+Test(kv_scanner, pair_separator_causes_values_to_be_split_at_that_character)
 {
-  static const Testcase cases_without_allow_pair_separator_in_value[] =
+  ScannerConfig config =
   {
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k=\"a",
-      { {"k", "a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k=\"\\",
-      { {"k", ""}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k='a",
-      { {"k", "a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k='\\",
-      { {"k", ""}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      " =k=v=w",
-      { {"k", "v=w"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k=\"\xc3v",
-      { {"k", "\xc3v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k=\"\xff",
-      { {"k", "\xff"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k=\"\xffv",
-      { {"k", "\xffv"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "lorem ipsum/dolor = foo=bar",
-      { {"foo", "bar"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1=\"v1\", k2=\"v2\"",
-      { {"k1", "v1"}, {"k2", "v2"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1=\"\\\"v1\"",
-      { {"k1", "\"v1"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1=\"\\b \\f \\n \\r \\t \\\\\"",
-      { {"k1", "\b \f \n \r \t \\"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1=\"\\p\"",
-      { {"k1", "\\p"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1='\\'v1'",
-      { {"k1", "'v1"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1='\\b \\f \\n \\r \\t \\\\'",
-      { {"k1", "\b \f \n \r \t \\"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1='\\p'",
-      { {"k1", "\\p"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1=\"v foo, foo2 =@,\\\"\" k2='v foo,  a='",
-      { {"k1", "v foo, foo2 =@,\""}, {"k2", "v foo,  a="}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1=v1, k2=v2, k3=v3",
-      { {"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "foo=bar lorem ipsum key=value some more values",
-      { {"foo", "bar"}, {"key", "value"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1=v1,   k2=v2  ,    k3=v3",
-      { {"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1 k2=v2, k3, k4=v4",
-      { {"k2", "v2"}, {"k4", "v4"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1= k2=v2, k3=, k4=v4 k5= , k6=v6",
-      { {"k1", ""}, {"k2", "v2"}, {"k3", ""}, {"k4", "v4"}, {"k5", ""}, {"k6", "v6"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1= v1 k2 = v2 k3 =v3 ",
-      { {"k1", ""}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k1='v1', k2='v2'",
-      { {"k1", "v1"}, {"k2", "v2"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k=v,",
-      { {"k", "v,"}, {} }
-    },
-    {
-      TC_HEAD,
-      { DEFAULT_CONFIG, {} },
-      "k=v, ",
-      { {"k", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { {':', FALSE}, {} },
-      "k1:v1 k2:v2 k3:v3 ",
-      { {"k1", "v1"}, {"k2", "v2"}, {"k3", "v3"}, {} }
-    },
-    {
-      TC_HEAD,
-      { {':', FALSE}, {} },
-      "k1: v1 k2 : v2 k3 :v3 ",
-      { {"k1", ""}, {} }
-    },
-    {
-      TC_HEAD,
-      { {'-', FALSE}, {} },
-      "k-v",
-      { {"k", "v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { {'-', FALSE}, {} },
-      "k--v",
-      { {"k", "-v"}, {} }
-    },
-    {
-      TC_HEAD,
-      { {'-', FALSE}, {} },
-      "---",
-      { {"-", "-"}, {} }
-    },
-
-    {}
+    .kv_separator = '=',
+    .pair_separator = ";",
   };
 
-  return cases_without_allow_pair_separator_in_value;
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=bar; bar=foo;",
+  {"foo", "bar"},
+  {"bar", "foo"});
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=bar;bar=foo;baz=foo",
+  {"foo", "bar"},
+  {"bar", "foo"},
+  {"baz", "foo"});
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=bar;bar=foo;",
+  {"foo", "bar"},
+  {"bar", "foo"});
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=bar baz;bar=foo;",
+  {"foo", "bar baz"},
+  {"bar", "foo"});
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=bar baz  ;bar=foo;",
+  {"foo", "bar baz"},
+  {"bar", "foo"});
 }
 
-static const Testcase *
-_provide_cases_with_allow_pair_separator_in_value(void)
-{
-  static const Testcase cases_with_allow_pair_separator_in_value[] =
-  {
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo =bar",
-      { {"foo", "bar"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo =bar",
-      { {"foo", "bar"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=bar ggg",
-      { {"foo", "bar ggg"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=bar ggg baz=ez",
-      { {"foo", "bar ggg"}, {"baz", "ez"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      " foo =bar ggg baz=ez",
-      { {"foo", "bar ggg"}, {"baz", "ez"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo =bar ggg baz =ez",
-      { {"foo", "bar ggg"}, {"baz", "ez"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo =bar ggg baz   =ez",
-      { {"foo", "bar ggg"}, {"baz", "ez"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo =  bar ggg baz   =   ez",
-      { {"foo", "bar ggg"}, {"baz", "ez"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "k===  a",
-      { {"k", "==  a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "a b c=d",
-      { {"c", "d"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      " k= b",
-      { {"k", "b"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=a \"bar baz\" ",
-      { {"foo", "a \"bar baz\""}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=a \"bar baz",
-      { {"foo", "a \"bar baz"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=a \"bar baz c=d",
-      { {"foo", "a \"bar baz"}, {"c", "d"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=a \"bar baz\"=f c=d a",
-      { {"foo", "a \"bar baz\"=f"}, {"c", "d a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=\\\"bar baz\\\"",
-      { {"foo", "\\\"bar baz\\\""}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=\"bar\" baz c=d",
-      { {"foo", "\"bar\" baz"}, {"c", "d"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=bar\"",
-      { {"foo", "bar\""}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "k===a",
-      { {"k", "==a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "k===  a",
-      { {"k", "==  a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "k===a=b",
-      { {"k", "==a=b"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "a==b=",
-      { {"a", "=b="}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "a=,=b=a",
-      { {"a", ",=b=a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "a= =a",
-      { {"a", "=a"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo=\"bar baz\"",
-      { {"foo", "bar baz"}, {} }
-    },
-    {
-      TC_HEAD,
-      { SPACE_HANDLING_CONFIG, {} },
-      "foo='bar",
-      { {"foo", "'bar"}, {} }
-    },
 
-    {}
+Test(kv_scanner, quotation_is_stored_in_the_was_quoted_value_member)
+{
+  _EXPECT_KVQ_TRIPLETS("foo=\"bar\"",
+  {"foo", "bar", TRUE});
+  _EXPECT_KVQ_TRIPLETS("foo='bar'",
+  {"foo", "bar", TRUE});
+  _EXPECT_KVQ_TRIPLETS("foo=bar",
+  {"foo", "bar", FALSE});
+  _EXPECT_KVQ_TRIPLETS("foo='bar' k=v",
+  {"foo", "bar", TRUE},
+  {"k", "v", FALSE});
+}
+
+Test(kv_scanner, spaces_around_value_separator_are_ignored)
+{
+  ScannerConfig config=
+  {
+    .kv_separator=':',
+  };
+  _IMPL_EXPECT_KV(config, "key1: value1 key2 : value2 key3 :value3 ",
+  {"key1", "value1"},
+  {"key2", "value2"},
+  {"key3", "value3"});
+}
+
+Test(kv_scanner, value_separator_is_used_to_separate_key_from_value)
+{
+  ScannerConfig config=
+  {
+    .kv_separator = ':',
   };
 
-  return cases_with_allow_pair_separator_in_value;
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config,
+                               "key1:value1 key2:value2 key3:value3 ",
+  { "key1", "value1" },
+  { "key2", "value2" },
+  { "key3", "value3" });
 }
 
-static const Testcase *
+Test(kv_scanner, invalid_value_encoding_is_copied_literally)
+{
+  _EXPECT_KV_PAIRS("k=\xc3",
+  { "k", "\xc3" });
+  _EXPECT_KV_PAIRS("k=\xc3v",
+  { "k", "\xc3v" });
+  _EXPECT_KV_PAIRS("k=\xff",
+  { "k", "\xff" });
+  _EXPECT_KV_PAIRS("k=\xffv",
+  { "k", "\xffv" });
+
+  _EXPECT_KV_PAIRS("k=\"\xc3\"",
+  { "k", "\xc3" });
+  _EXPECT_KV_PAIRS("k=\"\xc3v\"",
+  { "k", "\xc3v" });
+  _EXPECT_KV_PAIRS("k=\"\xff\"",
+  { "k", "\xff" });
+  _EXPECT_KV_PAIRS(" k=\"\xffv\"",
+  { "k", "\xffv" });
+}
+
+Test(kv_scanner, separator_in_key)
+{
+  ScannerConfig config=
+  {
+    .kv_separator = '-',
+  };
+
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "k-v",  { "k", "v" });
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "k--v",  { "k", "-v" });
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "---",  { "-", "-" });
+}
+
+Test(kv_scanner, empty_keys)
+{
+  _EXPECT_KV_PAIRS("=v");
+  _EXPECT_KV_PAIRS("k*=v");
+  _EXPECT_KV_PAIRS("=");
+  _EXPECT_KV_PAIRS("==");
+  _EXPECT_KV_PAIRS("===");
+  _EXPECT_KV_PAIRS(" =");
+  _EXPECT_KV_PAIRS(" ==");
+  _EXPECT_KV_PAIRS(" ===");
+  _EXPECT_KV_PAIRS(" = =");
+  _EXPECT_KV_PAIRS(" ==k=", { "k", "" });
+  _EXPECT_KV_PAIRS(" = =k=", { "k", "" });
+  _EXPECT_KV_PAIRS(" =k=",  { "k", "" });
+  _EXPECT_KV_PAIRS(" =k=v", { "k", "v" });
+  _EXPECT_KV_PAIRS(" ==k=v", { "k", "v" });
+  _EXPECT_KV_PAIRS(" =k=v=w", { "k", "v=w" });
+}
+
+Test(kv_scanner, unclosed_quotes)
+{
+  _EXPECT_KV_PAIRS("k=\"a",  { "k", "\"a" });
+  _EXPECT_KV_PAIRS("k=\\",   { "k", "\\" });
+  _EXPECT_KV_PAIRS("k=\"\\", { "k", "\"\\" });
+
+  _EXPECT_KV_PAIRS("k='a",   { "k", "'a" });
+  _EXPECT_KV_PAIRS("k='\\",  { "k", "'\\" });
+
+  /* backslash is not special if not within quotes */
+  _EXPECT_KV_PAIRS("k=\\",   {"k", "\\"});
+  _EXPECT_KV_PAIRS("foo=bar\"",
+  {"foo", "bar\""});
+  _EXPECT_KV_PAIRS("foo='bar",
+  {"foo", "'bar"});
+}
+
+
+Test(kv_scanner, comma_separator)
+{
+  _EXPECT_KV_PAIRS(", k=v",  { "k", "v" });
+  _EXPECT_KV_PAIRS(",k=v",   { "k", "v" });
+  _EXPECT_KV_PAIRS("k=v,",   { "k", "v," });
+  _EXPECT_KV_PAIRS("k=v, ",  { "k", "v" });
+}
+
+Test(kv_scanner, multiple_separators)
+{
+  _EXPECT_KV_PAIRS("k==", { "k", "=" });
+  _EXPECT_KV_PAIRS("k===", { "k", "==" });
+  _EXPECT_KV_PAIRS("k===a", {"k", "==a"});
+  _EXPECT_KV_PAIRS("k===a=b", {"k", "==a=b"});
+}
+
+Test(kv_scanner, keys_only_use_a_restricted_set_of_characters)
+{
+  _EXPECT_KV_PAIRS("k-j=v", { "k-j", "v" });
+  _EXPECT_KV_PAIRS("0=v", { "0", "v" });
+  _EXPECT_KV_PAIRS("_=v", { "_", "v" });
+  _EXPECT_KV_PAIRS(":=v");
+  _EXPECT_KV_PAIRS(":=");
+  _EXPECT_KV_PAIRS("Z=v", { "Z", "v" });
+
+  /* no value, as the key is not in [a-zA-Z0-9-_] */
+  _EXPECT_KV_PAIRS("á=v");
+  _EXPECT_KV_PAIRS("*k=v",
+  { "k", "v" });
+}
+
+Test(kv_scanner, unquoted_values_can_have_embedded_control_characters)
+{
+  _EXPECT_KV_PAIRS("k1=\\b\\f\\n\\r\\t\\\\",
+  {"k1", "\\b\\f\\n\\r\\t\\\\"});
+  _EXPECT_KV_PAIRS("k1=\b\f\n\r\\",
+  {"k1", "\b\f\n\r\\"});
+}
+
+Test(kv_scanner, spaces_are_trimmed_between_key_and_separator)
+{
+  _EXPECT_KV_PAIRS("foo =bar",
+  {"foo", "bar"});
+  _EXPECT_KV_PAIRS("foo= bar",
+  {"foo", "bar"});
+}
+
+Test(kv_scanner, space_is_only_a_delimiter_if_a_key_follows)
+{
+  _EXPECT_KV_PAIRS("foo=bar ggg",
+  {"foo", "bar ggg"});
+
+  _EXPECT_KV_PAIRS("foo=bar ggg baz=ez",
+  {"foo", "bar ggg"},
+  {"baz", "ez"});
+}
+
+
+Test(kv_scanner, spaces_are_trimmed_from_key_names)
+{
+  _EXPECT_KV_PAIRS(" foo =bar ggg baz=ez",
+  {"foo", "bar ggg"},
+  {"baz", "ez"});
+
+  _EXPECT_KV_PAIRS("foo =bar ggg baz=ez",
+  {"foo", "bar ggg"},
+  {"baz", "ez"});
+
+  _EXPECT_KV_PAIRS(" foo=bar ggg baz=ez",
+  {"foo", "bar ggg"},
+  {"baz", "ez"});
+
+  _EXPECT_KV_PAIRS("foo =  bar ggg baz   =   ez",
+  {"foo", "bar ggg"},
+  {"baz", "ez"});
+
+  _EXPECT_KV_PAIRS("k===  a",
+  {"k", "==  a"});
+
+}
+
+Test(kv_scanner, initial_spaces_are_trimmed_from_values)
+{
+  _EXPECT_KV_PAIRS(" k= b",
+  {"k", "b"});
+
+}
+
+Test(kv_scanner, key_buffer_underrun)
+{
+  const gchar *buffer = "ab=v";
+  const gchar *input = buffer + 2;
+  _EXPECT_KV_PAIRS(input);
+}
+
+static Testcase *
 _provide_cases_for_performance_test_nothing_to_parse(void)
 {
-  static const Testcase cases_for_performance_test_nothing_to_parse[] =
+  Testcase tc[] =
   {
     {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "Reducing the compressed framebuffer size. This may lead to less power savings than a non-reduced-size. \
+      .input = "Reducing the compressed framebuffer size. This may lead to less power savings than a non-reduced-size. \
 Try to increase stolen memory size if available in BIOS.",
-      { {} }
+      .expected = INIT_KVCONTAINER(),
     },
     {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "interrupt took too long (3136 > 3127), lowering kernel.perf_event_max_sample_rate to 63750",
-      { {} }
+      .input = "interrupt took too long (3136 > 3127), lowering kernel.perf_event_max_sample_rate to 63750",
+      .expected = INIT_KVCONTAINER(),
     },
     {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "Linux version 4.6.3-040603-generic (kernel@gomeisa) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-4ubuntu1) ) \
+      .input = "Linux version 4.6.3-040603-generic (kernel@gomeisa) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-4ubuntu1) ) \
 #201606241434 SMP Fri Jun 24 18:36:33 UTC 2016",
-      { {} }
+      .expected = INIT_KVCONTAINER(),
     },
-
     {}
   };
 
-  return cases_for_performance_test_nothing_to_parse;
+  return g_memdup(tc, sizeof(tc));
 }
 
-static const Testcase *
+static Testcase *
 _provide_cases_for_performance_test_parse_long_msg(void)
 {
-  static const Testcase cases_for_performance_test_parse_long_msg[] =
+  Testcase tc[] =
   {
     {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "PF: filter/forward DROP \
+      .input = "PF: filter/forward DROP \
       IN=15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843 \
       OUT=980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d \
       SRC=cc8177fc0c8681d3d5d2a42bc1ed86990f773589592fa3100c23fae445f8a260 \
@@ -1052,140 +779,107 @@ _provide_cases_for_performance_test_parse_long_msg(void)
       SPT=1e7996c7b0181429bba237ac2799ee5edc31aca2d5d90c39a48f9e9a3d4078bd \
       DPT=ca902d4a8acbdea132ada81a004081f51c5c9279d409cee414de5a39a139fab6 \
       LEN=c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db",
-      { {"IN", "15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843"},
-        {"OUT", "980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d"},
-        {"SRC", "cc8177fc0c8681d3d5d2a42bc1ed86990f773589592fa3100c23fae445f8a260"},
-        {"DST", "5fee25396500fc798e10b4dcb0b3fb315618ff11843be59978c0d5b41cd9f12c"},
-        {"LEN", "71ee45a3c0db9a9865f7313dd3372cf60dca6479d46261f3542eb9346e4a04d6"},
-        {"TOS", "c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7"},
-        {"PREC", "c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7"},
-        {"TTL", "da4ea2a5506f2693eae190d9360a1f31793c98a1adade51d93533a6f520ace1c"},
-        {"ID", "242a9377518dd1afaf021b2d0bfe6484e3fe48a878152f76dec99a396160022c"},
-        {"PROTO", "dc4030f9688d6e67dfc4c5f8f7afcbdbf5c30de866d8a3c6e1dd038768ab91c3"},
-        {"SPT", "1e7996c7b0181429bba237ac2799ee5edc31aca2d5d90c39a48f9e9a3d4078bd"},
-        {"DPT", "ca902d4a8acbdea132ada81a004081f51c5c9279d409cee414de5a39a139fab6"},
-        {"LEN", "c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db"},
-        {}
-      }
+      .expected = INIT_KVCONTAINER(
+      {"IN", "15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843"},
+      {"OUT", "980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d"},
+      {"SRC", "cc8177fc0c8681d3d5d2a42bc1ed86990f773589592fa3100c23fae445f8a260"},
+      {"DST", "5fee25396500fc798e10b4dcb0b3fb315618ff11843be59978c0d5b41cd9f12c"},
+      {"LEN", "71ee45a3c0db9a9865f7313dd3372cf60dca6479d46261f3542eb9346e4a04d6"},
+      {"TOS", "c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7"},
+      {"PREC", "c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7"},
+      {"TTL", "da4ea2a5506f2693eae190d9360a1f31793c98a1adade51d93533a6f520ace1c"},
+      {"ID", "242a9377518dd1afaf021b2d0bfe6484e3fe48a878152f76dec99a396160022c"},
+      {"PROTO", "dc4030f9688d6e67dfc4c5f8f7afcbdbf5c30de866d8a3c6e1dd038768ab91c3"},
+      {"SPT", "1e7996c7b0181429bba237ac2799ee5edc31aca2d5d90c39a48f9e9a3d4078bd"},
+      {"DPT", "ca902d4a8acbdea132ada81a004081f51c5c9279d409cee414de5a39a139fab6"},
+      {"LEN", "c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db"}),
     },
     {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "fw=108.53.156.38 pri=6 c=262144 m=98 msg=\"Connection Opened\" f=2 sess=\"None\" \
+      .input = "PF: filter/forward DROP \
+      IN='15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843' \
+      OUT='980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d' \
+      SRC='cc8177fc0c8681d3d5d2a42bc1ed86990f773589592fa3100c23fae445f8a260' \
+      DST='5fee25396500fc798e10b4dcb0b3fb315618ff11843be59978c0d5b41cd9f12c' \
+      LEN='71ee45a3c0db9a9865f7313dd3372cf60dca6479d46261f3542eb9346e4a04d6' \
+      TOS='c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7' \
+      PREC='c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7' \
+      TTL='da4ea2a5506f2693eae190d9360a1f31793c98a1adade51d93533a6f520ace1c' \
+      ID='242a9377518dd1afaf021b2d0bfe6484e3fe48a878152f76dec99a396160022c' \
+      PROTO='dc4030f9688d6e67dfc4c5f8f7afcbdbf5c30de866d8a3c6e1dd038768ab91c3' \
+      SPT='1e7996c7b0181429bba237ac2799ee5edc31aca2d5d90c39a48f9e9a3d4078bd' \
+      DPT='ca902d4a8acbdea132ada81a004081f51c5c9279d409cee414de5a39a139fab6' \
+      LEN='c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db'",
+      .expected = INIT_KVCONTAINER(
+      {"IN", "15dd205a6ac8b0c80ab3bcdcc5649c9c830074cdbdc094ff1d79f20f17c56843"},
+      {"OUT", "980816f36b77e58d342de41f85854376d10cf9bf33aa1934e129ffd77ddc833d"},
+      {"SRC", "cc8177fc0c8681d3d5d2a42bc1ed86990f773589592fa3100c23fae445f8a260"},
+      {"DST", "5fee25396500fc798e10b4dcb0b3fb315618ff11843be59978c0d5b41cd9f12c"},
+      {"LEN", "71ee45a3c0db9a9865f7313dd3372cf60dca6479d46261f3542eb9346e4a04d6"},
+      {"TOS", "c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7"},
+      {"PREC", "c4dd67368286d02d62bdaa7a775b7594765d5210c9ad20cc3c24148d493353d7"},
+      {"TTL", "da4ea2a5506f2693eae190d9360a1f31793c98a1adade51d93533a6f520ace1c"},
+      {"ID", "242a9377518dd1afaf021b2d0bfe6484e3fe48a878152f76dec99a396160022c"},
+      {"PROTO", "dc4030f9688d6e67dfc4c5f8f7afcbdbf5c30de866d8a3c6e1dd038768ab91c3"},
+      {"SPT", "1e7996c7b0181429bba237ac2799ee5edc31aca2d5d90c39a48f9e9a3d4078bd"},
+      {"DPT", "ca902d4a8acbdea132ada81a004081f51c5c9279d409cee414de5a39a139fab6"},
+      {"LEN", "c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db"}),
+    },
+    {
+      .input = "fw=108.53.156.38 pri=6 c=262144 m=98 msg=\"Connection Opened\" f=2 sess=\"None\" \
       n=16351474 src=10.0.5.200:57719:X0:MOGWAI dst=71.250.0.14:53:X1 dstMac=f8:c0:01:73:c7:c1 proto=udp/dns sent=66",
-      { {"fw", "108.53.156.38"},
-        {"pri", "6"},
-        {"c", "262144"},
-        {"m", "98"},
-        {"msg", "Connection Opened"},
-        {"f", "2"},
-        {"sess", "None"},
-        {"n", "16351474"},
-        {"src", "10.0.5.200:57719:X0:MOGWAI"},
-        {"dst", "71.250.0.14:53:X1"},
-        {"dstMac", "f8:c0:01:73:c7:c1"},
-        {"proto", "udp/dns"},
-        {"sent", "66"},
-        {}
-      }
+      .expected = INIT_KVCONTAINER(
+      {"fw", "108.53.156.38"},
+      {"pri", "6"},
+      {"c", "262144"},
+      {"m", "98"},
+      {"msg", "Connection Opened"},
+      {"f", "2"},
+      {"sess", "None"},
+      {"n", "16351474"},
+      {"src", "10.0.5.200:57719:X0:MOGWAI"},
+      {"dst", "71.250.0.14:53:X1"},
+      {"dstMac", "f8:c0:01:73:c7:c1"},
+      {"proto", "udp/dns"},
+      {"sent", "66"}),
     },
     {
-      TC_HEAD,
-      { DEFAULT_CONFIG, SPACE_HANDLING_CONFIG, {} },
-      "sn=C0EAE484E43E time=\"2016-07-08 13:42:58\" fw=132.237.143.192 pri=5 c=4 m=16 msg=\"Web site access allowed\" \
+      .input = "sn=C0EAE484E43E time=\"2016-07-08 13:42:58\" fw=132.237.143.192 pri=5 c=4 m=16 msg=\"Web site access allowed\" \
       app=11 sess=\"Auto\" n=5086 usr=\"DEMO\\primarystudent\" src=10.2.3.64:50682:X2-V3023 dst=157.55.240.220:443:X1 \
       srcMac=00:50:56:8e:55:8e dstMac=c0:ea:e4:84:e4:40 proto=tcp/https dstname=sls.update.microsoft.com arg= code=27 \
       Category=\"Information Technology/Computers\" fw_action=\"process\"",
-      { {"sn", "C0EAE484E43E"},
-        {"time", "2016-07-08 13:42:58"},
-        {"fw", "132.237.143.192"},
-        {"pri", "5"},
-        {"c", "4"},
-        {"m", "16"},
-        {"msg", "Web site access allowed"},
-        {"app", "11"},
-        {"sess", "Auto"},
-        {"n", "5086"},
-        {"usr", "DEMO\\primarystudent"},
-        {"src", "10.2.3.64:50682:X2-V3023"},
-        {"dst", "157.55.240.220:443:X1"},
-        {"srcMac", "00:50:56:8e:55:8e"},
-        {"dstMac", "c0:ea:e4:84:e4:40"},
-        {"proto", "tcp/https"},
-        {"dstname", "sls.update.microsoft.com"},
-        {"arg", ""},
-        {"code", "27"},
-        {"Category", "Information Technology/Computers"},
-        {"fw_action", "process"},
-        {}
-      }
+      .expected = INIT_KVCONTAINER(
+      {"sn", "C0EAE484E43E"},
+      {"time", "2016-07-08 13:42:58"},
+      {"fw", "132.237.143.192"},
+      {"pri", "5"},
+      {"c", "4"},
+      {"m", "16"},
+      {"msg", "Web site access allowed"},
+      {"app", "11"},
+      {"sess", "Auto"},
+      {"n", "5086"},
+      {"usr", "DEMO\\primarystudent"},
+      {"src", "10.2.3.64:50682:X2-V3023"},
+      {"dst", "157.55.240.220:443:X1"},
+      {"srcMac", "00:50:56:8e:55:8e"},
+      {"dstMac", "c0:ea:e4:84:e4:40"},
+      {"proto", "tcp/https"},
+      {"dstname", "sls.update.microsoft.com"},
+      {"arg", ""},
+      {"code", "27"},
+      {"Category", "Information Technology/Computers"},
+      {"fw_action", "process"}),
     },
-
     {}
   };
-  return cases_for_performance_test_parse_long_msg;
+  return g_memdup(tc, sizeof(tc));
 }
 
-static GString *
-_expected_to_string(const KV *kvs)
-{
-  GString *result = g_string_new("");
-  gboolean first = TRUE;
-  while (kvs->key)
-    {
-      if (!first)
-        {
-          g_string_append_c(result, ' ');
-        }
-      first = FALSE;
-      g_string_append_printf(result, "%s=%s", kvs->key, kvs->value);
-      kvs++;
-    }
-
-  return result;
-}
+#define ITERATION_NUMBER 100000
 
 static void
-_run_testcase(const Testcase tc)
+_test_performance(Testcase *tcs, gchar *title)
 {
-  GString *pretty_expected;
-  const ScannerConfig *cfg = tc.config;
-  while (cfg->kv_separator != 0)
-    {
-      pretty_expected = _expected_to_string(tc.expected);
-      testcase_begin("line:(%d), function:(%s), input:(%s), expected:(%s), separator(%c), separator_in_values(%d)",
-                     tc.line,
-                     tc.function,
-                     tc.input,
-                     pretty_expected->str,
-                     cfg->kv_separator,
-                     cfg->allow_pair_separator_in_value);
-      _scan_kv_pairs_scanner(create_kv_scanner(*cfg), tc.input, tc.expected);
-      testcase_end();
-      g_string_free(pretty_expected, TRUE);
-      cfg++;
-    }
-}
-
-static void
-_run_testcases(const Testcase *cases)
-{
-  const Testcase *tc = cases;
-  while (tc->input)
-    {
-      _run_testcase(*tc);
-      tc++;
-    }
-}
-
-#define ITERATION_NUMBER 10000
-
-static void
-_test_performance(const Testcase *tcs, gchar *title)
-{
-  GString *pretty_expected;
-  const ScannerConfig *cfg = NULL;
-  gint cfg_index = 0;
   const Testcase *tc;
   gint iteration_index = 0;
 
@@ -1194,55 +888,32 @@ _test_performance(const Testcase *tcs, gchar *title)
       printf("Performance test: %s\n", title);
     }
 
-  for (cfg_index = 0; tcs->config[cfg_index].kv_separator != 0; cfg_index++)
+  for (tc = tcs; tc->input; tc++)
     {
-
+      KVScanner *scanner = create_kv_scanner(((ScannerConfig)
+      {'='
+      }));
       start_stopwatch();
-
       for (iteration_index = 0; iteration_index < ITERATION_NUMBER; iteration_index++)
         {
-          for (tc = tcs; tc->input; tc++)
-            {
-              cfg = &tc->config[cfg_index];
+          gchar *error = NULL;
 
-              pretty_expected = _expected_to_string(tc->expected);
-              testcase_begin("input:(%s), expected:(%s), separator(%c), separator_in_values(%d)",
-                             tc->input, pretty_expected->str, cfg->kv_separator, cfg->allow_pair_separator_in_value);
-              _scan_kv_pairs_scanner(create_kv_scanner(*cfg), tc->input, tc->expected);
-              testcase_end();
-              g_string_free(pretty_expected, TRUE);
+          kv_scanner_input(scanner, tc->input);
+          if (!_expect_kv_pairs(scanner, tc->expected, &error))
+            {
+              cr_expect(FALSE, "%s", error);
+              g_free(error);
             }
         }
-
-      if (cfg != NULL)
-        {
-          stop_stopwatch_and_display_result(1, "Is pair-separator allowed in values: %s KV-separator: '%c' ",
-                                            cfg->allow_pair_separator_in_value?"YES":"NO ",
-                                            cfg->kv_separator);
-        }
+      stop_stopwatch_and_display_result(iteration_index, "%.64s...",
+                                        tc->input);
+      kv_scanner_free(scanner);
     }
+  g_free(tcs);
 }
 
-int main(int argc, char *argv[])
+Test(kv_scanner, performance_tests)
 {
-  _test_quotation_is_stored_in_the_was_quoted_value_member();
-  _test_quotation_is_stored_in_the_was_quoted_value_member_with_space_separator_option();
-  _test_key_buffer_underrun();
-  _test_transforms_values_if_parse_value_is_set();
-  _test_transforms_values_if_parse_value_is_set_with_space_separator_option();
-  _test_value_separator_clone();
-  _test_parse_value_clone();
-  _run_testcases(_provide_cases_without_allow_pair_separator_in_value());
-  _run_testcases(_provide_common_cases());
-  _run_testcases(_provide_cases_with_allow_pair_separator_in_value());
-  if (0)
-    {
-      _test_performance(_provide_common_cases(), "Common test cases");
-      _test_performance(_provide_cases_for_performance_test_nothing_to_parse(), "Nothing to parse in the message");
-      _test_performance(_provide_cases_for_performance_test_parse_long_msg(), "Parse long strings");
-    }
-  if (testutils_deinit())
-    return 0;
-  else
-    return 1;
+  _test_performance(_provide_cases_for_performance_test_nothing_to_parse(), "Nothing to parse in the message");
+  _test_performance(_provide_cases_for_performance_test_parse_long_msg(), "Parse long strings");
 }

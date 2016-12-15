@@ -23,6 +23,7 @@
  */
 
 #include "testutils.h"
+#include "stopwatch.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "plugin.h"
