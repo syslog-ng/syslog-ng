@@ -183,10 +183,20 @@ _process_unquoted_characters(StrReprDecodeState *state)
 }
 
 static gboolean
+_is_an_ending_string_acceptable_in_this_state(gint quote_state)
+{
+  return quote_state == KV_QUOTE_INITIAL ||
+      quote_state == KV_EXPECT_DELIMITER ||
+      quote_state == KV_UNQUOTED_CHARACTERS ||
+      quote_state == KV_FINISH_SUCCESS;
+}
+
+static gboolean
 _decode(StrReprDecodeState *state)
 {
   gint quote_state = KV_QUOTE_INITIAL;
-  while (*state->cur)
+
+  for (; *state->cur; state->cur++)
     {
       switch (quote_state)
         {
@@ -211,12 +221,8 @@ _decode(StrReprDecodeState *state)
         }
       if (quote_state == KV_FINISH_SUCCESS || quote_state == KV_FINISH_FAILURE)
         break;
-      state->cur++;
     }
-  if (quote_state == KV_QUOTE_INITIAL ||
-      quote_state == KV_EXPECT_DELIMITER ||
-      quote_state == KV_UNQUOTED_CHARACTERS ||
-      quote_state == KV_FINISH_SUCCESS)
+  if (_is_an_ending_string_acceptable_in_this_state(quote_state))
     return TRUE;
   return FALSE;
 }
