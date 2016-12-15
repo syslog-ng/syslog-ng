@@ -42,6 +42,7 @@
 #include "pathutils.h"
 #include "resolved-configurable-paths.h"
 #include "crypto.h"
+#include "compat/openssl_support.h"
 
 #include <stdio.h>
 #include <string.h>

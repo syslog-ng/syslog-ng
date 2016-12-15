@@ -24,6 +24,7 @@
 #include "tlscontext.h"
 #include "str-utils.h"
 #include "messages.h"
+#include "compat/openssl_support.h"
 
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -137,35 +138,37 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   if (self->ctx->verify_mode & TVM_UNTRUSTED)
     return 1;
 
+  int ctx_error_depth = X509_STORE_CTX_get_error_depth(ctx);
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
-  if (ok && ctx->error_depth == 0 && !tls_session_verify_fingerprint(ctx))
+  if (ok && ctx_error_depth == 0 && !tls_session_verify_fingerprint(ctx))
     {
       msg_notice("Certificate valid, but fingerprint constraints were not met, rejecting");
       return 0;
     }
 
-  if (ok && ctx->error_depth != 0 && (ctx->current_cert->ex_flags & EXFLAG_CA) == 0)
+  X509 *current_cert = X509_STORE_CTX_get_current_cert(ctx);
+  if (ok && ctx_error_depth != 0 && (X509_get_extension_flags(current_cert) & EXFLAG_CA) == 0)
     {
       msg_notice("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate");
-      ctx->error = X509_V_ERR_INVALID_CA;
+      X509_STORE_CTX_set_error(ctx, X509_V_ERR_INVALID_CA);
       return 0;
     }
 
   /* reject certificate if it is valid, but its DN is not trusted */
-  if (ok && ctx->error_depth == 0 && !tls_session_verify_dn(ctx))
+  if (ok && ctx_error_depth == 0 && !tls_session_verify_dn(ctx))
     {
       msg_notice("Certificate valid, but DN constraints were not met, rejecting");
-      ctx->error = X509_V_ERR_CERT_UNTRUSTED;
+      X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_UNTRUSTED);
       return 0;
     }
   /* if the crl_dir is set in the configuration file but the directory is empty ignore this error */
-  if (!ok && ctx->error == X509_V_ERR_UNABLE_TO_GET_CRL)
+  if (!ok && X509_STORE_CTX_get_error(ctx) == X509_V_ERR_UNABLE_TO_GET_CRL)
     {
       msg_notice("CRL directory is set but no CRLs found");
       return 1;
     }
 
-  if (!ok && ctx->error == X509_V_ERR_INVALID_PURPOSE)
+  if (!ok && X509_STORE_CTX_get_error(ctx) == X509_V_ERR_INVALID_PURPOSE)
     {
       msg_warning("Certificate valid, but purpose is invalid");
       return 1;
@@ -185,7 +188,8 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
    */
   if (X509_STORE_CTX_get_current_cert(ctx) == NULL)
     {
-      switch (ctx->error)
+      int ctx_error = X509_STORE_CTX_get_error(ctx);
+      switch (ctx_error)
         {
         case X509_V_ERR_NO_EXPLICIT_POLICY:
           /* NOTE: Because we set the CHECK_POLICY_FLAG if the
@@ -197,7 +201,7 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
           break;
         default:
           msg_notice("Error occured during certificate validation",
-                     evt_tag_int("error", ctx->error));
+                     evt_tag_int("error", X509_STORE_CTX_get_error(ctx)));
           break;
         }
     }
@@ -338,7 +342,7 @@ tls_context_setup_session(TLSContext *self)
       if (self->crl_dir)
         verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
 
-      X509_VERIFY_PARAM_set_flags(self->ssl_ctx->param, verify_flags);
+      X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
 
       switch (self->verify_mode)
         {
