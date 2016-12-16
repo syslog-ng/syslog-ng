@@ -41,7 +41,7 @@
 
 #define LIST_SCANNER_TESTCASE(x, ...) \
   do {                                                          \
-      list_scanner_testcase_begin(#x, #__VA_ARGS__);  		\
+      list_scanner_testcase_begin(#x, #__VA_ARGS__);      \
       x(__VA_ARGS__);                                           \
       list_scanner_testcase_end();                                \
   } while(0)

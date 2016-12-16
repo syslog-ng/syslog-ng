@@ -86,7 +86,8 @@ tf_context_lookup_call(LogTemplateFunction *self, gpointer s, const LogTemplateI
   g_string_free(buf, TRUE);
 }
 
-TEMPLATE_FUNCTION(TFCondState, tf_context_lookup, tf_grep_prepare, NULL, tf_context_lookup_call, tf_cond_free_state, NULL);
+TEMPLATE_FUNCTION(TFCondState, tf_context_lookup, tf_grep_prepare, NULL, tf_context_lookup_call, tf_cond_free_state,
+                  NULL);
 
 /*
  * $(context-values $nv1 $n2 ...)
@@ -120,4 +121,5 @@ tf_context_values_call(LogTemplateFunction *self, gpointer s, const LogTemplateI
   g_string_free(buf, TRUE);
 }
 
-TEMPLATE_FUNCTION(TFSimpleFuncState, tf_context_values, tf_simple_func_prepare, tf_simple_func_eval, tf_context_values_call, tf_simple_func_free_state, NULL);
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_context_values, tf_simple_func_prepare, tf_simple_func_eval,
+                  tf_context_values_call, tf_simple_func_free_state, NULL);

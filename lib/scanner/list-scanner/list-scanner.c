@@ -101,7 +101,8 @@ _parse_unquoted_empty_value(ListScanner *self)
 static gboolean
 _parse_value_from_current_position(ListScanner *self)
 {
-  StrReprDecodeOptions options = {
+  StrReprDecodeOptions options =
+  {
     0,
     .delimiter_chars = ",",
   };
