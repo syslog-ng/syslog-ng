@@ -236,8 +236,8 @@ _expect_kvq_triplets(KVScanner *scanner, KVQContainer args, gchar **error)
 
 #define _EXPECT_KV_AND_STRAY_WORDS(INPUT, STRAY, ...) \
   do { \
-    KVScanner *scanner = create_kv_scanner(((ScannerConfig) {			\
-      .kv_separator = '=', 							\
+    KVScanner *scanner = create_kv_scanner(((ScannerConfig) {     \
+      .kv_separator = '=',              \
       .extract_stray_words=TRUE})); \
     gchar *error = NULL; \
     \
