@@ -59,17 +59,28 @@ Plugin hello_plugin = TEMPLATE_FUNCTION_PLUGIN(hello, "hello");
     element.type;  \
     element.msg_ref; }
 
-#define assert_compiled_template(text, default_value, spec, type, msg_ref) \
+#define assert_compiled_template(set_text, set_default_value, spec, type, msg_ref) \
   do { \
+    const gchar *text; \
+    set_text; \
+    gchar *text_mut = g_strdup(text); \
+    \
+    const gchar *default_value; \
+    set_default_value; \
+    gchar *default_value_mut = g_strdup(default_value); \
+    \
     LogTemplateElem expected_elem;                                \
                                                                                                                                                                 \
-    fill_expected_template_element(expected_elem, text, default_value, spec, type, msg_ref);                  \
+    fill_expected_template_element(expected_elem, text = text_mut, \
+                                   default_value = default_value_mut, spec, type, msg_ref); \
     assert_gint((current_elem->type), (expected_elem.type), ASSERTION_ERROR("Bad compiled template type"));               \
     assert_common_element(expected_elem);                               \
     if ((expected_elem.type) == LTE_MACRO) assert_gint(current_elem->macro, expected_elem.macro, ASSERTION_ERROR("Bad compiled template macro"));     \
     if ((expected_elem.type) == LTE_VALUE) assert_gint(current_elem->value_handle, expected_elem.value_handle, ASSERTION_ERROR("Bad compiled template macro")); \
     if ((expected_elem.type) == LTE_FUNC) assert_gpointer(current_elem->func.ops, expected_elem.func.ops, ASSERTION_ERROR("Bad compiled template macro"));  \
-  } while (0)
+    g_free(text_mut); \
+    g_free(default_value_mut); \
+} while (0)
 
 
 #define TEMPLATE_TESTCASE(x, ...) do { template_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); template_testcase_end(); } while(0)
