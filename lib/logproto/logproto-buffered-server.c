@@ -352,7 +352,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
       gint64 cur_size;
       gint64 cur_inode;
       gint64 cur_pos;
-      guint16 version;
+      guint16 version = 0;
       gchar *buffer;
       gsize buffer_len;
 
