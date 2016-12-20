@@ -31,7 +31,7 @@ Test(serialize, test_serialize)
   GString *stream = g_string_new("");
   GString *value = g_string_new("");
   gchar buf[256];
-  guint32 num;
+  guint32 num = 0;
 
   SerializeArchive *a = serialize_string_archive_new(stream);
 
