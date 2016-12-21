@@ -1,3 +1,29 @@
+syslog-ng (3.9.1-1) experimental; urgency=low
+
+  [ Laszlo Budai <laszlo.budai@balabit.com> ]
+  * 3.9.1 release
+  * Improve parsing performance in case of keep-timestamp(no)
+  * TLS based transports will publish the peer's certificate in a set of
+    name-value pairs
+  * Improve performance of the tcp() source
+  * Make it possible to configure the listen-backlog() for any stream based
+    transports (unix-stream and tcp).
+  * Add a groupunset() rewrite rule that pairs up with groupset()
+  * Add support for ElasticSearch SearchGuard 
+  * kv-parser() is now able to cope with unquoted values with an embedded
+    space in them, it also trims whitespace from keys/values and is in
+    general more reliable in extracting key-value pairs from arbitrary log
+    messages.
+  * Improve performance for java based destinations.
+  * Add prefix() option to add-contextual-data()
+  * HDFS was updated to 2.7.3
+  * Elasticsearch was updated to 2.4.0
+  * Support was added for OpenSSL 1.1.x (#1281)
+  * Several bugfixes
+
+
+ -- Laszlo Budai <laszlo.budai@balabit.com>  Wed, 21 Dec 2016 14:06:25 +0100 
+
 syslog-ng (3.8.1-1) experimental; urgency=low
 
   [ Laszlo Budai <laszlo.budai@balabit.com> ]
