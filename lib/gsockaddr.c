@@ -186,6 +186,22 @@ g_sockaddr_inet_bind_prepare(int sock, GSockAddr *addr)
   int tmp = 1;
 
   setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp));
+#if defined(IP_FREEBIND)
+  setsockopt(sock, SOL_IP, IP_FREEBIND, &tmp, sizeof(tmp));
+#endif
+#if defined(SO_BINDANY)
+  setsockopt(sock, SOL_SOCKET, SO_BINDANY, &tmp, sizeof(tmp));
+#endif
+#if defined(IP_BINDANY)
+  if (addr->sockaddr.sa_family == AF_INET) {
+    setsockopt(sock, IPPROTO_IP, IP_BINDANY, &tmp, sizeof(tmp));
+  }
+#endif
+#if SYSLOG_NG_ENABLE_IPV6 && defined(IPV6_BINDANY)
+  if (addr->sockaddr.sa_family == AF_INET6) {
+    setsockopt(sock, IPPROTO_IPV6, IPV6_BINDANY, &tmp, sizeof(tmp));
+  }
+#endif
   return G_IO_STATUS_NORMAL;
 }
 
