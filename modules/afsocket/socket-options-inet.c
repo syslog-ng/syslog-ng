@@ -44,6 +44,7 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
 {
   SocketOptionsInet *self = (SocketOptionsInet *) s;
   gint off = 0;
+  gint on = 1;
 
   if (!socket_options_setup_socket_method(s, fd, addr, dir))
     return FALSE;
@@ -107,6 +108,15 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
       if (self->ip_tos && (dir & AFSOCKET_DIR_SEND))
         setsockopt(fd, SOL_IP, IP_TOS, &self->ip_tos, sizeof(self->ip_tos));
 
+      if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))
+        {
+#ifdef IP_FREEBIND
+          setsockopt(sock, SOL_IP, IP_FREEBIND, &on, sizeof(on));
+#else
+          msg_error("ip-freebind() is set but no IP_FREEBIND setsockopt on this platform");
+          return FALSE;
+#endif
+        }
       break;
     }
 #if SYSLOG_NG_ENABLE_IPV6
@@ -134,6 +144,16 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
         {
           if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
             setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
+        }
+      
+      if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))
+        {
+#ifdef IP_FREEBIND
+          setsockopt(sock, SOL_IPV6, IP_FREEBIND, &on, sizeof(on));
+#else
+          msg_error("ip-freebind() is set but no IP_FREEBIND setsockopt on this platform");
+          return FALSE;
+#endif
         }
       break;
     }
