@@ -97,69 +97,71 @@
 gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 gboolean interactive_mode = FALSE;
-
-/*
- * This variable is used to detect that syslog-ng is being terminated, in which
- * case ongoing reload operations are aborted.
- *
- * The variable is deeply embedded in various mainloop callbacks to get out
- * of an ongoing reload and start doing the termination instead.  A better
- * solution would be to use a queue for intrusive, worker-stopping
- * operations and serialize such tasks so they won't interfere which each other.
- *
- * This interference is now implemented by conditionals scattered around the code.
- *
- * Example:
- *   * reload is now taking two steps (marked R in the figure below)
- *     1) parse the configuration and request worker threads to be stopped
- *     2) apply the configuration once all threads exited
- *   * termination is also taking two steps
- *     1) send out the shutting down message and start waiting 100msec
- *     2) terminate the mainloop
- *
- * The problem happens when reload and termination happen at around the same
- * time and these steps are interleaved.
- *
- *   Normal operation: RRTT (e.g. reload finishes, then termination)
- *   Problematic case: RTRT (e.g. reload starts, termination starts, config apply, terminate)
- *
- * In the problematic case, two independent operations do similar things to
- * the mainloop, and to prevent misfortune we need to handle this case explicitly.
- *
- * Were the two operations serialized by some kind of queue, the problems
- * would be gone.
- */
-gboolean __main_loop_is_terminating = FALSE;
-
-/* signal handling */
-static struct iv_signal sighup_poll;
-static struct iv_signal sigterm_poll;
-static struct iv_signal sigint_poll;
-static struct iv_signal sigchild_poll;
-
-static struct iv_event exit_requested;
-static struct iv_event reload_config_requested;
-
-
-/* Currently running configuration, should not be used outside the mainloop
- * logic. If anything needs access to the GlobalConfig instance at runtime,
- * it needs to save that during initialization.  If anything needs the
- * config being parsed (e.g.  in the bison generated code), it should
- * consult the value of "configuration", which is NULL after the parsing is
- * finished.
- */
-static GlobalConfig *current_configuration;
 ThreadId main_thread_handle;
 
-/************************************************************************************
- * config load/reload
- ************************************************************************************/
+struct _MainLoop
+{
+  /*
+   * This variable is used to detect that syslog-ng is being terminated, in which
+   * case ongoing reload operations are aborted.
+   *
+   * The variable is deeply embedded in various mainloop callbacks to get out
+   * of an ongoing reload and start doing the termination instead.  A better
+   * solution would be to use a queue for intrusive, worker-stopping
+   * operations and serialize such tasks so they won't interfere which each other.
+   *
+   * This interference is now implemented by conditionals scattered around the code.
+   *
+   * Example:
+   *   * reload is now taking two steps (marked R in the figure below)
+   *     1) parse the configuration and request worker threads to be stopped
+   *     2) apply the configuration once all threads exited
+   *   * termination is also taking two steps
+   *     1) send out the shutting down message and start waiting 100msec
+   *     2) terminate the mainloop
+   *
+   * The problem happens when reload and termination happen at around the same
+   * time and these steps are interleaved.
+   *
+   *   Normal operation: RRTT (e.g. reload finishes, then termination)
+   *   Problematic case: RTRT (e.g. reload starts, termination starts, config apply, terminate)
+   *
+   * In the problematic case, two independent operations do similar things to
+   * the mainloop, and to prevent misfortune we need to handle this case explicitly.
+   *
+   * Were the two operations serialized by some kind of queue, the problems
+   * would be gone.
+   */
+  gboolean __is_terminating;
 
-/* the old configuration that is being reloaded */
-static GlobalConfig *main_loop_old_config;
-/* the pending configuration we wish to switch to */
-static GlobalConfig *main_loop_new_config;
+  /* signal handling */
+  struct iv_signal sighup_poll;
+  struct iv_signal sigterm_poll;
+  struct iv_signal sigint_poll;
+  struct iv_signal sigchild_poll;
 
+  struct iv_event exit_requested;
+  struct iv_event reload_config_requested;
+
+  struct iv_timer exit_timer;
+
+  /* Currently running configuration, should not be used outside the mainloop
+   * logic. If anything needs access to the GlobalConfig instance at runtime,
+   * it needs to save that during initialization.  If anything needs the
+   * config being parsed (e.g.  in the bison generated code), it should
+   * consult the value of "configuration", which is NULL after the parsing is
+   * finished.
+   */
+  GlobalConfig *current_configuration;
+
+  /* the old configuration that is being reloaded */
+  GlobalConfig *old_config;
+  /* the pending configuration we wish to switch to */
+  GlobalConfig *new_config;
+
+};
+
+static MainLoop main_loop;
 
 /* called when syslog-ng first starts up */
 gboolean
@@ -182,39 +184,45 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   return success;
 }
 
+static inline gboolean
+main_loop_is_terminating(void)
+{
+  return main_loop.__is_terminating;
+}
+
 /* called to apply the new configuration once all I/O worker threads have finished */
 static void
 main_loop_reload_config_apply(void)
 {
   if (main_loop_is_terminating())
     {
-      if (main_loop_new_config)
+      if (main_loop.new_config)
         {
-          cfg_free(main_loop_new_config);
-          main_loop_new_config = NULL;
+          cfg_free(main_loop.new_config);
+          main_loop.new_config = NULL;
         }
       return;
     }
-  main_loop_old_config->persist = persist_config_new();
-  cfg_deinit(main_loop_old_config);
-  cfg_persist_config_move(main_loop_old_config, main_loop_new_config);
+  main_loop.old_config->persist = persist_config_new();
+  cfg_deinit(main_loop.old_config);
+  cfg_persist_config_move(main_loop.old_config, main_loop.new_config);
 
-  if (cfg_init(main_loop_new_config))
+  if (cfg_init(main_loop.new_config))
     {
       msg_verbose("New configuration initialized");
-      persist_config_free(main_loop_new_config->persist);
-      main_loop_new_config->persist = NULL;
-      cfg_free(main_loop_old_config);
-      current_configuration = main_loop_new_config;
+      persist_config_free(main_loop.new_config->persist);
+      main_loop.new_config->persist = NULL;
+      cfg_free(main_loop.old_config);
+      main_loop.current_configuration = main_loop.new_config;
       service_management_clear_status();
     }
   else
     {
       msg_error("Error initializing new configuration, reverting to old config");
       service_management_publish_status("Error initializing new configuration, using the old config");
-      cfg_persist_config_move(main_loop_new_config, main_loop_old_config);
-      cfg_deinit(main_loop_new_config);
-      if (!cfg_init(main_loop_old_config))
+      cfg_persist_config_move(main_loop.new_config, main_loop.old_config);
+      cfg_deinit(main_loop.new_config);
+      if (!cfg_init(main_loop.old_config))
         {
           /* hmm. hmmm, error reinitializing old configuration, we're hosed.
            * Best is to kill ourselves in the hope that the supervisor
@@ -223,10 +231,10 @@ main_loop_reload_config_apply(void)
           kill(getpid(), SIGQUIT);
           g_assert_not_reached();
         }
-      persist_config_free(main_loop_old_config->persist);
-      main_loop_old_config->persist = NULL;
-      cfg_free(main_loop_new_config);
-      current_configuration = main_loop_old_config;
+      persist_config_free(main_loop.old_config->persist);
+      main_loop.old_config->persist = NULL;
+      cfg_free(main_loop.new_config);
+      main_loop.current_configuration = main_loop.old_config;
       goto finish;
     }
 
@@ -235,8 +243,8 @@ main_loop_reload_config_apply(void)
   msg_notice("Configuration reload request received, reloading configuration");
 
 finish:
-  main_loop_new_config = NULL;
-  main_loop_old_config = NULL;
+  main_loop.new_config = NULL;
+  main_loop.old_config = NULL;
 
   return;
 }
@@ -250,7 +258,7 @@ main_loop_reload_config_initiate(void)
 
   service_management_publish_status("Reloading configuration");
 
-  if (main_loop_new_config)
+  if (main_loop.new_config)
     {
       /* This block is entered only if this function is reentered before
        * main_loop_reload_config_apply() would be called.  In that case we
@@ -258,18 +266,18 @@ main_loop_reload_config_initiate(void)
        * ensure that the contents of the running configuration matches the
        * contents of the file at the time the SIGHUP signal was received.
        */
-      cfg_free(main_loop_new_config);
-      main_loop_new_config = NULL;
+      cfg_free(main_loop.new_config);
+      main_loop.new_config = NULL;
     }
 
-  main_loop_old_config = current_configuration;
+  main_loop.old_config = main_loop.current_configuration;
   app_pre_config_loaded();
-  main_loop_new_config = cfg_new(0);
-  if (!cfg_read_config(main_loop_new_config, resolvedConfigurablePaths.cfgfilename, FALSE, NULL))
+  main_loop.new_config = cfg_new(0);
+  if (!cfg_read_config(main_loop.new_config, resolvedConfigurablePaths.cfgfilename, FALSE, NULL))
     {
-      cfg_free(main_loop_new_config);
-      main_loop_new_config = NULL;
-      main_loop_old_config = NULL;
+      cfg_free(main_loop.new_config);
+      main_loop.new_config = NULL;
+      main_loop.old_config = NULL;
       msg_error("Error parsing configuration",
                 evt_tag_str(EVT_TAG_FILENAME, resolvedConfigurablePaths.cfgfilename));
       service_management_publish_status("Error parsing new configuration, using the old config");
@@ -282,15 +290,13 @@ main_loop_reload_config_initiate(void)
  * syncronized exit
  ************************************************************************************/
 
-static struct iv_timer main_loop_exit_timer;
-
 static void
 main_loop_exit_finish(void)
 {
   /* deinit the current configuration, as at this point we _know_ that no
    * threads are running.  This will unregister ivykis tasks and timers
    * that could fire while the configuration is being destructed */
-  cfg_deinit(current_configuration);
+  cfg_deinit(main_loop.current_configuration);
   iv_quit();
 }
 
@@ -309,13 +315,13 @@ main_loop_exit_initiate(void)
   msg_notice("syslog-ng shutting down",
              evt_tag_str("version", SYSLOG_NG_VERSION));
 
-  IV_TIMER_INIT(&main_loop_exit_timer);
+  IV_TIMER_INIT(&main_loop.exit_timer);
   iv_validate_now();
-  main_loop_exit_timer.expires = iv_now;
-  main_loop_exit_timer.handler = main_loop_exit_timer_elapsed;
-  timespec_add_msec(&main_loop_exit_timer.expires, 100);
-  iv_timer_register(&main_loop_exit_timer);
-  __main_loop_is_terminating = TRUE;
+  main_loop.exit_timer.expires = iv_now;
+  main_loop.exit_timer.handler = main_loop_exit_timer_elapsed;
+  timespec_add_msec(&main_loop.exit_timer.expires, 100);
+  iv_timer_register(&main_loop.exit_timer);
+  main_loop.__is_terminating = TRUE;
 }
 
 
@@ -378,10 +384,10 @@ static void
 setup_signals(void)
 {
   _ignore_signal(SIGPIPE);
-  _register_signal_handler(&sighup_poll, SIGHUP, sig_hup_handler);
-  _register_signal_handler(&sigchild_poll, SIGCHLD, sig_child_handler);
-  _register_signal_handler(&sigterm_poll, SIGTERM, sig_term_handler);
-  _register_signal_handler(&sigint_poll, SIGINT, sig_term_handler);
+  _register_signal_handler(&main_loop.sighup_poll, SIGHUP, sig_hup_handler);
+  _register_signal_handler(&main_loop.sigchild_poll, SIGCHLD, sig_child_handler);
+  _register_signal_handler(&main_loop.sigterm_poll, SIGTERM, sig_term_handler);
+  _register_signal_handler(&main_loop.sigint_poll, SIGINT, sig_term_handler);
 }
 
 /************************************************************************************
@@ -400,21 +406,21 @@ _register_event(struct iv_event *event, void (*handler)(void *))
 static void
 main_loop_init_events(void)
 {
-  _register_event(&exit_requested, (void (*)(void *)) main_loop_exit_initiate);
-  _register_event(&reload_config_requested, (void (*)(void *)) main_loop_reload_config_initiate);
+  _register_event(&main_loop.exit_requested, (void (*)(void *)) main_loop_exit_initiate);
+  _register_event(&main_loop.reload_config_requested, (void (*)(void *)) main_loop_reload_config_initiate);
 }
 
 void
 main_loop_exit(void)
 {
-  iv_event_post(&exit_requested);
+  iv_event_post(&main_loop.exit_requested);
   return;
 }
 
 void
 main_loop_reload_config(void)
 {
-  iv_event_post(&reload_config_requested);
+  iv_event_post(&main_loop.reload_config_requested);
   return;
 }
 
@@ -440,8 +446,10 @@ main_loop_init(void)
 int
 main_loop_read_and_init_config(void)
 {
-  current_configuration = cfg_new(0);
-  if (!cfg_read_config(current_configuration, resolvedConfigurablePaths.cfgfilename, syntax_only, preprocess_into))
+
+  main_loop.current_configuration = cfg_new(0);
+  if (!cfg_read_config(main_loop.current_configuration, resolvedConfigurablePaths.cfgfilename, syntax_only,
+                       preprocess_into))
     {
       return 1;
     }
@@ -451,7 +459,7 @@ main_loop_read_and_init_config(void)
       return 0;
     }
 
-  if (!main_loop_initialize_state(current_configuration, resolvedConfigurablePaths.persist_file))
+  if (!main_loop_initialize_state(main_loop.current_configuration, resolvedConfigurablePaths.persist_file))
     {
       return 2;
     }
@@ -461,8 +469,8 @@ main_loop_read_and_init_config(void)
 static void
 main_loop_free_config(void)
 {
-  cfg_free(current_configuration);
-  current_configuration = NULL;
+  cfg_free(main_loop.current_configuration);
+  main_loop.current_configuration = NULL;
 }
 
 void
@@ -473,8 +481,8 @@ main_loop_deinit(void)
   if (!syntax_only)
     control_destroy();
 
-  iv_event_unregister(&exit_requested);
-  iv_event_unregister(&reload_config_requested);
+  iv_event_unregister(&main_loop.exit_requested);
+  iv_event_unregister(&main_loop.reload_config_requested);
   main_loop_call_deinit();
   main_loop_io_worker_deinit();
   main_loop_worker_deinit();
@@ -491,8 +499,8 @@ main_loop_run(void)
   service_management_clear_status();
   if (interactive_mode)
     {
-      plugin_load_module("python", current_configuration, NULL);
-      debugger_start(current_configuration);
+      plugin_load_module("python", main_loop.current_configuration, NULL);
+      debugger_start(main_loop.current_configuration);
     }
   iv_main();
   service_management_publish_status("Shutting down...");
