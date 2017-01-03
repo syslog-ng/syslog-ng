@@ -29,8 +29,13 @@
 
 typedef struct _MainLoop MainLoop;
 
-extern gchar *preprocess_into;
-extern gboolean syntax_only;
+typedef struct _MainLoopOptions
+{
+  gchar *preprocess_into;
+  gboolean syntax_only;
+  gboolean interactive_mode;
+} MainLoopOptions;
+
 extern ThreadId main_thread_handle;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
@@ -55,7 +60,8 @@ void main_loop_exit(void);
 int main_loop_read_and_init_config(void);
 void main_loop_run(void);
 
-void main_loop_init(void);
+
+void main_loop_init(MainLoopOptions *options);
 void main_loop_deinit(void);
 
 void main_loop_add_options(GOptionContext *ctx);
