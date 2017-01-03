@@ -87,16 +87,6 @@
  *
  */
 
-/* parsed command line arguments */
-
-/* NOTE: these should not be here, rather they should be either processed by
- * the main module and then passed as parameters or propagated to a place
- * closer to their usage.  The simple reason they are here, is that mainloop
- * needed them and it implements the command line options to parse them.
- * This is far from perfect. (Bazsi) */
-gchar *preprocess_into = NULL;
-gboolean syntax_only = FALSE;
-gboolean interactive_mode = FALSE;
 ThreadId main_thread_handle;
 
 struct _MainLoop
@@ -159,6 +149,7 @@ struct _MainLoop
   /* the pending configuration we wish to switch to */
   GlobalConfig *new_config;
 
+  MainLoopOptions *options;
 };
 
 static MainLoop main_loop;
@@ -425,17 +416,18 @@ main_loop_reload_config(void)
 }
 
 void
-main_loop_init(void)
+main_loop_init(MainLoopOptions *options)
 {
   service_management_publish_status("Starting up...");
 
+  main_loop.options = options;
   main_thread_handle = get_thread_id();
   main_loop_worker_init();
   main_loop_io_worker_init();
   main_loop_call_init();
 
   main_loop_init_events();
-  if (!syntax_only)
+  if (!main_loop.options->syntax_only)
     control_init(resolvedConfigurablePaths.ctlfilename);
   setup_signals();
 }
@@ -446,15 +438,16 @@ main_loop_init(void)
 int
 main_loop_read_and_init_config(void)
 {
+  MainLoopOptions *options = main_loop.options;
 
   main_loop.current_configuration = cfg_new(0);
-  if (!cfg_read_config(main_loop.current_configuration, resolvedConfigurablePaths.cfgfilename, syntax_only,
-                       preprocess_into))
+  if (!cfg_read_config(main_loop.current_configuration, resolvedConfigurablePaths.cfgfilename, options->syntax_only,
+                       options->preprocess_into))
     {
       return 1;
     }
 
-  if (syntax_only || preprocess_into)
+  if (options->syntax_only || options->preprocess_into)
     {
       return 0;
     }
@@ -478,7 +471,7 @@ main_loop_deinit(void)
 {
   main_loop_free_config();
 
-  if (!syntax_only)
+  if (!main_loop.options->syntax_only)
     control_destroy();
 
   iv_event_unregister(&main_loop.exit_requested);
@@ -497,7 +490,7 @@ main_loop_run(void)
   /* main loop */
   service_management_indicate_readiness();
   service_management_clear_status();
-  if (interactive_mode)
+  if (main_loop.options->interactive_mode)
     {
       plugin_load_module("python", main_loop.current_configuration, NULL);
       debugger_start(main_loop.current_configuration);
@@ -506,21 +499,8 @@ main_loop_run(void)
   service_management_publish_status("Shutting down...");
 }
 
-
-static GOptionEntry main_loop_options[] =
-{
-  { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
-  { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
-  { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
-  { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &syntax_only, "Only read and parse config file", NULL},
-  { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
-  { "interactive",       'i',         0, G_OPTION_ARG_NONE, &interactive_mode, "Enable interactive mode" },
-  { NULL },
-};
-
 void
 main_loop_add_options(GOptionContext *ctx)
 {
-  g_option_context_add_main_entries(ctx, main_loop_options, NULL);
   main_loop_io_worker_add_options(ctx);
 }
