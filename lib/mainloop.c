@@ -422,18 +422,18 @@ main_loop_reload_config(void)
 }
 
 void
-main_loop_init(MainLoopOptions *options)
+main_loop_init(MainLoop *self_static, MainLoopOptions *options)
 {
   service_management_publish_status("Starting up...");
 
-  main_loop.options = options;
+  self_static->options = options;
   main_thread_handle = get_thread_id();
   main_loop_worker_init();
   main_loop_io_worker_init();
   main_loop_call_init();
 
   main_loop_init_events();
-  if (!main_loop.options->syntax_only)
+  if (!self_static->options->syntax_only)
     control_init(resolvedConfigurablePaths.ctlfilename);
   setup_signals();
 }
