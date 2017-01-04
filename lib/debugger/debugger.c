@@ -177,7 +177,8 @@ _cmd_drop(Debugger *self, gint argc, gchar *argv[])
 static gboolean
 _cmd_quit(Debugger *self, gint argc, gchar *argv[])
 {
-  main_loop_exit();
+  MainLoop *main_loop = main_loop_get_instance();
+  main_loop_exit(main_loop);
   self->drop_current_message = TRUE;
   return FALSE;
 }
