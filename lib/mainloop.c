@@ -415,9 +415,9 @@ main_loop_exit(void)
 }
 
 void
-main_loop_reload_config(void)
+main_loop_reload_config(MainLoop *self_static)
 {
-  iv_event_post(&main_loop.reload_config_requested);
+  iv_event_post(&self_static->reload_config_requested);
   return;
 }
 
