@@ -408,9 +408,9 @@ main_loop_init_events(void)
 }
 
 void
-main_loop_exit(void)
+main_loop_exit(MainLoop *self_static)
 {
-  iv_event_post(&main_loop.exit_requested);
+  iv_event_post(&self_static->exit_requested);
   return;
 }
 
