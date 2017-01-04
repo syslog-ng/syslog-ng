@@ -298,7 +298,7 @@ main(int argc, char *argv[])
   /* from now on internal messages are written to the system log as well */
 
   main_loop_run(main_loop);
-  main_loop_deinit();
+  main_loop_deinit(main_loop);
 
   app_shutdown();
   z_mem_trace_dump();
