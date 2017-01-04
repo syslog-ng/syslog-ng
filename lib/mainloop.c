@@ -473,15 +473,15 @@ main_loop_free_config(void)
 }
 
 void
-main_loop_deinit(void)
+main_loop_deinit(MainLoop *self_static)
 {
   main_loop_free_config();
 
-  if (!main_loop.options->syntax_only)
+  if (!self_static->options->syntax_only)
     control_destroy();
 
-  iv_event_unregister(&main_loop.exit_requested);
-  iv_event_unregister(&main_loop.reload_config_requested);
+  iv_event_unregister(&self_static->exit_requested);
+  iv_event_unregister(&self_static->reload_config_requested);
   main_loop_call_deinit();
   main_loop_io_worker_deinit();
   main_loop_worker_deinit();

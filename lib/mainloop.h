@@ -62,7 +62,7 @@ void main_loop_run(MainLoop *self_static);
 
 MainLoop *main_loop_get_instance(void);
 void main_loop_init(MainLoop *self_static, MainLoopOptions *options);
-void main_loop_deinit(void);
+void main_loop_deinit(MainLoop *self_static);
 
 void main_loop_add_options(GOptionContext *ctx);
 
