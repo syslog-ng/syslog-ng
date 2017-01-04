@@ -60,6 +60,7 @@ void main_loop_exit(void);
 int main_loop_read_and_init_config(void);
 void main_loop_run(void);
 
+MainLoop *main_loop_get_instance(void);
 
 void main_loop_init(MainLoopOptions *options);
 void main_loop_deinit(void);

@@ -154,6 +154,12 @@ struct _MainLoop
 
 static MainLoop main_loop;
 
+MainLoop *
+main_loop_get_instance(void)
+{
+  return &main_loop;
+}
+
 /* called when syslog-ng first starts up */
 gboolean
 main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
