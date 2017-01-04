@@ -488,7 +488,7 @@ main_loop_deinit(void)
 }
 
 void
-main_loop_run(void)
+main_loop_run(MainLoop *self_static)
 {
   msg_notice("syslog-ng starting up",
              evt_tag_str("version", SYSLOG_NG_VERSION));
@@ -496,10 +496,10 @@ main_loop_run(void)
   /* main loop */
   service_management_indicate_readiness();
   service_management_clear_status();
-  if (main_loop.options->interactive_mode)
+  if (self_static->options->interactive_mode)
     {
-      plugin_load_module("python", main_loop.current_configuration, NULL);
-      debugger_start(main_loop.current_configuration);
+      plugin_load_module("python", self_static->current_configuration, NULL);
+      debugger_start(self_static->current_configuration);
     }
   iv_main();
   service_management_publish_status("Shutting down...");

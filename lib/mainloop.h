@@ -58,7 +58,7 @@ void main_loop_reload_config(void);
 void main_loop_exit(void);
 
 int main_loop_read_and_init_config(MainLoop *self_static);
-void main_loop_run(void);
+void main_loop_run(MainLoop *self_static);
 
 MainLoop *main_loop_get_instance(void);
 void main_loop_init(MainLoop *self_static, MainLoopOptions *options);
