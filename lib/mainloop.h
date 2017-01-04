@@ -55,7 +55,7 @@ main_loop_is_main_thread(void)
 }
 
 void main_loop_reload_config(MainLoop *self_static);
-void main_loop_exit(void);
+void main_loop_exit(MainLoop *self_static);
 
 int main_loop_read_and_init_config(MainLoop *self_static);
 void main_loop_run(MainLoop *self_static);
