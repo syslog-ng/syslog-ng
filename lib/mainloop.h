@@ -54,7 +54,7 @@ main_loop_is_main_thread(void)
   return threads_equal(main_thread_handle, get_thread_id());
 }
 
-void main_loop_reload_config(void);
+void main_loop_reload_config(MainLoop *self_static);
 void main_loop_exit(void);
 
 int main_loop_read_and_init_config(MainLoop *self_static);
