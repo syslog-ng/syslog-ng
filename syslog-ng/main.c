@@ -200,6 +200,8 @@ main(int argc, char *argv[])
   GOptionContext *ctx;
   GError *error = NULL;
 
+  MainLoop *main_loop = main_loop_get_instance();
+
   z_mem_trace_init("syslog-ng.trace");
 
   g_process_set_argv_space(argc, (gchar **) argv);
@@ -266,7 +268,7 @@ main(int argc, char *argv[])
    */
   g_process_start();
   app_startup();
-  main_loop_init(&main_loop_options);
+  main_loop_init(main_loop, &main_loop_options);
   rc = main_loop_read_and_init_config();
 
   if (rc)
