@@ -182,44 +182,46 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 }
 
 static inline gboolean
-main_loop_is_terminating(void)
+main_loop_is_terminating(MainLoop *self_static)
 {
-  return main_loop.__is_terminating;
+  return self_static->__is_terminating;
 }
 
 /* called to apply the new configuration once all I/O worker threads have finished */
 static void
 main_loop_reload_config_apply(void)
 {
-  if (main_loop_is_terminating())
+  MainLoop *self_static = main_loop_get_instance();
+
+  if (main_loop_is_terminating(self_static))
     {
-      if (main_loop.new_config)
+      if (self_static->new_config)
         {
-          cfg_free(main_loop.new_config);
-          main_loop.new_config = NULL;
+          cfg_free(self_static->new_config);
+          self_static->new_config = NULL;
         }
       return;
     }
-  main_loop.old_config->persist = persist_config_new();
-  cfg_deinit(main_loop.old_config);
-  cfg_persist_config_move(main_loop.old_config, main_loop.new_config);
+  self_static->old_config->persist = persist_config_new();
+  cfg_deinit(self_static->old_config);
+  cfg_persist_config_move(self_static->old_config, self_static->new_config);
 
-  if (cfg_init(main_loop.new_config))
+  if (cfg_init(self_static->new_config))
     {
       msg_verbose("New configuration initialized");
-      persist_config_free(main_loop.new_config->persist);
-      main_loop.new_config->persist = NULL;
-      cfg_free(main_loop.old_config);
-      main_loop.current_configuration = main_loop.new_config;
+      persist_config_free(self_static->new_config->persist);
+      self_static->new_config->persist = NULL;
+      cfg_free(self_static->old_config);
+      self_static->current_configuration = self_static->new_config;
       service_management_clear_status();
     }
   else
     {
       msg_error("Error initializing new configuration, reverting to old config");
       service_management_publish_status("Error initializing new configuration, using the old config");
-      cfg_persist_config_move(main_loop.new_config, main_loop.old_config);
-      cfg_deinit(main_loop.new_config);
-      if (!cfg_init(main_loop.old_config))
+      cfg_persist_config_move(self_static->new_config, self_static->old_config);
+      cfg_deinit(self_static->new_config);
+      if (!cfg_init(self_static->old_config))
         {
           /* hmm. hmmm, error reinitializing old configuration, we're hosed.
            * Best is to kill ourselves in the hope that the supervisor
@@ -228,10 +230,10 @@ main_loop_reload_config_apply(void)
           kill(getpid(), SIGQUIT);
           g_assert_not_reached();
         }
-      persist_config_free(main_loop.old_config->persist);
-      main_loop.old_config->persist = NULL;
-      cfg_free(main_loop.new_config);
-      main_loop.current_configuration = main_loop.old_config;
+      persist_config_free(self_static->old_config->persist);
+      self_static->old_config->persist = NULL;
+      cfg_free(self_static->new_config);
+      self_static->current_configuration = self_static->old_config;
       goto finish;
     }
 
@@ -240,8 +242,8 @@ main_loop_reload_config_apply(void)
   msg_notice("Configuration reload request received, reloading configuration");
 
 finish:
-  main_loop.new_config = NULL;
-  main_loop.old_config = NULL;
+  self_static->new_config = NULL;
+  self_static->old_config = NULL;
 
   return;
 }
@@ -250,12 +252,14 @@ finish:
 void
 main_loop_reload_config_initiate(void)
 {
-  if (main_loop_is_terminating())
+  MainLoop *self_static = main_loop_get_instance();
+
+  if (main_loop_is_terminating(self_static))
     return;
 
   service_management_publish_status("Reloading configuration");
 
-  if (main_loop.new_config)
+  if (self_static->new_config)
     {
       /* This block is entered only if this function is reentered before
        * main_loop_reload_config_apply() would be called.  In that case we
@@ -263,18 +267,18 @@ main_loop_reload_config_initiate(void)
        * ensure that the contents of the running configuration matches the
        * contents of the file at the time the SIGHUP signal was received.
        */
-      cfg_free(main_loop.new_config);
-      main_loop.new_config = NULL;
+      cfg_free(self_static->new_config);
+      self_static->new_config = NULL;
     }
 
-  main_loop.old_config = main_loop.current_configuration;
+  self_static->old_config = self_static->current_configuration;
   app_pre_config_loaded();
-  main_loop.new_config = cfg_new(0);
-  if (!cfg_read_config(main_loop.new_config, resolvedConfigurablePaths.cfgfilename, FALSE, NULL))
+  self_static->new_config = cfg_new(0);
+  if (!cfg_read_config(self_static->new_config, resolvedConfigurablePaths.cfgfilename, FALSE, NULL))
     {
-      cfg_free(main_loop.new_config);
-      main_loop.new_config = NULL;
-      main_loop.old_config = NULL;
+      cfg_free(self_static->new_config);
+      self_static->new_config = NULL;
+      self_static->old_config = NULL;
       msg_error("Error parsing configuration",
                 evt_tag_str(EVT_TAG_FILENAME, resolvedConfigurablePaths.cfgfilename));
       service_management_publish_status("Error parsing new configuration, using the old config");
@@ -290,10 +294,12 @@ main_loop_reload_config_initiate(void)
 static void
 main_loop_exit_finish(void)
 {
+  MainLoop *self_static = main_loop_get_instance();
+
   /* deinit the current configuration, as at this point we _know_ that no
    * threads are running.  This will unregister ivykis tasks and timers
    * that could fire while the configuration is being destructed */
-  cfg_deinit(main_loop.current_configuration);
+  cfg_deinit(self_static->current_configuration);
   iv_quit();
 }
 
@@ -306,19 +312,21 @@ main_loop_exit_timer_elapsed(void *arg)
 static void
 main_loop_exit_initiate(void)
 {
-  if (main_loop_is_terminating())
+  MainLoop *self_static = main_loop_get_instance();
+
+  if (main_loop_is_terminating(self_static))
     return;
 
   msg_notice("syslog-ng shutting down",
              evt_tag_str("version", SYSLOG_NG_VERSION));
 
-  IV_TIMER_INIT(&main_loop.exit_timer);
+  IV_TIMER_INIT(&self_static->exit_timer);
   iv_validate_now();
-  main_loop.exit_timer.expires = iv_now;
-  main_loop.exit_timer.handler = main_loop_exit_timer_elapsed;
-  timespec_add_msec(&main_loop.exit_timer.expires, 100);
-  iv_timer_register(&main_loop.exit_timer);
-  main_loop.__is_terminating = TRUE;
+  self_static->exit_timer.expires = iv_now;
+  self_static->exit_timer.handler = main_loop_exit_timer_elapsed;
+  timespec_add_msec(&self_static->exit_timer.expires, 100);
+  iv_timer_register(&self_static->exit_timer);
+  self_static->__is_terminating = TRUE;
 }
 
 
@@ -378,13 +386,13 @@ _register_signal_handler(struct iv_signal *signal_poll, gint signum, void (*hand
 }
 
 static void
-setup_signals(void)
+setup_signals(MainLoop *self_static)
 {
   _ignore_signal(SIGPIPE);
-  _register_signal_handler(&main_loop.sighup_poll, SIGHUP, sig_hup_handler);
-  _register_signal_handler(&main_loop.sigchild_poll, SIGCHLD, sig_child_handler);
-  _register_signal_handler(&main_loop.sigterm_poll, SIGTERM, sig_term_handler);
-  _register_signal_handler(&main_loop.sigint_poll, SIGINT, sig_term_handler);
+  _register_signal_handler(&self_static->sighup_poll, SIGHUP, sig_hup_handler);
+  _register_signal_handler(&self_static->sigchild_poll, SIGCHLD, sig_child_handler);
+  _register_signal_handler(&self_static->sigterm_poll, SIGTERM, sig_term_handler);
+  _register_signal_handler(&self_static->sigint_poll, SIGINT, sig_term_handler);
 }
 
 /************************************************************************************
@@ -401,10 +409,10 @@ _register_event(struct iv_event *event, void (*handler)(void *))
 }
 
 static void
-main_loop_init_events(void)
+main_loop_init_events(MainLoop *self_static)
 {
-  _register_event(&main_loop.exit_requested, (void (*)(void *)) main_loop_exit_initiate);
-  _register_event(&main_loop.reload_config_requested, (void (*)(void *)) main_loop_reload_config_initiate);
+  _register_event(&self_static->exit_requested, (void (*)(void *)) main_loop_exit_initiate);
+  _register_event(&self_static->reload_config_requested, (void (*)(void *)) main_loop_reload_config_initiate);
 }
 
 void
@@ -432,10 +440,10 @@ main_loop_init(MainLoop *self_static, MainLoopOptions *options)
   main_loop_io_worker_init();
   main_loop_call_init();
 
-  main_loop_init_events();
+  main_loop_init_events(self_static);
   if (!self_static->options->syntax_only)
     control_init(resolvedConfigurablePaths.ctlfilename);
-  setup_signals();
+  setup_signals(self_static);
 }
 
 /*
@@ -466,16 +474,16 @@ main_loop_read_and_init_config(MainLoop *self_static)
 }
 
 static void
-main_loop_free_config(void)
+main_loop_free_config(MainLoop *self_static)
 {
-  cfg_free(main_loop.current_configuration);
-  main_loop.current_configuration = NULL;
+  cfg_free(self_static->current_configuration);
+  self_static->current_configuration = NULL;
 }
 
 void
 main_loop_deinit(MainLoop *self_static)
 {
-  main_loop_free_config();
+  main_loop_free_config(self_static);
 
   if (!self_static->options->syntax_only)
     control_destroy();
