@@ -442,12 +442,12 @@ main_loop_init(MainLoop *self_static, MainLoopOptions *options)
  * Returns: exit code to be returned to the calling process, 0 on success.
  */
 int
-main_loop_read_and_init_config(void)
+main_loop_read_and_init_config(MainLoop *self_static)
 {
-  MainLoopOptions *options = main_loop.options;
+  MainLoopOptions *options = self_static->options;
 
-  main_loop.current_configuration = cfg_new(0);
-  if (!cfg_read_config(main_loop.current_configuration, resolvedConfigurablePaths.cfgfilename, options->syntax_only,
+  self_static->current_configuration = cfg_new(0);
+  if (!cfg_read_config(self_static->current_configuration, resolvedConfigurablePaths.cfgfilename, options->syntax_only,
                        options->preprocess_into))
     {
       return 1;
@@ -458,7 +458,7 @@ main_loop_read_and_init_config(void)
       return 0;
     }
 
-  if (!main_loop_initialize_state(main_loop.current_configuration, resolvedConfigurablePaths.persist_file))
+  if (!main_loop_initialize_state(self_static->current_configuration, resolvedConfigurablePaths.persist_file))
     {
       return 2;
     }
