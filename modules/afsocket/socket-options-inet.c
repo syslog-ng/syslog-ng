@@ -145,7 +145,7 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
           if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
             setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
         }
-      
+
       if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))
         {
 #ifdef IP_FREEBIND
