@@ -115,7 +115,8 @@ static GString *
 control_connection_stop_process(GString *command)
 {
   GString *result = g_string_new("OK Shutdown initiated");
-  main_loop_exit();
+  MainLoop *main_loop = main_loop_get_instance();
+  main_loop_exit(main_loop);
   return result;
 }
 
@@ -123,7 +124,8 @@ static GString *
 control_connection_reload(GString *command)
 {
   GString *result = g_string_new("OK Config reload initiated");
-  main_loop_reload_config();
+  MainLoop *main_loop = main_loop_get_instance();
+  main_loop_reload_config(main_loop);
   return result;
 }
 
