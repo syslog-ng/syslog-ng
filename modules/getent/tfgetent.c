@@ -119,7 +119,8 @@ static struct
 {
   gchar *entity;
   lookup_method lookup;
-} tf_getent_lookup_map[] =  {
+} tf_getent_lookup_map[] =
+{
   { "group", tf_getent_group },
   { "passwd", tf_getent_passwd },
   { "services", tf_getent_services },

@@ -20,7 +20,8 @@
  * COPYING for details.
  */
 
-static formatter_map_t passwd_field_map[] = {
+static formatter_map_t passwd_field_map[] =
+{
   { "name", _getent_format_string, offsetof(struct passwd, pw_name) },
   { "uid", _getent_format_uid_gid, offsetof(struct passwd, pw_uid) },
   { "gid", _getent_format_uid_gid, offsetof(struct passwd, pw_gid) },
