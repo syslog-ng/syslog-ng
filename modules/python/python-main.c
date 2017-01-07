@@ -58,6 +58,14 @@ _py_construct_main_module(void)
 
   /* create a new module */
   module = PyImport_AddModule("_syslogng");
+  if (!module)
+    {
+      gchar buf[256];
+
+      msg_error("Error creating syslog-ng main module",
+                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+      return NULL;
+    }
 
   /* make sure __builtins__ is there, it is normally automatically done for
    * __main__ and any imported modules */
@@ -123,6 +131,9 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *code)
   PyObject *dict;
 
   module = _py_get_main_module(pc);
+  if (!module)
+    return FALSE;
+
   dict = PyModule_GetDict(module);
   result = PyRun_String(code, Py_file_input, dict, dict);
 
