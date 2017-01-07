@@ -112,6 +112,7 @@ void
 grouping_by_set_time(GroupingBy *self, const LogStamp *ls)
 {
   GTimeVal now;
+  gchar buf[256];
 
   /* clamp the current time between the timestamp of the current message
    * (low limit) and the current system time (high limit).  This ensures
@@ -125,8 +126,12 @@ grouping_by_set_time(GroupingBy *self, const LogStamp *ls)
     now.tv_sec = ls->tv_sec;
 
   timer_wheel_set_time(self->timer_wheel, now.tv_sec);
-  msg_debug("Advancing correllate() current time because of an incoming message",
-            evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)));
+  msg_debug("Advancing grouping-by() current time because of an incoming message",
+            evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
+            evt_tag_str("location",
+                        log_expr_node_format_location(self->super.super.super.expr_node,
+                            buf, sizeof(buf))));
+
 }
 
 /*
@@ -142,6 +147,7 @@ _grouping_by_timer_tick(GroupingBy *self)
 {
   GTimeVal now;
   glong diff;
+  gchar buf[256];
 
   g_static_mutex_lock(&self->lock);
   cached_g_current_time(&now);
@@ -152,8 +158,11 @@ _grouping_by_timer_tick(GroupingBy *self)
       glong diff_sec = diff / 1e6;
 
       timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
-      msg_debug("Advancing correllate() current time because of timer tick",
-                evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)));
+      msg_debug("Advancing grouping-by() current time because of timer tick",
+                evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
+                evt_tag_str("location",
+                            log_expr_node_format_location(self->super.super.super.expr_node,
+                                buf, sizeof(buf))));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
       self->last_tick = now;
@@ -225,7 +234,7 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
   GroupingBy *self = (GroupingBy *) timer_wheel_get_associated_data(wheel);
   gchar buf[256];
 
-  msg_debug("Expiring correllate() correllation context",
+  msg_debug("Expiring grouping-by() correllation context",
             evt_tag_long("utc", timer_wheel_get_time(wheel)),
             evt_tag_str("context-id", context->key.session_id),
             evt_tag_str("location",
@@ -245,7 +254,7 @@ grouping_by_format_persist_name(GroupingBy *self)
 {
   static gchar persist_name[512];
 
-  g_snprintf(persist_name, sizeof(persist_name), "correllation()");
+  g_snprintf(persist_name, sizeof(persist_name), "grouping-by()");
   return persist_name;
 }
 
@@ -297,7 +306,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
       if (self->trigger_condition_expr &&
           filter_expr_eval(self->trigger_condition_expr, msg))
         {
-          msg_verbose("Correllation close-condition() met, closing state",
+          msg_verbose("Correllation trigger() met, closing state",
                       evt_tag_str("key", context->key.session_id),
                       evt_tag_int("timeout", self->timeout),
                       evt_tag_int("num_messages", context->messages->len),
