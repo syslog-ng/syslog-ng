@@ -53,8 +53,7 @@ _py_construct_main_module(void)
   PyObject *modules = PyImport_GetModuleDict();
 
   /* make sure the module registry doesn't contain our module */
-  if (PyDict_Contains(modules, PyBytes_FromString("_syslogng")))
-    PyDict_DelItemString(modules, "_syslogng");
+  PyDict_DelItemString(modules, "_syslogng");
 
   /* create a new module */
   module = PyImport_AddModule("_syslogng");
