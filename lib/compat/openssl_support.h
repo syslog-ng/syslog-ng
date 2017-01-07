@@ -49,5 +49,9 @@ uint32_t X509_get_extension_flags(X509 *x);
 #define EVP_MD_CTX_destroy(md_ctx) EVP_MD_CTX_cleanup(md_ctx) 
 #endif
 
+#if !SYSLOG_NG_HAVE_DECL_ASN1_STRING_GET0_DATA
+#define ASN1_STRING_get0_data ASN1_STRING_data
+#endif
+
 #endif
 
