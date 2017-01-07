@@ -61,6 +61,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "destport",           KW_DESTPORT },
   { "ip_ttl",             KW_IP_TTL },
   { "ip_tos",             KW_IP_TOS },
+  { "ip_freebind",        KW_IP_FREEBIND },
   { "so_broadcast",       KW_SO_BROADCAST },
   { "so_rcvbuf",          KW_SO_RCVBUF },
   { "so_sndbuf",          KW_SO_SNDBUF },
