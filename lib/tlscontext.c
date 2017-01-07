@@ -584,7 +584,7 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
               gen_name = sk_GENERAL_NAME_value(alt_names, i);
               if (gen_name->type == GEN_DNS)
                 {
-                  guchar *dnsname = ASN1_STRING_data(gen_name->d.dNSName);
+                  const guchar *dnsname = ASN1_STRING_get0_data(gen_name->d.dNSName);
                   guint dnsname_len = ASN1_STRING_length(gen_name->d.dNSName);
 
                   if (dnsname_len > sizeof(pattern_buf) - 1)

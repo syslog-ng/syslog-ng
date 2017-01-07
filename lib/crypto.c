@@ -34,9 +34,10 @@
 #include <openssl/ssl.h>
 #include <stdio.h>
 
+static gboolean randfile_loaded;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static gint ssl_lock_count;
 static GStaticMutex *ssl_locks;
-static gboolean randfile_loaded;
 
 static void
 ssl_locking_callback(int mode, int type, const char *file, int line)
@@ -83,6 +84,7 @@ crypto_deinit_threading(void)
     }
   g_free(ssl_locks);
 }
+#endif
 
 void
 crypto_deinit(void)
@@ -95,16 +97,20 @@ crypto_deinit(void)
       if (rnd_file[0])
         RAND_write_file(rnd_file);
     }
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
   crypto_deinit_threading();
+#endif
 }
 
 void
 crypto_init(void)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
   SSL_library_init();
   SSL_load_error_strings();
   OpenSSL_add_all_algorithms();
   crypto_init_threading();
+#endif
 
   if (RAND_status() < 0 || getenv("RANDFILE"))
     {
