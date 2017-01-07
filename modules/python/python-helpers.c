@@ -43,7 +43,7 @@ _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
 }
 
 const gchar *
-_py_format_exception_text(gchar *buf, gsize buf_len)
+_py_fetch_and_format_exception_text(gchar *buf, gsize buf_len)
 {
   PyObject *exc, *value, *tb, *str;
 
@@ -109,7 +109,7 @@ _py_do_import(const gchar *modname)
 
       msg_error("Error loading Python module",
                 evt_tag_str("module", modname),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
       return NULL;
     }
   return modobj;

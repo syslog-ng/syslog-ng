@@ -131,7 +131,7 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *code)
       gchar buf[256];
 
       msg_error("Error evaluating global Python block",
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
       return FALSE;
     }
   Py_XDECREF(result);
