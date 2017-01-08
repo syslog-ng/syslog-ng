@@ -250,9 +250,9 @@ finish:
 
 /* initiate configuration reload */
 void
-main_loop_reload_config_initiate(void)
+main_loop_reload_config_initiate(gpointer user_data)
 {
-  MainLoop *self = main_loop_get_instance();
+  MainLoop *self = (MainLoop *) user_data;
 
   if (main_loop_is_terminating(self))
     return;
@@ -310,9 +310,9 @@ main_loop_exit_timer_elapsed(void *arg)
 }
 
 static void
-main_loop_exit_initiate(void)
+main_loop_exit_initiate(gpointer user_data)
 {
-  MainLoop *self = main_loop_get_instance();
+  MainLoop *self = (MainLoop *) user_data;
 
   if (main_loop_is_terminating(self))
     return;
@@ -335,19 +335,23 @@ main_loop_exit_initiate(void)
  ************************************************************************************/
 
 static void
-sig_hup_handler(void *s)
+sig_hup_handler(gpointer user_data)
 {
-  main_loop_reload_config_initiate();
+  MainLoop *self = (MainLoop *) user_data;
+
+  main_loop_reload_config_initiate(self);
 }
 
 static void
-sig_term_handler(void *s)
+sig_term_handler(gpointer user_data)
 {
-  main_loop_exit_initiate();
+  MainLoop *self = (MainLoop *) user_data;
+
+  main_loop_exit_initiate(self);
 }
 
 static void
-sig_child_handler(void *s)
+sig_child_handler(gpointer user_data)
 {
   pid_t pid;
   int status;
@@ -375,12 +379,12 @@ _ignore_signal(gint signum)
 }
 
 static void
-_register_signal_handler(struct iv_signal *signal_poll, gint signum, void (*handler)(void *))
+_register_signal_handler(struct iv_signal *signal_poll, gint signum, void (*handler)(void *), gpointer user_data)
 {
   IV_SIGNAL_INIT(signal_poll);
   signal_poll->signum = signum;
   signal_poll->flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  signal_poll->cookie = NULL;
+  signal_poll->cookie = user_data;
   signal_poll->handler = handler;
   iv_signal_register(signal_poll);
 }
@@ -389,10 +393,10 @@ static void
 setup_signals(MainLoop *self)
 {
   _ignore_signal(SIGPIPE);
-  _register_signal_handler(&self->sighup_poll, SIGHUP, sig_hup_handler);
-  _register_signal_handler(&self->sigchild_poll, SIGCHLD, sig_child_handler);
-  _register_signal_handler(&self->sigterm_poll, SIGTERM, sig_term_handler);
-  _register_signal_handler(&self->sigint_poll, SIGINT, sig_term_handler);
+  _register_signal_handler(&self->sighup_poll, SIGHUP, sig_hup_handler, self);
+  _register_signal_handler(&self->sigchild_poll, SIGCHLD, sig_child_handler, self);
+  _register_signal_handler(&self->sigterm_poll, SIGTERM, sig_term_handler, self);
+  _register_signal_handler(&self->sigint_poll, SIGINT, sig_term_handler, self);
 }
 
 /************************************************************************************
@@ -400,19 +404,19 @@ setup_signals(MainLoop *self)
  ************************************************************************************/
 
 static void
-_register_event(struct iv_event *event, void (*handler)(void *))
+_register_event(struct iv_event *event, void (*handler)(void *), gpointer user_data)
 {
   IV_EVENT_INIT(event);
   event->handler = handler;
-  event->cookie = NULL;
+  event->cookie = user_data;
   iv_event_register(event);
 }
 
 static void
 main_loop_init_events(MainLoop *self)
 {
-  _register_event(&self->exit_requested, (void (*)(void *)) main_loop_exit_initiate);
-  _register_event(&self->reload_config_requested, (void (*)(void *)) main_loop_reload_config_initiate);
+  _register_event(&self->exit_requested, main_loop_exit_initiate, self);
+  _register_event(&self->reload_config_requested, main_loop_reload_config_initiate, self);
 }
 
 void
