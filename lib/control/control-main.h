@@ -22,11 +22,12 @@
  *
  */
 
-#ifndef CONTROL_H_INCLUDED
-#define CONTROL_H_INCLUDED
+#ifndef CONTROL_MAIN_H_INCLUDED
+#define CONTROL_MAIN_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "mainloop.h"
 
-typedef GString *(*CommandFunction)(GString *, gpointer user_data);
+void control_init(MainLoop *main_loop, const gchar *control_name);
+void control_destroy(void);
 
 #endif
