@@ -244,6 +244,7 @@ void
 stats_init(void)
 {
   stats_registry_init();
+  stats_register_control_commands();
 }
 
 void
