@@ -57,7 +57,8 @@ volatile gboolean main_loop_workers_quit;
 static gint main_loop_workers_running;
 
 /* the function to be killed when all threads have exited */
-static void (*main_loop_workers_sync_func)(void);
+static void (*main_loop_workers_sync_func)(gpointer user_data);
+gpointer main_loop_workers_sync_func_user_data;
 static struct iv_task main_loop_workers_reenable_jobs_task;
 
 /* thread ID allocation */
@@ -242,7 +243,7 @@ main_loop_worker_job_complete(void)
        */
 
       iv_task_register(&main_loop_workers_reenable_jobs_task);
-      main_loop_workers_sync_func();
+      main_loop_workers_sync_func(main_loop_workers_sync_func_user_data);
     }
 }
 
@@ -331,7 +332,7 @@ _reenable_worker_jobs(void *s)
 }
 
 void
-main_loop_worker_sync_call(void (*func)(void))
+main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
 {
 #if 0
   /* FIXME */
@@ -342,11 +343,12 @@ main_loop_worker_sync_call(void (*func)(void))
 
   if (main_loop_workers_running == 0)
     {
-      func();
+      func(user_data);
     }
   else
     {
       main_loop_workers_sync_func = func;
+      main_loop_workers_sync_func_user_data = user_data;
       _request_all_threads_to_exit();
     }
 }
