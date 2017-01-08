@@ -26,11 +26,12 @@
 #define CONTROL_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "mainloop.h"
 
-typedef GString* (*CommandFunction)(GString *);
+typedef GString *(*CommandFunction)(GString *, gpointer user_data);
 
-void  control_init(const gchar *control_name);
+void  control_init(MainLoop *main_loop, const gchar *control_name);
 void control_destroy(void);
-void control_register_command(const gchar *command_name, const gchar *description, CommandFunction function);
+void control_register_command(const gchar *command_name, const gchar *description, CommandFunction function, gpointer user_data);
 
 #endif
