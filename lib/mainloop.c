@@ -514,7 +514,7 @@ main_loop_run(MainLoop *self)
   if (self->options->interactive_mode)
     {
       plugin_load_module("python", self->current_configuration, NULL);
-      debugger_start(self->current_configuration);
+      debugger_start(self, self->current_configuration);
     }
   iv_main();
   service_management_publish_status("Shutting down...");

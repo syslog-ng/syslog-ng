@@ -26,12 +26,13 @@
 
 #include "syslog-ng.h"
 #include "cfg.h"
+#include "mainloop.h"
 
 typedef struct _Debugger Debugger;
 
 typedef gchar *(*FetchCommandFunc)(void);
 
-Debugger *debugger_new(GlobalConfig *cfg);
+Debugger *debugger_new(MainLoop *main_loop, GlobalConfig *cfg);
 void debugger_free(Debugger *self);
 
 gchar *debugger_builtin_fetch_command(void);
