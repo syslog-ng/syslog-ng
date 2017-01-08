@@ -189,9 +189,9 @@ main_loop_is_terminating(MainLoop *self)
 
 /* called to apply the new configuration once all I/O worker threads have finished */
 static void
-main_loop_reload_config_apply(void)
+main_loop_reload_config_apply(gpointer user_data)
 {
-  MainLoop *self = main_loop_get_instance();
+  MainLoop *self = (MainLoop *) user_data;
 
   if (main_loop_is_terminating(self))
     {
@@ -284,7 +284,7 @@ main_loop_reload_config_initiate(gpointer user_data)
       service_management_publish_status("Error parsing new configuration, using the old config");
       return;
     }
-  main_loop_worker_sync_call(main_loop_reload_config_apply);
+  main_loop_worker_sync_call(main_loop_reload_config_apply, self);
 }
 
 /************************************************************************************
@@ -292,9 +292,9 @@ main_loop_reload_config_initiate(gpointer user_data)
  ************************************************************************************/
 
 static void
-main_loop_exit_finish(void)
+main_loop_exit_finish(gpointer user_data)
 {
-  MainLoop *self = main_loop_get_instance();
+  MainLoop *self = (MainLoop *) user_data;
 
   /* deinit the current configuration, as at this point we _know_ that no
    * threads are running.  This will unregister ivykis tasks and timers
@@ -304,9 +304,11 @@ main_loop_exit_finish(void)
 }
 
 static void
-main_loop_exit_timer_elapsed(void *arg)
+main_loop_exit_timer_elapsed(gpointer user_data)
 {
-  main_loop_worker_sync_call(main_loop_exit_finish);
+  MainLoop *self = (MainLoop *) user_data;
+
+  main_loop_worker_sync_call(main_loop_exit_finish, self);
 }
 
 static void
@@ -324,6 +326,7 @@ main_loop_exit_initiate(gpointer user_data)
   iv_validate_now();
   self->exit_timer.expires = iv_now;
   self->exit_timer.handler = main_loop_exit_timer_elapsed;
+  self->exit_timer.cookie = self;
   timespec_add_msec(&self->exit_timer.expires, 100);
   iv_timer_register(&self->exit_timer);
   self->__is_terminating = TRUE;
