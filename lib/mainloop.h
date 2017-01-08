@@ -54,15 +54,15 @@ main_loop_is_main_thread(void)
   return threads_equal(main_thread_handle, get_thread_id());
 }
 
-void main_loop_reload_config(MainLoop *self_static);
-void main_loop_exit(MainLoop *self_static);
+void main_loop_reload_config(MainLoop *self);
+void main_loop_exit(MainLoop *self);
 
-int main_loop_read_and_init_config(MainLoop *self_static);
-void main_loop_run(MainLoop *self_static);
+int main_loop_read_and_init_config(MainLoop *self);
+void main_loop_run(MainLoop *self);
 
 MainLoop *main_loop_get_instance(void);
-void main_loop_init(MainLoop *self_static, MainLoopOptions *options);
-void main_loop_deinit(MainLoop *self_static);
+void main_loop_init(MainLoop *self, MainLoopOptions *options);
+void main_loop_deinit(MainLoop *self);
 
 void main_loop_add_options(GOptionContext *ctx);
 
