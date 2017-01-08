@@ -42,6 +42,8 @@ compiled, these are:
     (--enable-tcp-wrapper)
   * Glib a generic I/O library used by a wide variety of applications
   * EventLog a generic event logging library developed by BalaBit
+  * pcre to enable Perl Compatible Regular Expressions
+  * OpenSSL for TLS/SSL communication
 
 Once these libraries are installed, you can start compiling syslog-ng:
 
