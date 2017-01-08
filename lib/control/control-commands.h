@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,13 +22,13 @@
  *
  */
 
-#ifndef CONTROL_MAIN_H_INCLUDED
-#define CONTROL_MAIN_H_INCLUDED
+#ifndef CONTROL_COMMANDS_H_INCLUDED
+#define CONTROL_COMMANDS_H_INCLUDED
 
+#include "control/control.h"
 #include "mainloop.h"
-#include "control/control-commands.h"
 
-void control_init(MainLoop *main_loop, const gchar *control_name);
-void control_destroy(void);
+void control_register_command(const gchar *command_name, const gchar *description, CommandFunction function, gpointer user_data);
+GList *control_register_default_commands(MainLoop *main_loop);
 
 #endif
