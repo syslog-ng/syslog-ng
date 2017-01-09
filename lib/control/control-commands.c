@@ -29,7 +29,8 @@
 static GList *command_list = NULL;
 
 void
-control_register_command(const gchar *command_name, const gchar *description, CommandFunction function, gpointer user_data)
+control_register_command(const gchar *command_name, const gchar *description, CommandFunction function,
+                         gpointer user_data)
 {
   ControlCommand *new_command = g_new0(ControlCommand, 1);
   new_command->command_name = command_name;
