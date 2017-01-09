@@ -26,6 +26,7 @@
 #include "stats/stats-syslog.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-log.h"
+#include "stats/stats-control.h"
 #include "timeutils.h"
 
 #include <string.h>
