@@ -62,10 +62,13 @@ start
           LL_BLOCK
           { cfg_lexer_pop_context(lexer); }
           {
-	    python_evaluate_global_code(configuration, $4);
+            gboolean result;
+
+	    result = python_evaluate_global_code(configuration, $4);
 	    free($4);
-	    *instance = (void *) 1;
-	    YYACCEPT;
+            CHECK_ERROR(result, @1, "Error processing global python block");
+            *instance = (void *) 1;
+            YYACCEPT;
           }
         ;
 
