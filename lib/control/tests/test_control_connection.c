@@ -23,6 +23,7 @@
  */
 
 #include "testutils.h"
+#include "control/control.h"
 #include "control/control-server.h"
 #include "apphook.h"
 
@@ -136,7 +137,7 @@ control_connection_moc_new(ControlServer *server)
 }
 
 GString *
-test_command(GString *command)
+test_command(GString *command, gpointer user_data)
 {
   assert_string(command->str,"test command", "Bad command handling");
   return g_string_new("OK");
