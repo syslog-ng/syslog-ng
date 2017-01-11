@@ -102,6 +102,8 @@ _strchr_optimized_for_single_char_haystack(const char *str, int c)
 {
   if (str[0] == c)
     return (char *) str;
+  else if (str[0] == '\0')
+    return NULL;
   if (str[1] == '\0')
     {
       if (c != '\0')
