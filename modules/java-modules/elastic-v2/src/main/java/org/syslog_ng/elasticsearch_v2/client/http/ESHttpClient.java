@@ -35,6 +35,7 @@ import org.syslog_ng.elasticsearch_v2.client.ESClient;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.http.HttpMessageProcessor;
+import java.util.Set;
 
 import java.io.IOException;
 
@@ -51,11 +52,11 @@ public class ESHttpClient implements ESClient {
 	}
 
 	private JestClient createClient() {
-		String connectionUrl = options.getClusterUrl();
+		Set<String> connectionUrl = options.getClusterUrl();
 		JestClientFactory clientFactory = new JestClientFactory();
 		clientFactory.setHttpClientConfig(new HttpClientConfig
 				.Builder(connectionUrl)
-				.multiThreaded(false)
+				.multiThreaded(true)
 				.build());
 		return clientFactory.getObject();
 	}
