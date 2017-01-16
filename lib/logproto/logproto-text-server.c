@@ -398,7 +398,18 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
   else
     {
       if (!log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
-        goto exit;
+        {
+          if (buffer_bytes == state->buffer_size)
+            {
+              log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
+              goto success;
+            }
+          else
+            {
+              log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
+              goto exit;
+            }
+        }
     }
 
 success:
