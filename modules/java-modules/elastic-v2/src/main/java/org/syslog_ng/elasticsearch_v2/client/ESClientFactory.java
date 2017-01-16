@@ -45,6 +45,9 @@ public class ESClientFactory {
 		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_HTTP)) {
 			return new ESHttpClient(options);
 		}
+		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_HTTPS)) {
+			return new ESHttpClient(options);
+		}
 		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_SEARCHGUARD)) {
 			return new ESTransportSearchGuardClient(options);
 		}
