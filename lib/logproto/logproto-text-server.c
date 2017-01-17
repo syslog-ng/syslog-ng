@@ -377,42 +377,36 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
                                         const guchar **msg, gsize *msg_len)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
-  const guchar *eol;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean result = FALSE;
 
-  eol = log_proto_text_server_locate_next_eol(self, state, buffer_start, buffer_bytes);
+  const guchar *eol = log_proto_text_server_locate_next_eol(self, state, buffer_start, buffer_bytes);
 
-  if (!eol &&
-      ((buffer_bytes == state->buffer_size) ||
-       log_proto_buffered_server_is_input_closed(&self->super)))
+  if (!eol)
     {
-      log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
-      goto success;
-    }
-  else if (!eol)
-    {
-      log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
-      goto exit;
-    }
-  else
-    {
-      if (!log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
+      if (buffer_bytes == state->buffer_size || log_proto_buffered_server_is_input_closed(&self->super))
         {
-          if (buffer_bytes == state->buffer_size)
-            {
-              log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
-              goto success;
-            }
-          else
-            {
-              log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
-              goto exit;
-            }
+          log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
+        }
+      else
+        {
+          log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
+          goto exit;
+        }
+    }
+  else if (!log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
+    {
+      if (buffer_bytes == state->buffer_size)
+        {
+          log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
+        }
+      else
+        {
+          log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
+          goto exit;
         }
     }
 
-success:
   log_proto_text_server_remove_trailing_newline(msg, msg_len);
   result = TRUE;
 
@@ -420,7 +414,6 @@ exit:
   log_proto_buffered_server_put_state(&self->super);
   return result;
 }
-
 
 static void
 log_proto_text_server_free(LogProtoServer *s)
