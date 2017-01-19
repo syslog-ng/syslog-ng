@@ -117,6 +117,17 @@ log_proto_text_server_prepare(LogProtoServer *s, GIOCondition *cond)
   return avail;
 }
 
+static void
+log_proto_test_server_maybe_realloc_reverse_buffer(LogProtoTextServer *self, gsize buffer_length)
+{
+  if (self->reverse_buffer_len >= buffer_length)
+    return;
+
+  /* we free and malloc, since we never need the data still in reverse buffer */
+  g_free(self->reverse_buffer);
+  self->reverse_buffer_len = buffer_length;
+  self->reverse_buffer = g_malloc(buffer_length);
+}
 
 /*
  * returns the number of bytes that represent the UTF8 encoding buffer
@@ -153,13 +164,9 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
   if (self->convert_scale)
     return g_utf8_strlen((gchar *) buffer, buffer_len) * self->convert_scale;
 
-  if (self->reverse_buffer_len < buffer_len * 6)
-    {
-      /* we free and malloc, since we never need the data still in reverse buffer */
-      g_free(self->reverse_buffer);
-      self->reverse_buffer_len = buffer_len * 6;
-      self->reverse_buffer = g_malloc(buffer_len * 6);
-    }
+
+  /* Multiplied by 6, because 1 character can be maximum 6 bytes in UTF-8 encoding */
+  log_proto_test_server_maybe_realloc_reverse_buffer(self, buffer_len * 6);
 
   avail_out = self->reverse_buffer_len;
   out = self->reverse_buffer;
@@ -368,7 +375,6 @@ log_proto_text_server_message_size_too_large(LogProtoTextServer *self, gsize buf
 {
   return buffer_bytes >= self->super.super.options->max_msg_size;
 }
-
 
 /**
  * log_proto_text_server_fetch_from_buffer:
