@@ -112,6 +112,14 @@ _open_fd(const gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_op
   return fd;
 }
 
+gboolean
+affile_is_linux_dev_stdin(const gchar *filename)
+{
+  if (strcmp(filename, "/dev/stdin") == 0)
+    return TRUE;
+  return FALSE;
+}
+
 static inline void
 _validate_file_type(const gchar *name, FileOpenOptions *open_opts)
 {
@@ -124,7 +132,7 @@ _validate_file_type(const gchar *name, FileOpenOptions *open_opts)
           msg_warning("WARNING: you are using the pipe driver, underlying file is not a FIFO, it should be used by file()",
                       evt_tag_str("filename", name));
         }
-      else if (!open_opts->is_pipe && S_ISFIFO(st.st_mode))
+      else if (!open_opts->is_pipe && S_ISFIFO(st.st_mode) && !affile_is_linux_dev_stdin(name))
         {
           msg_warning("WARNING: you are using the file driver, underlying file is a FIFO, it should be used by pipe()",
                       evt_tag_str("filename", name));

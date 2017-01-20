@@ -22,6 +22,7 @@
  */
 
 #include "transport-file.h"
+#include "logpipe.h"
 
 #include <errno.h>
 #include <unistd.h>
@@ -77,5 +78,31 @@ log_transport_file_new(gint fd)
   LogTransportFile *self = g_new0(LogTransportFile, 1);
 
   log_transport_file_init_instance(self, fd);
+  return &self->super;
+}
+
+static gssize
+log_transport_stdin_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+{
+  LogTransportStdin *self = (LogTransportStdin *) s;
+  gint rc;
+
+  rc = read(self->super.fd, buf, buflen);
+  if (rc == 0)
+    log_pipe_notify(self->control, NC_STDIN_EOF, NULL);
+
+  return rc;
+}
+
+LogTransport *
+log_transport_stdin_new(gint fd, LogPipe *control)
+{
+  LogTransportStdin *self = g_new0(LogTransportStdin, 1);
+
+  log_transport_init_instance(&self->super, fd);
+  self->super.read = log_transport_stdin_read_method;
+  self->super.write = NULL;
+  self->super.free_fn = log_transport_free_method;
+  self->control = control;
   return &self->super;
 }

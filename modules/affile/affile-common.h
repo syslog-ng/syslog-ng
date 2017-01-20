@@ -35,5 +35,6 @@ typedef struct _FileOpenOptions
 } FileOpenOptions;
 
 gboolean affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd);
+gboolean affile_is_linux_dev_stdin(const gchar *filename);
 
 #endif

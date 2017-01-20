@@ -51,6 +51,7 @@
 #include <iv.h>
 
 #define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
+#define STDIN_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_LARGEFILE)
 #define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
 gboolean
@@ -202,7 +203,9 @@ affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
 static LogTransport *
 affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
 {
-  if (self->file_open_options.is_pipe)
+  if (affile_is_linux_dev_stdin(self->filename->str))
+    return log_transport_stdin_new(fd, &self->super.super.super);
+  else if (self->file_open_options.is_pipe)
     return log_transport_pipe_new(fd);
   else if (self->follow_freq > 0)
     return log_transport_file_new(fd);
@@ -391,6 +394,13 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
       affile_sd_reopen_on_notify(s, FALSE);
       break;
     }
+    case NC_STDIN_EOF:
+    {
+      msg_verbose("Reached EOF while reading from /dev/stdin");
+      MainLoop *main_loop = main_loop_get_instance();
+      main_loop_exit(main_loop);
+      break;
+    }
     default:
       break;
     }
@@ -498,7 +508,11 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
   self->file_open_options.is_pipe = FALSE;
-  self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  if (affile_is_linux_dev_stdin(filename))
+    self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  else
+    self->file_open_options.open_flags = STDIN_OPEN_FLAGS;
+
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {

@@ -37,4 +37,13 @@ struct _LogTransportFile
 void log_transport_file_init_instance(LogTransportFile *self, gint fd);
 LogTransport *log_transport_file_new(gint fd);
 
+typedef struct _LogTransportStdin LogTransportStdin;
+struct _LogTransportStdin
+{
+  LogTransport super;
+  LogPipe *control;
+};
+
+LogTransport *log_transport_stdin_new(gint fd, LogPipe *control);
+
 #endif
