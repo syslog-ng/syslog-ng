@@ -274,7 +274,8 @@ main_loop_reload_config_initiate(gpointer user_data)
   self->old_config = self->current_configuration;
   app_pre_config_loaded();
   self->new_config = cfg_new(0);
-  if (!cfg_read_config(self->new_config, resolvedConfigurablePaths.cfgfilename, FALSE, NULL))
+  if (!cfg_open_config(self->new_config, resolvedConfigurablePaths.cfgfilename)
+      || !cfg_read_config(self->new_config, FALSE, NULL))
     {
       cfg_free(self->new_config);
       self->new_config = NULL;

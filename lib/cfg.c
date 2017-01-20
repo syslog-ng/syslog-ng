@@ -426,39 +426,45 @@ cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, 
 }
 
 gboolean
-cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gchar *preprocess_into)
+cfg_open_config(GlobalConfig *self, const gchar *fname)
 {
   FILE *cfg_file;
-  gint res;
 
   self->filename = fname;
-
   if ((cfg_file = fopen(fname, "r")) != NULL)
     {
-      CfgLexer *lexer;
-      GString *preprocess_output = g_string_sized_new(8192);
-
-      lexer = cfg_lexer_new(cfg_file, fname, preprocess_output);
-      res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
-      fclose(cfg_file);
-      if (preprocess_into)
-        {
-          cfg_dump_processed_config(preprocess_output, preprocess_into);
-        }
-      g_string_free(preprocess_output, TRUE);
-      if (res)
-        {
-          /* successfully parsed */
-          return TRUE;
-        }
+      self->cfg_file = cfg_file;
     }
   else
     {
       msg_error("Error opening configuration file",
                 evt_tag_str(EVT_TAG_FILENAME, fname),
                 evt_tag_errno(EVT_TAG_OSERROR, errno));
+      return FALSE;
     }
+  return TRUE;
+}
 
+gboolean
+cfg_read_config(GlobalConfig *self, gboolean syntax_only, gchar *preprocess_into)
+{
+  gint res;
+  CfgLexer *lexer;
+  GString *preprocess_output = g_string_sized_new(8192);
+
+  lexer = cfg_lexer_new(self->cfg_file, self->filename, preprocess_output);
+  res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
+  fclose(self->cfg_file);
+  if (preprocess_into)
+    {
+      cfg_dump_processed_config(preprocess_output, preprocess_into);
+    }
+  g_string_free(preprocess_output, TRUE);
+  if (res)
+    {
+      /* successfully parsed */
+      return TRUE;
+    }
   return FALSE;
 }
 
