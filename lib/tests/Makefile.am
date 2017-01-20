@@ -13,7 +13,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_pathutils	\
 	lib/tests/test_utf8utils	\
 	lib/tests/test_userdb		\
-	lib/tests/test_str-utils
+	lib/tests/test_str-utils	\
+	lib/tests/test_cli
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
@@ -93,6 +94,12 @@ lib_tests_test_str_utils_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_str_utils_LDADD	=	\
 	$(TEST_LDADD)
+
+lib_tests_test_cli_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_cli_LDADD	=	\
+	$(TEST_LDADD)
+
 
 CLEANFILES				+= \
 	test_values.persist		   \

@@ -1,5 +1,6 @@
  ignore
 scl/syslogconf/convert-syslogconf.awk$
+scl/cli/*
 .*/.*\.am$
 .*\.(yml|md|y|l|txt|xml|xsd|log|key|crt|files|in|conf\.example|gradle|mk|supp|sub|guess|list|pc\.cmake)$
 \..*rc$
@@ -29,6 +30,8 @@ doc/man
 (_configs\.sed|\.project|\.cproject|config\.status)$
 stamp-h1$
 tests/functional/test\.conf$
+lib/cli.*
+lib/tests/test_cli.c
 scripts/update-patterndb$
 (contrib|debian)
 doc/ChangeLog\.[0-9]$
