@@ -109,9 +109,9 @@ Feedback
 ========
 
 We are really interested in who uses our software, so if you do and you like
-what you see, please tell us about it.  A simple "thanks" is also enough,
-but learning about your usecase, experience, things to improve would be most
-appreciated.
+what you see, please tell us about it.  A "star" on github, an email
+with "thanks" in it is lots already, but learning about your usecase,
+experience, things to improve would be most appreciated.
 
 Just send an email to feedback (at) syslog-ng.org.
 
