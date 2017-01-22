@@ -28,7 +28,8 @@
 void
 test_debugger(void)
 {
-  Debugger *debugger = debugger_new(configuration);
+  MainLoop *main_loop = main_loop_get_instance();
+  Debugger *debugger = debugger_new(main_loop, configuration);
   debugger_free(debugger);
 }
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Balabit
- * Copyright (c) 2015 Balázs Scheidler
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,24 +21,31 @@
  * COPYING for details.
  *
  */
+#include "stats/stats-control.h"
+#include "stats/stats-csv.h"
+#include "stats/stats-counter.h"
+#include "control/control-commands.h"
 
-#include "debugger/debugger.h"
-#include "logpipe.h"
-
-static Debugger *current_debugger;
-
-static gboolean
-_pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+static GString *
+control_connection_send_stats(GString *command, gpointer user_data)
 {
-  return debugger_stop_at_breakpoint(current_debugger, s, msg);
+  gchar *stats = stats_generate_csv();
+  GString *result = g_string_new(stats);
+  g_free(stats);
+  return result;
+}
+
+static GString *
+control_connection_reset_stats(GString *command, gpointer user_data)
+{
+  GString *result = g_string_new("The statistics of syslog-ng have been reset to 0.");
+  stats_reset_non_stored_counters();
+  return result;
 }
 
 void
-debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
+stats_register_control_commands(void)
 {
-  /* we don't support threaded mode (yet), force it to non-threaded */
-  cfg->threaded = FALSE;
-  current_debugger = debugger_new(main_loop, cfg);
-  pipe_single_step_hook = _pipe_hook;
-  debugger_start_console(current_debugger);
+  control_register_command("STATS", NULL, control_connection_send_stats, NULL);
+  control_register_command("RESET_STATS", NULL, control_connection_reset_stats, NULL);
 }

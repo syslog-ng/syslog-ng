@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,52 +21,27 @@
  * COPYING for details.
  *
  */
-
-#include "control.h"
-#include "control-server.h"
-#include "gsocket.h"
-#include "messages.h"
-#include "stats/stats-csv.h"
-#include "stats/stats-counter.h"
+#include "control/control.h"
+#include "control/control-main.h"
 #include "mainloop.h"
+#include "messages.h"
 
-#include <errno.h>
-#include <string.h>
-#include <stdio.h>
-#include <iv.h>
-
-static ControlServer *control_server;
 static GList *command_list = NULL;
 
 void
-control_register_command(const gchar *command_name, const gchar *description, CommandFunction function)
+control_register_command(const gchar *command_name, const gchar *description, CommandFunction function,
+                         gpointer user_data)
 {
   ControlCommand *new_command = g_new0(ControlCommand, 1);
   new_command->command_name = command_name;
   new_command->description = description;
   new_command->func = function;
+  new_command->user_data = user_data;
   command_list = g_list_append(command_list, new_command);
-};
-
-static GString *
-control_connection_send_stats(GString *command)
-{
-  gchar *stats = stats_generate_csv();
-  GString *result = g_string_new(stats);
-  g_free(stats);
-  return result;
 }
 
 static GString *
-control_connection_reset_stats(GString *command)
-{
-  GString *result = g_string_new("The statistics of syslog-ng have been reset to 0.");
-  stats_reset_non_stored_counters();
-  return result;
-}
-
-static GString *
-control_connection_message_log(GString *command)
+control_connection_message_log(GString *command, gpointer user_data)
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
   gboolean on;
@@ -112,33 +87,35 @@ exit:
 }
 
 static GString *
-control_connection_stop_process(GString *command)
+control_connection_stop_process(GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Shutdown initiated");
-  main_loop_exit();
+  MainLoop *main_loop = (MainLoop *) user_data;
+
+  main_loop_exit(main_loop);
   return result;
 }
 
 static GString *
-control_connection_reload(GString *command)
+control_connection_reload(GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Config reload initiated");
-  main_loop_reload_config();
+  MainLoop *main_loop = (MainLoop *) user_data;
+
+  main_loop_reload_config(main_loop);
   return result;
 }
 
 ControlCommand default_commands[] =
 {
-  { "STATS", NULL, control_connection_send_stats },
-  { "RESET_STATS", NULL, control_connection_reset_stats },
   { "LOG", NULL, control_connection_message_log },
   { "STOP", NULL, control_connection_stop_process },
   { "RELOAD", NULL, control_connection_reload },
   { NULL, NULL, NULL },
 };
 
-static void
-register_default_commands()
+GList *
+control_register_default_commands(MainLoop *main_loop)
 {
   int i;
   ControlCommand *cmd;
@@ -146,20 +123,7 @@ register_default_commands()
   for (i = 0; default_commands[i].command_name != NULL; i++)
     {
       cmd = &default_commands[i];
-      control_register_command(cmd->command_name, cmd->description, cmd->func);
+      control_register_command(cmd->command_name, cmd->description, cmd->func, main_loop);
     }
-}
-
-void
-control_init(const gchar *control_name)
-{
-  register_default_commands();
-  control_server = control_server_new(control_name, command_list);
-  control_server_start(control_server);
-}
-
-void
-control_destroy(void)
-{
-  control_server_free(control_server);
+  return command_list;
 }

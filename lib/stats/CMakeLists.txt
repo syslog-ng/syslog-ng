@@ -1,5 +1,6 @@
 set(STATS_HEADERS
     stats/stats.h
+    stats/stats-control.h
     stats/stats-counter.h
     stats/stats-cluster.h
     stats/stats-csv.h
@@ -10,6 +11,7 @@ set(STATS_HEADERS
 
 set(STATS_SOURCES
     stats/stats.c
+    stats/stats-control.c
     stats/stats-counter.c
     stats/stats-cluster.c
     stats/stats-csv.c

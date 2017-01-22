@@ -24,7 +24,8 @@
 
 #include "testutils.h"
 #include "control/control-server.h"
-#include "control/control.c"
+#include "control/control-commands.c"
+#include "stats/stats-control.c"
 #include "stats/stats-cluster.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
@@ -36,12 +37,12 @@ test_log()
   GString *reply;
 
   g_string_assign(command,"LOG");
-  reply = control_connection_message_log(command);
+  reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "Invalid arguments received, expected at least one argument", "Bad reply");
   g_string_free(reply, TRUE);
 
   g_string_assign(command,"LOG fakelog");
-  reply = control_connection_message_log(command);
+  reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "Invalid arguments received", "Bad reply");
   g_string_free(reply, TRUE);
 
@@ -49,18 +50,18 @@ test_log()
   debug_flag = 1;
   trace_flag = 1;
   g_string_assign(command,"LOG VERBOSE");
-  reply = control_connection_message_log(command);
+  reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "VERBOSE=0", "Bad reply");
   g_string_free(reply, TRUE);
 
   g_string_assign(command,"LOG VERBOSE ON");
-  reply = control_connection_message_log(command);
+  reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "OK", "Bad reply");
   assert_gint(verbose_flag,1,"Flag isn't changed");
   g_string_free(reply, TRUE);
 
   g_string_assign(command,"LOG VERBOSE OFF");
-  reply = control_connection_message_log(command);
+  reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "OK", "Bad reply");
   assert_gint(verbose_flag,0,"Flag isn't changed");
   g_string_free(reply, TRUE);
@@ -69,7 +70,7 @@ test_log()
   verbose_flag = 1;
   trace_flag = 1;
   g_string_assign(command,"LOG DEBUG");
-  reply = control_connection_message_log(command);
+  reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "DEBUG=0", "Bad reply");
   g_string_free(reply, TRUE);
 
@@ -77,7 +78,7 @@ test_log()
   verbose_flag = 1;
   debug_flag = 1;
   g_string_assign(command,"LOG TRACE");
-  reply = control_connection_message_log(command);
+  reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "TRACE=0", "Bad reply");
   g_string_free(reply, TRUE);
 
@@ -100,7 +101,7 @@ test_stats()
 
   g_string_assign(command,"STATS");
 
-  reply = control_connection_send_stats(command);
+  reply = control_connection_send_stats(command, NULL);
   stats_result = g_strsplit(reply->str, "\n", 2);
   assert_string(stats_result[0], "SourceName;SourceId;SourceInstance;State;Type;Number",
                 "Bad reply");
@@ -126,12 +127,12 @@ test_reset_stats()
   stats_unlock();
 
   g_string_assign(command, "RESET_STATS");
-  reply = control_connection_reset_stats(command);
+  reply = control_connection_reset_stats(command, NULL);
   assert_string(reply->str, "The statistics of syslog-ng have been reset to 0.", "Bad reply");
   g_string_free(reply, TRUE);
 
   g_string_assign(command, "STATS");
-  reply = control_connection_send_stats(command);
+  reply = control_connection_send_stats(command, NULL);
   assert_string(reply->str, "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n",
                 "Bad reply");
   g_string_free(reply, TRUE);

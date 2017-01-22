@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Balabit
- * Copyright (c) 2015 Balázs Scheidler
+ * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,23 +22,22 @@
  *
  */
 
-#include "debugger/debugger.h"
-#include "logpipe.h"
+#include "control-main.h"
+#include "control-server.h"
+#include "control-commands.h"
 
-static Debugger *current_debugger;
+static ControlServer *control_server;
 
-static gboolean
-_pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+void
+control_init(MainLoop *main_loop, const gchar *control_name)
 {
-  return debugger_stop_at_breakpoint(current_debugger, s, msg);
+  control_server = control_server_new(control_name,
+                                      control_register_default_commands(main_loop));
+  control_server_start(control_server);
 }
 
 void
-debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
+control_destroy(void)
 {
-  /* we don't support threaded mode (yet), force it to non-threaded */
-  cfg->threaded = FALSE;
-  current_debugger = debugger_new(main_loop, cfg);
-  pipe_single_step_hook = _pipe_hook;
-  debugger_start_console(current_debugger);
+  control_server_free(control_server);
 }

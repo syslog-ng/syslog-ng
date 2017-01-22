@@ -160,10 +160,12 @@ control_connection_io_input(void *s)
 
   for (iter = self->server->control_commands; iter != NULL; iter = iter->next)
     {
-      if (strncmp(((ControlCommand *)iter->data)->command_name, command->str,
-                  strlen(((ControlCommand *)iter->data)->command_name)) == 0)
+      ControlCommand *cmd_desc = (ControlCommand *) iter->data;
+
+      if (strncmp(cmd_desc->command_name, command->str,
+                  strlen(cmd_desc->command_name)) == 0)
         {
-          reply = ((ControlCommand *)iter->data)->func(command);
+          reply = cmd_desc->func(command, cmd_desc->user_data);
           control_connection_send_reply(self, reply);
           break;
         }
