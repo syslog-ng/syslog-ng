@@ -34,11 +34,11 @@ _pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 }
 
 void
-debugger_start(GlobalConfig *cfg)
+debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
 {
   /* we don't support threaded mode (yet), force it to non-threaded */
   cfg->threaded = FALSE;
-  current_debugger = debugger_new(cfg);
+  current_debugger = debugger_new(main_loop, cfg);
   pipe_single_step_hook = _pipe_hook;
   debugger_start_console(current_debugger);
 }

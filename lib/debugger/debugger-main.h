@@ -28,6 +28,6 @@
 #include "debugger/debugger.h"
 #include "cfg.h"
 
-void debugger_start(GlobalConfig *cfg);
+void debugger_start(MainLoop *main_loop, GlobalConfig *cfg);
 
 #endif

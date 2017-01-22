@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2002-2017 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -276,7 +276,7 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
       _report_buffer_location(level->buffer.content, yylloc);
     }
 
-  fprintf(stderr, "\nsyslog-ng documentation: http://www.balabit.com/support/documentation/?product=syslog-ng\n"
+  fprintf(stderr, "\nsyslog-ng documentation: https://www.balabit.com/support/documentation?product=syslog-ng-ose\n"
           "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n");
 
 }

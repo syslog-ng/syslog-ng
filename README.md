@@ -17,7 +17,7 @@ applications or forwarded by systemd) and writes everything to a single
 file:
 
 ```
-@version: 3.8
+@version: 3.9
 @include "scl.conf"
 
 log {
@@ -29,7 +29,7 @@ log {
 This one also processes logs from the network (TCP/514 by default):
 
 ```
-@version: 3.8
+@version: 3.9
 @include "scl.conf"
 
 log {
@@ -43,7 +43,7 @@ log {
 Structured/application logging, local submission via JSON, output in key=value format.
 
 ```
-@version: 3.8
+@version: 3.9
 @include "scl.conf"
 
 log {
@@ -109,9 +109,9 @@ Feedback
 ========
 
 We are really interested in who uses our software, so if you do and you like
-what you see, please tell us about it.  A simple "thanks" is also enough,
-but learning about your usecase, experience, things to improve would be most
-appreciated.
+what you see, please tell us about it.  A "star" on github, an email
+with "thanks" in it is lots already, but learning about your usecase,
+experience, things to improve would be most appreciated.
 
 Just send an email to feedback (at) syslog-ng.org.
 

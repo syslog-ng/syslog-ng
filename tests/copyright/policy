@@ -40,9 +40,8 @@ cmake
 sub-configure\.sh$
 configure\.ac$
 Makefile\.am$
-lib/(compat|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|[^/]*$)
-lib/scanner/csv-scanner
-lib/str-repr
+lib/(compat|str-repr|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|[^/]*$)
+lib/scanner/(csv-scanner|list-scanner|[^/]*$)
 libtest
 syslog-ng(-ctl)?
 modules/java-modules/common
@@ -53,7 +52,7 @@ dev-utils/plugin_skeleton_creator/create_plugin.sh
 tests
 modules/java/(tools|[^/]*$)
 modules/java-modules/(dummy|elastic|elastic-v2|hdfs|http|kafka|[^/]*$)
-modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|basicfuncs|cef|confgen|cryptofuncs|csvparser|date|diskq|dbparser|geoip|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|system-source|[^/]*$)
+modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|basicfuncs|cef|confgen|cryptofuncs|csvparser|date|diskq|dbparser|geoip|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|getent|system-source|[^/]*$)
 modules/add-contextual-data
 scl
 scripts

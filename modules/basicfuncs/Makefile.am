@@ -15,10 +15,12 @@ modules_basicfuncs_libbasicfuncs_la_DEPENDENCIES=	\
 
 EXTRA_DIST					+=	\
 	modules/basicfuncs/cond-funcs.c 		\
+	modules/basicfuncs/context-funcs.c 		\
 	modules/basicfuncs/numeric-funcs.c 		\
 	modules/basicfuncs/str-funcs.c			\
 	modules/basicfuncs/ip-funcs.c			\
 	modules/basicfuncs/misc-funcs.c			\
+	modules/basicfuncs/list-funcs.c			\
 	modules/basicfuncs/tf-template.c
 
 modules/basicfuncs modules/basicfuncs/ mod-basicfuncs: modules/basicfuncs/libbasicfuncs.la

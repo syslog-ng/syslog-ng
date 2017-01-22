@@ -266,6 +266,99 @@ test_tf_template(void)
   assert_template_failure("foo $(template unknown) bar", "Unknown template function or template \"unknown\"");
 }
 
+static void
+test_list_funcs(void)
+{
+  assert_template_format("$(list-concat)", "");
+  assert_template_format("$(list-concat foo bar baz)", "foo,bar,baz");
+  assert_template_format("$(list-concat foo bar baz '')", "foo,bar,baz");
+  assert_template_format("$(list-concat foo $HOST $PROGRAM $PID bar)", "foo,bzorp,syslog-ng,23323,bar");
+  assert_template_format("$(list-concat foo $HOST,$PROGRAM,$PID bar)", "foo,bzorp,syslog-ng,23323,bar");
+  assert_template_format("$(list-concat foo '$HOST,$PROGRAM,$PID' bar)", "foo,bzorp,syslog-ng,23323,bar");
+  assert_template_format("$(list-concat foo '$HOST,$PROGRAM,$PID,' bar)", "foo,bzorp,syslog-ng,23323,bar");
+
+  assert_template_format("$(list-append)", "");
+  assert_template_format("$(list-append '' foo)", "foo");
+  assert_template_format("$(list-append '' foo bar)", "foo,bar");
+  assert_template_format("$(list-append '' foo bar baz)", "foo,bar,baz");
+  assert_template_format("$(list-append foo,bar,baz 'x')", "foo,bar,baz,x");
+  assert_template_format("$(list-append foo,bar,baz '')", "foo,bar,baz,\"\"");
+  assert_template_format("$(list-append foo,bar,baz 'xxx,')", "foo,bar,baz,\"xxx,\"");
+  assert_template_format("$(list-append foo,bar,baz 'a\tb')", "foo,bar,baz,\"a\\tb\"");
+
+  assert_template_format("$(list-head)", "");
+  assert_template_format("$(list-head '')", "");
+  assert_template_format("$(list-head foo)", "foo");
+  assert_template_format("$(list-head foo,)", "foo");
+  assert_template_format("$(list-head foo,bar)", "foo");
+  assert_template_format("$(list-head foo,bar,baz)", "foo");
+  assert_template_format("$(list-head ,bar,baz)", "bar");
+
+  assert_template_format("$(list-head foo bar)", "foo");
+  assert_template_format("$(list-head foo bar baz)", "foo");
+  assert_template_format("$(list-head '' bar baz)", "bar");
+
+  assert_template_format("$(list-head '\"\\tfoo,\",bar,baz')", "\tfoo,");
+
+  assert_template_format("$(list-nth 1 '\"foo,\",\"bar\",\"baz\"')", "bar");
+  assert_template_format("$(list-nth 2 '\"foo,\",\"bar\",\"baz\"')", "baz");
+
+  assert_template_format("$(list-tail)", "");
+  assert_template_format("$(list-tail foo)", "");
+  assert_template_format("$(list-tail foo,bar)", "bar");
+  assert_template_format("$(list-tail foo,)", "");
+  assert_template_format("$(list-tail ,bar)", "");
+  assert_template_format("$(list-tail foo,bar,baz)", "bar,baz");
+  assert_template_format("$(list-tail foo bar baz)", "bar,baz");
+  assert_template_format("$(list-tail foo,bar baz bad)", "bar,baz,bad");
+  assert_template_format("$(list-tail foo,bar,xxx, baz bad)", "bar,xxx,baz,bad");
+
+  assert_template_format("$(list-slice 0:0 foo,bar,xxx,baz,bad)", "");
+  assert_template_format("$(list-slice 0:1 foo,bar,xxx,baz,bad)", "foo");
+  assert_template_format("$(list-slice 0:2 foo,bar,xxx,baz,bad)", "foo,bar");
+  assert_template_format("$(list-slice 0:3 foo,bar,xxx,baz,bad)", "foo,bar,xxx");
+  assert_template_format("$(list-slice 1:1 foo,bar,xxx,baz,bad)", "");
+  assert_template_format("$(list-slice 1:2 foo,bar,xxx,baz,bad)", "bar");
+
+  assert_template_format("$(list-slice : foo,bar,xxx,baz,bad)", "foo,bar,xxx,baz,bad");
+
+  assert_template_format("$(list-slice 0: foo,bar,xxx,baz,bad)", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(list-slice 3: foo,bar,xxx,baz,bad)", "baz,bad");
+
+  assert_template_format("$(list-slice :1 foo,bar,xxx,baz,bad)", "foo");
+  assert_template_format("$(list-slice :2 foo,bar,xxx,baz,bad)", "foo,bar");
+  assert_template_format("$(list-slice :3 foo,bar,xxx,baz,bad)", "foo,bar,xxx");
+
+  assert_template_format("$(list-slice -1: foo,bar,xxx,baz,bad)", "bad");
+  assert_template_format("$(list-slice -2: foo,bar,xxx,baz,bad)", "baz,bad");
+  assert_template_format("$(list-slice -3: foo,bar,xxx,baz,bad)", "xxx,baz,bad");
+  assert_template_format("$(list-slice -5: foo,bar,xxx,baz,bad)", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(list-slice -6: foo,bar,xxx,baz,bad)", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(list-slice -100: foo,bar,xxx,baz,bad)", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(list-slice :-1 foo,bar,xxx,baz,bad)", "foo,bar,xxx,baz");
+  assert_template_format("$(list-slice :-2 foo,bar,xxx,baz,bad)", "foo,bar,xxx");
+  assert_template_format("$(list-slice :-3 foo,bar,xxx,baz,bad)", "foo,bar");
+  assert_template_format("$(list-slice :-4 foo,bar,xxx,baz,bad)", "foo");
+  assert_template_format("$(list-slice :-5 foo,bar,xxx,baz,bad)", "");
+  assert_template_format("$(list-slice :-6 foo,bar,xxx,baz,bad)", "");
+
+  assert_template_format("$(list-count foo,bar,xxx, baz bad)", "5");
+}
+
+void
+test_context_funcs(void)
+{
+  assert_template_format_with_context("$(context-length)", "2");
+
+  assert_template_format_with_context("$(context-lookup 'facility(local3)' $PID)", "23323,23323");
+  assert_template_format_with_context("$(context-lookup 'facility(local3)' ${comma_value})",
+                                      "\"value,with,a,comma\",\"value,with,a,comma\"");
+
+  assert_template_format_with_context("$(context-values ${PID})", "23323,23323");
+  assert_template_format_with_context("$(context-values ${comma_value})",
+                                      "\"value,with,a,comma\",\"value,with,a,comma\"");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -280,6 +373,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_numeric_aggregate_funcs();
   test_misc_funcs();
   test_tf_template();
+  test_list_funcs();
+  test_context_funcs();
 
   deinit_template_tests();
   app_shutdown();

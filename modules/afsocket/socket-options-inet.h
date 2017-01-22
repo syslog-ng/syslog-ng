@@ -31,6 +31,7 @@ typedef struct _SocketOptionsInet
   /* user settings */
   gint ip_ttl;
   gint ip_tos;
+  gboolean ip_freebind;
   gint tcp_keepalive_time;
   gint tcp_keepalive_intvl;
   gint tcp_keepalive_probes;

@@ -43,7 +43,9 @@
 #include "cond-funcs.c"
 #include "ip-funcs.c"
 #include "misc-funcs.c"
+#include "list-funcs.c"
 #include "tf-template.c"
+#include "context-funcs.c"
 
 static Plugin basicfuncs_plugins[] =
 {
@@ -51,6 +53,11 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_grep, "grep"),
   TEMPLATE_FUNCTION_PLUGIN(tf_if, "if"),
   TEMPLATE_FUNCTION_PLUGIN(tf_or, "or"),
+
+  /* context related funcs */
+  TEMPLATE_FUNCTION_PLUGIN(tf_context_lookup, "context-lookup"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_context_length, "context-length"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_context_values, "context-values"),
 
   /* str-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_echo, "echo"),
@@ -62,6 +69,15 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_uppercase, "uppercase"),
   TEMPLATE_FUNCTION_PLUGIN(tf_replace_delimiter, "replace-delimiter"),
   TEMPLATE_FUNCTION_PLUGIN(tf_string_padding, "padding"),
+
+  /* list-funcs */
+  TEMPLATE_FUNCTION_PLUGIN(tf_list_concat, "list-concat"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_list_head, "list-head"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_list_nth, "list-nth"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_list_tail, "list-tail"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_list_slice, "list-slice"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_list_count, "list-count"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_list_append, "list-append"),
 
   /* numeric-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_num_plus, "+"),
@@ -79,7 +95,6 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_indent_multi_line, "indent-multi-line"),
 
   /* misc funcs */
-  TEMPLATE_FUNCTION_PLUGIN(tf_context_length, "context-length"),
   TEMPLATE_FUNCTION_PLUGIN(tf_env, "env"),
   TEMPLATE_FUNCTION_PLUGIN(tf_template, "template")
 };

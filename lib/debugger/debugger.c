@@ -33,6 +33,7 @@
 struct _Debugger
 {
   Tracer *tracer;
+  MainLoop *main_loop;
   GlobalConfig *cfg;
   gchar *command_buffer;
   LogTemplate *display_template;
@@ -177,7 +178,7 @@ _cmd_drop(Debugger *self, gint argc, gchar *argv[])
 static gboolean
 _cmd_quit(Debugger *self, gint argc, gchar *argv[])
 {
-  main_loop_exit();
+  main_loop_exit(self->main_loop);
   self->drop_current_message = TRUE;
   return FALSE;
 }
@@ -342,10 +343,11 @@ debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe_, LogMessage *msg)
 }
 
 Debugger *
-debugger_new(GlobalConfig *cfg)
+debugger_new(MainLoop *main_loop, GlobalConfig *cfg)
 {
   Debugger *self = g_new0(Debugger, 1);
 
+  self->main_loop = main_loop;
   self->tracer = tracer_new(cfg);
   self->cfg = cfg;
   self->display_template = log_template_new(cfg, NULL);

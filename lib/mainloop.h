@@ -27,9 +27,15 @@
 #include "syslog-ng.h"
 #include "thread-utils.h"
 
+typedef struct _MainLoop MainLoop;
 
-extern gboolean syntax_only;
-extern gboolean __main_loop_is_terminating;
+typedef struct _MainLoopOptions
+{
+  gchar *preprocess_into;
+  gboolean syntax_only;
+  gboolean interactive_mode;
+} MainLoopOptions;
+
 extern ThreadId main_thread_handle;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
@@ -48,20 +54,15 @@ main_loop_is_main_thread(void)
   return threads_equal(main_thread_handle, get_thread_id());
 }
 
-static inline gboolean
-main_loop_is_terminating(void)
-{
-  return __main_loop_is_terminating;
-}
+void main_loop_reload_config(MainLoop *self);
+void main_loop_exit(MainLoop *self);
 
-void main_loop_reload_config(void);
-void main_loop_exit(void);
+int main_loop_read_and_init_config(MainLoop *self);
+void main_loop_run(MainLoop *self);
 
-int main_loop_read_and_init_config(void);
-void main_loop_run(void);
-
-void main_loop_init(void);
-void main_loop_deinit(void);
+MainLoop *main_loop_get_instance(void);
+void main_loop_init(MainLoop *self, MainLoopOptions *options);
+void main_loop_deinit(MainLoop *self);
 
 void main_loop_add_options(GOptionContext *ctx);
 

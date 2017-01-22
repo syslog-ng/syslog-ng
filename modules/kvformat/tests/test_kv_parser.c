@@ -140,11 +140,39 @@ test_kv_parser_audit(void)
 }
 
 static void
+test_kv_parser_extract_stray_words(void)
+{
+  LogMessage *msg;
+
+  kv_parser_set_stray_words_value_name(kv_parser, "stray");
+  kv_parser_set_prefix(kv_parser, ".junos.");
+  kv_parser_set_pair_separator(kv_parser, ";");
+  log_pipe_deinit((LogPipe *)kv_parser);
+  log_pipe_init((LogPipe *)kv_parser);
+  msg = parse_kv_into_log_message("VSYS=public; Slot=5/1; protocol=17; source-ip=10.116.214.221; source-port=50989; "
+                                  "destination-ip=172.16.236.16; destination-port=162;time=2016/02/18 16:00:07; "
+                                  "interzone-emtn_s1_vpn-enodeb_om inbound; policy=370;");
+  assert_log_message_value_by_name(msg, ".junos.VSYS", "public");
+  assert_log_message_value_by_name(msg, ".junos.Slot", "5/1");
+  assert_log_message_value_by_name(msg, ".junos.protocol", "17");
+  assert_log_message_value_by_name(msg, ".junos.source-ip", "10.116.214.221");
+  assert_log_message_value_by_name(msg, ".junos.source-port", "50989");
+  assert_log_message_value_by_name(msg, ".junos.destination-ip", "172.16.236.16");
+  assert_log_message_value_by_name(msg, ".junos.destination-port", "162");
+  assert_log_message_value_by_name(msg, ".junos.time", "2016/02/18 16:00:07");
+  assert_log_message_value_by_name(msg, ".junos.policy", "370");
+  assert_log_message_value_by_name(msg, "stray", "\"interzone-emtn_s1_vpn-enodeb_om inbound;\"");
+  log_msg_unref(msg);
+
+}
+
+static void
 test_kv_parser(void)
 {
   KV_PARSER_TESTCASE(test_kv_parser_basics);
   KV_PARSER_TESTCASE(test_kv_parser_audit);
   KV_PARSER_TESTCASE(test_kv_parser_uses_template_to_parse_input);
+  KV_PARSER_TESTCASE(test_kv_parser_extract_stray_words);
 }
 
 int
