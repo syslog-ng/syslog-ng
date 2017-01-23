@@ -52,10 +52,10 @@ public class ESHttpClient implements ESClient {
 	}
 
 	private JestClient createClient() {
-		Set<String> connectionUrl = options.getClusterUrl();
+		Set<String> connectionUrls = options.getClusterUrls();
 		JestClientFactory clientFactory = new JestClientFactory();
 		clientFactory.setHttpClientConfig(new HttpClientConfig
-				.Builder(connectionUrl)
+				.Builder(connectionUrls)
 				.multiThreaded(true)
 				.build());
 		return clientFactory.getObject();

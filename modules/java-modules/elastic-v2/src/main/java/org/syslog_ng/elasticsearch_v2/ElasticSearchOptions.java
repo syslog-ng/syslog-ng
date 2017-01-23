@@ -148,7 +148,7 @@ public class ElasticSearchOptions {
                 return options.get(SKIP_CLUSTER_HEALTH_CHECK).getValueAsBoolean();
         }
 
-	public Set<String> getClusterUrl() {
+	public Set<String> getClusterUrls() {
 		String[] cluster_url = options.get(CLUSTER_URL).getValueAsStringList(" ");
 		if (cluster_url[0].isEmpty()) {
 			String[] server_list = getServerList();
