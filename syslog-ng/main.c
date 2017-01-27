@@ -66,6 +66,7 @@ static gboolean dummy = FALSE;
 
 static MainLoopOptions main_loop_options;
 
+
 #ifdef YYDEBUG
 extern int cfg_parser_debug;
 #endif
@@ -85,6 +86,8 @@ static GOptionEntry syslogng_options[] =
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+  { "cli",               'l',         0, G_OPTION_ARG_NONE, &main_loop_options.command_line_mode, "Run as a command line tool" },
+  { G_OPTION_REMAINING,  0,           0, G_OPTION_ARG_STRING_ARRAY, &main_loop_options.cli_var, NULL, NULL },
   { NULL },
 };
 
@@ -257,7 +260,7 @@ main(int argc, char *argv[])
     }
 
   gboolean exit_before_main_loop_run = main_loop_options.syntax_only || main_loop_options.preprocess_into;
-  if (debug_flag || exit_before_main_loop_run)
+  if (debug_flag || exit_before_main_loop_run || main_loop_options.command_line_mode)
     {
       g_process_set_mode(G_PM_FOREGROUND);
     }

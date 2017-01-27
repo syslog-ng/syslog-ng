@@ -27,6 +27,7 @@
 #include "mainloop-call.h"
 #include "apphook.h"
 #include "cfg.h"
+#include "cli.h"
 #include "stats/stats-registry.h"
 #include "messages.h"
 #include "children.h"
@@ -454,17 +455,55 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
   setup_signals(self);
 }
 
+static int
+_setup_cli_mode(MainLoopOptions *options, GlobalConfig *current_configuration)
+{
+  CliParamConverter *converter = cli_param_converter_new(options->cli_var);
+
+  if (!cli_param_converter_setup(converter))
+    return 2;
+
+  cli_param_converter_convert(converter);
+  current_configuration->cfg_file = fmemopen(converter->generated_config, strlen(converter->generated_config), "r");
+
+  return 0;
+}
+
+static gboolean
+_is_cli_param_conversion_required(MainLoopOptions *options)
+{
+  return options->cli_var != NULL;
+}
+
+static int
+_prepare_configuration_for_reading(MainLoop *self)
+{
+  if (_is_cli_param_conversion_required(self->options))
+    {
+      return _setup_cli_mode(self->options, self->current_configuration);
+    }
+  else if (!cfg_open_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename))
+    {
+      return 1;
+    }
+  return 0;
+}
+
 /*
  * Returns: exit code to be returned to the calling process, 0 on success.
  */
 int
 main_loop_read_and_init_config(MainLoop *self)
 {
+  int result;
   MainLoopOptions *options = self->options;
 
   self->current_configuration = cfg_new(0);
-  if (!cfg_read_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename, options->syntax_only,
-                       options->preprocess_into))
+  result = _prepare_configuration_for_reading(self);
+  if (result != 0)
+    return result;
+
+  if (!cfg_read_config(self->current_configuration, options->syntax_only, options->preprocess_into))
     {
       return 1;
     }
