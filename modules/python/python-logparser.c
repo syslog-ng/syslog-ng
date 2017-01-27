@@ -44,7 +44,6 @@ typedef struct
   } py;
 } PythonParser;
 
-
 void
 python_parser_set_class(LogParser *d, gchar *class)
 {
@@ -71,140 +70,48 @@ python_parser_set_imports(LogParser *d, GList *imports)
   self->imports = imports;
 }
 
-void
-python_parser_insert_to_dict(gpointer key, gpointer value, gpointer dict)
-{
-  PyObject *key_pyobj = PyBytes_FromStringAndSize((gchar *) key, strlen((gchar *) key));
-  PyObject *value_pyobj = PyBytes_FromStringAndSize((gchar *) value, strlen((gchar *) value));
-  PyDict_SetItem( (PyObject *) dict, key_pyobj, value_pyobj);
-}
-
 PyObject *
 python_parser_create_arg_dict(PythonParser *self)
 {
-  PyObject *arg_dict = PyDict_New();
-  g_hash_table_foreach(self->options, python_parser_insert_to_dict, arg_dict);
-  return arg_dict;
-}
-
-
-static PyObject *
-_py_invoke_function(PythonParser *self, PyObject *func, PyObject *arg)
-{
-  PyObject *ret;
-
-  ret = PyObject_CallFunctionObjArgs(func, arg, NULL);
-  if (!ret)
-    {
-      gchar buf1[256], buf2[256];
-
-      msg_error("Exception while calling a Python function",
-                evt_tag_str("parser", self->super.name),
-                evt_tag_str("script", self->class),
-                evt_tag_str("function", _py_get_callable_name(func, buf1, sizeof(buf1))),
-                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
-      return NULL;
-    }
-  return ret;
-}
-
-static void
-_py_invoke_void_function(PythonParser *self, PyObject *func, PyObject *arg)
-{
-  PyObject *ret = _py_invoke_function(self, func, arg);
-  Py_XDECREF(ret);
+  return _py_create_arg_dict(self->options);
 }
 
 static gboolean
-_py_invoke_bool_function(PythonParser *self, PyObject *func, PyObject *arg)
+_pp_py_invoke_bool_function(PythonParser *self, PyObject *func, PyObject *arg)
 {
-  PyObject *ret;
-  gboolean result = FALSE;
-
-  ret = _py_invoke_function(self, func, arg);
-  if (ret)
-    result = PyObject_IsTrue(ret);
-  Py_XDECREF(ret);
-  return result;
+  return _py_invoke_bool_function(func, arg, self->class, self->super.name);
 }
 
 static void
-_foreach_import(gpointer data, gpointer user_data)
+_pp_py_invoke_void_method_by_name(PythonParser *self, PyObject *instance, const gchar *method_name)
 {
-  gchar *modname = (gchar *) data;
-  PyObject *mod;
-
-  mod = _py_do_import(modname);
-  Py_XDECREF(mod);
-}
-
-static void
-_py_perform_imports(PythonParser *self)
-{
-  g_list_foreach(self->imports, _foreach_import, self);
-}
-
-
-static PyObject *
-_py_get_method(PythonParser *self, PyObject *o, const gchar *method_name)
-{
-  PyObject *method = _py_get_attr_or_null(self->py.instance, method_name);
-  if (!method)
-    {
-      gchar buf[256];
-
-      msg_error("Missing Python method in the parser class",
-                evt_tag_str("parser", self->super.name),
-                evt_tag_str("method", method_name),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-      return NULL;
-    }
-  return method;
-}
-
-static void
-_py_invoke_void_method_by_name(PythonParser *self, PyObject *instance, const gchar *method_name)
-{
-  PyObject *method = _py_get_method(self, instance, method_name);
-  if (method)
-    {
-      _py_invoke_void_function(self, method, NULL);
-      Py_DECREF(method);
-    }
+  return _py_invoke_void_method_by_name(instance, method_name, self->class, self->super.name);
 }
 
 static gboolean
-_py_invoke_bool_method_by_name_with_args(PythonParser *self, PyObject *instance, const gchar *method_name,
+_pp_py_invoke_bool_method_by_name_with_args(PythonParser *self, PyObject *instance, const gchar *method_name,
     PyObject *args)
 {
-  gboolean result = FALSE;
-  PyObject *method = _py_get_method(self, instance, method_name);
-
-  if (method)
-    {
-      result = _py_invoke_bool_function(self, method, args);
-      Py_DECREF(method);
-    }
-  return result;
+  return _py_invoke_bool_method_by_name_with_args(instance, method_name, args, self->class, self->super.name);
 }
 
 static gboolean
 _py_invoke_parser_process(PythonParser *self, PyObject *msg)
 {
-  return _py_invoke_bool_function(self, self->py.parser_process, msg);
+  return _pp_py_invoke_bool_function(self, self->py.parser_process, msg);
 }
 
 static gboolean
 _py_invoke_init(PythonParser *self)
 {
   PyObject *args = python_parser_create_arg_dict(self);
-  return _py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init", args);
+  return _pp_py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init", args);
 }
 
 static void
 _py_invoke_deinit(PythonParser *self)
 {
-  _py_invoke_void_method_by_name(self, self->py.instance, "deinit");
+  _pp_py_invoke_void_method_by_name(self, self->py.instance, "deinit");
 }
 
 static gboolean
@@ -222,7 +129,7 @@ _py_init_bindings(PythonParser *self)
       return FALSE;
     }
 
-  self->py.instance = _py_invoke_function(self, self->py.class, NULL);
+  self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.name);
   if (!self->py.instance)
     {
       gchar buf[256];
@@ -304,7 +211,7 @@ python_parser_init(LogPipe *s)
 
   gstate = PyGILState_Ensure();
 
-  _py_perform_imports(self);
+  _py_perform_imports(self->imports);
   if (!_py_init_bindings(self) ||
       !_py_init_object(self))
     goto fail;
@@ -356,7 +263,6 @@ LogParser *
 python_parser_new(GlobalConfig *cfg)
 {
   PythonParser *self = g_new0(PythonParser, 1);
-
 
   log_parser_init_instance(&self->super, cfg);
   self->super.super.init = python_parser_init;
