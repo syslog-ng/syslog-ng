@@ -23,6 +23,7 @@
  */
 #include "python-logmsg.h"
 #include "logmsg/logmsg.h"
+#include "messages.h"
 
 typedef struct _PyLogMessage
 {
@@ -33,13 +34,15 @@ typedef struct _PyLogMessage
 static PyTypeObject py_log_message_type;
 
 static PyObject *
-py_log_message_getattr(PyLogMessage *self, gchar *name)
+_py_log_message_getattr(PyObject *o, PyObject *key)
 {
-  NVHandle handle;
-  const gchar *value;
+  if (!PyString_Check(key))
+    return NULL;
 
-  handle = log_msg_get_value_handle(name);
-  value = log_msg_get_value(self->msg, handle, NULL);
+  gchar *name = PyString_AsString(key);
+  NVHandle handle = log_msg_get_value_handle(name);
+  PyLogMessage *py_msg = (PyLogMessage *)o;
+  const gchar *value = log_msg_get_value(py_msg->msg, handle, NULL);
   if (!value)
     {
       PyErr_SetString(PyExc_AttributeError, "No such attribute");
@@ -48,12 +51,20 @@ py_log_message_getattr(PyLogMessage *self, gchar *name)
   return PyBytes_FromString(value);
 }
 
-static void
-py_log_message_setattr(PyLogMessage *self, gchar *name, PyObject *value)
+static int
+_py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
 {
+  if (!PyString_Check(key))
+    return -1;
+
+  PyLogMessage *py_msg = (PyLogMessage *)o;
+  gchar *name = PyString_AsString(key);
   NVHandle handle = log_msg_get_value_handle(name);
   PyObject *value_as_strobj = PyObject_Str(value);
-  log_msg_set_value(self->msg, handle, PyBytes_AsString(value_as_strobj), -1);
+  log_msg_set_value(py_msg->msg, handle, PyBytes_AsString(value_as_strobj), -1);
+  Py_DECREF(value_as_strobj);
+
+  return 0;
 }
 
 static void
@@ -76,17 +87,25 @@ py_log_message_new(LogMessage *msg)
   return (PyObject *) self;
 }
 
+static PyMappingMethods py_log_message_mapping =
+{
+  .mp_length = NULL,
+  .mp_subscript = (binaryfunc) _py_log_message_getattr,
+  .mp_ass_subscript = (objobjargproc) _py_log_message_setattr
+};
+
 static PyTypeObject py_log_message_type =
 {
   PyObject_HEAD_INIT(&PyType_Type)
   .tp_name = "LogMessage",
   .tp_basicsize = sizeof(PyLogMessage),
   .tp_dealloc = (destructor) py_log_message_free,
-  .tp_getattr = (getattrfunc) py_log_message_getattr,
-  .tp_setattr = (setattrfunc) py_log_message_setattr,
+  .tp_getattro = (getattrofunc) _py_log_message_getattr,
+  .tp_setattro = (setattrofunc) _py_log_message_setattr,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "LogMessage class encapsulating a syslog-ng log message",
   .tp_new = PyType_GenericNew,
+  .tp_as_mapping = &py_log_message_mapping,
 };
 
 void
