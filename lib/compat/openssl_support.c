@@ -22,6 +22,9 @@
  */
 
 #include "compat/openssl_support.h"
+#include "syslog-ng.h"
+#include "thread-utils.h"
+#include <openssl/ssl.h>
 
 #if !SYSLOG_NG_HAVE_DECL_SSL_CTX_GET0_PARAM
 X509_VERIFY_PARAM *SSL_CTX_get0_param(SSL_CTX *ctx)
@@ -42,5 +45,82 @@ uint32_t X509_get_extension_flags(X509 *x)
 {
   return x->ex_flags;
 }
+#endif
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static gint ssl_lock_count;
+static GStaticMutex *ssl_locks;
+
+static void
+_ssl_locking_callback(int mode, int type, const char *file, int line)
+{
+  if (mode & CRYPTO_LOCK)
+    {
+      g_static_mutex_lock(&ssl_locks[type]);
+    }
+  else
+    {
+      g_static_mutex_unlock(&ssl_locks[type]);
+    }
+}
+
+static unsigned long
+_ssl_thread_id(void)
+{
+  return (unsigned long) get_thread_id();
+}
+
+void
+openssl_crypto_init_threading(void)
+{
+  gint i;
+
+  ssl_lock_count = CRYPTO_num_locks();
+  ssl_locks = g_new(GStaticMutex, ssl_lock_count);
+  for (i = 0; i < ssl_lock_count; i++)
+    {
+      g_static_mutex_init(&ssl_locks[i]);
+    }
+  CRYPTO_set_id_callback(_ssl_thread_id);
+  CRYPTO_set_locking_callback(_ssl_locking_callback);
+}
+
+void
+openssl_crypto_deinit_threading(void)
+{
+  gint i;
+
+  for (i = 0; i < ssl_lock_count; i++)
+    {
+      g_static_mutex_free(&ssl_locks[i]);
+    }
+  g_free(ssl_locks);
+}
+
+void
+openssl_init(void)
+{
+  SSL_library_init();
+  SSL_load_error_strings();
+  OpenSSL_add_all_algorithms();
+}
+
+#else
+
+void
+openssl_crypto_deinit_threading(void)
+{
+}
+
+void
+openssl_crypto_init_threading(void)
+{
+}
+
+void
+openssl_init(void)
+{
+}
+
 #endif
 

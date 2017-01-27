@@ -53,5 +53,9 @@ uint32_t X509_get_extension_flags(X509 *x);
 #define ASN1_STRING_get0_data ASN1_STRING_data
 #endif
 
+void openssl_init();
+void openssl_crypto_init_threading();
+void openssl_crypto_deinit_threading();
+
 #endif
 
