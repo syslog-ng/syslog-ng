@@ -243,14 +243,17 @@ _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, con
 
 gboolean
 _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method_name,
-    PyObject *args, const gchar *class, const gchar *module)
+    GHashTable *args, const gchar *class, const gchar *module)
 {
   gboolean result = FALSE;
   PyObject *method = _py_get_method(instance, method_name, module);
 
   if (method)
     {
-      result = _py_invoke_bool_function(method, args, class, module);
+      PyObject *args_obj = args ? _py_create_arg_dict(args) : NULL;
+      result = _py_invoke_bool_function(method, args_obj, class, module);
+      if (args_obj)
+        PyObject_Del(args_obj);
       Py_DECREF(method);
     }
   return result;

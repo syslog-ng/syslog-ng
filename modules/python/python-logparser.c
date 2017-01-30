@@ -70,12 +70,6 @@ python_parser_set_imports(LogParser *d, GList *imports)
   self->imports = imports;
 }
 
-PyObject *
-python_parser_create_arg_dict(PythonParser *self)
-{
-  return _py_create_arg_dict(self->options);
-}
-
 static gboolean
 _pp_py_invoke_bool_function(PythonParser *self, PyObject *func, PyObject *arg)
 {
@@ -89,10 +83,9 @@ _pp_py_invoke_void_method_by_name(PythonParser *self, PyObject *instance, const 
 }
 
 static gboolean
-_pp_py_invoke_bool_method_by_name_with_args(PythonParser *self, PyObject *instance, const gchar *method_name,
-    PyObject *args)
+_pp_py_invoke_bool_method_by_name_with_args(PythonParser *self, PyObject *instance, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_args(instance, method_name, args, self->class, self->super.name);
+  return _py_invoke_bool_method_by_name_with_args(instance, method_name, self->options, self->class, self->super.name);
 }
 
 static gboolean
@@ -104,8 +97,7 @@ _py_invoke_parser_process(PythonParser *self, PyObject *msg)
 static gboolean
 _py_invoke_init(PythonParser *self)
 {
-  PyObject *args = python_parser_create_arg_dict(self);
-  return _pp_py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init", args);
+  return _pp_py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init");
 }
 
 static void

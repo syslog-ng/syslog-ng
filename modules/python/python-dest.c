@@ -151,9 +151,9 @@ _dd_py_invoke_void_method_by_name(PythonDestDriver *self, const gchar *method_na
 }
 
 static gboolean
-_dd_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, const gchar *method_name, PyObject *args)
+_dd_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, args, self->class,
+  return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, self->options, self->class,
          self->super.super.super.id);
 }
 
@@ -194,8 +194,7 @@ _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 static gboolean
 _py_invoke_init(PythonDestDriver *self)
 {
-  PyObject *args = python_dd_create_arg_dict(self);
-  return _dd_py_invoke_bool_method_by_name_with_args(self, "init", args);
+  return _dd_py_invoke_bool_method_by_name_with_args(self, "init");
 }
 
 static void
