@@ -29,60 +29,13 @@
 #include "crypto.h"
 #include "apphook.h"
 #include "thread-utils.h"
+#include "compat/openssl_support.h"
 
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
 #include <stdio.h>
 
-static gint ssl_lock_count;
-static GStaticMutex *ssl_locks;
 static gboolean randfile_loaded;
-
-static void
-ssl_locking_callback(int mode, int type, const char *file, int line)
-{
-  if (mode & CRYPTO_LOCK)
-    {
-      g_static_mutex_lock(&ssl_locks[type]);
-    }
-  else
-    {
-      g_static_mutex_unlock(&ssl_locks[type]);
-    }
-}
-
-static unsigned long
-ssl_thread_id(void)
-{
-  return (unsigned long) get_thread_id();
-}
-
-static void
-crypto_init_threading(void)
-{
-  gint i;
-
-  ssl_lock_count = CRYPTO_num_locks();
-  ssl_locks = g_new(GStaticMutex, ssl_lock_count);
-  for (i = 0; i < ssl_lock_count; i++)
-    {
-      g_static_mutex_init(&ssl_locks[i]);
-    }
-  CRYPTO_set_id_callback(ssl_thread_id);
-  CRYPTO_set_locking_callback(ssl_locking_callback);
-}
-
-static void
-crypto_deinit_threading(void)
-{
-  gint i;
-
-  for (i = 0; i < ssl_lock_count; i++)
-    {
-      g_static_mutex_free(&ssl_locks[i]);
-    }
-  g_free(ssl_locks);
-}
 
 void
 crypto_deinit(void)
@@ -95,16 +48,14 @@ crypto_deinit(void)
       if (rnd_file[0])
         RAND_write_file(rnd_file);
     }
-  crypto_deinit_threading();
+  openssl_crypto_deinit_threading();
 }
 
 void
 crypto_init(void)
 {
-  SSL_library_init();
-  SSL_load_error_strings();
-  OpenSSL_add_all_algorithms();
-  crypto_init_threading();
+  openssl_init();
+  openssl_crypto_init_threading();
 
   if (RAND_status() < 0 || getenv("RANDFILE"))
     {
