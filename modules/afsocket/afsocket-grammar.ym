@@ -359,7 +359,11 @@ source_afinet_tcp_option
 
 source_afsocket_stream_params
 	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive(last_driver, $3); }
-	| KW_MAX_CONNECTIONS '(' LL_NUMBER ')'	{ afsocket_sd_set_max_connections(last_driver, $3); }
+	| KW_MAX_CONNECTIONS '(' LL_NUMBER ')'	
+          {
+            CHECK_ERROR($3 > 0, @3, "max_connections must be a positive number");
+            afsocket_sd_set_max_connections(last_driver, $3);
+          }
 	| KW_LISTEN_BACKLOG '(' LL_NUMBER ')'	{ afsocket_sd_set_listen_backlog(last_driver, $3); }
 	;
 
