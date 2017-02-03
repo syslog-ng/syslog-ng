@@ -28,6 +28,7 @@ package org.syslog_ng.elasticsearch_v2;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.syslog_ng.LogDestination;
 import org.syslog_ng.options.*;
@@ -147,17 +148,21 @@ public class ElasticSearchOptions {
                 return options.get(SKIP_CLUSTER_HEALTH_CHECK).getValueAsBoolean();
         }
 
-	public String getClusterUrl() {
-		String cluster_url = options.get(CLUSTER_URL).getValue();
-		if (cluster_url.isEmpty()) {
-			StringBuilder url = new StringBuilder();
-			url.append("http://");
-			url.append(getServerList()[0]);
-			url.append(":");
-			url.append(getPort());
-			cluster_url = url.toString();
+	public Set<String> getClusterUrls() {
+		String[] cluster_url = options.get(CLUSTER_URL).getValueAsStringList(" ");
+		if (cluster_url[0].isEmpty()) {
+			String[] server_list = getServerList();
+			cluster_url = new String[server_list.length];
+			for (int i = 0; i < server_list.length; i++) {
+				StringBuilder url = new StringBuilder();
+				url.append("http://");
+				url.append(server_list[i]);
+				url.append(":");
+				url.append(getPort());
+				cluster_url[i] = url.toString();
+			}
 		}
-		return cluster_url;
+		return new HashSet<String>(Arrays.asList(cluster_url));
 	}
 
 

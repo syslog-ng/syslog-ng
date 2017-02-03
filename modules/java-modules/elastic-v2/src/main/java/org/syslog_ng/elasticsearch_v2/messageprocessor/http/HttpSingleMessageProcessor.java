@@ -25,6 +25,7 @@
 package org.syslog_ng.elasticsearch_v2.messageprocessor.http;
 
 import io.searchbox.core.Index;
+import io.searchbox.client.JestResult;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 
@@ -39,12 +40,17 @@ public class HttpSingleMessageProcessor extends  HttpMessageProcessor {
 	@Override
 	public boolean send(Index req) {
 		boolean result = true;
+	  JestResult jestResult = null;
 		try {
-			client.getClient().execute(req);
+			jestResult = client.getClient().execute(req);
 		}
 		catch (IOException e)
 		{
 			logger.error(e.getMessage());
+			result = false;
+		}
+		if (! jestResult.isSucceeded()) {
+			logger.error(jestResult.getErrorMessage());
 			result = false;
 		}
 		return result;
