@@ -118,7 +118,7 @@ log_proto_text_server_prepare(LogProtoServer *s, GIOCondition *cond)
 }
 
 static void
-log_proto_test_server_maybe_realloc_reverse_buffer(LogProtoTextServer *self, gsize buffer_length)
+log_proto_text_server_maybe_realloc_reverse_buffer(LogProtoTextServer *self, gsize buffer_length)
 {
   if (self->reverse_buffer_len >= buffer_length)
     return;
@@ -166,7 +166,7 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
 
 
   /* Multiplied by 6, because 1 character can be maximum 6 bytes in UTF-8 encoding */
-  log_proto_test_server_maybe_realloc_reverse_buffer(self, buffer_len * 6);
+  log_proto_text_server_maybe_realloc_reverse_buffer(self, buffer_len * 6);
 
   avail_out = self->reverse_buffer_len;
   out = self->reverse_buffer;
