@@ -117,6 +117,17 @@ log_proto_text_server_prepare(LogProtoServer *s, GIOCondition *cond)
   return avail;
 }
 
+static void
+log_proto_text_server_maybe_realloc_reverse_buffer(LogProtoTextServer *self, gsize buffer_length)
+{
+  if (self->reverse_buffer_len >= buffer_length)
+    return;
+
+  /* we free and malloc, since we never need the data still in reverse buffer */
+  g_free(self->reverse_buffer);
+  self->reverse_buffer_len = buffer_length;
+  self->reverse_buffer = g_malloc(buffer_length);
+}
 
 /*
  * returns the number of bytes that represent the UTF8 encoding buffer
@@ -153,13 +164,9 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
   if (self->convert_scale)
     return g_utf8_strlen((gchar *) buffer, buffer_len) * self->convert_scale;
 
-  if (self->reverse_buffer_len < buffer_len * 6)
-    {
-      /* we free and malloc, since we never need the data still in reverse buffer */
-      g_free(self->reverse_buffer);
-      self->reverse_buffer_len = buffer_len * 6;
-      self->reverse_buffer = g_malloc(buffer_len * 6);
-    }
+
+  /* Multiplied by 6, because 1 character can be maximum 6 bytes in UTF-8 encoding */
+  log_proto_text_server_maybe_realloc_reverse_buffer(self, buffer_len * 6);
 
   avail_out = self->reverse_buffer_len;
   out = self->reverse_buffer;
@@ -363,6 +370,12 @@ log_proto_text_server_locate_next_eol(LogProtoTextServer *self, LogProtoBuffered
   return eol;
 }
 
+static gboolean
+log_proto_text_server_message_size_too_large(LogProtoTextServer *self, gsize buffer_bytes)
+{
+  return buffer_bytes >= self->super.super.options->max_msg_size;
+}
+
 /**
  * log_proto_text_server_fetch_from_buffer:
  * @self: LogReader instance
@@ -377,31 +390,37 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
                                         const guchar **msg, gsize *msg_len)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
-  const guchar *eol;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean result = FALSE;
 
-  eol = log_proto_text_server_locate_next_eol(self, state, buffer_start, buffer_bytes);
+  const guchar *eol = log_proto_text_server_locate_next_eol(self, state, buffer_start, buffer_bytes);
 
-  if (!eol &&
-      ((buffer_bytes == state->buffer_size) ||
-       log_proto_buffered_server_is_input_closed(&self->super)))
+  if (!eol)
     {
-      log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
-      goto success;
+      if (log_proto_text_server_message_size_too_large(self, buffer_bytes)
+          || log_proto_buffered_server_is_input_closed(&self->super))
+        {
+          log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
+        }
+      else
+        {
+          log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
+          goto exit;
+        }
     }
-  else if (!eol)
+  else if (!log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
     {
-      log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
-      goto exit;
-    }
-  else
-    {
-      if (!log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
-        goto exit;
+      if (log_proto_text_server_message_size_too_large(self, buffer_bytes))
+        {
+          log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
+        }
+      else
+        {
+          log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
+          goto exit;
+        }
     }
 
-success:
   log_proto_text_server_remove_trailing_newline(msg, msg_len);
   result = TRUE;
 
@@ -409,7 +428,6 @@ exit:
   log_proto_buffered_server_put_state(&self->super);
   return result;
 }
-
 
 static void
 log_proto_text_server_free(LogProtoServer *s)
