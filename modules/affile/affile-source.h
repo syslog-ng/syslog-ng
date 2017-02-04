@@ -45,6 +45,7 @@ typedef struct _AFFileReaderOptions {
   gint follow_freq;
   gint multi_line_mode;
   MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
+  LogReaderOptions reader_options;
 } AFFileReaderOptions;
 
 typedef struct _AFFileSourceDriver
@@ -52,7 +53,6 @@ typedef struct _AFFileSourceDriver
   LogSrcDriver super;
   GString *filename;
   LogReader *reader;
-  LogReaderOptions reader_options;
   AFFileReaderOptions file_reader_options;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
