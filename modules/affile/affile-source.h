@@ -28,34 +28,7 @@
 #include "logreader.h"
 #include "logproto/logproto-regexp-multiline-server.h"
 #include "affile-common.h"
-
-
-enum
-{
-  MLM_NONE,
-  MLM_INDENTED,
-  MLM_PREFIX_GARBAGE,
-  MLM_PREFIX_SUFFIX,
-};
-
-typedef struct _FileReaderOptions {
-  FilePermOptions file_perm_options;
-  FileOpenOptions file_open_options;
-  gint pad_size;
-  gint follow_freq;
-  gint multi_line_mode;
-  MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
-  LogReaderOptions reader_options;
-} FileReaderOptions;
-
-typedef struct _FileReader
-{
-  LogPipe super;
-  LogSrcDriver *owner;
-  GString *filename;
-  FileReaderOptions *file_reader_options;
-  LogReader *reader;
-} FileReader;
+#include "file-reader.h"
 
 typedef struct _AFFileSourceDriver
 {

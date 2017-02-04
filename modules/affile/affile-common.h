@@ -25,6 +25,7 @@
 #define AFFILE_COMMON_H_INCLUDED
 
 #include "file-perms.h"
+#include <string.h>
 
 typedef struct _FileOpenOptions
 {
@@ -35,5 +36,15 @@ typedef struct _FileOpenOptions
 } FileOpenOptions;
 
 gboolean affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd);
+
+static inline gboolean
+affile_is_linux_proc_kmsg(const gchar *filename)
+{
+#ifdef __linux__
+  if (strcmp(filename, "/proc/kmsg") == 0)
+    return TRUE;
+#endif
+  return FALSE;
+}
 
 #endif
