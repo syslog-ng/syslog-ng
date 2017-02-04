@@ -48,11 +48,20 @@ typedef struct _FileReaderOptions {
   LogReaderOptions reader_options;
 } FileReaderOptions;
 
+typedef struct _FileReader
+{
+  LogPipe super;
+  LogSrcDriver *owner;
+  GString *filename;
+  FileReaderOptions *file_reader_options;
+  LogReader *reader;
+} FileReader;
+
 typedef struct _AFFileSourceDriver
 {
   LogSrcDriver super;
   GString *filename;
-  LogReader *reader;
+  FileReader *file_reader;
   FileReaderOptions file_reader_options;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
