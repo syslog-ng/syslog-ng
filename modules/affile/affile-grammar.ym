@@ -41,7 +41,7 @@
 
 #include <string.h>
 
-AFFileReaderOptions *last_file_reader_options;
+FileReaderOptions *last_file_reader_options;
 }
 
 %name-prefix "affile_"
