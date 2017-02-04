@@ -41,6 +41,7 @@
 
 #include <string.h>
 
+AFFileReaderOptions *last_file_reader_options;
 }
 
 %name-prefix "affile_"
@@ -88,7 +89,8 @@ source_affile_params
 	  {
       last_driver = *instance = affile_sd_new($1, configuration);
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
-	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_perm_options;
+	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
+	    last_file_perm_options = &last_file_reader_options->file_perm_options;
 	  }
           source_affile_options                 { $$ = last_driver; free($1); }
         ;
@@ -101,7 +103,7 @@ source_affile_options
 source_affile_option
 	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ affile_sd_set_follow_freq(last_driver, (long) ($3 * 1000)); }
 	| KW_FOLLOW_FREQ '(' nonnegative_integer ')'		{ affile_sd_set_follow_freq(last_driver, ($3 * 1000)); }
-	| KW_PAD_SIZE '(' nonnegative_integer ')'			{ ((AFFileSourceDriver *) last_driver)->pad_size = $3; }
+	| KW_PAD_SIZE '(' nonnegative_integer ')'			{ last_file_reader_options->pad_size = $3; }
 	| multi_line_option
         | source_reader_option
         ;
@@ -112,7 +114,8 @@ source_afpipe_params
 	  {
 	    last_driver = *instance = afpipe_sd_new($1, configuration);
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
-	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_perm_options;
+	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
+	    last_file_perm_options = &last_file_reader_options->file_perm_options;
 	  }
 	  source_afpipe_options				{ $$ = last_driver; free($1); }
 	;
@@ -124,7 +127,7 @@ source_afpipe_options
 
 source_afpipe_option
 	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
-	| KW_PAD_SIZE '(' nonnegative_integer ')'			{ ((AFFileSourceDriver *) last_driver)->pad_size = $3; }
+	| KW_PAD_SIZE '(' nonnegative_integer ')'			{ last_file_reader_options->pad_size = $3; }
 	| multi_line_option
 	| file_perm_option
 	| source_reader_option
