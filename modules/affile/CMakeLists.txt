@@ -2,6 +2,7 @@ set(AFFILE_HEADERS
     "logproto-linux-proc-kmsg-reader.h"
     "logproto-file-writer.h"
     "poll-file-changes.h"
+    "file-reader.h"
     "affile-common.h"
     "affile-source.h"
     "affile-dest.h"
@@ -12,6 +13,7 @@ set(AFFILE_HEADERS
 set(AFFILE_SOURCES
     "logproto-file-writer.c"
     "poll-file-changes.c"
+    "file-reader.c"
     "affile-common.c"
     "affile-source.c"
     "affile-dest.c"
