@@ -38,7 +38,7 @@ enum
   MLM_PREFIX_SUFFIX,
 };
 
-typedef struct _AFFileReaderOptions {
+typedef struct _FileReaderOptions {
   FilePermOptions file_perm_options;
   FileOpenOptions file_open_options;
   gint pad_size;
@@ -46,14 +46,14 @@ typedef struct _AFFileReaderOptions {
   gint multi_line_mode;
   MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
   LogReaderOptions reader_options;
-} AFFileReaderOptions;
+} FileReaderOptions;
 
 typedef struct _AFFileSourceDriver
 {
   LogSrcDriver super;
   GString *filename;
   LogReader *reader;
-  AFFileReaderOptions file_reader_options;
+  FileReaderOptions file_reader_options;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 
