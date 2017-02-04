@@ -87,9 +87,9 @@ source_affile
 source_affile_params
 	: string
 	  {
-      last_driver = *instance = affile_sd_new($1, configuration);
-	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
+        last_driver = *instance = affile_sd_new($1, configuration);
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
+	    last_reader_options = &last_file_reader_options->reader_options;
 	    last_file_perm_options = &last_file_reader_options->file_perm_options;
 	  }
           source_affile_options                 { $$ = last_driver; free($1); }
@@ -113,8 +113,8 @@ source_afpipe_params
 	: string
 	  {
 	    last_driver = *instance = afpipe_sd_new($1, configuration);
-	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
+	    last_reader_options = &last_file_reader_options->reader_options;
 	    last_file_perm_options = &last_file_reader_options->file_perm_options;
 	  }
 	  source_afpipe_options				{ $$ = last_driver; free($1); }

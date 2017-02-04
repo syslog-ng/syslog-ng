@@ -226,17 +226,18 @@ affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
 static LogProtoServer *
 affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
 {
-  LogProtoServerOptions *proto_options = &self->reader_options.proto_options.super;
+  LogReaderOptions *reader_options = &self->file_reader_options.reader_options;
+  LogProtoServerOptions *proto_options = &reader_options->proto_options.super;
   LogTransport *transport;
   MsgFormatHandler *format_handler;
 
   transport = affile_sd_construct_transport(self, fd);
 
-  format_handler = self->reader_options.parse_options.format_handler;
+  format_handler = reader_options->parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
     {
       proto_options->position_tracking_enabled = TRUE;
-      return format_handler->construct_proto(&self->reader_options.parse_options, transport, proto_options);
+      return format_handler->construct_proto(&reader_options->parse_options, transport, proto_options);
     }
 
   if (self->file_reader_options.pad_size)
@@ -286,7 +287,7 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
 
   log_reader_set_options(self->reader,
                          s,
-                         &self->reader_options,
+                         &self->file_reader_options.reader_options,
                          STATS_LEVEL1,
                          SCS_FILE,
                          self->super.super.id,
@@ -433,7 +434,7 @@ affile_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-  log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
+  log_reader_options_init(&self->file_reader_options.reader_options, cfg, self->super.super.group);
 
   if (_are_multi_line_settings_invalid(self))
     {
@@ -467,7 +468,7 @@ affile_sd_free(LogPipe *s)
   g_string_free(self->filename, TRUE);
   g_assert(!self->reader);
 
-  log_reader_options_destroy(&self->reader_options);
+  log_reader_options_destroy(&self->file_reader_options.reader_options);
 
   multi_line_regexp_free(self->file_reader_options.multi_line_prefix);
   multi_line_regexp_free(self->file_reader_options.multi_line_garbage);
@@ -488,9 +489,9 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.notify = affile_sd_notify;
   self->super.super.super.free_fn = affile_sd_free;
   self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
-  log_reader_options_defaults(&self->reader_options);
+  log_reader_options_defaults(&self->file_reader_options.reader_options);
   file_perm_options_defaults(&self->file_reader_options.file_perm_options);
-  self->reader_options.parse_options.flags |= LP_LOCAL;
+  self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
 
   if (affile_is_linux_proc_kmsg(filename))
     self->file_reader_options.file_open_options.needs_privileges = TRUE;
@@ -539,7 +540,7 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
     }
   else
     {
-      self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
+      self->file_reader_options.reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
     }
 
   return &self->super.super;
