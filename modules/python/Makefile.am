@@ -42,12 +42,8 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-logmsg.c	          \
 	modules/python/python-debugger.h	  \
 	modules/python/python-debugger.c	  \
-	modules/python/python-parser-parser.h	  \
-	modules/python/python-parser-parser.c	  \
 	modules/python/python-logparser.h	  \
-	modules/python/python-logparser.c	\
-	modules/python/python-parser-grammar.y
-
+	modules/python/python-logparser.c
 
 modules_python_libmod_python_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS) \
@@ -59,10 +55,7 @@ modules_python_libmod_python_la_DEPENDENCIES=	\
 BUILT_SOURCES					+= \
 	modules/python/python-grammar.y		   \
 	modules/python/python-grammar.c		   \
-	modules/python/python-grammar.h		   \
-	modules/python/python-parser-grammar.y	   \
-	modules/python/python-parser-grammar.h	\
-	modules/python/python-parser-grammar.c
+	modules/python/python-grammar.h
 
 modules/python mod-python: modules/python/libmod-python.la
 else

@@ -51,7 +51,7 @@ static Plugin python_plugins[] =
   {
     .type = LL_CONTEXT_PARSER,
     .name = "python",
-    .parser = &python_parser_parser,
+    .parser = &python_parser,
   },
   TEMPLATE_FUNCTION_PLUGIN(tf_python, "python"),
 };
