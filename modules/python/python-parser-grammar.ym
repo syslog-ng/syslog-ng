@@ -54,15 +54,15 @@ start
 	  {
 	    last_parser = *instance = python_parser_new(configuration);
           }
-          '(' python_options ')' { YYACCEPT; }
+          '(' python_parser_options ')' { YYACCEPT; }
         ;
 
-python_options
-        : python_option python_options
+python_parser_options
+        : python_parser_option python_parser_options
         |
         ;
 
-python_option
+python_parser_option
         : KW_CLASS '(' string ')'
           {
             python_parser_set_class(last_parser, $3);
