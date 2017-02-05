@@ -42,15 +42,14 @@
 
 /* INCLUDE_DECLS */
 
-%token KW_PYTHON_PARSER
+%token KW_PYTHON
 %token KW_CLASS
 %token KW_IMPORTS
-%token KW_OPTION
 
 %%
 
 start
-        : LL_CONTEXT_PARSER KW_PYTHON_PARSER
+        : LL_CONTEXT_PARSER KW_PYTHON
 	  {
 	    last_parser = *instance = python_parser_new(configuration);
           }
@@ -73,7 +72,7 @@ python_parser_option
             python_parser_set_imports(last_parser, $3);
             free($3);
           }
-        | KW_OPTION '(' python_parser_custom_options ')'
+        | KW_OPTIONS '(' python_parser_custom_options ')'
         ;
 
 python_parser_custom_options

@@ -29,10 +29,9 @@ int python_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword python_keywords[] =
 {
-  { "python_parser",            KW_PYTHON_PARSER  },
+  { "python",            	KW_PYTHON  },
   { "class",                    KW_CLASS   },
   { "imports",                  KW_IMPORTS },
-  { "option",                   KW_OPTION  },
   { NULL }
 };
 
