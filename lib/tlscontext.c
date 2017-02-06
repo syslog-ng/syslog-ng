@@ -54,7 +54,7 @@ tls_get_x509_digest(X509 *x, GString *hash_string)
 int
 tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
 {
-  SSL *ssl = X509_STORE_CTX_get_app_data(ctx);
+  SSL *ssl = (SSL *)X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
   TLSSession *self = SSL_get_app_data(ssl);
   GList *current_fingerprint = self->ctx->trusted_fingerpint_list;
   GString *hash;
@@ -106,7 +106,7 @@ tls_x509_format_dn(X509_NAME *name, GString *dn)
 int
 tls_session_verify_dn(X509_STORE_CTX *ctx)
 {
-  SSL *ssl = X509_STORE_CTX_get_app_data(ctx);
+  SSL *ssl = (SSL *)X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
   TLSSession *self = SSL_get_app_data(ssl);
   gboolean match = FALSE;
   GList *current_dn = self->ctx->trusted_dn_list;
@@ -179,7 +179,7 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
 int
 tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
 {
-  SSL *ssl = X509_STORE_CTX_get_app_data(ctx);
+  SSL *ssl = (SSL *)X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
   TLSSession *self = SSL_get_app_data(ssl);
   /* NOTE: Sometimes libssl calls this function
      with no current_cert. This happens when
