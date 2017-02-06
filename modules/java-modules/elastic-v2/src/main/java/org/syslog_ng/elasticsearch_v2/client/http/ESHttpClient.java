@@ -99,7 +99,7 @@ public class ESHttpClient implements ESClient {
 					return true;
 				}
 			};
-			if (options.getSSLInsecure()) {
+			if (options.getJavaSSLInsecure()) {
 				logger.warn("Using insecure options for HTTPS client");
 				// don't load trusted CA bundle
 				trustStore = null;
@@ -118,7 +118,7 @@ public class ESHttpClient implements ESClient {
 					return null;
 				}
 				try {
-					trustStore.load(new FileInputStream(options.getSSLTrustStoreFilepath()), options.getSSLTrustStorePassword().toCharArray());
+					trustStore.load(new FileInputStream(options.getJavaTrustStoreFilepath()), options.getJavaTrustStorePassword().toCharArray());
 				} catch (IOException | NoSuchAlgorithmException | CertificateException e) {
 					logger.error("Error loading truststore: " + e.getMessage());
 					return null;
@@ -140,7 +140,7 @@ public class ESHttpClient implements ESClient {
 					return null;
 				}
 				try {
-					keyStore.load(new FileInputStream(options.getSSLKeyStoreFilepath()), options.getSSLKeyStorePassword().toCharArray());
+					keyStore.load(new FileInputStream(options.getJavaKeyStoreFilepath()), options.getJavaKeyStorePassword().toCharArray());
 				} catch (IOException | NoSuchAlgorithmException | CertificateException  e) {
 					logger.error("Error loading keystore: " + e.getMessage());
 					return null;
@@ -148,7 +148,7 @@ public class ESHttpClient implements ESClient {
 
 				// not sure why we need to give keystore password again
 				try {
-					sslContextBuilder.loadKeyMaterial(keyStore,options.getSSLKeyStorePassword().toCharArray());
+					sslContextBuilder.loadKeyMaterial(keyStore,options.getJavaKeyStorePassword().toCharArray());
 				} catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
 					logger.error("Error loading keystore material: " + e.getMessage());
 					return null;
