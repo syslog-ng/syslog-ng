@@ -217,9 +217,14 @@ public class ESHttpClient implements ESClient {
 		String clusterName;
 		try {
 			JestResult result = client.execute(nodesinfo);
-			clusterName = result.getValue("cluster_name").toString();
-		} catch (IOException | NullPointerException e) {
+			if (result == null ) {
+				clusterName = result.getValue("cluster_name").toString();
+			} else {
+				clusterName = options.getCluster();
+			}
+		} catch (IOException e) {
 			clusterName = new String();
+			clusterName = options.getCluster();
 		}
 		return clusterName;
 	}
