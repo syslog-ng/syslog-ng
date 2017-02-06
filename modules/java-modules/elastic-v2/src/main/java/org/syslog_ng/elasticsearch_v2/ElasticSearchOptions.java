@@ -60,12 +60,12 @@ public class ElasticSearchOptions {
 	public static String CLIENT_MODE_HTTPS = "https";
 	public static String SKIP_CLUSTER_HEALTH_CHECK = "skip_cluster_health_check";
 	public static String SKIP_CLUSTER_HEALTH_CHECK_DEFAULT = "false";
-	public static String SSL_KEYSTORE_FILEPATH = "ssl_keystore_filepath";
-	public static String SSL_KEYSTORE_PASSWORD = "ssl_keystore_password";
-	public static String SSL_TRUSTSTORE_FILEPATH = "ssl_truststore_filepath";
-	public static String SSL_TRUSTSTORE_PASSWORD = "ssl_truststore_password";
-	public static String SSL_INSECURE = "ssl_insecure";
-	public static String SSL_INSECURE_DEFAULT = "false";
+	public static String JAVA_KEYSTORE_FILEPATH = "java_keystore_filepath";
+	public static String JAVA_KEYSTORE_PASSWORD = "java_keystore_password";
+	public static String JAVA_TRUSTSTORE_FILEPATH = "java_truststore_filepath";
+	public static String JAVA_TRUSTSTORE_PASSWORD = "java_truststore_password";
+	public static String JAVA_SSL_INSECURE = "java_ssl_insecure";
+	public static String JAVA_SSL_INSECURE_DEFAULT = "false";
 	public static String HTTP_AUTH_TYPE = "http_auth_type";
 	public static String HTTP_AUTH_TYPE_NONE = "none";
 	public static String HTTP_AUTH_TYPE_BASIC = "basic";
@@ -168,24 +168,24 @@ public class ElasticSearchOptions {
                 return options.get(SKIP_CLUSTER_HEALTH_CHECK).getValueAsBoolean();
         }
 
-	public boolean getSSLInsecure() {
-		return options.get(SSL_INSECURE).getValueAsBoolean();
+	public boolean getJavaSSLInsecure() {
+		return options.get(JAVA_SSL_INSECURE).getValueAsBoolean();
 	}
 
-	public String getSSLKeyStoreFilepath() {
-		return options.get(SSL_KEYSTORE_FILEPATH).getValue();
+	public String getJavaKeyStoreFilepath() {
+		return options.get(JAVA_KEYSTORE_FILEPATH).getValue();
 	}
 
-	public String getSSLKeyStorePassword() {
-		return options.get(SSL_KEYSTORE_PASSWORD).getValue();
+	public String getJavaKeyStorePassword() {
+		return options.get(JAVA_KEYSTORE_PASSWORD).getValue();
 	}
 
-	public String getSSLTrustStoreFilepath() {
-		return options.get(SSL_TRUSTSTORE_FILEPATH).getValue();
+	public String getJavaTrustStoreFilepath() {
+		return options.get(JAVA_TRUSTSTORE_FILEPATH).getValue();
 	}
 
-	public String getSSLTrustStorePassword() {
-		return options.get(SSL_TRUSTSTORE_PASSWORD).getValue();
+	public String getJavaTrustStorePassword() {
+		return options.get(JAVA_TRUSTSTORE_PASSWORD).getValue();
 	}
 
 	public String getHttpAuthTypeBasicUsername() {
@@ -238,16 +238,16 @@ public class ElasticSearchOptions {
 		options.put(new StringOption(owner, CONFIG_FILE));
 		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_DEFAULT), 0, Integer.MAX_VALUE));
 		options.put(new StringOption(owner, CLUSTER_URL, ""));
-		options.put(new StringOption(owner, SSL_KEYSTORE_FILEPATH, ""));
-		options.put(new StringOption(owner, SSL_KEYSTORE_PASSWORD, ""));
-		options.put(new StringOption(owner, SSL_TRUSTSTORE_FILEPATH, ""));
-		options.put(new StringOption(owner, SSL_TRUSTSTORE_PASSWORD, ""));
+		options.put(new StringOption(owner, JAVA_KEYSTORE_FILEPATH, ""));
+		options.put(new StringOption(owner, JAVA_KEYSTORE_PASSWORD, ""));
+		options.put(new StringOption(owner, JAVA_TRUSTSTORE_FILEPATH, ""));
+		options.put(new StringOption(owner, JAVA_TRUSTSTORE_PASSWORD, ""));
 		options.put(new StringOption(owner, HTTP_AUTH_TYPE_BASIC_USERNAME, ""));
 		options.put(new StringOption(owner, HTTP_AUTH_TYPE_BASIC_PASSWORD, ""));
 	}
 
 	private void fillBooleanOptions() {
 	        options.put(new BooleanOptionDecorator(new StringOption(owner, SKIP_CLUSTER_HEALTH_CHECK, SKIP_CLUSTER_HEALTH_CHECK_DEFAULT)));
-	        options.put(new BooleanOptionDecorator(new StringOption(owner, SSL_INSECURE, SSL_INSECURE)));
+	        options.put(new BooleanOptionDecorator(new StringOption(owner, JAVA_SSL_INSECURE, JAVA_SSL_INSECURE_DEFAULT)));
 	}
 }
