@@ -95,7 +95,7 @@ public class ESHttpClient implements ESClient {
 			// trust any server certificate
 			// TODO: configuration option to control this?
 			trustStrategy = new TrustStrategy() {
-				public boolean isTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+				public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
 					return true;
 				}
 			};
