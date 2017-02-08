@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2002-2017 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -28,7 +28,6 @@
 
 typedef enum
 {
-  SC_TYPE_MIN,
   SC_TYPE_DROPPED=0, /* number of messages dropped */
   SC_TYPE_PROCESSED, /* number of messages processed */
   SC_TYPE_STORED,    /* number of messages on disk */
@@ -103,11 +102,13 @@ typedef struct _StatsCluster
   gchar *instance;
   guint16 live_mask;
   guint16 dynamic:1;
+  gchar *query_key;
 } StatsCluster;
 
 typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data);
 
 const gchar *stats_cluster_get_type_name(gint type);
+gint stats_cluster_get_type_by_name(const gchar *name);
 const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len);
 
 void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data);
