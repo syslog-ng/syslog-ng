@@ -117,6 +117,7 @@ guint stats_cluster_hash(const StatsCluster *self);
 
 StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
+gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
 
 StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance);
 void stats_cluster_free(StatsCluster *self);
