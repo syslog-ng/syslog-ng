@@ -22,7 +22,6 @@
  *
  */
 #include "stats/stats-registry.h"
-
 #include <string.h>
 
 static GHashTable *counter_hash;
@@ -282,3 +281,10 @@ stats_registry_deinit(void)
   counter_hash = NULL;
   g_static_mutex_free(&stats_mutex);
 }
+
+GHashTable *
+stats_registry_get_counter_hash(void)
+{
+  return counter_hash;
+}
+

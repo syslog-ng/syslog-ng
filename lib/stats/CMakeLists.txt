@@ -7,6 +7,8 @@ set(STATS_HEADERS
     stats/stats-log.h
     stats/stats-registry.h
     stats/stats-syslog.h
+    stats/stats-query.h
+    stats/stats-query-commands.h
     PARENT_SCOPE)
 
 set(STATS_SOURCES
@@ -18,4 +20,6 @@ set(STATS_SOURCES
     stats/stats-log.c
     stats/stats-registry.c
     stats/stats-syslog.c
+    stats/stats-query.c
+    stats/stats-query-commands.c
     PARENT_SCOPE)

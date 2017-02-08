@@ -47,4 +47,6 @@ void stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer u
 void stats_registry_init(void);
 void stats_registry_deinit(void);
 
+GHashTable* stats_registry_get_counter_hash(void);
+
 #endif
