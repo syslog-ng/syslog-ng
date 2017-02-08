@@ -164,7 +164,7 @@ log_tags_dec_counter(LogTagId id)
  * get handled by this function.
  */
 void
-log_tags_reinit_stats(GlobalConfig *cfg)
+log_tags_reinit_stats(void)
 {
   gint id;
 

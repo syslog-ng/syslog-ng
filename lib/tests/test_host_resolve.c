@@ -44,7 +44,7 @@
       testcase_begin("%s(%s)", func, args);                       \
       dns_caching_thread_init();          \
       host_resolve_options_defaults(&host_resolve_options);   \
-      host_resolve_options_init(&host_resolve_options, configuration);  \
+      host_resolve_options_init(&host_resolve_options, &configuration->host_resolve_options);  \
       hostname_reinit(NULL);            \
     }                                                             \
   while (0)

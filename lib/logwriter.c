@@ -1605,7 +1605,7 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
     return;
 
   log_template_options_init(&options->template_options, cfg);
-  host_resolve_options_init(&options->host_resolve_options, cfg);
+  host_resolve_options_init(&options->host_resolve_options, &cfg->host_resolve_options);
   log_proto_client_options_init(&options->proto_options.super, cfg);
   options->options |= option_flags;
 

@@ -80,19 +80,9 @@
  * methods.
  */
 
-StatsOptions *stats_options;
-
-gboolean
-stats_check_level(gint level)
-{
-  if (stats_options)
-    return (stats_options->level >= level);
-  else
-    return level == 0;
-}
 
 static gboolean
-stats_cluster_is_expired(StatsCluster *sc, time_t now)
+stats_cluster_is_expired(StatsOptions *options, StatsCluster *sc, time_t now)
 {
   time_t tstamp;
 
@@ -111,7 +101,7 @@ stats_cluster_is_expired(StatsCluster *sc, time_t now)
     return FALSE;
 
   tstamp = sc->counters[SC_TYPE_STAMP].value;
-  return (tstamp <= now - stats_options->lifetime);
+  return (tstamp <= now - options->lifetime);
 }
 
 typedef struct _StatsTimerState
@@ -120,6 +110,7 @@ typedef struct _StatsTimerState
   time_t oldest_counter;
   gint dropped_counters;
   EVTREC *stats_event;
+  StatsOptions *options;
 } StatsTimerState;
 
 static gboolean
@@ -127,7 +118,7 @@ stats_prune_counter(StatsCluster *sc, StatsTimerState *st)
 {
   gboolean expired;
 
-  expired = stats_cluster_is_expired(sc, st->now.tv_sec);
+  expired = stats_cluster_is_expired(st->options, sc, st->now.tv_sec);
   if (expired)
     {
       time_t tstamp = sc->counters[SC_TYPE_STAMP].value;
@@ -149,14 +140,15 @@ stats_format_and_prune_cluster(StatsCluster *sc, gpointer user_data)
 }
 
 void
-stats_publish_and_prune_counters(void)
+stats_publish_and_prune_counters(StatsOptions *options)
 {
   StatsTimerState st;
-  gboolean publish = (stats_options->log_freq > 0);
+  gboolean publish = (options->log_freq > 0);
 
   st.oldest_counter = 0;
   st.dropped_counters = 0;
   st.stats_event = NULL;
+  st.options = options;
   cached_g_current_time(&st.now);
 
   if (publish)
@@ -179,9 +171,13 @@ stats_publish_and_prune_counters(void)
 
 
 static void
-stats_timer_rearm(struct iv_timer *timer)
+stats_timer_rearm(StatsOptions *options, struct iv_timer *timer)
 {
-  gint freq = GPOINTER_TO_INT(timer->cookie);
+  gint freq;
+
+  freq = options->log_freq;
+  if (!freq)
+    freq = options->lifetime <= 1 ? 1 : options->lifetime / 2;
   if (freq > 0)
     {
       /* arm the timer */
@@ -193,11 +189,11 @@ stats_timer_rearm(struct iv_timer *timer)
 }
 
 static void
-stats_timer_init(struct iv_timer *timer, void (*handler)(void *), gint freq)
+stats_timer_init(struct iv_timer *timer, void (*handler)(void *), StatsOptions *options)
 {
   IV_TIMER_INIT(timer);
   timer->handler = handler;
-  timer->cookie = GINT_TO_POINTER(freq);
+  timer->cookie = options;
 }
 
 static void
@@ -211,34 +207,31 @@ stats_timer_kill(struct iv_timer *timer)
 
 static struct iv_timer stats_timer;
 
-
 static void
 stats_timer_elapsed(gpointer st)
 {
-  stats_publish_and_prune_counters();
-  stats_timer_rearm(&stats_timer);
+  StatsOptions *options = (StatsOptions *) st;
+
+  stats_publish_and_prune_counters(options);
+  stats_timer_rearm(options, &stats_timer);
 }
 
 void
-stats_timer_reinit(void)
+stats_timer_reinit(StatsOptions *options)
 {
-  gint freq;
-
-  freq = stats_options->log_freq;
-  if (!freq)
-    freq = stats_options->lifetime <= 1 ? 1 : stats_options->lifetime / 2;
-
   stats_timer_kill(&stats_timer);
-  stats_timer_init(&stats_timer, stats_timer_elapsed, freq);
-  stats_timer_rearm(&stats_timer);
+  stats_timer_init(&stats_timer, stats_timer_elapsed, options);
+  stats_timer_rearm(options, &stats_timer);
 }
+
+static StatsOptions *stats_options;
 
 void
 stats_reinit(StatsOptions *options)
 {
   stats_options = options;
   stats_syslog_reinit();
-  stats_timer_reinit();
+  stats_timer_reinit(options);
 }
 
 void
@@ -260,4 +253,13 @@ stats_options_defaults(StatsOptions *options)
   options->level = 0;
   options->log_freq = 600;
   options->lifetime = 600;
+}
+
+gboolean
+stats_check_level(gint level)
+{
+  if (stats_options)
+    return (stats_options->level >= level);
+  else
+    return level == 0;
 }

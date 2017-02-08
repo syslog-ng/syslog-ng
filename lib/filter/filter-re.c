@@ -74,7 +74,7 @@ gboolean
 filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, gchar *re, GError **error)
 {
   log_matcher_options_init(&self->matcher_options, cfg);
-  self->matcher = log_matcher_new(&self->matcher_options);
+  self->matcher = log_matcher_new(cfg, &self->matcher_options);
   return log_matcher_compile(self->matcher, re, error);
 }
 
