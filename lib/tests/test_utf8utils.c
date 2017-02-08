@@ -28,18 +28,33 @@
 
 
 void
+assert_escaped_binary_with_unsafe_chars_with_len(const gchar *str, gssize str_len, const gchar *expected_escaped_str,
+    const gchar *unsafe_chars)
+{
+  GString *escaped_str = g_string_sized_new(64);
+
+  append_unsafe_utf8_as_escaped_binary(escaped_str, str, str_len, unsafe_chars);
+
+  assert_string(escaped_str->str, expected_escaped_str, "Escaped UTF-8 string is not expected");
+  g_string_free(escaped_str, TRUE);
+}
+
+void
 assert_escaped_binary_with_unsafe_chars(const gchar *str, const gchar *expected_escaped_str, const gchar *unsafe_chars)
 {
-  gchar *escaped_str = convert_unsafe_utf8_to_escaped_binary(str, -1, unsafe_chars);
-
-  assert_string(escaped_str, expected_escaped_str, "Escaped UTF-8 string is not expected");
-  g_free(escaped_str);
+  assert_escaped_binary_with_unsafe_chars_with_len(str, -1, expected_escaped_str, unsafe_chars);
 }
 
 void
 assert_escaped_binary(const gchar *str, const gchar *expected_escaped_str)
 {
   assert_escaped_binary_with_unsafe_chars(str, expected_escaped_str, NULL);
+}
+
+void
+assert_escaped_binary_with_len(const gchar *str, gssize str_len, const gchar *expected_escaped_str)
+{
+  assert_escaped_binary_with_unsafe_chars_with_len(str, str_len, expected_escaped_str, NULL);
 }
 
 void
@@ -70,6 +85,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   assert_escaped_binary("\x7", "\\x07");
   assert_escaped_binary("\xad", "\\xad");
   assert_escaped_binary("Á\xadÉ", "Á\\xadÉ");
+  assert_escaped_binary("\xc3\x00\xc1""", "\\xc3");
+  assert_escaped_binary_with_len("\xc3""\xa1 non zero terminated", 1, "\\xc3");
+  assert_escaped_binary_with_len("\xc3""\xa1 non zero terminated", 2, "á");
 
   assert_escaped_binary_with_unsafe_chars("\"text\"", "\\\"text\\\"", "\"");
   assert_escaped_binary_with_unsafe_chars("\"text\"", "\\\"te\\xt\\\"", "\"x");
