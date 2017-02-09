@@ -25,6 +25,7 @@
 #include "control/control-main.h"
 #include "mainloop.h"
 #include "messages.h"
+#include "stats/stats-query-commands.h"
 
 static GList *command_list = NULL;
 
@@ -111,6 +112,7 @@ ControlCommand default_commands[] =
   { "LOG", NULL, control_connection_message_log },
   { "STOP", NULL, control_connection_stop_process },
   { "RELOAD", NULL, control_connection_reload },
+  { "QUERY", NULL, process_query_command },
   { NULL, NULL, NULL },
 };
 

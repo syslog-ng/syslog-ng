@@ -39,18 +39,18 @@ stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, 
     }
 }
 
+static const gchar *tag_names[SC_TYPE_MAX] =
+{
+  /* [SC_TYPE_DROPPED]   = */ "dropped",
+  /* [SC_TYPE_PROCESSED] = */ "processed",
+  /* [SC_TYPE_STORED]   = */  "stored",
+  /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
+  /* [SC_TYPE_STAMP] = */ "stamp",
+};
+
 const gchar *
 stats_cluster_get_type_name(gint type)
 {
-  static const gchar *tag_names[SC_TYPE_MAX] =
-  {
-    /* [SC_TYPE_DROPPED]   = */ "dropped",
-    /* [SC_TYPE_PROCESSED] = */ "processed",
-    /* [SC_TYPE_STORED]   = */  "stored",
-    /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
-    /* [SC_TYPE_STAMP] = */ "stamp",
-  };
-
   return tag_names[type];
 }
 
@@ -164,6 +164,33 @@ stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **
   *counter = NULL;
 }
 
+static gchar *
+_stats_build_query_key(StatsCluster *self)
+{
+  GString *key = g_string_new("");
+  gchar buffer[64] = {0};
+  const gchar *component_name = stats_cluster_get_component_name(self, buffer, sizeof(buffer));
+
+  g_string_append(key, component_name);
+
+  if (self->id && self->id[0])
+    {
+      g_string_append_printf(key, ".%s", self->id);
+    }
+  if (self->instance && self->instance[0])
+    {
+      g_string_append_printf(key, ".%s", self->instance);
+    }
+
+  return g_string_free(key, FALSE);
+}
+
+gboolean
+stats_cluster_is_alive(StatsCluster *self, gint type)
+{
+  return ((1<<type) & self->live_mask);
+}
+
 StatsCluster *
 stats_cluster_new(gint component, const gchar *id, const gchar *instance)
 {
@@ -173,6 +200,7 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance)
   self->id = g_strdup(id ? : "");
   self->instance = g_strdup(instance ? : "");
   self->use_count = 0;
+  self->query_key = _stats_build_query_key(self);
   return self;
 }
 
@@ -181,5 +209,6 @@ stats_cluster_free(StatsCluster *self)
 {
   g_free(self->id);
   g_free(self->instance);
+  g_free(self->query_key);
   g_free(self);
 }
