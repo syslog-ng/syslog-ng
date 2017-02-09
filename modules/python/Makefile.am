@@ -67,8 +67,7 @@ include modules/python/pylib/Makefile.am
 EXTRA_DIST					+= \
 	modules/python/python-grammar.ym	   \
 	modules/python/python-example.conf	   \
-	modules/python/sngexample.py		   \
-	modules/python/python-parser-grammar.ym
+	modules/python/sngexample.py
 
 .PHONY: modules/python mod-python
 

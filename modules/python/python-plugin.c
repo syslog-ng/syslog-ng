@@ -28,7 +28,6 @@
 #include "python-tf.h"
 #include "python-logmsg.h"
 #include "python-debugger.h"
-#include "python-parser-parser.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
