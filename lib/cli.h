@@ -28,7 +28,6 @@
 
 typedef struct _CliParam
 {
-  gchar *name;
   gchar *cfg;
   gchar *type;
 } CliParam;
@@ -38,11 +37,12 @@ CliParam *cli_param_new(gchar *type, gchar *cfg);
 typedef struct _CliParamConverter
 {
   gchar **raw_params;
+  gchar *destination_params;
   GList *params;
   gchar *generated_config;
 } CliParamConverter;
 
-CliParamConverter *cli_param_converter_new(gchar **params);
+CliParamConverter *cli_param_converter_new(gchar **params, gchar *destination_params);
 gboolean cli_param_converter_setup(CliParamConverter *self);
 void cli_param_converter_convert(CliParamConverter *self);
 

@@ -87,6 +87,7 @@ static GOptionEntry syslogng_options[] =
   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
   { "cli",               'l',         0, G_OPTION_ARG_NONE, &main_loop_options.command_line_mode, "Run as a command line tool" },
+  { "destination",       's',         0, G_OPTION_ARG_STRING, &main_loop_options.cli_destination_options, "Set options of stdout when run in command line mode", "<destination-config>" },
   { G_OPTION_REMAINING,  0,           0, G_OPTION_ARG_STRING_ARRAY, &main_loop_options.cli_var, NULL, NULL },
   { NULL },
 };

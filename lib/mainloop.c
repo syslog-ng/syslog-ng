@@ -458,7 +458,7 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 static int
 _setup_cli_mode(MainLoopOptions *options, GlobalConfig *current_configuration)
 {
-  CliParamConverter *converter = cli_param_converter_new(options->cli_var);
+  CliParamConverter *converter = cli_param_converter_new(options->cli_var, options->cli_destination_options);
 
   if (!cli_param_converter_setup(converter))
     return 2;
