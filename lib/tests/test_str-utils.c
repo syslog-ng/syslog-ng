@@ -53,6 +53,7 @@ int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   assert_strchr_is_null("", 'x');
+  assert_strchr_is_null("\0x", 'x');
   assert_strchr_is_null("a", 'x');
   assert_strchr_is_null("abc", 'x');
 
