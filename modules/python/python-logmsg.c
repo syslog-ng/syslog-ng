@@ -36,10 +36,10 @@ static PyTypeObject py_log_message_type;
 static PyObject *
 _py_log_message_getattr(PyObject *o, PyObject *key)
 {
-  if (!PyString_Check(key))
+  if (!PyBytes_Check(key))
     return NULL;
 
-  gchar *name = PyString_AsString(key);
+  gchar *name = PyBytes_AsString(key);
   NVHandle handle = log_msg_get_value_handle(name);
   PyLogMessage *py_msg = (PyLogMessage *)o;
   const gchar *value = log_msg_get_value(py_msg->msg, handle, NULL);
@@ -54,11 +54,11 @@ _py_log_message_getattr(PyObject *o, PyObject *key)
 static int
 _py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
 {
-  if (!PyString_Check(key))
+  if (!PyBytes_Check(key))
     return -1;
 
   PyLogMessage *py_msg = (PyLogMessage *)o;
-  gchar *name = PyString_AsString(key);
+  gchar *name = PyBytes_AsString(key);
   NVHandle handle = log_msg_get_value_handle(name);
   PyObject *value_as_strobj = PyObject_Str(value);
   log_msg_set_value(py_msg->msg, handle, PyBytes_AsString(value_as_strobj), -1);

@@ -22,6 +22,8 @@ set(PYTHON_SOURCES
     python-logmsg.c
     python-debugger.c
     python-debugger.h
+    python-logparser.h
+    python-logparser.c
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.h
 )
