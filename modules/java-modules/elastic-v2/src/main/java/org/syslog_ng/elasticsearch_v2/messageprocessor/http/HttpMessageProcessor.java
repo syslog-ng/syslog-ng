@@ -30,6 +30,7 @@ import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
+import java.io.IOException;
 
 public abstract class HttpMessageProcessor implements ESMessageProcessor {
 	protected ElasticSearchOptions options;
@@ -45,7 +46,7 @@ public abstract class HttpMessageProcessor implements ESMessageProcessor {
 	public void init() {
 	}
 
-	public void flush() {
+	public void flush() throws IOException {
 
 	}
 
