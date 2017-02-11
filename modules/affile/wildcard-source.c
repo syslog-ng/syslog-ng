@@ -21,6 +21,25 @@
  */
 
 #include "wildcard-source.h"
+#include "messages.h"
+
+static gboolean
+_check_required_options(WildcardSourceDriver *self)
+{
+  if (!self->base_dir)
+    {
+      msg_error("Error: base-dir option is required",
+                evt_tag_str("driver", self->super.super.id));
+      return FALSE;
+    }
+  if (!self->filename_pattern)
+    {
+      msg_error("Error: filename-pattern option is required",
+                evt_tag_str("driver", self->super.super.id));
+      return FALSE;
+    }
+  return TRUE;
+}
 
 static void
 _free(LogPipe *s)
@@ -33,6 +52,21 @@ _free(LogPipe *s)
   log_src_driver_free(s);
 }
 
+static gboolean
+_init(LogPipe *s)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+  if (!log_src_driver_init_method(s))
+    {
+      return FALSE;
+    }
+  if (!_check_required_options(self))
+    {
+      return FALSE;
+    }
+  return TRUE;
+}
+
 LogDriver *
 wildcard_sd_new(GlobalConfig *cfg)
 {
@@ -41,6 +75,7 @@ wildcard_sd_new(GlobalConfig *cfg)
   log_src_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.free_fn = _free;
+  self->super.super.super.init = _init;
 
   return &self->super.super;
 }

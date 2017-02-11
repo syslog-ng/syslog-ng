@@ -42,12 +42,18 @@ _deinit(void)
   cfg_free(configuration);
 }
 
+static gboolean
+_parse_config(const gchar *config)
+{
+  static gchar raw_config[2048];
+  snprintf(raw_config, 2048, "source s_test { wildcard-file(%s); }; log { source(s_test); };", config);
+  return parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL);
+}
+
 static WildcardSourceDriver *
 _create_wildcard_filesource(const gchar *wildcard_config)
 {
-  static gchar raw_config[2048];
-  snprintf(raw_config, 2048, "source s_test { wildcard-file(%s); }; log { source(s_test); };", wildcard_config);
-  cr_assert(parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL), "Parsing the given configuration failed");
+  cr_assert(_parse_config(wildcard_config), "Parsing the given configuration failed");
   cr_assert(cfg_init(configuration), "Config initialization failed");
   LogExprNode *expr_node = cfg_tree_get_object(&configuration->tree, ENC_SOURCE, "s_test");
   cr_assert(expr_node != NULL);
@@ -101,3 +107,24 @@ Test(wildcard_source, test_option_duplication)
   cr_assert_str_eq(driver->base_dir->str, "/var/log");
   cr_assert_str_eq(driver->filename_pattern->str, "*.log");
 }
+
+Test(wildcard_source, test_filename_pattern_required_options)
+{
+  start_grabbing_messages();
+  cr_assert(_parse_config("base-dir(/tmp)"));
+  cr_assert(!cfg_init(configuration), "Config initialization should be failed");
+  stop_grabbing_messages();
+  cr_assert(assert_grabbed_messages_contain_non_fatal("filename-pattern option is required", NULL));
+  reset_grabbed_messages();
+}
+
+Test(wildcard_source, test_base_dir_required_options)
+{
+  start_grabbing_messages();
+  cr_assert(_parse_config("filename-pattern(/tmp)"));
+  cr_assert(!cfg_init(configuration), "Config initialization should be failed");
+  stop_grabbing_messages();
+  cr_assert(assert_grabbed_messages_contain_non_fatal("base-dir option is required", NULL));
+  reset_grabbed_messages();
+}
+
