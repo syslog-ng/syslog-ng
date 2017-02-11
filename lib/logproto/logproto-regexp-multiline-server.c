@@ -81,7 +81,7 @@ multi_line_regexp_free(MultiLineRegexp *self)
       if (self->pattern)
         pcre_free(self->pattern);
       if (self->extra)
-        pcre_free(self->extra);
+        pcre_free_study(self->extra);
       g_free(self);
     }
 }
