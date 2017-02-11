@@ -61,10 +61,10 @@ TestSuite(wildcard_source, .init = _init, .fini = _deinit);
 Test(wildcard_source, initial_test)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
-      "filename-pattern(*.log)"
-      "recursive(yes)"
-      "max-files(100)"
-      "force-directory-polling(no)");
+                                 "filename-pattern(*.log)"
+                                 "recursive(yes)"
+                                 "max-files(100)"
+                                 "force-directory-polling(no)");
   cr_assert_str_eq(driver->base_dir->str, "/tmp");
   cr_assert_str_eq(driver->filename_pattern->str, "*.log");
   cr_assert_eq(driver->max_files, 100);
@@ -75,16 +75,16 @@ Test(wildcard_source, initial_test)
 Test(wildcard_source, test_option_inheritance)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
-        "filename-pattern(*.log)"
-        "recursive(yes)"
-        "max-files(100)"
-        "force-directory-polling(no)"
-        "follow-freq(10)"
-        "follow_freq(10.0)"
-        "pad_size(5)"
-        "multi-line-mode(regexp)"
-        "multi-line-prefix(\\d+)"
-        "multi-line-garbage(garbage)");
+                                 "filename-pattern(*.log)"
+                                 "recursive(yes)"
+                                 "max-files(100)"
+                                 "force-directory-polling(no)"
+                                 "follow-freq(10)"
+                                 "follow_freq(10.0)"
+                                 "pad_size(5)"
+                                 "multi-line-mode(regexp)"
+                                 "multi-line-prefix(\\d+)"
+                                 "multi-line-garbage(garbage)");
   cr_assert_eq(driver->file_reader_options.follow_freq, 10000);
   cr_assert_eq(driver->file_reader_options.pad_size, 5);
   cr_assert_eq(driver->file_reader_options.multi_line_mode, MLM_PREFIX_GARBAGE);
@@ -95,9 +95,9 @@ Test(wildcard_source, test_option_inheritance)
 Test(wildcard_source, test_option_duplication)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
-          "filename-pattern(*.txt)"
-          "base-dir(/var/log)"
-          "filename-pattern(*.log)");
+                                 "filename-pattern(*.txt)"
+                                 "base-dir(/var/log)"
+                                 "filename-pattern(*.log)");
   cr_assert_str_eq(driver->base_dir->str, "/var/log");
   cr_assert_str_eq(driver->filename_pattern->str, "*.log");
 }
