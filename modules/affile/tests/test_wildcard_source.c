@@ -91,3 +91,13 @@ Test(wildcard_source, test_option_inheritance)
   cr_assert(driver->file_reader_options.multi_line_prefix != NULL);
   cr_assert(driver->file_reader_options.multi_line_garbage != NULL);
 }
+
+Test(wildcard_source, test_option_duplication)
+{
+  WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
+          "filename-pattern(*.txt)"
+          "base-dir(/var/log)"
+          "filename-pattern(*.log)");
+  cr_assert_str_eq(driver->base_dir->str, "/var/log");
+  cr_assert_str_eq(driver->filename_pattern->str, "*.log");
+}
