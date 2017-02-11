@@ -52,7 +52,7 @@
 
 
 static inline gboolean
-affile_is_linux_dev_kmsg(const gchar *filename)
+_is_linux_dev_kmsg(const gchar *filename)
 {
 #ifdef __linux__
   if (strcmp(filename, "/dev/kmsg") == 0)
@@ -70,7 +70,7 @@ _sd_open_file(FileReader *self, gchar *name, gint *fd)
 }
 
 static inline const gchar *
-file_reader_format_persist_name(const LogPipe *s)
+_format_persist_name(const LogPipe *s)
 {
   const FileReader *self = (const FileReader *)s;
   static gchar persist_name[1024];
@@ -84,14 +84,14 @@ file_reader_format_persist_name(const LogPipe *s)
 }
 
 static void
-file_reader_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
+_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
   if (self->file_reader_options->file_open_options.is_pipe || self->file_reader_options->follow_freq <= 0)
     return;
 
-  if (!log_proto_server_restart_with_state(proto, cfg->state, file_reader_format_persist_name(s)))
+  if (!log_proto_server_restart_with_state(proto, cfg->state, _format_persist_name(s)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str));
@@ -116,7 +116,7 @@ _is_fd_pollable(gint fd)
 }
 
 static PollEvents *
-file_reader_construct_poll_events(FileReader *self, gint fd)
+_construct_poll_events(FileReader *self, gint fd)
 {
   if (self->file_reader_options->follow_freq > 0)
     return poll_file_changes_new(fd, self->filename->str, self->file_reader_options->follow_freq, &self->super);
@@ -134,7 +134,7 @@ file_reader_construct_poll_events(FileReader *self, gint fd)
 }
 
 static LogTransport *
-file_reader_construct_transport(FileReader *self, gint fd)
+_construct_transport(FileReader *self, gint fd)
 {
   if (self->file_reader_options->file_open_options.is_pipe)
     return log_transport_pipe_new(fd);
@@ -142,7 +142,7 @@ file_reader_construct_transport(FileReader *self, gint fd)
     return log_transport_file_new(fd);
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_transport_device_new(fd, 10);
-  else if (affile_is_linux_dev_kmsg(self->filename->str))
+  else if (_is_linux_dev_kmsg(self->filename->str))
     {
       if (lseek(fd, 0, SEEK_END) < 0)
         {
@@ -156,14 +156,14 @@ file_reader_construct_transport(FileReader *self, gint fd)
 }
 
 static LogProtoServer *
-file_reader_construct_proto(FileReader *self, gint fd)
+_construct_proto(FileReader *self, gint fd)
 {
   LogReaderOptions *reader_options = &self->file_reader_options->reader_options;
   LogProtoServerOptions *proto_options = &reader_options->proto_options.super;
   LogTransport *transport;
   MsgFormatHandler *format_handler;
 
-  transport = file_reader_construct_transport(self, fd);
+  transport = _construct_transport(self, fd);
 
   format_handler = reader_options->parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
@@ -179,7 +179,7 @@ file_reader_construct_proto(FileReader *self, gint fd)
     }
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
-  else if (affile_is_linux_dev_kmsg(self->filename->str))
+  else if (_is_linux_dev_kmsg(self->filename->str))
     return log_proto_dgram_server_new(transport, proto_options);
   else
     {
@@ -244,7 +244,7 @@ _is_immediate_check_needed(gboolean file_opened, gboolean open_deferred)
 }
 
 static gboolean
-file_reader_open_file(LogPipe *s, gboolean recover_state)
+_reader_open_file(LogPipe *s, gboolean recover_state)
 {
   FileReader *self = (FileReader *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -265,13 +265,13 @@ file_reader_open_file(LogPipe *s, gboolean recover_state)
       PollEvents *poll_events;
       gboolean check_immediately;
 
-      poll_events = file_reader_construct_poll_events(self, fd);
+      poll_events = _construct_poll_events(self, fd);
       if (!poll_events)
         {
           close(fd);
           return FALSE;
         }
-      proto = file_reader_construct_proto(self, fd);
+      proto = _construct_proto(self, fd);
 
       check_immediately = _is_immediate_check_needed(file_opened, open_deferred);
       _setup_logreader(s, poll_events, proto, check_immediately);
@@ -284,7 +284,7 @@ file_reader_open_file(LogPipe *s, gboolean recover_state)
           return FALSE;
         }
       if (recover_state)
-        file_reader_recover_state(s, cfg, proto);
+        _recover_state(s, cfg, proto);
     }
   else
     {
@@ -298,17 +298,17 @@ file_reader_open_file(LogPipe *s, gboolean recover_state)
 }
 
 static void
-file_reader_reopen_on_notify(LogPipe *s, gboolean recover_state)
+_reopen_on_notify(LogPipe *s, gboolean recover_state)
 {
   FileReader *self = (FileReader *) s;
 
   _deinit_sd_logreader(self);
-  file_reader_open_file(s, recover_state);
+  _reader_open_file(s, recover_state);
 }
 
 /* NOTE: runs in the main thread */
 static void
-file_reader_notify(LogPipe *s, gint notify_code, gpointer user_data)
+_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   FileReader *self = (FileReader *) s;
 
@@ -318,14 +318,14 @@ file_reader_notify(LogPipe *s, gint notify_code, gpointer user_data)
     {
       msg_verbose("Follow-mode file source moved, tracking of the new file is started",
                   evt_tag_str("filename", self->filename->str));
-      file_reader_reopen_on_notify(s, TRUE);
+      _reopen_on_notify(s, TRUE);
       break;
     }
     case NC_READ_ERROR:
     {
       msg_verbose("Error while following source file, reopening in the hope it would work",
                   evt_tag_str("filename", self->filename->str));
-      file_reader_reopen_on_notify(s, FALSE);
+      _reopen_on_notify(s, FALSE);
       break;
     }
     default:
@@ -334,7 +334,7 @@ file_reader_notify(LogPipe *s, gint notify_code, gpointer user_data)
 }
 
 static void
-file_reader_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   FileReader *self = (FileReader *)s;
   static NVHandle filename_handle = 0;
@@ -347,13 +347,13 @@ file_reader_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
 }
 
 static gboolean
-file_reader_init(LogPipe *s)
+_init(LogPipe *s)
 {
-  return file_reader_open_file(s, TRUE);
+  return _reader_open_file(s, TRUE);
 }
 
 static gboolean
-file_reader_deinit(LogPipe *s)
+_deinit(LogPipe *s)
 {
   FileReader *self = (FileReader *)s;
   if (self->reader)
@@ -362,7 +362,7 @@ file_reader_deinit(LogPipe *s)
 }
 
 static void
-file_reader_free(LogPipe *s)
+_free(LogPipe *s)
 {
   FileReader *self = (FileReader *)s;
   g_string_free(self->filename, TRUE);
@@ -376,11 +376,11 @@ file_reader_new(gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg)
   log_pipe_init_instance(&self->super, cfg);
   self->owner = owner;
   self->filename = g_string_new(filename);
-  self->super.init = file_reader_init;
-  self->super.queue = file_reader_queue;
-  self->super.deinit = file_reader_deinit;
-  self->super.notify = file_reader_notify;
-  self->super.free_fn = file_reader_free;
-  self->super.generate_persist_name = file_reader_format_persist_name;
+  self->super.init = _init;
+  self->super.queue = _queue;
+  self->super.deinit = _deinit;
+  self->super.notify = _notify;
+  self->super.free_fn = _free;
+  self->super.generate_persist_name = _format_persist_name;
   return self;
 }
