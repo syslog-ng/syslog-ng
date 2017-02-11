@@ -31,6 +31,7 @@
 
 #include "affile-common.h"
 #include "affile-source.h"
+#include "wildcard-source.h"
 #include "affile-dest.h"
 #include "cfg-parser.h"
 #include "affile-grammar.h"
@@ -65,9 +66,17 @@ FileReaderOptions *last_file_reader_options;
 %token KW_MULTI_LINE_PREFIX
 %token KW_MULTI_LINE_GARBAGE
 
+%token KW_WILDCARD_FILE
+%token KW_BASE_DIR
+%token KW_FILENAME_PATTERN
+%token KW_RECURSIVE
+%token KW_MAX_FILES
+%token KW_FORCE_DIRECTORY_POLLING
+
 %type	<ptr> source_affile
 %type	<ptr> source_affile_params
 %type	<ptr> source_afpipe_params
+%type   <ptr> source_wildcard_params
 %type   <ptr> dest_affile
 %type	<ptr> dest_affile_params
 %type   <ptr> dest_afpipe_params
@@ -82,7 +91,23 @@ start
 source_affile
 	: KW_FILE '(' source_affile_params ')'	{ $$ = $3; }
 	| KW_PIPE '(' source_afpipe_params ')'	{ $$ = $3; }
+	| KW_WILDCARD_FILE 
+	{
+		last_driver = *instance = wildcard_sd_new(configuration);
+		last_file_reader_options = &((WildcardSourceDriver *) last_driver)->file_reader_options;
+		last_reader_options = &last_file_reader_options->reader_options;
+	    last_file_perm_options = &last_file_reader_options->file_perm_options;
+	} '(' source_wildcard_params ')' { $$ = last_driver; }
 	;
+	
+source_wildcard_params
+    : source_wildcard_options
+    ;
+ 
+source_wildcard_options
+    : source_wildcard_option source_wildcard_options
+    |
+    ;    
 
 source_affile_params
 	: string
@@ -101,12 +126,23 @@ source_affile_options
         ;
 
 source_affile_option
-	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ affile_sd_set_follow_freq(last_driver, (long) ($3 * 1000)); }
-	| KW_FOLLOW_FREQ '(' nonnegative_integer ')'		{ affile_sd_set_follow_freq(last_driver, ($3 * 1000)); }
+	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ file_reader_options_set_follow_freq(last_file_reader_options, (long) ($3 * 1000)); }
+	| KW_FOLLOW_FREQ '(' nonnegative_integer ')'		{ file_reader_options_set_follow_freq(last_file_reader_options, ($3 * 1000)); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'			{ last_file_reader_options->pad_size = $3; }
 	| multi_line_option
         | source_reader_option
         ;
+
+source_wildcard_option
+    : KW_BASE_DIR '(' string ')' { wildcard_sd_set_base_dir(last_driver, $3); free($3); }
+    | KW_FILENAME_PATTERN '(' string ')' {
+        wildcard_sd_set_filename_pattern(last_driver, $3);
+        free($3); }
+    | KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
+    | KW_MAX_FILES '(' LL_NUMBER ')' { wildcard_sd_set_max_files(last_driver, $3); }
+    | KW_FORCE_DIRECTORY_POLLING '(' yesno ')' { wildcard_sd_set_force_directory_polling(last_driver, $3); }
+    | source_affile_options
+    ;
 
 
 source_afpipe_params
@@ -137,18 +173,18 @@ source_afpipe_option
  * move it to cfg-grammar.y instead */
 
 multi_line_option
-	: KW_MULTI_LINE_MODE '(' string ')'		{ CHECK_ERROR(affile_sd_set_multi_line_mode(last_driver, $3), @3, "Invalid multi-line mode"); free($3); }
+	: KW_MULTI_LINE_MODE '(' string ')'		{ CHECK_ERROR(file_reader_options_set_multi_line_mode(last_file_reader_options, $3), @3, "Invalid multi-line mode"); free($3); }
 	| KW_MULTI_LINE_PREFIX '(' string ')'
           {
             GError *error = NULL;
 
-            CHECK_ERROR_GERROR(affile_sd_set_multi_line_prefix(last_driver, $3, &error), @3, error, "error compiling multi-line regexp"); free($3);
+            CHECK_ERROR_GERROR(file_reader_options_set_multi_line_prefix(last_file_reader_options, $3, &error), @3, error, "error compiling multi-line regexp"); free($3);
           }
 	| KW_MULTI_LINE_GARBAGE '(' string ')'
 	  {
             GError *error = NULL;
 
-	    CHECK_ERROR_GERROR(affile_sd_set_multi_line_garbage(last_driver, $3, &error), @3, error, "error compiling multi-line regexp"); free($3);
+	    CHECK_ERROR_GERROR(file_reader_options_set_multi_line_garbage(last_file_reader_options, $3, &error), @3, error, "error compiling multi-line regexp"); free($3);
 	  }
 	;
 

@@ -384,3 +384,51 @@ file_reader_new(gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg)
   self->super.generate_persist_name = _format_persist_name;
   return self;
 }
+
+gboolean
+file_reader_options_set_multi_line_mode(FileReaderOptions *options, const gchar *mode)
+{
+  if (strcasecmp(mode, "indented") == 0)
+    options->multi_line_mode = MLM_INDENTED;
+  else if (strcasecmp(mode, "regexp") == 0)
+    options->multi_line_mode = MLM_PREFIX_GARBAGE;
+  else if (strcasecmp(mode, "prefix-garbage") == 0)
+    options->multi_line_mode = MLM_PREFIX_GARBAGE;
+  else if (strcasecmp(mode, "prefix-suffix") == 0)
+    options->multi_line_mode = MLM_PREFIX_SUFFIX;
+  else if (strcasecmp(mode, "none") == 0)
+    options->multi_line_mode = MLM_NONE;
+  else
+    return FALSE;
+  return TRUE;
+}
+
+gboolean
+file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp, GError **error)
+{
+  options->multi_line_prefix = multi_line_regexp_compile(prefix_regexp, error);
+  return options->multi_line_prefix != NULL;
+}
+
+gboolean
+file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *garbage_regexp, GError **error)
+{
+  options->multi_line_garbage = multi_line_regexp_compile(garbage_regexp, error);
+  return options->multi_line_garbage != NULL;
+}
+
+
+void
+file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq)
+{
+  options->follow_freq = follow_freq;
+}
+
+void
+file_reader_options_destroy(FileReaderOptions *options)
+{
+  log_reader_options_destroy(&options->reader_options);
+
+  multi_line_regexp_free(options->multi_line_prefix);
+  multi_line_regexp_free(options->multi_line_garbage);
+}

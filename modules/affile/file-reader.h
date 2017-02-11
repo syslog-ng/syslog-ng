@@ -56,5 +56,12 @@ typedef struct _FileReader
 
 FileReader *file_reader_new(gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg);
 
+void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
+gboolean file_reader_options_set_multi_line_mode(FileReaderOptions *options, const gchar *mode);
+gboolean file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
+gboolean file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
+
+void file_reader_options_destroy(FileReaderOptions *options);
+
 
 #endif /* MODULES_AFFILE_FILE_READER_H_ */

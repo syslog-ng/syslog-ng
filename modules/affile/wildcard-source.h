@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2017 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,33 +19,32 @@
  * COPYING for details.
  *
  */
-  
-#ifndef AFFILE_SOURCE_H_INCLUDED
-#define AFFILE_SOURCE_H_INCLUDED
+#ifndef MODULES_AFFILE_WILDCARD_SOURCE_H_
+#define MODULES_AFFILE_WILDCARD_SOURCE_H_
 
+#include "syslog-ng.h"
 #include "driver.h"
-#include "logreader.h"
-#include "logproto/logproto-regexp-multiline-server.h"
-#include "affile-common.h"
 #include "file-reader.h"
 
-typedef struct _AFFileSourceDriver
-{
+typedef struct _WildcardSourceDriver {
   LogSrcDriver super;
-  GString *filename;
-  FileReader *file_reader;
+  GString *base_dir;
+  GString *filename_pattern;
+  gboolean recursive;
+  gboolean force_dir_polling;
+  guint32 max_files;
+
   FileReaderOptions file_reader_options;
-  /* state information to follow a set of files using a wildcard expression */
-} AFFileSourceDriver;
 
-LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
-LogDriver *afpipe_sd_new(gchar *filename, GlobalConfig *cfg);
+  GHashTable *file_readers;
+} WildcardSourceDriver;
 
-gboolean affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regexp, GError **error);
-gboolean affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error);
+LogDriver *wildcard_sd_new(GlobalConfig *cfg);
 
-void affile_sd_set_recursion(LogDriver *s, const gint recursion);
-void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
-void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
+void wildcard_sd_set_base_dir(LogDriver *s, const gchar *base_dir);
+void wildcard_sd_set_filename_pattern(LogDriver *s, const gchar *filename_pattern);
+void wildcard_sd_set_recursive(LogDriver *s, gboolean recursive);
+void wildcard_sd_set_force_directory_polling(LogDriver *s, gboolean force_directory_polling);
+void wildcard_sd_set_max_files(LogDriver *s, guint32 max_files);
 
-#endif
+#endif /* MODULES_AFFILE_WILDCARD_SOURCE_H_ */
