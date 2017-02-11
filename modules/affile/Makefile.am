@@ -7,6 +7,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/poll-file-changes.h			\
 	modules/affile/file-reader.c				\
 	modules/affile/file-reader.h				\
+	modules/affile/wildcard-source.h			\
+	modules/affile/wildcard-source.c			\
 	modules/affile/affile-common.c				\
 	modules/affile/affile-common.h				\
 	modules/affile/affile-source.c				\

@@ -7,6 +7,7 @@ set(AFFILE_HEADERS
     "affile-source.h"
     "affile-dest.h"
     "affile-parser.h"
+    "wildcard-source.h"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.h"
 )
 
@@ -19,6 +20,7 @@ set(AFFILE_SOURCES
     "affile-dest.c"
     "affile-parser.c"
     "affile-plugin.c"
+    "wildcard-source.c"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c"
 )
 

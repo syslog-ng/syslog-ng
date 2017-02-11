@@ -40,52 +40,6 @@
 #define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 #define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
-gboolean
-affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  if (strcasecmp(mode, "indented") == 0)
-    self->file_reader_options.multi_line_mode = MLM_INDENTED;
-  else if (strcasecmp(mode, "regexp") == 0)
-    self->file_reader_options.multi_line_mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-garbage") == 0)
-    self->file_reader_options.multi_line_mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-suffix") == 0)
-    self->file_reader_options.multi_line_mode = MLM_PREFIX_SUFFIX;
-  else if (strcasecmp(mode, "none") == 0)
-    self->file_reader_options.multi_line_mode = MLM_NONE;
-  else
-    return FALSE;
-  return TRUE;
-}
-
-gboolean
-affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regexp, GError **error)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  self->file_reader_options.multi_line_prefix = multi_line_regexp_compile(prefix_regexp, error);
-  return self->file_reader_options.multi_line_prefix != NULL;
-}
-
-gboolean
-affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  self->file_reader_options.multi_line_garbage = multi_line_regexp_compile(garbage_regexp, error);
-  return self->file_reader_options.multi_line_garbage != NULL;
-}
-
-void
-affile_sd_set_follow_freq(LogDriver *s, gint follow_freq)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  self->file_reader_options.follow_freq = follow_freq;
-}
-
 static inline gboolean
 affile_is_device_node(const gchar *filename)
 {
@@ -161,11 +115,7 @@ affile_sd_free(LogPipe *s)
 
   log_pipe_unref(&self->file_reader->super);
   g_string_free(self->filename, TRUE);
-  log_reader_options_destroy(&self->file_reader_options.reader_options);
-
-  multi_line_regexp_free(self->file_reader_options.multi_line_prefix);
-  multi_line_regexp_free(self->file_reader_options.multi_line_garbage);
-
+  file_reader_options_destroy(&self->file_reader_options);
   log_src_driver_free(s);
 }
 

@@ -35,6 +35,13 @@ static CfgLexerKeyword affile_keywords[] =
   { "fifo",               KW_PIPE },
   { "pipe",               KW_PIPE },
 
+  { "wildcard_file",      KW_WILDCARD_FILE },
+  { "base_dir",           KW_BASE_DIR },
+  { "filename_pattern",   KW_FILENAME_PATTERN },
+  { "recursive",          KW_RECURSIVE },
+  { "max_files",          KW_MAX_FILES },
+  { "force_directory_polling", KW_FORCE_DIRECTORY_POLLING },
+
   { "fsync",              KW_FSYNC },
   { "remove_if_older",    KW_OVERWRITE_IF_OLDER, KWS_OBSOLETE, "overwrite_if_older" },
   { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
