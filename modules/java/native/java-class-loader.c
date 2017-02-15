@@ -77,7 +77,7 @@ class_loader_new(JNIEnv *java_env)
     }
 
   self->mi_init_current_thread = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader,
-                                 "initCurrentThread", "()V");
+                                                    "initCurrentThread", "()V");
   if (!self->mi_init_current_thread)
     {
       msg_error("Can't find method in class",

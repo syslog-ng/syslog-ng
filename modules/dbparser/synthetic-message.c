@@ -86,7 +86,7 @@ synthetic_message_add_tag(SyntheticMessage *self, const gchar *text)
 
 gboolean
 synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name,
-    const gchar *value, GError **error)
+                                            const gchar *value, GError **error)
 {
   LogTemplate *value_template;
   gboolean result = FALSE;

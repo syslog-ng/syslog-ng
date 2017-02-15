@@ -92,7 +92,7 @@ _clone(AddContextualDataSelector *s, GlobalConfig *cfg)
 {
   AddContextualDataTemplateSelector *self = (AddContextualDataTemplateSelector *)s;
   AddContextualDataTemplateSelector *cloned = (AddContextualDataTemplateSelector *)
-      add_contextual_data_template_selector_new(cfg, self->selector_template_string);
+                                              add_contextual_data_template_selector_new(cfg, self->selector_template_string);
   _replace_template(&cloned->selector_template, self->selector_template);
 
   return &cloned->super;

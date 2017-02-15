@@ -676,7 +676,7 @@ recurse:
         {
           /* calculate day of year (ordinal date) */
           tm->tm_yday =  start_of_month[isleap_sum(tm->tm_year,
-                                        TM_YEAR_BASE)][tm->tm_mon] + (tm->tm_mday - 1);
+                                                   TM_YEAR_BASE)][tm->tm_mon] + (tm->tm_mday - 1);
           state |= S_YDAY;
         }
       else if (day_offset != -1)

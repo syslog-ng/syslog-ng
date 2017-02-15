@@ -356,7 +356,7 @@ riemann_worker_init(LogPipe *s)
   if (self->event.batch_size_max <= 0)
     self->event.batch_size_max = 1;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                     self->event.batch_size_max);
+                                                 self->event.batch_size_max);
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("driver", self->super.super.super.id),
@@ -587,7 +587,7 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
    */
   self->event.n = 0;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                     self->event.batch_size_max);
+                                                 self->event.batch_size_max);
   g_static_mutex_unlock(&self->event.lock);
 
   if (r != 0)

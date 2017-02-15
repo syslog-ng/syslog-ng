@@ -103,10 +103,10 @@ _append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
 
 static void
 _append_unsafe_utf8_as_escaped_with_specific_length(GString *escaped_output, const gchar *raw,
-    gsize raw_len,
-    const gchar *unsafe_chars,
-    const gchar *control_format,
-    const gchar *invalid_format)
+                                                    gsize raw_len,
+                                                    const gchar *unsafe_chars,
+                                                    const gchar *control_format,
+                                                    const gchar *invalid_format)
 {
   const gchar *raw_end = raw + raw_len;
 
@@ -117,12 +117,12 @@ _append_unsafe_utf8_as_escaped_with_specific_length(GString *escaped_output, con
 
 static void
 _append_unsafe_utf8_as_escaped_nul_terminated(GString *escaped_output, const gchar *raw,
-    const gchar *unsafe_chars,
-    const gchar *control_format,
-    const gchar *invalid_format)
+                                              const gchar *unsafe_chars,
+                                              const gchar *control_format,
+                                              const gchar *invalid_format)
 {
   _append_unsafe_utf8_as_escaped_with_specific_length(escaped_output, raw, strlen(raw), unsafe_chars, control_format,
-      invalid_format);
+                                                      invalid_format);
 }
 
 
@@ -139,7 +139,7 @@ _append_unsafe_utf8_as_escaped(GString *escaped_output, const gchar *raw,
     _append_unsafe_utf8_as_escaped_nul_terminated(escaped_output, raw, unsafe_chars, control_format, invalid_format);
   else
     _append_unsafe_utf8_as_escaped_with_specific_length(escaped_output, raw, raw_len, unsafe_chars, control_format,
-        invalid_format);
+                                                        invalid_format);
 }
 
 /**

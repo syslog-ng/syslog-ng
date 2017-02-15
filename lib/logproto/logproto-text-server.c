@@ -191,7 +191,7 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
 
 static gint
 log_proto_text_server_accumulate_line_method(LogProtoTextServer *self, const guchar *msg, gsize msg_len,
-    gssize consumed_len)
+                                             gssize consumed_len)
 {
   return LPT_CONSUME_LINE | LPT_EXTRACTED;
 }
@@ -338,7 +338,7 @@ log_proto_text_server_remove_trailing_newline(const guchar **msg, gsize *msg_len
 
 static inline void
 log_proto_text_server_yield_whole_buffer_as_message(LogProtoTextServer *self, LogProtoBufferedServerState *state,
-    const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
+                                                    const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
 {
   /* no EOL, our buffer is full, no way to move forward, return
    * everything we have in our buffer. */

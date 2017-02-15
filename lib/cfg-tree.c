@@ -440,7 +440,7 @@ cfg_tree_add_all_sources(gpointer key, gpointer value, gpointer user_data)
 
   /* prepend a source reference */
   referring_rule->children = log_expr_node_append_tail(log_expr_node_new_source_reference(rule->name, NULL),
-                             referring_rule->children);
+                                                       referring_rule->children);
 }
 
 static gboolean

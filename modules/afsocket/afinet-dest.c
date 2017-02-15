@@ -362,7 +362,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
    * spoofed packets are also going through the LogWriter queue */
 
   if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET
-      || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened(self->super.writer))
+                                                             || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened(self->super.writer))
     {
       gboolean success = FALSE;
 

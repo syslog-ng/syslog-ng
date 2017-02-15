@@ -155,8 +155,8 @@ _pop_state(PDBLoader *state)
 
 static gboolean
 _pop_state_for_closing_tag_with_alternatives(PDBLoader *state, const gchar *element_name,
-    const gchar *expected_element, const gchar *alternatives,
-    GError **error)
+                                             const gchar *expected_element, const gchar *alternatives,
+                                             GError **error)
 {
   if (strcmp(element_name, expected_element) != 0)
     {
@@ -607,7 +607,7 @@ _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
       /* valid, but we don't do anything */
     }
   else if (_pop_state_for_closing_tag_with_alternatives(state, element_name, "rule",
-           "</patterns>, </description>, </tags>, </urls>, </values>", error) == 0)
+                                                        "</patterns>, </description>, </tags>, </urls>, </values>", error) == 0)
     {
       if (state->current_rule)
         {

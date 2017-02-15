@@ -203,14 +203,14 @@ AFSocketSourceDriver *
 create_and_set_unix_dgram_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg)
 {
   return create_and_set_unix_socket_or_systemd_syslog_source(filename,
-         cfg,
-         ST_DGRAM);
+                                                             cfg,
+                                                             ST_DGRAM);
 }
 
 AFSocketSourceDriver *
 create_and_set_unix_stream_or_systemd_syslog_source(gchar *filename, GlobalConfig *cfg)
 {
   return create_and_set_unix_socket_or_systemd_syslog_source(filename,
-         cfg,
-         ST_STREAM);
+                                                             cfg,
+                                                             ST_STREAM);
 }

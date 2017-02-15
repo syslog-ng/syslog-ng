@@ -235,7 +235,7 @@ _py_invoke_void_method_by_name(PythonDestDriver *self, PyObject *instance, const
 
 static gboolean
 _py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, PyObject *instance, const gchar *method_name,
-    PyObject *args)
+                                         PyObject *args)
 {
   gboolean result = FALSE;
   PyObject *method = _py_get_method(self, instance, method_name);

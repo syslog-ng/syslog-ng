@@ -135,7 +135,7 @@ stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id
  */
 void
 stats_register_and_increment_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance,
-    time_t timestamp)
+                                             time_t timestamp)
 {
   StatsCounterItem *counter, *stamp;
   StatsCluster *handle;

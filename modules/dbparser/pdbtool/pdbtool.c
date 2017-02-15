@@ -695,7 +695,7 @@ pdbtool_test_find_conflicts(PatternDB *patterndb, LogMessage *msg)
       gint matching_ids_len;
 
       matching_ids = r_find_all_applicable_nodes(program_rules->rules, (guint8 *) message, strlen(message),
-          (RNodeGetValueFunc) pdb_rule_get_name);
+                                                 (RNodeGetValueFunc) pdb_rule_get_name);
       matching_ids_len = g_strv_length(matching_ids);
 
       if (matching_ids_len > 1)
