@@ -105,6 +105,11 @@ test_list_scanner_unquoted_empty_items_are_skipped_to_make_it_easy_to_concatenat
   assert_next_value_is("bar");
   assert_no_more_tokens();
 
+  list_scanner_input_va(list_scanner, "", "", "", ",,,,", "", "", "", "foo", "bar", NULL);
+  assert_next_value_is("foo");
+  assert_next_value_is("bar");
+  assert_no_more_tokens();
+
   list_scanner_input_va(list_scanner, "foo", "", "bar", NULL);
   assert_next_value_is("foo");
   assert_next_value_is("bar");

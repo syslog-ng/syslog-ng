@@ -88,17 +88,6 @@ _is_finished_with_args(ListScanner *self)
 }
 
 static gboolean
-_parse_unquoted_empty_value(ListScanner *self)
-{
-  if (*self->current_arg == ',')
-    {
-      self->current_arg = self->current_arg + 1;
-      return TRUE;
-    }
-  return FALSE;
-}
-
-static gboolean
 _parse_value_from_current_position(ListScanner *self)
 {
   StrReprDecodeOptions options =
@@ -122,14 +111,38 @@ _parse_value_from_current_position(ListScanner *self)
 }
 
 static gboolean
-_locate_next_non_empty_arg(ListScanner *self)
+_skip_if_current_arg_is_empty(ListScanner *self)
 {
-  while (!_is_finished_with_args(self) && self->current_arg[0] == 0)
+  if (self->current_arg[0] == 0)
     {
       self->current_arg_ndx++;
       self->current_arg = self->argv[self->current_arg_ndx];
+      return TRUE;
     }
-  return !_is_finished_with_args(self);
+  return FALSE;
+}
+
+static gboolean
+_skip_unquoted_empty_value(ListScanner *self)
+{
+  if (*self->current_arg == ',')
+    {
+      self->current_arg = self->current_arg + 1;
+      return TRUE;
+    }
+  return FALSE;
+}
+
+static void
+_skip_empty_values(ListScanner *self)
+{
+  while (!_is_finished_with_args(self))
+    {
+      if (!_skip_if_current_arg_is_empty(self) &&
+          !_skip_unquoted_empty_value(self))
+        break;
+    }
+  return;
 }
 
 gboolean
@@ -137,22 +150,12 @@ list_scanner_scan_next(ListScanner *self)
 {
   g_string_truncate(self->value, 0);
 
-  while (_locate_next_non_empty_arg(self))
-    {
-      if (_parse_unquoted_empty_value(self))
-        {
-          ;
-        }
-      else if (_parse_value_from_current_position(self))
-        {
-          return TRUE;
-        }
-      else
-        {
-          /* parse error, not happening right now */
-          return FALSE;
-        }
-    }
+  _skip_empty_values(self);
+
+  if (!_is_finished_with_args(self) &&
+      _parse_value_from_current_position(self))
+    return TRUE;
+
   return FALSE;
 }
 
