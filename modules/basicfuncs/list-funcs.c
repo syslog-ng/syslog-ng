@@ -113,6 +113,14 @@ _list_slice(gint argc, GString *argv[], GString *result,
 
   _adjust_list_slice(argc, argv, &first_ndx, &last_ndx);
 
+  /* NOTE: first_ndx and last_ndx may be negative, so these loops must cover
+   * that case, by interpreting negative first_ndx as "0", and negative
+   * last_ndx as "0".
+   *
+   * $(list-slice -100: a,b,c) - should return "a,b,c"
+   * $(list-slice :-100 a,b,c) - should return ""
+   */
+
   list_scanner_init(&scanner);
   list_scanner_input_gstring_array(&scanner, argc, argv);
 
