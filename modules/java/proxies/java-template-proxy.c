@@ -38,7 +38,7 @@ Java_org_syslog_1ng_LogTemplate_create_1new_1template_1instance(JNIEnv *env, job
 
 JNIEXPORT jboolean
 JNICALL Java_org_syslog_1ng_LogTemplate_compile(JNIEnv *env, jobject obj, jlong template_handle,
-    jstring template_string)
+                                                jstring template_string)
 {
   LogTemplate *template = (LogTemplate *)template_handle;
   GError *error = NULL;

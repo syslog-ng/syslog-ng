@@ -46,8 +46,8 @@ assert_log_kmsg_value(LogMessage *message, const gchar *key,
                       const gchar *expected_value)
 {
   const gchar *actual_value = log_msg_get_value(message,
-                              log_msg_get_value_handle(key),
-                              NULL);
+                                                log_msg_get_value_handle(key),
+                                                NULL);
   assert_string(actual_value, expected_value, NULL);
 }
 

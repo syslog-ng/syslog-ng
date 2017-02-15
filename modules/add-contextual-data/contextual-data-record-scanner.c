@@ -34,7 +34,7 @@ contextual_data_record_scanner_free(ContextualDataRecordScanner *self)
 
 void
 contextual_data_record_scanner_set_name_prefix(ContextualDataRecordScanner *
-    self, const gchar *prefix)
+                                               self, const gchar *prefix)
 {
   self->name_prefix = prefix;
 }

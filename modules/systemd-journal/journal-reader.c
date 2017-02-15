@@ -246,7 +246,7 @@ _set_message_timestamp(JournalReader *self, LogMessage *msg)
   msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
   msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
   msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(self->options->recv_time_zone_info,
-      msg->timestamps[LM_TS_STAMP].tv_sec);
+                                             msg->timestamps[LM_TS_STAMP].tv_sec);
   if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
     {
       msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
@@ -292,7 +292,7 @@ _load_state(JournalReader *self)
 
   self->persist_state = cfg->state;
   self->persist_handle = persist_state_lookup_entry(self->persist_state, self->persist_name, &state_size,
-                         &persist_version);
+                                                    &persist_version);
   return !!(self->persist_handle);
 }
 

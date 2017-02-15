@@ -259,7 +259,7 @@ test_clusters_find(gpointer key, gpointer value, gpointer user_data)
     {
 
       line = g_strdup((gchar *) log_msg_get_value((LogMessage *) g_ptr_array_index(data->logs, data->lines[i]), LM_V_MESSAGE,
-                      &msglen));
+                                                  &msglen));
 
       find_data = g_new(clusterfind2Data, 1);
       find_data->search_line = line;

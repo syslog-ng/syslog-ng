@@ -255,10 +255,10 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
           return log_proto_indented_multiline_server_new(transport, proto_options);
         case MLM_PREFIX_GARBAGE:
           return log_proto_prefix_garbage_multiline_server_new(transport, proto_options, self->multi_line_prefix,
-                 self->multi_line_garbage);
+                                                               self->multi_line_garbage);
         case MLM_PREFIX_SUFFIX:
           return log_proto_prefix_suffix_multiline_server_new(transport, proto_options, self->multi_line_prefix,
-                 self->multi_line_garbage);
+                                                              self->multi_line_garbage);
         default:
           return log_proto_text_server_new(transport, proto_options);
         }

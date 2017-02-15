@@ -352,7 +352,7 @@ log_threaded_dest_driver_start(LogPipe *s)
                          self->dropped_messages);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
-                                  log_threaded_dest_driver_format_seqnum_for_persist(self)));
+                                                           log_threaded_dest_driver_format_seqnum_for_persist(self)));
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
 

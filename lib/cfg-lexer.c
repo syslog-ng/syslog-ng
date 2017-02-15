@@ -495,8 +495,8 @@ cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
   level->include_type = CFGI_FILE;
 
   level->file.files = g_slist_insert_sorted(level->file.files,
-                      strdup(fn),
-                      (GCompareFunc) strcmp);
+                                            strdup(fn),
+                                            (GCompareFunc) strcmp);
 
   msg_debug("Adding include file",
             evt_tag_str("filename", fn),
@@ -615,7 +615,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 
 gboolean
 cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name, const gchar *buffer,
-    gsize length)
+                                                       gsize length)
 {
   CfgIncludeLevel *level;
   gchar *lexer_buffer;

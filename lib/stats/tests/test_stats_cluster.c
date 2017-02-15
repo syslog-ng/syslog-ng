@@ -73,13 +73,13 @@ test_stats_cluster_equal_if_component_id_and_instance_are_the_same(void)
                                        stats_cluster_new(SCS_SOURCE | SCS_FILE, "id", "instance"));
 
   assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | SCS_FILE, "id", "instance1"),
-      stats_cluster_new(SCS_SOURCE | SCS_FILE, "id", "instance2"));
+                                           stats_cluster_new(SCS_SOURCE | SCS_FILE, "id", "instance2"));
 
   assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | SCS_FILE, "id1", "instance"),
-      stats_cluster_new(SCS_SOURCE | SCS_FILE, "id2", "instance"));
+                                           stats_cluster_new(SCS_SOURCE | SCS_FILE, "id2", "instance"));
 
   assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | SCS_FILE, "id", "instance"),
-      stats_cluster_new(SCS_DESTINATION | SCS_FILE, "id", "instance"));
+                                           stats_cluster_new(SCS_DESTINATION | SCS_FILE, "id", "instance"));
 }
 
 typedef struct _ValidateCountersState

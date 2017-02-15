@@ -261,7 +261,7 @@ test_compat(void)
   reset_grabbed_messages();
   assert_template_format("$MSG", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
   gchar *expected_msg_macros_changed = g_strdup_printf("the meaning of the $MSG/$MESSAGE macros has changed from %s",
-                                       VERSION_3_0);
+                                                       VERSION_3_0);
   assert_grabbed_messages_contain(expected_msg_macros_changed, NULL);
   stop_grabbing_messages();
   g_free(expected_msg_default_value_changed);

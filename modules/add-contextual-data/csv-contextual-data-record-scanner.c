@@ -27,7 +27,7 @@
 
 static gchar *
 _csv_scanner_dup_current_value_with_prefix(CSVScanner *line_scanner,
-    const gchar *prefix)
+                                           const gchar *prefix)
 {
   return g_strdup_printf("%s%s", prefix ? prefix : "",
                          csv_scanner_get_current_value(line_scanner));

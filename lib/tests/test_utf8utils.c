@@ -29,7 +29,7 @@
 
 void
 assert_escaped_binary_with_unsafe_chars_with_len(const gchar *str, gssize str_len, const gchar *expected_escaped_str,
-    const gchar *unsafe_chars)
+                                                 const gchar *unsafe_chars)
 {
   GString *escaped_str = g_string_sized_new(64);
 

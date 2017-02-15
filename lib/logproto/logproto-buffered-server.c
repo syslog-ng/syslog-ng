@@ -549,14 +549,14 @@ log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond)
 
 static gint
 log_proto_buffered_server_read_data_method(LogProtoBufferedServer *self, guchar *buf, gsize len,
-    LogTransportAuxData *aux)
+                                           LogTransportAuxData *aux)
 {
   return log_transport_read(self->super.transport, buf, len, aux);
 }
 
 static gboolean
 log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len,
-    LogTransportAuxData *aux)
+                                            LogTransportAuxData *aux)
 {
   gsize buffer_bytes;
   const guchar *buffer_start;

@@ -32,9 +32,9 @@ log_proto_indented_multiline_is_continuation(guchar first_char)
 
 static gint
 log_proto_indented_multiline_accumulate_line(LogProtoTextServer *s,
-    const guchar *msg,
-    gsize msg_len,
-    gssize consumed_len)
+                                             const guchar *msg,
+                                             gsize msg_len,
+                                             gssize consumed_len)
 {
 
   /* NOTES:
@@ -74,8 +74,8 @@ log_proto_indented_multiline_accumulate_line(LogProtoTextServer *s,
 
 void
 log_proto_indented_multiline_server_init(LogProtoIMultiLineServer *self,
-    LogTransport *transport,
-    const LogProtoServerOptions *options)
+                                         LogTransport *transport,
+                                         const LogProtoServerOptions *options)
 {
   log_proto_text_server_init(&self->super, transport, options);
   self->super.accumulate_line = log_proto_indented_multiline_accumulate_line;

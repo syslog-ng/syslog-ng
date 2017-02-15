@@ -42,7 +42,7 @@ static const gchar *_counter_type[SC_TYPE_MAX+1] =
 
 
 typedef gboolean (*StatsClusterCounterCb)(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name,
-    gpointer user_data);
+                                          gpointer user_data);
 
 static void
 _foreach_live_counters(StatsCluster *sc, StatsClusterCounterCb counter_cb, gpointer user_data)
@@ -73,7 +73,7 @@ _append_counter_without_value(StatsCluster *sc, StatsCounterItem *ctr, const gch
 
 static gboolean
 _append_counter_with_value_when_name_is_matching(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name,
-    gpointer user_data)
+                                                 gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GString *result = (GString *) args[0];
@@ -88,7 +88,7 @@ _append_counter_with_value_when_name_is_matching(StatsCluster *sc, StatsCounterI
 
 static gboolean
 _append_counter_without_value_when_name_is_matching(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name,
-    gpointer user_data)
+                                                    gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GString *result = (GString *) args[0];

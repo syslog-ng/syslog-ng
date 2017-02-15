@@ -9,6 +9,7 @@
 
 # max line lenght is 120 chars
 --max-code-length=120
+--max-instatement-indent=60
 
 # pointer is aligned to the name of the variable
 --align-pointer=name

@@ -1195,7 +1195,7 @@ afsql_dd_init(LogPipe *s)
     init_sequence_number(&self->seq_num);
 
   self->queue = log_dest_driver_acquire_queue(&self->super,
-                afsql_dd_format_persist_name((const LogPipe *)self));
+                                              afsql_dd_format_persist_name((const LogPipe *)self));
   if (self->queue == NULL)
     {
       return FALSE;

@@ -96,9 +96,9 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     }
 
   self->dest_impl.mi_send = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy",
-      "(Ljava/lang/String;)Z");
+                                               "(Ljava/lang/String;)Z");
   self->dest_impl.mi_send_msg = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy",
-      "(Lorg/syslog_ng/LogMessage;)Z");
+                                                   "(Lorg/syslog_ng/LogMessage;)Z");
 
   if (!self->dest_impl.mi_send_msg && !self->dest_impl.mi_send)
     {
@@ -141,7 +141,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     }
 
   self->dest_impl.dest_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->loaded_class,
-      self->dest_impl.mi_constructor, handle);
+                                                   self->dest_impl.mi_constructor, handle);
   if (!self->dest_impl.dest_object)
     {
       msg_error("Can't create object",
@@ -289,7 +289,7 @@ __get_name_by_uniq_options(JavaDestinationProxy *self)
   jstring java_string;
 
   java_string = (jstring) CALL_JAVA_FUNCTION(env, CallObjectMethod, self->dest_impl.dest_object,
-      self->dest_impl.mi_get_name_by_uniq_options);
+                                             self->dest_impl.mi_get_name_by_uniq_options);
   if (!java_string)
     {
       msg_error("Can't get name by unique options");

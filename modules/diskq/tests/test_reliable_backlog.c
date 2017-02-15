@@ -363,7 +363,7 @@ void
 test_rewind_backlog()
 {
   LogQueueDiskReliable *dq = _init_diskq_for_test(QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
-                             mark_message_serialized_size * 5);
+                                                  mark_message_serialized_size * 5);
   gint64 old_read_pos;
 
   _prepare_rewind_backlog_test(dq, &old_read_pos);

@@ -75,7 +75,7 @@ _construct_merged_message(const gchar *name, const gchar *value)
 
 static void
 assert_log_msg_clear_clears_all_properties(LogMessage *message, NVHandle nv_handle,
-    NVHandle sd_handle, const gchar *tag_name)
+                                           NVHandle sd_handle, const gchar *tag_name)
 {
   log_msg_clear(message);
 
@@ -175,9 +175,9 @@ Test(log_message, test_log_message_can_be_cleared)
   log_message_test_params_clone_message(params);
 
   assert_log_msg_clear_clears_all_properties(params->message, params->nv_handle,
-      params->sd_handle, params->tag_name);
+                                             params->sd_handle, params->tag_name);
   assert_log_msg_clear_clears_all_properties(params->cloned_message, params->nv_handle,
-      params->sd_handle, params->tag_name);
+                                             params->sd_handle, params->tag_name);
 
   log_message_test_params_free(params);
 }

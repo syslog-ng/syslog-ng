@@ -255,7 +255,7 @@ _smtp_message_add_recipient_header(smtp_message_t self, AFSMTPRecipient *rcpt, A
 
 static void
 _smtp_message_add_recipient_from_template(smtp_message_t self, AFSMTPDriver *driver, LogTemplate *template,
-    LogMessage *msg)
+                                          LogMessage *msg)
 {
   log_template_format(template, msg, &driver->template_options, LTZ_SEND,
                       driver->super.seq_num, NULL, driver->str);

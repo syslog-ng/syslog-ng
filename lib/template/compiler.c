@@ -94,7 +94,7 @@ log_template_prepare_function_call(LogTemplateCompiler *self, Plugin *p, LogTemp
 
 static gboolean
 log_template_lookup_and_setup_function_call(LogTemplateCompiler *self, LogTemplateElem *e, gint argc, gchar *argv[],
-    GError **error)
+                                            GError **error)
 {
   Plugin *p;
 
@@ -367,8 +367,8 @@ log_template_compiler_process_template_function(LogTemplateCompiler *self, GErro
   if (!log_template_compiler_process_arg_list(self, strv))
     {
       log_template_compiler_fill_compile_error(error,
-          "Invalid template function reference, missing function name or inbalanced '('",
-          self->cursor - self->template->template);
+                                               "Invalid template function reference, missing function name or inbalanced '('",
+                                               self->cursor - self->template->template);
       goto error;
     }
   self->cursor++;

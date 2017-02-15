@@ -181,7 +181,7 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   LogDBParser *self = (LogDBParser *) s;
 
   if (G_UNLIKELY(!self->db_file_reloading && (self->db_file_last_check == 0
-                 || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5)))
+                                              || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5)))
     {
       /* first check if we need to reload without doing a lock, then grab
        * the lock, recheck the condition to rule out parallel database

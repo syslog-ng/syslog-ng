@@ -298,7 +298,7 @@ sockaddr_to_dnscache_key(GSockAddr *saddr)
 
 static const gchar *
 resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr,
-    const HostResolveOptions *host_resolve_options)
+                                           const HostResolveOptions *host_resolve_options)
 {
   const gchar *hname;
   gsize hname_len;

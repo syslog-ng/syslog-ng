@@ -1148,7 +1148,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   /* reference the original message */
   self->original = log_msg_ref(msg);
   self->ack_and_ref_and_abort_and_suspended = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(
-        0) + LOGMSG_REFCACHE_ABORT_TO_VALUE(0);
+                                                0) + LOGMSG_REFCACHE_ABORT_TO_VALUE(0);
   self->cur_node = 0;
   self->protect_cnt = 0;
 
@@ -1323,7 +1323,7 @@ _ack_and_ref_and_abort_and_suspend_to_acktype(gint value)
 /* Function to update the combined ACK (with the abort flag) and REF counter. */
 static inline gint
 log_msg_update_ack_and_ref_and_abort_and_suspended(LogMessage *self, gint add_ref, gint add_ack, gint add_abort,
-    gint add_suspend)
+                                                   gint add_suspend)
 {
   gint old_value, new_value;
   do
@@ -1519,11 +1519,11 @@ log_msg_refcache_start_producer(LogMessage *self)
   /* we don't need to be thread-safe here, as a producer has just created this message and no parallel access is yet possible */
 
   self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_REF_MASK) +
-      LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort_and_suspended) +
-                                    LOGMSG_REFCACHE_BIAS));
+                                              LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort_and_suspended) +
+                                                  LOGMSG_REFCACHE_BIAS));
   self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_ACK_MASK) +
-      LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort_and_suspended) +
-                                    LOGMSG_REFCACHE_BIAS));
+                                              LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort_and_suspended) +
+                                                  LOGMSG_REFCACHE_BIAS));
 
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;

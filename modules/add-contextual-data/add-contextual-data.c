@@ -145,7 +145,7 @@ _clone(LogPipe *s)
   add_contextual_data_set_prefix(&cloned->super, self->prefix);
   add_contextual_data_set_filename(&cloned->super, self->filename);
   add_contextual_data_set_database_default_selector(&cloned->super,
-      self->default_selector);
+                                                    self->default_selector);
   self->selector = add_contextual_data_selector_clone(self->selector, s->cfg);
 
   return &cloned->super.super;

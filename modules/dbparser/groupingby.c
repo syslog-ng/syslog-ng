@@ -130,7 +130,7 @@ grouping_by_set_time(GroupingBy *self, const LogStamp *ls)
             evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
             evt_tag_str("location",
                         log_expr_node_format_location(self->super.super.super.expr_node,
-                            buf, sizeof(buf))));
+                                                      buf, sizeof(buf))));
 
 }
 
@@ -162,7 +162,7 @@ _grouping_by_timer_tick(GroupingBy *self)
                 evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
                 evt_tag_str("location",
                             log_expr_node_format_location(self->super.super.super.expr_node,
-                                buf, sizeof(buf))));
+                                                          buf, sizeof(buf))));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
       self->last_tick = now;
@@ -223,7 +223,7 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
                 evt_tag_str("key", context->key.session_id),
                 evt_tag_str("location",
                             log_expr_node_format_location(self->super.super.super.expr_node,
-                                buf, sizeof(buf))));
+                                                          buf, sizeof(buf))));
     }
 }
 
@@ -239,7 +239,7 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
             evt_tag_str("context-id", context->key.session_id),
             evt_tag_str("location",
                         log_expr_node_format_location(self->super.super.super.expr_node,
-                            buf, sizeof(buf))));
+                                                      buf, sizeof(buf))));
   grouping_by_emit_synthetic(self, context);
   g_hash_table_remove(self->correllation->state, &context->key);
 
@@ -284,7 +284,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                     evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
                     evt_tag_str("location",
                                 log_expr_node_format_location(self->super.super.super.expr_node,
-                                    buf, sizeof(buf))));
+                                                              buf, sizeof(buf))));
           context = correllation_context_new(&key);
           g_hash_table_insert(self->correllation->state, &context->key, context);
           g_string_steal(buffer);
@@ -298,7 +298,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                     evt_tag_int("num_messages", context->messages->len),
                     evt_tag_str("location",
                                 log_expr_node_format_location(self->super.super.super.expr_node,
-                                    buf, sizeof(buf))));
+                                                              buf, sizeof(buf))));
         }
 
       g_ptr_array_add(context->messages, log_msg_ref(msg));
@@ -312,7 +312,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                       evt_tag_int("num_messages", context->messages->len),
                       evt_tag_str("location",
                                   log_expr_node_format_location(self->super.super.super.expr_node,
-                                      buf, sizeof(buf))));
+                                                                buf, sizeof(buf))));
           /* close down state */
           if (context->timer)
             timer_wheel_del_timer(self->timer_wheel, context->timer);

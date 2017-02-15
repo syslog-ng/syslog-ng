@@ -87,7 +87,7 @@ rcptid_create_new_entry(void)
   RcptidState *data;
 
   rcptid_service.persist_handle = persist_state_alloc_entry(rcptid_service.persist_state, "next.rcptid",
-                                  sizeof(RcptidState));
+                                                            sizeof(RcptidState));
   if (!rcptid_service.persist_handle)
     {
       msg_error("Error allocating RCPTID structure in persist-state");

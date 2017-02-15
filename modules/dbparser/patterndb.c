@@ -314,8 +314,8 @@ pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule,
   g_ptr_array_add(new_context->super.messages, context_msg);
 
   new_context->super.timer = timer_wheel_add_timer(db->timer_wheel, rule->context.timeout, pattern_db_expire_entry,
-                             correllation_context_ref(&new_context->super),
-                             (GDestroyNotify) correllation_context_unref);
+                                                   correllation_context_ref(&new_context->super),
+                                                   (GDestroyNotify) correllation_context_unref);
   new_context->rule = pdb_rule_ref(rule);
 }
 
@@ -694,8 +694,8 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBRule *rule, LogMessage *ms
       else
         {
           context->super.timer = timer_wheel_add_timer(self->timer_wheel, rule->context.timeout, pattern_db_expire_entry,
-                                 correllation_context_ref(&context->super),
-                                 (GDestroyNotify) correllation_context_unref);
+                                                       correllation_context_ref(&context->super),
+                                                       (GDestroyNotify) correllation_context_unref);
         }
       if (context->rule != rule)
         {
@@ -808,7 +808,7 @@ static void
 _init_state(PatternDB *self)
 {
   self->rate_limits = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL,
-                      (GDestroyNotify) pdb_rate_limit_free);
+                                            (GDestroyNotify) pdb_rate_limit_free);
   correllation_state_init_instance(&self->correllation);
   self->timer_wheel = timer_wheel_new();
   timer_wheel_set_associated_data(self->timer_wheel, self, NULL);

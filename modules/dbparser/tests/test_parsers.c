@@ -76,7 +76,7 @@ _invoke_parser(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gp
 
 static void
 assert_parser_success(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state,
-                      RParserMatch *match), const gchar *str, gpointer param, gpointer state, const gchar *expected_string)
+                                         RParserMatch *match), const gchar *str, gpointer param, gpointer state, const gchar *expected_string)
 {
   gchar *result_string = NULL;
   gboolean result;
@@ -89,7 +89,7 @@ assert_parser_success(gboolean (*parser)(guint8 *str, gint *len, const gchar *pa
 
 static void
 assert_parser_failure(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state,
-                      RParserMatch *match), const gchar *str, gpointer param, gpointer state)
+                                         RParserMatch *match), const gchar *str, gpointer param, gpointer state)
 {
   gboolean result;
 
