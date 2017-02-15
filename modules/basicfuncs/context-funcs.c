@@ -55,20 +55,19 @@ TEMPLATE_FUNCTION(NULL, tf_context_length,
 void
 tf_context_lookup_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
-  gint i, msg_ndx;
   gboolean first = TRUE;
   TFCondState *state = (TFCondState *) s;
   gint count = 0;
   GString *buf = g_string_sized_new(64);
 
-  for (msg_ndx = 0; msg_ndx < args->num_messages; msg_ndx++)
+  for (gint msg_ndx = 0; msg_ndx < args->num_messages; msg_ndx++)
     {
       LogMessage *msg = args->messages[msg_ndx];
 
       if (filter_expr_eval(state->filter, msg))
         {
           count++;
-          for (i = 0; i < state->super.argc; i++)
+          for (gint i = 0; i < state->super.argc; i++)
             {
               if (!first)
                 g_string_append_c(result, ',');
@@ -97,16 +96,15 @@ TEMPLATE_FUNCTION(TFCondState, tf_context_lookup, tf_grep_prepare, NULL, tf_cont
 void
 tf_context_values_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
-  gint i, msg_ndx;
   gboolean first = TRUE;
   TFSimpleFuncState *state = (TFSimpleFuncState *) s;
   GString *buf = g_string_sized_new(64);
 
-  for (msg_ndx = 0; msg_ndx < args->num_messages; msg_ndx++)
+  for (gint msg_ndx = 0; msg_ndx < args->num_messages; msg_ndx++)
     {
       LogMessage *msg = args->messages[msg_ndx];
 
-      for (i = 0; i < state->argc; i++)
+      for (gint i = 0; i < state->argc; i++)
         {
           if (!first)
             g_string_append_c(result, ',');
