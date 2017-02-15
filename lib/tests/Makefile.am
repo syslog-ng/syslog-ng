@@ -106,11 +106,17 @@ lib_tests_test_userdb_LDADD	= \
 if ENABLE_CRITERION
 
 lib_tests_TESTS		+= \
-	lib/tests/test_cache
+	lib/tests/test_cache		\
+	lib/tests/test_timeutils
 
 lib_tests_test_cache_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_cache_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_timeutils_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_timeutils_LDADD	=	\
 	$(TEST_LDADD)
 
 endif
