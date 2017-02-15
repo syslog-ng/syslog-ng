@@ -21,43 +21,20 @@
  *
  */
 #include "scanner/list-scanner/list-scanner.h"
-#include "testutils.h"
-
-#define list_scanner_testcase_begin(func, args)             \
-  do                                                            \
-    {                                                           \
-      testcase_begin("%s(%s)", func, args);                     \
-      list_scanner = list_scanner_new();                            \
-    }                                                           \
-  while (0)
-
-#define list_scanner_testcase_end()                           \
-  do                                                            \
-    {                                                           \
-      list_scanner_free(list_scanner);                              \
-      testcase_end();                                           \
-    }                                                           \
-  while (0)
-
-#define LIST_SCANNER_TESTCASE(x, ...) \
-  do {                                                          \
-      list_scanner_testcase_begin(#x, #__VA_ARGS__);      \
-      x(__VA_ARGS__);                                           \
-      list_scanner_testcase_end();                                \
-  } while(0)
+#include <criterion/criterion.h>
 
 ListScanner *list_scanner;
 
 static void
 assert_no_more_tokens(void)
 {
-  assert_false(list_scanner_scan_next(list_scanner), "list_scanner is expected to return no more key-value pairs");
+  cr_assert(!list_scanner_scan_next(list_scanner), "list_scanner is expected to return no more key-value pairs");
 }
 
 static void
 scan_next_token(void)
 {
-  assert_true(list_scanner_scan_next(list_scanner),  "list_scanner is expected to return TRUE for scan_next");
+  cr_assert(list_scanner_scan_next(list_scanner),  "list_scanner is expected to return TRUE for scan_next");
 }
 
 static void
@@ -65,7 +42,7 @@ assert_current_value_is(const gchar *expected_key)
 {
   const gchar *key = list_scanner_get_current_value(list_scanner);
 
-  assert_string(key, expected_key, "current key mismatch");
+  cr_assert_str_eq(key, expected_key, "current key mismatch");
 }
 
 static void
@@ -76,7 +53,20 @@ assert_next_value_is(const gchar *expected_value)
 }
 
 static void
-test_list_scanner_individual_items_are_scanned(void)
+setup(void)
+{
+  list_scanner = list_scanner_new();
+}
+
+static void
+teardown(void)
+{
+  list_scanner_free(list_scanner);
+}
+
+TestSuite(list_scanner, .init = setup, .fini = teardown);
+
+Test(list_scanner, individual_items_are_scanned)
 {
   list_scanner_input_va(list_scanner, "foo", NULL);
   assert_next_value_is("foo");
@@ -94,8 +84,7 @@ test_list_scanner_individual_items_are_scanned(void)
   assert_no_more_tokens();
 }
 
-static void
-test_list_scanner_unquoted_empty_items_are_skipped_to_make_it_easy_to_concatenate_lists(void)
+Test(list_scanner, unquoted_empty_items_are_skipped_to_make_it_easy_to_concatenate_lists)
 {
   list_scanner_input_va(list_scanner, "", NULL);
   assert_no_more_tokens();
@@ -129,8 +118,7 @@ test_list_scanner_unquoted_empty_items_are_skipped_to_make_it_easy_to_concatenat
   assert_no_more_tokens();
 }
 
-static void
-test_list_scanner_quoted_empty_items_are_parsed_as_empty_values(void)
+Test(list_scanner, quoted_empty_items_are_parsed_as_empty_values)
 {
   list_scanner_input_va(list_scanner, "foo", "''", "bar", NULL);
   assert_next_value_is("foo");
@@ -139,8 +127,7 @@ test_list_scanner_quoted_empty_items_are_parsed_as_empty_values(void)
   assert_no_more_tokens();
 }
 
-static void
-test_list_scanner_comma_delimiter_values_are_split(void)
+Test(list_scanner, comma_delimiter_values_are_split)
 {
   list_scanner_input_va(list_scanner, "foo,bar", NULL);
   assert_next_value_is("foo");
@@ -154,8 +141,7 @@ test_list_scanner_comma_delimiter_values_are_split(void)
   assert_no_more_tokens();
 }
 
-static void
-test_list_scanner_comma_and_arg_are_equivalent(void)
+Test(list_scanner, comma_and_arg_are_equivalent)
 {
   list_scanner_input_va(list_scanner, "foo,bar,baz", "xxx", "", "yyy", NULL);
   assert_next_value_is("foo");
@@ -166,8 +152,7 @@ test_list_scanner_comma_and_arg_are_equivalent(void)
   assert_no_more_tokens();
 }
 
-static void
-test_list_scanner_works_with_gstring_input(void)
+Test(list_scanner, works_with_gstring_input)
 {
   GString *argv[] =
   {
@@ -190,8 +175,7 @@ test_list_scanner_works_with_gstring_input(void)
     g_string_free(argv[i], TRUE);
 }
 
-static void
-test_list_scanner_handles_single_quotes(void)
+Test(list_scanner, handles_single_quotes)
 {
   list_scanner_input_va(list_scanner, "'foo'", NULL);
   assert_next_value_is("foo");
@@ -216,8 +200,7 @@ test_list_scanner_handles_single_quotes(void)
   assert_no_more_tokens();
 }
 
-static void
-test_list_scanner_handles_double_quotes(void)
+Test(list_scanner, handles_double_quotes)
 {
   list_scanner_input_va(list_scanner, "\"foo\"", NULL);
   assert_next_value_is("foo");
@@ -247,8 +230,7 @@ test_list_scanner_handles_double_quotes(void)
   assert_no_more_tokens();
 }
 
-static void
-test_list_scanner_malformed_quotes(void)
+Test(list_scanner, malformed_quotes)
 {
   list_scanner_input_va(list_scanner, "'foo", NULL);
   assert_next_value_is("'foo");
@@ -277,19 +259,4 @@ test_list_scanner_malformed_quotes(void)
   assert_next_value_is("bar");
   assert_next_value_is("\"foo,");
   assert_no_more_tokens();
-}
-
-int
-main(int argc, char *argv[])
-{
-  LIST_SCANNER_TESTCASE(test_list_scanner_individual_items_are_scanned);
-  LIST_SCANNER_TESTCASE(test_list_scanner_unquoted_empty_items_are_skipped_to_make_it_easy_to_concatenate_lists);
-  LIST_SCANNER_TESTCASE(test_list_scanner_quoted_empty_items_are_parsed_as_empty_values);
-  LIST_SCANNER_TESTCASE(test_list_scanner_comma_delimiter_values_are_split);
-  LIST_SCANNER_TESTCASE(test_list_scanner_comma_and_arg_are_equivalent);
-  LIST_SCANNER_TESTCASE(test_list_scanner_works_with_gstring_input);
-  LIST_SCANNER_TESTCASE(test_list_scanner_handles_single_quotes);
-  LIST_SCANNER_TESTCASE(test_list_scanner_handles_double_quotes);
-  LIST_SCANNER_TESTCASE(test_list_scanner_malformed_quotes);
-  return 0;
 }
