@@ -21,6 +21,7 @@
  */
 #include "kv-scanner.h"
 #include "str-repr/decode.h"
+#include "str-repr/encode.h"
 #include <string.h>
 
 static inline gboolean
@@ -84,6 +85,30 @@ _extract_key_from_positions(KVScanner *self, const gchar *start_of_key, const gc
   return FALSE;
 }
 
+static inline void
+_extract_stray_word(KVScanner *self, const gchar *stray_word, gssize len)
+{
+  if (len < 0)
+    len = strlen(stray_word);
+  if (self->stray_words && len > 0)
+    {
+      while (len > 0 && stray_word[len - 1] == ' ')
+        len--;
+      while (len > 0 && stray_word[0] == ' ')
+        {
+          stray_word++;
+          len--;
+        }
+      if (len > 0)
+        {
+          if (self->stray_words->len)
+            g_string_append_c(self->stray_words, ',');
+
+          str_repr_encode_append(self->stray_words, stray_word, len, ",");
+        }
+    }
+}
+
 static gboolean
 _extract_key(KVScanner *self)
 {
@@ -99,12 +124,13 @@ _extract_key(KVScanner *self)
 
       if (_extract_key_from_positions(self, start_of_key, end_of_key))
         {
+          _extract_stray_word(self, input, start_of_key - input);
           self->input_pos = separator - self->input + 1;
           return TRUE;
         }
       separator = _locate_separator(self, separator + 1);
     }
-
+  _extract_stray_word(self, input, -1);
   return FALSE;
 }
 
@@ -144,9 +170,14 @@ _end_of_string(const gchar *cur)
 }
 
 static inline gboolean
-_pair_separator(KVScanner *self, const gchar *cur)
+_pair_separator(KVScanner *self, const gchar *cur, const gchar **new_cur)
 {
-  return (self->pair_separator && (strncmp(cur, self->pair_separator, self->pair_separator_len) == 0));
+  if (self->pair_separator && (strncmp(cur, self->pair_separator, self->pair_separator_len) == 0))
+    {
+      *new_cur = cur + self->pair_separator_len;
+      return TRUE;
+    }
+  return FALSE;
 }
 
 static gboolean
@@ -161,12 +192,16 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
       _skip_spaces(&cur);
 
       if (_end_of_string(cur) ||
-          _pair_separator(self, cur) ||
           _key_follows(self, cur))
         {
           *new_cur = cur;
           result = TRUE;
         }
+      else if (_pair_separator(self, cur, new_cur))
+        {
+          result = TRUE;
+        }
+
     }
   else if (*cur == ' ')
     {
@@ -175,8 +210,7 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
     }
   else
     {
-      result = _pair_separator(self, cur);
-      *new_cur = cur + self->pair_separator_len;
+      result = _pair_separator(self, cur, new_cur);
     }
   return result;
 }
@@ -250,9 +284,13 @@ kv_scanner_scan_next(KVScanner *s)
 }
 
 static KVScanner *
-_clone(KVScanner *s)
+_clone(KVScanner *self)
 {
-  return kv_scanner_new(s->value_separator, s->pair_separator, s->transform_value);
+  KVScanner *scanner = kv_scanner_new(self->value_separator,
+                                      self->pair_separator,
+                                      self->stray_words != NULL);
+  kv_scanner_set_transform_value(scanner, self->transform_value);
+  return scanner;
 }
 
 void
@@ -263,22 +301,25 @@ kv_scanner_free(KVScanner *self)
   g_string_free(self->key, TRUE);
   g_string_free(self->value, TRUE);
   g_string_free(self->decoded_value, TRUE);
+  if (self->stray_words)
+    g_string_free(self->stray_words, TRUE);
   g_free(self->pair_separator);
   g_free(self);
 }
 
 KVScanner *
-kv_scanner_new(gchar value_separator, const gchar *pair_separator, KVTransformValueFunc transform_value)
+kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words)
 {
   KVScanner *self = g_new0(KVScanner, 1);
 
   self->key = g_string_sized_new(32);
   self->value = g_string_sized_new(64);
   self->decoded_value = g_string_sized_new(64);
+  if (extract_stray_words)
+    self->stray_words = g_string_sized_new(64);
   self->value_separator = value_separator;
   self->pair_separator = g_strdup(pair_separator ? : ", ");
   self->pair_separator_len = self->pair_separator ? strlen(self->pair_separator) : 0;
-  self->transform_value = transform_value;
   self->clone = _clone;
 
   return self;

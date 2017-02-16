@@ -20,30 +20,6 @@
  *
  */
 
-static gboolean
-tf_context_length_prepare(LogTemplateFunction *self, gpointer s,
-                          LogTemplate *parent, gint argc, gchar *argv[],
-                          GError **error)
-{
-  return TRUE;
-}
-
-static void
-tf_context_length_call(LogTemplateFunction *self, gpointer s,
-                       const LogTemplateInvokeArgs *args, GString *result)
-{
-  g_string_append_printf(result, "%d", args->num_messages);
-}
-
-static void
-tf_context_length_free_state(gpointer s)
-{
-}
-
-TEMPLATE_FUNCTION(NULL, tf_context_length,
-                  tf_context_length_prepare, NULL, tf_context_length_call,
-                  tf_context_length_free_state, NULL);
-
 static void
 tf_env(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
