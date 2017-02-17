@@ -9,7 +9,8 @@ compatinclude_HEADERS		= 	\
 	lib/compat/socket.h		\
 	lib/compat/string.h		\
 	lib/compat/time.h		\
-	lib/compat/openssl_support.h
+	lib/compat/openssl_support.h	\
+	lib/compat/pcre.h
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\

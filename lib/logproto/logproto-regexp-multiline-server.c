@@ -23,9 +23,9 @@
 
 #include "logproto-regexp-multiline-server.h"
 #include "messages.h"
+#include "compat/pcre.h"
 
 #include <string.h>
-#include <pcre.h>
 
 struct _MultiLineRegexp
 {
@@ -81,7 +81,7 @@ multi_line_regexp_free(MultiLineRegexp *self)
       if (self->pattern)
         pcre_free(self->pattern);
       if (self->extra)
-        pcre_free(self->extra);
+        pcre_free_study(self->extra);
       g_free(self);
     }
 }
