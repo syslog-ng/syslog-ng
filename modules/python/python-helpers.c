@@ -252,8 +252,8 @@ _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method
     {
       PyObject *args_obj = args ? _py_create_arg_dict(args) : NULL;
       result = _py_invoke_bool_function(method, args_obj, class, module);
-      if (args_obj)
-        PyObject_Del(args_obj);
+
+      Py_XDECREF(args_obj);
       Py_DECREF(method);
     }
   return result;
