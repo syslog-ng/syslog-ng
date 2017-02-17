@@ -42,8 +42,8 @@ class LogDestination(object):
         """This method is called at deinitialization time"""
         pass
 
-    def send(self, msg):
-        """Send a message to the target service
+    def send(self, msgs):
+        """Send a list of messages to the target service
 
         It should return True to indicate success, False will suspend the
         destination for a period specified by the time-reopen() option."""
@@ -51,6 +51,6 @@ class LogDestination(object):
 
 
 class DummyPythonDest(LogDestination):
-    def send(self, msg):
-        print('queue', msg)
+    def send(self, msgs):
+        print('queue', msgs)
         return True
