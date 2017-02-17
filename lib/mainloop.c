@@ -482,7 +482,7 @@ _prepare_configuration_for_reading(MainLoop *self)
     {
       return _setup_cli_mode(self->options, self->current_configuration);
     }
-  else if (!cfg_open_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename))
+  if (!cfg_open_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename))
     {
       return 1;
     }

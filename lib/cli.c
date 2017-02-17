@@ -28,7 +28,6 @@
 #include <string.h>
 
 static const char DELIMITER[] = " ";
-static const char DRIVER_TEMPLATE[] = "%s {%s};\n";
 static const char CFG_FILE_TEMPLATE[] =
   "@version: %s\n"
   "@include scl.conf\n"
@@ -54,16 +53,15 @@ cli_param_new(gchar *type, gchar *cfg)
 static gchar *
 _get_config_of_driver(CliParam *driver)
 {
-  return g_strdup_printf(DRIVER_TEMPLATE, driver->type, driver->cfg);
+  return g_strdup_printf("%s {%s};\n", driver->type, driver->cfg);
 }
 
 static gchar *
 _concatenate_strings(GList *elements)
 {
-  GList *element;
   GString *concatenated = g_string_new("");
 
-  for (element = elements; element != NULL; element = element->next)
+  for (GList *element = elements; element != NULL; element = element->next)
     g_string_append_printf(concatenated, "%s ", (gchar *) element->data);
 
   return g_string_free(concatenated, FALSE);
@@ -143,16 +141,16 @@ _add_new_cli_param(CliParamConverter *self, gchar **driver_type, gchar **driver_
 }
 
 static gboolean
-_parse_raw_parameter(CliParamConverter *self, gchar *raw_param)
+_parse_raw_parameter(CliParamConverter *self, gint i)
 {
   gchar *token;
   gchar *driver_config = "";
   gchar *driver_type = NULL;
 
-  if (!_is_driver_ending(raw_param))
+  if (!_is_driver_ending(self->raw_params[i]))
     return FALSE;
 
-  token = strtok(raw_param, DELIMITER);
+  token = strtok(self->raw_params[i], DELIMITER);
   while (_more_tokens(token))
     {
       _parse_driver_data(token, &driver_type, &driver_config);
@@ -176,9 +174,7 @@ cli_param_converter_setup(CliParamConverter *self)
 
   for (i = 0; self->raw_params[i]; i++)
     {
-      gchar *raw_param = g_strdup(self->raw_params[i]);
-
-      if (!_parse_raw_parameter(self, raw_param))
+      if (!_parse_raw_parameter(self, i))
         return FALSE;
     }
   return TRUE;
@@ -190,9 +186,13 @@ cli_param_converter_new(gchar **params, gchar *destination_params)
   CliParamConverter *self = g_new0(CliParamConverter, 1);
   self->raw_params = params;
   if (destination_params)
-    self->destination_params = destination_params;
+    {
+      self->destination_params = destination_params;
+    }
   else
-    self->destination_params = "";
+    {
+      self->destination_params = "";
+    }
   self->params = NULL;
   self->generated_config = NULL;
   return self;
