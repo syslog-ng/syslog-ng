@@ -524,6 +524,31 @@ Test(kv_scanner, transforms_values_if_transform_value_is_set)
   { "foo", "cbs" });
 }
 
+Test(kv_scanner, pair_separator_space_disables_space_related_heuristics)
+{
+  ScannerConfig config =
+  {
+    .kv_separator = '=',
+    .pair_separator = " ",
+  };
+
+  /* v2 and v4 below goes to stray words, as the pair-separator is a space,
+   * so we disable the heuristics about spaces embedded in non-quoted values
+   * */
+
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=v1 v2 bar=v3 v4",
+  {"foo", "v1"},
+  {"bar", "v3"});
+
+  /* if the separator is multiple spaces, we still trim spaces at the end of
+   * line (that is a partial separator).
+   */
+  config.pair_separator = "   ";
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=v1 v2   bar=v3 v4  ",
+  {"foo", "v1 v2"},
+  {"bar", "v3 v4"});
+}
+
 Test(kv_scanner, pair_separator_causes_values_to_be_split_at_that_character)
 {
   ScannerConfig config =
@@ -905,6 +930,29 @@ _provide_cases_for_performance_test_parse_long_msg(void)
       {"code", "27"},
       {"Category", "Information Technology/Computers"},
       {"fw_action", "process"}),
+    },
+    {
+      .input = "IN=em1 OUT= MAC=a2:be:d2:ab:11:af:e2:f2:00:00 SRC=192.168.2.115 DST=192.168.1.23 "
+      "LEN=52 TOS=0x00 PREC=0x00 TTL=127 ID=9434 DF PROTO=TCP SPT=58428 DPT=443 WINDOW=8192 "
+      "RES=0x00 SYN URGP=0",
+      .expected = INIT_KVCONTAINER(
+      {"IN", "em1"},
+      {"OUT", ""},
+      {"MAC", "a2:be:d2:ab:11:af:e2:f2:00:00"},
+      {"SRC", "192.168.2.115"},
+      {"DST", "192.168.1.23"},
+      {"LEN", "52"},
+      {"TOS", "0x00"},
+      {"PREC", "0x00"},
+      {"TTL", "127"},
+      {"ID", "9434 DF"},
+      {"PROTO", "TCP"},
+      {"SPT", "58428"},
+      {"DPT", "443"},
+      {"WINDOW", "8192"},
+      {"RES", "0x00 SYN"},
+      {"URGP", "0"},
+      ),
     },
     {}
   };
