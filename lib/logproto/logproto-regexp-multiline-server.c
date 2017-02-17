@@ -23,9 +23,9 @@
 
 #include "logproto-regexp-multiline-server.h"
 #include "messages.h"
+#include "compat/pcre.h"
 
 #include <string.h>
-#include <pcre.h>
 
 struct _MultiLineRegexp
 {

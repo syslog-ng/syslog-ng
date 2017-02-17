@@ -27,8 +27,7 @@
 #include "cfg.h"
 #include "str-utils.h"
 #include "compat/string.h"
-
-#include <pcre.h>
+#include "compat/pcre.h"
 
 static void
 log_matcher_init(LogMatcher *self, const LogMatcherOptions *options)
@@ -778,7 +777,7 @@ static void
 log_matcher_pcre_re_free(LogMatcher *s)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
-  pcre_free(self->extra);
+  pcre_free_study(self->extra);
   pcre_free(self->pattern);
 }
 

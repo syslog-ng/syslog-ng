@@ -8,6 +8,7 @@ set(COMPAT_HEADERS
     compat/string.h
     compat/time.h
     compat/openssl_support.h
+    compat/pcre.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES
