@@ -481,19 +481,18 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
   const gchar *errptr;
   gint erroffset;
   gint flags = 0;
-  gint optflags = 0;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
   if (self->super.flags & LMF_ICASE)
     flags |= PCRE_CASELESS;
-#ifdef PCRE_NEWLINE_ANYCRLF
+
   if (self->super.flags & LMF_NEWLINE)
-    flags |= PCRE_NEWLINE_ANYCRLF;
-#else
-  if (self->super.flags & LMF_NEWLINE)
-    msg_warning("syslog-ng was compiled against an old PCRE which doesn't support the 'newline' flag");
-#endif
+    {
+      if (!PCRE_NEWLINE_ANYCRLF)
+        msg_warning("syslog-ng was compiled against an old PCRE which doesn't support the 'newline' flag");
+      flags |= PCRE_NEWLINE_ANYCRLF;
+    }
   if (self->super.flags & LMF_UTF8)
     {
       gint support;
@@ -525,12 +524,8 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
       return FALSE;
     }
 
-#ifdef PCRE_STUDY_JIT_COMPILE
-  optflags = PCRE_STUDY_JIT_COMPILE;
-#endif
-
   /* optimize regexp */
-  self->extra = pcre_study(self->pattern, optflags, &errptr);
+  self->extra = pcre_study(self->pattern, PCRE_STUDY_JIT_COMPILE, &errptr);
   if (errptr != NULL)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Error while optimizing regular expression, error=%s", errptr);

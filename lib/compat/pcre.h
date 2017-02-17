@@ -32,4 +32,12 @@
 #define pcre_free_study pcre_free
 #endif
 
+#ifndef PCRE_STUDY_JIT_COMPILE
+#define PCRE_STUDY_JIT_COMPILE 0
+#endif
+
+#ifndef PCRE_NEWLINE_ANYCRLF
+#define PCRE_NEWLINE_ANYCRLF 0
+#endif
+
 #endif /* COMPAT_PCRE_H_INCLUDED */
