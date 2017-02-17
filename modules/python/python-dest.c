@@ -154,14 +154,14 @@ static gboolean
 _dd_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, const gchar *method_name)
 {
   return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, self->options, self->class,
-         self->super.super.super.id);
+                                                  self->super.super.super.id);
 }
 
 static gboolean
 _dd_py_invoke_bool_method_by_name(PythonDestDriver *self, const gchar *method_name)
 {
   return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, NULL, self->class,
-         self->super.super.super.id);
+                                                  self->super.super.super.id);
 }
 
 static gboolean

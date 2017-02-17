@@ -243,7 +243,7 @@ _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, con
 
 gboolean
 _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method_name,
-    GHashTable *args, const gchar *class, const gchar *module)
+                                         GHashTable *args, const gchar *class, const gchar *module)
 {
   gboolean result = FALSE;
   PyObject *method = _py_get_method(instance, method_name, module);
