@@ -180,6 +180,12 @@ _pair_separator(KVScanner *self, const gchar *cur, const gchar **new_cur)
   return FALSE;
 }
 
+static inline gboolean
+_pair_separator_starts_with_a_space(KVScanner *self)
+{
+  return (self->pair_separator && self->pair_separator[0] == ' ');
+}
+
 static gboolean
 _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
 {
@@ -189,19 +195,26 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
   if (!self->value_was_quoted &&
       *cur == ' ')
     {
-      _skip_spaces(&cur);
-
-      if (_end_of_string(cur) ||
-          _key_follows(self, cur))
-        {
-          *new_cur = cur;
-          result = TRUE;
-        }
-      else if (_pair_separator(self, cur, new_cur))
+      if (_pair_separator_starts_with_a_space(self) &&
+          _pair_separator(self, cur, new_cur))
         {
           result = TRUE;
         }
+      else
+        {
+          _skip_spaces(&cur);
 
+          if (_end_of_string(cur) ||
+              _key_follows(self, cur))
+            {
+              *new_cur = cur;
+              result = TRUE;
+            }
+          else if (_pair_separator(self, cur, new_cur))
+            {
+              result = TRUE;
+            }
+        }
     }
   else if (*cur == ' ')
     {

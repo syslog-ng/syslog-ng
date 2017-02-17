@@ -524,6 +524,31 @@ Test(kv_scanner, transforms_values_if_transform_value_is_set)
   { "foo", "cbs" });
 }
 
+Test(kv_scanner, pair_separator_space_disables_space_related_heuristics)
+{
+  ScannerConfig config =
+  {
+    .kv_separator = '=',
+    .pair_separator = " ",
+  };
+
+  /* v2 and v4 below goes to stray words, as the pair-separator is a space,
+   * so we disable the heuristics about spaces embedded in non-quoted values
+   * */
+
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=v1 v2 bar=v3 v4",
+  {"foo", "v1"},
+  {"bar", "v3"});
+
+  /* if the separator is multiple spaces, we still trim spaces at the end of
+   * line (that is a partial separator).
+   */
+  config.pair_separator = "   ";
+  _EXPECT_KV_PAIRS_WITH_CONFIG(config, "foo=v1 v2   bar=v3 v4  ",
+  {"foo", "v1 v2"},
+  {"bar", "v3 v4"});
+}
+
 Test(kv_scanner, pair_separator_causes_values_to_be_split_at_that_character)
 {
   ScannerConfig config =
