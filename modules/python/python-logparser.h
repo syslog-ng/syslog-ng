@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2014-2015 Balabit
- * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
- * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,30 +20,16 @@
  *
  */
 
-#include "python-parser.h"
-#include "cfg-parser.h"
-#include "python-grammar.h"
+#ifndef _SNG_PYTHON_LOGPARSER_H
+#define _SNG_PYTHON_LOGPARSER_H
 
-extern int python_debug;
-int python_parse(CfgLexer *lexer, void **instance, gpointer arg);
+#include "python-module.h"
+#include "parser/parser-expr.h"
+#include "value-pairs/value-pairs.h"
 
-static CfgLexerKeyword python_keywords[] =
-{
-  { "python",                   KW_PYTHON  },
-  { "class",                    KW_CLASS   },
-  { "imports",                  KW_IMPORTS },
-  { NULL }
-};
+LogParser *python_parser_new(GlobalConfig *cfg);
+void python_parser_set_imports(LogParser *s, GList *imports);
+void python_parser_set_class(LogParser *s, gchar *class_name);
+void python_parser_set_option(LogParser*  s, gchar* key, gchar* value);
 
-CfgParser python_parser =
-{
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &python_debug,
 #endif
-  .name = "python",
-  .keywords = python_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) python_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(python_, void **)

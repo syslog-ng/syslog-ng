@@ -156,3 +156,128 @@ exit:
   g_free(attribute_name);
   return value;
 }
+
+static void
+_insert_to_dict(gpointer key, gpointer value, gpointer dict)
+{
+  PyObject *key_pyobj = PyBytes_FromStringAndSize((gchar *) key, strlen((gchar *) key));
+  PyObject *value_pyobj = PyBytes_FromStringAndSize((gchar *) value, strlen((gchar *) value));
+  PyDict_SetItem( (PyObject *) dict, key_pyobj, value_pyobj);
+}
+
+PyObject *
+_py_create_arg_dict(GHashTable *args)
+{
+  PyObject *arg_dict = PyDict_New();
+  g_hash_table_foreach(args, _insert_to_dict, arg_dict);
+  return arg_dict;
+}
+
+PyObject *
+_py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module)
+{
+  PyObject *ret;
+
+  ret = PyObject_CallFunctionObjArgs(func, arg, NULL);
+  if (!ret)
+    {
+      gchar buf1[256], buf2[256];
+
+      msg_error("Exception while calling a Python function",
+                evt_tag_str("module", module),
+                evt_tag_str("script", class),
+                evt_tag_str("function", _py_get_callable_name(func, buf1, sizeof(buf1))),
+                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf2, sizeof(buf2))));
+      return NULL;
+    }
+  return ret;
+}
+
+void
+_py_invoke_void_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module)
+{
+  PyObject *ret = _py_invoke_function(func, arg, class, module);
+  Py_XDECREF(ret);
+}
+
+gboolean
+_py_invoke_bool_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module)
+{
+  PyObject *ret;
+  gboolean result = FALSE;
+
+  ret = _py_invoke_function(func, arg, class, module);
+  if (ret)
+    result = PyObject_IsTrue(ret);
+  Py_XDECREF(ret);
+  return result;
+}
+
+PyObject *
+_py_get_method(PyObject *instance, const gchar *method_name, const gchar *module)
+{
+  PyObject *method = _py_get_attr_or_null(instance, method_name);
+  if (!method)
+    {
+      gchar buf[256];
+
+      msg_error("Missing Python method in the driver class",
+                evt_tag_str("module", module),
+                evt_tag_str("method", method_name),
+                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+      return NULL;
+    }
+  return method;
+}
+
+void
+_py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class, const gchar *module)
+{
+  PyObject *method = _py_get_method(instance, method_name, module);
+  if (method)
+    {
+      _py_invoke_void_function(method, NULL, class, module);
+      Py_DECREF(method);
+    }
+}
+
+gboolean
+_py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method_name,
+                                         GHashTable *args, const gchar *class, const gchar *module)
+{
+  gboolean result = FALSE;
+  PyObject *method = _py_get_method(instance, method_name, module);
+
+  if (method)
+    {
+      PyObject *args_obj = args ? _py_create_arg_dict(args) : NULL;
+      result = _py_invoke_bool_function(method, args_obj, class, module);
+
+      Py_XDECREF(args_obj);
+      Py_DECREF(method);
+    }
+  return result;
+}
+
+gboolean
+_py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class, const gchar *module)
+{
+  return _py_invoke_bool_method_by_name_with_args(instance, method_name, NULL, class, module);
+}
+
+static void
+_foreach_import(gpointer data, gpointer user_data)
+{
+  gchar *modname = (gchar *) data;
+  PyObject *mod;
+
+  mod = _py_do_import(modname);
+  Py_XDECREF(mod);
+}
+
+void
+_py_perform_imports(GList *imports)
+{
+  g_list_foreach(imports, _foreach_import, NULL);
+}
+

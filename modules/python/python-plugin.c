@@ -33,6 +33,7 @@
 #include "plugin-types.h"
 
 extern CfgParser python_parser;
+extern CfgParser python_parser_parser;
 
 static Plugin python_plugins[] =
 {
@@ -43,6 +44,11 @@ static Plugin python_plugins[] =
   },
   {
     .type = LL_CONTEXT_ROOT,
+    .name = "python",
+    .parser = &python_parser,
+  },
+  {
+    .type = LL_CONTEXT_PARSER,
     .name = "python",
     .parser = &python_parser,
   },

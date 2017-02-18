@@ -29,6 +29,8 @@ import os
 
 config = """@version: 3.9
 
+options { keep-hostname(yes); };
+
 source s_int { internal(); };
 source s_tcp { tcp(port(%(port_number)d)); };
 
@@ -38,6 +40,29 @@ destination d_python {
 };
 
 log { source(s_tcp); destination(d_python); };
+
+python {
+
+class MyParser(object):
+  def init(self, options):
+      return True
+
+  def deinit(self):
+      return True
+
+  def parse(self, msg):
+      msg['FOOBAR'] = msg['MSG']
+      return True
+
+};
+
+log {
+  source(s_tcp);
+  parser {
+      python(class("MyParser"));
+  };
+  destination { file("test-python-parser.log" template("$ISODATE $HOST $MSGHDR$FOOBAR\n")); };
+};
 
 """ % locals()
 
@@ -73,5 +98,21 @@ def test_python():
         expected.extend(s.sendMessages(msg, pri=7))
     stopped = stop_syslogng()
     if not stopped or not check_file_expected('test-python', expected, settle_time=2):
+        return False
+    return True
+
+def test_python_parser():
+
+    messages = (
+        'python_parser1',
+        'python_parser2'
+    )
+    s = SocketSender(AF_INET, ('localhost', port_number), dgram=0)
+
+    expected = []
+    for msg in messages:
+        expected.extend(s.sendMessages(msg, pri=7))
+    stopped = stop_syslogng()
+    if not stopped or not check_file_expected('test-python-parser', expected, settle_time=2):
         return False
     return True

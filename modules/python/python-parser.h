@@ -27,11 +27,12 @@
 
 #include "python-module.h"
 #include "driver.h"
+#include "parser/parser-expr.h"
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
 
 extern CfgParser python_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(python_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(python_, void **)
 
 #endif

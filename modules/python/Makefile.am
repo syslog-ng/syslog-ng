@@ -40,9 +40,10 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-parser.h	          \
 	modules/python/python-logmsg.h		  \
 	modules/python/python-logmsg.c	          \
+	modules/python/python-debugger.h	  \
 	modules/python/python-debugger.c	  \
-	modules/python/python-debugger.h
-
+	modules/python/python-logparser.h	  \
+	modules/python/python-logparser.c
 
 modules_python_libmod_python_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS) \
