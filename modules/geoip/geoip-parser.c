@@ -23,7 +23,7 @@
 
 #include "geoip-parser.h"
 #include "parser/parser-expr.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 
 #include <GeoIPCity.h>
 
@@ -82,7 +82,7 @@ geoip_parser_process(LogParser *s, LogMessage **pmsg,
   GeoIPParser *self = (GeoIPParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
   GeoIPRecord *record;
-  SBGString *value;
+  GString *value;
 
   if (!self->dest.country_code &&
       !self->dest.latitude &&
@@ -109,22 +109,21 @@ geoip_parser_process(LogParser *s, LogMessage **pmsg,
                               record->country_code,
                               strlen(record->country_code));
 
-  value = sb_gstring_acquire();
+  value = scratch_buffers2_alloc();
 
-  g_string_printf(sb_gstring_string(value), "%f",
+  g_string_printf(value, "%f",
                   record->latitude);
   log_msg_set_value_by_name(msg, self->dest.latitude,
-                            sb_gstring_string(value)->str,
-                            sb_gstring_string(value)->len);
+                            value->str,
+                            value->len);
 
-  g_string_printf(sb_gstring_string(value), "%f",
+  g_string_printf(value, "%f",
                   record->longitude);
   log_msg_set_value_by_name(msg, self->dest.longitude,
-                            sb_gstring_string(value)->str,
-                            sb_gstring_string(value)->len);
+                            value->str,
+                            value->len);
 
   GeoIPRecord_delete(record);
-  sb_gstring_release(value);
 
   return TRUE;
 }
