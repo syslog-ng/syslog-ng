@@ -23,16 +23,16 @@
  */
 
 #include "tags-serialize.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 
 gboolean
 tags_deserialize(LogMessage *msg, SerializeArchive *sa)
 {
-  SBGString *sb = sb_gstring_acquire();
+  ScratchBuffersMarker marker;
+  GString *buf = scratch_buffers2_alloc_and_mark(&marker);
 
   while (1)
     {
-      GString *buf = sb_gstring_string(sb);
       if (!serialize_read_string(sa, buf))
         return FALSE;
       if (buf->len == 0)
@@ -45,7 +45,7 @@ tags_deserialize(LogMessage *msg, SerializeArchive *sa)
 
   msg->flags |= LF_STATE_OWN_TAGS;
 
-  sb_gstring_release(sb);
+  scratch_buffers2_reclaim_marked(marker);
   return TRUE;
 }
 
