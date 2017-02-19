@@ -212,7 +212,7 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
-  GTree *scope_set = ((gpointer *)user_data)[5];
+  VPResults *results = ((gpointer *)user_data)[5];
   const LogTemplateOptions *template_options = ((gpointer *)user_data)[6];
   SBTHGString *sb = sb_th_gstring_acquire();
   VPPairConf *vpc = (VPPairConf *)data;
@@ -223,7 +223,7 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
                              template_options,
                              time_zone_mode, seq_num, NULL, sb_th_gstring_string(sb));
 
-  g_tree_insert(scope_set, vp_transform_apply(vp, vpc->name), sb);
+  g_tree_insert(results->result_tree, vp_transform_apply(vp, vpc->name), sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -233,7 +233,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
                        gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
-  GTree *scope_set = ((gpointer *)user_data)[5];
+  VPResults *results = ((gpointer *)user_data)[5];
   guint j;
   gboolean inc;
   SBTHGString *sb;
@@ -256,7 +256,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 
   g_string_append_len(sb_th_gstring_string(sb), value, value_len);
   sb->type_hint = TYPE_HINT_STRING;
-  g_tree_insert(scope_set, vp_transform_apply(vp, name), sb);
+  g_tree_insert(results->result_tree, vp_transform_apply(vp, name), sb);
 
   return FALSE;
 }
@@ -391,9 +391,9 @@ vp_data_free (SBTHGString *s)
 }
 
 static void
-vp_results_init(VPResults *results, GCompareDataFunc compare_func)
+vp_results_init(VPResults *results, GCompareFunc compare_func)
 {
-  results->result_tree = g_tree_new_full(compare_func, NULL,
+  results->result_tree = g_tree_new_full((GCompareDataFunc)compare_func, NULL,
                                          (GDestroyNotify)g_free,
                                          (GDestroyNotify)vp_data_free);
 }
@@ -420,7 +420,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   VPResults results;
 
   vp_results_init(&results, compare_func);
-  args[5] = results.result_tree;
+  args[5] = &results;
 
   /*
    * Build up the base set
