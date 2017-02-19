@@ -27,7 +27,7 @@
 #include "timeutils.h"
 #include "cfg.h"
 #include "str-format.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -274,7 +274,7 @@ kmsg_parse_key_value_pair(const guchar *data, gsize *pos, gsize length,
                           LogMessage *msg)
 {
   gsize name_start, name_len, value_start, value_len;
-  SBGString *name;
+  GString *name;
 
   while (*pos < length && (data[*pos] == ' ' || data[*pos] == '\t'))
     (*pos)++;
@@ -302,15 +302,14 @@ kmsg_parse_key_value_pair(const guchar *data, gsize *pos, gsize length,
       return TRUE;
     }
 
-  name = sb_gstring_acquire();
+  name = scratch_buffers2_alloc();
 
-  g_string_assign(sb_gstring_string(name), ".linux.");
-  g_string_append_len(sb_gstring_string(name), (const gchar *)data + name_start, name_len);
+  g_string_assign(name, ".linux.");
+  g_string_append_len(name, (const gchar *)data + name_start, name_len);
 
   log_msg_set_value(msg,
-                    log_msg_get_value_handle(sb_gstring_string(name)->str),
+                    log_msg_get_value_handle(name->str),
                     (const gchar *)data + value_start, value_len);
-  sb_gstring_release(name);
 
   return TRUE;
 }
