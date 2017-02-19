@@ -46,6 +46,18 @@ typedef struct
   LogTemplate *template;
 } VPPairConf;
 
+typedef struct
+{
+  GString *name;
+  GString *value;
+  TypeHint type_hint;
+} VPResultValue;
+
+typedef struct
+{
+  GTree *result_tree;
+} VPResults;
+
 struct _ValuePairs
 {
   GAtomicCounter ref_cnt;
@@ -130,6 +142,7 @@ static CfgFlagHandler value_pair_scope[] =
   { NULL,                 0,       0,                            0},
 };
 
+
 static gboolean
 vp_pattern_spec_eval(VPPatternSpec *self, const gchar *input)
 {
@@ -170,7 +183,6 @@ vp_pair_conf_free(VPPairConf *vpc)
   g_free(vpc->name);
   g_free(vpc);
 }
-
 
 static gchar *
 vp_transform_apply (ValuePairs *vp, gchar *key)
@@ -317,7 +329,7 @@ vp_update_builtin_list_of_values(ValuePairs *vp)
 }
 
 static void
-vp_merge_builtins(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, GTree *dest,
+vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, gint32 seq_num, gint time_zone_mode,
                   const LogTemplateOptions *template_options)
 {
   gint i;
@@ -354,7 +366,7 @@ vp_merge_builtins(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zon
           continue;
         }
 
-      g_tree_insert(dest, vp_transform_apply(vp, spec->name), sb);
+      g_tree_insert(results->result_tree, vp_transform_apply(vp, spec->name), sb);
     }
 }
 
@@ -378,6 +390,20 @@ vp_data_free (SBTHGString *s)
   sb_th_gstring_release (s);
 }
 
+static void
+vp_results_init(VPResults *results, GCompareDataFunc compare_func)
+{
+  results->result_tree = g_tree_new_full(compare_func, NULL,
+                                         (GDestroyNotify)g_free,
+                                         (GDestroyNotify)vp_data_free);
+}
+
+static void
+vp_results_deinit(VPResults *results)
+{
+  g_tree_destroy(results->result_tree);
+}
+
 gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                             GCompareDataFunc compare_func,
@@ -391,12 +417,10 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                     };
   gboolean result = TRUE;
   gpointer helper_args[] = { func, user_data, &result };
-  GTree *scope_set;
+  VPResults results;
 
-  scope_set = g_tree_new_full((GCompareDataFunc)compare_func, NULL,
-                              (GDestroyNotify)g_free,
-                              (GDestroyNotify)vp_data_free);
-  args[5] = scope_set;
+  vp_results_init(&results, compare_func);
+  args[5] = results.result_tree;
 
   /*
    * Build up the base set
@@ -406,15 +430,14 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
-  vp_merge_builtins(vp, msg, seq_num, time_zone_mode, scope_set, template_options);
+  vp_merge_builtins(vp, &results, msg, seq_num, time_zone_mode, template_options);
 
   /* Merge the explicit key-value pairs too */
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
 
   /* Aaand we run it through the callback! */
-  g_tree_foreach(scope_set, (GTraverseFunc)vp_foreach_helper, helper_args);
-
-  g_tree_destroy(scope_set);
+  g_tree_foreach(results.result_tree, (GTraverseFunc)vp_foreach_helper, helper_args);
+  vp_results_deinit(&results);
 
   return result;
 }
