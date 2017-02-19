@@ -25,6 +25,7 @@
 #include "mainloop-call.h"
 #include "tls-support.h"
 #include "apphook.h"
+#include "scratch-buffers2.h"
 
 #include <iv.h>
 
@@ -176,14 +177,22 @@ main_loop_worker_thread_start(void *cookie)
   _allocate_thread_id();
   INIT_IV_LIST_HEAD(&batch_callbacks);
   app_thread_start();
+  scratch_buffers2_automatic_gc_init();
 }
 
 /* Call this function from worker threads, when you stop */
 void
 main_loop_worker_thread_stop(void)
 {
+  scratch_buffers2_automatic_gc_deinit();
   app_thread_stop();
   _release_thread_id();
+}
+
+void
+main_loop_worker_run_gc(void)
+{
+  scratch_buffers2_explicit_gc();
 }
 
 /*

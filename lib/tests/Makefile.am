@@ -69,6 +69,7 @@ lib_tests_test_runid_CFLAGS	=	\
 lib_tests_test_runid_LDADD	=	\
 	$(TEST_LDADD)
 
+
 lib_tests_test_str_format_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_str_format_LDADD	=	\
@@ -107,6 +108,7 @@ if ENABLE_CRITERION
 
 lib_tests_TESTS		+= \
 	lib/tests/test_cache		\
+	lib/tests/test_scratch_buffers 	\
 	lib/tests/test_timeutils
 
 lib_tests_test_cache_CFLAGS	=	\
@@ -118,5 +120,11 @@ lib_tests_test_timeutils_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_timeutils_LDADD	=	\
 	$(TEST_LDADD)
+
+lib_tests_test_scratch_buffers_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_scratch_buffers_LDADD	=	\
+	$(TEST_LDADD)
+
 
 endif

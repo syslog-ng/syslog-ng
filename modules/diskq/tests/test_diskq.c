@@ -187,6 +187,7 @@ threaded_feed(gpointer args)
   g_get_current_time(&start);
   for (i = 0; i < MESSAGES_PER_FEEDER; i++)
     {
+      main_loop_worker_run_gc();
       msg = log_msg_clone_cow(tmpl, &path_options);
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
@@ -217,6 +218,7 @@ threaded_consume(gpointer st)
 
   /* just to make sure time is properly cached */
   iv_init();
+  main_loop_worker_thread_start(NULL);
 
   for (i = 0; i < MESSAGES_SUM; i++)
     {
@@ -225,6 +227,8 @@ threaded_consume(gpointer st)
 
       while(!msg)
         {
+          main_loop_worker_run_gc();
+
           msg = log_queue_pop_head(q, &path_options);
           if (!msg)
             {
@@ -245,6 +249,8 @@ threaded_consume(gpointer st)
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
+
+  main_loop_worker_thread_stop();
 
   return NULL;
 }
@@ -307,8 +313,6 @@ main()
 
   configuration = cfg_new(0x308);
   plugin_load_module("syslogformat", configuration, NULL);
-  plugin_load_module("disk-buffer", configuration, NULL);
-  plugin_load_module("builtin-serializer", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 

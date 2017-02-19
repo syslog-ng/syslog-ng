@@ -1047,6 +1047,7 @@ afsql_dd_database_thread(gpointer arg)
               evt_tag_str("driver", self->super.super.id));
   while (!self->db_thread_terminate)
     {
+      main_loop_worker_run_gc();
       g_mutex_lock(self->db_thread_mutex);
       if (self->db_thread_suspended)
         {
