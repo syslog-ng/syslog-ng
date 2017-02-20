@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <locale.h>
 
 #if SYSLOG_NG_HAVE_GETOPT_H
 #include <getopt.h>
@@ -344,6 +345,8 @@ main(int argc, char *argv[])
   gint mode;
   GError *error = NULL;
   int result;
+
+  setlocale(LC_ALL, "");
 
   control_name = get_installation_path_for(PATH_CONTROL_SOCKET);
 
