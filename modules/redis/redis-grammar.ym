@@ -65,7 +65,7 @@ redis_option
             redis_dd_set_host(last_driver, $3);
             free($3);
           }
-        | KW_PORT '(' LL_NUMBER ')'
+        | KW_PORT '(' positive_integer ')'
           {
             redis_dd_set_port(last_driver, $3);
           }

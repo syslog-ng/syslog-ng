@@ -75,7 +75,7 @@ afamqp_options
 
 afamqp_option
         : KW_HOST '(' string ')'		{ afamqp_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' LL_NUMBER ')'		{ afamqp_dd_set_port(last_driver, $3); }
+        | KW_PORT '(' positive_integer ')'		{ afamqp_dd_set_port(last_driver, $3); }
         | KW_VHOST '(' string ')'		{ afamqp_dd_set_vhost(last_driver, $3); free($3); }
 	| KW_EXCHANGE '(' string ')'		{ afamqp_dd_set_exchange(last_driver, $3); free($3); }
         | KW_EXCHANGE_DECLARE '(' yesno ')'	{ afamqp_dd_set_exchange_declare(last_driver, $3); }

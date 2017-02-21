@@ -106,7 +106,7 @@ afmongodb_legacy_option
             afmongodb_dd_set_host(last_driver, $3);
             free($3);
         }
-    | KW_PORT '(' LL_NUMBER ')'
+    | KW_PORT '(' positive_integer ')'
         {
             CHECK_ERROR(afmongodb_dd_validate_network_combination(last_driver), @3,
                          "Can't mix path() & port()");

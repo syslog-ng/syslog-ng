@@ -114,11 +114,11 @@ source_systemd_journal_option
       last_journal_reader_options->prefix = strdup($3);
       free($3);
     }
-  | KW_MAX_FIELD_SIZE '(' LL_NUMBER ')'
+  | KW_MAX_FIELD_SIZE '(' positive_integer ')'
     {
       last_journal_reader_options->max_field_size = $3;
     }
-  | KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'
+  | KW_LOG_FETCH_LIMIT '(' positive_integer ')'
     {
       last_journal_reader_options->fetch_limit = $3;
     }
