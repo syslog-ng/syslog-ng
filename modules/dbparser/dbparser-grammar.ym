@@ -140,7 +140,7 @@ grouping_by_opt
             CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
             grouping_by_set_having_condition(last_parser, filter_expr);
           } ')'
-	| KW_TIMEOUT '(' LL_NUMBER ')'				{ grouping_by_set_timeout(last_parser, $3); }
+	| KW_TIMEOUT '(' nonnegative_integer ')'		{ grouping_by_set_timeout(last_parser, $3); }
 	| KW_AGGREGATE '(' synthetic_message ')'		{ grouping_by_set_synthetic_message(last_parser, $3); }
 	| KW_TRIGGER '('
           {

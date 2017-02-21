@@ -359,12 +359,8 @@ source_afinet_tcp_option
 
 source_afsocket_stream_params
 	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive(last_driver, $3); }
-	| KW_MAX_CONNECTIONS '(' LL_NUMBER ')'	
-          {
-            CHECK_ERROR($3 > 0, @3, "max_connections must be a positive number");
-            afsocket_sd_set_max_connections(last_driver, $3);
-          }
-	| KW_LISTEN_BACKLOG '(' LL_NUMBER ')'	{ afsocket_sd_set_listen_backlog(last_driver, $3); }
+	| KW_MAX_CONNECTIONS '(' positive_integer ')'	 { afsocket_sd_set_max_connections(last_driver, $3); }
+	| KW_LISTEN_BACKLOG '(' positive_integer ')'	{ afsocket_sd_set_listen_backlog(last_driver, $3); }
 	;
 
 source_afsyslog
@@ -717,14 +713,14 @@ tls_option
 
 
 socket_option
-	: KW_SO_SNDBUF '(' LL_NUMBER ')'
+	: KW_SO_SNDBUF '(' nonnegative_integer ')'
 	{
-		CHECK_ERROR($3 >= 0 && $3 <= G_MAXINT, @3, "Invalid so_sndbuf, it has to be between 0 and %d", G_MAXINT);
+		CHECK_ERROR($3 <= G_MAXINT, @3, "Invalid so_sndbuf, it has to be less than %d", G_MAXINT);
 		last_sock_options->so_sndbuf = $3;
 	}
-	| KW_SO_RCVBUF '(' LL_NUMBER ')'
+	| KW_SO_RCVBUF '(' nonnegative_integer ')'
 	{
-		CHECK_ERROR($3 >= 0 && $3 <= G_MAXINT, @3, "Invalid so_rcvbuf, it has to be between 0 and %d", G_MAXINT);
+		CHECK_ERROR($3 <= G_MAXINT, @3, "Invalid so_rcvbuf, it has to be less than %d", G_MAXINT);
 		last_sock_options->so_rcvbuf = $3;
 	}
 	| KW_SO_BROADCAST '(' yesno ')'             { last_sock_options->so_broadcast = $3; }
@@ -733,12 +729,12 @@ socket_option
 
 inet_socket_option
 	: socket_option
-	| KW_IP_TTL '(' LL_NUMBER ')'               { ((SocketOptionsInet *) last_sock_options)->ip_ttl = $3; }
-	| KW_IP_TOS '(' LL_NUMBER ')'               { ((SocketOptionsInet *) last_sock_options)->ip_tos = $3; }
+	| KW_IP_TTL '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_ttl = $3; }
+	| KW_IP_TOS '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_tos = $3; }
 	| KW_IP_FREEBIND '(' yesno ')'              { ((SocketOptionsInet *) last_sock_options)->ip_freebind = $3; }
-	| KW_TCP_KEEPALIVE_TIME '(' LL_NUMBER ')'   { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_time = $3; }
-	| KW_TCP_KEEPALIVE_INTVL '(' LL_NUMBER ')'  { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_intvl = $3; }
-	| KW_TCP_KEEPALIVE_PROBES '(' LL_NUMBER ')' { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_probes = $3; }
+	| KW_TCP_KEEPALIVE_TIME '(' nonnegative_integer ')'   { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_time = $3; }
+	| KW_TCP_KEEPALIVE_INTVL '(' nonnegative_integer ')'  { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_intvl = $3; }
+	| KW_TCP_KEEPALIVE_PROBES '(' nonnegative_integer ')' { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_probes = $3; }
 	;
 
 inet_ip_protocol_option

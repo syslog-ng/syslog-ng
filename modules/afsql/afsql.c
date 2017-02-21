@@ -177,15 +177,7 @@ void
 afsql_dd_set_retries(LogDriver *s, gint num_retries)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  if (num_retries < 1)
-    {
-      self->num_retries = 1;
-    }
-  else
-    {
-      self->num_retries = num_retries;
-    }
+  self->num_retries = num_retries;
 }
 
 void
