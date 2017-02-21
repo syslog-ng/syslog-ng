@@ -437,6 +437,9 @@ DNSCacheOptions *last_dns_cache_options;
 %type   <num> facility_string
 %type   <num> level_string
 
+%type   <num> positive_integer
+%type   <num> nonnegative_integer
+
 /* END_DECLS */
 
 %type   <ptr> template_def
@@ -953,6 +956,20 @@ dnsmode
 	: yesno					{ $$ = $1; }
 	| KW_PERSIST_ONLY                       { $$ = 2; }
 	;
+
+nonnegative_integer
+        : LL_NUMBER
+          {
+            CHECK_ERROR(($1 >= 0), @1, "It cannot be negative");
+          }
+        ;
+
+positive_integer
+        : LL_NUMBER
+          {
+            CHECK_ERROR(($1 > 0), @1, "Must be positive");
+          }
+        ;
 
 string_or_number
         : string                                { $$ = $1; }
