@@ -36,6 +36,7 @@
 #include <amqp.h>
 #include <amqp_framing.h>
 #include <amqp_tcp_socket.h>
+#include <amqp_ssl_socket.h>
 
 typedef struct
 {
@@ -65,6 +66,12 @@ typedef struct
   amqp_socket_t* sockfd;
   amqp_table_entry_t *entries;
   gint32 max_entries;
+
+  /* SSL props */
+  gchar *ssl_cacrt;
+  gchar *ssl_key;
+  gchar *ssl_usercrt;
+  gboolean ssl_verify;
 } AMQPDestDriver;
 
 /*
@@ -185,6 +192,41 @@ afamqp_dd_get_template_options(LogDriver *s)
   AMQPDestDriver *self = (AMQPDestDriver *) s;
 
   return &self->template_options;
+}
+
+void
+afamqp_dd_set_ssl_cacrt(LogDriver *d, const gchar *cacrt)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  g_free(self->ssl_cacrt);
+  self->ssl_cacrt = g_strdup(cacrt);
+}
+
+void
+afamqp_dd_set_ssl_key(LogDriver *d, const gchar *key)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  g_free(self->ssl_key);
+  self->ssl_key = g_strdup(key);
+}
+
+void
+afamqp_dd_set_ssl_usercrt(LogDriver *d, const gchar *usercrt)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  g_free(self->ssl_usercrt);
+  self->ssl_usercrt = g_strdup(usercrt);
+}
+
+void
+afamqp_dd_set_ssl_verify(LogDriver *d, gboolean verify)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  self->ssl_verify = verify;
 }
 
 /*
@@ -342,8 +384,41 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
       msg_error("Error allocating AMQP connection.");
       goto exception_amqp_dd_connect_failed_init;
     }
+  if(strcmp(self->ssl_cacrt,"") != 0)
+    {
+      int cacrt_ret;
+      self->sockfd = amqp_ssl_socket_new(self->conn);
+      cacrt_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ssl_cacrt);
+      if(cacrt_ret != AMQP_STATUS_OK)
+        {
+          msg_error("Error connecting to AMQP server while setting ssl_cacrt",
+                    evt_tag_str("driver", self->super.super.super.id),
+                    evt_tag_str("error", amqp_error_string2(cacrt_ret)),
+                    evt_tag_int("time_reopen", self->super.time_reopen));
 
-  self->sockfd = amqp_tcp_socket_new(self->conn);
+          goto exception_amqp_dd_connect_failed_init;
+
+        }
+
+      if(strcmp(self->ssl_key,"") != 0 && strcmp(self->ssl_usercrt,"") != 0)
+        {
+          int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->ssl_usercrt, self->ssl_key);
+          if(setkey_ret != AMQP_STATUS_OK)
+            {
+              msg_error("Error connecting to AMQP server while setting ssl_key and ssl_usercrt",
+                        evt_tag_str("driver", self->super.super.super.id),
+                        evt_tag_str("error", amqp_error_string2(setkey_ret)),
+                        evt_tag_int("time_reopen", self->super.time_reopen));
+
+              goto exception_amqp_dd_connect_failed_init;
+
+            }
+        }
+      amqp_ssl_socket_set_verify(self->sockfd, self->ssl_verify);
+    }
+  else
+    self->sockfd = amqp_tcp_socket_new(self->conn);
+
   struct timeval delay;
   delay.tv_sec = 1;
   delay.tv_usec = 0;
@@ -353,7 +428,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
     {
       msg_error("Error connecting to AMQP server",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("error", amqp_error_string2(-sockfd_ret)),
+                evt_tag_str("error", amqp_error_string2(sockfd_ret)),
                 evt_tag_int("time_reopen", self->super.time_reopen));
 
       goto exception_amqp_dd_connect_failed_init;
@@ -608,6 +683,10 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   log_template_options_defaults(&self->template_options);
   afamqp_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
+  afamqp_dd_set_ssl_cacrt((LogDriver *) self, "");
+  afamqp_dd_set_ssl_key((LogDriver *) self, "");
+  afamqp_dd_set_ssl_usercrt((LogDriver *) self, "");
+  afamqp_dd_set_ssl_verify((LogDriver *) self, TRUE);
 
   return (LogDriver *) self;
 }
