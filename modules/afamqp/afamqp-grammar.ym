@@ -57,6 +57,10 @@
 %token KW_BODY
 %token KW_PASSWORD
 %token KW_USERNAME
+%token KW_CACRT
+%token KW_SSLKEY
+%token KW_USRCRT
+%token KW_VERIFY
 
 %%
 
@@ -85,6 +89,10 @@ afamqp_option
 	| KW_PERSISTENT '(' yesno ')'		{ afamqp_dd_set_persistent(last_driver, $3); }
 	| KW_USERNAME '(' string ')'		{ afamqp_dd_set_user(last_driver, $3); free($3); }
 	| KW_PASSWORD '(' string ')'		{ afamqp_dd_set_password(last_driver, $3); free($3); }
+        | KW_CACRT '(' string ')'               { afamqp_dd_set_ssl_cacrt(last_driver, $3); }
+        | KW_SSLKEY '(' string ')'              { afamqp_dd_set_ssl_key(last_driver, $3); }
+        | KW_USRCRT '(' string ')'              { afamqp_dd_set_ssl_usercrt(last_driver, $3); }
+        | KW_VERIFY '(' yesno ')'               { afamqp_dd_set_ssl_verify(last_driver, $3); }
 	| value_pair_option			{ afamqp_dd_set_value_pairs(last_driver, $1); }
 	| dest_driver_option
 	| threaded_dest_driver_option
