@@ -60,7 +60,7 @@ public class ESHttpClient implements ESClient {
 	private String authtype;
 	private JestClient client;
 	private HttpMessageProcessor messageProcessor;
-	private Logger logger;
+	protected Logger logger;
 
 	public ESHttpClient(ElasticSearchOptions options) {
 		this.options = options;
@@ -68,12 +68,11 @@ public class ESHttpClient implements ESClient {
 		messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
 	}
 
-	private JestClient createClient() {
-		Set<String> connectionUrls = options.getClusterUrls();
-		JestClientFactory clientFactory = new JestClientFactory();
-		/* instanciate the HttpClientConfig builder with common options */
-		HttpClientConfig.Builder httpClientConfigBuilder = new HttpClientConfig
-			.Builder(connectionUrls)
+  protected void setupHttpClientBuilder(HttpClientConfig.Builder httpClientConfigBuilder, ElasticSearchOptions options) {}
+
+  private HttpClientConfig buildHttpClientConfig() {
+ 		HttpClientConfig.Builder httpClientConfigBuilder = new HttpClientConfig
+			.Builder(options.getClusterUrls())
 			.multiThreaded(true)
 			.defaultSchemeForDiscoveredNodes(options.getClientMode());
 
@@ -81,94 +80,15 @@ public class ESHttpClient implements ESClient {
 		if (options.getHttpAuthType().equals("basic")) {
 			httpClientConfigBuilder.defaultCredentials(options.getHttpAuthTypeBasicUsername(), options.getHttpAuthTypeBasicPassword());
 		}
-		/* HTTPS */
-		if (options.getClientMode().equals("https")) {
-			/* Initialize common objects */
-			SSLContextBuilder sslContextBuilder = new SSLContextBuilder();
-			SSLContext sslContext = null;
-			SSLConnectionSocketFactory sslSocketFactory = null;
-			SchemeIOSessionStrategy httpsIOSessionStrategy = null;
-			HostnameVerifier hostnameVerifier = null;
-			TrustStrategy trustStrategy  = null;
-			KeyStore trustStore = null;
-			/* Initialize trust strategy */
-			// trust any server certificate
-			// TODO: configuration option to control this?
-			trustStrategy = new TrustStrategy() {
-				public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-					return true;
-				}
-			};
-			if (options.getJavaSSLInsecure()) {
-				logger.warn("Using insecure options for HTTPS client");
-				// don't load trusted CA bundle
-				trustStore = null;
-				// skip hostname checks
-				hostnameVerifier = NoopHostnameVerifier.INSTANCE;
-			} else {
-				// ensure server certificate matches its hostname
-				// TODO: configuration option to control this?
-				logger.warn("Using default hostname verifier for HTTPS client");
-				hostnameVerifier = new DefaultHostnameVerifier();
-				// load trust store CA bundle
-				try {
-					trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-				} catch (Exception e) {
-					logger.error("Error initializing truststore: " + e.getMessage());
-					return null;
-				}
-				try {
-					trustStore.load(new FileInputStream(options.getJavaTrustStoreFilepath()), options.getJavaTrustStorePassword().toCharArray());
-				} catch (IOException | NoSuchAlgorithmException | CertificateException e) {
-					logger.error("Error loading truststore: " + e.getMessage());
-					return null;
-				}
-			}
-			try {
-				sslContextBuilder.loadTrustMaterial(trustStore, trustStrategy);
-			} catch (NoSuchAlgorithmException | KeyStoreException e) {
-				logger.error("Error loading truststore material: " + e.getMessage());
-				return null;
-			}
-			if (options.getHttpAuthType().equals("clientcert")) {
-				KeyStore keyStore = null;
-				try {
-					// TODO: maybe we should support other filetypes
-					keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-				} catch (KeyStoreException e) {
-					logger.error("Error initializing keystore: " + e.getMessage());
-					return null;
-				}
-				try {
-					keyStore.load(new FileInputStream(options.getJavaKeyStoreFilepath()), options.getJavaKeyStorePassword().toCharArray());
-				} catch (IOException | NoSuchAlgorithmException | CertificateException  e) {
-					logger.error("Error loading keystore: " + e.getMessage());
-					return null;
-				}
 
-				// not sure why we need to give keystore password again
-				try {
-					sslContextBuilder.loadKeyMaterial(keyStore,options.getJavaKeyStorePassword().toCharArray());
-				} catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
-					logger.error("Error loading keystore material: " + e.getMessage());
-					return null;
-				}
-			}
-			// Initialize ssl context
-			try {
-				sslContext = sslContextBuilder.build();
-			} catch (Exception e) {
-				logger.error("Error initializing SSL context: " + e.getMessage());
-				return null;
-			}
+    setupHttpClientBuilder(httpClientConfigBuilder, this.options);
 
-			// configure httpclient to use the ssl context
-			sslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
-			httpsIOSessionStrategy = new SSLIOSessionStrategy(sslContext, hostnameVerifier);
-			httpClientConfigBuilder.sslSocketFactory(sslSocketFactory).httpsIOSessionStrategy(httpsIOSessionStrategy);
-		}
+    return httpClientConfigBuilder.build();
+  }
 
-		clientFactory.setHttpClientConfig(httpClientConfigBuilder.build());
+	private JestClient createClient() {
+		JestClientFactory clientFactory = new JestClientFactory();
+	  clientFactory.setHttpClientConfig(buildHttpClientConfig());
 		return clientFactory.getObject();
 	}
 
