@@ -62,6 +62,22 @@ public class ESHttpClient implements ESClient {
 	private HttpMessageProcessor messageProcessor;
 	protected Logger logger;
 
+  public class HttpClientBuilderException extends RuntimeException {
+    public HttpClientBuilderException() {}
+
+    public HttpClientBuilderException(String msg) {
+      super(msg);
+    }
+
+    public HttpClientBuilderException(String msg, Throwable cause) {
+      super(msg, cause);
+    }
+
+    public HttpClientBuilderException(Throwable cause) {
+      super(cause);
+    }
+  }
+
 	public ESHttpClient(ElasticSearchOptions options) {
 		this.options = options;
 		logger = Logger.getRootLogger();
@@ -79,8 +95,7 @@ public class ESHttpClient implements ESClient {
 		/* HTTP Basic authentication requested */
 		if (options.getHttpAuthType().equals("basic")) {
 			httpClientConfigBuilder.defaultCredentials(options.getHttpAuthTypeBasicUsername(), options.getHttpAuthTypeBasicPassword());
-		}
-
+    } 
     setupHttpClientBuilder(httpClientConfigBuilder, this.options);
 
     return httpClientConfigBuilder.build();
@@ -99,7 +114,13 @@ public class ESHttpClient implements ESClient {
 	@Override
 	public boolean open() {
 		if (client == null) {
-			client = createClient();
+      try {
+			  client = createClient();
+      }
+      catch (ESHttpClient.HttpClientBuilderException e) {
+        logger.error(e.getMessage());
+        return false;
+      }
 		}
 		messageProcessor.init();
 		return true;

@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2016 Balabit
- * Copyright (c) 2016 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2017 Balabit
+ * Copyright (c) 2017 Fabien Wernli <git@faxmodem.org>
+ * Copyright (c) 2017 Laszlo Budai <laszlo.budai@balabit.com>
  *
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -45,89 +46,114 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 public class ESHttpsClient extends ESHttpClient {
-	public ESHttpsClient(ElasticSearchOptions options) {
+  public ESHttpsClient(ElasticSearchOptions options) {
 	  super(options);
+  }
+
+  private TrustStrategy trustStrategy;
+
+  {
+    trustStrategy = new TrustStrategy() {
+      public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+        return true;
+      }
+    };
+  }
+
+  private HostnameVerifier getNoopHostnameVerifier() {
+    return NoopHostnameVerifier.INSTANCE;
+  }
+
+  private HostnameVerifier getDefaultHostnameVerifier() {
+    return new DefaultHostnameVerifier();
+  }
+
+  private KeyStore createKeyStore() {
+    KeyStore keyStore;
+    try {
+      keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    } catch (KeyStoreException e) {
+      throw new ESHttpsClient.HttpClientBuilderException("Error initializing keyStore", e);
+    }
+    return keyStore;
+  }
+
+  private void loadKeyStore(KeyStore keyStore, String path, String password) {
+     try {
+      keyStore.load(new FileInputStream(path), password.toCharArray());
+    } catch (IOException | NoSuchAlgorithmException | CertificateException e) {
+      throw new ESHttpClient.HttpClientBuilderException("Failed to load KeyStore", e);
+    }
+  }
+
+  private KeyStore setupKeyStore(String path, String password) {
+    KeyStore keyStore = createKeyStore();
+    loadKeyStore(keyStore, path, password);
+    return keyStore;
+  }
+
+  private void loadTrustMaterial(SSLContextBuilder sslContextBuilder, KeyStore trustStore) {
+    try {
+      sslContextBuilder.loadTrustMaterial(trustStore, trustStrategy);
+    } catch (NoSuchAlgorithmException | KeyStoreException e) {
+      throw new ESHttpClient.HttpClientBuilderException("Error loading truststore material", e);
+    }
+  }
+
+  private void loadKeyMaterial(SSLContextBuilder sslContextBuilder, KeyStore keyStore, String password) {
+    try {
+      sslContextBuilder.loadKeyMaterial(keyStore, password.toCharArray());
+    } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
+      throw new ESHttpClient.HttpClientBuilderException("Error loading keyStore material", e);
+    }
+  }
+
+  private SSLContextBuilder setupSSLContextBuilder(ElasticSearchOptions options) {
+ 	    SSLContextBuilder sslContextBuilder = new SSLContextBuilder();
+      KeyStore trustStore = null;
+ 
+      if (options.getJavaSSLInsecure()) {
+				logger.warn("Using insecure options for HTTPS client");
+			} else {
+			  trustStore = setupKeyStore(options.getJavaTrustStoreFilepath(), options.getJavaTrustStorePassword());
+      }
+      loadTrustMaterial(sslContextBuilder, trustStore);
+			
+      if (options.getHttpAuthType().equals("clientcert")) {
+				KeyStore keyStore = setupKeyStore(options.getJavaKeyStoreFilepath(), options.getJavaKeyStorePassword());
+        loadKeyMaterial(sslContextBuilder, keyStore, options.getJavaKeyStorePassword());
+			}
+      return sslContextBuilder;
+  }
+
+  private HostnameVerifier setupHostnameVerifier(ElasticSearchOptions options) {
+    if (options.getJavaSSLInsecure()) {
+      return NoopHostnameVerifier.INSTANCE;
+    }
+    else {
+      return new DefaultHostnameVerifier();
+    }
+  }
+
+  private SSLContext buildSSLContext(SSLContextBuilder sslContextBuilder) {
+ 	  SSLContext sslContext;
+		try {
+				sslContext = sslContextBuilder.build();
+		} catch (Exception e) {
+				throw new ESHttpClient.HttpClientBuilderException("Error initializing SSL context",e); 
+		  }
+    return sslContext;
   }
 
   @Override
   protected void setupHttpClientBuilder(HttpClientConfig.Builder httpClientConfigBuilder, ElasticSearchOptions options) {
-		/* HTTPS */
-			/* Initialize common objects */
-			SSLContextBuilder sslContextBuilder = new SSLContextBuilder();
-			SSLContext sslContext = null;
-			SSLConnectionSocketFactory sslSocketFactory = null;
-			SchemeIOSessionStrategy httpsIOSessionStrategy = null;
-			HostnameVerifier hostnameVerifier = null;
-			TrustStrategy trustStrategy  = null;
-			KeyStore trustStore = null;
-			/* Initialize trust strategy */
-			// trust any server certificate
-			// TODO: configuration option to control this?
-			trustStrategy = new TrustStrategy() {
-				public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-					return true;
-				}
-			};
-			if (options.getJavaSSLInsecure()) {
-				logger.warn("Using insecure options for HTTPS client");
-				// don't load trusted CA bundle
-				trustStore = null;
-				// skip hostname checks
-				hostnameVerifier = NoopHostnameVerifier.INSTANCE;
-			} else {
-				// ensure server certificate matches its hostname
-				// TODO: configuration option to control this?
-				logger.warn("Using default hostname verifier for HTTPS client");
-				hostnameVerifier = new DefaultHostnameVerifier();
-				// load trust store CA bundle
-				try {
-					trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-				} catch (Exception e) {
-					logger.error("Error initializing truststore: " + e.getMessage());
-				}
-				try {
-					trustStore.load(new FileInputStream(options.getJavaTrustStoreFilepath()), options.getJavaTrustStorePassword().toCharArray());
-				} catch (IOException | NoSuchAlgorithmException | CertificateException e) {
-					logger.error("Error loading truststore: " + e.getMessage());
-				}
-			}
-			try {
-				sslContextBuilder.loadTrustMaterial(trustStore, trustStrategy);
-			} catch (NoSuchAlgorithmException | KeyStoreException e) {
-				logger.error("Error loading truststore material: " + e.getMessage());
-			}
-			if (options.getHttpAuthType().equals("clientcert")) {
-				KeyStore keyStore = null;
-				try {
-					// TODO: maybe we should support other filetypes
-					keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-				} catch (KeyStoreException e) {
-					logger.error("Error initializing keystore: " + e.getMessage());
-				}
-				try {
-					keyStore.load(new FileInputStream(options.getJavaKeyStoreFilepath()), options.getJavaKeyStorePassword().toCharArray());
-				} catch (IOException | NoSuchAlgorithmException | CertificateException  e) {
-					logger.error("Error loading keystore: " + e.getMessage());
-				}
+			SSLContextBuilder sslContextBuilder = setupSSLContextBuilder(options);
+			SSLContext sslContext = buildSSLContext(sslContextBuilder);
+			HostnameVerifier hostnameVerifier = setupHostnameVerifier(options);
+			SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
+			SchemeIOSessionStrategy httpsIOSessionStrategy = new SSLIOSessionStrategy(sslContext, hostnameVerifier);
 
-				// not sure why we need to give keystore password again
-				try {
-					sslContextBuilder.loadKeyMaterial(keyStore,options.getJavaKeyStorePassword().toCharArray());
-				} catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
-					logger.error("Error loading keystore material: " + e.getMessage());
-				}
-			}
-			// Initialize ssl context
-			try {
-				sslContext = sslContextBuilder.build();
-			} catch (Exception e) {
-				logger.error("Error initializing SSL context: " + e.getMessage());
-			}
-
-			// configure httpclient to use the ssl context
-			sslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
-			httpsIOSessionStrategy = new SSLIOSessionStrategy(sslContext, hostnameVerifier);
-			httpClientConfigBuilder.sslSocketFactory(sslSocketFactory).httpsIOSessionStrategy(httpsIOSessionStrategy);
+      httpClientConfigBuilder.sslSocketFactory(sslSocketFactory).httpsIOSessionStrategy(httpsIOSessionStrategy);
 	}
 
 }
