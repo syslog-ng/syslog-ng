@@ -29,7 +29,7 @@
 #include "type-hinting.h"
 #include "cfg-parser.h"
 #include "string-list.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 #include "cfg.h"
 
 #include <ctype.h>
@@ -184,18 +184,31 @@ vp_pair_conf_free(VPPairConf *vpc)
   g_free(vpc);
 }
 
-static void
-vp_data_free (SBTHGString *s)
+VPResultValue *
+vp_result_value_new(GString *name, TypeHint type_hint, GString *value)
 {
-  sb_th_gstring_release (s);
+  VPResultValue *rv = g_new(VPResultValue, 1);
+
+  rv->name = name;
+  rv->value = value;
+  rv->type_hint = type_hint;
+  return rv;
+}
+
+static void
+vp_result_value_free(VPResultValue *rv)
+{
+  g_string_free(rv->name, TRUE);
+  g_string_free(rv->value, TRUE);
+  g_free(rv);
 }
 
 static void
 vp_results_init(VPResults *results, GCompareFunc compare_func)
 {
   results->result_tree = g_tree_new_full((GCompareDataFunc) compare_func, NULL,
-                                         (GDestroyNotify)g_free,
-                                         (GDestroyNotify)vp_data_free);
+                                         (GDestroyNotify) g_free,
+                                         (GDestroyNotify) vp_result_value_free);
 }
 
 static void
@@ -205,9 +218,12 @@ vp_results_deinit(VPResults *results)
 }
 
 static void
-vp_results_insert(VPResults *results, gchar *name, SBTHGString *sb)
+vp_results_insert(VPResults *results, const gchar *name, TypeHint type_hint, GString *value)
 {
-  g_tree_insert(results->result_tree, name, sb);
+  GString *value_clone = g_string_sized_new(value->len);
+  g_string_append_len(value_clone, value->str, value->len);
+  VPResultValue *rv = vp_result_value_new(g_string_new(name), type_hint, value_clone);
+  g_tree_insert(results->result_tree, g_strdup(name), rv);
 }
 
 static gchar *
@@ -240,16 +256,17 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   VPResults *results = ((gpointer *)user_data)[5];
   const LogTemplateOptions *template_options = ((gpointer *)user_data)[6];
-  SBTHGString *sb = sb_th_gstring_acquire();
+  GString *sb = scratch_buffers2_alloc();
   VPPairConf *vpc = (VPPairConf *)data;
   gint time_zone_mode = GPOINTER_TO_INT (((gpointer *)user_data)[7]);
 
-  sb->type_hint = vpc->template->type_hint;
   log_template_append_format((LogTemplate *)vpc->template, msg,
                              template_options,
-                             time_zone_mode, seq_num, NULL, sb_th_gstring_string(sb));
+                             time_zone_mode, seq_num, NULL, sb);
 
-  vp_results_insert(results, vp_transform_apply(vp, vpc->name), sb);
+  gchar *name = vp_transform_apply(vp, vpc->name);
+  vp_results_insert(results, name, vpc->template->type_hint, sb);
+  g_free(name);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -262,7 +279,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   VPResults *results = ((gpointer *)user_data)[5];
   guint j;
   gboolean inc;
-  SBTHGString *sb;
+  GString *sb;
 
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
   (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
@@ -278,11 +295,12 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   if (!inc)
     return FALSE;
 
-  sb = sb_th_gstring_acquire();
+  sb = scratch_buffers2_alloc();
 
-  g_string_append_len(sb_th_gstring_string(sb), value, value_len);
-  sb->type_hint = TYPE_HINT_STRING;
-  vp_results_insert(results, vp_transform_apply(vp, name), sb);
+  g_string_append_len(sb, value, value_len);
+  name = vp_transform_apply(vp, name);
+  vp_results_insert(results, name, TYPE_HINT_STRING, sb);
+  g_free(name);
 
   return FALSE;
 }
@@ -359,18 +377,18 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, gint32 se
                   const LogTemplateOptions *template_options)
 {
   gint i;
-  SBTHGString *sb;
+  GString *sb;
 
   for (i = 0; i < vp->builtins->len; i++)
     {
       ValuePairSpec *spec = (ValuePairSpec *) g_ptr_array_index(vp->builtins, i);
 
-      sb = sb_th_gstring_acquire();
+      sb = scratch_buffers2_alloc();
 
       switch (spec->type)
         {
         case VPT_MACRO:
-          log_macro_expand(sb_th_gstring_string(sb), spec->id, FALSE,
+          log_macro_expand(sb, spec->id, FALSE,
                            template_options, time_zone_mode, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
@@ -379,34 +397,34 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, gint32 se
           gssize len;
 
           nv = log_msg_get_value(msg, (NVHandle) spec->id, &len);
-          g_string_append_len(sb_th_gstring_string(sb), nv, len);
+          g_string_append_len(sb, nv, len);
           break;
         }
         default:
           g_assert_not_reached();
         }
 
-      if (sb_th_gstring_string(sb)->len == 0)
+      if (sb->len == 0)
         {
-          sb_th_gstring_release(sb);
           continue;
         }
 
-      g_tree_insert(results->result_tree, vp_transform_apply(vp, spec->name), sb);
+      gchar *name = vp_transform_apply(vp, spec->name);
+      vp_results_insert(results, name, TYPE_HINT_STRING, sb);
+      g_free(name);
     }
 }
 
 static gboolean
-vp_foreach_helper (const gchar *name, const SBTHGString *hinted_value,
-                   gpointer data)
+vp_foreach_helper(const gchar *name, VPResultValue *rv, gpointer data)
 {
   VPForeachFunc func = ((gpointer *)data)[0];
   gpointer user_data = ((gpointer *)data)[1];
   gboolean *r = ((gpointer *)data)[2];
 
-  *r &= !func(name, hinted_value->type_hint,
-              sb_th_gstring_string(hinted_value)->str,
-              sb_th_gstring_string(hinted_value)->len, user_data);
+  *r &= !func(name, rv->type_hint,
+              rv->value->str,
+              rv->value->len, user_data);
   return !*r;
 }
 
@@ -671,21 +689,18 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 static gchar *
 vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
 {
-  SBGString *s = sb_gstring_acquire();
+  GString *s = scratch_buffers2_alloc();
   gchar *str;
   gint i;
 
   for (i = 0; i < until; i++)
     {
-      g_string_append(sb_gstring_string(s), g_ptr_array_index(tokens, i));
-      g_string_append_c(sb_gstring_string(s), '.');
+      g_string_append(s, g_ptr_array_index(tokens, i));
+      g_string_append_c(s, '.');
     }
-  g_string_append(sb_gstring_string(s), g_ptr_array_index(tokens, until));
+  g_string_append(s, g_ptr_array_index(tokens, until));
 
-  str = g_strdup(sb_gstring_string(s)->str);
-
-  sb_gstring_release(s);
-
+  str = g_strdup(s->str);
   return str;
 }
 
