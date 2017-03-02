@@ -48,7 +48,10 @@ typedef struct
 
 typedef struct
 {
-  GString *name;
+  /* we don't own any of the fields here, it is assumed that allocations are
+   * managed by the caller */
+
+  const gchar *name;
   GString *value;
   TypeHint type_hint;
 } VPResultValue;
@@ -56,6 +59,9 @@ typedef struct
 typedef struct
 {
   GTree *result_tree;
+
+  /* array of VPResultValue instances */
+  GArray *values;
 } VPResults;
 
 struct _ValuePairs
@@ -184,46 +190,40 @@ vp_pair_conf_free(VPPairConf *vpc)
   g_free(vpc);
 }
 
-VPResultValue *
-vp_result_value_new(GString *name, TypeHint type_hint, GString *value)
+static void
+vp_result_value_init(VPResultValue *rv, const gchar *name, TypeHint type_hint, GString *value)
 {
-  VPResultValue *rv = g_new(VPResultValue, 1);
-
+  rv->type_hint = type_hint;
   rv->name = name;
   rv->value = value;
-  rv->type_hint = type_hint;
-  return rv;
-}
-
-static void
-vp_result_value_free(VPResultValue *rv)
-{
-  g_string_free(rv->name, TRUE);
-  g_string_free(rv->value, TRUE);
-  g_free(rv);
 }
 
 static void
 vp_results_init(VPResults *results, GCompareFunc compare_func)
 {
+  results->values = g_array_sized_new(FALSE, FALSE, sizeof(VPResultValue), 16);
   results->result_tree = g_tree_new_full((GCompareDataFunc) compare_func, NULL,
-                                         (GDestroyNotify) g_free,
-                                         (GDestroyNotify) vp_result_value_free);
+                                         g_free, NULL);
 }
 
 static void
 vp_results_deinit(VPResults *results)
 {
   g_tree_destroy(results->result_tree);
+  g_array_free(results->values, TRUE);
 }
 
 static void
-vp_results_insert(VPResults *results, const gchar *name, TypeHint type_hint, GString *value)
+vp_results_insert(VPResults *results, gchar *name, TypeHint type_hint, GString *value)
 {
-  GString *value_clone = g_string_sized_new(value->len);
-  g_string_append_len(value_clone, value->str, value->len);
-  VPResultValue *rv = vp_result_value_new(g_string_new(name), type_hint, value_clone);
-  g_tree_insert(results->result_tree, g_strdup(name), rv);
+  VPResultValue *rv;
+  gint ndx = results->values->len;
+
+  g_array_set_size(results->values, ndx + 1);
+  rv = &g_array_index(results->values, VPResultValue, ndx);
+  vp_result_value_init(rv, name, type_hint, value);
+  /* GTree takes over ownership of name */
+  g_tree_insert(results->result_tree, name, GINT_TO_POINTER(ndx));
 }
 
 static gchar *
@@ -264,9 +264,7 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
                              template_options,
                              time_zone_mode, seq_num, NULL, sb);
 
-  gchar *name = vp_transform_apply(vp, vpc->name);
-  vp_results_insert(results, name, vpc->template->type_hint, sb);
-  g_free(name);
+  vp_results_insert(results, vp_transform_apply(vp, vpc->name), vpc->template->type_hint, sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -298,9 +296,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   sb = scratch_buffers2_alloc();
 
   g_string_append_len(sb, value, value_len);
-  name = vp_transform_apply(vp, name);
-  vp_results_insert(results, name, TYPE_HINT_STRING, sb);
-  g_free(name);
+  vp_results_insert(results, vp_transform_apply(vp, name), TYPE_HINT_STRING, sb);
 
   return FALSE;
 }
@@ -409,18 +405,19 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, gint32 se
           continue;
         }
 
-      gchar *name = vp_transform_apply(vp, spec->name);
-      vp_results_insert(results, name, TYPE_HINT_STRING, sb);
-      g_free(name);
+      vp_results_insert(results, vp_transform_apply(vp, spec->name), TYPE_HINT_STRING, sb);
     }
 }
 
 static gboolean
-vp_foreach_helper(const gchar *name, VPResultValue *rv, gpointer data)
+vp_foreach_helper(const gchar *name, gpointer ndx_as_pointer, gpointer data)
 {
-  VPForeachFunc func = ((gpointer *)data)[0];
-  gpointer user_data = ((gpointer *)data)[1];
-  gboolean *r = ((gpointer *)data)[2];
+  VPResults *results = ((gpointer *)data)[0];
+  gint ndx = GPOINTER_TO_INT(ndx_as_pointer);
+  VPResultValue *rv = &g_array_index(results->values, VPResultValue, ndx);
+  VPForeachFunc func = ((gpointer *)data)[1];
+  gpointer user_data = ((gpointer *)data)[2];
+  gboolean *r = ((gpointer *)data)[3];
 
   *r &= !func(name, rv->type_hint,
               rv->value->str,
@@ -441,8 +438,8 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                       (LogTemplateOptions *) template_options, GINT_TO_POINTER(time_zone_mode)
                     };
   gboolean result = TRUE;
-  gpointer helper_args[] = { func, user_data, &result };
   VPResults results;
+  gpointer helper_args[] = { &results, func, user_data, &result };
 
   vp_results_init(&results, compare_func);
   args[5] = &results;
