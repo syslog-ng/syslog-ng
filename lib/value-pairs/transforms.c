@@ -26,7 +26,7 @@
 #include "template/templates.h"
 #include "cfg-parser.h"
 #include "str-utils.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 
 #include <string.h>
 
@@ -233,30 +233,18 @@ value_pairs_transform_set_free(ValuePairsTransformSet *vpts)
   g_free(vpts);
 }
 
-gchar *
-value_pairs_transform_set_apply(ValuePairsTransformSet *vpts, gchar *key)
+void
+value_pairs_transform_set_apply(ValuePairsTransformSet *vpts, GString *key)
 {
-  if (g_pattern_match_string(vpts->pattern, key))
+  if (g_pattern_match_string(vpts->pattern, key->str))
     {
       GList *l;
-      SBGString *sb;
-      gchar *new_key;
-
-      sb = sb_gstring_acquire ();
-      g_string_assign(sb_gstring_string(sb), key);
 
       l = vpts->transforms;
       while (l)
         {
-          value_pairs_transform_apply((ValuePairsTransform *)l->data, sb);
+          value_pairs_transform_apply((ValuePairsTransform *)l->data, key);
           l = l->next;
         }
-
-      new_key = sb_gstring_string(sb)->str;
-      g_string_steal(sb_gstring_string(sb));
-      sb_gstring_release (sb);
-
-      return new_key;
     }
-  return g_strdup(key);
 }

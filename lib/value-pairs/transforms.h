@@ -38,6 +38,6 @@ void value_pairs_transform_free(ValuePairsTransform *t);
 ValuePairsTransformSet *value_pairs_transform_set_new(const gchar *glob);
 void value_pairs_transform_set_add_func(ValuePairsTransformSet *vpts, ValuePairsTransform *vpt);
 void value_pairs_transform_set_free(ValuePairsTransformSet *vpts);
-gchar *value_pairs_transform_set_apply(ValuePairsTransformSet *vpts, gchar *key);
+void value_pairs_transform_set_apply(ValuePairsTransformSet *vpts, GString *key);
 
 #endif
