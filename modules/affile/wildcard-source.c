@@ -22,6 +22,10 @@
 
 #include "wildcard-source.h"
 #include "messages.h"
+#include <fcntl.h>
+
+#define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE);
+
 
 static gboolean
 _check_required_options(WildcardSourceDriver *self)
@@ -49,13 +53,50 @@ _free(LogPipe *s)
   g_string_free(self->filename_pattern, TRUE);
   g_hash_table_unref(self->file_readers);
   file_reader_options_destroy(&self->file_reader_options);
+  directory_monitor_free(self->directory_monitor);
   log_src_driver_free(s);
+}
+
+static void
+_start_file_reader(const gchar *name, const gchar *full_path, FileType file_type, gpointer user_data)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
+  if (g_pattern_match_string(self->compiled_pattern, name))
+    {
+      FileReader *reader = g_hash_table_lookup(self->file_readers, full_path);
+
+      if (!reader)
+        {
+          GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+          reader = file_reader_new(full_path, &self->super, cfg);
+          reader->file_reader_options = &self->file_reader_options;
+          log_pipe_append(&reader->super, &self->super.super.super);
+          if (!log_pipe_init(&reader->super))
+            {
+              msg_warning("File reader initialization failed",
+                          evt_tag_str("filename", name),
+                          evt_tag_str("source_driver", self->super.super.group));
+              log_pipe_unref(&reader->super);
+              return;
+            }
+
+          g_hash_table_insert(self->file_readers, g_strdup(full_path), reader);
+        }
+    }
+  else
+    {
+      msg_debug("Filename does not match with pattern",
+                evt_tag_str("filename", name),
+                evt_tag_str("full_path", full_path),
+                evt_tag_str("pattern", self->filename_pattern->str));
+    }
 }
 
 static gboolean
 _init(LogPipe *s)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
   if (!log_src_driver_init_method(s))
     {
       return FALSE;
@@ -64,6 +105,33 @@ _init(LogPipe *s)
     {
       return FALSE;
     }
+  self->compiled_pattern = g_pattern_spec_new(self->filename_pattern->str);
+  if (!self->compiled_pattern)
+    {
+      msg_error("Invalid filename-pattern",
+                evt_tag_str("filename-pattern", self->filename_pattern->str));
+      return FALSE;
+    }
+  log_reader_options_init(&self->file_reader_options.reader_options, cfg, self->super.super.group);
+
+  self->directory_monitor = directory_monitor_new(self->base_dir->str);
+  directory_monitor_collect_all_files(self->directory_monitor, _start_file_reader, self);
+  return TRUE;
+}
+
+static void
+_deinit_reader(gpointer key, gpointer value, gpointer user_data)
+{
+  FileReader *reader = (FileReader *)value;
+  log_pipe_deinit(&reader->super);
+}
+
+static gboolean
+_deinit(LogPipe *s)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+  g_pattern_spec_free(self->compiled_pattern);
+  g_hash_table_foreach(self->file_readers, _deinit_reader, NULL);
   return TRUE;
 }
 
@@ -76,6 +144,16 @@ wildcard_sd_new(GlobalConfig *cfg)
 
   self->super.super.super.free_fn = _free;
   self->super.super.super.init = _init;
+  self->super.super.super.deinit = _deinit;
+
+  self->file_readers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)log_pipe_unref);
+  log_reader_options_defaults(&self->file_reader_options.reader_options);
+  file_perm_options_defaults(&self->file_reader_options.file_perm_options);
+
+  self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
+  self->file_reader_options.file_open_options.is_pipe = FALSE;
+  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_reader_options.follow_freq = 1000;
 
   return &self->super.super;
 }
