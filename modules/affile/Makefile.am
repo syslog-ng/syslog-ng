@@ -9,6 +9,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/file-reader.h				\
 	modules/affile/wildcard-source.h			\
 	modules/affile/wildcard-source.c			\
+	modules/affile/directory-monitor.h			\
+	modules/affile/directory-monitor.c			\
 	modules/affile/affile-common.c				\
 	modules/affile/affile-common.h				\
 	modules/affile/affile-source.c				\
