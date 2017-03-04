@@ -51,7 +51,7 @@ typedef struct
   /* we don't own any of the fields here, it is assumed that allocations are
    * managed by the caller */
 
-  const gchar *name;
+  GString *name;
   GString *value;
   TypeHint type_hint;
 } VPResultValue;
@@ -191,7 +191,7 @@ vp_pair_conf_free(VPPairConf *vpc)
 }
 
 static void
-vp_result_value_init(VPResultValue *rv, const gchar *name, TypeHint type_hint, GString *value)
+vp_result_value_init(VPResultValue *rv, GString *name, TypeHint type_hint, GString *value)
 {
   rv->type_hint = type_hint;
   rv->name = name;
@@ -203,7 +203,7 @@ vp_results_init(VPResults *results, GCompareFunc compare_func)
 {
   results->values = g_array_sized_new(FALSE, FALSE, sizeof(VPResultValue), 16);
   results->result_tree = g_tree_new_full((GCompareDataFunc) compare_func, NULL,
-                                         g_free, NULL);
+                                         NULL, NULL);
 }
 
 static void
@@ -214,7 +214,7 @@ vp_results_deinit(VPResults *results)
 }
 
 static void
-vp_results_insert(VPResults *results, gchar *name, TypeHint type_hint, GString *value)
+vp_results_insert(VPResults *results, GString *name, TypeHint type_hint, GString *value)
 {
   VPResultValue *rv;
   gint ndx = results->values->len;
@@ -223,28 +223,28 @@ vp_results_insert(VPResults *results, gchar *name, TypeHint type_hint, GString *
   rv = &g_array_index(results->values, VPResultValue, ndx);
   vp_result_value_init(rv, name, type_hint, value);
   /* GTree takes over ownership of name */
-  g_tree_insert(results->result_tree, name, GINT_TO_POINTER(ndx));
+  g_tree_insert(results->result_tree, name->str, GINT_TO_POINTER(ndx));
 }
 
-static gchar *
+static GString *
 vp_transform_apply (ValuePairs *vp, gchar *key)
 {
-  gchar *ckey, *okey = g_strdup(key);
   gint i;
+  GString *result = scratch_buffers2_alloc();
+
+  g_string_assign(result, key);
 
   if (vp->transforms->len == 0)
-    return okey;
+    return result;
 
   for (i = 0; i < vp->transforms->len; i++)
     {
       ValuePairsTransformSet *t = (ValuePairsTransformSet *) g_ptr_array_index(vp->transforms, i);
 
-      ckey = value_pairs_transform_set_apply(t, okey);
-      g_free(okey);
-      okey = ckey;
+      value_pairs_transform_set_apply(t, result);
     }
 
-  return ckey;
+  return result;
 }
 
 /* runs over the name-value pairs requested by the user (e.g. with value_pairs_add_pair) */
