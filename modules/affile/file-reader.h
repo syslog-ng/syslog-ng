@@ -54,7 +54,7 @@ typedef struct _FileReader
   LogReader *reader;
 } FileReader;
 
-FileReader *file_reader_new(gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg);
+FileReader *file_reader_new(const gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
 gboolean file_reader_options_set_multi_line_mode(FileReaderOptions *options, const gchar *mode);

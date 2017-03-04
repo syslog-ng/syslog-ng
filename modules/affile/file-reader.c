@@ -370,7 +370,7 @@ _free(LogPipe *s)
 }
 
 FileReader *
-file_reader_new(gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg)
+file_reader_new(const gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg)
 {
   FileReader *self = g_new0(FileReader, 1);
   log_pipe_init_instance(&self->super, cfg);
