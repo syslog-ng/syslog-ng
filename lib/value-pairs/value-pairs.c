@@ -440,7 +440,9 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   gboolean result = TRUE;
   VPResults results;
   gpointer helper_args[] = { &results, func, user_data, &result };
+  ScratchBuffersMarker mark;
 
+  scratch_buffers2_mark(&mark);
   vp_results_init(&results, compare_func);
   args[5] = &results;
 
@@ -460,6 +462,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   /* Aaand we run it through the callback! */
   g_tree_foreach(results.result_tree, (GTraverseFunc)vp_foreach_helper, helper_args);
   vp_results_deinit(&results);
+  scratch_buffers2_reclaim_marked(mark);
 
   return result;
 }
