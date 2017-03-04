@@ -1,6 +1,7 @@
 modules_affile_tests_TESTS				= \
 	modules/affile/tests/test_affile_open_file \
-	modules/affile/tests/test_wildcard_source
+	modules/affile/tests/test_wildcard_source \
+	modules/affile/tests/test_directory_monitor
 
 check_PROGRAMS						+= \
 	${modules_affile_tests_TESTS}
@@ -15,3 +16,8 @@ modules_affile_tests_test_wildcard_source_CFLAGS  = $(TEST_CFLAGS) -I$(top_srcdi
 modules_affile_tests_test_wildcard_source_LDADD   = $(TEST_LDADD) \
 	-dlpreopen $(top_builddir)/modules/affile/libaffile.la
 modules_affile_tests_test_wildcard_source_LDFLAGS = $(PREOPEN_CORE)
+
+modules_affile_tests_test_directory_monitor_CFLAGS  = $(TEST_CFLAGS) -I$(top_srcdir)/modules/affile
+modules_affile_tests_test_directory_monitor_LDADD   = $(TEST_LDADD) \
+	-dlpreopen $(top_builddir)/modules/affile/libaffile.la
+modules_affile_tests_test_test_directory_monitor_LDFLAGS = $(PREOPEN_CORE)
