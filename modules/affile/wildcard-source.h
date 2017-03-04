@@ -25,6 +25,7 @@
 #include "syslog-ng.h"
 #include "driver.h"
 #include "file-reader.h"
+#include "directory-monitor.h"
 
 typedef struct _WildcardSourceDriver {
   LogSrcDriver super;
@@ -36,7 +37,9 @@ typedef struct _WildcardSourceDriver {
 
   FileReaderOptions file_reader_options;
 
+  GPatternSpec *compiled_pattern;
   GHashTable *file_readers;
+  DirectoryMonitor *directory_monitor;
 } WildcardSourceDriver;
 
 LogDriver *wildcard_sd_new(GlobalConfig *cfg);

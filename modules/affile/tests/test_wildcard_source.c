@@ -67,12 +67,12 @@ TestSuite(wildcard_source, .init = _init, .fini = _deinit);
 
 Test(wildcard_source, initial_test)
 {
-  WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
+  WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
                                  "filename-pattern(*.log)"
                                  "recursive(yes)"
                                  "max-files(100)"
                                  "force-directory-polling(no)");
-  cr_assert_str_eq(driver->base_dir->str, "/tmp");
+  cr_assert_str_eq(driver->base_dir->str, "/test_non_existent_dir");
   cr_assert_str_eq(driver->filename_pattern->str, "*.log");
   cr_assert_eq(driver->max_files, 100);
   cr_assert_eq(driver->recursive, TRUE);
@@ -81,7 +81,7 @@ Test(wildcard_source, initial_test)
 
 Test(wildcard_source, test_option_inheritance)
 {
-  WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
+  WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
                                  "filename-pattern(*.log)"
                                  "recursive(yes)"
                                  "max-files(100)"
@@ -103,9 +103,9 @@ Test(wildcard_source, test_option_duplication)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
                                  "filename-pattern(*.txt)"
-                                 "base-dir(/var/log)"
+                                 "base-dir(/test_non_existent_dir)"
                                  "filename-pattern(*.log)");
-  cr_assert_str_eq(driver->base_dir->str, "/var/log");
+  cr_assert_str_eq(driver->base_dir->str, "/test_non_existent_dir");
   cr_assert_str_eq(driver->filename_pattern->str, "*.log");
 }
 

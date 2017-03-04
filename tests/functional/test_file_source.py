@@ -29,10 +29,12 @@ config = """@version: 3.9
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); threaded(yes); };
 
-source s_int { internal(); };
-source s_wildcard { file("wildcard/*.log"); };
+source s_wildcard { wildcard_file(
+                    base_dir("wildcard")
+                    filename_pattern("*.log"));
+                  };
 
-destination d_wildcard { file("test-wildcard.log"); logstore("test-wildcard.lgs"); };
+destination d_wildcard { file("test-wildcard.log"); };
 
 log { source(s_wildcard); destination(d_wildcard); };
 
