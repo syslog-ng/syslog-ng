@@ -115,6 +115,19 @@ _init_reader_options(WildcardSourceDriver *self, GlobalConfig *cfg)
 }
 
 static gboolean
+_init_filename_pattern(WildcardSourceDriver *self)
+{
+  self->compiled_pattern = g_pattern_spec_new(self->filename_pattern->str);
+  if (!self->compiled_pattern)
+    {
+      msg_error("Invalid filename-pattern",
+                evt_tag_str("filename-pattern", self->filename_pattern->str));
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
 _init(LogPipe *s)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
@@ -128,11 +141,9 @@ _init(LogPipe *s)
     {
       return FALSE;
     }
-  self->compiled_pattern = g_pattern_spec_new(self->filename_pattern->str);
-  if (!self->compiled_pattern)
+
+  if (!_init_filename_pattern(self))
     {
-      msg_error("Invalid filename-pattern",
-                evt_tag_str("filename-pattern", self->filename_pattern->str));
       return FALSE;
     }
 
