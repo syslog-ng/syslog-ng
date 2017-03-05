@@ -1,0 +1,106 @@
+/*
+ * Copyright (c) 2017 Balabit
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+#include "directory-monitor-inotify.h"
+#include "messages.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+
+static DirectoryMonitorEventType
+_get_event_type(struct inotify_event *event, gchar *filename)
+{
+  if ((event->mask & IN_CREATE) || (event->mask & IN_MOVED_TO))
+    {
+      if (event->mask & IN_ISDIR)
+        {
+          return DIRECTORY_CREATED;
+        }
+      return FILE_CREATED;
+    }
+  else if ((event->mask & IN_DELETE) || (event->mask & IN_MOVED_FROM))
+    {
+      return DELETED;
+    }
+  return UNKNOWN;
+}
+
+static void
+_handle_event(gpointer s, struct inotify_event *event)
+{
+  msg_error("Event occured", evt_tag_printf("event_id", "%08X", event->mask), evt_tag_printf("event_subject", "%.*s",
+            event->len, &event->name[0]));
+  DirectoryMonitorInotify *self = (DirectoryMonitorInotify *)s;
+  DirectoryMonitorEvent dir_event;
+  dir_event.name = g_strdup_printf("%.*s", event->len, &event->name[0]);
+  dir_event.full_path = build_filename(self->super.dir, dir_event.name);
+  dir_event.event_type = _get_event_type(event, dir_event.full_path);
+  if (self->super.callback && dir_event.event_type != UNKNOWN)
+    {
+      self->super.callback(&dir_event, self->super.callback_data);
+    }
+  g_free(dir_event.full_path);
+  g_free((gchar *)dir_event.name);
+}
+
+static void
+_start_watches(DirectoryMonitor *s)
+{
+  DirectoryMonitorInotify *self = (DirectoryMonitorInotify *)s;
+
+  IV_INOTIFY_WATCH_INIT(&self->watcher);
+  self->watcher.inotify = &self->inotify;
+  self->watcher.pathname = self->super.dir;
+  self->watcher.mask = IN_CREATE | IN_DELETE | IN_MOVE;
+  self->watcher.cookie = self;
+  self->watcher.handler = _handle_event;
+  iv_inotify_watch_register(&self->watcher);
+}
+
+static void
+_stop_watches(DirectoryMonitor *s)
+{
+  DirectoryMonitorInotify *self = (DirectoryMonitorInotify *)s;
+  iv_inotify_watch_unregister(&self->watcher);
+}
+
+static void
+_free(DirectoryMonitor *s)
+{
+  DirectoryMonitorInotify *self = (DirectoryMonitorInotify *)s;
+  iv_inotify_unregister(&self->inotify);
+}
+
+DirectoryMonitor *
+directory_monitor_inotify_new(const gchar *dir)
+{
+  DirectoryMonitorInotify *self = g_new0(DirectoryMonitorInotify, 1);
+  directory_monitor_init_instance(&self->super, dir);
+
+  self->super.start_watches = _start_watches;
+  self->super.stop_watches = _stop_watches;
+  self->super.free_fn = _free;
+  IV_INOTIFY_INIT(&self->inotify);
+  iv_inotify_register(&self->inotify);
+  return &self->super;
+}
