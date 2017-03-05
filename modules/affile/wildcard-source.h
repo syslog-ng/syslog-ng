@@ -44,7 +44,7 @@ typedef struct _WildcardSourceDriver {
 
   GPatternSpec *compiled_pattern;
   GHashTable *file_readers;
-  DirectoryMonitor *directory_monitor;
+  GHashTable *directory_monitors;
 } WildcardSourceDriver;
 
 LogDriver *wildcard_sd_new(GlobalConfig *cfg);
