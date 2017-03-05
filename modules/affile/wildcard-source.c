@@ -92,11 +92,34 @@ _start_file_reader(const gchar *name, const gchar *full_path, FileType file_type
     }
 }
 
+static void
+_init_reader_options(WildcardSourceDriver *self, GlobalConfig *cfg)
+{
+  if (!self->window_size_initialized)
+    {
+      self->file_reader_options.reader_options.super.init_window_size /= self->max_files;
+      if (self->file_reader_options.reader_options.super.init_window_size < MINIMUM_WINDOW_SIZE)
+        {
+          msg_warning("log_iw_size configuration value was divided by the value of max-files()."
+                      " The result was too small, clamping to minimum entries."
+                      " Ensure you have a proper log_fifo_size setting to avoid message loss.",
+                      evt_tag_int("orig_log_iw_size", self->file_reader_options.reader_options.super.init_window_size),
+                      evt_tag_int("new_log_iw_size", MINIMUM_WINDOW_SIZE),
+                      evt_tag_int("min_log_fifo_size", MINIMUM_WINDOW_SIZE * self->max_files));
+          self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE;
+        }
+      self->window_size_initialized = TRUE;
+
+    }
+  log_reader_options_init(&self->file_reader_options.reader_options, cfg, self->super.super.group);
+}
+
 static gboolean
 _init(LogPipe *s)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+
   if (!log_src_driver_init_method(s))
     {
       return FALSE;
@@ -112,8 +135,8 @@ _init(LogPipe *s)
                 evt_tag_str("filename-pattern", self->filename_pattern->str));
       return FALSE;
     }
-  log_reader_options_init(&self->file_reader_options.reader_options, cfg, self->super.super.group);
 
+  _init_reader_options(self, cfg);
   self->directory_monitor = directory_monitor_new(self->base_dir->str);
   directory_monitor_collect_all_files(self->directory_monitor, _start_file_reader, self);
   return TRUE;

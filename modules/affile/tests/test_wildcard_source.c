@@ -129,3 +129,23 @@ Test(wildcard_source, test_base_dir_required_options)
   reset_grabbed_messages();
 }
 
+Test(wildcard_source, test_minimum_window_size)
+{
+  WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
+                                 "filename-pattern(*.log)"
+                                 "recursive(yes)"
+                                 "max_files(100)"
+                                 "log_iw_size(1000)");
+  cr_assert_eq(driver->file_reader_options.reader_options.super.init_window_size, MINIMUM_WINDOW_SIZE);
+}
+
+Test(wildcard_source, test_window_size)
+{
+
+  WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
+                                 "filename-pattern(*.log)"
+                                 "recursive(yes)"
+                                 "max_files(10)"
+                                 "log_iw_size(10000)");
+  cr_assert_eq(driver->file_reader_options.reader_options.super.init_window_size, 1000);
+}
