@@ -114,7 +114,7 @@ _get_real_path(DirectoryMonitor *self)
 }
 
 void
-directory_monitor_collect_all_files(DirectoryMonitor *self, COLLECT_FILES_CALLBACK callback, gpointer user_data)
+directory_monitor_collect_all_files(DirectoryMonitor *self)
 {
   GError *error = NULL;
   gchar *real_path = _get_real_path(self);
@@ -135,13 +135,20 @@ directory_monitor_collect_all_files(DirectoryMonitor *self, COLLECT_FILES_CALLBA
       gchar *filename_real_path = resolve_to_absolute_path(filename, real_path);
       event.full_path = build_filename(real_path, filename);
       event.file_type = g_file_test(filename_real_path, G_FILE_TEST_IS_DIR) ? FILE_IS_DIRECTORY : FILE_IS_REGULAR;
-      callback(&event, user_data);
+      self->callback(&event, self->callback_data);
       g_free(filename_real_path);
       g_free(event.full_path);
       filename = g_dir_read_name(directory);
     }
   g_free(real_path);
   g_dir_close(directory);
+}
+
+void
+directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCallback callback, gpointer user_data)
+{
+  self->callback = callback;
+  self->callback_data = user_data;
 }
 
 DirectoryMonitor *

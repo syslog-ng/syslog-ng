@@ -31,20 +31,23 @@ typedef enum {
 
 typedef struct _DirectoryMonitorEvent {
   const gchar *name;
-  const gchar *full_path;
+  gchar *full_path;
   FileType file_type;
 } DirectoryMonitorEvent;
 
-typedef  void (*COLLECT_FILES_CALLBACK)(const DirectoryMonitorEvent *event,
+typedef  void (*DirectoryMonitorEventCallback)(const DirectoryMonitorEvent *event,
                                         gpointer user_data);
 
 typedef struct _DirectoryMonitor {
   gchar *dir;
+  DirectoryMonitorEventCallback callback;
+  gpointer callback_data;
 } DirectoryMonitor;
 
 DirectoryMonitor* directory_monitor_new(const gchar *dir);
 void directory_monitor_free(DirectoryMonitor *self);
+void directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCallback callback, gpointer user_data);
 
-void directory_monitor_collect_all_files(DirectoryMonitor *self, COLLECT_FILES_CALLBACK, gpointer user_data);
+void directory_monitor_collect_all_files(DirectoryMonitor *self);
 
 #endif /* MODULES_AFFILE_DIRECTORY_MONITOR_H_ */

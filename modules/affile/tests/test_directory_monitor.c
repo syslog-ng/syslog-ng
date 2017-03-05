@@ -55,7 +55,8 @@ Test(directory_monitor, read_content_of_directory)
     }
   DirectoryMonitor *monitor = directory_monitor_new(tmpdir);
   GList *found_files = NULL;
-  directory_monitor_collect_all_files(monitor, _callback, &found_files);
+  directory_monitor_set_callback(monitor, _callback, &found_files);
+  directory_monitor_collect_all_files(monitor);
 
   for (gint i = 0; i < 10; i++)
     {
@@ -74,7 +75,8 @@ Test(directory_monitor, non_existing_directory)
 {
   DirectoryMonitor *monitor = directory_monitor_new("this directory should not exist");
   GList *found_files = NULL;
-  directory_monitor_collect_all_files(monitor, _callback, &found_files);
+  directory_monitor_set_callback(monitor, _callback, &found_files);
+  directory_monitor_collect_all_files(monitor);
   cr_assert_null(found_files);
   directory_monitor_free(monitor);
 }

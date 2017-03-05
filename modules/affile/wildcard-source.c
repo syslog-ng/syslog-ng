@@ -150,7 +150,8 @@ _init(LogPipe *s)
 
   _init_reader_options(self, cfg);
   self->directory_monitor = directory_monitor_new(self->base_dir->str);
-  directory_monitor_collect_all_files(self->directory_monitor, _start_file_reader, self);
+  directory_monitor_set_callback(self->directory_monitor, _start_file_reader, self);
+  directory_monitor_collect_all_files(self->directory_monitor);
   return TRUE;
 }
 
