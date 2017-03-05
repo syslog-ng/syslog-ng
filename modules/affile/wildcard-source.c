@@ -75,7 +75,7 @@ static void
 _start_file_reader(const DirectoryMonitorEvent *event, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
-  if ((event->file_type == FILE_IS_REGULAR) && (g_pattern_match_string(self->compiled_pattern, event->name)))
+  if ((event->event_type == FILE_CREATED) && (g_pattern_match_string(self->compiled_pattern, event->name)))
     {
       FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 

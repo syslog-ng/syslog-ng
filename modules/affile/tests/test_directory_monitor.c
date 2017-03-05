@@ -32,7 +32,7 @@ static void
 _callback(const DirectoryMonitorEvent *event, gpointer user_data)
 {
   GList **p_list = (GList **)user_data;
-  if (event->file_type == FILE_IS_REGULAR)
+  if (event->event_type == FILE_CREATED)
     {
       *p_list = g_list_append(*p_list, g_strdup(event->name));
     }

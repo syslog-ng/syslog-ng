@@ -25,14 +25,14 @@
 #include <syslog-ng.h>
 
 typedef enum {
-  FILE_IS_DIRECTORY,
-  FILE_IS_REGULAR
-} FileType;
+  FILE_CREATED,
+  DIRECTORY_CREATED
+} DirectoryMonitorEventType;
 
 typedef struct _DirectoryMonitorEvent {
   const gchar *name;
   gchar *full_path;
-  FileType file_type;
+  DirectoryMonitorEventType event_type;
 } DirectoryMonitorEvent;
 
 typedef  void (*DirectoryMonitorEventCallback)(const DirectoryMonitorEvent *event,
