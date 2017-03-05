@@ -41,7 +41,6 @@ typedef struct _DirectoryMonitor {
 DirectoryMonitor* directory_monitor_new(const gchar *dir);
 void directory_monitor_free(DirectoryMonitor *self);
 
-gchar *directory_monitor_get_real_path(DirectoryMonitor *self);
 void directory_monitor_collect_all_files(DirectoryMonitor *self, COLLECT_FILES_CALLBACK, gpointer user_data);
 
 #endif /* MODULES_AFFILE_DIRECTORY_MONITOR_H_ */

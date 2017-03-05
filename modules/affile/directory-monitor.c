@@ -96,8 +96,8 @@ resolve_to_absolute_path(const gchar *path, const gchar *basedir)
   return res;
 }
 
-gchar *
-directory_monitor_get_real_path(DirectoryMonitor *self)
+static gchar *
+_get_real_path(DirectoryMonitor *self)
 {
   gchar *dir_real_path = NULL;
   if (!g_path_is_absolute(self->dir))
@@ -117,29 +117,29 @@ void
 directory_monitor_collect_all_files(DirectoryMonitor *self, COLLECT_FILES_CALLBACK callback, gpointer user_data)
 {
   GError *error = NULL;
-  gchar *abs_path = directory_monitor_get_real_path(self);
-  GDir *directory = g_dir_open(abs_path, 0, &error);
+  gchar *real_path = _get_real_path(self);
+  GDir *directory = g_dir_open(real_path, 0, &error);
   if (!directory)
     {
       msg_error("Can not open directory",
-                evt_tag_str("base_dir", abs_path),
+                evt_tag_str("base_dir", real_path),
                 evt_tag_str("error", error->message));
       g_error_free(error);
-      g_free(abs_path);
+      g_free(real_path);
       return;
     }
   const gchar *filename = g_dir_read_name(directory);
   while(filename)
     {
-      gchar *filename_real_path = resolve_to_absolute_path(filename, abs_path);
-      gchar *filename_full_path = build_filename(abs_path, filename);
+      gchar *filename_real_path = resolve_to_absolute_path(filename, real_path);
+      gchar *filename_full_path = build_filename(real_path, filename);
       FileType file_type = g_file_test(filename_real_path, G_FILE_TEST_IS_DIR) ? FILE_IS_DIRECTORY : FILE_IS_REGULAR;
       callback(filename, filename_full_path, file_type, user_data);
       g_free(filename_real_path);
       g_free(filename_full_path);
       filename = g_dir_read_name(directory);
     }
-  g_free(abs_path);
+  g_free(real_path);
   g_dir_close(directory);
 }
 
