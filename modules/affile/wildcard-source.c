@@ -24,7 +24,7 @@
 #include "messages.h"
 #include <fcntl.h>
 
-#define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE);
+#define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
 
 static gboolean
@@ -45,16 +45,7 @@ _check_required_options(WildcardSourceDriver *self)
   return TRUE;
 }
 
-static void
-_free(LogPipe *s)
 {
-  WildcardSourceDriver *self = (WildcardSourceDriver *)s;
-  g_string_free(self->base_dir, TRUE);
-  g_string_free(self->filename_pattern, TRUE);
-  g_hash_table_unref(self->file_readers);
-  file_reader_options_destroy(&self->file_reader_options);
-  directory_monitor_free(self->directory_monitor);
-  log_src_driver_free(s);
 }
 
 static void
@@ -169,29 +160,6 @@ _deinit(LogPipe *s)
   return TRUE;
 }
 
-LogDriver *
-wildcard_sd_new(GlobalConfig *cfg)
-{
-  WildcardSourceDriver *self = g_new0(WildcardSourceDriver, 1);
-
-  log_src_driver_init_instance(&self->super, cfg);
-
-  self->super.super.super.free_fn = _free;
-  self->super.super.super.init = _init;
-  self->super.super.super.deinit = _deinit;
-
-  self->file_readers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)log_pipe_unref);
-  log_reader_options_defaults(&self->file_reader_options.reader_options);
-  file_perm_options_defaults(&self->file_reader_options.file_perm_options);
-
-  self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
-  self->file_reader_options.file_open_options.is_pipe = FALSE;
-  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
-  self->file_reader_options.follow_freq = 1000;
-
-  return &self->super.super;
-}
-
 void
 wildcard_sd_set_base_dir(LogDriver *s, const gchar *base_dir)
 {
@@ -239,4 +207,42 @@ wildcard_sd_set_max_files(LogDriver *s, guint32 max_files)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
   self->max_files = max_files;
+}
+
+static void
+_free(LogPipe *s)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+  g_string_free(self->base_dir, TRUE);
+  g_string_free(self->filename_pattern, TRUE);
+  g_hash_table_unref(self->file_readers);
+  file_reader_options_destroy(&self->file_reader_options);
+  directory_monitor_free(self->directory_monitor);
+  log_src_driver_free(s);
+}
+
+LogDriver *
+wildcard_sd_new(GlobalConfig *cfg)
+{
+  WildcardSourceDriver *self = g_new0(WildcardSourceDriver, 1);
+
+  log_src_driver_init_instance(&self->super, cfg);
+
+  self->super.super.super.free_fn = _free;
+  self->super.super.super.init = _init;
+  self->super.super.super.deinit = _deinit;
+
+  self->file_readers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)log_pipe_unref);
+  log_reader_options_defaults(&self->file_reader_options.reader_options);
+  file_perm_options_defaults(&self->file_reader_options.file_perm_options);
+
+  self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
+  self->file_reader_options.file_open_options.is_pipe = FALSE;
+  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_reader_options.follow_freq = 1000;
+
+  self->max_files = DEFAULT_MAX_FILES;
+  self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE * self->max_files;
+
+  return &self->super.super;
 }
