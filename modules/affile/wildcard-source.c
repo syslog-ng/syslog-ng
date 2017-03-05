@@ -134,6 +134,15 @@ _init_filename_pattern(WildcardSourceDriver *self)
   return TRUE;
 }
 
+static void
+_add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
+{
+  DirectoryMonitor *monitor = directory_monitor_new(directory);
+  directory_monitor_set_callback(monitor, _start_file_reader, self);
+  directory_monitor_start(monitor);
+  g_hash_table_insert(self->directory_monitors, g_strdup(directory), monitor);
+}
+
 static gboolean
 _init(LogPipe *s)
 {
@@ -155,9 +164,7 @@ _init(LogPipe *s)
     }
 
   _init_reader_options(self, cfg);
-  self->directory_monitor = directory_monitor_new(self->base_dir->str);
-  directory_monitor_set_callback(self->directory_monitor, _start_file_reader, self);
-  directory_monitor_start(self->directory_monitor);
+  _add_directory_monitor(self, self->base_dir->str);
   return TRUE;
 }
 
@@ -233,8 +240,8 @@ _free(LogPipe *s)
   g_string_free(self->base_dir, TRUE);
   g_string_free(self->filename_pattern, TRUE);
   g_hash_table_unref(self->file_readers);
+  g_hash_table_unref(self->directory_monitors);
   file_reader_options_destroy(&self->file_reader_options);
-  directory_monitor_free(self->directory_monitor);
   log_src_driver_free(s);
 }
 
@@ -250,6 +257,7 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->super.super.super.deinit = _deinit;
 
   self->file_readers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)log_pipe_unref);
+  self->directory_monitors = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)directory_monitor_free);
   log_reader_options_defaults(&self->file_reader_options.reader_options);
   file_perm_options_defaults(&self->file_reader_options.file_perm_options);
 
