@@ -431,7 +431,7 @@ vp_foreach_helper(const gchar *name, VPResultValue *rv, gpointer data)
 
 gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
-                            GCompareDataFunc compare_func,
+                            GCompareFunc compare_func,
                             LogMessage *msg, gint32 seq_num, gint time_zone_mode,
                             const LogTemplateOptions *template_options,
                             gpointer user_data)
@@ -473,7 +473,7 @@ value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                     const LogTemplateOptions *template_options,
                     gpointer user_data)
 {
-  return value_pairs_foreach_sorted(vp, func, (GCompareDataFunc) strcmp,
+  return value_pairs_foreach_sorted(vp, func, (GCompareFunc) strcmp,
                                     msg, seq_num, time_zone_mode, template_options, user_data);
 }
 
@@ -803,7 +803,7 @@ value_pairs_walk(ValuePairs *vp,
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
-                                      (GCompareDataFunc)vp_walk_cmp, msg,
+                                      (GCompareFunc)vp_walk_cmp, msg,
                                       seq_num, time_zone_mode, template_options, &state);
   vp_walker_stack_unwind_all_containers(&state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
