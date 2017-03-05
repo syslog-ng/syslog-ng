@@ -29,9 +29,13 @@ typedef enum {
   FILE_IS_REGULAR
 } FileType;
 
-typedef  void (*COLLECT_FILES_CALLBACK)(const gchar *name,
-                                        const gchar *full_path,
-                                        FileType file_type,
+typedef struct _DirectoryMonitorEvent {
+  const gchar *name;
+  const gchar *full_path;
+  FileType file_type;
+} DirectoryMonitorEvent;
+
+typedef  void (*COLLECT_FILES_CALLBACK)(const DirectoryMonitorEvent *event,
                                         gpointer user_data);
 
 typedef struct _DirectoryMonitor {

@@ -72,23 +72,23 @@ _create_file_reader (WildcardSourceDriver* self, const gchar* name, const gchar*
 }
 
 static void
-_start_file_reader(const gchar *name, const gchar *full_path, FileType file_type, gpointer user_data)
+_start_file_reader(const DirectoryMonitorEvent *event, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
-  if ((file_type == FILE_IS_REGULAR) && (g_pattern_match_string(self->compiled_pattern, name)))
+  if ((event->file_type == FILE_IS_REGULAR) && (g_pattern_match_string(self->compiled_pattern, event->name)))
     {
-      FileReader *reader = g_hash_table_lookup(self->file_readers, full_path);
+      FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 
       if (!reader)
         {
-          _create_file_reader (self, name, full_path);
+          _create_file_reader (self, event->name, event->full_path);
         }
     }
   else
     {
       msg_debug("Filename does not match with pattern",
-                evt_tag_str("filename", name),
-                evt_tag_str("full_path", full_path),
+                evt_tag_str("filename", event->name),
+                evt_tag_str("full_path", event->full_path),
                 evt_tag_str("pattern", self->filename_pattern->str));
     }
 }
