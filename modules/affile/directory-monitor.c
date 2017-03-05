@@ -29,7 +29,7 @@
 #include <string.h>
 #include <messages.h>
 
-static gchar *
+gchar *
 build_filename(const gchar *basedir, const gchar *path)
 {
   gchar *result;
@@ -114,6 +114,15 @@ _get_real_path(DirectoryMonitor *self)
 }
 
 void
+directory_monitor_stop(DirectoryMonitor *self)
+{
+  if (self->stop_watches)
+    {
+      self->stop_watches(self);
+    }
+}
+
+void
 directory_monitor_start(DirectoryMonitor *self)
 {
   GError *error = NULL;
@@ -142,6 +151,10 @@ directory_monitor_start(DirectoryMonitor *self)
     }
   g_free(real_path);
   g_dir_close(directory);
+  if (self->start_watches)
+    {
+      self->start_watches(self);
+    }
 }
 
 void
@@ -151,11 +164,17 @@ directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCall
   self->callback_data = user_data;
 }
 
+void
+directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir)
+{
+  self->dir = g_strdup(dir);
+}
+
 DirectoryMonitor *
 directory_monitor_new(const gchar *dir)
 {
   DirectoryMonitor *self = g_new0(DirectoryMonitor, 1);
-  self->dir = g_strdup(dir);
+  directory_monitor_init_instance(self, dir);
   return self;
 }
 
@@ -164,6 +183,11 @@ directory_monitor_free(DirectoryMonitor *self)
 {
   if (self)
     {
+      msg_debug("Free directory monitor", evt_tag_str("dir", self->dir));
+      if (self->free_fn)
+        {
+          self->free_fn(self);
+        }
       g_free(self->dir);
       g_free(self);
     }

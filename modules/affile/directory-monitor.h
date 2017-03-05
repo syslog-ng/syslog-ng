@@ -26,7 +26,9 @@
 
 typedef enum {
   FILE_CREATED,
-  DIRECTORY_CREATED
+  DIRECTORY_CREATED,
+  DELETED,
+  UNKNOWN
 } DirectoryMonitorEventType;
 
 typedef struct _DirectoryMonitorEvent {
@@ -38,16 +40,25 @@ typedef struct _DirectoryMonitorEvent {
 typedef  void (*DirectoryMonitorEventCallback)(const DirectoryMonitorEvent *event,
                                         gpointer user_data);
 
-typedef struct _DirectoryMonitor {
+typedef struct _DirectoryMonitor DirectoryMonitor;
+
+struct _DirectoryMonitor {
   gchar *dir;
   DirectoryMonitorEventCallback callback;
   gpointer callback_data;
-} DirectoryMonitor;
+  void (*start_watches)(DirectoryMonitor *self);
+  void (*stop_watches)(DirectoryMonitor *self);
+  void (*free_fn)(DirectoryMonitor *self);
+};
 
 DirectoryMonitor* directory_monitor_new(const gchar *dir);
+void directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir);
 void directory_monitor_free(DirectoryMonitor *self);
 void directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCallback callback, gpointer user_data);
 
 void directory_monitor_start(DirectoryMonitor *self);
+void directory_monitor_stop(DirectoryMonitor *self);
+
+gchar *build_filename(const gchar *basedir, const gchar *path);
 
 #endif /* MODULES_AFFILE_DIRECTORY_MONITOR_H_ */
