@@ -29,12 +29,12 @@
 TestSuite(directory_monitor, .init = app_startup, .fini = app_shutdown);
 
 static void
-_callback(const gchar *filename, const gchar *filename_full_path, FileType file_type, gpointer user_data)
+_callback(const DirectoryMonitorEvent *event, gpointer user_data)
 {
   GList **p_list = (GList **)user_data;
-  if (file_type == FILE_IS_REGULAR)
+  if (event->file_type == FILE_IS_REGULAR)
     {
-      *p_list = g_list_append(*p_list, g_strdup(filename));
+      *p_list = g_list_append(*p_list, g_strdup(event->name));
     }
 }
 
