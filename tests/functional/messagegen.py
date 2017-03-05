@@ -171,6 +171,9 @@ class FileSender(MessageSender):
             self.fd.close()
 
     def initSender(self):
+        directory = os.path.dirname(self.file_name)
+        if not os.path.exists(directory) and len(directory) > 0:
+            os.makedirs(directory)
         if self.is_pipe:
             self.fd = open(self.file_name, "w")
         else:
