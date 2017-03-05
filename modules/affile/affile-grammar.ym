@@ -141,7 +141,7 @@ source_wildcard_option
     | KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
     | KW_MAX_FILES '(' LL_NUMBER ')' { wildcard_sd_set_max_files(last_driver, $3); }
     | KW_FORCE_DIRECTORY_POLLING '(' yesno ')' { wildcard_sd_set_force_directory_polling(last_driver, $3); }
-    | source_affile_options
+    | source_affile_option
     ;
 
 
