@@ -134,7 +134,7 @@ directory_monitor_start(DirectoryMonitor *self)
       DirectoryMonitorEvent event = {.name = filename };
       gchar *filename_real_path = resolve_to_absolute_path(filename, real_path);
       event.full_path = build_filename(real_path, filename);
-      event.file_type = g_file_test(filename_real_path, G_FILE_TEST_IS_DIR) ? FILE_IS_DIRECTORY : FILE_IS_REGULAR;
+      event.event_type = g_file_test(filename_real_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
       self->callback(&event, self->callback_data);
       g_free(filename_real_path);
       g_free(event.full_path);
