@@ -114,7 +114,7 @@ _get_real_path(DirectoryMonitor *self)
 }
 
 void
-directory_monitor_collect_all_files(DirectoryMonitor *self)
+directory_monitor_start(DirectoryMonitor *self)
 {
   GError *error = NULL;
   gchar *real_path = _get_real_path(self);

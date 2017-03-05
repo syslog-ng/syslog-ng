@@ -48,6 +48,6 @@ DirectoryMonitor* directory_monitor_new(const gchar *dir);
 void directory_monitor_free(DirectoryMonitor *self);
 void directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCallback callback, gpointer user_data);
 
-void directory_monitor_collect_all_files(DirectoryMonitor *self);
+void directory_monitor_start(DirectoryMonitor *self);
 
 #endif /* MODULES_AFFILE_DIRECTORY_MONITOR_H_ */
