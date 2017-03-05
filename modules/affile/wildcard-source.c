@@ -21,6 +21,7 @@
  */
 
 #include "wildcard-source.h"
+#include "directory-monitor-inotify.h"
 #include "messages.h"
 #include <fcntl.h>
 
@@ -85,13 +86,35 @@ _start_file_reader(const DirectoryMonitorEvent *event, gpointer user_data)
         {
           _create_file_reader (self, event->name, event->full_path);
         }
+      else
+        {
+          if (!log_pipe_init(&reader->super))
+            {
+              msg_error("Failed to initialize file reader", evt_tag_str("filename", event->full_path));
+            }
+        }
     }
   else if (event->event_type == DIRECTORY_CREATED && self->recursive)
     {
+      msg_error("Directory created", evt_tag_str("name", event->full_path));
       DirectoryMonitor *monitor = g_hash_table_lookup(self->directory_monitors, event->full_path);
       if (!monitor)
         {
           _add_directory_monitor(self, event->full_path);
+        }
+    }
+  else if (event->event_type == DELETED)
+    {
+      msg_error("DELETED EVENT OCCURED", evt_tag_str("name", event->full_path));
+      FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
+      if (reader)
+        {
+          msg_error("Monitored file is deleted", evt_tag_str("filename", event->full_path));
+          log_pipe_deinit(&reader->super);
+        }
+      else if (g_hash_table_remove(self->directory_monitors, event->full_path))
+        {
+          msg_error("Monitored directory is deleted", evt_tag_str("directory", event->full_path));
         }
     }
   else
@@ -147,7 +170,7 @@ _init_filename_pattern(WildcardSourceDriver *self)
 static void
 _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
 {
-  DirectoryMonitor *monitor = directory_monitor_new(directory);
+  DirectoryMonitor *monitor = directory_monitor_inotify_new(directory);
   directory_monitor_set_callback(monitor, _start_file_reader, self);
   directory_monitor_start(monitor);
   g_hash_table_insert(self->directory_monitors, g_strdup(directory), monitor);
@@ -255,6 +278,14 @@ _free(LogPipe *s)
   log_src_driver_free(s);
 }
 
+static void
+_stop_and_destroy_directory_monitor(gpointer s)
+{
+  DirectoryMonitor *monitor = (DirectoryMonitor *)s;
+  directory_monitor_stop(monitor);
+  directory_monitor_free(monitor);
+}
+
 LogDriver *
 wildcard_sd_new(GlobalConfig *cfg)
 {
@@ -268,7 +299,7 @@ wildcard_sd_new(GlobalConfig *cfg)
 
   self->file_readers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)log_pipe_unref);
   self->directory_monitors = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
-                             (GDestroyNotify)directory_monitor_free);
+                             (GDestroyNotify)_stop_and_destroy_directory_monitor);
   log_reader_options_defaults(&self->file_reader_options.reader_options);
   file_perm_options_defaults(&self->file_reader_options.file_perm_options);
 
