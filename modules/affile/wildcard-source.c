@@ -45,33 +45,43 @@ _check_required_options(WildcardSourceDriver *self)
   return TRUE;
 }
 
+void
+_create_file_reader (WildcardSourceDriver* self, const gchar* name, const gchar* full_path)
 {
+  FileReader* reader = NULL;
+  if (g_hash_table_size (self->file_readers) >= self->max_files)
+    {
+      msg_warning("Number of allowed monitorod file is reached, rejecting read file",
+                  evt_tag_str ("source", self->super.super.group), evt_tag_str ("filename", name),
+                  evt_tag_int ("max_files", self->max_files));
+    }
+  GlobalConfig* cfg = log_pipe_get_config (&self->super.super.super);
+  reader = file_reader_new (full_path, &self->super, cfg);
+  reader->file_reader_options = &self->file_reader_options;
+  log_pipe_append (&reader->super, &self->super.super.super);
+  if (!log_pipe_init (&reader->super))
+    {
+      msg_warning("File reader initialization failed", evt_tag_str ("filename", name),
+                  evt_tag_str ("source_driver", self->super.super.group));
+      log_pipe_unref (&reader->super);
+    }
+  else
+    {
+      g_hash_table_insert (self->file_readers, g_strdup (full_path), reader);
+    }
 }
 
 static void
 _start_file_reader(const gchar *name, const gchar *full_path, FileType file_type, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
-  if (g_pattern_match_string(self->compiled_pattern, name))
+  if ((file_type == FILE_IS_REGULAR) && (g_pattern_match_string(self->compiled_pattern, name)))
     {
       FileReader *reader = g_hash_table_lookup(self->file_readers, full_path);
 
       if (!reader)
         {
-          GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-          reader = file_reader_new(full_path, &self->super, cfg);
-          reader->file_reader_options = &self->file_reader_options;
-          log_pipe_append(&reader->super, &self->super.super.super);
-          if (!log_pipe_init(&reader->super))
-            {
-              msg_warning("File reader initialization failed",
-                          evt_tag_str("filename", name),
-                          evt_tag_str("source_driver", self->super.super.group));
-              log_pipe_unref(&reader->super);
-              return;
-            }
-
-          g_hash_table_insert(self->file_readers, g_strdup(full_path), reader);
+          _create_file_reader (self, name, full_path);
         }
     }
   else
