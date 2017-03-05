@@ -33,7 +33,7 @@ syslogng_pid = 0
 def start_syslogng(conf, keep_persist=False, verbose=False):
     global syslogng_pid
 
-    os.system('rm -f test-*.log test-*.lgs test-*.db wildcard/* log-file')
+    os.system('rm -rf test-*.log test-*.lgs test-*.db wildcard/* log-file')
     if not keep_persist:
         os.system('rm -f syslog-ng.persist')
 
