@@ -94,18 +94,47 @@ static PyMappingMethods py_log_message_mapping =
   .mp_ass_subscript = (objobjargproc) _py_log_message_setattr
 };
 
+static gboolean
+_collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
+                                  gpointer user_data)
+{
+  PyObject *list = (PyObject *)user_data;
+  PyList_Append(list, PyBytes_FromString(name));
+
+  return FALSE;
+}
+
+static PyObject *
+_logmessage_get_keys_method(PyLogMessage *self)
+{
+  PyObject *keys = PyList_New(0);
+  LogMessage *msg = self->msg;
+
+  log_msg_values_foreach(msg, _collect_nvpair_names_from_logmsg, (gpointer) keys);
+
+  return keys;
+}
+
+static PyMethodDef py_log_message_methods[] =
+{
+  {
+    "keys", (PyCFunction)_logmessage_get_keys_method,
+    METH_NOARGS, "Return keys."
+  },
+  {NULL}
+};
+
 static PyTypeObject py_log_message_type =
 {
   PyObject_HEAD_INIT(&PyType_Type)
   .tp_name = "LogMessage",
   .tp_basicsize = sizeof(PyLogMessage),
   .tp_dealloc = (destructor) py_log_message_free,
-  .tp_getattro = (getattrofunc) _py_log_message_getattr,
-  .tp_setattro = (setattrofunc) _py_log_message_setattr,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "LogMessage class encapsulating a syslog-ng log message",
   .tp_new = PyType_GenericNew,
   .tp_as_mapping = &py_log_message_mapping,
+  .tp_methods = py_log_message_methods,
 };
 
 void
