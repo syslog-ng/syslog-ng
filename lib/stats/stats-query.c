@@ -148,6 +148,20 @@ _split_expr(const gchar *expr, gchar **key, gchar **ctr)
     }
 }
 
+void
+_setup_filter_expression(const gchar *expr, gchar **key_str, gchar **ctr_str)
+{
+  if (!expr)
+    {
+      *key_str = g_strdup("*");
+      *ctr_str = g_strdup("*");
+    }
+  else
+    {
+      _split_expr(expr, key_str, ctr_str);
+    }
+}
+
 static gboolean
 _find_key_by_pattern(gpointer key, gpointer value, gpointer user_data)
 {
@@ -223,16 +237,8 @@ stats_query_get_sum(const gchar *expr)
   gint sum = 0;
   GString *result = g_string_new("");
 
-  if (!expr)
-    {
-      key_str = g_strdup("*");
-      ctr_str = g_strdup("*");
-    }
-  else
-    {
-      _split_expr(expr, &key_str, &ctr_str);
-    }
 
+  _setup_filter_expression(expr, &key_str, &ctr_str);
   found_match = _query_counter_hash(key_str, ctr_str, _add_counter_value, _add_value_when_name_is_matching,
                                     (gpointer) &sum);
 
@@ -252,15 +258,7 @@ stats_query_list(const gchar *expr)
   gchar *ctr_str = NULL;
   GString *result = g_string_new("");
 
-  if (!expr)
-    {
-      key_str = g_strdup("*");
-      ctr_str = g_strdup("*");
-    }
-  else
-    {
-      _split_expr(expr, &key_str, &ctr_str);
-    }
+  _setup_filter_expression(expr, &key_str, &ctr_str);
 
   _query_counter_hash(key_str, ctr_str, _append_counter_without_value,
                       _append_counter_without_value_when_name_is_matching, (gpointer) result);
