@@ -24,11 +24,14 @@
 #ifndef STATS_QUERY_H_INCLUDED
 #define STATS_QUERY_H_INCLUDED
 
+#include "stats-cluster.h"
 #include "syslog-ng.h"
 
-GString* stats_query_list(const gchar *expr);
-GString* stats_query_get(const gchar *expr);
-GString* stats_query_get_sum(const gchar *expr);
+typedef gboolean (*StatsFormatCb)(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data);
+
+gboolean stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result);
+gboolean stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result);
+gboolean stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 
 #endif
 

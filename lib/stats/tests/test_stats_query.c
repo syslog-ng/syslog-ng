@@ -23,11 +23,11 @@
 
 
 #include "apphook.h"
-#include "stats/stats-query-commands.h"
+#include "logmsg/logmsg.h"
 #include "stats/stats-cluster.h"
 #include "stats/stats-counter.h"
-#include "stats/stats-registry.h"
 #include "stats/stats-query.h"
+#include "stats/stats-registry.h"
 #include "syslog-ng.h"
 
 #include <criterion/criterion.h>
@@ -50,7 +50,7 @@ typedef struct _QueryTestCase
 
 
 static void
-_initialize_counter_hash()
+_initialize_counter_hash(void)
 {
   size_t i, n;
   const CounterHashContent counters[] =
@@ -63,6 +63,7 @@ _initialize_counter_hash()
     {SCS_TCP | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
   };
 
+  app_startup();
   stats_init();
   stats_lock();
 
@@ -76,6 +77,72 @@ _initialize_counter_hash()
   stats_unlock();
 }
 
+static gboolean
+_test_format_log_msg_get(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+{
+  gchar *name, *value;
+  LogMessage *msg = (LogMessage *)user_data;
+
+  name = g_strdup_printf("%s.%s", sc->query_key, ctr_name);
+  value = g_strdup_printf("%d", ctr->value);
+
+  log_msg_set_value_by_name(msg, name, value, -1);
+
+  g_free(name);
+  g_free(value);
+
+  return TRUE;
+}
+
+static gboolean
+_test_format_str_get(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+{
+  GString *str = (GString *)user_data;
+  g_string_append_printf(str, "%s.%s: %d\n", sc->query_key, ctr_name ? ctr_name : "", ctr->value);
+
+  return TRUE;
+}
+
+static gboolean
+_test_format_log_msg_get_sum(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+{
+  gchar *name, *value;
+  gpointer *args = (gpointer *) user_data;
+  LogMessage *msg = (LogMessage *) args[0];
+  gint *sum = (gint *) args[1];
+
+  name = g_strdup_printf("%s.%s", sc->query_key, ctr_name);
+  value = g_strdup_printf("%d", *sum);
+
+  log_msg_set_value_by_name(msg, name, value, -1);
+
+  g_free(name);
+  g_free(value);
+
+  return TRUE;
+}
+
+static gboolean
+_test_format_str_get_sum(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  GString *result = (GString *) args[0];
+  gint *sum = (gint *) args[1];
+
+  g_string_printf(result, "%d", *sum);
+
+  return TRUE;
+}
+
+static gboolean
+_test_format_list(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+{
+  GString *str = (GString *)user_data;
+  g_string_append_printf(str, "%s.%s\n", sc->query_key, ctr_name ? ctr_name : "");
+
+  return TRUE;
+}
+
 TestSuite(cluster_query_key, .init = app_startup, .fini = app_shutdown);
 
 Test(cluster_query_key, test_global_key)
@@ -85,6 +152,149 @@ Test(cluster_query_key, test_global_key)
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",
                    sc->query_key, expected_key);
+}
+
+TestSuite(stats_query, .init = _initialize_counter_hash, .fini = app_shutdown);
+
+ParameterizedTestParameters(stats_query, test_stats_query_get_log_msg_out)
+{
+  static QueryTestCase test_cases[] =
+  {
+    {"dst.tcp.guba.labda.received.dropped", "0"},
+    {"src.pipe.guba.gumi.diszno.frozen.suppressed", "0"},
+  };
+
+  return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_log_msg_out)
+{
+  const gchar *actual;
+  LogMessage *msg = log_msg_new_empty();
+
+  stats_query_get(test_cases->pattern, _test_format_log_msg_get, (gpointer)msg);
+  actual = log_msg_get_value_by_name(msg, test_cases->pattern, NULL);
+  cr_assert_str_eq(actual, test_cases->expected,
+                   "Counter: '%s'; expected number: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, actual);
+
+  log_msg_unref(msg);
+}
+
+ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
+{
+  static QueryTestCase test_cases[] =
+  {
+    {
+      "*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "center.guba.polo.frozen.suppressed: 0\n"
+      "src.tcp.guba.frizbi.left.stored: 0\n"
+      "dst.tcp.guba.labda.received.dropped: 0\n"
+      "src.file.guba.processed.processed: 0\n"
+    },
+    {"center.*.*", "center.guba.polo.frozen.suppressed: 0\n"},
+    {"cent*", "center.guba.polo.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.gumi.diszno.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
+    {"src.pipe.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
+    {
+      "*.tcp.guba.*.*", "src.tcp.guba.frizbi.left.stored: 0\n"
+      "dst.tcp.guba.labda.received.dropped: 0\n"
+    },
+    {
+      "*.guba.*i.*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.tcp.guba.frizbi.left.stored: 0\n"
+    },
+    {
+      "*.guba.gum?.*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
+    },
+    {
+      "src.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.tcp.guba.frizbi.left.stored: 0\n"
+      "src.file.guba.processed.processed: 0\n"
+    },
+    {"dst.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
+    {"dst.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
+    {"dst.*.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
+    {"src.java.*.*", ""},
+    {"src.ja*.*.*", ""},
+  };
+
+  return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_str_out)
+{
+  GString *result = g_string_new("");
+
+  stats_query_get(test_cases->pattern, _test_format_str_get, (gpointer)result);
+  cr_assert_str_eq(result->str, test_cases->expected,
+                   "Pattern: '%s'; expected key and value: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, result->str);
+
+  g_string_free(result, TRUE);
+}
+
+ParameterizedTestParameters(stats_query, test_stats_query_get_sum_log_msg_out)
+{
+  static QueryTestCase test_cases[] =
+  {
+    {"dst.tcp.guba.labda.received.dropped", "0"},
+    {"src.pipe.guba.gumi.diszno.frozen.suppressed", "0"},
+  };
+
+  return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_sum_log_msg_out)
+{
+  const gchar *actual;
+  LogMessage *msg = log_msg_new_empty();
+
+  stats_query_get_sum(test_cases->pattern, _test_format_log_msg_get_sum, (gpointer)msg);
+  actual = log_msg_get_value_by_name(msg, test_cases->pattern, NULL);
+  cr_assert_str_eq(actual, test_cases->expected,
+                   "Pattern: '%s'; expected number: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, actual);
+
+  log_msg_unref(msg);
+}
+
+ParameterizedTestParameters(stats_query, test_stats_query_get_sum_str_out)
+{
+  static QueryTestCase test_cases[] =
+  {
+    {"*.*", "0"},
+    {"center.*.*", "0"},
+    {"cent*", "0"},
+    {"src.pipe.guba.gumi.diszno.*.*", "0"},
+    {"src.pipe.guba.gumi.*.*", "0"},
+    {"src.pipe.guba.*.*", "0"},
+    {"src.pipe.*.*", "0"},
+    {"*.tcp.guba.*.*", "0"},
+    {"*.guba.*i.*.*", "0"},
+    {"*.guba.gum?.*.*", "0"},
+    {"src.*.*", "0"},
+    {"dst.*.*", "0"},
+    {"dst.*.*.*", "0"},
+    {"dst.*.*.*.*", "0"},
+    {"src.java.*.*", ""},
+    {"src.ja*.*.*", ""},
+  };
+
+  return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_sum_str_out)
+{
+  GString *result = g_string_new("");
+
+  stats_query_get_sum(test_cases->pattern, _test_format_str_get_sum, (gpointer)result);
+  cr_assert_str_eq(result->str, test_cases->expected,
+                   "Pattern: '%s'; expected key and value: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, result->str);
+
+  g_string_free(result, TRUE);
 }
 
 ParameterizedTestParameters(stats_query, test_stats_query_list)
@@ -143,104 +353,11 @@ ParameterizedTestParameters(stats_query, test_stats_query_list)
 
 ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_list)
 {
-  GString *result = NULL;
+  GString *result = g_string_new("");
 
-  _initialize_counter_hash();
-
-  result = stats_query_list(test_cases->pattern);
+  stats_query_list(test_cases->pattern, _test_format_list, (gpointer)result);
   cr_assert_str_eq(result->str, test_cases->expected,
                    "Pattern: '%s'; expected key: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, result->str);
-}
 
-ParameterizedTestParameters(stats_query, test_stats_query_get)
-{
-  static QueryTestCase test_cases[] =
-  {
-    {
-      "*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "center.guba.polo.frozen.suppressed: 0\n"
-      "src.tcp.guba.frizbi.left.stored: 0\n"
-      "dst.tcp.guba.labda.received.dropped: 0\n"
-      "src.file.guba.processed.processed: 0\n"
-    },
-    {"center.*.*", "center.guba.polo.frozen.suppressed: 0\n"},
-    {"cent*", "center.guba.polo.frozen.suppressed: 0\n"},
-    {"src.pipe.guba.gumi.diszno.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
-    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
-    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
-    {"src.pipe.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
-    {
-      "*.tcp.guba.*.*", "src.tcp.guba.frizbi.left.stored: 0\n"
-      "dst.tcp.guba.labda.received.dropped: 0\n"
-    },
-    {
-      "*.guba.*i.*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.tcp.guba.frizbi.left.stored: 0\n"
-    },
-    {
-      "*.guba.gum?.*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
-    },
-    {
-      "src.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.tcp.guba.frizbi.left.stored: 0\n"
-      "src.file.guba.processed.processed: 0\n"
-    },
-    {"dst.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
-    {"dst.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
-    {"dst.*.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
-    {"src.java.*.*", ""},
-    {"src.ja*.*.*", ""},
-  };
-
-  return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
-}
-
-ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get)
-{
-  GString *result = NULL;
-
-  _initialize_counter_hash();
-
-  result = stats_query_get(test_cases->pattern);
-  cr_assert_str_eq(result->str, test_cases->expected,
-                   "Pattern: '%s'; expected key and value: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, result->str);
-}
-
-ParameterizedTestParameters(stats_query, test_stats_query_get_sum)
-{
-  static QueryTestCase test_cases[] =
-  {
-    {"*.*", "0\n"},
-    {"center.*.*", "0\n"},
-    {"cent*", "0\n"},
-    {"src.pipe.guba.gumi.diszno.*.*", "0\n"},
-    {"src.pipe.guba.gumi.*.*", "0\n"},
-    {"src.pipe.guba.*.*", "0\n"},
-    {"src.pipe.*.*", "0\n"},
-    {"*.tcp.guba.*.*", "0\n"},
-    {"*.guba.*i.*.*", "0\n"},
-    {"*.guba.gum?.*.*", "0\n"},
-    {"src.*.*", "0\n"},
-    {"dst.*.*", "0\n"},
-    {"dst.*.*.*", "0\n"},
-    {"dst.*.*.*.*", "0\n"},
-    {"src.java.*.*", ""},
-    {"src.ja*.*.*", ""},
-  };
-
-  return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
-}
-
-ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_sum)
-{
-  GString *result = NULL;
-
-  _initialize_counter_hash();
-
-  result = stats_query_get_sum(test_cases->pattern);
-  cr_assert_str_eq(result->str, test_cases->expected,
-                   "Pattern: '%s'; expected number: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, result->str);
+  g_string_free(result, TRUE);
 }
