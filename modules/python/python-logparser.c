@@ -91,6 +91,7 @@ _pp_py_invoke_bool_method_by_name_with_args(PythonParser *self, PyObject *instan
 static gboolean
 _py_invoke_parser_process(PythonParser *self, PyObject *msg)
 {
+  msg_debug("Logmessage passed to the Python parser");
   return _pp_py_invoke_bool_function(self, self->py.parser_process, msg);
 }
 
