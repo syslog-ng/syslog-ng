@@ -248,7 +248,22 @@ python_parser_free(LogPipe *d)
   if (self->options)
     g_hash_table_unref(self->options);
 
+  string_list_free(self->imports);
+
   log_parser_free_method(d);
+}
+
+static LogPipe *
+python_parser_clone(LogPipe *s)
+{
+  PythonParser *self = (PythonParser *) s;
+  PythonParser *cloned = (PythonParser *) python_parser_new(log_pipe_get_config(s));
+  g_hash_table_unref(cloned->options);
+  python_parser_set_class(&cloned->super, self->class);
+  cloned->imports = string_list_clone(self->imports);
+  cloned->options = g_hash_table_ref(self->options);
+
+  return &cloned->super.super;
 }
 
 LogParser *
@@ -260,6 +275,7 @@ python_parser_new(GlobalConfig *cfg)
   self->super.super.init = python_parser_init;
   self->super.super.deinit = python_parser_deinit;
   self->super.super.free_fn = python_parser_free;
+  self->super.super.clone = python_parser_clone;
   self->super.process = python_parser_process;
   self->py.class = self->py.instance = self->py.parser_process = NULL;
 
