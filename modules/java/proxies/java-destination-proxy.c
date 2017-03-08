@@ -236,7 +236,7 @@ __queue_native_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
 static gboolean
 __queue_formatted_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
 {
-  log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, self->formatted_message);
+  log_template_format(self->template, msg, NULL, LTZ_SEND, 0, NULL, self->formatted_message);
   jstring message = CALL_JAVA_FUNCTION(env, NewStringUTF, self->formatted_message->str);
   jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_send,
                                     message);
