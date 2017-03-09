@@ -65,13 +65,19 @@ slng_run_command(const gchar *command)
   return control_client_read_reply(control_client);
 }
 
+static gboolean
+_is_response_empty(GString *response)
+{
+  return (response == NULL || g_str_equal(response->str, ""));
+}
+
 static gint
 _dispatch_command(const gchar *cmd)
 {
   gchar *dispatchable_command = g_strdup_printf("%s\n", cmd);
   GString *rsp = slng_run_command(dispatchable_command);
 
-  if (rsp == NULL)
+  if (_is_response_empty(rsp))
     return 1;
 
   printf("%s\n", rsp->str);
