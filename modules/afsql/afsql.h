@@ -78,6 +78,7 @@ typedef struct _AFSqlDestDriver
   gchar *password;
   gchar *database;
   gchar *encoding;
+  gchar *create_statement_append;
   GList *columns;
   GList *values;
   GList *indexes;
@@ -135,6 +136,7 @@ void afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines);
 void afsql_dd_set_flush_timeout(LogDriver *s, gint flush_timeout);
 void afsql_dd_set_session_statements(LogDriver *s, GList *session_statements);
 void afsql_dd_set_flags(LogDriver *s, gint flags);
+void afsql_dd_set_create_statement_append(LogDriver *s, const gchar *create_statement_append);
 LogDriver *afsql_dd_new(GlobalConfig *cfg);
 gint afsql_dd_lookup_flag(const gchar *flag);
 void afsql_dd_set_retries(LogDriver *s, gint num_retries);

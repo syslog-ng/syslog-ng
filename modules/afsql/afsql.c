@@ -81,7 +81,8 @@ afsql_dd_set_host(LogDriver *s, const gchar *host)
   self->host = g_strdup(host);
 }
 
-gboolean afsql_dd_check_port(const gchar *port)
+gboolean
+afsql_dd_check_port(const gchar *port)
 {
   /* only digits (->numbers) are allowed */
   int len = strlen(port);
@@ -217,6 +218,15 @@ afsql_dd_set_flags(LogDriver *s, gint flags)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
   self->flags = flags;
+}
+
+void
+afsql_dd_set_create_statement_append(LogDriver *s, const gchar *create_statement_append)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  g_free(self->create_statement_append);
+  self->create_statement_append = g_strdup(create_statement_append);
 }
 
 /**
@@ -584,6 +594,8 @@ _table_create(AFSqlDestDriver *self, const gchar *table)
         g_string_append(query_string, ", ");
     }
   g_string_append(query_string, ")");
+  if (self->create_statement_append)
+    g_string_append(query_string, self->create_statement_append);
   if (afsql_dd_run_query(self, query_string->str, FALSE, NULL))
     {
       success = TRUE;
@@ -1381,6 +1393,7 @@ afsql_dd_free(LogPipe *s)
   g_free(self->password);
   g_free(self->database);
   g_free(self->encoding);
+  g_free(self->create_statement_append);
   if (self->null_value)
     g_free(self->null_value);
   string_list_free(self->columns);
