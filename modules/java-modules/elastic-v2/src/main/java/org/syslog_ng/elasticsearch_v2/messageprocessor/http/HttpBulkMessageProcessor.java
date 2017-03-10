@@ -49,7 +49,7 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 
 	@Override
 	public void flush() {
-		logger.debug("Flushing messages for ES destination [mode=http]");
+		logger.debug("Flushing messages for ES destination [mode=" + options.getClientMode() + "]");
 		Bulk bulkActions = bulk.build();
 		try {
 			client.getClient().execute(bulkActions);
