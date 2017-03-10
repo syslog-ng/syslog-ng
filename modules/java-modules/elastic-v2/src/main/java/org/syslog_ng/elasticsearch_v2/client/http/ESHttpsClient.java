@@ -60,6 +60,10 @@ public class ESHttpsClient extends ESHttpClient {
         };
     }
 
+    private boolean isSSLInsecure(ElasticSearchOptions options) {
+        return options.getJavaTrustStoreFilepath().isEmpty();
+    }
+
     private HostnameVerifier getNoopHostnameVerifier() {
         return NoopHostnameVerifier.INSTANCE;
     }
@@ -112,7 +116,7 @@ public class ESHttpsClient extends ESHttpClient {
         SSLContextBuilder sslContextBuilder = new SSLContextBuilder();
         KeyStore trustStore = null;
 
-        if (options.getJavaSSLInsecure()) {
+        if (isSSLInsecure(options)) {
             logger.warn("Using insecure options for HTTPS client");
         } else {
             trustStore = setupKeyStore(options.getJavaTrustStoreFilepath(), options.getJavaTrustStorePassword());
@@ -127,7 +131,7 @@ public class ESHttpsClient extends ESHttpClient {
     }
 
     private HostnameVerifier setupHostnameVerifier(ElasticSearchOptions options) {
-        if (options.getJavaSSLInsecure()) {
+        if (isSSLInsecure(options)) {
             return NoopHostnameVerifier.INSTANCE;
         } else {
             return new DefaultHostnameVerifier();
