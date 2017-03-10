@@ -64,8 +64,6 @@ public class ElasticSearchOptions {
 	public static String JAVA_KEYSTORE_PASSWORD = "java_keystore_password";
 	public static String JAVA_TRUSTSTORE_FILEPATH = "java_truststore_filepath";
 	public static String JAVA_TRUSTSTORE_PASSWORD = "java_truststore_password";
-	public static String JAVA_SSL_INSECURE = "java_ssl_insecure";
-	public static String JAVA_SSL_INSECURE_DEFAULT = "false";
 	public static String HTTP_AUTH_TYPE = "http_auth_type";
 	public static String HTTP_AUTH_TYPE_NONE = "none";
 	public static String HTTP_AUTH_TYPE_BASIC = "basic";
@@ -168,10 +166,6 @@ public class ElasticSearchOptions {
                 return options.get(SKIP_CLUSTER_HEALTH_CHECK).getValueAsBoolean();
         }
 
-	public boolean getJavaSSLInsecure() {
-		return options.get(JAVA_SSL_INSECURE).getValueAsBoolean();
-	}
-
 	public String getJavaKeyStoreFilepath() {
 		return options.get(JAVA_KEYSTORE_FILEPATH).getValue();
 	}
@@ -248,6 +242,5 @@ public class ElasticSearchOptions {
 
 	private void fillBooleanOptions() {
 	        options.put(new BooleanOptionDecorator(new StringOption(owner, SKIP_CLUSTER_HEALTH_CHECK, SKIP_CLUSTER_HEALTH_CHECK_DEFAULT)));
-	        options.put(new BooleanOptionDecorator(new StringOption(owner, JAVA_SSL_INSECURE, JAVA_SSL_INSECURE_DEFAULT)));
 	}
 }
