@@ -76,7 +76,11 @@ public class ESHttpClient implements ESClient {
 
 	@Override
 	public void close() {
-		messageProcessor.flush();
+		try {
+			messageProcessor.flush();
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		}
 	}
 
 	@Override
