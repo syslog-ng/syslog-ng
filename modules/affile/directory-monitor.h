@@ -23,6 +23,7 @@
 #define MODULES_AFFILE_DIRECTORY_MONITOR_H_
 
 #include <syslog-ng.h>
+#include <iv.h>
 
 typedef enum {
   FILE_CREATED,
@@ -47,13 +48,18 @@ struct _DirectoryMonitor {
   gchar *real_path;
   DirectoryMonitorEventCallback callback;
   gpointer callback_data;
+
+  guint recheck_time;
+  struct iv_timer check_timer;
+
+  gboolean watches_running;
   void (*start_watches)(DirectoryMonitor *self);
   void (*stop_watches)(DirectoryMonitor *self);
   void (*free_fn)(DirectoryMonitor *self);
 };
 
-DirectoryMonitor* directory_monitor_new(const gchar *dir);
-void directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir);
+DirectoryMonitor* directory_monitor_new(const gchar *dir, guint recheck_time);
+void directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time);
 void directory_monitor_free(DirectoryMonitor *self);
 void directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCallback callback, gpointer user_data);
 

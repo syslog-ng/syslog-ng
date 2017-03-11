@@ -48,8 +48,6 @@ _get_event_type(struct inotify_event *event, gchar *filename)
 static void
 _handle_event(gpointer s, struct inotify_event *event)
 {
-  msg_error("Event occured", evt_tag_printf("event_id", "%08X", event->mask), evt_tag_printf("event_subject", "%.*s",
-            event->len, &event->name[0]));
   DirectoryMonitorInotify *self = (DirectoryMonitorInotify *)s;
   DirectoryMonitorEvent dir_event;
   dir_event.name = g_strdup_printf("%.*s", event->len, &event->name[0]);
@@ -92,10 +90,10 @@ _free(DirectoryMonitor *s)
 }
 
 DirectoryMonitor *
-directory_monitor_inotify_new(const gchar *dir)
+directory_monitor_inotify_new(const gchar *dir, guint recheck_time)
 {
   DirectoryMonitorInotify *self = g_new0(DirectoryMonitorInotify, 1);
-  directory_monitor_init_instance(&self->super, dir);
+  directory_monitor_init_instance(&self->super, dir, recheck_time);
 
   self->super.start_watches = _start_watches;
   self->super.stop_watches = _stop_watches;

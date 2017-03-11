@@ -49,14 +49,15 @@ _check_required_options(WildcardSourceDriver *self)
 }
 
 void
-_create_file_reader (WildcardSourceDriver *self, const gchar *name, const gchar *full_path)
+_create_file_reader(WildcardSourceDriver *self, const gchar *name, const gchar *full_path)
 {
   FileReader *reader = NULL;
   if (g_hash_table_size (self->file_readers) >= self->max_files)
     {
       msg_warning("Number of allowed monitorod file is reached, rejecting read file",
-                  evt_tag_str ("source", self->super.super.group), evt_tag_str ("filename", name),
-                  evt_tag_int ("max_files", self->max_files));
+                  evt_tag_str("source", self->super.super.group),
+                  evt_tag_str("filename", name),
+                  evt_tag_int("max_files", self->max_files));
     }
   GlobalConfig *cfg = log_pipe_get_config (&self->super.super.super);
   reader = file_reader_new (full_path, &self->super, cfg);
@@ -75,66 +76,78 @@ _create_file_reader (WildcardSourceDriver *self, const gchar *name, const gchar 
 }
 
 static void
-_start_file_reader(const DirectoryMonitorEvent *event, gpointer user_data)
+_handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
-  WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
-  if ((event->event_type == FILE_CREATED) && (g_pattern_match_string(self->compiled_pattern, event->name)))
+  if (g_pattern_match_string(self->compiled_pattern, event->name))
     {
-      FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
-
+      FileReader *reader = g_hash_table_lookup (self->file_readers, event->full_path);
       if (!reader)
         {
           _create_file_reader (self, event->name, event->full_path);
         }
-      else
+      else if (!log_pipe_init (&reader->super))
         {
-          if (!log_pipe_init(&reader->super))
-            {
-              msg_error("Failed to initialize file reader", evt_tag_str("filename", event->full_path));
-            }
+          msg_error("Failed to initialize file reader", evt_tag_str ("filename", event->full_path));
         }
     }
-  else if (event->event_type == DIRECTORY_CREATED && self->recursive)
+}
+
+void
+_handle_directory_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
+{
+  if (self->recursive)
     {
-      msg_error("Directory created", evt_tag_str("name", event->full_path));
+      msg_error("Directory created", evt_tag_str ("name", event->full_path));
       DirectoryMonitor *monitor = g_hash_table_lookup(self->directory_monitors, event->full_path);
       if (!monitor)
         {
           _add_directory_monitor(self, event->full_path);
         }
     }
-  else if (event->event_type == DELETED)
+}
+
+void
+_handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
+{
+  FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
+  if (reader)
     {
-      msg_error("DELETED EVENT OCCURED", evt_tag_str("name", event->full_path));
-      FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
-      if (reader)
-        {
-          msg_error("Monitored file is deleted", evt_tag_str("filename", event->full_path));
-          log_pipe_deinit(&reader->super);
-        }
-      else if (g_hash_table_remove(self->directory_monitors, event->full_path))
-        {
-          msg_error("Monitored directory is deleted", evt_tag_str("directory", event->full_path));
-        }
+      msg_error("Monitored file is deleted", evt_tag_str ("filename", event->full_path));
+      log_pipe_deinit (&reader->super);
     }
-  else
+  else if (g_hash_table_remove(self->directory_monitors, event->full_path))
     {
-      msg_debug("Filename does not match with pattern",
-                evt_tag_str("filename", event->name),
-                evt_tag_str("full_path", event->full_path),
-                evt_tag_str("pattern", self->filename_pattern->str));
+      msg_error("Monitored directory is deleted", evt_tag_str ("directory", event->full_path));
     }
 }
 
 static void
-_ensure_minimum_window_size (WildcardSourceDriver *self)
+_start_file_reader(const DirectoryMonitorEvent *event, gpointer user_data)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
+  if ((event->event_type == FILE_CREATED))
+    {
+      _handle_file_created(self, event);
+    }
+  else if (event->event_type == DIRECTORY_CREATED)
+    {
+      _handle_directory_created(self, event);
+    }
+  else if (event->event_type == DELETED)
+    {
+      _handle_deleted(self, event);
+    }
+}
+
+static void
+_ensure_minimum_window_size(WildcardSourceDriver *self)
 {
   if (self->file_reader_options.reader_options.super.init_window_size < MINIMUM_WINDOW_SIZE)
     {
       msg_warning("log_iw_size configuration value was divided by the value of max-files()."
                   " The result was too small, clamping to minimum entries."
                   " Ensure you have a proper log_fifo_size setting to avoid message loss.",
-                  evt_tag_int ("orig_log_iw_size", self->file_reader_options.reader_options.super.init_window_size),
+                  evt_tag_int("orig_log_iw_size", self->file_reader_options.reader_options.super.init_window_size),
                   evt_tag_int("new_log_iw_size", MINIMUM_WINDOW_SIZE),
                   evt_tag_int("min_log_fifo_size", MINIMUM_WINDOW_SIZE * self->max_files));
       self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE;
@@ -170,7 +183,7 @@ _init_filename_pattern(WildcardSourceDriver *self)
 static void
 _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
 {
-  DirectoryMonitor *monitor = directory_monitor_inotify_new(directory);
+  DirectoryMonitor *monitor = directory_monitor_inotify_new(directory, self->file_reader_options.follow_freq);
   directory_monitor_set_callback(monitor, _start_file_reader, self);
   directory_monitor_start(monitor);
   g_hash_table_insert(self->directory_monitors, g_strdup(directory), monitor);
@@ -300,6 +313,7 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->file_readers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)log_pipe_unref);
   self->directory_monitors = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
                              (GDestroyNotify)_stop_and_destroy_directory_monitor);
+
   log_reader_options_defaults(&self->file_reader_options.reader_options);
   file_perm_options_defaults(&self->file_reader_options.file_perm_options);
 
@@ -307,9 +321,9 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->file_reader_options.file_open_options.is_pipe = FALSE;
   self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
   self->file_reader_options.follow_freq = 1000;
+  self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE * DEFAULT_MAX_FILES;
 
   self->max_files = DEFAULT_MAX_FILES;
-  self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE * self->max_files;
 
   return &self->super.super;
 }

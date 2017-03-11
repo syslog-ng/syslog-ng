@@ -53,7 +53,7 @@ Test(directory_monitor, read_content_of_directory)
       gboolean res = g_file_set_contents(file_list_full_path[i], file_list[i], strlen(file_list[i]), &error);
       cr_assert(res != FALSE, "Error: %s", error ? error->message : "OK");
     }
-  DirectoryMonitor *monitor = directory_monitor_new(tmpdir);
+  DirectoryMonitor *monitor = directory_monitor_new(tmpdir, 1);
   GList *found_files = NULL;
   directory_monitor_set_callback(monitor, _callback, &found_files);
   directory_monitor_start(monitor);
@@ -73,7 +73,7 @@ Test(directory_monitor, read_content_of_directory)
 
 Test(directory_monitor, non_existing_directory)
 {
-  DirectoryMonitor *monitor = directory_monitor_new("this directory should not exist");
+  DirectoryMonitor *monitor = directory_monitor_new("this directory should not exist", 1);
   GList *found_files = NULL;
   directory_monitor_set_callback(monitor, _callback, &found_files);
   directory_monitor_start(monitor);
