@@ -53,7 +53,7 @@ _handle_event(gpointer s, struct inotify_event *event)
   DirectoryMonitorInotify *self = (DirectoryMonitorInotify *)s;
   DirectoryMonitorEvent dir_event;
   dir_event.name = g_strdup_printf("%.*s", event->len, &event->name[0]);
-  dir_event.full_path = build_filename(self->super.dir, dir_event.name);
+  dir_event.full_path = build_filename(self->super.real_path, dir_event.name);
   dir_event.event_type = _get_event_type(event, dir_event.full_path);
   if (self->super.callback && dir_event.event_type != UNKNOWN)
     {

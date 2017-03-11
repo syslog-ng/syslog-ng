@@ -126,30 +126,27 @@ void
 directory_monitor_start(DirectoryMonitor *self)
 {
   GError *error = NULL;
-  gchar *real_path = _get_real_path(self);
-  GDir *directory = g_dir_open(real_path, 0, &error);
+  GDir *directory = g_dir_open(self->real_path, 0, &error);
   if (!directory)
     {
       msg_error("Can not open directory",
-                evt_tag_str("base_dir", real_path),
+                evt_tag_str("base_dir", self->real_path),
                 evt_tag_str("error", error->message));
       g_error_free(error);
-      g_free(real_path);
       return;
     }
   const gchar *filename = g_dir_read_name(directory);
   while(filename)
     {
       DirectoryMonitorEvent event = {.name = filename };
-      gchar *filename_real_path = resolve_to_absolute_path(filename, real_path);
-      event.full_path = build_filename(real_path, filename);
+      gchar *filename_real_path = resolve_to_absolute_path(filename, self->real_path);
+      event.full_path = build_filename(self->real_path, filename);
       event.event_type = g_file_test(filename_real_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
       self->callback(&event, self->callback_data);
       g_free(filename_real_path);
       g_free(event.full_path);
       filename = g_dir_read_name(directory);
     }
-  g_free(real_path);
   g_dir_close(directory);
   if (self->start_watches)
     {
@@ -168,6 +165,7 @@ void
 directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir)
 {
   self->dir = g_strdup(dir);
+  self->real_path = _get_real_path(self);
 }
 
 DirectoryMonitor *
@@ -188,6 +186,7 @@ directory_monitor_free(DirectoryMonitor *self)
         {
           self->free_fn(self);
         }
+      g_free(self->real_path);
       g_free(self->dir);
       g_free(self);
     }
