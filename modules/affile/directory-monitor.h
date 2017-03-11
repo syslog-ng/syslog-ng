@@ -44,6 +44,7 @@ typedef struct _DirectoryMonitor DirectoryMonitor;
 
 struct _DirectoryMonitor {
   gchar *dir;
+  gchar *real_path;
   DirectoryMonitorEventCallback callback;
   gpointer callback_data;
   void (*start_watches)(DirectoryMonitor *self);
