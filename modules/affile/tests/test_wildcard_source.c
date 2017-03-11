@@ -39,6 +39,7 @@ _init(void)
 static void
 _deinit(void)
 {
+  cfg_deinit(configuration);
   cfg_free(configuration);
 }
 

@@ -31,6 +31,6 @@ typedef struct _DirectoryMonitorInotify {
   struct iv_inotify_watch watcher;
 } DirectoryMonitorInotify;
 
-DirectoryMonitor *directory_monitor_inotify_new(const gchar *dir);
+DirectoryMonitor *directory_monitor_inotify_new(const gchar *dir, guint recheck_time);
 
 #endif /* MODULES_AFFILE_DIRECTORY_MONITOR_INOTIFY_H_ */

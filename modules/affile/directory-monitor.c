@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <messages.h>
+#include <iv.h>
 
 gchar *
 build_filename(const gchar *basedir, const gchar *path)
@@ -116,42 +117,82 @@ _get_real_path(DirectoryMonitor *self)
 void
 directory_monitor_stop(DirectoryMonitor *self)
 {
-  if (self->stop_watches)
+  if (iv_timer_registered(&self->check_timer))
+    {
+      iv_timer_unregister(&self->check_timer);
+    }
+  if (self->stop_watches && self->watches_running)
     {
       self->stop_watches(self);
     }
+  self->watches_running = FALSE;
+}
+
+static void
+_collect_all_files (DirectoryMonitor *self, GDir *directory)
+{
+  const gchar *filename = g_dir_read_name (directory);
+  while (filename)
+    {
+      DirectoryMonitorEvent event =
+      { .name = filename };
+      gchar *filename_real_path = resolve_to_absolute_path (filename, self->real_path);
+      event.full_path = build_filename (self->real_path, filename);
+      event.event_type = g_file_test (filename_real_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
+      self->callback (&event, self->callback_data);
+      g_free (filename_real_path);
+      g_free (event.full_path);
+      filename = g_dir_read_name (directory);
+    }
+}
+
+static void
+_arm_recheck_timer(DirectoryMonitor *self)
+{
+  iv_validate_now ();
+  self->check_timer.cookie = self;
+  self->check_timer.handler = (GDestroyNotify) directory_monitor_start;
+  self->check_timer.expires = iv_now;
+  self->check_timer.expires.tv_sec++;
+  iv_timer_register (&self->check_timer);
+}
+
+static void
+_set_real_path(DirectoryMonitor *self)
+{
+  if (self->real_path)
+    g_free(self->real_path);
+  self->real_path = _get_real_path(self);
 }
 
 void
 directory_monitor_start(DirectoryMonitor *self)
 {
+  GDir *directory = NULL;
   GError *error = NULL;
-  GDir *directory = g_dir_open(self->real_path, 0, &error);
+  if (self->watches_running)
+    {
+      return;
+    }
+  _set_real_path(self);
+  directory = g_dir_open(self->real_path, 0, &error);
   if (!directory)
     {
       msg_error("Can not open directory",
                 evt_tag_str("base_dir", self->real_path),
                 evt_tag_str("error", error->message));
+      _arm_recheck_timer(self);
       g_error_free(error);
       return;
     }
-  const gchar *filename = g_dir_read_name(directory);
-  while(filename)
-    {
-      DirectoryMonitorEvent event = {.name = filename };
-      gchar *filename_real_path = resolve_to_absolute_path(filename, self->real_path);
-      event.full_path = build_filename(self->real_path, filename);
-      event.event_type = g_file_test(filename_real_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
-      self->callback(&event, self->callback_data);
-      g_free(filename_real_path);
-      g_free(event.full_path);
-      filename = g_dir_read_name(directory);
-    }
+  _collect_all_files (self, directory);
   g_dir_close(directory);
   if (self->start_watches)
     {
       self->start_watches(self);
     }
+  self->watches_running = TRUE;
+  return;
 }
 
 void
@@ -162,17 +203,18 @@ directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCall
 }
 
 void
-directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir)
+directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time)
 {
   self->dir = g_strdup(dir);
-  self->real_path = _get_real_path(self);
+  self->recheck_time = recheck_time;
+  IV_TIMER_INIT(&self->check_timer);
 }
 
 DirectoryMonitor *
-directory_monitor_new(const gchar *dir)
+directory_monitor_new(const gchar *dir, guint recheck_time)
 {
   DirectoryMonitor *self = g_new0(DirectoryMonitor, 1);
-  directory_monitor_init_instance(self, dir);
+  directory_monitor_init_instance(self, dir, recheck_time);
   return self;
 }
 
