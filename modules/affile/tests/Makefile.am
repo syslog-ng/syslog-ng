@@ -20,4 +20,4 @@ modules_affile_tests_test_wildcard_source_LDFLAGS = $(PREOPEN_CORE)
 modules_affile_tests_test_directory_monitor_CFLAGS  = $(TEST_CFLAGS) -I$(top_srcdir)/modules/affile
 modules_affile_tests_test_directory_monitor_LDADD   = $(TEST_LDADD) \
 	-dlpreopen $(top_builddir)/modules/affile/libaffile.la
-modules_affile_tests_test_test_directory_monitor_LDFLAGS = $(PREOPEN_CORE)
+modules_affile_tests_test_directory_monitor_LDFLAGS = $(PREOPEN_CORE)

@@ -11,8 +11,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/wildcard-source.c			\
 	modules/affile/directory-monitor.h			\
 	modules/affile/directory-monitor.c			\
-	modules/affile/directory-monitor-inotify.h	\
-	modules/affile/directory-monitor-inotify.c	\
+	modules/affile/directory-monitor-factory.h			\
+	modules/affile/directory-monitor-factory.c			\
 	modules/affile/affile-common.c				\
 	modules/affile/affile-common.h				\
 	modules/affile/affile-source.c				\
@@ -23,6 +23,16 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/affile-parser.c				\
 	modules/affile/affile-parser.h				\
 	modules/affile/affile-plugin.c
+
+if HAVE_INOTIFY
+  modules_affile_libaffile_la_SOURCES +=      \
+  modules/affile/directory-monitor-inotify.h  \
+  modules/affile/directory-monitor-inotify.c
+else
+  EXTRA_DIST +=                               \
+  modules/affile/directory-monitor-inotify.h  \
+  modules/affile/directory-monitor-inotify.c
+endif
 
 BUILT_SOURCES				+= 			\
 	modules/affile/affile-grammar.y				\

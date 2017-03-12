@@ -679,6 +679,11 @@ AC_CHECK_FUNCS(clock_gettime)
 LIBS=$old_LIBS
 
 dnl ***************************************************************************
+dnl check inotify
+dnl ***************************************************************************
+AC_CHECK_FUNCS([inotify_init])
+
+dnl ***************************************************************************
 dnl libevtlog headers/libraries
 dnl ***************************************************************************
 PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,)
@@ -1560,6 +1565,7 @@ AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
+AC_DEFINE_UNQUOTED([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes], [Have inotify])
 
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
@@ -1590,6 +1596,7 @@ AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_LEGACY_MONGODB_OPTIONS, [test x"$enable_legacy_mongodb_options" != x"no"])
 AM_CONDITIONAL(ENABLE_CRITERION, [test "$with_criterion" != "no"])
+AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
