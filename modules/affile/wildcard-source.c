@@ -21,7 +21,7 @@
  */
 
 #include "wildcard-source.h"
-#include "directory-monitor-inotify.h"
+#include "directory-monitor-factory.h"
 #include "messages.h"
 #include <fcntl.h>
 
@@ -58,6 +58,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *name, const gchar *
                   evt_tag_str("source", self->super.super.group),
                   evt_tag_str("filename", name),
                   evt_tag_int("max_files", self->max_files));
+      return;
     }
   GlobalConfig *cfg = log_pipe_get_config (&self->super.super.super);
   reader = file_reader_new (full_path, &self->super, cfg);
@@ -183,7 +184,12 @@ _init_filename_pattern(WildcardSourceDriver *self)
 static void
 _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
 {
-  DirectoryMonitor *monitor = directory_monitor_inotify_new(directory, self->file_reader_options.follow_freq);
+  DirectoryMonitorOptions options =
+  {
+    .dir = directory,
+    .follow_freq = self->file_reader_options.follow_freq
+  };
+  DirectoryMonitor *monitor = create_directory_monitor(&options);
   directory_monitor_set_callback(monitor, _start_file_reader, self);
   directory_monitor_start(monitor);
   g_hash_table_insert(self->directory_monitors, g_strdup(directory), monitor);
