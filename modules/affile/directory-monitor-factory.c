@@ -22,7 +22,7 @@
 
 #include "directory-monitor-factory.h"
 
-#if HAVE_INOTIFY
+#if SYSLOG_NG_HAVE_INOTIFY
 #include "directory-monitor-inotify.h"
 #endif
 
@@ -30,7 +30,7 @@ DirectoryMonitor *
 create_directory_monitor(DirectoryMonitorOptions *options)
 {
   DirectoryMonitor *monitor = NULL;
-#if HAVE_INOTIFY
+#if SYSLOG_NG_HAVE_INOTIFY
   monitor = directory_monitor_inotify_new(options->dir, options->follow_freq);
 #else
   monitor = directory_monitor_new(options->dir, options->follow_freq);
