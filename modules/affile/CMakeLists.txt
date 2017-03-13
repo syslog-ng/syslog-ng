@@ -10,6 +10,7 @@ set(AFFILE_HEADERS
     "wildcard-source.h"
     "directory-monitor.h"
     "directory-monitor-inotify.h"
+    "directory-monitor-factory.h"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.h"
 )
 
@@ -25,6 +26,7 @@ set(AFFILE_SOURCES
     "wildcard-source.c"
     "directory-monitor.c"
     "directory-monitor-inotify.c"
+    "directory-monitor-factory.c"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c"
 )
 
