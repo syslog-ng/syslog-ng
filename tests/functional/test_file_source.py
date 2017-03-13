@@ -53,10 +53,6 @@ def test_wildcard_files():
       'wildcard6',
       'wildcard7',
     )
-
-    if not wildcard_file_source_supported:
-        print_user("Not testing a Premium version, skipping wild card source tests")
-        return True
     expected = []
 
     for ndx in range(0, len(messages)):
@@ -82,10 +78,6 @@ def test_wildcard_recursion():
       'wildcard6',
       'wildcard7',
     )
-
-    if not wildcard_file_source_supported:
-        print_user("Not testing a Premium version, skipping wild card source tests")
-        return True
     expected = []
 
     for ndx in range(0, len(messages)):
@@ -115,16 +107,36 @@ def test_wildcard_no_directory_exists():
       'wildcard6',
       'wildcard7',
     )
-
-    if not wildcard_file_source_supported:
-        print_user("Not testing a Premium version, skipping wild card source tests")
-        return True
     expected = []
 
     for ndx in range(0, len(messages)):
         s = FileSender('wildcard/%d.log' % (ndx % 4), repeat=100)
         expected.extend(s.sendMessages(messages[ndx]))
 
+    if not check_file_expected('test-wildcard', expected, settle_time=12):
+        return False
+    return True
+
+def test_wildcard_runtime_detection():
+    messages = (
+      'wildcard0',
+      'wildcard1',
+      'wildcard2',
+      'wildcard3',
+      'wildcard4',
+      'wildcard5',
+      'wildcard6',
+      'wildcard7',
+    )
+    expected = []
+
+    for ndx in range(0, len(messages)):
+        s = FileSender('wildcard/%d.log' % (ndx % 4), repeat=100)
+        expected.extend(s.sendMessages(messages[ndx]))
+
+    messagegen.need_to_flush = False
+    print_user("waiting for syslog-ng to process files (%d sec)" % 5)
+    time.sleep(5)
     if not check_file_expected('test-wildcard', expected, settle_time=12):
         return False
     return True
