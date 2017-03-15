@@ -45,7 +45,7 @@ modules_affile_libaffile_la_CPPFLAGS	=			\
 	$(AM_CPPFLAGS)						\
 	-I$(top_srcdir)/modules/affile				\
 	-I$(top_builddir)/modules/affile
-modules_affile_libaffile_la_LIBADD	= $(MODULE_DEPS_LIBS)
+modules_affile_libaffile_la_LIBADD	= $(MODULE_DEPS_LIBS) $(IVYKIS_LIBS)
 modules_affile_libaffile_la_LDFLAGS	= $(MODULE_LDFLAGS)
 modules_affile_libaffile_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
