@@ -331,7 +331,7 @@ static struct
 };
 
 void
-usage(const gchar *bin_name)
+print_usage(const gchar *bin_name)
 {
   gint mode;
 
@@ -340,7 +340,12 @@ usage(const gchar *bin_name)
     {
       fprintf(stderr, "    %-12s %s\n", modes[mode].mode, modes[mode].description);
     }
-  exit(1);
+}
+
+gboolean
+_is_help(gchar *cmd)
+{
+  return g_str_equal(cmd, "--help");
 }
 
 int
@@ -356,10 +361,17 @@ main(int argc, char *argv[])
 
   control_name = get_installation_path_for(PATH_CONTROL_SOCKET);
 
+  if (_is_help(argv[1]))
+    {
+      print_usage(argv[0]);
+      exit(0);
+    }
+
   mode_string = get_mode(&argc, &argv);
   if (!mode_string)
     {
-      usage(argv[0]);
+      print_usage(argv[0]);
+      exit(1);
     }
 
   ctx = NULL;
@@ -379,7 +391,8 @@ main(int argc, char *argv[])
   if (!ctx)
     {
       fprintf(stderr, "Unknown command\n");
-      usage(argv[0]);
+      print_usage(argv[0]);
+      exit(1);
     }
 
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
