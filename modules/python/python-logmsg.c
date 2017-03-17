@@ -61,8 +61,15 @@ _py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
   gchar *name = PyBytes_AsString(key);
   NVHandle handle = log_msg_get_value_handle(name);
   PyObject *value_as_strobj = PyObject_Str(value);
-  log_msg_set_value(py_msg->msg, handle, PyBytes_AsString(value_as_strobj), -1);
-  Py_DECREF(value_as_strobj);
+  if (value_as_strobj)
+    {
+      log_msg_set_value(py_msg->msg, handle, PyBytes_AsString(value_as_strobj), -1);
+      Py_DECREF(value_as_strobj);
+    }
+  else
+    {
+      msg_warning("Cannot set value in logmsg", evt_tag_str("name", name));
+    }
 
   return 0;
 }
