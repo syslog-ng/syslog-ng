@@ -45,9 +45,10 @@ _deinit(void)
 static gboolean
 _parse_config(const gchar *config)
 {
-  static gchar raw_config[2048];
-  snprintf(raw_config, 2048, "source s_test { wildcard-file(%s); }; log { source(s_test); };", config);
-  return parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL);
+  gchar *raw_config = g_strdup_printf("source s_test { wildcard-file(%s); }; log { source(s_test); };", config);
+  gboolean result = parse_config(raw_config, LL_CONTEXT_ROOT, NULL, NULL);
+  g_free(raw_config);
+  return result;
 }
 
 static WildcardSourceDriver *
