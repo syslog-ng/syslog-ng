@@ -86,10 +86,6 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
         {
           _create_file_reader (self, event->name, event->full_path);
         }
-      else if (!log_pipe_init (&reader->super))
-        {
-          msg_error("Failed to initialize file reader", evt_tag_str ("filename", event->full_path));
-        }
     }
 }
 
@@ -114,7 +110,6 @@ _handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
   if (reader)
     {
       msg_error("Monitored file is deleted", evt_tag_str ("filename", event->full_path));
-      log_pipe_deinit (&reader->super);
     }
   else if (g_hash_table_remove(self->directory_monitors, event->full_path))
     {
