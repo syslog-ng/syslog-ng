@@ -40,8 +40,7 @@ build_filename(const gchar *basedir, const gchar *path)
 
   if (basedir)
     {
-      result = (gchar *)g_malloc(strlen(basedir) + strlen(path) + 2);
-      sprintf(result, "%s/%s", basedir, path);
+      result = g_build_path(G_DIR_SEPARATOR_S, basedir, path, NULL);
     }
   else
     {
@@ -51,17 +50,42 @@ build_filename(const gchar *basedir, const gchar *path)
   return result;
 }
 
+#define PATH_MAX_GUESS 1024
+
 static inline long
 get_path_max()
 {
-  long path_max;
+  static long path_max = 0;
+  if (path_max == 0)
+    {
 #ifdef PATH_MAX
-  path_max = PATH_MAX;
+      path_max = PATH_MAX;
 #else
-  path_max = pathconf(path, _PC_PATH_MAX);
-  if (path_max <= 0)
-    path_max = 4096;
+      {
+        /* This code based on example from the Advanced Programming in the UNIX environment
+         * on how to determine the max path length
+         */
+        static long posix_version = 0;
+        static long xsi_version = 0;
+        if (posix_version == 0)
+          posix_version = sysconf(_SC_VERSION);
+
+        if (xsi_version == 0)
+          xsi_version = sysconf(_SC_XOPEN_VERSION);
+
+        if ((path_max = pathconf("/", _PC_PATH_MAX)) < 0)
+          path_max = PATH_MAX_GUESS;
+        else
+          path_max++;    /* add one since it's relative to root */
+
+        /*
+         * Before POSIX.1-2001, we aren't guaranteed that PATH_MAX includes
+         * the terminating null byte.  Same goes for XPG3.
+         */
+        if ((posix_version < 200112L) && (xsi_version < 4))
+          pathmax++;
 #endif
+    }
   return path_max;
 }
 
@@ -131,18 +155,18 @@ directory_monitor_stop(DirectoryMonitor *self)
 static void
 _collect_all_files (DirectoryMonitor *self, GDir *directory)
 {
-  const gchar *filename = g_dir_read_name (directory);
+  const gchar *filename = g_dir_read_name(directory);
   while (filename)
     {
       DirectoryMonitorEvent event =
       { .name = filename };
-      gchar *filename_real_path = resolve_to_absolute_path (filename, self->real_path);
-      event.full_path = build_filename (self->real_path, filename);
-      event.event_type = g_file_test (filename_real_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
-      self->callback (&event, self->callback_data);
-      g_free (filename_real_path);
-      g_free (event.full_path);
-      filename = g_dir_read_name (directory);
+      gchar *filename_real_path = resolve_to_absolute_path(filename, self->real_path);
+      event.full_path = build_filename(self->real_path, filename);
+      event.event_type = g_file_test(filename_real_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
+      self->callback(&event, self->callback_data);
+      g_free(filename_real_path);
+      g_free(event.full_path);
+      filename = g_dir_read_name(directory);
     }
 }
 

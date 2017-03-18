@@ -49,7 +49,7 @@ Test(directory_monitor, read_content_of_directory)
     {
       GError *error = NULL;
       file_list[i] = g_strdup_printf("file_%d.txt", i);
-      file_list_full_path[i] = g_strdup_printf("%s" G_DIR_SEPARATOR_S "%s", tmpdir, file_list[i]);
+      file_list_full_path[i] = g_build_filename(tmpdir, file_list[i], NULL);;
       gboolean res = g_file_set_contents(file_list_full_path[i], file_list[i], strlen(file_list[i]), &error);
       cr_assert(res != FALSE, "Error: %s", error ? error->message : "OK");
     }
@@ -79,4 +79,20 @@ Test(directory_monitor, non_existing_directory)
   directory_monitor_start(monitor);
   cr_assert_null(found_files);
   directory_monitor_free(monitor);
+}
+
+TestSuite(directory_monitor_tools, .init = app_startup, .fini = app_shutdown);
+
+Test(directory_monitor_tools, build_filename)
+{
+  gchar *built_path = build_filename(NULL, "tmp");
+  cr_assert_str_eq("tmp", built_path);
+  g_free(built_path);
+
+  built_path = build_filename("tmp", "test_dir");
+  cr_assert_str_eq("tmp/test_dir", built_path);
+  g_free(built_path);
+
+  built_path = build_filename("tmp", NULL);
+  cr_assert_eq(NULL, built_path);
 }
