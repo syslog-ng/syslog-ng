@@ -40,7 +40,7 @@ static CfgLexerKeyword affile_keywords[] =
   { "filename_pattern",   KW_FILENAME_PATTERN },
   { "recursive",          KW_RECURSIVE },
   { "max_files",          KW_MAX_FILES },
-  { "force_directory_polling", KW_FORCE_DIRECTORY_POLLING },
+  { "monitor_method",     KW_MONITOR_METHOD },
 
   { "fsync",              KW_FSYNC },
   { "remove_if_older",    KW_OVERWRITE_IF_OLDER, KWS_OBSOLETE, "overwrite_if_older" },

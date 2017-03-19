@@ -21,6 +21,9 @@
  */
 
 #include "directory-monitor.h"
+#include "directory-monitor-factory.h"
+#include "directory-monitor-inotify.h"
+#include "directory-monitor-poll.h"
 #include "apphook.h"
 #include <criterion/criterion.h>
 #include <glib/gstdio.h>
@@ -95,4 +98,32 @@ Test(directory_monitor_tools, build_filename)
 
   built_path = build_filename("tmp", NULL);
   cr_assert_eq(NULL, built_path);
+}
+
+TestSuite(directory_monitor_factory, .init = app_startup, .fini = app_shutdown);
+
+Test(directory_monitor_factory, check_monitor_method)
+{
+#if SYSLOG_NG_HAVE_INOTIFY
+  cr_assert_eq(MM_INOTIFY, directory_monitor_factory_get_monitor_method("inotify"));
+#endif
+  cr_assert_eq(MM_AUTO, directory_monitor_factory_get_monitor_method("auto"));
+  cr_assert_eq(MM_POLL, directory_monitor_factory_get_monitor_method("poll"));
+  cr_assert_eq(MM_UNKNOWN, directory_monitor_factory_get_monitor_method("something else"));
+}
+
+Test(directory_monitor_factory, check_constructor)
+{
+  DirectoryMonitorOptions options = {.dir = "/tmp", .follow_freq = 1, .method = MM_AUTO};
+#if SYSLOG_NG_HAVE_INOTIFY
+  cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_inotify_new);
+  options.method = MM_INOTIFY;
+  cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_inotify_new);
+#else
+  cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_poll_new);
+#endif
+  options.method = MM_POLL;
+  cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_poll_new);
+  options.method = MM_UNKNOWN;
+  cr_assert_eq(directory_monitor_factory_get_constructor(&options), NULL);
 }

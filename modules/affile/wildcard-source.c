@@ -254,11 +254,18 @@ wildcard_sd_set_recursive(LogDriver *s, gboolean recursive)
   self->recursive = recursive;
 }
 
-void
-wildcard_sd_set_force_directory_polling(LogDriver *s, gboolean force_directory_polling)
+gboolean
+wildcard_sd_set_monitor_method(LogDriver *s, const gchar *method)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
-  self->force_dir_polling = force_directory_polling;
+  MonitorMethod new_method = directory_monitor_factory_get_monitor_method(method);
+  if (new_method == MM_UNKNOWN)
+    {
+      msg_error("Invalid monitor-method", evt_tag_str("monitor-method", method));
+      return FALSE;
+    }
+  self->monitor_method = new_method;
+  return TRUE;
 }
 
 void
@@ -305,6 +312,7 @@ wildcard_sd_new(GlobalConfig *cfg)
 
   log_reader_options_defaults(&self->file_reader_options.reader_options);
   file_perm_options_defaults(&self->file_reader_options.file_perm_options);
+  self->monitor_method = MM_AUTO;
 
   self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
   self->file_reader_options.file_open_options.is_pipe = FALSE;

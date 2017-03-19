@@ -26,6 +26,7 @@
 #include "driver.h"
 #include "file-reader.h"
 #include "directory-monitor.h"
+#include "directory-monitor-factory.h"
 
 #define MINIMUM_WINDOW_SIZE 100
 #define DEFAULT_MAX_FILES 100
@@ -34,11 +35,11 @@ typedef struct _WildcardSourceDriver {
   LogSrcDriver super;
   gchar *base_dir;
   gchar *filename_pattern;
-  gboolean recursive;
-  gboolean force_dir_polling;
+  MonitorMethod monitor_method;
   guint32 max_files;
 
   gboolean window_size_initialized;
+  gboolean recursive;
 
   FileReaderOptions file_reader_options;
 
@@ -52,7 +53,7 @@ LogDriver *wildcard_sd_new(GlobalConfig *cfg);
 void wildcard_sd_set_base_dir(LogDriver *s, const gchar *base_dir);
 void wildcard_sd_set_filename_pattern(LogDriver *s, const gchar *filename_pattern);
 void wildcard_sd_set_recursive(LogDriver *s, gboolean recursive);
-void wildcard_sd_set_force_directory_polling(LogDriver *s, gboolean force_directory_polling);
+gboolean wildcard_sd_set_monitor_method(LogDriver *s, const gchar *method);
 void wildcard_sd_set_max_files(LogDriver *s, guint32 max_files);
 
 #endif /* MODULES_AFFILE_WILDCARD_SOURCE_H_ */
