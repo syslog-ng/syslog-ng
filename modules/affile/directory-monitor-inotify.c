@@ -26,6 +26,13 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+typedef struct _DirectoryMonitorInotify
+{
+  DirectoryMonitor super;
+  struct iv_inotify inotify;
+  struct iv_inotify_watch watcher;
+} DirectoryMonitorInotify;
+
 
 static DirectoryMonitorEventType
 _get_event_type(struct inotify_event *event, gchar *filename)
