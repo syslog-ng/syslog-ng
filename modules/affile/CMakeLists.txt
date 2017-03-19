@@ -11,6 +11,7 @@ set(AFFILE_HEADERS
     "directory-monitor.h"
     "directory-monitor-inotify.h"
     "directory-monitor-factory.h"
+    "collection-comporator.h"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.h"
 )
 
@@ -27,6 +28,7 @@ set(AFFILE_SOURCES
     "directory-monitor.c"
     "directory-monitor-inotify.c"
     "directory-monitor-factory.c"
+    "collection-comporator.c"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c"
 )
 

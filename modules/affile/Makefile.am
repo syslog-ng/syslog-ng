@@ -13,6 +13,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/directory-monitor.c			\
 	modules/affile/directory-monitor-factory.h			\
 	modules/affile/directory-monitor-factory.c			\
+	modules/affile/collection-comporator.h		\
+	modules/affile/collection-comporator.c		\
 	modules/affile/affile-common.c				\
 	modules/affile/affile-common.h				\
 	modules/affile/affile-source.c				\
