@@ -94,7 +94,7 @@ _handle_directory_created(WildcardSourceDriver *self, const DirectoryMonitorEven
 {
   if (self->recursive)
     {
-      msg_error("Directory created", evt_tag_str ("name", event->full_path));
+      msg_debug("Directory created", evt_tag_str ("name", event->full_path));
       DirectoryMonitor *monitor = g_hash_table_lookup(self->directory_monitors, event->full_path);
       if (!monitor)
         {
@@ -109,11 +109,11 @@ _handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
   FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
   if (reader)
     {
-      msg_error("Monitored file is deleted", evt_tag_str ("filename", event->full_path));
+      msg_debug("Monitored file is deleted", evt_tag_str ("filename", event->full_path));
     }
   else if (g_hash_table_remove(self->directory_monitors, event->full_path))
     {
-      msg_error("Monitored directory is deleted", evt_tag_str ("directory", event->full_path));
+      msg_debug("Monitored directory is deleted", evt_tag_str ("directory", event->full_path));
     }
 }
 
