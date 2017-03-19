@@ -166,11 +166,11 @@ _init_reader_options(WildcardSourceDriver *self, GlobalConfig *cfg)
 static gboolean
 _init_filename_pattern(WildcardSourceDriver *self)
 {
-  self->compiled_pattern = g_pattern_spec_new(self->filename_pattern->str);
+  self->compiled_pattern = g_pattern_spec_new(self->filename_pattern);
   if (!self->compiled_pattern)
     {
       msg_error("Invalid filename-pattern",
-                evt_tag_str("filename-pattern", self->filename_pattern->str));
+                evt_tag_str("filename-pattern", self->filename_pattern));
       return FALSE;
     }
   return TRUE;
@@ -211,7 +211,7 @@ _init(LogPipe *s)
     }
 
   _init_reader_options(self, cfg);
-  _add_directory_monitor(self, self->base_dir->str);
+  _add_directory_monitor(self, self->base_dir);
   return TRUE;
 }
 
@@ -235,28 +235,16 @@ void
 wildcard_sd_set_base_dir(LogDriver *s, const gchar *base_dir)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
-  if (!self->base_dir)
-    {
-      self->base_dir = g_string_new(base_dir);
-    }
-  else
-    {
-      g_string_assign(self->base_dir, base_dir);
-    }
+  g_free(self->base_dir);
+  self->base_dir = g_strdup(base_dir);
 }
 
 void
 wildcard_sd_set_filename_pattern(LogDriver *s, const gchar *filename_pattern)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
-  if (!self->filename_pattern)
-    {
-      self->filename_pattern = g_string_new(filename_pattern);
-    }
-  else
-    {
-      g_string_assign(self->filename_pattern, filename_pattern);
-    }
+  g_free(self->filename_pattern);
+  self->filename_pattern = g_strdup(filename_pattern);
 }
 
 void
@@ -284,8 +272,8 @@ static void
 _free(LogPipe *s)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
-  g_string_free(self->base_dir, TRUE);
-  g_string_free(self->filename_pattern, TRUE);
+  g_free(self->base_dir);
+  g_free(self->filename_pattern);
   g_hash_table_unref(self->file_readers);
   g_hash_table_unref(self->directory_monitors);
   file_reader_options_destroy(&self->file_reader_options);

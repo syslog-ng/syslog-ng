@@ -32,8 +32,8 @@
 
 typedef struct _WildcardSourceDriver {
   LogSrcDriver super;
-  GString *base_dir;
-  GString *filename_pattern;
+  gchar *base_dir;
+  gchar *filename_pattern;
   gboolean recursive;
   gboolean force_dir_polling;
   guint32 max_files;
