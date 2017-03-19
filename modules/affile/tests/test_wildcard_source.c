@@ -72,12 +72,12 @@ Test(wildcard_source, initial_test)
                                  "filename-pattern(*.log)"
                                  "recursive(yes)"
                                  "max-files(100)"
-                                 "force-directory-polling(no)");
-  cr_assert_str_eq(driver->base_dir->str, "/test_non_existent_dir");
-  cr_assert_str_eq(driver->filename_pattern->str, "*.log");
+                                 "monitor-method(poll)");
+  cr_assert_str_eq(driver->base_dir, "/test_non_existent_dir");
+  cr_assert_str_eq(driver->filename_pattern, "*.log");
   cr_assert_eq(driver->max_files, 100);
   cr_assert_eq(driver->recursive, TRUE);
-  cr_assert_eq(driver->force_dir_polling, FALSE);
+  cr_assert_eq(driver->monitor_method, MM_POLL);
 }
 
 Test(wildcard_source, test_option_inheritance)
@@ -86,7 +86,6 @@ Test(wildcard_source, test_option_inheritance)
                                  "filename-pattern(*.log)"
                                  "recursive(yes)"
                                  "max-files(100)"
-                                 "force-directory-polling(no)"
                                  "follow-freq(10)"
                                  "follow_freq(10.0)"
                                  "pad_size(5)"
@@ -106,8 +105,8 @@ Test(wildcard_source, test_option_duplication)
                                  "filename-pattern(*.txt)"
                                  "base-dir(/test_non_existent_dir)"
                                  "filename-pattern(*.log)");
-  cr_assert_str_eq(driver->base_dir->str, "/test_non_existent_dir");
-  cr_assert_str_eq(driver->filename_pattern->str, "*.log");
+  cr_assert_str_eq(driver->base_dir, "/test_non_existent_dir");
+  cr_assert_str_eq(driver->filename_pattern, "*.log");
 }
 
 Test(wildcard_source, test_filename_pattern_required_options)
@@ -127,6 +126,15 @@ Test(wildcard_source, test_base_dir_required_options)
   cr_assert(!cfg_init(configuration), "Config initialization should be failed");
   stop_grabbing_messages();
   cr_assert(assert_grabbed_messages_contain_non_fatal("base-dir option is required", NULL));
+  reset_grabbed_messages();
+}
+
+Test(wildcard_source, test_invalid_monitor_method)
+{
+  start_grabbing_messages();
+  cr_assert(!_parse_config("monitor-method(\"something else\""));
+  stop_grabbing_messages();
+  cr_assert(assert_grabbed_messages_contain_non_fatal("Invalid monitor-method", NULL));
   reset_grabbed_messages();
 }
 

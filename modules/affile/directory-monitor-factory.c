@@ -21,19 +21,64 @@
  */
 
 #include "directory-monitor-factory.h"
+#include "directory-monitor-poll.h"
 
 #if SYSLOG_NG_HAVE_INOTIFY
 #include "directory-monitor-inotify.h"
 #endif
 
+#include <string.h>
+
+MonitorMethod
+directory_monitor_factory_get_monitor_method(const gchar *method)
+{
+  if (strcmp(method, "auto") == 0)
+    {
+      return MM_AUTO;
+    }
+  else if (strcmp(method, "poll") == 0)
+    {
+      return MM_POLL;
+    }
+#if SYSLOG_NG_HAVE_INOTIFY
+  else if (strcmp(method, "inotify") == 0)
+    {
+      return MM_INOTIFY;
+    }
+#endif
+  return MM_UNKNOWN;
+}
+
+DirectoryMonitorConstructor
+directory_monitor_factory_get_constructor(DirectoryMonitorOptions *options)
+{
+  DirectoryMonitorConstructor constructor = NULL;
+#if SYSLOG_NG_HAVE_INOTIFY
+  if (options->method == MM_AUTO || options->method == MM_INOTIFY)
+    {
+      constructor = directory_monitor_inotify_new;
+    }
+  else if (options->method == MM_POLL)
+    {
+      constructor = directory_monitor_poll_new;
+    }
+#else
+  if (options->method == MM_AUTO || options->method == MM_POLL)
+    {
+      constructor = directory_monitor_poll_new;
+    }
+#endif
+  return constructor;
+}
+
 DirectoryMonitor *
 create_directory_monitor(DirectoryMonitorOptions *options)
 {
   DirectoryMonitor *monitor = NULL;
-#if SYSLOG_NG_HAVE_INOTIFY
-  monitor = directory_monitor_inotify_new(options->dir, options->follow_freq);
-#else
-  monitor = directory_monitor_new(options->dir, options->follow_freq);
-#endif
+  DirectoryMonitorConstructor constructor = directory_monitor_factory_get_constructor(options);
+  if (constructor)
+    {
+      monitor = constructor(options->dir, options->follow_freq);
+    }
   return monitor;
 }
