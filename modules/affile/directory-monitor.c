@@ -21,6 +21,7 @@
  */
 
 #include "directory-monitor.h"
+#include "timeutils.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -173,12 +174,12 @@ _collect_all_files (DirectoryMonitor *self, GDir *directory)
 static void
 _arm_recheck_timer(DirectoryMonitor *self)
 {
-  iv_validate_now ();
+  iv_validate_now();
   self->check_timer.cookie = self;
   self->check_timer.handler = (GDestroyNotify) directory_monitor_start;
   self->check_timer.expires = iv_now;
-  self->check_timer.expires.tv_sec++;
-  iv_timer_register (&self->check_timer);
+  timespec_add_msec(&self->check_timer.expires, self->recheck_time);
+  iv_timer_register(&self->check_timer);
 }
 
 static void
@@ -209,7 +210,7 @@ directory_monitor_start(DirectoryMonitor *self)
       g_error_free(error);
       return;
     }
-  _collect_all_files (self, directory);
+  _collect_all_files(self, directory);
   g_dir_close(directory);
   if (self->start_watches)
     {
