@@ -25,12 +25,6 @@
 #include "directory-monitor.h"
 #include <iv_inotify.h>
 
-typedef struct _DirectoryMonitorInotify {
-  DirectoryMonitor super;
-  struct iv_inotify inotify;
-  struct iv_inotify_watch watcher;
-} DirectoryMonitorInotify;
-
 DirectoryMonitor *directory_monitor_inotify_new(const gchar *dir, guint recheck_time);
 
 #endif /* MODULES_AFFILE_DIRECTORY_MONITOR_INOTIFY_H_ */
