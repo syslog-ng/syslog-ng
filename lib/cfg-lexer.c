@@ -818,10 +818,9 @@ relex:
           *yylloc = self->include_stack[self->include_depth].lloc;
           tok = token->type;
           if (token->type == LL_TOKEN)
-            {
-              tok = token->token;
-              injected = TRUE;
-            }
+            tok = token->token;
+
+          injected = TRUE;
 
           goto exit;
         }
