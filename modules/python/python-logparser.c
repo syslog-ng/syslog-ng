@@ -98,13 +98,16 @@ _py_invoke_parser_process(PythonParser *self, PyObject *msg)
 static gboolean
 _py_invoke_init(PythonParser *self)
 {
+  if (_py_get_attr_or_null(self->py.instance, "init") == NULL)
+    return TRUE;
   return _pp_py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init");
 }
 
 static void
 _py_invoke_deinit(PythonParser *self)
 {
-  _pp_py_invoke_void_method_by_name(self, self->py.instance, "deinit");
+  if (_py_get_attr_or_null(self->py.instance, "deinit") != NULL)
+    _pp_py_invoke_void_method_by_name(self, self->py.instance, "deinit");
 }
 
 static gboolean
