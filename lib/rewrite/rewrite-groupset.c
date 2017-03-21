@@ -103,6 +103,7 @@ log_rewrite_groupset_clone(LogPipe *s)
       log_pipe_get_config(&self->super.super) );
   value_pairs_unref(cloned->query);
   cloned->query = value_pairs_ref(self->query);
+  cloned->vp_func = self->vp_func;
 
   if (self->super.condition)
     cloned->super.condition = filter_expr_ref(self->super.condition);
