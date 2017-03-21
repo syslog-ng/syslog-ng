@@ -361,7 +361,7 @@ main(int argc, char *argv[])
 
   control_name = get_installation_path_for(PATH_CONTROL_SOCKET);
 
-  if (_is_help(argv[1]))
+  if (argc > 1 && _is_help(argv[1]))
     {
       print_usage(argv[0]);
       exit(0);
