@@ -162,11 +162,13 @@ slng_reload(int argc, char *argv[], const gchar *mode)
 
 const static gint QUERY_COMMAND = 0;
 static gboolean query_is_get_sum = FALSE;
+static gboolean query_reset = FALSE;
 static gchar **raw_query_params = NULL;
 
 static GOptionEntry query_options[] =
 {
   { "sum", 0, 0, G_OPTION_ARG_NONE, &query_is_get_sum, "aggregate sum", NULL },
+  { "reset", 0, 0, G_OPTION_ARG_NONE, &query_reset, "reset counters after query", NULL },
   { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &raw_query_params, NULL, NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
 };
@@ -174,28 +176,54 @@ static GOptionEntry query_options[] =
 enum
 {
   QUERY_CMD_LIST,
+  QUERY_CMD_LIST_RESET,
   QUERY_CMD_GET,
-  QUERY_CMD_GET_SUM
+  QUERY_CMD_GET_RESET,
+  QUERY_CMD_GET_SUM,
+  QUERY_CMD_GET_SUM_RESET
 };
 
-const static gchar *QUERY_COMMANDS[] = {"LIST", "GET", "GET_SUM"};
+const static gchar *QUERY_COMMANDS[] = {"LIST", "LIST_RESET", "GET", "GET_RESET", "GET_SUM", "GET_SUM_RESET"};
+
+
+static gint
+_get_query_list_cmd()
+{
+  if (query_is_get_sum)
+    return -1;
+
+  if (query_reset)
+    return QUERY_CMD_LIST_RESET;
+
+  return QUERY_CMD_LIST;
+}
+
+static gint
+_get_query_get_cmd()
+{
+  if (query_is_get_sum)
+    {
+      if (query_reset)
+        return QUERY_CMD_GET_SUM_RESET;
+
+      return QUERY_CMD_GET_SUM;
+    }
+
+  if (query_reset)
+    return QUERY_CMD_GET_RESET;
+
+  return QUERY_CMD_GET;
+
+}
 
 static gint
 _get_query_cmd(gchar *cmd)
 {
   if (g_str_equal(cmd, "list"))
-    {
-      if (query_is_get_sum)
-        return -1;
-      return QUERY_CMD_LIST;
-    }
+    return _get_query_list_cmd();
 
   if (g_str_equal(cmd, "get"))
-    {
-      if (query_is_get_sum)
-        return QUERY_CMD_GET_SUM;
-      return QUERY_CMD_GET;
-    }
+    return _get_query_get_cmd();
 
   return -1;
 }
