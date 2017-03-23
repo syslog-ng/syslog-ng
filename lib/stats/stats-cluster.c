@@ -153,53 +153,6 @@ stats_cluster_get_type_name(gint type)
 }
 
 static const gchar *
-_get_module_name(gint source)
-{
-  static const gchar *module_names[SCS_MAX] =
-  {
-    "none",
-    "file",
-    "pipe",
-    "tcp",
-    "udp",
-    "tcp6",
-    "udp6",
-    "unix-stream",
-    "unix-dgram",
-    "syslog",
-    "network",
-    "internal",
-    "logstore",
-    "program",
-    "sql",
-    "sun-streams",
-    "usertty",
-    "group",
-    "center",
-    "host",
-    "global",
-    "mongodb",
-    "class",
-    "rule_id",
-    "tag",
-    "severity",
-    "facility",
-    "sender",
-    "smtp",
-    "amqp",
-    "stomp",
-    "redis",
-    "snmp",
-    "riemann",
-    "journald",
-    "java",
-    "http"
-  };
-  return module_names[source & SCS_SOURCE_MASK];
-}
-
-
-static const gchar *
 _get_component_prefix(gint source)
 {
   return (source & SCS_SOURCE ? "src." : (source & SCS_DESTINATION ? "dst." : ""));
