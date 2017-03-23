@@ -33,6 +33,37 @@ typedef struct _PyLogMessage
 
 static PyTypeObject py_log_message_type;
 
+static int
+_str_cmp(const void *s1, const void *s2)
+{
+  return strcmp(*(const gchar **)s1, *(const gchar **)s2);
+}
+
+static void
+_populate_blacklisted_keys(const gchar ***blacklist, size_t *n)
+{
+  static const gchar *keys[] = {
+    "S_STAMP", "_", "C_STAMP"
+  };
+  static gboolean keys_sorted = FALSE;
+  if (!keys_sorted)
+    {
+      keys_sorted = TRUE;
+      qsort(&keys[0], sizeof(keys)/sizeof(keys[0]), sizeof(gchar *), _str_cmp);
+    }
+  *blacklist = keys;
+  *n = sizeof(keys)/sizeof(keys[0]);
+}
+
+static gboolean
+_is_key_blacklisted(const gchar *key)
+{
+  const gchar **blacklist = NULL;
+  size_t n = 0;
+  _populate_blacklisted_keys(&blacklist, &n);
+  return (bsearch(&key, blacklist, n, sizeof(gchar *), _str_cmp) != NULL);
+}
+
 static PyObject *
 _py_log_message_getattr(PyObject *o, PyObject *key)
 {
@@ -40,6 +71,11 @@ _py_log_message_getattr(PyObject *o, PyObject *key)
     return NULL;
 
   gchar *name = PyBytes_AsString(key);
+  if (_is_key_blacklisted(name))
+    {
+      msg_error("Blacklisted attribute requested", evt_tag_str("key", name));
+      return NULL;
+    }
   NVHandle handle = log_msg_get_value_handle(name);
   PyLogMessage *py_msg = (PyLogMessage *)o;
   const gchar *value = log_msg_get_value(py_msg->msg, handle, NULL);
@@ -123,6 +159,18 @@ _is_key_assigned_to_match_handle(const gchar *s)
   return FALSE;
 }
 
+static gboolean
+_is_macro_name_visible_to_user(LogMessage *logmsg, const gchar *name)
+{
+  gssize value_len;
+
+  return (!_is_key_blacklisted(name) && 
+      (!_is_key_assigned_to_match_handle(name) ||
+      (_is_key_assigned_to_match_handle(name) &&
+       log_msg_get_value_by_name(logmsg, name, &value_len) != NULL
+       && value_len > 0)));
+}
+
 static void
 _collect_macro_names(gpointer key, gpointer value, gpointer user_data)
 {
@@ -130,12 +178,8 @@ _collect_macro_names(gpointer key, gpointer value, gpointer user_data)
   LogMessage *logmsg = (LogMessage *)args[0];
   PyObject *list = (PyObject *)args[1];
   const gchar *name = (const gchar *)key;
-  gssize value_len;
 
-  if (!_is_key_assigned_to_match_handle(name) ||
-      (_is_key_assigned_to_match_handle(name) &&
-       log_msg_get_value_by_name(logmsg, name, &value_len) != NULL
-       && value_len > 0))
+  if (_is_macro_name_visible_to_user(logmsg, name))
     {
       PyList_Append(list, PyBytes_FromString(name));
     }
