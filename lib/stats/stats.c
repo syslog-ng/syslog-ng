@@ -239,12 +239,14 @@ stats_init(void)
 {
   stats_registry_init();
   stats_register_control_commands();
+  stats_components_init();
 }
 
 void
 stats_destroy(void)
 {
   stats_registry_deinit();
+  stats_components_deinit();
 }
 
 void

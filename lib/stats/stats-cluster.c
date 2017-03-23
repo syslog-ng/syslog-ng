@@ -25,6 +25,104 @@
 
 #include <string.h>
 
+typedef struct _StatsComponentsElement
+{
+  GString *name;
+  gint index;
+} StatsComponentsElement;
+
+static GHashTable *stats_components = NULL;
+static StatsComponentsElement *mapping_from_component_number_to_element[SCS_SOURCE_MASK];
+
+static guint
+_stats_components_element_hash_cb(gconstpointer element)
+{
+  if (element)
+    return g_str_hash(((StatsComponentsElement *)element)->name->str);
+
+  return 0;
+}
+
+static gboolean
+_stats_components_names_are_equal_cb(gconstpointer a, gconstpointer b)
+{
+  return g_strcmp0(((StatsComponentsElement *)a)->name->str, ((StatsComponentsElement *)b)->name->str) == 0;
+}
+
+static void
+_stats_components_destroy_element_cb(gpointer e)
+{
+  StatsComponentsElement *element = (StatsComponentsElement *)e;
+  if (element)
+    {
+      g_string_free(element->name, TRUE);
+      g_free(element);
+    }
+}
+void
+stats_components_init()
+{
+  gint i;
+
+  if (!stats_components)
+    stats_components = g_hash_table_new_full(_stats_components_element_hash_cb,
+                                             _stats_components_names_are_equal_cb,
+                                             NULL,
+                                             _stats_components_destroy_element_cb);
+
+  for (i = 0; i < SCS_SOURCE_MASK; i++)
+    {
+      mapping_from_component_number_to_element[i] = NULL;
+    }
+}
+
+void
+stats_components_deinit()
+{
+  gint i;
+  g_hash_table_destroy(stats_components);
+  stats_components = NULL;
+
+  for (i = 0; i < SCS_SOURCE_MASK; i++)
+    mapping_from_component_number_to_element[i] = NULL;
+}
+
+int
+stats_components_get_component_index(const gchar *name)
+{
+  GString *name_str;
+  StatsComponentsElement *new_element;
+  StatsComponentsElement *searched_element;
+  int comp_index;
+
+
+  name_str = g_string_new(name);
+  new_element = g_new0(StatsComponentsElement, 1);
+  new_element->name = name_str;
+  searched_element = g_hash_table_lookup(stats_components, new_element);
+
+  if (searched_element)
+    {
+      comp_index = ((StatsComponentsElement *)searched_element)->index;
+      g_string_free(name_str, TRUE);
+      g_free(new_element);
+    }
+  else
+    {
+      comp_index = g_hash_table_size(stats_components);
+      g_hash_table_add(stats_components, new_element);
+      new_element->index = comp_index;
+
+      if (mapping_from_component_number_to_element[comp_index])
+        {
+          g_assert_not_reached();
+        }
+      mapping_from_component_number_to_element[comp_index] = new_element;
+    }
+
+  return comp_index;
+}
+
 void
 stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data)
 {
@@ -112,7 +210,9 @@ _get_component_prefix(gint source)
 const gchar *
 stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 {
-  if ((self->component & SCS_SOURCE_MASK) == SCS_GROUP)
+  StatsComponentsElement *element;
+
+  if ((self->component & SCS_SOURCE_MASK) == stats_components_get_component_index("group"))
     {
       if (self->component & SCS_SOURCE)
         return "source";
@@ -123,9 +223,13 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
     }
   else
     {
+      element = mapping_from_component_number_to_element[self->component & SCS_SOURCE_MASK];
+      if (!element)
+        g_assert_not_reached();
+
       g_snprintf(buf, buf_len, "%s%s",
                  _get_component_prefix(self->component),
-                 _get_module_name(self->component));
+                 ((StatsComponentsElement *)element)->name->str);
       return buf;
     }
 }

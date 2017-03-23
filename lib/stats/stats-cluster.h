@@ -107,6 +107,12 @@ typedef struct _StatsCluster
 
 typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data);
 
+void stats_components_init();
+
+void stats_components_deinit();
+
+int stats_components_get_component_index(const gchar* name);
+
 const gchar *stats_cluster_get_type_name(gint type);
 gint stats_cluster_get_type_by_name(const gchar *name);
 const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len);
