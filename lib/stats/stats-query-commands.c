@@ -28,8 +28,11 @@
 typedef enum _QueryCommand
 {
   QUERY_GET = 0,
+  QUERY_GET_RESET,
   QUERY_GET_SUM,
+  QUERY_GET_SUM_RESET,
   QUERY_LIST,
+  QUERY_LIST_RESET,
   QUERY_CMD_MAX
 } QueryCommand;
 
@@ -75,9 +78,21 @@ _query_get(const gchar *filter_expr, GString *result)
 }
 
 static gboolean
+_query_get_and_reset(const gchar *filter_expr, GString *result)
+{
+  return stats_query_get_and_reset_counters(filter_expr, _ctl_format_get, (gpointer)result);
+}
+
+static gboolean
 _query_list(const gchar *filter_expr, GString *result)
 {
   return stats_query_list(filter_expr, _ctl_format_name_without_value, (gpointer)result);
+}
+
+static gboolean
+_query_list_and_reset(const gchar *filter_expr, GString *result)
+{
+  return stats_query_list_and_reset_counters(filter_expr, _ctl_format_name_without_value, (gpointer)result);
 }
 
 static gboolean
@@ -86,17 +101,32 @@ _query_get_sum(const gchar *filter_expr, GString *result)
   return stats_query_get_sum(filter_expr, _ctl_format_get_sum, (gpointer)result);
 }
 
+static gboolean
+_query_get_sum_and_reset(const gchar *filter_expr, GString *result)
+{
+  return stats_query_get_sum_and_reset_counters(filter_expr, _ctl_format_get_sum, (gpointer)result);
+}
+
 static QueryCommand
 _command_str_to_id(const gchar *cmd)
 {
   if (g_str_equal(cmd, "GET_SUM"))
     return QUERY_GET_SUM;
 
+  if (g_str_equal(cmd, "GET_SUM_RESET"))
+    return QUERY_GET_SUM_RESET;
+
   if (g_str_equal(cmd, "GET"))
     return QUERY_GET;
 
+  if (g_str_equal(cmd, "GET_RESET"))
+    return QUERY_GET_RESET;
+
   if (g_str_equal(cmd, "LIST"))
     return QUERY_LIST;
+
+  if (g_str_equal(cmd, "LIST_RESET"))
+    return QUERY_LIST_RESET;
 
   msg_error("Unknown query command", evt_tag_str("command", cmd));
 
@@ -106,8 +136,11 @@ _command_str_to_id(const gchar *cmd)
 static query_cmd QUERY_CMDS[] =
 {
   _query_get,
+  _query_get_and_reset,
   _query_get_sum,
-  _query_list
+  _query_get_sum_and_reset,
+  _query_list,
+  _query_list_and_reset
 };
 
 static gboolean
