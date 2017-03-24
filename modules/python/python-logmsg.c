@@ -42,7 +42,8 @@ _str_cmp(const void *s1, const void *s2)
 static void
 _populate_blacklisted_keys(const gchar ***blacklist, size_t *n)
 {
-  static const gchar *keys[] = {
+  static const gchar *keys[] =
+  {
     "S_STAMP", "_", "C_STAMP"
   };
   static gboolean keys_sorted = FALSE;
@@ -164,11 +165,11 @@ _is_macro_name_visible_to_user(LogMessage *logmsg, const gchar *name)
 {
   gssize value_len;
 
-  return (!_is_key_blacklisted(name) && 
-      (!_is_key_assigned_to_match_handle(name) ||
-      (_is_key_assigned_to_match_handle(name) &&
-       log_msg_get_value_by_name(logmsg, name, &value_len) != NULL
-       && value_len > 0)));
+  return (!_is_key_blacklisted(name) &&
+          (!_is_key_assigned_to_match_handle(name) ||
+           (_is_key_assigned_to_match_handle(name) &&
+            log_msg_get_value_by_name(logmsg, name, &value_len) != NULL
+            && value_len > 0)));
 }
 
 static void
