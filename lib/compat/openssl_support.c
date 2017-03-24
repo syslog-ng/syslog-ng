@@ -64,11 +64,20 @@ _ssl_locking_callback(int mode, int type, const char *file, int line)
     }
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000
 static unsigned long
 _ssl_thread_id(void)
 {
   return (unsigned long) get_thread_id();
 }
+
+#else
+static void
+_ssl_thread_id2(CRYPTO_THREADID *id)
+{
+  CRYPTO_THREADID_set_numeric(id, (unsigned long) get_thread_id());
+}
+#endif
 
 void
 openssl_crypto_init_threading(void)
@@ -81,7 +90,11 @@ openssl_crypto_init_threading(void)
     {
       g_static_mutex_init(&ssl_locks[i]);
     }
+#if OPENSSL_VERSION_NUMBER < 0x10000000
   CRYPTO_set_id_callback(_ssl_thread_id);
+#else
+  CRYPTO_THREADID_set_callback(_ssl_thread_id2);
+#endif
   CRYPTO_set_locking_callback(_ssl_locking_callback);
 }
 
