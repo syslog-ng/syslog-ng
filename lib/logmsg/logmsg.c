@@ -304,6 +304,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
           gssize sdata_name_len;
           const gchar *sdata_name;
 
+          sdata_name_len = 0;
           sdata_name = log_msg_get_value_name(self->sdata[i], &sdata_name_len);
           if (sdata_name_len > prefix_and_block_len &&
               strncmp(sdata_name, name, prefix_and_block_len) == 0)
@@ -508,6 +509,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   if (handle == LM_V_NONE)
     return;
 
+  name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
 
   if (value_len < 0)
@@ -569,6 +571,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
 
   g_assert(handle >= LM_V_MAX);
 
+  name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
@@ -856,6 +859,7 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
       guint16 handle_flags;
       gint sd_id_len;
 
+      sdata_name_len = 0;
       sdata_name = log_msg_get_value_name(handle, &sdata_name_len);
       handle_flags = nv_registry_get_handle_flags(logmsg_registry, handle);
       value = log_msg_get_value_if_set(self, handle, &len);
