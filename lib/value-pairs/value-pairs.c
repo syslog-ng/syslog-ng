@@ -184,6 +184,32 @@ vp_pair_conf_free(VPPairConf *vpc)
   g_free(vpc);
 }
 
+static void
+vp_data_free (SBTHGString *s)
+{
+  sb_th_gstring_release (s);
+}
+
+static void
+vp_results_init(VPResults *results, GCompareFunc compare_func)
+{
+  results->result_tree = g_tree_new_full((GCompareDataFunc) compare_func, NULL,
+                                         (GDestroyNotify)g_free,
+                                         (GDestroyNotify)vp_data_free);
+}
+
+static void
+vp_results_deinit(VPResults *results)
+{
+  g_tree_destroy(results->result_tree);
+}
+
+static void
+vp_results_insert(VPResults *results, gchar *name, SBTHGString *sb)
+{
+  g_tree_insert(results->result_tree, name, sb);
+}
+
 static gchar *
 vp_transform_apply (ValuePairs *vp, gchar *key)
 {
@@ -223,7 +249,7 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
                              template_options,
                              time_zone_mode, seq_num, NULL, sb_th_gstring_string(sb));
 
-  g_tree_insert(results->result_tree, vp_transform_apply(vp, vpc->name), sb);
+  vp_results_insert(results, vp_transform_apply(vp, vpc->name), sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -256,7 +282,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 
   g_string_append_len(sb_th_gstring_string(sb), value, value_len);
   sb->type_hint = TYPE_HINT_STRING;
-  g_tree_insert(results->result_tree, vp_transform_apply(vp, name), sb);
+  vp_results_insert(results, vp_transform_apply(vp, name), sb);
 
   return FALSE;
 }
@@ -384,25 +410,6 @@ vp_foreach_helper (const gchar *name, const SBTHGString *hinted_value,
   return !*r;
 }
 
-static void
-vp_data_free (SBTHGString *s)
-{
-  sb_th_gstring_release (s);
-}
-
-static void
-vp_results_init(VPResults *results, GCompareFunc compare_func)
-{
-  results->result_tree = g_tree_new_full((GCompareDataFunc)compare_func, NULL,
-                                         (GDestroyNotify)g_free,
-                                         (GDestroyNotify)vp_data_free);
-}
-
-static void
-vp_results_deinit(VPResults *results)
-{
-  g_tree_destroy(results->result_tree);
-}
 
 gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
