@@ -212,7 +212,7 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 {
   StatsComponentsElement *element;
 
-  if ((self->component & SCS_SOURCE_MASK) == stats_components_get_component_index("group"))
+  if ((self->component & SCS_SOURCE_MASK) == stats_components_get_component_index(SCS_GROUP))
     {
       if (self->component & SCS_SOURCE)
         return "source";

@@ -284,7 +284,7 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
                          s,
                          &self->reader_options,
                          STATS_LEVEL1,
-                         stats_components_get_component_index("file"),
+                         stats_components_get_component_index(SCS_FILE),
                          self->super.super.id,
                          self->filename->str);
   if (check_immediately)

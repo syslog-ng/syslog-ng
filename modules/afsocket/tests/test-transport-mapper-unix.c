@@ -25,6 +25,9 @@
 #include "stats/stats-registry.h"
 #include "transport-mapper-lib.h"
 
+#define SCS_UNIX_DGRAM "unix_dgram"
+#define SCS_UNIX_STREAM "unix_stream"
+
 static void
 test_transport_mapper_unix_stream_apply_transport_sets_defaults()
 {
@@ -34,7 +37,7 @@ test_transport_mapper_unix_stream_apply_transport_sets_defaults()
   assert_transport_mapper_sock_type(transport_mapper, SOCK_STREAM);
   assert_transport_mapper_sock_proto(transport_mapper, 0);
   assert_transport_mapper_logproto(transport_mapper, "text");
-  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index("unix_stream"));
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_UNIX_STREAM));
 }
 
 static void
@@ -46,7 +49,7 @@ test_transport_mapper_unix_dgram_apply_transport_sets_defaults()
   assert_transport_mapper_sock_type(transport_mapper, SOCK_DGRAM);
   assert_transport_mapper_sock_proto(transport_mapper, 0);
   assert_transport_mapper_logproto(transport_mapper, "dgram");
-  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index("unix_dgram"));
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_UNIX_DGRAM));
 }
 
 static void

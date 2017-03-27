@@ -31,6 +31,8 @@
 
 #include <stdio.h>
 
+#define SCS_JAVA "java"
+
 JNIEXPORT jstring JNICALL
 Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, jstring key)
 {
@@ -276,7 +278,7 @@ java_dd_new(GlobalConfig *cfg)
 
   self->super.format.stats_instance = java_dd_format_stats_instance;
   self->super.messages.retry_over = __retry_over_message;
-  self->super.stats_source = stats_components_get_component_index("java");
+  self->super.stats_source = stats_components_get_component_index(SCS_JAVA);
 
   self->template = log_template_new(cfg, "java_dd_template");
   self->class_path = g_string_new(".");

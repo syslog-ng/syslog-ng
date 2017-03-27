@@ -30,6 +30,8 @@
 #include "poll-fd-events.h"
 #include "logproto/logproto-dgram-server.h"
 
+#define SCS_SUN_STREAMS "sun_streams"
+
 typedef struct _AFStreamsSourceDriver
 {
   LogSrcDriver super;
@@ -191,7 +193,7 @@ afstreams_sd_init(LogPipe *s)
                              s,
                              &self->reader_options,
                              STATS_LEVEL1,
-                             stats_components_get_component_index("sun_streams"),
+                             stats_components_get_component_index(SCS_SUN_STREAMS),
                              self->super.super.id,
                              self->dev_filename->str);
       log_pipe_append((LogPipe *) self->reader, s);

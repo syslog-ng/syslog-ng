@@ -26,6 +26,17 @@
 
 #include "stats/stats-counter.h"
 
+#define SCS_CENTER "center"
+#define SCS_FACILITY "facility"
+#define SCS_GLOBAL "global"
+#define SCS_GROUP "group"
+#define SCS_HOST "host"
+#define SCS_INTERNAL "internal"
+#define SCS_PROGRAM "program"
+#define SCS_SENDER "sender"
+#define SCS_SEVERITY "severity"
+#define SCS_TAG "tag"
+
 typedef enum
 {
   SC_TYPE_DROPPED=0, /* number of messages dropped */

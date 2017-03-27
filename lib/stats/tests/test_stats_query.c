@@ -33,6 +33,8 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
+#define SCS_PIPE "pipe"
+#define SCS_TCP "tcp"
 
 typedef struct _CounterHashContent
 {
@@ -55,12 +57,12 @@ _initialize_counter_hash(void)
   size_t i, n;
   const CounterHashContent counters[] =
   {
-    {stats_components_get_component_index("global"), "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
-    {stats_components_get_component_index("center"), "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
-    {stats_components_get_component_index("tcp") | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_STORED},
-    {stats_components_get_component_index("file") | SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED},
-    {stats_components_get_component_index("pipe") | SCS_SOURCE, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
-    {stats_components_get_component_index("tcp") | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
+    {stats_components_get_component_index(SCS_GLOBAL), "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
+    {stats_components_get_component_index(SCS_CENTER), "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
+    {stats_components_get_component_index(SCS_TCP) | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_STORED},
+    {stats_components_get_component_index(SCS_FILE) | SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED},
+    {stats_components_get_component_index(SCS_PIPE) | SCS_SOURCE, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
+    {stats_components_get_component_index(SCS_TCP) | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
   };
 
   app_startup();
@@ -148,7 +150,8 @@ TestSuite(cluster_query_key, .init = app_startup, .fini = app_shutdown);
 Test(cluster_query_key, test_global_key)
 {
   const gchar *expected_key = "dst.file.d_file.instance";
-  StatsCluster *sc = stats_cluster_new(SCS_DESTINATION stats_components_get_component_index("file"), "d_file", "instance");
+  StatsCluster *sc = stats_cluster_new(SCS_DESTINATION stats_components_get_component_index(SCS_FILE), "d_file",
+                                       "instance");
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",
                    sc->query_key, expected_key);

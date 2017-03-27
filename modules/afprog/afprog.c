@@ -235,7 +235,7 @@ afprogram_sd_init(LogPipe *s)
                              s,
                              &self->reader_options,
                              STATS_LEVEL0,
-                             stats_components_get_component_index("program"),
+                             stats_components_get_component_index(SCS_PROGRAM),
                              self->super.super.id,
                              self->process_info.cmdline->str);
     }
@@ -447,7 +447,7 @@ afprogram_dd_init(LogPipe *s)
                          s,
                          &self->writer_options,
                          STATS_LEVEL0,
-                         stats_components_get_component_index("program"),
+                         stats_components_get_component_index(SCS_PROGRAM),
                          self->super.super.id,
                          self->process_info.cmdline->str);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super,

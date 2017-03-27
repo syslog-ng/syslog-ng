@@ -25,6 +25,8 @@
 #include "syslog-names.h"
 #include "http-plugin.h"
 
+#define SCS_HTTP "http"
+
 static const gchar *
 _format_persist_name(const LogPipe *s)
 {
@@ -341,7 +343,7 @@ http_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = _insert;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format.stats_instance = _format_stats_instance;
-  self->super.stats_source = stats_components_get_component_index("http");
+  self->super.stats_source = stats_components_get_component_index(SCS_HTTP);
   self->super.super.super.super.free_fn = http_dd_free;
 
   curl_global_init(CURL_GLOBAL_ALL);

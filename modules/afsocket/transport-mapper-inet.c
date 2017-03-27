@@ -40,6 +40,13 @@
 #define SYSLOG_TRANSPORT_TCP_PORT 601
 #define SYSLOG_TRANSPORT_TLS_PORT 6514
 
+#define SCS_NETWORK "network"
+#define SCS_SYSLOG "syslog"
+#define SCS_TCP6 "tcp6"
+#define SCS_TCP "tcp"
+#define SCS_UDP6 "udp6"
+#define SCS_UDP "udp"
+
 static inline gboolean
 _is_tls_required(TransportMapperInet *self)
 {
@@ -140,7 +147,7 @@ transport_mapper_tcp_new(void)
   self->super.sock_type = SOCK_STREAM;
   self->super.sock_proto = IPPROTO_TCP;
   self->super.logproto = "text";
-  self->super.stats_source = stats_components_get_component_index("tcp");
+  self->super.stats_source = stats_components_get_component_index(SCS_TCP);
   self->server_port = TCP_PORT;
   self->allow_tls = TRUE;
   return &self->super;
@@ -152,7 +159,7 @@ transport_mapper_tcp6_new(void)
   TransportMapper *self = transport_mapper_tcp_new();
 
   self->address_family = AF_INET6;
-  self->stats_source = stats_components_get_component_index("tcp6");
+  self->stats_source = stats_components_get_component_index(SCS_TCP6);
   return self;
 }
 
@@ -164,7 +171,7 @@ transport_mapper_udp_new(void)
   self->super.sock_type = SOCK_DGRAM;
   self->super.sock_proto = IPPROTO_UDP;
   self->super.logproto = "dgram";
-  self->super.stats_source = stats_components_get_component_index("udp");
+  self->super.stats_source = stats_components_get_component_index(SCS_UDP);
   self->server_port = UDP_PORT;
   return &self->super;
 }
@@ -175,7 +182,7 @@ transport_mapper_udp6_new(void)
   TransportMapper *self = transport_mapper_udp_new();
 
   self->address_family = AF_INET6;
-  self->stats_source = stats_components_get_component_index("udp6");
+  self->stats_source = stats_components_get_component_index(SCS_UDP6);
   return self;
 }
 
@@ -235,7 +242,7 @@ transport_mapper_network_new(void)
   TransportMapperInet *self = transport_mapper_inet_new_instance("tcp");
 
   self->super.apply_transport = transport_mapper_network_apply_transport;
-  self->super.stats_source = stats_components_get_component_index("network");
+  self->super.stats_source = stats_components_get_component_index(SCS_NETWORK);
   return &self->super;
 }
 
@@ -310,6 +317,6 @@ transport_mapper_syslog_new(void)
   TransportMapperInet *self = transport_mapper_inet_new_instance("tcp");
 
   self->super.apply_transport = transport_mapper_syslog_apply_transport;
-  self->super.stats_source = stats_components_get_component_index("syslog");
+  self->super.stats_source = stats_components_get_component_index(SCS_SYSLOG);
   return &self->super;
 }

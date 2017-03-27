@@ -26,13 +26,14 @@
 #include "stats/stats-cluster.h"
 
 #define STATS_CLUSTER_TESTCASE(x) x()
+#define SCS_FILE "file"
 
 static void
 test_stats_cluster_new_replaces_NULL_with_an_empty_string(void)
 {
   StatsCluster *sc;
 
-  sc = stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), NULL, NULL);
+  sc = stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE), NULL, NULL);
   assert_string(sc->id, "", "StatsCluster->id is not properly defaulted to an empty string");
   assert_string(sc->instance, "", "StatsCluster->instance is not properly defaulted to an empty string");
   stats_cluster_free(sc);
@@ -69,17 +70,21 @@ assert_stats_cluster_mismatches_and_free(StatsCluster *sc1, StatsCluster *sc2)
 static void
 test_stats_cluster_equal_if_component_id_and_instance_are_the_same(void)
 {
-  assert_stats_cluster_equals_and_free(stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id", "instance"),
-                                       stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id", "instance"));
+  assert_stats_cluster_equals_and_free(stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE),
+                                                         "id", "instance"),
+                                       stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE), "id", "instance"));
 
-  assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id", "instance1"),
-                                           stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id", "instance2"));
+  assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE),
+                                                             "id", "instance1"),
+                                           stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE), "id", "instance2"));
 
-  assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id1", "instance"),
-                                           stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id2", "instance"));
+  assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE),
+                                                             "id1", "instance"),
+                                           stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE), "id2", "instance"));
 
-  assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id", "instance"),
-                                           stats_cluster_new(SCS_DESTINATION | stats_components_get_component_index("file"), "id", "instance"));
+  assert_stats_cluster_mismatches_and_free(stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE),
+                                                             "id", "instance"),
+                                           stats_cluster_new(SCS_DESTINATION | stats_components_get_component_index(SCS_FILE), "id", "instance"));
 }
 
 typedef struct _ValidateCountersState
@@ -129,7 +134,7 @@ assert_stats_foreach_yielded_counters_matches(StatsCluster *sc, ...)
 static void
 test_stats_foreach_counter_yields_tracked_counters(void)
 {
-  StatsCluster *sc = stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id", "instance");
+  StatsCluster *sc = stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE), "id", "instance");
 
   assert_stats_foreach_yielded_counters_matches(sc, -1);
 
@@ -144,7 +149,7 @@ test_stats_foreach_counter_yields_tracked_counters(void)
 static void
 test_stats_foreach_counter_never_forgets_untracked_counters(void)
 {
-  StatsCluster *sc = stats_cluster_new(SCS_SOURCE | stats_components_get_component_index("file"), "id", "instance");
+  StatsCluster *sc = stats_cluster_new(SCS_SOURCE | stats_components_get_component_index(SCS_FILE), "id", "instance");
   StatsCounterItem *processed, *stamp;
 
   processed = stats_cluster_track_counter(sc, SC_TYPE_PROCESSED);
@@ -173,11 +178,11 @@ assert_stats_component_name(gint component, const gchar *expected)
 static void
 test_get_component_name_translates_component_to_name_properly(void)
 {
-  assert_stats_component_name(SCS_SOURCE | stats_components_get_component_index("file"), "src.file");
-  assert_stats_component_name(SCS_DESTINATION | stats_components_get_component_index("file"), "dst.file");
-  assert_stats_component_name(stats_components_get_component_index("global"), "global");
-  assert_stats_component_name(SCS_SOURCE | stats_components_get_component_index("group"), "source");
-  assert_stats_component_name(SCS_DESTINATION | stats_components_get_component_index("group"), "destination");
+  assert_stats_component_name(SCS_SOURCE | stats_components_get_component_index(SCS_FILE), "src.file");
+  assert_stats_component_name(SCS_DESTINATION | stats_components_get_component_index(SCS_FILE), "dst.file");
+  assert_stats_component_name(stats_components_get_component_index(SCS_GLOBAL), "global");
+  assert_stats_component_name(SCS_SOURCE | stats_components_get_component_index(SCS_GROUP), "source");
+  assert_stats_component_name(SCS_DESTINATION | stats_components_get_component_index(SCS_GROUP), "destination");
 }
 
 static void
