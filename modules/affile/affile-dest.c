@@ -222,7 +222,7 @@ affile_dw_init(LogPipe *s)
                          s,
                          &self->owner->writer_options,
                          STATS_LEVEL1,
-                         self->owner->file_open_options.is_pipe ? SCS_PIPE : SCS_FILE,
+                         self->owner->file_open_options.is_pipe ? stats_components_get_component_index("pipe") : stats_components_get_component_index("file"),
                          self->owner->super.super.id,
                          self->filename);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super,
@@ -308,7 +308,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
                              &self->super,
                              &owner->writer_options,
                              STATS_LEVEL1,
-                             SCS_FILE,
+                             stats_components_get_component_index("file"),
                              self->owner->super.super.id,
                              self->filename);
     }

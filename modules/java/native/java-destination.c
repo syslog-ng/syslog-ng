@@ -276,7 +276,7 @@ java_dd_new(GlobalConfig *cfg)
 
   self->super.format.stats_instance = java_dd_format_stats_instance;
   self->super.messages.retry_over = __retry_over_message;
-  self->super.stats_source = SCS_JAVA;
+  self->super.stats_source = stats_components_get_component_index("java");
 
   self->template = log_template_new(cfg, "java_dd_template");
   self->class_path = g_string_new(".");

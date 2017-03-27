@@ -667,7 +667,7 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.worker.thread_deinit = riemann_worker_thread_deinit;
 
   self->super.format.stats_instance = riemann_dd_format_stats_instance;
-  self->super.stats_source = SCS_RIEMANN;
+  self->super.stats_source = stats_components_get_component_index("riemann");
 
   self->port = -1;
   self->type = RIEMANN_CLIENT_TCP;

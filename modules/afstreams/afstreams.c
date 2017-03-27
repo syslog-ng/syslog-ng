@@ -191,7 +191,7 @@ afstreams_sd_init(LogPipe *s)
                              s,
                              &self->reader_options,
                              STATS_LEVEL1,
-                             SCS_SUN_STREAMS,
+                             stats_components_get_component_index("sun_streams"),
                              self->super.super.id,
                              self->dev_filename->str);
       log_pipe_append((LogPipe *) self->reader, s);

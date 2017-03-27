@@ -33,10 +33,6 @@
 #include "str-utils.h"
 #include "messages.h"
 
-#ifndef SCS_PYTHON
-#define SCS_PYTHON 0
-#endif
-
 typedef struct
 {
   LogThrDestDriver super;
@@ -452,7 +448,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = python_dd_insert;
 
   self->super.format.stats_instance = python_dd_format_stats_instance;
-  self->super.stats_source = SCS_PYTHON;
+  self->super.stats_source = stats_components_get_component_index("python");
 
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
