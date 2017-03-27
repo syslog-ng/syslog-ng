@@ -27,7 +27,6 @@
 #include "template/macros.h"
 #include "template/escaping.h"
 #include "cfg.h"
-#include "logstamp.h"
 
 static void
 log_template_reset_compiled(LogTemplate *self)
@@ -325,7 +324,7 @@ log_template_options_defaults(LogTemplateOptions *options)
 {
   memset(options, 0, sizeof(LogTemplateOptions));
   options->frac_digits = -1;
-  options->ts_format = TS_FMT_ISO;
+  options->ts_format = -1;
   options->on_error = -1;
 }
 
