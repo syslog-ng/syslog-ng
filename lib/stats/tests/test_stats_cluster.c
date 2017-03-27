@@ -25,7 +25,10 @@
 #include "testutils.h"
 #include "stats/stats-cluster.h"
 
-#define STATS_CLUSTER_TESTCASE(x) x()
+#define STATS_CLUSTER_TESTCASE(x) do { stats_components_init(); \
+                                       x(); \
+                                       stats_components_deinit(); } \
+                                  while (0)
 #define SCS_FILE "file"
 
 static void
