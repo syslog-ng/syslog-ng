@@ -327,15 +327,6 @@ log_threaded_dest_driver_start(LogPipe *s)
       return FALSE;
     }
 
-  if (self->retries.max <= 0)
-    {
-      msg_warning("Wrong value for retries(), setting to default",
-                  evt_tag_int("value", self->retries.max),
-                  evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
-                  evt_tag_str("driver", self->super.super.id));
-      self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
-    }
-
   stats_lock();
   stats_register_counter(0, self->stats_source | SCS_DESTINATION, self->super.super.id,
                          self->format.stats_instance(self),
