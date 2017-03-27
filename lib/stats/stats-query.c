@@ -28,16 +28,6 @@
 
 #include <string.h>
 
-static const gchar *_counter_type[SC_TYPE_MAX+1] =
-{
-  "dropped",
-  "processed",
-  "stored",
-  "suppressed",
-  "stamp",
-  "MAX"
-};
-
 typedef struct _NamedStatsCounterItem
 {
   StatsCluster *cluster;
@@ -47,6 +37,31 @@ typedef struct _NamedStatsCounterItem
 typedef gboolean (*StatsClusterCounterCb)(StatsCluster *sc, NamedStatsCounterItem *named_counter,
                                           StatsFormatCb format_cb, gpointer user_data);
 
+
+static const gchar *
+_get_counter_name_by_index(gint type_index)
+{
+  const gchar *_counter_type[SC_TYPE_MAX+1] =
+  {
+    "dropped",
+    "processed",
+    "stored",
+    "suppressed",
+    "stamp",
+    "MAX"
+  };
+
+  if (type_index > SC_TYPE_MAX)
+    return "";
+
+  return _counter_type[type_index];
+}
+
+static const gchar *
+_get_name_of_counter_item(NamedStatsCounterItem *item)
+{
+  return _get_counter_name_by_index(item->index);
+}
 
 static void
 _append_live_counters(StatsCluster *sc, gchar *ctr_str, GList **counters)
@@ -60,7 +75,7 @@ _append_live_counters(StatsCluster *sc, gchar *ctr_str, GList **counters)
     {
       if (stats_cluster_is_alive(sc, i))
         {
-          if (is_wildcard || !strcmp(_counter_type[i], ctr_str))
+          if (is_wildcard || !strcmp(_get_counter_name_by_index(i), ctr_str))
             {
               NamedStatsCounterItem *c = g_new0(NamedStatsCounterItem, 1);
               c->cluster = sc;
@@ -143,11 +158,10 @@ _query_counter_hash(gchar *key_str, gchar *ctr_str)
 static void
 _format_selected_counters(GList *counters, StatsFormatCb format_cb, gpointer result)
 {
-  GList *counter = NULL;
-  for (counter = counters; counter; counter = counter->next)
+  for (GList *counter = counters; counter; counter = counter->next)
     {
       NamedStatsCounterItem *c = counter->data;
-      format_cb(c->cluster, &c->cluster->counters[c->index], _counter_type[c->index], result);
+      format_cb(c->cluster, &c->cluster->counters[c->index], _get_name_of_counter_item(c), result);
     }
 }
 
