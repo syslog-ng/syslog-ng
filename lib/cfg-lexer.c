@@ -795,18 +795,12 @@ _invoke__cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   return _cfg_lexer_lex(yylval, yylloc, self->state);
 }
 
-int
-cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+static gboolean
+cfg_lexer_consume_next_injected_token(CfgLexer *self, gint *tok, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
-  CfgBlockGenerator *gen;
   CfgTokenBlock *block;
   YYSTYPE *token;
-  gint tok;
-  gboolean injected;
 
-relex:
-
-  injected = FALSE;
   while (self->token_blocks)
     {
       block = self->token_blocks->data;
@@ -816,14 +810,13 @@ relex:
         {
           *yylval = *token;
           *yylloc = self->include_stack[self->include_depth].lloc;
-          tok = token->type;
-          if (token->type == LL_TOKEN)
-            {
-              tok = token->token;
-              injected = TRUE;
-            }
 
-          goto exit;
+          if (token->type == LL_TOKEN)
+            *tok = token->token;
+          else
+            *tok = token->type;
+
+          return TRUE;
         }
       else
         {
@@ -832,23 +825,39 @@ relex:
         }
     }
 
-  if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
-    cfg_lexer_start_block_state(self, "{}");
-  else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
-    cfg_lexer_start_block_state(self, "()");
+  return FALSE;
+}
 
-  yylval->type = 0;
+int
+cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  CfgBlockGenerator *gen;
+  gint tok;
+  gboolean injected;
 
-  g_string_truncate(self->token_text, 0);
-  g_string_truncate(self->token_pretext, 0);
+relex:
 
-  tok = _invoke__cfg_lexer_lex(self, yylval, yylloc);
-  if (yylval->type == 0)
-    yylval->type = tok;
+  injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
 
-  if (self->preprocess_output)
-    g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
-exit:
+  if (!injected)
+    {
+      if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
+        cfg_lexer_start_block_state(self, "{}");
+      else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
+        cfg_lexer_start_block_state(self, "()");
+
+      yylval->type = 0;
+
+      g_string_truncate(self->token_text, 0);
+      g_string_truncate(self->token_pretext, 0);
+
+      tok = _invoke__cfg_lexer_lex(self, yylval, yylloc);
+      if (yylval->type == 0)
+        yylval->type = tok;
+
+      if (self->preprocess_output)
+        g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
+    }
 
   if (self->ignore_pragma)
     {
