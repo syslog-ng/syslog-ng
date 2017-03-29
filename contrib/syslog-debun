@@ -44,6 +44,7 @@ pseao="ps -eao"
 dfk="df -k"
 dfh="df -h"
 duks="du -ks"
+lddcmd="ldd"
 mount=mount
 varlimit=1000
 myplimit () { echo "Plimit query is not supported on this platform" >&3 ; }
@@ -415,15 +416,20 @@ acquire_syslog_var () {
 	fi
 }
 
-acquire_syslog_ldinfo () {
-	ldd $syslogrealbin >${tmpdir}/syslog.ldd
+format_ldd_output () {
 	while read x ; do
 		x="${x#*=>}"
 		x="/${x#*/}"
 		x="${x%% (*}"
-		#[ "${x:0:2}" != "/ " ] && echo "$x" >>${tmpdir}/syslog.ldfiles
-		[ "${x}" != "/ " ] && echo "$x" >>${tmpdir}/syslog.ldfiles
-	done <${tmpdir}/syslog.ldd 
+		x="${x%%(*}"
+		[ "${x}" != "/ " ] && [ -f "${x}" ] && echo "$x"
+	done
+}
+
+
+acquire_syslog_ldinfo () {
+	$lddcmd $syslogrealbin |grep -v needs >${tmpdir}/syslog.ldd
+	format_ldd_output <${tmpdir}/syslog.ldd >${tmpdir}/syslog.ldfiles
 	for i in `cat ${tmpdir}/syslog.ldfiles ` ; do
 		distpkgoffile $i >>${tmpdir}/syslog.ldpkg
 	done
