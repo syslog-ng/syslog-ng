@@ -68,6 +68,7 @@ checkpid () { [ -n "$1" ] && kill -0 "$1" 2>/dev/null ; }
 #mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "\<$tailpid\>" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
 mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "^$tailpid\$" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
 is_available () { which "$1" >/dev/null 2>&1; }
+distpkgoffile_cleanup () { : ; }
 
 ###
 ### Show Usage
@@ -437,6 +438,7 @@ acquire_syslog_ldinfo () {
 	for i in `cat ${tmpdir}/syslog.ldfiles ` ; do
 		distpkgoffile $i >>${tmpdir}/syslog.ldpkg
 	done
+	distpkgoffile_cleanup
 	sort <${tmpdir}/syslog.ldpkg | uniq >${tmpdir}/syslog.ldpkg.u
 	mv ${tmpdir}/syslog.ldpkg.u ${tmpdir}/syslog.ldpkg
 	for i in `cat ${tmpdir}/syslog.ldpkg ` ; do
@@ -872,29 +874,42 @@ debun_freebsd() {
 	distpkgstatus () { : ; }
 }
 
-debun_extra_hpux () {
-	sysdef >${tmpdir}/sys.sysdef
-	swlist >${tmpdir}/sys.swlist
-}
-
-debun_hpux () {
-	add_extra debun_extra_hpux
+setup_env_hpux () {
+	gzipcmd="/usr/contrib/bin/gzip -9"
+	lddcmd="/usr/ccs/bin/ldd"
+	trace="/usr/local/bin/truss -f"
 	netstatsu="netstat -s"
-	netstatnlp="netstat -na"
+	netstatpunt="netstat -n"
 	ipconfig="netstat -ni"
+	pscmd="ps -eaf"
 	dfh="df"
-	service_stop="/sbin/init.d/syslog-ng stop"
-	service_start="/sbin/init.d/syslog-ng start"
-	service_status="/sbin/init.d/syslog-ng status"
-	mypidof () { ps -ef | while read user pid ppid c stimem stimed tty time cmd ; do
-		if [ "${stimem%:*}" = "${stimem}" ]
-		then
-			[ "${comm%% *}" = "$1" ] && echo $pid
-		else
-			[ "${time}" = "$1" ] && echo $pid
-		fi ; done ; }
-	getsyslogpids="mypidof ${syslogrealbin}"
+	initfile="/sbin/init.d/syslog-ng"
+	service_stop="${initfile} stop"
+	service_start="${initfile} start"
+	service_status="${initfile} status"
+
+	unset -f free
+	unset -f netstatnlp
+	unset -f mypidof
+	unset -f getsyslogpids
 	unset -f getparent
+	unset -f getchilds
+	unset -f is_available
+	unset -f distpkgoffile
+	unset -f distpkgstatus
+	unset -f distpkgoffile_cleanup
+
+	is_available () { which "$1" | grep -q "no $1 in" && return 1 || return 0 ; }
+	free () { swapinfo -tam ; }
+	netstatnlp () { netstat -na ; }
+	mypidof () { ps -e -f | while read uid pid ppid c stime tty time command extra ; do
+		if [ "${stime%%:*}" = "${stime}" ]
+		then
+			[ "${extra%% *}" = "$1" ] && echo $pid
+		else
+			[ "${command%% *}" = "$1" ] && echo $pid
+		fi ; done ; }
+	getsyslogpids () { mypidof "${syslogrealbin}" ; }
 	getparent () {
 		local self
 		local parent
@@ -908,7 +923,6 @@ debun_hpux () {
 		rm $tmpfile
 		echo $ret
 	}
-	unset -f getchilds
 	getchilds () {
 		local childs
 		local dummy
@@ -921,6 +935,27 @@ debun_hpux () {
 		done < $tmpfile
 		rm $tmpfile
 		echo ${childs}
+	}
+
+	distpkgoffile () {
+		local tmpfile=${tmpdir}/distpkgoffile.tmp
+		if [ ! -f $tmpfile ]; then
+			swlist -l file > "$tmpfile"
+		fi
+		grep $1 $tmpfile | cut -d : -f 1 | while read x; do
+			echo "$x"
+		done
+	}
+	distpkgstatus () {
+		printf "@@@Package info for fileset/patch: %s\n" "$1"
+		swlist -l fileset -a title -a description $1 | grep -v "^#" | grep -v "^\""
+		printf "\n"
+	}
+	distpkgoffile_cleanup () {
+		if [ -f "${tmpdir}/distpkgoffile.tmp" ]; then
+			echo "Removing package list cache"
+			rm "${tmpdir}/distpkgoffile.tmp"
+		fi
 	}
 }
 
