@@ -224,7 +224,7 @@ debun_finish_debug () {
 		done
 		sleep 2
 		for i in ${tracepids} ; do
-			checkpid $1 && kill -9 $i 2>/dev/null
+			checkpid $i && kill -9 $i 2>/dev/null
 		done
 	fi
 	mywait
@@ -241,7 +241,7 @@ debun_do_tarball () {
 	sync
 	kill $tailpid
 	sync
-	sleep 0.1
+	sleep 1
 }
 
 debun_final() {
@@ -365,7 +365,9 @@ acquire_syslog_config () {
 	echo "Copy configs from $confdir"
 	cd $confdir
 	mkdir  ${tmpdir}/config
-	find . | cpio -pd ${tmpdir}/config
+	find . | tee ${tmpdir}/syslog.etc.files | grep -v '\.key$' | \
+		while read FILE; do grep -q "PRIVATE KEY-----" "$FILE" 2>/dev/null || echo "$FILE" ; done | \
+		cpio -pd ${tmpdir}/config
 }
 
 acquire_syslog_pids () {
