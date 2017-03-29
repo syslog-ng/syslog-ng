@@ -357,6 +357,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
       cur_inode = -1;
       cur_pos = 0;
       cur_size = 0;
+      version = 0;
       archive = serialize_buffer_archive_new(old_state, old_state_size);
 
       /* NOTE: the v23 conversion code adds an extra length field which we
