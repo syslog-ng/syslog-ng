@@ -62,8 +62,12 @@ trace="strace -f"
 service_stop="/etc/init.d/syslog-ng stop"
 service_start="/etc/init.d/syslog-ng start"
 service_status="/etc/init.d/syslog-ng status"
-checkpid () { [ -d /proc/"$1" ]; }
-mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "\<$tailpid\>" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
+initfile="/etc/init.d/syslog-ng"
+#checkpid () { [ -d /proc/"$1" ]; }
+checkpid () { [ -n "$1" ] && kill -0 "$1" 2>/dev/null ; }
+#mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "\<$tailpid\>" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
+mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "^$tailpid\$" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
+is_available () { which "$1" >/dev/null 2>&1; }
 
 ###
 ### Show Usage
@@ -475,6 +479,123 @@ debun_extra_debian () {
 	md5sum --quiet -c /var/lib/dpkg/info/syslog-ng*.md5sums && echo Package files are intact
 	echo "list syslog-related packages"
 	dpkg -l |grep syslog > ${tmpdir}/deb.packages
+}
+
+debun_extra_redhat () {
+	printf "\nRedhat specific checks\n"
+	echo "Check package files integrity"
+	rpm -V syslog-ng-premium-edition && echo "syslog-ng-premium-edition: Package files are intact"
+	rpm -V syslog-ng-premium-edition-client && echo "syslog-ng-premium-edition-client: Package files are intact"
+	rpm -V syslog-ng-premium-edition-compact && echo "syslog-ng-premium-edition-compact: Package files are intact"
+	echo "list syslog-related packages"
+	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
+}
+debun_extra_genlinux () {
+	if is_available getenforce; then
+		getenforce >${tmpdir}/sys.selinux
+	else
+		echo "No getenforce in path." >${tmpdir}/sys.selinux
+	fi
+	sysctl -a >${tmpdir}/sys.sysctl.all 2>/dev/null
+}
+
+debun_linux () {
+	if [ "$dist" = "Debian" ]; then
+		add_extra debun_extra_debian
+	elif [ "$dist" = "Ubuntu" ]; then
+		add_extra debun_extra_debian
+	elif [ "$dist" = "CentOS" ]; then
+		add_extra debun_extra_redhat
+	elif [ "$dist" = "RedHatEnterpriseServer" ]; then
+		add_extra debun_extra_redhat
+	elif [ "$dist" = "RHEL" ]; then
+		add_extra debun_extra_redhat
+	elif [ "$dist" = "OracleServer" ]; then
+		add_extra debun_extra_redhat
+	elif [ "$dist" = "EnterpriseEnterpriseServer" ]; then
+		add_extra debun_extra_redhat
+	else
+		echo "Unknown Distro, perhaps unsupported"
+	fi
+
+	add_extra debun_extra_genlinux
+}
+
+debun_extra_gensolaris () {
+	sysdef >${tmpdir}/sys.sysdef
+	kstat >${tmpdir}/sys.kstat
+	cp /etc/release ${tmpdir}/sys.release
+	if is_available showrev ; then
+		showrev >${tmpdir}/sys.showrev
+	fi
+}
+
+### Here comes solaris specific parts
+debun_solaris () {
+	add_extra debun_extra_gensolaris
+
+	pkginfo | grep -i syslog > ${tmpdir}/pkg.packages
+
+	if is_available svcadm ; then
+		service_stop="svcadm disable syslog-ng"
+		service_start="svcadm enable syslog-ng"
+		service_status="svcs syslog-ng"
+	fi
+}
+
+debun_extra_freebsd() {
+	:
+}
+
+debun_freebsd() {
+	add_extra debun_extra_freebsd
+}
+
+debun_extra_hpux () {
+	sysdef >${tmpdir}/sys.sysdef
+	swlist >${tmpdir}/sys.swlist
+}
+
+debun_hpux () {
+	add_extra debun_extra_hpux
+}
+
+detect_env_linux () {
+	if is_available lsb_release ; then
+		lsb_release -a | tee ${tmpdir}/lsb.all
+		dist=`lsb_release -si`
+	elif [ -r /etc/debian_version ]; then
+		dist="Debian"
+	elif [ -r /etc/redhat-release ]; then
+		dist="RHEL"
+	fi
+}
+
+detect_env () {
+	###
+	### Detecting syslog-ng ver: ose or pe
+	###
+
+	echo "Start environment detection"
+	if [ -x /opt/syslog-ng/bin/loggen ] ; then
+		syslogfhs=unix
+		echo "Unix-like FHS detected"
+	elif [ -d /etc/syslog-ng/ ]; then
+		syslogfhs=linux
+		echo "Linux-type FHS detected"
+	else
+		syslogfhs=unknown
+		confdir=/nonexistent
+		echo "No syslog-ng detected"
+	fi
+
+	os=`uname -s`
+	if [ "$os" = "Linux" ]; then
+		detect_env_linux
+	fi
+}
+
+setup_env_debian () {
 	unset distpkgoffile
 	unset distpkgstatus
 	distpkgoffile () {
@@ -492,12 +613,7 @@ debun_extra_debian () {
 	#syslogrealbin=${binprefix}/sbin/syslog-ng
 }
 
-debun_extra_redhat () {
-	printf "\nRedhat specific checks\n"
-	echo "Check package files integrity"
-	rpm -V syslog-ng-pe && echo Package files are intact
-	echo "list syslog-related packages"
-	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
+setup_env_redhat () {
 	unset distpkgoffile
 	unset distpkgstatus
 	distpkgoffile () {
@@ -514,47 +630,40 @@ debun_extra_redhat () {
 	}
 }
 
-debun_extra_genlinux () {
-	if hash getenforce; then
-		getenforce >${tmpdir}/sys.selinux
-	else
-		echo "No getenforce in path." >${tmpdir}/sys.selinux
-	fi
-	sysctl -a >${tmpdir}/sys.sysctl.a
 }
 
-debun_linux () {
-	add_extra debun_extra_genlinux
-	if  hash lsb_release ; then
-		lsb_release -a | tee ${tmpdir}/lsb.all
-		dist=`lsb_release -si`
-		if [ "$dist" = "Debian" ]; then
-			add_extra debun_extra_debian 
-		elif [ "$dist" = "Ubuntu" ]; then
-			add_extra debun_extra_debian
-		elif [ "$dist" = "CentOS" ]; then
-			add_extra debun_extra_redhat
-		elif [ "$dist" = "RHEL" ]; then
-			add_extra debun_extra_redhat
-		else 
-			echo "Unknown Distro, perhaps unsupported"
-		fi
-	elif [ -r /etc/debian_version ]; then
-		add_extra debun_extra_debian
-	elif [ -r /etc/redhat-release ]; then
-		add_extra debun_extra_redhat
 	fi
 	unset myplimit
 	myplimit () { cat /proc/$1/limits ; }
 }
 
+setup_env_linux () {
+	if [ "$dist" = "Debian" ]; then
+		setup_env_debian
+	elif [ "$dist" = "Ubuntu" ]; then
+		setup_env_debian
+	elif [ "$dist" = "CentOS" ]; then
+		setup_env_redhat
+	elif [ "$dist" = "RedHatEnterpriseServer" ]; then
+		setup_env_redhat
+	elif [ "$dist" = "RHEL" ]; then
+		setup_env_redhat
+	elif [ "$dist" = "OracleServer" ]; then
+		setup_env_redhat
+	elif [ "$dist" = "EnterpriseEnterpriseServer" ]; then
+		setup_env_redhat
 debun_extra_gensolaris () {
 	sysdef >${tmpdir}/sys.sysdef
 	kstat >${tmpdir}/sys.kstat
 	cp /etc/release ${tmpdir}/sys.release
 	if hash showrev ; then
 		showrev >${tmpdir}/sys.showrev
+	else
+		echo "Unknown Distro, perhaps unsupported"
 	fi
+
+	unset myplimit
+	myplimit () { [ -f "/proc/$1/limits" ] && cat /proc/$1/limits ; }
 }
 
 ### Here comes solaris specific parts
@@ -661,45 +770,59 @@ debun_hpux () {
 	}
 }
 
-detect_env () {
-###
-### Detecting syslog-ng ver: ose or pe
-###
 
-echo "Start environment detection"
-if [ -d /opt/syslog-ng ] ; then
-	syslogfhs=unix
-	echo "Unix-like FHS detected"
-elif [ -d /etc/syslog-ng ]; then
-	syslogfhs=linux
-	echo "Linux-type FHS detected"
-else
-	syslogfhs=unknown
-	confdir=/nonexistent
-	echo "No syslog-ng detected"
-fi
+setup_env_generic () {
+	### Check if truss is available
+	if is_available truss ; then
+		trace="truss -f"
+	fi
 
-###
-### Decide OS (switch-like)
-###
-os=`uname -s`
-printf "\nOperating System Name: %s\n" "$os"
-if [ "$os" = "Linux" ]; then
-	debun_linux
-elif [ "$os" = "SunOS" ]; then
-	debun_solaris
-elif [ "$os" = "FreeBSD" ]; then
-	debun_freebsd
-elif [ "$os" = "HP-UX" ]; then
-	debun_hpux
-else
-	echo "Unkonwn or unhandled (yet) system"
-fi
+	### Check if ss is available (should only be present on Linux)
+	if is_available ss ; then
+		unset routeconfig
+		unset netstatnlp
+
+		routeconfig () { ip route show ; }
+		netstatnlp () { ss -nlp ; }
+		netstatsu="ss -su"
+		netstatpunt="ss -punt"
+	fi
+}
+
+setup_env() {
+	###
+	### Decide OS (switch-like)
+	###
+	printf "\nOperating System Name: %s\n" "$os"
+	if [ "$os" = "Linux" ]; then
+		setup_env_linux
+	elif [ "$os" = "SunOS" ]; then
+		setup_env_solaris
+	elif [ "$os" = "FreeBSD" ]; then
+		setup_env_freebsd
+	elif [ "$os" = "HP-UX" ]; then
+		setup_env_hpux
+	else
+		echo "Unkonwn or (yet) unhandled system"
+	fi
+
+	setup_env_generic
+}
 
 ### Check if truss is available
 if hash truss ; then
 	trace="truss -f"
 fi
+debun_run () {
+	if [ "$os" = "Linux" ]; then
+		debun_linux
+	elif [ "$os" = "SunOS" ]; then
+		debun_solaris
+	elif [ "$os" = "FreeBSD" ]; then
+		debun_freebsd
+	elif [ "$os" = "HP-UX" ]; then
+		debun_hpux
+	fi
 }
 
 run_specific_extras () {
@@ -769,10 +892,12 @@ fi
 
 debun_init
 detect_env
-acquire_general_info
-run_specific_extras
+setup_env
+debun_run
 [ "$syslogfhs" = "linux" ] && fhs_set_linux
 [ "$syslogfhs" = "unix" ] && fhs_set_unix
+run_specific_extras
+acquire_general_info
 if [ -n "$privacy_mode" ]; then
 	acquire_syslog_nprv
 else
