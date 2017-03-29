@@ -112,7 +112,6 @@ enum
   LF_LOCAL             = 0x0004,
   /* message is a MARK mode */
   LF_MARK              = 0x0008,
-
   /* state flags that only matter during syslog-ng runtime and never
    * when a message is serialized */
   LF_STATE_MASK        = 0xFFF0,
@@ -121,6 +120,9 @@ enum
   LF_STATE_OWN_TAGS    = 0x0040,
   LF_STATE_OWN_SDATA   = 0x0080,
   LF_STATE_OWN_MASK    = 0x00F0,
+
+  /* In the log header the hostname shall be printed individually (no group name, no chain hosts)*/
+  LF_SIMPLE_HOSTNAME = 0x0100,
 
   LF_CHAINED_HOSTNAME  = 0x00010000,
 

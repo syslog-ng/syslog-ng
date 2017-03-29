@@ -168,7 +168,12 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
       if (G_UNLIKELY(self->options->chain_hostnames))
         {
           msg->flags |= LF_CHAINED_HOSTNAME;
-          if (msg->flags & LF_LOCAL)
+          if (msg->flags & LF_SIMPLE_HOSTNAME)
+            {
+              /* local without group name */
+              host_len = g_snprintf(host, sizeof(host), "%s", resolved_name);
+            }
+          else if (msg->flags & LF_LOCAL)
             {
               /* local */
               host_len = g_snprintf(host, sizeof(host), "%s@%s", self->options->group_name, resolved_name);
