@@ -120,7 +120,8 @@ _get_module_name(gint source)
     "http",
     "python",
     "filter",
-    "parser"
+    "parser",
+    "monitoring"
   };
   return module_names[source & SCS_SOURCE_MASK];
 }
