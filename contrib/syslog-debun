@@ -626,6 +626,21 @@ debun_hpux () {
 	add_extra debun_extra_hpux
 }
 
+debun_extra_aix () {
+	alog -o -t console >${tmpdir}/sys.console-log
+}
+
+debun_aix () {
+	add_extra debun_extra_aix
+
+	echo "Check package files integrity"
+	rpm -V syslog-ng-premium-edition && echo "syslog-ng-premium-edition: Package files are intact"
+	rpm -V syslog-ng-premium-edition-client && echo "syslog-ng-premium-edition-client: Package files are intact"
+	rpm -V syslog-ng-premium-edition-compact && echo "syslog-ng-premium-edition-compact: Package files are intact"
+	echo "list syslog-related packages"
+	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
+}
+
 detect_env_linux () {
 	if is_available lsb_release ; then
 		lsb_release -a | tee ${tmpdir}/lsb.all
@@ -909,6 +924,54 @@ debun_hpux () {
 	}
 }
 
+setup_env_aix () {
+	ipconfig="ifconfig -a"
+	pscmd="ps -eaf"
+	dfh="df -k"
+	netstatsu="netstat -s"
+	netstatpunt="netstat -n"
+	dmesg="alog -o -t boot"
+	initfile=
+	service_stop="/usr/bin/stopsrc -s syslog-ng"
+	service_start="/usr/bin/startsrc -s syslog-ng"
+	service_status="/usr/bin/lssrc -s syslog-ng"
+
+	unset initfile
+	unset netstatnlp
+	unset routeconfig
+	unset free
+	unset getsyslogpids
+	unset mypidof
+	unset format_ldd_output
+
+	format_ldd_output () { sed -e 's:^[^/]*\(.*\)$:\1:' -e 's:^\(.*\)(.*)$:\1:'; }
+	netstatnlp () { netstat -na | grep LISTEN ; }
+	routeconfig () { if netstat -nr 2>&1 | grep -q 'Permission error' ; then echo 'WPAR without its own routing table.' ; else netstat -nr ; fi ; }
+	free () { svmon -G -O unit=KB ; }
+	mypidof () { ps -eaf | while read user pid ppid c stime tty time cmd extra; do
+		if [ "${stime%%:*}" = "${stime}" ]
+		then
+			[ "${extra%% *}" = "$1" ] && echo $pid
+		else
+			[ "${cmd%% *}" = "$1" ] && echo $pid
+		fi ; done ; }
+	getsyslogpids () { mypidof "${syslogrealbin}" ; }
+
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		local tmpfile=${tmpdir}/distpkgoffile.$$.tmp
+		rpm -qf $1 >$tmpfile
+		read x < $tmpfile
+		rm $tmpfile
+		echo "$x"
+	}
+	distpkgstatus () {
+		printf "@@@Package info for: %s\n" "$1"
+		rpm -qi $1
+		printf "\n"
+	}
+}
 
 setup_env_generic () {
 	### Check if truss is available
@@ -941,6 +1004,8 @@ setup_env() {
 		setup_env_freebsd
 	elif [ "$os" = "HP-UX" ]; then
 		setup_env_hpux
+	elif [ "$os" = "AIX" ]; then
+		setup_env_aix
 	else
 		echo "Unkonwn or (yet) unhandled system"
 	fi
@@ -961,6 +1026,8 @@ debun_run () {
 		debun_freebsd
 	elif [ "$os" = "HP-UX" ]; then
 		debun_hpux
+	elif [ "$os" = "AIX" ]; then
+		debun_aix
 	fi
 }
 
