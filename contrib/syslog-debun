@@ -808,12 +808,6 @@ setup_env_linux () {
 		setup_env_suse
 	elif [ "$dist" = "Slackware" ]; then
 		setup_env_slackware
-debun_extra_gensolaris () {
-	sysdef >${tmpdir}/sys.sysdef
-	kstat >${tmpdir}/sys.kstat
-	cp /etc/release ${tmpdir}/sys.release
-	if hash showrev ; then
-		showrev >${tmpdir}/sys.showrev
 	else
 		echo "Unknown Distro, perhaps unsupported"
 	fi
@@ -822,40 +816,43 @@ debun_extra_gensolaris () {
 	myplimit () { [ -f "/proc/$1/limits" ] && cat /proc/$1/limits ; }
 }
 
-### Here comes solaris specific parts
-debun_solaris () {
-	add_extra debun_extra_gensolaris
+setup_env_solaris () {
 	lsof=pfiles
 	ipconfig="ifconfig -a"
 	pscmd="ps -eaf"
-	unset myplimit
-	myplimit () { plimit $1 ; }
-	tcpdump="snoop -P -q -o"
+	tcpdumpcmd="snoop"
+	tcpdumpopts="-P -q -o"
 	pcapifparm="-d"
-	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done; }
-	syslogrealbin=${binprefix}/sbin/syslog-ng
-	getsyslogpids="mypidof ${syslogrealbin}"
-	free () { prtconf |grep Mem ; printf Pagesize:\  ; pagesize -a ; }
-	netstatnlp="netstat -na"
-	pkginfo |grep -i syslog > ${tmpdir}/pkg.packages
+	netstatpunt="netstat -n"
+
+	unset mypidof
+	unset getsyslogpids
+	unset netstatnlp
+	unset myplimit
+	unset free
 	unset distpkgoffile
 	unset distpkgstatus
+	unset -f is_available
+
+	is_available () { which "$1" | /usr/xpg4/bin/grep -q "no $1 in" && return 1 || return 0 ; }
+	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done ; }
+	getsyslogpids () { mypidof "${syslogrealbin}" ; }
+	netstatnlp () { netstat -na ; }
+	myplimit () { plimit $1 ; }
+	free () { prtconf | grep Mem ; printf Pagesize:\  ; pagesize -a ; }
 	distpkgoffile () {
-		pkgchk -l -p $1 | \
-		perl -n -e 'if ( /^Referenced by the/ ) { $p=1; } elsif (/:/ or /^$/ ) { $p=0; } elsif ($p) { s/^\s+//; print ; } else { print "FAIL:".$_; }'
+		FILE="$1"
+		if [ -L "/lib/64" ]; then
+			FILE=`perl -sae '$libarch=readlink("/lib/64"); $filename =~ s/lib\/64/lib\/$libarch/; print "$filename\n";' -- -filename="$1"`
+		fi
+		pkgchk -l -p $FILE | \
+		perl -ne 'if ( /^Referenced by the/ ) { $p=1; } elsif (/:/ or /^$/ ) { $p=0; } elsif ($p) { s/^\s+//; print ; } else { print "FAIL:".$_; }'
 	}
 	distpkgstatus () {
 		printf "@@@Package info for: %s\n" "$1"
 		pkginfo -l $1
 		printf "\n"
 	}
-	if hash svcadm ; then
-		service_stop="svcadm disable syslog-ng"
-		service_start="svcadm enable syslog-ng"
-		service_status="svcs syslog-ng"
-	fi
-}
-
 }
 
 setup_env_freebsd () {
