@@ -526,6 +526,32 @@ debun_extra_redhat () {
 	echo "list syslog-related packages"
 	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
 }
+
+debun_extra_slackware () {
+	printf "\nSlackware Linux specific checks\n"
+	echo "list syslog-related packages"
+	find /var/log/packages -name "*sys*log*" | while read -r FILE; do echo "${FILE##*/}"; done > ${tmpdir}/pkg.packages
+}
+
+debun_extra_suse() {
+	printf "\nSuSE specific checks\n"
+	echo "Check package files integrity"
+	rpm -V syslog-ng-premium-edition && echo "syslog-ng-premium-edition: Package files are intact"
+	rpm -V syslog-ng-premium-edition-client && echo "syslog-ng-premium-edition-client: Package files are intact"
+	rpm -V syslog-ng-premium-edition-compact && echo "syslog-ng-premium-edition-compact: Package files are intact"
+	echo "list syslog-related packages"
+	rpm -qa | grep syslog > ${tmpdir}/rpm.packages
+	#on opensuse "ss utility, iproute2-ss071016" crashes when run with the -punt CLI options
+	if is_available netstat; then
+		#this info should only be collected if the user has not requested privacy mode
+		#we value our customer's sense of privacy
+		if [ -z "$privacy_mode" ]; then
+			netstat -punt >${tmpdir}/sys.netstat.est.noss
+		fi
+	fi
+
+}
+
 debun_extra_genlinux () {
 	if is_available getenforce; then
 		getenforce >${tmpdir}/sys.selinux
@@ -550,6 +576,10 @@ debun_linux () {
 		add_extra debun_extra_redhat
 	elif [ "$dist" = "EnterpriseEnterpriseServer" ]; then
 		add_extra debun_extra_redhat
+	elif [ "$dist" = "SUSE LINUX" ]; then
+		add_extra debun_extra_suse
+	elif [ "$dist" = "Slackware" ]; then
+		add_extra debun_extra_slackware
 	else
 		echo "Unknown Distro, perhaps unsupported"
 	fi
@@ -604,6 +634,10 @@ detect_env_linux () {
 		dist="Debian"
 	elif [ -r /etc/redhat-release ]; then
 		dist="RHEL"
+	elif [ -r /etc/slackware-version ]; then
+		dist="Slackware"
+	elif [ -r /etc/SuSE-release ]; then
+		dist="SUSE LINUX"
 	fi
 }
 
@@ -666,11 +700,76 @@ setup_env_redhat () {
 	}
 }
 
+setup_env_suse  () {
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		local tmpfile=${tmpdir}/distpkgoffile.$$.tmp
+		rpm -qf $1 >$tmpfile
+		read x < $tmpfile
+		rm $tmpfile
+		echo "$x"
+	}
+	distpkgstatus () {
+		printf "@@@Package info for: %s\n" "$1"
+		rpm -qi $1
+		printf "\n"
+	}
 }
 
+setup_env_slackware  () {
+	initfile="/etc/rc.d/rc.syslog"
+	service_start="${initfile} start"
+	service_stop="${initfile} stop"
+
+	if [ -f "/var/run/syslog-ng.pid" ]; then
+		piddir="/var/run"
 	fi
-	unset myplimit
-	myplimit () { cat /proc/$1/limits ; }
+
+	unset service_status
+	unset distpkgoffile
+	unset distpkgstatus
+
+	distpkgoffile () {
+		local LINKTARGET
+		local PKGLOGFILENAMES
+		local SEARCHSTRING
+		PKGLOGFILE=
+		LINKTARGET=$( readlink -f "${1}" 2>/dev/null )
+		SEARCHSTRING="${LINKTARGET##/}"
+		PKGLOGFILENAMES=$( \
+			( grep -r -m 1 -E "^${SEARCHSTRING}\$" /var/log/packages ; \
+				[ "${SEARCHSTRING%%/*}" = "lib" ] && grep -r -m 1 -E "^lib/incoming/${SEARCHSTRING#*/}\$" /var/log/packages ; \
+				[ "${SEARCHSTRING%%/*}" = "lib64" ] && grep -r -m 1 -E "^lib64/incoming/${SEARCHSTRING#*/}\$" /var/log/packages ) | \
+			while read -r RESULT; do
+				RESULT="${RESULT%%:*}"
+				echo "${RESULT##*/}"
+			done )
+		if [ -n "${PKGLOGFILENAMES}" ]; then
+			echo "${PKGLOGFILENAMES}"
+		else
+			echo "No installed package for '$1' found!" >&2
+		fi
+	}
+	distpkgstatus () {
+		local PIVOT
+		local LASTLINE
+		local PKGINFO
+		echo "@@@Package info for: $1"
+		PKGINFO=$( \
+			( find /var/log/packages/ -name "$1*" ) | \
+			while read -r PKGLOGFILE; do
+				PIVOT=$( fgrep -n "FILE LIST:" "$PKGLOGFILE" )
+				LASTLINE=$(( ${PIVOT%%:*} - 1 )) 2>/dev/null
+				head -n ${LASTLINE:-16} "$PKGLOGFILE"
+				echo ""
+			done )
+		if [ -n "${PKGINFO}" ]; then
+			echo "${PKGINFO}"
+		else
+			echo "The package '$1' is not installed, or does not exist!" >&2
+		fi
+	}
 }
 
 setup_env_linux () {
@@ -688,6 +787,10 @@ setup_env_linux () {
 		setup_env_redhat
 	elif [ "$dist" = "EnterpriseEnterpriseServer" ]; then
 		setup_env_redhat
+	elif [ "$dist" = "SUSE LINUX" ]; then
+		setup_env_suse
+	elif [ "$dist" = "Slackware" ]; then
+		setup_env_slackware
 debun_extra_gensolaris () {
 	sysdef >${tmpdir}/sys.sysdef
 	kstat >${tmpdir}/sys.kstat
