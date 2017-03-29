@@ -391,7 +391,7 @@ dnl ***************************************************************************
 dnl Set up CFLAGS
 
 if test "x$ac_compiler_gnu" = "xyes"; then
-        CFLAGS="${CFLAGS} -Wall -Werror -Wno-error=deprecated-declarations"
+        CFLAGS="${CFLAGS} -Wall -Wno-error=deprecated-declarations"
         if test "x$enable_debug" = "xyes"; then
                 CFLAGS="${ac_cv_env_CFLAGS_value} -Wall -g"
         fi
