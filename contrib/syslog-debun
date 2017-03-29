@@ -1087,65 +1087,69 @@ debun_run () {
 }
 
 run_specific_extras () {
-for i in ${extras}; do
-	$i
-done
+	for i in ${extras}; do
+		$i
+	done
 }
 
 run_debug () {
-printf "\nStart Debug collection\n"
-if [ -n "$pcap_params" ]; then
-	echo "Start packet dump in background with filters: $pcap_params"
-	$tcpdump ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} $pcap_params &
-	pcappid=$!
-fi
-if [ -n "$tracing" ] && [ -z "$debug_params" ]; then
-	for i in ${sngallpids}; do
-		$trace -o ${tmpdir}/trace.${i}.txt -p $i &
-		tracepids="${tracepids}${tracepids:+ }$!"
-	done
-fi
-if [ -n "$waitforit" ]; then
-	[ -n "$pcap_params" ] && sleep 1
-	echo "Waiting $waitforit secs before stop system's syslog-ng, and restart in debug mode."
-	pad=''
-	bs=''	
-	for i in `seq 1 ${#waitforit}`; do pad="${pad} " ; bs="\b$bs" ; done
-	printf "Start countdown: ${pad}" >&3
-	for i in `seq $waitforit -1 1 `; do printf "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
-	echo "0">&3
-	touch ${tmpdir}/syslog.debug
-fi
-if [ -n "$debug_params" ]; then
-	$service_stop
-	# We should implement a better waiting for the system service's shutdown, sleep 1 works for now
-	sleep 1
-	echo "Start syslog-ng debug with params: $debug_params"
-	if [ -n "$tracing" ]; then
-		$trace -o ${tmpdir}/trace.dbg.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
-		i=$!
-		tracepids="$i"
-		debugpid="`getchilds $i`"
-		echo "Trace: $i Debug: $debugpid"
-	else
-		$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
-		debugpid=$!
+	printf "\nStart Debug collection\n"
+	if [ -n "$pcap_params" ]; then
+		if is_available $tcpdumpcmd ; then
+			echo "Start packet dump in background with filters: $pcap_params"
+			$tcpdumpcmd $tcpdumpopts ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} $pcap_params &
+			pcappid=$!
+		else
+			echo "tcpdump/snoop is not available" >&2
+		fi
 	fi
-fi
-[ -n "$timeout" ] || echo "When you want to stop collecting data, press ENTER" >&3
-if [ -n "$waitforit" ]; then
-	sleep 1						# Let's gave time the user, to read the message about stoping
-	tail -f ${tmpdir}/syslog.debug >&3 &
-	debugtailpid=$!
-	#disown
-fi
-if [ -n "$timeout" ];
-then
-	sleep "$timeout"
-else
-	read line
-fi
-}
+	if [ -n "$tracing" ] && [ -z "$debug_params" ]; then
+		for i in ${sngallpids}; do
+			$trace -o ${tmpdir}/trace.${i}.txt -p $i &
+			tracepids="${tracepids}${tracepids:+ }$!"
+		done
+	fi
+	if [ -n "$waitforit" ]; then
+		[ -n "$pcap_params" ] && sleep 1
+		echo "Waiting $waitforit secs before stop system's syslog-ng, and restart in debug mode."
+		pad=''
+		bs=''
+		for i in `seq 1 ${#waitforit}`; do pad="${pad} " ; bs="\b$bs" ; done
+		printf "Start countdown: ${pad}" >&3
+		for i in `seq $waitforit -1 1 `; do printf "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
+		echo "0">&3
+		touch ${tmpdir}/syslog.debug
+	fi
+	if [ -n "$debug_params" ]; then
+		$service_stop
+		# We should implement a better waiting for the system service's shutdown, sleep 1 works for now
+		sleep 1
+		echo "Start syslog-ng debug with params: $debug_params"
+		if [ -n "$tracing" ]; then
+			$trace -o ${tmpdir}/trace.dbg.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
+			i=$!
+			tracepids="$i"
+			debugpid="`getchilds $i`"
+			echo "Trace: $i Debug: $debugpid"
+		else
+			$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
+			debugpid=$!
+		fi
+	fi
+	[ -n "$timeout" ] || echo "When you want to stop collecting data, press ENTER" >&3
+	if [ -n "$waitforit" ]; then
+		sleep 1						# Let's gave time the user, to read the message about stoping
+		tail -f ${tmpdir}/syslog.debug >&3 &
+		debugtailpid=$!
+		#disown
+	fi
+	if [ -n "$timeout" ];
+	then
+		sleep "$timeout"
+	else
+		read line
+	fi
+	}
 
 ###
 ### Main program tasks
