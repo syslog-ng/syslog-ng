@@ -444,6 +444,39 @@ acquire_syslog_ldinfo () {
 	done
 }
 
+acquire_syslog_startup_method () {
+	echo "Detecting init system: "
+	if [ -d "/run/systemd/system" ]; then
+		acquire_syslog_startup_systemdunit
+	elif [ -d "/lib/svc/method" ]; then
+		acquire_syslog_startup_svc
+	else
+		acquire_syslog_startup_initscript
+	fi
+}
+
+acquire_syslog_startup_initscript () {
+	if [ -n "${initfile}" ]; then
+		echo "falling back to SystemV init style..."
+		cp "${initfile}" "${tmpdir}/sys.init.syslog-ng"
+		chmod 0660 "${tmpdir}/sys.init.syslog-ng"
+	else
+		echo "none."
+	fi
+}
+
+acquire_syslog_startup_systemdunit () {
+	echo "systemd detected..."
+	cp "/usr/lib/systemd/system/syslog-ng.service" "${tmpdir}/sys.service.syslog-ng"
+}
+
+acquire_syslog_startup_svc () {
+	echo "Solaris SMF detected..."
+	cp "/lib/svc/method/syslog-ng" "${tmpdir}/sys.svc-method.syslog-ng"
+	chmod 0660 "${tmpdir}/sys.svc-method.syslog-ng"
+	cp "/var/svc/manifest/system/syslog-ng.xml" "${tmpdir}/sys.svc-manifest.syslog-ng.xml"
+}
+
 acquire_syslog_all () {
 	printf "\nStart Syslog-specific info collection\n"
 	acquire_syslog_config
@@ -451,6 +484,8 @@ acquire_syslog_all () {
 	acquire_syslog_info
 	acquire_syslog_var
 	acquire_syslog_ldinfo
+	acquire_syslog_startup_method
+
 }
 
 acquire_syslog_nprv () {
@@ -458,6 +493,7 @@ acquire_syslog_nprv () {
 	acquire_syslog_pids
 	acquire_syslog_info
 	acquire_syslog_ldinfo
+	acquire_syslog_startup_method
 }
 
 fhs_set_linux () {
