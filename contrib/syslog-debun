@@ -856,20 +856,28 @@ debun_solaris () {
 	fi
 }
 
-debun_extra_freebsd() {
-	:
 }
 
-debun_freebsd() {
-	add_extra debun_extra_freebsd
-	netstatnlp="sockstat"
+setup_env_freebsd () {
+	netstatpunt="netstat -n"
 	ipconfig="ifconfig -a"
 	pseao="ps xao"
+	initfile="/etc/rc.d/syslog-ng"
+	service_stop="${initfile} stop"
+	service_start="${initfile} start"
+	service_status="${initfile} status"
+
+	unset free
+	unset netstatnlp
+	unset mypidof
+	unset getsyslogpids
+	unset distpkgoffile
+	unset distpkgstatus
+
+	free () { top -bt 0 ; }
+	netstatnlp () { sockstat ; }
 	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done; }
-	getsyslogpids="mypidof syslog-ng"
-	service_stop="/etc/rc.d/syslog-ng stop"
-	service_start="/etc/rc.d/syslog-ng start"
-	service_status="/etc/rc.d/syslog-ng status"
+	getsyslogpids () { mypidof syslog-ng ; }
 	distpkgoffile () { : ; }
 	distpkgstatus () { : ; }
 }
