@@ -220,7 +220,7 @@ debun_finish_debug () {
 			checkpid ${debugpid} && echo "I gave up... debugger pid doesn't die"
 		fi
 		printf 'Debugpid: "%s"\n' "${debugpid}"
-		$service_start
+		( exec 3>&- ; $service_start ; )
 	fi
 	if checkpid ${debugtailpid} ; then
 		kill $debugtailpid
