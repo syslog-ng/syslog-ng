@@ -378,7 +378,13 @@ acquire_syslog_config () {
 	cd $confdir
 	mkdir  ${tmpdir}/config
 	find . | tee ${tmpdir}/syslog.etc.files | grep -v '\.key$' | \
-		while read FILE; do ${grepq} "PRIVATE KEY-----" "${FILE}" 2>/dev/null || echo "${FILE}" ; done | \
+		while read FILE; do \
+			if ${grepq} "PRIVATE KEY-----" "${FILE}" 2>/dev/null; then
+				echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
+			else
+				echo "${FILE}"
+			fi
+		done | \
 		cpio -pd ${tmpdir}/config
 }
 
