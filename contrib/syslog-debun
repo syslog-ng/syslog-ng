@@ -376,8 +376,10 @@ acquire_general_info () {
 acquire_syslog_config () {
 	echo "Copy configs from $confdir"
 	cd $confdir
-	mkdir  ${tmpdir}/config
-	find . | tee ${tmpdir}/syslog.etc.files | grep -v '\.key$' | \
+	mkdir ${tmpdir}/config
+	find . > ${tmpdir}/syslog.etc.files
+	grep '\.key$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
+	grep -v '\.key$' ${tmpdir}/syslog.etc.files | \
 		while read FILE; do \
 			if ${grepq} "PRIVATE KEY-----" "${FILE}" 2>/dev/null; then
 				echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
