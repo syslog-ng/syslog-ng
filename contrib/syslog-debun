@@ -70,6 +70,8 @@ service_stop="${initfile} stop"
 service_start="${initfile} start"
 service_status="${initfile} status"
 #checkpid () { [ -d /proc/"$1" ]; }
+#some old Unix versions did not have procfs, and kill -0 allows to check whether a PID exists
+#for reference: http://pubs.opengroup.org/onlinepubs/009695399/functions/kill.html
 checkpid () { [ -n "$1" ] && kill -0 "$1" 2>/dev/null ; }
 #mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "\<$tailpid\>" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
 mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "^$tailpid\$" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
@@ -451,9 +453,15 @@ acquire_syslog_var () {
 
 format_ldd_output () {
 	while read x ; do
-		x="${x#*=>}"
+		#	libsyslog-ng-5.0.5.so => /opt/syslog-ng/lib/libsyslog-ng-5.0.5.so (0x00007f9b42990000)
+		#/opt/syslog-ng/lib/libsyslog-ng-5.0.5.so (0x00007f9b42990000)
 		x="/${x#*/}"
+		#/opt/syslog-ng/lib/libsyslog-ng-6.0.2.so (0x00007f034c8c0000)
+		#/opt/syslog-ng/lib/libsyslog-ng-6.0.2.so
 		x="${x%% (*}"
+		#AIX:
+		#/opt/syslog-ng/lib/libsyslog-ng.a(libsyslog-ng-5.0.14.so)
+		#/opt/syslog-ng/lib/libsyslog-ng.a
 		x="${x%%(*}"
 		[ "${x}" != "/ " ] && [ -f "${x}" ] && echo "$x"
 	done
@@ -537,6 +545,18 @@ fhs_set_linux () {
 fhs_set_unix () {
 	:
 }
+
+rpm_verify () {
+	local found=0
+	for pkg in "${@}"; do
+		if rpm -q "${pkg}" ; then
+			rpm -V "${pkg}" && echo "${pkg}: Package files are intact"
+			((found+=1))
+		fi
+	done
+	[ ${found} -eq 0 ] && return 1 || return 0
+}
+
 ### Here comes the linux & distro specific parts
 
 debun_extra_debian () {
@@ -551,9 +571,8 @@ debun_extra_debian () {
 debun_extra_redhat () {
 	printf "\nRedhat specific checks\n"
 	echo "Check package files integrity"
-	rpm -V syslog-ng-premium-edition && echo "syslog-ng-premium-edition: Package files are intact"
-	rpm -V syslog-ng-premium-edition-client && echo "syslog-ng-premium-edition-client: Package files are intact"
-	rpm -V syslog-ng-premium-edition-compact && echo "syslog-ng-premium-edition-compact: Package files are intact"
+	rpm_verify syslog-ng-premium-edition syslog-ng-premium-edition-client syslog-ng-premium-edition-compact || \
+		echo "No syslog-ng RPM packages have been found!"
 	echo "list syslog-related packages"
 	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
 }
@@ -567,9 +586,8 @@ debun_extra_slackware () {
 debun_extra_suse() {
 	printf "\nSuSE specific checks\n"
 	echo "Check package files integrity"
-	rpm -V syslog-ng-premium-edition && echo "syslog-ng-premium-edition: Package files are intact"
-	rpm -V syslog-ng-premium-edition-client && echo "syslog-ng-premium-edition-client: Package files are intact"
-	rpm -V syslog-ng-premium-edition-compact && echo "syslog-ng-premium-edition-compact: Package files are intact"
+	rpm_verify syslog-ng-premium-edition syslog-ng-premium-edition-client syslog-ng-premium-edition-compact || \
+		echo "No syslog-ng RPM packages have been found!"
 	echo "list syslog-related packages"
 	rpm -qa | grep syslog > ${tmpdir}/rpm.packages
 	#on opensuse "ss utility, iproute2-ss071016" crashes when run with the -punt CLI options
@@ -665,9 +683,8 @@ debun_aix () {
 	add_extra debun_extra_aix
 
 	echo "Check package files integrity"
-	rpm -V syslog-ng-premium-edition && echo "syslog-ng-premium-edition: Package files are intact"
-	rpm -V syslog-ng-premium-edition-client && echo "syslog-ng-premium-edition-client: Package files are intact"
-	rpm -V syslog-ng-premium-edition-compact && echo "syslog-ng-premium-edition-compact: Package files are intact"
+	rpm_verify syslog-ng-premium-edition syslog-ng-premium-edition-client syslog-ng-premium-edition-compact || \
+		echo "No syslog-ng RPM packages have been found!"
 	echo "list syslog-related packages"
 	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
 }
