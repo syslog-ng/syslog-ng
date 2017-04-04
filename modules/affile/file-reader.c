@@ -369,6 +369,16 @@ _free(LogPipe *s)
   g_assert(!self->reader);
 }
 
+void
+file_reader_remove_persist_state(FileReader *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super);
+  const gchar *old_persist_name = _format_persist_name(&self->super);
+  gchar *new_persist_name = g_strdup_printf("%s_REMOVED", old_persist_name);
+  persist_state_rename_entry(cfg->state, old_persist_name, new_persist_name);
+  g_free(new_persist_name);
+}
+
 FileReader *
 file_reader_new(const gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg)
 {
