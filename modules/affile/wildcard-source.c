@@ -118,7 +118,7 @@ _handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 }
 
 static void
-_start_file_reader(const DirectoryMonitorEvent *event, gpointer user_data)
+_on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
   if ((event->event_type == FILE_CREATED))
@@ -185,7 +185,7 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
     .follow_freq = self->file_reader_options.follow_freq
   };
   DirectoryMonitor *monitor = create_directory_monitor(&options);
-  directory_monitor_set_callback(monitor, _start_file_reader, self);
+  directory_monitor_set_callback(monitor, _on_directory_monitor_changed, self);
   directory_monitor_start(monitor);
   g_hash_table_insert(self->directory_monitors, g_strdup(directory), monitor);
 }
