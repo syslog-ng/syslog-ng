@@ -138,6 +138,7 @@ test_str_funcs(void)
   assert_template_format("$(sanitize -C alma\x1b_bela)", "alma\x1b_bela");
 
   assert_template_format("$(sanitize $HOST $PROGRAM)", "bzorp/syslog-ng");
+  assert_template_failure("$(sanitize ${missingbrace)", "Invalid macro, '}' is missing, error_pos='14'");
 
   assert_template_format("$(indent-multi-line 'foo\nbar')", "foo\n\tbar");
 
