@@ -49,14 +49,14 @@ _check_required_options(WildcardSourceDriver *self)
 }
 
 void
-_create_file_reader(WildcardSourceDriver *self, const gchar *name, const gchar *full_path)
+_create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 {
   FileReader *reader = NULL;
   if (g_hash_table_size (self->file_readers) >= self->max_files)
     {
       msg_warning("Number of allowed monitorod file is reached, rejecting read file",
                   evt_tag_str("source", self->super.super.group),
-                  evt_tag_str("filename", name),
+                  evt_tag_str("filename", full_path),
                   evt_tag_int("max_files", self->max_files));
       return;
     }
@@ -66,7 +66,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *name, const gchar *
   log_pipe_append (&reader->super, &self->super.super.super);
   if (!log_pipe_init (&reader->super))
     {
-      msg_warning("File reader initialization failed", evt_tag_str ("filename", name),
+      msg_warning("File reader initialization failed", evt_tag_str ("filename", full_path),
                   evt_tag_str ("source_driver", self->super.super.group));
       log_pipe_unref (&reader->super);
     }
@@ -84,7 +84,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
       FileReader *reader = g_hash_table_lookup (self->file_readers, event->full_path);
       if (!reader)
         {
-          _create_file_reader (self, event->name, event->full_path);
+          _create_file_reader (self, event->full_path);
         }
     }
 }
