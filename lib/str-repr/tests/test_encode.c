@@ -119,7 +119,7 @@ _perftest(const gchar *value_to_encode)
     {
       str_repr_encode(result, value_to_encode, value_len, ",");
     }
-  stop_stopwatch_and_display_result(iteration_index, "%.64s...");
+  stop_stopwatch_and_display_result(iteration_index, "%.64s...", value_to_encode);
   g_string_free(result, TRUE);
 }
 
