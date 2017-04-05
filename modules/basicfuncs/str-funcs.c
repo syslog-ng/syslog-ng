@@ -259,7 +259,6 @@ tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, 
 
   if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
     {
-      g_free(state);
       goto exit;
     }
   state->ctrl_chars = ctrl_chars;

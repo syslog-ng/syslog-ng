@@ -47,7 +47,9 @@ uint32_t X509_get_extension_flags(X509 *x)
 }
 #endif
 
+/* locking callbacks for OpenSSL prior to 1.1.0 */
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
+
 static gint ssl_lock_count;
 static GStaticMutex *ssl_locks;
 
@@ -64,23 +66,8 @@ _ssl_locking_callback(int mode, int type, const char *file, int line)
     }
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10000000
-static unsigned long
-_ssl_thread_id(void)
-{
-  return (unsigned long) get_thread_id();
-}
-
-#else
 static void
-_ssl_thread_id2(CRYPTO_THREADID *id)
-{
-  CRYPTO_THREADID_set_numeric(id, (unsigned long) get_thread_id());
-}
-#endif
-
-void
-openssl_crypto_init_threading(void)
+_init_locks(void)
 {
   gint i;
 
@@ -90,16 +77,11 @@ openssl_crypto_init_threading(void)
     {
       g_static_mutex_init(&ssl_locks[i]);
     }
-#if OPENSSL_VERSION_NUMBER < 0x10000000
-  CRYPTO_set_id_callback(_ssl_thread_id);
-#else
-  CRYPTO_THREADID_set_callback(_ssl_thread_id2);
-#endif
   CRYPTO_set_locking_callback(_ssl_locking_callback);
 }
 
-void
-openssl_crypto_deinit_threading(void)
+static void
+_deinit_locks(void)
 {
   gint i;
 
@@ -110,30 +92,71 @@ openssl_crypto_deinit_threading(void)
   g_free(ssl_locks);
 }
 
-void
-openssl_init(void)
-{
-  SSL_library_init();
-  SSL_load_error_strings();
-  OpenSSL_add_all_algorithms();
-}
-
 #else
 
-void
-openssl_crypto_deinit_threading(void)
+static void
+_init_locks(void)
 {
 }
 
-void
-openssl_crypto_init_threading(void)
-{
-}
-
-void
-openssl_init(void)
+static void
+_deinit_locks(void)
 {
 }
 
 #endif
 
+
+/* ThreadID callbacks for various OpenSSL versions */
+#if OPENSSL_VERSION_NUMBER < 0x10000000
+
+static unsigned long
+_ssl_thread_id(void)
+{
+  return (unsigned long) get_thread_id();
+}
+
+static void
+_init_threadid_callback(void)
+{
+  CRYPTO_set_id_callback(_ssl_thread_id);
+}
+
+#else
+
+static void
+_ssl_thread_id2(CRYPTO_THREADID *id)
+{
+  CRYPTO_THREADID_set_numeric(id, (unsigned long) get_thread_id());
+}
+
+static void
+_init_threadid_callback(void)
+{
+  CRYPTO_THREADID_set_callback(_ssl_thread_id2);
+}
+
+#endif
+
+void
+openssl_crypto_init_threading(void)
+{
+  _init_locks();
+  _init_threadid_callback();
+}
+
+void
+openssl_crypto_deinit_threading(void)
+{
+  _deinit_locks();
+}
+
+void
+openssl_init(void)
+{
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  SSL_library_init();
+  SSL_load_error_strings();
+  OpenSSL_add_all_algorithms();
+#endif
+}

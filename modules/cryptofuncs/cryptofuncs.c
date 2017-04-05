@@ -90,7 +90,6 @@ tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
     {
-      g_free(state);
       return FALSE;
     }
   state->length = length;
