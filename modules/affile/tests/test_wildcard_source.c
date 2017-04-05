@@ -69,10 +69,10 @@ TestSuite(wildcard_source, .init = _init, .fini = _deinit);
 Test(wildcard_source, initial_test)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
-                                 "filename-pattern(*.log)"
-                                 "recursive(yes)"
-                                 "max-files(100)"
-                                 "monitor-method(poll)");
+                                                             "filename-pattern(*.log)"
+                                                             "recursive(yes)"
+                                                             "max-files(100)"
+                                                             "monitor-method(poll)");
   cr_assert_str_eq(driver->base_dir, "/test_non_existent_dir");
   cr_assert_str_eq(driver->filename_pattern, "*.log");
   cr_assert_eq(driver->max_files, 100);
@@ -83,15 +83,15 @@ Test(wildcard_source, initial_test)
 Test(wildcard_source, test_option_inheritance)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
-                                 "filename-pattern(*.log)"
-                                 "recursive(yes)"
-                                 "max-files(100)"
-                                 "follow-freq(10)"
-                                 "follow_freq(10.0)"
-                                 "pad_size(5)"
-                                 "multi-line-mode(regexp)"
-                                 "multi-line-prefix(\\d+)"
-                                 "multi-line-garbage(garbage)");
+                                                             "filename-pattern(*.log)"
+                                                             "recursive(yes)"
+                                                             "max-files(100)"
+                                                             "follow-freq(10)"
+                                                             "follow_freq(10.0)"
+                                                             "pad_size(5)"
+                                                             "multi-line-mode(regexp)"
+                                                             "multi-line-prefix(\\d+)"
+                                                             "multi-line-garbage(garbage)");
   cr_assert_eq(driver->file_reader_options.follow_freq, 10000);
   cr_assert_eq(driver->file_reader_options.pad_size, 5);
   cr_assert_eq(driver->file_reader_options.multi_line_mode, MLM_PREFIX_GARBAGE);
@@ -102,9 +102,9 @@ Test(wildcard_source, test_option_inheritance)
 Test(wildcard_source, test_option_duplication)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
-                                 "filename-pattern(*.txt)"
-                                 "base-dir(/test_non_existent_dir)"
-                                 "filename-pattern(*.log)");
+                                                             "filename-pattern(*.txt)"
+                                                             "base-dir(/test_non_existent_dir)"
+                                                             "filename-pattern(*.log)");
   cr_assert_str_eq(driver->base_dir, "/test_non_existent_dir");
   cr_assert_str_eq(driver->filename_pattern, "*.log");
 }
@@ -141,10 +141,10 @@ Test(wildcard_source, test_invalid_monitor_method)
 Test(wildcard_source, test_minimum_window_size)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
-                                 "filename-pattern(*.log)"
-                                 "recursive(yes)"
-                                 "max_files(100)"
-                                 "log_iw_size(1000)");
+                                                             "filename-pattern(*.log)"
+                                                             "recursive(yes)"
+                                                             "max_files(100)"
+                                                             "log_iw_size(1000)");
   cr_assert_eq(driver->file_reader_options.reader_options.super.init_window_size, MINIMUM_WINDOW_SIZE);
 }
 
@@ -152,9 +152,9 @@ Test(wildcard_source, test_window_size)
 {
 
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
-                                 "filename-pattern(*.log)"
-                                 "recursive(yes)"
-                                 "max_files(10)"
-                                 "log_iw_size(10000)");
+                                                             "filename-pattern(*.log)"
+                                                             "recursive(yes)"
+                                                             "max_files(10)"
+                                                             "log_iw_size(10000)");
   cr_assert_eq(driver->file_reader_options.reader_options.super.init_window_size, 1000);
 }

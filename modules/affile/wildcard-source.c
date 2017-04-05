@@ -308,7 +308,7 @@ wildcard_sd_new(GlobalConfig *cfg)
 
   self->file_readers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)log_pipe_unref);
   self->directory_monitors = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
-                             (GDestroyNotify)_stop_and_destroy_directory_monitor);
+                                                   (GDestroyNotify)_stop_and_destroy_directory_monitor);
 
   log_reader_options_defaults(&self->file_reader_options.reader_options);
   file_perm_options_defaults(&self->file_reader_options.file_perm_options);
