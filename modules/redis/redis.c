@@ -44,13 +44,13 @@ typedef struct
 
   LogTemplateOptions template_options;
 
-  GString	*command;
-  LogTemplate	*key;
-  GString	*key_str;
-  LogTemplate	*param1;
-  GString	*param1_str;
-  LogTemplate	*param2;
-  GString	*param2_str;
+  GString *command;
+  LogTemplate *key;
+  GString *key_str;
+  LogTemplate *param1;
+  GString *param1_str;
+  LogTemplate *param2;
+  GString *param2_str;
 
   redisContext *c;
 } RedisDriver;
@@ -202,14 +202,14 @@ redis_dd_connect(RedisDriver *self, gboolean reconnect)
   if (self->auth)
     if (!authenticate_to_redis(self, self->auth))
       {
-         msg_error("REDIS: failed to authenticate");
-         return FALSE;
+        msg_error("REDIS: failed to authenticate");
+        return FALSE;
       }
 
   if (!test_connection_to_redis(self))
     {
-       msg_error("REDIS: failed to connect");
-       return FALSE;
+      msg_error("REDIS: failed to connect");
+      return FALSE;
     }
 
   msg_debug("Connecting to REDIS succeeded",
@@ -249,8 +249,8 @@ redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 
   if (!test_connection_to_redis(self))
     {
-       msg_error("REDIS: worker failed to connect");
-       return WORKER_INSERT_RESULT_NOT_CONNECTED;
+      msg_error("REDIS: worker failed to connect");
+      return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
 
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND,

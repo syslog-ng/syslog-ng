@@ -72,6 +72,7 @@ redis_option
         | KW_AUTH '(' string ')'
           {
             redis_dd_set_auth(last_driver, $3);
+            free($3);
           }
         | KW_COMMAND '(' string template_content ')'
           {
