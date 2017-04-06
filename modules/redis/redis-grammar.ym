@@ -69,6 +69,10 @@ redis_option
           {
             redis_dd_set_port(last_driver, $3);
           }
+        | KW_AUTH '(' string ')'
+          {
+            redis_dd_set_auth(last_driver, $3);
+          }
         | KW_COMMAND '(' string template_content ')'
           {
             redis_dd_set_command(last_driver, $3, $4, NULL, NULL);

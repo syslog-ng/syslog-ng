@@ -330,6 +330,9 @@ extern struct _StatsOptions *last_stats_options;
 
 %token KW_RETRIES                     10511
 
+/* authentication */
+%token KW_AUTH                        10600
+
 /* END_DECLS */
 
 %code {
