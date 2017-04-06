@@ -39,17 +39,18 @@ typedef struct
   LogThrDestDriver super;
 
   gchar *host;
-  gint port;
+  gint   port;
+  gchar *auth;
 
   LogTemplateOptions template_options;
 
-  GString *command;
-  LogTemplate *key;
-  GString *key_str;
-  LogTemplate *param1;
-  GString *param1_str;
-  LogTemplate *param2;
-  GString *param2_str;
+  GString	*command;
+  LogTemplate	*key;
+  GString	*key_str;
+  LogTemplate	*param1;
+  GString	*param1_str;
+  LogTemplate	*param2;
+  GString	*param2_str;
 
   redisContext *c;
 } RedisDriver;
@@ -73,6 +74,15 @@ redis_dd_set_port(LogDriver *d, gint port)
   RedisDriver *self = (RedisDriver *)d;
 
   self->port = (int)port;
+}
+
+void
+redis_dd_set_auth(LogDriver *d, const gchar *auth)
+{
+  RedisDriver *self = (RedisDriver *)d;
+
+  g_free(self->auth);
+  self->auth = g_strdup(auth);
 }
 
 void
@@ -135,6 +145,32 @@ redis_dd_format_persist_name(const LogPipe *s)
 }
 
 static gboolean
+sendRedisCommand(RedisDriver *self, const char *format, ...)
+{
+  va_list ap;
+  va_start(ap, format);
+  redisReply *reply = redisvCommand(self->c, format, ap);
+  va_end(ap);
+
+  gboolean retval = reply && (reply->type != REDIS_REPLY_ERROR);
+  if (reply)
+    freeReplyObject(reply);
+  return retval;
+}
+
+static gboolean
+test_connection_to_redis(RedisDriver *self)
+{
+  return sendRedisCommand(self, "ping");
+}
+
+static gboolean
+authenticate_to_redis(RedisDriver *self, const gchar *password)
+{
+  return sendRedisCommand(self, "AUTH %s", self->auth);
+}
+
+static gboolean
 redis_dd_connect(RedisDriver *self, gboolean reconnect)
 {
   redisReply *reply;
@@ -162,9 +198,22 @@ redis_dd_connect(RedisDriver *self, gboolean reconnect)
                 evt_tag_int("time_reopen", self->super.time_reopen));
       return FALSE;
     }
-  else
-    msg_debug("Connecting to REDIS succeeded",
-              evt_tag_str("driver", self->super.super.super.id));
+
+  if (self->auth)
+    if (!authenticate_to_redis(self, self->auth))
+      {
+         msg_error("REDIS: failed to authenticate");
+         return FALSE;
+      }
+
+  if (!test_connection_to_redis(self))
+    {
+       msg_error("REDIS: failed to connect");
+       return FALSE;
+    }
+
+  msg_debug("Connecting to REDIS succeeded",
+            evt_tag_str("driver", self->super.super.super.id));
 
   return TRUE;
 }
@@ -343,6 +392,7 @@ redis_dd_new(GlobalConfig *cfg)
 
   redis_dd_set_host((LogDriver *)self, "127.0.0.1");
   redis_dd_set_port((LogDriver *)self, 6379);
+  redis_dd_set_auth((LogDriver *)self, NULL);
 
   self->command = g_string_sized_new(32);
 
