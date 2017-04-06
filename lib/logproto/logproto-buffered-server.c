@@ -269,6 +269,8 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
                      evt_tag_str("state", persist_name));
           state->buffer_pos = state->pending_buffer_pos = 0;
         }
+
+      self->fetch_state = LPBSF_FETCHING_FROM_BUFFER;
     }
   else
     {
