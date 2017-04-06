@@ -159,7 +159,7 @@ sendRedisCommand(RedisDriver *self, const char *format, ...)
 }
 
 static gboolean
-test_connection_to_redis(RedisDriver *self)
+check_connection_to_redis(RedisDriver *self)
 {
   return sendRedisCommand(self, "ping");
 }
@@ -206,7 +206,7 @@ redis_dd_connect(RedisDriver *self, gboolean reconnect)
         return FALSE;
       }
 
-  if (!test_connection_to_redis(self))
+  if (!check_connection_to_redis(self))
     {
       msg_error("REDIS: failed to connect");
       return FALSE;
@@ -247,7 +247,7 @@ redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   if (self->c->err)
     return WORKER_INSERT_RESULT_ERROR;
 
-  if (!test_connection_to_redis(self))
+  if (!check_connection_to_redis(self))
     {
       msg_error("REDIS: worker failed to connect");
       return WORKER_INSERT_RESULT_NOT_CONNECTED;
@@ -364,6 +364,7 @@ redis_dd_free(LogPipe *d)
   log_template_options_destroy(&self->template_options);
 
   g_free(self->host);
+  g_free(self->auth);
   g_string_free(self->command, TRUE);
   log_template_unref(self->key);
   log_template_unref(self->param1);
