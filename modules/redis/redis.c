@@ -145,7 +145,7 @@ redis_dd_format_persist_name(const LogPipe *s)
 }
 
 static gboolean
-sendRedisCommand(RedisDriver *self, const char *format, ...)
+send_redis_command(RedisDriver *self, const char *format, ...)
 {
   va_list ap;
   va_start(ap, format);
@@ -161,13 +161,13 @@ sendRedisCommand(RedisDriver *self, const char *format, ...)
 static gboolean
 check_connection_to_redis(RedisDriver *self)
 {
-  return sendRedisCommand(self, "ping");
+  return send_redis_command(self, "ping");
 }
 
 static gboolean
 authenticate_to_redis(RedisDriver *self, const gchar *password)
 {
-  return sendRedisCommand(self, "AUTH %s", self->auth);
+  return send_redis_command(self, "AUTH %s", self->auth);
 }
 
 static gboolean
