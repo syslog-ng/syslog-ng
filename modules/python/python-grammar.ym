@@ -1,0 +1,149 @@
+/*
+ * Copyright (c) 2014 Balabit
+ * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "python-parser.h"
+#include "python-dest.h"
+#include "python-logparser.h"
+#include "python-main.h"
+#include "value-pairs/value-pairs.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "cfg-parser.h"
+#include "plugin.h"
+}
+
+%name-prefix "python_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {void **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_PYTHON
+%token KW_CLASS
+%token KW_IMPORTS
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_PYTHON
+          {
+            last_driver = *instance = python_dd_new(configuration);
+          }
+          '(' python_dd_options ')'         { YYACCEPT; }
+        | LL_CONTEXT_PARSER KW_PYTHON
+	  {
+	    last_parser = *instance = python_parser_new(configuration);
+          }
+          '(' python_parser_options ')' { YYACCEPT; }
+	| LL_CONTEXT_ROOT KW_PYTHON
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "Python code"); }
+          LL_BLOCK
+          { cfg_lexer_pop_context(lexer); }
+          {
+            gboolean result;
+
+	    result = python_evaluate_global_code(configuration, $4);
+	    free($4);
+            CHECK_ERROR(result, @1, "Error processing global python block");
+            *instance = (void *) 1;
+            YYACCEPT;
+          }
+        ;
+
+python_dd_options
+        : python_dd_option python_dd_options
+        |
+        ;
+
+python_dd_option
+        : KW_CLASS '(' string ')'
+          {
+            python_dd_set_class(last_driver, $3);
+            free($3);
+          }
+        | KW_IMPORTS '(' string_list ')'
+          {
+            python_dd_set_imports(last_driver, $3);
+          }
+        | KW_OPTIONS '(' python_dd_custom_options ')'
+        | value_pair_option
+          {
+            python_dd_set_value_pairs(last_driver, $1);
+          }
+        | dest_driver_option
+        | { last_template_options = python_dd_get_template_options(last_driver); } template_option
+        ;
+
+python_dd_custom_options
+        : python_dd_custom_option python_dd_custom_options
+        |
+        ;
+
+python_dd_custom_option
+        : string '(' string_or_number ')' { python_dd_set_option(last_driver, $1, $3); free($1); free($3);  }
+	;
+
+python_parser_options
+        : python_parser_option python_parser_options
+        |
+        ;
+
+python_parser_option
+        : KW_CLASS '(' string ')'
+          {
+            python_parser_set_class(last_parser, $3);
+            free($3);
+          }
+        | KW_IMPORTS '(' string_list ')'
+          {
+            python_parser_set_imports(last_parser, $3);
+            free($3);
+          }
+        | KW_OPTIONS '(' python_parser_custom_options ')'
+        ;
+
+python_parser_custom_options
+        : python_parser_custom_option python_parser_custom_options
+        |
+        ;
+
+python_parser_custom_option
+        : string string_or_number
+        {
+           python_parser_set_option(last_parser, $1, $2);
+           free($1);
+           free($2);
+        }
+
+
+/* INCLUDE_RULES */
+
+%%

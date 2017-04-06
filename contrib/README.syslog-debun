@@ -1,0 +1,58 @@
+README for syslog-debun, the Syslog-ng DEBUg buNdle generator
+
+The main purpose of this software is to collect and save information about
+your syslog-ng installation / implementation for that case, if you want to
+ask help about your syslog-ng related problem.
+
+usage examples:
+# syslog-debun
+	Create a simple debug bundle, collecting about your environmental
+	information. eg. list of packages, which contains the word: syslog
+	ldd of your syslog-binary, etc.
+
+# syslog-debun -l
+	Like previuos, but left out some information, which may you think
+	harm your privacy. Eg fstab, df's output, mount info, ip / network
+	interface configuration, DNS resolv info, and process tree is NOT
+	collected.
+
+# syslog-debun -d
+	Besides collecting information, it stops system's syslog-ng, then
+	start in debug mode with -Fedv --enable-core, and until you do not
+	press enter, it stays in that mode. Debug's output is collected into
+	a separate file, and also collected.
+
+# syslog-debun -p
+	Will run packet capture with filter: "port 514 or port 601 or port 53"
+	Also wait for pressing enter, like debug mode.
+
+# syslog-debun -p -t 10
+	Like the previous one, but do not wait for pressing enter, it will
+	exit from tcpdump mode after 10 seconds. (noninteractive debug mode)
+
+# syslog-debun -P "host 1.2.3.4" -D "-Fev --enable-core"
+	packet capturing's filter will be changed from default to
+		host 1.2.3.4
+	Debugging paramters will be changed from default to
+		-Fev --enable-core
+	And, since a timout is not given, it will wait for pressing enter.
+
+# syslog-debun -p -d -w 5 -t 10
+	Collect pcap and debug mode output following this scenario:
+	* start packet capture with default params
+	* wait 5 seconds
+	* stop system's syslog-ng
+	* start syslog-ng in debug mode with default params, syslog's debug
+	  messages are also appearing on your console
+	* wait 10 seconds
+	* stop syslog-ng debuging
+	* start system's syslog-ng
+	* stops packet capturing
+
+# syslog-debun -W /var/tmp -P /usr/local
+	Collect debug info, but the temporary files, and the result will be
+	in /var/tmp instead of /tmp and don't try to search syslog-ng in
+	/opt/syslog-ng, it will search in /usr/local
+
+# syslog-debun -s -t 10
+	Collect debug info, start tracing, and exit tracing after 10 seconds

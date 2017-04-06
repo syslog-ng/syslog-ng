@@ -1,0 +1,23 @@
+set(COMPAT_HEADERS
+    compat/compat.h
+    compat/getutent.h
+    compat/glib.h
+    compat/lfs.h
+    compat/pio.h
+    compat/socket.h
+    compat/string.h
+    compat/time.h
+    compat/openssl_support.h
+    compat/pcre.h
+    PARENT_SCOPE)
+
+set(COMPAT_SOURCES
+    compat/getutent.c
+    compat/inet_aton.c
+    compat/memrchr.c
+    compat/pio.c
+    compat/strcasestr.c
+    compat/strtok_r.c
+    compat/time.c
+    compat/openssl_support.c
+    PARENT_SCOPE)

@@ -1,0 +1,12 @@
+policy_module(syslog_ng, 1.0.5)
+
+require {
+        type syslogd_t, syslogd_var_run_t, shell_exec_t, bin_t;
+        class file { ioctl read getattr lock execute execute_no_trans };
+        class sock_file { ioctl read write create getattr setattr lock append unlink link rename };
+}
+
+allow syslogd_t syslogd_var_run_t:sock_file { ioctl read write create getattr setattr lock append unlink link rename }; 
+allow syslogd_t bin_t:file { ioctl read getattr lock execute execute_no_trans };
+allow syslogd_t shell_exec_t:file { read execute getattr execute_no_trans };
+

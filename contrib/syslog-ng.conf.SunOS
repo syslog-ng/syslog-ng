@@ -1,0 +1,56 @@
+# syslog-ng configuration file.
+#
+# This should behave pretty much like the original syslog on SunOS. But
+# it could be configured a lot smarter.
+#
+# See syslog-ng(8) and syslog-ng.conf(5) for more information.
+#
+# 20000925 gb@sysfive.com
+
+options { sync (0);
+          time_reopen (10);
+          log_fifo_size (1000);
+          long_hostnames (off);
+          use_dns (no);
+          use_fqdn (no);
+          create_dirs (no);
+          keep_hostname (yes);
+        };
+
+source s_sys { sun-streams ("/dev/log" door("/etc/.syslog_door")); internal(); };
+
+destination d_cons { file("/dev/console"); };
+destination d_mesg { file("/var/adm/messages"); };
+destination d_mail { file("/var/log/syslog"); };
+destination d_auth { file("/var/log/authlog"); };
+destination d_mlop { usertty("operator"); };
+destination d_mlrt { usertty("root"); };
+destination d_mlal { usertty("*"); };
+
+filter f_filter1   { level(err) or
+		     (level(notice) and facility (auth, kern)); };
+filter f_filter2   { level(err) or
+                     (facility(kern) and level(notice)) or
+                     (facility(daemon) and level(notice)) or
+                     (facility(mail) and level(crit)); };
+filter f_filter3   { level(alert) or
+                     (facility(kern) and level(err)) or
+                     (facility(daemon) and level(err)); };
+filter f_filter4   { level(alert); };
+filter f_filter5   { level(emerg); };
+filter f_filter6   { facility(kern) and level(notice); };
+filter f_filter7   { facility(mail) and level(debug); };
+filter f_filter8   { facility(user) and level(err); };
+filter f_filter9   { facility(user) and level(alert); };
+
+log { source(s_sys); filter(f_filter1); destination(d_cons); };
+log { source(s_sys); filter(f_filter2); destination(d_mesg); };
+log { source(s_sys); filter(f_filter3); destination(d_mlop); };
+log { source(s_sys); filter(f_filter4); destination(d_mlrt); };
+log { source(s_sys); filter(f_filter5); destination(d_mlal); };
+log { source(s_sys); filter(f_filter6); destination(d_auth); };
+log { source(s_sys); filter(f_filter7); destination(d_mail); };
+log { source(s_sys); filter(f_filter8); destination(d_cons);
+	                                destination(d_mesg); };
+log { source(s_sys); filter(f_filter9); destination(d_mlop);
+                                        destination(d_mlrt); };

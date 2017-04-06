@@ -1,0 +1,321 @@
+# /lib/lsb/init-functions replacement for syslog-ng Premium Edition
+
+RED=
+YELLOW=
+NORMAL=
+FANCYTTY=
+PSOPTS=
+
+ECHO=echo
+
+OS=`uname -s`
+
+# LSB Functions
+# ripped from ubuntu/debian lsb
+log_use_fancy_output() {
+  case "$TERM" in
+    dumb|raw|serial|vt*|cons*|unknown)
+      return 1
+      ;;
+    *)
+      if [ -n "$FANCYTTY" ] && [ $FANCYTTY -ne 1 ]; then
+        return 1
+      fi
+      RED="\033[31m"
+      YELLOW="\033[33m"
+      NORMAL="\033[0m"
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+log_success_msg() {
+  $ECHO "$@"
+}
+
+log_failure_msg() {
+  log_use_fancy_output
+  $ECHO "${RED}$@${NORMAL}"
+}
+
+log_warning_msg() {
+  log_use_fancy_output
+  $ECHO "${YELLOW}$@${NORMAL}"
+}
+
+# NON-LSB Functions
+
+log_begin_msg() {
+  if [ -z "$1" ]; then
+    return 1
+  fi
+
+  $ECHO "$@\c "
+}
+
+log_daemon_msg() {
+  if [ -z "$1" ];then
+    return 1
+  fi
+
+  if [ -z "$2" ]; then
+    $ECHO "$1:\c "
+    return
+  fi
+
+  $ECHO "$1: $2\c "
+}
+
+log_progress_msg() {
+  if [ -z "$1" ]; then
+    return 1
+  fi
+
+  if [ $1 -eq 0 ]; then
+    $ECHO "."
+  else
+    $ECHO " failed"
+  fi
+}
+
+log_end_msg() {
+  if [ -z "$1" ]; then
+    return 1
+  fi
+
+  log_fancy_output
+  if [ $1 -eq 0 ];then
+    $ECHO "."
+  else
+    $ECHO "${RED}failed!${NORMAL}"
+  fi
+  return $1
+}
+
+log_action_msg() {
+  $ECHO "$@."
+}
+
+log_action_begin_msg() {
+  $ECHO "$@...\c "
+}
+
+log_action_cont_msg() {
+  $ECHO "$@...\c "
+}
+
+log_action_end_msg() {
+  if [ -z "$2" ]; then
+    end="."
+  else
+    end=" ($2)."
+  fi
+
+  log_fancy_output
+  if [ $1 -eq 0 ]; then
+    $ECHO "done${end}"
+  else
+    $ECHO "${RED}failed${end}${NORMAL}"
+  fi
+}
+
+# overide log_*_msg if the init-functions file exits on the system
+[ -f /lib/lsb/init-functions ] && . /lib/lsb/init-functions
+
+# in these three cases we have to use our functions
+unalias start_daemon 2>/dev/null
+unalias killproc 2>/dev/null
+unalias pidofproc 2>/dev/null
+
+
+disable_xpg_echo() {
+  # \X chars only passed to echo under bash, if xpg_echo enabled or echo -e
+  # used on Linux.
+  if [ -n "$BASH_VERSION" ];then
+    shopt -s xpg_echo
+  fi
+}
+
+case $OS in
+  # default ps -e cuts the process' name at 8 characters, so we have to list it
+  # in a long form
+  SunOS)
+        PSOPTS=" -o pid -o tty -o time -o comm"
+        disable_xpg_echo
+        ;;
+  Linux)
+        if [ -z "$BASH_VERSION" ]; then
+          # beware of dash's builtin echo ...
+          ECHO="/bin/echo -e"
+        fi
+        ;;
+  *)    disable_xpg_echo ;;
+esac
+
+
+_checkpid() {
+  _pid=$1
+  _proc=$2
+  
+  for _ret in `ps -e $PSOPTS | grep "$_proc" | sed -e 's/^  *//' -e 's/ .*//'`; do
+    if [ -n "$_ret" ] && [ "$_ret" = "$_pid" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+_pid_from_pidfile() {
+  pidfile=$1
+  procname=$2
+  pid=
+
+  if [ -f "$pidfile" ];then
+    pid=`head -1 $pidfile 2> /dev/null`
+    if [ $? -ne 0 ]; then
+      # on slow machines (or ones under high load) the pidfile could be
+      # erased between -f and `head` ...
+      return 3
+    fi
+    if _checkpid $pid $procname; then
+      return 0
+    fi
+    return 1 # pidfile exist, but proc not running
+  fi
+
+  return 3 # proc not running
+}
+
+pidofproc() {
+  proc=
+  pidfile=
+  
+  if [ "$1" = "-p" ];then
+    pidfile=$2
+    shift
+    shift
+  fi
+
+  if [ -z "$1" ];then
+   echo "Usage: pidofproc [-p pidfile] {program}"
+   return 1
+  fi
+  proc=$1
+  shift
+
+  base=`basename ${proc}`
+  if [ -z "${pidfile}" ]; then
+    pidfile=/var/run/${base}.pid
+  fi
+
+  if [ -f ${pidfile} ];then
+    _pid_from_pidfile "${pidfile}" "${base}"
+    _ret=$?
+
+    if [ $_ret -eq 0 ]; then
+      if kill -0 ${pid} 2> /dev/null; then
+        echo "$pid"
+        return 0
+      fi
+    else
+      return $_ret
+    fi
+  fi
+
+  return 4
+}
+
+start_daemon() {
+  proc=
+  pidfile=
+  force=
+  nice=
+  
+  if [ "$1" = "-f" ]; then
+    force="force"
+    shift
+  fi
+
+  if [ "$1" = "-n" ];then
+    nice="nice $2"
+    shift
+    shift
+  fi
+
+  if [ "$1" = "-p" ];then
+    pidfile=$2
+    shift
+    shift
+  fi
+
+  if [ -z "$1" ];then
+   echo "Usage: start_daemon [-f] [-n nicelevel] [-p pidfile] {program} [args]"
+   return 1
+  fi
+  proc=$1
+  shift
+
+  base=`basename ${proc}`
+  if [ -z "${pidfile}" ]; then
+    pidfile=/var/run/${base}.pid
+  fi
+  _pid_from_pidfile "${pidfile}" "${base}"
+  if [ -n "$pid" ] && [ -z "$force" ];then
+    return
+  fi
+
+  $nice $proc $*
+  return $?
+}
+
+killproc() {
+  proc=
+  signal=-15
+  pidfile=
+  
+  if [ "$1" = "-p" ];then
+    pidfile=$2
+    shift
+    shift
+  fi
+
+  if [ -z "$1" ];then
+   echo "Usage: killproc [-p pidfile] {program}"
+   return 1
+  fi
+  proc=$1
+  shift
+
+  if [ -n "$1" ];then
+    signal=$1
+    echo "${signal}" | grep '^-' >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      signal="-${signal}"
+    fi
+  fi
+
+  base=`basename $proc`
+  if [ -z "${pidfile}" ]; then
+    pidfile=/var/run/${base}.pid
+  fi
+
+  _pid_from_pidfile "${pidfile}" "${base}"; 
+  _ret=$?
+  if [ $_ret -ne 0 ];then 
+    rm -f ${pidfile}
+    return $_ret
+  fi
+
+  if [ -n "$pid" ]; then
+    kill $signal $pid
+    _status="$?"
+    if [ $_status -eq  0 ];then
+      pidofproc -p "${pidfile}" "$proc" >/dev/null || rm -f "${pidfile}"
+    fi
+  fi
+  return $_retval
+}
+
+# vim: ft=sh ts=2 expandtab
+

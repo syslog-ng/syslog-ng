@@ -1,0 +1,226 @@
+#!/usr/bin/perl
+#
+# syslog-mc:
+# This perl script is to be used in conjuction with syslog-ng and it's
+# multicast feature.
+#
+# All you need to do is run the program, pass an IPv4 or IPv6 multicast
+# address as the first parameter and the script will 'tune in' to the syslog
+# multicast group and display the syslog lines.
+#
+# This helps no end if you want to write local trigger scripts or have a live
+# view of some daemon without actually having to be logged into the central
+# syslog server cluster.
+#
+# One note to bear in mind is that if you send you logs in the multicast group
+# to a port number below 1024 then you will need root privileges to run this
+# script.  It's probably a good idea to send your logs to a port number above
+# 1024 so that you do not need to run things as root.  Another recommendation
+# is to remember to 'seperate' your group addresses by thirty two IP's (for
+# IPv4) so that you do not receive any unwanted, although it's harmless and
+# filtered, extra traffic.
+#
+# When using the script, you can run it standalone and it will simply print the
+# syslog messages to STDOUT however you might prefer to pipe it into grep or
+# some other tool, so to print all the lines containing the word 'cheese':
+#
+# $ ./syslog-mc 239.194.253.8 5514 | grep cheese
+#
+# --
+# Maintained by  Alexander Clouter <ac56@soas.ac.uk>
+# Written/Copyright 2006 by Alexander Clouter <ac56@soas.ac.uk>
+#
+# This software may be used and distributed according to the terms
+# of the version two of the GNU General Public License, incorporated herein by
+# reference.
+# 
+use strict;
+use warnings;
+
+my $running = 1;
+
+use sigtrap 'handler' => sub { $running = 0 }, qw( INT );
+
+# under debian all these dependencies can be met with:
+# aptitude install libnet-ip-perl libsocket6-perl libio-socket-inet6-perl libparse-syslog-perl
+use Net::IP;
+use Socket;
+use Socket6;
+use IO::Socket::INET6;
+# we use IO::Select to avoid the nasty blocking nature of Parse::Syslog
+use IO::Select;
+use Parse::Syslog;
+use POSIX;
+
+# enable debugging?
+use constant DEBUG => 0;
+if ( DEBUG ) {
+  use Data::Dumper;
+}
+
+my ( $mcGroup, $port ) = ( $ARGV[0], $ARGV[1] );
+
+unless ( $mcGroup ) {
+  print <<EOF;
+Use: syslog-mc.pl <mcast-addr> [port]
+EOF
+  exit 0;
+}
+
+$mcGroup =~ s/\s*(.+)\s*/$1/;
+
+my $ip = Net::IP->new($mcGroup)
+	|| die 'First parameter is not a valid IP address';
+if ( $ip->version == 4 ) {
+  unless ( Net::IP->new('224.0.0.0/4')->overlaps($ip) != $Net::IP::IP_NO_OVERLAP ) {
+    print STDERR "IPv4 address given is not a multicast address\n";
+    exit 1;
+  }
+}
+elsif ( $ip->version == 6 ) {
+  unless ( Net::IP->new('ff::/120')->overlaps($ip) != $Net::IP::IP_NO_OVERLAP ) {
+    print STDERR "IPv6 address given is not a multicast address\n";
+    exit 1;
+  }
+}
+else {
+  print STDERR "Unknown IP Version\n";
+  exit 1;
+}
+
+if ( $port ) {
+  $port =~ s/\s*(.+)\s*/$1/;
+
+  if ( $port =~ /^\d+$/ ) {
+    unless ( $port > 0 && $port < 65536 ) {
+      print STDERR "Invalid port number\n";
+      exit 1;
+    }
+  }
+}
+else {
+  $port = 514;
+
+  print STDERR "No port number given, assuming 514\n"
+  	if ( DEBUG );
+}
+
+my $sock = &subscribe($mcGroup, $port);
+unless ( $sock ) {
+  print STDERR "Unable to open socket so bombing out\n";
+  exit 1;
+}
+
+my $parser = Parse::Syslog->new($sock, arrayref => 1);
+
+my $selectPoll = IO::Select->new;
+$selectPoll->add($sock);
+
+while ( $running ) {
+  my ( $select_set ) = IO::Select->select($selectPoll, undef, undef);
+
+  foreach my $fh ( @$select_set ) {
+    if ( $fh == $sock ) {
+      if ( $sock->eof ) {
+        $running = 0;
+	next;
+      }
+
+      my $sl = $parser->next;
+      
+      my $timestamp = POSIX::strftime '%b %e %T', gmtime($sl->[0]);
+      my $pid = ( $sl->[3] ) ? $sl->[3] : 'na';
+
+      print "$timestamp " . $sl->[1] . ' ' . $sl->[2] . "[$pid]: " . $sl->[4] . "\n";
+    }
+  }
+}
+
+$selectPoll->remove($sock);
+
+&unsubscribe($sock);
+
+exit 0;
+
+sub subscribe {
+  my $mcGroup = shift;
+  my $port = shift;
+
+  print STDERR "Trying to join group $mcGroup: "
+  	if ( DEBUG );
+
+  my @res = getaddrinfo $mcGroup, $port, AF_UNSPEC, SOCK_DGRAM;
+  my $sock = IO::Socket::INET6->new(
+		Domain		=> $res[0],
+                LocalAddr	=> $mcGroup,
+                Proto		=> 'udp',
+		Type		=> SOCK_DGRAM,
+		LocalPort	=> $port,
+		ReuseAddr	=> 1		) || print STDERR "Can't bind : $@\n";
+  unless ( $sock && ref $sock eq 'IO::Socket::INET6' ) {
+    print STDERR "Unable to open socket! If using a port number below 1024 you need to be root\n";
+    return;
+  }
+
+  my $joinStatus;
+  if ( $sock->sockdomain == AF_INET ) {
+    # struct ip_mreq <netinet/in.h>
+    my $mreq = pack 'a4 a4', inet_pton(AF_INET, $mcGroup), INADDR_ANY;
+    # IP_ADD_MEMBERSHIP = 35
+    $joinStatus = setsockopt $sock, IPPROTO_IP, 35, $mreq;
+  }
+  elsif ( $sock->sockdomain == AF_INET6 ) {
+    # struct ipv6_mreq <netinet/in.h>
+    my $mreq6 =  pack 'a16 N', inet_pton(AF_INET6, $mcGroup), 0;
+    # IPV6_ADD_MEMBERSHIP = 20
+    $joinStatus = setsockopt $sock, IPPROTO_IPV6, 20, $mreq6;
+  }
+  else {
+    print STDERR "unknown IP version, "
+    	if ( DEBUG );
+    $joinStatus = -1;
+  }
+
+  if ( $joinStatus == -1 ) {
+    print STDERR "unable to ADD_MEMBERSHIP for $mcGroup\n"
+    	if ( DEBUG );
+    close $sock;
+    return;
+  }
+
+  print STDERR "successful\n"
+  	if ( DEBUG );
+
+  return $sock;
+}
+
+sub unsubscribe {
+  my $sock = shift;
+
+  my $mcGroup = $sock->sockhost;
+
+  print STDERR "Leaving group $mcGroup: "
+  	if ( DEBUG );
+
+  my $leaveStatus;
+  if ( $sock->sockdomain == AF_INET ) {
+    my $mreq = pack 'a4 a4', inet_pton(AF_INET, $mcGroup), INADDR_ANY;
+    # IP_DROP_MEMBERSHIP = 36
+    $leaveStatus = setsockopt $sock, IPPROTO_IP, 36, $mreq;
+  }
+  else {
+    my $mreq6 =  pack 'a16 N', inet_pton(AF_INET6, $mcGroup), 0;
+    # IPV6_DROP_MEMBERSHIP = 21
+    $leaveStatus = setsockopt $sock, IPPROTO_IPV6, 21, $mreq6;
+  }
+
+  if ( $leaveStatus == -1 ) {
+    print STDERR "warning, unable to DROP_MEMBERSHIP for $mcGroup..."
+    	if ( DEBUG );
+  }
+
+  close $sock;
+
+  print STDERR "done\n"
+  	if ( DEBUG );
+}

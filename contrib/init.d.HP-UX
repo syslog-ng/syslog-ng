@@ -1,0 +1,146 @@
+:
+
+################################################################################
+#
+# Program: syslog-ng init script
+#
+# Description:
+#
+#  This is an init script for syslog-ng on the HP-UX platform.
+#
+#  To start the service, we check if the daemon program is executable.
+#  Accordingly, the preferred way to disable the service PERMANENTLY
+#  is to rename the binary or remove execute permissions.
+#  Ideally, you would remove the software from your system entirely.
+#
+#  The lowest PID of a running instance of the executable is logged to a
+#  file. This PID is used for killing the daemon. This is a best guess of
+#  course, it is much better to use built-in shutdown functions if the
+#  daemon has those.
+#
+#
+# Platforms (tested): HP-UX (B.10.20)
+#
+#
+# Author: Gregor Binder <gbinder@sysfive.com>
+#
+# Last Changed: October 10, 2000
+#
+#     Copyright (c) 2000 by sysfive.com GmbH, All rights reserved.
+#
+################################################################################
+
+################################################################################
+# configuration
+#
+INIT_PROG="/path_to/syslog-ng"   # FULL path to daemon required for fuser
+INIT_OPTS=""                     # options passed to daemon
+INIT_HOOK="1"                    # in case you want to use /etc/rc.config.d
+                                 # comment this out and edit code below
+
+INIT_RDIR="/var/run"
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+INIT_NAME=`basename "$INIT_PROG"`
+INIT_RPID="${INIT_RDIR}/${INIT_NAME}.pid"
+
+################################################################################
+# init
+#
+INIT_RETURN=0
+
+umask 077
+
+# Error Handling the HP way
+#
+set_return () {
+  x=$?
+  if [ $x -ne 0 ]; then
+    echo "EXIT CODE: $x"
+    INIT_RETURN=1  # always 1 so that 2 can be used for other reasons
+  fi
+}
+
+
+case "$1" in
+
+'start_msg')
+
+  echo "Start $INIT_NAME"
+  ;;
+
+'stop_msg')
+  echo "Stopping $INIT_NAME"
+  ;;
+
+'start')
+
+  # Remove comments to enable reading config files
+  #
+  #  if [ -f /etc/rc.config ] ; then
+  #    . /etc/rc.config
+  #  else
+  #    echo "ERROR: /etc/rc.config defaults file MISSING"
+  #  fi
+
+  if [ "$INIT_HOOK" -eq 1 -a -x $INIT_PROG ] ; then
+    $INIT_PROG $INIT_OPTS && echo "$INIT_NAME"
+    set_return
+  else
+    INIT_RETURN=2
+  fi  
+
+;;
+
+'stop')
+
+  # Remove comments to enable reading config files
+  #
+  #  if [ -f /etc/rc.config ] ; then
+  #    . /etc/rc.config
+  #  else
+  #    echo "ERROR: /etc/rc.config defaults file MISSING"
+  #  fi
+
+  # Determine PID of process(es) to stop
+  #
+  if [ "$INIT_HOOK" -ne 1 ] ; then
+    INIT_RETURN=2
+
+  else
+    [ -r "$INIT_RPID" ] && {
+
+      INIT_CPID=`cat "$INIT_RPID"`
+
+        INIT_CPRG="`ps -ef | awk '$2 == '"$INIT_CPID"' { print $9 }'`"
+        set_return
+
+        [ "${INIT_CPRG:="unknown"}" = "$INIT_PROG" ] || {
+          echo "process ID mismatch: [$INIT_CPID] is $INIT_CPRG"
+          INIT_RETURN=1          
+        }                           
+                         
+        [ $INIT_RETURN -eq 0 ] && kill "$INIT_CPID"
+        set_return
+                                                            
+        [ $INIT_RETURN -eq 0 ] && rm -f "$INIT_RPID"
+        set_return
+
+        if [ $INIT_RETURN -eq 0 ]; then
+          echo "$INIT_NAME stopped"
+        else
+          echo "Unable to stop $INIT_NAME"
+        fi
+    }
+
+  fi
+;;
+
+*)
+  echo "usage: $0 {start|stop}"
+  INIT_RETURN=1
+  ;;
+esac
+
+exit $INIT_RETURN

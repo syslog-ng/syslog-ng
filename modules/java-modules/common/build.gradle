@@ -1,0 +1,20 @@
+project.buildDir = syslogBuildDir + '/common/gradle'
+
+jar.baseName = 'syslog-ng-common'
+
+dependencies {
+  compile name: 'syslog-ng-core'
+  compile 'log4j:log4j:1.2.16'
+  testCompile 'junit:junit:4.12'
+  testCompile 'org.hamcrest:hamcrest-core:1.3'
+}
+
+ext.jarDestDir = project.hasProperty('jarDestDir') ? project.getProperty('jarDestDir') : '/'
+task copyLog4j(type: Copy) {
+     from findJar('log4j')
+     into jarDestDir
+}
+
+def findJar(prefix) {
+    configurations.runtime.filter { it.name.startsWith(prefix) }
+}

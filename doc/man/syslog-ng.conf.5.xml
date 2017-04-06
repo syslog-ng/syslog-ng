@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "../xml-stylesheet/pdf/dtd/docbookx.dtd">
+<reference xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>The syslog-ng.conf manual page</title>
+  <info>
+    <productname class="trade">syslog-ng Open Source Edition</productname>
+  </info>
+  <refentry id="syslog-ng.conf.5">
+    <refmeta>
+      <refentrytitle>syslog-ng.conf</refentrytitle>
+      <manvolnum>5</manvolnum>
+      <refmiscinfo class="version">3.3</refmiscinfo>
+      <refmiscinfo class="source">syslog-ng Open Source Edition</refmiscinfo>
+    </refmeta>
+    <refnamediv>
+      <refname>syslog-ng.conf</refname>
+      <refpurpose>syslog-ng configuration file</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis sepchar=" ">
+        <command moreinfo="none">syslog-ng.conf</command>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+      <title>Description</title><para>This manual page is only an abstract; for the complete documentation of syslog-ng, see <ulink url="http://www.balabit.com/support/documentation/"><command moreinfo="none">The syslog-ng Open Source Edition Administrator Guide</command></ulink> or <ulink url="http://www.balabit.com/network-security/syslog-ng/">the official syslog-ng website</ulink>.</para><para>The syslog-ng OSE application is a flexible and highly scalable system logging application.
+        Typically, syslog-ng is used to manage log messages and implement centralized logging, where
+        the aim is to collect the log messages of several devices on a single, central log server.
+        The different devices - called syslog-ng clients - all run syslog-ng, and collect the log
+        messages from the various applications, files, and other <emphasis>sources</emphasis>. The
+        clients send all important log messages to the remote syslog-ng server, where the server
+        sorts and stores them.</para>
+      <para>
+            The syslog-ng application reads incoming messages and forwards
+            them to the selected <emphasis xml:base="../syslog-ng-admin-guide/chapters/chapter_concepts.xml">destinations</emphasis>. The syslog-ng application can
+            receive messages from files, remote hosts, and other <emphasis xml:base="../syslog-ng-admin-guide/chapters/chapter_concepts.xml">sources</emphasis>.
+      </para>
+      <para>
+            Log messages enter syslog-ng in one of the defined sources, and
+            are sent to one or more <emphasis xml:base="../syslog-ng-admin-guide/chapters/chapter_concepts.xml">destinations</emphasis>.
+      </para>
+      <para>
+            Sources and destinations are independent objects; <emphasis xml:base="../syslog-ng-admin-guide/chapters/chapter_concepts.xml">log
+                paths</emphasis> define what syslog-ng does with a message, connecting the sources
+            to the destinations. A log path consists of one or more sources and one or more
+            destinations; messages arriving from a source are sent to every destination listed in the
+            log path. A log path defined in syslog-ng is called a <emphasis xml:base="../syslog-ng-admin-guide/chapters/chapter_concepts.xml">log
+            statement</emphasis>.
+      </para>
+      <para>
+            Optionally, log paths can include <emphasis xml:base="../syslog-ng-admin-guide/chapters/chapter_concepts.xml">filters</emphasis>.
+            Filters are rules that select only certain messages, for example, selecting only
+            messages sent by a specific application. If a log path includes filters, syslog-ng sends
+            only the messages satisfying the filter rules to the destinations set in the log path.
+      </para>
+    </refsect1>
+    <refsect1>
+      <title>Configuring syslog-ng</title>
+       <itemizedlist>
+
+                <listitem xml:base="../syslog-ng-admin-guide/chapters/chapter-configuration-file.xml">
+                    <para>The main body of the configuration file consists of object definitions: sources, destinations, logpaths define which log message are received and where they are sent. All identifiers, option names and attributes, and any other strings used in the syslog-ng configuration file are case sensitive. Objects must be defined before they are referenced in another statement. Object definitions (also called statements) have the following syntax:</para>
+                    <synopsis format="linespecific">object_type object_id {&lt;options&gt;};</synopsis>
+                    <itemizedlist>
+                        <listitem>
+                            <para><emphasis>Type of the object</emphasis>: One of <parameter moreinfo="none">source</parameter>,
+                                    <parameter moreinfo="none">destination</parameter>, <parameter moreinfo="none">log</parameter>,
+                                    <parameter moreinfo="none">filter</parameter>, <parameter moreinfo="none">parser</parameter>,
+                                    <parameter moreinfo="none">rewrite</parameter> rule, or
+                            <parameter moreinfo="none">template</parameter>.</para>
+                        </listitem>
+                        <listitem>
+                            <para><emphasis>Identifier of the object</emphasis>: A unique name identifying the
+                                object. When using a reserved word as an identifier, enclose the identifier in
+                                quotation marks.</para>
+                            <tip>
+                                <para>Use identifiers that refer to the type of the object they identify. For
+                                    example, prefix source objects with <parameter moreinfo="none">s_</parameter>, destinations
+                                    with <parameter moreinfo="none">d_</parameter>, and so on. </para>
+                            </tip>
+                        </listitem>
+                        <listitem>
+                            <para><emphasis>Parameters</emphasis>: The parameters of the object, enclosed in
+                                braces <parameter moreinfo="none">{parameters}</parameter>.</para>
+                        </listitem>
+                        <listitem>
+                            <para><emphasis>Semicolon</emphasis>: Object definitions end with a semicolon
+                                    (<parameter moreinfo="none">;</parameter>).</para>
+                        </listitem>
+                    </itemizedlist>
+                    <para>For example, the following line defines a source and calls it <parameter moreinfo="none">s_internal</parameter>.</para>
+                    <synopsis format="linespecific">source s_internal { internal(); };</synopsis>
+                    <para>The object can be later referenced in other statements using its ID, for example, the previous source is used as a parameter of the following log statement:</para>
+                    <synopsis format="linespecific">log { source(s_internal); destination(d_file); };</synopsis>
+                </listitem>
+                <listitem xml:base="../syslog-ng-admin-guide/chapters/chapter-configuration-file.xml">
+                    <para>The parameters and options within a statement are similar to function calls of the C programming language: the name of the option followed by a list of its parameters enclosed within brackets and terminated with a semicolon.</para>
+                    <synopsis format="linespecific">option(parameter1, parameter2); option2(parameter1, parameter2);</synopsis>
+                    <para>For example, the following source statement has three options; the first two options (<parameter moreinfo="none">file()</parameter> and <parameter moreinfo="none">follow_freq()</parameter>) have a single parameter, while the third one (<parameter moreinfo="none">flags()</parameter>) has two parameters:</para>
+                    <synopsis format="linespecific">source s_tail { file("/var/log/apache/access.log"
+    follow_freq(1) flags(no-parse, validate-utf8)); };</synopsis>
+                     <para>Objects may have required and optional parameters. Required parameters are positional, meaning that they must be specified in a defined order. Optional parameters can be specified in any order using the <literal moreinfo="none">option(value)</literal> format. If a parameter (optional or required) is not specified, its default value is used. The parameters and their default values are listed in the reference section of the particular object.</para>
+                    <example>
+                        <title>Using required and optional parameters</title>
+                        <para>The <parameter moreinfo="none">unix-stream()</parameter> source driver has a single required
+                            argument: the name of the socket to listen on. Optional parameters follow the socket
+                            name in any order, so the following source definitions have the same effect: </para>
+                        <synopsis format="linespecific">source s_demo_stream1 {
+        unix-stream("/dev/log" max-connections(10) group(log)); };
+source s_demo_stream2 {
+        unix-stream("/dev/log" group(log) max-connections(10)); };</synopsis>
+                    </example>
+                </listitem>
+                <listitem xml:base="../syslog-ng-admin-guide/chapters/chapter-configuration-file.xml">
+                    <para>Some options are global options, or can be set globally, for example, whether syslog-ng OSE should use DNS resolution to resolve IP addresses. Global options are detailed in <xref linkend="chapter-global-options"/>.</para>
+                    <synopsis format="linespecific">options { use_dns(no); };</synopsis>
+                </listitem>
+                <listitem xml:base="../syslog-ng-admin-guide/chapters/chapter-configuration-file.xml">
+                    <para>All identifiers, attributes, and any other strings used in the syslog-ng configuration file are case sensitive.</para>
+                </listitem>
+                <listitem xml:base="../syslog-ng-admin-guide/chapters/chapter-configuration-file.xml">
+                    <para>Objects can be used before definition.</para>
+                </listitem>
+               <listitem xml:base="../syslog-ng-admin-guide/chapters/chapter-configuration-file.xml">
+                    <para>To add comments to the configuration file, start a line with <parameter moreinfo="none">#</parameter> and write your comments. These lines are ignored by syslog-ng.</para>
+                    <synopsis format="linespecific"># Comment: This is a stream source
+source s_demo_stream {
+        unix-stream("/dev/log" max-connections(10) group(log)); };</synopsis>
+                </listitem>
+
+       </itemizedlist>
+      <!-- ************************************************************************* -->
+      <para>The syntax of log statements is as follows:</para>
+      <synopsis format="linespecific">log {
+    source(s1); source(s2); ...
+    optional_element(filter1|parser1|rewrite1); optional_element(filter2|parser2|rewrite2);...
+    destination(d1); destination(d2); ...
+    flags(flag1[, flag2...]);
+    };</synopsis>
+      <para xml:base="../syslog-ng-admin-guide/chapters/chapter-routing-filters.xml">The following log statement sends all messages arriving to the localhost to a
+                remote server.</para>
+      <synopsis format="linespecific" xml:base="../syslog-ng-admin-guide/chapters/chapter-routing-filters.xml">source s_localhost { tcp(ip(127.0.0.1) port(1999) ); };
+destination d_tcp { tcp("10.1.2.3" port(1999); localport(999)); };
+log { source(s_localhost); destination(d_tcp); };</synopsis>
+      <!-- ************************************************************************* -->
+      <para>
+            The syslog-ng application has a number of global options governing
+            DNS usage, the timestamp format used, and other general points. Each option may have
+            parameters, similarly to driver specifications. To set global options, add an option
+            statement to the syslog-ng configuration file using the following syntax:
+      </para>
+      <synopsis format="linespecific">options { option1(params); option2(params); ... };</synopsis>
+      <!-- ************************************************************************* -->
+
+      <para>The sources, destinations, and filters available in syslog-ng are listed below. For
+        details, see <ulink url="http://www.balabit.com/support/documentation/">
+          <command moreinfo="none">The syslog-ng Administrator Guide</command>
+        </ulink>. </para>
+-       <table>
+
+            <title xml:base="../syslog-ng-admin-guide/chapters/chapter-sources.xml">Source drivers available in syslog-ng</title>
+            <indexterm significance="normal" xml:base="../syslog-ng-admin-guide/chapters/chapter-sources.xml">
+                <primary>source drivers</primary>
+                <secondary>list of</secondary>
+            </indexterm>
+            <tgroup cols="2" xml:base="../syslog-ng-admin-guide/chapters/chapter-sources.xml">
+                <thead>
+                    <row>
+                        <entry>Name</entry>
+                        <entry>Description</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_internal">internal()</link>
+                        </entry>
+                        <entry>Messages generated internally in syslog-ng.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_file">file()</link>
+                        </entry>
+                        <entry>Opens the specified file and reads messages.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_pipe">pipe(), fifo</link>
+                        </entry>
+                        <entry>Opens the specified named pipe and reads messages.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring-source-pacct">pacct()</link>
+                        </entry>
+                        <entry>Reads messages from the process accounting logs on Linux.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="reference_source_program">program()</link>
+                        </entry>
+                        <entry>Opens the specified application and reads messages from its standard output.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_sunstreams">sun-stream(), sun-streams()</link>
+                        </entry>
+                        <entry>Opens the specified <parameter moreinfo="none">STREAMS</parameter> device on Solaris systems and reads incoming messages.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_syslog">syslog()</link>
+                        </entry>
+                        <entry>Listens for incoming messages using the new <link linkend="concepts_message_ietfsyslog">IETF-standard syslog protocol</link>.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring-source-system">system()</link>
+                        </entry>
+                        <entry>Automatically detects which platform syslog-ng OSE is running on, and collects the native log messages of that platform.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_tcpudp">tcp(), tcp6()</link>
+                        </entry>
+                        <entry>Listens on the specified TCP port for incoming messages using the <link linkend="concepts_message_bsdsyslog">BSD-syslog protocol</link> over IPv4 and IPv6 networks, respectively.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_tcpudp">udp(), udp6()</link>
+                        </entry>
+                        <entry>Listens on the specified UDP port for incoming messages using the <link linkend="concepts_message_bsdsyslog">BSD-syslog protocol</link> over IPv4 and IPv6 networks, respectively.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_unixstream">unix-dgram()</link>
+                        </entry>
+                        <entry>Opens the specified unix socket in <parameter moreinfo="none">SOCK_DGRAM</parameter> mode and listens for incoming messages.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_sources_unixstream">unix-stream()</link>
+                        </entry>
+                        <entry>Opens the specified unix socket in <parameter moreinfo="none">SOCK_STREAM</parameter> mode and listens for incoming messages.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+
+       </table>
+       <table>
+
+            <title xml:base="../syslog-ng-admin-guide/chapters/chapter-destinations.xml">Destination drivers available in syslog-ng</title>
+            <indexterm significance="normal" xml:base="../syslog-ng-admin-guide/chapters/chapter-destinations.xml">
+                <primary>destination drivers</primary>
+                <secondary>list of</secondary>
+            </indexterm>
+            <tgroup cols="2" xml:base="../syslog-ng-admin-guide/chapters/chapter-destinations.xml">
+                <thead>
+                    <row>
+                        <entry>Name</entry>
+                        <entry>Description</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_file">file()</link>
+                        </entry>
+                        <entry>Writes messages to the specified file.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_pipe">fifo(), pipe()</link>
+                        </entry>
+                        <entry>Writes messages to the specified named pipe.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_program">program()</link>
+                        </entry>
+                        <entry>Forks and launches the specified program, and sends messages to its standard input.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_sql">sql()</link>
+                        </entry>
+                        <entry>Sends messages into an SQL database. In addition to the standard syslog-ng packages, the <parameter moreinfo="none">sql()</parameter> destination requires database-specific packages to be installed. Refer to the section appropriate for your platform in <xref linkend="chapter_install"/>.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_syslog">syslog()</link>
+                        </entry>
+                        <entry>Sends messages to the specified remote host using the <link linkend="concepts_message_ietfsyslog">IETF-syslog protocol</link>. The IETF standard supports message transport using the UDP, TCP, and TLS networking protocols.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_tcpudp">tcp() and tcp6()</link>
+                        </entry>
+                        <entry>Sends messages to the specified TCP port of a remote host using the <link linkend="concepts_message_bsdsyslog">BSD-syslog protocol</link> over IPv4 and IPv6, respectively.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_tcpudp">udp() and udp6()</link>
+                        </entry>
+                        <entry>Sends messages to the specified UDP port of a remote host using the <link linkend="concepts_message_bsdsyslog">BSD-syslog protocol</link> over IPv4 and IPv6, respectively.</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_unixstream">unix-dgram()</link>
+                        </entry>
+                        <entry>Sends messages to the specified unix socket in <parameter moreinfo="none">SOCK_DGRAM</parameter> style (BSD).</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="configuring_destinations_unixstream">unix-stream()</link>
+                        </entry>
+                        <entry>Sends messages to the specified unix socket in <parameter moreinfo="none">SOCK_STREAM</parameter> style (Linux).</entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <link linkend="reference_destination_usertty">usertty()</link>
+                        </entry>
+                        <entry>Sends messages to the terminal of the specified user, if the user is logged in.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+
+       </table>
+       <table>
+
+                <title xml:base="../syslog-ng-admin-guide/chapters/chapter-routing-filters.xml">Filter functions available in syslog-ng OSE</title>
+                <indexterm significance="normal" xml:base="../syslog-ng-admin-guide/chapters/chapter-routing-filters.xml">
+                    <primary>filter functions</primary>
+                    <secondary>list of</secondary>
+                </indexterm>
+                <tgroup cols="2" xml:base="../syslog-ng-admin-guide/chapters/chapter-routing-filters.xml">
+                    <thead>
+                        <row>
+                            <entry>Name</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <link linkend="filter-facility">facility()</link>
+                            </entry>
+                            <entry>Filter messages based on the sending facility.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="filter-filter">filter()</link>
+                            </entry>
+                            <entry>Call another filter function.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="filter-host">host()</link>
+                            </entry>
+                            <entry>Filter messages based on the sending host.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="filter-priority">level() or priority()</link>
+                            </entry>
+                            <entry>Filter messages based on their priority.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="reference-filters-match">match()</link>
+                            </entry>
+                            <entry>Use a regular expression to filter messages based on a specified header or content field.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="filter-message">message()</link>
+                            </entry>
+                            <entry>Use a regular expression to filter messages based their content.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="filter-netmask">netmask()</link>
+                            </entry>
+                            <entry>Filter messages based on the IP address of the sending host.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="filter-program">program()</link>
+                            </entry>
+                            <entry>Filter messages based on the sending application.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="filter-source">source()</link>
+                            </entry>
+                            <entry>Select messages of the specified syslog-ng OSE source statement.</entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <link linkend="filter-tags">tags()</link>
+                            </entry>
+                            <entry>Select messages having the specified tag.</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+
+       </table>
+    </refsect1>
+    <refsect1>
+      <title>Files</title>
+      <para>
+        <filename moreinfo="none">/opt/syslog-ng/</filename>
+      </para>
+      <para>
+        <filename moreinfo="none">/opt/syslog-ng/etc/syslog-ng.conf</filename>
+      </para>
+    </refsect1>
+    <refsect1>
+      <title>See also</title>
+      <para>
+        <link linkend="syslog-ng.8">
+          <command moreinfo="none">syslog-ng</command>(8)</link>
+      </para>
+      <para><ulink url="http://www.balabit.com/support/documentation/"><command moreinfo="none">The syslog-ng OSE 3.3 Administrator Guide</command></ulink></para><para>If you experience any problems or need help with syslog-ng, visit <ulink url="http://www.balabit.com/wiki/syslog-ng-faq">visit the syslog-ng wiki</ulink> or the <ulink url="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command moreinfo="none">syslog-ng mailing list</command></ulink>.</para><para>For news and notifications about of syslog-ng, visit the <ulink url="http://insider.blogs.balabit.com"><command moreinfo="none">syslog-ng Insider Blog</command></ulink>.</para>
+    </refsect1>
+    <refsect1>
+        <title>Author</title><para>This manual page was written by the BalaBit Documentation Team &lt;documentation@balabit.com&gt;.</para>
+    </refsect1>
+    <refsect1>
+        <title>Copyright</title><refsect2 condition="ose">
+              <para>The authors grant permission to copy, distribute and/or modify this manual page under the terms of the GNU General Public License Version 2 or newer (GPL v2+).</para>
+          </refsect2>
+    </refsect1>
+    </refentry>
+</reference>

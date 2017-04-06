@@ -1,0 +1,68 @@
+#!/bin/sh
+# Inintscript for LFS (Linux From Scratch) systems.
+#
+# syslog-ng    This starts and stops syslog-ng
+#
+# description: reads and logs messages to the system console, log \
+#              files, other machines and/or users as specified by \
+#              its configuration file.
+# processname: /sbin/syslog-ng
+# config:      /etc/syslog-ng/syslog-ng.conf
+# config:      /etc/sysconfig/syslog-ng
+# pidfile:     /var/run/syslog-ng.pid
+#
+
+# Source function library.
+
+. /etc/sysconfig/rc
+. ${rc_functions}
+
+root="/opt/syslog-ng"
+exec="$root/sbin/syslog-ng"
+conf="$root/etc/syslog-ng.conf"
+
+prog=$(basename $exec)
+
+export LD_LIBRARY_PATH=$root/lib:$LD_LIBRARY_PATH
+
+[ -f $exec ] || exit 0
+
+# Source config
+[ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
+
+umask 077
+
+start() {
+    boot_mesg "Starting $prog: "
+    loadproc $exec -f $conf $SYSLOGNG_OPTIONS
+}
+
+stop() {
+    boot_mesg "Stopping $prog: "
+    killproc $prog
+}
+
+restart() {
+    stop
+    start
+}
+
+reload() {
+    echo -n $"Reloading syslog-ng.conf file: "
+    reloadproc $prog 
+}
+
+case "$1" in
+    start|stop|restart|reload)
+        $1
+        ;;
+    force-reload)
+        restart
+        ;;
+    status)
+    	statusproc $exec
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|try-restart|reload|force-reload}"
+        exit 2
+esac

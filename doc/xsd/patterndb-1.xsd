@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="patterndb">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="program" type="programType" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            A container to group log patterns for an application/program.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="version" type="xs:NMTOKEN" use="required">
+                <xs:annotation>
+                    <xs:documentation>
+                        The schema version of the pattern database.
+                        The current version is '1'.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="pub_date" type="xs:date" use="required">
+                <xs:annotation>
+                    <xs:documentation>
+                        The publication date of the XML file.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="programType">
+        <xs:all>
+            <xs:element name="description" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to attach description to an application/program.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="url" type="xs:anyURI" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to point to the homepage of the application.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="pattern" type="patternType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The pattern representing the name of the application in the
+                        syslog program field.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="rules">
+                <xs:annotation>
+                    <xs:documentation>
+                        The patterns for the application.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="rule" type="ruleType" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    A rule describes one log pattern with classifications and details.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the application.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="id" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The globaly unique ID of the application.
+                    FIXME: how it is generated? (simple md5 of the @name?)
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="ruleType">
+        <xs:all>
+            <xs:element name="description" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to describe the log disposition.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="url" type="xs:anyURI" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to point to some external resource for disposition.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="pattern" type="patternType">
+                <xs:annotation>
+                    <xs:documentation>
+                        The pattern representing the log message.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="provider" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The provider of the rule. To distinguish between who supplied the rule,
+                    or if it has been added to the xml by a local user.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="id" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The globaly unique ID of the rule.
+                    FIXME: how it is generated? (simple md5 of the @name?)
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="class" type="classType" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The class of the rule.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:simpleType name="patternType">
+        <xs:annotation>
+            <xs:documentation>
+                This type describes a radix/parser pattern which is used to match
+                a program name or a whole log message.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="classType">
+        <xs:annotation>
+            <xs:documentation>
+                The classification class for a single rule.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="violation">
+                <xs:annotation>
+                    <xs:documentation>
+                        The log message is a VIOLATION where immediate action must be taken.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="security">
+                <xs:annotation>
+                    <xs:documentation>
+                        The log message is related to a SECURITY event.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="system">
+                <xs:annotation>
+                    <xs:documentation>
+                        The log message is related to a normal SYSTEM event.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="unknown">
+                <xs:annotation>
+                    <xs:documentation>
+                        The log message is UNKNOWN and as is an anomaly.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

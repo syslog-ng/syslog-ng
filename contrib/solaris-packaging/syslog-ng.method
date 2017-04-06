@@ -1,0 +1,154 @@
+#!/sbin/sh
+#
+# $Id: syslog-ng.init.d,v 1.1.2.2 2006/03/02 18:35:45 folti Exp $
+#
+# adapted to syslog-ng by BJ, Aug, 7th 2000
+# cleaned up by Bazsi, Oct, 12th 2000
+# minor fix by Bojan Zdrnja, Apr, 11th 2003
+#   added nicer options field
+# Modified for BalaBit Ltd's syslog-ng package by Tamas Pal Mar, 1st 2006
+#
+
+SYSLOGNG_PREFIX=/opt/syslog-ng
+SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
+CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
+PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
+SYSLOGPIDFILE=/var/run/syslog.pid
+
+OPTIONS=
+MAXWAIT=30
+
+. /lib/svc/share/smf_include.sh
+
+test -x ${SYSLOGNG} || exit $SMF_EXIT_ERR_FATAL
+test -r ${CONFFILE} || exit $SMF_EXIT_ERR_CONFIG
+
+check_syntax() {
+        ${SYSLOGNG} --syntax-only
+        _rval=$?
+        [ $_rval -eq 0 ] || exit $SMF_EXIT_ERR_CONFIG
+}
+
+slng_waitforpid() {
+        _cnt=$MAXWAIT
+        _process=$1
+        _pid=$2
+        while [ $_cnt -gt 0 ]; do
+                pgrep $_process | grep $_pid > /dev/null 2>&1
+                [ $? -ne 0 ] && break
+                _cnt=`expr $_cnt - 1`
+                sleep 1
+        done
+        return $_cnt
+}
+
+slng_stop() {
+        # if we have a contract, we should simply use smf_kill_contract to terminate the process
+        if [ -n "$2" ]; then
+                smf_kill_contract $2 TERM 1 $MAXWAIT
+                [ $? -ne 0 ] && exit $SMF_EXIT_ERR_FATAL
+                return $SMF_EXIT_OK
+        fi
+
+        [ -f $PIDFILE ] || return $SMF_EXIT_ERR_FATAL
+
+        syspid=`head -1 $PIDFILE`
+
+        [ -z "$syspid" ] && return $SMF_EXIT_OK
+        kill -0 $syspid >/dev/null 2>&1
+        if [ $? -ne 0 ];then
+                return $SMF_EXIT_OK
+        fi
+
+        kill -TERM $syspid
+
+        _process=`basename $SYSLOGNG`
+        slng_waitforpid "$_process" $syspid
+        _ret=$?
+        if [ $_ret -eq 0 ]; then
+                kill -KILL $syspid
+                $_ret=$?
+        fi
+
+        if [ $_ret -eq 0 ] ;then
+                rm -f $PIDFILE
+                if [ -h $SYSLOGPIDFILE ];then
+                        rm -f $SYSLOGPIDFILE
+                fi
+                return $SMF_EXIT_OK
+        fi
+        return $SMF_EXIT_ERR_FATAL
+}
+
+
+slng_start () {
+        if [ -f $PIDFILE ];then
+            _process=`basename $SYSLOGNG`
+            _pid=`head -1 $PIDFILE`
+            pgrep $_process | grep $_pid > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                echo "syslog-ng already running."
+                exit 1
+            fi
+            echo "syslog-ng is not running, removing $PIDFILE."
+            /usr/bin/rm -f $PIDFILE
+        fi
+        if [ -f $CONFFILE -a -x $SYSLOGNG ]; then
+                echo 'syslog-ng service starting.'
+                #
+                # Before syslog-ng starts, save any messages from previous
+                # crash dumps so that messages appear in chronological order.
+                #
+                if [ -r /dev/dump ]; then
+                    /usr/bin/savecore -m
+                fi
+                if [ -r /etc/dumpadm.conf ]; then
+                    . /etc/dumpadm.conf
+                    if [ -n "$DUMPADM_DEVICE" ] && [ -r "$DUMPADM_DEVICE" ] && \
+                       [ "x$DUMPADM_DEVICE" != xswap ]; then
+                        /usr/bin/savecore -m -f $DUMPADM_DEVICE
+                    fi
+                fi
+                check_syntax
+                $SYSLOGNG $OPTIONS
+                # remove symlinks
+                if [ -h $SYSLOGPIDFILE ];then
+                        rm -f $SYSLOGPIDFILE
+                fi
+                if [ ! -f $SYSLOGPIDFILE ];then
+                        ln -s $PIDFILE $SYSLOGPIDFILE
+                fi
+                return $SMF_EXIT_OK
+        fi
+        return $SMF_EXIT_ERR_FATAL
+}
+
+case "$1" in
+        start)
+                slng_start $*
+                ;;
+
+        stop)
+                slng_stop $*
+                ;;
+        refresh)
+                if [ -f $PIDFILE ]; then
+                        syspid=`head -1 $PIDFILE`
+                        [ "$syspid" -gt 0 ] && kill -1 $syspid && echo "syslog-ng service reloaded"
+                fi
+                ;;
+        restart)
+                slng_stop $*
+                retval=$?
+                [ $retval -ne 0 ] && exit $retval
+                slng_start $*
+                ;;
+        *)
+                echo "Usage: $0 { start | stop | restart | reload }"
+                exit 1
+                ;;
+esac
+exit $?
+
+# vim: expandtab ts=8
+

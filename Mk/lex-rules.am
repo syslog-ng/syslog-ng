@@ -1,0 +1,17 @@
+%.y: %.ym $(syslog_ng_tools)/merge-grammar.pl $(syslog_ng_tools)/cfg-grammar.y
+	$(AM_V_at) $(mkinstalldirs) $(dir $@)
+	$(AM_V_GEN) $(syslog_ng_tools)/merge-grammar.pl $< > $@
+
+.l.c:
+	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE) | ($(EGREP) -v "(^updating|unchanged)" || true)
+	$(AM_V_at) touch $@
+
+.l.h:
+	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE) | ($(EGREP) -v "(^updating|unchanged)" || true)
+	$(AM_V_at) touch $@
+
+.y.c:
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE) 2>&1 | ($(EGREP) -v "(warning: ([0-9]+ )?(nonterminal|rule)s? useless in grammar)|(^updating|unchanged)" || true)
+
+.y.h:
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE) 2>&1 | ($(EGREP) -v "(warning: ([0-9]+ )?(nonterminal|rule)s? useless in grammar)|(^updating|unchanged)" || true)

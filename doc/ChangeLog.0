@@ -1,0 +1,478 @@
+2005-01-16  Balazs Scheidler <bazsi@balabit.hu>
+
+        * configure.in: take CFLAGS environment variable into consideration
+        when running configure, link eventlog and glib statically
+
+        * src/fdread.c, src/fdwrite.c: handle EINTR by repeating the read
+        system call
+
+        * src/logreader, src/logwriter.c: handle EAGAIN correctly
+
+2005-01-15  Balazs Scheidler <bazsi@balabit.hu>
+
+        * src/afsocket.c (afsocket_sd_accept): added g_fd_set_nonblock for
+        new sockets
+
+2005-01-09  Balazs Scheidler <bazsi@balabit.hu>
+
+        * src/logsource.c: new file, separated flow control related
+        functions from logreader
+
+        * src/logreader.c: LogReader is derived from LogSource
+
+        * src/afinter.c: substituted the pipe used for internal messages
+        with a GQueue
+
+2005-01-05  Balazs Scheidler <bazsi@balabit.hu>
+
+        * configure.in: added checks for -ldoor, -lsocket, -lnsl and getopt.h
+
+        * other files: fixed a couple of Solaris specific warnings
+
+2004-12-31  Balazs Scheidler <bazsi@balabit.hu>
+
+	* src/macros.c: added PRI and MSGONLY macros
+
+	* src/templates.c: added support for braces around macros for
+	$example: "{MSG}"
+
+2004-12-29  Balazs Scheidler <bazsi@balabit.hu>
+
+	* src/afprog.c (afprogram_dd_init): call setsid before launching child,
+	(afprogram_dd_deinit): deinit & unref self->writer here instead of
+	in afprogram_dd_free,
+
+	* src/center.c (log_center_queue): do not supply self as user_data pointer to
+	the ack_block callback as that would require adding a reference to self
+
+	* src/dgroup.c (log_dest_group_queue): do not supply self as user_data pointer to
+	the ack_block callback as that would require adding a reference to self
+
+	* src/logreader.c: instead of using self->window_size use self->options->window_size
+	so that the window is shared between all LogReaders using the same
+	options,
+	(log_reader_handle_line): add reference to self before supplying it as an argument to
+ 	the ack_block callback function,
+	(log_reader_msg_ack): unref the supplied logreader argument
+
+2004-12-27  Balazs Scheidler <bazsi@balabit.hu>
+
+	* src/afsocket.c (afsocket_sd_deinit): break circular reference
+	between self->reader and self,
+	(afsocket_sd_notify): do not destroy/unref sender in NC_CLOSE, as
+	afsocket_sd_close_connection already does that,
+	(afsocket_sd_init, afsocket_sd_deinit): removed static,
+	(afsocket_sd_free_instance): renamed from afsocket_sd_free, removed
+	static, created a new afsocket_sd_free function at the same time
+	which is set as the free_fn of AFSocketSourceDriver
+
+	* src/afunix.c: implemented user/group/perm settings
+
+	* src/cfg-grammar.y: added support for log-prefix
+
+	* src/cfg.c: changed default timestamp format to BSD for compatibility
+
+	* src/filter.c: fixed AND and OR operator evaluation, the operands
+	were not correctly saved at initialization time, thus NULL was
+	referenced at evaluation time
+
+	* src/logreader.c: added log_prefix support for all log readers
+
+	* src/logwriter.c: use log_msg_drop instead of a simple log_msg_unref
+
+	* src/main.c: fixed SIGCHLD handling, loop while waitpid returns > 0,
+	added tzset() call
+
+2004-12-27  Balazs Scheidler <bazsi@balabit.hu>
+
+        * src/affile.c (affile_sd_deinit): make sure to break circular
+        reference between self->reader and self, fixes possible memory leak,
+        (affile_sd_free): call log_drv_free_instance
+
+        * src/afinter.c (afinter_sd_deinit): break circular reference
+        between self->reader and self
+
+        * src/afprog.c (afprog_sd_free): added log_drv_free_instance
+
+        * src/afsocket.c (afsocket_sd_deinit): break circular reference
+        between self->reader and self,
+        (afsocket_sd_free): added log_drv_free_instance,
+        (afsocket_dd_free): -"-
+
+        * src/afuser.c (afuser_dd_queue): free queued message,
+        (afuser_dd_free): added log_drv_free_instance
+
+        * src/cfg-grammar.y: unref log driver after appending to avoid
+        memory leaks
+
+        * src/cfg.c (cfg_reload_config): fixed possible memory leak when
+        cfg_init fails (free persist),
+        (persist_config_free): added missing free for hashtable
+
+        * src/dgroup.c (log_dest_group_queue): make sure each driver gets
+        its own reference to msg as each will free it on its own, also
+        added an explicit unref at the end of the function
+        (log_dest_group_new): added missing call to log_pipe_init_instance
+
+        * src/gsockaddr.c: removed all low-level g_message invocation,
+        errors should be reported by the caller
+
+        * src/logpipe.c: added assertions to _ref and _unref
+
+        * src/main.c (main_loop_run): added a missing g_main_loop_unref to
+        avoid memory leaks,
+        (main): call msg_syslog_started at the end of initialization to force
+        messages into the system log
+
+        * src/messages.c (msg_syslog_started): new function to indicate
+        that initialization is finished, messages will be written to
+        stderr instead of the internal() source if syslog is not yet
+        started to let the administrator see important
+        failure messages,
+        (msg_deinit): free the event log context, only close the error pipe
+        if it was really opened
+
+2004-08-20  Balazs Scheidler  <bazsi@szekszard.balabit.hu>
+
+	* src/messages.c: adapted to the latest changes in the eventlog,
+	now it actually compiles again and shows some signs of operation
+
+2003-01-22  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/logwriter.c: support per-destination time stamp formatting
+	options (keep_timestamp, tz_convert, ts_format)
+
+	* src/logreader.c: support LR_STRICT flag (specifies LP_STRICT
+	when parsing messages), new per-source option time_zone which
+	specifies the sender's timezone
+
+	* src/macros.c: support time_zone when formatting a message
+
+	* src/templates.c: support time_zone specification for templates
+
+	* src/logmsg.c: added timezone handling, the possibility to parse
+	RFC3339 timestamps in incoming messages
+
+	* src/cfg.c, src/cfg-grammar.y: added timestamp & timezone
+	specific options
+
+	* src/afsocket.c: strict RFC3164 mode does not allow RFC3339
+	timestamps, kept alive file descriptors are stored in persist
+	offseted by +1, so NULL value is not possible
+
+	* src/afinet.c: UDP uses strict RFC3164 timestamps
+
+	* src/affile.c: added warning about template_escape() if the
+	template used is not specified inline
+
+2002-12-31  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/afsocket.c (afsocket_sd_set_keep_alive,
+	afsocket_sd_set_listener_keep_alive): new functions to set the
+	appropriate flags in self,
+	(afsocket_sd_kill_connection): new function, kills and unrefs the
+	given AFSocketSourceConnection object,
+	(afsocket_sd_init, afsocket_sd_deinit): support persistent
+	connections
+
+	* src/cfg-grammar.y: the inline template definition stores the
+	inline-ness in a gboolean attribute
+
+	* src/cfg.c: implemented file/directory uid/gid/perm functions,
+	(persist_config_add, persist_config_fetch): new functions
+
+	* src/filter.c: store the marked matches in global variables, so
+	macro expansion can reference it
+
+	* src/macros.c: support variables $1 - $9
+
+	* src/misc.c: moved resolve_user & family functions here
+
+	* src/main.c: use resolve_* functions from misc.c
+
+	* src/afinet.c (afinet_sd_new): set flags to AFSOCKET_KEEP_ALIVE |
+	AFSOCKET_LISTENER_KEEP_ALIVE
+
+	* src/affile.c (affile_set_template_escape): modify the inline
+	template object instead of a flag in self
+
+2002-11-15  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/templates.c: make LogTemplate refcounted
+
+	* src/logwriter.c (log_writer_format_log): support for
+	file_template & proto_template
+
+	* src/logreader.c: instead of relying on ourselves to let output
+	buffers flush, we use glib source priority mechanism (the exact
+	change was to return TRUE when a complete line is available in
+	prepare),
+	fixed MARK processing
+
+	* src/cfg.c: file_template & proto_template support
+
+	* src/cfg-lex.l: added two new options, file_template and
+	proto_template, they specify the ID of a template which will be
+	used by default for file/protocol outputs
+
+	* src/gsockaddr.c: changed return values from G_IO_ERROR_* to
+	G_IO_STATUS_* (glib 2 style)
+
+	* src/afsocket.c: changed to match gsockaddr.c changes, fixed a
+	bug that cause message loss between reconnections
+	(self->log_writer was reinitialized before each reconnect)
+
+2002-09-16  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/afprog.c (afprogram_dd_exit): new function, called when a
+	child exited, calls deinit & init to restart the program
+	(afprogram_dd_init): call child_manager_register(), so the
+	program() destination supports restarting the program
+
+	* src/afsocket.c: pass LR_PKTTERM flag for AFSOCKET_DGRAM sockets
+
+	* src/cfg-grammar.y: new token KW_FOLLOW_FREQ, it is a reader
+	option and specifies that the file should be followed using the
+	given frequence (a'la tail -f )
+
+	* src/cfg-lex.l: renamed keyword 'mark' to 'mark_freq'
+
+	* src/cfg.c: initialize follow_freq to -1
+
+	* src/children.c, src/children.h: new files which implement
+	process children handling, it makes it possible to register
+	callbacks for SIGCHLD
+
+	* src/logmsg.c: added 'log parsing flags', prefixed LP_*, which
+	modifies the way log messages are parsed, removed some specialized
+	log_msg_new_*() functions,
+	(log_msg_new_mark): new function, generates a MARK message
+
+	* src/logreader.c: added follow file option, added packet
+	terminated log processing (for SOCK_DGRAM sources),
+	self->source_id was changed to a GSource *, and renamed to
+	self->source, changed initialization and deinitialization code
+	accordingly
+
+	* src/main.c: initialize children.c, and call the necessary entry
+	point upon SIGCHLD
+
+2002-08-03  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/logreader.c, src/logreader.h: runtime variable log message size support
+
+	* src/cfg.c, src/cfg.h: template storage support
+
+	* src/cfg-grammar.y: add support for template keywords,
+	add support for log_msg_size
+
+	* src/templates.c, src/templates.h: new files for defineable templates
+
+2002-07-28  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/syslog-ng.h: added LOG_PRIORITY_* defines
+
+	* src/messages.c: initialize msg_pipe to {-1,-1} to let the
+	internal() driver know that internal message pipe has not been
+	initialized
+
+	* src/logwriter.h (LogWriterOptions): moved fifo_size to here,
+	added declaration for log_writer_options_* functions
+
+	* src/logwriter.c (log_writer_watch_new): set priority to
+	LOG_PRIORITY_WRITER
+	(log_writer_queue): use log_fifo_size from options, added some
+	more detail to message reporting queue full
+	(log_writer_new): removed initialization of log_fifo_size, it is
+	used from writer_options instead
+	(log_writer_options_defaults): new function
+	(log_writer_options_init): new function
+
+	* src/logreader.h (LogReaderOptions): added fetch_limit
+	(LogReader): added prev_addr field (to hold the sockaddr of the previous buffer,
+	added declaration for log_reader_options_defaults, log_reader_options_init
+
+	* src/logreader.c (log_reader_watch_new): set source priority to
+	LOG_PRIORITY_READER
+	(log_reader_iterate_buf): implemented fetch_limit option, fixed
+	sockaddr handling when something remains in the buffer
+	(log_reader_options_defaults, log_reader_options_init): new functions
+
+	* src/logmsg.c (log_msg_ack_block_end): fixed memory leak, instead
+	of simply removing the list entry, delete it
+
+	* src/cfg.h (GlobalConfig): added fields log_iw_size and log_fetch_limit
+
+	* src/cfg.c (cfg_new): set default options for log_iw_size and log_fetch_limit
+
+	* src/cfg-lex.l: added keywords for log_iw_size and log_fetch_limit
+
+	* src/cfg-grammar.y: cleaned up token section, added options
+	log_iw_size, log_fetch_limit, fixed log_fifo_size
+
+	* src/center.c (log_center_queue): pass a reference of msg
+	further, otherwise msg was freed too early
+
+	* src/afsocket.c (g_listen_source_new): set priority to
+	LOG_PRIORITY_LISTEN
+	(g_connect_source_new): set priority to LOG_PRIORITY_CONNECT
+	(afsocket_sd_init): call log_reader_options_init
+	(afsocket_sd_init_instance): call log_reader_options_defaults
+	instead of setting reader options directly
+	(afsocket_dd_init): call log_writer_options_init
+	(afsocket_dd_init_instance): call log_writer_options_defaults
+
+	* src/afprog.c (afprogram_dd_init): call log_writer_options_init
+	(afprogram_dd_new): call log_writer_options_defaults
+
+	* src/afinter.c (afinter_sd_init): call log_reader_options_init,
+	handle the case when internal messages are written to stderr
+	instead of the log
+	(afinter_sd_new): call log_reader_options_defaults
+
+	* src/affile.c (affile_sd_init): call log_reader_options_init
+	(affile_dd_new): call log_reader_options_defaults
+	(affile_dw_deinit): fixed memory leak, unref self->writer when deinitialized
+	(affile_dd_init): call log_writer_options_init
+	(affile_dd_queue): handle the case when the dw cannot be initialized
+	(affile_dd_new): call log_writer_options_defaults
+
+2002-07-27  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/main.c (sig_segv_handler): new function, handles SIGSEGV signals
+
+	* src/macros.c (result_append): instead of using g_string_sprintfa
+	to append an escaped char, append it using g_string_append_c
+	(supposed to be faster)
+
+	* src/logmsg.c (log_msg_ref, log_msg_unref): added assert() calls
+	to check whether ref_cnt has reached zero
+
+	* src/afsocket.c (afsocket_sc_free): bugfix, set
+	self->owner->connections to the value returned by g_list_remove(),
+	this one caused major headache to find
+
+	* src/affile.c (affile_dd_queue): free filename if dw is already
+	allocated
+
+2002-06-30  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/main.c: support for memtrace added
+
+	* src/logwriter.c, src/logwriter.h: use fd_write objects instead of simple fds
+
+	* src/logreader.c, src/logreader.h: use fd_read objects instead of simple fds
+
+	* src/logmsg.c (log_msg_ack_block_end): fixed memory leak, free
+	the allocated memory block
+
+	* src/fdread.c, src/fdread.h:: new files which implement file
+	descriptor reading
+
+	* src/fdwrite.c, src/fdwrite.h:: new files which implement file
+	descriptor writing
+
+	* src/cfg-grammar.y: pass AFSOCKET_LOCAL flag to unix domain socket sources
+
+	* src/afsocket.c: removed finalize function from g_connect &
+	g_listen sources, pass fd_read to log_reader, and fd_write to
+	log_writer instead of plain fds
+
+	* src/affile.c, src/afinter.c, src/afprog.c: pass fd_read object
+	to log_reader_new, and fd_write to log_writer instead of plain fds
+
+	* src/memtrace.c, src/memtrace.h: ported from Zorp
+
+	* src/Makefile.am: added memtrace.c & memtrace.h
+
+	* configure.in: added --enable-mem-trace switch
+
+2002-06-15  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* afsocket.c: ported to glib-2.0
+
+	* logreader.c: ported to glib-2.0
+
+	* logwriter.c: LogWriterOptions split from the main structure,
+	ported to glib-2.0
+
+	* affile.h: moved AFFileSourceDriver and AFFileDestDriver here, so
+	the parser can use reader_options/writer_options fields directly
+
+	* cfg-grammar.y: make log_reader and log_writer options separate
+	rules, so it is easier to add common rules for all
+	source/destination driver
+
+	* configure.in: use glib-2.0 and pkgconfig
+
+2002-06-08  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/messages.c: debug messages are never written to syslog as
+	internal message as it would drain the system (for example every
+	incoming log message is reported as a debug message, they are
+	always written to stderr instead
+
+	* src/cfg-grammar.y, src/cfg-lex.l: added support for flow
+	controlled message paths
+
+	* src/center.h: LC_FLOW_CONTROL new flag
+
+	* src/center.c: sources are also stored in a g_ptr_array in
+	addition to the hash table to make it easier to perform iterative
+	tasks (g_hash_table_foreach requires a function pointer), and
+	source references are also resolved at init time.
+
+	* src/logreader.c, src/center.c, src/dgroup.c, src/logwriter.c, src/afuser.c:
+	implemented flow control
+
+	* src/logpipe.h: added path_flags argument to queue() as it
+	specifies whether the sender wants ack or not (used by flow control),
+
+	* src/logreader.h: separated log reader specific options to
+	another structure (LogReaderOptions), to make it easier to specify
+	reader options from the configuration
+
+2002-05-13  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/messages.h, src/messages.c: added support for verbose_flag
+	and debug_flag, and implemented internal message handling
+
+	* src/logreader.c: added new flag LR_NOCLOSE to avoid closing the
+	fd if the logreader is destroyed, added LR_INTERNAL for processing
+	internal messages, and LR_NOPARSE to avoid parsing incoming
+	message
+
+	* src/afinter.c: implemented internal messages driver
+
+2002-05-09  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* src/afprog.c: added the ability to respawn the child program
+	once it exited
+
+	* src/messages.h: added msg_debug macro
+
+	* src/main.c: added processing most of the command line options, added
+	the ability to go into background, chroot, setuid, setgid etc.
+
+	* src/afunix.c: implemented afunix sources and destinations
+
+	* src/logpipe.h: added NC_WRITE_ERROR, renamed NC_CLOSE_ERROR to
+	NC_READ_ERROR, changed referrences appropriately,
+	(log_pipe_append): new function
+
+	* src/afinet.c: implemented hostname and service lookup, implemented
+	reconnection after a timeout, implemented EOF detection when the channel is idle
+
+	* src/logwriter.c, src/logreader.c: added new argument named
+	control where notify messages are sent, log readers have no
+	explicit 'next' argument anymore, pipes are constructed using
+	log_pipe_append instead
+
+	* src/affile.c: implemented destination file reaping
+
+2002-04-04  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* affile, afpipe and afinet fixes
+
+	* do not leak memory on -HUP
+

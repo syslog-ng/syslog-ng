@@ -1,0 +1,13 @@
+[submodule "lib/ivykis"]
+	path = lib/ivykis
+        url = https://github.com/buytenh/ivykis.git
+[submodule "lib/jsonc"]
+	path = lib/jsonc
+	url = https://github.com/json-c/json-c.git
+[submodule "modules/afamqp/rabbitmq-c"]
+	path = modules/afamqp/rabbitmq-c
+	url = https://github.com/alanxz/rabbitmq-c.git
+[submodule "modules/afmongodb/mongo-c-driver"]
+	path = modules/afmongodb/mongo-c-driver
+	url = https://github.com/mongodb/mongo-c-driver.git
+	branch = 1.2.0-dev

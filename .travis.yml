@@ -1,0 +1,178 @@
+language: c
+git:
+  submodules: false
+
+env: B=autotools
+
+os: linux
+
+install:
+  - curl -4 http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_12.04/Release.key | sudo apt-key add -
+  - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_12.04 ./" | sudo tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq
+      autoconf-archive
+      bison
+      docbook-xsl
+      flex
+      gradle-2.2.1
+      libcap-dev
+      libdbd-sqlite3
+      libdbi0-dev
+      libesmtp-dev
+      libevtlog-dev
+      libgeoip-dev
+      libglib2.0-dev
+      libhiredis-dev
+      libivykis-dev
+      libjson0-dev
+      libnet1-dev
+      libriemann-client-dev
+      libwrap0-dev
+      pkg-config
+      sqlite3
+      xsltproc
+      criterion-dev
+  - sudo pip install -r requirements.txt
+before_script:
+  - ./autogen.sh
+  - unset PYTHON_CFLAGS # HACK
+  - ./configure
+      CFLAGS=-Werror
+      --prefix=$HOME/install/syslog-ng
+      --with-ivykis=internal
+      --with-mongoc=internal
+      --with-librabbitmq=internal
+      --with-jsonc=system
+      --disable-env-wrapper
+      --disable-memtrace
+      --enable-tcp-wrapper
+      --enable-linux-caps
+      --disable-sun-streams
+      --enable-all-modules
+      --disable-sql
+      --enable-pacct
+      --enable-manpages
+      --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
+      --enable-extra-warnings
+script:
+  - . tests/build-log-cflags-propagation.sh;
+    if [ "$CC" = "gcc" ]; then
+      export DISTCHECK_CONFIGURE_FLAGS="CFLAGS=-Werror --enable-extra-warnings";
+      exec_prop_check "make distcheck V=1 --keep-going";
+    else
+      exec_prop_check "make -j V=1 --keep-going install";
+      S=$?;
+      if [ "$S" = "0" ]; then
+        . scripts/get-libjvm-path.sh || return $?;
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
+        make func-test V=1;
+      elif [ "$S" = "42" ]; then
+        return $S;
+      else
+        make V=1;
+        return $S;
+      fi;
+    fi
+compiler:
+  - gcc
+  - clang
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - os: osx
+  include:
+    - env: B=style-check
+      dist: trusty
+      sudo: required
+      install:
+      - curl -4 http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04/Release.key | sudo apt-key add -
+      - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04 ./" | sudo tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
+      - sudo apt-get update -qq
+      - sudo apt-get install -qq
+          astyle
+      before_script:
+      script:
+      - scripts/style-checker.sh check
+    - env: B=copyright-check
+      sudo: false
+      compiler: gcc
+      install:
+      before_script:
+      script:
+        - export COPYRIGHTVERBOSITY=2
+        - tests/copyright/check.sh . .
+    - env: B=trusty-cmake
+      compiler: clang
+      dist: trusty
+      sudo: required
+      before_script:
+      script:
+        - mkdir build
+        - cd build
+        - cmake
+            -DCMAKE_C_FLAGS=-Werror
+            -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
+            ..
+        - make -j install
+    - env: B=check
+      os: osx
+      osx_image: xcode8
+      compiler: clang
+      install:
+        - brew update
+        - brew install
+            autoconf-archive
+            binutils
+            bison
+            eventlog
+            geoip
+            geoipupdate
+            glib
+            gradle
+            hiredis
+            libdbi
+            libnet
+            riemann-client
+        - geoipupdate
+        - pip install -r requirements.txt
+        - export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PATH
+        - export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+      before_script:
+        - ./autogen.sh
+        - ./configure
+            --disable-sun-streams
+            --disable-systemd
+            --disable-pacct
+            --enable-all-modules
+            --disable-smtp
+        - make --keep-going -j 3 ||
+          {
+            S=$?;
+            make V=1;
+            return $S;
+          }
+      script:
+        - make --keep-going check ||
+          {
+            S=$?;
+            make V=1 check;
+            find . -name test-suite.log |
+            xargs cat;
+            return $S;
+          }
+
+branches:
+  except:
+    - /wip/
+notifications:
+  irc:
+    channels:
+      - "irc.freenode.org#balabit"
+  webhooks:
+      urls:
+        - https://webhooks.gitter.im/e/1c6e3a6f10348748585a
+      on_success: always  # options: [always|never|change] default: always
+      on_failure: always  # options: [always|never|change] default: always
+      on_start: true     # default: false

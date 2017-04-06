@@ -1,0 +1,8 @@
+/var/log/syslog-ng.log {
+	weekly
+	rotate 52
+	compress
+	postrotate
+		/etc/rc.d/init.d/syslog-ng reload 2>/dev/null
+	endscript
+}

@@ -1,0 +1,37 @@
+# $Id: opt.syslog-ng.sbin.syslog-ng 12 2008-08-19 16:68:41Z folti $
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2002-2005 Novell/SUSE
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+#include <tunables/global>
+
+/opt/syslog-ng/sbin/syslog-ng {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/consoles>
+
+  capability sys_admin,
+  capability sys_tty_config,
+  capability dac_override,
+  capability dac_read_search,
+
+  /dev/log                      wl,
+  /var/lib/*/dev/log            wl,
+
+  /dev/tty*                     w,
+  /dev/xconsole                 rw,
+  /etc/syslog.conf              r,
+  /boot/System.map*     r,
+  /proc/kmsg		r,
+  /opt/syslog-ng/sbin/syslog-ng                 rmix,
+  /var/log/**                   rw,
+  /var/run/syslog-ng.pid          rwl,
+  /var/run/utmp                 rw,
+  /var/spool/compaq/nic/messages_fifo rw,
+}

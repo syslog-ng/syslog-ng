@@ -1,0 +1,68 @@
+
+BalaBit security advisory
+Advisory ID: BB-2002/01
+
+Package: 		syslog-ng
+Versions affected: 	versions prior to and including 1.5.20
+Problem type: 		buffer overflow
+Exploitable:		yes
+Date:			2002-09-27
+
+1) Background
+
+syslog-ng is a portable syslog implementation. Its highlights include regexp
+based log selection, TCP transport and more. For more information: 
+http://www.balabit.hu/en/downloads/syslog-ng/
+
+2) Problem description
+
+To make it easier to specify message destinations, syslog-ng supports macros
+in destination filenames as the following log snippet shows:
+
+destination d_messages_by_host { file("/var/log/$HOST/messages"); };
+
+The same syntax is used when specifying the contents of destination files:
+
+destination d_special_messages { file("/var/log/messages" template("$ISODATE $HOST $MSG\n")); };
+
+The problem lies in the way macro expansion handles constant characters. (ie
+everything other than macro references). As syslog-ng expands macros it uses
+a buffer, and a variable called 'left', which contains the number of
+characters available in the buffer. When a constant character is appended,
+this variable is not decremented, thus when expanding macros incorrect
+bounds checking is performed.
+
+3) Impact
+
+If templated filenames or templated output is used, it is possible to
+overflow a buffer. The number of bytes exceeding the allocated buffer
+depends on the exact template being used.
+
+It is believed that this overflow can be exploited, given enough constant
+characters are present in the template string.
+
+4) Solution
+
+Upgrade syslog-ng to 1.5.21 (devel) or 1.4.16 (stable) or apply the
+following patch:
+
+diff -u -r1.52 -r1.53
+--- affile.c    21 Aug 2002 14:03:50 -0000      1.52
++++ affile.c    27 Sep 2002 09:11:33 -0000      1.53
+@@ -859,7 +859,7 @@
+                { "SOURCEIP", M_SOURCE_IP }
+        };
+        char format[cfg->log_msg_size + 1], *format_ptr = format;
+-       int left = sizeof(format);
++       int left = sizeof(format) - 1;
+        int i, j;
+ 
+        i = 0;
+@@ -888,6 +888,7 @@
+                        *format_ptr = template->data[i];
+                        format_ptr++;
+                        i++;
++                       left--;
+                }
+        }
+        *format_ptr = 0;
