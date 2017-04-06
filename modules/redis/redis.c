@@ -247,6 +247,12 @@ redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   if (self->c->err)
     return WORKER_INSERT_RESULT_ERROR;
 
+  if (!test_connection_to_redis(self))
+    {
+       msg_error("REDIS: worker failed to connect");
+       return WORKER_INSERT_RESULT_NOT_CONNECTED;
+    }
+
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
                       self->super.seq_num, NULL, self->key_str);
 
