@@ -43,6 +43,7 @@
 
 %token KW_REDIS
 %token KW_COMMAND
+%token KW_AUTH
 
 %%
 
@@ -68,6 +69,11 @@ redis_option
         | KW_PORT '(' positive_integer ')'
           {
             redis_dd_set_port(last_driver, $3);
+          }
+        | KW_AUTH '(' string ')'
+          {
+            redis_dd_set_auth(last_driver, $3);
+            free($3);
           }
         | KW_COMMAND '(' string template_content ')'
           {

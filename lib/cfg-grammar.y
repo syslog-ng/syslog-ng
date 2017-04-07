@@ -755,7 +755,7 @@ log_flags_items
 options_stmt
         : KW_OPTIONS '{' options_items '}'
 	;
-	
+
 template_stmt
         : template_def
           {
@@ -797,7 +797,7 @@ template_fn
           }
           template_content_inner						{ $$ = last_template; free($2); }
 	;
-	
+
 template_items
 	: template_item ';' template_items
 	|
@@ -1278,4 +1278,3 @@ vp_rekey_option
 
 
 %%
-
