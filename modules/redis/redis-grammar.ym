@@ -43,6 +43,7 @@
 
 %token KW_REDIS
 %token KW_COMMAND
+%token KW_AUTH
 
 %%
 
