@@ -44,6 +44,13 @@ log_transport_init_instance(LogTransport *self, gint fd)
   self->fd = fd;
   self->cond = 0;
   self->free_fn = log_transport_free_method;
+  self->exit_on_eof = FALSE;
+}
+
+void
+log_transport_exit_on_eof(LogTransport *self)
+{
+  self->exit_on_eof = TRUE;
 }
 
 void

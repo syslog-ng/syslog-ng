@@ -59,6 +59,7 @@
 
 %token KW_FSYNC
 %token KW_FOLLOW_FREQ
+%token KW_EXIT_ON_EOF
 %token KW_OVERWRITE_IF_OLDER
 %token KW_MULTI_LINE_MODE
 %token KW_MULTI_LINE_PREFIX
@@ -101,6 +102,7 @@ source_affile_options
 source_affile_option
 	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ affile_sd_set_follow_freq(last_driver, (long) ($3 * 1000)); }
 	| KW_FOLLOW_FREQ '(' nonnegative_integer ')'		{ affile_sd_set_follow_freq(last_driver, ($3 * 1000)); }
+	| KW_EXIT_ON_EOF '(' yesno ')'		    { affile_sd_set_exit_on_eof(last_driver, $3); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'			{ ((AFFileSourceDriver *) last_driver)->pad_size = $3; }
 	| multi_line_option
         | source_reader_option

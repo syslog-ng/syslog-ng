@@ -23,6 +23,7 @@
  */
 
 #include "logreader.h"
+#include "mainloop.h"
 #include "mainloop-io-worker.h"
 #include "mainloop-call.h"
 #include "ack_tracker.h"
@@ -359,6 +360,11 @@ log_reader_fetch_log(LogReader *self)
       switch (status)
         {
         case LPS_EOF:
+          if (log_proto_server_get_exit_on_eof(self->proto))
+            {
+              MainLoop *main_loop = main_loop_get_instance();
+              main_loop_exit(main_loop);
+            }
         case LPS_ERROR:
           g_sockaddr_unref(aux.peer_addr);
           return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;

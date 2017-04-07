@@ -40,7 +40,11 @@ log_transport_file_read_method(LogTransport *s, gpointer buf, gsize buflen, LogT
 
   if (rc == 0)
     {
-      /* regular files should never return EOF, they just need to be read again */
+      if (&self->super.exit_on_eof)
+        {
+          return rc;
+        }
+
       rc = -1;
       errno = EAGAIN;
     }
@@ -77,5 +81,6 @@ log_transport_file_new(gint fd)
   LogTransportFile *self = g_new0(LogTransportFile, 1);
 
   log_transport_file_init_instance(self, fd);
+
   return &self->super;
 }

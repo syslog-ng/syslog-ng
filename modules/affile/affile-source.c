@@ -99,6 +99,13 @@ affile_sd_set_follow_freq(LogDriver *s, gint follow_freq)
   self->follow_freq = follow_freq;
 }
 
+void affile_sd_set_exit_on_eof(LogDriver *s, gboolean exit_on_eof)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  self->exit_on_eof = exit_on_eof;
+}
+
 static inline gboolean
 affile_is_linux_proc_kmsg(const gchar *filename)
 {
@@ -200,7 +207,7 @@ affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
 }
 
 static LogTransport *
-affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
+_construct_transport(AFFileSourceDriver *self, gint fd)
 {
   if (self->file_open_options.is_pipe)
     return log_transport_pipe_new(fd);
@@ -217,8 +224,19 @@ affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
         }
       return log_transport_device_new(fd, 0);
     }
-  else
     return log_transport_pipe_new(fd);
+}
+
+static LogTransport *
+affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
+{
+  LogTransport *transport;
+
+  transport = _construct_transport(self, fd);
+  if (self->exit_on_eof)
+      log_transport_exit_on_eof(transport);
+
+  return transport;
 }
 
 static LogProtoServer *

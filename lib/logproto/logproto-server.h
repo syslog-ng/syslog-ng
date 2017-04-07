@@ -123,6 +123,13 @@ log_proto_server_get_fd(LogProtoServer *s)
   return s->transport->fd;
 }
 
+static inline gboolean
+log_proto_server_get_exit_on_eof(LogProtoServer *s)
+{
+  /* FIXME: Layering violation */
+  return s->transport->exit_on_eof;
+}
+
 static inline void
 log_proto_server_reset_error(LogProtoServer *s)
 {
