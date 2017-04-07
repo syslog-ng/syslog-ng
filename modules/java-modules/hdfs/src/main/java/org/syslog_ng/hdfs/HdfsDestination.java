@@ -31,6 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -43,6 +44,7 @@ import java.util.UUID;
 
 public class HdfsDestination extends TextLogDestination {
     private static final String LOG_TAG = "HDFS:";
+    private static final String HADOOP_SECURITY_AUTH_KEY = "hadoop.security.authentication";
 
     HdfsOptions options;
     Logger logger;
@@ -85,6 +87,9 @@ public class HdfsDestination extends TextLogDestination {
         try {
             Configuration configuration = new Configuration();
             loadConfigResources(configuration);
+            if (isKerberosAuthEnabled()) {
+                setKerberosAuth(configuration);
+            }
 
             hdfs = FileSystem.get(new URI(options.getUri()), configuration);
             hdfs.getStatus(); // Just to be sure we are really connected to hdfs
@@ -106,6 +111,16 @@ public class HdfsDestination extends TextLogDestination {
             configuration.addResource(new Path(resource));
             logger.debug(String.format("Resource loaded: %s", resource));
         }
+    }
+
+    private boolean isKerberosAuthEnabled() {
+        return options.getKerberosPrincipal() != null && options.getKerberosKeytabFile() != null;
+    }
+
+    private void setKerberosAuth(Configuration configuration) throws IOException {
+        configuration.set(HADOOP_SECURITY_AUTH_KEY, "kerberos");
+        UserGroupInformation.setConfiguration(configuration);
+        UserGroupInformation.loginUserFromKeytab(options.getKerberosPrincipal(), options.getKerberosKeytabFile());
     }
 
     @Override

@@ -37,6 +37,8 @@ public class HdfsOptions {
   public static String RESOURCES = "hdfs_resources";
   public static String MAX_FILENAME_LENGTH = "hdfs_max_filename_length";
   public static String MAX_FILENAME_LENGTH_DEFAULT = "255";
+  public static String KERBEROS_PRINCIPAL = "kerberos_principal";
+  public static String KERBEROS_KEYTAB_FILE = "kerberos_keytab_file";
 
   private LogDestination owner;
   private Options options;
@@ -79,6 +81,14 @@ public class HdfsOptions {
      return options.get(MAX_FILENAME_LENGTH).getValueAsInteger();
   }
 
+  public String getKerberosPrincipal() {
+      return options.get(KERBEROS_PRINCIPAL).getValue();
+  }
+
+  public String getKerberosKeytabFile() {
+      return options.get(KERBEROS_KEYTAB_FILE).getValue();
+  }
+
   private void fillOptions() {
     fillStringOptions();
   }
@@ -89,6 +99,8 @@ public class HdfsOptions {
 		options.put(new StringOption(owner, ARCHIVE_DIR));
 		options.put(new StringOption(owner, RESOURCES));
 		options.put(new StringOption(owner, MAX_FILENAME_LENGTH, MAX_FILENAME_LENGTH_DEFAULT));
+		options.put(new StringOption(owner, KERBEROS_PRINCIPAL));
+		options.put(new StringOption(owner, KERBEROS_KEYTAB_FILE));
   }
 
 }
