@@ -18,6 +18,7 @@ EXTRA_DIST					+=	\
 	modules/basicfuncs/context-funcs.c 		\
 	modules/basicfuncs/numeric-funcs.c 		\
 	modules/basicfuncs/str-funcs.c			\
+	modules/basicfuncs/fname-funcs.c		\
 	modules/basicfuncs/ip-funcs.c			\
 	modules/basicfuncs/misc-funcs.c			\
 	modules/basicfuncs/list-funcs.c			\
