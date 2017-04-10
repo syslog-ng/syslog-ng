@@ -37,6 +37,19 @@ test_format_welf(void)
                                       "MSG=árvíztűrőtükörfúrógép MSG=árvíztűrőtükörfúrógép");
 }
 
+void
+test_format_welf_performance(void)
+{
+  perftest_template("$(format-welf APP.*)\n");
+  perftest_template("<$PRI>1 $ISODATE $LOGHOST @syslog-ng - - ${SDATA:--} $(format-welf --scope all-nv-pairs "
+                    "--exclude 0* --exclude 1* --exclude 2* --exclude 3* --exclude 4* --exclude 5* "
+                    "--exclude 6* --exclude 7* --exclude 8* --exclude 9* "
+                    "--exclude SOURCE "
+                    "--exclude .SDATA.* "
+                    "..RSTAMP='${R_UNIXTIME}${R_TZ}' "
+                    "..TAGS=${TAGS})\n");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -47,6 +60,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   plugin_load_module("kvformat", configuration, NULL);
 
   test_format_welf();
+  test_format_welf_performance();
 
   deinit_template_tests();
   app_shutdown();
