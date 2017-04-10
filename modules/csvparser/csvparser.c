@@ -31,7 +31,6 @@ typedef struct _CSVParser
 {
   LogParser super;
   CSVScannerOptions options;
-  CSVScanner scanner;
   GString *formatted_key;
   gchar *prefix;
   gint prefix_len;
@@ -117,17 +116,19 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   CSVParser *self = (CSVParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
 
-  csv_scanner_input(&self->scanner, input);
-  while (csv_scanner_scan_next(&self->scanner))
+  CSVScanner scanner;
+  csv_scanner_init(&scanner, &self->options, input);
+  while (csv_scanner_scan_next(&scanner))
     {
 
       log_msg_set_value_by_name(msg,
-                                _get_formatted_key(self, csv_scanner_get_current_name(&self->scanner)),
-                                csv_scanner_get_current_value(&self->scanner),
-                                csv_scanner_get_current_value_len(&self->scanner));
+                                _get_formatted_key(self, csv_scanner_get_current_name(&scanner)),
+                                csv_scanner_get_current_value(&scanner),
+                                csv_scanner_get_current_value_len(&scanner));
     }
 
-  return csv_scanner_is_scan_finished(&self->scanner);
+  csv_scanner_deinit(&scanner);
+  return csv_scanner_is_scan_finished(&scanner);
 }
 
 static LogPipe *
@@ -149,7 +150,6 @@ csv_parser_free(LogPipe *s)
   CSVParser *self = (CSVParser *) s;
 
   csv_scanner_options_clean(&self->options);
-  csv_scanner_state_clean(&self->scanner);
   g_string_free(self->formatted_key, TRUE);
   g_free(self->prefix);
   log_parser_free_method(s);
@@ -172,7 +172,6 @@ csv_parser_new(GlobalConfig *cfg)
   csv_scanner_options_set_quote_pairs(&self->options, "\"\"''");
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
-  csv_scanner_state_init(&self->scanner, &self->options);
   return &self->super;
 }
 

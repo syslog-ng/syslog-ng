@@ -34,15 +34,14 @@ _csv_scanner_dup_current_value_with_prefix(CSVScanner *line_scanner,
 }
 
 static gboolean
-_fetch_next_with_prefix(ContextualDataRecordScanner *record_scanner,
+_fetch_next_with_prefix(CSVContextualDataRecordScanner *record_scanner,
                         GString **target, const gchar *prefix)
 {
-  CSVScanner *line_scanner = (CSVScanner *) record_scanner->scanner;
-  if (!csv_scanner_scan_next(line_scanner))
+  if (!csv_scanner_scan_next(&record_scanner->scanner))
     {
       return FALSE;
     }
-  gchar *next = _csv_scanner_dup_current_value_with_prefix(line_scanner, prefix);
+  gchar *next = _csv_scanner_dup_current_value_with_prefix(&record_scanner->scanner, prefix);
   *target = g_string_new(next);
   g_free(next);
 
@@ -50,35 +49,35 @@ _fetch_next_with_prefix(ContextualDataRecordScanner *record_scanner,
 }
 
 static gboolean
-_fetch_next_without_prefix(ContextualDataRecordScanner *
+_fetch_next_without_prefix(CSVContextualDataRecordScanner *
                            record_scanner, GString **target)
 {
   return _fetch_next_with_prefix(record_scanner, target, NULL);
 }
 
 static gboolean
-_is_whole_record_parsed(CSVScanner *line_scanner)
+_is_whole_record_parsed(CSVContextualDataRecordScanner *csv_record_scanner)
 {
-  csv_scanner_scan_next(line_scanner);
-  return csv_scanner_is_scan_finished(line_scanner);
+  csv_scanner_scan_next(&csv_record_scanner->scanner);
+  return csv_scanner_is_scan_finished(&csv_record_scanner->scanner);
 }
 
 const gboolean
 get_next_record(ContextualDataRecordScanner *s, const gchar *input, ContextualDataRecord *record)
 {
-  CSVScanner *line_scanner = (CSVScanner *) s->scanner;
-  csv_scanner_input(line_scanner, input);
+  CSVContextualDataRecordScanner *csv_record_scanner = (CSVContextualDataRecordScanner *) s;
+  csv_scanner_init(&csv_record_scanner->scanner, &csv_record_scanner->options, input);
 
-  if (!_fetch_next_without_prefix(s, &record->selector))
+  if (!_fetch_next_without_prefix(csv_record_scanner, &record->selector))
     return FALSE;
 
-  if (!_fetch_next_with_prefix(s, &record->name, s->name_prefix))
+  if (!_fetch_next_with_prefix(csv_record_scanner, &record->name, s->name_prefix))
     return FALSE;
 
-  if (!_fetch_next_without_prefix(s, &record->value))
+  if (!_fetch_next_without_prefix(csv_record_scanner, &record->value))
     return FALSE;
 
-  return _is_whole_record_parsed(line_scanner);
+  return _is_whole_record_parsed(csv_record_scanner);
 }
 
 static void
@@ -86,7 +85,7 @@ csv_contextual_data_record_scanner_free(ContextualDataRecordScanner *s)
 {
   CSVContextualDataRecordScanner *self = (CSVContextualDataRecordScanner *) s;
   csv_scanner_options_clean(&self->options);
-  csv_scanner_state_clean(&self->scanner);
+  csv_scanner_deinit(&self->scanner);
   g_free(self);
 }
 
@@ -102,8 +101,6 @@ csv_contextual_data_record_scanner_new()
                                   string_array_to_list(column_array));
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE | CSV_SCANNER_DROP_INVALID);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
-  csv_scanner_state_init(&self->scanner, &self->options);
-  self->super.scanner = &self->scanner;
   self->super.get_next = get_next_record;
   self->super.free_fn = csv_contextual_data_record_scanner_free;
 
