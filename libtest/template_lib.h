@@ -38,6 +38,7 @@ void assert_template_format_with_escaping_msg(const gchar *template, gboolean es
 void assert_template_format_with_context(const gchar *template, const gchar *expected);
 void assert_template_format_with_context_msgs(const gchar *template, const gchar *expected, LogMessage **msgs, gint num_messages);
 void assert_template_failure(const gchar *template, const gchar *expected_failure);
+void perftest_template(gchar *template);
 
 LogMessage *create_empty_message(void);
 LogMessage *create_sample_message(void);

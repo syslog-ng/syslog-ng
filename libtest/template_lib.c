@@ -25,6 +25,7 @@
 #include "testutils.h"
 #include "template_lib.h"
 #include "msg_parse_lib.h"
+#include "stopwatch.h"
 
 #include <string.h>
 
@@ -99,6 +100,13 @@ create_sample_message(void)
   LogMessage *msg = create_empty_message();
 
   log_msg_set_value_by_name(msg, "APP.VALUE", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE2", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE3", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE4", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE5", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE6", "value", -1);
+  log_msg_set_value_by_name(msg, "APP.VALUE7", "value", -1);
+
   log_msg_set_value_by_name(msg, "APP.STRIP1", "     value", -1);
   log_msg_set_value_by_name(msg, "APP.STRIP2", "value     ", -1);
   log_msg_set_value_by_name(msg, "APP.STRIP3", "     value     ", -1);
@@ -225,4 +233,40 @@ assert_template_failure(const gchar *template, const gchar *expected_error)
               error->message, expected_error);
   g_clear_error(&error);
   log_template_unref(templ);
+}
+
+#define BENCHMARK_COUNT 100000
+
+void
+perftest_template(gchar *template)
+{
+  LogTemplate *templ;
+  LogMessage *msg;
+  GString *res = g_string_sized_new(1024);
+  gint i;
+  GError *error = NULL;
+
+  templ = log_template_new(configuration, NULL);
+  if (!log_template_compile(templ, template, &error))
+    {
+      expect_true(FALSE, "template expected to compile cleanly,"
+                  " but it didn't, template=%s, error=%s",
+                  template, error ? error->message : "(none)");
+      return;
+    }
+  msg = create_sample_message();
+
+  start_stopwatch();
+  for (i = 0; i < BENCHMARK_COUNT; i++)
+    {
+      log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, NULL, res);
+    }
+  stop_stopwatch_and_display_result(BENCHMARK_COUNT,
+                                    "      %-90.*s",
+                                    (int) strlen(template) - 1,
+                                    template);
+
+  log_template_unref(templ);
+  g_string_free(res, TRUE);
+  log_msg_unref(msg);
 }

@@ -208,7 +208,7 @@ test_nvpairs(void)
                          "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
   assert_template_format("${APP.VALUE}", "value");
   assert_template_format("${APP.VALUE:-ures}", "value");
-  assert_template_format("${APP.VALUE2:-ures}", "ures");
+  assert_template_format("${APP.VALUE99:-ures}", "ures");
   assert_template_format("${1}", "first-match");
   assert_template_format("$1", "first-match");
   assert_template_format("$$$1$$", "$first-match$");
