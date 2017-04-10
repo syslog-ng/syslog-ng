@@ -172,6 +172,19 @@ test_numeric_funcs(void)
   assert_template_format("$(- 10000000000 5000000000)", "5000000000");
 }
 
+void
+test_fname_funcs(void)
+{
+  assert_template_format("$(basename foo)", "foo");
+  assert_template_format("$(basename /foo/bar)", "bar");
+  assert_template_format("$(basename /foo/bar/baz)", "baz");
+
+  assert_template_format("$(dirname foo)", ".");
+  assert_template_format("$(dirname /foo/bar)", "/foo");
+  assert_template_format("$(dirname /foo/bar/)", "/foo");
+  assert_template_format("$(dirname /foo/bar/baz)", "/foo/bar");
+}
+
 typedef struct
 {
   const gchar *macro;
