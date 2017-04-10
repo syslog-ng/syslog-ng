@@ -147,6 +147,19 @@ test_format_json_with_utf8(void)
   log_msg_unref(msg);
 }
 
+void
+test_format_json_performance(void)
+{
+  perftest_template("$(format-json APP.*)\n");
+  perftest_template("<$PRI>1 $ISODATE $LOGHOST @syslog-ng - - ${SDATA:--} $(format-json --scope all-nv-pairs "
+                    "--exclude 0* --exclude 1* --exclude 2* --exclude 3* --exclude 4* --exclude 5* "
+                    "--exclude 6* --exclude 7* --exclude 8* --exclude 9* "
+                    "--exclude SOURCE "
+                    "--exclude .SDATA.* "
+                    "..RSTAMP='${R_UNIXTIME}${R_TZ}' "
+                    "..TAGS=${TAGS})\n");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -162,6 +175,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_format_json_with_type_hints();
   test_format_json_on_error();
   test_format_json_with_utf8();
+  test_format_json_performance();
 
   deinit_template_tests();
   app_shutdown();
