@@ -64,8 +64,7 @@ void csv_scanner_options_set_quotes(CSVScannerOptions *options, const gchar *quo
 void csv_scanner_options_set_quote_pairs(CSVScannerOptions *options, const gchar *quote_pairs);
 void csv_scanner_options_set_null_value(CSVScannerOptions *options, const gchar *null_value);
 
-typedef struct _CSVScanner
-{
+typedef struct {
   CSVScannerOptions *options;
   GList *current_column;
   const gchar *src;
@@ -80,9 +79,7 @@ gboolean csv_scanner_scan_next(CSVScanner *pstate);
 gboolean csv_scanner_is_scan_finished(CSVScanner *pstate);
 gchar *csv_scanner_dup_current_value(CSVScanner *self);
 
-void csv_scanner_input(CSVScanner *pstate, const gchar *input);
-gboolean csv_scanner_parse_input(CSVScanner *pstate);
-void csv_scanner_state_init(CSVScanner *pstate, CSVScannerOptions *options);
-void csv_scanner_state_clean(CSVScanner *pstate);
+void csv_scanner_init(CSVScanner *pstate, CSVScannerOptions *options, const gchar *input);
+void csv_scanner_deinit(CSVScanner *pstate);
 
 #endif
