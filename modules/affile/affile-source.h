@@ -42,9 +42,6 @@ typedef struct _AFFileSourceDriver
 LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
 LogDriver *afpipe_sd_new(gchar *filename, GlobalConfig *cfg);
 
-gboolean affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regexp, GError **error);
-gboolean affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error);
-
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
 void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
 void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
