@@ -392,24 +392,17 @@ csv_scanner_is_scan_finished(CSVScanner *self)
 }
 
 void
-csv_scanner_input(CSVScanner *self, const gchar *input)
+csv_scanner_init(CSVScanner *scanner, CSVScannerOptions *options, const gchar *input)
 {
-  self->src = input;
-  self->current_column = NULL;
+  memset(scanner, 0, sizeof(*scanner));
+  scanner->src = input;
+  scanner->current_value = g_string_sized_new(128);
+  scanner->current_column = NULL;
+  scanner->options = options;
 }
 
 void
-csv_scanner_state_init(CSVScanner *self, CSVScannerOptions *options)
-{
-  self->options = options;
-  self->current_column = options->columns;
-  self->src = NULL;
-  self->current_value = g_string_sized_new(128);
-  self->current_quote = 0;
-}
-
-void
-csv_scanner_state_clean(CSVScanner *self)
+csv_scanner_deinit(CSVScanner *self)
 {
   g_string_free(self->current_value, TRUE);
 }
