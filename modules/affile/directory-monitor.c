@@ -154,7 +154,7 @@ directory_monitor_stop(DirectoryMonitor *self)
 }
 
 static void
-_collect_all_files (DirectoryMonitor *self, GDir *directory)
+_collect_all_files(DirectoryMonitor *self, GDir *directory)
 {
   const gchar *filename = g_dir_read_name(directory);
   while (filename)

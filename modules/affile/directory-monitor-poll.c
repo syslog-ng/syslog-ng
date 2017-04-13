@@ -84,7 +84,7 @@ _rescan_directory(DirectoryMonitorPoll *self)
 void
 _rearm_rescan_timer(DirectoryMonitorPoll *self)
 {
-  iv_validate_now ();
+  iv_validate_now();
   self->rescan_timer.expires = iv_now;
   timespec_add_msec(&self->rescan_timer.expires, self->super.recheck_time);
   iv_timer_register(&self->rescan_timer);

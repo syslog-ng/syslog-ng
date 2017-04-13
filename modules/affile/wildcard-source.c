@@ -52,7 +52,7 @@ void
 _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 {
   FileReader *reader = NULL;
-  if (g_hash_table_size (self->file_readers) >= self->max_files)
+  if (g_hash_table_size(self->file_readers) >= self->max_files)
     {
       msg_warning("Number of allowed monitorod file is reached, rejecting read file",
                   evt_tag_str("source", self->super.super.group),
@@ -60,19 +60,19 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
                   evt_tag_int("max_files", self->max_files));
       return;
     }
-  GlobalConfig *cfg = log_pipe_get_config (&self->super.super.super);
-  reader = file_reader_new (full_path, &self->super, cfg);
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+  reader = file_reader_new(full_path, &self->super, cfg);
   reader->file_reader_options = &self->file_reader_options;
-  log_pipe_append (&reader->super, &self->super.super.super);
-  if (!log_pipe_init (&reader->super))
+  log_pipe_append(&reader->super, &self->super.super.super);
+  if (!log_pipe_init(&reader->super))
     {
-      msg_warning("File reader initialization failed", evt_tag_str ("filename", full_path),
-                  evt_tag_str ("source_driver", self->super.super.group));
-      log_pipe_unref (&reader->super);
+      msg_warning("File reader initialization failed", evt_tag_str("filename", full_path),
+                  evt_tag_str("source_driver", self->super.super.group));
+      log_pipe_unref(&reader->super);
     }
   else
     {
-      g_hash_table_insert (self->file_readers, g_strdup (full_path), reader);
+      g_hash_table_insert(self->file_readers, g_strdup(full_path), reader);
     }
 }
 
@@ -81,16 +81,16 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
 {
   if (g_pattern_match_string(self->compiled_pattern, event->name))
     {
-      FileReader *reader = g_hash_table_lookup (self->file_readers, event->full_path);
+      FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
       if (!reader)
         {
-          _create_file_reader (self, event->full_path);
+          _create_file_reader(self, event->full_path);
         }
       else
         {
           if (!log_pipe_init(&reader->super))
             {
-              msg_error("Can not re-initialize reader for file", evt_tag_str ("filename", event->full_path));
+              msg_error("Can not re-initialize reader for file", evt_tag_str("filename", event->full_path));
             }
         }
     }
@@ -101,7 +101,7 @@ _handle_directory_created(WildcardSourceDriver *self, const DirectoryMonitorEven
 {
   if (self->recursive)
     {
-      msg_debug("Directory created", evt_tag_str ("name", event->full_path));
+      msg_debug("Directory created", evt_tag_str("name", event->full_path));
       DirectoryMonitor *monitor = g_hash_table_lookup(self->directory_monitors, event->full_path);
       if (!monitor)
         {
@@ -116,13 +116,13 @@ _handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
   FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
   if (reader)
     {
-      msg_debug("Monitored file is deleted", evt_tag_str ("filename", event->full_path));
+      msg_debug("Monitored file is deleted", evt_tag_str("filename", event->full_path));
       log_pipe_deinit(&reader->super);
       file_reader_remove_persist_state(reader);
     }
   else if (g_hash_table_remove(self->directory_monitors, event->full_path))
     {
-      msg_debug("Monitored directory is deleted", evt_tag_str ("directory", event->full_path));
+      msg_debug("Monitored directory is deleted", evt_tag_str("directory", event->full_path));
     }
 }
 
@@ -165,7 +165,7 @@ _init_reader_options(WildcardSourceDriver *self, GlobalConfig *cfg)
   if (!self->window_size_initialized)
     {
       self->file_reader_options.reader_options.super.init_window_size /= self->max_files;
-      _ensure_minimum_window_size (self);
+      _ensure_minimum_window_size(self);
       self->window_size_initialized = TRUE;
 
     }
