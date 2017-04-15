@@ -29,6 +29,7 @@
 #include "pdb-load.h"
 #include "pdb-context.h"
 #include "pdb-ratelimit.h"
+#include "pdb-lookup-params.h"
 #include "correllation.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
@@ -46,16 +47,6 @@ static NVHandle rule_id_handle = 0;
 static NVHandle context_id_handle = 0;
 static LogTagId system_tag;
 static LogTagId unknown_tag;
-
-typedef struct _PDBLookupParams PDBLookupParams;
-struct _PDBLookupParams
-{
-  LogMessage *msg;
-  NVHandle program_handle;
-  NVHandle message_handle;
-  const gchar *message_string;
-  gssize message_len;
-};
 
 struct _PatternDB
 {
@@ -684,14 +675,6 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
   return rule != NULL;
 }
 
-static void
-pdb_lookup_params_init(PDBLookupParams *lookup, LogMessage *msg)
-{
-  lookup->msg = msg;
-  lookup->program_handle = LM_V_PROGRAM;
-  lookup->message_handle = LM_V_MESSAGE;
-  lookup->message_len = 0;
-}
 
 gboolean
 pattern_db_process(PatternDB *self, LogMessage *msg)
