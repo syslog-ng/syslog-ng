@@ -98,17 +98,17 @@ struct _PatternDB
  * Rule evaluation
  *********************************************/
 
-static inline gboolean
-pdb_check_action_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMessage *msg, GString *buffer)
+static gboolean
+_is_action_within_rate_limit(PatternDB *db, PDBRule *rule, PDBAction *action, LogMessage *msg, GString *buffer)
 {
   CorrellationKey key;
   PDBRateLimit *rl;
   guint64 now;
 
-  if (self->rate == 0)
+  if (action->rate == 0)
     return TRUE;
 
-  g_string_printf(buffer, "%s:%d", rule->rule_id, self->id);
+  g_string_printf(buffer, "%s:%d", rule->rule_id, action->id);
   correllation_key_setup(&key, rule->context.scope, msg, buffer->str);
 
   rl = g_hash_table_lookup(db->rate_limits, &key);
@@ -122,12 +122,12 @@ pdb_check_action_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
   if (rl->last_check == 0)
     {
       rl->last_check = now;
-      rl->buckets = self->rate;
+      rl->buckets = action->rate;
     }
   else
     {
       /* quick and dirty fixed point arithmetic, 8 bit fraction part */
-      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) self->rate_quantum) << 8) / self->rate);
+      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) action->rate_quantum) << 8) / action->rate);
 
       if (new_credits)
         {
@@ -135,7 +135,7 @@ pdb_check_action_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
            * Deposit the new credits in bucket but make sure we don't permit
            * more than the maximum rate. */
 
-          rl->buckets = MIN(rl->buckets + new_credits, self->rate);
+          rl->buckets = MIN(rl->buckets + new_credits, action->rate);
           rl->last_check = now;
         }
     }
@@ -148,43 +148,43 @@ pdb_check_action_rate_limit(PDBAction *self, PDBRule *rule, PatternDB *db, LogMe
 }
 
 gboolean
-pdb_is_action_triggered(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
+pdb_is_action_triggered(PDBAction *action, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
                         LogMessage *msg, GString *buffer)
 {
-  if (self->trigger != trigger)
+  if (action->trigger != trigger)
     return FALSE;
 
-  if (self->condition)
+  if (action->condition)
     {
       if (context
-          && !filter_expr_eval_with_context(self->condition, (LogMessage **) context->super.messages->pdata,
+          && !filter_expr_eval_with_context(action->condition, (LogMessage **) context->super.messages->pdata,
                                             context->super.messages->len))
         return FALSE;
-      if (!context && !filter_expr_eval(self->condition, msg))
+      if (!context && !filter_expr_eval(action->condition, msg))
         return FALSE;
     }
 
-  if (!pdb_check_action_rate_limit(self, rule, db, msg, buffer))
+  if (!_is_action_within_rate_limit(db, rule, action, msg, buffer))
     return FALSE;
 
   return TRUE;
 }
 
 LogMessage *
-pdb_generate_message(PDBAction *self, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_generate_message(PDBAction *action, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   if (context)
-    return synthetic_message_generate_with_context(&self->content.message, &context->super, buffer);
+    return synthetic_message_generate_with_context(&action->content.message, &context->super, buffer);
   else
-    return synthetic_message_generate_without_context(&self->content.message, msg, buffer);
+    return synthetic_message_generate_without_context(&action->content.message, msg, buffer);
 }
 
 void
-pdb_execute_action_message(PDBAction *self, PatternDB *db, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_execute_action_message(PDBAction *action, PatternDB *db, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   LogMessage *genmsg;
 
-  genmsg = pdb_generate_message(self, context, msg, buffer);
+  genmsg = pdb_generate_message(action, context, msg, buffer);
   db->emit(genmsg, TRUE, db->emit_data);
   log_msg_unref(genmsg);
 }
@@ -192,7 +192,7 @@ pdb_execute_action_message(PDBAction *self, PatternDB *db, PDBContext *context, 
 static void pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data);
 
 void
-pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *triggering_context,
+pdb_execute_action_create_context(PDBAction *action, PatternDB *db, PDBRule *rule, PDBContext *triggering_context,
                                   LogMessage *triggering_msg, GString *buffer)
 {
   CorrellationKey key;
@@ -201,8 +201,8 @@ pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule,
   SyntheticContext *syn_context;
   SyntheticMessage *syn_message;
 
-  syn_context = &self->content.create_context.context;
-  syn_message = &self->content.create_context.message;
+  syn_context = &action->content.create_context.context;
+  syn_message = &action->content.create_context.message;
   if (triggering_context)
     {
       context_msg = synthetic_message_generate_with_context(syn_message, &triggering_context->super, buffer);
@@ -238,17 +238,17 @@ pdb_execute_action_create_context(PDBAction *self, PatternDB *db, PDBRule *rule,
 }
 
 void
-pdb_execute_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *context, LogMessage *msg, GString *buffer)
+pdb_execute_action(PDBAction *action, PatternDB *db, PDBRule *rule, PDBContext *context, LogMessage *msg, GString *buffer)
 {
-  switch (self->content_type)
+  switch (action->content_type)
     {
     case RAC_NONE:
       break;
     case RAC_MESSAGE:
-      pdb_execute_action_message(self, db, context, msg, buffer);
+      pdb_execute_action_message(action, db, context, msg, buffer);
       break;
     case RAC_CREATE_CONTEXT:
-      pdb_execute_action_create_context(self, db, rule, context, msg, buffer);
+      pdb_execute_action_create_context(action, db, rule, context, msg, buffer);
       break;
     default:
       g_assert_not_reached();
@@ -257,26 +257,26 @@ pdb_execute_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBContext *co
 }
 
 void
-pdb_trigger_action(PDBAction *self, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
+pdb_trigger_action(PDBAction *action, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
                    LogMessage *msg, GString *buffer)
 {
-  if (pdb_is_action_triggered(self, db, rule, trigger, context, msg, buffer))
-    pdb_execute_action(self, db, rule, context, msg, buffer);
+  if (pdb_is_action_triggered(action, db, rule, trigger, context, msg, buffer))
+    pdb_execute_action(action, db, rule, context, msg, buffer);
 }
 
 void
-pdb_run_rule_actions(PDBRule *self, PatternDB *db, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg,
+pdb_run_rule_actions(PDBRule *rule, PatternDB *db, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg,
                      GString *buffer)
 {
   gint i;
 
-  if (!self->actions)
+  if (!rule->actions)
     return;
-  for (i = 0; i < self->actions->len; i++)
+  for (i = 0; i < rule->actions->len; i++)
     {
-      PDBAction *action = (PDBAction *) g_ptr_array_index(self->actions, i);
+      PDBAction *action = (PDBAction *) g_ptr_array_index(rule->actions, i);
 
-      pdb_trigger_action(action, db, self, trigger, context, msg, buffer);
+      pdb_trigger_action(action, db, rule, trigger, context, msg, buffer);
     }
 }
 
@@ -320,7 +320,7 @@ _add_matches_to_message(LogMessage *msg, GArray *matches, NVHandle ref_handle, c
  * NOTE: it also modifies @msg to store the name-value pairs found during lookup, so
  */
 PDBRule *
-pdb_lookup_ruleset(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
+pdb_lookup_ruleset(PDBRuleSet *rule_set, PDBLookupParams *lookup, GArray *dbg_list)
 {
   RNode *node;
   LogMessage *msg = lookup->msg;
@@ -328,12 +328,12 @@ pdb_lookup_ruleset(PDBRuleSet *self, PDBLookupParams *lookup, GArray *dbg_list)
   const gchar *program_value;
   gssize program_len;
 
-  if (G_UNLIKELY(!self->programs))
+  if (G_UNLIKELY(!rule_set->programs))
     return FALSE;
 
   program_value = log_msg_get_value(msg, lookup->program_handle, &program_len);
   prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
-  node = r_find_node(self->programs, (guint8 *) program_value, program_len, prg_matches);
+  node = r_find_node(rule_set->programs, (guint8 *) program_value, program_len, prg_matches);
 
   if (node)
     {
