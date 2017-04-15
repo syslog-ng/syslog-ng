@@ -21,6 +21,8 @@ set(PATTERNDB_SOURCES
     pdb-ruleset.h
     pdb-context.c
     pdb-context.h
+    pdb-ratelimit.c
+    pdb-ratelimit.h
     correllation.c
     correllation.h
     correllation-key.c

@@ -28,6 +28,7 @@
 #include "pdb-ruleset.h"
 #include "pdb-load.h"
 #include "pdb-context.h"
+#include "pdb-ratelimit.h"
 #include "correllation.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
@@ -101,47 +102,6 @@ struct _PatternDB
  *
  */
 
-/***************************************************************************
- * PDBRateLimit
- ***************************************************************************/
-
-/* This class encapsulates a rate-limit state stored in
-   db->state. */
-typedef struct _PDBRateLimit
-{
-  /* key in the hashtable. NOTE: host/program/pid/session_id are allocated, thus they need to be freed when the structure is freed. */
-  CorrellationKey key;
-  gint buckets;
-  guint64 last_check;
-} PDBRateLimit;
-
-PDBRateLimit *
-pdb_rate_limit_new(CorrellationKey *key)
-{
-  PDBRateLimit *self = g_new0(PDBRateLimit, 1);
-
-  memcpy(&self->key, key, sizeof(*key));
-  if (self->key.pid)
-    self->key.pid = g_strdup(self->key.pid);
-  if (self->key.program)
-    self->key.program = g_strdup(self->key.program);
-  if (self->key.host)
-    self->key.host = g_strdup(self->key.host);
-  return self;
-}
-
-void
-pdb_rate_limit_free(PDBRateLimit *self)
-{
-  if (self->key.host)
-    g_free((gchar *) self->key.host);
-  if (self->key.program)
-    g_free((gchar *) self->key.program);
-  if (self->key.pid)
-    g_free((gchar *) self->key.pid);
-  g_free(self->key.session_id);
-  g_free(self);
-}
 
 /*********************************************
  * Rule evaluation
