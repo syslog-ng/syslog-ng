@@ -63,6 +63,7 @@ typedef struct _PatternDBProcessState
   PDBAction *action;
   PDBContext *context;
   LogMessage *msg;
+  GString *buffer;
 } PatternDBProcessState;
 
 /*
@@ -271,11 +272,12 @@ _execute_action_if_triggered(PatternDB *db, PDBRule *rule, PDBAction *action,
 }
 
 static void
-_execute_rule_actions(PatternDB *db, PDBRule *rule,
-                      PDBActionTrigger trigger, PDBContext *context,
-                      LogMessage *msg, GString *buffer)
+_execute_rule_actions(PatternDB *db, PatternDBProcessState *process_state, PDBActionTrigger trigger)
 {
   gint i;
+  PDBRule *rule = process_state->rule;
+  LogMessage *msg = process_state->msg;
+  PDBContext *context = process_state->context;
 
   if (!rule->actions)
     return;
@@ -283,7 +285,7 @@ _execute_rule_actions(PatternDB *db, PDBRule *rule,
     {
       PDBAction *action = (PDBAction *) g_ptr_array_index(rule->actions, i);
 
-      _execute_action_if_triggered(db, rule, action, trigger, context, msg, buffer);
+      _execute_action_if_triggered(db, rule, action, trigger, context, msg, process_state->buffer);
     }
 }
 
@@ -306,12 +308,18 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
   PatternDB *pdb = (PatternDB *) timer_wheel_get_associated_data(wheel);
   GString *buffer = g_string_sized_new(256);
   LogMessage *msg = correllation_context_get_last_message(&context->super);
+  PatternDBProcessState process_state_p = {0};
+  PatternDBProcessState *process_state = &process_state_p;
 
   msg_debug("Expiring patterndb correllation context",
             evt_tag_str("last_rule", context->rule->rule_id),
             evt_tag_long("utc", timer_wheel_get_time(pdb->timer_wheel)));
+  process_state->context = context;
+  process_state->rule = context->rule;
+  process_state->msg = msg;
+  process_state->buffer = buffer;
   if (pdb->emit)
-    _execute_rule_actions(pdb, context->rule, RAT_TIMEOUT, context, msg, buffer);
+    _execute_rule_actions(pdb, process_state, RAT_TIMEOUT);
   g_hash_table_remove(pdb->correllation.state, &context->super.key);
   g_string_free(buffer, TRUE);
 
@@ -508,12 +516,13 @@ _pattern_db_process_matching_rule(PatternDB *self, PatternDBProcessState *proces
     }
 
   process_state->context = context;
+  process_state->buffer = buffer;
   synthetic_message_apply(&rule->msg, &context->super, msg, buffer);
   if (self->emit)
     {
       g_static_rw_lock_writer_unlock(&self->lock);
       self->emit(msg, FALSE, self->emit_data);
-      _execute_rule_actions(self, rule, RAT_MATCH, context, msg, buffer);
+      _execute_rule_actions(self, process_state, RAT_MATCH);
       g_static_rw_lock_writer_lock(&self->lock);
     }
   pdb_rule_unref(rule);
@@ -559,7 +568,6 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
     _pattern_db_process_unmatching_rule(self, process_state);
   return process_state->rule != NULL;
 }
-
 
 gboolean
 pattern_db_process(PatternDB *self, LogMessage *msg)
