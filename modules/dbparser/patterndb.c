@@ -237,8 +237,8 @@ _execute_action_create_context(PatternDB *db, PDBAction *action, PDBRule *rule, 
   new_context->rule = pdb_rule_ref(rule);
 }
 
-void
-pdb_execute_action(PDBAction *action, PatternDB *db, PDBRule *rule, PDBContext *context, LogMessage *msg, GString *buffer)
+static void
+_execute_action(PatternDB *db, PDBRule *rule, PDBAction *action, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   switch (action->content_type)
     {
@@ -261,7 +261,7 @@ pdb_trigger_action(PDBAction *action, PatternDB *db, PDBRule *rule, PDBActionTri
                    LogMessage *msg, GString *buffer)
 {
   if (_is_action_triggered(db, rule, action, trigger, context, msg, buffer))
-    pdb_execute_action(action, db, rule, context, msg, buffer);
+    _execute_action(db, rule, action, context, msg, buffer);
 }
 
 void
