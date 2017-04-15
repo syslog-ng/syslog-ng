@@ -147,9 +147,9 @@ _is_action_within_rate_limit(PatternDB *db, PDBRule *rule, PDBAction *action, Lo
   return FALSE;
 }
 
-gboolean
-pdb_is_action_triggered(PDBAction *action, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
-                        LogMessage *msg, GString *buffer)
+static gboolean
+_is_action_triggered(PatternDB *db, PDBRule *rule, PDBAction *action, PDBActionTrigger trigger, PDBContext *context,
+                     LogMessage *msg, GString *buffer)
 {
   if (action->trigger != trigger)
     return FALSE;
@@ -260,7 +260,7 @@ void
 pdb_trigger_action(PDBAction *action, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
                    LogMessage *msg, GString *buffer)
 {
-  if (pdb_is_action_triggered(action, db, rule, trigger, context, msg, buffer))
+  if (_is_action_triggered(db, rule, action, trigger, context, msg, buffer))
     pdb_execute_action(action, db, rule, context, msg, buffer);
 }
 
