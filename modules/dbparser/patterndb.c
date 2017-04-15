@@ -179,8 +179,8 @@ _generate_synthetic_message(PDBAction *action, PDBContext *context, LogMessage *
     return synthetic_message_generate_without_context(&action->content.message, msg, buffer);
 }
 
-void
-pdb_execute_action_message(PDBAction *action, PatternDB *db, PDBContext *context, LogMessage *msg, GString *buffer)
+static void
+_execute_action_message(PatternDB *db, PDBAction *action, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   LogMessage *genmsg;
 
@@ -245,7 +245,7 @@ pdb_execute_action(PDBAction *action, PatternDB *db, PDBRule *rule, PDBContext *
     case RAC_NONE:
       break;
     case RAC_MESSAGE:
-      pdb_execute_action_message(action, db, context, msg, buffer);
+      _execute_action_message(db, action, context, msg, buffer);
       break;
     case RAC_CREATE_CONTEXT:
       pdb_execute_action_create_context(action, db, rule, context, msg, buffer);
