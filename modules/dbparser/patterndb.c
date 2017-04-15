@@ -685,7 +685,7 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 }
 
 static void
-pdb_lookup_state_init(PDBLookupParams *lookup, LogMessage *msg)
+pdb_lookup_params_init(PDBLookupParams *lookup, LogMessage *msg)
 {
   lookup->msg = msg;
   lookup->program_handle = LM_V_PROGRAM;
@@ -698,7 +698,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_state_init(&lookup, msg);
+  pdb_lookup_params_init(&lookup, msg);
   return _pattern_db_process(self, &lookup, NULL);
 }
 
@@ -707,7 +707,7 @@ pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const g
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_state_init(&lookup, msg);
+  pdb_lookup_params_init(&lookup, msg);
   lookup.message_handle = LM_V_NONE;
   lookup.message_string = message;
   lookup.message_len = message_len;
@@ -719,7 +719,7 @@ pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_state_init(&lookup, msg);
+  pdb_lookup_params_init(&lookup, msg);
   _pattern_db_process(self, &lookup, dbg_list);
 }
 
