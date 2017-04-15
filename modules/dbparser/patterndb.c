@@ -191,9 +191,9 @@ _execute_action_message(PatternDB *db, PDBAction *action, PDBContext *context, L
 
 static void pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data);
 
-void
-pdb_execute_action_create_context(PDBAction *action, PatternDB *db, PDBRule *rule, PDBContext *triggering_context,
-                                  LogMessage *triggering_msg, GString *buffer)
+static void
+_execute_action_create_context(PatternDB *db, PDBAction *action, PDBRule *rule, PDBContext *triggering_context,
+                               LogMessage *triggering_msg, GString *buffer)
 {
   CorrellationKey key;
   PDBContext *new_context;
@@ -248,7 +248,7 @@ pdb_execute_action(PDBAction *action, PatternDB *db, PDBRule *rule, PDBContext *
       _execute_action_message(db, action, context, msg, buffer);
       break;
     case RAC_CREATE_CONTEXT:
-      pdb_execute_action_create_context(action, db, rule, context, msg, buffer);
+      _execute_action_create_context(db, action, rule, context, msg, buffer);
       break;
     default:
       g_assert_not_reached();
