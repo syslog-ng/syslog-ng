@@ -265,9 +265,10 @@ _execute_action_if_triggered(PatternDB *db, PDBRule *rule, PDBAction *action,
     _execute_action(db, rule, action, context, msg, buffer);
 }
 
-void
-pdb_run_rule_actions(PDBRule *rule, PatternDB *db, PDBActionTrigger trigger, PDBContext *context, LogMessage *msg,
-                     GString *buffer)
+static void
+_execute_rule_actions(PatternDB *db, PDBRule *rule,
+                      PDBActionTrigger trigger, PDBContext *context,
+                      LogMessage *msg, GString *buffer)
 {
   gint i;
 
@@ -434,7 +435,7 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
             evt_tag_str("last_rule", context->rule->rule_id),
             evt_tag_long("utc", timer_wheel_get_time(pdb->timer_wheel)));
   if (pdb->emit)
-    pdb_run_rule_actions(context->rule, pdb, RAT_TIMEOUT, context, msg, buffer);
+    _execute_rule_actions(pdb, context->rule, RAT_TIMEOUT, context, msg, buffer);
   g_hash_table_remove(pdb->correllation.state, &context->super.key);
   g_string_free(buffer, TRUE);
 
@@ -633,7 +634,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBRule *rule, LogMessage *ms
     {
       g_static_rw_lock_writer_unlock(&self->lock);
       self->emit(msg, FALSE, self->emit_data);
-      pdb_run_rule_actions(rule, self, RAT_MATCH, context, msg, buffer);
+      _execute_rule_actions(self, rule, RAT_MATCH, context, msg, buffer);
       g_static_rw_lock_writer_lock(&self->lock);
     }
   pdb_rule_unref(rule);
