@@ -57,6 +57,14 @@ struct _PatternDB
   gpointer emit_data;
 };
 
+typedef struct _PatternDBProcessState
+{
+  PDBRule *rule;
+  PDBAction *action;
+  PDBContext *context;
+  LogMessage *msg;
+} PatternDBProcessState;
+
 /*
  * Timing
  * ======
@@ -436,9 +444,11 @@ _pattern_db_is_empty(PatternDB *self)
 }
 
 static void
-_pattern_db_process_matching_rule(PatternDB *self, PDBRule *rule, LogMessage *msg)
+_pattern_db_process_matching_rule(PatternDB *self, PatternDBProcessState *process_state)
 {
   PDBContext *context = NULL;
+  PDBRule *rule = process_state->rule;
+  LogMessage *msg = process_state->msg;
   GString *buffer = g_string_sized_new(32);
 
   g_static_rw_lock_writer_lock(&self->lock);
@@ -497,6 +507,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBRule *rule, LogMessage *ms
       context = NULL;
     }
 
+  process_state->context = context;
   synthetic_message_apply(&rule->msg, &context->super, msg, buffer);
   if (self->emit)
     {
@@ -515,8 +526,10 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBRule *rule, LogMessage *ms
 }
 
 static void
-_pattern_db_process_unmatching_rule(PatternDB *self, LogMessage *msg)
+_pattern_db_process_unmatching_rule(PatternDB *self, PatternDBProcessState *process_state)
 {
+  LogMessage *msg = process_state->msg;
+
   g_static_rw_lock_writer_lock(&self->lock);
   pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
   g_static_rw_lock_writer_unlock(&self->lock);
@@ -527,8 +540,9 @@ _pattern_db_process_unmatching_rule(PatternDB *self, LogMessage *msg)
 static gboolean
 _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 {
-  PDBRule *rule;
   LogMessage *msg = lookup->msg;
+  PatternDBProcessState process_state_p = {0};
+  PatternDBProcessState *process_state = &process_state_p;
 
   g_static_rw_lock_reader_lock(&self->lock);
   if (_pattern_db_is_empty(self))
@@ -536,13 +550,14 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
       g_static_rw_lock_reader_unlock(&self->lock);
       return FALSE;
     }
-  rule = pdb_ruleset_lookup(self->ruleset, lookup, dbg_list);
+  process_state->rule = pdb_ruleset_lookup(self->ruleset, lookup, dbg_list);
+  process_state->msg = msg;
   g_static_rw_lock_reader_unlock(&self->lock);
-  if (rule)
-    _pattern_db_process_matching_rule(self, rule, msg);
+  if (process_state->rule)
+    _pattern_db_process_matching_rule(self, process_state);
   else
-    _pattern_db_process_unmatching_rule(self, msg);
-  return rule != NULL;
+    _pattern_db_process_unmatching_rule(self, process_state);
+  return process_state->rule != NULL;
 }
 
 
