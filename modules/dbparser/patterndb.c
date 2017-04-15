@@ -170,8 +170,8 @@ _is_action_triggered(PatternDB *db, PDBRule *rule, PDBAction *action, PDBActionT
   return TRUE;
 }
 
-LogMessage *
-pdb_generate_message(PDBAction *action, PDBContext *context, LogMessage *msg, GString *buffer)
+static LogMessage *
+_generate_synthetic_message(PDBAction *action, PDBContext *context, LogMessage *msg, GString *buffer)
 {
   if (context)
     return synthetic_message_generate_with_context(&action->content.message, &context->super, buffer);
@@ -184,7 +184,7 @@ pdb_execute_action_message(PDBAction *action, PatternDB *db, PDBContext *context
 {
   LogMessage *genmsg;
 
-  genmsg = pdb_generate_message(action, context, msg, buffer);
+  genmsg = _generate_synthetic_message(action, context, msg, buffer);
   db->emit(genmsg, TRUE, db->emit_data);
   log_msg_unref(genmsg);
 }
