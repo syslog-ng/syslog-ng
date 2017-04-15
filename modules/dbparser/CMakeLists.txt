@@ -19,6 +19,8 @@ set(PATTERNDB_SOURCES
     pdb-example.h
     pdb-ruleset.c
     pdb-ruleset.h
+    pdb-context.c
+    pdb-context.h
     correllation.c
     correllation.h
     correllation-key.c

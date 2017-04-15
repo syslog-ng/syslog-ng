@@ -27,6 +27,7 @@
 #include "pdb-program.h"
 #include "pdb-ruleset.h"
 #include "pdb-load.h"
+#include "pdb-context.h"
 #include "correllation.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
@@ -99,40 +100,6 @@ struct _PatternDB
  *    states even if there are no incoming messages
  *
  */
-
-
-/**************************************************************************
- * PDBContext, represents a correllation state in the state hash table, is
- * marked with PSK_CONTEXT in the hash table key
- **************************************************************************/
-
-/* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
-typedef struct _PDBContext
-{
-  CorrellationContext super;
-  /* back reference to the last rule touching this context */
-  PDBRule *rule;
-} PDBContext;
-
-static void
-pdb_context_free(CorrellationContext *s)
-{
-  PDBContext *self = (PDBContext *) s;
-
-  if (self->rule)
-    pdb_rule_unref(self->rule);
-  correllation_context_free_method(s);
-}
-
-PDBContext *
-pdb_context_new(CorrellationKey *key)
-{
-  PDBContext *self = g_new0(PDBContext, 1);
-
-  correllation_context_init(&self->super, key);
-  self->super.free_fn = pdb_context_free;
-  return self;
-}
 
 /***************************************************************************
  * PDBRateLimit
