@@ -256,9 +256,10 @@ _execute_action(PatternDB *db, PDBRule *rule, PDBAction *action, PDBContext *con
     }
 }
 
-void
-pdb_trigger_action(PDBAction *action, PatternDB *db, PDBRule *rule, PDBActionTrigger trigger, PDBContext *context,
-                   LogMessage *msg, GString *buffer)
+static void
+_execute_action_if_triggered(PatternDB *db, PDBRule *rule, PDBAction *action,
+                             PDBActionTrigger trigger, PDBContext *context,
+                             LogMessage *msg, GString *buffer)
 {
   if (_is_action_triggered(db, rule, action, trigger, context, msg, buffer))
     _execute_action(db, rule, action, context, msg, buffer);
@@ -276,7 +277,7 @@ pdb_run_rule_actions(PDBRule *rule, PatternDB *db, PDBActionTrigger trigger, PDB
     {
       PDBAction *action = (PDBAction *) g_ptr_array_index(rule->actions, i);
 
-      pdb_trigger_action(action, db, rule, trigger, context, msg, buffer);
+      _execute_action_if_triggered(db, rule, action, trigger, context, msg, buffer);
     }
 }
 
