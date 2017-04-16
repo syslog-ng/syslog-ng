@@ -105,8 +105,13 @@ typedef struct _PatternDBProcessState
  *********************************************/
 
 static gboolean
-_is_action_within_rate_limit(PatternDB *db, PDBRule *rule, PDBAction *action, LogMessage *msg, GString *buffer)
+_is_action_within_rate_limit(PatternDB *db, PatternDBProcessState *process_state)
 {
+  PDBRule *rule = process_state->rule;
+  PDBAction *action = process_state->action;
+  LogMessage *msg = process_state->msg;
+  GString *buffer = process_state->buffer;
+
   CorrellationKey key;
   PDBRateLimit *rl;
   guint64 now;
@@ -154,9 +159,12 @@ _is_action_within_rate_limit(PatternDB *db, PDBRule *rule, PDBAction *action, Lo
 }
 
 static gboolean
-_is_action_triggered(PatternDB *db, PDBRule *rule, PDBAction *action, PDBActionTrigger trigger, PDBContext *context,
-                     LogMessage *msg, GString *buffer)
+_is_action_triggered(PatternDB *db, PatternDBProcessState *process_state, PDBActionTrigger trigger)
 {
+  PDBAction *action = process_state->action;
+  PDBContext *context = process_state->context;
+  LogMessage *msg = process_state->msg;
+
   if (action->trigger != trigger)
     return FALSE;
 
@@ -170,15 +178,20 @@ _is_action_triggered(PatternDB *db, PDBRule *rule, PDBAction *action, PDBActionT
         return FALSE;
     }
 
-  if (!_is_action_within_rate_limit(db, rule, action, msg, buffer))
+  if (!_is_action_within_rate_limit(db, process_state))
     return FALSE;
 
   return TRUE;
 }
 
 static LogMessage *
-_generate_synthetic_message(PDBAction *action, PDBContext *context, LogMessage *msg, GString *buffer)
+_generate_synthetic_message(PatternDBProcessState *process_state)
 {
+  PDBAction *action = process_state->action;
+  PDBContext *context = process_state->context;
+  LogMessage *msg = process_state->msg;
+  GString *buffer = process_state->buffer;
+
   if (context)
     return synthetic_message_generate_with_context(&action->content.message, &context->super, buffer);
   else
@@ -186,11 +199,11 @@ _generate_synthetic_message(PDBAction *action, PDBContext *context, LogMessage *
 }
 
 static void
-_execute_action_message(PatternDB *db, PDBAction *action, PDBContext *context, LogMessage *msg, GString *buffer)
+_execute_action_message(PatternDB *db, PatternDBProcessState *process_state)
 {
   LogMessage *genmsg;
 
-  genmsg = _generate_synthetic_message(action, context, msg, buffer);
+  genmsg = _generate_synthetic_message(process_state);
   db->emit(genmsg, TRUE, db->emit_data);
   log_msg_unref(genmsg);
 }
@@ -198,10 +211,14 @@ _execute_action_message(PatternDB *db, PDBAction *action, PDBContext *context, L
 static void pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data);
 
 static void
-_execute_action_create_context(PatternDB *db, PDBAction *action, PDBRule *rule, PDBContext *triggering_context,
-                               LogMessage *triggering_msg, GString *buffer)
+_execute_action_create_context(PatternDB *db, PatternDBProcessState *process_state)
 {
   CorrellationKey key;
+  PDBAction *action = process_state->action;
+  PDBRule *rule = process_state->rule;
+  PDBContext *triggering_context = process_state->context;
+  LogMessage *triggering_msg = process_state->msg;
+  GString *buffer = process_state->buffer;
   PDBContext *new_context;
   LogMessage *context_msg;
   SyntheticContext *syn_context;
@@ -244,17 +261,19 @@ _execute_action_create_context(PatternDB *db, PDBAction *action, PDBRule *rule, 
 }
 
 static void
-_execute_action(PatternDB *db, PDBRule *rule, PDBAction *action, PDBContext *context, LogMessage *msg, GString *buffer)
+_execute_action(PatternDB *db, PatternDBProcessState *process_state)
 {
+  PDBAction *action = process_state->action;
+
   switch (action->content_type)
     {
     case RAC_NONE:
       break;
     case RAC_MESSAGE:
-      _execute_action_message(db, action, context, msg, buffer);
+      _execute_action_message(db, process_state);
       break;
     case RAC_CREATE_CONTEXT:
-      _execute_action_create_context(db, action, rule, context, msg, buffer);
+      _execute_action_create_context(db, process_state);
       break;
     default:
       g_assert_not_reached();
@@ -263,12 +282,10 @@ _execute_action(PatternDB *db, PDBRule *rule, PDBAction *action, PDBContext *con
 }
 
 static void
-_execute_action_if_triggered(PatternDB *db, PDBRule *rule, PDBAction *action,
-                             PDBActionTrigger trigger, PDBContext *context,
-                             LogMessage *msg, GString *buffer)
+_execute_action_if_triggered(PatternDB *db, PatternDBProcessState *process_state, PDBActionTrigger trigger)
 {
-  if (_is_action_triggered(db, rule, action, trigger, context, msg, buffer))
-    _execute_action(db, rule, action, context, msg, buffer);
+  if (_is_action_triggered(db, process_state, trigger))
+    _execute_action(db, process_state);
 }
 
 static void
@@ -276,16 +293,15 @@ _execute_rule_actions(PatternDB *db, PatternDBProcessState *process_state, PDBAc
 {
   gint i;
   PDBRule *rule = process_state->rule;
-  LogMessage *msg = process_state->msg;
-  PDBContext *context = process_state->context;
 
   if (!rule->actions)
     return;
+  
   for (i = 0; i < rule->actions->len; i++)
     {
-      PDBAction *action = (PDBAction *) g_ptr_array_index(rule->actions, i);
+      process_state->action = (PDBAction *) g_ptr_array_index(rule->actions, i);
 
-      _execute_action_if_triggered(db, rule, action, trigger, context, msg, process_state->buffer);
+      _execute_action_if_triggered(db, process_state, trigger);
     }
 }
 
