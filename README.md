@@ -4,6 +4,8 @@
 syslog-ng
 =========
 
+[![Join the chat at https://gitter.im/balabit/syslog-ng](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/balabit/syslog-ng?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 syslog-ng is an enhanced log daemon, supporting a wide range of input
 and output methods: syslog, unstructured text, message queues,
 databases (SQL and NoSQL alike) and more.
