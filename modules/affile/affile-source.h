@@ -48,6 +48,7 @@ typedef struct _AFFileSourceDriver
   FileOpenOptions file_open_options;
   gint pad_size;
   gint follow_freq;
+  gboolean exit_on_eof;
   gint multi_line_mode;
   MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
   /* state information to follow a set of files using a wildcard expression */
@@ -60,6 +61,7 @@ gboolean affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regex
 gboolean affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error);
 gboolean affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode);
 void affile_sd_set_follow_freq(LogDriver *s, gint follow_freq);
+void affile_sd_set_exit_on_eof(LogDriver *s, gboolean exit_on_eof);
 
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
 void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);

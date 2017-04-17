@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2002-2017 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -37,6 +37,8 @@ struct _LogTransport
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
   void (*free_fn)(LogTransport *self);
+
+  gboolean exit_on_eof;
 };
 
 static inline gssize 
@@ -52,6 +54,7 @@ log_transport_read(LogTransport *self, gpointer buf, gsize count, LogTransportAu
 }
 
 void log_transport_init_instance(LogTransport *s, gint fd);
+void log_transport_exit_on_eof(LogTransport *self);
 void log_transport_free_method(LogTransport *s);
 void log_transport_free(LogTransport *s);
 
