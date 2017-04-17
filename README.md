@@ -116,7 +116,7 @@ Just send an email to feedback (at) syslog-ng.org.
 
 Should not take more than a minute, right?  Now go ahead. Please.
 
-#FeedbackPowersOpenSource.
+# FeedbackPowersOpenSource.
 
 Installation from Source
 ========================

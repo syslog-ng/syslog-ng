@@ -105,7 +105,7 @@
 
  * Support was added for OpenSSL 1.1.x (#1281)
 
-#Notes to the Developers
+# Notes to the Developers
 
  * We started to standardize our tests on the criterion unit testing
    framework, please submit all new tests using this framework. Patches to
@@ -118,7 +118,7 @@
  * debian/ directory has been removed from the "master" branch and is now
    maintained in a separate "release" branch.
 
-#Credits
+# Credits
 
 syslog-ng is developed as a community project, and as such it relies
 on volunteers, to do the work necessarily to produce syslog-ng.
