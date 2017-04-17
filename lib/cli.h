@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2016-2017 Noémi Ványi
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,28 +21,29 @@
  *
  */
 
-#ifndef TRANSPORT_TRANSPORT_FILE_H_INCLUDED
-#define TRANSPORT_TRANSPORT_FILE_H_INCLUDED 1
+#ifndef CLI_H_INCLUDED
+#define CLI_H_INCLUDED
 
-#include "transport/logtransport.h"
+#include <glib.h>
 
-/* log transport that simply sends messages to an fd */
-typedef struct _LogTransportFile LogTransportFile;
-struct _LogTransportFile
+typedef struct _CliParam
 {
-  LogTransport super;
-};
+  gchar *cfg;
+  gchar *type;
+} CliParam;
 
-void log_transport_file_init_instance(LogTransportFile *self, gint fd);
-LogTransport *log_transport_file_new(gint fd);
+CliParam *cli_param_new(gchar *type, gchar *cfg);
 
-typedef struct _LogTransportStdin LogTransportStdin;
-struct _LogTransportStdin
+typedef struct _CliParamConverter
 {
-  LogTransport super;
-  LogPipe *control;
-};
+  gchar **raw_params;
+  gchar *destination_params;
+  GList *params;
+  gchar *generated_config;
+} CliParamConverter;
 
-LogTransport *log_transport_stdin_new(gint fd, LogPipe *control);
+CliParamConverter *cli_param_converter_new(gchar **params, gchar *destination_params);
+gboolean cli_param_converter_setup(CliParamConverter *self);
+void cli_param_converter_convert(CliParamConverter *self);
 
 #endif
