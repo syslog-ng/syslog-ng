@@ -100,7 +100,7 @@ _register_counter(gint stats_level, gint component, const gchar *id, const gchar
 /**
  * stats_register_counter:
  * @stats_level: the required statistics level to make this counter available
- * @component: a reference to the syslog-ng component that this counter belongs to (SCS_*)
+ * @component: a reference to the syslog-ng component that this counter belongs to stats_components_get_component_index(const gchar*)
  * @id: the unique identifier of the configuration item that this counter belongs to
  * @instance: if a given configuration item manages multiple similar counters
  *            this makes those unique (like destination filename in case macros are used)
@@ -287,4 +287,3 @@ stats_registry_get_counter_hash(void)
 {
   return counter_hash;
 }
-

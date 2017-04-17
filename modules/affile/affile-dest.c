@@ -49,6 +49,8 @@
 #define DEFAULT_DW_REOPEN_FLAGS (O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE | O_APPEND)
 #define DEFAULT_DW_REOPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
+#define SCS_PIPE "pipe"
+
 /*
  * Threading notes:
  *
@@ -222,7 +224,8 @@ affile_dw_init(LogPipe *s)
                          s,
                          &self->owner->writer_options,
                          STATS_LEVEL1,
-                         self->owner->file_open_options.is_pipe ? SCS_PIPE : SCS_FILE,
+                         self->owner->file_open_options.is_pipe ? stats_components_get_component_index(SCS_PIPE) :
+                         stats_components_get_component_index(SCS_FILE),
                          self->owner->super.super.id,
                          self->filename);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super,
@@ -308,7 +311,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
                              &self->super,
                              &owner->writer_options,
                              STATS_LEVEL1,
-                             SCS_FILE,
+                             stats_components_get_component_index(SCS_FILE),
                              self->owner->super.super.id,
                              self->filename);
     }

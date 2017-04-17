@@ -320,7 +320,8 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   AFInterSource *self = g_new0(AFInterSource, 1);
 
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
-  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE, FALSE,
+  log_source_set_options(&self->super, options, 0, stats_components_get_component_index(SCS_INTERNAL),
+                         owner->super.super.id, NULL, FALSE, FALSE,
                          owner->super.super.super.expr_node);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
@@ -431,7 +432,8 @@ afinter_message_posted(LogMessage *msg)
       internal_msg_queue = g_queue_new();
 
       stats_lock();
-      stats_register_counter(0, SCS_GLOBAL, "internal_queue_length", NULL, SC_TYPE_PROCESSED, &internal_queue_length);
+      stats_register_counter(0, stats_components_get_component_index(SCS_GLOBAL), "internal_queue_length", NULL,
+                             SC_TYPE_PROCESSED, &internal_queue_length);
       stats_unlock();
     }
 

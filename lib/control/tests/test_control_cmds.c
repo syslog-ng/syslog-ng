@@ -96,7 +96,8 @@ test_stats()
 
   stats_init();
   stats_lock();
-  stats_register_counter(0, SCS_CENTER, "id", "received", SC_TYPE_PROCESSED, &counter);
+  stats_register_counter(0, stats_components_get_component_index(SCS_CENTER), "id", "received", SC_TYPE_PROCESSED,
+                         &counter);
   stats_unlock();
 
   g_string_assign(command,"STATS");
@@ -122,7 +123,8 @@ test_reset_stats()
 
   stats_init();
   stats_lock();
-  stats_register_counter(0, SCS_CENTER, "id", "received", SC_TYPE_PROCESSED, &counter);
+  stats_register_counter(0, stats_components_get_component_index(SCS_CENTER), "id", "received", SC_TYPE_PROCESSED,
+                         &counter);
   stats_counter_set(counter, 666);
   stats_unlock();
 

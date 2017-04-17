@@ -29,6 +29,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#define SCS_UNIX_DGRAM "unix_dgram"
+#define SCS_UNIX_STREAM "unix_stream"
 
 struct _TransportMapperUnix
 {
@@ -83,7 +85,7 @@ transport_mapper_unix_dgram_new(void)
   TransportMapperUnix *self = transport_mapper_unix_new_instance("unix-dgram", SOCK_DGRAM);
 
   self->super.logproto = "dgram";
-  self->super.stats_source = SCS_UNIX_DGRAM;
+  self->super.stats_source = stats_components_get_component_index(SCS_UNIX_DGRAM);
 
   return &self->super;
 }
@@ -94,7 +96,7 @@ transport_mapper_unix_stream_new(void)
   TransportMapperUnix *self = transport_mapper_unix_new_instance("unix-stream", SOCK_STREAM);
 
   self->super.logproto = "text";
-  self->super.stats_source = SCS_UNIX_STREAM;
+  self->super.stats_source = stats_components_get_component_index(SCS_UNIX_STREAM);
 
   return &self->super;
 }

@@ -25,6 +25,8 @@
 #include "testutils.h"
 #include "stats/stats.h"
 
+#define SCS_JOURNALD "journald"
+
 struct _TestSource
 {
   LogPipe super;
@@ -51,7 +53,8 @@ __init(LogPipe *s)
       self->current_test_case->init(self->current_test_case, self, self->journald_mock, self->reader, &self->options);
     }
   journal_reader_options_init(&self->options, configuration, "test");
-  journal_reader_set_options((LogPipe *)self->reader, &self->super, &self->options, 3, SCS_JOURNALD, "test", "1");
+  journal_reader_set_options((LogPipe *)self->reader, &self->super, &self->options, 3,
+                             stats_components_get_component_index(SCS_JOURNALD), "test", "1");
   log_pipe_append((LogPipe *)self->reader, &self->super);
   assert_true(log_pipe_init((LogPipe *)self->reader), ASSERTION_ERROR("Can't initialize reader"));
   return TRUE;
@@ -155,5 +158,3 @@ test_source_finish_tc(TestSource *self)
     }
   iv_task_register(&self->stop);
 }
-
-

@@ -31,6 +31,13 @@
 
 #include <unistd.h>
 
+#define SCS_NETWORK "network"
+#define SCS_SYSLOG "syslog"
+#define SCS_TCP6 "tcp6"
+#define SCS_TCP "tcp"
+#define SCS_UDP6 "udp6"
+#define SCS_UDP "udp"
+
 TransportMapper *transport_mapper;
 
 #define transport_mapper_inet_testcase_begin(init_name, func, args)           \
@@ -159,7 +166,7 @@ test_tcp_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "tcp");
   assert_transport_mapper_logproto(transport_mapper, "text");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_TCP);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_TCP));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -171,7 +178,7 @@ test_tcp6_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "tcp");
   assert_transport_mapper_logproto(transport_mapper, "text");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_TCP6);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_TCP6));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -183,7 +190,7 @@ test_udp_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "udp");
   assert_transport_mapper_logproto(transport_mapper, "dgram");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_UDP);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_UDP));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -202,7 +209,7 @@ test_udp6_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "udp");
   assert_transport_mapper_logproto(transport_mapper, "dgram");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_UDP6);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_UDP6));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -214,7 +221,7 @@ test_network_transport_udp_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "udp");
   assert_transport_mapper_logproto(transport_mapper, "dgram");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_NETWORK);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_NETWORK));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -233,7 +240,7 @@ test_network_transport_tcp_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "tcp");
   assert_transport_mapper_logproto(transport_mapper, "text");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_NETWORK);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_NETWORK));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -252,7 +259,7 @@ test_network_transport_tls_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "tls");
   assert_transport_mapper_logproto(transport_mapper, "text");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_NETWORK);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_NETWORK));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -264,7 +271,7 @@ test_network_transport_foo_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "foo");
   assert_transport_mapper_logproto(transport_mapper, "foo");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_NETWORK);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_NETWORK));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -276,7 +283,7 @@ test_syslog_transport_udp_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "udp");
   assert_transport_mapper_logproto(transport_mapper, "dgram");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_SYSLOG);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_SYSLOG));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
@@ -295,7 +302,7 @@ test_syslog_transport_tcp_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "tcp");
   assert_transport_mapper_logproto(transport_mapper, "framed");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_SYSLOG);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_SYSLOG));
   assert_transport_mapper_inet_server_port(transport_mapper, 601);
 }
 
@@ -314,7 +321,7 @@ test_syslog_transport_tls_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "tls");
   assert_transport_mapper_logproto(transport_mapper, "framed");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_SYSLOG);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_SYSLOG));
   assert_transport_mapper_inet_server_port(transport_mapper, 6514);
 }
 
@@ -326,7 +333,7 @@ test_syslog_transport_foo_apply_transport_sets_defaults(void)
 
   assert_transport_mapper_transport(transport_mapper, "foo");
   assert_transport_mapper_logproto(transport_mapper, "foo");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_SYSLOG);
+  assert_transport_mapper_stats_source(transport_mapper, stats_components_get_component_index(SCS_SYSLOG));
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 

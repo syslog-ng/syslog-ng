@@ -311,11 +311,15 @@ _setup(void)
   test_cfg->state = persist_state_new(persist_filename);
 
   _before_test();
+
+  stats_components_init();
 }
 
 static void
 _teardown(void)
 {
+  stats_components_deinit();
+
   _free_test();
   if (test_cfg->persist)
     {

@@ -26,6 +26,8 @@
 
 #include "file-perms.h"
 
+#define SCS_FILE "file"
+
 typedef struct _FileOpenOptions
 {
   gboolean needs_privileges:1,

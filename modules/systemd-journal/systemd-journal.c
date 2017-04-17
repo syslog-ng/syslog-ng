@@ -27,6 +27,8 @@
 
 #include <stdlib.h>
 
+#define SCS_JOURNALD "journald"
+
 struct _SystemdJournalSourceDriver
 {
   LogSrcDriver super;
@@ -51,7 +53,8 @@ __init(LogPipe *s)
 
   journal_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  journal_reader_set_options((LogPipe *)self->reader, &self->super.super.super,  &self->reader_options, 0, SCS_JOURNALD,
+  journal_reader_set_options((LogPipe *)self->reader, &self->super.super.super,  &self->reader_options, 0,
+                             stats_components_get_component_index(SCS_JOURNALD),
                              self->super.super.id, "journal");
 
   log_pipe_append((LogPipe *)self->reader, &self->super.super.super);

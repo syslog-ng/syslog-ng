@@ -44,6 +44,7 @@ static const char *s_freetds = "freetds";
 static dbi_inst dbi_instance;
 
 #define MAX_FAILED_ATTEMPTS 3
+#define SCS_SQL "sql"
 
 void
 afsql_dd_add_dbd_option(LogDriver *s, const gchar *name, const gchar *value)
@@ -1188,9 +1189,11 @@ afsql_dd_init(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+  stats_register_counter(0, stats_components_get_component_index(SCS_SQL) | SCS_DESTINATION, self->super.super.id,
+                         afsql_dd_format_stats_instance(self),
                          SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+  stats_register_counter(0, stats_components_get_component_index(SCS_SQL) | SCS_DESTINATION, self->super.super.id,
+                         afsql_dd_format_stats_instance(self),
                          SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
@@ -1316,9 +1319,11 @@ afsql_dd_init(LogPipe *s)
 error:
 
   stats_lock();
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+  stats_unregister_counter(stats_components_get_component_index(SCS_SQL) | SCS_DESTINATION, self->super.super.id,
+                           afsql_dd_format_stats_instance(self),
                            SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+  stats_unregister_counter(stats_components_get_component_index(SCS_SQL) | SCS_DESTINATION, self->super.super.id,
+                           afsql_dd_format_stats_instance(self),
                            SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
@@ -1337,9 +1342,11 @@ afsql_dd_deinit(LogPipe *s)
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
   stats_lock();
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+  stats_unregister_counter(stats_components_get_component_index(SCS_SQL) | SCS_DESTINATION, self->super.super.id,
+                           afsql_dd_format_stats_instance(self),
                            SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
+  stats_unregister_counter(stats_components_get_component_index(SCS_SQL) | SCS_DESTINATION, self->super.super.id,
+                           afsql_dd_format_stats_instance(self),
                            SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 

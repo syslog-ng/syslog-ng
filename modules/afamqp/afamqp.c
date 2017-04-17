@@ -37,6 +37,8 @@
 #include <amqp_framing.h>
 #include <amqp_tcp_socket.h>
 
+#define SCS_AMQP "amqp"
+
 typedef struct
 {
   LogThrDestDriver super;
@@ -590,7 +592,7 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = afamqp_worker_insert;
 
   self->super.format.stats_instance = afamqp_dd_format_stats_instance;
-  self->super.stats_source = SCS_AMQP;
+  self->super.stats_source = stats_components_get_component_index(SCS_AMQP);
 
   self->routing_key_template = log_template_new(cfg, NULL);
 

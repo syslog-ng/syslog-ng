@@ -37,6 +37,8 @@
 #include <stomp.h>
 #include "logthrdestdrv.h"
 
+#define SCS_STOMP "stomp"
+
 typedef struct
 {
   LogThrDestDriver super;
@@ -394,7 +396,7 @@ afstomp_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = afstomp_worker_insert;
 
   self->super.format.stats_instance = afstomp_dd_format_stats_instance;
-  self->super.stats_source = SCS_STOMP;
+  self->super.stats_source = stats_components_get_component_index(SCS_STOMP);
 
   afstomp_dd_set_host((LogDriver *) self, "127.0.0.1");
   afstomp_dd_set_port((LogDriver *) self, 61613);
