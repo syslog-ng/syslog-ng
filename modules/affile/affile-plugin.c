@@ -40,6 +40,11 @@ static Plugin affile_plugins[] =
     .parser = &affile_parser,
   },
   {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "wildcard_file",
+    .parser = &affile_parser,
+  },
+  {
     .type = LL_CONTEXT_DESTINATION,
     .name = "file",
     .parser = &affile_parser,

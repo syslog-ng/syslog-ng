@@ -23,21 +23,8 @@
 #include "affile-source.h"
 #include "driver.h"
 #include "messages.h"
-#include "serialize.h"
 #include "gprocess.h"
-#include "stats/stats-registry.h"
 #include "mainloop.h"
-#include "transport/transport-file.h"
-#include "transport/transport-pipe.h"
-#include "transport/transport-device.h"
-#include "logproto/logproto-record-server.h"
-#include "logproto/logproto-text-server.h"
-#include "logproto/logproto-dgram-server.h"
-#include "logproto/logproto-indented-multiline-server.h"
-#include "logproto-linux-proc-kmsg-reader.h"
-#include "poll-fd-events.h"
-#include "poll-file-changes.h"
-#include "compat/lfs.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -53,72 +40,6 @@
 #define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 #define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
-gboolean
-affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  if (strcasecmp(mode, "indented") == 0)
-    self->multi_line_mode = MLM_INDENTED;
-  else if (strcasecmp(mode, "regexp") == 0)
-    self->multi_line_mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-garbage") == 0)
-    self->multi_line_mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-suffix") == 0)
-    self->multi_line_mode = MLM_PREFIX_SUFFIX;
-  else if (strcasecmp(mode, "none") == 0)
-    self->multi_line_mode = MLM_NONE;
-  else
-    return FALSE;
-  return TRUE;
-}
-
-gboolean
-affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regexp, GError **error)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  self->multi_line_prefix = multi_line_regexp_compile(prefix_regexp, error);
-  return self->multi_line_prefix != NULL;
-}
-
-gboolean
-affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  self->multi_line_garbage = multi_line_regexp_compile(garbage_regexp, error);
-  return self->multi_line_garbage != NULL;
-}
-
-void
-affile_sd_set_follow_freq(LogDriver *s, gint follow_freq)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  self->follow_freq = follow_freq;
-}
-
-static inline gboolean
-affile_is_linux_proc_kmsg(const gchar *filename)
-{
-#ifdef __linux__
-  if (strcmp(filename, "/proc/kmsg") == 0)
-    return TRUE;
-#endif
-  return FALSE;
-}
-
-static inline gboolean
-affile_is_linux_dev_kmsg(const gchar *filename)
-{
-#ifdef __linux__
-  if (strcmp(filename, "/dev/kmsg") == 0)
-    return TRUE;
-#endif
-  return FALSE;
-}
-
 static inline gboolean
 affile_is_device_node(const gchar *filename)
 {
@@ -129,294 +50,27 @@ affile_is_device_node(const gchar *filename)
   return !S_ISREG(st.st_mode);
 }
 
-gboolean
-_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
-{
-  return affile_open_file(name, &self->file_open_options, &self->file_perm_options, fd);
-}
-
 static inline const gchar *
 affile_sd_format_persist_name(const LogPipe *s)
 {
-  const AFFileSourceDriver *self = (const AFFileSourceDriver *)s;
-  static gchar persist_name[1024];
-
-  if (s->persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.curpos", s->persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
-
-  return persist_name;
-}
-
-static void
-affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  if (self->file_open_options.is_pipe || self->follow_freq <= 0)
-    return;
-
-  if (!log_proto_server_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(s)))
-    {
-      msg_error("Error converting persistent state from on-disk format, losing file position information",
-                evt_tag_str("filename", self->filename->str));
-      return;
-    }
-}
-
-static gboolean
-_is_fd_pollable(gint fd)
-{
-  struct iv_fd check_fd;
-  gboolean pollable;
-
-  IV_FD_INIT(&check_fd);
-  check_fd.fd = fd;
-  check_fd.cookie = NULL;
-
-  pollable = (iv_fd_register_try(&check_fd) == 0);
-  if (pollable)
-    iv_fd_unregister(&check_fd);
-  return pollable;
-}
-
-static PollEvents *
-affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
-{
-  if (self->follow_freq > 0)
-    return poll_file_changes_new(fd, self->filename->str, self->follow_freq, &self->super.super.super);
-  else if (fd >= 0 && _is_fd_pollable(fd))
-    return poll_fd_events_new(fd);
-  else
-    {
-      msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it "
-                "with the current ivykis polling method. Set follow-freq() for regular files or change "
-                "IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
-                evt_tag_str("filename", self->filename->str),
-                evt_tag_int("fd", fd));
-      return NULL;
-    }
-}
-
-static LogTransport *
-affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
-{
-  if (self->file_open_options.is_pipe)
-    return log_transport_pipe_new(fd);
-  else if (self->follow_freq > 0)
-    return log_transport_file_new(fd);
-  else if (affile_is_linux_proc_kmsg(self->filename->str))
-    return log_transport_device_new(fd, 10);
-  else if (affile_is_linux_dev_kmsg(self->filename->str))
-    {
-      if (lseek(fd, 0, SEEK_END) < 0)
-        {
-          msg_error("Error seeking /dev/kmsg to the end",
-                    evt_tag_str("error", g_strerror(errno)));
-        }
-      return log_transport_device_new(fd, 0);
-    }
-  else
-    return log_transport_pipe_new(fd);
-}
-
-static LogProtoServer *
-affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
-{
-  LogProtoServerOptions *proto_options = &self->reader_options.proto_options.super;
-  LogTransport *transport;
-  MsgFormatHandler *format_handler;
-
-  transport = affile_sd_construct_transport(self, fd);
-
-  format_handler = self->reader_options.parse_options.format_handler;
-  if ((format_handler && format_handler->construct_proto))
-    {
-      proto_options->position_tracking_enabled = TRUE;
-      return format_handler->construct_proto(&self->reader_options.parse_options, transport, proto_options);
-    }
-
-  if (self->pad_size)
-    {
-      proto_options->position_tracking_enabled = TRUE;
-      return log_proto_padded_record_server_new(transport, proto_options, self->pad_size);
-    }
-  else if (affile_is_linux_proc_kmsg(self->filename->str))
-    return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
-  else if (affile_is_linux_dev_kmsg(self->filename->str))
-    return log_proto_dgram_server_new(transport, proto_options);
-  else
-    {
-      proto_options->position_tracking_enabled = TRUE;
-      switch (self->multi_line_mode)
-        {
-        case MLM_INDENTED:
-          return log_proto_indented_multiline_server_new(transport, proto_options);
-        case MLM_PREFIX_GARBAGE:
-          return log_proto_prefix_garbage_multiline_server_new(transport, proto_options, self->multi_line_prefix,
-                                                               self->multi_line_garbage);
-        case MLM_PREFIX_SUFFIX:
-          return log_proto_prefix_suffix_multiline_server_new(transport, proto_options, self->multi_line_prefix,
-                                                              self->multi_line_garbage);
-        default:
-          return log_proto_text_server_new(transport, proto_options);
-        }
-    }
-}
-
-static void
-_deinit_sd_logreader(AFFileSourceDriver *self)
-{
-  log_pipe_deinit((LogPipe *) self->reader);
-  log_pipe_unref((LogPipe *) self->reader);
-  self->reader = NULL;
-}
-
-static void
-_setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  self->reader = log_reader_new(self->super.super.super.cfg);
-  log_reader_reopen(self->reader, proto, poll_events);
-
-  log_reader_set_options(self->reader,
-                         s,
-                         &self->reader_options,
-                         STATS_LEVEL1,
-                         SCS_FILE,
-                         self->super.super.id,
-                         self->filename->str);
-  if (check_immediately)
-    log_reader_set_immediate_check(self->reader);
-
-  /* NOTE: if the file could not be opened, we ignore the last
-   * remembered file position, if the file is created in the future
-   * we're going to read from the start. */
-  log_pipe_append((LogPipe *) self->reader, s);
-}
-
-static gboolean
-_is_immediate_check_needed(gboolean file_opened, gboolean open_deferred)
-{
-  if (file_opened)
-    return TRUE;
-  else if (open_deferred)
-    return FALSE;
-  return FALSE;
-}
-
-static gboolean
-affile_sd_open_file(LogPipe *s, gboolean recover_state)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
-  gboolean file_opened, open_deferred = FALSE;
-
-  file_opened = _sd_open_file(self, self->filename->str, &fd);
-  if (!file_opened && self->follow_freq > 0)
-    {
-      msg_info("Follow-mode file source not found, deferring open", evt_tag_str("filename", self->filename->str));
-      open_deferred = TRUE;
-      fd = -1;
-    }
-
-  if (file_opened || open_deferred)
-    {
-      LogProtoServer *proto;
-      PollEvents *poll_events;
-      gboolean check_immediately;
-
-      poll_events = affile_sd_construct_poll_events(self, fd);
-      if (!poll_events)
-        {
-          close(fd);
-          return FALSE;
-        }
-      proto = affile_sd_construct_proto(self, fd);
-
-      check_immediately = _is_immediate_check_needed(file_opened, open_deferred);
-      _setup_logreader(s, poll_events, proto, check_immediately);
-      if (!log_pipe_init((LogPipe *) self->reader))
-        {
-          msg_error("Error initializing log_reader, closing fd", evt_tag_int("fd", fd));
-          log_pipe_unref((LogPipe *) self->reader);
-          self->reader = NULL;
-          close(fd);
-          return FALSE;
-        }
-      if (recover_state)
-        affile_sd_recover_state(s, cfg, proto);
-    }
-  else
-    {
-      msg_error("Error opening file for reading",
-                evt_tag_str("filename", self->filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
-      return self->super.super.optional;
-    }
-  return TRUE;
-
-}
-
-static void
-affile_sd_reopen_on_notify(LogPipe *s, gboolean recover_state)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  _deinit_sd_logreader(self);
-  affile_sd_open_file(s, recover_state);
-}
-
-/* NOTE: runs in the main thread */
-static void
-affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-
-  switch (notify_code)
-    {
-    case NC_FILE_MOVED:
-    {
-      msg_verbose("Follow-mode file source moved, tracking of the new file is started",
-                  evt_tag_str("filename", self->filename->str));
-      affile_sd_reopen_on_notify(s, TRUE);
-      break;
-    }
-    case NC_READ_ERROR:
-    {
-      msg_verbose("Error while following source file, reopening in the hope it would work",
-                  evt_tag_str("filename", self->filename->str));
-      affile_sd_reopen_on_notify(s, FALSE);
-      break;
-    }
-    default:
-      break;
-    }
+  AFFileSourceDriver *self = (AFFileSourceDriver *)s;
+  return log_pipe_get_persist_name(&self->file_reader->super);
 }
 
 static void
 affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  static NVHandle filename_handle = 0;
-
-  if (!filename_handle)
-    filename_handle = log_msg_get_value_handle("FILE_NAME");
-
-  log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
-
   log_src_driver_queue_method(s, msg, path_options, user_data);
 }
 
 static gboolean
 _are_multi_line_settings_invalid(AFFileSourceDriver *self)
 {
-  gboolean is_garbage_mode = self->multi_line_mode == MLM_PREFIX_GARBAGE;
-  gboolean is_suffix_mode = self->multi_line_mode == MLM_PREFIX_SUFFIX;
+  gboolean is_garbage_mode = self->file_reader_options.multi_line_mode == MLM_PREFIX_GARBAGE;
+  gboolean is_suffix_mode = self->file_reader_options.multi_line_mode == MLM_PREFIX_SUFFIX;
 
-  return (!is_garbage_mode && !is_suffix_mode) && (self->multi_line_prefix || self->multi_line_garbage);
+  return (!is_garbage_mode && !is_suffix_mode) && (self->file_reader_options.multi_line_prefix
+                                                   || self->file_reader_options.multi_line_garbage);
 }
 
 static gboolean
@@ -428,7 +82,7 @@ affile_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-  log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
+  log_reader_options_init(&self->file_reader_options.reader_options, cfg, self->super.super.group);
 
   if (_are_multi_line_settings_invalid(self))
     {
@@ -437,17 +91,17 @@ affile_sd_init(LogPipe *s)
       return FALSE;
     }
 
-  return affile_sd_open_file(s, TRUE);
+  log_pipe_append(&self->file_reader->super, &self->super.super.super);
+  return log_pipe_init(&self->file_reader->super);
 }
+
 
 static gboolean
 affile_sd_deinit(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if (self->reader)
-    _deinit_sd_logreader(self);
-
+  log_pipe_deinit(&self->file_reader->super);
   if (!log_src_driver_deinit_method(s))
     return FALSE;
 
@@ -459,14 +113,9 @@ affile_sd_free(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
+  log_pipe_unref(&self->file_reader->super);
   g_string_free(self->filename, TRUE);
-  g_assert(!self->reader);
-
-  log_reader_options_destroy(&self->reader_options);
-
-  multi_line_regexp_free(self->multi_line_prefix);
-  multi_line_regexp_free(self->multi_line_garbage);
-
+  file_reader_options_destroy(&self->file_reader_options);
   log_src_driver_free(s);
 }
 
@@ -477,18 +126,19 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
 
   log_src_driver_init_instance(&self->super, cfg);
   self->filename = g_string_new(filename);
+  self->file_reader = file_reader_new(filename, &self->super, cfg);
+  self->file_reader->file_reader_options = &self->file_reader_options;
   self->super.super.super.init = affile_sd_init;
   self->super.super.super.queue = affile_sd_queue;
   self->super.super.super.deinit = affile_sd_deinit;
-  self->super.super.super.notify = affile_sd_notify;
   self->super.super.super.free_fn = affile_sd_free;
   self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
-  log_reader_options_defaults(&self->reader_options);
-  file_perm_options_defaults(&self->file_perm_options);
-  self->reader_options.parse_options.flags |= LP_LOCAL;
+  log_reader_options_defaults(&self->file_reader_options.reader_options);
+  file_perm_options_defaults(&self->file_reader_options.file_perm_options);
+  self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
 
   if (affile_is_linux_proc_kmsg(filename))
-    self->file_open_options.needs_privileges = TRUE;
+    self->file_reader_options.file_open_options.needs_privileges = TRUE;
   return self;
 }
 
@@ -497,21 +147,21 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_open_options.is_pipe = FALSE;
-  self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_reader_options.file_open_options.is_pipe = FALSE;
+  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
       msg_warning_once("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0
                        " to '1' for all files except /proc/kmsg");
-      self->follow_freq = -1;
+      self->file_reader_options.follow_freq = -1;
     }
   else
     {
       if (affile_is_device_node(filename) || affile_is_linux_proc_kmsg(filename))
-        self->follow_freq = 0;
+        self->file_reader_options.follow_freq = 0;
       else
-        self->follow_freq = 1000;
+        self->file_reader_options.follow_freq = 1000;
     }
 
   return &self->super.super;
@@ -522,8 +172,8 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_open_options.is_pipe = TRUE;
-  self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
+  self->file_reader_options.file_open_options.is_pipe = TRUE;
+  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
 
   if (cfg_is_config_version_older(cfg, 0x0302))
     {
@@ -534,7 +184,7 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
     }
   else
     {
-      self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
+      self->file_reader_options.reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
     }
 
   return &self->super.super;

@@ -65,7 +65,7 @@ if is_premium_edition:
     wildcard_file_source_supported = True
 else:
     logstore_store_supported = False
-    wildcard_file_source_supported = False
+    wildcard_file_source_supported = True
 
 port_number = os.getpid() % 30000 + 33000
 ssl_port_number = port_number + 1

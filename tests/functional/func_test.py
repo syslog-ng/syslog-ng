@@ -77,6 +77,18 @@ l625DLckaYmOPTh0ECFKzhaPF+/LNmzD36ToOAeuNjfbUjiUVGfntr2mc4E8mUFyo+TskrkSfw==
     except ImportError:
         return
 
+def run_testcase(test_name, config, verbose, test_case):
+    print_start(test_name)
+
+    if not start_syslogng(config, verbose):
+      sys.exit(1)
+
+    print_user("Starting test case...")
+    success = test_case()
+    if not stop_syslogng():
+      sys.exit(1)
+    print_end(test_name, success)
+    return success
 
 # import test modules
 import test_file_source
@@ -110,19 +122,14 @@ try:
             if obj[:5] != 'test_':
                 continue
             test_case = getattr(test_module, obj)
-            test_name = test_module.__name__ + '.' + obj
-            print_start(test_name)
-
-
-            if not start_syslogng(test_module.config, verbose):
-                sys.exit(1)
-
-            print_user("Starting test case...")
-            success = test_case()
-            if not stop_syslogng():
-                sys.exit(1)
-            print_end(test_name, success)
-
+            if type(test_module.config) is str:
+                success = run_testcase(test_module.__name__ + '.' + obj, test_module.config, verbose, test_case)
+            elif type(test_module.config) is dict:
+                success = True
+                for config_name in test_module.config:
+                    testcase_name = "%s.%s[%s]" %(test_module.__name__, obj, config_name)
+                    config = test_module.config[config_name]
+                    success = run_testcase(testcase_name, config, verbose, test_case) and success
             if not success:
                 rc = 1
 finally:

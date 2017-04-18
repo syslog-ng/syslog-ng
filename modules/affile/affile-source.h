@@ -28,38 +28,19 @@
 #include "logreader.h"
 #include "logproto/logproto-regexp-multiline-server.h"
 #include "affile-common.h"
-
-
-enum
-{
-  MLM_NONE,
-  MLM_INDENTED,
-  MLM_PREFIX_GARBAGE,
-  MLM_PREFIX_SUFFIX,
-};
+#include "file-reader.h"
 
 typedef struct _AFFileSourceDriver
 {
   LogSrcDriver super;
   GString *filename;
-  LogReader *reader;
-  LogReaderOptions reader_options;
-  FilePermOptions file_perm_options;
-  FileOpenOptions file_open_options;
-  gint pad_size;
-  gint follow_freq;
-  gint multi_line_mode;
-  MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
+  FileReader *file_reader;
+  FileReaderOptions file_reader_options;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
 LogDriver *afpipe_sd_new(gchar *filename, GlobalConfig *cfg);
-
-gboolean affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regexp, GError **error);
-gboolean affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error);
-gboolean affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode);
-void affile_sd_set_follow_freq(LogDriver *s, gint follow_freq);
 
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
 void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
