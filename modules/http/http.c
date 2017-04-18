@@ -153,6 +153,23 @@ _set_curl_opt(HTTPDestinationDriver *self, LogMessage *msg, struct curl_slist *c
   if (self->user_agent)
     curl_easy_setopt(self->curl, CURLOPT_USERAGENT, self->user_agent);
 
+  if (self->ca_dir)
+    curl_easy_setopt(self->curl, CURLOPT_CAPATH, self->ca_dir);
+
+  if (self->ca_file)
+    curl_easy_setopt(self->curl, CURLOPT_CAINFO, self->ca_file);
+
+  if (self->cert_file)
+    curl_easy_setopt(self->curl, CURLOPT_SSLCERT, self->cert_file);
+
+  if (self->key_file)
+    curl_easy_setopt(self->curl, CURLOPT_SSLKEY, self->key_file);
+
+  if (self->ciphers)
+    curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, self->ciphers);
+
+  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
+  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
 
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, curl_headers);
 
@@ -282,6 +299,68 @@ http_dd_get_template_options(LogDriver *d)
   return &self->template_options;
 }
 
+void
+http_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->ca_dir);
+  self->ca_dir = g_strdup(ca_dir);
+}
+
+void
+http_dd_set_ca_file(LogDriver *d, const gchar *ca_file)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->ca_file);
+  self->ca_file = g_strdup(ca_file);
+}
+
+void
+http_dd_set_cert_file(LogDriver *d, const gchar *cert_file)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->cert_file);
+  self->cert_file = g_strdup(cert_file);
+}
+
+void
+http_dd_set_key_file(LogDriver *d, const gchar *key_file)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->key_file);
+  self->key_file = g_strdup(key_file);
+}
+
+void
+http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->ciphers);
+  self->ciphers = g_strdup(ciphers);
+}
+
+void
+http_dd_set_peer_verify(LogDriver *d, const gchar *value)
+{
+  gboolean verify;
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  if (type_cast_to_boolean(value, &verify, NULL))
+    {
+      self->peer_verify = verify;
+    }
+  else
+    {
+      msg_warning("curl: non-boolean value for TLS peer verify",
+                  evt_tag_str("peer_verify", value));
+    }
+}
+
 gboolean
 http_dd_init(LogPipe *s)
 {
@@ -319,6 +398,11 @@ http_dd_free(LogPipe *s)
   g_free(self->user);
   g_free(self->password);
   g_free(self->user_agent);
+  g_free(self->ca_dir);
+  g_free(self->ca_file);
+  g_free(self->cert_file);
+  g_free(self->key_file);
+  g_free(self->ciphers);
   g_list_free_full(self->headers, g_free);
 
   log_threaded_dest_driver_free(s);
@@ -352,6 +436,7 @@ http_dd_new(GlobalConfig *cfg)
 
       return NULL;
     }
+  self->peer_verify = TRUE;
 
   return &self->super.super.super;
 }
