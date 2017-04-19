@@ -61,6 +61,7 @@
 %token KW_CERT_FILE
 %token KW_KEY_FILE
 %token KW_CIPHER_SUITE
+%token KW_SSL_VERSION
 %token KW_PEER_VERIFY
 
 %type   <ptr> driver
@@ -110,6 +111,7 @@ http_option
     | KW_CERT_FILE  '(' string ')'            { http_dd_set_cert_file(last_driver, $3); free($3); }
     | KW_KEY_FILE   '(' string ')'            { http_dd_set_key_file(last_driver, $3); free($3); }
     | KW_CIPHER_SUITE '(' string ')'          { http_dd_set_cipher_suite(last_driver, $3); free($3); }
+    | KW_SSL_VERSION '(' string ')'           { http_dd_set_ssl_version(last_driver, $3); free($3); }
     | KW_PEER_VERIFY '(' string ')'           { http_dd_set_peer_verify(last_driver, $3); free($3); }
     | dest_driver_option
     | threaded_dest_driver_option

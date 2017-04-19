@@ -168,6 +168,8 @@ _set_curl_opt(HTTPDestinationDriver *self, LogMessage *msg, struct curl_slist *c
   if (self->ciphers)
     curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, self->ciphers);
 
+  curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, self->ssl_version);
+
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
 
@@ -345,6 +347,55 @@ http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers)
 }
 
 void
+http_dd_set_ssl_version(LogDriver *d, const gchar *value)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  if (strcmp(value, "default") == 0)
+    {
+      /* libcurl default, currently TLS 1.x */
+      self->ssl_version = CURL_SSLVERSION_DEFAULT;
+
+    }
+  else if (strcmp(value, "tlsv1") == 0)
+    {
+      /* TLS 1.x */
+      self->ssl_version = CURL_SSLVERSION_TLSv1;
+    }
+  else if (strcmp(value, "sslv2") == 0)
+    {
+      /* SSL 2 only */
+      self->ssl_version = CURL_SSLVERSION_SSLv2;
+
+    }
+  else if (strcmp(value, "sslv3") == 0)
+    {
+      /* SSL 3 only */
+      self->ssl_version = CURL_SSLVERSION_SSLv3;
+    }
+  else if (strcmp(value, "tlsv1_0") == 0)
+    {
+      /* TLS 1.0 only */
+      self->ssl_version = CURL_SSLVERSION_TLSv1_0;
+    }
+  else if (strcmp(value, "tlsv1_1") == 0)
+    {
+      /* TLS 1.1 only */
+      self->ssl_version = CURL_SSLVERSION_TLSv1_1;
+    }
+  else if (strcmp(value, "tlsv1_2") == 0)
+    {
+      /* TLS 1.2 only */
+      self->ssl_version = CURL_SSLVERSION_TLSv1_2;
+    }
+  else
+    {
+      msg_warning("curl: unsupported SSL version",
+                  evt_tag_str("ssl_version", value));
+    }
+}
+
+void
 http_dd_set_peer_verify(LogDriver *d, const gchar *value)
 {
   gboolean verify;
@@ -436,6 +487,7 @@ http_dd_new(GlobalConfig *cfg)
 
       return NULL;
     }
+  self->ssl_version = CURL_SSLVERSION_DEFAULT;
   self->peer_verify = TRUE;
 
   return &self->super.super.super;

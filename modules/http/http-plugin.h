@@ -43,8 +43,9 @@ typedef struct
   gchar *cert_file;
   gchar *key_file;
   gchar *ciphers;
-  short int method_type;
+  int ssl_version;
   gboolean peer_verify;
+  short int method_type;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
 } HTTPDestinationDriver;
@@ -64,6 +65,7 @@ void http_dd_set_ca_file(LogDriver *d, const gchar *ca_file);
 void http_dd_set_cert_file(LogDriver *d, const gchar *cert_file);
 void http_dd_set_key_file(LogDriver *d, const gchar *key_file);
 void http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers);
+void http_dd_set_ssl_version(LogDriver *d, const gchar *value);
 void http_dd_set_peer_verify(LogDriver *d, const gchar *verify);
 LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
 
