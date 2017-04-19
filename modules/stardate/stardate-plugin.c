@@ -1,5 +1,5 @@
 /*
- * Copyright (c) @YEAR_AND_AUTHOR@
+ * Copyright (c) 2017 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,33 +21,31 @@
  */
 
 #include "cfg-parser.h"
+#include "stardate.c"
 #include "plugin.h"
 #include "plugin-types.h"
 
-extern CfgParser @PLUGIN_NAME_US@_parser;
+extern CfgParser stardate_parser;
 
-static Plugin @PLUGIN_NAME_US@_plugins[] =
+static Plugin stardate_plugins[] =
 {
-  {
-    .type = @PLUGIN_TYPE@,
-    .name = "@PLUGIN_KEY@",
-    .parser = &@PLUGIN_NAME_US@_parser,
-  },
+  TEMPLATE_FUNCTION_PLUGIN(tf_stardate, "stardate"),
 };
 
 gboolean
-@PLUGIN_NAME_US@_module_init(GlobalConfig *cfg, CfgArgs *args)
+stardate_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-  plugin_register(cfg, @PLUGIN_NAME_US@_plugins, G_N_ELEMENTS(@PLUGIN_NAME_US@_plugins));
+  plugin_register(cfg, stardate_plugins, G_N_ELEMENTS(stardate_plugins));
   return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "@PLUGIN_NAME_US@",
-  .version = VERSION,
-  .description = "Please fill this description",
-  .core_revision = SOURCE_REVISION,
-  .plugins = @PLUGIN_NAME_US@_plugins,
-  .plugins_len = G_N_ELEMENTS(@PLUGIN_NAME_US@_plugins),
+  .canonical_name = "stardate",
+  .version = SYSLOG_NG_VERSION,
+  .description = "This fuction provides stardate template function: "
+  "fractional years. Example: $(stardate [--digits 2] $UNIXTIME).",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = stardate_plugins,
+  .plugins_len = G_N_ELEMENTS(stardate_plugins),
 };

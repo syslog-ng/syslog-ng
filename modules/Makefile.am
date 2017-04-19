@@ -36,6 +36,7 @@ include modules/diskq/Makefile.am
 include modules/add-contextual-data/Makefile.am
 include modules/getent/Makefile.am
 include modules/map-value-pairs/Makefile.am
+include modules/stardate/Makefile.am
 
 SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 
