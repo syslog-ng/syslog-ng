@@ -396,20 +396,11 @@ http_dd_set_ssl_version(LogDriver *d, const gchar *value)
 }
 
 void
-http_dd_set_peer_verify(LogDriver *d, const gchar *value)
+http_dd_set_peer_verify(LogDriver *d, gboolean verify)
 {
-  gboolean verify;
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-  if (type_cast_to_boolean(value, &verify, NULL))
-    {
-      self->peer_verify = verify;
-    }
-  else
-    {
-      msg_warning("curl: non-boolean value for TLS peer verify",
-                  evt_tag_str("peer_verify", value));
-    }
+  self->peer_verify = verify;
 }
 
 gboolean
