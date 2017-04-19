@@ -665,6 +665,12 @@ tls_option
         : KW_IFDEF {
 }
 
+	| KW_PEER_VERIFY '(' yesno ')'
+	  {
+	    last_tls_context->verify_mode = $3
+		? (TVM_REQUIRED | TVM_TRUSTED)
+		: (TVM_OPTIONAL | TVM_UNTRUSTED);
+          }
 	| KW_PEER_VERIFY '(' string ')'
 	  {
 	    last_tls_context->verify_mode = tls_lookup_verify_mode($3);
