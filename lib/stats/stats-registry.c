@@ -24,14 +24,14 @@
 #include "stats/stats-registry.h"
 #include <string.h>
 
-static GHashTable *counter_hash;
+static GHashTable *stats_cluster_container;
 static GStaticMutex stats_mutex = G_STATIC_MUTEX_INIT;
 gboolean stats_locked;
 
 static void
 _insert_cluster(StatsCluster *sc)
 {
-  g_hash_table_insert(counter_hash, &sc->key, sc);
+  g_hash_table_insert(stats_cluster_container, &sc->key, sc);
 }
 
 void
@@ -56,7 +56,7 @@ _grab_cluster(gint stats_level, const StatsClusterKey *sc_key, gboolean dynamic)
   if (!stats_check_level(stats_level))
     return NULL;
 
-  sc = g_hash_table_lookup(counter_hash, sc_key);
+  sc = g_hash_table_lookup(stats_cluster_container, sc_key);
   if (!sc)
     {
       /* no such StatsCluster instance, register one */
@@ -181,7 +181,7 @@ stats_unregister_counter(const StatsClusterKey *sc_key, gint type,
   if (*counter == NULL)
     return;
 
-  sc = g_hash_table_lookup(counter_hash, sc_key);
+  sc = g_hash_table_lookup(stats_cluster_container, sc_key);
 
   stats_cluster_untrack_counter(sc, type, counter);
 }
@@ -212,7 +212,7 @@ stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data)
   gpointer args[] = { func, user_data };
 
   g_assert(stats_locked);
-  g_hash_table_foreach(counter_hash, _foreach_cluster_helper, args);
+  g_hash_table_foreach(stats_cluster_container, _foreach_cluster_helper, args);
 }
 
 static gboolean
@@ -230,7 +230,7 @@ void
 stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer user_data)
 {
   gpointer args[] = { func, user_data };
-  g_hash_table_foreach_remove(counter_hash, _foreach_cluster_remove_helper, args);
+  g_hash_table_foreach_remove(stats_cluster_container, _foreach_cluster_remove_helper, args);
 }
 
 static void
@@ -255,7 +255,7 @@ stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data)
 void
 stats_registry_init(void)
 {
-  counter_hash = g_hash_table_new_full((GHashFunc) stats_cluster_hash, (GEqualFunc) stats_cluster_key_equal, NULL,
+  stats_cluster_container = g_hash_table_new_full((GHashFunc) stats_cluster_hash, (GEqualFunc) stats_cluster_equal, NULL,
                                        (GDestroyNotify) stats_cluster_free);
   g_static_mutex_init(&stats_mutex);
 }
@@ -263,14 +263,14 @@ stats_registry_init(void)
 void
 stats_registry_deinit(void)
 {
-  g_hash_table_destroy(counter_hash);
-  counter_hash = NULL;
+  g_hash_table_destroy(stats_cluster_container);
+  stats_cluster_container = NULL;
   g_static_mutex_free(&stats_mutex);
 }
 
 GHashTable *
-stats_registry_get_counter_hash(void)
+stats_registry_get_container(void)
 {
-  return counter_hash;
+  return stats_cluster_container;
 }
 

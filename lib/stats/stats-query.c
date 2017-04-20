@@ -130,7 +130,7 @@ _find_key_by_pattern(gpointer key, gpointer value, gpointer user_data)
 static GList *
 _query_counter_hash(gchar *key_str, gchar *ctr_str)
 {
-  GHashTable *counter_hash = stats_registry_get_counter_hash();
+  GHashTable *counter_hash = stats_registry_get_container();
   GPatternSpec *pattern = g_pattern_spec_new(key_str);
   StatsCluster *sc = NULL;
   GList *counters = NULL;
