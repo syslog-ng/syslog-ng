@@ -353,7 +353,11 @@ http_dd_set_ssl_version(LogDriver *d, const gchar *value)
 
   if (strcmp(value, "default") == 0)
     {
-      /* libcurl default, currently TLS 1.x */
+      /*
+       * Negotiate the version based on what the remote server supports.
+       * SSLv2 is disabled by default as of libcurl 7.18.1.
+       * SSLv3 is disabled by default as of libcurl 7.39.0.
+       */
       self->ssl_version = CURL_SSLVERSION_DEFAULT;
 
     }
@@ -373,21 +377,27 @@ http_dd_set_ssl_version(LogDriver *d, const gchar *value)
       /* SSL 3 only */
       self->ssl_version = CURL_SSLVERSION_SSLv3;
     }
+#ifdef CURL_SSLVERSION_TLSv1_0
   else if (strcmp(value, "tlsv1_0") == 0)
     {
       /* TLS 1.0 only */
       self->ssl_version = CURL_SSLVERSION_TLSv1_0;
     }
+#endif
+#ifdef CURL_SSLVERSION_TLSv1_1
   else if (strcmp(value, "tlsv1_1") == 0)
     {
       /* TLS 1.1 only */
       self->ssl_version = CURL_SSLVERSION_TLSv1_1;
     }
+#endif
+#ifdef CURL_SSLVERSION_TLSv1_2
   else if (strcmp(value, "tlsv1_2") == 0)
     {
       /* TLS 1.2 only */
       self->ssl_version = CURL_SSLVERSION_TLSv1_2;
     }
+#endif
   else
     {
       msg_warning("curl: unsupported SSL version",
