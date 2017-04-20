@@ -56,6 +56,13 @@
 %token KW_METHOD
 %token KW_HEADERS
 %token KW_BODY
+%token KW_CA_DIR
+%token KW_CA_FILE
+%token KW_CERT_FILE
+%token KW_KEY_FILE
+%token KW_CIPHER_SUITE
+%token KW_SSL_VERSION
+%token KW_PEER_VERIFY
 
 %type   <ptr> driver
 %type   <ptr> http_destination
@@ -99,6 +106,13 @@ http_option
     | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free($3); }
     | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
     | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
+    | KW_CA_DIR     '(' string ')'            { http_dd_set_ca_dir(last_driver, $3); free($3); }
+    | KW_CA_FILE    '(' string ')'            { http_dd_set_ca_file(last_driver, $3); free($3); }
+    | KW_CERT_FILE  '(' string ')'            { http_dd_set_cert_file(last_driver, $3); free($3); }
+    | KW_KEY_FILE   '(' string ')'            { http_dd_set_key_file(last_driver, $3); free($3); }
+    | KW_CIPHER_SUITE '(' string ')'          { http_dd_set_cipher_suite(last_driver, $3); free($3); }
+    | KW_SSL_VERSION '(' string ')'           { http_dd_set_ssl_version(last_driver, $3); free($3); }
+    | KW_PEER_VERIFY '(' yesno ')'            { http_dd_set_peer_verify(last_driver, $3); }
     | dest_driver_option
     | threaded_dest_driver_option
     | { last_template_options = http_dd_get_template_options(last_driver); } template_option
