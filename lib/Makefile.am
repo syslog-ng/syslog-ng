@@ -1,5 +1,5 @@
 
-DIST_SUBDIRS				= lib/ivykis
+DIST_SUBDIRS				+= lib/ivykis
 
 include lib/transport/Makefile.am
 include lib/logproto/Makefile.am
