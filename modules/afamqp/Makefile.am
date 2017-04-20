@@ -1,4 +1,4 @@
-DIST_SUBDIRS				+= modules/afamqp/rabbitmq-c
+DIST_SUBDIRS				+= @LIBRABBITMQ_SUBDIRS@
 
 if LIBRABBITMQ_INTERNAL
 
