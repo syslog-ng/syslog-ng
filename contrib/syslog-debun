@@ -46,6 +46,7 @@ pscmd="ps auxwwwwwf"
 pseao="ps -eao"
 dfk="df -k"
 dfh="df -h"
+dfi="df -i"
 duks="du -ks"
 grepq="grep -q"
 lddcmd="ldd"
@@ -352,6 +353,7 @@ acquire_filesystem_info () {
 	echo "Mount and disk free info collection"
 	$dfk >${tmpdir}/sys.df_k
 	$dfh >${tmpdir}/sys.df_h
+	$dfi >${tmpdir}/sys.df_i
 	$mount >${tmpdir}/sys.mount
 }
 
@@ -609,7 +611,12 @@ debun_extra_genlinux () {
 	else
 		echo "No getenforce in path." >${tmpdir}/sys.selinux
 	fi
+	if is_available dmidecode; then
+		dmidecode >${tmpdir}/sys.dmidecode
+	fi
 	sysctl -a >${tmpdir}/sys.sysctl.all 2>/dev/null
+	lspci >${tmpdir}/sys.lspci
+	cp /proc/cpuinfo >${tmpdir}/sys.cpuinfo
 }
 
 debun_linux () {
