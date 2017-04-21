@@ -491,13 +491,15 @@ acquire_syslog_startup_method () {
 	else
 		acquire_syslog_startup_initscript
 	fi
+	[ -f /etc/default/syslog-ng ] && cp /etc/default/syslog-ng "${tmpdir}/sys.startup.default"
+	[ -f /etc/sysconfig/syslog-ng ] && cp /etc/sysconfig/syslog-ng "${tmpdir}/sys.startup.sysconfig"
 }
 
 acquire_syslog_startup_initscript () {
 	if [ -n "${initfile}" ]; then
 		echo "falling back to SystemV init style..."
-		cp "${initfile}" "${tmpdir}/sys.init.syslog-ng"
-		chmod 0660 "${tmpdir}/sys.init.syslog-ng"
+		cp "${initfile}" "${tmpdir}/sys.startup.init.syslog-ng"
+		chmod 0660 "${tmpdir}/sys.startup.init.syslog-ng"
 	else
 		echo "none."
 	fi
@@ -505,14 +507,14 @@ acquire_syslog_startup_initscript () {
 
 acquire_syslog_startup_systemdunit () {
 	echo "systemd detected..."
-	cp "/usr/lib/systemd/system/syslog-ng.service" "${tmpdir}/sys.service.syslog-ng"
+	cp "/usr/lib/systemd/system/syslog-ng.service" "${tmpdir}/sys.startup.systemd-service.syslog-ng"
 }
 
 acquire_syslog_startup_svc () {
 	echo "Solaris SMF detected..."
-	cp "/lib/svc/method/syslog-ng" "${tmpdir}/sys.svc-method.syslog-ng"
-	chmod 0660 "${tmpdir}/sys.svc-method.syslog-ng"
-	cp "/var/svc/manifest/system/syslog-ng.xml" "${tmpdir}/sys.svc-manifest.syslog-ng.xml"
+	cp "/lib/svc/method/syslog-ng" "${tmpdir}/sys.startup.svc-method.syslog-ng"
+	chmod 0660 "${tmpdir}/sys.startup.svc-method.syslog-ng"
+	cp "/var/svc/manifest/system/syslog-ng.xml" "${tmpdir}/sys.startup.svc-manifest.syslog-ng.xml"
 }
 
 acquire_syslog_all () {
