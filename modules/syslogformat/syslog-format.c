@@ -696,7 +696,7 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
 
 
 static inline void
-sd_step_and_store(LogMessage *self, const guchar **data, gint *left)
+sd_step(const guchar **data, gint *left)
 {
   (*data)++;
   (*left)--;
@@ -755,7 +755,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
     }
   else if (left && src[0] == '[')
     {
-      sd_step_and_store(self, &src, &left);
+      sd_step(&src, &left);
       open_sd++;
       do
         {
@@ -782,7 +782,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                 {
                   goto error;
                 }
-              sd_step_and_store(self, &src, &left);
+              sd_step(&src, &left);
             }
 
           if (pos == 0)
@@ -806,7 +806,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           while (left && *src != ']')
             {
               if (left && *src == ' ') /* skip the ' ' before the parameter name */
-                sd_step_and_store(self, &src, &left);
+                sd_step(&src, &left);
               else
                 goto error;
 
@@ -831,14 +831,14 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                     {
                       goto error;
                     }
-                  sd_step_and_store(self, &src, &left);
+                  sd_step(&src, &left);
                 }
               sd_param_name[pos] = 0;
               strncpy(&sd_value_name[logmsg_sd_prefix_len + 1 + sd_id_len], sd_param_name,
                       sizeof(sd_value_name) - logmsg_sd_prefix_len - 1 - sd_id_len);
 
               if (left && *src == '=')
-                sd_step_and_store(self, &src, &left);
+                sd_step(&src, &left);
               else
                 goto error;
 
@@ -848,7 +848,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                 {
                   gboolean quote = FALSE;
                   /* opening quote */
-                  sd_step_and_store(self, &src, &left);
+                  sd_step(&src, &left);
                   pos = 0;
 
                   while (left && (*src != '"' || quote))
@@ -866,6 +866,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                             }
                           else if (!quote &&  *src == ']')
                             {
+                              sd_step(&src, &left);
                               goto error;
                             }
                           if (pos < sizeof(sd_param_value) - 1)
@@ -875,13 +876,13 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                             }
                           quote = FALSE;
                         }
-                      sd_step_and_store(self, &src, &left);
+                      sd_step(&src, &left);
                     }
                   sd_param_value[pos] = 0;
                   sd_param_value_len = pos;
 
                   if (left && *src == '"')/* closing quote */
-                    sd_step_and_store(self, &src, &left);
+                    sd_step(&src, &left);
                   else
                     goto error;
                 }
@@ -895,7 +896,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
 
           if (left && *src == ']')
             {
-              sd_step_and_store(self, &src, &left);
+              sd_step(&src, &left);
               open_sd--;
             }
           else
@@ -907,7 +908,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           if (left && *src == '[')
             {
               /* new structured data begins, thus continue iteration */
-              sd_step_and_store(self, &src, &left);
+              sd_step(&src, &left);
               open_sd++;
             }
         }
@@ -1110,8 +1111,10 @@ log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *
   /* hostname 255 ascii */
   log_msg_parse_hostname(self, &src, &left, &hostname_start, &hostname_len, parse_options->flags, NULL);
   if (!log_msg_parse_skip_space(self, &src, &left))
-    goto error;
-
+    {
+      src++;
+      goto error;
+    }
   /* If we did manage to find a hostname, store it. */
   if (hostname_start && hostname_len == 1 && *hostname_start == '-')
     ;

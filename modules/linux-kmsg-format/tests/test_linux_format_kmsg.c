@@ -164,7 +164,7 @@ test_kmsg_device_parsing(void)
 
   parsed_message = kmsg_parse_message(msg_invalid_block);
   assert_log_message_value(parsed_message, LM_V_MESSAGE,
-                           "Error processing log message (at position 6): 6,202;Fake message\n DEVICE=b12:1");
+                           "Error processing log message: 6,202>@<;Fake message\n DEVICE=b12:1");
   log_msg_unref(parsed_message);
 
   testcase_end();
