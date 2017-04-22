@@ -97,6 +97,9 @@ _extract_log_message_pointer_and_synthetic_value(gpointer value, LogMessage **pm
 static void
 _emit_message(PatternDB *self, PDBProcessParams *process_params, gboolean synthetic, LogMessage *msg)
 {
+  if (!self->emit)
+    return;
+
   if (process_params->num_emitted_messages < EXPECTED_NUMBER_OF_MESSAGES_EMITTED)
     {
       process_params->emitted_messages[process_params->num_emitted_messages++] =
@@ -116,6 +119,9 @@ _emit_message(PatternDB *self, PDBProcessParams *process_params, gboolean synthe
 static void
 _send_emitted_message_array(PatternDB *self, gpointer *values, gsize len)
 {
+  /* if emit is NULL, we don't store any entries in the arrays, so no need
+   * to check it here.  */
+
   for (gint i = 0; i < len; i++)
     {
       gpointer *value = values[i];
@@ -419,8 +425,7 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
   process_params->rule = context->rule;
   process_params->msg = msg;
   process_params->buffer = buffer;
-  if (pdb->emit)
-    _execute_rule_actions(pdb, process_params, RAT_TIMEOUT);
+  _execute_rule_actions(pdb, process_params, RAT_TIMEOUT);
   g_hash_table_remove(pdb->correllation.state, &context->super.key);
   g_string_free(buffer, TRUE);
 
@@ -644,11 +649,10 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
   process_params->context = context;
   process_params->buffer = buffer;
   synthetic_message_apply(&rule->msg, &context->super, msg, buffer);
-  if (self->emit)
-    {
-      _emit_message(self, process_params, FALSE, msg);
-      _execute_rule_actions(self, process_params, RAT_MATCH);
-    }
+
+  _emit_message(self, process_params, FALSE, msg);
+  _execute_rule_actions(self, process_params, RAT_MATCH);
+
   pdb_rule_unref(rule);
   g_static_rw_lock_writer_unlock(&self->lock);
 
