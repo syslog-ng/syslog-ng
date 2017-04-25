@@ -1,13 +1,17 @@
 [submodule "lib/ivykis"]
-	path = lib/ivykis
+        path = lib/ivykis
         url = https://github.com/buytenh/ivykis.git
+        ignore = dirty
 [submodule "lib/jsonc"]
-	path = lib/jsonc
-	url = https://github.com/json-c/json-c.git
+        path = lib/jsonc
+        url = https://github.com/json-c/json-c.git
+        ignore = dirty
 [submodule "modules/afamqp/rabbitmq-c"]
-	path = modules/afamqp/rabbitmq-c
-	url = https://github.com/alanxz/rabbitmq-c.git
+        path = modules/afamqp/rabbitmq-c
+        url = https://github.com/alanxz/rabbitmq-c.git
+        ignore = dirty
 [submodule "modules/afmongodb/mongo-c-driver"]
-	path = modules/afmongodb/mongo-c-driver
-	url = https://github.com/mongodb/mongo-c-driver.git
-	branch = 1.2.0-dev
+        path = modules/afmongodb/mongo-c-driver
+        url = https://github.com/mongodb/mongo-c-driver.git
+        branch = 1.2.0-dev
+        ignore = dirty
