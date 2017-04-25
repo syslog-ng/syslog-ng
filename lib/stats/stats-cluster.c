@@ -30,7 +30,7 @@ stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, 
 {
   gint type;
 
-  for (type = 0; type < SC_TYPE_MAX; type++)
+  for (type = 0; type < self->max_counters; type++)
     {
       if (self->live_mask & (1 << type))
         {
@@ -49,9 +49,9 @@ static const gchar *tag_names[SC_TYPE_MAX] =
 };
 
 const gchar *
-stats_cluster_get_type_name(gint type)
+stats_cluster_get_type_name(StatsCluster *self, gint type)
 {
-  return tag_names[type];
+  return self->tag_names[type];
 }
 
 static const gchar *
@@ -147,7 +147,7 @@ stats_cluster_track_counter(StatsCluster *self, gint type)
 {
   gint type_mask = 1 << type;
 
-  g_assert(type < SC_TYPE_MAX);
+  g_assert(type < self->max_counters);
 
   self->live_mask |= type_mask;
   self->use_count++;
@@ -192,7 +192,7 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 }
 
 StatsCluster *
-stats_cluster_new(gint component, const gchar *id, const gchar *instance)
+stats_cluster_new(gint component, const gchar *id, const gchar *instance, const gchar **tag_names, StatsCounterItem *counters, guint16 max_counters)
 {
   StatsCluster *self = g_new0(StatsCluster, 1);
 
@@ -201,7 +201,17 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance)
   self->instance = g_strdup(instance ? : "");
   self->use_count = 0;
   self->query_key = _stats_build_query_key(self);
+  self->counters = counters;
+  self->tag_names = tag_names;
+  self->max_counters = max_counters;
+  g_assert(max_counters <= sizeof(self->live_mask)*8);
   return self;
+}
+
+StatsCluster *
+stats_cluster_logpipe_new(gint component, const gchar *id, const gchar *instance)
+{
+  return stats_cluster_new(component, id, instance, tag_names, g_new(StatsCounterItem, SC_TYPE_MAX), SC_TYPE_MAX);
 }
 
 void
@@ -210,5 +220,6 @@ stats_cluster_free(StatsCluster *self)
   g_free(self->id);
   g_free(self->instance);
   g_free(self->query_key);
+  g_free(self->counters);
   g_free(self);
 }

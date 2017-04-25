@@ -94,7 +94,7 @@ enum
  * be registered with a single hash lookup */
 typedef struct _StatsCluster
 {
-  StatsCounterItem counters[SC_TYPE_MAX];
+  StatsCounterItem *counters;
   guint16 use_count;
   /* syslog-ng component/driver/subsystem that registered this cluster */
   guint16 component;
@@ -103,12 +103,13 @@ typedef struct _StatsCluster
   guint16 live_mask;
   guint16 dynamic:1;
   gchar *query_key;
+  const gchar **tag_names;
+  guint16 max_counters;
 } StatsCluster;
 
 typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data);
 
-const gchar *stats_cluster_get_type_name(gint type);
-gint stats_cluster_get_type_by_name(const gchar *name);
+const gchar *stats_cluster_get_type_name(StatsCluster *self, gint type);
 const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len);
 
 void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data);
@@ -120,7 +121,8 @@ StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
 
-StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance);
+StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance, const gchar **tags, StatsCounterItem *counters, guint16 number_of_stats_counters);
+StatsCluster *stats_cluster_logpipe_new(gint component, const gchar *id, const gchar *instance);
 void stats_cluster_free(StatsCluster *self);
 
 #endif

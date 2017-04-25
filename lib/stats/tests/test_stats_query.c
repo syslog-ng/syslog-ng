@@ -148,7 +148,7 @@ TestSuite(cluster_query_key, .init = app_startup, .fini = app_shutdown);
 Test(cluster_query_key, test_global_key)
 {
   const gchar *expected_key = "dst.file.d_file.instance";
-  StatsCluster *sc = stats_cluster_new(SCS_DESTINATION|SCS_FILE, "d_file", "instance");
+  StatsCluster *sc = stats_cluster_logpipe_new(SCS_DESTINATION|SCS_FILE, "d_file", "instance");
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",
                    sc->query_key, expected_key);

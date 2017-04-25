@@ -64,7 +64,7 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
   if (!sc)
     {
       /* no such StatsCluster instance, register one */
-      sc = stats_cluster_new(component, id, instance);
+      sc = stats_cluster_logpipe_new(component, id, instance);
       sc->dynamic = dynamic;
       g_hash_table_insert(counter_hash, sc, sc);
     }

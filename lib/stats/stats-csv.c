@@ -75,7 +75,7 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
   else
     state = 'a';
 
-  tag_name = stats_format_csv_escapevar(stats_cluster_get_type_name(type));
+  tag_name = stats_format_csv_escapevar(stats_cluster_get_type_name(sc, type));
   g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n",
                          stats_cluster_get_component_name(sc, buf, sizeof(buf)),
                          s_id, s_instance, state, tag_name, stats_counter_get(&sc->counters[type]));
