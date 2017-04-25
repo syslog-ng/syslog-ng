@@ -39,15 +39,6 @@ stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, 
     }
 }
 
-static const gchar *tag_names[SC_TYPE_MAX] =
-{
-  /* [SC_TYPE_DROPPED]   = */ "dropped",
-  /* [SC_TYPE_PROCESSED] = */ "processed",
-  /* [SC_TYPE_STORED]   = */  "stored",
-  /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
-  /* [SC_TYPE_STAMP] = */ "stamp",
-};
-
 const gchar *
 stats_cluster_get_type_name(StatsCluster *self, gint type)
 {
@@ -206,12 +197,6 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance, const 
   self->max_counters = max_counters;
   g_assert(max_counters <= sizeof(self->live_mask)*8);
   return self;
-}
-
-StatsCluster *
-stats_cluster_logpipe_new(gint component, const gchar *id, const gchar *instance)
-{
-  return stats_cluster_new(component, id, instance, tag_names, g_new(StatsCounterItem, SC_TYPE_MAX), SC_TYPE_MAX);
 }
 
 void

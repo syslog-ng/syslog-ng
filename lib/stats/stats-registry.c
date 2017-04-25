@@ -82,7 +82,7 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
 }
 
 static StatsCluster *
-_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type,
+_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, gint type,
                   gboolean dynamic, StatsCounterItem **counter)
 {
   StatsCluster *sc;
@@ -114,7 +114,7 @@ _register_counter(gint stats_level, gint component, const gchar *id, const gchar
  * freed when all of these uses are unregistered.
  **/
 void
-stats_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type,
+stats_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, gint type,
                        StatsCounterItem **counter)
 {
   _register_counter(stats_level, component, id, instance, type, FALSE, counter);
@@ -122,7 +122,7 @@ stats_register_counter(gint stats_level, gint component, const gchar *id, const 
 
 StatsCluster *
 stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance,
-                               StatsCounterType type, StatsCounterItem **counter)
+                               gint type, StatsCounterItem **counter)
 {
   return _register_counter(stats_level, component, id, instance, type, TRUE, counter);
 }
@@ -162,7 +162,7 @@ stats_register_and_increment_dynamic_counter(gint stats_level, gint component, c
  * instance in order to avoid an unnecessary lookup.
  **/
 void
-stats_register_associated_counter(StatsCluster *sc, StatsCounterType type, StatsCounterItem **counter)
+stats_register_associated_counter(StatsCluster *sc, gint type, StatsCounterItem **counter)
 {
   g_assert(stats_locked);
 
@@ -175,7 +175,7 @@ stats_register_associated_counter(StatsCluster *sc, StatsCounterType type, Stats
 }
 
 void
-stats_unregister_counter(gint component, const gchar *id, const gchar *instance, StatsCounterType type,
+stats_unregister_counter(gint component, const gchar *id, const gchar *instance, gint type,
                          StatsCounterItem **counter)
 {
   StatsCluster *sc;
@@ -201,7 +201,7 @@ stats_unregister_counter(gint component, const gchar *id, const gchar *instance,
 }
 
 void
-stats_unregister_dynamic_counter(StatsCluster *sc, StatsCounterType type, StatsCounterItem **counter)
+stats_unregister_dynamic_counter(StatsCluster *sc, gint type, StatsCounterItem **counter)
 {
   g_assert(stats_locked);
   if (!sc)

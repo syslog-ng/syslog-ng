@@ -25,16 +25,7 @@
 #define STATS_CLUSTER_H_INCLUDED 1
 
 #include "stats/stats-counter.h"
-
-typedef enum
-{
-  SC_TYPE_DROPPED=0, /* number of messages dropped */
-  SC_TYPE_PROCESSED, /* number of messages processed */
-  SC_TYPE_STORED,    /* number of messages on disk */
-  SC_TYPE_SUPPRESSED,/* number of messages suppressed */
-  SC_TYPE_STAMP,     /* timestamp */
-  SC_TYPE_MAX
-} StatsCounterType;
+#include "stats/stats-cluster-logpipe.h" //TODO: REMOVE
 
 enum
 {
@@ -122,7 +113,6 @@ void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterIt
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
 
 StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance, const gchar **tags, StatsCounterItem *counters, guint16 number_of_stats_counters);
-StatsCluster *stats_cluster_logpipe_new(gint component, const gchar *id, const gchar *instance);
 void stats_cluster_free(StatsCluster *self);
 
 #endif
