@@ -439,7 +439,7 @@ acquire_syslog_info () {
 }
 
 acquire_syslog_var () {
-	$duks $vardir >${tmpdir}/syslog.duks.var
+	$duks $vardir/ >${tmpdir}/syslog.duks.var
 	read vardu dir <${tmpdir}/syslog.duks.var
 	mkdir ${tmpdir}/var
 	cd "$vardir"
