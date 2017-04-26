@@ -33,8 +33,8 @@ test_stats_cluster_logpipe_new_replaces_NULL_with_an_empty_string(void)
   StatsCluster *sc;
 
   sc = stats_cluster_logpipe_new(SCS_SOURCE | SCS_FILE, NULL, NULL);
-  assert_string(sc->id, "", "StatsCluster->id is not properly defaulted to an empty string");
-  assert_string(sc->instance, "", "StatsCluster->instance is not properly defaulted to an empty string");
+  assert_string(sc->key.id, "", "StatsCluster->id is not properly defaulted to an empty string");
+  assert_string(sc->key.instance, "", "StatsCluster->instance is not properly defaulted to an empty string");
   stats_cluster_free(sc);
 }
 

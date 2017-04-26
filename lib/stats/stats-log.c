@@ -33,9 +33,9 @@ stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gp
 
   tag = evt_tag_printf(stats_cluster_get_type_name(sc, type), "%s(%s%s%s)=%u",
                        stats_cluster_get_component_name(sc, buf, sizeof(buf)),
-                       sc->id,
-                       (sc->id[0] && sc->instance[0]) ? "," : "",
-                       sc->instance,
+                       sc->key.id,
+                       (sc->key.id[0] && sc->key.instance[0]) ? "," : "",
+                       sc->key.instance,
                        stats_counter_get(&sc->counter_group.counters[type]));
   evt_rec_add_tag(e, tag);
 }

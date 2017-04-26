@@ -103,11 +103,11 @@ _get_component_prefix(gint source)
 const gchar *
 stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 {
-  if ((self->component & SCS_SOURCE_MASK) == SCS_GROUP)
+  if ((self->key.component & SCS_SOURCE_MASK) == SCS_GROUP)
     {
-      if (self->component & SCS_SOURCE)
+      if (self->key.component & SCS_SOURCE)
         return "source";
-      else if (self->component & SCS_DESTINATION)
+      else if (self->key.component & SCS_DESTINATION)
         return "destination";
       else
         g_assert_not_reached();
@@ -115,8 +115,8 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
   else
     {
       g_snprintf(buf, buf_len, "%s%s",
-                 _get_component_prefix(self->component),
-                 _get_module_name(self->component));
+                 _get_component_prefix(self->key.component),
+                 _get_module_name(self->key.component));
       return buf;
     }
 }
@@ -124,13 +124,13 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 gboolean
 stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2)
 {
-  return sc1->component == sc2->component && strcmp(sc1->id, sc2->id) == 0 && strcmp(sc1->instance, sc2->instance) == 0;
+  return sc1->key.component == sc2->key.component && strcmp(sc1->key.id, sc2->key.id) == 0 && strcmp(sc1->key.instance, sc2->key.instance) == 0;
 }
 
 guint
 stats_cluster_hash(const StatsCluster *self)
 {
-  return g_str_hash(self->id) + g_str_hash(self->instance) + self->component;
+  return g_str_hash(self->key.id) + g_str_hash(self->key.instance) + self->key.component;
 }
 
 StatsCounterItem *
@@ -164,13 +164,13 @@ _stats_build_query_key(StatsCluster *self)
 
   g_string_append(key, component_name);
 
-  if (self->id && self->id[0])
+  if (self->key.id && self->key.id[0])
     {
-      g_string_append_printf(key, ".%s", self->id);
+      g_string_append_printf(key, ".%s", self->key.id);
     }
-  if (self->instance && self->instance[0])
+  if (self->key.instance && self->key.instance[0])
     {
-      g_string_append_printf(key, ".%s", self->instance);
+      g_string_append_printf(key, ".%s", self->key.instance);
     }
 
   return g_string_free(key, FALSE);
@@ -187,9 +187,9 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance, StatsC
 {
   StatsCluster *self = g_new0(StatsCluster, 1);
 
-  self->component = component;
-  self->id = g_strdup(id ? : "");
-  self->instance = g_strdup(instance ? : "");
+  self->key.component = component;
+  self->key.id = g_strdup(id ? : "");
+  self->key.instance = g_strdup(instance ? : "");
   self->use_count = 0;
   self->query_key = _stats_build_query_key(self);
   self->counter_group = *group;
@@ -200,8 +200,8 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance, StatsC
 void
 stats_cluster_free(StatsCluster *self)
 {
-  g_free(self->id);
-  g_free(self->instance);
+  g_free(self->key.id);
+  g_free(self->key.instance);
   g_free(self->query_key);
   g_free(self->counter_group.counters); //TODO: dtor?
   g_free(self);

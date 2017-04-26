@@ -56,9 +56,9 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
   if (!instance)
     instance = "";
 
-  key.component = component;
-  key.id = (gchar *) id;
-  key.instance = (gchar *) instance;
+  key.key.component = component;
+  key.key.id = (gchar *) id;
+  key.key.instance = (gchar *) instance;
 
   sc = g_hash_table_lookup(counter_hash, &key);
   if (!sc)
@@ -191,9 +191,9 @@ stats_unregister_counter(gint component, const gchar *id, const gchar *instance,
   if (!instance)
     instance = "";
 
-  key.component = component;
-  key.id = (gchar *) id;
-  key.instance = (gchar *) instance;
+  key.key.component = component;
+  key.key.id = (gchar *) id;
+  key.key.instance = (gchar *) instance;
 
   sc = g_hash_table_lookup(counter_hash, &key);
 

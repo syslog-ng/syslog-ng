@@ -81,6 +81,14 @@ typedef struct _StatsCounterGroup
   guint16 capacity;
 } StatsCounterGroup;
 
+typedef struct _StatsClusterKey
+{
+  /* syslog-ng component/driver/subsystem that registered this cluster */
+  guint16 component;
+  gchar *id;
+  gchar *instance;
+} StatsClusterKey;
+
 /* NOTE: This struct can only be used by the stats implementation and not by client code. */
 
 /* StatsCluster encapsulates a set of related counters that are registered
@@ -92,12 +100,9 @@ typedef struct _StatsCounterGroup
  * be registered with a single hash lookup */
 typedef struct _StatsCluster
 {
+  StatsClusterKey key;
   StatsCounterGroup counter_group;
   guint16 use_count;
-  /* syslog-ng component/driver/subsystem that registered this cluster */
-  guint16 component;
-  gchar *id;
-  gchar *instance;
   guint16 live_mask;
   guint16 dynamic:1;
   gchar *query_key;
