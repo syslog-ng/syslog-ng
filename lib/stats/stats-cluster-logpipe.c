@@ -44,6 +44,10 @@ stats_cluster_logpipe_new(gint component, const gchar *id, const gchar *instance
     .capacity = SC_TYPE_MAX,
     .counter_names = tag_names
   };
-  return stats_cluster_new(component, id, instance, &counter_group);
+
+  StatsClusterKey key;
+  stats_cluster_key_set(&key, component, id, instance);
+
+  return stats_cluster_new(&key, &counter_group);
 }
 

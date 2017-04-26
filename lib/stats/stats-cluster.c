@@ -25,6 +25,31 @@
 
 #include <string.h>
 
+static StatsClusterKey*
+_clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
+{
+  dst->component = src->component;
+  dst->id = g_strdup(src->id ? : "");
+  dst->instance = g_strdup(src->instance ? : "");
+
+  return dst;
+}
+
+void 
+stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance)
+{
+  self->component = component;
+  self->id = id; 
+  self->instance = instance;
+}
+
+static void
+_stats_cluster_key_cloned_free(StatsClusterKey *self)
+{
+  g_free((gchar *)(self->id));
+  g_free((gchar *)(self->instance));
+}
+
 void
 stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data)
 {
@@ -183,13 +208,11 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 }
 
 StatsCluster *
-stats_cluster_new(gint component, const gchar *id, const gchar *instance, StatsCounterGroup *group)
+stats_cluster_new(StatsClusterKey *key, StatsCounterGroup *group)
 {
   StatsCluster *self = g_new0(StatsCluster, 1);
 
-  self->key.component = component;
-  self->key.id = g_strdup(id ? : "");
-  self->key.instance = g_strdup(instance ? : "");
+  _clone_stats_cluster_key(&self->key, key);
   self->use_count = 0;
   self->query_key = _stats_build_query_key(self);
   self->counter_group = *group;
@@ -200,8 +223,7 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance, StatsC
 void
 stats_cluster_free(StatsCluster *self)
 {
-  g_free(self->key.id);
-  g_free(self->key.instance);
+  _stats_cluster_key_cloned_free(&self->key);
   g_free(self->query_key);
   g_free(self->counter_group.counters); //TODO: dtor?
   g_free(self);
