@@ -944,17 +944,22 @@ dnl ***************************************************************************
 dnl ivykis headers/libraries
 dnl ***************************************************************************
 
+IVYKIS_INTERNAL_SOURCE_EXISTS="test -f $srcdir/lib/ivykis/src/iv_main_posix.c"
+
+if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
+	AC_CONFIG_SUBDIRS([lib/ivykis])
+	IVYKIS_SUBDIRS=lib/ivykis
+fi
+
+
 INTERNAL_IVYKIS_CFLAGS=""
 if test "x$with_ivykis" = "xinternal"; then
-	if test -f "$srcdir/lib/ivykis/src/iv_main_posix.c"; then
-		AC_CONFIG_SUBDIRS([lib/ivykis])
-
+	if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
 		# these can only be used in lib as it assumes
 		# the current directory just one below ivykis
 
 		IVYKIS_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/src/include -I\$(top_builddir)/lib/ivykis/src/include"
-		IVYKIS_SUBDIRS=lib/ivykis
                 INTERNAL_IVYKIS_CFLAGS="-I\${includedir}/syslog-ng/ivykis"
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
@@ -1582,7 +1587,7 @@ AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
-AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$IVYKIS_SUBDIRS" != "x"])
+AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$with_ivykis" = "xinternal"])
 AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
