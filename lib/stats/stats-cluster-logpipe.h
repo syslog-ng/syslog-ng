@@ -37,7 +37,7 @@ typedef enum
   SC_TYPE_MAX
 } StatsCounterTypeLogPipe;
 
-StatsCluster *stats_cluster_logpipe_new(gint component, const gchar *id, const gchar *instance);
+StatsCluster *stats_cluster_logpipe_new(StatsClusterKey *sc_key);
 
 #endif
 

@@ -36,7 +36,7 @@ static const gchar *tag_names[SC_TYPE_MAX] =
 
 
 StatsCluster *
-stats_cluster_logpipe_new(gint component, const gchar *id, const gchar *instance)
+stats_cluster_logpipe_new(StatsClusterKey *sc_key)
 {
   StatsCounterGroup counter_group = 
   {
@@ -45,9 +45,6 @@ stats_cluster_logpipe_new(gint component, const gchar *id, const gchar *instance
     .counter_names = tag_names
   };
 
-  StatsClusterKey key;
-  stats_cluster_key_set(&key, component, id, instance);
-
-  return stats_cluster_new(&key, &counter_group);
+  return stats_cluster_new(sc_key, &counter_group);
 }
 

@@ -89,7 +89,9 @@ log_tags_get_by_name(const gchar *name)
            * log_tags_reinit_stats() below */
 
           stats_lock();
-          stats_register_counter(3, SCS_TAG, name, NULL, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
+          StatsClusterKey sc_key;
+          stats_cluster_key_set(&sc_key, SCS_TAG, name, NULL);
+          stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
           stats_unlock();
 
           g_hash_table_insert(log_tags_hash, log_tags_list[id].name, GUINT_TO_POINTER(log_tags_list[id].id + 1));
@@ -173,11 +175,13 @@ log_tags_reinit_stats(void)
   for (id = 0; id < log_tags_num; id++)
     {
       const gchar *name = log_tags_list[id].name;
-
+      StatsClusterKey sc_key;
+      stats_cluster_key_set(&sc_key, SCS_TAG, name, NULL);
+   
       if (stats_check_level(3))
-        stats_register_counter(3, SCS_TAG, name, NULL, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
+        stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
       else
-        stats_unregister_counter(SCS_TAG, name, NULL, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
+        stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
     }
 
   stats_unlock();
@@ -209,9 +213,11 @@ log_tags_global_deinit(void)
   g_hash_table_destroy(log_tags_hash);
 
   stats_lock();
+  StatsClusterKey sc_key;
   for (i = 0; i < log_tags_num; i++)
     {
-      stats_unregister_counter(SCS_TAG, log_tags_list[i].name, NULL, SC_TYPE_PROCESSED, &log_tags_list[i].counter);
+      stats_cluster_key_set(&sc_key, SCS_TAG, log_tags_list[i].name, NULL);
+      stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &log_tags_list[i].counter);
       g_free(log_tags_list[i].name);
     }
   stats_unlock();

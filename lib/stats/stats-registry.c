@@ -43,7 +43,7 @@ stats_unlock(void)
 }
 
 static StatsCluster *
-_grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *instance, gboolean dynamic)
+_grab_cluster(gint stats_level, StatsClusterKey *sc_key, gboolean dynamic)
 {
   StatsCluster key;
   StatsCluster *sc;
@@ -51,20 +51,13 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
   if (!stats_check_level(stats_level))
     return NULL;
 
-  if (!id)
-    id = "";
-  if (!instance)
-    instance = "";
-
-  key.key.component = component;
-  key.key.id = (gchar *) id;
-  key.key.instance = (gchar *) instance;
+  key.key = *sc_key;
 
   sc = g_hash_table_lookup(counter_hash, &key);
   if (!sc)
     {
       /* no such StatsCluster instance, register one */
-      sc = stats_cluster_logpipe_new(component, id, instance);
+      sc = stats_cluster_logpipe_new(sc_key);
       sc->dynamic = dynamic;
       g_hash_table_insert(counter_hash, sc, sc);
     }
@@ -82,14 +75,14 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
 }
 
 static StatsCluster *
-_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, gint type,
+_register_counter(gint stats_level, StatsClusterKey *sc_key, gint type,
                   gboolean dynamic, StatsCounterItem **counter)
 {
   StatsCluster *sc;
 
   g_assert(stats_locked);
 
-  sc = _grab_cluster(stats_level, component, id, instance, dynamic);
+  sc = _grab_cluster(stats_level, sc_key, dynamic);
   if (sc)
     *counter = stats_cluster_track_counter(sc, type);
   else
@@ -114,17 +107,17 @@ _register_counter(gint stats_level, gint component, const gchar *id, const gchar
  * freed when all of these uses are unregistered.
  **/
 void
-stats_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, gint type,
+stats_register_counter(gint stats_level, StatsClusterKey *sc_key, gint type,
                        StatsCounterItem **counter)
 {
-  _register_counter(stats_level, component, id, instance, type, FALSE, counter);
+  _register_counter(stats_level, sc_key, type, FALSE, counter);
 }
 
 StatsCluster *
-stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance,
+stats_register_dynamic_counter(gint stats_level, StatsClusterKey *sc_key,
                                gint type, StatsCounterItem **counter)
 {
-  return _register_counter(stats_level, component, id, instance, type, TRUE, counter);
+  return _register_counter(stats_level, sc_key, type, TRUE, counter);
 }
 
 /*
@@ -134,14 +127,14 @@ stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id
  * Instantly create (if not exists) and increment a dynamic counter.
  */
 void
-stats_register_and_increment_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance,
+stats_register_and_increment_dynamic_counter(gint stats_level, StatsClusterKey *sc_key,
                                              time_t timestamp)
 {
   StatsCounterItem *counter, *stamp;
   StatsCluster *handle;
 
   g_assert(stats_locked);
-  handle = stats_register_dynamic_counter(stats_level, component, id, instance, SC_TYPE_PROCESSED, &counter);
+  handle = stats_register_dynamic_counter(stats_level, sc_key, SC_TYPE_PROCESSED, &counter);
   stats_counter_inc(counter);
   if (timestamp >= 0)
     {
@@ -175,7 +168,7 @@ stats_register_associated_counter(StatsCluster *sc, gint type, StatsCounterItem 
 }
 
 void
-stats_unregister_counter(gint component, const gchar *id, const gchar *instance, gint type,
+stats_unregister_counter(StatsClusterKey *sc_key, gint type,
                          StatsCounterItem **counter)
 {
   StatsCluster *sc;
@@ -186,14 +179,7 @@ stats_unregister_counter(gint component, const gchar *id, const gchar *instance,
   if (*counter == NULL)
     return;
 
-  if (!id)
-    id = "";
-  if (!instance)
-    instance = "";
-
-  key.key.component = component;
-  key.key.id = (gchar *) id;
-  key.key.instance = (gchar *) instance;
+  key.key = *sc_key;
 
   sc = g_hash_table_lookup(counter_hash, &key);
 

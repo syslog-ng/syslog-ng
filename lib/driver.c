@@ -131,9 +131,12 @@ log_src_driver_init_method(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, SCS_SOURCE | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED,
+  StatsClusterKey sc_key;
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL);
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED,
                          &self->super.processed_group_messages);
-  stats_register_counter(0, SCS_CENTER, NULL, "received", SC_TYPE_PROCESSED, &self->received_global_messages);
+  stats_cluster_key_set(&sc_key,  SCS_CENTER, NULL, "received");
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
   stats_unlock();
 
   return TRUE;
@@ -148,9 +151,12 @@ log_src_driver_deinit_method(LogPipe *s)
     return FALSE;
 
   stats_lock();
-  stats_unregister_counter(SCS_SOURCE | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED,
+  StatsClusterKey sc_key;
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL);
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
                            &self->super.processed_group_messages);
-  stats_unregister_counter(SCS_CENTER, NULL, "received", SC_TYPE_PROCESSED, &self->received_global_messages);
+  stats_cluster_key_set(&sc_key, SCS_CENTER, NULL, "received");
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
   stats_unlock();
   return TRUE;
 }
@@ -254,9 +260,12 @@ log_dest_driver_init_method(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED,
+  StatsClusterKey sc_key;
+  stats_cluster_key_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL);
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED,
                          &self->super.processed_group_messages);
-  stats_register_counter(0, SCS_CENTER, NULL, "queued", SC_TYPE_PROCESSED, &self->queued_global_messages);
+  stats_cluster_key_set(&sc_key, SCS_CENTER, NULL, "queued");
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
   stats_unlock();
 
   return TRUE;
@@ -282,9 +291,12 @@ log_dest_driver_deinit_method(LogPipe *s)
   g_assert(self->queues == NULL);
 
   stats_lock();
-  stats_unregister_counter(SCS_DESTINATION | SCS_GROUP, self->super.group, NULL, SC_TYPE_PROCESSED,
+  StatsClusterKey sc_key;
+  stats_cluster_key_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL);
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
                            &self->super.processed_group_messages);
-  stats_unregister_counter(SCS_CENTER, NULL, "queued", SC_TYPE_PROCESSED, &self->queued_global_messages);
+  stats_cluster_key_set(&sc_key, SCS_CENTER, NULL, "queued");
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
   stats_unlock();
 
   if (!log_driver_deinit_method(s))

@@ -39,8 +39,8 @@ void
 stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance)
 {
   self->component = component;
-  self->id = id; 
-  self->instance = instance;
+  self->id = (id?id:""); 
+  self->instance = (instance?instance:"");
 }
 
 static void
