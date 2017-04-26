@@ -36,7 +36,7 @@ stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gp
                        sc->id,
                        (sc->id[0] && sc->instance[0]) ? "," : "",
                        sc->instance,
-                       stats_counter_get(&sc->counters[type]));
+                       stats_counter_get(&sc->counter_group.counters[type]));
   evt_rec_add_tag(e, tag);
 }
 

@@ -30,11 +30,11 @@ stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, 
 {
   gint type;
 
-  for (type = 0; type < self->max_counters; type++)
+  for (type = 0; type < self->counter_group.capacity; type++)
     {
       if (self->live_mask & (1 << type))
         {
-          func(self, type, &self->counters[type], user_data);
+          func(self, type, &self->counter_group.counters[type], user_data);
         }
     }
 }
@@ -42,7 +42,7 @@ stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, 
 const gchar *
 stats_cluster_get_type_name(StatsCluster *self, gint type)
 {
-  return self->tag_names[type];
+  return self->counter_group.counter_names[type];
 }
 
 static const gchar *
@@ -138,17 +138,17 @@ stats_cluster_track_counter(StatsCluster *self, gint type)
 {
   gint type_mask = 1 << type;
 
-  g_assert(type < self->max_counters);
+  g_assert(type < self->counter_group.capacity);
 
   self->live_mask |= type_mask;
   self->use_count++;
-  return &self->counters[type];
+  return &self->counter_group.counters[type];
 }
 
 void
 stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter)
 {
-  g_assert(self && (self->live_mask & (1 << type)) && &self->counters[type] == (*counter));
+  g_assert(self && (self->live_mask & (1 << type)) && &self->counter_group.counters[type] == (*counter));
   g_assert(self->use_count > 0);
 
   self->use_count--;
@@ -183,7 +183,7 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 }
 
 StatsCluster *
-stats_cluster_new(gint component, const gchar *id, const gchar *instance, const gchar **tag_names, StatsCounterItem *counters, guint16 max_counters)
+stats_cluster_new(gint component, const gchar *id, const gchar *instance, StatsCounterGroup *group)
 {
   StatsCluster *self = g_new0(StatsCluster, 1);
 
@@ -192,10 +192,8 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance, const 
   self->instance = g_strdup(instance ? : "");
   self->use_count = 0;
   self->query_key = _stats_build_query_key(self);
-  self->counters = counters;
-  self->tag_names = tag_names;
-  self->max_counters = max_counters;
-  g_assert(max_counters <= sizeof(self->live_mask)*8);
+  self->counter_group = *group;
+  g_assert(self->counter_group.capacity <= sizeof(self->live_mask)*8);
   return self;
 }
 
@@ -205,6 +203,6 @@ stats_cluster_free(StatsCluster *self)
   g_free(self->id);
   g_free(self->instance);
   g_free(self->query_key);
-  g_free(self->counters);
+  g_free(self->counter_group.counters); //TODO: dtor?
   g_free(self);
 }

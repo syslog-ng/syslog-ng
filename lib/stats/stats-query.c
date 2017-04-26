@@ -161,7 +161,7 @@ _format_selected_counters(GList *counters, StatsFormatCb format_cb, gpointer res
   for (GList *counter = counters; counter; counter = counter->next)
     {
       NamedStatsCounterItem *c = counter->data;
-      format_cb(c->cluster, &c->cluster->counters[c->index], _get_name_of_counter_item(c), result);
+      format_cb(c->cluster, &c->cluster->counter_group.counters[c->index], _get_name_of_counter_item(c), result);
     }
 }
 
@@ -172,7 +172,7 @@ _reset_selected_counters(GList *counters)
   for (c = counters; c; c = c->next)
     {
       NamedStatsCounterItem *counter = c->data;
-      StatsCounterItem *item = &counter->cluster->counters[counter->index];
+      StatsCounterItem *item = &counter->cluster->counter_group.counters[counter->index];
       stats_counter_set(item, 0);
     }
 }
@@ -226,7 +226,7 @@ _sum_selected_counters(GList *counters, gpointer user_data)
   for (c = counters; c; c = c->next)
     {
       NamedStatsCounterItem *counter = c->data;
-      *sum += counter->cluster->counters[counter->index].value;
+      *sum += counter->cluster->counter_group.counters[counter->index].value;
     }
 }
 

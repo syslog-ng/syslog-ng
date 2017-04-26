@@ -74,6 +74,13 @@ enum
   SCS_SOURCE_MASK    = 0xff
 };
 
+typedef struct _StatsCounterGroup
+{
+  StatsCounterItem *counters;
+  const gchar **counter_names;
+  guint16 capacity;
+} StatsCounterGroup;
+
 /* NOTE: This struct can only be used by the stats implementation and not by client code. */
 
 /* StatsCluster encapsulates a set of related counters that are registered
@@ -85,7 +92,7 @@ enum
  * be registered with a single hash lookup */
 typedef struct _StatsCluster
 {
-  StatsCounterItem *counters;
+  StatsCounterGroup counter_group;
   guint16 use_count;
   /* syslog-ng component/driver/subsystem that registered this cluster */
   guint16 component;
@@ -94,8 +101,6 @@ typedef struct _StatsCluster
   guint16 live_mask;
   guint16 dynamic:1;
   gchar *query_key;
-  const gchar **tag_names;
-  guint16 max_counters;
 } StatsCluster;
 
 typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data);
@@ -112,7 +117,7 @@ StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
 
-StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance, const gchar **tags, StatsCounterItem *counters, guint16 number_of_stats_counters);
+StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance, StatsCounterGroup *counters_group);
 void stats_cluster_free(StatsCluster *self);
 
 #endif
