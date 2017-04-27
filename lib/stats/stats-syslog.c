@@ -54,19 +54,19 @@ stats_syslog_reinit(void)
   gchar name[11] = "";
   gint i;
   StatsClusterKey sc_key;
- 
+
   stats_lock();
   if (stats_check_level(3))
     {
-     /* we need these counters, register them */
-     for (i = 0; i < SEVERITY_MAX; i++)
+      /* we need these counters, register them */
+      for (i = 0; i < SEVERITY_MAX; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
           stats_cluster_logpipe_key_set(&sc_key, SCS_SEVERITY | SCS_SOURCE, NULL, name );
           stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &severity_counters[i]);
         }
 
-     for (i = 0; i < FACILITY_MAX - 1; i++)
+      for (i = 0; i < FACILITY_MAX - 1; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
           stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, name );

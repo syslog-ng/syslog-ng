@@ -1273,7 +1273,7 @@ log_writer_init(LogPipe *s)
       stats_lock();
       StatsClusterKey sc_key;
       stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
-  
+
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
       if (self->options->suppress > 0)
         stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);

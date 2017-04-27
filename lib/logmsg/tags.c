@@ -177,7 +177,7 @@ log_tags_reinit_stats(void)
       const gchar *name = log_tags_list[id].name;
       StatsClusterKey sc_key;
       stats_cluster_logpipe_key_set(&sc_key, SCS_TAG, name, NULL );
-   
+
       if (stats_check_level(3))
         stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
       else

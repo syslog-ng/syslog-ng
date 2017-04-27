@@ -1188,14 +1188,15 @@ afsql_dd_init(LogPipe *s)
     }
 
   stats_lock();
-    {
-      StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self) );
-      stats_register_counter(0, &sc_key, SC_TYPE_STORED, &self->stored_messages);
-      stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    }
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                  afsql_dd_format_stats_instance(self) );
+    stats_register_counter(0, &sc_key, SC_TYPE_STORED, &self->stored_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  }
   stats_unlock();
- 
+
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, afsql_dd_format_persist_sequence_number(self)));
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
@@ -1318,12 +1319,13 @@ afsql_dd_init(LogPipe *s)
 error:
 
   stats_lock();
-    {
-      StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self) );
-      stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
-      stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    }
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                  afsql_dd_format_stats_instance(self) );
+    stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  }
   stats_unlock();
 
   return FALSE;
@@ -1342,7 +1344,8 @@ afsql_dd_deinit(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self) );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                afsql_dd_format_stats_instance(self) );
   stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();

@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-static StatsClusterKey*
+static StatsClusterKey *
 _clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
 {
   dst->component = src->component;
@@ -36,11 +36,12 @@ _clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
   return dst;
 }
 
-void 
-stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance, StatsCounterGroupInit counter_group_init)
+void
+stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+                      StatsCounterGroupInit counter_group_init)
 {
   self->component = component;
-  self->id = (id?id:""); 
+  self->id = (id?id:"");
   self->instance = (instance?instance:"");
   self->counter_group_init = counter_group_init;
 }
