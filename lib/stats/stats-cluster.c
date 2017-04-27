@@ -233,10 +233,17 @@ stats_cluster_new(const StatsClusterKey *key)
 }
 
 void
+stats_counter_group_free(StatsCounterGroup *self)
+{
+  if (self->free_fn)
+    self->free_fn(self);
+}
+
+void
 stats_cluster_free(StatsCluster *self)
 {
   _stats_cluster_key_cloned_free(&self->key);
   g_free(self->query_key);
-  g_free(self->counter_group.counters); //TODO: dtor?
+  stats_counter_group_free(&self->counter_group);
   g_free(self);
 }

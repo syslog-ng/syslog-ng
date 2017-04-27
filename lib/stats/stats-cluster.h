@@ -74,14 +74,18 @@ enum
   SCS_SOURCE_MASK    = 0xff
 };
 
-typedef struct _StatsCounterGroup
+typedef struct _StatsCounterGroup StatsCounterGroup;
+
+struct _StatsCounterGroup
 {
   StatsCounterItem *counters;
   const gchar **counter_names;
   guint16 capacity;
-} StatsCounterGroup;
+  void (*free_fn)(StatsCounterGroup *self);
+};
 
 typedef void (*StatsCounterGroupInit)(StatsCounterGroup *counter_group);
+void stats_counter_group_free(StatsCounterGroup *self);
 
 typedef struct _StatsClusterKey
 {

@@ -35,11 +35,18 @@ static const gchar *tag_names[SC_TYPE_MAX] =
 };
 
 static void
+_counter_group_logpipe_free(StatsCounterGroup *counter_group)
+{
+  g_free(counter_group->counters);
+}
+
+static void
 _counter_group_logpipe_init(StatsCounterGroup *counter_group)
 {
   counter_group->counters = g_new0(StatsCounterItem, SC_TYPE_MAX);
   counter_group->capacity = SC_TYPE_MAX;
   counter_group->counter_names = tag_names;
+  counter_group->free_fn = _counter_group_logpipe_free;
 }
 
 void
