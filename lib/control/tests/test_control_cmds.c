@@ -97,7 +97,7 @@ test_stats()
   stats_init();
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_CENTER, "id", "received", stats_counter_group_logpipe_init);
+  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received" );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
   stats_unlock();
 
@@ -125,7 +125,7 @@ test_reset_stats()
   stats_init();
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_CENTER, "id", "received", stats_counter_group_logpipe_init);
+  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received" );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
   stats_counter_set(counter, 666);
   stats_unlock();

@@ -329,10 +329,9 @@ log_threaded_dest_driver_start(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
+  stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
                           self->super.super.id,
-                          self->format.stats_instance(self),
-                          stats_counter_group_logpipe_init);
+                          self->format.stats_instance(self));
   stats_register_counter(0, &sc_key, SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
@@ -366,10 +365,9 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
+  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
                           self->super.super.id,
-                          self->format.stats_instance(self),
-                          stats_counter_group_logpipe_init);
+                          self->format.stats_instance(self));
   stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
