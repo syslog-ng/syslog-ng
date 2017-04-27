@@ -149,12 +149,18 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 }
 
 gboolean
+stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2)
+{
+  return key1->component == key2->component
+         && strcmp(key1->id, key2->id) == 0
+         && strcmp(key1->instance, key2->instance) == 0
+         && key1->counter_group_init == key2->counter_group_init;
+}
+
+gboolean
 stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2)
 {
-  return sc1->key.component == sc2->key.component 
-         && strcmp(sc1->key.id, sc2->key.id) == 0
-         && strcmp(sc1->key.instance, sc2->key.instance) == 0
-         && sc1->key.counter_group_init == sc2->key.counter_group_init;
+  return stats_cluster_key_equal(&sc1->key, &sc2->key);
 }
 
 guint
@@ -213,7 +219,7 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 }
 
 StatsCluster *
-stats_cluster_new(StatsClusterKey *key)
+stats_cluster_new(const StatsClusterKey *key)
 {
   StatsCluster *self = g_new0(StatsCluster, 1);
 

@@ -118,6 +118,7 @@ const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gs
 
 void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data);
 
+gboolean stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2);
 gboolean stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2);
 guint stats_cluster_hash(const StatsCluster *self);
 
@@ -125,7 +126,7 @@ StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
 
-StatsCluster *stats_cluster_new(StatsClusterKey *key);
+StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
 
 void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance, StatsCounterGroupInit counter_group_ctor);
