@@ -31,16 +31,18 @@ _clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
   dst->component = src->component;
   dst->id = g_strdup(src->id ? : "");
   dst->instance = g_strdup(src->instance ? : "");
+  dst->counter_group_init = src->counter_group_init;
 
   return dst;
 }
 
 void 
-stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance)
+stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance, StatsCounterGroupInit counter_group_init)
 {
   self->component = component;
   self->id = (id?id:""); 
   self->instance = (instance?instance:"");
+  self->counter_group_init = counter_group_init;
 }
 
 static void
@@ -149,7 +151,10 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 gboolean
 stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2)
 {
-  return sc1->key.component == sc2->key.component && strcmp(sc1->key.id, sc2->key.id) == 0 && strcmp(sc1->key.instance, sc2->key.instance) == 0;
+  return sc1->key.component == sc2->key.component 
+         && strcmp(sc1->key.id, sc2->key.id) == 0
+         && strcmp(sc1->key.instance, sc2->key.instance) == 0
+         && sc1->key.counter_group_init == sc2->key.counter_group_init;
 }
 
 guint
@@ -208,14 +213,14 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 }
 
 StatsCluster *
-stats_cluster_new(StatsClusterKey *key, StatsCounterGroup *group)
+stats_cluster_new(StatsClusterKey *key)
 {
   StatsCluster *self = g_new0(StatsCluster, 1);
 
   _clone_stats_cluster_key(&self->key, key);
   self->use_count = 0;
   self->query_key = _stats_build_query_key(self);
-  self->counter_group = *group;
+  key->counter_group_init(&self->counter_group);
   g_assert(self->counter_group.capacity <= sizeof(self->live_mask)*8);
   return self;
 }

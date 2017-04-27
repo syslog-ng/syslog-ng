@@ -25,7 +25,7 @@
 #ifndef STATS_CLUSTER_LOGPIPE_H_INCLUDED
 #define STATS_CLUSTER_LOGPIPE_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "stats/stats-counter.h" 
 
 typedef enum
 {
@@ -35,9 +35,9 @@ typedef enum
   SC_TYPE_SUPPRESSED,/* number of messages suppressed */
   SC_TYPE_STAMP,     /* timestamp */
   SC_TYPE_MAX
-} StatsCounterTypeLogPipe;
+} StatsCounterGroupLogPipe;
 
-StatsCluster *stats_cluster_logpipe_new(StatsClusterKey *sc_key);
+void stats_counter_group_logpipe_init(StatsCounterGroup *counter_group);
 
 #endif
 

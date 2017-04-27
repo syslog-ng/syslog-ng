@@ -28,13 +28,13 @@
 #define STATS_CLUSTER_TESTCASE(x) x()
 
 static void
-test_stats_cluster_logpipe_new_replaces_NULL_with_an_empty_string(void)
+test_stats_cluster_new_replaces_NULL_with_an_empty_string(void)
 {
   StatsCluster *sc;
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, NULL, NULL);
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, NULL, NULL, stats_counter_group_logpipe_init);
 
-  sc = stats_cluster_logpipe_new(&sc_key);
+  sc = stats_cluster_new(&sc_key);
   assert_string(sc->key.id, "", "StatsCluster->id is not properly defaulted to an empty string");
   assert_string(sc->key.instance, "", "StatsCluster->instance is not properly defaulted to an empty string");
   stats_cluster_free(sc);
@@ -72,25 +72,25 @@ static void
 test_stats_cluster_equal_if_component_id_and_instance_are_the_same(void)
 {
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance");
-  assert_stats_cluster_equals_and_free(stats_cluster_logpipe_new(&sc_key),
-                                       stats_cluster_logpipe_new(&sc_key));
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance", stats_counter_group_logpipe_init);
+  assert_stats_cluster_equals_and_free(stats_cluster_new(&sc_key),
+                                       stats_cluster_new(&sc_key));
 
-  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance1");
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance1", stats_counter_group_logpipe_init);
   StatsClusterKey sc_key2;
-  stats_cluster_key_set(&sc_key2, SCS_SOURCE | SCS_FILE, "id", "instance2");
-  assert_stats_cluster_mismatches_and_free(stats_cluster_logpipe_new(&sc_key),
-                                           stats_cluster_logpipe_new(&sc_key2));
+  stats_cluster_key_set(&sc_key2, SCS_SOURCE | SCS_FILE, "id", "instance2", stats_counter_group_logpipe_init);
+  assert_stats_cluster_mismatches_and_free(stats_cluster_new(&sc_key),
+                                           stats_cluster_new(&sc_key2));
 
-  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id1", "instance");
-  stats_cluster_key_set(&sc_key2, SCS_SOURCE | SCS_FILE, "id2", "instance");
-  assert_stats_cluster_mismatches_and_free(stats_cluster_logpipe_new(&sc_key),
-                                           stats_cluster_logpipe_new(&sc_key2));
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id1", "instance", stats_counter_group_logpipe_init);
+  stats_cluster_key_set(&sc_key2, SCS_SOURCE | SCS_FILE, "id2", "instance", stats_counter_group_logpipe_init);
+  assert_stats_cluster_mismatches_and_free(stats_cluster_new(&sc_key),
+                                           stats_cluster_new(&sc_key2));
 
-  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance");
-  stats_cluster_key_set(&sc_key2, SCS_DESTINATION | SCS_FILE, "id", "instance");
-  assert_stats_cluster_mismatches_and_free(stats_cluster_logpipe_new(&sc_key),
-                                           stats_cluster_logpipe_new(&sc_key2));
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance", stats_counter_group_logpipe_init);
+  stats_cluster_key_set(&sc_key2, SCS_DESTINATION | SCS_FILE, "id", "instance", stats_counter_group_logpipe_init);
+  assert_stats_cluster_mismatches_and_free(stats_cluster_new(&sc_key),
+                                           stats_cluster_new(&sc_key2));
 }
 
 typedef struct _ValidateCountersState
@@ -141,8 +141,8 @@ static void
 test_stats_foreach_counter_yields_tracked_counters(void)
 {
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance");
-  StatsCluster *sc = stats_cluster_logpipe_new(&sc_key);
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance", stats_counter_group_logpipe_init);
+  StatsCluster *sc = stats_cluster_new(&sc_key);
 
   assert_stats_foreach_yielded_counters_matches(sc, -1);
 
@@ -158,8 +158,8 @@ static void
 test_stats_foreach_counter_never_forgets_untracked_counters(void)
 {
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance");
-  StatsCluster *sc = stats_cluster_logpipe_new(&sc_key);
+  stats_cluster_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance", stats_counter_group_logpipe_init);
+  StatsCluster *sc = stats_cluster_new(&sc_key);
   StatsCounterItem *processed, *stamp;
 
   processed = stats_cluster_track_counter(sc, SC_TYPE_PROCESSED);
@@ -179,8 +179,8 @@ assert_stats_component_name(gint component, const gchar *expected)
   gchar buf[32];
   const gchar *name;
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, component, NULL, NULL);
-  StatsCluster *sc = stats_cluster_logpipe_new(&sc_key);
+  stats_cluster_key_set(&sc_key, component, NULL, NULL, stats_counter_group_logpipe_init);
+  StatsCluster *sc = stats_cluster_new(&sc_key);
 
   name = stats_cluster_get_component_name(sc, buf, sizeof(buf));
   assert_string(name, expected, "component name mismatch");
@@ -200,7 +200,7 @@ test_get_component_name_translates_component_to_name_properly(void)
 static void
 test_stats_cluster(void)
 {
-  STATS_CLUSTER_TESTCASE(test_stats_cluster_logpipe_new_replaces_NULL_with_an_empty_string);
+  STATS_CLUSTER_TESTCASE(test_stats_cluster_new_replaces_NULL_with_an_empty_string);
   STATS_CLUSTER_TESTCASE(test_stats_cluster_equal_if_component_id_and_instance_are_the_same);
   STATS_CLUSTER_TESTCASE(test_stats_foreach_counter_yields_tracked_counters);
   STATS_CLUSTER_TESTCASE(test_stats_foreach_counter_never_forgets_untracked_counters);

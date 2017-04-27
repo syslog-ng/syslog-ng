@@ -81,12 +81,15 @@ typedef struct _StatsCounterGroup
   guint16 capacity;
 } StatsCounterGroup;
 
+typedef void (*StatsCounterGroupInit)(StatsCounterGroup *counter_group);
+
 typedef struct _StatsClusterKey
 {
   /* syslog-ng component/driver/subsystem that registered this cluster */
   guint16 component;
   const gchar *id;
   const gchar *instance;
+  StatsCounterGroupInit counter_group_init;
 } StatsClusterKey;
 
 /* NOTE: This struct can only be used by the stats implementation and not by client code. */
@@ -122,9 +125,9 @@ StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
 
-StatsCluster *stats_cluster_new(StatsClusterKey *key, StatsCounterGroup *counters_group);
+StatsCluster *stats_cluster_new(StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
 
-void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance);
+void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance, StatsCounterGroupInit counter_group_ctor);
 
 #endif

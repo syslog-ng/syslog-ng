@@ -1190,7 +1190,7 @@ afsql_dd_init(LogPipe *s)
   stats_lock();
     {
       StatsClusterKey sc_key;
-      stats_cluster_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self));
+      stats_cluster_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), stats_counter_group_logpipe_init);
       stats_register_counter(0, &sc_key, SC_TYPE_STORED, &self->stored_messages);
       stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
       stats_unlock();
@@ -1320,7 +1320,7 @@ error:
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self));
+    stats_cluster_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), stats_counter_group_logpipe_init);
     stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   }
@@ -1342,7 +1342,7 @@ afsql_dd_deinit(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self));
+  stats_cluster_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), stats_counter_group_logpipe_init);
   stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();

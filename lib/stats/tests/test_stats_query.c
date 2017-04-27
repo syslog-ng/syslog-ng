@@ -72,7 +72,7 @@ _initialize_counter_hash(void)
     {
       StatsCounterItem *item = NULL;
       StatsClusterKey sc_key;
-      stats_cluster_key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance);
+      stats_cluster_key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance, stats_counter_group_logpipe_init);
       stats_register_counter(0, &sc_key, counters[i].type, &item);
     }
 
@@ -151,8 +151,8 @@ Test(cluster_query_key, test_global_key)
 {
   const gchar *expected_key = "dst.file.d_file.instance";
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance");
-  StatsCluster *sc = stats_cluster_logpipe_new(&sc_key);
+  stats_cluster_key_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance", stats_counter_group_logpipe_init);
+  StatsCluster *sc = stats_cluster_new(&sc_key);
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",
                    sc->query_key, expected_key);

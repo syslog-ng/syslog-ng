@@ -1720,13 +1720,13 @@ log_msg_global_init(void)
   log_msg_registry_init();
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, SCS_GLOBAL, "msg_clones", NULL);
+  stats_cluster_key_set(&sc_key, SCS_GLOBAL, "msg_clones", NULL, stats_counter_group_logpipe_init);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_msg_clones);
 
-  stats_cluster_key_set(&sc_key, SCS_GLOBAL, "payload_reallocs", NULL);
+  stats_cluster_key_set(&sc_key, SCS_GLOBAL, "payload_reallocs", NULL, stats_counter_group_logpipe_init);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_payload_reallocs);
 
-  stats_cluster_key_set(&sc_key, SCS_GLOBAL, "sdata_updates", NULL);
+  stats_cluster_key_set(&sc_key, SCS_GLOBAL, "sdata_updates", NULL, stats_counter_group_logpipe_init);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_sdata_updates);
   stats_unlock();
 }

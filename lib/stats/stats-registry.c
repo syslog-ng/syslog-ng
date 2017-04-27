@@ -57,7 +57,7 @@ _grab_cluster(gint stats_level, StatsClusterKey *sc_key, gboolean dynamic)
   if (!sc)
     {
       /* no such StatsCluster instance, register one */
-      sc = stats_cluster_logpipe_new(sc_key);
+      sc = stats_cluster_new(sc_key);
       sc->dynamic = dynamic;
       g_hash_table_insert(counter_hash, sc, sc);
     }

@@ -1272,7 +1272,7 @@ log_writer_init(LogPipe *s)
     {
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance);
+      stats_cluster_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, stats_counter_group_logpipe_init);
   
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
       if (self->options->suppress > 0)
@@ -1326,7 +1326,7 @@ log_writer_deinit(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance);
+  stats_cluster_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, stats_counter_group_logpipe_init);
 
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);

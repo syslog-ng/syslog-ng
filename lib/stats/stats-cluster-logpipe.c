@@ -34,17 +34,11 @@ static const gchar *tag_names[SC_TYPE_MAX] =
   /* [SC_TYPE_STAMP] = */ "stamp",
 };
 
-
-StatsCluster *
-stats_cluster_logpipe_new(StatsClusterKey *sc_key)
+void
+stats_counter_group_logpipe_init(StatsCounterGroup *counter_group)
 {
-  StatsCounterGroup counter_group = 
-  {
-    .counters = g_new0(StatsCounterItem, SC_TYPE_MAX),
-    .capacity = SC_TYPE_MAX,
-    .counter_names = tag_names
-  };
-
-  return stats_cluster_new(sc_key, &counter_group);
+  counter_group->counters = g_new0(StatsCounterItem, SC_TYPE_MAX);
+  counter_group->capacity = SC_TYPE_MAX;
+  counter_group->counter_names = tag_names;
 }
 
