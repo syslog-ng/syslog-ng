@@ -944,17 +944,22 @@ dnl ***************************************************************************
 dnl ivykis headers/libraries
 dnl ***************************************************************************
 
+IVYKIS_INTERNAL_SOURCE_EXISTS="test -f $srcdir/lib/ivykis/src/iv_main_posix.c"
+
+if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
+	AC_CONFIG_SUBDIRS([lib/ivykis])
+	IVYKIS_SUBDIRS=lib/ivykis
+fi
+
+
 INTERNAL_IVYKIS_CFLAGS=""
 if test "x$with_ivykis" = "xinternal"; then
-	if test -f "$srcdir/lib/ivykis/src/iv_main_posix.c"; then
-		AC_CONFIG_SUBDIRS([lib/ivykis])
-
+	if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
 		# these can only be used in lib as it assumes
 		# the current directory just one below ivykis
 
 		IVYKIS_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/src/include -I\$(top_builddir)/lib/ivykis/src/include"
-		IVYKIS_SUBDIRS=lib/ivykis
                 INTERNAL_IVYKIS_CFLAGS="-I\${includedir}/syslog-ng/ivykis"
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
@@ -1152,25 +1157,29 @@ dnl ***************************************************************************
 dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
 
-if test "x$with_librabbitmq_client" = "xinternal"; then
+
+LIBRABBITMQ_INTERNAL_SOURCE_EXISTS="test -f $srcdir/modules/afamqp/rabbitmq-c/librabbitmq/amqp.h"
+
+if $LIBRABBITMQ_INTERNAL_SOURCE_EXISTS; then
     PYTHON_VERSION=`python -V 2>&1 | cut -d ' ' -f 2`
     PYTHON_MAJOR=`echo $PYTHON_VERSION | cut -d '.' -f 1`
     PYTHON_MINOR=`echo $PYTHON_VERSION | cut -d '.' -f 2`
     if test ${PYTHON} = "" || test $PYTHON_MAJOR -eq 2 && test $PYTHON_MINOR -lt 5; then
-        AC_MSG_WARN([Was about to execute rabbitmq configure script, but that requires Python >= 2.5, which you don't seem to have, disabling rabbitmq])
-        with_librabbitmq_client=no
+        AC_MSG_WARN([Was about to execute rabbitmq configure script, but that requires Python >= 2.5, which you don't seem to have, reverting to system rabbitmq])
+        with_librabbitmq_client="system"
+    else
+        AC_CONFIG_SUBDIRS([modules/afamqp/rabbitmq-c])
+        LIBRABBITMQ_SUBDIRS="modules/afamqp/rabbitmq-c"
     fi
 fi
 
 if test "x$with_librabbitmq_client" = "xinternal"; then
-    if test -f "$srcdir/modules/afamqp/rabbitmq-c/librabbitmq/amqp.h"; then
-        AC_CONFIG_SUBDIRS([modules/afamqp/rabbitmq-c])
+    if $LIBRABBITMQ_INTERNAL_SOURCE_EXISTS; then
         # these can only be used in modules/amqp as it assumes
         # the current directory just one below rabbitmq-c
 
         LIBRABBITMQ_LIBS="-L\$(top_builddir)/modules/afamqp/rabbitmq-c/librabbitmq -lrabbitmq"
         LIBRABBITMQ_CFLAGS="-I\$(top_srcdir)/modules/afamqp/rabbitmq-c/librabbitmq -I\$(top_builddir)/modules/afamqp/rabbitmq-c/librabbitmq"
-        LIBRABBITMQ_SUBDIRS="modules/afamqp/rabbitmq-c"
     else
         AC_MSG_WARN([Internal librabbitmq-client sources not found in modules/afamqp/rabbitmq-c])
         with_librabbitmq_client="no"
@@ -1184,12 +1193,10 @@ if test "x$with_librabbitmq_client" = "xno"; then
       AC_MSG_ERROR([Could not find librabbitmq-client, and AMQP support was explicitly enabled.])
     fi
     enable_amqp="no"
-    LIBRABBITMQ_SUBDIRS=""
 fi
 
 if test "x$enable_amqp" = "xno"; then
    with_librabbitmq_client="no"
-   LIBRABBITMQ_SUBDIRS=""
 fi
 
 if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
@@ -1582,10 +1589,10 @@ AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
-AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$IVYKIS_SUBDIRS" != "x"])
+AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$with_ivykis" = "xinternal"])
 AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
-AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
+AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$with_librabbitmq_client" = "xinternal"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
