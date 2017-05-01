@@ -101,6 +101,25 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
         }
     }
   log_msg_write_unprotect(msg);
+
+  /* NOTE: non of our multiplexed destinations delivered this message, let's
+   * propagate this result.  But only if we don't have a "next".  If we do,
+   * that would be responsible for doing the same, for instance if it is a
+   * filter.
+   *
+   * In case where this matters most (e.g.  the multiplexer attached to the
+   * source LogPipe), "next" will always be NULL.  I am not sure if there's
+   * ever a case, where a LogMpx has both "next" set, and have branches as
+   * well.
+   *
+   * If there's such a case, then from a conceptual point of view, this Mpx
+   * instance should transfer the responsibility for setting "matched" to
+   * the next pipeline element, which is what we do here.
+   */
+
+  if (!s->pipe_next && !delivered && path_options->matched)
+    *path_options->matched = FALSE;
+
   log_pipe_forward_msg(s, msg, path_options);
 }
 
