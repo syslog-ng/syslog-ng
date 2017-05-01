@@ -504,6 +504,17 @@ log_msg_free_queue_node(LogMessageQueueNode *node)
     g_slice_free(LogMessageQueueNode, node);
 }
 
+static gboolean
+_log_name_value_updates(LogMessage *self)
+{
+  /* we don't log name value updates for internal messages that are
+   * initialized at this point, as that may generate an endless recursion.
+   * log_msg_new_internal() calling log_msg_set_value(), which in turn
+   * generates an internal message, again calling log_msg_set_value()
+   */
+  return (!self->initial_parse && (self->flags & LF_INTERNAL) == 0);
+}
+
 void
 log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len)
 {
@@ -518,6 +529,14 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
+
+  if (_log_name_value_updates(self))
+    {
+      msg_debug("Setting value",
+                evt_tag_printf("msg", "%p", self),
+                evt_tag_str("name", name),
+                evt_tag_printf("value", "%.*s", (gint) value_len, value));
+    }
 
   if (value_len < 0)
     value_len = strlen(value);
@@ -586,6 +605,16 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
 
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
+
+  if (_log_name_value_updates(self))
+    {
+      msg_debug("Setting indirect value",
+                evt_tag_printf("msg", "%p", self),
+                evt_tag_str("name", name),
+                evt_tag_int("ref_handle", ref_handle),
+                evt_tag_int("ofs", ofs),
+                evt_tag_int("len", len));
+    }
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {
@@ -1254,11 +1283,13 @@ log_msg_new_internal(gint prio, const gchar *msg)
 
   g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
   self = log_msg_new_local();
+  self->flags |= LF_INTERNAL;
+  self->initial_parse = TRUE;
   log_msg_set_value(self, LM_V_PROGRAM, "syslog-ng", 9);
   log_msg_set_value(self, LM_V_PID, buf, -1);
   log_msg_set_value(self, LM_V_MESSAGE, msg, -1);
+  self->initial_parse = FALSE;
   self->pri = prio;
-  self->flags |= LF_INTERNAL;
 
   return self;
 }
