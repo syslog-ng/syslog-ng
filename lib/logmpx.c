@@ -72,6 +72,7 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   gint fallback;
 
   local_options.matched = &matched;
+  log_msg_write_protect(msg);
   for (fallback = 0; (fallback == 0) || (fallback == 1 && self->fallback_exists && !delivered); fallback++)
     {
       for (i = 0; i < self->next_hops->len; i++)
@@ -99,6 +100,7 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
             }
         }
     }
+  log_msg_write_unprotect(msg);
   log_pipe_forward_msg(s, msg, path_options);
 }
 
