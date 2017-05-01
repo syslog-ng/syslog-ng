@@ -12,6 +12,7 @@ SCL_SUBDIRS	= \
 	kafka		\
 	hdfs		\
 	apache		\
+	cisco		\
 	loggly		\
 	logmatic
 SCL_CONFIGS	= scl.conf syslog-ng.conf
