@@ -49,7 +49,13 @@ filter_in_list_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   value = log_msg_get_value(msg, self->value_handle, &len);
   APPEND_ZERO(value, value, len);
 
-  return (g_tree_lookup(self->tree, value) != NULL) ^ s->comp;
+  gboolean result = (g_tree_lookup(self->tree, value) != NULL) ^ s->comp;
+  msg_debug("Filter in-list node evaluation result",
+            evt_tag_printf("msg", "%p", msg),
+            evt_tag_str("value", value),
+            evt_tag_str("result", result ? "match" : "not-match"));
+
+  return result;
 }
 
 static void

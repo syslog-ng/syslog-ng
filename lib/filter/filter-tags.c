@@ -83,5 +83,6 @@ filter_tags_new(GList *tags)
 
   self->super.eval = filter_tags_eval;
   self->super.free_fn = filter_tags_free;
+  self->super.type = "tags";
   return &self->super;
 }
