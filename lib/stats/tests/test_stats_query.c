@@ -55,12 +55,12 @@ _initialize_counter_hash(void)
   size_t i, n;
   const CounterHashContent counters[] =
   {
-    {SCS_GLOBAL, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
     {SCS_CENTER, "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_STORED},
     {SCS_FILE | SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED},
+    {SCS_GLOBAL, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
     {SCS_PIPE | SCS_SOURCE, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
     {SCS_TCP | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
+    {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_STORED},
   };
 
   app_startup();
@@ -80,13 +80,13 @@ _initialize_counter_hash(void)
 }
 
 static gboolean
-_test_format_log_msg_get(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+_test_format_log_msg_get(StatsCounterItem *ctr, gpointer user_data)
 {
   gchar *name, *value;
   LogMessage *msg = (LogMessage *)user_data;
 
-  name = g_strdup_printf("%s.%s", sc->query_key, ctr_name);
-  value = g_strdup_printf("%d", ctr->value);
+  name = g_strdup_printf("%s", stats_counter_get_name(ctr));
+  value = g_strdup_printf("%d", stats_counter_get(ctr));
 
   log_msg_set_value_by_name(msg, name, value, -1);
 
@@ -97,23 +97,23 @@ _test_format_log_msg_get(StatsCluster *sc, StatsCounterItem *ctr, const gchar *c
 }
 
 static gboolean
-_test_format_str_get(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+_test_format_str_get(StatsCounterItem *ctr, gpointer user_data)
 {
   GString *str = (GString *)user_data;
-  g_string_append_printf(str, "%s.%s: %d\n", sc->query_key, ctr_name ? ctr_name : "", ctr->value);
+  g_string_append_printf(str, "%s: %d\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
 
   return TRUE;
 }
 
 static gboolean
-_test_format_log_msg_get_sum(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+_test_format_log_msg_get_sum(StatsCounterItem *ctr, gpointer user_data)
 {
   gchar *name, *value;
   gpointer *args = (gpointer *) user_data;
   LogMessage *msg = (LogMessage *) args[0];
   gint *sum = (gint *) args[1];
 
-  name = g_strdup_printf("%s.%s", sc->query_key, ctr_name);
+  name = g_strdup_printf("%s", stats_counter_get_name(ctr));
   value = g_strdup_printf("%d", *sum);
 
   log_msg_set_value_by_name(msg, name, value, -1);
@@ -125,7 +125,7 @@ _test_format_log_msg_get_sum(StatsCluster *sc, StatsCounterItem *ctr, const gcha
 }
 
 static gboolean
-_test_format_str_get_sum(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+_test_format_str_get_sum(StatsCounterItem *ctr, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GString *result = (GString *) args[0];
@@ -137,10 +137,10 @@ _test_format_str_get_sum(StatsCluster *sc, StatsCounterItem *ctr, const gchar *c
 }
 
 static gboolean
-_test_format_list(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+_test_format_list(StatsCounterItem *ctr, gpointer user_data)
 {
   GString *str = (GString *)user_data;
-  g_string_append_printf(str, "%s.%s\n", sc->query_key, ctr_name ? ctr_name : "");
+  g_string_append_printf(str, "%s\n", stats_counter_get_name(ctr));
 
   return TRUE;
 }
@@ -189,12 +189,12 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
   static QueryTestCase test_cases[] =
   {
     {
-      "*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "*.*", "dst.tcp.guba.labda.received.dropped: 0\n"
+      "global.guba.gumi.diszno.frozen.suppressed: 0\n"
       "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.file.guba.processed.processed: 0\n"
       "center.guba.polo.frozen.suppressed: 0\n"
       "src.tcp.guba.frizbi.left.stored: 0\n"
-      "dst.tcp.guba.labda.received.dropped: 0\n"
-      "src.file.guba.processed.processed: 0\n"
     },
     {"center.*.*", "center.guba.polo.frozen.suppressed: 0\n"},
     {"cent*", "center.guba.polo.frozen.suppressed: 0\n"},
@@ -203,8 +203,8 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
     {"src.pipe.guba.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
     {"src.pipe.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
     {
-      "*.tcp.guba.*.*", "src.tcp.guba.frizbi.left.stored: 0\n"
-      "dst.tcp.guba.labda.received.dropped: 0\n"
+      "*.tcp.guba.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"
+      "src.tcp.guba.frizbi.left.stored: 0\n"
     },
     {
       "*.guba.*i.*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
@@ -217,8 +217,8 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
     },
     {
       "src.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.tcp.guba.frizbi.left.stored: 0\n"
       "src.file.guba.processed.processed: 0\n"
+      "src.tcp.guba.frizbi.left.stored: 0\n"
     },
     {"dst.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
     {"dst.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
@@ -306,20 +306,21 @@ ParameterizedTestParameters(stats_query, test_stats_query_list)
   static QueryTestCase test_cases[] =
   {
     {
-      NULL, "global.guba.gumi.diszno.frozen.suppressed\n"
+      NULL,
+      "dst.tcp.guba.labda.received.dropped\n"
+      "global.guba.gumi.diszno.frozen.suppressed\n"
       "src.pipe.guba.gumi.diszno.frozen.suppressed\n"
+      "src.file.guba.processed.processed\n"
       "center.guba.polo.frozen.suppressed\n"
       "src.tcp.guba.frizbi.left.stored\n"
-      "dst.tcp.guba.labda.received.dropped\n"
-      "src.file.guba.processed.processed\n"
     },
     {
-      "*.*", "global.guba.gumi.diszno.frozen.suppressed\n"
+      "*.*", "dst.tcp.guba.labda.received.dropped\n"
+      "global.guba.gumi.diszno.frozen.suppressed\n"
       "src.pipe.guba.gumi.diszno.frozen.suppressed\n"
+      "src.file.guba.processed.processed\n"
       "center.guba.polo.frozen.suppressed\n"
       "src.tcp.guba.frizbi.left.stored\n"
-      "dst.tcp.guba.labda.received.dropped\n"
-      "src.file.guba.processed.processed\n"
     },
     {"center.*.*", "center.guba.polo.frozen.suppressed\n"},
     {"cent*", "center.guba.polo.frozen.suppressed\n"},
@@ -328,8 +329,8 @@ ParameterizedTestParameters(stats_query, test_stats_query_list)
     {"src.pipe.guba.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed\n"},
     {"src.pipe.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed\n"},
     {
-      "*.tcp.guba.*.*", "src.tcp.guba.frizbi.left.stored\n"
-      "dst.tcp.guba.labda.received.dropped\n"
+      "*.tcp.guba.*.*", "dst.tcp.guba.labda.received.dropped\n"
+      "src.tcp.guba.frizbi.left.stored\n"
     },
     {
       "*.guba.*i.*.*", "global.guba.gumi.diszno.frozen.suppressed\n"
@@ -342,9 +343,11 @@ ParameterizedTestParameters(stats_query, test_stats_query_list)
     },
     {
       "src.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed\n"
-      "src.tcp.guba.frizbi.left.stored\n"
       "src.file.guba.processed.processed\n"
+      "src.tcp.guba.frizbi.left.stored\n"
     },
+    {"dst*", "dst.tcp.guba.labda.received.dropped\n"},
+    {"dst.*", "dst.tcp.guba.labda.received.dropped\n"},
     {"dst.*.*", "dst.tcp.guba.labda.received.dropped\n"},
     {"dst.*.*.*", "dst.tcp.guba.labda.received.dropped\n"},
     {"dst.*.*.*.*", "dst.tcp.guba.labda.received.dropped\n"},

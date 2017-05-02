@@ -256,7 +256,7 @@ void
 stats_registry_init(void)
 {
   stats_cluster_container = g_hash_table_new_full((GHashFunc) stats_cluster_hash, (GEqualFunc) stats_cluster_equal, NULL,
-                                       (GDestroyNotify) stats_cluster_free);
+                                                  (GDestroyNotify) stats_cluster_free);
   g_static_mutex_init(&stats_mutex);
 }
 
@@ -273,4 +273,3 @@ stats_registry_get_container(void)
 {
   return stats_cluster_container;
 }
-
