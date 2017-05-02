@@ -87,14 +87,14 @@ struct _StatsCounterGroup
 typedef void (*StatsCounterGroupInit)(StatsCounterGroup *counter_group);
 void stats_counter_group_free(StatsCounterGroup *self);
 
-typedef struct _StatsClusterKey
+struct _StatsClusterKey
 {
   /* syslog-ng component/driver/subsystem that registered this cluster */
   guint16 component;
   const gchar *id;
   const gchar *instance;
   StatsCounterGroupInit counter_group_init;
-} StatsClusterKey;
+};
 
 /* NOTE: This struct can only be used by the stats implementation and not by client code. */
 
