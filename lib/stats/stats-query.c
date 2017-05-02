@@ -34,6 +34,7 @@ typedef struct _NamedStatsCounterItem
   gint index;
 } NamedStatsCounterItem;
 
+static GHashTable *counter_index;
 typedef gboolean (*StatsClusterCounterCb)(StatsCluster *sc, NamedStatsCounterItem *named_counter,
                                           StatsFormatCb format_cb, gpointer user_data);
 
@@ -305,4 +306,17 @@ gboolean
 stats_query_list_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result)
 {
   return _stats_query_list(expr, format_cb, result, TRUE);
+}
+
+void
+stats_query_index_init(void)
+{
+  counter_index = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
+}
+
+void
+stats_query_index_deinit(void)
+{
+  g_hash_table_destroy(counter_index);
+  counter_index = NULL;
 }

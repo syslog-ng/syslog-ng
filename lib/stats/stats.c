@@ -22,11 +22,12 @@
  *
  */
 
-#include "stats/stats.h"
-#include "stats/stats-syslog.h"
-#include "stats/stats-registry.h"
-#include "stats/stats-log.h"
 #include "stats/stats-control.h"
+#include "stats/stats-log.h"
+#include "stats/stats-query.h"
+#include "stats/stats-registry.h"
+#include "stats/stats-syslog.h"
+#include "stats/stats.h"
 #include "timeutils.h"
 
 #include <string.h>
@@ -238,6 +239,7 @@ void
 stats_init(void)
 {
   stats_registry_init();
+  stats_query_index_init();
   stats_register_control_commands();
 }
 
@@ -245,6 +247,7 @@ void
 stats_destroy(void)
 {
   stats_registry_deinit();
+  stats_query_index_deinit();
 }
 
 void

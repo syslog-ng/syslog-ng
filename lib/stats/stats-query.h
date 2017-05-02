@@ -36,5 +36,7 @@ gboolean stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb for
 gboolean stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 gboolean stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 
-#endif
+void stats_query_index_init(void);
+void stats_query_index_deinit(void);
 
+#endif
