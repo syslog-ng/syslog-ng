@@ -25,7 +25,7 @@
 #define STATS_CLUSTER_H_INCLUDED 1
 
 #include "stats/stats-counter.h"
-#include "stats/stats-cluster-logpipe.h" //TODO: REMOVE
+#include "stats/stats-cluster-logpipe.h" 
 
 enum
 {
