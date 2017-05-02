@@ -70,7 +70,10 @@ stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, 
 const gchar *
 stats_cluster_get_type_name(StatsCluster *self, gint type)
 {
-  return self->counter_group.counter_names[type];
+  if (type < self->counter_group.capacity)
+    return self->counter_group.counter_names[type];
+
+  return "";
 }
 
 static const gchar *
