@@ -70,7 +70,9 @@ test_diskq_become_full(gboolean reliable)
 
   q->persist_name = "test_diskq";
   stats_lock();
-  stats_register_counter(0, SCS_DESTINATION, q->persist_name, NULL, SC_TYPE_DROPPED, &q->dropped_messages);
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
+  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->dropped_messages);
   stats_counter_set(q->dropped_messages, 0);
   stats_unlock();
   unlink(DISKQ_FILENAME);

@@ -71,7 +71,9 @@ _initialize_counter_hash(void)
   for (i = 0; i < n; i++)
     {
       StatsCounterItem *item = NULL;
-      stats_register_counter(0, counters[i].component, counters[i].id, counters[i].instance, counters[i].type, &item);
+      StatsClusterKey sc_key;
+      stats_cluster_logpipe_key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance );
+      stats_register_counter(0, &sc_key, counters[i].type, &item);
     }
 
   stats_unlock();
@@ -148,7 +150,9 @@ TestSuite(cluster_query_key, .init = app_startup, .fini = app_shutdown);
 Test(cluster_query_key, test_global_key)
 {
   const gchar *expected_key = "dst.file.d_file.instance";
-  StatsCluster *sc = stats_cluster_new(SCS_DESTINATION|SCS_FILE, "d_file", "instance");
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance" );
+  StatsCluster *sc = stats_cluster_new(&sc_key);
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",
                    sc->query_key, expected_key);

@@ -203,10 +203,11 @@ log_source_init(LogPipe *s)
   LogSource *self = (LogSource *) s;
 
   stats_lock();
-  stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance,
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance );
+  stats_register_counter(self->stats_level, &sc_key,
                          SC_TYPE_PROCESSED, &self->recvd_messages);
-  stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance,
-                         SC_TYPE_STAMP, &self->last_message_seen);
+  stats_register_counter(self->stats_level, &sc_key, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
   return TRUE;
 }
@@ -217,10 +218,10 @@ log_source_deinit(LogPipe *s)
   LogSource *self = (LogSource *) s;
 
   stats_lock();
-  stats_unregister_counter(self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED,
-                           &self->recvd_messages);
-  stats_unregister_counter(self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP,
-                           &self->last_message_seen);
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance );
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->recvd_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
   return TRUE;
 }
@@ -301,14 +302,16 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       stats_lock();
 
-      stats_register_and_increment_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL),
-                                                   msg->timestamps[LM_TS_RECVD].tv_sec);
+      StatsClusterKey sc_key;
+      stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SOURCE, NULL,  log_msg_get_value(msg, LM_V_HOST, NULL) );
+
+      stats_register_and_increment_dynamic_counter(2, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
       if (stats_check_level(3))
         {
-          stats_register_and_increment_dynamic_counter(3, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM,
-                                                       NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
-          stats_register_and_increment_dynamic_counter(3, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM,
-                                                       NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL) );
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_cluster_logpipe_key_set(&sc_key, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL) );
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
         }
 
       stats_unlock();

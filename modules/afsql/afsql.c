@@ -1188,10 +1188,13 @@ afsql_dd_init(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                         SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                         SC_TYPE_DROPPED, &self->dropped_messages);
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                  afsql_dd_format_stats_instance(self) );
+    stats_register_counter(0, &sc_key, SC_TYPE_STORED, &self->stored_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  }
   stats_unlock();
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, afsql_dd_format_persist_sequence_number(self)));
@@ -1316,10 +1319,13 @@ afsql_dd_init(LogPipe *s)
 error:
 
   stats_lock();
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                           SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                           SC_TYPE_DROPPED, &self->dropped_messages);
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                  afsql_dd_format_stats_instance(self) );
+    stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  }
   stats_unlock();
 
   return FALSE;
@@ -1337,10 +1343,11 @@ afsql_dd_deinit(LogPipe *s)
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
   stats_lock();
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                           SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                           SC_TYPE_DROPPED, &self->dropped_messages);
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                afsql_dd_format_stats_instance(self) );
+  stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))
