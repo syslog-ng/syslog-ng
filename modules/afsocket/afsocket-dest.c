@@ -553,8 +553,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   log_writer_options_defaults(&self->writer_options);
   self->super.super.super.init = afsocket_dd_init;
   self->super.super.super.deinit = afsocket_dd_deinit;
-  /* NULL behaves as if log_msg_forward_msg was specified */
-  self->super.super.super.queue = NULL;
   self->super.super.super.free_fn = afsocket_dd_free;
   self->super.super.super.notify = afsocket_dd_notify;
   self->super.super.super.generate_persist_name = afsocket_dd_format_name;
