@@ -213,6 +213,15 @@ stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, g
   return _stats_query_get(expr, format_cb, result, TRUE);
 }
 
+gboolean
+_is_timestamp(gchar *counter_name)
+{
+   gint counter_name_len = strlen(counter_name);
+   gint timestamp_len = strlen(".stamp");
+
+   return timestamp_len < counter_name_len && g_str_equal(counter_name + (counter_name_len - timestamp_len), ".stamp");
+}
+
 void
 _sum_selected_counters(GList *counters, gpointer user_data)
 {
@@ -222,7 +231,8 @@ _sum_selected_counters(GList *counters, gpointer user_data)
   for (c = counters; c; c = c->next)
     {
       StatsCounterItem *counter = c->data;
-      *sum += stats_counter_get(counter);
+      if (!_is_timestamp(stats_counter_get_name(counter)))
+        *sum += stats_counter_get(counter);
     }
 }
 
