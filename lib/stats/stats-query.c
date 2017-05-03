@@ -57,16 +57,19 @@ _construct_counter_item_name(StatsCluster *sc, gint type)
 }
 
 static void
-_add_counter_to_index(StatsCluster *sc, gint type, StatsCounterItem *counter)
+_add_counter_to_index(StatsCluster *sc, gint type)
 {
+  StatsCounterItem *counter = &sc->counter_group.counters[type];
   gchar *counter_full_name = NULL;
 
   counter_full_name = stats_counter_get_name(counter);
   if (counter_full_name == NULL)
-    counter_full_name = _construct_counter_item_name(sc, type);
+    {
+      counter_full_name = _construct_counter_item_name(sc, type);
+      counter->name = counter_full_name;
+    }
 
-  sc->counter_group.counters[type].name = counter_full_name;
-  g_hash_table_insert(counter_index, counter_full_name, &sc->counter_group.counters[type]);
+  g_hash_table_insert(counter_index, counter_full_name, counter);
   sc->indexed_mask |= type;
 }
 
@@ -83,7 +86,7 @@ _index_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer 
 {
   if (!stats_cluster_is_indexed(sc, type) && stats_cluster_is_alive(sc, type))
     {
-      _add_counter_to_index(sc, type, counter);
+      _add_counter_to_index(sc, type);
     }
   else if (stats_cluster_is_indexed(sc, type) && !stats_cluster_is_alive(sc, type))
     {
@@ -213,13 +216,13 @@ stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, g
   return _stats_query_get(expr, format_cb, result, TRUE);
 }
 
-gboolean
+static gboolean
 _is_timestamp(gchar *counter_name)
 {
-   gint counter_name_len = strlen(counter_name);
-   gint timestamp_len = strlen(".stamp");
+  gint counter_name_len = strlen(counter_name);
+  gint timestamp_len = strlen(".stamp");
 
-   return timestamp_len < counter_name_len && g_str_equal(counter_name + (counter_name_len - timestamp_len), ".stamp");
+  return timestamp_len < counter_name_len && g_str_equal(counter_name + (counter_name_len - timestamp_len), ".stamp");
 }
 
 void
