@@ -48,3 +48,9 @@ stats_reset_non_stored_counters(void)
   stats_unlock();
 }
 
+void
+stats_counter_free(StatsCounterItem *counter)
+{
+  if (counter->name)
+    g_free(counter->name);
+}

@@ -53,23 +53,23 @@ _append_reset_msg_if_found_matching_counters(gboolean found_match, GString *resu
 }
 
 static gboolean
-_ctl_format_get(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+_ctl_format_get(StatsCounterItem *ctr, gpointer user_data)
 {
   GString *str = (GString *)user_data;
-  g_string_append_printf(str, "%s.%s: %d\n", sc->query_key, ctr_name ? ctr_name : "", ctr->value);
+  g_string_append_printf(str, "%s: %d\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
   return TRUE;
 }
 
 static gboolean
-_ctl_format_name_without_value(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+_ctl_format_name_without_value(StatsCounterItem *ctr, gpointer user_data)
 {
   GString *str = (GString *)user_data;
-  g_string_append_printf(str, "%s.%s\n", sc->query_key, ctr_name ? ctr_name : "");
+  g_string_append_printf(str, "%s\n", stats_counter_get_name(ctr));
   return TRUE;
 }
 
 static gboolean
-_ctl_format_get_sum(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data)
+_ctl_format_get_sum(StatsCounterItem *ctr, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GString *result = (GString *) args[0];

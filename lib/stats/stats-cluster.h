@@ -111,6 +111,7 @@ typedef struct _StatsCluster
   StatsCounterGroup counter_group;
   guint16 use_count;
   guint16 live_mask;
+  guint16 indexed_mask;
   guint16 dynamic:1;
   gchar *query_key;
 } StatsCluster;
@@ -129,6 +130,7 @@ guint stats_cluster_hash(const StatsCluster *self);
 StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
+gboolean stats_cluster_is_indexed(StatsCluster *self, gint type);
 
 StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);

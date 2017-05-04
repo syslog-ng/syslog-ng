@@ -219,7 +219,18 @@ _stats_build_query_key(StatsCluster *self)
 gboolean
 stats_cluster_is_alive(StatsCluster *self, gint type)
 {
+  g_assert(type < self->counter_group.capacity);
+
   return ((1<<type) & self->live_mask);
+}
+
+
+gboolean
+stats_cluster_is_indexed(StatsCluster *self, gint type)
+{
+  g_assert(type < self->counter_group.capacity);
+
+  return ((1<<type) & self->indexed_mask);
 }
 
 StatsCluster *
@@ -242,11 +253,18 @@ stats_counter_group_free(StatsCounterGroup *self)
     self->free_fn(self);
 }
 
+static void
+_free_stats_counters_in_cluster(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+{
+  stats_counter_free(counter);
+}
+
 void
 stats_cluster_free(StatsCluster *self)
 {
   _stats_cluster_key_cloned_free(&self->key);
   g_free(self->query_key);
   stats_counter_group_free(&self->counter_group);
+  stats_cluster_foreach_counter(self, _free_stats_counters_in_cluster, NULL);
   g_free(self);
 }

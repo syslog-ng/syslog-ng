@@ -29,6 +29,7 @@
 typedef struct _StatsCounterItem
 {
   gint value;
+  gchar *name;
 } StatsCounterItem;
 
 
@@ -72,6 +73,15 @@ stats_counter_get(StatsCounterItem *counter)
   return result;
 }
 
+static inline gchar *
+stats_counter_get_name(StatsCounterItem *counter)
+{
+  if (counter && counter->name)
+    return counter->name;
+  return NULL;
+}
+
 void stats_reset_non_stored_counters(void);
+void stats_counter_free(StatsCounterItem *counter);
 
 #endif
