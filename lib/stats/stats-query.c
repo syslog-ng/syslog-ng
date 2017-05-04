@@ -219,10 +219,8 @@ stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, g
 static gboolean
 _is_timestamp(gchar *counter_name)
 {
-  gint counter_name_len = strlen(counter_name);
-  gint timestamp_len = strlen(".stamp");
-
-  return timestamp_len < counter_name_len && g_str_equal(counter_name + (counter_name_len - timestamp_len), ".stamp");
+  gchar *last_dot = strrchr(counter_name, '.');
+  return (g_strcmp0(last_dot, ".stamp") == 0);
 }
 
 void
