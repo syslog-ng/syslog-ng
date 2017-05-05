@@ -30,6 +30,7 @@
 
 
 static GHashTable *counter_index;
+static GStaticMutex stats_query_mutex = G_STATIC_MUTEX_INIT;
 
 static void
 _setup_filter_expression(const gchar *expr, gchar **key_str)
@@ -108,11 +109,13 @@ _update_index(void)
   gpointer key, value;
   GHashTableIter iter;
 
+  g_static_mutex_lock(&stats_query_mutex);
   g_hash_table_iter_init(&iter, counter_container);
   while (g_hash_table_iter_next(&iter, &key, &value))
     {
       _update_indexes_of_cluster_if_needed(key, value);
     }
+  g_static_mutex_unlock(&stats_query_mutex);
 }
 
 static gboolean
@@ -142,6 +145,8 @@ _query_counter_hash(gchar *key_str)
 
   _update_index();
   single_match = _is_single_match(key_str);
+
+  g_static_mutex_lock(&stats_query_mutex);
   g_hash_table_iter_init(&iter, counter_index);
   while (g_hash_table_iter_next(&iter, &key, &value))
     {
@@ -154,6 +159,8 @@ _query_counter_hash(gchar *key_str)
             break;
         }
     }
+  g_static_mutex_unlock(&stats_query_mutex);
+
   g_pattern_spec_free(pattern);
   return counters;
 }
