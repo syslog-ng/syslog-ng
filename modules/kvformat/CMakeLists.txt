@@ -3,8 +3,6 @@ set(KVFORMAT_SOURCES
     format-welf.h
     kv-parser.c
     kv-parser.h
-    kv-scanner.c
-    kv-scanner.h
     linux-audit-parser.c
     linux-audit-parser.h
     kv-parser-parser.c

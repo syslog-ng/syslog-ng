@@ -18,7 +18,7 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#include "kv-scanner.h"
+#include "scanner/kv-scanner/kv-scanner.h"
 #include "linux-audit-parser.h"
 #include "testutils.h"
 

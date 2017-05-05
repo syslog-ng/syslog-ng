@@ -15,6 +15,7 @@ include lib/compat/Makefile.am
 include lib/logmsg/Makefile.am
 include lib/scanner/csv-scanner/Makefile.am
 include lib/scanner/list-scanner/Makefile.am
+include lib/scanner/kv-scanner/Makefile.am
 include lib/str-repr/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @PACKAGE_VERSION@ | cut -d. -f1,2)
@@ -240,6 +241,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/block-ref-grammar.y		\
 	lib/pragma-grammar.y		\
 	$(csvscanner_sources)		\
+	$(kvscanner_sources)		\
 	$(listscanner_sources)		\
 	$(transport_sources)		\
 	$(logproto_sources)		\
