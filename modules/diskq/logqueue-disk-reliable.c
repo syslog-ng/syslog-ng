@@ -149,6 +149,8 @@ _move_message_from_qbacklog_to_qreliable(LogQueueDiskReliable *self)
   g_queue_push_head(self->qreliable, ptr_opt);
   g_queue_push_head(self->qreliable, ptr_msg);
   g_queue_push_head(self->qreliable, ptr_pos);
+
+  stats_counter_add(self->super.super.memory_usage, log_msg_get_size(ptr_msg));
 }
 
 static void
@@ -158,7 +160,6 @@ _rewind_from_qbacklog(LogQueueDiskReliable *self, gint64 new_pos)
   g_assert((self->qbacklog->length % 3) == 0);
 
   gint rewind_backlog_queue = _find_pos_in_qbacklog(self, new_pos);
-
   for (i = 0; i <= rewind_backlog_queue; i++)
     {
       _move_message_from_qbacklog_to_qreliable(self);
@@ -174,7 +175,6 @@ _rewind_backlog(LogQueueDisk *s, guint rewind_count)
   guint number_of_messages_stay_in_backlog;
   gint64 new_read_head;
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
-
   rewind_count = MIN(rewind_count, qdisk_get_backlog_count (self->super.qdisk));
   number_of_messages_stay_in_backlog = qdisk_get_backlog_count (self->super.qdisk) - rewind_count;
   new_read_head = qdisk_get_backlog_head (self->super.qdisk);
@@ -182,7 +182,6 @@ _rewind_backlog(LogQueueDisk *s, guint rewind_count)
     {
       new_read_head = qdisk_skip_record(self->super.qdisk, new_read_head);
     }
-
   _rewind_from_qbacklog(self, new_read_head);
 
   qdisk_set_backlog_count (self->super.qdisk, number_of_messages_stay_in_backlog);
@@ -204,6 +203,8 @@ _pop_head(LogQueueDisk *s, LogPathOptions *path_options)
       if (pos == qdisk_get_reader_head (self->super.qdisk))
         {
           msg = g_queue_pop_head (self->qreliable);
+          stats_counter_sub(self->super.super.memory_usage, log_msg_get_size(msg));
+
           POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qreliable), path_options);
           _skip_message (s);
           if (self->super.super.use_backlog)
@@ -289,6 +290,7 @@ _push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, cons
       g_queue_push_tail (self->qreliable, LOG_PATH_OPTIONS_TO_POINTER(path_options));
       log_msg_ref (msg);
 
+      stats_counter_add(self->super.super.memory_usage, log_msg_get_size(msg));
       local_options->ack_needed = FALSE;
     }
 
