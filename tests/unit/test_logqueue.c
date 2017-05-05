@@ -190,12 +190,30 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   gint i;
 
   q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+
+  StatsClusterKey sc_key;
+  stats_lock();
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
+  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
+  stats_register_counter(0, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
+  stats_unlock();
+
   log_queue_set_use_backlog(q, TRUE);
+
+  cr_assert_eq(q->queued_messages->value, 0);
 
   fed_messages = 0;
   acked_messages = 0;
+  feed_some_messages(q, 1, &parse_options);
+  cr_assert_eq(stats_counter_get(q->queued_messages), 1);
+  cr_assert_neq(stats_counter_get(q->memory_usage), 0);
+  gint size_when_single_msg = stats_counter_get(q->memory_usage);
+
   for (i = 0; i < 10; i++)
     feed_some_messages(q, 10, &parse_options);
+
+  cr_assert_eq(stats_counter_get(q->queued_messages), 101);
+  cr_assert_eq(stats_counter_get(q->memory_usage), 101*size_when_single_msg);
 
   send_some_messages(q, fed_messages);
   app_ack_some_messages(q, fed_messages);
