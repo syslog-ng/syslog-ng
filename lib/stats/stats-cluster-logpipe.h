@@ -34,6 +34,7 @@ typedef enum
   SC_TYPE_QUEUED,    /* number of messages on disk */
   SC_TYPE_SUPPRESSED,/* number of messages suppressed */
   SC_TYPE_STAMP,     /* timestamp */
+  SC_TYPE_MEMORY_USAGE,
   SC_TYPE_MAX
 } StatsCounterGroupLogPipe;
 

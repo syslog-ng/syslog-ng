@@ -67,6 +67,7 @@ struct _LogWriter
   StatsCounterItem *suppressed_messages;
   StatsCounterItem *processed_messages;
   StatsCounterItem *queued_messages;
+  StatsCounterItem *memory_usage;
   LogPipe *control;
   LogWriterOptions *options;
   LogMessage *last_msg;
@@ -1272,7 +1273,7 @@ _register_counters(LogWriter *self)
     cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-
+    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
     if (cluster != NULL)
       stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
   }
@@ -1294,7 +1295,7 @@ log_writer_init(LogPipe *s)
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     _register_counters(self);
 
-  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages);
+  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
   if (self->proto)
     {
       LogProtoClient *proto;
@@ -1327,6 +1328,7 @@ _unregister_counters(LogWriter *self)
     stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   }
   stats_unlock();
 
@@ -1351,8 +1353,8 @@ log_writer_deinit(LogPipe *s)
   ml_batched_timer_unregister(&self->suppress_timer);
   ml_batched_timer_unregister(&self->mark_timer);
 
-  log_queue_set_counters(self->queue, NULL, NULL);
   _unregister_counters(self);
+  log_queue_set_counters(self->queue, NULL, NULL, NULL);
 
   return TRUE;
 }
