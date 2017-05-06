@@ -308,25 +308,20 @@ _clone(KVScanner *self)
   return scanner;
 }
 
-void
-kv_scanner_free(KVScanner *self)
+void kv_scanner_free_method(KVScanner *self)
 {
-  if (!self)
-    return;
   g_string_free(self->key, TRUE);
   g_string_free(self->value, TRUE);
   g_string_free(self->decoded_value, TRUE);
   if (self->stray_words)
     g_string_free(self->stray_words, TRUE);
   g_free(self->pair_separator);
-  g_free(self);
 }
 
-KVScanner *
-kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words)
+void
+kv_scanner_init_instance(KVScanner *self, gchar value_separator, const gchar *pair_separator,
+                         gboolean extract_stray_words)
 {
-  KVScanner *self = g_new0(KVScanner, 1);
-
   self->key = g_string_sized_new(32);
   self->value = g_string_sized_new(64);
   self->decoded_value = g_string_sized_new(64);
@@ -335,7 +330,16 @@ kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extr
   self->value_separator = value_separator;
   self->pair_separator = g_strdup(pair_separator ? : ", ");
   self->pair_separator_len = self->pair_separator ? strlen(self->pair_separator) : 0;
+
   self->clone = _clone;
+  self->free_fn = kv_scanner_free_method;
+}
+
+KVScanner *
+kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words)
+{
+  KVScanner *self = g_new0(KVScanner, 1);
+  kv_scanner_init_instance(self, value_separator, pair_separator, extract_stray_words);
 
   return self;
 }
