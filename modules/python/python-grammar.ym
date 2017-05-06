@@ -94,6 +94,7 @@ python_dd_option
             python_dd_set_imports(last_driver, $3);
           }
         | KW_OPTIONS '(' python_dd_custom_options ')'
+        | threaded_dest_driver_option
         | value_pair_option
           {
             python_dd_set_value_pairs(last_driver, $1);
