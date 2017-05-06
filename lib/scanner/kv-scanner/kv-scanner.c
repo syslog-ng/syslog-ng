@@ -49,7 +49,7 @@ _locate_start_of_key(KVScanner *self, const gchar *end_of_key, const gchar **sta
   const gchar *cur;
 
   cur = end_of_key;
-  while (cur > input && _is_valid_key_character(*(cur - 1)))
+  while (cur > input && self->is_valid_key_character(*(cur - 1)))
     cur--;
   *start_of_key = cur;
 }
@@ -146,7 +146,7 @@ _key_follows(KVScanner *self, const gchar *cur)
 {
   const gchar *key = cur;
 
-  while (_is_valid_key_character(*key))
+  while (self->is_valid_key_character(*key))
     key++;
 
   while (*key == ' ')
@@ -305,6 +305,7 @@ _clone(KVScanner *self)
                                       self->pair_separator,
                                       self->stray_words != NULL);
   kv_scanner_set_transform_value(scanner, self->transform_value);
+  kv_scanner_set_valid_key_character_func(scanner, self->is_valid_key_character);
   return scanner;
 }
 
@@ -330,6 +331,7 @@ kv_scanner_init_instance(KVScanner *self, gchar value_separator, const gchar *pa
   self->value_separator = value_separator;
   self->pair_separator = g_strdup(pair_separator ? : ", ");
   self->pair_separator_len = self->pair_separator ? strlen(self->pair_separator) : 0;
+  self->is_valid_key_character = _is_valid_key_character;
 
   self->clone = _clone;
   self->free_fn = kv_scanner_free_method;
