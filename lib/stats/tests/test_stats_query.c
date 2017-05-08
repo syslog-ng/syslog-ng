@@ -86,7 +86,7 @@ _test_format_log_msg_get(StatsCounterItem *ctr, gpointer user_data)
   LogMessage *msg = (LogMessage *)user_data;
 
   name = g_strdup_printf("%s", stats_counter_get_name(ctr));
-  value = g_strdup_printf("%d", stats_counter_get(ctr));
+  value = g_strdup_printf("%"G_GSIZE_FORMAT, stats_counter_get(ctr));
 
   log_msg_set_value_by_name(msg, name, value, -1);
 
@@ -100,7 +100,7 @@ static gboolean
 _test_format_str_get(StatsCounterItem *ctr, gpointer user_data)
 {
   GString *str = (GString *)user_data;
-  g_string_append_printf(str, "%s: %d\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
+  g_string_append_printf(str, "%s: %"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
 
   return TRUE;
 }
