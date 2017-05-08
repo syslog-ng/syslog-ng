@@ -595,7 +595,7 @@ Test(kv_scanner, spaces_around_value_separator_are_ignored)
   {
     .kv_separator=':',
   };
-  _IMPL_EXPECT_KV(config, "key1: value1 key2 : value2 key3 :value3 ",
+  _IMPL_EXPECT_KV(config, "key1: \"value1\" key2 : value2 key3 :value3 ",
   {"key1", "value1"},
   {"key2", "value2"},
   {"key3", "value3"});
