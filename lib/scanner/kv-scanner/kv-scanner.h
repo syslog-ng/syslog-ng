@@ -30,6 +30,7 @@
 typedef struct _KVScanner KVScanner;
 
 typedef gboolean (*KVTransformValueFunc)(KVScanner *);
+typedef void (*KVExtractAnnotationFunc)(KVScanner *);
 typedef gboolean (*KVIsValidKeyCharFunc)(gchar c);
 
 struct _KVScanner
@@ -47,6 +48,7 @@ struct _KVScanner
   gchar stop_char;
 
   KVTransformValueFunc transform_value;
+  KVExtractAnnotationFunc extract_annotation;
   KVIsValidKeyCharFunc is_valid_key_character;
   KVScanner* (*clone)(KVScanner *self);
   void (*free_fn)(KVScanner *self);
@@ -92,6 +94,12 @@ static inline void
 kv_scanner_set_transform_value(KVScanner *self, KVTransformValueFunc transform_value)
 {
   self->transform_value = transform_value;
+}
+
+static inline void
+kv_scanner_set_extract_annotation_func(KVScanner *self, KVExtractAnnotationFunc extract_annotation)
+{
+  self->extract_annotation = extract_annotation;
 }
 
 static inline void

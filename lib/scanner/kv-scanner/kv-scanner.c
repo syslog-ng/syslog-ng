@@ -278,6 +278,13 @@ _decode_value(KVScanner *self)
 }
 
 static void
+_extract_optional_annotation(KVScanner *self)
+{
+  if (self->extract_annotation)
+    self->extract_annotation(self);
+}
+
+static void
 _extract_value(KVScanner *self)
 {
   self->value_was_quoted = FALSE;
@@ -307,6 +314,8 @@ kv_scanner_scan_next(KVScanner *s)
   if (!_extract_key(self))
     return FALSE;
 
+  _extract_optional_annotation(self);
+
   _extract_value(self);
   _transform_value(s);
 
@@ -322,6 +331,7 @@ _clone(KVScanner *self)
   kv_scanner_set_transform_value(scanner, self->transform_value);
   kv_scanner_set_valid_key_character_func(scanner, self->is_valid_key_character);
   kv_scanner_set_stop_character(scanner, self->stop_char);
+  kv_scanner_set_extract_annotation_func(scanner, self->extract_annotation);
   return scanner;
 }
 
