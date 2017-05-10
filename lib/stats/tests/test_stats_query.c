@@ -49,6 +49,34 @@ typedef struct _QueryTestCase
 } QueryTestCase;
 
 
+static gchar *
+_construct_view_name(const gchar *counter_id)
+{
+  GString *aliased_name = g_string_new("");
+  aliased_name = g_string_append(aliased_name, counter_id);
+  aliased_name = g_string_append(aliased_name, ".aliased");
+  return g_string_free(aliased_name, FALSE);
+}
+
+static GList *
+_construct_view_query_list(const gchar *counter_instance)
+{
+  GList *queries = NULL;
+  GString *query = g_string_new("*");
+  query = g_string_append(query, counter_instance);
+  query = g_string_append(query, ".*");
+  gchar *q = g_string_free(query, FALSE);
+  queries = g_list_append(queries, q);
+  return queries;
+}
+
+void
+_add_two_to_value(GList *counters, StatsCounterItem **result)
+{
+  StatsCounterItem *c = counters->data;
+  stats_counter_set(*result, stats_counter_get(c) + 2);
+}
+
 static void
 _initialize_counter_hash(void)
 {
@@ -58,7 +86,7 @@ _initialize_counter_hash(void)
     {SCS_CENTER, "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
     {SCS_FILE | SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED},
     {SCS_GLOBAL, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_PIPE | SCS_SOURCE, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
+    {SCS_PIPE | SCS_SOURCE, "guba.gumi.disz", "frozen", SC_TYPE_SUPPRESSED},
     {SCS_TCP | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
     {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_STORED},
   };
@@ -72,8 +100,12 @@ _initialize_counter_hash(void)
     {
       StatsCounterItem *item = NULL;
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance );
+      stats_cluster_logpipe_key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance);
       stats_register_counter(0, &sc_key, counters[i].type, &item);
+
+      gchar *name = _construct_view_name(counters[i].id);
+      GList *queries = _construct_view_query_list(counters[i].instance);
+      stats_views_add_new(name, queries, _add_two_to_value);
     }
 
   stats_unlock();
@@ -145,6 +177,7 @@ _test_format_list(StatsCounterItem *ctr, gpointer user_data)
   return TRUE;
 }
 
+
 TestSuite(cluster_query_key, .init = app_startup, .fini = app_shutdown);
 
 Test(cluster_query_key, test_global_key)
@@ -165,7 +198,7 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_log_msg_out)
   static QueryTestCase test_cases[] =
   {
     {"dst.tcp.guba.labda.received.dropped", "0"},
-    {"src.pipe.guba.gumi.diszno.frozen.suppressed", "0"},
+    {"src.pipe.guba.gumi.disz.frozen.suppressed", "0"},
   };
 
   return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
@@ -191,40 +224,55 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
     {
       "*.*", "dst.tcp.guba.labda.received.dropped: 0\n"
       "global.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.tcp.guba.frizbi.left.stored: 0\n"
       "src.file.guba.processed.processed: 0\n"
       "center.guba.polo.frozen.suppressed: 0\n"
-      "src.tcp.guba.frizbi.left.stored: 0\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"
+      "guba.frizbi.aliased: 2\n"
+      "guba.gumi.diszno.aliased: 2\n"
+      "guba.polo.aliased: 2\n"
+      "guba.aliased: 2\n"
+      "guba.gumi.disz.aliased: 2\n"
+      "guba.labda.aliased: 2\n"
     },
     {"center.*.*", "center.guba.polo.frozen.suppressed: 0\n"},
     {"cent*", "center.guba.polo.frozen.suppressed: 0\n"},
-    {"src.pipe.guba.gumi.diszno.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
-    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
-    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
-    {"src.pipe.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.gumi.disz.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
+    {"src.pipe.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
     {
       "*.tcp.guba.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"
       "src.tcp.guba.frizbi.left.stored: 0\n"
     },
     {
       "*.guba.*i.*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
       "src.tcp.guba.frizbi.left.stored: 0\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"
     },
     {
       "*.guba.gum?.*.*", "global.guba.gumi.diszno.frozen.suppressed: 0\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"
     },
     {
-      "src.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed: 0\n"
+      "src.*.*", "src.tcp.guba.frizbi.left.stored: 0\n"
       "src.file.guba.processed.processed: 0\n"
-      "src.tcp.guba.frizbi.left.stored: 0\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"
     },
     {"dst.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
     {"dst.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
     {"dst.*.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
     {"src.java.*.*", ""},
     {"src.ja*.*.*", ""},
+    {
+      "*.aliased",
+      "guba.frizbi.aliased: 2\n"
+      "guba.gumi.diszno.aliased: 2\n"
+      "guba.polo.aliased: 2\n"
+      "guba.aliased: 2\n"
+      "guba.gumi.disz.aliased: 2\n"
+      "guba.labda.aliased: 2\n"
+    },
   };
 
   return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
@@ -246,7 +294,7 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_sum_log_msg_out)
   static QueryTestCase test_cases[] =
   {
     {"dst.tcp.guba.labda.received.dropped", "0"},
-    {"src.pipe.guba.gumi.diszno.frozen.suppressed", "0"},
+    {"src.pipe.guba.gumi.disz.frozen.suppressed", "0"},
   };
 
   return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
@@ -269,10 +317,10 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_sum_str_out)
 {
   static QueryTestCase test_cases[] =
   {
-    {"*.*", "0"},
+    {"*.*", "12"},
     {"center.*.*", "0"},
     {"cent*", "0"},
-    {"src.pipe.guba.gumi.diszno.*.*", "0"},
+    {"src.pipe.guba.gumi.disz.*.*", "0"},
     {"src.pipe.guba.gumi.*.*", "0"},
     {"src.pipe.guba.*.*", "0"},
     {"src.pipe.*.*", "0"},
@@ -309,42 +357,55 @@ ParameterizedTestParameters(stats_query, test_stats_query_list)
       NULL,
       "dst.tcp.guba.labda.received.dropped\n"
       "global.guba.gumi.diszno.frozen.suppressed\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed\n"
+      "src.tcp.guba.frizbi.left.stored\n"
       "src.file.guba.processed.processed\n"
       "center.guba.polo.frozen.suppressed\n"
-      "src.tcp.guba.frizbi.left.stored\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed\n"
+      "guba.frizbi.aliased\n"
+      "guba.gumi.diszno.aliased\n"
+      "guba.polo.aliased\n"
+      "guba.aliased\n"
+      "guba.gumi.disz.aliased\n"
+      "guba.labda.aliased\n"
     },
     {
-      "*.*", "dst.tcp.guba.labda.received.dropped\n"
+      "*.*",
+      "dst.tcp.guba.labda.received.dropped\n"
       "global.guba.gumi.diszno.frozen.suppressed\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed\n"
+      "src.tcp.guba.frizbi.left.stored\n"
       "src.file.guba.processed.processed\n"
       "center.guba.polo.frozen.suppressed\n"
-      "src.tcp.guba.frizbi.left.stored\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed\n"
+      "guba.frizbi.aliased\n"
+      "guba.gumi.diszno.aliased\n"
+      "guba.polo.aliased\n"
+      "guba.aliased\n"
+      "guba.gumi.disz.aliased\n"
+      "guba.labda.aliased\n"
     },
     {"center.*.*", "center.guba.polo.frozen.suppressed\n"},
     {"cent*", "center.guba.polo.frozen.suppressed\n"},
-    {"src.pipe.guba.gumi.diszno.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed\n"},
-    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed\n"},
-    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed\n"},
-    {"src.pipe.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed\n"},
+    {"src.pipe.guba.gumi.disz.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed\n"},
+    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed\n"},
+    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed\n"},
+    {"src.pipe.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed\n"},
     {
       "*.tcp.guba.*.*", "dst.tcp.guba.labda.received.dropped\n"
       "src.tcp.guba.frizbi.left.stored\n"
     },
     {
       "*.guba.*i.*.*", "global.guba.gumi.diszno.frozen.suppressed\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed\n"
       "src.tcp.guba.frizbi.left.stored\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed\n"
     },
     {
       "*.guba.gum?.*.*", "global.guba.gumi.diszno.frozen.suppressed\n"
-      "src.pipe.guba.gumi.diszno.frozen.suppressed\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed\n"
     },
     {
-      "src.*.*", "src.pipe.guba.gumi.diszno.frozen.suppressed\n"
+      "src.*.*", "src.tcp.guba.frizbi.left.stored\n"
       "src.file.guba.processed.processed\n"
-      "src.tcp.guba.frizbi.left.stored\n"
+      "src.pipe.guba.gumi.disz.frozen.suppressed\n"
     },
     {"dst*", "dst.tcp.guba.labda.received.dropped\n"},
     {"dst.*", "dst.tcp.guba.labda.received.dropped\n"},
