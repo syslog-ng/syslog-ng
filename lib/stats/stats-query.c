@@ -48,6 +48,16 @@ _free_view_record(gpointer r)
   g_free(record);
 }
 
+void
+stats_views_add_new(gchar *name, GList *queries, const AggregatedMetricsCb aggregate)
+{
+  ViewRecord *record = g_new0(ViewRecord, 1);
+  record->counter = g_new0(StatsCounterItem, 1);
+  record->counter->name = name;
+  record->queries = queries;
+  record->aggregate = aggregate;
+  g_hash_table_insert(stats_views, name, record);
+}
 
 static void
 _setup_filter_expression(const gchar *expr, gchar **key_str)
@@ -182,6 +192,95 @@ _query_counter_hash(gchar *key_str)
   return counters;
 }
 
+static GList *
+_get_input_counters_of_view(ViewRecord *view)
+{
+  GList *counters_of_view = NULL;
+  for (GList *q = view->queries; q; q = q->next)
+    {
+      GList *selected_counters = NULL;
+      gchar *query = q->data;
+
+      selected_counters = _query_counter_hash(query);
+      if (selected_counters == NULL)
+        continue;
+
+      counters_of_view = g_list_concat(counters_of_view, selected_counters);
+    }
+  return counters_of_view;
+}
+
+static GList *
+_get_aggregated_counters_from_views(GList *views)
+{
+  GList *aggregated_counters = NULL;
+
+  for (GList *v = views; v; v = v->next)
+    {
+      ViewRecord *view = v->data;
+      GList *counters = _get_input_counters_of_view(view);
+
+      if (counters == NULL)
+        continue;
+
+      view->aggregate(counters, &view->counter);
+      aggregated_counters = g_list_append(aggregated_counters, view->counter);
+    }
+  return aggregated_counters;
+}
+
+static GList *
+_get_views(gchar *filter)
+{
+  GPatternSpec *pattern = g_pattern_spec_new(filter);
+  GList *views = NULL;
+  gpointer key, value;
+  GHashTableIter iter;
+  gboolean single_match;
+
+  single_match = _is_single_match(filter);
+
+  g_hash_table_iter_init(&iter, stats_views);
+  while (g_hash_table_iter_next(&iter, &key, &value))
+    {
+      if (_is_pattern_matches_key(pattern, key))
+        {
+          ViewRecord *view = (ViewRecord *) value;
+          views = g_list_append(views, view);
+
+          if (single_match)
+            break;
+        }
+    }
+  g_pattern_spec_free(pattern);
+  return views;
+}
+
+static GList *
+_get_aggregated_counters(gchar *filter)
+{
+  GList *views = _get_views(filter);
+  GList *counters = _get_aggregated_counters_from_views(views);
+
+  g_list_free(views);
+  return counters;
+}
+
+static GList *
+_get_counters(gchar *key_str)
+{
+  GList *simple_counters = _query_counter_hash(key_str);
+  GList *aggregated_counters = _get_aggregated_counters(key_str);
+
+  if (simple_counters != NULL && aggregated_counters != NULL)
+    return g_list_concat(simple_counters, aggregated_counters);
+  if (simple_counters != NULL)
+    return simple_counters;
+  if (aggregated_counters != NULL)
+    return aggregated_counters;
+  return NULL;
+}
+
 static void
 _format_selected_counters(GList *counters, StatsFormatCb format_cb, gpointer result)
 {
@@ -214,7 +313,7 @@ _stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gb
   gboolean found_match = FALSE;
 
   _setup_filter_expression(expr, &key_str);
-  counters = _query_counter_hash(key_str);
+  counters = _get_counters(key_str);
   _format_selected_counters(counters, format_cb, result);
 
   if (must_reset)
@@ -275,7 +374,7 @@ _stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result
   gpointer args[] = {result, &sum};
 
   _setup_filter_expression(expr, &key_str);
-  counters = _query_counter_hash(key_str);
+  counters = _get_counters(key_str);
   _sum_selected_counters(counters, (gpointer)args);
   _format_selected_counters(counters, format_cb, (gpointer)args);
 
@@ -311,7 +410,7 @@ _stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result, g
   gboolean found_match = FALSE;
 
   _setup_filter_expression(expr, &key_str);
-  counters = _query_counter_hash(key_str);
+  counters = _get_counters(key_str);
   _format_selected_counters(counters, format_cb, result);
 
   if (must_reset)
