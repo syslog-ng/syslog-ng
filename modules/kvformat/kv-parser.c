@@ -20,7 +20,7 @@
  */
 
 #include "kv-parser.h"
-#include "kv-scanner.h"
+#include "scanner/kv-scanner/kv-scanner.h"
 
 gboolean
 kv_parser_is_valid_separator_character(char c)

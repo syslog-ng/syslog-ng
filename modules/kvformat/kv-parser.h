@@ -23,7 +23,7 @@
 #define KVPARSER_H_INCLUDED
 
 #include "parser/parser-expr.h"
-#include "kv-scanner.h"
+#include "scanner/kv-scanner/kv-scanner.h"
 
 /* base class */
 typedef struct _KVParser
