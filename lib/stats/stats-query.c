@@ -224,6 +224,7 @@ _stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gb
     found_match = TRUE;
 
   g_free(key_str);
+  g_list_free(counters);
 
   return found_match;
 }
@@ -285,6 +286,7 @@ _stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result
     found_match = TRUE;
 
   g_free(key_str);
+  g_list_free(counters);
 
   return found_match;
 }
@@ -319,6 +321,7 @@ _stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result, g
     found_match = TRUE;
 
   g_free(key_str);
+  g_list_free(counters);
 
   return found_match;
 }
