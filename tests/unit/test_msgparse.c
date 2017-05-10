@@ -231,7 +231,7 @@ Test(msgparse, test_failed_to_parse_too_long_sd_id)
       0, 0, 0,  // timestamp (sec/usec/zone)
       "", //host
       "syslog-ng", //app
-      "Error processing log message: <5>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [timeQuality isSynced=\"0\"][1234567890123456789012345678901234 i=\"long_33\"] An application event log entry...", // msg
+      "Error processing log message: <5>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [timeQuality isSynced=\"0\"][1234567890123456789012345678901>@<234 i=\"long_33\"] An application event log entry...", // msg
       "", // sd str,
       0, // processid
       0, // msgid,
@@ -254,7 +254,7 @@ Test(msgparse, test_bad_sd_data_unescaped)
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",        // host
       "syslog-ng", //app
-      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...", // msg
+      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\">@<\"ok\"] An application event log entry...", // msg
       "", //sd_str
       0,//processid
       0,//msgid
@@ -678,7 +678,7 @@ Test(msgparse, test_expected_sd_pairs_1)
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",        // host
       "syslog-ng", //app
-      "Error processing log message: <7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 [ exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...", // msg
+      "Error processing log message: <7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 >@<[ exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...", // msg
       "",
       NULL,//processid
       NULL,//msgid
@@ -798,7 +798,7 @@ Test(msgparse, test_expected_sd_pairs_4)
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",         // host
       "syslog-ng", //app
-      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long_33\"] An application event log entry...", // msg
+      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>@<aaa i=\"long_33\"] An application event log entry...", // msg
       "", //sd_str
       0,//processid
       0,//msgid
@@ -846,7 +846,7 @@ Test(msgparse, test_expected_sd_pairs_too_long)
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",        // host
       "syslog-ng", //app
-      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"] An application event log entry...", // msg
+      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>@<aaa=\"long_33\"] An application event log entry...", // msg
       "", //sd_str
       0,//processid
       0,//msgid
@@ -889,7 +889,7 @@ Test(msgparse, test_unescaped_too_long_message_parts)
       0, 0, 0,    // timestamp (sec/usec/zone)
       "", //host
       "syslog-ng", //app
-      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",        // msg
+      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 >@<aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",        // msg
       "", //sd_str
       0,//processid
       0,//msgid
@@ -945,7 +945,7 @@ Test(msgparse, test_unescaped_too_long_message_parts)
       0, 0, 0,    // timestamp (sec/usec/zone)
       "",        // host
       "syslog-ng", //app
-      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok\"] An application event log entry...", // msg
+      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\">@<]ok\"] An application event log entry...", // msg
       "", //sd_str
       0,//processid
       0,//msgid
@@ -960,7 +960,7 @@ Test(msgparse, test_unescaped_too_long_message_parts)
       0, 0, 0, // timestamp (sec/usec/zone)
       "",    // host
       "syslog-ng", //app
-      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...", // msg
+      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\">@<\"ok\"] An application event log entry...", // msg
       "", //sd_str
       0,//processid
       0,//msgid
