@@ -267,6 +267,7 @@ _decode_value(KVScanner *self)
 static void
 _extract_value(KVScanner *self)
 {
+  self->value_was_quoted = FALSE;
   _skip_initial_spaces(self);
   _decode_value(self);
 }
