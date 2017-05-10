@@ -31,7 +31,7 @@ stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gp
   EVTTAG *tag;
   gchar buf[32];
 
-  tag = evt_tag_printf(stats_cluster_get_type_name(sc, type), "%s(%s%s%s)=%u",
+  tag = evt_tag_printf(stats_cluster_get_type_name(sc, type), "%s(%s%s%s)=%"G_GSIZE_FORMAT,
                        stats_cluster_get_component_name(sc, buf, sizeof(buf)),
                        sc->key.id,
                        (sc->key.id[0] && sc->key.instance[0]) ? "," : "",
