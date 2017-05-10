@@ -31,6 +31,23 @@
 
 static GHashTable *counter_index;
 static GStaticMutex stats_query_mutex = G_STATIC_MUTEX_INIT;
+static GHashTable *stats_views;
+
+typedef struct _ViewRecord
+{
+  GList *queries;
+  StatsCounterItem *counter;
+  AggregatedMetricsCb aggregate;
+} ViewRecord;
+
+void
+_free_view_record(gpointer r)
+{
+  ViewRecord *record = (ViewRecord *) r;
+  g_list_free_full(record->queries, g_free);
+  g_free(record);
+}
+
 
 static void
 _setup_filter_expression(const gchar *expr, gchar **key_str)
@@ -319,14 +336,17 @@ stats_query_list_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, 
 }
 
 void
-stats_query_index_init(void)
+stats_query_init(void)
 {
   counter_index = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
+  stats_views = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, _free_view_record);
 }
 
 void
-stats_query_index_deinit(void)
+stats_query_deinit(void)
 {
   g_hash_table_destroy(counter_index);
   counter_index = NULL;
+  g_hash_table_destroy(stats_views);
+  stats_views = NULL;
 }

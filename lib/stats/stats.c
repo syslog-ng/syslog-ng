@@ -239,7 +239,7 @@ void
 stats_init(void)
 {
   stats_registry_init();
-  stats_query_index_init();
+  stats_query_init();
   stats_register_control_commands();
 }
 
@@ -247,7 +247,7 @@ void
 stats_destroy(void)
 {
   stats_registry_deinit();
-  stats_query_index_deinit();
+  stats_query_deinit();
 }
 
 void
