@@ -40,6 +40,7 @@
 #include "service-management.h"
 #include "crypto.h"
 #include "value-pairs/value-pairs.h"
+#include "scratch-buffers2.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -135,6 +136,8 @@ app_startup(void)
   log_template_global_init();
   value_pairs_global_init();
   service_management_init();
+  scratch_buffers2_global_init();
+  scratch_buffers2_allocator_init();
 }
 
 void
@@ -160,6 +163,8 @@ void
 app_shutdown(void)
 {
   run_application_hook(AH_SHUTDOWN);
+  scratch_buffers2_allocator_deinit();
+  scratch_buffers2_global_deinit();
   value_pairs_global_deinit();
   log_template_global_deinit();
   log_tags_global_deinit();
@@ -193,6 +198,7 @@ void
 app_thread_start(void)
 {
   scratch_buffers_init();
+  scratch_buffers2_allocator_init();
   dns_caching_thread_init();
   main_loop_call_thread_init();
 }
@@ -200,7 +206,8 @@ app_thread_start(void)
 void
 app_thread_stop(void)
 {
+  main_loop_call_thread_deinit();
   dns_caching_thread_deinit();
   scratch_buffers_free();
-  main_loop_call_thread_deinit();
+  scratch_buffers2_allocator_deinit();
 }

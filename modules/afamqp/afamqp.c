@@ -29,7 +29,7 @@
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 #include "plugin-types.h"
 #include "logthrdestdrv.h"
 
@@ -439,8 +439,8 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   amqp_table_t table;
   amqp_basic_properties_t props;
   gboolean success = TRUE;
-  SBGString *routing_key = sb_gstring_acquire();
-  SBGString *body = sb_gstring_acquire();
+  GString *routing_key = scratch_buffers2_alloc();
+  GString *body = scratch_buffers2_alloc();
   amqp_bytes_t body_bytes = amqp_cstring_bytes("");
 
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };
@@ -460,22 +460,19 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
 
   log_template_format(self->routing_key_template, msg, NULL, LTZ_LOCAL,
                       self->super.seq_num,
-                      NULL, sb_gstring_string(routing_key));
+                      NULL, routing_key);
 
   if (self->body_template)
     {
       log_template_format(self->body_template, msg, NULL, LTZ_LOCAL,
                           self->super.seq_num,
-                          NULL, sb_gstring_string(body));
-      body_bytes = amqp_cstring_bytes(sb_gstring_string(body)->str);
+                          NULL, body);
+      body_bytes = amqp_cstring_bytes(body->str);
     }
 
   ret = amqp_basic_publish(self->conn, 1, amqp_cstring_bytes(self->exchange),
-                           amqp_cstring_bytes(sb_gstring_string(routing_key)->str),
+                           amqp_cstring_bytes(routing_key->str),
                            0, 0, &props, body_bytes);
-
-  sb_gstring_release(routing_key);
-  sb_gstring_release(body);
 
   if (ret < 0)
     {

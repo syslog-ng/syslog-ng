@@ -30,7 +30,7 @@
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 #include "plugin-types.h"
 
 #include <glib.h>
@@ -262,13 +262,13 @@ afstomp_vp_foreach(const gchar *name, TypeHint type, const gchar *value, gsize v
 }
 
 static void
-afstomp_set_frame_body(STOMPDestDriver *self, SBGString *body, stomp_frame *frame, LogMessage *msg)
+afstomp_set_frame_body(STOMPDestDriver *self, GString *body, stomp_frame *frame, LogMessage *msg)
 {
   if (self->body_template)
     {
       log_template_format(self->body_template, msg, NULL, LTZ_LOCAL,
-                          self->super.seq_num, NULL, sb_gstring_string(body));
-      stomp_frame_set_body(frame, sb_gstring_string(body)->str, sb_gstring_string(body)->len);
+                          self->super.seq_num, NULL, body);
+      stomp_frame_set_body(frame, body->str, body->len);
     }
 }
 
@@ -276,7 +276,7 @@ static gboolean
 afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
 {
   gboolean success = TRUE;
-  SBGString *body = NULL;
+  GString *body = NULL;
   stomp_frame frame;
   stomp_frame recv_frame;
   gchar seq_num[16];
@@ -287,7 +287,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
       return FALSE;
     }
 
-  body = sb_gstring_acquire();
+  body = scratch_buffers2_alloc();
   stomp_frame_init(&frame, "SEND", sizeof("SEND"));
 
   if (self->persistent)
@@ -314,8 +314,6 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
 
   if (success && self->ack_needed)
     success = stomp_receive_frame(self->conn, &recv_frame);
-
-  sb_gstring_release(body);
 
   return success;
 }

@@ -917,6 +917,7 @@ relex:
 
           self->preprocess_suppress_tokens--;
           success = cfg_lexer_generate_block(self, cfg_lexer_get_context_type(self), yylval->cptr, gen, args);
+          free(yylval->cptr);
           cfg_args_unref(args);
           if (success)
             {
@@ -925,6 +926,7 @@ relex:
         }
       else
         {
+          free(yylval->cptr);
           self->preprocess_suppress_tokens--;
         }
       return LL_ERROR;

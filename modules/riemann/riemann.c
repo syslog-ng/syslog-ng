@@ -29,7 +29,7 @@
 #include "logthrdestdrv.h"
 #include "string-list.h"
 #include "stats/stats.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 #include "riemann.h"
 
 typedef struct
@@ -421,12 +421,12 @@ riemann_dd_field_add_attribute_vp(const gchar *name,
 }
 
 static gboolean
-riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, SBGString *str)
+riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
 {
   log_template_format(self->fields.metric, msg, &self->template_options,
-                      LTZ_SEND, self->super.seq_num, NULL, sb_gstring_string(str));
+                      LTZ_SEND, self->super.seq_num, NULL, str);
 
-  if (sb_gstring_string(str)->len == 0)
+  if (str->len == 0)
     return FALSE;
 
   switch (self->fields.metric->type_hint)
@@ -436,12 +436,12 @@ riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, Log
     {
       gint64 i;
 
-      if (type_cast_to_int64(sb_gstring_string(str)->str, &i, NULL))
+      if (type_cast_to_int64(str->str, &i, NULL))
         riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_S64, i,
                           RIEMANN_EVENT_FIELD_NONE);
       else
         return type_cast_drop_helper(self->template_options.on_error,
-                                     sb_gstring_string(str)->str, "int");
+                                     str->str, "int");
       break;
     }
     case TYPE_HINT_DOUBLE:
@@ -449,40 +449,40 @@ riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, Log
     {
       gdouble d;
 
-      if (type_cast_to_double(sb_gstring_string(str)->str, &d, NULL))
+      if (type_cast_to_double(str->str, &d, NULL))
         riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_D, d,
                           RIEMANN_EVENT_FIELD_NONE);
       else
         return type_cast_drop_helper(self->template_options.on_error,
-                                     sb_gstring_string(str)->str, "double");
+                                     str->str, "double");
       break;
     }
     default:
       return type_cast_drop_helper(self->template_options.on_error,
-                                   sb_gstring_string(str)->str, "<unknown>");
+                                   str->str, "<unknown>");
       break;
     }
   return FALSE;
 };
 
 static gboolean
-riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, SBGString *str)
+riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
 {
   gdouble d;
 
   log_template_format(self->fields.ttl, msg, &self->template_options,
                       LTZ_SEND, self->super.seq_num, NULL,
-                      sb_gstring_string(str));
+                      str);
 
-  if (sb_gstring_string(str)->len == 0)
+  if (str->len == 0)
     return FALSE;
 
-  if (type_cast_to_double (sb_gstring_string(str)->str, &d, NULL))
+  if (type_cast_to_double (str->str, &d, NULL))
     riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, (float) d,
                       RIEMANN_EVENT_FIELD_NONE);
   else
     return type_cast_drop_helper(self->template_options.on_error,
-                                 sb_gstring_string(str)->str, "double");
+                                 str->str, "double");
   return FALSE;
 }
 
@@ -502,11 +502,11 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 {
   riemann_event_t *event;
   gboolean success = TRUE, need_drop = FALSE;
-  SBGString *str;
+  GString *str;
 
   event = riemann_event_new();
 
-  str = sb_gstring_acquire();
+  str = scratch_buffers2_alloc();
 
   if (self->fields.metric)
     {
@@ -523,19 +523,19 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
       riemann_dd_field_maybe_add(event, msg, self->fields.host,
                                  &self->template_options,
                                  RIEMANN_EVENT_FIELD_HOST,
-                                 self->super.seq_num, sb_gstring_string(str));
+                                 self->super.seq_num, str);
       riemann_dd_field_maybe_add(event, msg, self->fields.service,
                                  &self->template_options,
                                  RIEMANN_EVENT_FIELD_SERVICE,
-                                 self->super.seq_num, sb_gstring_string(str));
+                                 self->super.seq_num, str);
       riemann_dd_field_maybe_add(event, msg, self->fields.description,
                                  &self->template_options,
                                  RIEMANN_EVENT_FIELD_DESCRIPTION,
-                                 self->super.seq_num, sb_gstring_string(str));
+                                 self->super.seq_num, str);
       riemann_dd_field_maybe_add(event, msg, self->fields.state,
                                  &self->template_options,
                                  RIEMANN_EVENT_FIELD_STATE,
-                                 self->super.seq_num, sb_gstring_string(str));
+                                 self->super.seq_num, str);
 
       if (self->fields.tags)
         g_list_foreach(self->fields.tags, riemann_dd_field_add_tag,
@@ -552,8 +552,6 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 
       _append_event(self, event);
     }
-
-  sb_gstring_release(str);
 
   if (need_drop)
     return WORKER_INSERT_RESULT_DROP;

@@ -90,8 +90,8 @@ _threaded_feed(gpointer args)
   sum_time += diff;
   g_static_mutex_unlock(&tlock);
   log_msg_unref(tmpl);
-  iv_deinit();
   main_loop_worker_thread_stop();
+  iv_deinit();
   return NULL;
 }
 
@@ -151,6 +151,8 @@ static gpointer
 _output_thread(gpointer args)
 {
   WorkerOptions wo;
+
+  iv_init();
   wo.is_output_thread = TRUE;
   main_loop_worker_thread_start(&wo);
   struct timespec ns;

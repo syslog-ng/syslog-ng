@@ -39,6 +39,7 @@
 #include "debugger/debugger-main.h"
 #include "plugin.h"
 #include "resolved-configurable-paths.h"
+#include "scratch-buffers2.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -443,6 +444,7 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 
   self->options = options;
   main_thread_handle = get_thread_id();
+  scratch_buffers2_automatic_gc_init();
   main_loop_worker_init();
   main_loop_io_worker_init();
   main_loop_call_init();
@@ -500,6 +502,7 @@ main_loop_deinit(MainLoop *self)
   main_loop_call_deinit();
   main_loop_io_worker_deinit();
   main_loop_worker_deinit();
+  scratch_buffers2_automatic_gc_deinit();
 }
 
 void

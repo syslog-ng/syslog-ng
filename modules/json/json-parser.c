@@ -22,7 +22,7 @@
 
 #include "json-parser.h"
 #include "dot-notation.h"
-#include "scratch-buffers.h"
+#include "scratch-buffers2.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -78,61 +78,61 @@ json_parser_process_single(struct json_object *jso,
                            const gchar *obj_key,
                            LogMessage *msg)
 {
-  SBGString *key, *value;
+  GString *key, *value;
   gboolean parsed = FALSE;
 
   if (!jso)
     return;
 
-  key = sb_gstring_acquire();
-  value = sb_gstring_acquire();
+  key = scratch_buffers2_alloc();
+  value = scratch_buffers2_alloc();
 
   switch (json_object_get_type(jso))
     {
     case json_type_boolean:
       parsed = TRUE;
       if (json_object_get_boolean(jso))
-        g_string_assign(sb_gstring_string(value), "true");
+        g_string_assign(value, "true");
       else
-        g_string_assign(sb_gstring_string(value), "false");
+        g_string_assign(value, "false");
       break;
     case json_type_double:
       parsed = TRUE;
-      g_string_printf(sb_gstring_string(value), "%f",
+      g_string_printf(value, "%f",
                       json_object_get_double(jso));
       break;
     case json_type_int:
       parsed = TRUE;
-      g_string_printf(sb_gstring_string(value), "%i",
+      g_string_printf(value, "%i",
                       json_object_get_int(jso));
       break;
     case json_type_string:
       parsed = TRUE;
-      g_string_assign(sb_gstring_string(value),
+      g_string_assign(value,
                       json_object_get_string(jso));
       break;
     case json_type_object:
       if (prefix)
-        g_string_assign(sb_gstring_string(key), prefix);
-      g_string_append(sb_gstring_string(key), obj_key);
-      g_string_append_c(sb_gstring_string(key), '.');
-      json_parser_process_object(jso, sb_gstring_string(key)->str, msg);
+        g_string_assign(key, prefix);
+      g_string_append(key, obj_key);
+      g_string_append_c(key, '.');
+      json_parser_process_object(jso, key->str, msg);
       break;
     case json_type_array:
     {
       gint i, plen;
 
-      g_string_assign(sb_gstring_string(key), obj_key);
+      g_string_assign(key, obj_key);
 
-      plen = sb_gstring_string(key)->len;
+      plen = key->len;
 
       for (i = 0; i < json_object_array_length(jso); i++)
         {
-          g_string_truncate(sb_gstring_string(key), plen);
-          g_string_append_printf(sb_gstring_string(key), "[%d]", i);
+          g_string_truncate(key, plen);
+          g_string_append_printf(key, "[%d]", i);
           json_parser_process_single(json_object_array_get_idx(jso, i),
                                      prefix,
-                                     sb_gstring_string(key)->str, msg);
+                                     key->str, msg);
         }
       break;
     }
@@ -148,22 +148,20 @@ json_parser_process_single(struct json_object *jso,
     {
       if (prefix)
         {
-          g_string_assign(sb_gstring_string(key), prefix);
-          g_string_append(sb_gstring_string(key), obj_key);
+          g_string_assign(key, prefix);
+          g_string_append(key, obj_key);
           log_msg_set_value_by_name(msg,
-                                    sb_gstring_string(key)->str,
-                                    sb_gstring_string(value)->str,
-                                    sb_gstring_string(value)->len);
+                                    key->str,
+                                    value->str,
+                                    value->len);
         }
       else
         log_msg_set_value_by_name(msg,
                                   obj_key,
-                                  sb_gstring_string(value)->str,
-                                  sb_gstring_string(value)->len);
+                                  value->str,
+                                  value->len);
     }
 
-  sb_gstring_release(key);
-  sb_gstring_release(value);
 }
 
 static void
