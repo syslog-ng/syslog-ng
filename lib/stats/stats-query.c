@@ -239,6 +239,7 @@ _get_views(const gchar *filter)
 
   single_match = _is_single_match(filter);
 
+  g_static_mutex_lock(&stats_query_mutex);
   g_hash_table_iter_init(&iter, stats_views);
   while (g_hash_table_iter_next(&iter, &key, &value))
     {
@@ -251,6 +252,8 @@ _get_views(const gchar *filter)
             break;
         }
     }
+  g_static_mutex_unlock(&stats_query_mutex);
+
   g_pattern_spec_free(pattern);
   return views;
 }
