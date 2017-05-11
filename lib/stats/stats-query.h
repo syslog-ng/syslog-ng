@@ -40,5 +40,5 @@ gboolean stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb
 void stats_query_init(void);
 void stats_query_deinit(void);
 
-void stats_views_add_new(gchar *name, GList *queries, const AggregatedMetricsCb aggregate);
+void stats_register_view(gchar *name, GList *queries, const AggregatedMetricsCb aggregate);
 #endif

@@ -105,7 +105,7 @@ _initialize_counter_hash(void)
 
       gchar *name = _construct_view_name(counters[i].id);
       GList *queries = _construct_view_query_list(counters[i].instance);
-      stats_views_add_new(name, queries, _add_two_to_value);
+      stats_register_view(name, queries, _add_two_to_value);
     }
 
   stats_unlock();

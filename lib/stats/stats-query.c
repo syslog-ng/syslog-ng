@@ -49,7 +49,7 @@ _free_view_record(gpointer r)
 }
 
 void
-stats_views_add_new(gchar *name, GList *queries, const AggregatedMetricsCb aggregate)
+stats_register_view(gchar *name, GList *queries, const AggregatedMetricsCb aggregate)
 {
   ViewRecord *record = g_new0(ViewRecord, 1);
   record->counter = g_new0(StatsCounterItem, 1);
@@ -153,7 +153,7 @@ _is_pattern_matches_key(GPatternSpec *pattern, gpointer key)
 }
 
 static gboolean
-_is_single_match(gchar *key_str)
+_is_single_match(const gchar *key_str)
 {
   gboolean is_wildcard = strchr(key_str, '*') ? TRUE : FALSE;
   gboolean is_joker = strchr(key_str, '?') ? TRUE : FALSE;
@@ -162,7 +162,7 @@ _is_single_match(gchar *key_str)
 }
 
 static GList *
-_query_counter_hash(gchar *key_str)
+_query_counter_hash(const gchar *key_str)
 {
   GPatternSpec *pattern = g_pattern_spec_new(key_str);
   GList *counters = NULL;
@@ -193,15 +193,14 @@ _query_counter_hash(gchar *key_str)
 }
 
 static GList *
-_get_input_counters_of_view(ViewRecord *view)
+_get_input_counters_of_view(const ViewRecord *view)
 {
   GList *counters_of_view = NULL;
   for (GList *q = view->queries; q; q = q->next)
     {
-      GList *selected_counters = NULL;
       gchar *query = q->data;
+      GList *selected_counters = _query_counter_hash(query);
 
-      selected_counters = _query_counter_hash(query);
       if (selected_counters == NULL)
         continue;
 
@@ -230,7 +229,7 @@ _get_aggregated_counters_from_views(GList *views)
 }
 
 static GList *
-_get_views(gchar *filter)
+_get_views(const gchar *filter)
 {
   GPatternSpec *pattern = g_pattern_spec_new(filter);
   GList *views = NULL;
@@ -257,7 +256,7 @@ _get_views(gchar *filter)
 }
 
 static GList *
-_get_aggregated_counters(gchar *filter)
+_get_aggregated_counters(const gchar *filter)
 {
   GList *views = _get_views(filter);
   GList *counters = _get_aggregated_counters_from_views(views);
@@ -267,7 +266,7 @@ _get_aggregated_counters(gchar *filter)
 }
 
 static GList *
-_get_counters(gchar *key_str)
+_get_counters(const gchar *key_str)
 {
   GList *simple_counters = _query_counter_hash(key_str);
   GList *aggregated_counters = _get_aggregated_counters(key_str);
