@@ -246,8 +246,8 @@ stats_init(void)
 void
 stats_destroy(void)
 {
-  stats_registry_deinit();
   stats_query_deinit();
+  stats_registry_deinit();
 }
 
 void
