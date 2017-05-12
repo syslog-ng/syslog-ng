@@ -440,6 +440,10 @@ log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
                                       LogMessage *msg)
 {
   stats_counter_inc(self->dropped_messages);
+  msg_error("Multiple failures while sending message to destination, message dropped",
+            evt_tag_str("driver", self->super.super.id),
+            evt_tag_int("number_of_retries", self->retries.max));
+
   log_threaded_dest_driver_message_accept(self, msg);
 }
 

@@ -242,13 +242,6 @@ java_dd_free(LogPipe *s)
   g_string_free(self->class_path, TRUE);
 }
 
-static void
-__retry_over_message(LogThrDestDriver *s, LogMessage *msg)
-{
-  msg_error("Multiple failures while inserting this record to the java destination, message dropped",
-            evt_tag_int("number_of_retries", s->retries.max));
-}
-
 LogTemplateOptions *
 java_dd_get_template_options(LogDriver *s)
 {
@@ -275,7 +268,6 @@ java_dd_new(GlobalConfig *cfg)
   self->super.worker.worker_message_queue_empty = java_worker_message_queue_empty;
 
   self->super.format.stats_instance = java_dd_format_stats_instance;
-  self->super.messages.retry_over = __retry_over_message;
   self->super.stats_source = SCS_JAVA;
 
   self->template = log_template_new(cfg, "java_dd_template");
