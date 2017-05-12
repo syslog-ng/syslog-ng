@@ -24,6 +24,7 @@
 #include "csvparser.h"
 #include "logmsg/logmsg.h"
 #include "string-list.h"
+#include "scratch-buffers2.h"
 
 LogParser *
 _construct_parser(gint max_columns, gint dialect, gchar *delimiters, gchar *quotes, gchar *null_value,
@@ -145,6 +146,7 @@ int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   stats_init();
+  scratch_buffers2_allocator_init();
   log_msg_global_init();
   test_escaped_parsers();
   log_msg_global_deinit();
