@@ -195,7 +195,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
                 evt_tag_int("count", n),
                 evt_tag_str("persist_name", self->super.persist_name));
     }
-  stats_counter_add(self->super.stored_messages, self->qoverflow_input[thread_id].len);
+  stats_counter_add(self->super.queued_messages, self->qoverflow_input[thread_id].len);
   iv_list_splice_tail_init(&self->qoverflow_input[thread_id].items, &self->qoverflow_wait);
   self->qoverflow_wait_len += self->qoverflow_input[thread_id].len;
   self->qoverflow_input[thread_id].len = 0;
@@ -297,7 +297,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
       self->qoverflow_wait_len++;
       log_queue_push_notify(&self->super);
 
-      stats_counter_inc(self->super.stored_messages);
+      stats_counter_inc(self->super.queued_messages);
       g_static_mutex_unlock(&self->super.lock);
 
       log_msg_unref(msg);
@@ -342,7 +342,7 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   self->qoverflow_output_len++;
   log_msg_unref(msg);
 
-  stats_counter_inc(self->super.stored_messages);
+  stats_counter_inc(self->super.queued_messages);
 }
 
 /*
@@ -396,7 +396,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
        */
       return NULL;
     }
-  stats_counter_dec(self->super.stored_messages);
+  stats_counter_dec(self->super.queued_messages);
 
   if (self->super.use_backlog)
     {
@@ -452,7 +452,7 @@ log_queue_fifo_rewind_backlog_all(LogQueue *s)
 
   iv_list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
   self->qoverflow_output_len += self->qbacklog_len;
-  stats_counter_add(self->super.stored_messages, self->qbacklog_len);
+  stats_counter_add(self->super.queued_messages, self->qbacklog_len);
   self->qbacklog_len = 0;
 }
 
@@ -478,7 +478,7 @@ log_queue_fifo_rewind_backlog(LogQueue *s, guint rewind_count)
 
       self->qbacklog_len--;
       self->qoverflow_output_len++;
-      stats_counter_inc(self->super.stored_messages);
+      stats_counter_inc(self->super.queued_messages);
     }
 }
 

@@ -298,9 +298,9 @@ scratch_buffers2_global_init(void)
 
   stats_lock();
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "scratch_buffers_count", NULL);
-  stats_register_counter(0, &sc_key, SC_TYPE_STORED, &stats_scratch_buffers_count);
+  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &stats_scratch_buffers_count);
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "scratch_buffers_bytes", NULL);
-  stats_register_counter(0, &sc_key, SC_TYPE_STORED, &stats_scratch_buffers_bytes);
+  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &stats_scratch_buffers_bytes);
   stats_unlock();
 }
 
@@ -311,8 +311,8 @@ scratch_buffers2_global_deinit(void)
 
   stats_lock();
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "scratch_buffers_count", NULL);
-  stats_unregister_counter(&sc_key, SC_TYPE_STORED, &stats_scratch_buffers_count);
+  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &stats_scratch_buffers_count);
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "scratch_buffers_bytes", NULL);
-  stats_unregister_counter(&sc_key, SC_TYPE_STORED, &stats_scratch_buffers_bytes);
+  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &stats_scratch_buffers_bytes);
   stats_unlock();
 }

@@ -48,7 +48,7 @@ struct _LogThrDestDriver
   LogDestDriver super;
 
   StatsCounterItem *dropped_messages;
-  StatsCounterItem *stored_messages;
+  StatsCounterItem *queued_messages;
   StatsCounterItem *processed_messages;
 
   gboolean suspended;

@@ -65,7 +65,7 @@ struct _LogWriter
   StatsCounterItem *dropped_messages;
   StatsCounterItem *suppressed_messages;
   StatsCounterItem *processed_messages;
-  StatsCounterItem *stored_messages;
+  StatsCounterItem *queued_messages;
   LogPipe *control;
   LogWriterOptions *options;
   LogMessage *last_msg;
@@ -1279,10 +1279,10 @@ log_writer_init(LogPipe *s)
         stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
 
-      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_STORED, &self->stored_messages);
+      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
       stats_unlock();
     }
-  log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
+  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages);
   if (self->proto)
     {
       LogProtoClient *proto;
@@ -1331,7 +1331,7 @@ log_writer_deinit(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unlock();
 
   return TRUE;

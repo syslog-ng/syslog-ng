@@ -169,11 +169,11 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
 }
 
 void
-log_queue_set_counters(LogQueue *self, StatsCounterItem *stored_messages, StatsCounterItem *dropped_messages)
+log_queue_set_counters(LogQueue *self, StatsCounterItem *queued_messages, StatsCounterItem *dropped_messages)
 {
-  self->stored_messages = stored_messages;
+  self->queued_messages = queued_messages;
   self->dropped_messages = dropped_messages;
-  stats_counter_set(self->stored_messages, log_queue_get_length(self));
+  stats_counter_set(self->queued_messages, log_queue_get_length(self));
 }
 
 void
