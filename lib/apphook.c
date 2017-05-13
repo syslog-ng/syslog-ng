@@ -35,7 +35,6 @@
 #include "afinter.h"
 #include "template/templates.h"
 #include "hostname.h"
-#include "scratch-buffers.h"
 #include "mainloop-call.h"
 #include "service-management.h"
 #include "crypto.h"
@@ -204,7 +203,6 @@ app_shutdown(void)
 void
 app_thread_start(void)
 {
-  scratch_buffers_init();
   scratch_buffers2_allocator_init();
   dns_caching_thread_init();
   main_loop_call_thread_init();
@@ -215,6 +213,5 @@ app_thread_stop(void)
 {
   main_loop_call_thread_deinit();
   dns_caching_thread_deinit();
-  scratch_buffers_free();
   scratch_buffers2_allocator_deinit();
 }

@@ -136,7 +136,6 @@ pkginclude_HEADERS			+= \
 	lib/reloc.h			\
 	lib/rcptid.h			\
 	lib/run-id.h			\
-	lib/scratch-buffers.h		\
 	lib/scratch-buffers2.h		\
 	lib/serialize.h			\
 	lib/service-management.h	\
@@ -216,7 +215,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/rcptid.c			\
 	lib/reloc.c			\
 	lib/run-id.c			\
-	lib/scratch-buffers.c		\
 	lib/scratch-buffers2.c		\
 	lib/serialize.c			\
 	lib/service-management.c	\
