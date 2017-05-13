@@ -365,10 +365,13 @@ _worker_retry_over_message(LogThrDestDriver *s, LogMessage *msg)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
-  msg_error("Dropped message",
-            evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num,
-                                LTZ_SEND, &self->template_options));
+  msg_error(
+    "Multiple failures while inserting this record into the database, "
+    "message dropped",
+    evt_tag_str("driver", self->super.super.super.id),
+    evt_tag_int("number_of_retries", s->retries.max),
+    evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num,
+                        LTZ_SEND, &self->template_options));
 }
 
 static worker_insert_result_t

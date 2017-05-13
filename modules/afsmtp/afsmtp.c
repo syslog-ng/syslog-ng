@@ -482,6 +482,16 @@ __send_message(AFSMTPDriver *self, smtp_session_t session)
   return success;
 }
 
+static void
+__worker_message_retry_over(LogThrDestDriver *self, LogMessage *msg)
+{
+  msg_error("Multiple failures while sending message in email to the server, "
+            "message dropped",
+            evt_tag_str("driver", self->super.super.id),
+            evt_tag_int("attempts", self->retries.counter),
+            evt_tag_int("max-attempts", self->retries.max));
+}
+
 static worker_insert_result_t
 afsmtp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 {
@@ -674,6 +684,8 @@ afsmtp_dd_new(GlobalConfig *cfg)
 
   self->super.format.stats_instance = afsmtp_dd_format_stats_instance;
   self->super.stats_source = SCS_SMTP;
+
+  self->super.messages.retry_over = __worker_message_retry_over;
 
   afsmtp_dd_set_host((LogDriver *)self, "127.0.0.1");
   afsmtp_dd_set_port((LogDriver *)self, 25);
