@@ -29,7 +29,7 @@
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 #include "plugin-types.h"
 #include "logthrdestdrv.h"
 
@@ -439,8 +439,8 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   amqp_table_t table;
   amqp_basic_properties_t props;
   gboolean success = TRUE;
-  GString *routing_key = scratch_buffers2_alloc();
-  GString *body = scratch_buffers2_alloc();
+  GString *routing_key = scratch_buffers_alloc();
+  GString *body = scratch_buffers_alloc();
   amqp_bytes_t body_bytes = amqp_cstring_bytes("");
 
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };

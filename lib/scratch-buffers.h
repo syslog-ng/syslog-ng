@@ -29,30 +29,30 @@
 
 typedef gint32 ScratchBuffersMarker;
 
-GString *scratch_buffers2_alloc(void);
-GString *scratch_buffers2_alloc_and_mark(ScratchBuffersMarker *marker);
-void scratch_buffers2_mark(ScratchBuffersMarker *marker);
-void scratch_buffers2_reclaim_allocations(void);
-void scratch_buffers2_reclaim_marked(ScratchBuffersMarker marker);
+GString *scratch_buffers_alloc(void);
+GString *scratch_buffers_alloc_and_mark(ScratchBuffersMarker *marker);
+void scratch_buffers_mark(ScratchBuffersMarker *marker);
+void scratch_buffers_reclaim_allocations(void);
+void scratch_buffers_reclaim_marked(ScratchBuffersMarker marker);
 
-gint scratch_buffers2_get_global_allocation_count(void);
-gint scratch_buffers2_get_local_allocation_count(void);
-glong scratch_buffers2_get_local_allocation_bytes(void);
-gint scratch_buffers2_get_local_usage_count(void);
-void scratch_buffers2_update_stats(void);
+gint scratch_buffers_get_global_allocation_count(void);
+gint scratch_buffers_get_local_allocation_count(void);
+glong scratch_buffers_get_local_allocation_bytes(void);
+gint scratch_buffers_get_local_usage_count(void);
+void scratch_buffers_update_stats(void);
 
 /* lazy stats update */
-void scratch_buffers2_lazy_update_stats(void);
+void scratch_buffers_lazy_update_stats(void);
 
 /* garbage collector */
-void scratch_buffers2_explicit_gc(void);
+void scratch_buffers_explicit_gc(void);
 
-void scratch_buffers2_allocator_init(void);
-void scratch_buffers2_allocator_deinit(void);
-void scratch_buffers2_automatic_gc_init(void);
-void scratch_buffers2_automatic_gc_deinit(void);
+void scratch_buffers_allocator_init(void);
+void scratch_buffers_allocator_deinit(void);
+void scratch_buffers_automatic_gc_init(void);
+void scratch_buffers_automatic_gc_deinit(void);
 
-void scratch_buffers2_global_init(void);
-void scratch_buffers2_global_deinit(void);
+void scratch_buffers_global_init(void);
+void scratch_buffers_global_deinit(void);
 
 #endif

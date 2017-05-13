@@ -24,7 +24,7 @@
 #include "csvparser.h"
 #include "scanner/csv-scanner/csv-scanner.h"
 #include "parser/parser-expr.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 
@@ -128,7 +128,7 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   CSVScanner scanner;
   csv_scanner_init(&scanner, &self->options, input);
 
-  GString *key_scratch = scratch_buffers2_alloc();
+  GString *key_scratch = scratch_buffers_alloc();
   if (self->prefix)
     g_string_assign(key_scratch, self->prefix);
 

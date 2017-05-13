@@ -23,7 +23,7 @@
 
 #include "pseudofile.h"
 #include "messages.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 #include <fcntl.h>
@@ -157,7 +157,7 @@ static void
 pseudofile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   PseudoFileDestDriver *self = (PseudoFileDestDriver *) s;
-  GString *formatted_message = scratch_buffers2_alloc();
+  GString *formatted_message = scratch_buffers_alloc();
   gboolean success;
   time_t now = msg->timestamps[LM_TS_RECVD].tv_sec;
 

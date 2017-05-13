@@ -27,7 +27,7 @@
 #include "timeutils.h"
 #include "cfg.h"
 #include "str-format.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -302,7 +302,7 @@ kmsg_parse_key_value_pair(const guchar *data, gsize *pos, gsize length,
       return TRUE;
     }
 
-  name = scratch_buffers2_alloc();
+  name = scratch_buffers_alloc();
 
   g_string_assign(name, ".linux.");
   g_string_append_len(name, (const gchar *)data + name_start, name_len);

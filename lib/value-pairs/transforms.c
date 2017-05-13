@@ -26,7 +26,7 @@
 #include "template/templates.h"
 #include "cfg-parser.h"
 #include "str-utils.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 

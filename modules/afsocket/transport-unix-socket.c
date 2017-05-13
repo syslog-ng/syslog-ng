@@ -23,7 +23,7 @@
  */
 #include "transport-unix-socket.h"
 #include "transport/transport-socket.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 #include "str-format.h"
 #include "unix-credentials.h"
 
@@ -38,12 +38,12 @@ static void
 _add_nv_pair_int(LogTransportAuxData *aux, const gchar *name, gint value)
 {
   ScratchBuffersMarker marker;
-  GString *buf = scratch_buffers2_alloc_and_mark(&marker);
+  GString *buf = scratch_buffers_alloc_and_mark(&marker);
 
   g_string_truncate(buf, 0);
   format_uint32_padded(buf, -1, 0, 10, value);
   log_transport_aux_data_add_nv_pair(aux, name, buf->str);
-  scratch_buffers2_reclaim_marked(marker);
+  scratch_buffers_reclaim_marked(marker);
 }
 
 static void

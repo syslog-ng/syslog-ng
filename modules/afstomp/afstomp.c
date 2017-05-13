@@ -30,7 +30,7 @@
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 #include "plugin-types.h"
 
 #include <glib.h>
@@ -287,7 +287,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
       return FALSE;
     }
 
-  body = scratch_buffers2_alloc();
+  body = scratch_buffers_alloc();
   stomp_frame_init(&frame, "SEND", sizeof("SEND"));
 
   if (self->persistent)

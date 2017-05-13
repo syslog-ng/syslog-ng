@@ -36,7 +36,7 @@
 #include "mainloop-call.h"
 #include "ml-batched-timer.h"
 #include "str-format.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -1204,13 +1204,13 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         break;
 
       ScratchBuffersMarker mark;
-      scratch_buffers2_mark(&mark);
+      scratch_buffers_mark(&mark);
       if (!log_writer_write_message(self, msg, &path_options, &write_error))
         {
-          scratch_buffers2_reclaim_marked(mark);
+          scratch_buffers_reclaim_marked(mark);
           break;
         }
-      scratch_buffers2_reclaim_marked(mark);
+      scratch_buffers_reclaim_marked(mark);
     }
 
   if (write_error)

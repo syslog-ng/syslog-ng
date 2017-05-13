@@ -29,7 +29,7 @@
 #include "type-hinting.h"
 #include "cfg-parser.h"
 #include "string-list.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 #include "cfg.h"
 
 #include <ctype.h>
@@ -230,7 +230,7 @@ static GString *
 vp_transform_apply (ValuePairs *vp, gchar *key)
 {
   gint i;
-  GString *result = scratch_buffers2_alloc();
+  GString *result = scratch_buffers_alloc();
 
   g_string_assign(result, key);
 
@@ -256,7 +256,7 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   VPResults *results = ((gpointer *)user_data)[5];
   const LogTemplateOptions *template_options = ((gpointer *)user_data)[6];
-  GString *sb = scratch_buffers2_alloc();
+  GString *sb = scratch_buffers_alloc();
   VPPairConf *vpc = (VPPairConf *)data;
   gint time_zone_mode = GPOINTER_TO_INT (((gpointer *)user_data)[7]);
 
@@ -293,7 +293,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   if (!inc)
     return FALSE;
 
-  sb = scratch_buffers2_alloc();
+  sb = scratch_buffers_alloc();
 
   g_string_append_len(sb, value, value_len);
   vp_results_insert(results, vp_transform_apply(vp, name), TYPE_HINT_STRING, sb);
@@ -379,7 +379,7 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, gint32 se
     {
       ValuePairSpec *spec = (ValuePairSpec *) g_ptr_array_index(vp->builtins, i);
 
-      sb = scratch_buffers2_alloc();
+      sb = scratch_buffers_alloc();
 
       switch (spec->type)
         {
@@ -442,7 +442,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   gpointer helper_args[] = { &results, func, user_data, &result };
   ScratchBuffersMarker mark;
 
-  scratch_buffers2_mark(&mark);
+  scratch_buffers_mark(&mark);
   vp_results_init(&results, compare_func);
   args[5] = &results;
 
@@ -462,7 +462,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   /* Aaand we run it through the callback! */
   g_tree_foreach(results.result_tree, (GTraverseFunc)vp_foreach_helper, helper_args);
   vp_results_deinit(&results);
-  scratch_buffers2_reclaim_marked(mark);
+  scratch_buffers_reclaim_marked(mark);
 
   return result;
 }
@@ -689,7 +689,7 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 static gchar *
 vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
 {
-  GString *s = scratch_buffers2_alloc();
+  GString *s = scratch_buffers_alloc();
   gchar *str;
   gint i;
 

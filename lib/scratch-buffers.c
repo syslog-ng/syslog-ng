@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 #include "tls-support.h"
 #include "stats/stats-registry.h"
 #include "timeutils.h"
@@ -49,7 +49,7 @@
  *     once processing is finished of the given message.
  *
  * Design principles:
- *   - you can allocate a GString instance using scratch_buffers2_alloc()
+ *   - you can allocate a GString instance using scratch_buffers_alloc()
  *
  *   - these are thread specific allocations and should not be leaked
  *     through thread boundaries, not until your own next invocation
@@ -105,17 +105,17 @@ StatsCounterItem *stats_scratch_buffers_bytes;
 static void _register_gc_task(void);
 
 void
-scratch_buffers2_mark(ScratchBuffersMarker *marker)
+scratch_buffers_mark(ScratchBuffersMarker *marker)
 {
   *marker = scratch_buffers_used;
 }
 
 GString *
-scratch_buffers2_alloc_and_mark(ScratchBuffersMarker *marker)
+scratch_buffers_alloc_and_mark(ScratchBuffersMarker *marker)
 {
   _register_gc_task();
   if (marker)
-    scratch_buffers2_mark(marker);
+    scratch_buffers_mark(marker);
   if (scratch_buffers_used >= scratch_buffers->len)
     {
       g_ptr_array_add(scratch_buffers, g_string_sized_new(255));
@@ -129,39 +129,39 @@ scratch_buffers2_alloc_and_mark(ScratchBuffersMarker *marker)
 }
 
 GString *
-scratch_buffers2_alloc(void)
+scratch_buffers_alloc(void)
 {
-  return scratch_buffers2_alloc_and_mark(NULL);
+  return scratch_buffers_alloc_and_mark(NULL);
 }
 
 void
-scratch_buffers2_reclaim_allocations(void)
+scratch_buffers_reclaim_allocations(void)
 {
-  scratch_buffers2_reclaim_marked(0);
+  scratch_buffers_reclaim_marked(0);
 }
 
 void
-scratch_buffers2_reclaim_marked(ScratchBuffersMarker marker)
+scratch_buffers_reclaim_marked(ScratchBuffersMarker marker)
 {
   scratch_buffers_used = marker;
 }
 
 /* get a snapshot of the global allocation counter, can be racy */
 gint
-scratch_buffers2_get_global_allocation_count(void)
+scratch_buffers_get_global_allocation_count(void)
 {
   return stats_counter_get(stats_scratch_buffers_count);
 }
 
 /* get the number of thread-local allocations does not race */
 gint
-scratch_buffers2_get_local_allocation_count(void)
+scratch_buffers_get_local_allocation_count(void)
 {
   return scratch_buffers->len;
 }
 
 glong
-scratch_buffers2_get_local_allocation_bytes(void)
+scratch_buffers_get_local_allocation_bytes(void)
 {
   glong bytes = 0;
 
@@ -174,27 +174,27 @@ scratch_buffers2_get_local_allocation_bytes(void)
 }
 
 gint
-scratch_buffers2_get_local_usage_count(void)
+scratch_buffers_get_local_usage_count(void)
 {
   return scratch_buffers_used;
 }
 
 void
-scratch_buffers2_update_stats(void)
+scratch_buffers_update_stats(void)
 {
   glong prev_reported = scratch_buffers_bytes_reported;
-  scratch_buffers_bytes_reported = scratch_buffers2_get_local_allocation_bytes();
+  scratch_buffers_bytes_reported = scratch_buffers_get_local_allocation_bytes();
   stats_counter_add(stats_scratch_buffers_bytes, -prev_reported + scratch_buffers_bytes_reported);
 }
 
 void
-scratch_buffers2_allocator_init(void)
+scratch_buffers_allocator_init(void)
 {
   scratch_buffers = g_ptr_array_sized_new(256);
 }
 
 void
-scratch_buffers2_allocator_deinit(void)
+scratch_buffers_allocator_deinit(void)
 {
   /* check if GC was executed */
   if (scratch_buffers_used > 0 && !scratch_buffers_gc_executed)
@@ -239,11 +239,11 @@ _thread_maintenance_update_time(void)
 }
 
 void
-scratch_buffers2_lazy_update_stats(void)
+scratch_buffers_lazy_update_stats(void)
 {
   if (_thread_maintenance_period_elapsed())
     {
-      scratch_buffers2_update_stats();
+      scratch_buffers_update_stats();
       _thread_maintenance_update_time();
     }
 }
@@ -253,17 +253,17 @@ scratch_buffers2_lazy_update_stats(void)
  *********************************************************/
 
 void
-scratch_buffers2_explicit_gc(void)
+scratch_buffers_explicit_gc(void)
 {
-  scratch_buffers2_lazy_update_stats();
-  scratch_buffers2_reclaim_allocations();
+  scratch_buffers_lazy_update_stats();
+  scratch_buffers_reclaim_allocations();
   scratch_buffers_gc_executed = TRUE;
 }
 
 static void
 _garbage_collect_scratch_buffers(gpointer arg)
 {
-  scratch_buffers2_explicit_gc();
+  scratch_buffers_explicit_gc();
 }
 
 static void
@@ -274,7 +274,7 @@ _register_gc_task(void)
 }
 
 void
-scratch_buffers2_automatic_gc_init(void)
+scratch_buffers_automatic_gc_init(void)
 {
   IV_TASK_INIT(&scratch_buffers_gc);
   if (iv_inited())
@@ -285,14 +285,14 @@ scratch_buffers2_automatic_gc_init(void)
 }
 
 void
-scratch_buffers2_automatic_gc_deinit(void)
+scratch_buffers_automatic_gc_deinit(void)
 {
   if (iv_task_registered(&scratch_buffers_gc))
     iv_task_unregister(&scratch_buffers_gc);
 }
 
 void
-scratch_buffers2_global_init(void)
+scratch_buffers_global_init(void)
 {
   StatsClusterKey sc_key;
 
@@ -305,7 +305,7 @@ scratch_buffers2_global_init(void)
 }
 
 void
-scratch_buffers2_global_deinit(void)
+scratch_buffers_global_deinit(void)
 {
   StatsClusterKey sc_key;
 
