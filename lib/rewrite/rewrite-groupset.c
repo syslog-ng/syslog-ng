@@ -71,6 +71,8 @@ log_rewrite_groupset_process(LogRewrite *s, LogMessage **msg, const LogPathOptio
 {
   LogRewriteGroupSet *self = (LogRewriteGroupSet *) s;
   LogRewriteGroupSetCallbackData userdata;
+
+  log_msg_make_writable(msg, path_options);
   userdata.msg = *msg;
   userdata.template = self->replacement;
   value_pairs_foreach(self->query, self->vp_func, *msg, 0, LTZ_LOCAL, NULL, &userdata);
