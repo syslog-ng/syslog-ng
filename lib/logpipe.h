@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOGPIPE_H_INCLUDED
 #define LOGPIPE_H_INCLUDED
 
@@ -213,6 +213,7 @@ struct _LogPipe
   GlobalConfig *cfg;
   LogExprNode *expr_node;
   LogPipe *pipe_next;
+  StatsCounterItem *discarded_messages;
   const gchar *persist_name;
 
   /* user_data pointer of the "queue" method in case it is overridden

@@ -71,6 +71,8 @@ enum
   SCS_JAVA           = 35,
   SCS_HTTP           = 36,
   SCS_PYTHON         = 37,
+  SCS_FILTER         = 38,
+  SCS_PARSER         = 39,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };

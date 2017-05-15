@@ -118,7 +118,9 @@ _get_module_name(gint source)
     "journald",
     "java",
     "http",
-    "python"
+    "python",
+    "filter",
+    "parser"
   };
   return module_names[source & SCS_SOURCE_MASK];
 }
