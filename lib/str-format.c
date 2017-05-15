@@ -339,6 +339,29 @@ scan_expect_char(const gchar **buf, gint *left, gchar value)
 }
 
 gboolean
+scan_expect_str(const gchar **buf, gint *left, const gchar *value)
+{
+  const gchar *original_buf = *buf;
+  gint original_left = *left;
+
+  while (*value)
+    {
+      if (*left == 0 || *value != **buf)
+        {
+          *buf = original_buf;
+          *left = original_left;
+          return FALSE;
+        }
+
+      (*buf)++;
+      (*left)--;
+      value++;
+    }
+
+  return TRUE;
+}
+
+gboolean
 scan_day_abbrev(const gchar **buf, gint *left, gint *wday)
 {
   *wday = -1;
