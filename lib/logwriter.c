@@ -25,6 +25,7 @@
 #include "logwriter.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-views.h"
 #include "hostname.h"
 #include "host-resolve.h"
 #include "seqnum.h"
@@ -1271,15 +1272,17 @@ log_writer_init(LogPipe *s)
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     {
       stats_lock();
+      StatsCluster *cluster;
       StatsClusterKey sc_key;
       stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
 
-      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
       if (self->options->suppress > 0)
         stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
+      cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+      stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
+
       stats_unlock();
     }
   log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages);
