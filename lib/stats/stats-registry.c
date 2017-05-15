@@ -87,9 +87,14 @@ _register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
 
   sc = _grab_cluster(stats_level, sc_key, dynamic);
   if (sc)
-    *counter = stats_cluster_track_counter(sc, type);
+    {
+      *counter = stats_cluster_track_counter(sc, type);
+      (*counter)->type = type;
+    }
   else
-    *counter = NULL;
+    {
+      *counter = NULL;
+    }
   return sc;
 }
 
@@ -109,11 +114,11 @@ _register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
  * users of the same counter in this case, thus the counter will only be
  * freed when all of these uses are unregistered.
  **/
-void
+StatsCluster *
 stats_register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
                        StatsCounterItem **counter)
 {
-  _register_counter(stats_level, sc_key, type, FALSE, counter);
+  return _register_counter(stats_level, sc_key, type, FALSE, counter);
 }
 
 StatsCluster *

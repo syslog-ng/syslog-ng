@@ -11,6 +11,7 @@ statsinclude_HEADERS = \
 	lib/stats/stats-syslog.h		\
 	lib/stats/stats-query.h			\
 	lib/stats/stats-query-commands.h \
+	lib/stats/stats-views.h           \
 	lib/stats/stats-cluster-logpipe.h \
 	lib/stats/stats-cluster-single.h
 
@@ -25,6 +26,7 @@ stats_sources = \
 	lib/stats/stats-syslog.c		\
 	lib/stats/stats-query.c			\
 	lib/stats/stats-query-commands.c \
+	lib/stats/stats-views.c          \
 	lib/stats/stats-cluster-logpipe.c \
 	lib/stats/stats-cluster-single.c
 
