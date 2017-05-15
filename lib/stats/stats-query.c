@@ -454,3 +454,9 @@ stats_query_deinit(void)
   g_hash_table_destroy(stats_views);
   stats_views = NULL;
 }
+
+void
+stats_query_index_counter(StatsCluster *cluster, gint type)
+{
+  _add_counter_to_index(cluster, type);
+}

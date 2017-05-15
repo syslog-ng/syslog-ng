@@ -30,6 +30,7 @@ typedef struct _StatsCounterItem
 {
   gssize value;
   gchar *name;
+  gint type;
 } StatsCounterItem;
 
 
