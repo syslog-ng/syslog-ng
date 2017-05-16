@@ -42,6 +42,8 @@ _calculate_written_messages(GList *counters, StatsCounterItem **result)
         queued = counter;
     }
 
+  g_assert(processed != NULL || dropped != NULL || queued != NULL);
+
   written = stats_counter_get(processed);
   written -= stats_counter_get(dropped);
   written -= stats_counter_get(queued);
