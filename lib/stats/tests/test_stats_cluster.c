@@ -24,8 +24,22 @@
 
 #include "testutils.h"
 #include "stats/stats-cluster.h"
+#include "stats/stats-cluster-single.h"
 
 #define STATS_CLUSTER_TESTCASE(x) x()
+
+static void
+test_stats_cluster_single(void)
+{
+  StatsCluster *sc;
+  StatsClusterKey sc_key;
+  stats_cluster_single_key_set(&sc_key, SCS_GLOBAL, "logmsg_allocated_bytes", NULL);
+
+  sc = stats_cluster_new(&sc_key);
+  assert_string(sc->query_key, "global.logmsg_allocated_bytes", "Unexpected query key");
+  assert_gint(sc->counter_group.capacity, 1, "Invalid group capacity");
+  stats_cluster_free(sc);
+}
 
 static void
 test_stats_cluster_new_replaces_NULL_with_an_empty_string(void)
@@ -205,6 +219,7 @@ test_stats_cluster(void)
   STATS_CLUSTER_TESTCASE(test_stats_foreach_counter_yields_tracked_counters);
   STATS_CLUSTER_TESTCASE(test_stats_foreach_counter_never_forgets_untracked_counters);
   STATS_CLUSTER_TESTCASE(test_get_component_name_translates_component_to_name_properly);
+  STATS_CLUSTER_TESTCASE(test_stats_cluster_single);
 }
 
 int

@@ -29,6 +29,7 @@
 #include "timeutils.h"
 #include "logmsg/nvtable.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 #include "template/templates.h"
 #include "tls-support.h"
 #include "compat/string.h"
@@ -210,6 +211,7 @@ gint logmsg_queue_node_max = 1;
 static StatsCounterItem *count_msg_clones;
 static StatsCounterItem *count_payload_reallocs;
 static StatsCounterItem *count_sdata_updates;
+static StatsCounterItem *count_allocated_bytes;
 static GStaticPrivate priv_macro_value = G_STATIC_PRIVATE_INIT;
 
 static inline gboolean
@@ -290,8 +292,13 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
       self->sdata = sdata;
       log_msg_set_flag(self, LF_STATE_OWN_SDATA);
     }
+  guint16 old_alloc_sdata = self->alloc_sdata;
   self->alloc_sdata = alloc_sdata;
-
+  if (self->sdata)
+    {
+      self->allocated_bytes += ((self->alloc_sdata - old_alloc_sdata) * sizeof(self->sdata[0]));
+      stats_counter_add(count_allocated_bytes, (self->alloc_sdata - old_alloc_sdata) * sizeof(self->sdata[0]));
+    }
   /* ok, we have our own SDATA array now which has at least one free slot */
 
   if (!self->initial_parse)
@@ -519,6 +526,8 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
     {
       self->payload = nv_table_clone(self->payload, name_len + value_len + 2);
       log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
+      self->allocated_bytes += self->payload->size;
+      stats_counter_add(count_allocated_bytes, self->payload->size);
     }
 
   /* we need a loop here as a single realloc may not be enough. Might help
@@ -527,6 +536,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   while (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, &new_entry))
     {
       /* error allocating string in payload, reallocate */
+      guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))
         {
           /* can't grow the payload, it has reached the maximum size */
@@ -535,6 +545,9 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
                    evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""));
           break;
         }
+      guint32 new_size = self->payload->size;
+      self->allocated_bytes += (new_size - old_size);
+      stats_counter_add(count_allocated_bytes, new_size-old_size);
       stats_counter_inc(count_payload_reallocs);
     }
 
@@ -1095,6 +1108,8 @@ log_msg_alloc(gsize payload_size)
     msg->payload = nv_table_init_borrowed(((gchar *) msg) + payload_ofs, payload_space, LM_V_MAX);
 
   msg->num_nodes = nodes;
+  msg->allocated_bytes = alloc_size + payload_space;
+  stats_counter_add(count_allocated_bytes, msg->allocated_bytes);
   return msg;
 }
 
@@ -1286,6 +1301,8 @@ log_msg_free(LogMessage *self)
 
   if (self->original)
     log_msg_unref(self->original);
+
+  stats_counter_sub(count_allocated_bytes, self->allocated_bytes);
 
   g_free(self);
 }
@@ -1728,6 +1745,9 @@ log_msg_global_init(void)
 
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "sdata_updates", NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_sdata_updates);
+
+  stats_cluster_single_key_set(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
+  stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
   stats_unlock();
 }
 
