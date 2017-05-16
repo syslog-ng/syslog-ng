@@ -7,6 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
+version="0.3.2.20170516"
 ### Check for "local" variable support
 if type local >/dev/null; then
 	:
@@ -66,7 +67,7 @@ tcpdumpcmd="tcpdump"
 tcpdumpopts="-p -s 1500 -w"
 opensslmajor=0
 getsyslogpids () { pidof syslog-ng ; }
-trace="strace -f"
+trace="strace -s256 -ff -ttT -f"
 initfile="/etc/init.d/syslog-ng"
 service_stop="${initfile} stop"
 service_start="${initfile} start"
@@ -196,7 +197,7 @@ fi
 debun_init () {
 	#Create temp dir, to place files into
 	host=`uname -n`
-	date=`date '+%Y-%m-%d_%H:%M'`
+	date=`date '+%Y-%m-%d_%H-%M'`
 	tmpdir=${workdir}/syslog.debun.${host}.${date}.$$
 	( umask 077 ; mkdir ${tmpdir} )
 	[ -d "$tmpdir" ] || { printf "Could not create a temp directory\n" >&2 ; exit 1 ; }
@@ -320,6 +321,12 @@ getallchilds () {
 	echo ${childs} ${subchilds}
 }
 
+acquire_debun_info () {
+	pwd > ${tmpdir}/debun.pwd
+	echo "${0} ${@}" > ${tmpdir}/debun.argv
+	echo "${version}" > ${tmpdir}/debun.version
+}
+
 acquire_system_info () {
 	printf "System's full uname: "
 	uname -a | tee ${tmpdir}/sys.uname
@@ -370,6 +377,7 @@ acquire_system_other_info () {
 ### Here comes the general info acquiring parts
 acquire_general_info () {
 	printf "\nStart general info collection\n"
+	acquire_debun_info
 	acquire_system_info
 	[ -n "$privacy_mode" ] && return
 	acquire_network_info
@@ -762,6 +770,7 @@ debun_extra_suse() {
 debun_extra_genlinux () {
 	if is_available getenforce; then
 		getenforce >${tmpdir}/sys.selinux
+		${pscmd}Z >${tmpdir}/sys.ps.selinux
 	else
 		echo "No getenforce in path." >${tmpdir}/sys.selinux
 	fi
@@ -770,7 +779,7 @@ debun_extra_genlinux () {
 	fi
 	sysctl -a >${tmpdir}/sys.sysctl.all 2>/dev/null
 	lspci >${tmpdir}/sys.lspci
-	cp /proc/cpuinfo >${tmpdir}/sys.cpuinfo
+	cp /proc/cpuinfo "${tmpdir}/sys.cpuinfo"
 }
 
 debun_linux () {
@@ -1091,7 +1100,7 @@ setup_env_freebsd () {
 setup_env_hpux () {
 	gzipcmd="/usr/contrib/bin/gzip -9"
 	lddcmd="/usr/ccs/bin/ldd"
-	trace="/usr/local/bin/truss -f"
+	trace="/usr/local/bin/tusc -T -f"
 	netstatsu="netstat -s"
 	netstatpunt="netstat -n"
 	ipconfig="netstat -ni"
@@ -1225,7 +1234,7 @@ setup_env_aix () {
 setup_env_generic () {
 	### Check if truss is available
 	if is_available truss ; then
-		trace="truss -f"
+		trace="truss -r all -w all -u libc:: -f"
 	fi
 
 	### Check if ss is available (should only be present on Linux)
