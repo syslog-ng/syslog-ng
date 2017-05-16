@@ -48,7 +48,7 @@ dfk="df -k"
 dfh="df -h"
 dfi="df -i"
 duks="du -ks"
-grepq="grep -q"
+grepq="fgrep -q"
 lddcmd="ldd"
 mount=mount
 varlimit=1000
@@ -64,6 +64,7 @@ vmstat=vmstat
 dmesg=dmesg
 tcpdumpcmd="tcpdump"
 tcpdumpopts="-p -s 1500 -w"
+opensslmajor=0
 getsyslogpids () { pidof syslog-ng ; }
 trace="strace -f"
 initfile="/etc/init.d/syslog-ng"
@@ -377,15 +378,167 @@ acquire_general_info () {
 	acquire_system_other_info
 }
 
+pki_is_certificate () {
+	grep "BEGIN CERTIFICATE" "${1}" 2>/dev/null | ${grepq} -v "REQUEST"
+}
+
+pki_count_certificates () {
+	grep -c "BEGIN CERTIFICATE"	"${1}" 2>/dev/null
+}
+
+pki_is_private_key () {
+	${grepq} "PRIVATE KEY" "${1}" 2>/dev/null
+}
+
+pki_is_public_key () {
+	${grepq} "PUBLIC KEY" "${1}" 2>/dev/null
+}
+
+pki_is_rsa () {
+	${grepq} "RSA " "${1}" 2>/dev/null
+}
+
+pki_is_dsa () {
+	${grepq} "DSA " "${1}" 2>/dev/null
+}
+
+pki_is_ecdsa () {
+	${grepq} " EC " "${1}" 2>/dev/null
+}
+
+pki_is_encrypted () {
+	if ${grepq} "ENCRYPTED" "${1}"; then
+		return 0
+	else
+		local buffer_error
+		buffer_error=$( openssl rsa -in "${1}" -noout -text 2>&1 >/dev/null )
+		if echo "${buffer_error}" | ${grepq} "problems getting password"; then
+			return 0
+		else
+			return 1
+		fi
+	fi
+}
+
+pki_parse_public_key () {
+	oneline_cert=$( tr -d '\n' )
+	if echo "${oneline_cert}" | $grepq "unknown public key type"; then
+		printf "OPENSSL_TOO_OLD;"
+	else
+		echo "${oneline_cert}" | sed -e 's: ::g' -e 's_^.*\(Modulus\|modulus\|pub\)\(([0-9]\+bit)\)\?:\([a-f0-9:]\+\).*$_Public Key=\3;_'
+	fi
+}
+
+pki_guess_certificate () {
+	local header buffer_pubkey buffer_rest hashopts hashnum
+	if [ ${opensslmajor} -gt 0 ]; then
+			hashopts="-subject_hash -subject_hash_old"
+			hashnum="2;"
+	else
+			hashopts="-subject_hash"
+			hashnum="1;"
+	fi
+
+	certcount=$( pki_count_certificates "${1}" )
+	[ "${certcount}" -gt 1 ] && header="STACKED_CERTIFICATE(${certcount});${1};" || header="CERTIFICATE;${1};"
+	buffer_pubkey=$( openssl x509 -in "${1}" -text -noout  2>/dev/null | pki_parse_public_key )
+	buffer_rest=$( openssl x509 -in "${1}" -noout ${hashopts} -serial -dates -fingerprint -subject -issuer | tr '\n' ';' )
+	printf "${header}${buffer_pubkey}${hashnum}${buffer_rest}"
+}
+
+pki_guess_private_key () {
+	local header buffer_pubkey buffer_error
+	if pki_is_encrypted "${1}"; then
+		header="PRIVATE_ENCRYPTED;${1};"
+	else
+		if pki_is_rsa "${1}"; then
+			header="PRIVATE_RSA;${1};"
+			buffer_pubkey=$( openssl rsa -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		elif pki_is_dsa "${1}"; then
+			header="PRIVATE_DSA;${1};"
+			buffer_pubkey=$( openssl dsa -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		elif pki_is_ecdsa "${1}"; then
+			header="PRIVATE_EC;${1};"
+			buffer_error=$( openssl ec -in "${1}" -noout -text 2>&1 >/dev/null )
+			if echo "${buffer_error}" | ${grepq} "'ec' is an invalid command"; then
+				buffer_pubkey="OPENSSL_TOO_OLD;"
+			else
+				buffer_pubkey=$( openssl ec -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+			fi
+		else
+			header="UNKNOWN_PRIVATE;${1};"
+			buffer_pubkey=";"
+		fi
+	fi
+	printf "${header}${buffer_pubkey}"
+}
+
+pki_guess_public_key () {
+	# Public keys do not have their type in the PEM header/footer
+
+	local header buffer_pubkey buffer_error
+	header="PUBLIC;${1};"
+	if [ ${opensslmajor} -gt 0 ]; then
+		buffer_pubkey=$( openssl pkey -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+	else
+		buffer_error=$( openssl rsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+		if echo "${buffer_error}" | ${grepq} "expecting an rsa key"; then
+			buffer_error=$( openssl dsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+			if echo "${buffer_error}" | ${grepq} "expecting a dsa key"; then
+				header="UNKNOWN_PUBLIC;${1};"
+				buffer_pubkey=";"
+			else
+				buffer_pubkey=$( openssl dsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+			fi
+		elif echo "${buffer_error}" | ${grepq} "unknown public key type"; then
+			header="UNKNOWN_PUBLIC;${1};"
+			buffer_pubkey="OPENSSL_TOO_OLD;"
+		else
+			buffer_pubkey=$( openssl rsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		fi
+	fi
+	printf "${header}${buffer_pubkey}"
+}
+
+pki_process_file () {
+	local output_buffer
+	if pki_is_certificate "${1}"; then
+		output_buffer=$( pki_guess_certificate "${1}" )
+	else
+		if pki_is_private_key "${1}"; then
+			output_buffer=$( pki_guess_private_key "${1}" )
+		elif pki_is_public_key "${1}"; then
+			output_buffer=$( pki_guess_public_key "${1}" )
+		else
+			output_buffer="OTHER_FILE;${1};"
+		fi
+	fi
+	echo "${output_buffer}"
+}
+
+acquire_syslog_pki_info () {
+	if is_available openssl; then
+		local opensslver
+		opensslver=$( openssl version )
+		opensslver=${opensslver%%.*}
+		opensslmajor=${opensslver##OpenSSL }
+		cd "${confdir}"
+		find . -name '*.0' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
+		while read FILE; do
+			pki_process_file "${FILE}" >>${tmpdir}/syslog.etc.pki.info.csv
+		done <${tmpdir}/syslog.etc.pki.files
+	fi
+}
+
 acquire_syslog_config () {
 	echo "Copy configs from $confdir"
-	cd $confdir
+	cd "${confdir}"
 	mkdir ${tmpdir}/config
 	find . > ${tmpdir}/syslog.etc.files
 	grep '\.key$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
 	grep -v '\.key$' ${tmpdir}/syslog.etc.files | \
 		while read FILE; do \
-			if ${grepq} "PRIVATE KEY-----" "${FILE}" 2>/dev/null; then
+			if pki_is_private_key "${FILE}" 2>/dev/null; then
 				echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
 			else
 				echo "${FILE}"
@@ -522,6 +675,7 @@ acquire_syslog_startup_svc () {
 acquire_syslog_all () {
 	printf "\nStart Syslog-specific info collection\n"
 	acquire_syslog_config
+	acquire_syslog_pki_info
 	acquire_syslog_pids
 	acquire_syslog_info
 	acquire_syslog_var
