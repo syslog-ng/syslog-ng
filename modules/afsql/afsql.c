@@ -1193,7 +1193,7 @@ afsql_dd_init(LogPipe *s)
     StatsClusterKey sc_key;
     stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
                                   afsql_dd_format_stats_instance(self) );
-    stats_register_counter(0, &sc_key, SC_TYPE_STORED, &self->stored_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   }
   stats_unlock();
@@ -1213,7 +1213,7 @@ afsql_dd_init(LogPipe *s)
       if (self->flags & AFSQL_DDF_EXPLICIT_COMMITS)
         log_queue_set_use_backlog(self->queue, TRUE);
     }
-  log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
+  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages);
   if (!self->fields)
     {
       GList *col, *value;
@@ -1324,7 +1324,7 @@ error:
     StatsClusterKey sc_key;
     stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
                                   afsql_dd_format_stats_instance(self) );
-    stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   }
   stats_unlock();
@@ -1347,7 +1347,7 @@ afsql_dd_deinit(LogPipe *s)
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
                                 afsql_dd_format_stats_instance(self) );
-  stats_unregister_counter(&sc_key, SC_TYPE_STORED, &self->stored_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 

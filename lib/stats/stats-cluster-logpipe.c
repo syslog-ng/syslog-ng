@@ -29,7 +29,7 @@ static const gchar *tag_names[SC_TYPE_MAX] =
 {
   /* [SC_TYPE_DROPPED]   = */ "dropped",
   /* [SC_TYPE_PROCESSED] = */ "processed",
-  /* [SC_TYPE_STORED]   = */  "stored",
+  /* [SC_TYPE_QUEUED]   = */  "queued",
   /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
   /* [SC_TYPE_STAMP] = */ "stamp",
 };

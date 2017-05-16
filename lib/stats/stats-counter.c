@@ -34,7 +34,7 @@ _reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer 
 static inline void
 _reset_non_stored_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
-  if (type != SC_TYPE_STORED)
+  if (type != SC_TYPE_QUEUED)
     {
       _reset_counter(sc, type, counter, user_data);
     }

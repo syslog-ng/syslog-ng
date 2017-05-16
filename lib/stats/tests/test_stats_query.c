@@ -108,7 +108,7 @@ _initialize_counter_hash(void)
     {SCS_GLOBAL, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
     {SCS_PIPE | SCS_SOURCE, "guba.gumi.disz", "frozen", SC_TYPE_SUPPRESSED},
     {SCS_TCP | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
-    {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_STORED},
+    {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_QUEUED},
   };
 
   const CounterHashContent single_cluster_counters[] =
