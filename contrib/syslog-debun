@@ -8,6 +8,7 @@
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
 version="0.3.2.20170516"
+
 ### Check for "local" variable support
 if type local >/dev/null; then
 	:
@@ -329,27 +330,27 @@ acquire_debun_info () {
 
 acquire_system_info () {
 	printf "System's full uname: "
-	uname -a | tee ${tmpdir}/sys.uname
+	uname -a | tee "${tmpdir}/sys.uname"
 }
 
 acquire_network_info () {
 	printf "Getting network-interface information: "
 	if $ipconfig >${tmpdir}/net.ip ; then
-		echo "Success"
+		printf "Success\n"
 	else
-		echo "Failed"
+		printf "Failed\n"
 	fi
 	printf "Getting network routes: "
 	if routeconfig >${tmpdir}/net.route ; then
-		echo "Success"
+		printf "Success\n"
 	else
-		echo "Failed"
+		printf "Failed\n"
 	fi
-	echo "Getting DNS resolution-related informations: "
+	printf "Getting DNS resolution-related information: "
 	[ -f /etc/nsswitch.conf ] && cp /etc/nsswitch.conf ${tmpdir}/sys.nsswitch.conf
 	[ -f /etc/resolv.conf ] && cp /etc/resolv.conf ${tmpdir}/sys.resolv.conf
 	[ -f /etc/hosts ] && cp /etc/hosts ${tmpdir}/sys.hosts
-	echo "Done"
+	printf "Done\n"
 }
 
 acquire_system_process_info () {
@@ -583,7 +584,7 @@ acquire_syslog_pids () {
 }
 
 acquire_syslog_info () {
-	echo "Syslog-ng's exact version: "
+	printf "Syslog-ng's exact version: "
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
 	${syslogbin}-ctl stats > ${tmpdir}/syslog.stats 2>&1
@@ -600,14 +601,14 @@ acquire_syslog_info () {
 }
 
 acquire_syslog_var () {
-	$duks $vardir/ >${tmpdir}/syslog.duks.var
+	$duks "${vardir}/" >${tmpdir}/syslog.duks.var
 	read vardu dir <${tmpdir}/syslog.duks.var
 	mkdir ${tmpdir}/var
-	cd "$vardir"
+	cd "${vardir}"
 	if [ "$vardu" -lt "$varlimit" ] ; then
 		find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
 	else
-		printf "Size of $vardir is larger than $varlimit kilobytes.\n"
+		printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
 		printf "Do you really want to copy it's contents? Type 'YES' with all capitals: "
 		read ans
 		[ "$ans" = "YES" ] && find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
@@ -646,7 +647,7 @@ acquire_syslog_ldinfo () {
 }
 
 acquire_syslog_startup_method () {
-	echo "Detecting init system: "
+	printf "Detecting init system: "
 	if [ -d "/run/systemd/system" ]; then
 		acquire_syslog_startup_systemdunit
 	elif [ -d "/lib/svc/method" ]; then
@@ -729,32 +730,32 @@ debun_extra_debian () {
 	printf "\nDebian specific checks\n"
 	printf "Check package files integrity\n"
 	cd /
-	md5sum --quiet -c /var/lib/dpkg/info/syslog-ng*.md5sums && echo Package files are intact
-	echo "list syslog-related packages"
+	md5sum --quiet -c /var/lib/dpkg/info/syslog-ng*.md5sums && printf "Package files are intact\n"
+	printf "list syslog-related packages\n"
 	dpkg -l |grep syslog > ${tmpdir}/deb.packages
 }
 
 debun_extra_redhat () {
 	printf "\nRedhat specific checks\n"
-	echo "Check package files integrity"
+	printf "Check package files integrity\n"
 	rpm_verify syslog-ng-premium-edition syslog-ng-premium-edition-client syslog-ng-premium-edition-compact || \
-		echo "No syslog-ng RPM packages have been found!"
-	echo "list syslog-related packages"
+		printf "No syslog-ng RPM packages have been found!\n"
+	printf "list syslog-related packages\n"
 	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
 }
 
 debun_extra_slackware () {
 	printf "\nSlackware Linux specific checks\n"
-	echo "list syslog-related packages"
+	printf "list syslog-related packages\n"
 	find /var/log/packages -name "*sys*log*" | while read -r FILE; do echo "${FILE##*/}"; done > ${tmpdir}/pkg.packages
 }
 
 debun_extra_suse() {
 	printf "\nSuSE specific checks\n"
-	echo "Check package files integrity"
+	printf "Check package files integrity\n"
 	rpm_verify syslog-ng-premium-edition syslog-ng-premium-edition-client syslog-ng-premium-edition-compact || \
-		echo "No syslog-ng RPM packages have been found!"
-	echo "list syslog-related packages"
+		printf "No syslog-ng RPM packages have been found!\n"
+	printf "list syslog-related packages\n"
 	rpm -qa | grep syslog > ${tmpdir}/rpm.packages
 	#on opensuse "ss utility, iproute2-ss071016" crashes when run with the -punt CLI options
 	if is_available netstat; then
@@ -774,11 +775,13 @@ debun_extra_genlinux () {
 	else
 		echo "No getenforce in path." >${tmpdir}/sys.selinux
 	fi
+
+	[ -n "$privacy_mode" ] && return
 	if is_available dmidecode; then
-		dmidecode >${tmpdir}/sys.dmidecode
+		dmidecode >"${tmpdir}/sys.dmidecode"
 	fi
-	sysctl -a >${tmpdir}/sys.sysctl.all 2>/dev/null
-	lspci >${tmpdir}/sys.lspci
+	sysctl -a >"${tmpdir}/sys.sysctl.all" 2>/dev/null
+	lspci >"${tmpdir}/sys.lspci"
 	cp /proc/cpuinfo "${tmpdir}/sys.cpuinfo"
 }
 
@@ -911,9 +914,9 @@ setup_env_debian () {
 		echo "${x%: /*}"
 	}
 	distpkgstatus () {
-		printf "@@@Package info for: %s\n" "$1"
-		dpkg -s $1
-		printf "\n"
+		echo "@@@Package info for: ${1}"
+		dpkg -s ${1}
+		echo ""
 	}
 }
 
@@ -928,9 +931,9 @@ setup_env_redhat () {
 		echo "$x"
 	}
 	distpkgstatus () {
-		printf "@@@Package info for: %s\n" "$1"
-		rpm -qi $1
-		printf "\n"
+		echo "@@@Package info for: ${1}"
+		rpm -qi ${1}
+		echo ""
 	}
 }
 
@@ -945,9 +948,9 @@ setup_env_suse  () {
 		echo "$x"
 	}
 	distpkgstatus () {
-		printf "@@@Package info for: %s\n" "$1"
+		echo "@@@Package info for: ${1}"
 		rpm -qi $1
-		printf "\n"
+		echo ""
 	}
 }
 
@@ -989,19 +992,19 @@ setup_env_slackware  () {
 		local PIVOT
 		local LASTLINE
 		local PKGINFO
-		echo "@@@Package info for: $1"
+		echo "@@@Package info for: ${1}"
 		PKGINFO=$( \
-			( find /var/log/packages/ -name "$1*" ) | \
+			( find /var/log/packages/ -name "${1}*" ) | \
 			while read -r PKGLOGFILE; do
-				PIVOT=$( fgrep -n "FILE LIST:" "$PKGLOGFILE" )
+				PIVOT=$( fgrep -n "FILE LIST:" "${PKGLOGFILE}" )
 				LASTLINE=$(( ${PIVOT%%:*} - 1 )) 2>/dev/null
-				head -n ${LASTLINE:-16} "$PKGLOGFILE"
+				head -n ${LASTLINE:-16} "${PKGLOGFILE}"
 				echo ""
 			done )
 		if [ -n "${PKGINFO}" ]; then
 			echo "${PKGINFO}"
 		else
-			echo "The package '$1' is not installed, or does not exist!" >&2
+			echo "The package '${1}' is not installed, or does not exist!" >&2
 		fi
 	}
 }
@@ -1067,9 +1070,9 @@ setup_env_solaris () {
 		perl -ne 'if ( /^Referenced by the/ ) { $p=1; } elsif (/:/ or /^$/ ) { $p=0; } elsif ($p) { s/^\s+//; print ; } else { print "FAIL:".$_; }'
 	}
 	distpkgstatus () {
-		printf "@@@Package info for: %s\n" "$1"
+		echo "@@@Package info for: ${1}"
 		pkginfo -l $1
-		printf "\n"
+		echo ""
 	}
 }
 
@@ -1265,7 +1268,7 @@ setup_env() {
 	elif [ "$os" = "AIX" ]; then
 		setup_env_aix
 	else
-		echo "Unkonwn or (yet) unhandled system"
+		printf "Unkonwn or (yet) unhandled system\n"
 	fi
 
 	setup_env_generic
@@ -1293,58 +1296,59 @@ run_specific_extras () {
 
 run_debug () {
 	printf "\nStart Debug collection\n"
-	if [ -n "$pcap_params" ]; then
+	if [ -n "${pcap_params}" ]; then
 		if is_available $tcpdumpcmd ; then
-			echo "Start packet dump in background with filters: $pcap_params"
-			$tcpdumpcmd $tcpdumpopts ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} $pcap_params &
-			pcappid=$!
+			echo "Start packet dump in background with filters: ${pcap_params}"
+			${tcpdumpcmd} ${tcpdumpopts} ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} ${pcap_params} &
+			pcappid=${!}
 		else
 			echo "tcpdump/snoop is not available" >&2
 		fi
 	fi
-	if [ -n "$tracing" ] && [ -z "$debug_params" ]; then
+	if [ -n "${tracing}" ] && [ -z "${debug_params}" ]; then
 		for i in ${sngallpids}; do
-			$trace -o ${tmpdir}/trace.${i}.txt -p $i &
-			tracepids="${tracepids}${tracepids:+ }$!"
+			${trace} -o ${tmpdir}/trace.${i}.txt -p ${i} &
+			tracepids="${tracepids}${tracepids:+ }${!}"
 		done
 	fi
-	if [ -n "$waitforit" ]; then
-		[ -n "$pcap_params" ] && sleep 1
-		echo "Waiting $waitforit secs before stop system's syslog-ng, and restart in debug mode."
+	if [ -n "${waitforit}" ]; then
+		[ -n "${pcap_params}" ] && sleep 1
+		echo "Waiting ${waitforit} secs before stop system's syslog-ng, and restart in debug mode."
 		pad=''
 		bs=''
-		for i in `seq 1 ${#waitforit}`; do pad="${pad} " ; bs="\b$bs" ; done
+		for i in `seq 1 ${#waitforit}`; do pad="${pad} " ; bs="\b${bs}" ; done
 		printf "Start countdown: ${pad}" >&3
-		for i in `seq $waitforit -1 1 `; do printf "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
-		echo "0">&3
+		for i in `seq ${waitforit} -1 1 `; do printf "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
+		print "0\n">&3
 		touch ${tmpdir}/syslog.debug
 	fi
-	if [ -n "$debug_params" ]; then
-		$service_stop
+	if [ -n "${debug_params}" ]; then
+		${service_stop}
 		# We should implement a better waiting for the system service's shutdown, sleep 1 works for now
 		sleep 1
-		echo "Start syslog-ng debug with params: $debug_params"
+		echo "Start syslog-ng debug with params: ${debug_params}"
 		if [ -n "$tracing" ]; then
-			$trace -o ${tmpdir}/trace.dbg.txt $syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
-			i=$!
-			tracepids="$i"
-			debugpid="`getchilds $i`"
-			echo "Trace: $i Debug: $debugpid"
+			${trace} -o ${tmpdir}/trace.dbg.txt ${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
+			i=${!}
+			tracepids="${i}"
+			debugpid="`getchilds ${i}`"
+			echo "Trace: ${i} Debug: ${debugpid}"
 		else
-			$syslogbin $debug_params >>${tmpdir}/syslog.debug 2>&1 &
-			debugpid=$!
+			${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
+			debugpid=${!}
 		fi
 	fi
-	[ -n "$timeout" ] || echo "When you want to stop collecting data, press ENTER" >&3
-	if [ -n "$waitforit" ]; then
-		sleep 1						# Let's gave time the user, to read the message about stoping
+	[ -n "${timeout}" ] || echo "When you want to stop collecting data, press ENTER" >&3
+	if [ -n "${waitforit}" ]; then
+		sleep 1
+		# Let's gave time the user, to read the message about stopping
 		tail -f ${tmpdir}/syslog.debug >&3 &
-		debugtailpid=$!
+		debugtailpid=${!}
 		#disown
 	fi
-	if [ -n "$timeout" ];
+	if [ -n "${timeout}" ];
 	then
-		sleep "$timeout"
+		sleep "${timeout}"
 	else
 		read line
 	fi
