@@ -22,6 +22,7 @@
  *
  */
 
+#include "stats/stats-views.h"
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 
@@ -329,12 +330,15 @@ log_threaded_dest_driver_start(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
+  StatsCluster *cluster;
   stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
                                 self->super.super.id,
                                 self->format.stats_instance(self));
-  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+  cluster = stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
+
   stats_unlock();
 
   log_queue_set_counters(self->queue, self->queued_messages,

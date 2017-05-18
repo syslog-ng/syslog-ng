@@ -33,7 +33,7 @@ typedef gboolean (*StatsForeachClusterRemoveFunc)(StatsCluster *sc, gpointer use
 void stats_lock(void);
 void stats_unlock(void);
 gboolean stats_check_level(gint level);
-void stats_register_counter(gint level, const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
+StatsCluster *stats_register_counter(gint level, const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
 StatsCluster *stats_register_dynamic_counter(gint stats_level, const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
 void stats_register_and_increment_dynamic_counter(gint stats_level, const StatsClusterKey *sc_key, time_t timestamp);
 void stats_register_associated_counter(StatsCluster *handle, gint type, StatsCounterItem **counter);
