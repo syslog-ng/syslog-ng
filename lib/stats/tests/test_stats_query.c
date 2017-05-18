@@ -99,6 +99,19 @@ _register_counters(const CounterHashContent *counters, size_t n, ClusterKeySet k
 }
 
 static void
+_register_single_counter_with_name()
+{
+  stats_lock();
+  {
+    StatsClusterKey sc_key;
+    StatsCounterItem *ctr_item;
+    stats_cluster_single_key_set_with_name(&sc_key, SCS_GLOBAL, "id", "instance", "name");
+    stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &ctr_item);
+  }
+  stats_unlock();
+}
+
+static void
 _initialize_counter_hash(void)
 {
   const CounterHashContent logpipe_cluster_counters[] =
@@ -119,6 +132,7 @@ _initialize_counter_hash(void)
   app_startup();
   _register_counters(logpipe_cluster_counters, ARRAY_SIZE(logpipe_cluster_counters), stats_cluster_logpipe_key_set);
   _register_counters(single_cluster_counters, ARRAY_SIZE(single_cluster_counters), stats_cluster_single_key_set);
+  _register_single_counter_with_name();
 }
 
 static gboolean
@@ -242,6 +256,7 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
     {"dst.*.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
     {"src.java.*.*", ""},
     {"src.ja*.*.*", ""},
+    {"global.id.instance.name", "global.id.instance.name: 0\n"},
     {
       "*.aliased", ".aliased: 2\n"
       "guba.frizbi.aliased: 2\n"

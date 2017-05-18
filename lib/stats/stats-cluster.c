@@ -153,12 +153,27 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 }
 
 gboolean
+stats_counter_group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other)
+{
+  if (!self || !other)
+    return FALSE;
+
+  if (self == other)
+    return TRUE;
+
+  if (self->equals)
+    return self->equals(self, other);
+
+  return (self->init == other->init) && (self->counter_names == other->counter_names);
+}
+
+gboolean
 stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2)
 {
   return key1->component == key2->component
          && strcmp(key1->id, key2->id) == 0
          && strcmp(key1->instance, key2->instance) == 0
-         && key1->counter_group_init == key2->counter_group_init;
+         && stats_counter_group_init_equals(&key1->counter_group_init, &key2->counter_group_init);
 }
 
 gboolean
@@ -224,7 +239,6 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
   return ((1<<type) & self->live_mask);
 }
 
-
 gboolean
 stats_cluster_is_indexed(StatsCluster *self, gint type)
 {
@@ -241,7 +255,7 @@ stats_cluster_new(const StatsClusterKey *key)
   _clone_stats_cluster_key(&self->key, key);
   self->use_count = 0;
   self->query_key = _stats_build_query_key(self);
-  key->counter_group_init(&self->counter_group);
+  key->counter_group_init.init(&self->key.counter_group_init, &self->counter_group);
   g_assert(self->counter_group.capacity <= sizeof(self->live_mask)*8);
   return self;
 }

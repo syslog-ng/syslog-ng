@@ -107,6 +107,26 @@ test_stats_cluster_equal_if_component_id_and_instance_are_the_same(void)
                                            stats_cluster_new(&sc_key2));
 }
 
+static void
+test_stats_cluster_key_not_equal_when_custom_tags_are_different(void)
+{
+  StatsClusterKey sc_key1;
+  StatsClusterKey sc_key2;
+  stats_cluster_single_key_set_with_name(&sc_key1, SCS_SOURCE | SCS_FILE, "id", "instance", "name1");
+  stats_cluster_single_key_set_with_name(&sc_key2, SCS_SOURCE | SCS_FILE, "id", "instance", "name2");
+  assert_gboolean(stats_cluster_key_equal(&sc_key1, &sc_key2), FALSE, __FUNCTION__);
+}
+
+static void
+test_stats_cluster_key_equal_when_custom_tags_are_the_same(void)
+{
+  StatsClusterKey sc_key1;
+  StatsClusterKey sc_key2;
+  stats_cluster_single_key_set_with_name(&sc_key1, SCS_SOURCE | SCS_FILE, "id", "instance", "name");
+  stats_cluster_single_key_set_with_name(&sc_key2, SCS_SOURCE | SCS_FILE, "id", "instance", "name");
+  assert_gboolean(stats_cluster_key_equal(&sc_key1, &sc_key2), TRUE, __FUNCTION__);
+}
+
 typedef struct _ValidateCountersState
 {
   gint type1;
@@ -220,6 +240,8 @@ test_stats_cluster(void)
   STATS_CLUSTER_TESTCASE(test_stats_foreach_counter_never_forgets_untracked_counters);
   STATS_CLUSTER_TESTCASE(test_get_component_name_translates_component_to_name_properly);
   STATS_CLUSTER_TESTCASE(test_stats_cluster_single);
+  STATS_CLUSTER_TESTCASE(test_stats_cluster_key_not_equal_when_custom_tags_are_different);
+  STATS_CLUSTER_TESTCASE(test_stats_cluster_key_equal_when_custom_tags_are_the_same);
 }
 
 int
