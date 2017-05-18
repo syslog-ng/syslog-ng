@@ -1281,7 +1281,9 @@ log_writer_init(LogPipe *s)
       cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-      stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
+
+      if (cluster != NULL)
+        stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
 
       stats_unlock();
     }
