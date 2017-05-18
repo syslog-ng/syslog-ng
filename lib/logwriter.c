@@ -1258,6 +1258,28 @@ log_writer_init_watches(LogWriter *self)
   self->io_job.completion = (void (*)(void *)) log_writer_work_finished;
 }
 
+static void
+_register_counters(LogWriter *self)
+{
+  stats_lock();
+  {
+    StatsCluster *cluster;
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
+
+    if (self->options->suppress > 0)
+      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
+    cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+
+    if (cluster != NULL)
+      stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
+  }
+  stats_unlock();
+
+}
+
 static gboolean
 log_writer_init(LogPipe *s)
 {
@@ -1270,23 +1292,8 @@ log_writer_init(LogPipe *s)
   iv_event_register(&self->queue_filled);
 
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
-    {
-      stats_lock();
-      StatsCluster *cluster;
-      StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
+    _register_counters(self);
 
-      if (self->options->suppress > 0)
-        stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-      cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-
-      if (cluster != NULL)
-        stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
-
-      stats_unlock();
-    }
   log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages);
   if (self->proto)
     {
@@ -1306,6 +1313,23 @@ log_writer_init(LogPipe *s)
     }
 
   return TRUE;
+}
+
+static void
+_unregister_counters(LogWriter *self)
+{
+  stats_lock();
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
+
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+  }
+  stats_unlock();
+
 }
 
 static gboolean
@@ -1328,16 +1352,7 @@ log_writer_deinit(LogPipe *s)
   ml_batched_timer_unregister(&self->mark_timer);
 
   log_queue_set_counters(self->queue, NULL, NULL);
-
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
-
-  stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_unlock();
+  _unregister_counters(self);
 
   return TRUE;
 }
