@@ -206,11 +206,11 @@ _stats_build_query_key(StatsCluster *self)
 
   if (self->key.id && self->key.id[0])
     {
-      g_string_append_printf(key, ";%s", self->key.id);
+      g_string_append_printf(key, ".%s", self->key.id);
     }
   if (self->key.instance && self->key.instance[0])
     {
-      g_string_append_printf(key, ";%s", self->key.instance);
+      g_string_append_printf(key, ".%s", self->key.instance);
     }
 
   return g_string_free(key, FALSE);
