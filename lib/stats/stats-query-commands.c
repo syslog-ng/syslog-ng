@@ -56,7 +56,7 @@ static gboolean
 _ctl_format_get(StatsCounterItem *ctr, gpointer user_data)
 {
   GString *str = (GString *)user_data;
-  g_string_append_printf(str, "%s: %"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
+  g_string_append_printf(str, "%s=%"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
   return TRUE;
 }
 
