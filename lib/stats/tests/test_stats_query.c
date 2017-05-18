@@ -64,7 +64,7 @@ _construct_view_name(const gchar *counter_id)
 {
   GString *aliased_name = g_string_new("");
   aliased_name = g_string_append(aliased_name, counter_id);
-  aliased_name = g_string_append(aliased_name, ";aliased");
+  aliased_name = g_string_append(aliased_name, ".aliased");
   return g_string_free(aliased_name, FALSE);
 }
 
@@ -74,7 +74,7 @@ _construct_view_query_list(const gchar *counter_instance)
   GList *queries = NULL;
   GString *query = g_string_new("*");
   query = g_string_append(query, counter_instance);
-  query = g_string_append(query, ";*");
+  query = g_string_append(query, ".*");
   gchar *q = g_string_free(query, FALSE);
   queries = g_list_append(queries, q);
   return queries;
@@ -103,12 +103,12 @@ _initialize_counter_hash(void)
 {
   const CounterHashContent logpipe_cluster_counters[] =
   {
-    {SCS_CENTER, "guba;polo", "frozen", SC_TYPE_SUPPRESSED},
+    {SCS_CENTER, "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
     {SCS_FILE | SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED},
-    {SCS_GLOBAL, "guba;gumi;diszno", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_PIPE | SCS_SOURCE, "guba;gumi;disz", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_TCP | SCS_DESTINATION, "guba;labda", "received", SC_TYPE_DROPPED},
-    {SCS_TCP | SCS_SOURCE, "guba;frizbi", "left", SC_TYPE_QUEUED},
+    {SCS_GLOBAL, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
+    {SCS_PIPE | SCS_SOURCE, "guba.gumi.disz", "frozen", SC_TYPE_SUPPRESSED},
+    {SCS_TCP | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
+    {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_QUEUED},
   };
 
   const CounterHashContent single_cluster_counters[] =
@@ -192,7 +192,7 @@ TestSuite(cluster_query_key, .init = app_startup, .fini = app_shutdown);
 
 Test(cluster_query_key, test_global_key)
 {
-  const gchar *expected_key = "dst.file;d_file;instance";
+  const gchar *expected_key = "dst.file.d_file.instance";
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance" );
   StatsCluster *sc = stats_cluster_new(&sc_key);
@@ -207,8 +207,8 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_log_msg_out)
 {
   static QueryTestCase test_cases[] =
   {
-    {"dst.tcp;guba;labda;received;dropped", "0"},
-    {"src.pipe;guba;gumi;disz;frozen;suppressed", "0"},
+    {"dst.tcp.guba.labda.received.dropped", "0"},
+    {"src.pipe.guba.gumi.disz.frozen.suppressed", "0"},
   };
 
   return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
@@ -231,25 +231,25 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
 {
   static QueryTestCase test_cases[] =
   {
-    {"center;*;*", "center;guba;polo;frozen;suppressed: 0\n"},
-    {"cent*", "center;guba;polo;frozen;suppressed: 0\n"},
-    {"src.pipe;guba;gumi;disz;*;*", "src.pipe;guba;gumi;disz;frozen;suppressed: 0\n"},
-    {"src.pipe;guba;gumi;*;*", "src.pipe;guba;gumi;disz;frozen;suppressed: 0\n"},
-    {"src.pipe;guba;*;*", "src.pipe;guba;gumi;disz;frozen;suppressed: 0\n"},
-    {"src.pipe;*;*", "src.pipe;guba;gumi;disz;frozen;suppressed: 0\n"},
-    {"dst.*;*", "dst.tcp;guba;labda;received;dropped: 0\n"},
-    {"dst.*;*;*", "dst.tcp;guba;labda;received;dropped: 0\n"},
-    {"dst.*;*;*;*", "dst.tcp;guba;labda;received;dropped: 0\n"},
-    {"src.java;*;*", ""},
-    {"src.ja*;*;*", ""},
+    {"center.*.*", "center.guba.polo.frozen.suppressed: 0\n"},
+    {"cent*", "center.guba.polo.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.gumi.disz.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
+    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
+    {"src.pipe.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
+    {"dst.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
+    {"dst.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
+    {"dst.*.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
+    {"src.java.*.*", ""},
+    {"src.ja*.*.*", ""},
     {
-      "*;aliased", ";aliased: 2\n"
-      "guba;aliased: 2\n"
-      "guba;gumi;diszno;aliased: 2\n"
-      "guba;gumi;disz;aliased: 2\n"
-      "guba;labda;aliased: 2\n"
-      "guba;frizbi;aliased: 2\n"
-      "guba;polo;aliased: 2\n"
+      "*.aliased", ".aliased: 2\n"
+      "guba.frizbi.aliased: 2\n"
+      "guba.gumi.diszno.aliased: 2\n"
+      "guba.polo.aliased: 2\n"
+      "guba.aliased: 2\n"
+      "guba.gumi.disz.aliased: 2\n"
+      "guba.labda.aliased: 2\n"
     },
   };
 
@@ -271,8 +271,8 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_sum_log_msg_out)
 {
   static QueryTestCase test_cases[] =
   {
-    {"dst.tcp;guba;labda;received;dropped", "0"},
-    {"src.pipe;guba;gumi;disz;frozen;suppressed", "0"},
+    {"dst.tcp.guba.labda.received.dropped", "0"},
+    {"src.pipe.guba.gumi.disz.frozen.suppressed", "0"},
   };
 
   return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
@@ -296,13 +296,13 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_sum_str_out)
   static QueryTestCase test_cases[] =
   {
     {"*", "14"},
-    {"center;*;*", "0"},
+    {"center.*.*", "0"},
     {"cent*", "0"},
-    {"src.pipe;guba;gumi;disz;*;*", "0"},
-    {"*.tcp;guba;*;*", "0"},
-    {"*;guba;*i;*;*", "0"},
-    {"*;guba;gum?;*;*", "0"},
-    {"src.ja*;*;*", ""},
+    {"src.pipe.guba.gumi.disz.*.*", "0"},
+    {"*.tcp.guba.*.*", "0"},
+    {"*.guba.*i.*.*", "0"},
+    {"*.guba.gum?.*.*", "0"},
+    {"src.ja*.*.*", ""},
   };
 
   return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
@@ -323,12 +323,12 @@ ParameterizedTestParameters(stats_query, test_stats_query_list)
 {
   static QueryTestCase test_cases[] =
   {
-    {"center;*;*", "center;guba;polo;frozen;suppressed\n"},
-    {"cent*", "center;guba;polo;frozen;suppressed\n"},
-    {"src.pipe;guba;gumi;disz;*;*", "src.pipe;guba;gumi;disz;frozen;suppressed\n"},
-    {"src.pipe;*;*", "src.pipe;guba;gumi;disz;frozen;suppressed\n"},
-    {"src.java;*;*", ""},
-    {"src.ja*;*;*", ""},
+    {"center.*.*", "center.guba.polo.frozen.suppressed\n"},
+    {"cent*", "center.guba.polo.frozen.suppressed\n"},
+    {"src.pipe.guba.gumi.disz.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed\n"},
+    {"src.pipe.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed\n"},
+    {"src.java.*.*", ""},
+    {"src.ja*.*.*", ""},
   };
 
   return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));

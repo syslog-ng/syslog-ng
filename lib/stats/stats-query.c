@@ -78,7 +78,7 @@ _construct_counter_item_name(StatsCluster *sc, gint type)
   GString *name = g_string_new("");
 
   g_string_append(name, sc->query_key);
-  g_string_append(name, ";");
+  g_string_append(name, ".");
   g_string_append(name, stats_cluster_get_type_name(sc, type));
 
   return g_string_free(name, FALSE);
