@@ -196,9 +196,6 @@ tf_strip(LogMessage *msg, gint argc, GString *argv[], GString *result)
       while (isspace(argv[i]->str[spaces_start]))
         spaces_start++;
 
-      if (argv[i]->len == spaces_start)
-        continue;
-
       if (result->len > 0)
         g_string_append_c(result, ' ');
 
