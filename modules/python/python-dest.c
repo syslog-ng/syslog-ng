@@ -33,10 +33,6 @@
 #include "str-utils.h"
 #include "messages.h"
 
-#ifndef SCS_PYTHON
-#define SCS_PYTHON 0
-#endif
-
 typedef struct
 {
   LogThrDestDriver super;
