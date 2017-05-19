@@ -310,8 +310,12 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
   gstate = PyGILState_Ensure();
   if (!_py_invoke_is_opened(self))
     {
-      result = WORKER_INSERT_RESULT_NOT_CONNECTED;
-      goto exit;
+      _py_invoke_open(self);
+      if (!_py_invoke_is_opened(self))
+        {
+          result = WORKER_INSERT_RESULT_NOT_CONNECTED;
+          goto exit;
+        }
     }
 
   if (!_py_construct_message(self, msg, &msg_object))
