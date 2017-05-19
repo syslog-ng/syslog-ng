@@ -1,6 +1,9 @@
 EXTRA_DIST += \
 	contrib/README \
 	\
+	contrib/README.syslog-debun \
+	contrib/syslog-debun \
+	\
 	contrib/init.d.solaris \
 	contrib/init.d.HP-UX \
 	contrib/init.d.RedHat \
