@@ -83,9 +83,9 @@ stats_register_written_view(StatsCluster *cluster, StatsCounterItem *processed, 
   written_view_name = _construct_view_name(cluster);
   _index_required_written_counters(cluster);
 
-  written_query = g_list_append(written_query, stats_counter_get_name(queued));
-  written_query = g_list_append(written_query, stats_counter_get_name(processed));
-  written_query = g_list_append(written_query, stats_counter_get_name(dropped));
+  written_query = g_list_append(written_query, g_strdup(stats_counter_get_name(queued)));
+  written_query = g_list_append(written_query, g_strdup(stats_counter_get_name(processed)));
+  written_query = g_list_append(written_query, g_strdup(stats_counter_get_name(dropped)));
 
   stats_register_view(written_view_name, written_query, _calculate_written_messages);
 }
