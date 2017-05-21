@@ -44,7 +44,6 @@ struct _KVScanner
   gchar value_separator;
   gchar *pair_separator;
   gsize pair_separator_len;
-  gchar quote_char;
   gchar stop_char;
 
   KVTransformValueFunc transform_value;
