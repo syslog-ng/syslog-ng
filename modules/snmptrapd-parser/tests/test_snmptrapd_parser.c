@@ -370,3 +370,22 @@ Test(snmptrapd_parser, test_v2_varbindlist_starts_with_tab)
 
   assert_log_message_dropped(input);
 }
+
+Test(snmptrapd_parser, test_v2_message_with_garbage)
+{
+  const gchar *input =
+    "2017-05-10 12:46:14 localhost [UDP: [127.0.0.1]:34257->[127.0.0.1]:162]:\n"
+    "iso.3.6.1.2.1.1.3.0 = Timeticks: (875496867) 101 days, 7:56:08.67\t"
+    "iso.3.6.1.6.3.1.1.4.1.0 = OID: iso.3.6.1.4.1.8072.2.3.0.1\n"
+    "garbage = stop here";
+
+  TestNameValue expected[] =
+  {
+    { ".snmp.hostname", "localhost" },
+    { ".snmp.transport_info", "UDP: [127.0.0.1]:34257->[127.0.0.1]:162" },
+    { ".snmp.iso.3.6.1.2.1.1.3.0", "(875496867) 101 days, 7:56:08.67" },
+    { ".snmp.iso.3.6.1.6.3.1.1.4.1.0", "iso.3.6.1.4.1.8072.2.3.0.1" }
+  };
+
+  assert_log_message_name_values(input, expected, SIZE_OF_ARRAY(expected));
+}

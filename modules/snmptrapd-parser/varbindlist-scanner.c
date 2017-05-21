@@ -89,6 +89,7 @@ varbindlist_scanner_init(VarBindListScanner *self)
   kv_scanner_init_instance(&self->super, '=', "\t", FALSE);
   kv_scanner_set_extract_annotation_func(&self->super, _extract_type);
   kv_scanner_set_valid_key_character_func(&self->super, _is_valid_key_character);
+  kv_scanner_set_stop_character(&self->super, '\n');
 
   self->varbind_type = g_string_sized_new(16);
   self->super.clone = _clone;
