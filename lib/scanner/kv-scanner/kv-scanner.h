@@ -45,6 +45,7 @@ struct _KVScanner
   gchar *pair_separator;
   gsize pair_separator_len;
   gchar quote_char;
+  gchar stop_char;
 
   KVTransformValueFunc transform_value;
   KVIsValidKeyCharFunc is_valid_key_character;
@@ -98,6 +99,12 @@ static inline void
 kv_scanner_set_valid_key_character_func(KVScanner *self, KVIsValidKeyCharFunc is_valid_key_character)
 {
   self->is_valid_key_character = is_valid_key_character;
+}
+
+static inline void
+kv_scanner_set_stop_character(KVScanner *self, gchar stop_char)
+{
+  self->stop_char = stop_char;
 }
 
 static inline void
