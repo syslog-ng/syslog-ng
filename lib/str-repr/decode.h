@@ -32,7 +32,7 @@ typedef struct _StrReprDecodeOptions
 {
   MatchDelimiterFunc match_delimiter;
   gpointer match_delimiter_data;
-  gchar delimiter_chars[2];
+  gchar delimiter_chars[3];
 } StrReprDecodeOptions;
 
 gboolean str_repr_decode(GString *value, const gchar *input, const gchar **end);
