@@ -126,8 +126,7 @@ static void
 _advance_time(gint timeout)
 {
   if (timeout)
-    timer_wheel_set_time(pattern_db_get_timer_wheel(patterndb),
-                         timer_wheel_get_time(pattern_db_get_timer_wheel(patterndb)) + timeout + 1);
+    pattern_db_advance_time(patterndb, timeout + 1);
 }
 
 static LogMessage *

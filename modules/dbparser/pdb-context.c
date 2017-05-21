@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013, 2015 Balabit
- * Copyright (c) 1998-2013, 2015 Balázs Scheidler
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,28 +20,24 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_PDB_RULESET_H_INCLUDED
-#define PATTERNDB_PDB_RULESET_H_INCLUDED
+#include "pdb-context.h"
 
-#include "syslog-ng.h"
-#include "radix.h"
-#include "pdb-lookup-params.h"
-#include "pdb-rule.h"
-
-/* rules loaded from a pdb file */
-typedef struct _PDBRuleSet
+static void
+pdb_context_free(CorrellationContext *s)
 {
-  RNode *programs;
-  gchar *version;
-  gchar *pub_date;
-  gboolean is_empty;
-} PDBRuleSet;
+  PDBContext *self = (PDBContext *) s;
 
-PDBRule *pdb_ruleset_lookup(PDBRuleSet *rule_set, PDBLookupParams *lookup, GArray *dbg_list);
-PDBRuleSet *pdb_rule_set_new(void);
-void pdb_rule_set_free(PDBRuleSet *self);
+  if (self->rule)
+    pdb_rule_unref(self->rule);
+  correllation_context_free_method(s);
+}
 
-void pdb_rule_set_global_init(void);
+PDBContext *
+pdb_context_new(CorrellationKey *key)
+{
+  PDBContext *self = g_new0(PDBContext, 1);
 
-
-#endif
+  correllation_context_init(&self->super, key);
+  self->super.free_fn = pdb_context_free;
+  return self;
+}

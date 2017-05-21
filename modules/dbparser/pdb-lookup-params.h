@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013, 2015 Balabit
- * Copyright (c) 1998-2013, 2015 Balázs Scheidler
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,28 +20,27 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_PDB_RULESET_H_INCLUDED
-#define PATTERNDB_PDB_RULESET_H_INCLUDED
 
-#include "syslog-ng.h"
-#include "radix.h"
-#include "pdb-lookup-params.h"
-#include "pdb-rule.h"
+#ifndef PATTERNDB_PDB_LOOKUP_PARAMS_H_INCLUDED
+#define PATTERNDB_PDB_LOOKUP_PARAMS_H_INCLUDED
 
-/* rules loaded from a pdb file */
-typedef struct _PDBRuleSet
+typedef struct _PDBLookupParams PDBLookupParams;
+struct _PDBLookupParams
 {
-  RNode *programs;
-  gchar *version;
-  gchar *pub_date;
-  gboolean is_empty;
-} PDBRuleSet;
+  LogMessage *msg;
+  NVHandle program_handle;
+  NVHandle message_handle;
+  const gchar *message_string;
+  gssize message_len;
+};
 
-PDBRule *pdb_ruleset_lookup(PDBRuleSet *rule_set, PDBLookupParams *lookup, GArray *dbg_list);
-PDBRuleSet *pdb_rule_set_new(void);
-void pdb_rule_set_free(PDBRuleSet *self);
-
-void pdb_rule_set_global_init(void);
-
+static inline void
+pdb_lookup_params_init(PDBLookupParams *lookup, LogMessage *msg)
+{
+  lookup->msg = msg;
+  lookup->program_handle = LM_V_PROGRAM;
+  lookup->message_handle = LM_V_MESSAGE;
+  lookup->message_len = 0;
+}
 
 #endif

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013, 2015 Balabit
- * Copyright (c) 1998-2013, 2015 Balázs Scheidler
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,28 +20,25 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_PDB_RULESET_H_INCLUDED
-#define PATTERNDB_PDB_RULESET_H_INCLUDED
 
-#include "syslog-ng.h"
-#include "radix.h"
-#include "pdb-lookup-params.h"
+#ifndef PATTERNDB_PDB_CONTEXT_H_INCLUDED
+#define PATTERNDB_PDB_CONTEXT_H_INCLUDED
+
 #include "pdb-rule.h"
 
-/* rules loaded from a pdb file */
-typedef struct _PDBRuleSet
+/**************************************************************************
+ * PDBContext, represents a correllation state in the state hash table, is
+ * marked with PSK_CONTEXT in the hash table key
+ **************************************************************************/
+
+/* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
+typedef struct _PDBContext
 {
-  RNode *programs;
-  gchar *version;
-  gchar *pub_date;
-  gboolean is_empty;
-} PDBRuleSet;
+  CorrellationContext super;
+  /* back reference to the last rule touching this context */
+  PDBRule *rule;
+} PDBContext;
 
-PDBRule *pdb_ruleset_lookup(PDBRuleSet *rule_set, PDBLookupParams *lookup, GArray *dbg_list);
-PDBRuleSet *pdb_rule_set_new(void);
-void pdb_rule_set_free(PDBRuleSet *self);
-
-void pdb_rule_set_global_init(void);
-
+PDBContext *pdb_context_new(CorrellationKey *key);
 
 #endif
