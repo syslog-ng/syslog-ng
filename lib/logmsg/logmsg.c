@@ -1184,11 +1184,13 @@ LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
   LogMessage *self = log_msg_alloc(0);
+  gsize allocated_bytes = self->allocated_bytes;
 
   stats_counter_inc(count_msg_clones);
   log_msg_write_protect(msg);
 
   memcpy(self, msg, sizeof(*msg));
+  msg->allocated_bytes = allocated_bytes;
 
   /* every field _must_ be initialized explicitly if its direct
    * copying would cause problems (like copying a pointer by value) */

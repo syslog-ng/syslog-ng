@@ -162,7 +162,7 @@ struct _LogMessage
   AckRecord *ack_record;
   LMAckFunc ack_func;
   LogMessage *original;
-  size_t allocated_bytes;
+  gsize allocated_bytes;
 
   /* message parts */ 
   
