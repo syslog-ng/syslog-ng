@@ -119,7 +119,9 @@ log_proto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gb
 static inline gint
 log_proto_server_get_fd(LogProtoServer *s)
 {
-  /* FIXME: Layering violation */
+  /* FIXME: Layering violation, as transport may not be fd based at all.
+   * But LogReader assumes it is.  */
+
   return s->transport->fd;
 }
 
