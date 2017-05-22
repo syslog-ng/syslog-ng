@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.2.20170516"
+version="0.3.2.20170522"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -430,16 +430,24 @@ pki_is_encrypted () {
 }
 
 pki_parse_public_key () {
-	oneline_cert=$( tr -d '\n' )
-	if echo "${oneline_cert}" | $grepq "unknown public key type"; then
-		printf "OPENSSL_TOO_OLD;"
+	oneline_cert=$( tr -d '\n' | tr -d ' ' )
+	[ -z "${oneline_cert}" ] && printf "NO_PUBLIC_KEY_COULD_BE_EXTRACTED;" && return
+
+	if echo "${oneline_cert}" | $grepq "UnabletoloadPublicKey"; then
+		printf "OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
 	else
-		echo "${oneline_cert}" | sed -e 's: ::g' -e 's_^.*\(Modulus\|modulus\|pub\)\(([0-9]\+bit)\)\?:\([a-f0-9:]\+\).*$_Public Key=\3;_'
+		if echo "${oneline_cert}" | $grepq "PublicKey:X509v3extensions"; then
+			printf "NO_PUBLIC_KEY_COULD_BE_EXTRACTED;"
+		else
+			echo "${oneline_cert}" | sed -e 's_^.*\(Modulus\|modulus\|pub\)\(([0-9]\+bit)\)\?:\([a-f0-9:]\+\).*$_Public Key=\3;_'
+		fi
 	fi
 }
 
 pki_guess_certificate () {
-	local header buffer_pubkey buffer_rest hashopts hashnum
+	local header duout buffer_pubkey buffer_rest hashopts hashnum
+	duout=$( du -b "${1}" )
+
 	if [ ${opensslmajor} -gt 0 ]; then
 			hashopts="-subject_hash -subject_hash_old"
 			hashnum="2;"
@@ -452,11 +460,12 @@ pki_guess_certificate () {
 	[ "${certcount}" -gt 1 ] && header="STACKED_CERTIFICATE(${certcount});${1};" || header="CERTIFICATE;${1};"
 	buffer_pubkey=$( openssl x509 -in "${1}" -text -noout  2>/dev/null | pki_parse_public_key )
 	buffer_rest=$( openssl x509 -in "${1}" -noout ${hashopts} -serial -dates -fingerprint -subject -issuer | tr '\n' ';' )
-	printf "${header}${buffer_pubkey}${hashnum}${buffer_rest}"
+	printf "${header}${duout%%	*};${buffer_pubkey}${hashnum}${buffer_rest}"
 }
 
 pki_guess_private_key () {
-	local header buffer_pubkey buffer_error
+	local header duout buffer_pubkey buffer_error
+	duout=$( du -b "${1}" )
 	if pki_is_encrypted "${1}"; then
 		header="PRIVATE_ENCRYPTED;${1};"
 	else
@@ -470,6 +479,8 @@ pki_guess_private_key () {
 			header="PRIVATE_EC;${1};"
 			buffer_error=$( openssl ec -in "${1}" -noout -text 2>&1 >/dev/null )
 			if echo "${buffer_error}" | ${grepq} "'ec' is an invalid command"; then
+				buffer_pubkey="NO_ECDSA_SUPPORT_IN_OPENSSL;"
+			elif echo "${buffer_error}" | $grepq "unable to load Key"; then
 				buffer_pubkey="OPENSSL_TOO_OLD;"
 			else
 				buffer_pubkey=$( openssl ec -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
@@ -479,47 +490,70 @@ pki_guess_private_key () {
 			buffer_pubkey=";"
 		fi
 	fi
-	printf "${header}${buffer_pubkey}"
+	printf "${header}${duout%%	*};${buffer_pubkey}"
 }
 
 pki_guess_public_key () {
 	# Public keys do not have their type in the PEM header/footer
 
-	local header buffer_pubkey buffer_error
+	local header duout buffer_pubkey buffer_error
 	header="PUBLIC;${1};"
+	duout=$( du -b "${1}" )
 	if [ ${opensslmajor} -gt 0 ]; then
-		buffer_pubkey=$( openssl pkey -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		buffer_error=$( openssl pkey -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+		if echo "${buffer_error}" | ${grepq} "unable to load Public Key"; then
+			header="UNKNOWN_PUBLIC;${1};"
+			buffer_pubkey="OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
+		else
+			buffer_pubkey=$( openssl pkey -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		fi
 	else
 		buffer_error=$( openssl rsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
 		if echo "${buffer_error}" | ${grepq} "expecting an rsa key"; then
 			buffer_error=$( openssl dsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
 			if echo "${buffer_error}" | ${grepq} "expecting a dsa key"; then
-				header="UNKNOWN_PUBLIC;${1};"
-				buffer_pubkey=";"
+				buffer_error=$( openssl ec -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+				if echo "${buffer_error}" | ${grepq} "expecting a ec key"; then
+					header="UNKNOWN_PUBLIC;${1};"
+					buffer_pubkey=";"
+				elif echo "${buffer_error}" | ${grepq} "'ec' is an invalid command"; then
+					header="UNKNOWN_PUBLIC;${1};"
+					buffer_pubkey="NO_ECDSA_SUPPORT_IN_OPENSSL;"
+				else
+					buffer_pubkey=$( openssl ec -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+				fi
 			else
 				buffer_pubkey=$( openssl dsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 			fi
-		elif echo "${buffer_error}" | ${grepq} "unknown public key type"; then
+		elif echo "${buffer_error}" | ${grepq} "unable to load Key"; then
 			header="UNKNOWN_PUBLIC;${1};"
-			buffer_pubkey="OPENSSL_TOO_OLD;"
+			buffer_pubkey="OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
 		else
 			buffer_pubkey=$( openssl rsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 		fi
 	fi
-	printf "${header}${buffer_pubkey}"
+	printf "${header}${duout%%	*};${buffer_pubkey}"
+}
+
+pki_other_file () {
+	local duout
+	duout=$( du -b "${1}" )
+	printf "OTHER_FILE;${1};${duout%%	*};"
 }
 
 pki_process_file () {
-	local output_buffer
+	local output_buffer duout
+	duout=$( du -b "${1}" )
+
 	if pki_is_certificate "${1}"; then
 		output_buffer=$( pki_guess_certificate "${1}" )
 	else
 		if pki_is_private_key "${1}"; then
-			output_buffer=$( pki_guess_private_key "${1}" )
+			output_buffer=$( pki_guess_private_key "${1}"  )
 		elif pki_is_public_key "${1}"; then
 			output_buffer=$( pki_guess_public_key "${1}" )
 		else
-			output_buffer="OTHER_FILE;${1};"
+			output_buffer=$( pki_other_file "${1}" )
 		fi
 	fi
 	echo "${output_buffer}"
