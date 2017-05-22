@@ -76,6 +76,7 @@ enum
 };
 
 typedef struct _StatsCounterGroup StatsCounterGroup;
+typedef struct _StatsCounterGroupInit StatsCounterGroupInit;
 
 struct _StatsCounterGroup
 {
@@ -85,7 +86,15 @@ struct _StatsCounterGroup
   void (*free_fn)(StatsCounterGroup *self);
 };
 
-typedef void (*StatsCounterGroupInit)(StatsCounterGroup *counter_group);
+struct _StatsCounterGroupInit
+{
+  const gchar **counter_names;
+  void (*init)(StatsCounterGroupInit *self, StatsCounterGroup *counter_group);
+  gboolean (*equals)(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
+};
+
+gboolean stats_counter_group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
+
 void stats_counter_group_free(StatsCounterGroup *self);
 
 struct _StatsClusterKey
