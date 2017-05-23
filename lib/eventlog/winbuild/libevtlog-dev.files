@@ -1,0 +1,3 @@
+include/eventlog/*
+lib/pkgconfig/eventlog.pc
+lib/*.lib

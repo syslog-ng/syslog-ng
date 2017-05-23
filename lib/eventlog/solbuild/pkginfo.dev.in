@@ -1,0 +1,10 @@
+PKG=ZOSevtdev
+NAME="libevtlog static libraries and development headers"
+VERSION=@VERSION@
+ARCH=sparc
+CATEGORY=library
+CLASSES="library headers none"
+BASEDIR=/
+VENDOR="Balabit IT Ltd."
+EMAIL="zorpos@balabit.com"
+DESC="Eventlog development package"

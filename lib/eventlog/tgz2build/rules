@@ -1,0 +1,44 @@
+#!/usr/bin/make -f
+
+include tgz2build/rules.conf
+                                                                                
+STAMPDIR=tgz2build/stamps
+
+CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-shared
+
+ifneq (,$(findstring solaris,$(ZBS_DIST)))
+	ifneq (,$(findstring amd64,$(ZBS_ARCH)))
+		CONFIGURE_OPTS  += 
+	endif
+  LDFLAGS += -Wl,-R/opt/syslog-ng/lib
+endif
+
+
+all: binary
+
+binary: setup configure build install
+
+setup: $(STAMPDIR)/stamp-setup
+$(STAMPDIR)/stamp-setup:
+	mkdir tgz2build/stamps || true
+	touch $@
+
+configure: $(STAMPDIR)/stamp-configure
+$(STAMPDIR)/stamp-configure:
+	LDFLAGS="$(LDFLAGS)" ./configure $(CONFIGURE_OPTS)
+	touch $@
+
+build: $(STAMPDIR)/stamp-build
+$(STAMPDIR)/stamp-build:
+	$(MAKE)
+	touch $@
+
+install:
+	rm -rf $(ZBS_STAGE_DIR)
+	$(MAKE) install DESTDIR=$(ZBS_STAGE_DIR)
+        
+clean:
+	rm -rf tgz2build/stamps || true
+	rm -rf tgz2build/staging || true
+	$(MAKE) clean
+

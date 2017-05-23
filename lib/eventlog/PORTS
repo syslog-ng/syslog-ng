@@ -1,0 +1,5 @@
+EventLog has been ported to the following systems:
+
+Platform				Compiler used
+Debian GNU/Linux 3.0 woody		gcc 2.95
+Debian GNU/Linux 3.1 sarge		gcc 3.3.5-13
