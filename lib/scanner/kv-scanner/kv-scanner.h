@@ -117,7 +117,7 @@ kv_scanner_set_stop_character(KVScanner *self, gchar stop_char)
 static inline void
 kv_scanner_free(KVScanner *self)
 {
-  if (!self)
+  if (!self || !self->free_fn)
     return;
 
   self->free_fn(self);
