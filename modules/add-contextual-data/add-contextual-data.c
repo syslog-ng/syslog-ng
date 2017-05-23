@@ -249,13 +249,7 @@ _load_context_info_db(AddContextualData *self)
 }
 
 static gboolean
-_is_initialized(AddContextualData *self)
-{
-  return context_info_db_is_loaded(self->context_info_db);
-}
-
-static gboolean
-_first_init(AddContextualData *self)
+_init_context_info_db(AddContextualData *self)
 {
   if (self->filename == NULL)
     {
@@ -263,16 +257,19 @@ _first_init(AddContextualData *self)
       return FALSE;
     }
 
-  if (!_load_context_info_db(self))
+  if (!context_info_db_is_loaded(self->context_info_db) && !_load_context_info_db(self))
     {
       msg_error("Failed to load the database file.");
       return FALSE;
     }
 
-  if (!add_contextual_data_selector_init(self->selector, context_info_db_ordered_selectors(self->context_info_db)))
-    return FALSE;
-
   return TRUE;
+}
+
+static gboolean
+_init_selector(AddContextualData *self)
+{
+  return add_contextual_data_selector_init(self->selector, context_info_db_ordered_selectors(self->context_info_db));
 }
 
 static gboolean
@@ -280,10 +277,14 @@ _init(LogPipe *s)
 {
   AddContextualData *self = (AddContextualData *)s;
 
-  if (_is_initialized(self) || _first_init(self))
-    return log_parser_init_method(s);
+  if (!_init_context_info_db(self))
+    return FALSE;
+  if (!_init_selector(self))
+    return FALSE;
+  if (!log_parser_init_method(s))
+    return FALSE;
 
-  return FALSE;
+  return TRUE;
 }
 
 LogParser *
