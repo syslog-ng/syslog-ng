@@ -266,7 +266,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
 
   if (self->alloc_sdata <= self->num_sdata)
     {
-      alloc_sdata = MAX(self->num_sdata + 1, (self->num_sdata + 8) & ~7);
+      alloc_sdata = MAX(self->num_sdata + 1, STRICT_ROUND_TO_NEXT_EIGHT(self->num_sdata));
       if (alloc_sdata > 255)
         alloc_sdata = 255;
     }
@@ -1771,6 +1771,16 @@ log_msg_lookup_time_stamp_name(const gchar *name)
   else if (strcmp(name, "recvd") == 0)
     return LM_TS_RECVD;
   return -1;
+}
+
+gssize log_msg_get_size(LogMessage *self)
+{
+  return
+    sizeof(LogMessage) + // msg.static fields
+    + self->alloc_sdata * sizeof(self->sdata[0]) +
+    sizeof(GSockAddr) + sizeof (GSockAddrFuncs) + // msg.saddr + msg.saddr.sa_func
+    ((self->num_tags) ? sizeof(self->tags[0]) * self->num_tags : 0) +
+    nv_table_get_memory_consumption(self->payload); // msg.payload (nvtable)
 }
 
 #ifdef __linux__

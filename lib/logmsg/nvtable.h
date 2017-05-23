@@ -406,4 +406,12 @@ nv_table_get_ofs_for_an_entry(NVTable *self, NVEntry *entry)
   return (nv_table_get_top(self) - (gchar *) entry);
 }
 
+static inline gssize
+nv_table_get_memory_consumption(NVTable *self)
+{
+  return sizeof(*self)+
+    self->num_static_entries*sizeof(self->static_entries[0])+
+    self->used;
+}
+
 #endif

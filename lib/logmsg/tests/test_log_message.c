@@ -30,6 +30,7 @@
 #include "libtest/persist_lib.h"
 
 #include <stdlib.h>
+#include <glib/gprintf.h>
 
 typedef struct _LogMessageTestParams
 {
@@ -380,5 +381,103 @@ Test(log_message, test_sdata_value_omits_unset_values)
   log_msg_unset_value_by_name(msg, ".SDATA.foo.bar1");
   log_msg_unset_value_by_name(msg, ".SDATA.foo.bar3");
   assert_sdata_value_equals(msg, "");
+  log_msg_unref(msg);
+}
+
+#define DEFUN_KEY_VALUE(name, key, value, size) \
+  gchar name ## _key[size]; \
+  gchar name ## _value[size]; \
+  name ## _key[size-1] = name ## _value[size-1] = 0; \
+  memset(name ## _key, key, sizeof(name ##_key)-1); \
+  memset(name ## _value, value, sizeof(name ##_value)-1); \
+
+
+typedef struct
+{
+  gssize nvtable_size_old;
+  gssize nvtable_size_new;
+  gssize msg_size_old;
+  gssize msg_size_new;
+} sizes_t;
+
+static sizes_t
+add_key_value(LogMessage *msg, gchar *key, gchar *value)
+{
+  sizes_t sizes;
+  sizes.msg_size_old = log_msg_get_size(msg);
+  sizes.nvtable_size_old = nv_table_get_memory_consumption(msg->payload);
+  log_msg_set_value_by_name(msg, key, value, -1);
+  sizes.nvtable_size_new = nv_table_get_memory_consumption(msg->payload);
+  sizes.msg_size_new = log_msg_get_size(msg);
+  return sizes;
+}
+
+
+static void
+test_with_sdata(LogMessage *msg, guint32 old_msg_size)
+{
+  sizes_t sizes;
+  gchar key_format[]   = ".SDATA.%02d";
+  gchar key[]          = ".SDATA.**";
+  gchar value[] = "AAAAAAA";
+
+  guint32 single_sdata_kv_size;
+  guint32 sdata_payload_array_size;
+
+  const char iter_length = 17;
+
+  for (char i = 0; i < iter_length; i++)
+    {
+      g_sprintf(key, key_format, i);
+      sizes = add_key_value(msg, key, value);
+
+      single_sdata_kv_size = NV_ENTRY_DIRECT_HDR + NV_TABLE_BOUND(strlen(key)+1 + strlen(value)+1);
+
+      /* i+1 is stored, but the sdata array size is calculated when adding the i-th */
+      sdata_payload_array_size = STRICT_ROUND_TO_NEXT_EIGHT(i) * sizeof(msg->sdata[0]);
+      cr_assert_eq(old_msg_size + (i+1) * single_sdata_kv_size + sdata_payload_array_size, sizes.msg_size_new);
+    }
+}
+
+#define SMALL_LENGTH 10
+#define LARGE_LENGTH 256
+
+Test(log_message, test_message_size)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  sizes_t sizes;
+
+  DEFUN_KEY_VALUE(small, 'C', 'D', SMALL_LENGTH);
+  sizes = add_key_value(msg, small_key, small_value);
+  // (SMALL_LENGTH-1)*'C'+'\0' + (SMALL_LENGTH-1)*'D'+'\0'
+  guint32 entry_size = NV_ENTRY_DIRECT_HDR + NV_TABLE_BOUND(SMALL_LENGTH + SMALL_LENGTH);
+  cr_assert_eq(sizes.nvtable_size_old + entry_size, sizes.nvtable_size_new);
+  cr_assert_eq(sizes.msg_size_old + entry_size, sizes.msg_size_new);  // Size increased because of nvtable
+
+  guint32 msg_size = sizes.msg_size_new;
+  log_msg_set_tag_by_name(msg, "test_tag_storage");
+  cr_assert(log_msg_is_tag_by_name(msg, "test_tag_storage"));
+  cr_assert_eq(msg_size, log_msg_get_size(msg)); // Tag is not increased until tag id 65
+
+  char *tag_name = strdup("00tagname");
+  // (*8 to convert ot bits) + no need plus 1 bcause we already added one tag: test_tag_storage
+  for (int i = 0; i < GLIB_SIZEOF_LONG*8; i++)
+    {
+      sprintf(tag_name, "%dtagname", i);
+      log_msg_set_tag_by_name(msg, tag_name);
+    }
+  free(tag_name);
+  cr_assert_eq(msg_size + 2*GLIB_SIZEOF_LONG, log_msg_get_size(msg));
+
+
+  DEFUN_KEY_VALUE(big, 'A', 'B', LARGE_LENGTH);
+  sizes = add_key_value(msg, big_key, big_value); // nvtable is expanded
+  entry_size = NV_ENTRY_DIRECT_HDR + NV_TABLE_BOUND(LARGE_LENGTH + LARGE_LENGTH);
+  cr_assert_eq(sizes.nvtable_size_old + entry_size, sizes.nvtable_size_new); // but only increased by the entry
+  cr_assert_eq(sizes.msg_size_old + entry_size, sizes.msg_size_new);  // nvtable is doubled
+
+  test_with_sdata(msg, sizes.msg_size_new);
+
   log_msg_unref(msg);
 }
