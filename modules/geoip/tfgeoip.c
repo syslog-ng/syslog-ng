@@ -28,50 +28,141 @@
 #include "tls-support.h"
 
 #include "syslog-ng-config.h"
+#include "geoip-helper.h"
 
 #include <GeoIP.h>
 
-typedef struct _TFGeoIPState
+typedef struct _TFGeoIPState TFGeoIPState;
+
+struct _TFGeoIPState
 {
+  TFSimpleFuncState super;
   GeoIP *gi;
-} TFGeoIPState;
+  gchar *database;
+  void (*add_geoip_result)(TFGeoIPState *state, GString *result, const gchar *ip);
+};
 
-TLS_BLOCK_START
+static void
+add_geodata_from_geocity(TFGeoIPState *state, GString *result, const gchar *ip)
 {
-  TFGeoIPState *geoip_state;
-}
-TLS_BLOCK_END;
+  GeoIPRecord *record;
 
-#define local_state __tls_deref(geoip_state)
-
-static inline void
-tf_geoip_init(void)
-{
-  if (!local_state)
+  record = GeoIP_record_by_name(state->gi, ip);
+  if (record)
     {
-      local_state = g_new0(TFGeoIPState, 1);
-      local_state->gi = GeoIP_new(GEOIP_MMAP_CACHE);
+      if (record->country_code)
+        g_string_append(result, record->country_code);
+      GeoIPRecord_delete(record);
     }
+}
+
+static void
+add_geodata_from_geocountry(TFGeoIPState *state, GString *result, const gchar *ip)
+{
+  const char *country;
+  country = GeoIP_country_code_by_name(state->gi, ip);
+  if (country)
+    g_string_append(result, country);
+}
+
+static inline gboolean
+tf_geoip_init(TFGeoIPState *state)
+{
+
+  if (state->database)
+    state->gi = GeoIP_open(state->database, GEOIP_MMAP_CACHE);
+  else
+    state->gi = GeoIP_new(GEOIP_MMAP_CACHE);
+
+  if (!state->gi)
+    return FALSE;
+
+  if (is_country_type(state->gi->databaseType))
+    {
+      msg_debug("geoip: country type database detected",
+                evt_tag_int("database type", state->gi->databaseType));
+      state->add_geoip_result = add_geodata_from_geocountry;
+    }
+  else
+    {
+      msg_debug("geoip: city type database detected",
+                evt_tag_int("database type", state->gi->databaseType));
+      state->add_geoip_result = add_geodata_from_geocity;
+    }
+  return TRUE;
 }
 
 static gboolean
-tf_geoip(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_geoip_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
+                 gint argc, gchar *argv[], GError **error)
 {
-  const char *country;
+  TFGeoIPState *state = (TFGeoIPState *) s;
+  state->database = NULL;
 
-  tf_geoip_init();
+  GOptionEntry geoip_options[] =
+  {
+    { "database", 'd', 0, G_OPTION_ARG_FILENAME, &state->database, "geoip database location", NULL },
+    { NULL }
+  };
 
-  if (argc != 1)
+  GOptionContext *ctx = g_option_context_new("geoip");
+  g_option_context_add_main_entries(ctx, geoip_options, NULL);
+
+  if (!g_option_context_parse(ctx, &argc, &argv, error))
     {
-      msg_debug("tfgeoip takes only one argument",
-                evt_tag_int("count", argc));
+      g_option_context_free(ctx);
       return FALSE;
     }
+  g_option_context_free(ctx);
 
-  country = GeoIP_country_code_by_name(local_state->gi, argv[0]->str);
-  if (country)
-    g_string_append(result, country);
+  if (argc != 2)
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "geoip: format must be: $(geoip [--database <file location>] ${HOST})\n");
+      goto error;
+    }
+
+  if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "geoip: prepare failed");
+      goto error;
+    }
+
+  if (!tf_geoip_init(state))
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "geoip: error while opening database");
+
+      goto error;
+    }
 
   return TRUE;
+
+error:
+  return FALSE;
+
 }
-TEMPLATE_FUNCTION_SIMPLE(tf_geoip);
+
+static void
+tf_geoip_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+{
+  TFGeoIPState *state = (TFGeoIPState *) s;
+  GString **argv = (GString **) args->bufs->pdata;
+
+  state->add_geoip_result(state, result, argv[0]->str);
+
+}
+
+static void
+tf_geoip_free_state(gpointer s)
+{
+  TFGeoIPState *state = (TFGeoIPState *) s;
+
+  if (state->database)
+    g_free(state->database);
+  tf_simple_func_free_state(&state->super);
+}
+
+TEMPLATE_FUNCTION(TFGeoIPState, tf_geoip, tf_geoip_prepare,
+                  tf_simple_func_eval, tf_geoip_call, tf_geoip_free_state, NULL);
