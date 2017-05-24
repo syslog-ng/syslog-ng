@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.2.20170522"
+version="0.3.2.20170524"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -362,7 +362,7 @@ acquire_filesystem_info () {
 	echo "Mount and disk free info collection"
 	$dfk >${tmpdir}/sys.df_k
 	$dfh >${tmpdir}/sys.df_h
-	$dfi >${tmpdir}/sys.df_i
+	$dfi >${tmpdir}/sys.df_i 2>/dev/null
 	$mount >${tmpdir}/sys.mount
 }
 
@@ -452,7 +452,7 @@ pki_guess_certificate () {
 			hashopts="-subject_hash -subject_hash_old"
 			hashnum="2;"
 	else
-			hashopts="-subject_hash"
+			hashopts="-hash"
 			hashnum="1;"
 	fi
 
@@ -695,21 +695,23 @@ acquire_syslog_startup_method () {
 
 acquire_syslog_startup_initscript () {
 	if [ -n "${initfile}" ]; then
-		echo "falling back to SystemV init style..."
+		printf "falling back to SystemV init style...\n"
 		cp "${initfile}" "${tmpdir}/sys.startup.init.syslog-ng"
 		chmod 0660 "${tmpdir}/sys.startup.init.syslog-ng"
 	else
-		echo "none."
+		printf "none.\n"
 	fi
 }
 
 acquire_syslog_startup_systemdunit () {
-	echo "systemd detected..."
-	cp "/usr/lib/systemd/system/syslog-ng.service" "${tmpdir}/sys.startup.systemd-service.syslog-ng"
+	printf "systemd detected...\n"
+	systemctl list-units --type=service --plain --no-legend --no-pager --all | grep syslog | grep -vE '(not-found|masked)' | while read SERVICE LOAD ACTIVE SUB DESCRIPTION ; do \
+		output_buffer=$( systemctl show -p FragmentPath ${SERVICE} ) ; echo "${output_buffer##FragmentPath=}" ; done | \
+		while read UNITFILE; do SUFFIX=$( echo "${UNITFILE}" | tr / . ); cp "${UNITFILE}" "${tmpdir}/sys.startup.systemd-service${SUFFIX}" ; done
 }
 
 acquire_syslog_startup_svc () {
-	echo "Solaris SMF detected..."
+	printf "Solaris SMF detected...\n"
 	cp "/lib/svc/method/syslog-ng" "${tmpdir}/sys.startup.svc-method.syslog-ng"
 	chmod 0660 "${tmpdir}/sys.startup.svc-method.syslog-ng"
 	cp "/var/svc/manifest/system/syslog-ng.xml" "${tmpdir}/sys.startup.svc-manifest.syslog-ng.xml"
@@ -804,15 +806,20 @@ debun_extra_suse() {
 
 debun_extra_genlinux () {
 	if is_available getenforce; then
-		getenforce >${tmpdir}/sys.selinux
-		${pscmd}Z >${tmpdir}/sys.ps.selinux
+		getenforce >"${tmpdir}/sys.selinux"
+		${pscmd}Z >"${tmpdir}/sys.ps.selinux"
 	else
-		echo "No getenforce in path." >${tmpdir}/sys.selinux
+		echo "No getenforce in path." >"${tmpdir}/sys.selinux"
 	fi
 
 	[ -n "$privacy_mode" ] && return
 	if is_available dmidecode; then
 		dmidecode >"${tmpdir}/sys.dmidecode"
+	fi
+	if is_available lspci; then
+		lspci >"${tmpdir}/sys.lspci"
+	else
+		echo "No lspci in path." >"${tmpdir}/sys.lspci"
 	fi
 	sysctl -a >"${tmpdir}/sys.sysctl.all" 2>/dev/null
 	lspci >"${tmpdir}/sys.lspci"
@@ -1071,6 +1078,7 @@ setup_env_linux () {
 }
 
 setup_env_solaris () {
+	dfi="df -o i"
 	lsof=pfiles
 	ipconfig="ifconfig -a"
 	pscmd="ps -eaf"
@@ -1098,7 +1106,7 @@ setup_env_solaris () {
 	distpkgoffile () {
 		FILE="$1"
 		if [ -L "/lib/64" ]; then
-			FILE=`perl -sae '$libarch=readlink("/lib/64"); $filename =~ s/lib\/64/lib\/$libarch/; print "$filename\n";' -- -filename="$1"`
+			FILE=$( perl -sae '$libarch=readlink("/lib/64"); $filename =~ s/lib\/64/lib\/$libarch/; print "$filename\n";' -- -filename="$1" )
 		fi
 		pkgchk -l -p $FILE | \
 		perl -ne 'if ( /^Referenced by the/ ) { $p=1; } elsif (/:/ or /^$/ ) { $p=0; } elsif ($p) { s/^\s+//; print ; } else { print "FAIL:".$_; }'
