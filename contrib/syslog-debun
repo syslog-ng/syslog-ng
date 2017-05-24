@@ -52,6 +52,8 @@ dfi="df -i"
 duks="du -ks"
 grepq="fgrep -q"
 lddcmd="ldd"
+opensslcmd="openssl"
+pki_pubkey_parser_cmd="sed -E"
 mount=mount
 varlimit=1000
 myplimit () { echo "Plimit query is not supported on this platform" >&3 ; }
@@ -420,7 +422,7 @@ pki_is_encrypted () {
 		return 0
 	else
 		local buffer_error
-		buffer_error=$( openssl rsa -in "${1}" -noout -text 2>&1 >/dev/null )
+		buffer_error=$( ${opensslcmd} rsa -in "${1}" -noout -text 2>&1 >/dev/null )
 		if echo "${buffer_error}" | ${grepq} "problems getting password"; then
 			return 0
 		else
@@ -439,14 +441,14 @@ pki_parse_public_key () {
 		if echo "${oneline_cert}" | $grepq "PublicKey:X509v3extensions"; then
 			printf "NO_PUBLIC_KEY_COULD_BE_EXTRACTED;"
 		else
-			echo "${oneline_cert}" | sed -e 's_^.*\(Modulus\|modulus\|pub\)\(([0-9]\+bit)\)\?:\([a-f0-9:]\+\).*$_Public Key=\3;_'
+			echo "${oneline_cert}" | ${pki_pubkey_parser_cmd} 's/^.*(Modulus|modulus|pub)(\([0-9]+bit\))?:([a-f0-9:]+).*$/Public Key=\3;/'
 		fi
 	fi
 }
 
 pki_guess_certificate () {
-	local header duout buffer_pubkey buffer_rest hashopts hashnum
-	duout=$( du -b "${1}" )
+	local header wccout buffer_pubkey buffer_rest hashopts hashnum
+	wccout=$( wc -c "${1}" )
 
 	if [ ${opensslmajor} -gt 0 ]; then
 			hashopts="-subject_hash -subject_hash_old"
@@ -458,61 +460,61 @@ pki_guess_certificate () {
 
 	certcount=$( pki_count_certificates "${1}" )
 	[ "${certcount}" -gt 1 ] && header="STACKED_CERTIFICATE(${certcount});${1};" || header="CERTIFICATE;${1};"
-	buffer_pubkey=$( openssl x509 -in "${1}" -text -noout  2>/dev/null | pki_parse_public_key )
-	buffer_rest=$( openssl x509 -in "${1}" -noout ${hashopts} -serial -dates -fingerprint -subject -issuer | tr '\n' ';' )
-	printf "${header}${duout%%	*};${buffer_pubkey}${hashnum}${buffer_rest}"
+	buffer_pubkey=$( ${opensslcmd} x509 -in "${1}" -text -noout  2>/dev/null | pki_parse_public_key )
+	buffer_rest=$( ${opensslcmd} x509 -in "${1}" -noout ${hashopts} -serial -dates -fingerprint -subject -issuer | tr '\n' ';' )
+	printf "${header}${wccout% *};${buffer_pubkey}${hashnum}${buffer_rest}"
 }
 
 pki_guess_private_key () {
-	local header duout buffer_pubkey buffer_error
-	duout=$( du -b "${1}" )
+	local header wccout buffer_pubkey buffer_error
+	wccout=$( wc -c "${1}" )
 	if pki_is_encrypted "${1}"; then
 		header="PRIVATE_ENCRYPTED;${1};"
 	else
 		if pki_is_rsa "${1}"; then
 			header="PRIVATE_RSA;${1};"
-			buffer_pubkey=$( openssl rsa -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+			buffer_pubkey=$( ${opensslcmd} rsa -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 		elif pki_is_dsa "${1}"; then
 			header="PRIVATE_DSA;${1};"
-			buffer_pubkey=$( openssl dsa -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+			buffer_pubkey=$( ${opensslcmd} dsa -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 		elif pki_is_ecdsa "${1}"; then
 			header="PRIVATE_EC;${1};"
-			buffer_error=$( openssl ec -in "${1}" -noout -text 2>&1 >/dev/null )
+			buffer_error=$( ${opensslcmd} ec -in "${1}" -noout -text 2>&1 >/dev/null )
 			if echo "${buffer_error}" | ${grepq} "'ec' is an invalid command"; then
 				buffer_pubkey="NO_ECDSA_SUPPORT_IN_OPENSSL;"
 			elif echo "${buffer_error}" | $grepq "unable to load Key"; then
 				buffer_pubkey="OPENSSL_TOO_OLD;"
 			else
-				buffer_pubkey=$( openssl ec -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+				buffer_pubkey=$( ${opensslcmd} ec -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 			fi
 		else
 			header="UNKNOWN_PRIVATE;${1};"
 			buffer_pubkey=";"
 		fi
 	fi
-	printf "${header}${duout%%	*};${buffer_pubkey}"
+	printf "${header}${wccout% *};${buffer_pubkey}"
 }
 
 pki_guess_public_key () {
 	# Public keys do not have their type in the PEM header/footer
 
-	local header duout buffer_pubkey buffer_error
+	local header wccout buffer_pubkey buffer_error
 	header="PUBLIC;${1};"
-	duout=$( du -b "${1}" )
+	wccout=$( wc -c "${1}" )
 	if [ ${opensslmajor} -gt 0 ]; then
-		buffer_error=$( openssl pkey -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+		buffer_error=$( ${opensslcmd} pkey -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
 		if echo "${buffer_error}" | ${grepq} "unable to load Public Key"; then
 			header="UNKNOWN_PUBLIC;${1};"
 			buffer_pubkey="OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
 		else
-			buffer_pubkey=$( openssl pkey -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+			buffer_pubkey=$( ${opensslcmd} pkey -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 		fi
 	else
-		buffer_error=$( openssl rsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+		buffer_error=$( ${opensslcmd} rsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
 		if echo "${buffer_error}" | ${grepq} "expecting an rsa key"; then
-			buffer_error=$( openssl dsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+			buffer_error=$( ${opensslcmd} dsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
 			if echo "${buffer_error}" | ${grepq} "expecting a dsa key"; then
-				buffer_error=$( openssl ec -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+				buffer_error=$( ${opensslcmd} ec -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
 				if echo "${buffer_error}" | ${grepq} "expecting a ec key"; then
 					header="UNKNOWN_PUBLIC;${1};"
 					buffer_pubkey=";"
@@ -520,30 +522,29 @@ pki_guess_public_key () {
 					header="UNKNOWN_PUBLIC;${1};"
 					buffer_pubkey="NO_ECDSA_SUPPORT_IN_OPENSSL;"
 				else
-					buffer_pubkey=$( openssl ec -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+					buffer_pubkey=$( ${opensslcmd} ec -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 				fi
 			else
-				buffer_pubkey=$( openssl dsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+				buffer_pubkey=$( ${opensslcmd} dsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 			fi
 		elif echo "${buffer_error}" | ${grepq} "unable to load Key"; then
 			header="UNKNOWN_PUBLIC;${1};"
 			buffer_pubkey="OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
 		else
-			buffer_pubkey=$( openssl rsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+			buffer_pubkey=$( ${opensslcmd} rsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 		fi
 	fi
-	printf "${header}${duout%%	*};${buffer_pubkey}"
+	printf "${header}${wccout% *};${buffer_pubkey}"
 }
 
 pki_other_file () {
-	local duout
-	duout=$( du -b "${1}" )
-	printf "OTHER_FILE;${1};${duout%%	*};"
+	local wccout
+	wccout=$( wc -c "${1}" )
+	printf "OTHER_FILE;${1};${wccout% *};"
 }
 
 pki_process_file () {
-	local output_buffer duout
-	duout=$( du -b "${1}" )
+	local output_buffer
 
 	if pki_is_certificate "${1}"; then
 		output_buffer=$( pki_guess_certificate "${1}" )
@@ -560,9 +561,10 @@ pki_process_file () {
 }
 
 acquire_syslog_pki_info () {
-	if is_available openssl; then
+	printf "Gathering PKI information... "
+	if is_available ${opensslcmd}; then
 		local opensslver
-		opensslver=$( openssl version )
+		opensslver=$( ${opensslcmd} version )
 		opensslver=${opensslver%%.*}
 		opensslmajor=${opensslver##OpenSSL }
 		cd "${confdir}"
@@ -570,6 +572,9 @@ acquire_syslog_pki_info () {
 		while read FILE; do
 			pki_process_file "${FILE}" >>${tmpdir}/syslog.etc.pki.info.csv
 		done <${tmpdir}/syslog.etc.pki.files
+		printf "done.\n"
+	else
+		printf "no openssl found in PATH.\n"
 	fi
 }
 
@@ -816,13 +821,13 @@ debun_extra_genlinux () {
 	if is_available dmidecode; then
 		dmidecode >"${tmpdir}/sys.dmidecode"
 	fi
+
 	if is_available lspci; then
 		lspci >"${tmpdir}/sys.lspci"
 	else
 		echo "No lspci in path." >"${tmpdir}/sys.lspci"
 	fi
 	sysctl -a >"${tmpdir}/sys.sysctl.all" 2>/dev/null
-	lspci >"${tmpdir}/sys.lspci"
 	cp /proc/cpuinfo "${tmpdir}/sys.cpuinfo"
 }
 
@@ -1087,6 +1092,7 @@ setup_env_solaris () {
 	pcapifparm="-d"
 	netstatpunt="netstat -n"
 	grepq="/usr/xpg4/bin/grep -q"
+	pki_pubkey_parser_cmd="perl -p -e"
 
 	unset mypidof
 	unset getsyslogpids
@@ -1116,6 +1122,12 @@ setup_env_solaris () {
 		pkginfo -l $1
 		echo ""
 	}
+
+	if is_available ${opensslcmd}; then
+		:
+	else
+		[ -x /usr/sfw/bin/openssl ] && opensslcmd="/usr/sfw/bin/openssl"
+	fi
 }
 
 setup_env_freebsd () {
@@ -1155,6 +1167,7 @@ setup_env_hpux () {
 	service_stop="${initfile} stop"
 	service_start="${initfile} start"
 	service_status="${initfile} status"
+	pki_pubkey_parser_cmd="perl -p -e"
 
 	unset -f free
 	unset -f netstatnlp
@@ -1238,6 +1251,7 @@ setup_env_aix () {
 	service_stop="/usr/bin/stopsrc -s syslog-ng"
 	service_start="/usr/bin/startsrc -s syslog-ng"
 	service_status="/usr/bin/lssrc -s syslog-ng"
+	pki_pubkey_parser_cmd="perl -p -e"
 
 	unset initfile
 	unset netstatnlp
