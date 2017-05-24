@@ -24,6 +24,7 @@
 
 #include "filter-re.h"
 #include "str-utils.h"
+#include "messages.h"
 
 #include <string.h>
 
@@ -31,11 +32,16 @@ static gboolean
 filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, const gchar *str, gssize str_len)
 {
   FilterRE *self = (FilterRE *) s;
+  gboolean result;
 
   if (str_len < 0)
     str_len = strlen(str);
-
-  return log_matcher_match(self->matcher, msg, value_handle, str, str_len) ^ self->super.comp;
+  result = log_matcher_match(self->matcher, msg, value_handle, str, str_len) ^ self->super.comp;
+  msg_debug("Filter regexp node evaluation result",
+            evt_tag_printf("msg", "%p", msg),
+            evt_tag_str("input", str),
+            evt_tag_str("result", result ? "match" : "not-match"));
+  return result;
 }
 
 static gboolean
@@ -86,6 +92,7 @@ filter_re_init_instance(FilterRE *self, NVHandle value_handle)
   self->super.init = filter_re_init;
   self->super.eval = filter_re_eval;
   self->super.free_fn = filter_re_free;
+  self->super.type = "regexp";
   log_matcher_options_defaults(&self->matcher_options);
   self->matcher_options.flags |= LMF_MATCH_ONLY;
 }

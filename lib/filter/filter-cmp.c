@@ -108,7 +108,6 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
   self->super.free_fn = fop_cmp_free;
   self->left = left;
   self->right = right;
-  self->super.type = "CMP";
 
   switch (op)
     {
@@ -116,37 +115,46 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
       self->cmp_op = FCMP_NUM;
     case KW_LT:
       self->cmp_op |= FCMP_LT;
+      self->super.type = "<";
       break;
 
     case KW_NUM_LE:
       self->cmp_op = FCMP_NUM;
     case KW_LE:
       self->cmp_op |= FCMP_LT | FCMP_EQ;
+      self->super.type = "<=";
       break;
 
     case KW_NUM_EQ:
       self->cmp_op = FCMP_NUM;
     case KW_EQ:
       self->cmp_op |= FCMP_EQ;
+      self->super.type = "==";
       break;
 
     case KW_NUM_NE:
       self->cmp_op = FCMP_NUM;
     case KW_NE:
       self->cmp_op |= 0;
+      self->super.type = "!=";
       break;
 
     case KW_NUM_GE:
       self->cmp_op = FCMP_NUM;
     case KW_GE:
       self->cmp_op |= FCMP_GT | FCMP_EQ;
+      self->super.type = ">=";
       break;
 
     case KW_NUM_GT:
       self->cmp_op = FCMP_NUM;
     case KW_GT:
       self->cmp_op |= FCMP_GT;
+      self->super.type = ">";
       break;
+
+    default:
+      g_assert_not_reached();
     }
 
   if (self->cmp_op & FCMP_NUM && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))

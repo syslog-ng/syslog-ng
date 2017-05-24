@@ -29,6 +29,14 @@
 #include "compat/string.h"
 #include "compat/pcre.h"
 
+static gboolean
+_shall_set_values_indirectly(NVHandle value_handle)
+{
+  return value_handle != LM_V_NONE &&
+         !log_msg_is_handle_macro(value_handle) &&
+         !log_msg_is_handle_match(value_handle);
+}
+
 static void
 log_matcher_init(LogMatcher *self, const LogMatcherOptions *options)
 {
@@ -103,10 +111,11 @@ log_matcher_posix_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_ha
                                    const gchar *value)
 {
   gint i;
+  gboolean indirect = _shall_set_values_indirectly(value_handle);
 
   for (i = 0; i < RE_MAX_MATCHES && matches[i].rm_so != -1; i++)
     {
-      if (value_handle != LM_V_NONE && !log_msg_is_handle_macro(value_handle))
+      if (indirect)
         {
           log_msg_set_match_indirect(msg, i, value_handle, 0, matches[i].rm_so, matches[i].rm_eo - matches[i].rm_so);
         }
@@ -540,10 +549,11 @@ log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_han
                                   const gchar *value)
 {
   gint i;
+  gboolean indirect = _shall_set_values_indirectly(value_handle);
 
   for (i = 0; i < (RE_MAX_MATCHES) && i < match_num; i++)
     {
-      if (value_handle != LM_V_NONE && !log_msg_is_handle_macro(value_handle))
+      if (indirect)
         {
           log_msg_set_match_indirect(msg, i, value_handle, 0, matches[2 * i], matches[2 * i + 1] - matches[2 * i]);
         }
