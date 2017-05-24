@@ -1,6 +1,10 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(src/evtrec.c)
+AC_INIT([evtlog], m4_esyscmd([tr -d '\n' < VERSION]))
+AC_CONFIG_SRCDIR([src/evtrec.c])
+AC_CONFIG_MACRO_DIR([m4])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 
 dnl ***************************************************************************
 dnl definitions
@@ -23,12 +27,11 @@ else
         CURRDATE=`date +"%a, %d %b %Y %H:%M:%S %Z"`
 fi
 
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION, 1)
+AM_INIT_AUTOMAKE([foreign no-define subdir-objects])
+
 if test -n "$SNAPSHOT_VERSION"; then
         VERSION=$VERSION+$SNAPSHOT_VERSION
 fi
-
-AC_CONFIG_MACRO_DIR([m4])
 
 AM_CONFIG_HEADER(config.h)
 

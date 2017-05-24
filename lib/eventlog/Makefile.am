@@ -1,5 +1,5 @@
 
-ACLOCAL_AMFLAGS=-I m4
+ACLOCAL_AMFLAGS=-I m4 --install
 SUBDIRS = src tests solbuild tgzbuild tgz2build winbuild
 
 EXTRA_DIST = VERSION NEWS PORTS CREDITS doc/API.txt doc/DESIGN.txt doc/configuration.txt \
@@ -12,3 +12,5 @@ pkgconfig_DATA = eventlog.pc
 
 debian/changelog: debian/changelog.in
 	$(top_builddir)/config.status --file $@:$<
+
+AUTOMAKE_OPTIONS	= subdir-objects parallel-tests
