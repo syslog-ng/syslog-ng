@@ -31,7 +31,7 @@ typedef struct _SnmpTrapdParser
 {
   LogParser super;
   GString *prefix;
-  gboolean generate_message;
+  gboolean set_message_macro;
 } SnmpTrapdParser;
 
 void
@@ -46,11 +46,11 @@ snmptrapd_parser_set_prefix(LogParser *s, const gchar *prefix)
 }
 
 void
-snmptrapd_parser_set_generate_message(LogParser *s, gboolean generate_message)
+snmptrapd_parser_set_set_message_macro(LogParser *s, gboolean set_message_macro)
 {
   SnmpTrapdParser *self = (SnmpTrapdParser *) s;
 
-  self->generate_message = generate_message;
+  self->set_message_macro = set_message_macro;
 }
 
 static inline gboolean
@@ -180,7 +180,7 @@ snmptrapd_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *
   APPEND_ZERO(input, input, input_len);
 
   GString *generated_message = NULL;
-  if (self->generate_message)
+  if (self->set_message_macro)
     generated_message = scratch_buffers2_alloc_and_mark(&marker);
 
 
@@ -201,7 +201,7 @@ snmptrapd_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *
     return FALSE;
 
 
-  if (self->generate_message)
+  if (self->set_message_macro)
     {
       log_msg_set_value(nv_context.msg, LM_V_MESSAGE, nv_context.generated_message->str, -1);
       scratch_buffers2_reclaim_marked(marker);
@@ -222,7 +222,7 @@ snmptrapd_parser_clone(LogPipe *s)
   SnmpTrapdParser *cloned = (SnmpTrapdParser *) snmptrapd_parser_new(s->cfg);
 
   snmptrapd_parser_set_prefix(&cloned->super, self->prefix->str);
-  snmptrapd_parser_set_generate_message(&cloned->super, self->generate_message);
+  snmptrapd_parser_set_set_message_macro(&cloned->super, self->set_message_macro);
 
   /* log_parser_clone_method() is missing.. */
   log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
@@ -251,7 +251,7 @@ snmptrapd_parser_new(GlobalConfig *cfg)
   self->super.process = snmptrapd_parser_process;
 
   self->prefix = g_string_new(".snmp.");
-  self->generate_message = TRUE;
+  self->set_message_macro = TRUE;
 
   return &self->super;
 }

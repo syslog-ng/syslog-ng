@@ -32,7 +32,7 @@ static CfgLexerKeyword snmptrapd_parser_keywords[] =
 {
   { "snmptrapd_parser",  KW_SNMPTRAPD_PARSER },
   { "prefix",            KW_PREFIX },
-  { "generate_message",  KW_GENERATE_MESSAGE },
+  { "set_message_macro", KW_SET_MESSAGE_MACRO },
   { NULL }
 };
 

@@ -54,7 +54,7 @@
 
 %token KW_SNMPTRAPD_PARSER
 %token KW_PREFIX
-%token KW_GENERATE_MESSAGE
+%token KW_SET_MESSAGE_MACRO
 
 %type	<ptr> parser_expr_snmptrapd
 
@@ -79,7 +79,7 @@ snmptrapd_parser_options
 
 snmptrapd_parser_option
         : KW_PREFIX '(' string ')'              { snmptrapd_parser_set_prefix(last_parser, $3); free($3); }
-        | KW_GENERATE_MESSAGE '(' yesno ')'     { snmptrapd_parser_set_generate_message(last_parser, $3); }
+        | KW_SET_MESSAGE_MACRO '(' yesno ')'    { snmptrapd_parser_set_set_message_macro(last_parser, $3); }
         | parser_opt
         ;
 

@@ -37,7 +37,7 @@ typedef struct
 typedef struct
 {
   const gchar *key_prefix;
-  gboolean generate_message;
+  gboolean set_message_macro;
 } TestParserOptions;
 
 static LogParser *
@@ -50,7 +50,7 @@ create_parser(TestParserOptions *options)
       if (options->key_prefix)
         snmptrapd_parser_set_prefix(snmptrapd_parser, options->key_prefix);
 
-      snmptrapd_parser_set_generate_message(snmptrapd_parser, options->generate_message);
+      snmptrapd_parser_set_set_message_macro(snmptrapd_parser, options->set_message_macro);
     }
 
   log_pipe_init((LogPipe *)snmptrapd_parser);
@@ -240,7 +240,7 @@ Test(snmptrapd_parser, test_v2_with_generated_message)
 {
   TestParserOptions options =
   {
-    .generate_message = TRUE
+    .set_message_macro = TRUE
   };
 
   const gchar *input =
@@ -266,7 +266,7 @@ Test(snmptrapd_parser, test_v2_with_generated_message_escaped)
 {
   TestParserOptions options =
   {
-    .generate_message = TRUE
+    .set_message_macro = TRUE
   };
 
   const gchar *input =
