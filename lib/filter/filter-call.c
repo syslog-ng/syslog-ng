@@ -35,19 +35,21 @@ typedef struct _FilterCall
 static gboolean
 filter_call_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
+  gboolean res = FALSE;
   FilterCall *self = (FilterCall *) s;
 
   if (self->filter_expr)
     {
       /* rule is assumed to contain a single filter pipe */
+      res = filter_expr_eval_with_context(self->filter_expr, msgs, num_msg);
+    }
 
-      return filter_expr_eval_with_context(self->filter_expr, msgs, num_msg) ^ s->comp;
-    }
+  if (res)
+    stats_counter_inc(self->super.matched);
   else
-    {
-      /* an unreferenced filter() expression never matches unless explicitly negated */
-      return (0 ^ s->comp);
-    }
+    stats_counter_inc(self->super.not_matched);
+
+  return res ^ s->comp;
 }
 
 static void
@@ -83,6 +85,14 @@ filter_call_free(FilterExprNode *s)
   FilterCall *self = (FilterCall *) s;
 
   filter_expr_unref(self->filter_expr);
+
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->rule, NULL );
+  stats_unregister_counter(&sc_key, SC_TYPE_MATCHED, &self->super.matched);
+  stats_unregister_counter(&sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
+  stats_unlock();
+
   g_free((gchar *) self->super.type);
   g_free(self->rule);
 }
@@ -98,5 +108,13 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->super.free_fn = filter_call_free;
   self->super.type = g_strdup_printf("filter(%s)", rule);
   self->rule = g_strdup(rule);
+
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->rule, NULL );
+  stats_register_counter(0, &sc_key, SC_TYPE_MATCHED, &self->super.matched);
+  stats_register_counter(0, &sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
+  stats_unlock();
+
   return &self->super;
 }
