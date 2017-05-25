@@ -157,6 +157,9 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
       switch (result)
         {
         case WORKER_INSERT_RESULT_DROP:
+          msg_error("Message dropped while sending message to destinaton",
+                    evt_tag_str("driver", self->super.super.id));
+
           log_threaded_dest_driver_message_drop(self, msg);
           _disconnect_and_suspend(self);
           break;
@@ -168,6 +171,11 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
             {
               if (self->messages.retry_over)
                 self->messages.retry_over(self, msg);
+
+              msg_error("Multiple failures while sending message to destination, message dropped",
+                        evt_tag_str("driver", self->super.super.id),
+                        evt_tag_int("number_of_retries", self->retries.max));
+
               log_threaded_dest_driver_message_drop(self, msg);
             }
           else
@@ -445,10 +453,6 @@ log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
                                       LogMessage *msg)
 {
   stats_counter_inc(self->dropped_messages);
-  msg_error("Multiple failures while sending message to destination, message dropped",
-            evt_tag_str("driver", self->super.super.id),
-            evt_tag_int("number_of_retries", self->retries.max));
-
   log_threaded_dest_driver_message_accept(self, msg);
 }
 
