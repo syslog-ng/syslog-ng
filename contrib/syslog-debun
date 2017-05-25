@@ -482,7 +482,7 @@ pki_guess_private_key () {
 			buffer_error=$( ${opensslcmd} ec -in "${1}" -noout -text 2>&1 >/dev/null )
 			if echo "${buffer_error}" | ${grepq} "'ec' is an invalid command"; then
 				buffer_pubkey="NO_ECDSA_SUPPORT_IN_OPENSSL;"
-			elif echo "${buffer_error}" | $grepq "unable to load Key"; then
+			elif echo "${buffer_error}" | $grepq "unable to load"; then
 				buffer_pubkey="OPENSSL_TOO_OLD;"
 			else
 				buffer_pubkey=$( ${opensslcmd} ec -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
@@ -503,7 +503,7 @@ pki_guess_public_key () {
 	wccout=$( wc -c "${1}" )
 	if [ ${opensslmajor} -gt 0 ]; then
 		buffer_error=$( ${opensslcmd} pkey -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
-		if echo "${buffer_error}" | ${grepq} "unable to load Public Key"; then
+		if echo "${buffer_error}" | ${grepq} "unable to load"; then
 			header="UNKNOWN_PUBLIC;${1};"
 			buffer_pubkey="OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
 		else
@@ -527,7 +527,7 @@ pki_guess_public_key () {
 			else
 				buffer_pubkey=$( ${opensslcmd} dsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 			fi
-		elif echo "${buffer_error}" | ${grepq} "unable to load Key"; then
+		elif echo "${buffer_error}" | ${grepq} "unable to load"; then
 			header="UNKNOWN_PUBLIC;${1};"
 			buffer_pubkey="OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
 		else
@@ -1061,6 +1061,16 @@ setup_env_slackware  () {
 setup_env_genlinux () {
 	unset myplimit
 	myplimit () { [ -f "/proc/$1/limits" ] && cat /proc/$1/limits ; }
+
+	# sed -E uses extended regexes, and normally works on Linux and BSD, where perl is not present by default.
+	# -e and -E patterns use different syntax, but the great thing is that the -E format also works with perl.
+	# However older GNU sed versions do not support the -E option, so we have no other choice but perl in
+	# these cases.
+	if echo "eee" | sed -E 's/eee/fff/g' >/dev/null 2>/dev/null ; then
+		:
+	else
+		pki_pubkey_parser_cmd="perl -p -e"
+	fi
 }
 
 setup_env_linux () {
