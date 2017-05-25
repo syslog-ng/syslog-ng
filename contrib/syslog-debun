@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.2.20170524"
+version="0.3.2.20170525"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -690,11 +690,13 @@ acquire_syslog_startup_method () {
 	if [ -d "/run/systemd/system" ]; then
 		acquire_syslog_startup_systemdunit
 	elif [ -d "/lib/svc/method" ]; then
-		acquire_syslog_startup_svc
+		acquire_syslog_startup_smf
 	else
 		acquire_syslog_startup_initscript
 	fi
-	[ -f /etc/default/syslog-ng ] && cp /etc/default/syslog-ng "${tmpdir}/sys.startup.default"
+	for i in /etc/default/syslog-ng* ; do
+		[ -f "${i}" ] && cp "${i}" "${tmpdir}/sys.startup.default.${i##*/}"
+	done
 	[ -f /etc/sysconfig/syslog-ng ] && cp /etc/sysconfig/syslog-ng "${tmpdir}/sys.startup.sysconfig"
 }
 
@@ -710,16 +712,17 @@ acquire_syslog_startup_initscript () {
 
 acquire_syslog_startup_systemdunit () {
 	printf "systemd detected...\n"
-	systemctl list-units --type=service --plain --no-legend --no-pager --all | grep syslog | grep -vE '(not-found|masked)' | while read SERVICE LOAD ACTIVE SUB DESCRIPTION ; do \
-		output_buffer=$( systemctl show -p FragmentPath ${SERVICE} ) ; echo "${output_buffer##FragmentPath=}" ; done | \
+	systemctl list-units --type=service --plain --no-legend --no-pager --all | grep syslog | grep -vE '(not-found|masked)' | tee "${tmpdir}/sys.startup.systemd-instances" | \
+		while read SERVICE LOAD ACTIVE SUB DESCRIPTION ; do output_buffer=$( systemctl show -p FragmentPath ${SERVICE} ) ; echo "${output_buffer##FragmentPath=}" ; done | \
 		while read UNITFILE; do SUFFIX=$( echo "${UNITFILE}" | tr / . ); cp "${UNITFILE}" "${tmpdir}/sys.startup.systemd-service${SUFFIX}" ; done
 }
 
-acquire_syslog_startup_svc () {
+acquire_syslog_startup_smf () {
 	printf "Solaris SMF detected...\n"
 	cp "/lib/svc/method/syslog-ng" "${tmpdir}/sys.startup.svc-method.syslog-ng"
 	chmod 0660 "${tmpdir}/sys.startup.svc-method.syslog-ng"
 	cp "/var/svc/manifest/system/syslog-ng.xml" "${tmpdir}/sys.startup.svc-manifest.syslog-ng.xml"
+	svcs -H system/syslog-ng >"${tmpdir}/sys.startup.svc-instances"
 }
 
 acquire_syslog_all () {
@@ -1055,6 +1058,11 @@ setup_env_slackware  () {
 	}
 }
 
+setup_env_genlinux () {
+	unset myplimit
+	myplimit () { [ -f "/proc/$1/limits" ] && cat /proc/$1/limits ; }
+}
+
 setup_env_linux () {
 	if [ "$dist" = "Debian" ]; then
 		setup_env_debian
@@ -1078,8 +1086,7 @@ setup_env_linux () {
 		echo "Unknown Distro, perhaps unsupported"
 	fi
 
-	unset myplimit
-	myplimit () { [ -f "/proc/$1/limits" ] && cat /proc/$1/limits ; }
+	setup_env_genlinux
 }
 
 setup_env_solaris () {
