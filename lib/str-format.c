@@ -339,6 +339,29 @@ scan_expect_char(const gchar **buf, gint *left, gchar value)
 }
 
 gboolean
+scan_expect_str(const gchar **buf, gint *left, const gchar *value)
+{
+  const gchar *original_buf = *buf;
+  gint original_left = *left;
+
+  while (*value)
+    {
+      if (*left == 0 || *value != **buf)
+        {
+          *buf = original_buf;
+          *left = original_left;
+          return FALSE;
+        }
+
+      (*buf)++;
+      (*left)--;
+      value++;
+    }
+
+  return TRUE;
+}
+
+gboolean
 scan_day_abbrev(const gchar **buf, gint *left, gint *wday)
 {
   *wday = -1;
@@ -518,5 +541,26 @@ scan_bsd_timestamp(const gchar **buf, gint *left, struct tm *tm)
       !scan_expect_char(buf, left, ':') ||
       !scan_int(buf, left, 2, &tm->tm_sec))
     return FALSE;
+  return TRUE;
+}
+
+gboolean
+scan_std_timestamp(const gchar **buf, gint *left, struct tm *tm)
+{
+  /* YYYY-MM-DD HH:MM:SS */
+  if (!scan_int(buf, left, 4, &tm->tm_year) ||
+      !scan_expect_char(buf, left, '-') ||
+      !scan_int(buf, left, 2, &tm->tm_mon) ||
+      !scan_expect_char(buf, left, '-') ||
+      !scan_int(buf, left, 2, &tm->tm_mday) ||
+      !scan_expect_char(buf, left, ' ') ||
+      !scan_int(buf, left, 2, &tm->tm_hour) ||
+      !scan_expect_char(buf, left, ':') ||
+      !scan_int(buf, left, 2, &tm->tm_min) ||
+      !scan_expect_char(buf, left, ':') ||
+      !scan_int(buf, left, 2, &tm->tm_sec))
+    return FALSE;
+  tm->tm_year -= 1900;
+  tm->tm_mon -= 1;
   return TRUE;
 }

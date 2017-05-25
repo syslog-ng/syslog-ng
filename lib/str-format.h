@@ -38,6 +38,11 @@ gchar *format_hex_string_with_delimiter(gpointer str, gsize str_len, gchar *resu
 
 
 gboolean
+scan_expect_char(const gchar **buf, gint *left, gchar value);
+gboolean
+scan_expect_str(const gchar **buf, gint *left, const gchar *value);
+
+gboolean
 scan_iso_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean
 scan_pix_timestamp(const gchar **buf, gint *left, struct tm *tm);
@@ -45,5 +50,7 @@ gboolean
 scan_linksys_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean
 scan_bsd_timestamp(const gchar **buf, gint *left, struct tm *tm);
+gboolean
+scan_std_timestamp(const gchar **buf, gint *left, struct tm *tm);
 
 #endif

@@ -86,7 +86,8 @@ _invoke_match_delimiter(StrReprDecodeState *state, const gchar **new_cur)
 
   if (options->delimiter_chars[0])
     {
-      if (*state->cur == options->delimiter_chars[0] || *state->cur == options->delimiter_chars[1])
+      if (*state->cur == options->delimiter_chars[0] || *state->cur == options->delimiter_chars[1]
+          || *state->cur == options->delimiter_chars[2])
         {
           if (options->match_delimiter)
             return options->match_delimiter(state->cur, new_cur, options->match_delimiter_data);

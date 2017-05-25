@@ -49,7 +49,7 @@ _locate_start_of_key(KVScanner *self, const gchar *end_of_key, const gchar **sta
   const gchar *cur;
 
   cur = end_of_key;
-  while (cur > input && _is_valid_key_character(*(cur - 1)))
+  while (cur > input && self->is_valid_key_character(*(cur - 1)))
     cur--;
   *start_of_key = cur;
 }
@@ -111,6 +111,13 @@ _extract_stray_word(KVScanner *self, const gchar *stray_word, gssize len)
 }
 
 static gboolean
+_should_stop(KVScanner *self)
+{
+  const gchar *input = &self->input[self->input_pos];
+  return *input == self->stop_char;
+}
+
+static gboolean
 _extract_key(KVScanner *self)
 {
   const gchar *input = &self->input[self->input_pos];
@@ -146,7 +153,7 @@ _key_follows(KVScanner *self, const gchar *cur)
 {
   const gchar *key = cur;
 
-  while (_is_valid_key_character(*key))
+  while (self->is_valid_key_character(*key))
     key++;
 
   while (*key == ' ')
@@ -222,6 +229,11 @@ _match_delimiter(const gchar *cur, const gchar **new_cur, gpointer user_data)
       result = TRUE;
       *new_cur = cur + 1;
     }
+  else if (*cur == self->stop_char)
+    {
+      result = TRUE;
+      *new_cur = cur;
+    }
   else
     {
       result = _pair_separator(self, cur, new_cur);
@@ -250,7 +262,7 @@ _decode_value(KVScanner *self)
     0,
     .match_delimiter = _match_delimiter,
     .match_delimiter_data = self,
-    .delimiter_chars = { ' ', self->pair_separator[0] },
+    .delimiter_chars = { ' ', self->pair_separator[0], self->stop_char },
   };
 
   self->value_was_quoted = _is_quoted(input);
@@ -263,6 +275,13 @@ _decode_value(KVScanner *self)
       /* quotation error, set was_quoted to FALSE */
       self->value_was_quoted = FALSE;
     }
+}
+
+static void
+_extract_optional_annotation(KVScanner *self)
+{
+  if (self->extract_annotation)
+    self->extract_annotation(self);
 }
 
 static void
@@ -289,8 +308,13 @@ kv_scanner_scan_next(KVScanner *s)
 {
   KVScanner *self = (KVScanner *)s;
 
+  if (_should_stop(self))
+    return FALSE;
+
   if (!_extract_key(self))
     return FALSE;
+
+  _extract_optional_annotation(self);
 
   _extract_value(self);
   _transform_value(s);
@@ -305,28 +329,26 @@ _clone(KVScanner *self)
                                       self->pair_separator,
                                       self->stray_words != NULL);
   kv_scanner_set_transform_value(scanner, self->transform_value);
+  kv_scanner_set_valid_key_character_func(scanner, self->is_valid_key_character);
+  kv_scanner_set_stop_character(scanner, self->stop_char);
+  kv_scanner_set_extract_annotation_func(scanner, self->extract_annotation);
   return scanner;
 }
 
-void
-kv_scanner_free(KVScanner *self)
+void kv_scanner_free_method(KVScanner *self)
 {
-  if (!self)
-    return;
   g_string_free(self->key, TRUE);
   g_string_free(self->value, TRUE);
   g_string_free(self->decoded_value, TRUE);
   if (self->stray_words)
     g_string_free(self->stray_words, TRUE);
   g_free(self->pair_separator);
-  g_free(self);
 }
 
-KVScanner *
-kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words)
+void
+kv_scanner_init_instance(KVScanner *self, gchar value_separator, const gchar *pair_separator,
+                         gboolean extract_stray_words)
 {
-  KVScanner *self = g_new0(KVScanner, 1);
-
   self->key = g_string_sized_new(32);
   self->value = g_string_sized_new(64);
   self->decoded_value = g_string_sized_new(64);
@@ -335,7 +357,18 @@ kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extr
   self->value_separator = value_separator;
   self->pair_separator = g_strdup(pair_separator ? : ", ");
   self->pair_separator_len = self->pair_separator ? strlen(self->pair_separator) : 0;
+  self->is_valid_key_character = _is_valid_key_character;
+  self->stop_char = 0;
+
   self->clone = _clone;
+  self->free_fn = kv_scanner_free_method;
+}
+
+KVScanner *
+kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words)
+{
+  KVScanner *self = g_new0(KVScanner, 1);
+  kv_scanner_init_instance(self, value_separator, pair_separator, extract_stray_words);
 
   return self;
 }
