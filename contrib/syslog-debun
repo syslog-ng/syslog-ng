@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.2.20170525"
+version="0.3.3.20170526"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
