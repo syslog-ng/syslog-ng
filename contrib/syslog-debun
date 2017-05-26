@@ -25,6 +25,7 @@ fi
 ### Do not overwrite them, parameters or distro / OS specific detections will do that if neccessary
 ###
 
+argv_backup="${@}"
 os="none"
 dist="none"
 default_debug_params="-Fedv --enable-core"
@@ -326,7 +327,7 @@ getallchilds () {
 
 acquire_debun_info () {
 	pwd > ${tmpdir}/debun.pwd
-	echo "${0} ${@}" > ${tmpdir}/debun.argv
+	echo "${0} ${argv_backup}" > ${tmpdir}/debun.argv
 	echo "${version}" > ${tmpdir}/debun.version
 }
 
@@ -648,7 +649,7 @@ acquire_syslog_var () {
 		find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
 	else
 		printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
-		printf "Do you really want to copy it's contents? Type 'YES' with all capitals: "
+		printf "Do you really want to copy its contents? Type 'YES' with all capitals: "
 		read ans
 		[ "$ans" = "YES" ] && find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
 	fi
@@ -722,7 +723,7 @@ acquire_syslog_startup_smf () {
 	cp "/lib/svc/method/syslog-ng" "${tmpdir}/sys.startup.svc-method.syslog-ng"
 	chmod 0660 "${tmpdir}/sys.startup.svc-method.syslog-ng"
 	cp "/var/svc/manifest/system/syslog-ng.xml" "${tmpdir}/sys.startup.svc-manifest.syslog-ng.xml"
-	svcs -H system/syslog-ng >"${tmpdir}/sys.startup.svc-instances"
+	svcs -H system/syslog* >"${tmpdir}/sys.startup.svc-instances"
 }
 
 acquire_syslog_all () {
@@ -816,6 +817,7 @@ debun_extra_genlinux () {
 	if is_available getenforce; then
 		getenforce >"${tmpdir}/sys.selinux"
 		${pscmd}Z >"${tmpdir}/sys.ps.selinux"
+		semodule -l >"${tmpdir}/sys.selinux.modules"
 	else
 		echo "No getenforce in path." >"${tmpdir}/sys.selinux"
 	fi
@@ -874,12 +876,6 @@ debun_solaris () {
 	add_extra debun_extra_gensolaris
 
 	pkginfo | grep -i syslog > ${tmpdir}/pkg.packages
-
-	if is_available svcadm ; then
-		service_stop="svcadm disable syslog-ng"
-		service_start="svcadm enable syslog-ng"
-		service_status="svcs syslog-ng"
-	fi
 }
 
 debun_extra_freebsd() {
@@ -1062,6 +1058,12 @@ setup_env_genlinux () {
 	unset myplimit
 	myplimit () { [ -f "/proc/$1/limits" ] && cat /proc/$1/limits ; }
 
+	if is_available systemctl ; then
+		service_stop="systemctl stop syslog-ng"
+		service_start="systemctl start syslog-ng"
+		service_status="systemctl status syslog-ng"
+	fi
+
 	# sed -E uses extended regexes, and normally works on Linux and BSD, where perl is not present by default.
 	# -e and -E patterns use different syntax, but the great thing is that the -E format also works with perl.
 	# However older GNU sed versions do not support the -E option, so we have no other choice but perl in
@@ -1107,6 +1109,7 @@ setup_env_solaris () {
 	tcpdumpcmd="snoop"
 	tcpdumpopts="-P -q -o"
 	pcapifparm="-d"
+	trace="truss -r all -w all -u libc:: -f"
 	netstatpunt="netstat -n"
 	grepq="/usr/xpg4/bin/grep -q"
 	pki_pubkey_parser_cmd="perl -p -e"
@@ -1140,6 +1143,12 @@ setup_env_solaris () {
 		echo ""
 	}
 
+	if is_available svcadm ; then
+		service_stop="svcadm disable system/syslog-ng:default"
+		service_start="svcadm enable system/syslog-ng:default"
+		service_status="svcs system/syslog-ng:default"
+	fi
+
 	if is_available ${opensslcmd}; then
 		:
 	else
@@ -1151,6 +1160,7 @@ setup_env_freebsd () {
 	netstatpunt="netstat -n"
 	ipconfig="ifconfig -a"
 	pseao="ps xao"
+	trace="truss -a -d -f -s 256"
 	initfile="/etc/rc.d/syslog-ng"
 	service_stop="${initfile} stop"
 	service_start="${initfile} start"
@@ -1174,7 +1184,7 @@ setup_env_freebsd () {
 setup_env_hpux () {
 	gzipcmd="/usr/contrib/bin/gzip -9"
 	lddcmd="/usr/ccs/bin/ldd"
-	trace="/usr/local/bin/tusc -T -f"
+	trace="/usr/local/bin/tusc -p -l -u -f"
 	netstatsu="netstat -s"
 	netstatpunt="netstat -n"
 	ipconfig="netstat -ni"
@@ -1264,6 +1274,7 @@ setup_env_aix () {
 	netstatsu="netstat -s"
 	netstatpunt="netstat -n"
 	dmesg="alog -o -t boot"
+	trace="truss -r all -w all -u libc:: -f"
 	initfile=
 	service_stop="/usr/bin/stopsrc -s syslog-ng"
 	service_start="/usr/bin/startsrc -s syslog-ng"
@@ -1307,12 +1318,11 @@ setup_env_aix () {
 	}
 }
 
-setup_env_generic () {
-	### Check if truss is available
-	if is_available truss ; then
-		trace="truss -r all -w all -u libc:: -f"
-	fi
+setup_env_generic_pre () {
+	:
+}
 
+setup_env_generic_post () {
 	### Check if ss is available (should only be present on Linux)
 	if is_available ss ; then
 		unset routeconfig
@@ -1326,6 +1336,8 @@ setup_env_generic () {
 }
 
 setup_env() {
+	setup_env_generic_pre
+
 	###
 	### Decide OS (switch-like)
 	###
@@ -1344,7 +1356,7 @@ setup_env() {
 		printf "Unkonwn or (yet) unhandled system\n"
 	fi
 
-	setup_env_generic
+	setup_env_generic_post
 }
 
 debun_run () {
@@ -1379,10 +1391,14 @@ run_debug () {
 		fi
 	fi
 	if [ -n "${tracing}" ] && [ -z "${debug_params}" ]; then
-		for i in ${sngallpids}; do
-			${trace} -o ${tmpdir}/trace.${i}.txt -p ${i} &
-			tracepids="${tracepids}${tracepids:+ }${!}"
-		done
+		if is_available "${trace%% *}"; then
+			for i in ${sngallpids}; do
+				${trace} -o ${tmpdir}/trace.${i}.txt -p ${i} &
+				tracepids="${tracepids}${tracepids:+ }${!}"
+			done
+		else
+			echo "Tracing was requested but ${trace%% *} was not available!"
+		fi
 	fi
 	if [ -n "${waitforit}" ]; then
 		[ -n "${pcap_params}" ] && sleep 1
@@ -1401,11 +1417,17 @@ run_debug () {
 		sleep 1
 		echo "Start syslog-ng debug with params: ${debug_params}"
 		if [ -n "$tracing" ]; then
-			${trace} -o ${tmpdir}/trace.dbg.txt ${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
-			i=${!}
-			tracepids="${i}"
-			debugpid="`getchilds ${i}`"
-			echo "Trace: ${i} Debug: ${debugpid}"
+			if is_available "${trace%% *}"; then
+				${trace} -o ${tmpdir}/trace.dbg.txt ${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
+				i=${!}
+				tracepids="${i}"
+				debugpid="`getchilds ${i}`"
+				echo "Trace: ${i} Debug: ${debugpid}"
+			else
+				echo "Tracing was requested but ${trace%% *} was not available!"
+				${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
+				debugpid=${!}
+			fi
 		else
 			${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
 			debugpid=${!}
