@@ -29,7 +29,7 @@
 #include "mainloop.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
-#include "transport/transport-device.h"
+#include "transport-prockmsg.h"
 #include "logproto/logproto-record-server.h"
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-dgram-server.h"
@@ -140,7 +140,7 @@ _construct_transport(FileReader *self, gint fd)
   else if (self->file_reader_options->follow_freq > 0)
     return log_transport_file_new(fd);
   else if (affile_is_linux_proc_kmsg(self->filename->str))
-    return log_transport_device_new(fd, 10);
+    return log_transport_prockmsg_new(fd, 10);
   else if (_is_linux_dev_kmsg(self->filename->str))
     {
       if (lseek(fd, 0, SEEK_END) < 0)

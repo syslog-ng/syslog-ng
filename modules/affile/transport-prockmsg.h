@@ -22,11 +22,11 @@
  *
  */
 
-#ifndef TRANSPORT_TRANSPORT_DEVICE_H_INCLUDED
-#define TRANSPORT_TRANSPORT_DEVICE_H_INCLUDED 1
+#ifndef TRANSPORT_TRANSPORT_PROCKMSG_H_INCLUDED
+#define TRANSPORT_TRANSPORT_PROCKMSG_H_INCLUDED 1
 
-#include "logtransport.h"
+#include "transport/logtransport.h"
 
-LogTransport *log_transport_device_new(gint fd, gint timeout);
+LogTransport *log_transport_prockmsg_new(gint fd, gint timeout);
 
 #endif
