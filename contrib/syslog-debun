@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.3.20170526"
+version="0.3.3.20170527"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -374,8 +374,10 @@ acquire_system_other_info () {
 	$dmesg >${tmpdir}/sys.dmesg
 	netstatnlp >${tmpdir}/sys.netstat.ltn
 	$netstatpunt >${tmpdir}/sys.netstat.est
+	$netstatsu >${tmpdir}/sys.netstat.su
 	free >${tmpdir}/sys.free
 	vmstat >${tmpdir}/sys.vmstat
+	[ -f /proc/net/udp ] && cp /proc/net/udp ${tmpdir}/sys.proc.net.udp
 }
 
 ### Here comes the general info acquiring parts
@@ -1111,6 +1113,7 @@ setup_env_solaris () {
 	pcapifparm="-d"
 	trace="truss -r all -w all -u libc:: -f"
 	netstatpunt="netstat -n"
+	netstatsu="netstat -s"
 	grepq="/usr/xpg4/bin/grep -q"
 	pki_pubkey_parser_cmd="perl -p -e"
 
@@ -1158,6 +1161,7 @@ setup_env_solaris () {
 
 setup_env_freebsd () {
 	netstatpunt="netstat -n"
+	netstatsu="netstat -s"
 	ipconfig="ifconfig -a"
 	pseao="ps xao"
 	trace="truss -a -d -f -s 256"
@@ -1330,8 +1334,12 @@ setup_env_generic_post () {
 
 		routeconfig () { ip route show ; }
 		netstatnlp () { ss -nlp ; }
-		netstatsu="ss -su"
 		netstatpunt="ss -punt"
+	fi
+	if is_available netstat; then
+		:
+	else
+		is_available nstat && netstatsu="nstat"
 	fi
 }
 
