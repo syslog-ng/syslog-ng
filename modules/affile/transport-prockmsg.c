@@ -22,7 +22,7 @@
  *
  */
 
-#include "transport/transport-device.h"
+#include "transport-prockmsg.h"
 #include "messages.h"
 #include "alarms.h"
 
@@ -37,7 +37,7 @@ struct _LogTransportDevice
 };
 
 static gssize
-log_transport_device_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+log_transport_prockmsg_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportDevice *self = (LogTransportDevice *) s;
   gint rc;
@@ -64,13 +64,13 @@ log_transport_device_read_method(LogTransport *s, gpointer buf, gsize buflen, Lo
 }
 
 LogTransport *
-log_transport_device_new(gint fd, gint timeout)
+log_transport_prockmsg_new(gint fd, gint timeout)
 {
   LogTransportDevice *self = g_new0(LogTransportDevice, 1);
 
   log_transport_init_instance(&self->super, fd);
   self->timeout = timeout;
-  self->super.read = log_transport_device_read_method;
+  self->super.read = log_transport_prockmsg_read_method;
   self->super.write = NULL;
   self->super.free_fn = log_transport_free_method;
   return &self->super;
