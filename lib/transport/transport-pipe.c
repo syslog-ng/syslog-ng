@@ -27,7 +27,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-static gssize
+gssize
 log_transport_pipe_write_method(LogTransport *s, const gpointer buf, gsize buflen)
 {
   LogTransportFile *self = (LogTransportFile *) s;

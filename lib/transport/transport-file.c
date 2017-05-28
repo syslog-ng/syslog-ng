@@ -26,36 +26,41 @@
 #include <errno.h>
 #include <unistd.h>
 
-static gssize
-log_transport_file_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+gssize
+log_transport_file_read_method(LogTransport *self, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
-  LogTransportFile *self = (LogTransportFile *) s;
   gint rc;
 
   do
     {
-      rc = read(self->super.fd, buf, buflen);
+      rc = read(self->fd, buf, buflen);
     }
   while (rc == -1 && errno == EINTR);
+  return rc;
+}
 
+gssize
+log_transport_file_read_and_ignore_eof_method(LogTransport *self, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+{
+  gint rc;
+
+  rc = log_transport_file_read_method(self, buf, buflen, aux);
   if (rc == 0)
     {
-      /* regular files should never return EOF, they just need to be read again */
       rc = -1;
       errno = EAGAIN;
     }
   return rc;
 }
 
-static gssize
-log_transport_file_write_method(LogTransport *s, const gpointer buf, gsize buflen)
+gssize
+log_transport_file_write_method(LogTransport *self, const gpointer buf, gsize buflen)
 {
-  LogTransportFile *self = (LogTransportFile *) s;
   gint rc;
 
   do
     {
-      rc = write(self->super.fd, buf, buflen);
+      rc = write(self->fd, buf, buflen);
     }
   while (rc == -1 && errno == EINTR);
   return rc;
@@ -70,7 +75,6 @@ log_transport_file_init_instance(LogTransportFile *self, gint fd)
   self->super.free_fn = log_transport_free_method;
 }
 
-/* regular files */
 LogTransport *
 log_transport_file_new(gint fd)
 {

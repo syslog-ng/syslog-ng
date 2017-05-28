@@ -27,6 +27,7 @@
 
 #include "logtransport.h"
 
+gssize log_transport_pipe_write_method(LogTransport *s, const gpointer buf, gsize buflen);
 LogTransport *log_transport_pipe_new(gint fd);
 
 #endif

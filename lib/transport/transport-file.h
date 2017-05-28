@@ -34,6 +34,10 @@ struct _LogTransportFile
   LogTransport super;
 };
 
+gssize log_transport_file_read_method(LogTransport *self, gpointer buf, gsize buflen, LogTransportAuxData *aux);
+gssize log_transport_file_read_and_ignore_eof_method(LogTransport *self, gpointer buf, gsize buflen, LogTransportAuxData *aux);
+gssize log_transport_file_write_method(LogTransport *self, const gpointer buf, gsize buflen);
+
 void log_transport_file_init_instance(LogTransportFile *self, gint fd);
 LogTransport *log_transport_file_new(gint fd);
 
