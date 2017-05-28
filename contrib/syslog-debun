@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.3.20170527"
+version="0.3.3.20170528"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -378,6 +378,10 @@ acquire_system_other_info () {
 	free >${tmpdir}/sys.free
 	vmstat >${tmpdir}/sys.vmstat
 	[ -f /proc/net/udp ] && cp /proc/net/udp ${tmpdir}/sys.proc.net.udp
+
+	if is_available ${opensslcmd}; then
+		${opensslcmd} version >${tmpdir}/sys.openssl.version
+	fi
 }
 
 ### Here comes the general info acquiring parts
@@ -566,10 +570,9 @@ pki_process_file () {
 acquire_syslog_pki_info () {
 	printf "Gathering PKI information... "
 	if is_available ${opensslcmd}; then
-		local opensslver
-		opensslver=$( ${opensslcmd} version )
-		opensslver=${opensslver%%.*}
-		opensslmajor=${opensslver##OpenSSL }
+		local OPENSSL OPENSSLVER OPENSSLDAY OPENSSLMONTH OPENSSLYEAR REST
+		read OPENSSL OPENSSLVER OPENSSLDAY OPENSSLMONTH OPENSSLYEAR REST <${tmpdir}/sys.openssl.version
+		opensslmajor=${OPENSSLVER%%.*}
 		cd "${confdir}"
 		find . -name '*.0' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
 		while read FILE; do
