@@ -39,6 +39,7 @@
 #include "hostname.h"
 #include "rcptid.h"
 #include "resolved-configurable-paths.h"
+#include "mainloop.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -171,6 +172,19 @@ static void
 cfg_deinit_modules(GlobalConfig *cfg)
 {
   g_hash_table_foreach(cfg->module_config, (GHFunc) _invoke_module_deinit, cfg);
+}
+
+/* Request that this configuration shuts down and terminates.  Right now, as
+ * there's only one configuration executed in a syslog-ng process, it will
+ * cause the mainloop to exit.  Should there be multiple configs running in
+ * the same process at a future point, this would only terminate one and
+ * continue with the rest.
+ */
+void
+cfg_shutdown(GlobalConfig *cfg)
+{
+  MainLoop *main_loop = main_loop_get_instance();
+  main_loop_exit(main_loop);
 }
 
 gboolean
