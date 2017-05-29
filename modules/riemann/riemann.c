@@ -496,7 +496,7 @@ static worker_insert_result_t
 riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 {
   riemann_event_t *event;
-  gboolean success = TRUE, need_drop = FALSE;
+  gboolean need_drop = FALSE;
   GString *str;
 
   event = riemann_event_new();
@@ -550,11 +550,8 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 
   if (need_drop)
     return WORKER_INSERT_RESULT_DROP;
-
-  if (success)
-    return WORKER_INSERT_RESULT_SUCCESS;
   else
-    return WORKER_INSERT_RESULT_ERROR;
+    return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 static worker_insert_result_t
@@ -564,7 +561,7 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
   int r;
 
   if (!riemann_dd_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_ERROR;
+    return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
   message = riemann_message_new();
 
