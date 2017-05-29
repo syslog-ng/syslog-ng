@@ -560,6 +560,9 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
   riemann_message_t *message;
   int r;
 
+  if (self->event.n == 0)
+    return WORKER_INSERT_RESULT_SUCCESS;
+
   if (!riemann_dd_connect(self, TRUE))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
@@ -611,6 +614,13 @@ riemann_worker_thread_deinit(LogThrDestDriver *s)
   riemann_worker_batch_flush(self);
 }
 
+static void
+riemann_flush_queue(LogThrDestDriver *s)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
+  riemann_worker_batch_flush(self);
+}
+
 /*
  * Plugin glue.
  */
@@ -655,6 +665,7 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
   self->super.worker.thread_deinit = riemann_worker_thread_deinit;
+  self->super.worker.worker_message_queue_empty = riemann_flush_queue;
 
   self->super.format.stats_instance = riemann_dd_format_stats_instance;
   self->super.stats_source = SCS_RIEMANN;
