@@ -588,12 +588,16 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   RiemannDestDriver *self = (RiemannDestDriver *)s;
   worker_insert_result_t result;
 
+  if (self->event.n == self->event.batch_size_max)
+    {
+      result = riemann_worker_batch_flush(self);
+      if (result != WORKER_INSERT_RESULT_SUCCESS)
+        return result;
+    }
+
   result = riemann_worker_insert_one(self, msg);
 
   if (self->event.n < self->event.batch_size_max)
-    return result;
-
-  if (result != WORKER_INSERT_RESULT_SUCCESS)
     return result;
 
   return riemann_worker_batch_flush(self);
