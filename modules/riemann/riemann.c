@@ -577,7 +577,7 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
                                                  self->event.batch_size_max);
   if (r != 0)
-    return WORKER_INSERT_RESULT_DROP;
+    return WORKER_INSERT_RESULT_ERROR;
   else
     return WORKER_INSERT_RESULT_SUCCESS;
 }
