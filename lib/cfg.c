@@ -225,7 +225,7 @@ cfg_deinit(GlobalConfig *cfg)
 }
 
 void
-cfg_set_version(GlobalConfig *self, gint version)
+cfg_set_version(GlobalConfig *self, guint version)
 {
   self->user_version = version;
   if (cfg_is_config_version_older(self, VERSION_VALUE))
@@ -287,7 +287,7 @@ cfg_register_builtin_plugins(GlobalConfig *self)
 }
 
 GlobalConfig *
-cfg_new(gint version)
+cfg_new(guint version)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
@@ -551,13 +551,13 @@ cfg_persist_config_fetch(GlobalConfig *cfg, const gchar *name)
   return res;
 }
 
-gint
+guint
 cfg_get_user_version(const GlobalConfig *cfg)
 {
   return cfg->user_version;
 }
 
-gint
+guint
 cfg_get_parsed_version(const GlobalConfig *cfg)
 {
   return cfg->parsed_version;
