@@ -84,7 +84,8 @@ json_parser_process_single(struct json_object *jso,
   if (!jso)
     return;
 
-  key = scratch_buffers2_alloc();
+  ScratchBuffersMarker marker;
+  key = scratch_buffers2_alloc_and_mark(&marker);
   value = scratch_buffers2_alloc();
 
   switch (json_object_get_type(jso))
@@ -162,6 +163,7 @@ json_parser_process_single(struct json_object *jso,
                                   value->len);
     }
 
+  scratch_buffers2_reclaim_marked(marker);
 }
 
 static void
