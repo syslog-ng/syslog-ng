@@ -68,7 +68,6 @@ typedef struct
     riemann_event_t **list;
     gint n;
     gint batch_size_max;
-    GStaticMutex lock;
   } event;
 } RiemannDestDriver;
 
@@ -489,12 +488,8 @@ riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMes
 static void
 _append_event(RiemannDestDriver *self, riemann_event_t *event)
 {
-  g_static_mutex_lock(&self->event.lock);
-
   self->event.list[self->event.n] = event;
   self->event.n++;
-
-  g_static_mutex_unlock(&self->event.lock);
 }
 
 static worker_insert_result_t
@@ -573,8 +568,6 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
 
   message = riemann_message_new();
 
-  g_static_mutex_lock(&self->event.lock);
-
   riemann_message_set_events_n(message, self->event.n, self->event.list);
   r = riemann_client_send_message_oneshot(self->client, message);
 
@@ -586,8 +579,6 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
   self->event.n = 0;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
                                                  self->event.batch_size_max);
-  g_static_mutex_unlock(&self->event.lock);
-
   if (r != 0)
     return WORKER_INSERT_RESULT_DROP;
   else
