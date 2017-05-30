@@ -237,7 +237,7 @@ dest_afpipe_options
 dest_afpipe_option
 	: dest_writer_option
 	| dest_driver_option
-	| dest_driver_basic_plugins
+	| dest_driver_basic_and_diskq_plugins
 	| file_perm_option
 	;
 
