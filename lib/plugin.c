@@ -85,8 +85,20 @@ plugin_candidate_free(PluginCandidate *self)
   g_free(self);
 }
 
+static gboolean
+is_plugin_type_match(Plugin *plugin, const gint *plugin_types, gint num_of_types)
+{
+  for (gint i = 0; i < num_of_types; i++)
+    {
+      if(plugin->type == plugin_types[i])
+        return TRUE;
+    }
+  return FALSE;
+}
+
 static Plugin *
-plugin_find_in_list(GlobalConfig *cfg, GList *head, gint plugin_type, const gchar *plugin_name)
+plugin_find_in_list(GlobalConfig *cfg, GList *head, const gint *plugin_types, gint num_of_plugin_types,
+                    const gchar *plugin_name)
 {
   GList *p;
   Plugin *plugin;
@@ -99,7 +111,7 @@ plugin_find_in_list(GlobalConfig *cfg, GList *head, gint plugin_type, const gcha
   for (p = head; p; p = g_list_next(p))
     {
       plugin = p->data;
-      if (plugin->type == plugin_type)
+      if (is_plugin_type_match(plugin, plugin_types, num_of_plugin_types))
         {
           for (i = 0; plugin->name[i] && plugin_name[i]; i++)
             {
@@ -121,10 +133,11 @@ void
 plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
 {
   gint i;
+  gint number_of_types = 1;
 
   for (i = 0; i < number; i++)
     {
-      if (plugin_find_in_list(cfg, cfg->plugins, p[i].type, p[i].name))
+      if (plugin_find_in_list(cfg, cfg->plugins, &p[i].type, number_of_types, p[i].name))
         {
           msg_debug("Attempted to register the same plugin multiple times, ignoring",
                     evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
@@ -136,17 +149,19 @@ plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
 }
 
 Plugin *
-plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+plugin_find_multiple_types(GlobalConfig *cfg, const gint *plugin_types, gint num_of_plugin_types,
+                           const gchar *plugin_name)
 {
   Plugin *p;
   PluginCandidate *candidate;
 
   /* try registered plugins first */
-  p = plugin_find_in_list(cfg, cfg->plugins, plugin_type, plugin_name);
+  p = plugin_find_in_list(cfg, cfg->plugins, plugin_types, num_of_plugin_types, plugin_name);
   if (p)
     return p;
 
-  candidate = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin_type, plugin_name);
+  candidate = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin_types, num_of_plugin_types,
+                                                      plugin_name);
   if (!candidate)
     return NULL;
 
@@ -154,7 +169,7 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
   plugin_load_module(candidate->module_name, cfg, NULL);
 
   /* by this time it should've registered */
-  p = plugin_find_in_list(cfg, cfg->plugins, plugin_type, plugin_name);
+  p = plugin_find_in_list(cfg, cfg->plugins, plugin_types, num_of_plugin_types, plugin_name);
   if (p)
     {
       return p;
@@ -163,10 +178,16 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
     {
       msg_error("This module claims to support a plugin, which it didn't register after loading",
                 evt_tag_str("module", candidate->module_name),
-                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin_type)),
                 evt_tag_str("name", plugin_name));
     }
   return NULL;
+}
+
+
+Plugin *
+plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+{
+  return  plugin_find_multiple_types(cfg, &plugin_type, 1, plugin_name);
 }
 
 /* construct a plugin without having a configuration file to parse */
@@ -428,8 +449,10 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
                     {
                       Plugin *plugin = &module_info->plugins[j];
                       PluginCandidate *candidate_plugin;
+                      gint number_of_types = 1;
 
-                      candidate_plugin = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin->type, plugin->name);
+                      candidate_plugin = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, &plugin->type, number_of_types,
+                                                                                 plugin->name);
 
                       msg_debug("Registering candidate plugin",
                                 evt_tag_str("module", module_name),

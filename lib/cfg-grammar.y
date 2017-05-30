@@ -1105,6 +1105,49 @@ driver_option
     : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, g_strdup($3)); free($3); }
     ;
 
+dest_driver_basic_and_diskq_plugins
+  : LL_IDENTIFIER
+    {
+      Plugin *p;
+      gint contexts[] = {LL_CONTEXT_DEST_PLUGIN_DISKQ, LL_CONTEXT_INNER_DEST};
+      gint number_of_contexts = sizeof(contexts)/sizeof(contexts[0]);
+      gpointer value;
+
+      p = plugin_find_multiple_types(configuration, contexts, number_of_contexts, $1);
+      CHECK_ERROR(p, @1, "plugin %s not found", $1);
+
+      value = plugin_parse_config(p, configuration, &@1, last_driver);
+
+      free($1);
+      if (!value)
+        {
+          YYERROR;
+        }
+      log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
+    }
+  ;
+
+dest_driver_basic_plugins
+   : LL_IDENTIFIER
+     {
+       Plugin *p;
+       gint context = LL_CONTEXT_INNER_DEST;
+       gpointer value;
+
+       p = plugin_find(configuration, context, $1);
+       CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+       value = plugin_parse_config(p, configuration, &@1, last_driver);
+
+       free($1);
+       if (!value)
+         {
+           YYERROR;
+         }
+       log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
+     }
+   ;
+
 threaded_dest_driver_option
 	: KW_RETRIES '(' positive_integer ')'
         {
