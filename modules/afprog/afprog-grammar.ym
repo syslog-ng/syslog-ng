@@ -113,6 +113,7 @@ dest_afprogram_options
 dest_afprogram_option
 	: dest_writer_option
 	| dest_driver_option
+	| dest_driver_basic_and_diskq_plugins
 	| KW_KEEP_ALIVE '(' yesno ')' { afprogram_dd_set_keep_alive((AFProgramDestDriver *)last_driver, $3); }
 	| KW_INHERIT_ENVIRONMENT '(' yesno ')' { afprogram_set_inherit_environment(&((AFProgramDestDriver *)last_driver)->process_info, $3); }
 	;

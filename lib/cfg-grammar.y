@@ -1159,25 +1159,7 @@ dest_driver_option
 
 	: KW_LOG_FIFO_SIZE '(' positive_integer ')'	{ ((LogDestDriver *) last_driver)->log_fifo_size = $3; }
 	| KW_THROTTLE '(' nonnegative_integer ')'         { ((LogDestDriver *) last_driver)->throttle = $3; }
-        | LL_IDENTIFIER
-          {
-            Plugin *p;
-            gint context = LL_CONTEXT_INNER_DEST;
-            gpointer value;
-
-            p = plugin_find(configuration, context, $1);
-            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
-
-            value = plugin_parse_config(p, configuration, &@1, last_driver);
-
-            free($1);
-            if (!value)
-              {
-                YYERROR;
-              }
-            log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
-          }
-    | driver_option
+	| driver_option
         ;
 
 dest_writer_options

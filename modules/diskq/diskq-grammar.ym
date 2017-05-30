@@ -68,7 +68,7 @@ DiskQueueOptions *last_options;
 %%
 
 start
-	: LL_CONTEXT_INNER_DEST dest_diskq { YYACCEPT; }
+	: LL_CONTEXT_DEST_PLUGIN_DISKQ dest_diskq { YYACCEPT; }
 	;
 
 dest_diskq
