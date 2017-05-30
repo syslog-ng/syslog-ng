@@ -1091,6 +1091,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_CLIENT_PROTO] = "client-proto",
   [LL_CONTEXT_SERVER_PROTO] = "server-proto",
   [LL_CONTEXT_SELECTOR] = "selector",
+  [LL_CONTEXT_DEST_PLUGIN_DISKQ] = "dest-plugin-diskq",
 };
 
 gint

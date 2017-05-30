@@ -159,6 +159,8 @@ extern struct _StatsOptions *last_stats_options;
 %token LL_CONTEXT_CLIENT_PROTO        17
 %token LL_CONTEXT_SERVER_PROTO        18
 %token LL_CONTEXT_SELECTOR            19
+%token LL_CONTEXT_DEST_PLUGIN_DISKQ   20
+
 
 
 /* statements */
