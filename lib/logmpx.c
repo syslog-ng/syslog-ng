@@ -72,7 +72,10 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   gint fallback;
 
   local_options.matched = &matched;
-  log_msg_write_protect(msg);
+  if (self->next_hops->len > 1)
+    {
+      log_msg_write_protect(msg);
+    }
   for (fallback = 0; (fallback == 0) || (fallback == 1 && self->fallback_exists && !delivered); fallback++)
     {
       for (i = 0; i < self->next_hops->len; i++)
@@ -100,7 +103,10 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
             }
         }
     }
-  log_msg_write_unprotect(msg);
+  if (self->next_hops->len > 1)
+    {
+      log_msg_write_unprotect(msg);
+    }
 
   /* NOTE: non of our multiplexed destinations delivered this message, let's
    * propagate this result.  But only if we don't have a "next".  If we do,
