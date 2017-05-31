@@ -1195,6 +1195,7 @@ afsql_dd_init(LogPipe *s)
                                   afsql_dd_format_stats_instance(self) );
     stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   }
   stats_unlock();
 
@@ -1326,6 +1327,7 @@ error:
                                   afsql_dd_format_stats_instance(self) );
     stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   }
   stats_unlock();
 
