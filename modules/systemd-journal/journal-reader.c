@@ -623,18 +623,21 @@ journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, co
   if (options->recv_time_zone_info == NULL)
     options->recv_time_zone_info = time_zone_info_new(options->recv_time_zone);
 
-  gchar *value = ".journald.";
-  if (options->prefix == NULL && cfg_is_config_version_older(cfg, VERSION_VALUE_3_8))
-    {
-      msg_warning("WARNING: Default value changed for the prefix() option of systemd-journal source in " VERSION_3_8,
-                  evt_tag_str("old_value", ""),
-                  evt_tag_str("new_value", value));
-    }
-  else if (!cfg_is_config_version_older(cfg, VERSION_VALUE_3_8))
-    {
-      options->prefix = g_strdup(value);
-    }
 
+  if (options->prefix == NULL)
+    {
+      gchar *default_prefix = ".journald.";
+      if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_8))
+        {
+          msg_warning("WARNING: Default value changed for the prefix() option of systemd-journal source in " VERSION_3_8,
+                      evt_tag_str("old_value", ""),
+                      evt_tag_str("new_value", default_prefix));
+        }
+      else
+        {
+          options->prefix = g_strdup(default_prefix);
+        }
+    }
   options->initialized = TRUE;
 }
 
