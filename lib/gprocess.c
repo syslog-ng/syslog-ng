@@ -1441,6 +1441,18 @@ g_process_startup_ok(void)
 void
 g_process_finish(void)
 {
+
+#ifdef SYSLOG_NG_HAVE_ENVIRON
+
+  for (gint i = 0; environ[i] != NULL; i++)
+    g_free(environ[i]);
+
+  g_free(environ);
+
+  if (process_opts.argv_orig)
+    free(process_opts.argv_orig);
+#endif
+
   g_process_remove_pidfile();
 }
 
@@ -1502,4 +1514,3 @@ g_process_add_option_group(GOptionContext *ctx)
   g_option_group_add_entries(group, g_process_option_entries);
   g_option_context_add_group(ctx, group);
 }
-
