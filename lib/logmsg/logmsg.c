@@ -1780,7 +1780,7 @@ log_msg_global_init(void)
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_sdata_updates);
 
   stats_cluster_single_key_set(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
-  stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
   stats_unlock();
 }
 
