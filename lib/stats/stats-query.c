@@ -226,6 +226,7 @@ _get_aggregated_counters_from_views(GList *views)
 
       view->aggregate(counters, &view->counter);
       aggregated_counters = g_list_append(aggregated_counters, view->counter);
+      g_list_free(counters);
     }
   return aggregated_counters;
 }
