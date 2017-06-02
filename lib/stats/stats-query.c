@@ -55,7 +55,7 @@ stats_register_view(gchar *name, GList *queries, const AggregatedMetricsCb aggre
 {
   ViewRecord *record = g_new0(ViewRecord, 1);
   record->counter = g_new0(StatsCounterItem, 1);
-  record->counter->name = name;
+  record->counter->name = g_strdup(name);
   record->queries = queries;
   record->aggregate = aggregate;
   g_hash_table_insert(stats_views, name, record);
@@ -226,6 +226,7 @@ _get_aggregated_counters_from_views(GList *views)
 
       view->aggregate(counters, &view->counter);
       aggregated_counters = g_list_append(aggregated_counters, view->counter);
+      g_list_free(counters);
     }
   return aggregated_counters;
 }
@@ -445,7 +446,7 @@ void
 stats_query_init(void)
 {
   counter_index = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
-  stats_views = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, _free_view_record);
+  stats_views = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, _free_view_record);
 }
 
 void

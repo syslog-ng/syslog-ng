@@ -193,6 +193,8 @@ process_query_command(GString *command, gpointer user_data)
 
   g_strfreev(cmds);
 
+  if (result->len == 0)
+    g_string_assign(result, "\n");
+
   return result;
 }
-
