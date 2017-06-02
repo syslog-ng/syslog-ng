@@ -50,8 +50,8 @@ create_log_filter_pipe()
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, "filter-matching", NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_MATCHED, &p->matched);
-  stats_register_counter(0, &sc_key, SC_TYPE_NOT_MATCHED, &p->not_matched);
+  stats_register_counter(1, &sc_key, SC_TYPE_MATCHED, &p->matched);
+  stats_register_counter(1, &sc_key, SC_TYPE_NOT_MATCHED, &p->not_matched);
   stats_unlock();
 
   return p;
@@ -73,7 +73,10 @@ Test(test_filters_statistics, filter_stastistics)
   app_startup();
 
   configuration = cfg_new(VERSION_VALUE);
+  configuration->stats_options.level = 1;
   plugin_load_module("syslogformat", configuration, NULL);
+  cr_assert(cfg_init(configuration));
+
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
@@ -82,6 +85,7 @@ Test(test_filters_statistics, filter_stastistics)
   queue_and_assert_statistics(p, "<16> openvpn[2499]: PTHREAD support initialized", 1, 1);
   queue_and_assert_statistics(p, "<16> openvpn[2499]: PTHREAD support initialized", 1, 2);
 
+  cfg_deinit(configuration);
+  cfg_free(configuration);
   app_shutdown();
-
 }

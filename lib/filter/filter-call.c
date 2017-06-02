@@ -112,8 +112,8 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->rule, NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_MATCHED, &self->super.matched);
-  stats_register_counter(0, &sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
+  stats_register_counter(1, &sc_key, SC_TYPE_MATCHED, &self->super.matched);
+  stats_register_counter(1, &sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
   stats_unlock();
 
   return &self->super;
