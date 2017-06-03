@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+
+DOCKER=docker
+DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
+	-v $(ROOT_DIR):/source \
+	-v $(DBLD_DIR)/build:/build \
+	-v ~/.gitconfig:/home/$(shell whoami)/.gitconfig
+ROOT_DIR=$(shell pwd)
+DBLD_DIR=$(ROOT_DIR)/dbld
+IMAGE_SHELL=balabit/syslog-ng-jessie
+
+deb: deb-zesty
+
+shell: shell-zesty
+
+deb-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
+
+shell-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/shell
+
+images: image-jessie image-zesty
+
+
+image-%:
+	cd $(DBLD_DIR)/images/$* && docker build -t balabit/syslog-ng-$* .
+
+setup:
+	mkdir -p dbld/build || true
