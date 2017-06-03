@@ -558,7 +558,7 @@ Description: Enhanced system logging daemon (Kafka destination)
  This package provides the Apache Kafka destination, allowing one to send
  messages to Kafka.
 
-Package: syslog-ng-mod-http
+Package: syslog-ng-mod-java-http
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-mod-java-common-lib, syslog-ng-mod-java
@@ -581,7 +581,7 @@ Description: Enhanced system logging daemon (HTTP destination)
  This package provides an HTTP destination, allowing one to send syslog messages as HTTP 
  PUT messages to an http server.
 
-Package: syslog-ng-mod-curl
+Package: syslog-ng-mod-http
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}

@@ -3,7 +3,8 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-mod-mongodb.preinst \
 		debian/syslog-ng-mod-common.maintscript \
 		debian/syslog-ng-mod-kafka.install \
-		debian/syslog-ng-mod-curl.install \
+		debian/syslog-ng-mod-http.install \
+		debian/syslog-ng-mod-java-http.install \
 		debian/syslog-ng-mod-journal.install \
 		debian/syslog-ng-mod-elastic.install \
 		debian/syslog-ng-mod-mongodb.postinst \
