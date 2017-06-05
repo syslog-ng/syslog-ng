@@ -13,13 +13,18 @@ deb: deb-zesty
 
 shell: shell-zesty
 
+rpm: rpm-centos7
+
 deb-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
+
+rpm-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
 
 shell-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/shell
 
-images: image-jessie image-zesty
+images: image-jessie image-zesty image-centos7
 
 
 image-%:
