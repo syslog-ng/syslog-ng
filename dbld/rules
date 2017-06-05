@@ -7,6 +7,8 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-v ~/.gitconfig:/home/$(shell whoami)/.gitconfig
 ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
+BUILD_DIR=$(DBLD_DIR)/build
+RELEASE_DIR=$(DBLD_DIR)/release
 IMAGE_SHELL=balabit/syslog-ng-jessie
 
 deb: deb-zesty
@@ -15,11 +17,31 @@ shell: shell-zesty
 
 rpm: rpm-centos7
 
+release: release-deb release-rpm
+
 deb-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
 
 rpm-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
+
+release-deb: clean
+	$(DBLD_DIR)/rules deb
+
+	# tarball is built by release-deb
+	cp $(BUILD_DIR)/syslog-ng-*.tar.gz $(RELEASE_DIR)
+
+	# Debian sources and binaries
+	cp $(BUILD_DIR)/syslog-ng_*{dsc,orig.tar.gz,deb} $(RELEASE_DIR)
+
+release-rpm: clean
+	$(DBLD_DIR)/rules rpm
+	# RPM sources and binaries
+	cp $(BUILD_DIR)/syslog-ng*rpm $(RELEASE_DIR)
+
+clean:
+	rm -rf $(BUILD_DIR)/*
+
 
 shell-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/shell
@@ -32,3 +54,4 @@ image-%:
 
 setup:
 	mkdir -p dbld/build || true
+	mkdir -p dbld/release || true
