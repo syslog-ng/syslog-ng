@@ -13,13 +13,11 @@ if [ ! -d debian ]; then
 	exit 1
 fi
 VERSION=`cat VERSION`
-./autogen.sh
 
 cd /build
-/source/configure
-make dist
+
 tar xvf syslog-ng-${VERSION}.tar.gz
-mv syslog-ng-${VERSION}.tar.gz syslog-ng_${VERSION}.orig.tar.gz
+cp syslog-ng-${VERSION}.tar.gz syslog-ng_${VERSION}.orig.tar.gz
 cd syslog-ng-${VERSION}
 dpkg-buildpackage -rfakeroot
 

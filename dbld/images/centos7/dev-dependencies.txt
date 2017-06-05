@@ -31,7 +31,7 @@ autoconf-archive
 GeoIP-devel
 python-pep8
 libesmtp-devel
-libmongo-client-devel
+mongo-c-driver-devel
 hiredis-devel
 python-pep8
 cyrus-sasl-devel

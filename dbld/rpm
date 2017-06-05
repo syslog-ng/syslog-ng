@@ -13,11 +13,8 @@ if [ ! -f syslog-ng.spec ]; then
 	exit 1
 fi
 VERSION=`cat VERSION`
-./autogen.sh
 
 cd /build
-/source/configure
-make dist
 rpmbuild -ta syslog-ng-${VERSION}.tar.gz
 mv ~/rpmbuild/RPMS/*/*.rpm /build
 echo "Your rpms are in /build, also available on the host in \$(top_srcdir)/dbld/build"

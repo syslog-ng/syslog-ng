@@ -1,18 +1,13 @@
 FROM centos:7
 MAINTAINER Andras Mitzki <andras.mitzki@balabit.com>
 
-RUN yum install -y wget epel
+RUN yum install -y wget epel-release
 
-#RUN wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_17.04/Release.key | apt-key add -
-#RUN echo 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_17.04 ./' | tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
-
+RUN cd /etc/yum.repos.d && wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng39/repo/epel-7/czanik-syslog-ng39-epel-7.repo
 
 ADD dev-dependencies.txt .
 RUN cat dev-dependencies.txt | grep -v "#" | xargs yum -y  install
 
-RUN yum install -y epel-release
-
-RUN cd /etc/yum.repos.d && wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng39/repo/epel-7/czanik-syslog-ng39-epel-7.repo
 
 #
 # if you want to add further packages, add them to addons.txt to make image
@@ -22,8 +17,6 @@ RUN cd /etc/yum.repos.d && wget https://copr.fedorainfracloud.org/coprs/czanik/s
 #
 ADD addons.txt .
 RUN cat addons.txt | grep -v "#" | xargs -r yum -y install
-
-RUN yum install -y mongo-c-driver-devel
 
 ADD gosu.pubkey /tmp
 # grab gosu for easy step-down from root
