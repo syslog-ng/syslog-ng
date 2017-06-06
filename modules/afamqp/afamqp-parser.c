@@ -43,10 +43,10 @@ static CfgLexerKeyword afamqp_keywords[] = {
   { "password",			KW_PASSWORD },
   { "log_fifo_size",		KW_LOG_FIFO_SIZE  },
   { "body",			KW_BODY },
-  { "ssl_cacrt",     KW_CACRT },
-  { "ssl_key",       KW_SSLKEY },
-  { "ssl_usercrt",   KW_USRCRT },
-  { "ssl_verify",    KW_VERIFY },
+  { "ca_file",     		KW_CA_FILE },
+  { "key_file",       		KW_KEY_FILE },
+  { "cert_file",   		KW_CERT_FILE },
+  { "peer_verify",    		KW_PEER_VERIFY },
   { NULL }
 };
 
