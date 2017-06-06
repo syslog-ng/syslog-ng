@@ -68,10 +68,10 @@ typedef struct
   gint32 max_entries;
 
   /* SSL props */
-  gchar *ssl_cacrt;
-  gchar *ssl_key;
-  gchar *ssl_usercrt;
-  gboolean ssl_verify;
+  gchar *ca_file;
+  gchar *key_file;
+  gchar *cert_file;
+  gboolean peer_verify;
 } AMQPDestDriver;
 
 /*
@@ -195,38 +195,38 @@ afamqp_dd_get_template_options(LogDriver *s)
 }
 
 void
-afamqp_dd_set_ssl_cacrt(LogDriver *d, const gchar *cacrt)
+afamqp_dd_set_ca_file(LogDriver *d, const gchar *cacrt)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
-  g_free(self->ssl_cacrt);
-  self->ssl_cacrt = g_strdup(cacrt);
+  g_free(self->ca_file);
+  self->ca_file = g_strdup(cacrt);
 }
 
 void
-afamqp_dd_set_ssl_key(LogDriver *d, const gchar *key)
+afamqp_dd_set_key_file(LogDriver *d, const gchar *key)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
-  g_free(self->ssl_key);
-  self->ssl_key = g_strdup(key);
+  g_free(self->key_file);
+  self->key_file = g_strdup(key);
 }
 
 void
-afamqp_dd_set_ssl_usercrt(LogDriver *d, const gchar *usercrt)
+afamqp_dd_set_cert_file(LogDriver *d, const gchar *usercrt)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
-  g_free(self->ssl_usercrt);
-  self->ssl_usercrt = g_strdup(usercrt);
+  g_free(self->cert_file);
+  self->cert_file = g_strdup(usercrt);
 }
 
 void
-afamqp_dd_set_ssl_verify(LogDriver *d, gboolean verify)
+afamqp_dd_set_peer_verify(LogDriver *d, gboolean verify)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
-  self->ssl_verify = verify;
+  self->peer_verify = verify;
 }
 
 /*
@@ -384,28 +384,28 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
       msg_error("Error allocating AMQP connection.");
       goto exception_amqp_dd_connect_failed_init;
     }
-  if(strcmp(self->ssl_cacrt,"") != 0)
+  if(strcmp(self->ca_file,"") != 0)
     {
-      int cacrt_ret;
+      int ca_file_ret;
       self->sockfd = amqp_ssl_socket_new(self->conn);
-      cacrt_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ssl_cacrt);
-      if(cacrt_ret != AMQP_STATUS_OK)
+      ca_file_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ca_file);
+      if(ca_file_ret != AMQP_STATUS_OK)
         {
-          msg_error("Error connecting to AMQP server while setting ssl_cacrt",
+          msg_error("Error connecting to AMQP server while setting ca_file",
                     evt_tag_str("driver", self->super.super.super.id),
-                    evt_tag_str("error", amqp_error_string2(cacrt_ret)),
+                    evt_tag_str("error", amqp_error_string2(ca_file_ret)),
                     evt_tag_int("time_reopen", self->super.time_reopen));
 
           goto exception_amqp_dd_connect_failed_init;
 
         }
 
-      if(strcmp(self->ssl_key,"") != 0 && strcmp(self->ssl_usercrt,"") != 0)
+      if(strcmp(self->key_file,"") != 0 && strcmp(self->cert_file,"") != 0)
         {
-          int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->ssl_usercrt, self->ssl_key);
+          int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->cert_file, self->key_file);
           if(setkey_ret != AMQP_STATUS_OK)
             {
-              msg_error("Error connecting to AMQP server while setting ssl_key and ssl_usercrt",
+              msg_error("Error connecting to AMQP server while setting key_file and cert_file",
                         evt_tag_str("driver", self->super.super.super.id),
                         evt_tag_str("error", amqp_error_string2(setkey_ret)),
                         evt_tag_int("time_reopen", self->super.time_reopen));
@@ -414,7 +414,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 
             }
         }
-      amqp_ssl_socket_set_verify(self->sockfd, self->ssl_verify);
+      amqp_ssl_socket_set_verify(self->sockfd, self->peer_verify);
     }
   else
     self->sockfd = amqp_tcp_socket_new(self->conn);
@@ -683,10 +683,10 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   log_template_options_defaults(&self->template_options);
   afamqp_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
-  afamqp_dd_set_ssl_cacrt((LogDriver *) self, "");
-  afamqp_dd_set_ssl_key((LogDriver *) self, "");
-  afamqp_dd_set_ssl_usercrt((LogDriver *) self, "");
-  afamqp_dd_set_ssl_verify((LogDriver *) self, TRUE);
+  afamqp_dd_set_ca_file((LogDriver *) self, "");
+  afamqp_dd_set_key_file((LogDriver *) self, "");
+  afamqp_dd_set_cert_file((LogDriver *) self, "");
+  afamqp_dd_set_peer_verify((LogDriver *) self, TRUE);
 
   return (LogDriver *) self;
 }
