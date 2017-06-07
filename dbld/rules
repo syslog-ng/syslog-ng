@@ -4,6 +4,7 @@ DOCKER=docker
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-v $(ROOT_DIR):/source \
 	-v $(DBLD_DIR)/build:/build \
+	-v $(DBLD_DIR)/install:/install \
 	-v ~/.gitconfig:/home/$(shell whoami)/.gitconfig
 ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
@@ -86,4 +87,5 @@ image-%:
 
 setup:
 	mkdir -p dbld/build || true
+	mkdir -p dbld/install || true
 	mkdir -p dbld/release || true

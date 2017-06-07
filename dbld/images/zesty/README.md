@@ -30,7 +30,7 @@ $ pip install -r requirements.txt
 $ ./autogen.sh
 $ mkdir build
 $ cd build/
-$ ../configure --enable-debug --prefix=/install/syslog-ng
+$ ../configure --enable-debug --prefix=/install
 $ make
 $ make check
 $ make install
@@ -43,4 +43,5 @@ $ /install/syslog-ng/sbin/syslog-ng -Fedv
 ```
 
 The source code and build products are mounted externally in a directory
-called `/source` and `/build` respectively.
+called `/source` (for the sources) `/build` (for build products) and
+`/install` (for the installed binaries) respectively.
