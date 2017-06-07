@@ -536,6 +536,7 @@ AC_CHECK_HEADERS(strings.h	\
 AC_CHECK_HEADERS(tcpd.h)
 
 AC_CHECK_TYPES([struct ucred, struct cmsgcred], [], [], [#define _GNU_SOURCE 1
+#define _DEFAULT_SOURCE 1
 #include <sys/types.h>
 #include <sys/socket.h>])
 
@@ -579,7 +580,7 @@ I_CONSLOG
   blb_cv_c_i_conslog=no, blb_cv_c_i_conslog=yes)])
 
 old_CPPFLAGS=$CPPFLAGS
-CPPFLAGS=-D_GNU_SOURCE
+CPPFLAGS="-D_GNU_SOURCE -D_DEFAULT_SOURCE"
 AC_CACHE_CHECK(for O_LARGEFILE, blb_cv_c_o_largefile,
   [AC_EGREP_CPP(O_LARGEFILE,
 [
@@ -1430,7 +1431,7 @@ if test "x$module_path" = "x"; then
 	java_module_path="$moduledir"/java-modules
 fi
 
-CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 ########################################################
 ## NOTES: on how syslog-ng is linked
