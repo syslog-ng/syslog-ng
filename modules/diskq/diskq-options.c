@@ -43,11 +43,7 @@ disk_queue_options_qout_size_set(DiskQueueOptions *self, gint qout_size)
 void
 disk_queue_options_disk_buf_size_set(DiskQueueOptions *self, gint64 disk_buf_size)
 {
-  if (disk_buf_size == 0)
-    {
-      msg_warning("WARNING: The configured disk buffer size is zero. No disk queue file will be created.");
-    }
-  else if (disk_buf_size < MIN_DISK_BUF_SIZE)
+  if (disk_buf_size < MIN_DISK_BUF_SIZE)
     {
       msg_warning("WARNING: The configured disk buffer size is smaller than the minimum allowed",
                   evt_tag_int("configured size", disk_buf_size),
