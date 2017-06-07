@@ -155,8 +155,6 @@ geoip_parser_free(LogPipe *s)
   g_free(self->database);
   g_free(self->prefix);
 
-  GeoIP_delete(self->gi);
-
   log_parser_free_method(s);
 }
 
@@ -164,11 +162,22 @@ static gboolean
 geoip_parser_init(LogPipe *s)
 {
   GeoIPParser *self = (GeoIPParser *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
   geoip_parser_reset_fields(self);
 
   if (self->database)
-    self->gi = GeoIP_open(self->database, GEOIP_MMAP_CACHE);
+    {
+      GeoIP *_gi = GeoIP_open(self->database, GEOIP_MMAP_CACHE);
+      if (_gi)
+        {
+          if (self->gi)
+            GeoIP_delete(self->gi);
+          self->gi = _gi;
+        }
+      else
+        self->gi = cfg_persist_config_fetch(cfg, "geoip-obj");
+    }
   else
     self->gi = GeoIP_new(GEOIP_MMAP_CACHE);
 
@@ -177,6 +186,18 @@ geoip_parser_init(LogPipe *s)
   return log_parser_init_method(s);
 }
 
+static gboolean
+geoip_parser_deinit(LogPipe *s)
+{
+  GeoIPParser *self = (GeoIPParser *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  cfg_persist_config_add(cfg, "geoip-obj", self->gi,
+                         (GDestroyNotify) GeoIP_delete, FALSE);
+  return TRUE;
+}
+
+
 LogParser *
 geoip_parser_new(GlobalConfig *cfg)
 {
@@ -184,6 +205,7 @@ geoip_parser_new(GlobalConfig *cfg)
 
   log_parser_init_instance(&self->super, cfg);
   self->super.super.init = geoip_parser_init;
+  self->super.super.deinit = geoip_parser_deinit;
   self->super.super.free_fn = geoip_parser_free;
   self->super.super.clone = geoip_parser_clone;
   self->super.process = geoip_parser_process;

@@ -122,7 +122,7 @@ int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
-
+  configuration = cfg_new(VERSION_VALUE);
   test_geoip_parser();
   app_shutdown();
   return 0;
