@@ -356,7 +356,7 @@ init_statistics(LogQueue *q)
   stats_cluster_logpipe_key_set(&sc_key1, SCS_DESTINATION, "queued messages", NULL );
   stats_register_counter(0, &sc_key1, SC_TYPE_QUEUED, &q->queued_messages);
   stats_cluster_logpipe_key_set(&sc_key2, SCS_DESTINATION, "memory usage", NULL );
-  stats_register_counter(0, &sc_key2, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
+  stats_register_counter(1, &sc_key2, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
   stats_unlock();
   stats_counter_set(q->queued_messages, 0);
   stats_counter_set(q->memory_usage, 0);
@@ -489,7 +489,9 @@ main()
   putenv("TZ=MET-1METDST");
   tzset();
 
-  configuration = cfg_new(0x308);
+  configuration = cfg_new(VERSION_VALUE);
+  configuration->stats_options.level = 1;
+  assert_true(cfg_init(configuration), "cfg_init failed!");
   plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);

@@ -173,6 +173,8 @@ setup(void)
   putenv("TZ=MET-1METDST");
   tzset();
   init_and_load_syslogformat_module();
+  configuration->stats_options.level = 1;
+  cr_assert(cfg_init(configuration), "cfg_init failed!");
 }
 
 void
@@ -195,7 +197,7 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   stats_lock();
   stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
-  stats_register_counter(0, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
+  stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
   stats_unlock();
 
   log_queue_set_use_backlog(q, TRUE);
