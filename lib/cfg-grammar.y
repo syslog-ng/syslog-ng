@@ -885,7 +885,7 @@ options_items
 
 options_item
 	: KW_MARK_FREQ '(' nonnegative_integer ')'		{ configuration->mark_freq = $3; }
-	| KW_FLUSH_LINES '(' positive_integer ')'		{ configuration->flush_lines = $3; }
+	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ configuration->flush_lines = $3; }
         | KW_MARK_MODE '(' KW_INTERNAL ')'         { cfg_set_mark_mode(configuration, "internal"); }
         | KW_MARK_MODE '(' string ')'
           {
@@ -1144,7 +1144,7 @@ dest_writer_option
         /* NOTE: plugins need to set "last_writer_options" in order to incorporate this rule in their grammar */
 
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
-	| KW_FLUSH_LINES '(' positive_integer ')'		{ last_writer_options->flush_lines = $3; }
+	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ last_writer_options->flush_timeout = $3; }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' string ')'       	{
