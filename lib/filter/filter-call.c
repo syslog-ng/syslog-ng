@@ -71,6 +71,13 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
       self->filter_expr = filter_expr_ref(filter_pipe->expr);
       filter_expr_init(self->filter_expr, cfg);
       self->super.modify = self->filter_expr->modify;
+
+      stats_lock();
+      StatsClusterKey sc_key;
+      stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->rule, NULL );
+      stats_register_counter(1, &sc_key, SC_TYPE_MATCHED, &self->super.matched);
+      stats_register_counter(1, &sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
+      stats_unlock();
     }
   else
     {
@@ -108,13 +115,6 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->super.free_fn = filter_call_free;
   self->super.type = g_strdup_printf("filter(%s)", rule);
   self->rule = g_strdup(rule);
-
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->rule, NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_MATCHED, &self->super.matched);
-  stats_register_counter(0, &sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
-  stats_unlock();
 
   return &self->super;
 }

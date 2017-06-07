@@ -34,15 +34,15 @@ MsgFormatOptions parse_options;
 LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
 static LogParser *
-_create_parser()
+_create_parser(GlobalConfig *cfg)
 {
-  LogParser *p = csv_parser_new(NULL);
+  LogParser *p = csv_parser_new(cfg);
   const gchar *column_array[] = { "header1", NULL };
 
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, p->name, NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_DISCARDED, &p->super.discarded_messages);
+  stats_register_counter(1, &sc_key, SC_TYPE_DISCARDED, &p->super.discarded_messages);
   stats_unlock();
 
   csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(p), ",");
@@ -74,12 +74,15 @@ _parse_msg(LogParser *self, gchar *msg)
 Test(test_filters_statistics, filter_stastistics)
 {
   app_startup();
-  configuration = cfg_new(0x0309);
+  configuration = cfg_new(VERSION_VALUE);
+  configuration->stats_options.level = 1;
+  cr_assert(cfg_init(configuration));
+
   plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
-  LogParser *parser = _create_parser();
+  LogParser *parser = _create_parser(configuration);
   cr_assert_eq(stats_counter_get(parser->super.discarded_messages), 0);
   _parse_msg(parser, "column1, column2, column3, column4");
   cr_assert_eq(stats_counter_get(parser->super.discarded_messages), 1);
@@ -91,5 +94,7 @@ Test(test_filters_statistics, filter_stastistics)
   _unregister_statistics(parser);
 
   log_parser_free_method((LogPipe *)parser);
+  cfg_deinit(configuration);
+  cfg_free(configuration);
   app_shutdown();
 }

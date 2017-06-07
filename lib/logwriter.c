@@ -1280,7 +1280,7 @@ _register_counters(LogWriter *self)
     cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+    stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
     if (cluster != NULL)
       stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
   }
