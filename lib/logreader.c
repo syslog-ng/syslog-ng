@@ -521,8 +521,6 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
 {
   gpointer args[] = { self, proto, poll_events };
 
-  log_source_deinit(&self->super.super);
-
   main_loop_call((MainLoopTaskFunc) log_reader_reopen_deferred, args, TRUE);
 
   if (!main_loop_is_main_thread())
@@ -534,7 +532,6 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
         }
       g_static_mutex_unlock(&self->pending_proto_lock);
     }
-  log_source_init(&self->super.super);
 }
 
 void
