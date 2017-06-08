@@ -50,8 +50,6 @@ void file_opener_set_options(FileOpener *self, FileOpenerOptions *options);
 FileOpener *file_opener_new(void);
 void file_opener_free(FileOpener *self);
 
-gboolean affile_open_file(gchar *name, FileOpenerOptions *open_opts, gint *fd);
-
 static inline gboolean
 affile_is_linux_proc_kmsg(const gchar *filename)
 {

@@ -133,7 +133,7 @@ _validate_file_type(const gchar *name, FileOpenerOptions *options)
     }
 }
 
-gboolean
+static gboolean
 affile_open_file(gchar *name, FileOpenerOptions *options, gint *fd)
 {
   cap_t saved_caps;

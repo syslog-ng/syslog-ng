@@ -32,7 +32,18 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define AFFILE_TESTCASE(testfunc, ...) { testcase_begin("%s(%s)", #testfunc, #__VA_ARGS__); testfunc(__VA_ARGS__); testcase_end(); }
+#define affile_testcase_begin(func, args)	\
+  do {						\
+    testcase_begin("%s(%s)", func, args);	\
+    file_opener = file_opener_new();		\
+  } while (0)
+
+#define affile_testcase_end() \
+  do { 				\
+    testcase_end();		\
+  } while (0)
+
+#define AFFILE_TESTCASE(testfunc, ...) { affile_testcase_begin(#testfunc, #__VA_ARGS__); testfunc(__VA_ARGS__); affile_testcase_end(); }
 
 #define CREATE_DIRS 0x01
 #define PIPE 0x02
@@ -41,6 +52,8 @@
 
 #define PIPE_OPEN_FLAGS (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 #define REGULAR_FILE_OPEN_FLAGS (O_CREAT | O_NOCTTY | O_LARGEFILE)
+
+static FileOpener *file_opener;
 
 static void
 setup()
@@ -69,7 +82,8 @@ open_file(gchar *fname, int open_flags, gint extra_flags, gint *fd)
   open_opts.is_pipe = !!(extra_flags & PIPE);
   open_opts.needs_privileges = FALSE;
 
-  return affile_open_file(fname, &open_opts, fd);
+  file_opener_set_options(file_opener, &open_opts);
+  return file_opener_open_fd(file_opener, fname, fd);
 }
 
 static void

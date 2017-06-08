@@ -149,12 +149,6 @@ affile_dw_reap(gpointer s)
 }
 
 static gboolean
-_affile_dw_reopen_file(AFFileDestWriter *self, gchar *name, gint *fd)
-{
-  return affile_open_file(name, &self->owner->file_opener_options, fd);
-}
-
-static gboolean
 affile_dw_reopen(AFFileDestWriter *self)
 {
   int fd;
@@ -181,7 +175,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       unlink(self->filename);
     }
 
-  if (_affile_dw_reopen_file(self, self->filename, &fd))
+  if (file_opener_open_fd(self->owner->file_opener, self->filename, &fd))
     {
       proto =  self->owner->file_opener_options.is_pipe
                ? log_proto_text_client_new(log_transport_pipe_new(fd), &self->owner->writer_options.proto_options.super)
@@ -480,6 +474,7 @@ affile_dd_init(LogPipe *s)
     self->time_reap = cfg->time_reap;
 
   file_opener_options_init(&self->file_opener_options, cfg);
+  file_opener_set_options(self->file_opener, &self->file_opener_options);
   log_writer_options_init(&self->writer_options, cfg, 0);
 
   if (self->filename_is_a_template)
@@ -771,6 +766,8 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
     }
   file_opener_options_defaults(&self->file_opener_options);
   self->file_opener_options.open_flags = DEFAULT_DW_REOPEN_FLAGS;
+
+  self->file_opener = file_opener_new();
   self->time_reap = -1;
   g_static_mutex_init(&self->lock);
   return self;
