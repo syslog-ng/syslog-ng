@@ -40,6 +40,7 @@ typedef struct _AFFileDestDriver
     template_escape:1,
     use_fsync:1;
   FileOpenerOptions file_opener_options;
+  FileOpener *file_opener;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
   GHashTable *writer_hash;
