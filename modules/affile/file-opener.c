@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-#include "affile-common.h"
+#include "file-opener.h"
 #include "messages.h"
 #include "gprocess.h"
 #include "fdhelpers.h"
@@ -58,9 +58,9 @@ _is_path_spurious(const gchar *name)
 }
 
 static inline gboolean
-_obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, cap_t *act_caps)
+_obtain_capabilities(gchar *name, FileOpenOptions *options, FilePermOptions *perm_opts, cap_t *act_caps)
 {
-  if (open_opts->needs_privileges)
+  if (options->needs_privileges)
     {
       g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
       g_process_cap_modify(CAP_SYSLOG, TRUE);
@@ -70,7 +70,7 @@ _obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *p
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
     }
 
-  if (open_opts->create_dirs && perm_opts &&
+  if (options->create_dirs && perm_opts &&
       !file_perm_options_create_containing_directory(perm_opts, name))
     {
       return FALSE;
@@ -95,36 +95,36 @@ _set_fd_permission(FilePermOptions *perm_opts, int fd)
 }
 
 static inline int
-_open_fd(const gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts)
+_open_fd(const gchar *name, FileOpenOptions *options, FilePermOptions *perm_opts)
 {
   int fd;
   int mode = (perm_opts && (perm_opts->file_perm >= 0))
              ? perm_opts->file_perm : 0600;
 
-  fd = open(name, open_opts->open_flags, mode);
+  fd = open(name, options->open_flags, mode);
 
-  if (open_opts->is_pipe && fd < 0 && errno == ENOENT)
+  if (options->is_pipe && fd < 0 && errno == ENOENT)
     {
       if (mkfifo(name, mode) >= 0)
-        fd = open(name, open_opts->open_flags, mode);
+        fd = open(name, options->open_flags, mode);
     }
 
   return fd;
 }
 
 static inline void
-_validate_file_type(const gchar *name, FileOpenOptions *open_opts)
+_validate_file_type(const gchar *name, FileOpenOptions *options)
 {
   struct stat st;
 
   if (stat(name, &st) >= 0)
     {
-      if (open_opts->is_pipe && !S_ISFIFO(st.st_mode))
+      if (options->is_pipe && !S_ISFIFO(st.st_mode))
         {
           msg_warning("WARNING: you are using the pipe driver, underlying file is not a FIFO, it should be used by file()",
                       evt_tag_str("filename", name));
         }
-      else if (!open_opts->is_pipe && S_ISFIFO(st.st_mode))
+      else if (!options->is_pipe && S_ISFIFO(st.st_mode))
         {
           msg_warning("WARNING: you are using the file driver, underlying file is a FIFO, it should be used by pipe()",
                       evt_tag_str("filename", name));
@@ -133,7 +133,7 @@ _validate_file_type(const gchar *name, FileOpenOptions *open_opts)
 }
 
 gboolean
-affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd)
+affile_open_file(gchar *name, FileOpenOptions *options, FilePermOptions *perm_opts, gint *fd)
 {
   cap_t saved_caps;
 
@@ -146,15 +146,15 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
 
   saved_caps = g_process_cap_save();
 
-  if (!_obtain_capabilities(name, open_opts, perm_opts, &saved_caps))
+  if (!_obtain_capabilities(name, options, perm_opts, &saved_caps))
     {
       g_process_cap_restore(saved_caps);
       return FALSE;
     }
 
-  _validate_file_type(name, open_opts);
+  _validate_file_type(name, options);
 
-  *fd = _open_fd(name, open_opts, perm_opts);
+  *fd = _open_fd(name, options, perm_opts);
 
   if (!is_file_device(name))
     _set_fd_permission(perm_opts, *fd);

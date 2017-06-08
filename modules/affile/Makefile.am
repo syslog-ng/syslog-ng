@@ -19,8 +19,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/collection-comporator.c		\
 	modules/affile/directory-monitor-poll.h   \
 	modules/affile/directory-monitor-poll.c   \
-	modules/affile/affile-common.c				\
-	modules/affile/affile-common.h				\
+	modules/affile/file-opener.c				\
+	modules/affile/file-opener.h				\
 	modules/affile/affile-source.c				\
 	modules/affile/affile-source.h				\
 	modules/affile/affile-dest.c				\

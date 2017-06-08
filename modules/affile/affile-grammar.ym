@@ -29,7 +29,7 @@
 
 %code {
 
-#include "affile-common.h"
+#include "file-opener.h"
 #include "affile-source.h"
 #include "wildcard-source.h"
 #include "affile-dest.h"
