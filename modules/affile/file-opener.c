@@ -175,12 +175,17 @@ file_opener_open_fd(FileOpener *self, gchar *name, gint *fd)
   return affile_open_file(name, self->options, fd);
 }
 
+void
+file_opener_set_options(FileOpener *self, FileOpenerOptions *options)
+{
+  self->options = options;
+}
+
 FileOpener *
-file_opener_new(FileOpenerOptions *options)
+file_opener_new(void)
 {
   FileOpener *self = g_new0(FileOpener, 1);
 
-  self->options = options;
   return self;
 }
 

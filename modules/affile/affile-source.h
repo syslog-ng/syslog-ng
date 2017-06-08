@@ -35,6 +35,7 @@ typedef struct _AFFileSourceDriver
   LogSrcDriver super;
   GString *filename;
   FileReader *file_reader;
+  FileOpener *file_opener;
   FileReaderOptions file_reader_options;
   FileOpenerOptions file_opener_options;
   /* state information to follow a set of files using a wildcard expression */
