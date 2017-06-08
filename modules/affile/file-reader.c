@@ -460,10 +460,25 @@ file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq
 }
 
 void
-file_reader_options_destroy(FileReaderOptions *options)
+file_reader_options_defaults(FileReaderOptions *options)
 {
-  log_reader_options_destroy(&options->reader_options);
+  log_reader_options_defaults(&options->reader_options);
+  options->reader_options.parse_options.flags |= LP_LOCAL;
+  file_opener_options_defaults(&options->file_open_options);
+}
 
+void
+file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group)
+{
+  log_reader_options_init(&options->reader_options, cfg, group);
+  file_opener_options_init(&options->file_open_options, cfg);
+}
+
+void
+file_reader_options_deinit(FileReaderOptions *options)
+{
   multi_line_regexp_free(options->multi_line_prefix);
   multi_line_regexp_free(options->multi_line_garbage);
+  log_reader_options_destroy(&options->reader_options);
+  file_opener_options_deinit(&options->file_open_options);
 }

@@ -35,7 +35,8 @@ enum
   MLM_PREFIX_SUFFIX,
 };
 
-typedef struct _FileReaderOptions {
+typedef struct _FileReaderOptions
+{
   FileOpenOptions file_open_options;
   gint pad_size;
   gint follow_freq;
@@ -62,7 +63,9 @@ gboolean file_reader_options_set_multi_line_mode(FileReaderOptions *options, con
 gboolean file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
 gboolean file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
 
-void file_reader_options_destroy(FileReaderOptions *options);
+void file_reader_options_defaults(FileReaderOptions *options);
+void file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group);
+void file_reader_options_deinit(FileReaderOptions *options);
 
 
 #endif /* MODULES_AFFILE_FILE_READER_H_ */

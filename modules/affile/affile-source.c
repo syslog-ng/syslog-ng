@@ -82,8 +82,7 @@ affile_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-  log_reader_options_init(&self->file_reader_options.reader_options, cfg, self->super.super.group);
-  file_opener_options_init(&self->file_reader_options.file_open_options, cfg);
+  file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
 
   if (_are_multi_line_settings_invalid(self))
     {
@@ -116,8 +115,7 @@ affile_sd_free(LogPipe *s)
 
   log_pipe_unref(&self->file_reader->super);
   g_string_free(self->filename, TRUE);
-  file_reader_options_destroy(&self->file_reader_options);
-  file_opener_options_deinit(&self->file_reader_options.file_open_options);
+  file_reader_options_deinit(&self->file_reader_options);
   log_src_driver_free(s);
 }
 
@@ -135,9 +133,7 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.deinit = affile_sd_deinit;
   self->super.super.super.free_fn = affile_sd_free;
   self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
-  log_reader_options_defaults(&self->file_reader_options.reader_options);
-  file_opener_options_defaults(&self->file_reader_options.file_open_options);
-  self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
+  file_reader_options_defaults(&self->file_reader_options);
 
   if (affile_is_linux_proc_kmsg(filename))
     self->file_reader_options.file_open_options.needs_privileges = TRUE;

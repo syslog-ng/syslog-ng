@@ -169,7 +169,7 @@ _init_reader_options(WildcardSourceDriver *self, GlobalConfig *cfg)
       self->window_size_initialized = TRUE;
 
     }
-  log_reader_options_init(&self->file_reader_options.reader_options, cfg, self->super.super.group);
+  file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
 }
 
 static gboolean
@@ -220,7 +220,6 @@ _init(LogPipe *s)
     }
 
   _init_reader_options(self, cfg);
-  file_opener_options_init(&self->file_reader_options.file_open_options, cfg);
   _add_directory_monitor(self, self->base_dir);
   return TRUE;
 }
@@ -293,8 +292,7 @@ _free(LogPipe *s)
   g_free(self->filename_pattern);
   g_hash_table_unref(self->file_readers);
   g_hash_table_unref(self->directory_monitors);
-  file_reader_options_destroy(&self->file_reader_options);
-  file_opener_options_deinit(&self->file_reader_options.file_open_options);
+  file_reader_options_deinit(&self->file_reader_options);
   log_src_driver_free(s);
 }
 
@@ -321,15 +319,15 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->directory_monitors = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
                                                    (GDestroyNotify)_stop_and_destroy_directory_monitor);
 
-  log_reader_options_defaults(&self->file_reader_options.reader_options);
-  file_opener_options_defaults(&self->file_reader_options.file_open_options);
   self->monitor_method = MM_AUTO;
 
-  self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
-  self->file_reader_options.file_open_options.is_pipe = FALSE;
-  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  file_reader_options_defaults(&self->file_reader_options);
   self->file_reader_options.follow_freq = 1000;
   self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE * DEFAULT_MAX_FILES;
+
+  self->file_reader_options.file_open_options.is_pipe = FALSE;
+  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+
 
   self->max_files = DEFAULT_MAX_FILES;
 
