@@ -87,12 +87,6 @@ _is_linux_dev_kmsg(const gchar *filename)
   return FALSE;
 }
 
-static gboolean
-_sd_open_file(FileReader *self, gchar *name, gint *fd)
-{
-  return file_opener_open_fd(self->opener, name, fd);
-}
-
 static inline const gchar *
 _format_persist_name(const LogPipe *s)
 {
@@ -274,7 +268,7 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   gint fd;
   gboolean file_opened, open_deferred = FALSE;
 
-  file_opened = _sd_open_file(self, self->filename->str, &fd);
+  file_opened = file_opener_open_fd(self->opener, self->filename->str, &fd);
   if (!file_opened && self->options->follow_freq > 0)
     {
       msg_info("Follow-mode file source not found, deferring open", evt_tag_str("filename", self->filename->str));
