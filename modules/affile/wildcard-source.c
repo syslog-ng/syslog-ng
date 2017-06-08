@@ -133,6 +133,7 @@ static void
 _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
+
   if ((event->event_type == FILE_CREATED))
     {
       _handle_file_created(self, event);
@@ -197,6 +198,7 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
     .follow_freq = self->file_reader_options.follow_freq
   };
   DirectoryMonitor *monitor = create_directory_monitor(&options);
+
   directory_monitor_set_callback(monitor, _on_directory_monitor_changed, self);
   directory_monitor_start(monitor);
   g_hash_table_insert(self->directory_monitors, g_strdup(directory), monitor);
@@ -239,6 +241,7 @@ static gboolean
 _deinit(LogPipe *s)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+
   g_pattern_spec_free(self->compiled_pattern);
   g_hash_table_foreach(self->file_readers, _deinit_reader, NULL);
   return TRUE;
@@ -248,6 +251,7 @@ void
 wildcard_sd_set_base_dir(LogDriver *s, const gchar *base_dir)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+
   g_free(self->base_dir);
   self->base_dir = g_strdup(base_dir);
 }
@@ -256,6 +260,7 @@ void
 wildcard_sd_set_filename_pattern(LogDriver *s, const gchar *filename_pattern)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+
   g_free(self->filename_pattern);
   self->filename_pattern = g_strdup(filename_pattern);
 }
@@ -264,6 +269,7 @@ void
 wildcard_sd_set_recursive(LogDriver *s, gboolean recursive)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+
   self->recursive = recursive;
 }
 
@@ -272,6 +278,7 @@ wildcard_sd_set_monitor_method(LogDriver *s, const gchar *method)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
   MonitorMethod new_method = directory_monitor_factory_get_monitor_method(method);
+
   if (new_method == MM_UNKNOWN)
     {
       msg_error("Invalid monitor-method", evt_tag_str("monitor-method", method));
@@ -285,6 +292,7 @@ void
 wildcard_sd_set_max_files(LogDriver *s, guint32 max_files)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+
   self->max_files = max_files;
 }
 
@@ -292,6 +300,7 @@ static void
 _free(LogPipe *s)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+
   g_free(self->base_dir);
   g_free(self->filename_pattern);
   g_hash_table_unref(self->file_readers);
@@ -304,6 +313,7 @@ static void
 _stop_and_destroy_directory_monitor(gpointer s)
 {
   DirectoryMonitor *monitor = (DirectoryMonitor *)s;
+
   directory_monitor_stop(monitor);
   directory_monitor_free(monitor);
 }
