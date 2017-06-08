@@ -125,14 +125,14 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   AFFileSourceDriver *self = g_new0(AFFileSourceDriver, 1);
 
   log_src_driver_init_instance(&self->super, cfg);
-  self->filename = g_string_new(filename);
-  self->file_reader = file_reader_new(filename, &self->super, cfg);
-  self->file_reader->file_reader_options = &self->file_reader_options;
   self->super.super.super.init = affile_sd_init;
   self->super.super.super.queue = affile_sd_queue;
   self->super.super.super.deinit = affile_sd_deinit;
   self->super.super.super.free_fn = affile_sd_free;
   self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
+
+  self->filename = g_string_new(filename);
+  self->file_reader = file_reader_new(filename, &self->file_reader_options, &self->super, cfg);
   file_reader_options_defaults(&self->file_reader_options);
 
   if (affile_is_linux_proc_kmsg(filename))

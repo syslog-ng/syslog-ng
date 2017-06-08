@@ -50,11 +50,11 @@ typedef struct _FileReader
   LogPipe super;
   LogSrcDriver *owner;
   GString *filename;
-  FileReaderOptions *file_reader_options;
+  FileReaderOptions *options;
   LogReader *reader;
 } FileReader;
 
-FileReader *file_reader_new(const gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg);
+FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, LogSrcDriver *owner, GlobalConfig *cfg);
 
 void file_reader_remove_persist_state(FileReader *self);
 
