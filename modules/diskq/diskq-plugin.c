@@ -30,7 +30,7 @@ extern CfgParser diskq_parser;
 static Plugin diskq_plugins[] =
 {
   {
-    .type = LL_CONTEXT_INNER_DEST,
+    .type = LL_CONTEXT_DEST_PLUGIN_DISKQ,
     .name = "disk_buffer",
     .parser = &diskq_parser,
   },

@@ -159,6 +159,8 @@ extern struct _StatsOptions *last_stats_options;
 %token LL_CONTEXT_CLIENT_PROTO        17
 %token LL_CONTEXT_SERVER_PROTO        18
 %token LL_CONTEXT_SELECTOR            19
+%token LL_CONTEXT_DEST_PLUGIN_DISKQ   20
+
 
 
 /* statements */
@@ -1103,6 +1105,49 @@ driver_option
     : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, g_strdup($3)); free($3); }
     ;
 
+dest_driver_basic_and_diskq_plugins
+  : LL_IDENTIFIER
+    {
+      Plugin *p;
+      gint contexts[] = {LL_CONTEXT_DEST_PLUGIN_DISKQ, LL_CONTEXT_INNER_DEST};
+      gint number_of_contexts = sizeof(contexts)/sizeof(contexts[0]);
+      gpointer value;
+
+      p = plugin_find_multiple_types(configuration, contexts, number_of_contexts, $1);
+      CHECK_ERROR(p, @1, "plugin %s not found", $1);
+
+      value = plugin_parse_config(p, configuration, &@1, last_driver);
+
+      free($1);
+      if (!value)
+        {
+          YYERROR;
+        }
+      log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
+    }
+  ;
+
+dest_driver_basic_plugins
+   : LL_IDENTIFIER
+     {
+       Plugin *p;
+       gint context = LL_CONTEXT_INNER_DEST;
+       gpointer value;
+
+       p = plugin_find(configuration, context, $1);
+       CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+       value = plugin_parse_config(p, configuration, &@1, last_driver);
+
+       free($1);
+       if (!value)
+         {
+           YYERROR;
+         }
+       log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
+     }
+   ;
+
 threaded_dest_driver_option
 	: KW_RETRIES '(' positive_integer ')'
         {
@@ -1114,25 +1159,7 @@ dest_driver_option
 
 	: KW_LOG_FIFO_SIZE '(' positive_integer ')'	{ ((LogDestDriver *) last_driver)->log_fifo_size = $3; }
 	| KW_THROTTLE '(' nonnegative_integer ')'         { ((LogDestDriver *) last_driver)->throttle = $3; }
-        | LL_IDENTIFIER
-          {
-            Plugin *p;
-            gint context = LL_CONTEXT_INNER_DEST;
-            gpointer value;
-
-            p = plugin_find(configuration, context, $1);
-            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
-
-            value = plugin_parse_config(p, configuration, &@1, last_driver);
-
-            free($1);
-            if (!value)
-              {
-                YYERROR;
-              }
-            log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
-          }
-    | driver_option
+	| driver_option
         ;
 
 dest_writer_options

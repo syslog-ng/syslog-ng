@@ -80,6 +80,7 @@ java_dest_option
         | KW_OPTION '(' java_dest_custom_options ')'
         | threaded_dest_driver_option
         | dest_driver_option
+        | dest_driver_basic_and_diskq_plugins
         | { last_template_options = java_dd_get_template_options(last_driver); } template_option
         ;
 

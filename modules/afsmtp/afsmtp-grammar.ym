@@ -163,6 +163,7 @@ afsmtp_option
           }
         | threaded_dest_driver_option
         | dest_driver_option
+        | dest_driver_basic_and_diskq_plugins
         | { last_template_options = afsmtp_dd_get_template_options(last_driver); } template_option
         ;
 

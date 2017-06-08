@@ -123,6 +123,7 @@ dest_afsql_option
 
 	| { last_template_options = &((AFSqlDestDriver *) last_driver)->template_options; } template_option
 	| dest_driver_option
+	| dest_driver_basic_and_diskq_plugins
         ;
 
 dest_afsql_values

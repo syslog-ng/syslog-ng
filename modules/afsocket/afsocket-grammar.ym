@@ -491,6 +491,7 @@ dest_afunix_option
 	| dest_afsocket_option
 	| socket_option
 	| dest_driver_option
+	| dest_driver_basic_and_diskq_plugins
 	;
 
 dest_afinet
@@ -536,6 +537,7 @@ dest_afinet_option
 	| dest_writer_option
 	| dest_afsocket_option
 	| dest_driver_option
+	| dest_driver_basic_and_diskq_plugins
 	;
 
 
