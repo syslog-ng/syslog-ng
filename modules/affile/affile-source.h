@@ -36,6 +36,7 @@ typedef struct _AFFileSourceDriver
   GString *filename;
   FileReader *file_reader;
   FileReaderOptions file_reader_options;
+  FileOpenerOptions file_opener_options;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 

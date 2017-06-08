@@ -63,7 +63,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
       return;
     }
 
-  reader = file_reader_new(full_path, &self->file_reader_options, &self->super, cfg);
+  reader = file_reader_new(full_path, &self->file_reader_options, file_opener_new(&self->file_opener_options), &self->super, cfg);
   log_pipe_append(&reader->super, &self->super.super.super);
   if (!log_pipe_init(&reader->super))
     {
@@ -225,6 +225,7 @@ _init(LogPipe *s)
     }
 
   _init_reader_options(self, cfg);
+  file_opener_options_init(&self->file_opener_options, cfg);
   _add_directory_monitor(self, self->base_dir);
   return TRUE;
 }
@@ -306,6 +307,7 @@ _free(LogPipe *s)
   g_hash_table_unref(self->file_readers);
   g_hash_table_unref(self->directory_monitors);
   file_reader_options_deinit(&self->file_reader_options);
+  file_opener_options_deinit(&self->file_opener_options);
   log_src_driver_free(s);
 }
 
@@ -336,11 +338,12 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->monitor_method = MM_AUTO;
 
   file_reader_options_defaults(&self->file_reader_options);
+  file_opener_options_defaults(&self->file_opener_options);
   self->file_reader_options.follow_freq = 1000;
   self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE * DEFAULT_MAX_FILES;
 
-  self->file_reader_options.file_opener_options.is_pipe = FALSE;
-  self->file_reader_options.file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_opener_options.is_pipe = FALSE;
+  self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
 
 
   self->max_files = DEFAULT_MAX_FILES;

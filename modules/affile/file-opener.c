@@ -169,6 +169,27 @@ affile_open_file(gchar *name, FileOpenerOptions *options, gint *fd)
   return (*fd != -1);
 }
 
+gboolean
+file_opener_open_fd(FileOpener *self, gchar *name, gint *fd)
+{
+  return affile_open_file(name, self->options, fd);
+}
+
+FileOpener *
+file_opener_new(FileOpenerOptions *options)
+{
+  FileOpener *self = g_new0(FileOpener, 1);
+
+  self->options = options;
+  return self;
+}
+
+void
+file_opener_free(FileOpener *self)
+{
+  g_free(self);
+}
+
 void
 file_opener_options_defaults(FileOpenerOptions *options)
 {
