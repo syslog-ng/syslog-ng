@@ -45,7 +45,9 @@ typedef struct _FileOpener
 } FileOpener;
 
 gboolean file_opener_open_fd(FileOpener *self, gchar *name, gint *fd);
-FileOpener *file_opener_new(FileOpenerOptions *options);
+
+void file_opener_set_options(FileOpener *self, FileOpenerOptions *options);
+FileOpener *file_opener_new(void);
 void file_opener_free(FileOpener *self);
 
 gboolean affile_open_file(gchar *name, FileOpenerOptions *open_opts, gint *fd);

@@ -380,7 +380,6 @@ _free(LogPipe *s)
   g_assert(!self->reader);
 
   g_string_free(self->filename, TRUE);
-  file_opener_free(self->opener);
 }
 
 void

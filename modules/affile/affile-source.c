@@ -85,8 +85,9 @@ affile_sd_init(LogPipe *s)
   file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
   file_opener_options_init(&self->file_opener_options, cfg);
 
+  file_opener_set_options(self->file_opener, &self->file_opener_options);
   self->file_reader = file_reader_new(self->filename->str, &self->file_reader_options,
-                                      file_opener_new(&self->file_opener_options),
+                                      self->file_opener,
                                       &self->super, cfg);
 
   if (_are_multi_line_settings_invalid(self))
@@ -118,6 +119,7 @@ affile_sd_free(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
+  file_opener_free(self->file_opener);
   log_pipe_unref(&self->file_reader->super);
   g_string_free(self->filename, TRUE);
   file_reader_options_deinit(&self->file_reader_options);
@@ -144,6 +146,8 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   if (affile_is_linux_proc_kmsg(filename))
     self->file_opener_options.needs_privileges = TRUE;
 
+  /* this should move to the respective source driver constructors */
+  self->file_opener = file_opener_new();
 
   return self;
 }
