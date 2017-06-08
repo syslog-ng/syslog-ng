@@ -52,6 +52,8 @@ void
 _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 {
   FileReader *reader = NULL;
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
   if (g_hash_table_size(self->file_readers) >= self->max_files)
     {
       msg_warning("Number of allowed monitorod file is reached, rejecting read file",
@@ -60,9 +62,8 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
                   evt_tag_int("max_files", self->max_files));
       return;
     }
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-  reader = file_reader_new(full_path, &self->super, cfg);
-  reader->file_reader_options = &self->file_reader_options;
+
+  reader = file_reader_new(full_path, &self->file_reader_options, &self->super, cfg);
   log_pipe_append(&reader->super, &self->super.super.super);
   if (!log_pipe_init(&reader->super))
     {
@@ -82,6 +83,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
   if (g_pattern_match_string(self->compiled_pattern, event->name))
     {
       FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
+
       if (!reader)
         {
           _create_file_reader(self, event->full_path);
@@ -114,6 +116,7 @@ void
 _handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
   FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
+
   if (reader)
     {
       msg_debug("Monitored file is deleted", evt_tag_str("filename", event->full_path));
@@ -227,7 +230,8 @@ _init(LogPipe *s)
 static void
 _deinit_reader(gpointer key, gpointer value, gpointer user_data)
 {
-  FileReader *reader = (FileReader *)value;
+  FileReader *reader = (FileReader *) value;
+
   log_pipe_deinit(&reader->super);
 }
 

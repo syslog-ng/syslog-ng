@@ -91,7 +91,7 @@ static gboolean
 _sd_open_file(FileReader *self, gchar *name, gint *fd)
 {
   return affile_open_file(name,
-                          &self->file_reader_options->file_open_options,
+                          &self->options->file_open_options,
                           fd);
 }
 
@@ -114,7 +114,7 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
-  if (self->file_reader_options->file_open_options.is_pipe || self->file_reader_options->follow_freq <= 0)
+  if (self->options->file_open_options.is_pipe || self->options->follow_freq <= 0)
     return;
 
   if (!log_proto_server_restart_with_state(proto, cfg->state, _format_persist_name(s)))
@@ -144,8 +144,8 @@ _is_fd_pollable(gint fd)
 static PollEvents *
 _construct_poll_events(FileReader *self, gint fd)
 {
-  if (self->file_reader_options->follow_freq > 0)
-    return poll_file_changes_new(fd, self->filename->str, self->file_reader_options->follow_freq, &self->super);
+  if (self->options->follow_freq > 0)
+    return poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
   else if (fd >= 0 && _is_fd_pollable(fd))
     return poll_fd_events_new(fd);
   else
@@ -162,9 +162,9 @@ _construct_poll_events(FileReader *self, gint fd)
 static LogTransport *
 _construct_transport(FileReader *self, gint fd)
 {
-  if (self->file_reader_options->file_open_options.is_pipe)
+  if (self->options->file_open_options.is_pipe)
     return log_transport_source_named_pipe_new(fd);
-  else if (self->file_reader_options->follow_freq > 0)
+  else if (self->options->follow_freq > 0)
     return log_transport_followed_file_new(fd);
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_transport_prockmsg_new(fd, 10);
@@ -177,7 +177,7 @@ _construct_transport(FileReader *self, gint fd)
 static LogProtoServer *
 _construct_proto(FileReader *self, gint fd)
 {
-  LogReaderOptions *reader_options = &self->file_reader_options->reader_options;
+  LogReaderOptions *reader_options = &self->options->reader_options;
   LogProtoServerOptions *proto_options = &reader_options->proto_options.super;
   LogTransport *transport;
   MsgFormatHandler *format_handler;
@@ -191,10 +191,10 @@ _construct_proto(FileReader *self, gint fd)
       return format_handler->construct_proto(&reader_options->parse_options, transport, proto_options);
     }
 
-  if (self->file_reader_options->pad_size)
+  if (self->options->pad_size)
     {
       proto_options->position_tracking_enabled = TRUE;
-      return log_proto_padded_record_server_new(transport, proto_options, self->file_reader_options->pad_size);
+      return log_proto_padded_record_server_new(transport, proto_options, self->options->pad_size);
     }
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
@@ -203,18 +203,18 @@ _construct_proto(FileReader *self, gint fd)
   else
     {
       proto_options->position_tracking_enabled = TRUE;
-      switch (self->file_reader_options->multi_line_mode)
+      switch (self->options->multi_line_mode)
         {
         case MLM_INDENTED:
           return log_proto_indented_multiline_server_new(transport, proto_options);
         case MLM_PREFIX_GARBAGE:
           return log_proto_prefix_garbage_multiline_server_new(transport, proto_options,
-                                                               self->file_reader_options->multi_line_prefix,
-                                                               self->file_reader_options->multi_line_garbage);
+                                                               self->options->multi_line_prefix,
+                                                               self->options->multi_line_garbage);
         case MLM_PREFIX_SUFFIX:
           return log_proto_prefix_suffix_multiline_server_new(transport, proto_options,
-                                                              self->file_reader_options->multi_line_prefix,
-                                                              self->file_reader_options->multi_line_garbage);
+                                                              self->options->multi_line_prefix,
+                                                              self->options->multi_line_garbage);
         default:
           return log_proto_text_server_new(transport, proto_options);
         }
@@ -232,7 +232,7 @@ _deinit_sd_logreader(FileReader *self)
 static gint
 _get_stats_source(FileReader *self)
 {
-  return self->file_reader_options->file_open_options.is_pipe ? SCS_PIPE : SCS_FILE;
+  return self->options->file_open_options.is_pipe ? SCS_PIPE : SCS_FILE;
 }
 
 static void
@@ -244,7 +244,7 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
 
   log_reader_set_options(self->reader,
                          s,
-                         &self->file_reader_options->reader_options,
+                         &self->options->reader_options,
                          STATS_LEVEL1,
                          _get_stats_source(self),
                          self->owner->super.id,
@@ -277,7 +277,7 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   gboolean file_opened, open_deferred = FALSE;
 
   file_opened = _sd_open_file(self, self->filename->str, &fd);
-  if (!file_opened && self->file_reader_options->follow_freq > 0)
+  if (!file_opened && self->options->follow_freq > 0)
     {
       msg_info("Follow-mode file source not found, deferring open", evt_tag_str("filename", self->filename->str));
       open_deferred = TRUE;
@@ -405,10 +405,12 @@ file_reader_remove_persist_state(FileReader *self)
 }
 
 FileReader *
-file_reader_new(const gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg)
+file_reader_new(const gchar *filename, FileReaderOptions *options, LogSrcDriver *owner, GlobalConfig *cfg)
 {
   FileReader *self = g_new0(FileReader, 1);
+
   log_pipe_init_instance(&self->super, cfg);
+  self->options = options;
   self->owner = owner;
   self->filename = g_string_new(filename);
   self->super.init = _init;
