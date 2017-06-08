@@ -39,6 +39,15 @@ typedef struct _FileOpenerOptions
   gint create_dirs;
 } FileOpenerOptions;
 
+typedef struct _FileOpener
+{
+  FileOpenerOptions *options;
+} FileOpener;
+
+gboolean file_opener_open_fd(FileOpener *self, gchar *name, gint *fd);
+FileOpener *file_opener_new(FileOpenerOptions *options);
+void file_opener_free(FileOpener *self);
+
 gboolean affile_open_file(gchar *name, FileOpenerOptions *open_opts, gint *fd);
 
 static inline gboolean

@@ -90,9 +90,7 @@ _is_linux_dev_kmsg(const gchar *filename)
 static gboolean
 _sd_open_file(FileReader *self, gchar *name, gint *fd)
 {
-  return affile_open_file(name,
-                          &self->options->file_opener_options,
-                          fd);
+  return file_opener_open_fd(self->opener, name, fd);
 }
 
 static inline const gchar *
@@ -114,7 +112,7 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
-  if (self->options->file_opener_options.is_pipe || self->options->follow_freq <= 0)
+  if (self->is_pipe || self->options->follow_freq <= 0)
     return;
 
   if (!log_proto_server_restart_with_state(proto, cfg->state, _format_persist_name(s)))
@@ -162,7 +160,7 @@ _construct_poll_events(FileReader *self, gint fd)
 static LogTransport *
 _construct_transport(FileReader *self, gint fd)
 {
-  if (self->options->file_opener_options.is_pipe)
+  if (self->is_pipe)
     return log_transport_source_named_pipe_new(fd);
   else if (self->options->follow_freq > 0)
     return log_transport_followed_file_new(fd);
@@ -232,7 +230,7 @@ _deinit_sd_logreader(FileReader *self)
 static gint
 _get_stats_source(FileReader *self)
 {
-  return self->options->file_opener_options.is_pipe ? SCS_PIPE : SCS_FILE;
+  return self->is_pipe ? SCS_PIPE : SCS_FILE;
 }
 
 static void
@@ -389,9 +387,12 @@ _deinit(LogPipe *s)
 static void
 _free(LogPipe *s)
 {
-  FileReader *self = (FileReader *)s;
-  g_string_free(self->filename, TRUE);
+  FileReader *self = (FileReader *) s;
+
   g_assert(!self->reader);
+
+  g_string_free(self->filename, TRUE);
+  file_opener_free(self->opener);
 }
 
 void
@@ -405,20 +406,23 @@ file_reader_remove_persist_state(FileReader *self)
 }
 
 FileReader *
-file_reader_new(const gchar *filename, FileReaderOptions *options, LogSrcDriver *owner, GlobalConfig *cfg)
+file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner, GlobalConfig *cfg)
 {
   FileReader *self = g_new0(FileReader, 1);
 
   log_pipe_init_instance(&self->super, cfg);
-  self->options = options;
-  self->owner = owner;
-  self->filename = g_string_new(filename);
   self->super.init = _init;
   self->super.queue = _queue;
   self->super.deinit = _deinit;
   self->super.notify = _notify;
   self->super.free_fn = _free;
   self->super.generate_persist_name = _format_persist_name;
+
+  self->filename = g_string_new(filename);
+  self->options = options;
+  self->opener = opener;
+  self->owner = owner;
+  self->is_pipe = opener->options->is_pipe;
   return self;
 }
 
@@ -466,14 +470,12 @@ file_reader_options_defaults(FileReaderOptions *options)
 {
   log_reader_options_defaults(&options->reader_options);
   options->reader_options.parse_options.flags |= LP_LOCAL;
-  file_opener_options_defaults(&options->file_opener_options);
 }
 
 void
 file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group)
 {
   log_reader_options_init(&options->reader_options, cfg, group);
-  file_opener_options_init(&options->file_opener_options, cfg);
 }
 
 void
@@ -482,5 +484,4 @@ file_reader_options_deinit(FileReaderOptions *options)
   multi_line_regexp_free(options->multi_line_prefix);
   multi_line_regexp_free(options->multi_line_garbage);
   log_reader_options_destroy(&options->reader_options);
-  file_opener_options_deinit(&options->file_opener_options);
 }

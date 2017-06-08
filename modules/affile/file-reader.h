@@ -37,7 +37,6 @@ enum
 
 typedef struct _FileReaderOptions
 {
-  FileOpenerOptions file_opener_options;
   gint pad_size;
   gint follow_freq;
   gint multi_line_mode;
@@ -51,10 +50,12 @@ typedef struct _FileReader
   LogSrcDriver *owner;
   GString *filename;
   FileReaderOptions *options;
+  FileOpener *opener;
   LogReader *reader;
+  gboolean is_pipe;
 } FileReader;
 
-FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, LogSrcDriver *owner, GlobalConfig *cfg);
+FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner, GlobalConfig *cfg);
 
 void file_reader_remove_persist_state(FileReader *self);
 

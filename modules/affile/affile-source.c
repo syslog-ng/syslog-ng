@@ -83,6 +83,11 @@ affile_sd_init(LogPipe *s)
     return FALSE;
 
   file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
+  file_opener_options_init(&self->file_opener_options, cfg);
+
+  self->file_reader = file_reader_new(self->filename->str, &self->file_reader_options,
+                                      file_opener_new(&self->file_opener_options),
+                                      &self->super, cfg);
 
   if (_are_multi_line_settings_invalid(self))
     {
@@ -116,6 +121,7 @@ affile_sd_free(LogPipe *s)
   log_pipe_unref(&self->file_reader->super);
   g_string_free(self->filename, TRUE);
   file_reader_options_deinit(&self->file_reader_options);
+  file_opener_options_deinit(&self->file_opener_options);
   log_src_driver_free(s);
 }
 
@@ -134,10 +140,10 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->filename = g_string_new(filename);
 
   file_reader_options_defaults(&self->file_reader_options);
+  file_opener_options_defaults(&self->file_opener_options);
   if (affile_is_linux_proc_kmsg(filename))
-    self->file_reader_options.file_opener_options.needs_privileges = TRUE;
+    self->file_opener_options.needs_privileges = TRUE;
 
-  self->file_reader = file_reader_new(filename, &self->file_reader_options, &self->super, cfg);
 
   return self;
 }
@@ -147,8 +153,8 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_reader_options.file_opener_options.is_pipe = FALSE;
-  self->file_reader_options.file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_opener_options.is_pipe = FALSE;
+  self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
@@ -172,8 +178,8 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_reader_options.file_opener_options.is_pipe = TRUE;
-  self->file_reader_options.file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
+  self->file_opener_options.is_pipe = TRUE;
+  self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
 
   if (cfg_is_config_version_older(cfg, 0x0302))
     {
