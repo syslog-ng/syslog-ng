@@ -221,12 +221,6 @@ _deinit_sd_logreader(FileReader *self)
   self->reader = NULL;
 }
 
-static gint
-_get_stats_source(FileReader *self)
-{
-  return self->is_pipe ? SCS_PIPE : SCS_FILE;
-}
-
 static void
 _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
 {
@@ -238,7 +232,7 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
                          s,
                          &self->options->reader_options,
                          STATS_LEVEL1,
-                         _get_stats_source(self),
+                         self->options->stats_source,
                          self->owner->super.id,
                          self->filename->str);
   if (check_immediately)

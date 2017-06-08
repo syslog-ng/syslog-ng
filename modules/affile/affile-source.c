@@ -155,6 +155,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   self->file_opener_options.is_pipe = FALSE;
   self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_reader_options.stats_source = SCS_FILE;
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
@@ -180,6 +181,7 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
 
   self->file_opener_options.is_pipe = TRUE;
   self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
+  self->file_reader_options.stats_source = SCS_PIPE;
 
   if (cfg_is_config_version_older(cfg, 0x0302))
     {
