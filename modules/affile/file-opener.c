@@ -25,6 +25,7 @@
 #include "gprocess.h"
 #include "fdhelpers.h"
 #include "pathutils.h"
+#include "cfg.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -133,7 +134,7 @@ _validate_file_type(const gchar *name, FileOpenOptions *options)
 }
 
 gboolean
-affile_open_file(gchar *name, FileOpenOptions *options, FilePermOptions *perm_opts, gint *fd)
+affile_open_file(gchar *name, FileOpenOptions *options, gint *fd)
 {
   cap_t saved_caps;
 
@@ -146,7 +147,7 @@ affile_open_file(gchar *name, FileOpenOptions *options, FilePermOptions *perm_op
 
   saved_caps = g_process_cap_save();
 
-  if (!_obtain_capabilities(name, options, perm_opts, &saved_caps))
+  if (!_obtain_capabilities(name, options, &options->file_perm_options, &saved_caps))
     {
       g_process_cap_restore(saved_caps);
       return FALSE;
@@ -154,10 +155,10 @@ affile_open_file(gchar *name, FileOpenOptions *options, FilePermOptions *perm_op
 
   _validate_file_type(name, options);
 
-  *fd = _open_fd(name, options, perm_opts);
+  *fd = _open_fd(name, options, &options->file_perm_options);
 
   if (!is_file_device(name))
-    _set_fd_permission(perm_opts, *fd);
+    _set_fd_permission(&options->file_perm_options, *fd);
 
   g_process_cap_restore(saved_caps);
 
@@ -166,4 +167,25 @@ affile_open_file(gchar *name, FileOpenOptions *options, FilePermOptions *perm_op
             evt_tag_int("fd", *fd));
 
   return (*fd != -1);
+}
+
+void
+file_opener_options_defaults(FileOpenerOptions *options)
+{
+  file_perm_options_defaults(&options->file_perm_options);
+  options->create_dirs = -1;
+  options->is_pipe = FALSE;
+  options->needs_privileges = FALSE;
+}
+
+void
+file_opener_options_init(FileOpenerOptions *options, GlobalConfig *cfg)
+{
+  file_perm_options_inherit_from(&options->file_perm_options, &cfg->file_perm_options);
+}
+
+void
+file_opener_options_deinit(FileOpenerOptions *options)
+{
+  /* empty, this function only serves to meet the conventions of *Options */
 }

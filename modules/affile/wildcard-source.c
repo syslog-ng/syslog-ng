@@ -220,6 +220,7 @@ _init(LogPipe *s)
     }
 
   _init_reader_options(self, cfg);
+  file_opener_options_init(&self->file_reader_options.file_open_options, cfg);
   _add_directory_monitor(self, self->base_dir);
   return TRUE;
 }
@@ -293,6 +294,7 @@ _free(LogPipe *s)
   g_hash_table_unref(self->file_readers);
   g_hash_table_unref(self->directory_monitors);
   file_reader_options_destroy(&self->file_reader_options);
+  file_opener_options_deinit(&self->file_reader_options.file_open_options);
   log_src_driver_free(s);
 }
 
@@ -320,7 +322,7 @@ wildcard_sd_new(GlobalConfig *cfg)
                                                    (GDestroyNotify)_stop_and_destroy_directory_monitor);
 
   log_reader_options_defaults(&self->file_reader_options.reader_options);
-  file_perm_options_defaults(&self->file_reader_options.file_perm_options);
+  file_opener_options_defaults(&self->file_reader_options.file_open_options);
   self->monitor_method = MM_AUTO;
 
   self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;

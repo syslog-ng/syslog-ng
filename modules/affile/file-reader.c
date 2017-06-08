@@ -92,7 +92,7 @@ _sd_open_file(FileReader *self, gchar *name, gint *fd)
 {
   return affile_open_file(name,
                           &self->file_reader_options->file_open_options,
-                          &self->file_reader_options->file_perm_options, fd);
+                          fd);
 }
 
 static inline const gchar *

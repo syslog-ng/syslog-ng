@@ -22,7 +22,7 @@
  */
 
 #include "testutils.h"
-#include "affile/affile-common.h"
+#include "affile/file-opener.h"
 #include "lib/messages.h"
 #include <fcntl.h>
 #include <stdlib.h>
@@ -60,17 +60,16 @@ get_fd_file_mode(gint fd)
 static gboolean
 open_file(gchar *fname, int open_flags, gint extra_flags, gint *fd)
 {
-  FilePermOptions perm_opts;
-  FileOpenOptions open_opts;
+  FileOpenerOptions open_opts;
 
-  file_perm_options_defaults(&perm_opts);
+  file_opener_options_defaults(&open_opts);
 
   open_opts.open_flags = open_flags;
   open_opts.create_dirs = !!(extra_flags & CREATE_DIRS);
   open_opts.is_pipe = !!(extra_flags & PIPE);
   open_opts.needs_privileges = FALSE;
 
-  return affile_open_file(fname, &open_opts, &perm_opts, fd);
+  return affile_open_file(fname, &open_opts, fd);
 }
 
 static void

@@ -32,13 +32,14 @@
 
 typedef struct _FileOpenOptions
 {
+  FilePermOptions file_perm_options;
   gboolean needs_privileges:1,
            is_pipe:1;
   gint open_flags;
   gint create_dirs;
-} FileOpenOptions;
+} FileOpenOptions, FileOpenerOptions;
 
-gboolean affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd);
+gboolean affile_open_file(gchar *name, FileOpenOptions *open_opts, gint *fd);
 
 static inline gboolean
 affile_is_linux_proc_kmsg(const gchar *filename)
@@ -49,5 +50,10 @@ affile_is_linux_proc_kmsg(const gchar *filename)
 #endif
   return FALSE;
 }
+
+void file_opener_options_defaults(FileOpenerOptions *options);
+void file_opener_options_init(FileOpenerOptions *options, GlobalConfig *cfg);
+void file_opener_options_deinit(FileOpenerOptions *options);
+
 
 #endif
