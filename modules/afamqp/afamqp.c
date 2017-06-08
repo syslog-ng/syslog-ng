@@ -651,6 +651,9 @@ afamqp_dd_free(LogPipe *d)
   g_free(self->vhost);
   g_free(self->entries);
   value_pairs_unref(self->vp);
+  g_free(self->ca_file);
+  g_free(self->key_file);
+  g_free(self->cert_file);
 
   log_threaded_dest_driver_free(d);
 }
