@@ -37,7 +37,7 @@ enum
 
 typedef struct _FileReaderOptions
 {
-  FileOpenOptions file_open_options;
+  FileOpenerOptions file_opener_options;
   gint pad_size;
   gint follow_freq;
   gint multi_line_mode;

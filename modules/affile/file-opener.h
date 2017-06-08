@@ -30,16 +30,16 @@
 #include "file-perms.h"
 #include <string.h>
 
-typedef struct _FileOpenOptions
+typedef struct _FileOpenerOptions
 {
   FilePermOptions file_perm_options;
   gboolean needs_privileges:1,
            is_pipe:1;
   gint open_flags;
   gint create_dirs;
-} FileOpenOptions, FileOpenerOptions;
+} FileOpenerOptions;
 
-gboolean affile_open_file(gchar *name, FileOpenOptions *open_opts, gint *fd);
+gboolean affile_open_file(gchar *name, FileOpenerOptions *open_opts, gint *fd);
 
 static inline gboolean
 affile_is_linux_proc_kmsg(const gchar *filename)

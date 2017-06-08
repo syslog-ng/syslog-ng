@@ -59,7 +59,7 @@ _is_path_spurious(const gchar *name)
 }
 
 static inline gboolean
-_obtain_capabilities(gchar *name, FileOpenOptions *options, FilePermOptions *perm_opts, cap_t *act_caps)
+_obtain_capabilities(gchar *name, FileOpenerOptions *options, FilePermOptions *perm_opts, cap_t *act_caps)
 {
   if (options->needs_privileges)
     {
@@ -96,7 +96,7 @@ _set_fd_permission(FilePermOptions *perm_opts, int fd)
 }
 
 static inline int
-_open_fd(const gchar *name, FileOpenOptions *options, FilePermOptions *perm_opts)
+_open_fd(const gchar *name, FileOpenerOptions *options, FilePermOptions *perm_opts)
 {
   int fd;
   int mode = (perm_opts && (perm_opts->file_perm >= 0))
@@ -114,7 +114,7 @@ _open_fd(const gchar *name, FileOpenOptions *options, FilePermOptions *perm_opts
 }
 
 static inline void
-_validate_file_type(const gchar *name, FileOpenOptions *options)
+_validate_file_type(const gchar *name, FileOpenerOptions *options)
 {
   struct stat st;
 
@@ -134,7 +134,7 @@ _validate_file_type(const gchar *name, FileOpenOptions *options)
 }
 
 gboolean
-affile_open_file(gchar *name, FileOpenOptions *options, gint *fd)
+affile_open_file(gchar *name, FileOpenerOptions *options, gint *fd)
 {
   cap_t saved_caps;
 

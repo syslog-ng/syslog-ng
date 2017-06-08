@@ -339,8 +339,8 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->file_reader_options.follow_freq = 1000;
   self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE * DEFAULT_MAX_FILES;
 
-  self->file_reader_options.file_open_options.is_pipe = FALSE;
-  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_reader_options.file_opener_options.is_pipe = FALSE;
+  self->file_reader_options.file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
 
 
   self->max_files = DEFAULT_MAX_FILES;

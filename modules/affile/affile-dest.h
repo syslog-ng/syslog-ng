@@ -39,7 +39,7 @@ typedef struct _AFFileDestDriver
   gboolean filename_is_a_template:1,
     template_escape:1,
     use_fsync:1;
-  FileOpenOptions file_open_options;
+  FileOpenerOptions file_opener_options;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
   GHashTable *writer_hash;
