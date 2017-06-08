@@ -354,6 +354,55 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
 }
 
 static gboolean
+afamqp_dd_socket_init(AMQPDestDriver *self) {
+
+    self->conn = amqp_new_connection();
+
+    if (self->conn == NULL)
+      {
+        msg_error("Error allocating AMQP connection.");
+        return FALSE;
+      }
+
+    if(strcmp(self->ca_file,"") != 0)
+      {
+        int ca_file_ret;
+        self->sockfd = amqp_ssl_socket_new(self->conn);
+        ca_file_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ca_file);
+        if(ca_file_ret != AMQP_STATUS_OK)
+          {
+            msg_error("Error connecting to AMQP server while setting ca_file",
+                      evt_tag_str("driver", self->super.super.super.id),
+                      evt_tag_str("error", amqp_error_string2(ca_file_ret)),
+                      evt_tag_int("time_reopen", self->super.time_reopen));
+
+            return FALSE;
+
+          }
+
+        if(strcmp(self->key_file,"") != 0 && strcmp(self->cert_file,"") != 0)
+          {
+            int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->cert_file, self->key_file);
+            if(setkey_ret != AMQP_STATUS_OK)
+              {
+                msg_error("Error connecting to AMQP server while setting key_file and cert_file",
+                          evt_tag_str("driver", self->super.super.super.id),
+                          evt_tag_str("error", amqp_error_string2(setkey_ret)),
+                          evt_tag_int("time_reopen", self->super.time_reopen));
+
+                return FALSE;
+
+              }
+          }
+        amqp_ssl_socket_set_verify(self->sockfd, self->peer_verify);
+      }
+    else
+      self->sockfd = amqp_tcp_socket_new(self->conn);
+
+    return TRUE;
+}
+
+static gboolean
 afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 {
   int sockfd_ret;
@@ -372,47 +421,8 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
         }
     }
 
-  self->conn = amqp_new_connection();
-
-  if (self->conn == NULL)
-    {
-      msg_error("Error allocating AMQP connection.");
+  if(!afamqp_dd_socket_init(self))
       goto exception_amqp_dd_connect_failed_init;
-    }
-  if(strcmp(self->ca_file,"") != 0)
-    {
-      int ca_file_ret;
-      self->sockfd = amqp_ssl_socket_new(self->conn);
-      ca_file_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ca_file);
-      if(ca_file_ret != AMQP_STATUS_OK)
-        {
-          msg_error("Error connecting to AMQP server while setting ca_file",
-                    evt_tag_str("driver", self->super.super.super.id),
-                    evt_tag_str("error", amqp_error_string2(ca_file_ret)),
-                    evt_tag_int("time_reopen", self->super.time_reopen));
-
-          goto exception_amqp_dd_connect_failed_init;
-
-        }
-
-      if(strcmp(self->key_file,"") != 0 && strcmp(self->cert_file,"") != 0)
-        {
-          int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->cert_file, self->key_file);
-          if(setkey_ret != AMQP_STATUS_OK)
-            {
-              msg_error("Error connecting to AMQP server while setting key_file and cert_file",
-                        evt_tag_str("driver", self->super.super.super.id),
-                        evt_tag_str("error", amqp_error_string2(setkey_ret)),
-                        evt_tag_int("time_reopen", self->super.time_reopen));
-
-              goto exception_amqp_dd_connect_failed_init;
-
-            }
-        }
-      amqp_ssl_socket_set_verify(self->sockfd, self->peer_verify);
-    }
-  else
-    self->sockfd = amqp_tcp_socket_new(self->conn);
 
   struct timeval delay;
   delay.tv_sec = 1;
