@@ -477,7 +477,13 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
 {
   LogReader *self = (LogReader *) s;
 
-  gboolean pos_tracked = ((self->proto != NULL) && log_proto_server_is_position_tracked(self->proto));
+  /* log_reader_reopen() needs to be called prior to set_options.  This is
+   * an ugly hack, but at least it is more explicitly than what used to be
+   * here, which silently ignored if self->proto was NULL.
+   */
+
+  g_assert(self->proto != NULL);
+  gboolean pos_tracked = log_proto_server_is_position_tracked(self->proto);
 
   log_source_set_options(&self->super, &options->super, stats_id, stats_instance,
                          (options->flags & LR_THREADED), pos_tracked, control->expr_node);
@@ -487,8 +493,7 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
   self->control = control;
 
   self->options = options;
-  if (self->proto)
-    log_proto_server_set_options(self->proto, &self->options->proto_options.super);
+  log_proto_server_set_options(self->proto, &self->options->proto_options.super);
 }
 
 /* run in the main thread in reaction to a log_reader_reopen to change
@@ -521,8 +526,6 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
 {
   gpointer args[] = { self, proto, poll_events };
 
-  log_source_deinit(&self->super.super);
-
   main_loop_call((MainLoopTaskFunc) log_reader_reopen_deferred, args, TRUE);
 
   if (!main_loop_is_main_thread())
@@ -534,7 +537,6 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
         }
       g_static_mutex_unlock(&self->pending_proto_lock);
     }
-  log_source_init(&self->super.super);
 }
 
 void

@@ -79,15 +79,6 @@ afsocket_sc_construct_transport(AFSocketSourceConnection *self, gint fd)
   return transport_mapper_construct_log_transport(self->owner->transport_mapper, fd);
 }
 
-static void
-_associate_logreader_to_self(AFSocketSourceConnection *self)
-{
-  log_reader_set_options(self->reader, &self->super,
-                         &self->owner->reader_options,
-                         self->owner->super.super.id,
-                         afsocket_sc_stats_instance(self));
-}
-
 static gboolean
 afsocket_sc_init(LogPipe *s)
 {
@@ -105,12 +96,13 @@ afsocket_sc_init(LogPipe *s)
       proto = log_proto_server_factory_construct(self->owner->proto_factory, transport,
                                                  &self->owner->reader_options.proto_options.super);
       self->reader = log_reader_new(s->cfg);
-      _associate_logreader_to_self(self);
       log_reader_reopen(self->reader, proto, poll_fd_events_new(self->sock));
       log_reader_set_peer_addr(self->reader, self->peer_addr);
     }
-  else
-    _associate_logreader_to_self(self);
+  log_reader_set_options(self->reader, &self->super,
+                         &self->owner->reader_options,
+                         self->owner->super.super.id,
+                         afsocket_sc_stats_instance(self));
 
   log_pipe_append((LogPipe *) self->reader, s);
   if (log_pipe_init((LogPipe *) self->reader))

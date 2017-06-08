@@ -162,14 +162,15 @@ static void
 _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
 {
   FileReader *self = (FileReader *) s;
+
   self->reader = log_reader_new(log_pipe_get_config(s));
   log_reader_reopen(self->reader, proto, poll_events);
-
   log_reader_set_options(self->reader,
                          s,
                          &self->options->reader_options,
                          self->owner->super.id,
                          self->filename->str);
+
   if (check_immediately)
     log_reader_set_immediate_check(self->reader);
 
