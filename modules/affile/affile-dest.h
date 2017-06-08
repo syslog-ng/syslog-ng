@@ -39,7 +39,6 @@ typedef struct _AFFileDestDriver
   gboolean filename_is_a_template:1,
     template_escape:1,
     use_fsync:1;
-  FilePermOptions file_perm_options;
   FileOpenOptions file_open_options;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;

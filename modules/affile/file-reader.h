@@ -36,7 +36,6 @@ enum
 };
 
 typedef struct _FileReaderOptions {
-  FilePermOptions file_perm_options;
   FileOpenOptions file_open_options;
   gint pad_size;
   gint follow_freq;

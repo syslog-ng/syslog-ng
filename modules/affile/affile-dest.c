@@ -150,7 +150,7 @@ affile_dw_reap(gpointer s)
 static gboolean
 _affile_dw_reopen_file(AFFileDestWriter *self, gchar *name, gint *fd)
 {
-  return affile_open_file(name, &self->owner->file_open_options, &self->owner->file_perm_options, fd);
+  return affile_open_file(name, &self->owner->file_open_options, fd);
 }
 
 static gboolean
@@ -472,7 +472,7 @@ affile_dd_init(LogPipe *s)
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
 
-  file_perm_options_inherit_from(&self->file_perm_options, &cfg->file_perm_options);
+  file_opener_options_init(&self->file_open_options, cfg);
   log_writer_options_init(&self->writer_options, cfg, 0);
 
   if (self->filename_is_a_template)
@@ -739,6 +739,7 @@ affile_dd_free(LogPipe *s)
 
   log_template_unref(self->filename_template);
   log_writer_options_destroy(&self->writer_options);
+  file_opener_options_deinit(&self->file_open_options);
   log_dest_driver_free(s);
 }
 
@@ -756,17 +757,14 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->filename_template = log_template_new(cfg, NULL);
   log_template_compile(self->filename_template, filename, NULL);
   log_writer_options_defaults(&self->writer_options);
-  file_perm_options_defaults(&self->file_perm_options);
   self->writer_options.mark_mode = MM_NONE;
   if (strchr(filename, '$') != NULL)
     {
       self->filename_is_a_template = TRUE;
     }
-  self->time_reap = -1;
-  self->file_open_options.create_dirs = -1;
-  self->file_open_options.is_pipe = FALSE;
-  self->file_open_options.needs_privileges = FALSE;
+  file_opener_options_defaults(&self->file_open_options);
   self->file_open_options.open_flags = DEFAULT_DW_REOPEN_FLAGS;
+  self->time_reap = -1;
   g_static_mutex_init(&self->lock);
   return self;
 }
@@ -781,8 +779,9 @@ LogDriver *
 afpipe_dd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
+
+  /* FIXME: these should be delegated to the FileOpener */
   self->file_open_options.is_pipe = TRUE;
   self->file_open_options.open_flags = DEFAULT_DW_REOPEN_FLAGS_PIPE;
-
   return &self->super.super;
 }
