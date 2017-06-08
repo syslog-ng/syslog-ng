@@ -96,7 +96,7 @@ source_affile
 		last_driver = *instance = wildcard_sd_new(configuration);
 		last_file_reader_options = &((WildcardSourceDriver *) last_driver)->file_reader_options;
 		last_reader_options = &last_file_reader_options->reader_options;
-	        last_file_perm_options = &last_file_reader_options->file_open_options.file_perm_options;
+	        last_file_perm_options = &last_file_reader_options->file_opener_options.file_perm_options;
 	} '(' source_wildcard_params ')' { $$ = last_driver; }
 	;
 	
@@ -115,7 +115,7 @@ source_affile_params
             last_driver = *instance = affile_sd_new($1, configuration);
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
 	    last_reader_options = &last_file_reader_options->reader_options;
-	    last_file_perm_options = &last_file_reader_options->file_open_options.file_perm_options;
+	    last_file_perm_options = &last_file_reader_options->file_opener_options.file_perm_options;
 	  }
           source_affile_options                 { $$ = last_driver; free($1); }
         ;
@@ -151,7 +151,7 @@ source_afpipe_params
 	    last_driver = *instance = afpipe_sd_new($1, configuration);
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
 	    last_reader_options = &last_file_reader_options->reader_options;
-	    last_file_perm_options = &last_file_reader_options->file_open_options.file_perm_options;
+	    last_file_perm_options = &last_file_reader_options->file_opener_options.file_perm_options;
 	  }
 	  source_afpipe_options				{ $$ = last_driver; free($1); }
 	;
@@ -198,7 +198,7 @@ dest_affile_params
 	  {
 	    last_driver = *instance = affile_dd_new($1, configuration);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
-	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_open_options.file_perm_options;
+	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
 	  }
 	  dest_affile_options                           { $$ = last_driver; free($1); }
 	;
@@ -223,7 +223,7 @@ dest_afpipe_params
 	  {
 	    last_driver = *instance = afpipe_dd_new($1, configuration);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
-	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_open_options.file_perm_options;
+	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
 	  }
 	  dest_afpipe_options                   { $$ = last_driver; free($1); }
 	;

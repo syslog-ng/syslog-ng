@@ -132,11 +132,13 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
 
   self->filename = g_string_new(filename);
-  self->file_reader = file_reader_new(filename, &self->file_reader_options, &self->super, cfg);
-  file_reader_options_defaults(&self->file_reader_options);
 
+  file_reader_options_defaults(&self->file_reader_options);
   if (affile_is_linux_proc_kmsg(filename))
-    self->file_reader_options.file_open_options.needs_privileges = TRUE;
+    self->file_reader_options.file_opener_options.needs_privileges = TRUE;
+
+  self->file_reader = file_reader_new(filename, &self->file_reader_options, &self->super, cfg);
+
   return self;
 }
 
@@ -145,8 +147,8 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_reader_options.file_open_options.is_pipe = FALSE;
-  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_reader_options.file_opener_options.is_pipe = FALSE;
+  self->file_reader_options.file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
@@ -170,8 +172,8 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_reader_options.file_open_options.is_pipe = TRUE;
-  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
+  self->file_reader_options.file_opener_options.is_pipe = TRUE;
+  self->file_reader_options.file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
 
   if (cfg_is_config_version_older(cfg, 0x0302))
     {
