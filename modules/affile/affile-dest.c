@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-#include "affile-common.h"
+#include "file-opener.h"
 #include "affile-dest.h"
 #include "driver.h"
 #include "messages.h"

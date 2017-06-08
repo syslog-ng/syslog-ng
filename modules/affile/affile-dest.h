@@ -26,7 +26,7 @@
 
 #include "driver.h"
 #include "logwriter.h"
-#include "affile-common.h"
+#include "file-opener.h"
 
 typedef struct _AFFileDestWriter AFFileDestWriter;
 

@@ -25,7 +25,7 @@
 #include "driver.h"
 #include "logreader.h"
 #include "logproto/logproto-regexp-multiline-server.h"
-#include "affile-common.h"
+#include "file-opener.h"
 
 enum
 {
