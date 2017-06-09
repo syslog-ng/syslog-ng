@@ -104,6 +104,10 @@ static gboolean stderr_present = TRUE;
 static int have_capsyslog = FALSE;
 #endif
 
+#if SYSLOG_NG_HAVE_ENVIRON
+static gint env_ctr;
+#endif
+
 /* global variables */
 static struct
 {
@@ -506,7 +510,6 @@ g_process_set_argv_space(gint argc, gchar **argv)
     ;
 
   environ = g_new(char *, i + 1);
-
   /*
    * Find the last argv string or environment variable within
    * our process memory area.
@@ -535,6 +538,7 @@ g_process_set_argv_space(gint argc, gchar **argv)
   for (i = 0; envp[i] != NULL; i++)
     environ[i] = g_strdup(envp[i]);
   environ[i] = NULL;
+  env_ctr = i;
 #endif
 }
 
@@ -1441,10 +1445,8 @@ g_process_startup_ok(void)
 void
 g_process_finish(void)
 {
-
 #ifdef SYSLOG_NG_HAVE_ENVIRON
-
-  for (gint i = 0; environ[i] != NULL; i++)
+  for (gint i = 0; i < env_ctr && environ[i] != NULL; i++)
     g_free(environ[i]);
 
   g_free(environ);
