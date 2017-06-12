@@ -103,7 +103,7 @@ http_option
     | KW_USER       '(' string ')'            { http_dd_set_user(last_driver, $3); free($3); }
     | KW_PASSWORD   '(' string ')'            { http_dd_set_password(last_driver, $3); free($3); }
     | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }
-    | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free($3); }
+    | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free_full($3, free); }
     | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
     | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
     | KW_CA_DIR     '(' string ')'            { http_dd_set_ca_dir(last_driver, $3); free($3); }
@@ -121,4 +121,3 @@ http_option
 /* INCLUDE_RULES */
 
 %%
-

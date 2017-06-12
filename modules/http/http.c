@@ -443,6 +443,8 @@ http_dd_free(LogPipe *s)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
 
+  log_template_options_destroy(&self->template_options);
+
   curl_easy_cleanup(self->curl);
   curl_global_cleanup();
 
