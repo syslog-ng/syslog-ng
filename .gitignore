@@ -37,3 +37,4 @@ m4/ax*.m4
 /compile
 .deps
 /lib/cfg-grammar.h
+/test-driver
