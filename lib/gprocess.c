@@ -104,10 +104,6 @@ static gboolean stderr_present = TRUE;
 static int have_capsyslog = FALSE;
 #endif
 
-#if SYSLOG_NG_HAVE_ENVIRON
-static gint env_ctr;
-#endif
-
 /* global variables */
 static struct
 {
@@ -538,7 +534,6 @@ g_process_set_argv_space(gint argc, gchar **argv)
   for (i = 0; envp[i] != NULL; i++)
     environ[i] = g_strdup(envp[i]);
   environ[i] = NULL;
-  env_ctr = i;
 #endif
 }
 
@@ -1446,13 +1441,27 @@ void
 g_process_finish(void)
 {
 #ifdef SYSLOG_NG_HAVE_ENVIRON
-  for (gint i = 0; i < env_ctr && environ[i] != NULL; i++)
-    g_free(environ[i]);
-
-  g_free(environ);
-
-  if (process_opts.argv_orig)
-    free(process_opts.argv_orig);
+  /**
+   * There is a memory leak for **environ and elements that should be
+   * freed here theoretically.
+   *
+   * The reason why environ is copied during g_process_set_argv_space
+   * so to be able to overwrite process title in ps/top commands to
+   * supervisor. In bsd there is setproctitle call which solve this,
+   * but currently it is not available for linux.
+   *
+   * The problem is that modules can add their own env variables to the
+   * list, which must not be freed here, otherwise it would result
+   * double free (e.g some version of Oracle Java). One might also would
+   * try to track which environment variables are added by syslog-ng,
+   * and free only those. There is still a problem with this, **environ
+   * itself cannot be freed in some cases. For example libcurl registers
+   * an atexit function which needs an environment variable, that would
+   * be freed here before at_exit is called, resulting in invalid read.
+   *
+   * As this leak does not cause any real problem like accumulating over
+   * time, it is safe to leave it as it is.
+  */
 #endif
 
   g_process_remove_pidfile();
