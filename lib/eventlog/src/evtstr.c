@@ -38,7 +38,7 @@
 /*
  * A couple of string support functions which make it easy to output
  * escaped strings. It is used by event formatting functions.
- */ 
+ */
 #include "evt_internals.h"
 
 #include <stdlib.h>
@@ -65,7 +65,7 @@ int
 evt_str_append_len(EVTSTR *es, char *str, size_t len)
 {
   /* make sure we have room new string + trailing zero */
-  
+
   if (es->es_allocated < es->es_length + len + 1)
     {
       if (!evt_str_grow(es, es->es_length + len + 1))
@@ -84,20 +84,20 @@ evt_str_append(EVTSTR *es, char *str)
 }
 
 int
-evt_str_append_escape_bs(EVTSTR *es, 
-                        char *unescaped, size_t unescaped_len, 
-                        char escape_char)
+evt_str_append_escape_bs(EVTSTR *es,
+                         char *unescaped, size_t unescaped_len,
+                         char escape_char)
 {
   /* a single character is escaped to at most 4 characters: \xXX */
 
   char *buf = (char *)alloca(4*unescaped_len + 1);
-                             
+
   int i, dst;
-  
+
   for (i = 0, dst = 0; i < unescaped_len; i++)
     {
       unsigned c = (unsigned) unescaped[i];
-      
+
       if (c < 32 && c != '\t')
         {
           sprintf(&buf[dst], "\\x%02x", (unsigned char) unescaped[i]);
@@ -118,8 +118,8 @@ evt_str_append_escape_bs(EVTSTR *es,
 }
 
 int
-evt_str_append_escape_xml_attr(EVTSTR *es, 
-                              char *unescaped, size_t unescaped_len)
+evt_str_append_escape_xml_attr(EVTSTR *es,
+                               char *unescaped, size_t unescaped_len)
 {
   /* a single character is escaped to at most 6 characters: '&#xXX;' or '&quot;' */
 
@@ -127,9 +127,9 @@ evt_str_append_escape_xml_attr(EVTSTR *es,
    * which is not portable */
 
   char *buf = (char *)alloca(6*unescaped_len + 1);
-                             
+
   int i, dst;
-  
+
   for (i = 0, dst = 0; i < unescaped_len; i++)
     {
       if ((unsigned) unescaped[i] < 32)
@@ -152,8 +152,8 @@ evt_str_append_escape_xml_attr(EVTSTR *es,
 }
 
 int
-evt_str_append_escape_xml_pcdata(EVTSTR *es, 
-                                char *unescaped, size_t unescaped_len)
+evt_str_append_escape_xml_pcdata(EVTSTR *es,
+                                 char *unescaped, size_t unescaped_len)
 {
   /* a single character is escaped to at most 6 characters: '&#xXX;' or '&gt;' or '&lt;' */
 
@@ -161,9 +161,9 @@ evt_str_append_escape_xml_pcdata(EVTSTR *es,
    * which is not portable */
 
   char *buf = (char *)alloca(6*unescaped_len + 1);
-                             
+
   int i, dst;
-  
+
   for (i = 0, dst = 0; i < unescaped_len; i++)
     {
       if ((unsigned) unescaped[i] < 32)

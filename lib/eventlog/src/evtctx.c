@@ -60,9 +60,9 @@ evtrec_add_standard_tags(EVTREC *e, void *userptr)
   struct tm *tm = NULL;
   char buf[128];
   EVTCONTEXT *ctx = e->ev_ctx;
-  
+
   time(&now);
-  
+
   if (ctx->ec_flags & EF_ADD_PID)
     evt_rec_add_tag(e, evt_tag_int(EVT_TAG_PID, (int) getpid()));
   if (ctx->ec_flags & EF_ADD_PROG)
@@ -94,7 +94,7 @@ evt_read_config(EVTCONTEXT *ctx)
 {
   FILE *fp;
   char line[1024];
-  
+
   fp = fopen(__PATH_ETC_EVENTLOG_CONF, "r");
   if (!fp)
     return;
@@ -102,19 +102,19 @@ evt_read_config(EVTCONTEXT *ctx)
   while (!feof(fp))
     {
       char *keyword, *value;
-      
+
       if (line[0] == '#' || line[0] == '\n')
         goto next;
-      
+
       keyword = strtok(line, " \t\n");
       value = strtok(NULL, " \t\n");
-      
+
       if (!keyword || !value)
         goto next;
-      
+
       while (*value == ' ' || *value == '\t' || *value == '\n')
         value++;
-        
+
       if (strcmp(keyword, "format") == 0)
         {
           strncpy(ctx->ec_formatter, value, sizeof(ctx->ec_formatter));
@@ -127,16 +127,16 @@ evt_read_config(EVTCONTEXT *ctx)
         {
           ctx->ec_flags = strtoul(value, NULL, 0) & EF_ADD_ALL;
         }
-     next:
+next:
       fgets(line, sizeof(line), fp);
     }
 }
 
-int 
+int
 evt_ctx_tag_hook_add(EVTCONTEXT *ctx, int (*func)(EVTREC *e, void *user_ptr), void *user_ptr)
 {
   EVTTAGHOOK *cb = malloc(sizeof(EVTTAGHOOK));
-  
+
   if (!cb)
     return 0;
   cb->et_callback = func;
@@ -150,7 +150,7 @@ EVTCONTEXT *
 evt_ctx_init(const char *prog, int syslog_fac)
 {
   EVTCONTEXT *ctx;
-  
+
   ctx = (EVTCONTEXT *) calloc(sizeof(*ctx), 1);
   if (ctx)
     {
@@ -166,7 +166,7 @@ evt_ctx_init(const char *prog, int syslog_fac)
 #endif
       evt_read_config(ctx);
     }
-     
+
   return ctx;
 }
 
@@ -185,7 +185,7 @@ evt_ctx_free(EVTCONTEXT *ctx)
   if (--ctx->ec_ref == 0)
     {
       EVTTAGHOOK *p, *p_next;
-      
+
       p = ctx->ec_tag_hooks;
       while (p)
         {

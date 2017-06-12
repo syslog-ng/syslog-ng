@@ -48,10 +48,10 @@ void
 evt_openlog(const char *ident, int options, int facility)
 {
   syslog_context = evt_ctx_init(ident, facility);
-  
+
   /* NOTE: we save the legacy syslog option value, so that our local target
    * can use it */
-  
+
   syslog_opts.es_options = options;
 }
 
@@ -65,7 +65,7 @@ evt_vsyslog(int pri, const char *format, va_list ap)
 {
   EVTREC *e;
   char msgbuf[1024];
-  
+
   vsnprintf(msgbuf, sizeof(msgbuf), format, ap);
   e = evt_rec_init(syslog_context, pri, msgbuf);
   evt_log(e);
@@ -75,7 +75,7 @@ void
 evt_syslog(int pri, const char *format, ...)
 {
   va_list ap;
-  
+
   va_start(ap, format);
   evt_vsyslog(pri, format, ap);
   va_end(ap);
@@ -85,17 +85,17 @@ evt_syslog(int pri, const char *format, ...)
 
 #include <dlfcn.h>
 
-void 
+void
 openlog(const char *ident, int option, int facility)
 {
   evt_openlog(ident, option, facility);
 }
 
-void 
+void
 syslog(int pri, const char *format, ...)
 {
   va_list ap;
-  
+
   va_start(ap, format);
   evt_vsyslog(pri, format, ap);
   va_end(ap);
@@ -111,7 +111,7 @@ void
 evt_syslog_wrapper_init(void)
 {
   static int initialized = 0;
-  
+
   if (!initialized)
     {
       syslog_opts.es_openlog = dlsym(RTLD_NEXT, "openlog");
@@ -128,7 +128,7 @@ void
 evt_syslog_wrapper_init(void)
 {
   static int initialized = 0;
-  
+
   if (!initialized)
     {
       syslog_opts.es_openlog = openlog;

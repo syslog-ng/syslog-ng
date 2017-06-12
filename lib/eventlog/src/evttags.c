@@ -34,11 +34,11 @@
  * SUCH DAMAGE.
  *
  */
-           
+
 /*
  * This module implements tag support functions.
  */
- 
+
 #include "evt_internals.h"
 
 #include <stdio.h>
@@ -65,12 +65,12 @@ EVTTAG *
 evt_tag_str(const char *tag, const char *value)
 {
   EVTTAG *p;
-  
+
   /* neither tag nor value can be NULL */
   assert(tag);
   if (!value)
     value = "(null)";
-  
+
   p = (EVTTAG *) malloc(sizeof(EVTTAG));
   if (p)
     {
@@ -84,7 +84,7 @@ EVTTAG *
 evt_tag_int(const char *tag, int value)
 {
   char buf[32]; /* a 64 bit int fits into 20 characters */
-  
+
   snprintf(buf, sizeof(buf), "%d", value);
   return evt_tag_str(tag, buf);
 }
@@ -93,7 +93,7 @@ EVTTAG *
 evt_tag_long(const char *tag, long value)
 {
   char buf[32]; /* a 64 bit int fits into 20 characters */
-  
+
   snprintf(buf, sizeof(buf), "%ld", value);
   return evt_tag_str(tag, buf);
 }
@@ -102,9 +102,9 @@ EVTTAG *
 evt_tag_errno(const char *tag, int err)
 {
   char buf[128];
-  
+
   snprintf(buf, sizeof(buf), "%s (%d)", strerror(err), err);
-  return evt_tag_str(tag, buf);  
+  return evt_tag_str(tag, buf);
 }
 
 EVTTAG *
@@ -112,7 +112,7 @@ evt_tag_printf(const char *tag, const char *format, ...)
 {
   va_list ap;
   char buf[1024];
-  
+
   va_start(ap, format);
   vsnprintf(buf, sizeof(buf), format, ap);
   va_end(ap);

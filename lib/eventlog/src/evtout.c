@@ -37,9 +37,9 @@
 
 /*
  * Output implementations. An output method is responsible for delivering a
- * message. Each output method has a unique ID and the administrator is 
+ * message. Each output method has a unique ID and the administrator is
  * free to select which method to use.
- */ 
+ */
 #include "evt_internals.h"
 
 #include <stdlib.h>
@@ -47,16 +47,16 @@
 #include <string.h>
 
 /* local method implementation */
-static int 
+static int
 evt_output_local(EVTREC *e)
 {
   static int initialized = 0;
   char *msg;
   EVTCONTEXT *ctx = e->ev_ctx;
-  
+
   if (!initialized)
     {
-      /* 
+      /*
        * there's a small window of race here, if this is used in a
        * multithreaded program, but it's a small race, and can only occur
        * when the first message is sent
@@ -70,7 +70,7 @@ evt_output_local(EVTREC *e)
   return 1;
 }
 
-static struct 
+static struct
 {
   char *eo_name;
   int (*eo_outmethod_fn)(EVTREC *e);
@@ -85,7 +85,7 @@ evt_log(EVTREC *e)
 {
   int res;
   EVTCONTEXT *ctx = e->ev_ctx;
-  
+
   if (!ctx->ec_outmethod_fn)
     {
       int i;

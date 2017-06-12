@@ -34,13 +34,13 @@
  * SUCH DAMAGE.
  *
  */
- 
+
 /*
  * Formatting implementations. This module is responsible for formatting
  * EVENT records. Each formatter has a unique ID and the administrator is
  * free to select which output format to use.
  */
- 
+
 #include "evt_internals.h"
 
 #include <stdlib.h>
@@ -52,10 +52,10 @@ evtrec_format_plain(EVTREC *e)
   EVTSTR *es;
   EVTTAG *et;
   char *res;
-  
+
   if (!(es = evt_str_init(128)))
     return NULL;
-  
+
   evt_str_append_escape_bs(es, e->ev_desc, strlen(e->ev_desc), ';');
   evt_str_append(es, ";");
   if (e->ev_pairs)
@@ -81,11 +81,11 @@ evtrec_format_xmlattr(EVTREC *e)
   EVTSTR *es;
   EVTTAG *et;
   char *res;
-  
+
   if (!(es = evt_str_init(128)))
     return NULL;
 
-  evt_str_append(es, "<event ");  
+  evt_str_append(es, "<event ");
   for (et = e->ev_pairs; et; et = et->et_next)
     {
       evt_str_append(es, et->et_tag);
@@ -109,11 +109,11 @@ evtrec_format_xmltags(EVTREC *e)
   EVTSTR *es;
   EVTTAG *et;
   char *res;
-  
+
   if (!(es = evt_str_init(256)))
     return NULL;
 
-  evt_str_append(es, "<event>");  
+  evt_str_append(es, "<event>");
   for (et = e->ev_pairs; et; et = et->et_next)
     {
       evt_str_append(es, "<");
@@ -131,7 +131,7 @@ evtrec_format_xmltags(EVTREC *e)
   return res;
 }
 
-static struct 
+static struct
 {
   char *ef_name;
   char *(*ef_formatter)(EVTREC *e);
@@ -147,7 +147,7 @@ char *
 evt_format(EVTREC *e)
 {
   EVTCONTEXT *ctx = e->ev_ctx;
-  
+
   if (!ctx->ec_formatter_fn)
     {
       int i;

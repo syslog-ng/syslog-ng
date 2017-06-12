@@ -34,7 +34,7 @@
  * SUCH DAMAGE.
  *
  */
- 
+
 #include "evt_internals.h"
 
 #include <stdlib.h>
@@ -46,12 +46,12 @@ evt_rec_add_tag(EVTREC *e, EVTTAG *tag)
 {
   /* make it the last in list */
   tag->et_next = NULL;
-  
+
   if (e->ev_last_pair)
     e->ev_last_pair->et_next = tag;
   else
     e->ev_pairs = tag;
-    
+
   e->ev_last_pair = tag;
 }
 
@@ -59,7 +59,7 @@ void
 evt_rec_add_tagsv(EVTREC *e, va_list tags)
 {
   EVTTAG *t;
-  
+
   t = va_arg(tags, EVTTAG *);
   while (t)
     {
@@ -72,7 +72,7 @@ void
 evt_rec_add_tags(EVTREC *e, EVTTAG *first, ...)
 {
   va_list ap;
-  
+
   va_start(ap, first);
   evt_rec_add_tagsv(e, ap);
   va_end(ap);
@@ -89,7 +89,7 @@ evt_rec_call_hooks(EVTREC *e)
 {
   EVTTAGHOOK *et;
   int res = 1;
-  
+
   for (et = e->ev_ctx->ec_tag_hooks; et; et = et->et_next)
     {
       if (!et->et_callback(e, et->et_userptr))
@@ -98,11 +98,11 @@ evt_rec_call_hooks(EVTREC *e)
   return res;
 }
 
-EVTREC * 
+EVTREC *
 evt_rec_init(EVTCONTEXT *ctx, int syslog_pri, const char *desc)
 {
   EVTREC *e;
-  
+
   e = (EVTREC *) malloc(sizeof(EVTREC));
   if (e)
     {
@@ -132,7 +132,7 @@ void
 evt_rec_free(EVTREC *e)
 {
   EVTTAG *p, *p_next;
-  
+
   if (--e->ev_ref == 0)
     {
       free(e->ev_desc);

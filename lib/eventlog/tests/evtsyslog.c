@@ -4,7 +4,7 @@
 #include <evtlog.h>
 #endif
 
-int 
+int
 main()
 {
   openlog("evtsyslog", LOG_PID, 0);
