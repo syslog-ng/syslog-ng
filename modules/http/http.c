@@ -204,7 +204,7 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 
       curl_slist_free_all(curl_headers);
 
-      return WORKER_INSERT_RESULT_ERROR;
+      return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
 
   if (body_rendered)
