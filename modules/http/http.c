@@ -136,7 +136,7 @@ _get_body_rendered(HTTPDestinationDriver *self, LogMessage *msg)
 }
 
 static void
-_set_curl_opt(HTTPDestinationDriver *self, LogMessage *msg, struct curl_slist *curl_headers, GString *body_rendered)
+_set_curl_opt(HTTPDestinationDriver *self)
 {
   curl_easy_reset(self->curl);
 
@@ -173,13 +173,15 @@ _set_curl_opt(HTTPDestinationDriver *self, LogMessage *msg, struct curl_slist *c
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
 
-  curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, curl_headers);
-
-  const gchar *body = body_rendered ? body_rendered->str : log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-
-  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, body);
   if (self->method_type == METHOD_TYPE_PUT)
     curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
+}
+
+static void
+_set_payload(HTTPDestinationDriver *self, struct curl_slist *curl_headers, const gchar *body)
+{
+  curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, curl_headers);
+  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, body);
 }
 
 static worker_insert_result_t
@@ -189,10 +191,12 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
+  _set_curl_opt(self);
+
   struct curl_slist *curl_headers = _get_curl_headers(self, msg);
   GString *body_rendered = _get_body_rendered(self, msg);
-
-  _set_curl_opt(self, msg, curl_headers, body_rendered);
+  const gchar *body = body_rendered ? body_rendered->str : log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+  _set_payload(self, curl_headers, body);
 
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
     {
@@ -424,6 +428,12 @@ http_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
 
+  if (!(self->curl = curl_easy_init()))
+    {
+      msg_error("curl: cannot initialize libcurl", NULL);
+      return FALSE;
+    }
+
   if (!self->url)
     {
       self->url = g_strdup(HTTP_DEFAULT_URL);
@@ -484,12 +494,6 @@ http_dd_new(GlobalConfig *cfg)
 
   curl_global_init(CURL_GLOBAL_ALL);
 
-  if (!(self->curl = curl_easy_init()))
-    {
-      msg_error("curl: cannot initialize libcurl", NULL);
-
-      return NULL;
-    }
   self->ssl_version = CURL_SSLVERSION_DEFAULT;
   self->peer_verify = TRUE;
 
