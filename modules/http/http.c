@@ -24,6 +24,7 @@
 
 #include "syslog-names.h"
 #include "http-plugin.h"
+#include "scratch-buffers.h"
 
 static const gchar *
 _format_persist_name(const LogPipe *s)
@@ -121,18 +122,19 @@ _get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
   return curl_headers;
 }
 
-static GString *
-_get_body_rendered(HTTPDestinationDriver *self, LogMessage *msg)
+static const gchar *
+_get_body(HTTPDestinationDriver *self, LogMessage *msg)
 {
-  GString *body_rendered = NULL;
+  GString *body_rendered = scratch_buffers_alloc();
 
   if (self->body_template)
     {
-      body_rendered = g_string_new(NULL);
       log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
                           self->super.seq_num, NULL, body_rendered);
+      return body_rendered->str;
     }
-  return body_rendered;
+  else
+    return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
 }
 
 static void
@@ -194,8 +196,7 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
   _set_curl_opt(self);
 
   struct curl_slist *curl_headers = _get_curl_headers(self, msg);
-  GString *body_rendered = _get_body_rendered(self, msg);
-  const gchar *body = body_rendered ? body_rendered->str : log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+  const gchar *body = _get_body(self, msg);
   _set_payload(self, curl_headers, body);
 
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
@@ -203,16 +204,10 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
       msg_error("curl: error sending HTTP request",
                 evt_tag_str("error", curl_easy_strerror(ret)));
 
-      if (body_rendered)
-        g_string_free(body_rendered, TRUE);
-
       curl_slist_free_all(curl_headers);
 
       return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
-
-  if (body_rendered)
-    g_string_free(body_rendered, TRUE);
 
   curl_slist_free_all(curl_headers);
 
