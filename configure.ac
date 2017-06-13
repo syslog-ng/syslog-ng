@@ -1297,8 +1297,7 @@ AC_MSG_CHECKING(whether to enable Sun STREAMS support)
 if test "x$ac_cv_header_stropts_h" = "xyes" -a \
         "x$ac_cv_header_sys_strlog_h" = "xyes" -a \
         "x$enable_sun_streams" != "xno" -a \
-        "x$blb_cv_c_i_conslog" != "xno" -o \
-        "x$enable_sun_streams" = "xyes"; then
+        "x$blb_cv_c_i_conslog" != "xno"; then
         enable_sun_streams=yes
         AC_MSG_RESULT(yes)
 else
