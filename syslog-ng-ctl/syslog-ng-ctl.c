@@ -160,6 +160,12 @@ slng_reload(int argc, char *argv[], const gchar *mode)
   return _dispatch_command("RELOAD");
 }
 
+static gint
+slng_reopen(int argc, char *argv[], const gchar *mode)
+{
+  return _dispatch_command("REOPEN");
+}
+
 const static gint QUERY_COMMAND = 0;
 static gboolean query_is_get_sum = FALSE;
 static gboolean query_reset = FALSE;
@@ -383,6 +389,7 @@ static struct
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
   { "stop", no_options, "Stop syslog-ng process", slng_stop },
   { "reload", no_options, "Reload syslog-ng", slng_reload },
+  { "reopen", no_options, "Re-open of log destination files", slng_reopen },
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query },
   { "show-license-info", license_options, "Show information about the license", slng_license },
   { NULL, NULL },
