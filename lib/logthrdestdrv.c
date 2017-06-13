@@ -351,6 +351,7 @@ log_threaded_dest_driver_start(LogPipe *s)
 
   log_queue_set_counters(self->queue, self->queued_messages,
                          self->dropped_messages, self->memory_usage);
+  stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                                            log_threaded_dest_driver_format_seqnum_for_persist(self)));

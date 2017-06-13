@@ -1303,6 +1303,7 @@ log_writer_init(LogPipe *s)
     _register_counters(self);
 
   log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
+  stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
   if (self->proto)
     {
       LogProtoClient *proto;
