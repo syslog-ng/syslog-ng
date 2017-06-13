@@ -193,8 +193,6 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
 
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  _set_curl_opt(self);
-
   struct curl_slist *curl_headers = _get_curl_headers(self, msg);
   const gchar *body = _get_body(self, msg);
   _set_payload(self, curl_headers, body);
@@ -433,6 +431,8 @@ http_dd_init(LogPipe *s)
     {
       self->url = g_strdup(HTTP_DEFAULT_URL);
     }
+
+  _set_curl_opt(self);
 
   return log_threaded_dest_driver_start(s);
 }
