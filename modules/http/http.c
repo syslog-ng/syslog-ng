@@ -85,10 +85,15 @@ _disconnect(LogThrDestDriver *s)
 {
 }
 
+static void
+_add_custom_curl_header(gpointer data, gpointer curl_headers)
+{
+  curl_headers = curl_slist_append((struct curl_slist *)curl_headers, data);
+}
+
 static struct curl_slist *
 _get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
 {
-  GList *header = NULL;
   struct curl_slist *curl_headers = NULL;
   gchar header_host[128] = {0};
   gchar header_program[32] = {0};
@@ -111,12 +116,7 @@ _get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
              "X-Syslog-Level: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
   curl_headers = curl_slist_append(curl_headers, header_level);
 
-  header = self->headers;
-  while (header != NULL)
-    {
-      curl_headers = curl_slist_append(curl_headers, (gchar *)header->data);
-      header = g_list_next(header);
-    }
+  g_list_foreach(self->headers, _add_custom_curl_header, curl_headers);
 
   return curl_headers;
 }
