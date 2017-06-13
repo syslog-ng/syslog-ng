@@ -932,7 +932,9 @@ if test "x$enable_spoof_source" = "xauto"; then
 		LIBNET_CFLAGS=
 		AC_MSG_RESULT(no)
         fi
-elif test "x$enable_spoof_source" != "xyes"; then
+elif test "x$enable_spoof_source" = "xyes" && test "x$LIBNET_LIBS" = "x"; then
+        AC_MSG_ERROR([Could not find libnet, and spoof source support was explicitly enabled.])
+else
 	LIBNET_CFLAGS=""
 	LIBNET_LIBS=""
 	enable_spoof_source=no
