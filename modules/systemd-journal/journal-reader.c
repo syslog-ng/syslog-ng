@@ -224,7 +224,8 @@ static void
 _set_program(JournalReaderOptions *options, LogMessage *msg)
 {
   gssize value_length = 0;
-  const gchar *value = _get_value_from_message(options, msg, "SYSLOG_IDENTIFIER", &value_length);
+  /* g_strdup: referred value can change during log_msg_set_value if nvtable realloc needed */
+  gchar *value = g_strdup(_get_value_from_message(options, msg, "SYSLOG_IDENTIFIER", &value_length));
 
   if (value_length > 0)
     {
@@ -232,9 +233,12 @@ _set_program(JournalReaderOptions *options, LogMessage *msg)
     }
   else
     {
-      value = _get_value_from_message(options, msg, "_COMM", &value_length);
+      value = g_strdup(_get_value_from_message(options, msg, "_COMM", &value_length));
       log_msg_set_value(msg, LM_V_PROGRAM, value, value_length);
     }
+
+  g_free(value);
+
 }
 
 static void
