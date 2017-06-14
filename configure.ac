@@ -878,11 +878,16 @@ if test -n "$OPENSSL_LIBS" -a "$linking_mode" != "dynamic"; then
 	LIBS=$old_LIBS
 fi
 
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $OPENSSL_CFLAGS"
+
 AC_CHECK_DECLS([SSL_CTX_get0_param],[], [], [[#include <openssl/ssl.h>]])
 AC_CHECK_DECLS([X509_STORE_CTX_get0_cert],[], [], [[#include <openssl/ssl.h>]])
 AC_CHECK_DECLS([X509_get_extension_flags], [], [], [[#include <openssl/x509v3.h>]])
 AC_CHECK_DECLS([EVP_MD_CTX_reset], [], [], [[#include <openssl/evp.h>]])
 AC_CHECK_DECLS([ASN1_STRING_get0_data], [], [], [[#include <openssl/asn1.h>]])
+
+CPPFLAGS="$CPPFLAGS_SAVE"
 
 dnl
 dnl Right now, openssl is never linked statically as it is only used by the
@@ -927,7 +932,9 @@ if test "x$enable_spoof_source" = "xauto"; then
 		LIBNET_CFLAGS=
 		AC_MSG_RESULT(no)
         fi
-elif test "x$enable_spoof_source" != "xyes"; then
+elif test "x$enable_spoof_source" = "xyes" && test "x$LIBNET_LIBS" = "x"; then
+        AC_MSG_ERROR([Could not find libnet, and spoof source support was explicitly enabled.])
+else
 	LIBNET_CFLAGS=""
 	LIBNET_LIBS=""
 	enable_spoof_source=no
@@ -1290,8 +1297,7 @@ AC_MSG_CHECKING(whether to enable Sun STREAMS support)
 if test "x$ac_cv_header_stropts_h" = "xyes" -a \
         "x$ac_cv_header_sys_strlog_h" = "xyes" -a \
         "x$enable_sun_streams" != "xno" -a \
-        "x$blb_cv_c_i_conslog" != "xno" -o \
-        "x$enable_sun_streams" = "xyes"; then
+        "x$blb_cv_c_i_conslog" != "xno"; then
         enable_sun_streams=yes
         AC_MSG_RESULT(yes)
 else
