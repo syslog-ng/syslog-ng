@@ -1,0 +1,91 @@
+#!/usr/bin/make -f
+
+DOCKER=docker
+DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
+	-v $(ROOT_DIR):/source \
+	-v $(DBLD_DIR)/build:/build \
+	-v $(DBLD_DIR)/install:/install \
+	-v ~/.gitconfig:/home/$(shell whoami)/.gitconfig
+ROOT_DIR=$(shell pwd)
+DBLD_DIR=$(ROOT_DIR)/dbld
+BUILD_DIR=$(DBLD_DIR)/build
+RELEASE_DIR=$(DBLD_DIR)/release
+IMAGE_SHELL=balabit/syslog-ng-jessie
+VERSION=$(shell cat VERSION)
+TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
+
+help:
+	@echo "This script allows you to build release/snapshot artifacts, such "
+	@echo "as rpm, deb packages or tarballs."
+	@echo ""
+	@echo "These targets are available:"
+	@echo "  image-<os>: generate docker image for building syslog-ng"
+	@echo "  images: generate all docker images"
+	@echo "  deb-<os>: generate debs in dbld/build for the specified OS"
+	@echo "  rpm-<os>: generate rpms in dbld/build for the specified OS"
+	@echo "  shell-<os>: start a shell in the specified OS"
+	@echo "  tarball: generate a tarball"
+	@echo ""
+	@echo "Supported OSs are: centos7, jessie, zesty."
+	@echo ""
+	@echo "NOTE: this script requires that debian/rpm packaging are"
+	@echo "already merged to your tree, which is not there by default"
+	@echo "if you work in a git clone. These files live on the 'release'"
+	@echo "branch. Make sure you have that merged, OR work from a release tarball"
+
+
+deb: deb-zesty
+
+shell: shell-zesty
+
+rpm: rpm-centos7
+
+release: release-deb release-rpm
+
+deb-%: tarball
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
+
+rpm-%: tarball
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
+
+tarball: setup
+	if [ -f $(TARBALL) ]; then \
+		count=`find $(ROOT_DIR) -newer $(TARBALL) | grep -v "^$(ROOT_DIR)/dbld/" | wc -l`; \
+	else \
+		count=1; \
+	fi; \
+	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-zesty /source/dbld/tarball || true
+
+release-tarball: clean
+	$(DBLD_DIR)/rules tarball
+	cp $(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz $(RELEASE_DIR)
+
+
+release-deb: release-tarball
+	$(DBLD_DIR)/rules deb
+
+	# Debian sources and binaries
+	cp $(BUILD_DIR)/syslog-ng_*{dsc,orig.tar.gz,deb} $(RELEASE_DIR)
+
+release-rpm: release-tarball
+	$(DBLD_DIR)/rules rpm
+	# RPM sources and binaries
+	cp $(BUILD_DIR)/syslog-ng*rpm $(RELEASE_DIR)
+
+clean:
+	rm -rf $(BUILD_DIR)/*
+
+
+shell-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/shell
+
+images: image-jessie image-zesty image-centos7
+
+
+image-%:
+	cd $(DBLD_DIR)/images/$* && docker build -t balabit/syslog-ng-$* .
+
+setup:
+	mkdir -p dbld/build || true
+	mkdir -p dbld/install || true
+	mkdir -p dbld/release || true

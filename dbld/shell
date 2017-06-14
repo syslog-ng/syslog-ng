@@ -1,0 +1,11 @@
+#!/bin/bash
+
+echo -e "\n\n\nWelcome to the syslog-ng developer's shell"
+
+echo -e "\tYou can find the source in /source, you can build the source using:"
+echo -e "\t\$ cd /build"
+echo -e "\t\$ /source/configure"
+echo -e "\t\$ make"
+echo -e "\tIf configure is not yet available, run autogen.sh in the source dir"
+cd /source
+exec bash

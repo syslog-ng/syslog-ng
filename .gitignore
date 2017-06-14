@@ -38,3 +38,8 @@ m4/ax*.m4
 .deps
 /lib/cfg-grammar.h
 /test-driver
+dbld/build/
+dbld/release/
+debian/build-tree/
+debian/*.log
+debian/autoreconf.*

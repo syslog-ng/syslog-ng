@@ -35,6 +35,10 @@ doc/ChangeLog\.[0-9]$
 (\.gitmodules|AUTHORS|COPYING|INSTALL|VERSION|aclocal\.m4|compile|configure|depcomp|install-sh|libtool|ltmain\.sh|missing|test-driver|ylwrap)$
 .*/[^/.]*$
 GPATH|GTAGS|GRTAGS|GSYMS
+dbld/build/.*$
+dbld/release/.*$
+dbld/install/.*$
+dbld/images/.*$
  LGPLv2.1+_SSL
 autogen\.sh$
 cmake

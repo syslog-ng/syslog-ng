@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+cd /source
+VERSION=`cat VERSION`
+./autogen.sh
+
+cd /build
+/source/configure
+make dist
+
+echo "Your tarball is in /build, also available on the host in \$(top_srcdir)/dbld/build"
