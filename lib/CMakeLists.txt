@@ -102,7 +102,6 @@ set (LIB_HEADERS
     rcptid.h
     run-id.h
     scratch-buffers.h
-    scratch-buffers2.h
     serialize.h
     service-management.h
     seqnum.h
@@ -186,7 +185,6 @@ set(LIB_SOURCES
     reloc.c
     run-id.c
     scratch-buffers.c
-    scratch-buffers2.c
     serialize.c
     service-management.c
     str-format.c

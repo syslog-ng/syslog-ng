@@ -164,7 +164,7 @@ tf_cef_append(GString *result, ValuePairs *vp, LogMessage *msg,
   state.template_options = template_options;
 
   return value_pairs_foreach_sorted(vp, tf_cef_walker,
-                                    (GCompareDataFunc) tf_cef_walk_cmp, msg,
+                                    (GCompareFunc) tf_cef_walk_cmp, msg,
                                     seq_num, time_zone_mode, template_options,
                                     &state);
 }

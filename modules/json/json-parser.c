@@ -22,7 +22,7 @@
 
 #include "json-parser.h"
 #include "dot-notation.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -85,8 +85,8 @@ json_parser_process_single(struct json_object *jso,
     return;
 
   ScratchBuffersMarker marker;
-  key = scratch_buffers2_alloc_and_mark(&marker);
-  value = scratch_buffers2_alloc();
+  key = scratch_buffers_alloc_and_mark(&marker);
+  value = scratch_buffers_alloc();
 
   switch (json_object_get_type(jso))
     {
@@ -163,7 +163,7 @@ json_parser_process_single(struct json_object *jso,
                                   value->len);
     }
 
-  scratch_buffers2_reclaim_marked(marker);
+  scratch_buffers_reclaim_marked(marker);
 }
 
 static void

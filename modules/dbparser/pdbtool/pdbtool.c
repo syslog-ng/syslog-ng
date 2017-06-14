@@ -43,7 +43,7 @@
 #include "resolved-configurable-paths.h"
 #include "crypto.h"
 #include "compat/openssl_support.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -1225,8 +1225,8 @@ main(int argc, char *argv[])
   msg_init(TRUE);
   resolved_configurable_paths_init(&resolvedConfigurablePaths);
   stats_init();
-  scratch_buffers2_global_init();
-  scratch_buffers2_allocator_init();
+  scratch_buffers_global_init();
+  scratch_buffers_allocator_init();
   log_msg_global_init();
   log_template_global_init();
   log_tags_global_init();
@@ -1251,8 +1251,8 @@ main(int argc, char *argv[])
     colors = full_colors;
 
   ret = modes[mode].main(argc, argv);
-  scratch_buffers2_allocator_deinit();
-  scratch_buffers2_global_deinit();
+  scratch_buffers_allocator_deinit();
+  scratch_buffers_global_deinit();
   stats_destroy();
   log_tags_global_deinit();
   log_msg_global_deinit();

@@ -31,7 +31,7 @@
 #include "logqueue-disk-reliable.h"
 #include "logqueue-disk-non-reliable.h"
 #include "logmsg/logmsg-serialize.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -296,15 +296,15 @@ main(int argc, char *argv[])
 
   msg_init(TRUE);
   stats_init();
-  scratch_buffers2_global_init();
-  scratch_buffers2_allocator_init();
+  scratch_buffers_global_init();
+  scratch_buffers_allocator_init();
   log_template_global_init();
   log_msg_registry_init();
   log_tags_global_init();
   modes[mode].main(argc, argv);
   log_tags_global_deinit();
-  scratch_buffers2_allocator_deinit();
-  scratch_buffers2_global_deinit();
+  scratch_buffers_allocator_deinit();
+  scratch_buffers_global_deinit();
   stats_destroy();
   msg_deinit();
   return 0;

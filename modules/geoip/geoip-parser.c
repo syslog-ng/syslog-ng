@@ -23,7 +23,7 @@
 
 #include "geoip-parser.h"
 #include "parser/parser-expr.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 #include "geoip-helper.h"
 
 typedef struct _GeoIPParser GeoIPParser;
@@ -89,7 +89,7 @@ add_geoip_record(GeoIPParser *self, LogMessage *msg, const gchar *ip)
                                   record->country_code,
                                   strlen(record->country_code));
 
-      value = scratch_buffers2_alloc();
+      value = scratch_buffers_alloc();
 
       g_string_printf(value, "%f",
                       record->latitude);
@@ -118,7 +118,6 @@ add_geoip_country_code(GeoIPParser *self, LogMessage *msg, const gchar *ip)
                               country,
                               strlen(country));
 }
-
 
 static gboolean
 geoip_parser_process(LogParser *s, LogMessage **pmsg,

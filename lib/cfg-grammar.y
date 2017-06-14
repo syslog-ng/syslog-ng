@@ -1230,36 +1230,35 @@ vp_options
 
 vp_option
         : KW_PAIR '(' string ':' template_content ')'
-        {
-          value_pairs_add_pair(last_value_pairs, $3, $5);
-          free($3);
-        }
+          {
+            value_pairs_add_pair(last_value_pairs, $3, $5);
+            free($3);
+          }
         | KW_PAIR '(' string template_content ')'
-        {
-          value_pairs_add_pair(last_value_pairs, $3, $4);
-          free($3);
-        }
+          {
+            value_pairs_add_pair(last_value_pairs, $3, $4);
+            free($3);
+          }
         | KW_KEY '(' string KW_REKEY '('
-        {
-          last_vp_transset = value_pairs_transform_set_new($3);
-          value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE);
-          free($3);
-        }
-        vp_rekey_options
-        ')' { value_pairs_add_transforms(last_value_pairs, last_vp_transset); } ')'
+          {
+            last_vp_transset = value_pairs_transform_set_new($3);
+            value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE);
+            free($3);
+          }
+          vp_rekey_options ')'                           { value_pairs_add_transforms(last_value_pairs, last_vp_transset); } ')'
 	| KW_KEY '(' string_list ')'		         { value_pairs_add_glob_patterns(last_value_pairs, $3, TRUE); }
         | KW_REKEY '(' string
-        {
-          last_vp_transset = value_pairs_transform_set_new($3);
-          free($3);
-        }
-        vp_rekey_options ')'                     { value_pairs_add_transforms(last_value_pairs, last_vp_transset); }
-        | KW_EXCLUDE '(' string_list ')'         { value_pairs_add_glob_patterns(last_value_pairs, $3, FALSE); }
+          {
+            last_vp_transset = value_pairs_transform_set_new($3);
+            free($3);
+          }
+          vp_rekey_options ')'                           { value_pairs_add_transforms(last_value_pairs, last_vp_transset); }
+        | KW_EXCLUDE '(' string_list ')'                 { value_pairs_add_glob_patterns(last_value_pairs, $3, FALSE); }
 	| KW_SCOPE '(' vp_scope_list ')'
 	;
 
 vp_scope_list
-	: string vp_scope_list              { value_pairs_add_scope(last_value_pairs, $1); free($1); }
+	: string vp_scope_list                           { value_pairs_add_scope(last_value_pairs, $1); free($1); }
 	|
 	;
 

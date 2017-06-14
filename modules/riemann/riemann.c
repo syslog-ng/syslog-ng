@@ -29,7 +29,7 @@
 #include "logthrdestdrv.h"
 #include "string-list.h"
 #include "stats/stats.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 #include "riemann.h"
 
 typedef struct
@@ -501,7 +501,7 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 
   event = riemann_event_new();
 
-  str = scratch_buffers2_alloc();
+  str = scratch_buffers_alloc();
 
   if (self->fields.metric)
     {

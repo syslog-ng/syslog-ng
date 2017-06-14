@@ -26,7 +26,7 @@
 #include "mainloop-io-worker.h"
 #include "mainloop-call.h"
 #include "ack_tracker.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <iv_event.h>
 
@@ -380,14 +380,14 @@ log_reader_fetch_log(LogReader *self)
           msg_count++;
 
           ScratchBuffersMarker mark;
-          scratch_buffers2_mark(&mark);
+          scratch_buffers_mark(&mark);
           if (!log_reader_handle_line(self, msg, msg_len, &aux))
             {
-              scratch_buffers2_reclaim_marked(mark);
+              scratch_buffers_reclaim_marked(mark);
               /* window is full, don't generate further messages */
               break;
             }
-          scratch_buffers2_reclaim_marked(mark);
+          scratch_buffers_reclaim_marked(mark);
         }
     }
   log_transport_aux_data_destroy(&aux);

@@ -46,6 +46,24 @@ typedef struct
   LogTemplate *template;
 } VPPairConf;
 
+typedef struct
+{
+  /* we don't own any of the fields here, it is assumed that allocations are
+   * managed by the caller */
+
+  GString *name;
+  GString *value;
+  TypeHint type_hint;
+} VPResultValue;
+
+typedef struct
+{
+  GTree *result_tree;
+
+  /* array of VPResultValue instances */
+  GArray *values;
+} VPResults;
+
 struct _ValuePairs
 {
   GAtomicCounter ref_cnt;
@@ -130,6 +148,7 @@ static CfgFlagHandler value_pair_scope[] =
   { NULL,                 0,       0,                            0},
 };
 
+
 static gboolean
 vp_pattern_spec_eval(VPPatternSpec *self, const gchar *input)
 {
@@ -171,26 +190,61 @@ vp_pair_conf_free(VPPairConf *vpc)
   g_free(vpc);
 }
 
+static void
+vp_result_value_init(VPResultValue *rv, GString *name, TypeHint type_hint, GString *value)
+{
+  rv->type_hint = type_hint;
+  rv->name = name;
+  rv->value = value;
+}
 
-static gchar *
+static void
+vp_results_init(VPResults *results, GCompareFunc compare_func)
+{
+  results->values = g_array_sized_new(FALSE, FALSE, sizeof(VPResultValue), 16);
+  results->result_tree = g_tree_new_full((GCompareDataFunc) compare_func, NULL,
+                                         NULL, NULL);
+}
+
+static void
+vp_results_deinit(VPResults *results)
+{
+  g_tree_destroy(results->result_tree);
+  g_array_free(results->values, TRUE);
+}
+
+static void
+vp_results_insert(VPResults *results, GString *name, TypeHint type_hint, GString *value)
+{
+  VPResultValue *rv;
+  gint ndx = results->values->len;
+
+  g_array_set_size(results->values, ndx + 1);
+  rv = &g_array_index(results->values, VPResultValue, ndx);
+  vp_result_value_init(rv, name, type_hint, value);
+  /* GTree takes over ownership of name */
+  g_tree_insert(results->result_tree, name->str, GINT_TO_POINTER(ndx));
+}
+
+static GString *
 vp_transform_apply (ValuePairs *vp, gchar *key)
 {
-  gchar *ckey, *okey = g_strdup(key);
   gint i;
+  GString *result = scratch_buffers_alloc();
+
+  g_string_assign(result, key);
 
   if (vp->transforms->len == 0)
-    return okey;
+    return result;
 
   for (i = 0; i < vp->transforms->len; i++)
     {
       ValuePairsTransformSet *t = (ValuePairsTransformSet *) g_ptr_array_index(vp->transforms, i);
 
-      ckey = value_pairs_transform_set_apply(t, okey);
-      g_free(okey);
-      okey = ckey;
+      value_pairs_transform_set_apply(t, result);
     }
 
-  return ckey;
+  return result;
 }
 
 /* runs over the name-value pairs requested by the user (e.g. with value_pairs_add_pair) */
@@ -200,18 +254,17 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
-  GTree *scope_set = ((gpointer *)user_data)[5];
+  VPResults *results = ((gpointer *)user_data)[5];
   const LogTemplateOptions *template_options = ((gpointer *)user_data)[6];
-  SBTHGString *sb = sb_th_gstring_acquire();
+  GString *sb = scratch_buffers_alloc();
   VPPairConf *vpc = (VPPairConf *)data;
   gint time_zone_mode = GPOINTER_TO_INT (((gpointer *)user_data)[7]);
 
-  sb->type_hint = vpc->template->type_hint;
   log_template_append_format((LogTemplate *)vpc->template, msg,
                              template_options,
-                             time_zone_mode, seq_num, NULL, sb_th_gstring_string(sb));
+                             time_zone_mode, seq_num, NULL, sb);
 
-  g_tree_insert(scope_set, vp_transform_apply(vp, vpc->name), sb);
+  vp_results_insert(results, vp_transform_apply(vp, vpc->name), vpc->template->type_hint, sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -221,10 +274,10 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
                        gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
-  GTree *scope_set = ((gpointer *)user_data)[5];
+  VPResults *results = ((gpointer *)user_data)[5];
   guint j;
   gboolean inc;
-  SBTHGString *sb;
+  GString *sb;
 
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
   (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
@@ -240,11 +293,10 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   if (!inc)
     return FALSE;
 
-  sb = sb_th_gstring_acquire();
+  sb = scratch_buffers_alloc();
 
-  g_string_append_len(sb_th_gstring_string(sb), value, value_len);
-  sb->type_hint = TYPE_HINT_STRING;
-  g_tree_insert(scope_set, vp_transform_apply(vp, name), sb);
+  g_string_append_len(sb, value, value_len);
+  vp_results_insert(results, vp_transform_apply(vp, name), TYPE_HINT_STRING, sb);
 
   return FALSE;
 }
@@ -317,22 +369,22 @@ vp_update_builtin_list_of_values(ValuePairs *vp)
 }
 
 static void
-vp_merge_builtins(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, GTree *dest,
+vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, gint32 seq_num, gint time_zone_mode,
                   const LogTemplateOptions *template_options)
 {
   gint i;
-  SBTHGString *sb;
+  GString *sb;
 
   for (i = 0; i < vp->builtins->len; i++)
     {
       ValuePairSpec *spec = (ValuePairSpec *) g_ptr_array_index(vp->builtins, i);
 
-      sb = sb_th_gstring_acquire();
+      sb = scratch_buffers_alloc();
 
       switch (spec->type)
         {
         case VPT_MACRO:
-          log_macro_expand(sb_th_gstring_string(sb), spec->id, FALSE,
+          log_macro_expand(sb, spec->id, FALSE,
                            template_options, time_zone_mode, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
@@ -341,46 +393,42 @@ vp_merge_builtins(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zon
           gssize len;
 
           nv = log_msg_get_value(msg, (NVHandle) spec->id, &len);
-          g_string_append_len(sb_th_gstring_string(sb), nv, len);
+          g_string_append_len(sb, nv, len);
           break;
         }
         default:
           g_assert_not_reached();
         }
 
-      if (sb_th_gstring_string(sb)->len == 0)
+      if (sb->len == 0)
         {
-          sb_th_gstring_release(sb);
           continue;
         }
 
-      g_tree_insert(dest, vp_transform_apply(vp, spec->name), sb);
+      vp_results_insert(results, vp_transform_apply(vp, spec->name), TYPE_HINT_STRING, sb);
     }
 }
 
 static gboolean
-vp_foreach_helper (const gchar *name, const SBTHGString *hinted_value,
-                   gpointer data)
+vp_foreach_helper(const gchar *name, gpointer ndx_as_pointer, gpointer data)
 {
-  VPForeachFunc func = ((gpointer *)data)[0];
-  gpointer user_data = ((gpointer *)data)[1];
-  gboolean *r = ((gpointer *)data)[2];
+  VPResults *results = ((gpointer *)data)[0];
+  gint ndx = GPOINTER_TO_INT(ndx_as_pointer);
+  VPResultValue *rv = &g_array_index(results->values, VPResultValue, ndx);
+  VPForeachFunc func = ((gpointer *)data)[1];
+  gpointer user_data = ((gpointer *)data)[2];
+  gboolean *r = ((gpointer *)data)[3];
 
-  *r &= !func(name, hinted_value->type_hint,
-              sb_th_gstring_string(hinted_value)->str,
-              sb_th_gstring_string(hinted_value)->len, user_data);
+  *r &= !func(name, rv->type_hint,
+              rv->value->str,
+              rv->value->len, user_data);
   return !*r;
 }
 
-static void
-vp_data_free (SBTHGString *s)
-{
-  sb_th_gstring_release (s);
-}
 
 gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
-                            GCompareDataFunc compare_func,
+                            GCompareFunc compare_func,
                             LogMessage *msg, gint32 seq_num, gint time_zone_mode,
                             const LogTemplateOptions *template_options,
                             gpointer user_data)
@@ -390,13 +438,13 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                       (LogTemplateOptions *) template_options, GINT_TO_POINTER(time_zone_mode)
                     };
   gboolean result = TRUE;
-  gpointer helper_args[] = { func, user_data, &result };
-  GTree *scope_set;
+  VPResults results;
+  gpointer helper_args[] = { &results, func, user_data, &result };
+  ScratchBuffersMarker mark;
 
-  scope_set = g_tree_new_full((GCompareDataFunc)compare_func, NULL,
-                              (GDestroyNotify)g_free,
-                              (GDestroyNotify)vp_data_free);
-  args[5] = scope_set;
+  scratch_buffers_mark(&mark);
+  vp_results_init(&results, compare_func);
+  args[5] = &results;
 
   /*
    * Build up the base set
@@ -406,15 +454,15 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
-  vp_merge_builtins(vp, msg, seq_num, time_zone_mode, scope_set, template_options);
+  vp_merge_builtins(vp, &results, msg, seq_num, time_zone_mode, template_options);
 
   /* Merge the explicit key-value pairs too */
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
 
   /* Aaand we run it through the callback! */
-  g_tree_foreach(scope_set, (GTraverseFunc)vp_foreach_helper, helper_args);
-
-  g_tree_destroy(scope_set);
+  g_tree_foreach(results.result_tree, (GTraverseFunc)vp_foreach_helper, helper_args);
+  vp_results_deinit(&results);
+  scratch_buffers_reclaim_marked(mark);
 
   return result;
 }
@@ -425,7 +473,7 @@ value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                     const LogTemplateOptions *template_options,
                     gpointer user_data)
 {
-  return value_pairs_foreach_sorted(vp, func, (GCompareDataFunc) strcmp,
+  return value_pairs_foreach_sorted(vp, func, (GCompareFunc) strcmp,
                                     msg, seq_num, time_zone_mode, template_options, user_data);
 }
 
@@ -641,21 +689,18 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 static gchar *
 vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
 {
-  SBGString *s = sb_gstring_acquire();
+  GString *s = scratch_buffers_alloc();
   gchar *str;
   gint i;
 
   for (i = 0; i < until; i++)
     {
-      g_string_append(sb_gstring_string(s), g_ptr_array_index(tokens, i));
-      g_string_append_c(sb_gstring_string(s), '.');
+      g_string_append(s, g_ptr_array_index(tokens, i));
+      g_string_append_c(s, '.');
     }
-  g_string_append(sb_gstring_string(s), g_ptr_array_index(tokens, until));
+  g_string_append(s, g_ptr_array_index(tokens, until));
 
-  str = g_strdup(sb_gstring_string(s)->str);
-
-  sb_gstring_release(s);
-
+  str = g_strdup(s->str);
   return str;
 }
 
@@ -758,7 +803,7 @@ value_pairs_walk(ValuePairs *vp,
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
-                                      (GCompareDataFunc)vp_walk_cmp, msg,
+                                      (GCompareFunc)vp_walk_cmp, msg,
                                       seq_num, time_zone_mode, template_options, &state);
   vp_walker_stack_unwind_all_containers(&state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);

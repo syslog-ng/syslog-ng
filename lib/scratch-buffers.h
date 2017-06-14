@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2013 Balabit
- * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2017 Balabit
+ * Copyright (c) 2017 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,66 +22,37 @@
  *
  */
 
-#ifndef SCRATCH_BUFFERS_H_INCLUDED
-#define SCRATCH_BUFFERS_H_INCLUDED 1
+#ifndef SCRATCH_BUFFERS2_H_INCLUDED
+#define SCRATCH_BUFFERS2_H_INCLUDED 1
 
-#include <glib.h>
-#include "type-hinting.h"
+#include "syslog-ng.h"
 
-/* Global API */
+typedef gint32 ScratchBuffersMarker;
 
-typedef struct
-{
-  GTrashStack *(*acquire_buffer)(void);
-  void (*release_buffer)(GTrashStack *stack);
-  void (*free_stack)(void);
-} ScratchBufferStack;
+GString *scratch_buffers_alloc(void);
+GString *scratch_buffers_alloc_and_mark(ScratchBuffersMarker *marker);
+void scratch_buffers_mark(ScratchBuffersMarker *marker);
+void scratch_buffers_reclaim_allocations(void);
+void scratch_buffers_reclaim_marked(ScratchBuffersMarker marker);
 
-static inline GTrashStack *
-scratch_buffer_acquire(ScratchBufferStack *stack)
-{
-  return stack->acquire_buffer();
-}
+gint scratch_buffers_get_global_allocation_count(void);
+gint scratch_buffers_get_local_allocation_count(void);
+glong scratch_buffers_get_local_allocation_bytes(void);
+gint scratch_buffers_get_local_usage_count(void);
+void scratch_buffers_update_stats(void);
 
-static inline void
-scratch_buffer_release(ScratchBufferStack *stack, GTrashStack *buffer)
-{
-  stack->release_buffer(buffer);
-}
+/* lazy stats update */
+void scratch_buffers_lazy_update_stats(void);
 
-void scratch_buffers_register(ScratchBufferStack *stack);
-void scratch_buffers_init(void);
-void scratch_buffers_free(void);
+/* garbage collector */
+void scratch_buffers_explicit_gc(void);
 
-/* GStrings */
+void scratch_buffers_allocator_init(void);
+void scratch_buffers_allocator_deinit(void);
+void scratch_buffers_automatic_gc_init(void);
+void scratch_buffers_automatic_gc_deinit(void);
 
-typedef struct
-{
-  GTrashStack stackp;
-  GString s;
-} SBGString;
-
-extern ScratchBufferStack SBGStringStack;
-
-#define sb_gstring_acquire() ((SBGString *)scratch_buffer_acquire(&SBGStringStack))
-#define sb_gstring_release(b) (scratch_buffer_release(&SBGStringStack, (GTrashStack *)b))
-
-#define sb_gstring_string(buffer) (&buffer->s)
-
-/* Type-hinted GStrings */
-
-typedef struct
-{
-  GTrashStack stackp;
-  GString s;
-  TypeHint type_hint;
-} SBTHGString;
-
-extern ScratchBufferStack SBTHGStringStack;
-
-#define sb_th_gstring_acquire() ((SBTHGString *)scratch_buffer_acquire(&SBTHGStringStack))
-#define sb_th_gstring_release(b) (scratch_buffer_release(&SBTHGStringStack, (GTrashStack *)b))
-
-#define sb_th_gstring_string(buffer) (&buffer->s)
+void scratch_buffers_global_init(void);
+void scratch_buffers_global_deinit(void);
 
 #endif

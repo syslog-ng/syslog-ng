@@ -25,7 +25,7 @@
 #include "mainloop-call.h"
 #include "tls-support.h"
 #include "apphook.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <iv.h>
 
@@ -190,7 +190,7 @@ main_loop_worker_thread_stop(void)
 void
 main_loop_worker_run_gc(void)
 {
-  scratch_buffers2_explicit_gc();
+  scratch_buffers_explicit_gc();
 }
 
 /*

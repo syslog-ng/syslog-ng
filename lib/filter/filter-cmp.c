@@ -24,7 +24,7 @@
 
 #include "filter/filter-cmp.h"
 #include "filter/filter-expr-grammar.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -46,8 +46,8 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterCmp *self = (FilterCmp *) s;
   ScratchBuffersMarker marker;
-  GString *left_buf = scratch_buffers2_alloc_and_mark(&marker);
-  GString *right_buf = scratch_buffers2_alloc();
+  GString *left_buf = scratch_buffers_alloc_and_mark(&marker);
+  GString *right_buf = scratch_buffers_alloc();
   gboolean result = FALSE;
   gint cmp;
 
@@ -85,7 +85,7 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
       result = self->cmp_op & FCMP_GT || self->cmp_op == 0;
     }
 
-  scratch_buffers2_reclaim_marked(marker);
+  scratch_buffers_reclaim_marked(marker);
   return result ^ s->comp;
 }
 

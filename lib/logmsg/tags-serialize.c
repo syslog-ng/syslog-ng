@@ -23,13 +23,13 @@
  */
 
 #include "tags-serialize.h"
-#include "scratch-buffers2.h"
+#include "scratch-buffers.h"
 
 gboolean
 tags_deserialize(LogMessage *msg, SerializeArchive *sa)
 {
   ScratchBuffersMarker marker;
-  GString *buf = scratch_buffers2_alloc_and_mark(&marker);
+  GString *buf = scratch_buffers_alloc_and_mark(&marker);
 
   while (1)
     {
@@ -45,7 +45,7 @@ tags_deserialize(LogMessage *msg, SerializeArchive *sa)
 
   msg->flags |= LF_STATE_OWN_TAGS;
 
-  scratch_buffers2_reclaim_marked(marker);
+  scratch_buffers_reclaim_marked(marker);
   return TRUE;
 }
 
