@@ -861,7 +861,7 @@ dnl ***************************************************************************
 #  * TLS support
 
 dnl check OpenSSL static linking
-PKG_CHECK_MODULES(OPENSSL, 
+PKG_CHECK_MODULES(OPENSSL,
                   openssl >= $OPENSSL_MIN_VERSION,,
                   AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
 
@@ -1254,7 +1254,7 @@ if test "x$enable_python" != "xno"; then
   if test "x$enable_python" = "xyes" -a "x$python_found" = "xno"; then
     AC_MSG_ERROR([Could not find the requested Python development libraries])
   fi
-  enable_python="$python_found" 
+  enable_python="$python_found"
 else
   with_python=""
 fi
