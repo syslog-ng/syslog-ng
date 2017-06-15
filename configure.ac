@@ -861,7 +861,7 @@ dnl ***************************************************************************
 #  * TLS support
 
 dnl check OpenSSL static linking
-PKG_CHECK_MODULES(OPENSSL, 
+PKG_CHECK_MODULES(OPENSSL,
                   openssl >= $OPENSSL_MIN_VERSION,,
                   AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
 
@@ -932,12 +932,16 @@ if test "x$enable_spoof_source" = "xauto"; then
 		LIBNET_CFLAGS=
 		AC_MSG_RESULT(no)
         fi
-elif test "x$enable_spoof_source" = "xyes" && test "x$LIBNET_LIBS" = "x"; then
-        AC_MSG_ERROR([Could not find libnet, and spoof source support was explicitly enabled.])
-else
+elif test "x$enable_spoof_source" = "xyes"; then
+  if test "x$LIBNET_LIBS" = "x"; then
+    AC_MSG_ERROR([Could not find libnet, and spoof source support was explicitly enabled.])
+  fi
+elif test "x$enable_spoof_source" = "xno"; then
 	LIBNET_CFLAGS=""
 	LIBNET_LIBS=""
 	enable_spoof_source=no
+else
+  AC_MSG_ERROR([Invalid value ($enable_spoof_source) for enable-spoof-source])
 fi
 
 dnl ***************************************************************************
@@ -1250,7 +1254,7 @@ if test "x$enable_python" != "xno"; then
   if test "x$enable_python" = "xyes" -a "x$python_found" = "xno"; then
     AC_MSG_ERROR([Could not find the requested Python development libraries])
   fi
-  enable_python="$python_found" 
+  enable_python="$python_found"
 else
   with_python=""
 fi
