@@ -408,7 +408,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
             {
               g_queue_push_tail(q, msg);
               /* we restore the queue without ACKs */
-              g_queue_push_tail(q, GINT_TO_POINTER(0x80000000));
+              g_queue_push_tail(q, LOG_PATH_OPTIONS_FOR_BACKLOG);
             }
           else
             {
@@ -1015,4 +1015,3 @@ qdisk_new()
   QDisk *self = g_new0(QDisk, 1);
   return self;
 }
-

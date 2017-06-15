@@ -50,6 +50,7 @@ struct _LogQueue
   StatsCounterItem *queued_messages;
   StatsCounterItem *dropped_messages;
   StatsCounterItem *memory_usage;
+  gssize memory_usage_initial_value;
 
   GStaticMutex lock;
   LogQueuePushNotifyFunc parallel_push_notify;

@@ -170,10 +170,8 @@ log_writer_get_queue(LogWriter *s)
 
 /* consumes the reference */
 void
-log_writer_set_queue(LogWriter *s, LogQueue *queue)
+log_writer_set_queue(LogWriter *self, LogQueue *queue)
 {
-  LogWriter *self = (LogWriter *)s;
-
   log_queue_unref(self->queue);
   self->queue = log_queue_ref(queue);
   log_queue_set_use_backlog(self->queue, TRUE);
