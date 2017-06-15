@@ -123,7 +123,7 @@ struct _MainLoop
    * Were the two operations serialized by some kind of queue, the problems
    * would be gone.
    */
-  gboolean __is_terminating;
+  gboolean _is_terminating;
 
   /* signal handling */
   struct iv_signal sighup_poll;
@@ -198,7 +198,7 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 static inline gboolean
 main_loop_is_terminating(MainLoop *self)
 {
-  return self->__is_terminating;
+  return self->_is_terminating;
 }
 
 /* called to apply the new configuration once all I/O worker threads have finished */
@@ -214,6 +214,7 @@ main_loop_reload_config_apply(gpointer user_data)
           cfg_free(self->new_config);
           self->new_config = NULL;
         }
+      is_reloading_scheduled = FALSE;
       return;
     }
   self->old_config->persist = persist_config_new();
@@ -270,20 +271,13 @@ main_loop_reload_config_initiate(gpointer user_data)
 
   if (main_loop_is_terminating(self))
     return;
+  if (is_reloading_scheduled)
+    {
+      msg_notice("Error initiating reload, reload is already ongoing");
+      return;
+    }
 
   service_management_publish_status("Reloading configuration");
-
-  if (self->new_config)
-    {
-      /* This block is entered only if this function is reentered before
-       * main_loop_reload_config_apply() would be called.  In that case we
-       * drop the previously parsed configuration and start over again to
-       * ensure that the contents of the running configuration matches the
-       * contents of the file at the time the SIGHUP signal was received.
-       */
-      cfg_free(self->new_config);
-      self->new_config = NULL;
-    }
 
   self->old_config = self->current_configuration;
   app_pre_config_loaded();
@@ -298,6 +292,8 @@ main_loop_reload_config_initiate(gpointer user_data)
       service_management_publish_status("Error parsing new configuration, using the old config");
       return;
     }
+
+  is_reloading_scheduled = TRUE;
   main_loop_worker_sync_call(main_loop_reload_config_apply, self);
 }
 
@@ -343,7 +339,7 @@ main_loop_exit_initiate(gpointer user_data)
   self->exit_timer.cookie = self;
   timespec_add_msec(&self->exit_timer.expires, 100);
   iv_timer_register(&self->exit_timer);
-  self->__is_terminating = TRUE;
+  self->_is_terminating = TRUE;
 }
 
 

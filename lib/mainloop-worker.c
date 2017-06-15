@@ -25,6 +25,7 @@
 #include "mainloop-call.h"
 #include "tls-support.h"
 #include "apphook.h"
+#include "messages.h"
 #include "scratch-buffers.h"
 
 #include <iv.h>
@@ -50,16 +51,15 @@ TLS_BLOCK_END;
 #define batch_callbacks    __tls_deref(batch_callbacks)
 #define main_loop_worker_type __tls_deref(main_loop_worker_type)
 
+GQueue sync_call_actions = G_QUEUE_INIT;
 
 /* cause workers to stop, no new I/O jobs to be submitted */
 volatile gboolean main_loop_workers_quit;
+volatile gboolean is_reloading_scheduled;
 
 /* number of I/O worker jobs running */
 static gint main_loop_workers_running;
 
-/* the function to be killed when all threads have exited */
-static void (*main_loop_workers_sync_func)(gpointer user_data);
-gpointer main_loop_workers_sync_func_user_data;
 static struct iv_task main_loop_workers_reenable_jobs_task;
 
 /* thread ID allocation */
@@ -205,6 +205,38 @@ main_loop_worker_job_start(void)
   main_loop_workers_running++;
 }
 
+typedef struct
+{
+  void (*func)(gpointer user_data);
+  gpointer user_data;
+} SyncCallAction;
+
+void
+_register_sync_call_action(GQueue *q, void (*func)(gpointer user_data), gpointer user_data)
+{
+
+  SyncCallAction *action = g_new0(SyncCallAction, 1);
+  action->func = func;
+  action->user_data = user_data;
+
+  g_queue_push_tail(q, action);
+
+}
+
+void
+_consume_action(SyncCallAction *action, gpointer dummy)
+{
+  action->func(action->user_data);
+  g_free(action);
+}
+
+static void
+_invoke_sync_call_actions()
+{
+  g_queue_foreach(&sync_call_actions, (GFunc)_consume_action, NULL);
+  g_queue_clear(&sync_call_actions);
+}
+
 /*
  * This function is called in the main thread after a job was finished in
  * one of the worker threads.
@@ -250,7 +282,7 @@ main_loop_worker_job_complete(void)
        */
 
       iv_task_register(&main_loop_workers_reenable_jobs_task);
-      main_loop_workers_sync_func(main_loop_workers_sync_func_user_data);
+      _invoke_sync_call_actions();
     }
 }
 
@@ -335,27 +367,23 @@ static void
 _reenable_worker_jobs(void *s)
 {
   main_loop_workers_quit = FALSE;
-  main_loop_workers_sync_func = NULL;
+  if (is_reloading_scheduled)
+    msg_notice("Configuration reload finished");
+  is_reloading_scheduled = FALSE;
 }
 
 void
 main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
 {
-#if 0
-  /* FIXME */
-  g_assert(main_loop_workers_sync_func == NULL || main_loop_workers_sync_func == func || under_termination);
-#endif
 
-  g_assert(main_loop_workers_sync_func == NULL || main_loop_workers_sync_func == func);
+  _register_sync_call_action(&sync_call_actions, func, user_data);
 
   if (main_loop_workers_running == 0)
     {
-      func(user_data);
+      _invoke_sync_call_actions();
     }
   else
     {
-      main_loop_workers_sync_func = func;
-      main_loop_workers_sync_func_user_data = user_data;
       _request_all_threads_to_exit();
     }
 }
