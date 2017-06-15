@@ -31,8 +31,6 @@
 
 typedef struct _LogQueueDisk LogQueueDisk;
 
-#define LOG_PATH_OPTIONS_FOR_BACKLOG GINT_TO_POINTER(0x80000000)
-
 struct _LogQueueDisk
 {
   LogQueue super;

@@ -28,11 +28,47 @@
 
 #define ITEM_NUMBER_PER_MESSAGE 2
 
+typedef struct
+{
+  guint index_in_queue;
+  guint item_number_per_message;
+  gssize *memory_usage_initial_value;
+} DiskqMemusageLoaderState;
+
+static gboolean
+_object_is_message_in_position(guint index_in_queue, guint item_number_per_message)
+{
+  return !(index_in_queue % item_number_per_message);
+}
+
+static void
+_update_memory_usage_during_load(gpointer data, gpointer s)
+{
+  DiskqMemusageLoaderState *state = (DiskqMemusageLoaderState *)s;
+
+  if (_object_is_message_in_position(state->index_in_queue, state->item_number_per_message))
+    {
+      LogMessage *msg = (LogMessage *)data;
+      *state->memory_usage_initial_value += log_msg_get_size(msg);
+    }
+  state->index_in_queue++;
+}
+
 static gboolean
 _start(LogQueueDisk *s, const gchar *filename)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
-  return qdisk_start(s->qdisk, filename, self->qout, self->qbacklog, self->qoverflow);
+
+  gboolean retval = qdisk_start(s->qdisk, filename, self->qout, self->qbacklog, self->qoverflow);
+
+  DiskqMemusageLoaderState state = { .index_in_queue = 0,
+                                     .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
+                                     .memory_usage_initial_value = &self->super.super.memory_usage_initial_value
+                                   };
+
+  g_queue_foreach(self->qout, _update_memory_usage_during_load, &state);
+
+  return retval;
 }
 
 static inline guint
