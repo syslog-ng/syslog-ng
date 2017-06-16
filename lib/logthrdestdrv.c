@@ -318,6 +318,14 @@ log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
                                  self, &self->worker_options);
 }
 
+static void
+_update_processed_message_counter_when_diskq_is_used(LogThrDestDriver *self)
+{
+  if (!g_strcmp0(self->queue->type, "DISK"))
+    {
+      stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
+    }
+}
 
 gboolean
 log_threaded_dest_driver_start(LogPipe *s)
@@ -351,7 +359,7 @@ log_threaded_dest_driver_start(LogPipe *s)
 
   log_queue_set_counters(self->queue, self->queued_messages,
                          self->dropped_messages, self->memory_usage);
-  stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
+  _update_processed_message_counter_when_diskq_is_used(self);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                                            log_threaded_dest_driver_format_seqnum_for_persist(self)));
