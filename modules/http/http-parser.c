@@ -45,6 +45,7 @@ static CfgLexerKeyword http_keywords[] =
   { "cipher_suite", KW_CIPHER_SUITE },
   { "ssl_version",  KW_SSL_VERSION },
   { "peer_verify",  KW_PEER_VERIFY },
+  { "timeout",      KW_TIMEOUT },
   { NULL }
 };
 

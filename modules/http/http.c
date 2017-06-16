@@ -175,6 +175,8 @@ _set_curl_opt(HTTPDestinationDriver *self)
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
 
+  curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, self->timeout);
+
   if (self->method_type == METHOD_TYPE_PUT)
     curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
 }
@@ -408,6 +410,14 @@ http_dd_set_peer_verify(LogDriver *d, gboolean verify)
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   self->peer_verify = verify;
+}
+
+void
+http_dd_set_timeout(LogDriver *d, glong timeout)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->timeout = timeout;
 }
 
 gboolean
