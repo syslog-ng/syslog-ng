@@ -349,7 +349,6 @@ log_queue_disk_reliable_new(DiskQueueOptions *options)
   qdisk_init(self->super.qdisk, options);
   self->qreliable = g_queue_new();
   self->qbacklog = g_queue_new();
-  self->super.super.type = log_queue_disk_type;
   _set_virtual_functions(&self->super);
   return &self->super.super;
 }
