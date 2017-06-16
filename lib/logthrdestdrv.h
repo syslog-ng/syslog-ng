@@ -54,6 +54,7 @@ struct _LogThrDestDriver
   StatsCounterItem *memory_usage;
 
   gboolean suspended;
+  gboolean under_termination;
   time_t time_reopen;
 
   LogQueue *queue;
