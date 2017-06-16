@@ -1286,6 +1286,15 @@ _register_counters(LogWriter *self)
 
 }
 
+static void
+_update_processed_message_counter_when_diskq_is_used(LogWriter *self)
+{
+  if (!g_strcmp0(self->queue->type, "DISK"))
+    {
+      stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
+    }
+}
+
 static gboolean
 log_writer_init(LogPipe *s)
 {
@@ -1301,7 +1310,7 @@ log_writer_init(LogPipe *s)
     _register_counters(self);
 
   log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
-  stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
+  _update_processed_message_counter_when_diskq_is_used(self);
   if (self->proto)
     {
       LogProtoClient *proto;
