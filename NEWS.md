@@ -1,122 +1,216 @@
-3.9.1
+3.10.1
 
-<!-- Tue, 20 Dec 2016 11:59:09 +0100 -->
+<!-- Sun, 18 Jun 2017 16:26:18 +0200 -->
 
 # Features
- * Improve parsing performance in case of keep-timestamp(no), earlier the
-   timestamp was parsed and then dropped, now we don't parse it, which is a
-   2x performance improvement in reception speed.
 
- * TLS based transports will publish the peer's certificate in a set of
-   name-value pairs, as follows:
+ * Support https in http (curl) module
 
-    * .tls.x509_cn - X.509 common name
-    * .tls.x509_o  - X.509 organization string
-    * .tls.x509_ou - X.509 organizational unit
+ * Docker support : from now Dockerfile for CentOS7, Ubuntu Zesty and for
+   Debian Jessie is part of our upstream
 
- * Improve performance of the tcp() source, due to a bug, syslog-ng
-   attempted to apply position tracking to messages coming over a TCP
-   transport, which is used for file position tracking and causing
-   performance degradation. This bug is fixed, causing performance to be
-   increased. (#1195)
+ * Add --database parameter for geoip template function
 
- * Make it possible to configure the listen-backlog() for any stream based
-   transports (unix-stream and tcp).  Earlier this was hard-wired at 256
-   connections, now can be tuned using an option. For example:
+ * Metric improvements
+     * add discarded messages for parsers
+     * add matched/not matched counter for filters
+     * add memory_usage counter to logqueue
+     * add written counter
+        * Written is a calculated counter which return the written messages
+          by destinations. Written message is which was processed but not
+          queued and not dropped. (written = processed - queued - dropped)
+     * stats-counters: rename stored counter to queued
+     * add global_allocated_logmsg_size counter for tracking memory logmsg
+       related allocations
 
-     tcp(port(6514) listen-backlog(2048));
+ * Add snmp-parser (v1, v2)
+     * parses snmptrapd log
+     * The parsed information is available as key-value pairs, which can be
+       used/serialized (macros, format-json, etc.) in the log path.
+       If you want to send the message in a structured way, you can disable the
+       default message generation with the `generate-message(no)` option.
 
- * Add a groupunset() rewrite rule that pairs up with groupset() but instead
-   of setting values it unsets them. (#1235)
+ * Add snmp-soure
+    * available as an SCL block that containing a filesource and an SNMP parser
+    modules: add snmptrapd parser
 
- * Add support for Elastic Shield (#1228) and SearchGuard (#1223)
+ * Add osquery source
+   * available as an SCL block
+   * It reads the osquery log file and parses with the JSON parser,
+     creating name-vaule pairs with an .osquery. prefix by default.
 
- * kv-parser() is now able to cope with unquoted values with an embedded
-   space in them, it also trims whitespace from keys/values and is in
-   general more reliable in extracting key-value pairs from arbitrary log
-   messages.
+ * Add cisco-parser
+   * available as an SCL block
 
- * Improve performance for java based destinations. (#1243)
+ * Add wildcard filesource
 
- * Add prefix() option to add-contextual-data()
+ * Add startdate template function
+
+ * Add $(basename) and $(dirname) template functions
+
+ * Add Kerberos support for HDFS destination
+
+ * Add AUTH support for redis destination
+
+ * Add map-value-pairs() parser
+    * it can be used to map existing name-value pairs to a different set during
+      processing, in bulk.  Normal value-pairs expressions can be used, just
+      like with value-pairs based destinations.
+
+ * Extend Python language binding by Python parser
+
+ * Add support for extract-stray-words() option in kv-parser()
+    * stray words: those words that happen to be between key-value pairs and
+      are otherwise not recognized either as keys nor as values.
+
+ * Add $(context-values) template function
+
+ * Add $(context-lookup) function
+
+ * Add list related template functions
+    * $(list-head list ...)          returns the first element (unquoted)
+    * $(list-nth NDX list ...)       returns the specific element (unquoted)
+    * $(list-concat list1 list2 ...) returns a list containing the concatenated
+                                     list
+    * $(list-append list elem1 elem2 ...) returns a list, appending elem1,
+                                     elem2 ...
+    * $(list-tail list ...)          returns a list containing everything except
+                                     for the first element
+    * $(list-slice FROM:TO list ...) returns a list containing the slice
+                                     [FROM:TO), Python style slice
+                                   boundaries are supported (e.g. negative)
+    * $(list-count ...)              returns the number of elements in list
+
+ * Add add query commands to syslog-ng-ctl
+    * query list	<filter>		 List names of counters which match the filter
+    * query get <filter>			 Get names and values of counters which match the
+                               filter
+    * query get --sum <filter> Get the sum of values of counters which match the
+                               filter
+
+ * Support multiple servers in elasticsearch2-http destination
+
+ * Implements elastic-v2 https in http mode
+
+ * Add getent module (ported from incubator)
+    * This module adds $(getent) that allows one to look up various NSS based
+      databases, such as passwd, services or protocols.
+
+ *  Add support for IP_FREEBIND
 
 
 # Bugfixes
- * Fix a potential crash in the file destination, in case it is a template
-   based filename and time-reap() is elapsed. (#1183)
 
- * Fix a potential ACK problem within syslog-ng that can cause input windows
-   to overflow queue sizes over time, effectively causing message drops that
-   shouldn't occur. (#1230)
+ * Fix a libnet detection check error that caused problem configuring
+   enable-spoof-source.
 
- * Fix a heap corruption bug in the DNS cache, in case the maximum number of
-   DNS cache entries is reached. (#1218)
+ * Avoid warnings about _DEFAULT_SOURCE on recent glibc versions
+   With the glibc on zesty, using _GNU_SOURCE and not defining _DEFAULT_SOURCE
+   results in a warning, avoid that by defining _DEFAULT_SOURCE as well.
 
- * Fix timestamp for suppression messages. (#1233)
+ * Fix invalid database warning for geoip parser
 
- * Fix add-contextual-data() to support CRLF line endings in its CSV input
-   files.
+ * Fix prefix() default in systemd-journal for new config versions
 
- * Fixed key() option parsing in riemann() destinations.
+ * Fix a potential message loss in Riemann destination
 
- * Find libsystemd-journal related functions in both libsystemd-journal.so
-   and libsystemd.so, as recent systemd versions bundled all systemd
-   related libs into the same library.
+ * Fix a potential crash in the Riemann destination when the client is not
+   connected to the Riemann server.
 
- * Fixed the build-time detection of system-wide installed librabbitmq,
-   libmongoc and libcap.
+ * Fix a possible add-contextual-data() related data loss in case of multiple
+   reference to the same add-contextual-data parser in several logpaths.
 
- * Fix the file source to repeatedly check for unexisting files, as a bug
-   caused syslog-ng to stop after two attempts previously. (#841)
+ * Fix dbparser deadlock
 
- * The performance testing tool "loggen" crashed if it was used to generate
-   messages on multiple threads over TLS. This was now fixed. (#1182)
+ * Fix Python destination
+     * open() was not called in every time_reopen()
+     * python destination is not defined in stats output
 
- * Fix an issue in the syslog-parser() parser, so that timestamps parsed
-   earlier in the log path are properly overwritten.  Earlier a time-zone
-   setting may have remained in the timestamp in case the first timestamp
-   did contain a timezone and then the one parsed by syslog-parser() didn't.
-   (#1206)
+ * Fix processed stats counter for afsocket
 
- * Due to a compilation issue, tcp-keepalive-time(), tcp-keepalive-intvl() and
-   tcp-keepalive-probes() were not working, now they are again. (#1214)
+ * Fix stats source for pipes
+   * Previously pipe source is shown as file
 
- * The --disable-shm-counters option is now passed to mongo-c-driver to work
-   around a minor security issue (#1219).
+ * Fix csv-parser multithreaded support
+   In some cases (when csv-parser attached to network source), the parser
+   randomly filled the column macros with garbage.
 
-     https://jira.mongodb.org/plugins/servlet/mobile#issue/CDRIVER-1691/comment/1405406
+ * Fix a message loss in case of filesource when syslog-ng was restarted and
+   the log_msg_size > file size.
 
- * Fix compilation issues on FreeBSD. (#1252)
+ * Fix a potential crash in cryptofuncs
 
- * Add support to month names in all caps in syslog timestamps. At least one
-   device seems to generate these. (#1263)
+ * Fix a potential crash in syslog-ng-ctl when no command line parameters was
+   set.
 
- * The options() option to java destination can now accept numbers and not
-   just strings.
+ * Fix token duplication in the output of '--preprocess-into'
 
- * Fix a memory leak in the java destination driver, that may affect java
-   based destinations like ElasticSearch, Kafka & HDFS.
+ * Fix UTF-8 support in syslog-ng-ctl
+
+ * Fix a potential crash during X.509 certificate validation.
+
+ * Fix a segfault in Python module startup
+
+ * Fix a possible endless reading loop issue in case of multi-line filesource.
+
+ * Fix soname for the http module from "curl" to "http"
+
+ * Avoid openssl 1.1.0 deprecated APIs
+   When openssl is built with `--api=1.1 disable-deprecated`, use of deprecated
+   APIs results in build failure.
+
+
 
 # Other changes
 
- * HDFS was updated to 2.7.3
+ * Increase processed counter by queued counter after reload or restart when
+   diskqueue is used otherwise the newly added written counter would underflow.
 
- * Elasticsearch was updated to 2.4.0
+ * Set the default time-zone to UTC for elasticsearch2
+   Elasticsearch and Kibana use UTC internally.
 
- * Support was added for OpenSSL 1.1.x (#1281)
+ * Add retries support for python destination
+
+ * Prefer server side cipher suite order
+
+ * Always include librabbitmq in the dist tarball
+
+ * Always include ivykis in the dist tarball
+
+ * Marking parse error locations with >@<.
+
+ * Default log_msg_size is increased to 64Kbyte from 8Kb
+ 
+ * Tons of syslog-debun improvements
+
+ * Exit with 0 return code when --help is specified for syslog-ng-ctl
+
+ * syslog-ng: make '--preprocess-into' foreground only
+
+ * Add debug messages on log_msg_set_value()
+
+ * Add more detail to filter evaluation related debug messages
+
 
 # Notes to the Developers
 
- * We started to standardize our tests on the criterion unit testing
-   framework, please submit all new tests using this framework. Patches to
-   convert existing ones are also welcome.
-   https://github.com/Snaipe/Criterion
+ * Extract template perf test function to testlib
 
- * We also added a configuration file for astyle and accompanying make
-   targets to check/reformat the source code to meet syslog-ng's style.
+ * Print a debug message when logmsg passed to the Python side
 
- * debian/ directory has been removed from the "master" branch and is now
-   maintained in a separate "release" branch.
+ * Allow http module (curl) to be build with cmake
+
+ * astylerc: allow continuation lines to start until column 60
+
+ * Move kv-scanner under syslog-ng/lib
+
+ * scratch-buffers2: implement an alternative to current scratch buffers
+    This new API is aimed a bit easier to use in situations where a throw away
+    buffer is needed that will automatically be freed at the next message.
+    It also gets does away with GTrashStack that is deprecated in recent glib
+    versions.
+
+ * Several refactors in stats module.
 
 # Credits
 
@@ -129,6 +223,9 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Lászlo Várady, 0xddaa, Balázs Scheidler, Tamás Nagy, László Budai,
-Fabien Wernli, Viktor Juhász, Kyle Manna, Michael Wimpy, Noémi Ványi,
-Attila Szalay, Tibor Bodnár, Zoltán Pallagi
+Andras Mitzki, Antal Nemes, Balazs Scheidler, eroen, Fabien Wernli, Gabor Nagy,
+Gergely Nagy, Jason Hensley, Laszlo Varady, Laszlo Budai, Mate Farkas, 
+Noemi Vanyi, Peter Czanik, Peter Gervai, Todd C. Miller, Philip Prindeville,
+Zoltan Pallagi
+
+
