@@ -1,3 +1,18 @@
+syslog-ng (3.10.1-1) experimental; urgency=low
+
+  [ Laszlo Budai <laszlo.budai@balabit.com>]
+  * 3.10.1 release
+  * https://github.com/balabit/syslog-ng/releases/tag/syslog-ng-3.10.1
+  * new packages:
+    * syslog-ng-mod-getent
+    * syslog-ng-mod-stardate
+    * syslog-ng-mod-map-value-pairs
+    * syslog-ng-mod-pacctformat
+    * syslog-ng-mod-snmptrapd-parser
+
+
+ -- Laszlo Budai <laszlo.budai@balabit.com>  Mon, 19 Jun 2017 11:18:04 +0200
+
 syslog-ng (3.9.1-1) experimental; urgency=low
 
   [ Laszlo Budai <laszlo.budai@balabit.com> ]

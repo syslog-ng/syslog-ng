@@ -64,7 +64,12 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-core.dirs \
 		debian/syslog-ng-core.syslog-ng.upstart \
 		debian/syslog-ng-mod-graphite.install \
-		debian/syslog-ng-mod-add-contextual-data.install
+		debian/syslog-ng-mod-add-contextual-data.install \
+		debian/syslog-ng-mod-getent.install \
+		debian/syslog-ng-mod-stardate.install \
+		debian/syslog-ng-mod-map-value-pairs.install \
+		debian/syslog-ng-mod-pacctformat.install \
+		debian/syslog-ng-mod-snmptrapd-parser.install
 
 
 
