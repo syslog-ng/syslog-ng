@@ -91,6 +91,7 @@ override_dh_auto_configure:
 		--enable-manpages \
 		--enable-python \
 		--enable-java \
+		--enable-pacct \
 		--with-libmongo-client=system \
 		--with-ivykis=system \
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/${UMAJOR}' \
