@@ -61,12 +61,18 @@ _start(LogQueueDisk *s, const gchar *filename)
 
   gboolean retval = qdisk_start(s->qdisk, filename, self->qout, self->qbacklog, self->qoverflow);
 
-  DiskqMemusageLoaderState state = { .index_in_queue = 0,
-                                     .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
-                                     .memory_usage_initial_value = &self->super.super.memory_usage_initial_value
-                                   };
+  DiskqMemusageLoaderState qout_sum = { .index_in_queue = 0,
+                                        .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
+                                        .memory_usage_initial_value = &self->super.super.memory_usage_qout_initial_value
+                                      };
 
-  g_queue_foreach(self->qout, _update_memory_usage_during_load, &state);
+  DiskqMemusageLoaderState overflow_sum = { .index_in_queue = 0,
+                                            .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
+                                            .memory_usage_initial_value = &self->super.super.memory_usage_overflow_initial_value
+                                          };
+
+  g_queue_foreach(self->qout, _update_memory_usage_during_load, &qout_sum);
+  g_queue_foreach(self->qoverflow, _update_memory_usage_during_load, &overflow_sum);
 
   return retval;
 }
