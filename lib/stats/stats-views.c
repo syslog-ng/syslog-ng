@@ -25,6 +25,15 @@
 
 #include "stats-views.h"
 
+static gchar *
+_construct_view_name(StatsCluster *cluster, gchar *view_name)
+{
+  GString *name = g_string_new(cluster->query_key);
+  name = g_string_append(name, ".");
+  name = g_string_append(name, view_name);
+  return g_string_free(name, FALSE);
+}
+
 static void
 _calculate_written_messages(GList *counters, StatsCounterItem **result)
 {
@@ -57,20 +66,11 @@ _calculate_written_messages(GList *counters, StatsCounterItem **result)
   stats_counter_set(*result, written);
 }
 
-static gchar *
-_construct_view_name(StatsCluster *cluster)
-{
-  GString *name = g_string_new(cluster->query_key);
-  name = g_string_append(name, ".written");
-  return g_string_free(name, FALSE);
-}
-
 static void
-_index_required_written_counters(StatsCluster *cluster)
+_index_required_counters(StatsCluster *cluster, gint *counter_types, gint counter_count)
 {
-  stats_query_index_counter(cluster, SC_TYPE_QUEUED);
-  stats_query_index_counter(cluster, SC_TYPE_DROPPED);
-  stats_query_index_counter(cluster, SC_TYPE_PROCESSED);
+  for (gint i = 0; i < counter_count; i++)
+    stats_query_index_counter(cluster, counter_types[i]);
 }
 
 void
@@ -78,10 +78,12 @@ stats_register_written_view(StatsCluster *cluster, StatsCounterItem *processed, 
                             StatsCounterItem *queued)
 {
   GList *written_query = NULL;
+  gint counter_types[] = { SC_TYPE_QUEUED, SC_TYPE_DROPPED, SC_TYPE_PROCESSED };
+  gsize counter_types_len = sizeof(counter_types) / sizeof(counter_types[0]);
   gchar *written_view_name;
 
-  written_view_name = _construct_view_name(cluster);
-  _index_required_written_counters(cluster);
+  written_view_name = _construct_view_name(cluster, "written");
+  _index_required_counters(cluster, counter_types, counter_types_len);
 
   written_query = g_list_append(written_query, g_strdup(stats_counter_get_name(queued)));
   written_query = g_list_append(written_query, g_strdup(stats_counter_get_name(processed)));
