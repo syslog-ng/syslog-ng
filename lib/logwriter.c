@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-views.h"
+#include "stats/stats-cluster-single.h"
 #include "hostname.h"
 #include "host-resolve.h"
 #include "seqnum.h"
@@ -37,6 +38,7 @@
 #include "ml-batched-timer.h"
 #include "str-format.h"
 #include "scratch-buffers.h"
+#include "logqueue.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -1304,7 +1306,7 @@ _register_counters(LogWriter *self)
 static void
 _update_processed_message_counter_when_diskq_is_used(LogWriter *self)
 {
-  if (!g_strcmp0(self->queue->type, LOG_QUEUE_DISK_TYPE))
+  if (!g_strcmp0(log_queue_get_type(self->queue), "DISK"))
     {
       stats_counter_add(self->counters.processed_messages, stats_counter_get(self->counters.queued_messages));
     }

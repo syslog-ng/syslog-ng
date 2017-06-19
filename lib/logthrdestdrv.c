@@ -24,6 +24,7 @@
 
 #include "stats/stats-views.h"
 #include "logthrdestdrv.h"
+#include "logqueue.h"
 #include "seqnum.h"
 
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
@@ -321,9 +322,9 @@ log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
 static void
 _update_processed_message_counter_when_diskq_is_used(LogThrDestDriver *self)
 {
-  if (!g_strcmp0(self->queue->type, LOG_QUEUE_DISK_TYPE))
+  if (!g_strcmp0(log_queue_get_type(self->queue), "DISK"))
     {
-      stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
+      stats_counter_add(self->counters.processed_messages, stats_counter_get(self->counters.queued_messages));
     }
 }
 
