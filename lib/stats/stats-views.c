@@ -24,6 +24,7 @@
 
 
 #include "stats-views.h"
+#include "stats-cluster-single.h"
 
 static gchar *
 _construct_view_name(StatsCluster *cluster, gchar *view_name)
@@ -90,4 +91,45 @@ stats_register_written_view(StatsCluster *cluster, StatsCounterItem *processed, 
   written_query = g_list_append(written_query, g_strdup(stats_counter_get_name(dropped)));
 
   stats_register_view(written_view_name, written_query, _calculate_written_messages);
+}
+
+void
+_calculate_fifo_fillup_rate(GList *counters, StatsCounterItem **result)
+{
+  StatsCounterItem *number_of_messages_in_queue = NULL, *queue_capacity = NULL;
+  gint rate = 0;
+
+  for (GList *c = counters; c; c = c->next)
+    {
+      StatsCounterItem *counter = c->data;
+      if (counter->type == SC_TYPE_SINGLE_VALUE && g_str_has_suffix(stats_counter_get_name(counter), ".mem_capacity_count"))
+        queue_capacity = counter;
+      else if (counter->type == SC_TYPE_QUEUED)
+        number_of_messages_in_queue = counter;
+    }
+
+  g_assert(number_of_messages_in_queue != NULL || queue_capacity != NULL);
+
+  rate = stats_counter_get(number_of_messages_in_queue) * 100 / stats_counter_get(queue_capacity);
+  stats_counter_set(*result, rate);
+}
+
+void
+stats_register_fifo_fillup_rate(StatsCluster *cluster_of_actual, StatsCluster *cluster_of_max, StatsCounterItem *actual,
+                                StatsCounterItem *max)
+{
+  GList *fillup_rate_query = NULL;
+  gint counter_type_of_actual[] = { SC_TYPE_QUEUED };
+  gint counter_type_of_max[] = { SC_TYPE_SINGLE_VALUE };
+
+  g_assert(actual != NULL || max != NULL || cluster_of_actual != NULL || cluster_of_max != NULL);
+
+  gchar *fillup_rate_name = _construct_view_name(cluster_of_actual, "mem_fillup_rate");
+  _index_required_counters(cluster_of_actual, counter_type_of_actual, 1);
+  _index_required_counters(cluster_of_max, counter_type_of_max, 1);
+
+  fillup_rate_query = g_list_append(fillup_rate_query, g_strdup(stats_counter_get_name(actual)));
+  fillup_rate_query = g_list_append(fillup_rate_query, g_strdup(stats_counter_get_name(max)));
+
+  stats_register_view(fillup_rate_name, fillup_rate_query, _calculate_fifo_fillup_rate);
 }
