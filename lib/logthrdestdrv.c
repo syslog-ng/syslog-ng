@@ -321,7 +321,7 @@ log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
 static void
 _update_processed_message_counter_when_diskq_is_used(LogThrDestDriver *self)
 {
-  if (!g_strcmp0(self->queue->type, "DISK"))
+  if (!g_strcmp0(self->queue->type, LOG_QUEUE_DISK_TYPE))
     {
       stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
     }

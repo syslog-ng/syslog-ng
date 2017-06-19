@@ -40,7 +40,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-const QueueType log_queue_disk_type = "DISK";
+const gchar *LOG_QUEUE_DISK_TYPE = "DISK";
 
 static gint64
 _get_length(LogQueue *s)
@@ -343,7 +343,7 @@ log_queue_disk_init_instance(LogQueueDisk *self)
   log_queue_init_instance(&self->super,NULL);
   self->qdisk = qdisk_new();
 
-  self->super.type = log_queue_disk_type;
+  self->super.queue_type = LOG_QUEUE_DISK_TYPE;
   self->super.get_length = _get_length;
   self->super.push_tail = _push_tail;
   self->super.push_head = _push_head;
