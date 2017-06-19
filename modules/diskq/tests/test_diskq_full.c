@@ -72,14 +72,15 @@ test_diskq_become_full(gboolean reliable)
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->dropped_messages);
-  stats_counter_set(q->dropped_messages, 0);
+  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->counters.external.dropped_messages);
+  stats_counter_set(q->counters.external.dropped_messages, 0);
   stats_unlock();
   unlink(DISKQ_FILENAME);
   log_queue_disk_load_queue(q, DISKQ_FILENAME);
   feed_some_messages(q, 1000, &parse_options);
 
-  assert_gint(q->dropped_messages->value, 1000, "Bad dropped message number (reliable: %s)", reliable ? "TRUE" : "FALSE");
+  assert_gint(q->counters.external.dropped_messages->value, 1000, "Bad dropped message number (reliable: %s)",
+              reliable ? "TRUE" : "FALSE");
 
   log_queue_unref(q);
   disk_queue_options_destroy(&options);

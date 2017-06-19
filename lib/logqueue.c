@@ -169,15 +169,12 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
 }
 
 void
-log_queue_set_counters(LogQueue *self, StatsCounterItem *queued_messages, StatsCounterItem *dropped_messages,
-                       StatsCounterItem *memory_usage)
+log_queue_set_counters(LogQueue *self, LogQueueCountersExternal counters)
 {
-  self->queued_messages = queued_messages;
-  self->dropped_messages = dropped_messages;
-  self->memory_usage = memory_usage;
-  stats_counter_set(self->memory_usage,
+  self->counters.external = counters;
+  stats_counter_set(self->counters.external.queued_messages, log_queue_get_length(self));
+  stats_counter_set(self->external.memory_usage,
                     self->memory_usage_qout_initial_value + self->memory_usage_overflow_initial_value);
-  stats_counter_set(self->queued_messages, log_queue_get_length(self));
 }
 
 void
