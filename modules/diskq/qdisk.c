@@ -1015,3 +1015,9 @@ qdisk_new()
   QDisk *self = g_new0(QDisk, 1);
   return self;
 }
+
+gint64
+qdisk_get_capacity(QDisk *self)
+{
+  return self->options->disk_buf_size;
+}

@@ -68,6 +68,7 @@ struct _LogQueue
   void (*ack_backlog)(LogQueue *self, gint n);
   void (*rewind_backlog)(LogQueue *self, guint rewind_count);
   void (*rewind_backlog_all)(LogQueue *self);
+  gint (*capacity_fn)(LogQueue *self);
 
   void (*free_fn)(LogQueue *self);
 };
@@ -192,6 +193,14 @@ log_queue_set_use_backlog(LogQueue *self, gboolean use_backlog)
 {
   if (self)
     self->use_backlog = use_backlog;
+}
+
+static inline gint
+log_queue_get_capacity(LogQueue *self)
+{
+  if (self->capacity_fn)
+    return self->capacity_fn(self);
+  return 0;
 }
 
 void log_queue_push_notify(LogQueue *self);

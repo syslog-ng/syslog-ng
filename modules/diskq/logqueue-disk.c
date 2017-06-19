@@ -55,6 +55,13 @@ _get_length(LogQueue *s)
   return qdisk_length;
 }
 
+static gint
+_get_capacity(LogQueue *s)
+{
+  LogQueueDisk *self = (LogQueueDisk *) s;
+  return qdisk_get_capacity(self->qdisk);
+}
+
 static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -345,6 +352,7 @@ log_queue_disk_init_instance(LogQueueDisk *self)
   self->super.rewind_backlog = _rewind_backlog;
   self->super.rewind_backlog_all = _backlog_all;
   self->super.free_fn = _free;
+  self->super.capacity_fn = _get_capacity;
 
   self->read_message = _read_message;
   self->write_message = _write_message;
