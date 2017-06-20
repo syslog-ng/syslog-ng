@@ -32,7 +32,7 @@ typedef struct
 {
   guint index_in_queue;
   guint item_number_per_message;
-  gssize *memory_usage_initial_value;
+  gssize *value_accumulator;
 } DiskqMemusageLoaderState;
 
 static gboolean
@@ -49,7 +49,7 @@ _update_memory_usage_during_load(gpointer data, gpointer s)
   if (_object_is_message_in_position(state->index_in_queue, state->item_number_per_message))
     {
       LogMessage *msg = (LogMessage *)data;
-      *state->memory_usage_initial_value += log_msg_get_size(msg);
+      *state->value_accumulator += log_msg_get_size(msg);
     }
   state->index_in_queue++;
 }
@@ -63,12 +63,12 @@ _start(LogQueueDisk *s, const gchar *filename)
 
   DiskqMemusageLoaderState qout_sum = { .index_in_queue = 0,
                                         .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
-                                        .memory_usage_initial_value = &self->super.super.memory_usage_qout_initial_value
+                                        .value_accumulator = &self->super.super.memory_usage_qout_initial_value
                                       };
 
   DiskqMemusageLoaderState overflow_sum = { .index_in_queue = 0,
                                             .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
-                                            .memory_usage_initial_value = &self->super.super.memory_usage_overflow_initial_value
+                                            .value_accumulator = &self->super.super.memory_usage_overflow_initial_value
                                           };
 
   g_queue_foreach(self->qout, _update_memory_usage_during_load, &qout_sum);
