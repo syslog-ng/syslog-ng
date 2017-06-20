@@ -1269,30 +1269,18 @@ _register_counters(LogWriter *self)
 {
   stats_lock();
   {
-    StatsCluster *cluster;
     StatsClusterKey sc_key;
     stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
 
     if (self->options->suppress > 0)
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-    cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-    if (cluster != NULL)
-      stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
   }
   stats_unlock();
 
-}
-
-static void
-_update_processed_message_counter_when_diskq_is_used(LogWriter *self)
-{
-  if (!g_strcmp0(self->queue->type, "DISK"))
-    {
-      stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
-    }
 }
 
 static gboolean
@@ -1310,7 +1298,6 @@ log_writer_init(LogPipe *s)
     _register_counters(self);
 
   log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
-  _update_processed_message_counter_when_diskq_is_used(self);
   if (self->proto)
     {
       LogProtoClient *proto;
