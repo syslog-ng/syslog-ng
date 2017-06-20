@@ -323,7 +323,7 @@ _update_processed_message_counter_when_diskq_is_used(LogThrDestDriver *self)
 {
   if (!g_strcmp0(self->queue->type, "DISK"))
     {
-      stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
+      stats_counter_set(self->processed_messages, stats_counter_get(self->queued_messages));
     }
 }
 
