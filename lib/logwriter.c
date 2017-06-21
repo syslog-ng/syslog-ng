@@ -68,6 +68,7 @@ struct _LogWriter
   StatsCounterItem *suppressed_messages;
   StatsCounterItem *processed_messages;
   StatsCounterItem *queued_messages;
+  StatsCounterItem *written_messages;
   StatsCounterItem *memory_usage;
   LogPipe *control;
   LogWriterOptions *options;
@@ -1083,6 +1084,7 @@ log_writer_flush_finalize(LogWriter *self)
   if (status != LPS_SUCCESS)
     return FALSE;
 
+
   return TRUE;
 }
 
@@ -1209,6 +1211,9 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           break;
         }
       scratch_buffers2_reclaim_marked(mark);
+
+      if (!write_error)
+        stats_counter_inc(self->written_messages);
     }
 
   if (write_error)
@@ -1277,6 +1282,7 @@ _register_counters(LogWriter *self)
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
     stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   }
   stats_unlock();
@@ -1330,6 +1336,7 @@ _unregister_counters(LogWriter *self)
     stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   }
   stats_unlock();

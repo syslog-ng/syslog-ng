@@ -22,7 +22,7 @@
  *
  */
 
-#include "stats/stats-views.h"
+#include "stats/stats-cluster-logpipe.h"
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 
@@ -195,6 +195,7 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
           break;
 
         case WORKER_INSERT_RESULT_SUCCESS:
+          stats_counter_inc(self->written_messages);
           log_threaded_dest_driver_message_accept(self, msg);
           break;
 
@@ -343,6 +344,7 @@ log_threaded_dest_driver_start(LogPipe *s)
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_register_counter(1, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   stats_unlock();
 
@@ -380,6 +382,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   stats_unlock();
 

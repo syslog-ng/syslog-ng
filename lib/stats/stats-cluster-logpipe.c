@@ -36,6 +36,7 @@ static const gchar *tag_names[SC_TYPE_MAX] =
   /* [SC_TYPE_DISCARDED] = */ "discarded",
   /* [SC_TYPE_MATCHED] = */ "matched",
   /* [SC_TYPE_NOT_MATCHED] = */ "not_matched",
+  /* [SC_TYPE_WRITTEN] = */ "written",
 };
 
 static void
