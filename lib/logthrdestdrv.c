@@ -22,7 +22,7 @@
  *
  */
 
-#include "stats/stats-views.h"
+#include "stats/stats-cluster-logpipe.h"
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 
@@ -195,6 +195,7 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
           break;
 
         case WORKER_INSERT_RESULT_SUCCESS:
+          stats_counter_inc(self->written_messages);
           log_threaded_dest_driver_message_accept(self, msg);
           break;
 
@@ -318,15 +319,6 @@ log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
                                  self, &self->worker_options);
 }
 
-static void
-_update_processed_message_counter_when_diskq_is_used(LogThrDestDriver *self)
-{
-  if (!g_strcmp0(self->queue->type, "DISK"))
-    {
-      stats_counter_set(self->processed_messages, stats_counter_get(self->queued_messages));
-    }
-}
-
 gboolean
 log_threaded_dest_driver_start(LogPipe *s)
 {
@@ -346,20 +338,18 @@ log_threaded_dest_driver_start(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  StatsCluster *cluster;
   stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
                                 self->super.super.id,
                                 self->format.stats_instance(self));
-  cluster = stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_register_counter(1, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-  stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
   stats_unlock();
 
   log_queue_set_counters(self->queue, self->queued_messages,
                          self->dropped_messages, self->memory_usage);
-  _update_processed_message_counter_when_diskq_is_used(self);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                                            log_threaded_dest_driver_format_seqnum_for_persist(self)));
@@ -392,6 +382,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   stats_unlock();
 
