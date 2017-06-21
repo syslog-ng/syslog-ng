@@ -9,7 +9,6 @@ set(STATS_HEADERS
     stats/stats-syslog.h
     stats/stats-query.h
     stats/stats-query-commands.h
-    stats/stats-views.h
     stats/stats-cluster-logpipe.h
     stats/stats-cluster-single.h
     PARENT_SCOPE)
@@ -25,7 +24,6 @@ set(STATS_SOURCES
     stats/stats-syslog.c
     stats/stats-query.c
     stats/stats-query-commands.c
-    stats/stats-views.c
     stats/stats-cluster-logpipe.c
     stats/stats-cluster-single.c
     PARENT_SCOPE)
