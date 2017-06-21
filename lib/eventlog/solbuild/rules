@@ -1,0 +1,37 @@
+#!/usr/local/bin/make -f
+
+STAMPDIR=solbuild/stamps
+PREFIX=/usr/local
+DOCDIR=$(PREFIX)/doc
+INSTPREFIX=solbuild/libevtlog
+
+all: binary
+
+binary: setup configure build install pkgpackage
+
+setup: $(STAMPDIR)/stamp-setup
+$(STAMPDIR)/stamp-setup:
+	mkdir solbuild/stamps || true
+
+	touch $@
+
+configure: $(STAMPDIR)/stamp-configure
+$(STAMPDIR)/stamp-configure: setup
+	./configure --prefix=$(PREFIX)
+	touch $@
+
+build: $(STAMPDIR)/stamp-build
+$(STAMPDIR)/stamp-build: configure
+	make
+	touch $@
+
+install:  
+	dir=`pwd`; make install DESTDIR=$$dir/$(INSTPREFIX); \
+
+pkgpackage:
+	(cd $(INSTPREFIX) ; sh ../prototype-maker.sh ; sh ../pkgmaker.sh )
+
+clean:
+	rm -rf solbuild/stamps || true
+	rm -rf $(INSTPREFIX) || true
+	make clean

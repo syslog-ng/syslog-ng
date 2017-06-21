@@ -1,0 +1,15 @@
+This package was debianized by SZALAY Attila <sasa@balabit.hu> on
+Tue May 24 20:33:23 CEST 2005
+
+The original source can always be found at:
+	http://www.balabit.hu/downloads/syslog-ng/1.9/src/
+
+Upstream Author: Scheidler Balazs <bazsi@balabit.hu> 
+
+Copyright:
+
+ * Copyright (c) 2003 BalaBit IT Ltd.
+ * All rights reserved.
+ * Author: Balazs Scheidler
+
+Please refer to /usr/share/common-licenses/BSD for details.

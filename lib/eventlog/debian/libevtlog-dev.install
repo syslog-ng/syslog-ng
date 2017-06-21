@@ -1,0 +1,5 @@
+usr/include/eventlog
+usr/lib/pkgconfig
+usr/lib/libevtlog.a
+usr/lib/libevtlog.la
+usr/lib/libevtlog.so

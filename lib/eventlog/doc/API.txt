@@ -1,0 +1,56 @@
+
+Application Programming Interface
+---------------------------------
+
+The EventLog library implements a set of functions to construct, format and
+output event records. 
+
+The public symbols are defined in the header file named <evtlog.h>, for a
+list and documentation of functions please consult that file as it contains
+inline function descriptions in gtk-doc format.
+
+It is very important to use consistent tag naming and that different
+applications use identify the same data with the same tag name. Therefore
+please use the predefined tag name if one is available. Predefined tag names
+are defined in the header file <evtmaps.h>. This header is included by
+<evtlog.h> therefore you will not need to reference it explicitly.
+
+A third header file named "evt_internals.h" is defines the internals of the
+EventLog library. Please do not depend on its contents and don't include it
+directly. As this header file is not meant to be used in applications, it is
+not installed when the library is installed.
+
+Syslog compatibility
+--------------------
+
+Most UNIX systems and therefore the programs running under UNIX use the
+syslog() API found in the libc for logging. Because of the large installed
+base it is worth supporting legacy applications before they are converted to
+use EventLog.
+
+Two different implementations of syslog compatibility is provided: macro and
+linker based.
+
+* Macro based compatibility
+
+  This works by defining the syslog() function names as macros to refer to
+  the compatibility functions found in EventLog. To use the macro based
+  wrapper you will need to recompile the program from source:
+
+    $ cc -DEVENTLOG_SYSLOG_MACROS syslogapp.c -levtlog
+
+* Linker based compatibility
+
+  Some dynamic linker implementations (most notably: Linux and Solaris)
+  support symbol overloading. EventLog can use this feature if the dlsym()
+  function is present which supports RTLD_NEXT to fetch symbols hidden by
+  EventLog itself.
+
+  To enable this wrapper configure EventLog with the --enable-dlsym-wrapper
+  configure option. To use the wrapper you simply need to preload the
+  event log shared object like:
+
+   $ LD_PRELOAD=/usr/lib/libeventlog.so.0 syslogapp
+
+  Where syslogapp is the program to be run. As you can see the application
+  itself did not need to be recompiled.

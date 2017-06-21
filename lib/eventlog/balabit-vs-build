@@ -1,0 +1,123 @@
+#!/bin/sh -e
+
+ZWACONF=./.zwaconf
+
+TARGET=
+
+set -e
+
+if [ -f $ZWACONF ]; then
+  . $ZWACONF
+fi
+
+if [ -z "$TARGET" ]; then
+  TARGET=$PWD/out
+fi
+
+get_version(){
+      head -1 debian/changelog | sed -e 's/.*(\([^)]*\)).*/\1/'
+}
+
+sed_file() {
+
+    while [ -n "$1" ]; do
+        in=$1.in
+        out=$1
+
+        sed \
+            -e "s,@TARGET@,${TARGET},g" \
+            -e "s/@VERSION@/${VERSION}/g" \
+            $in > $out
+        shift
+    done
+}
+
+cmd=$1
+
+shift
+case "$cmd" in
+  get-version)
+    get_version
+    ;;
+  prepare-dist)
+    VERSION=`get_version`
+    ;;
+  dist-exclude-list|build-exclude-list)
+    echo "out obj *.aqt *.ncb *.suo *.vcproj.*.user config.h"
+    ;;
+  bootstrap)
+    ;;
+  configure)
+    OPTIONS=`getopt -l help,prefix: 'p:' $*`
+    if [ $? -ne 0 ]; then
+      echo "$0: unknown flags..."
+      exit 1
+    fi
+
+    eval set -- "$OPTIONS"
+    while true ; do
+      _arg=$1
+
+      if [ -z "$_arg" ]; then
+        break
+      fi
+      case $1 in
+        --prefix|-p)
+          shift
+          TARGET=`cygpath -u "$1"`
+          ;;
+      esac
+      shift
+    done
+    echo "TARGET=$TARGET" > $ZWACONF
+    ;;
+  make)
+    # kill variables declared by unix make with contents incompatible by nmake.
+    unset MAKE
+    unset MAKEFLAGS
+    unset MAKEDIR
+    set -x
+    if [ -z "$ZBS_PREFIX" ]; then
+      ZBS_PREFIX=.
+    fi
+    OUT=$ZBS_PREFIX/out
+    if [ -n "$ZWA_INSTALL_DIR" ]; then
+      export COMPILE_ENV="`cygpath -m $ZWA_INSTALL_DIR`"
+      OUT=$COMPILE_ENV
+      export DEP=$COMPILE_ENV
+    fi
+    export COMPILE_ENV="`cygpath -w $COMPILE_ENV`"
+    if [ ! -f eventlog.pc ]; then
+        # just make a dummy one to make makefile.msc happy
+        sed_file eventlog.pc
+    fi
+    mkdir -p $OUT
+    if [ -z "$1" ]; then
+      nmake -nologo -f makefile.msc ROOT="`cygpath -w $OUT`"
+    else
+      case $1 in
+        clean)
+          nmake -nologo -f makefile.msc clean ROOT="`cygpath -w $OUT`"
+          rm -f $ZWACONF
+          ;;
+        distclean)
+          $0 clean
+          ;;
+        install)
+          mkdir -p ${TARGET}
+          if [ -n "$OUT" ] && [ "$OUT" != "`cygpath -m $TARGET`" ]; then
+            cd ${OUT}
+            mv * ${TARGET}
+          fi
+          ;;
+      esac
+    fi
+    ;;
+  *)
+    echo "Unknown command: $cmd"
+    exit 1
+    ;;
+esac
+exit 0
+
+# vim: ts=2 sw=2 expandtab
