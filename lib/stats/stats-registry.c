@@ -22,6 +22,8 @@
  *
  */
 #include "stats/stats-registry.h"
+#include "stats/stats-query.h"
+#include "cfg.h"
 #include <string.h>
 
 static GHashTable *stats_cluster_container;
@@ -122,6 +124,17 @@ stats_register_counter(gint stats_level, const StatsClusterKey *sc_key, gint typ
 }
 
 StatsCluster *
+stats_register_counter_and_index(gint stats_level, const StatsClusterKey *sc_key, gint type,
+                                 StatsCounterItem **counter)
+{
+  StatsCluster *cluster =  _register_counter(stats_level, sc_key, type, FALSE, counter);
+  if (cluster)
+    stats_query_index_counter(cluster, type);
+
+  return cluster;
+}
+
+StatsCluster *
 stats_register_dynamic_counter(gint stats_level, const StatsClusterKey *sc_key,
                                gint type, StatsCounterItem **counter)
 {
@@ -198,6 +211,27 @@ stats_unregister_dynamic_counter(StatsCluster *sc, gint type, StatsCounterItem *
   if (!sc)
     return;
   stats_cluster_untrack_counter(sc, type, counter);
+}
+
+void
+save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter)
+{
+  if (counter)
+    {
+      g_assert(counter->name);
+      gssize *orig_value = g_new(gssize, 1);
+      *orig_value = stats_counter_get(counter);
+      cfg_persist_config_add(cfg, counter->name, orig_value, (GDestroyNotify) g_free, FALSE);
+    }
+}
+
+void
+load_counter_from_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter)
+{
+  g_assert(counter->name);
+  gssize *orig_value = cfg_persist_config_fetch(cfg, counter->name);
+  if (orig_value)
+    stats_counter_set(counter, *orig_value);
 }
 
 static void

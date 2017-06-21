@@ -319,6 +319,16 @@ log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
                                  self, &self->worker_options);
 }
 
+static void
+_update_memory_usage_counter_when_fifo_is_used(LogThrDestDriver *self)
+{
+  if (!g_strcmp0(self->queue->type, "FIFO") && self->memory_usage)
+    {
+      LogPipe *_pipe = &self->super.super.super;
+      load_counter_from_persistent_storage(log_pipe_get_config(_pipe), self->memory_usage);
+    }
+}
+
 gboolean
 log_threaded_dest_driver_start(LogPipe *s)
 {
@@ -344,12 +354,13 @@ log_threaded_dest_driver_start(LogPipe *s)
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_register_counter_and_index(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   stats_register_counter(1, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-  stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   stats_unlock();
 
   log_queue_set_counters(self->queue, self->queued_messages,
                          self->dropped_messages, self->memory_usage);
+  _update_memory_usage_counter_when_fifo_is_used(self);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                                            log_threaded_dest_driver_format_seqnum_for_persist(self)));
@@ -373,6 +384,8 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   cfg_persist_config_add(log_pipe_get_config(s),
                          log_threaded_dest_driver_format_seqnum_for_persist(self),
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
+
+  save_counter_to_persistent_storage(log_pipe_get_config(s), self->memory_usage);
 
   stats_lock();
   StatsClusterKey sc_key;

@@ -34,11 +34,14 @@ void stats_lock(void);
 void stats_unlock(void);
 gboolean stats_check_level(gint level);
 StatsCluster *stats_register_counter(gint level, const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
+StatsCluster *stats_register_counter_and_index(gint level, const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
 StatsCluster *stats_register_dynamic_counter(gint stats_level, const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
 void stats_register_and_increment_dynamic_counter(gint stats_level, const StatsClusterKey *sc_key, time_t timestamp);
 void stats_register_associated_counter(StatsCluster *handle, gint type, StatsCounterItem **counter);
 void stats_unregister_counter(const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
 void stats_unregister_dynamic_counter(StatsCluster *handle, gint type, StatsCounterItem **counter);
+
+void save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
 
 void stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data);
 void stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data);
@@ -48,5 +51,8 @@ void stats_registry_init(void);
 void stats_registry_deinit(void);
 
 GHashTable* stats_registry_get_container(void);
+
+void save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
+void load_counter_from_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
 
 #endif
