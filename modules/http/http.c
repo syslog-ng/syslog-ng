@@ -189,9 +189,37 @@ _set_payload(HTTPDestinationDriver *self, struct curl_slist *curl_headers, const
 }
 
 static worker_insert_result_t
+_map_http_status_to_worker_status(glong http_code)
+{
+  worker_insert_result_t retval;
+
+  switch (http_code/100)
+    {
+    case 4:
+      msg_debug("curl: 4XX: msg dropped",
+                evt_tag_int("status_code", http_code));
+      retval = WORKER_INSERT_RESULT_DROP;
+      break;
+    case 5:
+      msg_debug("curl: 5XX: message will be retried",
+                evt_tag_int("status_code", http_code));
+      retval = WORKER_INSERT_RESULT_ERROR;
+      break;
+    default:
+      msg_debug("curl: OK status code",
+                evt_tag_int("status_code", http_code));
+      retval = WORKER_INSERT_RESULT_SUCCESS;
+      break;
+    }
+
+  return retval;
+}
+
+static worker_insert_result_t
 _insert(LogThrDestDriver *s, LogMessage *msg)
 {
   CURLcode ret;
+  worker_insert_result_t retval;
 
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
@@ -209,9 +237,13 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
       return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
 
+  glong http_code = 0;
+  curl_easy_getinfo (self->curl, CURLINFO_RESPONSE_CODE, &http_code);
+  retval = _map_http_status_to_worker_status(http_code);
+
   curl_slist_free_all(curl_headers);
 
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return retval;
 }
 
 void
