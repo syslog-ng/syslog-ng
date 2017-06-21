@@ -25,7 +25,6 @@
 #include "logwriter.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
-#include "stats/stats-views.h"
 #include "hostname.h"
 #include "host-resolve.h"
 #include "seqnum.h"
