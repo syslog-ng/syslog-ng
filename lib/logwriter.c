@@ -1282,10 +1282,21 @@ _register_counters(LogWriter *self)
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_register_counter(self->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-    stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+    stats_register_counter_and_index(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+
   }
   stats_unlock();
 
+}
+
+static void
+_update_memory_usage_counter_when_fifo_is_used(LogWriter *self)
+{
+  if (!g_strcmp0(self->queue->type, "FIFO") && self->memory_usage)
+    {
+      LogPipe *_pipe = &self->super;
+      load_counter_from_persistent_storage(log_pipe_get_config(_pipe), self->memory_usage);
+    }
 }
 
 static gboolean
@@ -1303,6 +1314,9 @@ log_writer_init(LogPipe *s)
     _register_counters(self);
 
   log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
+
+  _update_memory_usage_counter_when_fifo_is_used(self);
+
   if (self->proto)
     {
       LogProtoClient *proto;
@@ -1326,6 +1340,10 @@ log_writer_init(LogPipe *s)
 static void
 _unregister_counters(LogWriter *self)
 {
+
+  if (self->memory_usage)
+    save_counter_to_persistent_storage(log_pipe_get_config(&self->super), self->memory_usage);
+
   stats_lock();
   {
     StatsClusterKey sc_key;
