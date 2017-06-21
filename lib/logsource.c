@@ -40,6 +40,8 @@ log_source_wakeup(LogSource *self)
 {
   if (self->wakeup)
     self->wakeup(self);
+
+  msg_debug("Source has been resumed", log_pipe_location_tag(&self->super));
 }
 
 static inline void
@@ -141,6 +143,8 @@ log_source_msg_ack(LogMessage *msg, AckType ack_type)
 void
 log_source_flow_control_suspend(LogSource *self)
 {
+  msg_debug("Source has been suspended", log_pipe_location_tag(&self->super));
+
   g_atomic_counter_set(&self->suspended_window_size, g_atomic_counter_get(&self->window_size));
   g_atomic_counter_set(&self->window_size, 0);
   _flow_control_rate_adjust(self);
@@ -241,6 +245,9 @@ log_source_post(LogSource *self, LogMessage *msg)
   msg->ack_func = log_source_msg_ack;
 
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
+
+  if (G_UNLIKELY(old_window_size == 1))
+    msg_debug("Source has been suspended", log_pipe_location_tag(&self->super));
 
   /*
    * NOTE: this assertion validates that the source is not overflowing its
