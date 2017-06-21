@@ -419,6 +419,7 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
 
       self->writer = afsocket_dd_construct_writer(self);
     }
+  log_pipe_set_config((LogPipe *)self->writer, log_pipe_get_config(&self->super.super.super));
   log_writer_set_options(self->writer, &self->super.super.super,
                          &self->writer_options,
                          STATS_LEVEL0,
