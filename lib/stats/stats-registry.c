@@ -48,6 +48,12 @@ stats_unlock(void)
   g_static_mutex_unlock(&stats_mutex);
 }
 
+StatsCluster *
+stats_registry_lookup_cluster(const StatsClusterKey *sc_key)
+{
+  return g_hash_table_lookup(stats_cluster_container, sc_key);
+}
+
 static StatsCluster *
 _grab_cluster(gint stats_level, const StatsClusterKey *sc_key, gboolean dynamic)
 {

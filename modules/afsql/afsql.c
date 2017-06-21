@@ -1001,7 +1001,7 @@ out:
         {
           msg_error("Multiple failures while inserting this record into the database, message dropped",
                     evt_tag_int("attempts", self->num_retries));
-          stats_counter_inc(self->dropped_messages);
+          stats_counter_inc(self->counters.dropped_messages);
           log_msg_drop(msg, &path_options, AT_PROCESSED);
           self->failed_message_counter = 0;
           success = TRUE;
@@ -1171,6 +1171,43 @@ afsql_dd_format_persist_sequence_number(AFSqlDestDriver *self)
   return persist_name;
 }
 
+static void
+_register_counters(AFSqlDestDriver *self)
+{
+  stats_lock();
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                  afsql_dd_format_stats_instance(self) );
+    stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->counters.queued_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->counters.dropped_messages);
+    stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->counters.memory_usage);
+    log_queue_set_counters(self->queue, (LogQueueCountersExternal)
+    {
+      .queued_messages = self->counters.queued_messages,
+       .dropped_messages = self->counters.dropped_messages,
+        .memory_usage = self->counters.memory_usage,
+    });
+    log_queue_register_internal_counters(self->queue, &sc_key, 0);
+  }
+  stats_unlock();
+}
+
+static void
+_unregister_counters(AFSqlDestDriver *self)
+{
+  stats_lock();
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                  afsql_dd_format_stats_instance(self) );
+    stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->counters.queued_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->counters.dropped_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->counters.memory_usage);
+  }
+  stats_unlock();
+}
+
 static gboolean
 afsql_dd_init(LogPipe *s)
 {
@@ -1188,16 +1225,7 @@ afsql_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  stats_lock();
-  {
-    StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
-                                  afsql_dd_format_stats_instance(self) );
-    stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-    stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-  }
-  stats_unlock();
+  _register_counters(self);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, afsql_dd_format_persist_sequence_number(self)));
   if (!self->seq_num)
@@ -1214,7 +1242,12 @@ afsql_dd_init(LogPipe *s)
       if (self->flags & AFSQL_DDF_EXPLICIT_COMMITS)
         log_queue_set_use_backlog(self->queue, TRUE);
     }
-  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
+  log_queue_set_counters(self->queue, (LogQueueCountersExternal)
+  {
+    .queued_messages = self->counters.queued_messages,
+     .dropped_messages = self->counters.dropped_messages,
+      .memory_usage = self->counters.memory_usage,
+  });
   if (!self->fields)
     {
       GList *col, *value;
@@ -1319,17 +1352,7 @@ afsql_dd_init(LogPipe *s)
   return TRUE;
 
 error:
-
-  stats_lock();
-  {
-    StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
-                                  afsql_dd_format_stats_instance(self) );
-    stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-  }
-  stats_unlock();
+  _unregister_counters(self);
 
   return FALSE;
 }
@@ -1341,7 +1364,10 @@ afsql_dd_deinit(LogPipe *s)
 
   log_queue_reset_parallel_push(self->queue);
 
-  log_queue_set_counters(self->queue, NULL, NULL, NULL);
+  log_queue_set_counters(self->queue, (LogQueueCountersExternal)
+  {
+    NULL, NULL, NULL
+  });
   cfg_persist_config_add(log_pipe_get_config(s), afsql_dd_format_persist_sequence_number(self),
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
@@ -1349,8 +1375,8 @@ afsql_dd_deinit(LogPipe *s)
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
                                 afsql_dd_format_stats_instance(self) );
-  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->counters.queued_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->counters.dropped_messages);
   stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))

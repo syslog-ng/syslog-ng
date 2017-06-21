@@ -50,14 +50,18 @@ struct _LogQueueDisk
   gboolean (*write_message)(LogQueueDisk *self, LogMessage *msg);
   void (*restart)(LogQueueDisk *self);
   void (*restart_corrupted)(LogQueueDisk *self);
+  void (*register_internal_counters)(LogQueueDisk *self, StatsClusterKey *sc_key, gint stats_level);
+  void (*unregister_internal_counters)(LogQueueDisk *self, StatsClusterKey *sc_key);
 };
 
-extern const QueueType log_queue_disk_type;
+extern const gchar *LOG_QUEUE_DISK_TYPE;
 
 gboolean log_queue_disk_is_reliable(LogQueue *s);
 const gchar *log_queue_disk_get_filename(LogQueue *self);
 gboolean log_queue_disk_save_queue(LogQueue *self, gboolean *persistent);
 gboolean log_queue_disk_load_queue(LogQueue *self, const gchar *filename);
 void log_queue_disk_init_instance(LogQueueDisk *self);
+void log_queue_disk_register_internal_counters(LogQueueDisk *self, StatsClusterKey *sc_key, gint stats_level);
+void log_queue_disk_unregister_internal_counters(LogQueueDisk *self, StatsClusterKey *sc_key);
 
 #endif

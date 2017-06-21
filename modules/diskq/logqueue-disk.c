@@ -27,6 +27,8 @@
 #include "serialize.h"
 #include "logmsg/logmsg-serialize.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
+#include "stats/stats-views.h"
 #include "reloc.h"
 #include "qdisk.h"
 
@@ -40,7 +42,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-const QueueType log_queue_disk_type = "DISK";
+const gchar *LOG_QUEUE_DISK_TYPE = "DISK";
 
 static gint64
 _get_length(LogQueue *s)
@@ -55,6 +57,13 @@ _get_length(LogQueue *s)
   return qdisk_length;
 }
 
+static gint
+_get_capacity(LogQueue *s)
+{
+  LogQueueDisk *self = (LogQueueDisk *) s;
+  return qdisk_get_capacity(self->qdisk);
+}
+
 static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -66,14 +75,14 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
       if (self->push_tail(self, msg, &local_options, path_options))
         {
           log_queue_push_notify (&self->super);
-          stats_counter_inc(self->super.queued_messages);
+          stats_counter_inc(self->super.counters.external.queued_messages);
           log_msg_ack(msg, &local_options, AT_PROCESSED);
           log_msg_unref(msg);
           g_static_mutex_unlock(&self->super.lock);
           return;
         }
     }
-  stats_counter_inc (self->super.dropped_messages);
+  stats_counter_inc (self->super.counters.external.dropped_messages);
 
   if (path_options->flow_control_requested)
     log_msg_ack(msg, path_options, AT_SUSPENDED);
@@ -110,7 +119,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
     }
   if (msg != NULL)
     {
-      stats_counter_dec(self->super.queued_messages);
+      stats_counter_dec(self->super.counters.external.queued_messages);
     }
   g_static_mutex_unlock(&self->super.lock);
   return msg;
@@ -203,6 +212,45 @@ log_queue_disk_get_filename(LogQueue *s)
 {
   LogQueueDisk *self = (LogQueueDisk *) s;
   return qdisk_get_filename(self->qdisk);
+}
+
+void
+log_queue_disk_register_internal_counters(LogQueueDisk *self, StatsClusterKey *sc_key, gint stats_level)
+{
+  if (self && self->register_internal_counters)
+    self->register_internal_counters(self, sc_key, stats_level);
+}
+
+void
+log_queue_disk_unregister_internal_counters(LogQueueDisk *self, StatsClusterKey *sc_key)
+{
+  if (self && self->unregister_internal_counters)
+    self->unregister_internal_counters(self, sc_key);
+}
+
+static void
+_register_internal_counters(LogQueue *s, StatsClusterKey *sc_key, gint stats_level)
+{
+  LogQueueDisk *self = (LogQueueDisk *)s;
+  StatsClusterKey sc_key_internal;
+
+  stats_cluster_single_key_set_with_name(&sc_key_internal, sc_key->component, sc_key->id, sc_key->instance,
+                                         "disk_capacity_byte");
+  stats_register_counter(stats_level, &sc_key_internal, SC_TYPE_SINGLE_VALUE,
+                         &self->super.counters.internal.disk_capacity);
+
+  stats_counter_set(self->super.counters.internal.disk_capacity, qdisk_get_capacity(self->qdisk));
+}
+
+static void
+_unregister_internal_counters(LogQueue *s, StatsClusterKey *sc_key)
+{
+  LogQueueDisk *self = (LogQueueDisk *)s;
+  StatsClusterKey sc_key_internal;
+
+  stats_cluster_single_key_set_with_name(&sc_key_internal, sc_key->component, sc_key->id, sc_key->instance,
+                                         "disk_capacity_byte");
+  stats_unregister_counter(&sc_key_internal, SC_TYPE_SINGLE_VALUE, &self->super.counters.internal.disk_capacity);
 }
 
 static void
@@ -336,7 +384,7 @@ log_queue_disk_init_instance(LogQueueDisk *self)
   log_queue_init_instance(&self->super,NULL);
   self->qdisk = qdisk_new();
 
-  self->super.type = log_queue_disk_type;
+  self->super.queue_type = LOG_QUEUE_DISK_TYPE;
   self->super.get_length = _get_length;
   self->super.push_tail = _push_tail;
   self->super.push_head = _push_head;
@@ -345,9 +393,12 @@ log_queue_disk_init_instance(LogQueueDisk *self)
   self->super.rewind_backlog = _rewind_backlog;
   self->super.rewind_backlog_all = _backlog_all;
   self->super.free_fn = _free;
+  self->super.capacity_fn = _get_capacity;
 
   self->read_message = _read_message;
   self->write_message = _write_message;
   self->restart = _restart;
   self->restart_corrupted = _restart_corrupted;
+  self->super.register_internal_counters = _register_internal_counters;
+  self->super.unregister_internal_counters = _unregister_internal_counters;
 }

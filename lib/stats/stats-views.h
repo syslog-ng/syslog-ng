@@ -27,6 +27,7 @@
 #include "stats/stats-query.h"
 
 void stats_register_written_view(StatsCluster *cluster, StatsCounterItem *processed, StatsCounterItem *dropped, StatsCounterItem *queued);
+void stats_register_fifo_fillup_rate(StatsCluster *cluster_of_actual, StatsCluster *cluster_of_max, StatsCounterItem *actual, StatsCounterItem *max);
 
 #endif
 

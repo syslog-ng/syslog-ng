@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-views.h"
+#include "stats/stats-cluster-single.h"
 #include "hostname.h"
 #include "host-resolve.h"
 #include "seqnum.h"
@@ -37,6 +38,7 @@
 #include "ml-batched-timer.h"
 #include "str-format.h"
 #include "scratch-buffers.h"
+#include "logqueue.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -64,11 +66,14 @@ struct _LogWriter
   LogQueue *queue;
   guint32 flags:31;
   gint32 seq_num;
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *suppressed_messages;
-  StatsCounterItem *processed_messages;
-  StatsCounterItem *queued_messages;
-  StatsCounterItem *memory_usage;
+  struct
+  {
+    StatsCounterItem *dropped_messages;
+    StatsCounterItem *suppressed_messages;
+    StatsCounterItem *processed_messages;
+    StatsCounterItem *queued_messages;
+    StatsCounterItem *memory_usage;
+  } counters;
   LogPipe *control;
   LogWriterOptions *options;
   LogMessage *last_msg;
@@ -698,7 +703,7 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
           !_is_message_a_mark(lm))
         {
 
-          stats_counter_inc(self->suppressed_messages);
+          stats_counter_inc(self->counters.suppressed_messages);
           self->last_msg_count++;
 
           /* we only create the timer if this is the first suppressed message, otherwise it is already running. */
@@ -761,7 +766,7 @@ log_writer_mark_timeout(void *cookie)
   if (!log_writer_is_msg_suppressed(self, msg))
     {
       log_queue_push_tail(self->queue, msg, &path_options);
-      stats_counter_inc(self->processed_messages);
+      stats_counter_inc(self->counters.processed_messages);
     }
   else
     {
@@ -813,7 +818,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
       log_writer_postpone_mark_timer(self);
     }
 
-  stats_counter_inc(self->processed_messages);
+  stats_counter_inc(self->counters.processed_messages);
   log_queue_push_tail(self->queue, lm, path_options);
 }
 
@@ -1274,13 +1279,25 @@ _register_counters(LogWriter *self)
     stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
 
     if (self->options->suppress > 0)
-      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-    cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-    stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->counters.suppressed_messages);
+    cluster = stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->counters.dropped_messages);
+    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->counters.processed_messages);
+    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->counters.queued_messages);
+    stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->counters.memory_usage);
+    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_MEMORY_USAGE, &self->counters.memory_usage);
+
+    log_queue_set_counters(self->queue, (LogQueueCountersExternal)
+    {
+      .queued_messages = self->counters.queued_messages,
+       .dropped_messages = self->counters.dropped_messages,
+        .memory_usage = self->counters.memory_usage,
+    });
+
+    log_queue_register_internal_counters(self->queue, &sc_key, self->stats_level);
+
     if (cluster != NULL)
-      stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
+      stats_register_written_view(cluster, self->counters.processed_messages, self->counters.dropped_messages,
+                                  self->counters.queued_messages);
   }
   stats_unlock();
 
@@ -1289,9 +1306,9 @@ _register_counters(LogWriter *self)
 static void
 _update_processed_message_counter_when_diskq_is_used(LogWriter *self)
 {
-  if (!g_strcmp0(self->queue->type, "DISK"))
+  if (!g_strcmp0(log_queue_get_type(self->queue), "DISK"))
     {
-      stats_counter_add(self->processed_messages, stats_counter_get(self->queued_messages));
+      stats_counter_add(self->counters.processed_messages, stats_counter_get(self->counters.queued_messages));
     }
 }
 
@@ -1306,11 +1323,11 @@ log_writer_init(LogPipe *s)
     }
   iv_event_register(&self->queue_filled);
 
-  if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
+  if ((self->options->options & LWO_NO_STATS) == 0 && !self->counters.dropped_messages)
     _register_counters(self);
 
-  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
   _update_processed_message_counter_when_diskq_is_used(self);
+
   if (self->proto)
     {
       LogProtoClient *proto;
@@ -1339,11 +1356,18 @@ _unregister_counters(LogWriter *self)
     StatsClusterKey sc_key;
     stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
 
-    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->counters.dropped_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->counters.suppressed_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->counters.processed_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->counters.queued_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->counters.memory_usage);
+    stats_cluster_single_key_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id,
+                                           self->stats_instance, "");
+    log_queue_set_counters(self->queue, (LogQueueCountersExternal)
+    {
+      NULL, NULL, NULL
+    });
+    log_queue_unregister_internal_counters(self->queue, &sc_key);
   }
   stats_unlock();
 
@@ -1372,7 +1396,6 @@ log_writer_deinit(LogPipe *s)
   ml_batched_timer_unregister(&self->mark_timer);
 
   _unregister_counters(self);
-  log_queue_set_counters(self->queue, NULL, NULL, NULL);
 
   return TRUE;
 }

@@ -27,6 +27,8 @@
 #include "messages.h"
 #include "serialize.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
+#include "stats/stats-views.h"
 #include "mainloop-worker.h"
 
 #include <sys/types.h>
@@ -36,7 +38,7 @@
 #include <string.h>
 #include <iv_thread.h>
 
-const QueueType log_queue_fifo_type = "FIFO";
+const gchar *log_queue_fifo_type = "FIFO";
 
 /*
  * LogFifo is a scalable first-in-first-output queue implementation, that:
@@ -112,7 +114,7 @@ iv_list_update_msg_size(LogQueueFifo *self, struct iv_list_head *head)
   iv_list_for_each_safe(ilh, ilh2, head)
   {
     msg = iv_list_entry(ilh, LogMessageQueueNode, list)->msg;
-    stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+    stats_counter_add(self->super.counters.external.memory_usage, log_msg_get_size(msg));
   }
 }
 
@@ -195,7 +197,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
           self->qoverflow_input[thread_id].len--;
           path_options.ack_needed = node->ack_needed;
           path_options.flow_control_requested = node->flow_control_requested;
-          stats_counter_inc(self->super.dropped_messages);
+          stats_counter_inc(self->super.counters.external.dropped_messages);
           log_msg_free_queue_node(node);
           if (path_options.flow_control_requested)
             log_msg_drop(msg, &path_options, AT_SUSPENDED);
@@ -208,7 +210,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
                 evt_tag_int("count", n),
                 evt_tag_str("persist_name", self->super.persist_name));
     }
-  stats_counter_add(self->super.queued_messages, self->qoverflow_input[thread_id].len);
+  stats_counter_add(self->super.counters.external.queued_messages, self->qoverflow_input[thread_id].len);
   iv_list_update_msg_size(self, &self->qoverflow_input[thread_id].items);
 
   iv_list_splice_tail_init(&self->qoverflow_input[thread_id].items, &self->qoverflow_wait);
@@ -311,15 +313,15 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
       iv_list_add_tail(&node->list, &self->qoverflow_wait);
       self->qoverflow_wait_len++;
       log_queue_push_notify(&self->super);
-      stats_counter_inc(self->super.queued_messages);
-      stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+      stats_counter_inc(self->super.counters.external.queued_messages);
+      stats_counter_add(self->super.counters.external.memory_usage, log_msg_get_size(msg));
       g_static_mutex_unlock(&self->super.lock);
 
       log_msg_unref(msg);
     }
   else
     {
-      stats_counter_inc(self->super.dropped_messages);
+      stats_counter_inc(self->super.counters.external.dropped_messages);
       g_static_mutex_unlock(&self->super.lock);
 
       if (path_options->flow_control_requested)
@@ -357,8 +359,8 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   self->qoverflow_output_len++;
   log_msg_unref(msg);
 
-  stats_counter_inc(self->super.queued_messages);
-  stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+  stats_counter_inc(self->super.counters.external.queued_messages);
+  stats_counter_add(self->super.counters.external.memory_usage, log_msg_get_size(msg));
 }
 
 /*
@@ -412,8 +414,8 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
        */
       return NULL;
     }
-  stats_counter_dec(self->super.queued_messages);
-  stats_counter_sub(self->super.memory_usage, log_msg_get_size(msg));
+  stats_counter_dec(self->super.counters.external.queued_messages);
+  stats_counter_sub(self->super.counters.external.memory_usage, log_msg_get_size(msg));
 
   if (self->super.use_backlog)
     {
@@ -471,7 +473,7 @@ log_queue_fifo_rewind_backlog_all(LogQueue *s)
   iv_list_update_msg_size(self, &self->qbacklog);
 
   self->qoverflow_output_len += self->qbacklog_len;
-  stats_counter_add(self->super.queued_messages, self->qbacklog_len);
+  stats_counter_add(self->super.counters.external.queued_messages, self->qbacklog_len);
   self->qbacklog_len = 0;
 }
 
@@ -497,8 +499,8 @@ log_queue_fifo_rewind_backlog(LogQueue *s, guint rewind_count)
 
       self->qbacklog_len--;
       self->qoverflow_output_len++;
-      stats_counter_inc(self->super.queued_messages);
-      stats_counter_add(self->super.memory_usage, log_msg_get_size(node->msg));
+      stats_counter_inc(self->super.counters.external.queued_messages);
+      stats_counter_add(self->super.counters.external.memory_usage, log_msg_get_size(node->msg));
     }
 }
 
@@ -540,6 +542,38 @@ log_queue_fifo_free(LogQueue *s)
   log_queue_free_method(s);
 }
 
+static void
+_register_internal_counters(LogQueue *s, StatsClusterKey *sc_key, gint stats_level)
+{
+  LogQueueFifo *self = (LogQueueFifo *)s;
+  StatsClusterKey sc_key_internal;
+  StatsCluster *capacity_cluster, *queued_cluster;
+
+  stats_cluster_single_key_set_with_name(&sc_key_internal, sc_key->component, sc_key->id, sc_key->instance,
+                                         "mem_capacity_count");
+  capacity_cluster = stats_register_counter(stats_level, &sc_key_internal, SC_TYPE_SINGLE_VALUE,
+                                            &self->super.counters.internal.memory_capacity);
+  queued_cluster = stats_registry_lookup_cluster(sc_key);
+  if (capacity_cluster != NULL && queued_cluster != NULL)
+    {
+      stats_register_fifo_fillup_rate(queued_cluster, capacity_cluster, self->super.counters.external.queued_messages,
+                                      self->super.counters.internal.memory_capacity);
+    }
+
+  stats_counter_set(self->super.counters.internal.memory_capacity, self->qoverflow_size);
+}
+
+static void
+_unregister_internal_counters(LogQueue *s, StatsClusterKey *sc_key)
+{
+  LogQueueFifo *self = (LogQueueFifo *)s;
+  StatsClusterKey sc_key_internal;
+
+  stats_cluster_single_key_set_with_name(&sc_key_internal, sc_key->component, sc_key->id, sc_key->instance,
+                                         "mem_capacity_count");
+  stats_unregister_counter(&sc_key_internal, SC_TYPE_SINGLE_VALUE, &self->super.counters.internal.memory_capacity);
+}
+
 LogQueue *
 log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
 {
@@ -549,7 +583,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   self = g_malloc0(sizeof(LogQueueFifo) + log_queue_max_threads * sizeof(self->qoverflow_input[0]));
 
   log_queue_init_instance(&self->super, persist_name);
-  self->super.type = log_queue_fifo_type;
+  self->super.queue_type = log_queue_fifo_type;
   self->super.use_backlog = FALSE;
   self->super.get_length = log_queue_fifo_get_length;
   self->super.is_empty_racy = log_queue_fifo_is_empty_racy;
@@ -560,6 +594,8 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   self->super.ack_backlog = log_queue_fifo_ack_backlog;
   self->super.rewind_backlog = log_queue_fifo_rewind_backlog;
   self->super.rewind_backlog_all = log_queue_fifo_rewind_backlog_all;
+  self->super.register_internal_counters = _register_internal_counters;
+  self->super.unregister_internal_counters = _unregister_internal_counters;
 
   self->super.free_fn = log_queue_fifo_free;
 

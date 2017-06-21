@@ -47,10 +47,14 @@ struct _LogThrDestDriver
 {
   LogDestDriver super;
 
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *queued_messages;
-  StatsCounterItem *processed_messages;
-  StatsCounterItem *memory_usage;
+  struct
+  {
+    StatsCounterItem *dropped_messages;
+    StatsCounterItem *queued_messages;
+    StatsCounterItem *processed_messages;
+    StatsCounterItem *memory_usage;
+    StatsCounterItem *log_queue_max_size;
+  } counters;
 
   gboolean suspended;
   time_t time_reopen;

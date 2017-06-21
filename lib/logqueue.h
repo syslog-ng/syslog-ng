@@ -34,11 +34,28 @@ typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
 
 typedef struct _LogQueue LogQueue;
 
-typedef char *QueueType;
+typedef struct _LogQueueCountersExternal
+{
+  StatsCounterItem *queued_messages;
+  StatsCounterItem *dropped_messages;
+  StatsCounterItem *memory_usage;
+} LogQueueCountersExternal;
+
+typedef struct _LogQueueCountersInternal
+{
+  StatsCounterItem *memory_capacity;
+  StatsCounterItem *disk_capacity;
+} LogQueueCountersInternal;
+
+typedef struct _LogQueueCounters
+{
+  LogQueueCountersInternal internal;
+  LogQueueCountersExternal external;
+} LogQueueCounters;
 
 struct _LogQueue
 {
-  QueueType type;
+  const gchar *queue_type;
   GAtomicCounter ref_cnt;
   gboolean use_backlog;
 
@@ -47,11 +64,10 @@ struct _LogQueue
   GTimeVal last_throttle_check;
 
   gchar *persist_name;
-  StatsCounterItem *queued_messages;
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *memory_usage;
-  gssize memory_usage_qout_initial_value;
+  gssize memory_usage_initial_value;
   gssize memory_usage_overflow_initial_value;
+  gssize memory_usage_qout_initial_value;
+  LogQueueCounters counters;
 
   GStaticMutex lock;
   LogQueuePushNotifyFunc parallel_push_notify;
@@ -68,6 +84,9 @@ struct _LogQueue
   void (*ack_backlog)(LogQueue *self, gint n);
   void (*rewind_backlog)(LogQueue *self, guint rewind_count);
   void (*rewind_backlog_all)(LogQueue *self);
+  void (*register_internal_counters)(LogQueue *self, StatsClusterKey *sc_key, gint stats_level);
+  void (*unregister_internal_counters)(LogQueue *self, StatsClusterKey *sc_key);
+  gint (*capacity_fn)(LogQueue *self);
 
   void (*free_fn)(LogQueue *self);
 };
@@ -194,11 +213,41 @@ log_queue_set_use_backlog(LogQueue *self, gboolean use_backlog)
     self->use_backlog = use_backlog;
 }
 
+static inline gint
+log_queue_get_capacity(LogQueue *self)
+{
+  if (self->capacity_fn)
+    return self->capacity_fn(self);
+  return 0;
+}
+
+static inline const gchar *
+log_queue_get_type(LogQueue *self)
+{
+  if (self->queue_type)
+    return self->queue_type;
+  return NULL;
+}
+
+static inline void
+log_queue_register_internal_counters(LogQueue *self, StatsClusterKey *sc_key, gint stats_level)
+{
+  if (self && self->register_internal_counters)
+    self->register_internal_counters(self, sc_key, stats_level);
+}
+
+static inline void
+log_queue_unregister_internal_counters(LogQueue *self, StatsClusterKey *sc_key)
+{
+  if (self && self->unregister_internal_counters)
+    self->unregister_internal_counters(self, sc_key);
+}
+
 void log_queue_push_notify(LogQueue *self);
 void log_queue_reset_parallel_push(LogQueue *self);
 void log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
 gboolean log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
-void log_queue_set_counters(LogQueue *self, StatsCounterItem *queued_messages, StatsCounterItem *dropped_messages, StatsCounterItem *memory_usage);
+void log_queue_set_counters(LogQueue *self, LogQueueCountersExternal counters);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_free_method(LogQueue *self);
 

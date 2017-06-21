@@ -150,7 +150,7 @@ _move_message_from_qbacklog_to_qreliable(LogQueueDiskReliable *self)
   g_queue_push_head(self->qreliable, ptr_msg);
   g_queue_push_head(self->qreliable, ptr_pos);
 
-  stats_counter_add(self->super.super.memory_usage, log_msg_get_size(ptr_msg));
+  stats_counter_add(self->super.super.counters.external.memory_usage, log_msg_get_size(ptr_msg));
 }
 
 static void
@@ -188,7 +188,7 @@ _rewind_backlog(LogQueueDisk *s, guint rewind_count)
   qdisk_set_reader_head (self->super.qdisk, new_read_head);
   qdisk_set_length (self->super.qdisk, qdisk_get_length (self->super.qdisk) + rewind_count);
 
-  stats_counter_add (self->super.super.queued_messages, rewind_count);
+  stats_counter_add (self->super.super.counters.external.queued_messages, rewind_count);
 }
 
 static LogMessage *
@@ -203,7 +203,7 @@ _pop_head(LogQueueDisk *s, LogPathOptions *path_options)
       if (pos == qdisk_get_reader_head (self->super.qdisk))
         {
           msg = g_queue_pop_head (self->qreliable);
-          stats_counter_sub(self->super.super.memory_usage, log_msg_get_size(msg));
+          stats_counter_sub(self->super.super.counters.external.memory_usage, log_msg_get_size(msg));
 
           POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qreliable), path_options);
           _skip_message (s);
@@ -290,7 +290,7 @@ _push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, cons
       g_queue_push_tail (self->qreliable, LOG_PATH_OPTIONS_TO_POINTER(path_options));
       log_msg_ref (msg);
 
-      stats_counter_add(self->super.super.memory_usage, log_msg_get_size(msg));
+      stats_counter_add(self->super.super.counters.external.memory_usage, log_msg_get_size(msg));
       local_options->ack_needed = FALSE;
     }
 
@@ -338,6 +338,8 @@ _set_virtual_functions(LogQueueDisk *self)
   self->load_queue = _load_queue;
   self->start = _start;
   self->save_queue = _save_queue;
+  self->register_internal_counters = NULL;
+  self->unregister_internal_counters = NULL;
 }
 
 LogQueue *
