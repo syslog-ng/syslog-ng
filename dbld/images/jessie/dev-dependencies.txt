@@ -1,7 +1,7 @@
 # required for autogen
 autoconf
 autoconf-archive
-automake
+automake1.11
 libtool
 pkg-config
 # required for configure
