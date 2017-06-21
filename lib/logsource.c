@@ -40,6 +40,8 @@ log_source_wakeup(LogSource *self)
 {
   if (self->wakeup)
     self->wakeup(self);
+
+  msg_debug("Source has been resumed", evt_tag_str("group_name", self->options->group_name));
 }
 
 static inline void
@@ -52,10 +54,7 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
   g_atomic_counter_set(&self->suspended_window_size, 0);
 
   if (old_window_size == 0)
-    {
-      msg_debug("Source has been resumed", evt_tag_str("group_name", self->options->group_name));
-      log_source_wakeup(self);
-    }
+    log_source_wakeup(self);
 }
 
 static void
@@ -247,7 +246,7 @@ log_source_post(LogSource *self, LogMessage *msg)
 
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
 
-  if (G_UNLIKELY(g_atomic_counter_get(&self->window_size) == 0))
+  if (G_UNLIKELY(old_window_size == 1))
     msg_debug("Source has been suspended", evt_tag_str("group_name", self->options->group_name));
 
   /*
