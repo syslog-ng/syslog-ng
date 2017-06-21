@@ -50,6 +50,7 @@ struct _LogThrDestDriver
   StatsCounterItem *dropped_messages;
   StatsCounterItem *queued_messages;
   StatsCounterItem *processed_messages;
+  StatsCounterItem *written_messages;
   StatsCounterItem *memory_usage;
 
   gboolean suspended;
