@@ -100,7 +100,7 @@ _add_counter_to_index(StatsCluster *sc, gint type)
     }
 
   g_hash_table_insert(counter_index, counter_full_name, counter);
-  sc->indexed_mask |= type;
+  sc->indexed_mask |= (1 << type);
 }
 
 static void
@@ -108,7 +108,7 @@ _remove_counter_from_index(StatsCluster *sc, gint type)
 {
   gchar *key = stats_counter_get_name(&sc->counter_group.counters[type]);
   g_hash_table_remove(counter_index, key);
-  sc->indexed_mask |= type;
+  sc->indexed_mask |= (1 << type);
 }
 
 static void
