@@ -230,7 +230,8 @@ _insert(LogThrDestDriver *s, LogMessage *msg)
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
     {
       msg_error("curl: error sending HTTP request",
-                evt_tag_str("error", curl_easy_strerror(ret)));
+                evt_tag_str("error", curl_easy_strerror(ret)),
+                log_pipe_location_tag(&s->super.super.super));
 
       curl_slist_free_all(curl_headers);
 
@@ -465,7 +466,8 @@ http_dd_init(LogPipe *s)
 
   if (!(self->curl = curl_easy_init()))
     {
-      msg_error("curl: cannot initialize libcurl", NULL);
+      msg_error("curl: cannot initialize libcurl",
+                log_pipe_location_tag(s));
       return FALSE;
     }
 
