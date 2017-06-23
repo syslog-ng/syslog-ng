@@ -1,5 +1,6 @@
-DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@ @EVTLOG_SUBDIRS@
+DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@
 
+include lib/eventlog/src/Makefile.am
 include lib/transport/Makefile.am
 include lib/logproto/Makefile.am
 include lib/rewrite/Makefile.am
@@ -44,27 +45,10 @@ lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release ${LSNG_RELEASE} \
 
 lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite lib_template lib_stats lib_control
 
-
-lib/eventlog/src/libevtlog.la:
-	${MAKE} CFLAGS="${CFLAGS} -Wno-error" -C lib/eventlog
-
-
-install-eventlog:
-	${MAKE} -C lib/eventlog/src install
-
-uninstall-eventlog:
-	${MAKE} -C lib/eventlog/src uninstall
-
-CLEAN_SUBDIRS				+= @EVTLOG_SUBDIRS@
 lib_libsyslog_ng_la_DEPENDENCIES	= lib/eventlog/src/libevtlog.la
 
-
-INSTALL_EXEC_HOOKS			+= install-eventlog
-UNINSTALL_HOOKS				+= uninstall-eventlog
-
-
 if IVYKIS_INTERNAL
-lib_libsyslog_ng_la_DEPENDENCIES	+= lib/ivykis/src/libivykis.la 
+lib_libsyslog_ng_la_DEPENDENCIES	+= lib/ivykis/src/libivykis.la
 
 lib/ivykis/src/libivykis.la:
 	${MAKE} CFLAGS="${CFLAGS} -Wno-error" -C lib/ivykis
@@ -293,8 +277,7 @@ EXTRA_DIST += \
 	lib/pragma-grammar.ym		\
 	lib/merge-grammar.pl		\
 	lib/hostname-unix.c		\
-	lib/ivykis/configure.gnu	\
-	lib/eventlog/configure.gnu
+	lib/ivykis/configure.gnu
 
 lib/plugin-types.h: lib/cfg-grammar.h
 
