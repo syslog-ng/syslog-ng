@@ -8,6 +8,7 @@ Makefile.in
 aclocal.m4
 config.h.in
 configure
+configure.gnu
 depcomp
 install-sh
 missing
