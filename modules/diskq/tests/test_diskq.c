@@ -61,7 +61,7 @@ testcase_zero_diskbuf_and_normal_acks()
 
   _construct_options(&options, 10000000, 100000, TRUE);
 
-  q = log_queue_disk_reliable_new(&options);
+  q = log_queue_disk_reliable_new(&options, NULL);
   log_queue_set_use_backlog(q, TRUE);
 
   filename = g_string_sized_new(32);
@@ -95,7 +95,7 @@ testcase_zero_diskbuf_alternating_send_acks()
 
   _construct_options(&options, 10000000, 100000, TRUE);
 
-  q = log_queue_disk_reliable_new(&options);
+  q = log_queue_disk_reliable_new(&options, NULL);
   log_queue_set_use_backlog(q, TRUE);
 
   filename = g_string_sized_new(32);
@@ -130,7 +130,7 @@ testcase_ack_and_rewind_messages()
 
   _construct_options(&options, 10000000, 100000, TRUE);
 
-  q = log_queue_disk_reliable_new(&options);
+  q = log_queue_disk_reliable_new(&options, NULL);
   log_queue_set_use_backlog(q, TRUE);
 
   StatsClusterKey sc_key;
@@ -287,7 +287,7 @@ testcase_with_threads()
 
       _construct_options(&options, 10000000, 100000, TRUE);
 
-      q = log_queue_disk_reliable_new(&options);
+      q = log_queue_disk_reliable_new(&options, NULL);
       filename = g_string_sized_new(32);
       g_string_sprintf(filename,"test-%04d.qf",i);
       unlink(filename->str);
@@ -324,7 +324,7 @@ is_valid_msg_size(guint32 one_msg_size)
 
 struct diskq_tester_parameters;
 
-typedef LogQueue *(*queue_constructor_t)(DiskQueueOptions *);
+typedef LogQueue *(*queue_constructor_t)(DiskQueueOptions *, const gchar *);
 typedef void (*first_msg_asserter_t)(LogQueue *q, struct diskq_tester_parameters *parameters);
 typedef void (*second_msg_asserter_t)(LogQueue *q, struct diskq_tester_parameters *parameters, gssize one_msg_size);
 
@@ -390,7 +390,7 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   _construct_options(options, parameters->disk_size, 100000, parameters->reliable);
   options->qout_size = parameters->qout_size;
 
-  q = parameters->constructor(options);
+  q = parameters->constructor(options, NULL);
 
   init_statistics(q);
   assert_gint(stats_counter_get(q->queued_messages), 0, "queued messages: line: %d", __LINE__);

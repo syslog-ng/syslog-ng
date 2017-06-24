@@ -58,6 +58,6 @@ gboolean log_queue_disk_is_reliable(LogQueue *s);
 const gchar *log_queue_disk_get_filename(LogQueue *self);
 gboolean log_queue_disk_save_queue(LogQueue *self, gboolean *persistent);
 gboolean log_queue_disk_load_queue(LogQueue *self, const gchar *filename);
-void log_queue_disk_init_instance(LogQueueDisk *self);
+void log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name);
 
 #endif

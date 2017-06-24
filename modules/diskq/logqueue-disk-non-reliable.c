@@ -413,11 +413,11 @@ _set_virtual_functions (LogQueueDisk *self)
 }
 
 LogQueue *
-log_queue_disk_non_reliable_new(DiskQueueOptions *options)
+log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *persist_name)
 {
   g_assert(options->reliable == FALSE);
   LogQueueDiskNonReliable *self = g_new0(LogQueueDiskNonReliable, 1);
-  log_queue_disk_init_instance (&self->super);
+  log_queue_disk_init_instance(&self->super, persist_name);
   qdisk_init (self->super.qdisk, options);
   self->qbacklog = g_queue_new ();
   self->qout = g_queue_new ();
