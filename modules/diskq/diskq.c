@@ -64,7 +64,6 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name, gpointer user_data)
           msg_error("Error opening disk-queue file, a new one started",
                     evt_tag_str("old_filename", qfile_name),
                     evt_tag_str("new_filename", log_queue_disk_get_filename(queue)));
-          g_free(qfile_name);
         }
       else
         {
@@ -73,6 +72,8 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name, gpointer user_data)
           return NULL;
         }
     }
+
+  g_free(qfile_name);
 
   if (persist_name)
     {
