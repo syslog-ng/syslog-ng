@@ -215,7 +215,8 @@ _free(LogQueue *s)
 
   qdisk_deinit(self->qdisk);
   qdisk_free(self->qdisk);
-  g_free(self);
+
+  log_queue_free_method(s);
 }
 
 static gboolean
