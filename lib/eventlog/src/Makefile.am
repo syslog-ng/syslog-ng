@@ -10,6 +10,9 @@ lib_eventlog_src_libevtlog_la_SOURCES = \
 		lib/eventlog/src/evttags.c \
 		lib/eventlog/src/evtsyslog.c
 
+lib_eventlog_src_libevtlog_la_LDFLAGS = -no-undefined -release ${LSNG_RELEASE} \
+					-version-info ${LSNG_CURRENT}:${LSNG_REVISION}:${LSNG_AGE}
+
 noinst_HEADERS = lib/eventlog/src/evt_internals.h
 
 pkginclude_HEADERS += \
