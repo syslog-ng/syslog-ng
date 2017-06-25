@@ -1,6 +1,7 @@
 DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@
 
 include lib/eventlog/src/Makefile.am
+include lib/eventlog/tests/Makefile.am
 include lib/transport/Makefile.am
 include lib/logproto/Makefile.am
 include lib/rewrite/Makefile.am
