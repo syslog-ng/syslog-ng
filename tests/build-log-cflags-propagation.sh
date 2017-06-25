@@ -94,8 +94,7 @@ libtool: compile: +gcc |\
 ignore_submodule_gcc() {
   ignore_submodule_gcc_mongo_c_driver "$@" |
   ignore_submodule_gcc_rabbitmq_c |
-  ignore_submodule_gcc_ivykis |
-  ignore_submodule_gcc_eventlog
+  ignore_submodule_gcc_ivykis
 }
 
 ignore_submodule_gcc_mongo_c_driver() {
@@ -120,12 +119,5 @@ gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./lib/ivykis/src |\
 gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./lib/ivykis/test |\
 gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./\.\./lib/ivykis/contrib/iv_getaddrinfo |\
 gcc -std=gnu99 -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./\.\./lib/ivykis/contrib/kojines \
-)" "$@"
-}
-
-ignore_submodule_gcc_eventlog() {
-  grep -vE -- "\<(\
-gcc -std=gnu99 -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./lib/eventlog/src |\
-gcc -std=gnu99 -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./lib/eventlog/tests -I\.\.  -I\.\./\.\./\.\./\.\./lib/eventlog/src \
 )" "$@"
 }
