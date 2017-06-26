@@ -210,6 +210,7 @@ main(int argc, char *argv[])
            transformers);
   g_ptr_array_free(transformers, TRUE);
 
+  cfg_free(cfg);
   app_shutdown();
   if (success)
     return 0;

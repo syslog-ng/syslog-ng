@@ -297,9 +297,13 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
   g_strfreev(module_path_dirs);
   if (!plugin_module_name)
     {
-      msg_error("Plugin module not found in 'module-path'",
-                evt_tag_str("module-path", module_path),
-                evt_tag_str("module", module_name));
+      if (module_path)
+        msg_error("Plugin module not found in 'module-path'",
+                  evt_tag_str("module-path", module_path),
+                  evt_tag_str("module", module_name));
+      else
+        msg_error("Plugin module not found in empty 'module-path'",
+                  evt_tag_str("module", module_name));
       return NULL;
     }
   msg_trace("Trying to open module",

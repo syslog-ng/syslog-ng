@@ -1,0 +1,95 @@
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   pwrite64(buf)
+   ...
+   fun:log_queue_push_tail
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr8
+   fun:memrchr
+   fun:log_msg_update_sdata_slow
+   fun:log_msg_update_sdata
+   fun:log_msg_set_value
+   fun:construct_log_message_with_all_bells_and_whistles
+   fun:test_log_message_can_be_cleared
+   fun:test_log_message
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr8
+   fun:memrchr
+   fun:log_msg_append_format_sdata
+   fun:log_msg_format_sdata
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:getpwnam
+   fun:resolve_user
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr8
+   fun:memrchr
+   fun:log_msg_append_format_sdata
+   fun:log_macro_expand
+   fun:vp_merge_builtins
+   fun:value_pairs_foreach_sorted
+   fun:value_pairs_foreach
+   fun:testcase
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:getgrnam
+   fun:resolve_group
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:pdb_rule_new
+   ...
+   fun:pattern_db_reload_ruleset
+   fun:_load_pattern_db_from_string
+   ...
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_file_open_tmp
+   fun:_load_pattern_db_from_string
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:log_msg_alloc
+   fun:log_msg_new
+   fun:feed_some_messages
+   fun:test_diskq_become_full
+   fun:main
+}
