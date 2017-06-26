@@ -355,8 +355,9 @@ _seek_to_saved_state(JournalReader *self)
 {
   JournalReaderState *state = persist_state_map_entry(self->persist_state, self->persist_handle);
   gint rc = journald_seek_cursor(self->journal, state->cursor);
+  gint tc = journald_test_cursor(self->journal, state->cursor);
   persist_state_unmap_entry(self->persist_state, self->persist_handle);
-  if (rc != 0)
+  if (rc != 0 || tc != 0)
     {
       msg_warning("Failed to seek journal to the saved cursor position",
                   evt_tag_str("cursor", state->cursor),
