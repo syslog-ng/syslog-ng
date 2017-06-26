@@ -37,7 +37,7 @@ install:
 before_script:
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
-  - ./configure
+  - CONFIGURE_FLAGS="
       CFLAGS=-Werror
       --prefix=$HOME/install/syslog-ng
       --with-ivykis=internal
@@ -55,13 +55,22 @@ before_script:
       --enable-manpages
       --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
       --enable-extra-warnings
+      "
+  - ./configure $CONFIGURE_FLAGS
 script:
   - . tests/build-log-cflags-propagation.sh;
     if [ "$CC" = "gcc" ]; then
-      export DISTCHECK_CONFIGURE_FLAGS="CFLAGS=-Werror --enable-extra-warnings";
-      exec_prop_check "make distcheck V=1 --keep-going";
+      export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
+      exec_prop_check "make distcheck -j 3 V=1 --keep-going" ||
+      {
+        S=$?;
+        make V=1 distcheck;
+        find . -name test-suite.log |
+        xargs cat;
+        return $S;
+      };
     else
-      exec_prop_check "make -j V=1 --keep-going install";
+      make --keep-going -j 3 install;
       S=$?;
       if [ "$S" = "0" ]; then
         . scripts/get-libjvm-path.sh || return $?;
@@ -70,7 +79,7 @@ script:
       elif [ "$S" = "42" ]; then
         return $S;
       else
-        make V=1;
+        make V=1 install;
         return $S;
       fi;
     fi
@@ -101,7 +110,7 @@ matrix:
       install:
       before_script:
       script:
-        - export COPYRIGHTVERBOSITY=2
+        - export COPYRIGHTVERBOSITY=1
         - tests/copyright/check.sh . .
     - env: B=trusty-cmake
       compiler: clang
@@ -115,7 +124,12 @@ matrix:
             -DCMAKE_C_FLAGS=-Werror
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make -j install
+        - make --keep-going -j 3 install ||
+          {
+            S=$?;
+            make V=1 install;
+            return $S;
+          }
     - env: B=check
       os: osx
       osx_image: xcode8
