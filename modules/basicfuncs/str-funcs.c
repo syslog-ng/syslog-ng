@@ -186,14 +186,14 @@ tf_strip(LogMessage *msg, gint argc, GString *argv[], GString *result)
         continue;
 
       gint spaces_end = 0;
-      while (isspace(argv[i]->str[argv[i]->len - spaces_end - 1]) && spaces_end < argv[i]->len)
+      while (g_ascii_isspace(argv[i]->str[argv[i]->len - spaces_end - 1]) && spaces_end < argv[i]->len)
         spaces_end++;
 
       if (argv[i]->len == spaces_end)
         continue;
 
       gint spaces_start = 0;
-      while (isspace(argv[i]->str[spaces_start]))
+      while (g_ascii_isspace(argv[i]->str[spaces_start]))
         spaces_start++;
 
       if (result->len > 0)
