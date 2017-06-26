@@ -24,6 +24,7 @@
 
 #include "syslog-ng.h"
 #include "driver.h"
+#include "affile-common.h"
 #include "file-reader.h"
 #include "directory-monitor.h"
 #include "directory-monitor-factory.h"

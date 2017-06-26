@@ -33,7 +33,6 @@
 #include "logproto-file-writer.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
-#include "compat/lfs.h"
 #include "logwriter.h"
 
 #include <iv.h>
