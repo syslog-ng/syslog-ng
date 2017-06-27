@@ -44,6 +44,7 @@ struct _LogDBParser
   ino_t db_file_inode;
   time_t db_file_mtime;
   gboolean db_file_reloading;
+  gboolean drop_unmatched;
 };
 
 static void
@@ -179,6 +180,7 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
                       gsize input_len)
 {
   LogDBParser *self = (LogDBParser *) s;
+  gboolean matched = FALSE;
 
   if (G_UNLIKELY(!self->db_file_reloading && (self->db_file_last_check == 0
                                               || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5)))
@@ -209,11 +211,14 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
       log_msg_make_writable(pmsg, path_options);
 
       if (G_UNLIKELY(self->super.super.template))
-        pattern_db_process_with_custom_message(self->db, *pmsg, input, input_len);
+        matched = pattern_db_process_with_custom_message(self->db, *pmsg, input, input_len);
       else
-        pattern_db_process(self->db, *pmsg);
+        matched = pattern_db_process(self->db, *pmsg);
     }
-  return TRUE;
+
+  if (!self->drop_unmatched)
+    matched = TRUE;
+  return matched;
 }
 
 void
@@ -222,6 +227,12 @@ log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file)
   if (self->db_file)
     g_free(self->db_file);
   self->db_file = g_strdup(db_file);
+}
+
+void
+log_db_parser_set_drop_unmatched(LogDBParser *self, gboolean setting)
+{
+  self->drop_unmatched = setting;
 }
 
 /*
