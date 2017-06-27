@@ -225,6 +225,12 @@ journald_seek_cursor(Journald *self, const gchar *cursor)
 }
 
 int
+journald_test_cursor(Journald *self, const gchar *cursor)
+{
+  return sd_journal_test_cursor(self->journal, cursor);
+}
+
+int
 journald_get_fd(Journald *self)
 {
   return sd_journal_get_fd(self->journal);
