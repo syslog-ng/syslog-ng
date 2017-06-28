@@ -114,12 +114,6 @@ _open_fd(FileOpener *self, const gchar *name)
 
   fd = open(name, self->options->open_flags, mode);
 
-  if (self->options->is_pipe && fd < 0 && errno == ENOENT)
-    {
-      if (mkfifo(name, mode) >= 0)
-        fd = open(name, self->options->open_flags, mode);
-    }
-
   return fd;
 }
 
