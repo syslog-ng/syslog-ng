@@ -29,6 +29,7 @@
 
 #include "file-perms.h"
 #include "transport/logtransport.h"
+#include "logproto/logproto-server.h"
 #include <string.h>
 
 typedef struct _FileOpenerOptions
@@ -46,12 +47,19 @@ struct _FileOpener
   FileOpenerOptions *options;
   gboolean (*prepare_open)(FileOpener *self, const gchar *name);
   LogTransport *(*construct_transport)(FileOpener *self, gint fd);
+  LogProtoServer *(*construct_src_proto)(FileOpener *self, LogTransport *transport, LogProtoServerOptions *proto_options);
 };
 
 static inline LogTransport *
 file_opener_construct_transport(FileOpener *self, gint fd)
 {
   return self->construct_transport(self, fd);
+}
+
+static inline LogProtoServer *
+file_opener_construct_src_proto(FileOpener *self, LogTransport *transport, LogProtoServerOptions *proto_options)
+{
+  return self->construct_src_proto(self, transport, proto_options);
 }
 
 gboolean file_opener_open_fd(FileOpener *self, gchar *name, gint *fd);
