@@ -39,7 +39,7 @@ log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
   return persist_name;
 }
 
-void
+static void
 log_threaded_dest_driver_suspend(LogThrDestDriver *self)
 {
   iv_validate_now();
