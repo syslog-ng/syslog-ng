@@ -60,9 +60,9 @@ _is_path_spurious(const gchar *name)
 }
 
 static inline gboolean
-_obtain_capabilities(gchar *name, FileOpenerOptions *options, FilePermOptions *perm_opts, cap_t *act_caps)
+_obtain_capabilities(FileOpener *self, gchar *name, cap_t *act_caps)
 {
-  if (options->needs_privileges)
+  if (self->options->needs_privileges)
     {
       g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
       g_process_cap_modify(CAP_SYSLOG, TRUE);
@@ -72,8 +72,8 @@ _obtain_capabilities(gchar *name, FileOpenerOptions *options, FilePermOptions *p
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
     }
 
-  if (options->create_dirs && perm_opts &&
-      !file_perm_options_create_containing_directory(perm_opts, name))
+  if (self->options->create_dirs &&
+      !file_perm_options_create_containing_directory(&self->options->file_perm_options, name))
     {
       return FALSE;
     }
@@ -82,7 +82,7 @@ _obtain_capabilities(gchar *name, FileOpenerOptions *options, FilePermOptions *p
 }
 
 static inline void
-_set_fd_permission(FilePermOptions *perm_opts, int fd)
+_set_fd_permission(FileOpener *self, int fd)
 {
   if (fd != -1)
     {
@@ -91,42 +91,42 @@ _set_fd_permission(FilePermOptions *perm_opts, int fd)
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
 
-      if (perm_opts)
-        file_perm_options_apply_fd(perm_opts, fd);
+      file_perm_options_apply_fd(&self->options->file_perm_options, fd);
     }
 }
 
 static inline int
-_open_fd(const gchar *name, FileOpenerOptions *options, FilePermOptions *perm_opts)
+_open_fd(FileOpener *self, const gchar *name)
 {
+  FilePermOptions *perm_opts = &self->options->file_perm_options;
   int fd;
   int mode = (perm_opts && (perm_opts->file_perm >= 0))
              ? perm_opts->file_perm : 0600;
 
-  fd = open(name, options->open_flags, mode);
+  fd = open(name, self->options->open_flags, mode);
 
-  if (options->is_pipe && fd < 0 && errno == ENOENT)
+  if (self->options->is_pipe && fd < 0 && errno == ENOENT)
     {
       if (mkfifo(name, mode) >= 0)
-        fd = open(name, options->open_flags, mode);
+        fd = open(name, self->options->open_flags, mode);
     }
 
   return fd;
 }
 
 static inline void
-_validate_file_type(const gchar *name, FileOpenerOptions *options)
+_validate_file_type(FileOpener *self, const gchar *name)
 {
   struct stat st;
 
   if (stat(name, &st) >= 0)
     {
-      if (options->is_pipe && !S_ISFIFO(st.st_mode))
+      if (self->options->is_pipe && !S_ISFIFO(st.st_mode))
         {
           msg_warning("WARNING: you are using the pipe driver, underlying file is not a FIFO, it should be used by file()",
                       evt_tag_str("filename", name));
         }
-      else if (!options->is_pipe && S_ISFIFO(st.st_mode))
+      else if (!self->options->is_pipe && S_ISFIFO(st.st_mode))
         {
           msg_warning("WARNING: you are using the file driver, underlying file is a FIFO, it should be used by pipe()",
                       evt_tag_str("filename", name));
@@ -134,8 +134,8 @@ _validate_file_type(const gchar *name, FileOpenerOptions *options)
     }
 }
 
-static gboolean
-affile_open_file(gchar *name, FileOpenerOptions *options, gint *fd)
+gboolean
+file_opener_open_fd(FileOpener *self, gchar *name, gint *fd)
 {
   cap_t saved_caps;
 
@@ -148,18 +148,18 @@ affile_open_file(gchar *name, FileOpenerOptions *options, gint *fd)
 
   saved_caps = g_process_cap_save();
 
-  if (!_obtain_capabilities(name, options, &options->file_perm_options, &saved_caps))
+  if (!_obtain_capabilities(self, name, &saved_caps))
     {
       g_process_cap_restore(saved_caps);
       return FALSE;
     }
 
-  _validate_file_type(name, options);
+  _validate_file_type(self, name);
 
-  *fd = _open_fd(name, options, &options->file_perm_options);
+  *fd = _open_fd(self, name);
 
   if (!is_file_device(name))
-    _set_fd_permission(&options->file_perm_options, *fd);
+    _set_fd_permission(self, *fd);
 
   g_process_cap_restore(saved_caps);
 
@@ -168,12 +168,6 @@ affile_open_file(gchar *name, FileOpenerOptions *options, gint *fd)
             evt_tag_int("fd", *fd));
 
   return (*fd != -1);
-}
-
-gboolean
-file_opener_open_fd(FileOpener *self, gchar *name, gint *fd)
-{
-  return affile_open_file(name, self->options, fd);
 }
 
 void
