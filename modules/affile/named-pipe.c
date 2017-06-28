@@ -23,6 +23,33 @@
 #include "file-specializations.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
+#include "messages.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+
+static gboolean
+_prepare_open(FileOpener *self, const gchar *name)
+{
+  struct stat st;
+
+  if (stat(name, &st) < 0 &&
+      (errno == ENOENT || errno == ENOTDIR))
+    {
+      if (mkfifo(name, self->options->file_perm_options.file_perm) < 0)
+        {
+          msg_error("Error creating named pipe, mkfifo() returned an error",
+                    evt_tag_str("file", name),
+                    evt_tag_str("error", g_strerror(errno)));
+          return FALSE;
+        }
+      return TRUE;
+    }
+
+  return TRUE;
+}
 
 static LogTransport *
 _construct(FileOpener *self, gint fd)
@@ -38,6 +65,7 @@ file_opener_for_named_pipes_new(void)
 {
   FileOpener *self = file_opener_new();
 
+  self->prepare_open = _prepare_open;
   self->construct_transport = _construct;
   return self;
 }
