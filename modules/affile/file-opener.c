@@ -117,11 +117,6 @@ _open_fd(FileOpener *self, const gchar *name)
   return fd;
 }
 
-static inline void
-_validate_file_type(FileOpener *self, const gchar *name)
-{
-}
-
 gboolean
 file_opener_open_fd(FileOpener *self, gchar *name, gint *fd)
 {
@@ -142,7 +137,6 @@ file_opener_open_fd(FileOpener *self, gchar *name, gint *fd)
       return FALSE;
     }
 
-  _validate_file_type(self, name);
   if (!file_opener_prepare_open(self, name))
     return FALSE;
 
