@@ -22,6 +22,30 @@
  */
 #include "file-specializations.h"
 #include "transport/transport-file.h"
+#include "messages.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+
+static gboolean
+_prepare_open(FileOpener *self, const gchar *name)
+{
+  struct stat st;
+
+  if (stat(name, &st) >= 0)
+    {
+      if (S_ISFIFO(st.st_mode))
+        {
+          msg_error("You are using the file() driver, underlying file is a FIFO, it should be used by pipe()",
+                    evt_tag_str("filename", name));
+          errno = EINVAL;
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
 
 static LogTransport *
 _construct(FileOpener *self, gint fd)
@@ -37,6 +61,7 @@ file_opener_for_regular_files_new(void)
 {
   FileOpener *self = file_opener_new();
 
+  self->prepare_open = _prepare_open;
   self->construct_transport = _construct;
   return self;
 }

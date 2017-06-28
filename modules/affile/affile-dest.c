@@ -778,7 +778,7 @@ affile_dd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
-  self->file_opener = file_opener_new();
+  self->file_opener = file_opener_for_regular_files_new();
   return &self->super.super;
 }
 
