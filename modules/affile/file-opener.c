@@ -120,16 +120,6 @@ _open_fd(FileOpener *self, const gchar *name)
 static inline void
 _validate_file_type(FileOpener *self, const gchar *name)
 {
-  struct stat st;
-
-  if (stat(name, &st) >= 0)
-    {
-      if (!self->options->is_pipe && S_ISFIFO(st.st_mode))
-        {
-          msg_warning("WARNING: you are using the file driver, underlying file is a FIFO, it should be used by pipe()",
-                      evt_tag_str("filename", name));
-        }
-    }
 }
 
 gboolean
