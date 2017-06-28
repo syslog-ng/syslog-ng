@@ -59,6 +59,7 @@ struct _GlobalConfig
 {
   /* version number specified by the user, set _after_ parsing is complete */
   /* hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
+  /* it can be < 0, which means that the parsed file is a partial, local config */
   gint user_version;
   
   /* version number as parsed from the configuration file, it can be set
