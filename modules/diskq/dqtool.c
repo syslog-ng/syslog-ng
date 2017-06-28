@@ -83,14 +83,14 @@ open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options)
     {
       options->disk_buf_size = 128;
       options->mem_buf_size = 1024 * 1024;
-      *lq = log_queue_disk_reliable_new(options);
+      *lq = log_queue_disk_reliable_new(options, NULL);
     }
   else
     {
       options->disk_buf_size = 1;
       options->mem_buf_size = 128;
       options->qout_size = 128;
-      *lq = log_queue_disk_non_reliable_new(options);
+      *lq = log_queue_disk_non_reliable_new(options, NULL);
     }
 
   if (!log_queue_disk_load_queue(*lq, filename))

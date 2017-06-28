@@ -61,7 +61,7 @@ _init_diskq_for_test(gint64 size, gint64 membuf_size)
   LogQueueDiskReliable *dq;
 
   _construct_options(&options, size, membuf_size, TRUE);
-  LogQueue *q = log_queue_disk_reliable_new(&options);
+  LogQueue *q = log_queue_disk_reliable_new(&options, NULL);
   struct stat st;
   num_of_ack = 0;
   gchar *filename = FILENAME;

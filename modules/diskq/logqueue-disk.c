@@ -215,7 +215,8 @@ _free(LogQueue *s)
 
   qdisk_deinit(self->qdisk);
   qdisk_free(self->qdisk);
-  g_free(self);
+
+  log_queue_free_method(s);
 }
 
 static gboolean
@@ -331,9 +332,9 @@ _restart_corrupted(LogQueueDisk *self)
 
 
 void
-log_queue_disk_init_instance(LogQueueDisk *self)
+log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
 {
-  log_queue_init_instance(&self->super,NULL);
+  log_queue_init_instance(&self->super, persist_name);
   self->qdisk = qdisk_new();
 
   self->super.type = log_queue_disk_type;

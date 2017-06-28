@@ -54,21 +54,22 @@ test_diskq_become_full(gboolean reliable)
   fed_messages = 0;
   DiskQueueOptions options = {0};
 
+  const gchar *persist_name = "test_diskq";
+
   options.reliable = reliable;
   if (reliable)
     {
       _construct_options(&options, 1000, 1000, reliable);
-      q = log_queue_disk_reliable_new(&options);
+      q = log_queue_disk_reliable_new(&options, persist_name);
     }
   else
     {
       _construct_options(&options, 1000, 0, reliable);
-      q = log_queue_disk_non_reliable_new(&options);
+      q = log_queue_disk_non_reliable_new(&options, persist_name);
     }
 
   log_queue_set_use_backlog(q, TRUE);
 
-  q->persist_name = "test_diskq";
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
