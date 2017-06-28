@@ -27,7 +27,7 @@
 #include "file-opener.h"
 
 FileOpener *file_opener_for_named_pipes_new(void);
-FileOpener *file_opener_for_followed_files_new(void);
+FileOpener *file_opener_for_regular_files_new(void);
 FileOpener *file_opener_for_stdin_new(void);
 FileOpener *file_opener_for_devkmsg_new(void);
 FileOpener *file_opener_for_prockmsg_new(void);
