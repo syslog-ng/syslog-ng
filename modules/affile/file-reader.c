@@ -156,6 +156,9 @@ _construct_proto(FileReader *self, gint fd)
       return format_handler->construct_proto(&reader_options->parse_options, transport, proto_options);
     }
 
+  if (self->opener->construct_src_proto)
+    return file_opener_construct_src_proto(self->opener, transport, proto_options);
+
   if (self->options->pad_size)
     {
       proto_options->position_tracking_enabled = TRUE;
