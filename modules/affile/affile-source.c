@@ -193,7 +193,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
         self->file_reader_options.follow_freq = 1000;
     }
   if (self->file_reader_options.follow_freq > 0)
-    self->file_opener = file_opener_for_followed_files_new();
+    self->file_opener = file_opener_for_regular_files_new();
   else if (_is_linux_proc_kmsg(self->filename->str))
     {
       self->file_opener_options.needs_privileges = TRUE;
@@ -202,7 +202,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
   else if (_is_linux_dev_kmsg(self->filename->str))
     self->file_opener = file_opener_for_devkmsg_new();
   else
-    self->file_opener = file_opener_new();
+    self->file_opener = file_opener_for_regular_files_new();
 
   return &self->super.super;
 }

@@ -22,7 +22,7 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/file-opener.c				\
 	modules/affile/file-opener.h				\
 	modules/affile/file-specializations.h			\
-	modules/affile/followed-files.c				\
+	modules/affile/regular-files.c				\
 	modules/affile/named-pipe.c				\
 	modules/affile/linux-kmsg.c				\
 	modules/affile/affile-source.c				\

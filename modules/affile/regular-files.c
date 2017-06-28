@@ -33,7 +33,7 @@ _construct(FileOpener *self, gint fd)
 }
 
 FileOpener *
-file_opener_for_followed_files_new(void)
+file_opener_for_regular_files_new(void)
 {
   FileOpener *self = file_opener_new();
 
