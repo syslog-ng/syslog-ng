@@ -36,6 +36,7 @@ static CfgLexerKeyword dbparser_keywords[] =
 
   /* correllate options */
   { "inject_mode",        KW_INJECT_MODE },
+  { "drop_unmatched",     KW_DROP_UNMATCHED },
   { "key",                KW_KEY },
   { "scope",              KW_SCOPE },
   { "timeout",            KW_TIMEOUT },
