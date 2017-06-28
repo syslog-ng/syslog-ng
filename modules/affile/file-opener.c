@@ -37,6 +37,15 @@
 #include <time.h>
 #include <stdlib.h>
 
+static inline gboolean
+file_opener_prepare_open(FileOpener *self, const gchar *name)
+{
+  if (self->prepare_open)
+    return self->prepare_open(self, name);
+  return TRUE;
+}
+
+
 static const gchar *spurious_paths[] = {"../", "/..", NULL};
 
 static inline gboolean
@@ -155,6 +164,8 @@ file_opener_open_fd(FileOpener *self, gchar *name, gint *fd)
     }
 
   _validate_file_type(self, name);
+  if (!file_opener_prepare_open(self, name))
+    return FALSE;
 
   *fd = _open_fd(self, name);
 

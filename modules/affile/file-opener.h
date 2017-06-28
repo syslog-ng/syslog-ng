@@ -44,6 +44,7 @@ typedef struct _FileOpener FileOpener;
 struct _FileOpener
 {
   FileOpenerOptions *options;
+  gboolean (*prepare_open)(FileOpener *self, const gchar *name);
   LogTransport *(*construct_transport)(FileOpener *self, gint fd);
 };
 
