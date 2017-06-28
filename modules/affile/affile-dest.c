@@ -34,6 +34,7 @@
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
 #include "logwriter.h"
+#include "file-specializations.h"
 
 #include <iv.h>
 #include <sys/types.h>
@@ -760,7 +761,6 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
   file_opener_options_defaults(&self->file_opener_options);
   self->file_opener_options.open_flags = DEFAULT_DW_REOPEN_FLAGS;
 
-  self->file_opener = file_opener_new();
   self->time_reap = -1;
   g_static_mutex_init(&self->lock);
   return self;
@@ -769,7 +769,10 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
 LogDriver *
 affile_dd_new(gchar *filename, GlobalConfig *cfg)
 {
-  return &affile_dd_new_instance(filename, cfg)->super.super;
+  AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
+
+  self->file_opener = file_opener_new();
+  return &self->super.super;
 }
 
 LogDriver *
@@ -780,5 +783,6 @@ afpipe_dd_new(gchar *filename, GlobalConfig *cfg)
   /* FIXME: these should be delegated to the FileOpener */
   self->file_opener_options.is_pipe = TRUE;
   self->file_opener_options.open_flags = DEFAULT_DW_REOPEN_FLAGS_PIPE;
+  self->file_opener = file_opener_for_named_pipes_new();
   return &self->super.super;
 }

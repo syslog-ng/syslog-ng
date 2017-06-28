@@ -48,6 +48,14 @@ _prepare_open(FileOpener *self, const gchar *name)
       return TRUE;
     }
 
+  if (!S_ISFIFO(st.st_mode))
+    {
+      msg_error("You are using the pipe() driver, underlying file is not a FIFO, it should be used by file()",
+                evt_tag_str("filename", name));
+      errno = EINVAL;
+      return FALSE;
+    }
+
   return TRUE;
 }
 
