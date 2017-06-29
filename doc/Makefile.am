@@ -6,11 +6,13 @@ xsd_DATA	= \
 		doc/xsd/patterndb-5.xsd
 
 EXTRA_DIST	+=  \
+		doc/man/dqtool.1.xml \
+		doc/man/loggen.1.xml \
+		doc/man/pdbtool.1.xml \
+		doc/man/syslog-debun.1.xml \
+		doc/man/syslog-ng-ctl.1.xml \
 		doc/man/syslog-ng.8.xml \
 		doc/man/syslog-ng.conf.5.xml \
-		doc/man/pdbtool.1.xml \
-		doc/man/loggen.1.xml \
-		doc/man/syslog-ng-ctl.1.xml \
 		doc/security/bof-2002-09-27.txt \
 		doc/security/dos-2000-11-22.txt \
 		$(xsd_DATA)
@@ -18,11 +20,13 @@ EXTRA_DIST	+=  \
 
 if ENABLE_MANPAGES
 man_MANS	+= \
-		doc/man/syslog-ng.8 \
-		doc/man/syslog-ng.conf.5 \
-		doc/man/pdbtool.1 \
+		doc/man/dqtool.1 \
 		doc/man/loggen.1 \
-		doc/man/syslog-ng-ctl.1
+		doc/man/pdbtool.1 \
+		doc/man/syslog-debun.1 \
+		doc/man/syslog-ng-ctl.1 \
+		doc/man/syslog-ng.8 \
+		doc/man/syslog-ng.conf.5
 
 EXTRA_DIST	+= $(man_MANS)
 
