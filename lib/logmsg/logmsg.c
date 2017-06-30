@@ -622,7 +622,15 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
       log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
     }
 
-  while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, ref_handle, type, ofs, len, &new_entry))
+  NVReferencedSlice referenced_slice =
+  {
+    .handle = ref_handle,
+    .ofs = ofs,
+    .len = len,
+    .type = type
+  };
+
+  while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, &referenced_slice, &new_entry))
     {
       /* error allocating string in payload, reallocate */
       if (!nv_table_realloc(self->payload, &self->payload))

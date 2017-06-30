@@ -460,13 +460,13 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
 
 static void
 nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, const gchar *name, gsize name_len,
-                            NVHandle ref_handle, NVEntry *ref_entry, guint8 type, guint32 rofs, guint32 rlen)
+                            NVEntry *ref_entry, const NVReferencedSlice *referenced_slice)
 {
   ref_entry->referenced = TRUE;
-  entry->vindirect.handle = ref_handle;
-  entry->vindirect.ofs = rofs;
-  entry->vindirect.len = rlen;
-  entry->vindirect.type = type;
+  entry->vindirect.handle = referenced_slice->handle;
+  entry->vindirect.ofs = referenced_slice->ofs;
+  entry->vindirect.len = referenced_slice->len;
+  entry->vindirect.type = referenced_slice->type;
 
   if (entry->indirect)
     return;
@@ -487,27 +487,28 @@ nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, cons
 
 static gboolean
 nv_table_copy_referenced_value(NVTable *self, NVEntry *ref_entry, NVHandle handle, const gchar *name,
-                               gsize name_len, guint32 rofs, guint32 rlen, gboolean *new_entry)
+                               gsize name_len, NVReferencedSlice *ref_slice, gboolean *new_entry)
 {
+
   gssize ref_length;
   const gchar *ref_value = nv_table_resolve_entry(self, ref_entry, &ref_length);
 
-  if (rofs > ref_length)
+  if (ref_slice->ofs > ref_length)
     {
-      rlen = 0;
-      rofs = 0;
+      ref_slice->len = 0;
+      ref_slice->ofs = 0;
     }
   else
     {
-      rlen = MIN(rofs + rlen, ref_length) - rofs;
+      ref_slice->len = MIN(ref_slice->ofs + ref_slice->len, ref_length) - ref_slice->ofs;
     }
 
-  return nv_table_add_value(self, handle, name, name_len, ref_value + rofs, rlen, new_entry);
+  return nv_table_add_value(self, handle, name, name_len, ref_value + ref_slice->ofs, ref_slice->len, new_entry);
 }
 
 gboolean
-nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle,
-                            guint8 type, guint32 rofs, guint32 rlen, gboolean *new_entry)
+nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len,
+                            NVReferencedSlice *referenced_slice, gboolean *new_entry)
 {
   NVEntry *entry, *ref_entry;
   NVIndexEntry *index_entry;
@@ -515,18 +516,18 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
 
   if (new_entry)
     *new_entry = FALSE;
-  ref_entry = nv_table_get_entry(self, ref_handle, &index_entry);
+  ref_entry = nv_table_get_entry(self, referenced_slice->handle, &index_entry);
 
-  if ((ref_entry && ref_entry->indirect) || handle == ref_handle)
+  if ((ref_entry && ref_entry->indirect) || handle == referenced_slice->handle)
     {
       /* NOTE: uh-oh, the to-be-referenced value is already an indirect
        * reference, this is not supported, copy the stuff */
-      return nv_table_copy_referenced_value(self, ref_entry, handle, name, name_len, rofs, rlen, new_entry);
+      return nv_table_copy_referenced_value(self, ref_entry, handle, name, name_len, referenced_slice, new_entry);
     }
 
 
   entry = nv_table_get_entry(self, handle, &index_entry);
-  if ((!entry && !new_entry && rlen == 0) || !ref_entry)
+  if ((!entry && !new_entry && referenced_slice->len == 0) || !ref_entry)
     {
       /* we don't store zero length matches unless the caller is
        * interested in whether a new entry was created. It is used by
@@ -547,7 +548,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
   if (entry && (((guint) entry->alloc_len) >= NV_ENTRY_INDIRECT_HDR + name_len + 1))
     {
       /* this value already exists and the new reference fits in the old space */
-      nv_table_set_indirect_entry(self, handle, entry, name, name_len, ref_handle, ref_entry, type, rofs, rlen);
+      nv_table_set_indirect_entry(self, handle, entry, name, name_len, ref_entry, referenced_slice);
       return TRUE;
     }
   else if (!entry && new_entry)
@@ -564,7 +565,9 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
     }
 
   ofs = nv_table_get_ofs_for_an_entry(self, entry);
-  nv_table_set_indirect_entry(self, handle, entry, name, name_len, ref_handle, ref_entry, type, rofs, rlen);
+
+  nv_table_set_indirect_entry(self, handle, entry, name, name_len, ref_entry, referenced_slice);
+
   nv_table_set_table_entry(self, handle, ofs, index_entry);
 
   return TRUE;
