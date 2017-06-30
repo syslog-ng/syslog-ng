@@ -526,7 +526,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
 
 
   entry = nv_table_get_entry(self, handle, &index_entry);
-  if (!entry && !new_entry && (rlen == 0 || !ref_entry))
+  if ((!entry && !new_entry && rlen == 0) || !ref_entry)
     {
       /* we don't store zero length matches unless the caller is
        * interested in whether a new entry was created. It is used by
