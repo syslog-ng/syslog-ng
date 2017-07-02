@@ -14,6 +14,16 @@
 # pointer is aligned to the name of the variable
 --align-pointer=name
 
+# remove extra space padding around parens on the inside and outside
+--unpad-paren
+# insert space padding between a header (e.g. 'if', 'for', 'while'...) and the following paren
+--pad-header
+# insert space padding around operators.
+--pad-oper
+
+# don't break one-line blocks
+--keep-one-line-blocks
+
 # check files recursively in folder
 --recursive
 
