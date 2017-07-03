@@ -26,6 +26,7 @@
 #include "fdhelpers.h"
 #include "pathutils.h"
 #include "cfg.h"
+#include "transport/transport-file.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -185,7 +186,6 @@ FileOpener *
 file_opener_new(void)
 {
   FileOpener *self = g_new0(FileOpener, 1);
-
   return self;
 }
 

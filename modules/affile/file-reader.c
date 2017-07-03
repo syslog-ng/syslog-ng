@@ -49,35 +49,17 @@
 
 #include <iv.h>
 
-LogTransport *
-log_transport_followed_file_new(gint fd)
+static gboolean
+_is_linux_proc_kmsg(const gchar *filename)
 {
-  LogTransport *self = log_transport_file_new(fd);
-
-  self->read = log_transport_file_read_and_ignore_eof_method;
-  return self;
-}
-LogTransport *
-log_transport_source_named_pipe_new(gint fd)
-{
-  LogTransport *self = log_transport_pipe_new(fd);
-
-  self->read = log_transport_file_read_and_ignore_eof_method;
-  return self;
+#ifdef __linux__
+  if (strcmp(filename, "/proc/kmsg") == 0)
+    return TRUE;
+#endif
+  return FALSE;
 }
 
-LogTransport *
-log_transport_devkmsg_new(gint fd)
-{
-  if (lseek(fd, 0, SEEK_END) < 0)
-    {
-      msg_error("Error seeking /dev/kmsg to the end",
-                evt_tag_str("error", g_strerror(errno)));
-    }
-  return log_transport_file_new(fd);
-}
-
-static inline gboolean
+static gboolean
 _is_linux_dev_kmsg(const gchar *filename)
 {
 #ifdef __linux__
@@ -154,16 +136,7 @@ _construct_poll_events(FileReader *self, gint fd)
 static LogTransport *
 _construct_transport(FileReader *self, gint fd)
 {
-  if (self->is_pipe)
-    return log_transport_source_named_pipe_new(fd);
-  else if (self->options->follow_freq > 0)
-    return log_transport_followed_file_new(fd);
-  else if (affile_is_linux_proc_kmsg(self->filename->str))
-    return log_transport_prockmsg_new(fd, 10);
-  else if (_is_linux_dev_kmsg(self->filename->str))
-    return log_transport_devkmsg_new(fd);
-  else
-    return log_transport_pipe_new(fd);
+  return file_opener_construct_transport(self->opener, fd);
 }
 
 static LogProtoServer *
@@ -188,7 +161,7 @@ _construct_proto(FileReader *self, gint fd)
       proto_options->position_tracking_enabled = TRUE;
       return log_proto_padded_record_server_new(transport, proto_options, self->options->pad_size);
     }
-  else if (affile_is_linux_proc_kmsg(self->filename->str))
+  else if (_is_linux_proc_kmsg(self->filename->str))
     return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
   else if (_is_linux_dev_kmsg(self->filename->str))
     return log_proto_dgram_server_new(transport, proto_options);
