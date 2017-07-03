@@ -50,6 +50,14 @@
 #include <iv.h>
 
 LogTransport *
+log_transport_followed_file_new(gint fd)
+{
+  LogTransport *self = log_transport_file_new(fd);
+
+  self->read = log_transport_file_read_and_ignore_eof_method;
+  return self;
+}
+LogTransport *
 log_transport_devkmsg_new(gint fd)
 {
   if (lseek(fd, 0, SEEK_END) < 0)
@@ -148,7 +156,7 @@ _construct_transport(FileReader *self, gint fd)
   if (self->file_reader_options->file_open_options.is_pipe)
     return log_transport_pipe_new(fd);
   else if (self->file_reader_options->follow_freq > 0)
-    return log_transport_file_new(fd);
+    return log_transport_followed_file_new(fd);
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_transport_prockmsg_new(fd, 10);
   else if (_is_linux_dev_kmsg(self->filename->str))
