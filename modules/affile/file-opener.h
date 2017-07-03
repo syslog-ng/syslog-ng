@@ -28,6 +28,7 @@
 #include "compat/lfs.h"
 
 #include "file-perms.h"
+#include "transport/logtransport.h"
 #include <string.h>
 
 typedef struct _FileOpenerOptions
@@ -39,26 +40,24 @@ typedef struct _FileOpenerOptions
   gint create_dirs;
 } FileOpenerOptions;
 
-typedef struct _FileOpener
+typedef struct _FileOpener FileOpener;
+struct _FileOpener
 {
   FileOpenerOptions *options;
-} FileOpener;
+  LogTransport *(*construct_transport)(FileOpener *self, gint fd);
+};
+
+static inline LogTransport *
+file_opener_construct_transport(FileOpener *self, gint fd)
+{
+  return self->construct_transport(self, fd);
+}
 
 gboolean file_opener_open_fd(FileOpener *self, gchar *name, gint *fd);
 
 void file_opener_set_options(FileOpener *self, FileOpenerOptions *options);
 FileOpener *file_opener_new(void);
 void file_opener_free(FileOpener *self);
-
-static inline gboolean
-affile_is_linux_proc_kmsg(const gchar *filename)
-{
-#ifdef __linux__
-  if (strcmp(filename, "/proc/kmsg") == 0)
-    return TRUE;
-#endif
-  return FALSE;
-}
 
 void file_opener_options_defaults(FileOpenerOptions *options);
 void file_opener_options_init(FileOpenerOptions *options, GlobalConfig *cfg);

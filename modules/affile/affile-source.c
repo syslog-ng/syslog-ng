@@ -24,7 +24,7 @@
 #include "driver.h"
 #include "messages.h"
 #include "gprocess.h"
-#include "mainloop.h"
+#include "file-specializations.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -40,8 +40,29 @@
 #define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 #define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
+
+static gboolean
+_is_linux_proc_kmsg(const gchar *filename)
+{
+#ifdef __linux__
+  if (strcmp(filename, "/proc/kmsg") == 0)
+    return TRUE;
+#endif
+  return FALSE;
+}
+
+static gboolean
+_is_linux_dev_kmsg(const gchar *filename)
+{
+#ifdef __linux__
+  if (strcmp(filename, "/dev/kmsg") == 0)
+    return TRUE;
+#endif
+  return FALSE;
+}
+
 static inline gboolean
-affile_is_device_node(const gchar *filename)
+_is_device_node(const gchar *filename)
 {
   struct stat st;
 
@@ -143,11 +164,7 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
 
   file_reader_options_defaults(&self->file_reader_options);
   file_opener_options_defaults(&self->file_opener_options);
-  if (affile_is_linux_proc_kmsg(filename))
-    self->file_opener_options.needs_privileges = TRUE;
 
-  /* this should move to the respective source driver constructors */
-  self->file_opener = file_opener_new();
 
   return self;
 }
@@ -157,6 +174,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
+  /* FIXME: should be delegated to the opener */
   self->file_opener_options.is_pipe = FALSE;
   self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
   self->file_reader_options.stats_source = SCS_FILE;
@@ -169,11 +187,22 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
     }
   else
     {
-      if (affile_is_device_node(filename) || affile_is_linux_proc_kmsg(filename))
+      if (_is_device_node(filename) || _is_linux_proc_kmsg(filename))
         self->file_reader_options.follow_freq = 0;
       else
         self->file_reader_options.follow_freq = 1000;
     }
+  if (self->file_reader_options.follow_freq > 0)
+    self->file_opener = file_opener_for_followed_files_new();
+  else if (_is_linux_proc_kmsg(self->filename->str))
+    {
+      self->file_opener_options.needs_privileges = TRUE;
+      self->file_opener = file_opener_for_prockmsg_new();
+    }
+  else if (_is_linux_dev_kmsg(self->filename->str))
+    self->file_opener = file_opener_for_devkmsg_new();
+  else
+    self->file_opener = file_opener_new();
 
   return &self->super.super;
 }
@@ -198,6 +227,8 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
     {
       self->file_reader_options.reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
     }
+
+  self->file_opener = file_opener_for_named_pipes_new();
 
   return &self->super.super;
 }

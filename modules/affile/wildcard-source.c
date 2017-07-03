@@ -23,6 +23,8 @@
 #include "wildcard-source.h"
 #include "directory-monitor-factory.h"
 #include "messages.h"
+#include "file-specializations.h"
+
 #include <fcntl.h>
 
 #define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
@@ -356,7 +358,7 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
 
   self->max_files = DEFAULT_MAX_FILES;
-  self->file_opener = file_opener_new();
+  self->file_opener = file_opener_for_followed_files_new();
 
   return &self->super.super;
 }
