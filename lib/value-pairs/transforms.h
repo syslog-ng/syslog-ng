@@ -30,8 +30,8 @@
 typedef struct _ValuePairsTransform ValuePairsTransform;
 typedef struct _ValuePairsTransformSet ValuePairsTransformSet;
 
-ValuePairsTransform *value_pairs_new_transform_add_prefix (const gchar *prefix);
-ValuePairsTransform *value_pairs_new_transform_shift (gint amount);
+ValuePairsTransform *value_pairs_new_transform_add_prefix(const gchar *prefix);
+ValuePairsTransform *value_pairs_new_transform_shift(gint amount);
 ValuePairsTransform *value_pairs_new_transform_replace_prefix(const gchar *prefix, const gchar *new_prefix);
 void value_pairs_transform_free(ValuePairsTransform *t);
 

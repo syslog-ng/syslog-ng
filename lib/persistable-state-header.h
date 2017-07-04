@@ -37,7 +37,7 @@ typedef struct _PersistableStateHeader
    *
    * Every State structure must have it's own byte-order swapping function
    */
-  guint8 big_endian:1;
+  guint8 big_endian: 1;
 } PersistableStateHeader;
 
 #endif

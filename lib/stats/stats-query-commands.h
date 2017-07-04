@@ -26,6 +26,6 @@
 
 #include "syslog-ng.h"
 
-GString* process_query_command(GString *cmd, gpointer user_data);
+GString *process_query_command(GString *cmd, gpointer user_data);
 
 #endif

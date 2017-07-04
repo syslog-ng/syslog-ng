@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef APPHOOK_H_INCLUDED
 #define APPHOOK_H_INCLUDED
 

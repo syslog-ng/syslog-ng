@@ -92,7 +92,7 @@ struct _StatsCounterGroupInit
 {
   const gchar **counter_names;
   void (*init)(StatsCounterGroupInit *self, StatsCounterGroup *counter_group);
-  gboolean (*equals)(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
+  gboolean(*equals)(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
 };
 
 gboolean stats_counter_group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
@@ -124,7 +124,7 @@ typedef struct _StatsCluster
   guint16 use_count;
   guint16 live_mask;
   guint16 indexed_mask;
-  guint16 dynamic:1;
+  guint16 dynamic: 1;
   gchar *query_key;
 } StatsCluster;
 
@@ -147,6 +147,7 @@ gboolean stats_cluster_is_indexed(StatsCluster *self, gint type);
 StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
 
-void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance, StatsCounterGroupInit counter_group_ctor);
+void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+                           StatsCounterGroupInit counter_group_ctor);
 
 #endif

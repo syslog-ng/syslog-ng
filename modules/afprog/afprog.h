@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef AFPROG_H_INCLUDED
 #define AFPROG_H_INCLUDED
 

@@ -40,15 +40,15 @@
 
 /* base event map, with no namespace */
 
-#define EVT_TAG_PID		"pid"
-#define EVT_TAG_PROG		"prog"
-#define EVT_TAG_ISOSTAMP	"isostamp"
-#define EVT_TAG_UTCSTAMP	"utcstamp"
-#define EVT_TAG_TIMEZONE	"tz"
-#define EVT_TAG_MSGID		"msgid"
+#define EVT_TAG_PID   "pid"
+#define EVT_TAG_PROG    "prog"
+#define EVT_TAG_ISOSTAMP  "isostamp"
+#define EVT_TAG_UTCSTAMP  "utcstamp"
+#define EVT_TAG_TIMEZONE  "tz"
+#define EVT_TAG_MSGID   "msgid"
 
-#define EVT_TAG_FD		"fd"
-#define EVT_TAG_OSERROR		"error"
-#define EVT_TAG_FILENAME	"filename"
+#define EVT_TAG_FD    "fd"
+#define EVT_TAG_OSERROR   "error"
+#define EVT_TAG_FILENAME  "filename"
 
 #endif

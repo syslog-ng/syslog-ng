@@ -31,7 +31,7 @@
 #define LTM_INJECT_ERROR(err)   (GUINT_TO_POINTER(err)), 0
 /* macro to be used at the end of the I/O stream */
 #define LTM_EOF                 NULL, 0
-#define LTM_PADDING		"padd", -1, "padd", -1, "padd", -1, "padd", -1, "padd", -1
+#define LTM_PADDING   "padd", -1, "padd", -1, "padd", -1, "padd", -1, "padd", -1
 
 LogTransport *
 log_transport_mock_stream_new(gchar *read_buffer1, gssize read_buffer_length1, ...);

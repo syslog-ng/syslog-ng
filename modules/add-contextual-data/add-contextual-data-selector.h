@@ -28,14 +28,15 @@
 
 typedef struct _AddContextualDataSelector AddContextualDataSelector;
 
-struct _AddContextualDataSelector{
+struct _AddContextualDataSelector
+{
   gchar *(*resolve)(AddContextualDataSelector *self, LogMessage *msg);
   void (*free)(AddContextualDataSelector *self);
-  AddContextualDataSelector*(*clone)(AddContextualDataSelector *self, GlobalConfig *cfg);
-  gboolean (*init)(AddContextualDataSelector *self, GList *ordered_selectors);
+  AddContextualDataSelector *(*clone)(AddContextualDataSelector *self, GlobalConfig *cfg);
+  gboolean(*init)(AddContextualDataSelector *self, GList *ordered_selectors);
 };
 
-static inline gchar*
+static inline gchar *
 add_contextual_data_selector_resolve(AddContextualDataSelector *self, LogMessage *msg)
 {
   if (self && self->resolve)

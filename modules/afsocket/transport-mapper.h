@@ -45,7 +45,7 @@ struct _TransportMapper
   const gchar *logproto;
   gint stats_source;
 
-  gboolean (*apply_transport)(TransportMapper *self, GlobalConfig *cfg);
+  gboolean(*apply_transport)(TransportMapper *self, GlobalConfig *cfg);
   LogTransport *(*construct_log_transport)(TransportMapper *self, gint fd);
   void (*free_fn)(TransportMapper *self);
 };

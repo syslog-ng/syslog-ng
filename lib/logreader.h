@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOGREADER_H_INCLUDED
 #define LOGREADER_H_INCLUDED
 
@@ -54,7 +54,8 @@ typedef struct _LogReaderOptions
 
 typedef struct _LogReader LogReader;
 
-void log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance);
+void log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, gint stats_level,
+                            gint stats_source, const gchar *stats_id, const gchar *stats_instance);
 void log_reader_set_follow_filename(LogReader *self, const gchar *follow_filename);
 void log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr);
 void log_reader_set_immediate_check(LogReader *s);

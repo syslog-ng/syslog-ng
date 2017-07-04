@@ -32,7 +32,7 @@
 #include <netinet/in.h>
 
 #ifndef SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE
-struct sockaddr_storage 
+struct sockaddr_storage
 {
   union
   {

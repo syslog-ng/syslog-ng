@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef AFFILE_DEST_H_INCLUDED
 #define AFFILE_DEST_H_INCLUDED
 
@@ -36,15 +36,15 @@ typedef struct _AFFileDestDriver
   GStaticMutex lock;
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
-  gboolean filename_is_a_template:1,
-    template_escape:1,
-    use_fsync:1;
+  gboolean filename_is_a_template: 1,
+           template_escape: 1,
+           use_fsync: 1;
   FilePermOptions file_perm_options;
   FileOpenOptions file_open_options;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
   GHashTable *writer_hash;
-    
+
   gint overwrite_if_older;
   gboolean use_time_recvd;
   gint time_reap;

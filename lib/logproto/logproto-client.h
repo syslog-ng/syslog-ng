@@ -62,10 +62,10 @@ struct _LogProtoClient
   const LogProtoClientOptions *options;
   LogTransport *transport;
   /* FIXME: rename to something else */
-  gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond);
-  LogProtoStatus (*post)(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed);
-  LogProtoStatus (*flush)(LogProtoClient *s);
-  gboolean (*validate_options)(LogProtoClient *s);
+  gboolean(*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond);
+  LogProtoStatus(*post)(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed);
+  LogProtoStatus(*flush)(LogProtoClient *s);
+  gboolean(*validate_options)(LogProtoClient *s);
   void (*free_fn)(LogProtoClient *s);
   LogProtoClientFlowControlFuncs flow_control_funcs;
 };
@@ -149,10 +149,10 @@ void log_proto_client_free_method(LogProtoClient *s);
   }
 
 #define LOG_PROTO_CLIENT_PLUGIN(prefix, __name) \
-  {							\
-    .type = LL_CONTEXT_CLIENT_PROTO,		        \
-    .name = __name,					\
-    .construct = prefix ## _client_plugin_construct,	\
+  {             \
+    .type = LL_CONTEXT_CLIENT_PROTO,            \
+    .name = __name,         \
+    .construct = prefix ## _client_plugin_construct,  \
   }
 
 typedef struct _LogProtoClientFactory LogProtoClientFactory;
@@ -163,7 +163,8 @@ struct _LogProtoClientFactory
 };
 
 static inline LogProtoClient *
-log_proto_client_factory_construct(LogProtoClientFactory *self, LogTransport *transport, const LogProtoClientOptions *options)
+log_proto_client_factory_construct(LogProtoClientFactory *self, LogTransport *transport,
+                                   const LogProtoClientOptions *options)
 {
   return self->construct(transport, options);
 }

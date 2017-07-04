@@ -41,7 +41,8 @@ gboolean pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gch
 void pattern_db_advance_time(PatternDB *self, gint timeout);
 void pattern_db_timer_tick(PatternDB *self);
 gboolean pattern_db_process(PatternDB *self, LogMessage *msg);
-gboolean pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const gchar *message, gssize message_len);
+gboolean pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const gchar *message,
+                                                gssize message_len);
 void pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list);
 void pattern_db_expire_state(PatternDB *self);
 void pattern_db_forget_state(PatternDB *self);

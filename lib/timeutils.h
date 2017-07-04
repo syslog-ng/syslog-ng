@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef TIMEUTILS_H_INCLUDED
 #define TIMEUTILS_H_INCLUDED
 
@@ -53,7 +53,7 @@ typedef struct _ZoneInfo ZoneInfo;
 typedef struct _TimeZoneInfo TimeZoneInfo;
 
 gint32 time_zone_info_get_offset(const TimeZoneInfo *self, time_t stamp);
-TimeZoneInfo* time_zone_info_new(const gchar *tz);
+TimeZoneInfo *time_zone_info_new(const gchar *tz);
 void time_zone_info_free(TimeZoneInfo *self);
 
 extern const char *month_names_abbrev[];

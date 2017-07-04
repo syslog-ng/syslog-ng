@@ -33,8 +33,10 @@ typedef struct _NVIndexEntry NVIndexEntry;
 typedef struct _NVEntry NVEntry;
 typedef guint32 NVHandle;
 typedef struct _NVHandleDesc NVHandleDesc;
-typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data);
-typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data);
+typedef gboolean(*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
+                                      gpointer user_data);
+typedef gboolean(*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
+                                           gpointer user_data);
 
 #define NVHANDLE_MAX_VALUE ((NVHandle)-1)
 
@@ -118,14 +120,16 @@ nv_registry_get_handle_name(NVRegistry *self, NVHandle handle, gssize *length)
 struct _NVEntry
 {
   /* negative offset, counting from string table top, e.g. start of the string is at @top + ofs */
-  union {
-    struct {
+  union
+  {
+    struct
+    {
       /* make sure you don't exceed 8 bits here. So if you want to add new
        * bits, decrease the size of __bit_padding below */
-      guint8 indirect:1,
-             referenced:1,
-             unset:1,
-             __bit_padding:5;
+      guint8 indirect: 1,
+             referenced: 1,
+             unset: 1,
+             __bit_padding: 5;
     };
     guint8 flags;
   };
@@ -230,8 +234,8 @@ struct _NVTable
    * versions, but index_size is a more descriptive name */
   guint16 index_size;
   guint8 num_static_entries;
-  guint8 ref_cnt:7,
-    borrowed:1; /* specifies if the memory used by NVTable was borrowed from the container struct */
+  guint8 ref_cnt: 7,
+         borrowed: 1; /* specifies if the memory used by NVTable was borrowed from the container struct */
 
   /* variable data, see memory layout in the comment above */
   union
@@ -253,9 +257,11 @@ struct _NVTable
  * static values */
 #define NV_TABLE_MIN_BYTES  128
 
-gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len, gboolean *new_entry);
+gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value,
+                            gsize value_len, gboolean *new_entry);
 void nv_table_unset_value(NVTable *self, NVHandle handle);
-gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint32 ofs, guint32 len, gboolean *new_entry);
+gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len,
+                                     NVHandle ref_handle, guint8 type, guint32 ofs, guint32 len, gboolean *new_entry);
 
 gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, gpointer user_data);
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);
@@ -274,7 +280,8 @@ nv_table_get_alloc_size(gint num_static_entries, gint index_size_hint, gint init
   NVTable *self G_GNUC_UNUSED = NULL;
   gsize size;
 
-  size = NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + index_size_hint * sizeof(NVIndexEntry));
+  size = NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(
+                                                        self->static_entries[0]) + index_size_hint * sizeof(NVIndexEntry));
   if (size < NV_TABLE_MIN_BYTES)
     return NV_TABLE_MIN_BYTES;
   if (size > NV_TABLE_MAX_BYTES)
@@ -331,7 +338,7 @@ __nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries,
       *index_entry = NULL;
       if (G_UNLIKELY(!ofs))
         return NULL;
-      return (NVEntry *) (nv_table_get_top(self) - ofs);
+      return (NVEntry *)(nv_table_get_top(self) - ofs);
     }
   else
     {
@@ -409,9 +416,9 @@ nv_table_get_ofs_for_an_entry(NVTable *self, NVEntry *entry)
 static inline gssize
 nv_table_get_memory_consumption(NVTable *self)
 {
-  return sizeof(*self)+
-    self->num_static_entries*sizeof(self->static_entries[0])+
-    self->used;
+  return sizeof(*self) +
+         self->num_static_entries * sizeof(self->static_entries[0]) +
+         self->used;
 }
 
 #endif

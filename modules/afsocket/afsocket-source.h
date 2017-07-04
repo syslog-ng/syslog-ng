@@ -39,10 +39,10 @@ typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
 struct _AFSocketSourceDriver
 {
   LogSrcDriver super;
-  guint32 recvd_messages_are_local:1,
-    connections_kept_alive_accross_reloads:1,
-    require_tls:1,
-    window_size_initialized:1;
+  guint32 recvd_messages_are_local: 1,
+          connections_kept_alive_accross_reloads: 1,
+          require_tls: 1,
+          window_size_initialized: 1;
   struct iv_fd listen_fd;
   gint fd;
   LogReaderOptions reader_options;
@@ -65,10 +65,10 @@ struct _AFSocketSourceDriver
    * during init().
    */
 
-  gboolean (*setup_addresses)(AFSocketSourceDriver *s);
+  gboolean(*setup_addresses)(AFSocketSourceDriver *s);
 
   /* optionally acquire a socket from the runtime environment (e.g. systemd) */
-  gboolean (*acquire_socket)(AFSocketSourceDriver *s, gint *fd);
+  gboolean(*acquire_socket)(AFSocketSourceDriver *s, gint *fd);
 };
 
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
@@ -97,6 +97,7 @@ gboolean afsocket_sd_init_method(LogPipe *s);
 gboolean afsocket_sd_deinit_method(LogPipe *s);
 void afsocket_sd_free_method(LogPipe *self);
 
-void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper, GlobalConfig *cfg);
+void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *socket_options,
+                               TransportMapper *transport_mapper, GlobalConfig *cfg);
 
 #endif

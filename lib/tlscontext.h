@@ -38,23 +38,23 @@ typedef enum
 typedef enum
 {
   TVM_NONE,
-  TVM_TRUSTED=0x0001,
-  TVM_UNTRUSTED=0x0002,
-  TVM_OPTIONAL=0x0010,
-  TVM_REQUIRED=0x0020,
+  TVM_TRUSTED = 0x0001,
+  TVM_UNTRUSTED = 0x0002,
+  TVM_OPTIONAL = 0x0010,
+  TVM_REQUIRED = 0x0020,
 } TLSVerifyMode;
 
 typedef enum
 {
   TSO_NONE,
-  TSO_NOSSLv2=0x0001,
-  TSO_NOSSLv3=0x0002,
-  TSO_NOTLSv1=0x0004,
-  TSO_NOTLSv11=0x0008,
-  TSO_NOTLSv12=0x0010,
+  TSO_NOSSLv2 = 0x0001,
+  TSO_NOSSLv3 = 0x0002,
+  TSO_NOTLSv1 = 0x0004,
+  TSO_NOTLSv11 = 0x0008,
+  TSO_NOTLSv12 = 0x0010,
 } TLSSslOptions;
 
-typedef gint (*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
+typedef gint(*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
 typedef struct _TLSContext TLSContext;
 
 #define X509_MAX_CN_LEN 64
@@ -77,7 +77,8 @@ typedef struct _TLSSession
   } peer_info;
 } TLSSession;
 
-void tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data, GDestroyNotify verify_destroy);
+void tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data,
+                            GDestroyNotify verify_destroy);
 void tls_session_free(TLSSession *self);
 
 struct _TLSContext

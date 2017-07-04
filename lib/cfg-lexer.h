@@ -93,7 +93,8 @@ typedef struct _CfgLexerKeyword
  * generate configuration snippets programmatically.  That code
  * however is missing as of now.  (though would be trivial to add)
  */
-typedef gboolean (*CfgBlockGeneratorFunc)(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, gpointer user_data);
+typedef gboolean(*CfgBlockGeneratorFunc)(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args,
+                                         gpointer user_data);
 
 /* structure that describes a given location in the include stack */
 struct _CfgIncludeLevel
@@ -145,12 +146,13 @@ struct _CfgLexer
   GString *token_pretext;
   GString *token_text;
   CfgArgs *globals;
-  gboolean non_pragma_seen:1, ignore_pragma:1;
+  gboolean non_pragma_seen: 1, ignore_pragma: 1;
 };
 
 /* preprocessor help */
 gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length, gsize *output_length, GError **error);
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length,
+                     gsize *output_length, GError **error);
 
 /* pattern buffer */
 void cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval);
@@ -180,7 +182,8 @@ gint cfg_lexer_get_context_type(CfgLexer *self);
 
 /* token blocks */
 void cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block);
-gboolean cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer user_data, GDestroyNotify user_data_free);
+gboolean cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name,
+                                            CfgBlockGeneratorFunc generator, gpointer user_data, GDestroyNotify user_data_free);
 
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 void cfg_lexer_free_token(YYSTYPE *token);

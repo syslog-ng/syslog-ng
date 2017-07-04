@@ -30,6 +30,6 @@ void linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
                                const guchar *data, gsize length,
                                LogMessage *self);
 
-void linux_msg_format_init (void);
+void linux_msg_format_init(void);
 
 #endif

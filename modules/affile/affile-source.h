@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef AFFILE_SOURCE_H_INCLUDED
 #define AFFILE_SOURCE_H_INCLUDED
 

@@ -25,7 +25,8 @@
 #include "rewrite/rewrite-expr.h"
 #include "value-pairs/value-pairs.h"
 
-typedef struct _LogRewriteGroupSet {
+typedef struct _LogRewriteGroupSet
+{
   LogRewrite super;
   ValuePairs *query;
   LogTemplate *replacement;

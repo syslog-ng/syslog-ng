@@ -33,7 +33,7 @@
 typedef struct _BookmarkContainer
 {
   /* Bookmark structure should be aligned (ie. HPUX-11v2 ia64) */
-  gint64 other_state[MAX_BOOKMARK_DATA_LENGTH/sizeof(gint64)];
+  gint64 other_state[MAX_BOOKMARK_DATA_LENGTH / sizeof(gint64)];
 } BookmarkContainer;
 
 struct _Bookmark

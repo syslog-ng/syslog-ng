@@ -27,14 +27,14 @@
 #include "driver.h"
 
 typedef enum
-  {
-    AFSMTP_RCPT_TYPE_NONE,
-    AFSMTP_RCPT_TYPE_TO,
-    AFSMTP_RCPT_TYPE_CC,
-    AFSMTP_RCPT_TYPE_BCC,
-    AFSMTP_RCPT_TYPE_REPLY_TO,
-    AFSMTP_RCPT_TYPE_SENDER,
-  } afsmtp_rcpt_type_t;
+{
+  AFSMTP_RCPT_TYPE_NONE,
+  AFSMTP_RCPT_TYPE_TO,
+  AFSMTP_RCPT_TYPE_CC,
+  AFSMTP_RCPT_TYPE_BCC,
+  AFSMTP_RCPT_TYPE_REPLY_TO,
+  AFSMTP_RCPT_TYPE_SENDER,
+} afsmtp_rcpt_type_t;
 
 LogDriver *afsmtp_dd_new(GlobalConfig *cfg);
 
