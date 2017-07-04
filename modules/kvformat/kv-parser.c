@@ -27,7 +27,7 @@ kv_parser_is_valid_separator_character(char c)
 {
   return (c != ' '  &&
           c != '\'' &&
-          c != '\"' );
+          c != '\"');
 }
 
 void

@@ -37,7 +37,7 @@ do { \
 
 
 
-gchar *pdb_parser_skeleton_prefix ="<?xml version='1.0' encoding='UTF-8'?>\
+gchar *pdb_parser_skeleton_prefix = "<?xml version='1.0' encoding='UTF-8'?>\
 <patterndb version='4' pub_date='2010-02-22'>\
   <ruleset name='test1_program' id='480de478-d4a6-4a7f-bea4-0c0245d361e1'>\
     <patterns>\
@@ -92,10 +92,10 @@ test_parser(gchar **test)
 
   _load_pattern_db_from_string(str->str);
   g_string_free(str, TRUE);
-  while(test[i] != NULL)
+  while (test[i] != NULL)
     test_pattern(test[i++], test[0], TRUE);
   i++;
-  while(test[i] != NULL)
+  while (test[i] != NULL)
     test_pattern(test[i++], test[0], FALSE);
 
   _destroy_pattern_db();
@@ -123,7 +123,7 @@ gchar *test2 [] =
   "1.2.3.4",
   "1234ab",
   NULL, // not match
-  "ab1234",NULL
+  "ab1234", NULL
 };
 
 gchar *test3 [] =
@@ -131,7 +131,7 @@ gchar *test3 [] =
   "@ESTRING:TEST:endmark@",
   "ab ba endmark",
   NULL,
-  "ab ba",NULL
+  "ab ba", NULL
 };
 
 gchar *test4 [] =
@@ -139,7 +139,7 @@ gchar *test4 [] =
   "@ESTRING:TEST:&gt;@",
   "ab ba > ab",
   NULL,
-  "ab ba",NULL
+  "ab ba", NULL
 };
 
 gchar *test5 [] =
@@ -150,7 +150,7 @@ gchar *test5 [] =
   "1.2.3.4",
   "1234ab",
   NULL, // not match
-  "ab1234",NULL
+  "ab1234", NULL
 };
 
 gchar *test6 [] =
@@ -161,7 +161,7 @@ gchar *test6 [] =
   " 	a ",
   " 	 a ",
   NULL, // not match
-  "ab1234",NULL
+  "ab1234", NULL
 };
 
 gchar *test7 [] =
@@ -175,7 +175,7 @@ gchar *test7 [] =
   "1234",
   "ab1234",
   "ab1.2.3.4",
-  "1,2,3,4",NULL
+  "1,2,3,4", NULL
 };
 
 gchar *test8 [] =
@@ -188,7 +188,7 @@ gchar *test8 [] =
   "2001:0db8::1428:57ab",
   "2001:db8::1428:57ab",
   NULL,
-  "2001:0db8::34d2::1428:57ab",NULL
+  "2001:0db8::34d2::1428:57ab", NULL
 };
 
 gchar *test9 [] =
@@ -209,7 +209,7 @@ gchar *test9 [] =
   "ab1234",
   "ab1.2.3.4",
   "1,2,3,4",
-  "2001:0db8::34d2::1428:57ab",NULL
+  "2001:0db8::34d2::1428:57ab", NULL
 };
 
 gchar *test10 [] =
@@ -231,7 +231,7 @@ gchar *test11 [] =
   "< aabb >",
   NULL,
   "aabb>",
-  "<aabb",NULL
+  "<aabb", NULL
 };
 
 gchar *test12 [] =
@@ -243,7 +243,7 @@ gchar *test12 [] =
   "ab1234",
   "1234bb",
   "1.2.3.4",
-  NULL,NULL
+  NULL, NULL
 };
 
 gchar **parsers[] = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10, test11, test12, NULL};

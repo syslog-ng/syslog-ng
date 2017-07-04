@@ -37,8 +37,8 @@
 #include <stddef.h>
 
 
-typedef gboolean (*lookup_method)(gchar *key, gchar *member_name, GString *result);
-typedef gboolean (*format_member)(gchar *member_name, gpointer member, GString *result);
+typedef gboolean(*lookup_method)(gchar *key, gchar *member_name, GString *result);
+typedef gboolean(*format_member)(gchar *member_name, gpointer member, GString *result);
 
 typedef struct
 {

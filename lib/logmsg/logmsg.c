@@ -327,7 +327,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
 
   if (i >= 0)
     {
-      memmove(&self->sdata[i+1], &self->sdata[i], (self->num_sdata - i) * sizeof(self->sdata[0]));
+      memmove(&self->sdata[i + 1], &self->sdata[i], (self->num_sdata - i) * sizeof(self->sdata[0]));
       self->sdata[i] = handle;
     }
   else
@@ -566,7 +566,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
         }
       guint32 new_size = self->payload->size;
       self->allocated_bytes += (new_size - old_size);
-      stats_counter_add(count_allocated_bytes, new_size-old_size);
+      stats_counter_add(count_allocated_bytes, new_size - old_size);
       stats_counter_inc(count_payload_reallocs);
     }
 
@@ -736,15 +736,15 @@ static inline void
 log_msg_set_bit(gulong *tags, gint index_, gboolean value)
 {
   if (value)
-    tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] |= ((gulong) (1UL << (index_ & LOGMSG_TAGS_NDX_MASK)));
+    tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] |= ((gulong)(1UL << (index_ & LOGMSG_TAGS_NDX_MASK)));
   else
-    tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] &= ~((gulong) (1UL << (index_ & LOGMSG_TAGS_NDX_MASK)));
+    tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] &= ~((gulong)(1UL << (index_ & LOGMSG_TAGS_NDX_MASK)));
 }
 
 static inline gboolean
 log_msg_get_bit(gulong *tags, gint index_)
 {
-  return !!(tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] & ((gulong) (1UL << (index_ & LOGMSG_TAGS_NDX_MASK))));
+  return !!(tags[index_ >> LOGMSG_TAGS_NDX_SHIFT] & ((gulong)(1UL << (index_ & LOGMSG_TAGS_NDX_MASK))));
 }
 
 void
@@ -970,13 +970,13 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
         }
       /* if message hasn't sequenceId and the cur_elem is the meta block Append the sequenceId for the result
          if seq_num isn't 0 */
-      if (!has_seq_num && seq_num!=0 && strncmp(sdata_elem,"meta.",5) == 0)
+      if (!has_seq_num && seq_num != 0 && strncmp(sdata_elem, "meta.", 5) == 0)
         {
           gchar sequence_id[16];
           g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
           g_string_append_c(result, ' ');
-          g_string_append_len(result,"sequenceId=\"",12);
-          g_string_append_len(result,sequence_id,strlen(sequence_id));
+          g_string_append_len(result, "sequenceId=\"", 12);
+          g_string_append_len(result, sequence_id, strlen(sequence_id));
           g_string_append_c(result, '"');
           has_seq_num = TRUE;
         }
@@ -1000,14 +1000,14 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
     There was no meta block and if sequenceId must be added (seq_num!=0)
     create the whole meta block with sequenceId
   */
-  if (!has_seq_num && seq_num!=0)
+  if (!has_seq_num && seq_num != 0)
     {
       gchar sequence_id[16];
       g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
       g_string_append_c(result, '[');
-      g_string_append_len(result,"meta sequenceId=\"",17);
-      g_string_append_len(result,sequence_id,strlen(sequence_id));
-      g_string_append_len(result, "\"]",2);
+      g_string_append_len(result, "meta sequenceId=\"", 17);
+      g_string_append_len(result, sequence_id, strlen(sequence_id));
+      g_string_append_len(result, "\"]", 2);
     }
 }
 
@@ -1021,7 +1021,7 @@ log_msg_format_sdata(const LogMessage *self, GString *result,  guint32 seq_num)
 gboolean
 log_msg_append_tags_callback(const LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data)
 {
-  GString *result = (GString *) ((gpointer *) user_data)[0];
+  GString *result = (GString *)((gpointer *) user_data)[0];
   gint original_length = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
 
   g_assert(result);
@@ -1383,9 +1383,9 @@ log_msg_update_ack_and_ref_and_abort_and_suspended(LogMessage *self, gint add_re
   do
     {
       new_value = old_value = (volatile gint) self->ack_and_ref_and_abort_and_suspended;
-      new_value = (new_value & ~LOGMSG_REFCACHE_REF_MASK)   + LOGMSG_REFCACHE_REF_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_REF(
+      new_value = (new_value & ~LOGMSG_REFCACHE_REF_MASK)   + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(
                     old_value)   + add_ref));
-      new_value = (new_value & ~LOGMSG_REFCACHE_ACK_MASK)   + LOGMSG_REFCACHE_ACK_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_ACK(
+      new_value = (new_value & ~LOGMSG_REFCACHE_ACK_MASK)   + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(
                     old_value)   + add_ack));
       new_value = (new_value & ~LOGMSG_REFCACHE_ABORT_MASK) + LOGMSG_REFCACHE_ABORT_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ABORT(
                     old_value) | add_abort));
@@ -1775,13 +1775,13 @@ log_msg_stats_global_init(void)
 {
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "msg_clones", NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "msg_clones", NULL);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_msg_clones);
 
-  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "payload_reallocs", NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "payload_reallocs", NULL);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_payload_reallocs);
 
-  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "sdata_updates", NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "sdata_updates", NULL);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_sdata_updates);
 
   stats_cluster_single_key_set(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
@@ -1816,7 +1816,7 @@ gssize log_msg_get_size(LogMessage *self)
   return
     sizeof(LogMessage) + // msg.static fields
     + self->alloc_sdata * sizeof(self->sdata[0]) +
-    sizeof(GSockAddr) + sizeof (GSockAddrFuncs) + // msg.saddr + msg.saddr.sa_func
+    sizeof(GSockAddr) + sizeof(GSockAddrFuncs) +  // msg.saddr + msg.saddr.sa_func
     ((self->num_tags) ? sizeof(self->tags[0]) * self->num_tags : 0) +
     nv_table_get_memory_consumption(self->payload); // msg.payload (nvtable)
 }

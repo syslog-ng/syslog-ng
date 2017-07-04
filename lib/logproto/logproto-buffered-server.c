@@ -78,7 +78,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
       out = (gchar *) self->buffer + state->pending_buffer_end;
 
       ret = g_iconv(self->convert, (gchar **) &raw_buffer, &avail_in, (gchar **) &out, &avail_out);
-      if (ret == (gsize) -1)
+      if (ret == (gsize) - 1)
         {
           switch (errno)
             {
@@ -625,7 +625,7 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
   if (G_UNLIKELY(!self->buffer))
     log_proto_buffered_server_allocate_buffer(self, state);
 
-  if (self->convert == (GIConv) -1)
+  if (self->convert == (GIConv) - 1)
     {
       /* no conversion, we read directly into our buffer */
       raw_buffer = self->buffer + state->pending_buffer_end;
@@ -679,7 +679,7 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
       rc += state->raw_buffer_leftover_size;
       state->raw_buffer_leftover_size = 0;
 
-      if (self->convert == (GIConv) -1)
+      if (self->convert == (GIConv) - 1)
         {
           state->pending_buffer_end += rc;
         }
@@ -843,7 +843,7 @@ log_proto_buffered_server_validate_options_method(LogProtoServer *s)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
 
-  if (self->super.options->encoding && self->convert == (GIConv) -1)
+  if (self->super.options->encoding && self->convert == (GIConv) - 1)
     {
       msg_error("Unknown character set name specified",
                 evt_tag_str("encoding", self->super.options->encoding));
@@ -864,7 +864,7 @@ log_proto_buffered_server_free_method(LogProtoServer *s)
     {
       g_free(self->state1);
     }
-  if (self->convert != (GIConv) -1)
+  if (self->convert != (GIConv) - 1)
     g_iconv_close(self->convert);
   log_proto_server_free_method(s);
 }
@@ -881,13 +881,13 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;
   self->super.is_position_tracked = log_proto_buffered_server_is_position_tracked;
   self->super.validate_options = log_proto_buffered_server_validate_options_method;
-  self->convert = (GIConv) -1;
+  self->convert = (GIConv) - 1;
   self->read_data = log_proto_buffered_server_read_data_method;
   self->io_status = G_IO_STATUS_NORMAL;
   if (options->encoding)
     self->convert = g_iconv_open("utf-8", options->encoding);
   else
-    self->convert = (GIConv) -1;
+    self->convert = (GIConv) - 1;
   self->stream_based = TRUE;
   self->pos_tracking = options->position_tracking_enabled;
 }

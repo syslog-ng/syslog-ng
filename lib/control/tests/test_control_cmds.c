@@ -36,12 +36,12 @@ test_log()
   GString *command = g_string_sized_new(128);
   GString *reply;
 
-  g_string_assign(command,"LOG");
+  g_string_assign(command, "LOG");
   reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "Invalid arguments received, expected at least one argument", "Bad reply");
   g_string_free(reply, TRUE);
 
-  g_string_assign(command,"LOG fakelog");
+  g_string_assign(command, "LOG fakelog");
   reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "Invalid arguments received", "Bad reply");
   g_string_free(reply, TRUE);
@@ -49,27 +49,27 @@ test_log()
   verbose_flag = 0;
   debug_flag = 1;
   trace_flag = 1;
-  g_string_assign(command,"LOG VERBOSE");
+  g_string_assign(command, "LOG VERBOSE");
   reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "VERBOSE=0", "Bad reply");
   g_string_free(reply, TRUE);
 
-  g_string_assign(command,"LOG VERBOSE ON");
+  g_string_assign(command, "LOG VERBOSE ON");
   reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "OK", "Bad reply");
-  assert_gint(verbose_flag,1,"Flag isn't changed");
+  assert_gint(verbose_flag, 1, "Flag isn't changed");
   g_string_free(reply, TRUE);
 
-  g_string_assign(command,"LOG VERBOSE OFF");
+  g_string_assign(command, "LOG VERBOSE OFF");
   reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "OK", "Bad reply");
-  assert_gint(verbose_flag,0,"Flag isn't changed");
+  assert_gint(verbose_flag, 0, "Flag isn't changed");
   g_string_free(reply, TRUE);
 
   debug_flag = 0;
   verbose_flag = 1;
   trace_flag = 1;
-  g_string_assign(command,"LOG DEBUG");
+  g_string_assign(command, "LOG DEBUG");
   reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "DEBUG=0", "Bad reply");
   g_string_free(reply, TRUE);
@@ -77,7 +77,7 @@ test_log()
   trace_flag = 0;
   verbose_flag = 1;
   debug_flag = 1;
-  g_string_assign(command,"LOG TRACE");
+  g_string_assign(command, "LOG TRACE");
   reply = control_connection_message_log(command, NULL);
   assert_string(reply->str, "TRACE=0", "Bad reply");
   g_string_free(reply, TRUE);
@@ -97,11 +97,11 @@ test_stats()
   stats_init();
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received" );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received");
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
   stats_unlock();
 
-  g_string_assign(command,"STATS");
+  g_string_assign(command, "STATS");
 
   reply = control_connection_send_stats(command, NULL);
   stats_result = g_strsplit(reply->str, "\n", 2);
@@ -125,7 +125,7 @@ test_reset_stats()
   stats_init();
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received" );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received");
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
   stats_counter_set(counter, 666);
   stats_unlock();

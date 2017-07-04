@@ -186,7 +186,7 @@ test_type_cast(void)
 }
 
 int
-main (void)
+main(void)
 {
   app_startup();
 

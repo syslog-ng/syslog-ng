@@ -88,7 +88,7 @@ CfgParser afsocket_parser =
 #endif
   .name = "afsocket",
   .keywords = afsocket_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) afsocket_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) afsocket_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

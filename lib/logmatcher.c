@@ -426,7 +426,7 @@ log_matcher_glob_compile(LogMatcher *s, const gchar *pattern, GError **error)
 static gboolean
 log_matcher_glob_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
-  LogMatcherGlob *self =  (LogMatcherGlob *) s;
+  LogMatcherGlob *self = (LogMatcherGlob *) s;
 
   if (G_LIKELY((msg->flags & LF_UTF8) || g_utf8_validate(value, value_len, NULL)))
     {
@@ -589,7 +589,7 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcher *s, LogMessage *msg, int *m
       for (i = 0; i < namecount; i++)
         {
           int n = (tabptr[0] << 8) | tabptr[1];
-          log_msg_set_value_by_name(msg, tabptr + 2, value + matches[2*n], matches[2*n+1] - matches[2*n]);
+          log_msg_set_value_by_name(msg, tabptr + 2, value + matches[2 * n], matches[2 * n + 1] - matches[2 * n]);
           tabptr += name_entry_size;
         }
     }

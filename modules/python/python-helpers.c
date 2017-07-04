@@ -162,7 +162,7 @@ _insert_to_dict(gpointer key, gpointer value, gpointer dict)
 {
   PyObject *key_pyobj = PyBytes_FromStringAndSize((gchar *) key, strlen((gchar *) key));
   PyObject *value_pyobj = PyBytes_FromStringAndSize((gchar *) value, strlen((gchar *) value));
-  PyDict_SetItem( (PyObject *) dict, key_pyobj, value_pyobj);
+  PyDict_SetItem((PyObject *) dict, key_pyobj, value_pyobj);
 }
 
 PyObject *

@@ -67,7 +67,7 @@ _append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
   const gchar *char_ptr = *raw;
   gunichar uchar = g_utf8_get_char_validated(char_ptr, raw_len);
 
-  if (G_UNLIKELY(uchar == (gunichar) -1 || uchar == (gunichar) -2))
+  if (G_UNLIKELY(uchar == (gunichar) - 1 || uchar == (gunichar) - 2))
     {
       g_string_append_printf(escaped_output, invalid_format, *(guint8 *) char_ptr);
       (*raw)++;

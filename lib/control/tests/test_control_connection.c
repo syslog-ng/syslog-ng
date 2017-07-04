@@ -55,7 +55,7 @@ void (*next_step)(gpointer s);
 PositionedBuffer *
 positioned_buffer_new(gsize size)
 {
-  PositionedBuffer *self = g_new0(PositionedBuffer,1);
+  PositionedBuffer *self = g_new0(PositionedBuffer, 1);
 
   self->buffer = g_string_sized_new(size);
   return self;
@@ -122,7 +122,7 @@ control_connection_moc_free(ControlConnection *s)
 ControlConnection *
 control_connection_moc_new(ControlServer *server)
 {
-  ControlConnectionMoc *self =  g_new0(ControlConnectionMoc,1);
+  ControlConnectionMoc *self =  g_new0(ControlConnectionMoc, 1);
   control_connection_init_instance(&self->super, server);
 
   self->source_buffer = positioned_buffer_new(128);
@@ -139,7 +139,7 @@ control_connection_moc_new(ControlServer *server)
 GString *
 test_command(GString *command, gpointer user_data)
 {
-  assert_string(command->str,"test command", "Bad command handling");
+  assert_string(command->str, "test command", "Bad command handling");
   return g_string_new("OK");
 }
 
@@ -180,7 +180,7 @@ void
 control_connection_start_watches(ControlConnection *s)
 {
   next_step = s->handle_input;
-  while(next_step)
+  while (next_step)
     {
       next_step(s);
     }
@@ -190,10 +190,10 @@ void
 test_control_connection(gsize transaction_size)
 {
   moc_connection = (ControlConnectionMoc *)control_connection_moc_new(&moc_server);
-  g_string_assign(moc_connection->source_buffer->buffer,"test command\n");
+  g_string_assign(moc_connection->source_buffer->buffer, "test command\n");
   moc_connection->transaction_size = transaction_size;
   control_connection_start_watches((ControlConnection *)moc_connection);
-  assert_string(result_string->str, "OK\n.\n", "BAD Behaviour transaction_size: %d",transaction_size);
+  assert_string(result_string->str, "OK\n.\n", "BAD Behaviour transaction_size: %d", transaction_size);
 }
 
 int

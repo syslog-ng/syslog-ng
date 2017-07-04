@@ -51,7 +51,7 @@ control_connection_message_log(GString *command, gpointer user_data)
 
   if (!cmds[1])
     {
-      g_string_assign(result,"Invalid arguments received, expected at least one argument");
+      g_string_assign(result, "Invalid arguments received, expected at least one argument");
       goto exit;
     }
 
@@ -73,11 +73,11 @@ control_connection_message_log(GString *command, gpointer user_data)
               *type = on;
             }
 
-          g_string_assign(result,"OK");
+          g_string_assign(result, "OK");
         }
       else
         {
-          g_string_printf(result,"%s=%d", cmds[1], *type);
+          g_string_printf(result, "%s=%d", cmds[1], *type);
         }
     }
   else

@@ -55,7 +55,7 @@ CfgParser http_parser =
 #endif
   .name = "http",
   .keywords = http_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) http_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) http_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

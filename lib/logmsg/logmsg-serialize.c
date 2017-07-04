@@ -76,7 +76,7 @@ _deserialize_sdata(LogMessage *self, SerializeArchive *sa)
   if (!serialize_read_uint8(sa, &self->alloc_sdata))
     return FALSE;
 
-  self->sdata = (NVHandle *) g_malloc(sizeof(NVHandle)*self->alloc_sdata);
+  self->sdata = (NVHandle *) g_malloc(sizeof(NVHandle) * self->alloc_sdata);
   serialize_read_uint32_array(sa, (guint32 *) self->sdata, self->num_sdata);
   return TRUE;
 }
@@ -107,7 +107,7 @@ _deserialize_message(LogMessageSerializationState *state)
 
   if (!serialize_read_uint8(sa, &initial_parse))
     return FALSE;
-  msg->initial_parse=initial_parse;
+  msg->initial_parse = initial_parse;
 
   if (!serialize_read_uint8(sa, &msg->num_matches))
     return FALSE;

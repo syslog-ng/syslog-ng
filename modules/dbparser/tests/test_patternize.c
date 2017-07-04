@@ -71,8 +71,8 @@ testcase_get_logmessages(gchar *logs)
     {
       logline = g_strdup_printf("Jul 29 06:25:41 vav zorp/inter_http[27940]: %s", input_lines[i]);
       len = strlen(logline);
-      if (logline[len-1] == '\n')
-        logline[len-1] = 0;
+      if (logline[len - 1] == '\n')
+        logline[len - 1] = 0;
 
       msg = log_msg_new(logline, len, addr, &parse_options);
       g_ptr_array_add(self->logmessages, msg);
@@ -299,7 +299,7 @@ test_clusters_find(gpointer key, gpointer value, gpointer user_data)
 void
 testcase_find_clusters_slct(gchar *logs, guint support, gchar *expected)
 {
-  int i,j;
+  int i, j;
   gchar **expecteds;
   loglinesType *logmessages;
   clusterfindData *find_data;
@@ -457,6 +457,6 @@ main()
   find_clusters_slct_tests();
   log_tags_global_deinit();
 
-  return  (fail ? 1 : 0);
+  return (fail ? 1 : 0);
 
 }

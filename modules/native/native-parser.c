@@ -45,7 +45,7 @@ __attribute__((__visibility__("hidden"))) CfgParser native_parser =
   .context = LL_IDENTIFIER,
   .name = "native-module",
   .keywords = native_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) native_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) native_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

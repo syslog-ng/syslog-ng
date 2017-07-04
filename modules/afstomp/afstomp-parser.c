@@ -51,7 +51,7 @@ CfgParser afstomp_parser =
 #endif
   .name = "afstomp",
   .keywords = afstomp_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afstomp_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) afstomp_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

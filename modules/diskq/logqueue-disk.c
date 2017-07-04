@@ -65,7 +65,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
     {
       if (self->push_tail(self, msg, &local_options, path_options))
         {
-          log_queue_push_notify (&self->super);
+          log_queue_push_notify(&self->super);
           stats_counter_inc(self->super.queued_messages);
           log_msg_ack(msg, &local_options, AT_PROCESSED);
           log_msg_unref(msg);
@@ -73,7 +73,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
           return;
         }
     }
-  stats_counter_inc (self->super.dropped_messages);
+  stats_counter_inc(self->super.dropped_messages);
 
   if (path_options->flow_control_requested)
     log_msg_ack(msg, path_options, AT_SUSPENDED);
@@ -139,7 +139,7 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
 
   if (self->rewind_backlog)
     {
-      self->rewind_backlog (self, rewind_count);
+      self->rewind_backlog(self, rewind_count);
     }
 
   g_static_mutex_unlock(&self->super.lock);
@@ -246,7 +246,7 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
       serialize_archive_free(sa);
       log_msg_unref(*msg);
       *msg = NULL;
-      msg_error("Can't read correct message from disk-queue file",evt_tag_str("filename",qdisk_get_filename(self->qdisk)));
+      msg_error("Can't read correct message from disk-queue file", evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
       return TRUE;
     }
 
@@ -262,17 +262,17 @@ _read_message(LogQueueDisk *self, LogPathOptions *path_options)
   LogMessage *msg = NULL;
   do
     {
-      if (qdisk_get_length (self->qdisk) == 0)
+      if (qdisk_get_length(self->qdisk) == 0)
         {
           break;
         }
-      if (!_pop_disk (self, &msg))
+      if (!_pop_disk(self, &msg))
         {
           msg_error("Error reading from disk-queue file, dropping disk queue",
-                    evt_tag_str ("filename", qdisk_get_filename (self->qdisk)));
+                    evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
           self->restart_corrupted(self);
           if (msg)
-            log_msg_unref (msg);
+            log_msg_unref(msg);
           msg = NULL;
           return NULL;
         }
@@ -307,8 +307,8 @@ _restart_diskq(LogQueueDisk *self, gboolean corrupted)
   qdisk_deinit(self->qdisk);
   if (corrupted)
     {
-      new_file = g_strdup_printf("%s.corrupted",filename);
-      rename(filename,new_file);
+      new_file = g_strdup_printf("%s.corrupted", filename);
+      rename(filename, new_file);
       g_free(new_file);
     }
   if (self->start)

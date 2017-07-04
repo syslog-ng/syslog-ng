@@ -126,7 +126,7 @@ static struct
   gboolean core;
   gint fd_limit_min;
   gint check_period;
-  gboolean (*check_fn)(void);
+  gboolean(*check_fn)(void);
 } process_opts =
 {
   .mode = G_PM_SAFE_BACKGROUND,
@@ -328,8 +328,8 @@ g_process_check_cap_syslog(void)
   ret = cap_from_name("cap_syslog", NULL);
   if (ret == -1)
     {
-      fprintf (stderr, "CAP_SYSLOG seems to be supported by the system, but "
-               "libcap can't parse it. Falling back to CAP_SYS_ADMIN!\n");
+      fprintf(stderr, "CAP_SYSLOG seems to be supported by the system, but "
+              "libcap can't parse it. Falling back to CAP_SYS_ADMIN!\n");
       return FALSE;
     }
 
@@ -547,7 +547,7 @@ g_process_set_argv_space(gint argc, gchar **argv)
  * returns TRUE.
  */
 void
-g_process_set_check(gint check_period, gboolean (*check_fn)(void))
+g_process_set_check(gint check_period, gboolean(*check_fn)(void))
 {
   process_opts.check_period = check_period;
   process_opts.check_fn = check_fn;
@@ -1190,7 +1190,7 @@ g_process_perform_supervise(void)
                       break;
 
                     case 0:
-                      switch(fork())
+                      switch (fork())
                         {
                         case -1:
                           g_process_message("Could not fork for external notification; reason='%s'", strerror(errno));

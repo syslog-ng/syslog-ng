@@ -437,13 +437,13 @@ drop_level:
 }
 
 static int
-_cfg_lexer_glob_err (const char *p, gint e)
+_cfg_lexer_glob_err(const char *p, gint e)
 {
   if (e != ENOENT)
     {
-      msg_debug ("Error processing path for inclusion",
-                 evt_tag_str("path", p),
-                 evt_tag_errno("errno", e));
+      msg_debug("Error processing path for inclusion",
+                evt_tag_str("path", p),
+                evt_tag_errno("errno", e));
       return -1;
     }
   return 0;
@@ -453,7 +453,7 @@ _cfg_lexer_glob_err (const char *p, gint e)
 #define GLOB_NOMAGIC 0
 
 int
-__glob_pattern_p (const char *pattern)
+__glob_pattern_p(const char *pattern)
 {
   register const char *p;
   int open = 0;
@@ -520,7 +520,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
       if (r == GLOB_NOMATCH)
         {
 #ifndef SYSLOG_NG_HAVE_GLOB_NOMAGIC
-          if (!__glob_pattern_p (pattern))
+          if (!__glob_pattern_p(pattern))
             {
               return cfg_lexer_include_file_add(self, pattern);
             }

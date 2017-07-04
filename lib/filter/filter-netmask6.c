@@ -45,7 +45,7 @@ typedef struct _FilterNetmask6
 static inline uint64_t
 _calculate_mask_by_prefix(int prefix)
 {
-  return (uint64_t) (~0) << (64 - prefix);
+  return (uint64_t)(~0) << (64 - prefix);
 }
 
 static inline uint64_t

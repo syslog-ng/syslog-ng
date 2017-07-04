@@ -269,12 +269,12 @@ __has_iso_timezone(const guchar *src, gint length)
 {
   return (length >= 5) &&
          (*src == '+' || *src == '-') &&
-         isdigit(*(src+1)) &&
-         isdigit(*(src+2)) &&
-         *(src+3) == ':' &&
-         isdigit(*(src+4)) &&
-         isdigit(*(src+5)) &&
-         !isdigit(*(src+6));
+         isdigit(*(src + 1)) &&
+         isdigit(*(src + 2)) &&
+         *(src + 3) == ':' &&
+         isdigit(*(src + 4)) &&
+         isdigit(*(src + 5)) &&
+         !isdigit(*(src + 6));
 }
 
 static gboolean
@@ -403,7 +403,7 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
 static inline void
 __set_zone_offset(LogStamp *const timestamp, glong const assumed_timezone)
 {
-  if(timestamp->zone_offset == -1)
+  if (timestamp->zone_offset == -1)
     {
       timestamp->zone_offset = assumed_timezone;
     }

@@ -34,7 +34,7 @@
 static gboolean
 _is_leap_year(int year)
 {
-  return ((year%4==0) && (year % 100!=0)) || (year%400==0);
+  return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
 }
 
 static time_t
@@ -113,7 +113,7 @@ tf_stardate_call(LogTemplateFunction *self, gpointer s,
   argv = (GString **) args->bufs->pdata;
 
   char format[7]; // "%0.xlf\0"
-  if (g_snprintf(format, sizeof(format),"%%0.%dlf", state->precision) < 0)
+  if (g_snprintf(format, sizeof(format), "%%0.%dlf", state->precision) < 0)
     {
       msg_error("stardate: sprintf error)",
                 evt_tag_int("precision", state->precision));
@@ -130,12 +130,12 @@ tf_stardate_call(LogTemplateFunction *self, gpointer s,
     }
 
   struct tm tm_time;
-  localtime_r(&time_to_convert, &tm_time );
+  localtime_r(&time_to_convert, &tm_time);
 
   struct tm secs_beginning_year = {.tm_year = tm_time.tm_year, .tm_mday = 1};
   time_t elapsed_seconds = time_to_convert - mktime(&secs_beginning_year);
 
-  double fraction = (double)elapsed_seconds/year_in_seconds(tm_time.tm_year);
+  double fraction = (double)elapsed_seconds / year_in_seconds(tm_time.tm_year);
   double truncated = (double) floor(fraction * power10[state->precision]) / power10[state->precision];
 
   g_string_append_printf(result, format, 1900 + tm_time.tm_year + truncated);

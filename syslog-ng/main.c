@@ -115,7 +115,7 @@ get_installer_version(gchar **inst_version)
           gchar *pos = strchr(line, '=');
           if (pos)
             {
-              *inst_version = strdup(pos+1);
+              *inst_version = strdup(pos + 1);
               result = TRUE;
               break;
             }
@@ -171,7 +171,7 @@ version(void)
   "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner=p "
 
 static void
-setup_caps (void)
+setup_caps(void)
 {
   static gchar *capsstr_syslog = BASE_CAPS "cap_syslog=ep";
   static gchar *capsstr_sys_admin = BASE_CAPS "cap_sys_admin=ep";
@@ -241,12 +241,12 @@ main(int argc, char *argv[])
       return 0;
     }
 
-  if(startup_debug_flag && debug_flag)
+  if (startup_debug_flag && debug_flag)
     {
       startup_debug_flag = FALSE;
     }
 
-  if(startup_debug_flag)
+  if (startup_debug_flag)
     {
       debug_flag = TRUE;
     }
@@ -290,7 +290,7 @@ main(int argc, char *argv[])
   app_post_daemonized();
   app_post_config_loaded();
 
-  if(startup_debug_flag)
+  if (startup_debug_flag)
     {
       debug_flag = FALSE;
       log_stderr = FALSE;

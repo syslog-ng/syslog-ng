@@ -389,7 +389,7 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
 {
   FILE *output_file;
 
-  output_file = fopen(output_filename,"w+");
+  output_file = fopen(output_filename, "w+");
   if (output_file)
     {
       fprintf(output_file, "%s", preprocess_output->str);

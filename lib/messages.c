@@ -47,7 +47,7 @@ enum
 typedef struct _MsgContext
 {
   guint16 recurse_state;
-  gboolean recurse_warning:1;
+  gboolean recurse_warning: 1;
   gchar recurse_trigger[128];
 } MsgContext;
 
@@ -174,7 +174,7 @@ msg_send_formatted_message(int prio, const char *msg)
 }
 
 static void
-msg_event_send_with_suppression(EVTREC *e, gboolean (*suppress)(const gchar *msg))
+msg_event_send_with_suppression(EVTREC *e, gboolean(*suppress)(const gchar *msg))
 {
   gchar *msg;
 

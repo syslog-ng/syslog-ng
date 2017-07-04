@@ -41,7 +41,7 @@ static Plugin linux_kmsg_format_plugin =
 {
   .type = LL_CONTEXT_FORMAT,
   .name = "linux-kmsg",
-  .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) linux_kmsg_format_construct,
+  .construct = (gpointer(*)(Plugin * self, GlobalConfig * cfg, gint plugin_type, const gchar * plugin_name)) linux_kmsg_format_construct,
 };
 
 gboolean

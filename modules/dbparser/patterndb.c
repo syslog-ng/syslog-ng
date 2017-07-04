@@ -81,14 +81,14 @@ _piggy_back_log_message_pointer_with_synthetic_value(LogMessage *msg, gboolean s
   /* we piggy back the "synthetic" value as the LSB in the pointer value
    * (which is always zero anyway).  This avoids creating a struct that
    * holds two values */
-  return (gpointer) ((guintptr) msg | (!!synthetic));
+  return (gpointer)((guintptr) msg | (!!synthetic));
 }
 
 static inline void
 _extract_log_message_pointer_and_synthetic_value(gpointer value, LogMessage **pmsg, gboolean *synthetic)
 {
-  *synthetic = (gboolean) ((guintptr) value & 1);
-  *pmsg = (LogMessage *) ((guintptr) value & ~1);
+  *synthetic = (gboolean)((guintptr) value & 1);
+  *pmsg = (LogMessage *)((guintptr) value & ~1);
 }
 
 /* This function is called to populate the emitted_messages array in
@@ -230,7 +230,7 @@ _is_action_within_rate_limit(PatternDB *db, PDBProcessParams *process_params)
   else
     {
       /* quick and dirty fixed point arithmetic, 8 bit fraction part */
-      gint new_credits = (((glong) (now - rl->last_check)) << 8) / ((((glong) action->rate_quantum) << 8) / action->rate);
+      gint new_credits = (((glong)(now - rl->last_check)) << 8) / ((((glong) action->rate_quantum) << 8) / action->rate);
 
       if (new_credits)
         {

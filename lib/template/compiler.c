@@ -309,7 +309,7 @@ log_template_compiler_process_arg_list(LogTemplateCompiler *self, GPtrArray *res
   while (*self->cursor && *self->cursor == ' ')
     self->cursor++;
 
-  while(*self->cursor)
+  while (*self->cursor)
     {
       if (*self->cursor == '\\')
         {

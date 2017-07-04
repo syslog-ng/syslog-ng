@@ -90,7 +90,7 @@ ParameterizedTestParameters(params, multiple)
   params[4] = create_all;
   params[5] = mixed;
 
-  return cr_make_param_array(struct TestFileList, params, sizeof (params) / sizeof (struct TestFileList));
+  return cr_make_param_array(struct TestFileList, params, sizeof(params) / sizeof(struct TestFileList));
 }
 
 ParameterizedTest(struct TestFileList *tup, params, multiple)

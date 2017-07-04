@@ -227,7 +227,7 @@ vp_results_insert(VPResults *results, GString *name, TypeHint type_hint, GString
 }
 
 static GString *
-vp_transform_apply (ValuePairs *vp, gchar *key)
+vp_transform_apply(ValuePairs *vp, gchar *key)
 {
   gint i;
   GString *result = scratch_buffers_alloc();
@@ -253,12 +253,12 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
-  gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
+  gint32 seq_num = GPOINTER_TO_INT(((gpointer *)user_data)[3]);
   VPResults *results = ((gpointer *)user_data)[5];
   const LogTemplateOptions *template_options = ((gpointer *)user_data)[6];
   GString *sb = scratch_buffers_alloc();
   VPPairConf *vpc = (VPPairConf *)data;
-  gint time_zone_mode = GPOINTER_TO_INT (((gpointer *)user_data)[7]);
+  gint time_zone_mode = GPOINTER_TO_INT(((gpointer *)user_data)[7]);
 
   log_template_append_format((LogTemplate *)vpc->template, msg,
                              template_options,
@@ -427,13 +427,13 @@ vp_foreach_helper(const gchar *name, gpointer ndx_as_pointer, gpointer data)
 
 
 gboolean
-value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
-                            GCompareFunc compare_func,
-                            LogMessage *msg, gint32 seq_num, gint time_zone_mode,
-                            const LogTemplateOptions *template_options,
-                            gpointer user_data)
+value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
+                           GCompareFunc compare_func,
+                           LogMessage *msg, gint32 seq_num, gint time_zone_mode,
+                           const LogTemplateOptions *template_options,
+                           gpointer user_data)
 {
-  gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL,
+  gpointer args[] = { vp, func, msg, GINT_TO_POINTER(seq_num), user_data, NULL,
                       /* remove constness, we are not using that pointer non-const anyway */
                       (LogTemplateOptions *) template_options, GINT_TO_POINTER(time_zone_mode)
                     };
@@ -561,8 +561,8 @@ typedef struct
 } vp_walk_state_t;
 
 static vp_walk_stack_data_t *
-vp_walker_stack_push (vp_stack_t *stack,
-                      gchar *key, gchar *prefix)
+vp_walker_stack_push(vp_stack_t *stack,
+                     gchar *key, gchar *prefix)
 {
   vp_walk_stack_data_t *nt = g_new(vp_walk_stack_data_t, 1);
 
@@ -838,7 +838,7 @@ value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean include)
   while (l)
     {
       value_pairs_add_glob_pattern(vp, (gchar *)l->data, include);
-      l = g_list_next (l);
+      l = g_list_next(l);
     }
   string_list_free(patterns);
   vp_update_builtin_list_of_values(vp);
@@ -885,7 +885,7 @@ value_pairs_new_default(GlobalConfig *cfg)
 }
 
 static void
-value_pairs_free (ValuePairs *vp)
+value_pairs_free(ValuePairs *vp)
 {
   guint i;
 

@@ -270,7 +270,7 @@ format_hex_string_with_delimiter(gpointer data, gsize data_len, gchar *result, g
 
   for (i = 0; i < data_len && result_len - pos >= 3; i++)
     {
-      if ( (delimiter != 0) && (i < data_len - 1))
+      if ((delimiter != 0) && (i < data_len - 1))
         {
           g_snprintf(result + pos, 4, "%02x%c", str[i], delimiter);
           pos += 3;

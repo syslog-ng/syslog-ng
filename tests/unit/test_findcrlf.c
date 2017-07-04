@@ -120,7 +120,7 @@ ParameterizedTestParameters(findcrlf, test)
     { "abcdefghijklmnopqrstuvwxyz", 26, -1 }
   };
 
-  return cr_make_param_array(struct findcrlf_params, params, sizeof (params) / sizeof(struct findcrlf_params));
+  return cr_make_param_array(struct findcrlf_params, params, sizeof(params) / sizeof(struct findcrlf_params));
 }
 
 ParameterizedTest(struct findcrlf_params *params, findcrlf, test)

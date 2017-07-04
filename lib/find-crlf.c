@@ -70,7 +70,7 @@ find_cr_or_lf(gchar *s, gsize n)
         {
           gint i;
 
-          char_ptr = (gchar *) (longword_ptr - 1);
+          char_ptr = (gchar *)(longword_ptr - 1);
 
           for (i = 0; i < sizeof(longword); i++)
             {

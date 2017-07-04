@@ -305,7 +305,7 @@ test_log_proto_text_server_multi_read_not_allowed(void)
 }
 
 LogProtoServer *
-construct_test_proto_with_accumulator(gint (*accumulator)(LogProtoTextServer *, const guchar *, gsize, gssize),
+construct_test_proto_with_accumulator(gint(*accumulator)(LogProtoTextServer *, const guchar *, gsize, gssize),
                                       LogTransport *transport)
 {
   LogProtoServer *proto = construct_test_proto(transport);

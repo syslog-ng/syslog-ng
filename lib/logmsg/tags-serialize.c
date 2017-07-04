@@ -52,7 +52,7 @@ tags_deserialize(LogMessage *msg, SerializeArchive *sa)
 static gboolean
 _callback(const LogMessage *msg, LogTagId tag_id, const gchar *name, gpointer user_data)
 {
-  SerializeArchive *sa = ( SerializeArchive *)user_data;
+  SerializeArchive *sa = (SerializeArchive *)user_data;
   serialize_write_cstring(sa, name, strlen(name));
   return TRUE;
 }

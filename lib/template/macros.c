@@ -71,7 +71,7 @@ LogMacroDef macros[] =
   { "AMPM",           M_AMPM },
   { "WEEKDAY",        M_WEEK_DAY_ABBREV }, /* deprecated */
   { "WEEK_DAY",       M_WEEK_DAY },
-  { "WEEK_DAY_ABBREV",M_WEEK_DAY_ABBREV },
+  { "WEEK_DAY_ABBREV", M_WEEK_DAY_ABBREV },
   { "WEEK_DAY_NAME",  M_WEEK_DAY_NAME },
   { "WEEK",           M_WEEK },
   { "TZOFFSET",       M_TZOFFSET },
@@ -99,7 +99,7 @@ LogMacroDef macros[] =
   { "R_AMPM",           M_RECVD_OFS + M_AMPM },
   { "R_WEEKDAY",        M_RECVD_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
   { "R_WEEK_DAY",       M_RECVD_OFS + M_WEEK_DAY },
-  { "R_WEEK_DAY_ABBREV",M_RECVD_OFS + M_WEEK_DAY_ABBREV },
+  { "R_WEEK_DAY_ABBREV", M_RECVD_OFS + M_WEEK_DAY_ABBREV },
   { "R_WEEK_DAY_NAME",  M_RECVD_OFS + M_WEEK_DAY_NAME },
   { "R_WEEK",           M_RECVD_OFS + M_WEEK },
   { "R_TZOFFSET",       M_RECVD_OFS + M_TZOFFSET },
@@ -126,7 +126,7 @@ LogMacroDef macros[] =
   { "S_AMPM",           M_STAMP_OFS + M_AMPM },
   { "S_WEEKDAY",        M_STAMP_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
   { "S_WEEK_DAY",       M_STAMP_OFS + M_WEEK_DAY },
-  { "S_WEEK_DAY_ABBREV",M_STAMP_OFS + M_WEEK_DAY_ABBREV },
+  { "S_WEEK_DAY_ABBREV", M_STAMP_OFS + M_WEEK_DAY_ABBREV },
   { "S_WEEK_DAY_NAME",  M_STAMP_OFS + M_WEEK_DAY_NAME },
   { "S_WEEK",           M_STAMP_OFS + M_WEEK },
   { "S_TZOFFSET",       M_STAMP_OFS + M_TZOFFSET },
@@ -149,7 +149,7 @@ LogMacroDef macros[] =
   { "C_SEC",            M_CSTAMP_OFS + M_SEC },
   { "C_WEEKDAY",        M_CSTAMP_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
   { "C_WEEK_DAY",       M_CSTAMP_OFS + M_WEEK_DAY },
-  { "C_WEEK_DAY_ABBREV",M_CSTAMP_OFS + M_WEEK_DAY_ABBREV },
+  { "C_WEEK_DAY_ABBREV", M_CSTAMP_OFS + M_WEEK_DAY_ABBREV },
   { "C_WEEK_DAY_NAME",  M_CSTAMP_OFS + M_WEEK_DAY_NAME },
   { "C_WEEK",           M_CSTAMP_OFS + M_WEEK },
   { "C_TZOFFSET",       M_CSTAMP_OFS + M_TZOFFSET },
@@ -355,7 +355,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
     {
       gchar *ip;
 
-      if(_is_message_source_an_ip_address(msg))
+      if (_is_message_source_an_ip_address(msg))
         {
           gchar buf[MAX_SOCKADDR_STRING];
 
@@ -545,7 +545,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           format_uint32_padded(result, 2, '0', 10, tm->tm_sec);
           break;
         case M_MSEC:
-          format_uint32_padded(result, 3, '0', 10, stamp->tv_usec/1000);
+          format_uint32_padded(result, 3, '0', 10, stamp->tv_usec / 1000);
           break;
         case M_USEC:
           format_uint32_padded(result, 6, '0', 10, stamp->tv_usec);
@@ -593,7 +593,7 @@ log_macro_lookup(gchar *macro, gint len)
   gint macro_id;
 
   g_assert(macro_hash);
-  g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
+  g_strlcpy(buf, macro, MIN(sizeof(buf), len + 1));
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
 
   if (cfg_is_config_version_older(configuration, 0x0300) && (macro_id == M_MESSAGE))

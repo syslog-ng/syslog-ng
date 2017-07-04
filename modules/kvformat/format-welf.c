@@ -37,7 +37,7 @@ tf_format_welf_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
 {
   TFWelfState *state = (TFWelfState *) s;
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
+  state->vp = value_pairs_new_from_cmdline(parent->cfg, argc, argv, error);
   if (!state->vp)
     return FALSE;
 
@@ -70,7 +70,7 @@ static gint
 tf_format_welf_strcmp(gconstpointer a, gconstpointer b)
 {
   gchar *sa = (gchar *)a, *sb = (gchar *)b;
-  if (strcmp (sa, "id") == 0)
+  if (strcmp(sa, "id") == 0)
     return -1;
   return strcmp(sa, sb);
 }

@@ -96,7 +96,7 @@ struct _AFInterSource
   struct iv_event schedule_wakeup;
   struct iv_timer mark_timer;
   struct iv_task restart_task;
-  gboolean watches_running:1;
+  gboolean watches_running: 1;
 };
 
 static void afinter_source_update_watches(AFInterSource *self);
@@ -432,7 +432,7 @@ afinter_message_posted(LogMessage *msg)
 
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL );
+      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL);
       stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
       stats_unlock();
     }

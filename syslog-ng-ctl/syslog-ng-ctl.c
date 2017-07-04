@@ -48,7 +48,7 @@ slng_send_cmd(const gchar *cmd)
       return FALSE;
     }
 
-  if (control_client_send_command(control_client,cmd) < 0)
+  if (control_client_send_command(control_client, cmd) < 0)
     {
       return FALSE;
     }
@@ -245,7 +245,7 @@ _shift_query_command_out_of_params()
 static gboolean
 _validate_get_params(gint query_cmd)
 {
-  if(query_cmd == QUERY_CMD_GET || query_cmd == QUERY_CMD_GET_SUM)
+  if (query_cmd == QUERY_CMD_GET || query_cmd == QUERY_CMD_GET_SUM)
     if (*raw_query_params == NULL)
       {
         fprintf(stderr, "error: need a path argument\n");
@@ -285,7 +285,7 @@ _get_dispatchable_query_command()
     return NULL;
 
   *raw_query_params = _shift_query_command_out_of_params();
-  if(_validate_get_params(query_cmd))
+  if (_validate_get_params(query_cmd))
     return NULL;
 
   return _get_query_command_string(query_cmd);
@@ -323,7 +323,7 @@ get_mode(int *argc, char **argv[])
       if ((*argv)[i][0] != '-')
         {
           mode = (*argv)[i];
-          memmove(&(*argv)[i], &(*argv)[i+1], ((*argc) - i) * sizeof(gchar *));
+          memmove(&(*argv)[i], &(*argv)[i + 1], ((*argc) - i) * sizeof(gchar *));
           (*argc)--;
           return mode;
         }
@@ -345,7 +345,7 @@ static struct
   const gchar *mode;
   const GOptionEntry *options;
   const gchar *description;
-  gint (*main)(gint argc, gchar *argv[], const gchar *mode);
+  gint(*main)(gint argc, gchar *argv[], const gchar *mode);
 } modes[] =
 {
   { "stats", stats_options, "Get syslog-ng statistics in CSV format", slng_stats },

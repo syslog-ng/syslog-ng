@@ -208,7 +208,7 @@ log_source_init(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance );
+  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance);
   stats_register_counter(self->stats_level, &sc_key,
                          SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_register_counter(self->stats_level, &sc_key, SC_TYPE_STAMP, &self->last_message_seen);
@@ -223,7 +223,7 @@ log_source_deinit(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance );
+  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
@@ -310,14 +310,14 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       stats_lock();
 
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SOURCE, NULL,  log_msg_get_value(msg, LM_V_HOST, NULL) );
+      stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SOURCE, NULL,  log_msg_get_value(msg, LM_V_HOST, NULL));
 
       stats_register_and_increment_dynamic_counter(2, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
       if (stats_check_level(3))
         {
-          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL) );
+          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL));
           stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL) );
+          stats_cluster_logpipe_key_set(&sc_key, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL));
           stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
         }
 
@@ -376,7 +376,7 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
   self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
   if (self->stats_instance)
     g_free(self->stats_instance);
-  self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
+  self->stats_instance = stats_instance ? g_strdup(stats_instance) : NULL;
   self->threaded = threaded;
   self->pos_tracked = pos_tracked;
   self->super.expr_node = expr_node;

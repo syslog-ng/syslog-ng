@@ -92,7 +92,7 @@ struct _LogProtoREMultiLineServer
   /* these are borrowed */
   MultiLineRegexp *prefix;
   MultiLineRegexp *garbage;
-  gint (*get_offset_of_garbage)(LogProtoREMultiLineServer *self, const guchar *line, gsize line_len);
+  gint(*get_offset_of_garbage)(LogProtoREMultiLineServer *self, const guchar *line, gsize line_len);
 };
 
 static int

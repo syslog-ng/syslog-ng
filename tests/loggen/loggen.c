@@ -94,7 +94,7 @@ typedef ssize_t (*send_data_t)(void *user_data, void *buf, size_t length);
 static ssize_t
 send_plain(void *user_data, void *buf, size_t length)
 {
-  int fd = (int) ((long) user_data);
+  int fd = (int)((long) user_data);
   int cc;
 
   for (;;)
@@ -234,7 +234,7 @@ parse_line(const char *line, char *host, char *program, char *pid, char **msg)
     ;
 
   memcpy(program, pos + 1, end - pos - 1);
-  program[end-pos-1] = '\0';
+  program[end - pos - 1] = '\0';
 
   /* Host */
   end = pos;
@@ -242,7 +242,7 @@ parse_line(const char *line, char *host, char *program, char *pid, char **msg)
     ;
 
   memcpy(host, pos + 1, end - pos - 1);
-  host[end-pos-1] = '\0';
+  host[end - pos - 1] = '\0';
 
   *msg = ((char *)pos0) + 2;
 
@@ -361,7 +361,7 @@ format_timezone_offset_with_colon(char *timestamp, int timestamp_size, struct tm
   offset[len - 1] = offset[len - 2];
   offset[len - 2] = ':';
 
-  strncat(timestamp, offset, timestamp_size - strlen(timestamp) -1);
+  strncat(timestamp, offset, timestamp_size - strlen(timestamp) - 1);
 }
 
 static guint64
@@ -443,7 +443,7 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
   raw_message_length = linelen = strlen(linebuf);
   while (permanent || time_val_diff_in_usec(&now, &start) < ((int64_t)interval) * USEC_PER_SEC)
     {
-      if(number_of_messages != 0 && count >= number_of_messages)
+      if (number_of_messages != 0 && count >= number_of_messages)
         {
           break;
         }
@@ -482,7 +482,7 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
             break;
 
           linelen = rc;
-          sum_linelen = sum_linelen+rc;
+          sum_linelen = sum_linelen + rc;
 
         }
 
@@ -512,13 +512,13 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
             {
               time_val_diff_in_timeval(&diff_tv, &now, &start);
               printf("%d;%lu.%06lu;%.2lf;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec,
-                     (((double) (count - last_count) * USEC_PER_SEC) / diff_usec),count);
+                     (((double)(count - last_count) * USEC_PER_SEC) / diff_usec), count);
 
             }
           else if (!quiet)
             {
               fprintf(stderr, "count=%ld, rate = %.2lf msg/sec                 \r", count,
-                      ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
+                      ((double)(count - last_count) * USEC_PER_SEC) / diff_usec);
             }
           last_ts_format = now;
           last_count = count;
@@ -546,12 +546,12 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
   time_val_diff_in_timeval(&diff_tv, &now, &start);
   if (csv)
     printf("%d;%lu.%06lu;%.2lf;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec,
-           (((double) (count - last_count) * USEC_PER_SEC) / diff_usec), count);
+           (((double)(count - last_count) * USEC_PER_SEC) / diff_usec), count);
 
   if (readfrom)
     {
       if (count)
-        raw_message_length = sum_linelen/count;
+        raw_message_length = sum_linelen / count;
       else
         raw_message_length = 0;
     }
@@ -573,7 +573,7 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
   if (NULL == (ssl = SSL_new(ctx)))
     return 1;
 
-  SSL_set_fd (ssl, sock);
+  SSL_set_fd(ssl, sock);
   if (-1 == (err = SSL_connect(ssl)))
     {
       fprintf(stderr, "SSL connect failed\n");
@@ -583,11 +583,11 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
 
   ret = gen_messages(send_ssl, ssl, id, readfrom);
 
-  SSL_shutdown (ssl);
+  SSL_shutdown(ssl);
 
   /* Clean up. */
-  SSL_free (ssl);
-  SSL_CTX_free (ctx);
+  SSL_free(ssl);
+  SSL_CTX_free(ctx);
 
   return ret;
 }
@@ -738,7 +738,7 @@ static GOptionEntry loggen_options[] =
 static GOptionEntry file_option_entries[] =
 {
   { "read-file", 'R', 0, G_OPTION_ARG_STRING, &read_file, "Read log messages from file", "<filename>" },
-  { "loop-reading",'l',0, G_OPTION_ARG_NONE, &loop_reading, "Read the file specified in read-file option in loop (it will restart the reading if reached the end of the file)", NULL },
+  { "loop-reading", 'l', 0, G_OPTION_ARG_NONE, &loop_reading, "Read the file specified in read-file option in loop (it will restart the reading if reached the end of the file)", NULL },
   { "dont-parse", 'd', 0, G_OPTION_ARG_NONE, &dont_parse, "Don't parse the lines coming from the readed files. Loggen will send the whole lines as it is in the readed file", NULL },
   { "skip-tokens", 0, 0, G_OPTION_ARG_INT, &skip_tokens, "Skip the given number of tokens (delimined by a space) at the beginning of each line (default value: 3)", "<number>" },
   { NULL }
@@ -917,7 +917,7 @@ main(int argc, char *argv[])
   thread_connected = g_cond_new();
   /* mutex used for both cond vars */
   thread_lock = g_mutex_new();
-  if(csv)
+  if (csv)
     {
       printf("ThreadId;Time;Rate;Count\n");
     }

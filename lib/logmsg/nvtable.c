@@ -156,7 +156,7 @@ nv_table_alloc_value(NVTable *self, gsize alloc_size)
   if (!nv_table_alloc_check(self, alloc_size))
     return NULL;
   self->used += alloc_size;
-  entry = (NVEntry *) (nv_table_get_top(self) - (self->used));
+  entry = (NVEntry *)(nv_table_get_top(self) - (self->used));
 
   /* initialize all flags to zero, so we don't need to bump the version for
    * a compatible change */
@@ -231,7 +231,7 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_ent
   ofs = 0;
   while (l <= h)
     {
-      m = (l+h) >> 1;
+      m = (l + h) >> 1;
       mv = index_table[m].handle;
       if (mv == handle)
         {
@@ -273,7 +273,7 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **inde
         {
           guint16 mv;
 
-          m = (l+h) >> 1;
+          m = (l + h) >> 1;
           mv = index_table[m].handle;
 
           if (mv == handle)
@@ -319,7 +319,7 @@ nv_table_set_table_entry(NVTable *self, NVHandle handle, guint32 ofs, NVIndexEnt
   if (G_LIKELY(handle <= self->num_static_entries))
     {
       /* this is a statically allocated value, simply store the offset */
-      self->static_entries[handle-1] = ofs;
+      self->static_entries[handle - 1] = ofs;
     }
   else
     {
@@ -332,7 +332,7 @@ nv_table_set_table_entry(NVTable *self, NVHandle handle, guint32 ofs, NVIndexEnt
 static gboolean
 nv_table_make_direct(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
 {
-  NVTable *self = (NVTable *) (((gpointer *) user_data)[0]);
+  NVTable *self = (NVTable *)(((gpointer *) user_data)[0]);
   NVHandle ref_handle = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
 
   if (entry->indirect && entry->vindirect.handle == ref_handle)
@@ -566,8 +566,8 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
 static gboolean
 nv_table_call_foreach(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
 {
-  NVTable *self = (NVTable *) ((gpointer *) user_data)[0];
-  NVRegistry *registry = (NVRegistry *) ((gpointer *) user_data)[1];
+  NVTable *self = (NVTable *)((gpointer *) user_data)[0];
+  NVRegistry *registry = (NVRegistry *)((gpointer *) user_data)[1];
   NVTableForeachFunc func = ((gpointer *) user_data)[2];
   gpointer func_data = ((gpointer *) user_data)[3];
   const gchar *value;

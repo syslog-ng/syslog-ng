@@ -90,7 +90,7 @@ evt_str_append_escape_bs(EVTSTR *es,
 {
   /* a single character is escaped to at most 4 characters: \xXX */
 
-  char *buf = (char *)alloca(4*unescaped_len + 1);
+  char *buf = (char *)alloca(4 * unescaped_len + 1);
 
   int i, dst;
 
@@ -112,7 +112,7 @@ evt_str_append_escape_bs(EVTSTR *es,
         {
           buf[dst++] = unescaped[i];
         }
-      assert(dst <= 4*unescaped_len);
+      assert(dst <= 4 * unescaped_len);
     }
   return evt_str_append_len(es, buf, dst);
 }
@@ -126,7 +126,7 @@ evt_str_append_escape_xml_attr(EVTSTR *es,
   /* FIXME: this is a gcc extension, alternative would be to use alloca(),
    * which is not portable */
 
-  char *buf = (char *)alloca(6*unescaped_len + 1);
+  char *buf = (char *)alloca(6 * unescaped_len + 1);
 
   int i, dst;
 
@@ -146,7 +146,7 @@ evt_str_append_escape_xml_attr(EVTSTR *es,
         {
           buf[dst++] = unescaped[i];
         }
-      assert(dst <= 6*unescaped_len);
+      assert(dst <= 6 * unescaped_len);
     }
   return evt_str_append_len(es, buf, dst);
 }
@@ -160,7 +160,7 @@ evt_str_append_escape_xml_pcdata(EVTSTR *es,
   /* FIXME: this is a gcc extension, alternative would be to use alloca(),
    * which is not portable */
 
-  char *buf = (char *)alloca(6*unescaped_len + 1);
+  char *buf = (char *)alloca(6 * unescaped_len + 1);
 
   int i, dst;
 
@@ -185,7 +185,7 @@ evt_str_append_escape_xml_pcdata(EVTSTR *es,
         {
           buf[dst++] = unescaped[i];
         }
-      assert(dst <= 6*unescaped_len);
+      assert(dst <= 6 * unescaped_len);
     }
   return evt_str_append_len(es, buf, dst);
 }

@@ -206,7 +206,7 @@ testcase_with_backref_chk(gchar *msg,
 
   value_msg = log_msg_get_value_by_name(logmsg, name, &length);
   nv_table_unref(nv_table);
-  if(value == NULL || value[0] == 0)
+  if (value == NULL || value[0] == 0)
     {
       if (value_msg != NULL && value_msg[0] != 0)
         {
@@ -470,10 +470,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
 
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_posix_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "1","a");
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "1", "a");
 
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_posix_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0", "al fa");
 
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_posix_regexp_filter(LM_V_MESSAGE,
                             "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "232", NULL);
@@ -536,18 +536,18 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   TEST_ASSERT(create_pcre_regexp_match("((", 0) == NULL);
 
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "MM","m");
+                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "MM", "m");
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
                             "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "aaaa", NULL);
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa_name>fa)", LMF_STORE_MATCHES), 1, "fa_name","fa");
+                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa_name>fa)", LMF_STORE_MATCHES), 1, "fa_name", "fa");
 
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "2","l");
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "2", "l");
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0", "al fa");
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "233",NULL);
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "233", NULL);
 
   app_shutdown();
   return 0;

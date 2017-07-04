@@ -276,7 +276,7 @@ pdbtool_merge(int argc, char *argv[])
 
   merged = g_string_sized_new(4096);
   g_date_clear(&date, 1);
-  g_date_set_time_t(&date, time (NULL));
+  g_date_set_time_t(&date, time(NULL));
 
   buff = g_markup_printf_escaped("<?xml version='1.0' encoding='UTF-8'?>\n<patterndb version='4' pub_date='%04d-%02d-%02d'>",
                                  g_date_get_year(&date), g_date_get_month(&date), g_date_get_day(&date));
@@ -1128,7 +1128,7 @@ pdbtool_mode(int *argc, char **argv[])
       if ((*argv)[i][0] != '-')
         {
           mode = (*argv)[i];
-          memmove(&(*argv)[i], &(*argv)[i+1], ((*argc) - i) * sizeof(gchar *));
+          memmove(&(*argv)[i], &(*argv)[i + 1], ((*argc) - i) * sizeof(gchar *));
           (*argc)--;
           return mode;
         }
@@ -1162,7 +1162,7 @@ static struct
   const gchar *mode;
   const GOptionEntry *options;
   const gchar *description;
-  gint (*main)(gint argc, gchar *argv[]);
+  gint(*main)(gint argc, gchar *argv[]);
 } modes[] =
 {
   { "match", match_options, "Match a message against the pattern database", pdbtool_match },

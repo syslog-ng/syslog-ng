@@ -208,8 +208,8 @@ _truncate_file(QDisk *self, gint64 new_size)
       msg_error("Error truncating disk-queue file",
                 evt_tag_errno("error", errno),
                 evt_tag_str("filename", self->filename),
-                evt_tag_int("newsize",self->hdr->write_head),
-                evt_tag_int("fd",self->fd));
+                evt_tag_int("newsize", self->hdr->write_head),
+                evt_tag_int("fd", self->fd));
     }
 
   return success;
@@ -271,7 +271,7 @@ qdisk_push_tail(QDisk *self, GString *record)
   /* NOTE: if these were equal, that'd mean the queue is empty, so we spoiled something */
   g_assert(self->hdr->write_head != self->hdr->backlog_head);
 
-  if (self->hdr->write_head > MAX(self->hdr->backlog_head,self->hdr->read_head))
+  if (self->hdr->write_head > MAX(self->hdr->backlog_head, self->hdr->read_head))
     {
       if (self->file_size > self->hdr->write_head)
         {
@@ -483,7 +483,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
       if (!(qbacklog_ofs > 0 && qbacklog_ofs < self->hdr->write_head))
         {
-          if(!_load_queue(self, qbacklog, qbacklog_ofs, qbacklog_len, qbacklog_count))
+          if (!_load_queue(self, qbacklog, qbacklog_ofs, qbacklog_len, qbacklog_count))
             return !self->options->read_only;
         }
       else
@@ -496,7 +496,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
       if (!(qoverflow_ofs > 0 && qoverflow_ofs < self->hdr->write_head))
         {
-          if(!_load_queue(self, qoverflow, qoverflow_ofs, qoverflow_len, qoverflow_count))
+          if (!_load_queue(self, qoverflow, qoverflow_ofs, qoverflow_len, qoverflow_count))
             return !self->options->read_only;
         }
       else
@@ -515,7 +515,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
         end_ofs = qbacklog_ofs;
       if (qoverflow_ofs && qoverflow_ofs < end_ofs)
         end_ofs = qoverflow_ofs;
-      if(end_ofs > QDISK_RESERVED_SPACE)
+      if (end_ofs > QDISK_RESERVED_SPACE)
         _truncate_file(self, end_ofs);
     }
 
@@ -672,7 +672,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   else
     {
       struct stat st;
-      if (stat(filename,&st) == -1)
+      if (stat(filename, &st) == -1)
         {
           new_file = TRUE;
         }
@@ -710,7 +710,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     {
       self->hdr = g_malloc(sizeof(QDiskFileHeader));
       memcpy(self->hdr, p, sizeof(QDiskFileHeader));
-      munmap(p, sizeof(QDiskFileHeader) );
+      munmap(p, sizeof(QDiskFileHeader));
       p = NULL;
     }
   else
@@ -725,8 +725,8 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       memset(&tmp, 0, sizeof(tmp));
       if (!pwrite_strict(self->fd, &tmp, sizeof(tmp), 0))
         {
-          msg_error("Error occured while initalizing the new queue file",evt_tag_str("filename",self->filename),
-                    evt_tag_errno("error",errno));
+          msg_error("Error occured while initalizing the new queue file", evt_tag_str("filename", self->filename),
+                    evt_tag_errno("error", errno));
           munmap((void *)self->hdr, sizeof(QDiskFileHeader));
           self->hdr = NULL;
           close(self->fd);
@@ -891,7 +891,7 @@ qdisk_skip_record(QDisk *self, guint64 position)
 {
   guint64 new_position = position;
   guint32 s;
-  qdisk_read (self, (gchar *) &s, sizeof(s), position);
+  qdisk_read(self, (gchar *) &s, sizeof(s), position);
   s = GUINT32_FROM_BE(s);
   new_position += s + sizeof(s);
   if (new_position > self->hdr->write_head)
@@ -915,7 +915,7 @@ qdisk_reset_file_if_possible(QDisk *self)
       self->hdr->read_head = QDISK_RESERVED_SPACE;
       self->hdr->write_head = QDISK_RESERVED_SPACE;
       self->hdr->backlog_head = QDISK_RESERVED_SPACE;
-      _truncate_file (self, QDISK_RESERVED_SPACE);
+      _truncate_file(self, QDISK_RESERVED_SPACE);
     }
 }
 

@@ -80,7 +80,7 @@ _allocate_thread_id(void)
 
   main_loop_worker_id = 0;
 
-  if(main_loop_worker_type != EXTERNAL_INPUT_THREAD)
+  if (main_loop_worker_type != EXTERNAL_INPUT_THREAD)
     {
       for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
         {
@@ -169,7 +169,7 @@ main_loop_worker_thread_start(void *cookie)
     {
       main_loop_worker_type = OUTPUT_THREAD;
     }
-  else if(worker_options && worker_options->is_external_input)
+  else if (worker_options && worker_options->is_external_input)
     {
       main_loop_worker_type = EXTERNAL_INPUT_THREAD;
     }

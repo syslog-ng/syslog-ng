@@ -51,8 +51,8 @@ void
 stomp_frame_add_header(stomp_frame *frame, const char *name, const char *value)
 {
   msg_debug("Adding header",
-            evt_tag_str("name",name),
-            evt_tag_str("value",value));
+            evt_tag_str("name", name),
+            evt_tag_str("value", value));
 
   g_hash_table_insert(frame->headers, g_strdup(name), g_strdup(value));
 };
@@ -63,8 +63,8 @@ stomp_frame_add_header_len(stomp_frame *frame, const char *name, int name_len, c
   char *name_slice = g_strndup(name, name_len);
   char *value_slice = g_strndup(value, value_len);
   msg_debug("Adding header",
-            evt_tag_str("name",name_slice),
-            evt_tag_str("value",value_slice));
+            evt_tag_str("name", name_slice),
+            evt_tag_str("value", value_slice));
 
   g_hash_table_insert(frame->headers, name_slice, value_slice);
 };
@@ -274,7 +274,7 @@ stomp_receive_frame(stomp_connection *connection, stomp_frame *frame)
 
   res = stomp_parse_frame(data, frame);
   msg_debug("Frame received",
-            evt_tag_str("command",frame->command));
+            evt_tag_str("command", frame->command));
   g_string_free(data, TRUE);
   return res;
 }
@@ -288,7 +288,7 @@ stomp_check_for_frame(stomp_connection *connection)
   pfd.events = POLLIN | POLLPRI;
 
   poll(&pfd, 1, 0);
-  if (pfd.revents & ( POLLIN | POLLPRI))
+  if (pfd.revents & (POLLIN | POLLPRI))
     {
       stomp_frame frame;
 

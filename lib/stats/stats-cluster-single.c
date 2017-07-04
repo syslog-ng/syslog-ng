@@ -50,7 +50,7 @@ stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, const gcha
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names,_counter_group_init
+    tag_names, _counter_group_init
   });
 }
 

@@ -51,7 +51,7 @@ CfgParser kv_parser_parser =
 #endif
   .name = "kv-parser",
   .keywords = kv_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) kv_parser_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) kv_parser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

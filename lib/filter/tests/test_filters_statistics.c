@@ -49,7 +49,7 @@ create_log_filter_pipe()
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, "filter-matching", NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, "filter-matching", NULL);
   stats_register_counter(1, &sc_key, SC_TYPE_MATCHED, &p->matched);
   stats_register_counter(1, &sc_key, SC_TYPE_NOT_MATCHED, &p->not_matched);
   stats_unlock();

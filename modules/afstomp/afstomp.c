@@ -254,7 +254,7 @@ static gboolean
 afstomp_vp_foreach(const gchar *name, TypeHint type, const gchar *value, gsize value_len,
                    gpointer user_data)
 {
-  stomp_frame *frame = (stomp_frame *) (user_data);
+  stomp_frame *frame = (stomp_frame *)(user_data);
 
   stomp_frame_add_header(frame, name, value);
 
@@ -326,7 +326,7 @@ afstomp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
   if (!afstomp_dd_connect(self, TRUE))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
-  if (!afstomp_worker_publish (self, msg))
+  if (!afstomp_worker_publish(self, msg))
     return WORKER_INSERT_RESULT_ERROR;
 
   return WORKER_INSERT_RESULT_SUCCESS;

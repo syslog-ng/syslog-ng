@@ -44,7 +44,7 @@ CfgParser afprog_parser =
 #endif
   .name = "afprog",
   .keywords = afprog_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer arg)) afprog_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer arg)) afprog_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

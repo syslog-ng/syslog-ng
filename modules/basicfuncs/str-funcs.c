@@ -217,7 +217,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_strip);
 typedef struct _TFSanitizeState
 {
   TFSimpleFuncState super;
-  gint ctrl_chars:1, replacement:8;
+  gint ctrl_chars: 1, replacement: 8;
   gchar *invalid_chars;
 } TFSanitizeState;
 
@@ -320,7 +320,7 @@ tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text)
   /* look up the \n-s and insert a \t after them */
   p = text->str;
   new_line = memchr(p, '\n', text->len);
-  while(new_line)
+  while (new_line)
     {
       if (*(gchar *)(new_line + 1) != '\t')
         {

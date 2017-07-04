@@ -129,7 +129,7 @@ test_file_flags()
 {
   gint fd;
   gchar fname[] = "test_flags.log";
-  gint flags = O_CREAT|O_WRONLY;
+  gint flags = O_CREAT | O_WRONLY;
 
   assert_true(open_file(fname, flags, 0, &fd), "affile_open_file failed: %s", fname);
   assert_true((fcntl(fd, F_GETFL) & O_WRONLY) == O_WRONLY, "invalid open flags");

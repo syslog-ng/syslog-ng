@@ -168,7 +168,7 @@ __test_enumerate(Journald *journald)
 
   result = journald_enumerate_data(journald, &data, &length);
   assert_gint(result, 1, ASSERTION_ERROR("Data should exist"));
-  assert_gpointer((gpointer )data, (gpointer )prev_data,
+  assert_gpointer((gpointer)data, (gpointer)prev_data,
                   ASSERTION_ERROR("restart data should seek the start of the data"));
   assert_gint(length, prev_len, ASSERTION_ERROR("Bad length after restart data"));
 
@@ -444,7 +444,7 @@ _test_default_facility_init(TestCase *self, TestSource *src, Journald *journal, 
 {
   MockEntry *entry = __create_dummy_entry(journal, "test default facility");
   gint facility = GPOINTER_TO_INT(self->user_data);
-  if(options->default_pri == 0xFFFF)
+  if (options->default_pri == 0xFFFF)
     options->default_pri = LOG_NOTICE;
   options->default_pri = (options->default_pri & 7) | facility;
   journald_mock_add_entry(journal, entry);

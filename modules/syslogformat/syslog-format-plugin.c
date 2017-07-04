@@ -43,7 +43,7 @@ static Plugin syslog_format_plugins[] =
   {
     .type = LL_CONTEXT_FORMAT,
     .name = "syslog",
-    .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) syslog_format_construct,
+    .construct = (gpointer(*)(Plugin * self, GlobalConfig * cfg, gint plugin_type, const gchar * plugin_name)) syslog_format_construct,
   },
   {
     .type = LL_CONTEXT_PARSER,

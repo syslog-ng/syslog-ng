@@ -94,7 +94,7 @@ ring_buffer_push(RingBuffer *self)
 }
 
 gpointer
-ring_buffer_tail (RingBuffer *self)
+ring_buffer_tail(RingBuffer *self)
 {
   gpointer r = NULL;
 

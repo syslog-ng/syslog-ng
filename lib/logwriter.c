@@ -61,7 +61,7 @@ struct _LogWriter
 {
   LogPipe super;
   LogQueue *queue;
-  guint32 flags:31;
+  guint32 flags: 31;
   gint32 seq_num;
   StatsCounterItem *dropped_messages;
   StatsCounterItem *suppressed_messages;
@@ -92,7 +92,7 @@ struct _LogWriter
   gboolean work_result;
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
-  gboolean watches_running:1, suspended:1, working:1, waiting_for_throttle:1;
+  gboolean watches_running: 1, suspended: 1, working: 1, waiting_for_throttle: 1;
   gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
@@ -847,7 +847,7 @@ log_writer_do_padding(LogWriter *self, GString *result)
   if (!self->options->padding)
     return;
 
-  if(G_UNLIKELY(self->options->padding < result->len))
+  if (G_UNLIKELY(self->options->padding < result->len))
     {
       msg_warning("Padding is too small to hold the full message",
                   evt_tag_int("padding", self->options->padding),
@@ -1102,7 +1102,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
   if (!(msg->flags & LF_INTERNAL))
     {
       msg_debug("Outgoing message",
-                evt_tag_str("message",self->line_buffer->str));
+                evt_tag_str("message", self->line_buffer->str));
     }
 
   if (self->line_buffer->len)
@@ -1151,7 +1151,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
   else
     {
       msg_debug("Can't send the message rewind backlog",
-                evt_tag_str("message",self->line_buffer->str));
+                evt_tag_str("message", self->line_buffer->str));
 
       log_queue_rewind_backlog(self->queue, 1);
 
@@ -1245,13 +1245,13 @@ log_writer_init_watches(LogWriter *self)
   ml_batched_timer_init(&self->suppress_timer);
   self->suppress_timer.cookie = self;
   self->suppress_timer.handler = (void (*)(void *)) log_writer_suppress_timeout;
-  self->suppress_timer.ref_cookie = (gpointer (*)(gpointer)) log_pipe_ref;
+  self->suppress_timer.ref_cookie = (gpointer(*)(gpointer)) log_pipe_ref;
   self->suppress_timer.unref_cookie = (void (*)(gpointer)) log_pipe_unref;
 
   ml_batched_timer_init(&self->mark_timer);
   self->mark_timer.cookie = self;
   self->mark_timer.handler = (void (*)(void *)) log_writer_mark_timeout;
-  self->mark_timer.ref_cookie = (gpointer (*)(gpointer)) log_pipe_ref;
+  self->mark_timer.ref_cookie = (gpointer(*)(gpointer)) log_pipe_ref;
   self->mark_timer.unref_cookie = (void (*)(gpointer)) log_pipe_unref;
 
   IV_TIMER_INIT(&self->reopen_timer);
@@ -1274,7 +1274,7 @@ _register_counters(LogWriter *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
+    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance);
 
     if (self->options->suppress > 0)
       stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
@@ -1347,7 +1347,7 @@ _unregister_counters(LogWriter *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
+    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance);
 
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);

@@ -196,12 +196,12 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
 
   if ((fd = open("/dev/kmsg", O_RDONLY)) != -1)
     {
-      if ((lseek (fd, 0, SEEK_END) != -1) && _is_fd_pollable(fd))
+      if ((lseek(fd, 0, SEEK_END) != -1) && _is_fd_pollable(fd))
         {
           kmsg = "/dev/kmsg";
           format = "linux-kmsg";
         }
-      close (fd);
+      close(fd);
     }
 
   if (access(kmsg, R_OK) == -1)
@@ -236,7 +236,7 @@ _is_running_in_linux_container(void)
         }
     }
 
-  fclose (f);
+  fclose(f);
 
   return container;
 }

@@ -42,7 +42,7 @@ CfgParser syslog_parser_parser =
 #endif
   .name = "syslog_parser",
   .keywords = syslog_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) syslog_parser_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) syslog_parser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

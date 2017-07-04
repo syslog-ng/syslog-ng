@@ -348,7 +348,7 @@ log_threaded_dest_driver_start(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
+  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
                                 self->super.super.id,
                                 self->format.stats_instance(self));
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);

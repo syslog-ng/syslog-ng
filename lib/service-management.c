@@ -41,7 +41,7 @@ struct _ServiceManagement
   void (*publish_status)(const gchar *status);
   void (*clear_status)();
   void (*indicate_readiness)();
-  gboolean (*is_active)();
+  gboolean(*is_active)();
 };
 
 ServiceManagement *current_service_mgmt = NULL;
@@ -145,7 +145,7 @@ ServiceManagement service_managements[] =
     .is_active = service_management_dummy_is_active
   }
 #if SYSLOG_NG_ENABLE_SYSTEMD
-  ,{
+  , {
     .type = SMT_SYSTEMD,
     .publish_status = service_management_systemd_publish_status,
     .clear_status = service_management_systemd_clear_status,
