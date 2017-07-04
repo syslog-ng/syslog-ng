@@ -1,7 +1,7 @@
 #!/bin/sh
 #!/bin/bash
 
-### syslog-debun: syslog debug bundle generator
+### syslog-ng-debun: syslog debug bundle generator
 ### Written/Copyright: Gyorgy Pasztor <pasztor@linux.gyakg.u-szeged.hu>, (c) 2014-2016.
 ### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2017.
 ### This software may be used and distributed according to the terms of GNU GPLv2
@@ -90,7 +90,7 @@ distpkgoffile_cleanup () { : ; }
 ###
 debun_usage () {
 cat <<END
-Usage: syslog-debun [OPTIONS]
+Usage: syslog-ng-debun [OPTIONS]
 
 General Options:
   -h		Show this help page

@@ -1,11 +1,11 @@
 dist_sbin_SCRIPTS += \
-	contrib/syslog-debun
+	contrib/syslog-ng-debun
 
 EXTRA_DIST += \
 	contrib/README \
 	\
-	contrib/README.syslog-debun \
-	contrib/syslog-debun \
+	contrib/README.syslog-ng-debun \
+	contrib/syslog-ng-debun \
 	\
 	contrib/init.d.solaris \
 	contrib/init.d.HP-UX \
