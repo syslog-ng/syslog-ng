@@ -1,3 +1,6 @@
+dist_sbin_SCRIPTS += \
+	contrib/syslog-debun
+
 EXTRA_DIST += \
 	contrib/README \
 	\
