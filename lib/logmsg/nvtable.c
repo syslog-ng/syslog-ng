@@ -458,6 +458,26 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
     }
 }
 
+static gboolean
+nv_table_copy_referenced_value(NVTable *self, NVEntry *ref_entry, NVHandle handle, const gchar *name,
+                               gsize name_len, guint32 rofs, guint32 rlen, gboolean *new_entry)
+{
+  gssize ref_length;
+  const gchar *ref_value = nv_table_resolve_entry(self, ref_entry, &ref_length);
+
+  if (rofs > ref_length)
+    {
+      rlen = 0;
+      rofs = 0;
+    }
+  else
+    {
+      rlen = MIN(rofs + rlen, ref_length) - rofs;
+    }
+
+  return nv_table_add_value(self, handle, name, name_len, ref_value + rofs, rlen, new_entry);
+}
+
 gboolean
 nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle,
                             guint8 type, guint32 rofs, guint32 rlen, gboolean *new_entry)
@@ -469,27 +489,14 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
   if (new_entry)
     *new_entry = FALSE;
   ref_entry = nv_table_get_entry(self, ref_handle, &index_entry);
+
   if ((ref_entry && ref_entry->indirect) || handle == ref_handle)
     {
-      const gchar *ref_value;
-      gssize ref_length;
-
       /* NOTE: uh-oh, the to-be-referenced value is already an indirect
        * reference, this is not supported, copy the stuff */
-
-      ref_value = nv_table_resolve_entry(self, ref_entry, &ref_length);
-
-      if (rofs > ref_length)
-        {
-          rlen = 0;
-          rofs = 0;
-        }
-      else
-        {
-          rlen = MIN(rofs + rlen, ref_length) - rofs;
-        }
-      return nv_table_add_value(self, handle, name, name_len, ref_value + rofs, rlen, new_entry);
+      return nv_table_copy_referenced_value(self, ref_entry, handle, name, name_len, rofs, rlen, new_entry);
     }
+
 
   entry = nv_table_get_entry(self, handle, &index_entry);
   if (!entry && !new_entry && (rlen == 0 || !ref_entry))
