@@ -223,7 +223,10 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
       self->file_reader_options.reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
     }
 
-  self->file_opener = file_opener_for_named_pipes_new();
+  if (self->file_reader_options.exit_on_eof)
+    self->file_opener = file_opener_for_stdin_new();
+  else
+    self->file_opener = file_opener_for_named_pipes_new();
 
   return &self->super.super;
 }

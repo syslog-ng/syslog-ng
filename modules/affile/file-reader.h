@@ -34,6 +34,7 @@ typedef struct _FileReaderOptions
   gboolean restore_state;
   LogProtoMultiLineServerOptions multi_line_options;
   LogReaderOptions reader_options;
+  gboolean exit_on_eof;
 } FileReaderOptions;
 
 typedef struct _FileReader
@@ -52,6 +53,7 @@ FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, F
 void file_reader_remove_persist_state(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
+void file_reader_options_set_exit_on_eof(FileReaderOptions *options, gboolean exit_on_eof);
 
 void file_reader_options_defaults(FileReaderOptions *options);
 void file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group);
