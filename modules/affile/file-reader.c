@@ -26,7 +26,6 @@
 #include "serialize.h"
 #include "gprocess.h"
 #include "stats/stats-registry.h"
-#include "mainloop.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
 #include "transport-prockmsg.h"
@@ -244,20 +243,23 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
 
   switch (notify_code)
     {
+    case NC_CLOSE:
+      if (self->options->exit_on_eof)
+        cfg_shutdown(log_pipe_get_config(s));
+      break;
+
     case NC_FILE_MOVED:
-    {
       msg_verbose("Follow-mode file source moved, tracking of the new file is started",
                   evt_tag_str("filename", self->filename->str));
       _reopen_on_notify(s, TRUE);
       break;
-    }
+
     case NC_READ_ERROR:
-    {
       msg_verbose("Error while following source file, reopening in the hope it would work",
                   evt_tag_str("filename", self->filename->str));
       _reopen_on_notify(s, FALSE);
       break;
-    }
+
     default:
       break;
     }

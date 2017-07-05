@@ -26,6 +26,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/regular-files.c				\
 	modules/affile/named-pipe.c				\
 	modules/affile/linux-kmsg.c				\
+	modules/affile/stdin.c					\
+	modules/affile/stdin.h					\
 	modules/affile/affile-source.c				\
 	modules/affile/affile-source.h				\
 	modules/affile/affile-dest.c				\

@@ -39,8 +39,10 @@ typedef struct _AFFileSourceDriver
   FileOpenerOptions file_opener_options;
 } AFFileSourceDriver;
 
+AFFileSourceDriver *affile_sd_new_instance(gchar *filename, GlobalConfig *cfg);
 LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
 LogDriver *afpipe_sd_new(gchar *filename, GlobalConfig *cfg);
+
 
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
 void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);

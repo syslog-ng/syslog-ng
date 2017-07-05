@@ -39,6 +39,7 @@
 #include "messages.h"
 #include "plugin.h"
 #include "cfg-grammar.h"
+#include "stdin.h"
 
 #include <string.h>
 
@@ -74,10 +75,13 @@ LogProtoFileReaderOptions *last_log_proto_options;
 %token KW_MAX_FILES
 %token KW_MONITOR_METHOD
 
+%token KW_STDIN
+
 %type	<ptr> source_affile
 %type	<ptr> source_affile_params
 %type	<ptr> source_afpipe_params
 %type   <ptr> source_wildcard_params
+%type	<ptr> source_stdin_params
 %type   <ptr> dest_affile
 %type	<ptr> dest_affile_params
 %type   <ptr> dest_afpipe_params
@@ -92,6 +96,7 @@ start
 source_affile
 	: KW_FILE '(' source_affile_params ')'	{ $$ = $3; }
 	| KW_PIPE '(' source_afpipe_params ')'	{ $$ = $3; }
+	| KW_STDIN '(' source_stdin_params ')'	{ $$ = $3; }
 	| KW_WILDCARD_FILE 
 	{
 		last_driver = *instance = wildcard_sd_new(configuration);
@@ -110,6 +115,18 @@ source_wildcard_options
     : source_wildcard_option source_wildcard_options
     |
     ;    
+
+source_stdin_params
+	:
+	  {
+            last_driver = *instance = stdin_sd_new(configuration);
+	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
+	    last_reader_options = &last_file_reader_options->reader_options;
+	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
+            last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	  }
+          source_affile_options                 { $$ = last_driver; }
+        ;
 
 source_affile_params
 	: string

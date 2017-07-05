@@ -148,7 +148,7 @@ affile_sd_free(LogPipe *s)
   log_src_driver_free(s);
 }
 
-static AFFileSourceDriver *
+AFFileSourceDriver *
 affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = g_new0(AFFileSourceDriver, 1);
