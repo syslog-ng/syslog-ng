@@ -118,7 +118,7 @@ _open_fd(FileOpener *self, const gchar *name)
 }
 
 gboolean
-file_opener_open_fd(FileOpener *self, gchar *name, gint *fd)
+file_opener_open_fd(FileOpener *self, gchar *name, FileDirection dir, gint *fd)
 {
   cap_t saved_caps;
 

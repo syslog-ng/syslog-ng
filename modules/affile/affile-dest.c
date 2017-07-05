@@ -176,7 +176,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       unlink(self->filename);
     }
 
-  if (file_opener_open_fd(self->owner->file_opener, self->filename, &fd))
+  if (file_opener_open_fd(self->owner->file_opener, self->filename, AFFILE_DIR_WRITE, &fd))
     {
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 

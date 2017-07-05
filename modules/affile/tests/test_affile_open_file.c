@@ -82,7 +82,7 @@ open_fd(FileOpener *file_opener, gchar *fname, int open_flags, gint extra_flags,
   open_opts.needs_privileges = FALSE;
 
   file_opener_set_options(file_opener, &open_opts);
-  return file_opener_open_fd(file_opener, fname, fd);
+  return file_opener_open_fd(file_opener, fname, AFFILE_DIR_READ, fd);
 }
 
 static gboolean
