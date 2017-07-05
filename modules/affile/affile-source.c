@@ -175,7 +175,6 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
   /* FIXME: should be delegated to the opener */
-  self->file_opener_options.is_pipe = FALSE;
   self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
   self->file_reader_options.stats_source = SCS_FILE;
 
@@ -204,6 +203,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
   else
     self->file_opener = file_opener_for_regular_files_new();
 
+  self->file_reader_options.restore_state = self->file_reader_options.follow_freq > 0;
   return &self->super.super;
 }
 
@@ -212,7 +212,6 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_opener_options.is_pipe = TRUE;
   self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
   self->file_reader_options.stats_source = SCS_PIPE;
 
