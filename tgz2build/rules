@@ -82,7 +82,12 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man1
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man5
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man8
+
+	$(INSTALL) -m 644 -c doc/man/dqtool.1 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man1
+	$(INSTALL) -m 644 -c doc/man/loggen.1 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man1
 	$(INSTALL) -m 644 -c doc/man/pdbtool.1 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man1
+	$(INSTALL) -m 644 -c doc/man/syslog-debun.1 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man1
+	$(INSTALL) -m 644 -c doc/man/syslog-ng-ctl.1 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man1
 	$(INSTALL) -m 644 -c doc/man/syslog-ng.8 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man8
 	$(INSTALL) -m 644 -c doc/man/syslog-ng.conf.5 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man5
 
