@@ -1,11 +1,11 @@
 modules_affile_tests_TESTS				= \
-	modules/affile/tests/test_affile_open_file 
+	modules/affile/tests/test_file_opener
 
 check_PROGRAMS						+= \
 	${modules_affile_tests_TESTS}
 
-modules_affile_tests_test_affile_open_file_CFLAGS 	= $(TEST_CFLAGS)
-modules_affile_tests_test_affile_open_file_LDADD	= $(TEST_LDADD) \
+modules_affile_tests_test_file_opener_CFLAGS 	= $(TEST_CFLAGS)
+modules_affile_tests_test_file_opener_LDADD	= $(TEST_LDADD) \
 	-dlpreopen $(top_builddir)/modules/affile/libaffile.la
 
 if ENABLE_CRITERION
