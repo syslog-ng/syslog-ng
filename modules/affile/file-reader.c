@@ -34,7 +34,6 @@
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-dgram-server.h"
 #include "logproto/logproto-indented-multiline-server.h"
-#include "logproto-linux-proc-kmsg-reader.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
 
@@ -48,26 +47,6 @@
 #include <stdlib.h>
 
 #include <iv.h>
-
-static gboolean
-_is_linux_proc_kmsg(const gchar *filename)
-{
-#ifdef __linux__
-  if (strcmp(filename, "/proc/kmsg") == 0)
-    return TRUE;
-#endif
-  return FALSE;
-}
-
-static gboolean
-_is_linux_dev_kmsg(const gchar *filename)
-{
-#ifdef __linux__
-  if (strcmp(filename, "/dev/kmsg") == 0)
-    return TRUE;
-#endif
-  return FALSE;
-}
 
 static inline const gchar *
 _format_persist_name(const LogPipe *s)
@@ -164,10 +143,6 @@ _construct_proto(FileReader *self, gint fd)
       proto_options->position_tracking_enabled = TRUE;
       return log_proto_padded_record_server_new(transport, proto_options, self->options->pad_size);
     }
-  else if (_is_linux_proc_kmsg(self->filename->str))
-    return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
-  else if (_is_linux_dev_kmsg(self->filename->str))
-    return log_proto_dgram_server_new(transport, proto_options);
   else
     {
       proto_options->position_tracking_enabled = TRUE;

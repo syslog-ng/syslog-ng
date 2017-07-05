@@ -24,9 +24,16 @@
 #include "transport/transport-file.h"
 #include "transport-prockmsg.h"
 #include "messages.h"
+#include "logproto/logproto-dgram-server.h"
+#include "logproto/logproto-text-server.h"
 
 #include <unistd.h>
 #include <errno.h>
+
+/**************************************************************
+ * /dev/kmsg support
+ **************************************************************/
+
 
 LogTransport *
 log_transport_devkmsg_new(gint fd)
@@ -41,15 +48,15 @@ log_transport_devkmsg_new(gint fd)
 
 
 static LogTransport *
-_construct_devkmsg(FileOpener *self, gint fd)
+_construct_devkmsg_transport(FileOpener *self, gint fd)
 {
   return log_transport_devkmsg_new(fd);
 }
 
-static LogTransport *
-_construct_prockmsg(FileOpener *self, gint fd)
+static LogProtoServer *
+_construct_devkmsg_proto(FileOpener *self, LogTransport *transport, LogProtoServerOptions *proto_options)
 {
-  return log_transport_prockmsg_new(fd, 10);
+  return log_proto_dgram_server_new(transport, proto_options);
 }
 
 FileOpener *
@@ -57,8 +64,36 @@ file_opener_for_devkmsg_new(void)
 {
   FileOpener *self = file_opener_new();
 
-  self->construct_transport = _construct_devkmsg;
+  self->construct_transport = _construct_devkmsg_transport;
+  self->construct_src_proto = _construct_devkmsg_proto;
   return self;
+}
+
+/**************************************************************
+ * /proc/kmsg support
+ **************************************************************/
+
+static LogProtoServer *
+log_proto_linux_proc_kmsg_reader_new(LogTransport *transport, const LogProtoServerOptions *options)
+{
+  LogProtoServer *proto;
+
+  proto = log_proto_text_server_new(transport, options);
+  ((LogProtoTextServer *) proto)->super.no_multi_read = TRUE;
+  return proto;
+}
+
+
+static LogTransport *
+_construct_prockmsg_transport(FileOpener *self, gint fd)
+{
+  return log_transport_prockmsg_new(fd, 10);
+}
+
+static LogProtoServer *
+_construct_prockmsg_proto(FileOpener *self, LogTransport *transport, LogProtoServerOptions *proto_options)
+{
+  return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
 }
 
 FileOpener *
@@ -66,6 +101,7 @@ file_opener_for_prockmsg_new(void)
 {
   FileOpener *self = file_opener_new();
 
-  self->construct_transport = _construct_prockmsg;
+  self->construct_transport = _construct_prockmsg_transport;
+  self->construct_src_proto = _construct_prockmsg_proto;
   return self;
 }
