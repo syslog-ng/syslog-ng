@@ -65,6 +65,7 @@ file_opener_construct_src_proto(FileOpener *self, LogTransport *transport, LogPr
 gboolean file_opener_open_fd(FileOpener *self, gchar *name, gint *fd);
 
 void file_opener_set_options(FileOpener *self, FileOpenerOptions *options);
+void file_opener_init_instance(FileOpener *self);
 FileOpener *file_opener_new(void);
 void file_opener_free(FileOpener *self);
 
