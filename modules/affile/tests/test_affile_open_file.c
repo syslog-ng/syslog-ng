@@ -79,7 +79,6 @@ open_file(gchar *fname, int open_flags, gint extra_flags, gint *fd)
 
   open_opts.open_flags = open_flags;
   open_opts.create_dirs = !!(extra_flags & CREATE_DIRS);
-  open_opts.is_pipe = !!(extra_flags & PIPE);
   open_opts.needs_privileges = FALSE;
 
   file_opener_set_options(file_opener, &open_opts);

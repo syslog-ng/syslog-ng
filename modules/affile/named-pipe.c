@@ -23,6 +23,7 @@
 #include "file-specializations.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
+#include "logproto/logproto-text-client.h"
 #include "messages.h"
 
 #include <sys/types.h>
@@ -60,12 +61,18 @@ _prepare_open(FileOpener *self, const gchar *name)
 }
 
 static LogTransport *
-_construct(FileOpener *self, gint fd)
+_construct_src_transport(FileOpener *self, gint fd)
 {
   LogTransport *transport = log_transport_pipe_new(fd);
 
   transport->read = log_transport_file_read_and_ignore_eof_method;
   return transport;
+}
+
+static LogProtoClient *
+_construct_dst_proto(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options)
+{
+  return log_proto_text_client_new(transport, proto_options);
 }
 
 FileOpener *
@@ -74,6 +81,7 @@ file_opener_for_named_pipes_new(void)
   FileOpener *self = file_opener_new();
 
   self->prepare_open = _prepare_open;
-  self->construct_transport = _construct;
+  self->construct_transport = _construct_src_transport;
+  self->construct_dst_proto = _construct_dst_proto;
   return self;
 }

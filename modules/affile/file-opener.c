@@ -185,7 +185,6 @@ file_opener_options_defaults(FileOpenerOptions *options)
 {
   file_perm_options_defaults(&options->file_perm_options);
   options->create_dirs = -1;
-  options->is_pipe = FALSE;
   options->needs_privileges = FALSE;
 }
 

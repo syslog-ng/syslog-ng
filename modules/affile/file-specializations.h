@@ -25,9 +25,11 @@
 #define AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
 
 #include "file-opener.h"
+#include "logwriter.h"
 
 FileOpener *file_opener_for_named_pipes_new(void);
-FileOpener *file_opener_for_regular_files_new(void);
+FileOpener *file_opener_for_regular_source_files_new(void);
+FileOpener *file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync);
 FileOpener *file_opener_for_stdin_new(void);
 FileOpener *file_opener_for_devkmsg_new(void);
 FileOpener *file_opener_for_prockmsg_new(void);
