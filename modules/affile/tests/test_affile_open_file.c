@@ -51,9 +51,6 @@
 
 #define TEST_DIR "affile_test_dir"
 
-#define PIPE_OPEN_FLAGS (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
-#define REGULAR_FILE_OPEN_FLAGS (O_CREAT | O_NOCTTY | O_LARGEFILE)
-
 static void
 setup(void)
 {
@@ -71,13 +68,12 @@ get_fd_file_mode(gint fd)
 }
 
 static gboolean
-open_fd(FileOpener *file_opener, gchar *fname, int open_flags, gint extra_flags, gint *fd)
+open_fd(FileOpener *file_opener, gchar *fname, gint extra_flags, gint *fd)
 {
   FileOpenerOptions open_opts;
 
   file_opener_options_defaults(&open_opts);
   file_opener_options_init(&open_opts, configuration);
-  open_opts.open_flags = open_flags;
   open_opts.create_dirs = !!(extra_flags & CREATE_DIRS);
   open_opts.needs_privileges = FALSE;
 
@@ -86,17 +82,17 @@ open_fd(FileOpener *file_opener, gchar *fname, int open_flags, gint extra_flags,
 }
 
 static gboolean
-open_regular_source_file(gchar *fname, int open_flags, gint extra_flags, gint *fd)
+open_regular_source_file(gchar *fname, gint extra_flags, gint *fd)
 {
   FileOpener *file_opener = file_opener_for_regular_source_files_new();
-  return open_fd(file_opener, fname, open_flags, extra_flags, fd);
+  return open_fd(file_opener, fname, extra_flags, fd);
 }
 
 static gboolean
-open_named_pipe(gchar *fname, int open_flags, gint extra_flags, gint *fd)
+open_named_pipe(gchar *fname, gint extra_flags, gint *fd)
 {
   FileOpener *file_opener = file_opener_for_named_pipes_new();
-  return open_fd(file_opener, fname, open_flags, extra_flags, fd);
+  return open_fd(file_opener, fname, extra_flags, fd);
 }
 
 static void
@@ -105,7 +101,7 @@ test_open_regular_file(void)
   gint fd;
   gchar fname[] = "test.log";
 
-  assert_true(open_regular_source_file(fname, REGULAR_FILE_OPEN_FLAGS, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
+  assert_true(open_regular_source_file(fname, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
   assert_true(S_ISREG(get_fd_file_mode(fd)) != 0, "%s is not regular file", fname);
 
   close(fd);
@@ -118,7 +114,7 @@ test_open_named_pipe(void)
   gint fd;
   gchar fname[] = "test.pipe";
 
-  assert_true(open_named_pipe(fname, PIPE_OPEN_FLAGS, PIPE, &fd), "failed to open %s", fname);
+  assert_true(open_named_pipe(fname, PIPE, &fd), "failed to open %s", fname);
   assert_true(S_ISFIFO(get_fd_file_mode(fd)) != 0, "%s is not pipe", fname);
 
   close(fd);
@@ -131,7 +127,7 @@ test_spurious_path(void)
   gint fd;
   gchar fname[] = "./../test.fname";
 
-  assert_false(open_regular_source_file(fname, REGULAR_FILE_OPEN_FLAGS, 0, &fd), "affile_open_regular_source_file should not be able to open: %s",
+  assert_false(open_regular_source_file(fname, 0, &fd), "affile_open_regular_source_file should not be able to open: %s",
                fname);
 }
 
@@ -142,8 +138,8 @@ test_create_file_in_nonexistent_dir(void)
   gchar fname[] = "nonexistent/test.txt";
   gint fd;
 
-  assert_false(open_regular_source_file(fname, REGULAR_FILE_OPEN_FLAGS, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
-  assert_true(open_regular_source_file(fname, REGULAR_FILE_OPEN_FLAGS, CREATE_DIRS, &fd), "affile_open_regular_source_file failed: %s", fname);
+  assert_false(open_regular_source_file(fname, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
+  assert_true(open_regular_source_file(fname, CREATE_DIRS, &fd), "affile_open_regular_source_file failed: %s", fname);
 
   close(fd);
   remove(fname);
@@ -155,10 +151,9 @@ test_file_flags(void)
 {
   gint fd;
   gchar fname[] = "test_flags.log";
-  gint flags = O_CREAT|O_WRONLY;
 
-  assert_true(open_regular_source_file(fname, flags, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
-  assert_true((fcntl(fd, F_GETFL) & O_WRONLY) == O_WRONLY, "invalid open flags");
+  assert_true(open_regular_source_file(fname, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
+  assert_true((fcntl(fd, F_GETFL) & O_NOCTTY) == O_NOCTTY, "invalid open flags");
 
   close(fd);
   remove(fname);

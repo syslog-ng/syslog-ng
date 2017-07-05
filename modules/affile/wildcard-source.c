@@ -355,8 +355,6 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
   self->file_reader_options.restore_state = TRUE;
 
-  self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
-
   self->max_files = DEFAULT_MAX_FILES;
   self->file_opener = file_opener_for_regular_source_files_new();
 

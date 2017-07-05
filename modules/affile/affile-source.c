@@ -37,9 +37,6 @@
 
 #include <iv.h>
 
-#define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
-#define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
-
 
 static gboolean
 _is_linux_proc_kmsg(const gchar *filename)
@@ -176,8 +173,6 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  /* FIXME: should be delegated to the opener */
-  self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
   self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
 
   if (cfg_is_config_version_older(cfg, 0x0300))
@@ -214,7 +209,6 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
   self->file_reader_options.reader_options.super.stats_source = SCS_PIPE;
 
   if (cfg_is_config_version_older(cfg, 0x0302))
