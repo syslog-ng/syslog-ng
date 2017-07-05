@@ -210,7 +210,7 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   gint fd;
   gboolean file_opened, open_deferred = FALSE;
 
-  file_opened = file_opener_open_fd(self->opener, self->filename->str, &fd);
+  file_opened = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
   if (!file_opened && self->options->follow_freq > 0)
     {
       msg_info("Follow-mode file source not found, deferring open", evt_tag_str("filename", self->filename->str));
