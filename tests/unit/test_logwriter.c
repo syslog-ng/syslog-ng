@@ -166,7 +166,7 @@ _assert_logwriter_output(LogWriterTestCase c)
   queue = log_queue_fifo_new(1000, NULL);
   writer = log_writer_new(c.writer_flags, configuration);
 
-  log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL);
+  log_writer_set_options(writer, NULL, &opt, NULL, NULL);
   log_writer_set_queue(writer, queue);
   log_writer_format_log(writer, msg, result_msg);
   cr_assert_str_eq(result_msg->str, c.expected_value, "Expected: %s, actual: %s", c.expected_value, result_msg->str);
