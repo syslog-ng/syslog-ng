@@ -43,7 +43,6 @@ typedef struct _FileOpenerOptions
 {
   FilePermOptions file_perm_options;
   gboolean needs_privileges:1;
-  gint open_flags;
   gint create_dirs;
 } FileOpenerOptions;
 
@@ -52,6 +51,7 @@ struct _FileOpener
 {
   FileOpenerOptions *options;
   gboolean (*prepare_open)(FileOpener *self, const gchar *name);
+  gint (*get_open_flags)(FileOpener *self, FileDirection dir);
   LogTransport *(*construct_transport)(FileOpener *self, gint fd);
   LogProtoServer *(*construct_src_proto)(FileOpener *self, LogTransport *transport, LogProtoServerOptions *proto_options);
   LogProtoClient *(*construct_dst_proto)(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options);

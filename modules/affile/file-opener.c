@@ -45,6 +45,25 @@ file_opener_prepare_open(FileOpener *self, const gchar *name)
   return TRUE;
 }
 
+static gint
+file_opener_get_open_flags_method(FileOpener *self, FileDirection dir)
+{
+  switch (dir)
+    {
+    case AFFILE_DIR_READ:
+      return O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
+    case AFFILE_DIR_WRITE:
+      return O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE | O_APPEND;
+    default:
+      g_assert_not_reached();
+    }
+}
+
+static inline gint
+file_opener_get_open_flags(FileOpener *self, FileDirection dir)
+{
+  return self->get_open_flags(self, dir);
+}
 
 static const gchar *spurious_paths[] = {"../", "/..", NULL};
 
@@ -105,14 +124,14 @@ _set_fd_permission(FileOpener *self, int fd)
 }
 
 static inline int
-_open_fd(FileOpener *self, const gchar *name)
+_open_fd(FileOpener *self, const gchar *name, gint open_flags)
 {
   FilePermOptions *perm_opts = &self->options->file_perm_options;
   int fd;
   int mode = (perm_opts && (perm_opts->file_perm >= 0))
              ? perm_opts->file_perm : 0600;
 
-  fd = open(name, self->options->open_flags, mode);
+  fd = open(name, open_flags, mode);
 
   return fd;
 }
@@ -140,7 +159,7 @@ file_opener_open_fd(FileOpener *self, gchar *name, FileDirection dir, gint *fd)
   if (!file_opener_prepare_open(self, name))
     return FALSE;
 
-  *fd = _open_fd(self, name);
+  *fd = _open_fd(self, name, file_opener_get_open_flags(self, dir));
 
   if (!is_file_device(name))
     _set_fd_permission(self, *fd);
@@ -163,6 +182,7 @@ file_opener_set_options(FileOpener *self, FileOpenerOptions *options)
 void
 file_opener_init_instance(FileOpener *self)
 {
+  self->get_open_flags = file_opener_get_open_flags_method;
 }
 
 FileOpener *

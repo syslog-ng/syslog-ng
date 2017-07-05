@@ -46,9 +46,6 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define DEFAULT_DW_REOPEN_FLAGS (O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE | O_APPEND)
-#define DEFAULT_DW_REOPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
-
 /*
  * Threading notes:
  *
@@ -752,7 +749,6 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
       self->filename_is_a_template = TRUE;
     }
   file_opener_options_defaults(&self->file_opener_options);
-  self->file_opener_options.open_flags = DEFAULT_DW_REOPEN_FLAGS;
 
   self->time_reap = -1;
   g_static_mutex_init(&self->lock);
@@ -776,8 +772,6 @@ afpipe_dd_new(gchar *filename, GlobalConfig *cfg)
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
   self->writer_options.stats_source = SCS_PIPE;
-  /* FIXME: these should be delegated to the FileOpener */
-  self->file_opener_options.open_flags = DEFAULT_DW_REOPEN_FLAGS_PIPE;
   self->file_opener = file_opener_for_named_pipes_new();
   return &self->super.super;
 }

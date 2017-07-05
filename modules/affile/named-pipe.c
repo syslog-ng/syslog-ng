@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 
 static gboolean
@@ -56,8 +57,20 @@ _prepare_open(FileOpener *self, const gchar *name)
       errno = EINVAL;
       return FALSE;
     }
-
   return TRUE;
+}
+
+static gint
+_get_open_flags(FileOpener *self, FileDirection dir)
+{
+  switch (dir)
+    {
+    case AFFILE_DIR_READ:
+    case AFFILE_DIR_WRITE:
+      return (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE);
+    default:
+      g_assert_not_reached();
+    }
 }
 
 static LogTransport *
@@ -81,6 +94,7 @@ file_opener_for_named_pipes_new(void)
   FileOpener *self = file_opener_new();
 
   self->prepare_open = _prepare_open;
+  self->get_open_flags = _get_open_flags;
   self->construct_transport = _construct_src_transport;
   self->construct_dst_proto = _construct_dst_proto;
   return self;
