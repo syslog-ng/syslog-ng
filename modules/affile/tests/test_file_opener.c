@@ -21,7 +21,7 @@
  *
  */
 
-#include "testutils.h"
+#include <criterion/criterion.h>
 #include "affile/file-opener.h"
 #include "affile/file-specializations.h"
 #include "messages.h"
@@ -34,29 +34,9 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define affile_testcase_begin(func, args)	\
-  do {						\
-    testcase_begin("%s(%s)", func, args);	\
-  } while (0)
-
-#define affile_testcase_end() \
-  do { 				\
-    testcase_end();		\
-  } while (0)
-
-#define AFFILE_TESTCASE(testfunc, ...) { affile_testcase_begin(#testfunc, #__VA_ARGS__); testfunc(__VA_ARGS__); affile_testcase_end(); }
-
 #define CREATE_DIRS 0x01
-#define PIPE 0x02
-
-#define TEST_DIR "affile_test_dir"
-
-static void
-setup(void)
-{
-  msg_init(FALSE);
-  configuration = cfg_new(VERSION_VALUE);
-}
+#define SRC_FILE 0x02
+#define DST_FILE 0x04
 
 static mode_t
 get_fd_file_mode(gint fd)
@@ -71,6 +51,14 @@ static gboolean
 open_fd(FileOpener *file_opener, gchar *fname, gint extra_flags, gint *fd)
 {
   FileOpenerOptions open_opts;
+  FileDirection dir;
+
+  if (extra_flags & DST_FILE)
+    dir = AFFILE_DIR_WRITE;
+  else if (extra_flags & SRC_FILE)
+    dir = AFFILE_DIR_READ;
+  else
+    g_assert_not_reached();
 
   file_opener_options_defaults(&open_opts);
   file_opener_options_init(&open_opts, configuration);
@@ -78,7 +66,10 @@ open_fd(FileOpener *file_opener, gchar *fname, gint extra_flags, gint *fd)
   open_opts.needs_privileges = FALSE;
 
   file_opener_set_options(file_opener, &open_opts);
-  return file_opener_open_fd(file_opener, fname, AFFILE_DIR_READ, fd);
+
+  gboolean success = file_opener_open_fd(file_opener, fname, dir, fd);
+  file_opener_free(file_opener);
+  return success;
 }
 
 static gboolean
@@ -95,77 +86,85 @@ open_named_pipe(gchar *fname, gint extra_flags, gint *fd)
   return open_fd(file_opener, fname, extra_flags, fd);
 }
 
-static void
-test_open_regular_file(void)
+Test(file_opener, test_open_regular_file)
 {
   gint fd;
   gchar fname[] = "test.log";
 
-  assert_true(open_regular_source_file(fname, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
-  assert_true(S_ISREG(get_fd_file_mode(fd)) != 0, "%s is not regular file", fname);
+  cr_assert(open_regular_source_file(fname, DST_FILE, &fd), "file_opener_open_fd failed: %s", fname);
+  cr_assert(S_ISREG(get_fd_file_mode(fd)) != 0, "%s is not regular file", fname);
 
   close(fd);
+
+  cr_assert(open_regular_source_file(fname, SRC_FILE, &fd), "file_opener_open_fd failed: %s", fname);
+  cr_assert(S_ISREG(get_fd_file_mode(fd)) != 0, "%s is not regular file", fname);
+
+  close(fd);
+
   remove(fname);
 }
 
-static void
-test_open_named_pipe(void)
+Test(file_opener, test_open_named_pipe)
 {
   gint fd;
   gchar fname[] = "test.pipe";
 
-  assert_true(open_named_pipe(fname, PIPE, &fd), "failed to open %s", fname);
-  assert_true(S_ISFIFO(get_fd_file_mode(fd)) != 0, "%s is not pipe", fname);
+  cr_assert(open_named_pipe(fname, SRC_FILE, &fd), "failed to open %s", fname);
+  cr_assert(S_ISFIFO(get_fd_file_mode(fd)) != 0, "%s is not pipe", fname);
 
   close(fd);
   remove(fname);
 }
 
-static void
-test_spurious_path(void)
+Test(file_opener, test_spurious_path)
 {
   gint fd;
   gchar fname[] = "./../test.fname";
 
-  assert_false(open_regular_source_file(fname, 0, &fd), "affile_open_regular_source_file should not be able to open: %s",
+  cr_assert_not(open_regular_source_file(fname, DST_FILE, &fd), "file_opener_open_fd should not be able to open: %s",
                fname);
 }
 
-static void
-test_create_file_in_nonexistent_dir(void)
+Test(file_opener, test_create_file_in_nonexistent_dir)
 {
   gchar test_dir[] = "nonexistent";
   gchar fname[] = "nonexistent/test.txt";
   gint fd;
 
-  assert_false(open_regular_source_file(fname, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
-  assert_true(open_regular_source_file(fname, CREATE_DIRS, &fd), "affile_open_regular_source_file failed: %s", fname);
+  cr_assert_not(open_regular_source_file(fname, DST_FILE, &fd), "file_opener_open_fd failed: %s", fname);
+  cr_assert(open_regular_source_file(fname, CREATE_DIRS | DST_FILE, &fd), "file_opener_open_fd failed: %s", fname);
 
   close(fd);
   remove(fname);
   rmdir(test_dir);
 }
 
-static void
-test_file_flags(void)
+Test(file_opener, test_file_flags)
 {
   gint fd;
   gchar fname[] = "test_flags.log";
 
-  assert_true(open_regular_source_file(fname, 0, &fd), "affile_open_regular_source_file failed: %s", fname);
-  assert_true((fcntl(fd, F_GETFL) & O_NOCTTY) == O_NOCTTY, "invalid open flags");
+  cr_assert(open_regular_source_file(fname, DST_FILE, &fd), "file_opener_open_fd failed: %s", fname);
+  cr_assert((fcntl(fd, F_GETFL) & O_APPEND) == O_APPEND, "invalid open flags");
+  close(fd);
+
+  cr_assert(open_regular_source_file(fname, SRC_FILE, &fd), "file_opener_open_fd failed: %s", fname);
+  cr_assert((fcntl(fd, F_GETFL) & O_APPEND) != O_APPEND, "invalid open flags");
 
   close(fd);
   remove(fname);
 }
 
-int main(int argc, char **argv)
+static void
+setup(void)
 {
-  setup();
-
-  AFFILE_TESTCASE(test_open_regular_file);
-  AFFILE_TESTCASE(test_open_named_pipe);
-  AFFILE_TESTCASE(test_spurious_path);
-  AFFILE_TESTCASE(test_create_file_in_nonexistent_dir);
-  AFFILE_TESTCASE(test_file_flags);
+  msg_init(FALSE);
+  configuration = cfg_new(VERSION_VALUE);
 }
+
+void
+teardown(void)
+{
+}
+
+TestSuite(file_opener, .init = setup, .fini = teardown);
