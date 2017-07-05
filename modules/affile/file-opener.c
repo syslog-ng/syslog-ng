@@ -160,10 +160,17 @@ file_opener_set_options(FileOpener *self, FileOpenerOptions *options)
   self->options = options;
 }
 
+void
+file_opener_init_instance(FileOpener *self)
+{
+}
+
 FileOpener *
 file_opener_new(void)
 {
   FileOpener *self = g_new0(FileOpener, 1);
+
+  file_opener_init_instance(self);
   return self;
 }
 
