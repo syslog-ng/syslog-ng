@@ -32,7 +32,6 @@
 #include "transport-prockmsg.h"
 #include "logproto/logproto-record-server.h"
 #include "logproto/logproto-text-server.h"
-#include "logproto/logproto-dgram-server.h"
 #include "logproto/logproto-indented-multiline-server.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"

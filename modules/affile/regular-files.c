@@ -22,12 +22,20 @@
  */
 #include "file-specializations.h"
 #include "transport/transport-file.h"
+#include "logproto-file-writer.h"
 #include "messages.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
+
+typedef struct _FileOpenerRegularFiles
+{
+  FileOpener super;
+  const LogWriterOptions *writer_options;
+  gboolean *use_fsync;
+} FileOpenerRegularFiles;
 
 static gboolean
 _prepare_open(FileOpener *self, const gchar *name)
@@ -48,7 +56,7 @@ _prepare_open(FileOpener *self, const gchar *name)
 }
 
 static LogTransport *
-_construct(FileOpener *self, gint fd)
+_construct_src_transport(FileOpener *self, gint fd)
 {
   LogTransport *transport = log_transport_file_new(fd);
 
@@ -57,11 +65,41 @@ _construct(FileOpener *self, gint fd)
 }
 
 FileOpener *
-file_opener_for_regular_files_new(void)
+file_opener_for_regular_source_files_new(void)
 {
-  FileOpener *self = file_opener_new();
+  FileOpenerRegularFiles *self = g_new0(FileOpenerRegularFiles, 1);
 
-  self->prepare_open = _prepare_open;
-  self->construct_transport = _construct;
-  return self;
+  file_opener_init_instance(&self->super);
+  self->super.prepare_open = _prepare_open;
+  self->super.construct_transport = _construct_src_transport;
+  return &self->super;
+}
+
+static LogProtoClient *
+_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptions *proto_options)
+{
+  FileOpenerRegularFiles *self = (FileOpenerRegularFiles *) s;
+
+  return log_proto_file_writer_new(transport, proto_options,
+                                   self->writer_options->flush_lines,
+                                   *self->use_fsync);
+}
+
+static LogTransport *
+_construct_transport(FileOpener *s, gint fd)
+{
+  return log_transport_file_new(fd);
+}
+
+FileOpener *
+file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync)
+{
+  FileOpenerRegularFiles *self = g_new0(FileOpenerRegularFiles, 1);
+
+  file_opener_init_instance(&self->super);
+  self->super.construct_transport = _construct_transport;
+  self->super.construct_dst_proto = _construct_dst_proto;
+  self->writer_options = writer_options;
+  self->use_fsync = use_fsync;
+  return &self->super;
 }

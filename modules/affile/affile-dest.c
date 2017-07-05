@@ -177,11 +177,9 @@ affile_dw_reopen(AFFileDestWriter *self)
 
   if (file_opener_open_fd(self->owner->file_opener, self->filename, &fd))
     {
-      proto =  self->owner->file_opener_options.is_pipe
-               ? log_proto_text_client_new(log_transport_pipe_new(fd), &self->owner->writer_options.proto_options.super)
-               : log_proto_file_writer_new(log_transport_file_new(fd), &self->owner->writer_options.proto_options.super,
-                                           self->owner->writer_options.flush_lines,
-                                           self->owner->use_fsync);
+      LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
+
+      proto = file_opener_construct_dst_proto(self->owner->file_opener, transport, &self->owner->writer_options.proto_options.super);
 
       main_loop_call((void *(*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
@@ -205,18 +203,13 @@ affile_dw_init(LogPipe *s)
 
   if (!self->writer)
     {
-      guint32 flags;
-
-      flags = LW_FORMAT_FILE |
-              (self->owner->file_opener_options.is_pipe ? 0 : LW_SOFT_FLOW_CONTROL);
-
-      self->writer = log_writer_new(flags, cfg);
+      self->writer = log_writer_new(self->owner->writer_flags, cfg);
     }
   log_writer_set_options(self->writer,
                          s,
                          &self->owner->writer_options,
                          STATS_LEVEL1,
-                         self->owner->file_opener_options.is_pipe ? SCS_PIPE : SCS_FILE,
+                         self->owner->stats_source,
                          self->owner->super.super.id,
                          self->filename);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super,
@@ -754,6 +747,8 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
   log_template_compile(self->filename_template, filename, NULL);
   log_writer_options_defaults(&self->writer_options);
   self->writer_options.mark_mode = MM_NONE;
+  self->writer_flags = LW_FORMAT_FILE;
+
   if (strchr(filename, '$') != NULL)
     {
       self->filename_is_a_template = TRUE;
@@ -771,7 +766,9 @@ affile_dd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
-  self->file_opener = file_opener_for_regular_files_new();
+  self->writer_flags |= LW_SOFT_FLOW_CONTROL;
+  self->stats_source = SCS_FILE;
+  self->file_opener = file_opener_for_regular_dest_files_new(&self->writer_options, &self->use_fsync);
   return &self->super.super;
 }
 
@@ -780,8 +777,8 @@ afpipe_dd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
+  self->stats_source = SCS_PIPE;
   /* FIXME: these should be delegated to the FileOpener */
-  self->file_opener_options.is_pipe = TRUE;
   self->file_opener_options.open_flags = DEFAULT_DW_REOPEN_FLAGS_PIPE;
   self->file_opener = file_opener_for_named_pipes_new();
   return &self->super.super;
