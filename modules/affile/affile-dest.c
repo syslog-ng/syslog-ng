@@ -205,11 +205,10 @@ affile_dw_init(LogPipe *s)
     {
       self->writer = log_writer_new(self->owner->writer_flags, cfg);
     }
+
   log_writer_set_options(self->writer,
                          s,
                          &self->owner->writer_options,
-                         STATS_LEVEL1,
-                         self->owner->stats_source,
                          self->owner->super.super.id,
                          self->filename);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super,
@@ -294,8 +293,6 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
       log_writer_set_options(self->writer,
                              &self->super,
                              &owner->writer_options,
-                             STATS_LEVEL1,
-                             SCS_FILE,
                              self->owner->super.super.id,
                              self->filename);
     }
@@ -747,6 +744,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
   log_template_compile(self->filename_template, filename, NULL);
   log_writer_options_defaults(&self->writer_options);
   self->writer_options.mark_mode = MM_NONE;
+  self->writer_options.stats_level = STATS_LEVEL1;
   self->writer_flags = LW_FORMAT_FILE;
 
   if (strchr(filename, '$') != NULL)
@@ -767,7 +765,7 @@ affile_dd_new(gchar *filename, GlobalConfig *cfg)
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
   self->writer_flags |= LW_SOFT_FLOW_CONTROL;
-  self->stats_source = SCS_FILE;
+  self->writer_options.stats_source = SCS_FILE;
   self->file_opener = file_opener_for_regular_dest_files_new(&self->writer_options, &self->use_fsync);
   return &self->super.super;
 }
@@ -777,7 +775,7 @@ afpipe_dd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
-  self->stats_source = SCS_PIPE;
+  self->writer_options.stats_source = SCS_PIPE;
   /* FIXME: these should be delegated to the FileOpener */
   self->file_opener_options.open_flags = DEFAULT_DW_REOPEN_FLAGS_PIPE;
   self->file_opener = file_opener_for_named_pipes_new();

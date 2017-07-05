@@ -43,7 +43,6 @@ typedef struct _AFFileDestDriver
   FileOpener *file_opener;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
-  gint stats_source;
   guint32 writer_flags;
   GHashTable *writer_hash;
     

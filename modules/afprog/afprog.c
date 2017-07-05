@@ -446,8 +446,6 @@ afprogram_dd_init(LogPipe *s)
   log_writer_set_options(self->writer,
                          s,
                          &self->writer_options,
-                         STATS_LEVEL0,
-                         SCS_PROGRAM,
                          self->super.super.id,
                          self->process_info.cmdline->str);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super,
@@ -546,6 +544,8 @@ afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg)
   self->process_info.pid = -1;
   afprogram_set_inherit_environment(&self->process_info, TRUE);
   log_writer_options_defaults(&self->writer_options);
+  self->writer_options.stats_level = STATS_LEVEL0;
+  self->writer_options.stats_source = SCS_PROGRAM;
   return &self->super.super;
 }
 
