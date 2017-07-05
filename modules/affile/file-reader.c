@@ -67,7 +67,7 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
-  if (self->is_pipe || self->options->follow_freq <= 0)
+  if (!self->options->restore_state)
     return;
 
   if (!log_proto_server_restart_with_state(proto, cfg->state, _format_persist_name(s)))
@@ -360,7 +360,6 @@ file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *o
   self->options = options;
   self->opener = opener;
   self->owner = owner;
-  self->is_pipe = opener->options->is_pipe;
   return self;
 }
 
@@ -408,6 +407,7 @@ file_reader_options_defaults(FileReaderOptions *options)
 {
   log_reader_options_defaults(&options->reader_options);
   options->reader_options.parse_options.flags |= LP_LOCAL;
+  options->restore_state = FALSE;
 }
 
 void

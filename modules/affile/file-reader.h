@@ -41,6 +41,7 @@ typedef struct _FileReaderOptions
   gint follow_freq;
   gint multi_line_mode;
   gint stats_source;
+  gboolean restore_state;
   MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
   LogReaderOptions reader_options;
 } FileReaderOptions;
