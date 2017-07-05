@@ -426,8 +426,9 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
       g_static_mutex_unlock(&self->lock);
     }
 
-  log_dest_driver_release_queue(&self->super, log_writer_get_queue(writer));
+  LogQueue *queue = log_writer_get_queue(writer);
   log_pipe_deinit(&dw->super);
+  log_dest_driver_release_queue(&self->super, queue);
   log_pipe_unref(&dw->super);
 }
 
