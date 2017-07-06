@@ -75,4 +75,10 @@ log_proto_text_server_accumulate_line(LogProtoTextServer *self,
 
 gint log_proto_get_char_size_for_fixed_encoding(const gchar *encoding);
 
+static inline gboolean
+log_proto_text_server_validate_options_method(LogProtoServer *s)
+{
+  return log_proto_buffered_server_validate_options_method(s);
+}
+
 #endif
