@@ -84,11 +84,11 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 static gboolean
 _are_multi_line_settings_invalid(AFFileSourceDriver *self)
 {
-  gboolean is_garbage_mode = self->file_reader_options.multi_line_mode == MLM_PREFIX_GARBAGE;
-  gboolean is_suffix_mode = self->file_reader_options.multi_line_mode == MLM_PREFIX_SUFFIX;
+  gboolean is_garbage_mode = self->file_reader_options.multi_line_options.mode == MLM_PREFIX_GARBAGE;
+  gboolean is_suffix_mode = self->file_reader_options.multi_line_options.mode == MLM_PREFIX_SUFFIX;
 
-  return (!is_garbage_mode && !is_suffix_mode) && (self->file_reader_options.multi_line_prefix
-                                                   || self->file_reader_options.multi_line_garbage);
+  return (!is_garbage_mode && !is_suffix_mode) && (self->file_reader_options.multi_line_options.prefix
+                                                   || self->file_reader_options.multi_line_options.garbage);
 }
 
 static gboolean

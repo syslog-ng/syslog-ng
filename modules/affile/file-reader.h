@@ -24,24 +24,15 @@
 
 #include "driver.h"
 #include "logreader.h"
-#include "logproto/logproto-regexp-multiline-server.h"
+#include "logproto/logproto-multiline-server.h"
 #include "file-opener.h"
-
-enum
-{
-  MLM_NONE,
-  MLM_INDENTED,
-  MLM_PREFIX_GARBAGE,
-  MLM_PREFIX_SUFFIX,
-};
 
 typedef struct _FileReaderOptions
 {
   gint pad_size;
   gint follow_freq;
-  gint multi_line_mode;
   gboolean restore_state;
-  MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
+  LogProtoMultiLineServerOptions multi_line_options;
   LogReaderOptions reader_options;
 } FileReaderOptions;
 
@@ -61,9 +52,6 @@ FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, F
 void file_reader_remove_persist_state(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
-gboolean file_reader_options_set_multi_line_mode(FileReaderOptions *options, const gchar *mode);
-gboolean file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
-gboolean file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
 
 void file_reader_options_defaults(FileReaderOptions *options);
 void file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group);

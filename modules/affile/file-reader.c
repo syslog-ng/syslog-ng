@@ -32,7 +32,7 @@
 #include "transport-prockmsg.h"
 #include "logproto/logproto-record-server.h"
 #include "logproto/logproto-text-server.h"
-#include "logproto/logproto-indented-multiline-server.h"
+#include "logproto/logproto-multiline-server.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
 
@@ -145,21 +145,7 @@ _construct_proto(FileReader *self, gint fd)
   else
     {
       proto_options->position_tracking_enabled = TRUE;
-      switch (self->options->multi_line_mode)
-        {
-        case MLM_INDENTED:
-          return log_proto_indented_multiline_server_new(transport, proto_options);
-        case MLM_PREFIX_GARBAGE:
-          return log_proto_prefix_garbage_multiline_server_new(transport, proto_options,
-                                                               self->options->multi_line_prefix,
-                                                               self->options->multi_line_garbage);
-        case MLM_PREFIX_SUFFIX:
-          return log_proto_prefix_suffix_multiline_server_new(transport, proto_options,
-                                                              self->options->multi_line_prefix,
-                                                              self->options->multi_line_garbage);
-        default:
-          return log_proto_text_server_new(transport, proto_options);
-        }
+      return log_proto_multiline_server_new(transport, proto_options, &self->options->multi_line_options);
     }
 }
 
@@ -360,39 +346,6 @@ file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *o
   return self;
 }
 
-gboolean
-file_reader_options_set_multi_line_mode(FileReaderOptions *options, const gchar *mode)
-{
-  if (strcasecmp(mode, "indented") == 0)
-    options->multi_line_mode = MLM_INDENTED;
-  else if (strcasecmp(mode, "regexp") == 0)
-    options->multi_line_mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-garbage") == 0)
-    options->multi_line_mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-suffix") == 0)
-    options->multi_line_mode = MLM_PREFIX_SUFFIX;
-  else if (strcasecmp(mode, "none") == 0)
-    options->multi_line_mode = MLM_NONE;
-  else
-    return FALSE;
-  return TRUE;
-}
-
-gboolean
-file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp, GError **error)
-{
-  options->multi_line_prefix = multi_line_regexp_compile(prefix_regexp, error);
-  return options->multi_line_prefix != NULL;
-}
-
-gboolean
-file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *garbage_regexp, GError **error)
-{
-  options->multi_line_garbage = multi_line_regexp_compile(garbage_regexp, error);
-  return options->multi_line_garbage != NULL;
-}
-
-
 void
 file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq)
 {
@@ -403,6 +356,7 @@ void
 file_reader_options_defaults(FileReaderOptions *options)
 {
   log_reader_options_defaults(&options->reader_options);
+  log_proto_multi_line_server_options_defaults(&options->multi_line_options);
   options->reader_options.parse_options.flags |= LP_LOCAL;
   options->restore_state = FALSE;
 }
@@ -411,12 +365,12 @@ void
 file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group)
 {
   log_reader_options_init(&options->reader_options, cfg, group);
+  log_proto_multi_line_server_options_init(&options->multi_line_options);
 }
 
 void
 file_reader_options_deinit(FileReaderOptions *options)
 {
-  multi_line_regexp_free(options->multi_line_prefix);
-  multi_line_regexp_free(options->multi_line_garbage);
+  log_proto_multi_line_server_options_destroy(&options->multi_line_options);
   log_reader_options_destroy(&options->reader_options);
 }
