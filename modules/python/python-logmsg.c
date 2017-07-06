@@ -50,10 +50,10 @@ _populate_blacklisted_keys(const gchar ***blacklist, size_t *n)
   if (!keys_sorted)
     {
       keys_sorted = TRUE;
-      qsort(&keys[0], sizeof(keys)/sizeof(keys[0]), sizeof(gchar *), _str_cmp);
+      qsort(&keys[0], sizeof(keys) / sizeof(keys[0]), sizeof(gchar *), _str_cmp);
     }
   *blacklist = keys;
-  *n = sizeof(keys)/sizeof(keys[0]);
+  *n = sizeof(keys) / sizeof(keys[0]);
 }
 
 static gboolean

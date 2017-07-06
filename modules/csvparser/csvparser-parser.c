@@ -51,7 +51,7 @@ CfgParser csvparser_parser =
 #endif
   .name = "csvparser",
   .keywords = csvparser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) csvparser_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) csvparser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

@@ -89,7 +89,7 @@ _register_counters(const CounterHashContent *counters, size_t n, ClusterKeySet k
     {
       StatsCounterItem *item = NULL;
       StatsClusterKey sc_key;
-      key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance );
+      key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance);
       stats_register_counter(0, &sc_key, counters[i].type, &item);
       gchar *name = _construct_view_name(counters[i].id);
       GList *queries = _construct_view_query_list(counters[i].instance);
@@ -208,7 +208,7 @@ Test(cluster_query_key, test_global_key)
 {
   const gchar *expected_key = "dst.file.d_file.instance";
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance" );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION | SCS_FILE, "d_file", "instance");
   StatsCluster *sc = stats_cluster_new(&sc_key);
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",

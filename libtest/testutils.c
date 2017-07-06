@@ -454,7 +454,7 @@ assert_no_error_non_fatal(GError *error, const gchar *error_message, ...)
 static int
 cmp_guint32(const void *a, const void *b)
 {
-  return (*(guint32 *)a - *(guint32 *)b);
+  return (*(guint32 *)a - * (guint32 *)b);
 }
 
 gboolean

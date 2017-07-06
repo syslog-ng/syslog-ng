@@ -76,7 +76,7 @@ find_eom(const guchar *s, gsize n)
         {
           gint i;
 
-          char_ptr = (const guchar *) (longword_ptr - 1);
+          char_ptr = (const guchar *)(longword_ptr - 1);
 
           for (i = 0; i < sizeof(longword); i++)
             {
@@ -139,7 +139,7 @@ log_proto_server_options_set_encoding(LogProtoServerOptions *self, const gchar *
 
   /* validate encoding */
   convert = g_iconv_open("utf-8", encoding);
-  if (convert == (GIConv) -1)
+  if (convert == (GIConv) - 1)
     return FALSE;
   g_iconv_close(convert);
   return TRUE;

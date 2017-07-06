@@ -30,7 +30,7 @@
 
 /* rule action triggers */
 typedef enum
- {
+{
   RAT_MATCH = 1,
   RAT_TIMEOUT
 } PDBActionTrigger;

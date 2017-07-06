@@ -112,7 +112,7 @@ _threaded_consume(gpointer st)
       gint slept = 0;
       msg = NULL;
 
-      while((msg = log_queue_pop_head(q, &path_options)) == NULL)
+      while ((msg = log_queue_pop_head(q, &path_options)) == NULL)
         {
           struct timespec ns;
 
@@ -195,7 +195,7 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
 
   StatsClusterKey sc_key;
   stats_lock();
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
   stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
   stats_unlock();
@@ -215,7 +215,7 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
     feed_some_messages(q, 10, &parse_options);
 
   cr_assert_eq(stats_counter_get(q->queued_messages), 101);
-  cr_assert_eq(stats_counter_get(q->memory_usage), 101*size_when_single_msg);
+  cr_assert_eq(stats_counter_get(q->memory_usage), 101 * size_when_single_msg);
 
   send_some_messages(q, fed_messages);
   app_ack_some_messages(q, fed_messages);
@@ -261,13 +261,13 @@ Test(logqueue, test_with_threads)
   log_queue_set_max_threads(FEEDERS);
   for (i = 0; i < TEST_RUNS; i++)
     {
-      fprintf(stderr,"starting testrun: %d\n",i);
+      fprintf(stderr, "starting testrun: %d\n", i);
       q = log_queue_fifo_new(MESSAGES_SUM, NULL);
       log_queue_set_use_backlog(q, TRUE);
 
       for (j = 0; j < FEEDERS; j++)
         {
-          fprintf(stderr,"starting feed thread %d\n",j);
+          fprintf(stderr, "starting feed thread %d\n", j);
           other_threads[j] = g_thread_create(_output_thread, NULL, TRUE, NULL);
           thread_feed[j] = g_thread_create(_threaded_feed, q, TRUE, NULL);
         }
@@ -276,7 +276,7 @@ Test(logqueue, test_with_threads)
 
       for (j = 0; j < FEEDERS; j++)
         {
-          fprintf(stderr,"waiting for feed thread %d\n",j);
+          fprintf(stderr, "waiting for feed thread %d\n", j);
           g_thread_join(thread_feed[j]);
           g_thread_join(other_threads[j]);
         }

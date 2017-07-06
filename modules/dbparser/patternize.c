@@ -118,7 +118,7 @@ ptz_find_frequent_words(GPtrArray *logs, guint support, gchar *delimiters, gbool
           msg_progress("Finding frequent words",
                        evt_tag_str("phase", "caching"));
           srand(time(NULL));
-          cachesize = (guint) ((logs->len * PTZ_WORDLIST_CACHE));
+          cachesize = (guint)((logs->len * PTZ_WORDLIST_CACHE));
           cacheseed = rand();
           wordlist_cache = g_new0(int, cachesize);
         }
@@ -465,8 +465,8 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
    * won't get junk as the last word
    */
   skey = g_strdup((gchar *) key);
-  if (skey[strlen(skey) -1] == PTZ_SEPARATOR_CHAR)
-    skey[strlen(skey) -1] = 0;
+  if (skey[strlen(skey) - 1] == PTZ_SEPARATOR_CHAR)
+    skey[strlen(skey) - 1] = 0;
 
   splitstr = g_strdup_printf("%c", PTZ_SEPARATOR_CHAR);
   words = g_strsplit(skey, splitstr, 0);
@@ -474,8 +474,8 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
 
   /* pop the delimiters from the cluster key */
   wordcount = g_strv_length(words);
-  delimiters = words[wordcount-1];
-  words[wordcount-1] = 0;
+  delimiters = words[wordcount - 1];
+  words[wordcount - 1] = 0;
 
   for (i = 0; words[i]; ++i)
     {
@@ -611,8 +611,8 @@ ptz_load_file(Patternizer *self, gchar *input_file, gboolean no_parse, GError **
   while (fgets(line, PTZ_MAXLINELEN, file))
     {
       len = strlen(line);
-      if (line[len-1] == '\n')
-        line[len-1] = 0;
+      if (line[len - 1] == '\n')
+        line[len - 1] = 0;
 
       msg = log_msg_new(line, len, NULL, &parse_options);
       g_ptr_array_add(self->logs, msg);
@@ -646,7 +646,7 @@ ptz_free(Patternizer *self)
   int i;
 
   for (i = 0; i < self->logs->len; ++i)
-    log_msg_unref((LogMessage *) (LogMessage *) g_ptr_array_index(self->logs, i));
+    log_msg_unref((LogMessage *)(LogMessage *) g_ptr_array_index(self->logs, i));
 
   g_ptr_array_free(self->logs, TRUE);
   g_free(self);

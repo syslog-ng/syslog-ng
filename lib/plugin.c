@@ -323,7 +323,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
 {
   GModule *mod;
   static GModule *main_module_handle;
-  gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
+  gboolean(*init_func)(GlobalConfig * cfg, CfgArgs * args);
   gchar *module_init_func;
   const gchar *mp;
   gboolean result;
@@ -413,7 +413,7 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
 
               if (g_str_has_prefix(fname, "lib"))
                 fname += 3;
-              module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
+              module_name = g_strndup(fname, (gint)(strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
 
               msg_debug("Reading shared object for a candidate module",
                         evt_tag_str("path", mod_paths[i]),
@@ -497,7 +497,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
 
               if (g_str_has_prefix(fname, "lib"))
                 fname += 3;
-              module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
+              module_name = g_strndup(fname, (gint)(strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
 
               mod = plugin_dlopen_module(module_name, resolvedConfigurablePaths.initial_module_path);
               module_info = plugin_get_module_info(mod);

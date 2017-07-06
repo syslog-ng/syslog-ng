@@ -32,7 +32,7 @@ struct _AckTracker
 {
   gboolean late;
   LogSource *source;
-  Bookmark* (*request_bookmark)(AckTracker *self);
+  Bookmark *(*request_bookmark)(AckTracker *self);
   void (*track_msg)(AckTracker *self, LogMessage *msg);
   void (*manage_msg_ack)(AckTracker *self, LogMessage *msg, AckType ack_type);
 };
@@ -42,8 +42,8 @@ struct _AckRecord
   AckTracker *tracker;
 };
 
-AckTracker* late_ack_tracker_new(LogSource *source);
-AckTracker* early_ack_tracker_new(LogSource *source);
+AckTracker *late_ack_tracker_new(LogSource *source);
+AckTracker *early_ack_tracker_new(LogSource *source);
 
 void late_ack_tracker_free(AckTracker *self);
 void early_ack_tracker_free(AckTracker *self);
@@ -66,7 +66,7 @@ ack_tracker_is_late(AckTracker *self)
   return self->late;
 }
 
-static inline Bookmark*
+static inline Bookmark *
 ack_tracker_request_bookmark(AckTracker *self)
 {
   return self->request_bookmark(self);

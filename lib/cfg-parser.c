@@ -93,7 +93,7 @@ static CfgLexerKeyword main_keywords[] =
   { "sync",               KW_FLUSH_LINES, KWS_OBSOLETE, "flush_lines" },
   { "long_hostnames",     KW_CHAIN_HOSTNAMES, KWS_OBSOLETE, "chain_hostnames" },
   { "chain_hostnames",    KW_CHAIN_HOSTNAMES },
-  { "normalize_hostnames",KW_NORMALIZE_HOSTNAMES },
+  { "normalize_hostnames", KW_NORMALIZE_HOSTNAMES },
   { "keep_hostname",      KW_KEEP_HOSTNAME },
   { "check_hostname",     KW_CHECK_HOSTNAME },
   { "bad_hostname",       KW_BAD_HOSTNAME },
@@ -307,7 +307,7 @@ cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag_)
 
       if (strcmp(handlers[h].name, flag) == 0)
         {
-          guint32 *field = ((guint32 *) (((gchar *) base) + handler->ofs));
+          guint32 *field = ((guint32 *)(((gchar *) base) + handler->ofs));
           switch (handler->op)
             {
             case CFH_SET:

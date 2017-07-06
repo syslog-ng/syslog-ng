@@ -528,7 +528,7 @@ _ensure_table_is_syslogng_conform(AFSqlDestDriver *self, dbi_result db_res, cons
         }
     }
 
-  if (new_transaction_started && ( !success || !afsql_dd_commit_transaction(self)))
+  if (new_transaction_started && (!success || !afsql_dd_commit_transaction(self)))
     {
       afsql_dd_rollback_transaction(self);
       success = FALSE;
@@ -1166,7 +1166,7 @@ afsql_dd_format_persist_sequence_number(AFSqlDestDriver *self)
 
   g_snprintf(persist_name, sizeof(persist_name),
              "afsql_dd_sequence_number(%s,%s,%s,%s,%s)",
-             self->type,self->host, self->port, self->database, self->table->template);
+             self->type, self->host, self->port, self->database, self->table->template);
 
   return persist_name;
 }
@@ -1192,7 +1192,7 @@ afsql_dd_init(LogPipe *s)
   {
     StatsClusterKey sc_key;
     stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
-                                  afsql_dd_format_stats_instance(self) );
+                                  afsql_dd_format_stats_instance(self));
     stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
@@ -1324,7 +1324,7 @@ error:
   {
     StatsClusterKey sc_key;
     stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
-                                  afsql_dd_format_stats_instance(self) );
+                                  afsql_dd_format_stats_instance(self));
     stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
@@ -1348,7 +1348,7 @@ afsql_dd_deinit(LogPipe *s)
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
-                                afsql_dd_format_stats_instance(self) );
+                                afsql_dd_format_stats_instance(self));
   stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();

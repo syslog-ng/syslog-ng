@@ -67,14 +67,14 @@ tf_graphite_parse_command_line_arguments(TFGraphiteState *self, gint *argc, gcha
   userdata.state = self;
   userdata.cfg = parent->cfg;
 
-  ctx = g_option_context_new ("graphite-options");
-  og = g_option_group_new (NULL, NULL, NULL, &userdata, NULL);
+  ctx = g_option_context_new("graphite-options");
+  og = g_option_group_new(NULL, NULL, NULL, &userdata, NULL);
   g_option_group_add_entries(og, graphite_options);
   g_option_context_set_main_group(ctx, og);
   g_option_context_set_ignore_unknown_options(ctx, TRUE);
 
-  success = g_option_context_parse (ctx, argc, argv, &error);
-  g_option_context_free (ctx);
+  success = g_option_context_parse(ctx, argc, argv, &error);
+  g_option_context_free(ctx);
 
   return success;
 }
@@ -96,7 +96,7 @@ tf_graphite_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
       log_template_compile(state->timestamp_template, "$R_UNIXTIME", NULL);
     }
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
+  state->vp = value_pairs_new_from_cmdline(parent->cfg, argc, argv, error);
   if (!state->vp)
     return FALSE;
 
@@ -122,11 +122,11 @@ tf_graphite_foreach_func(const gchar *name, TypeHint type, const gchar *value,
   TFGraphiteForeachUserData *data = (TFGraphiteForeachUserData *) user_data;
 
   g_string_append(data->result, name);
-  g_string_append_c(data->result,' ');
+  g_string_append_c(data->result, ' ');
   g_string_append(data->result, value);
-  g_string_append_c(data->result,' ');
+  g_string_append_c(data->result, ' ');
   g_string_append(data->result, data->formatted_unixtime->str);
-  g_string_append_c(data->result,'\n');
+  g_string_append_c(data->result, '\n');
 
   return FALSE;
 }

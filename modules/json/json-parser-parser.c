@@ -44,7 +44,7 @@ CfgParser json_parser_parser =
 #endif
   .name = "json-parser",
   .keywords = json_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) json_parser_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) json_parser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

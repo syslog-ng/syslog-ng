@@ -62,17 +62,17 @@ stats_syslog_reinit(void)
       for (i = 0; i < SEVERITY_MAX; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_SEVERITY | SCS_SOURCE, NULL, name );
+          stats_cluster_logpipe_key_set(&sc_key, SCS_SEVERITY | SCS_SOURCE, NULL, name);
           stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &severity_counters[i]);
         }
 
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, name );
+          stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, name);
           stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
-      stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, "other" );
+      stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, "other");
       stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }
   else
@@ -81,17 +81,17 @@ stats_syslog_reinit(void)
       for (i = 0; i < SEVERITY_MAX; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_SEVERITY | SCS_SOURCE, NULL, name );
+          stats_cluster_logpipe_key_set(&sc_key, SCS_SEVERITY | SCS_SOURCE, NULL, name);
           stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &severity_counters[i]);
         }
 
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, name );
+          stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, name);
           stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
-      stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, "other" );
+      stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY | SCS_SOURCE, NULL, "other");
       stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }
   stats_unlock();

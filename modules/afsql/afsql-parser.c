@@ -66,7 +66,7 @@ CfgParser afsql_parser =
 #endif
   .name = "afsql",
   .keywords = afsql_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) afsql_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) afsql_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

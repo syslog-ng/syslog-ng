@@ -176,14 +176,14 @@
 
 struct _LogPathOptions
 {
-   /* an acknowledgement is "passed" to this path, an ACK is still
-    * needed to close the window slot. This was called "flow-control"
-    * and meant both of these things: the user requested
-    * flags(flow-control), _AND_ an acknowledgement was needed. With
-    * the latest change, the one below specifies the user option,
-    * while the "ack is still needed" condition is stored in
-    * ack_needed.
-    */
+  /* an acknowledgement is "passed" to this path, an ACK is still
+   * needed to close the window slot. This was called "flow-control"
+   * and meant both of these things: the user requested
+   * flags(flow-control), _AND_ an acknowledgement was needed. With
+   * the latest change, the one below specifies the user option,
+   * while the "ack is still needed" condition is stored in
+   * ack_needed.
+   */
 
   gboolean ack_needed;
 
@@ -220,8 +220,8 @@ struct _LogPipe
      by a plugin, see the explanation in the comment on the top. */
   gpointer queue_data;
   void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
-  gboolean (*init)(LogPipe *self);
-  gboolean (*deinit)(LogPipe *self);
+  gboolean(*init)(LogPipe *self);
+  gboolean(*deinit)(LogPipe *self);
 
   const gchar *(*generate_persist_name)(const LogPipe *self);
 
@@ -235,7 +235,7 @@ struct _LogPipe
   void (*notify)(LogPipe *self, gint notify_code, gpointer user_data);
 };
 
-extern gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
+extern gboolean(*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
 
 LogPipe *log_pipe_ref(LogPipe *self);
 void log_pipe_unref(LogPipe *self);

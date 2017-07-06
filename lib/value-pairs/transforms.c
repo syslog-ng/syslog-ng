@@ -115,7 +115,7 @@ vp_trans_add_prefix_destroy(ValuePairsTransform *t)
 }
 
 ValuePairsTransform *
-value_pairs_new_transform_add_prefix (const gchar *prefix)
+value_pairs_new_transform_add_prefix(const gchar *prefix)
 {
   VPTransAddPrefix *vpt;
 
@@ -139,7 +139,7 @@ vp_trans_shift(ValuePairsTransform *t, GString *key)
 }
 
 ValuePairsTransform *
-value_pairs_new_transform_shift (gint amount)
+value_pairs_new_transform_shift(gint amount)
 {
   VPTransShift *vpt;
 

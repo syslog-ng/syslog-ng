@@ -74,11 +74,11 @@ typedef struct
 } LogRcptStatusData;
 
 static gchar *
-afsmtp_wash_string (gchar *str)
+afsmtp_wash_string(gchar *str)
 {
   gint i;
 
-  for (i = 0; i < strlen (str); i++)
+  for (i = 0; i < strlen(str); i++)
          if (str[i] == '\n' ||
              str[i] == '\r')
            str[i] = ' ';
@@ -103,7 +103,7 @@ afsmtp_dd_set_host(LogDriver *d, const gchar *host)
   AFSMTPDriver *self = (AFSMTPDriver *)d;
 
   g_free(self->host);
-  self->host = g_strdup (host);
+  self->host = g_strdup(host);
 }
 
 void
@@ -188,7 +188,7 @@ afsmtp_dd_add_header(LogDriver *d, const gchar *header, LogTemplate *value)
  * Utilities
  */
 void
-ignore_sigpipe (void)
+ignore_sigpipe(void)
 {
   struct sigaction sa;
 
@@ -249,7 +249,7 @@ _smtp_message_add_recipient_header(smtp_message_t self, AFSMTPRecipient *rcpt, A
       return;
     }
 
-  smtp_set_header(self, hdr, rcpt->phrase, afsmtp_wash_string (driver->str->str));
+  smtp_set_header(self, hdr, rcpt->phrase, afsmtp_wash_string(driver->str->str));
   smtp_set_header_option(self, hdr, Hdr_OVERRIDE, 1);
 }
 
@@ -259,7 +259,7 @@ _smtp_message_add_recipient_from_template(smtp_message_t self, AFSMTPDriver *dri
 {
   log_template_format(template, msg, &driver->template_options, LTZ_SEND,
                       driver->super.seq_num, NULL, driver->str);
-  smtp_add_recipient(self, afsmtp_wash_string (driver->str->str));
+  smtp_add_recipient(self, afsmtp_wash_string(driver->str->str));
 }
 
 static void
@@ -283,7 +283,7 @@ afsmtp_dd_msg_add_header(AFSMTPHeader *hdr, gpointer user_data)
   log_template_format(hdr->template, msg, &self->template_options, LTZ_LOCAL,
                       self->super.seq_num, NULL, self->str);
 
-  smtp_set_header(message, hdr->name, afsmtp_wash_string (self->str->str), NULL);
+  smtp_set_header(message, hdr->name, afsmtp_wash_string(self->str->str), NULL);
   smtp_set_header_option(message, hdr->name, Hdr_OVERRIDE, 1);
 }
 
@@ -356,9 +356,9 @@ afsmtp_dd_cb_monitor(const gchar *buf, gint buflen, gint writing,
   switch (writing)
     {
     case SMTP_CB_READING:
-      msg_debug ("SMTP Session: SERVER",
-                 evt_tag_str("driver", self->super.super.super.id),
-                 evt_tag_printf("message", fmt, buf));
+      msg_debug("SMTP Session: SERVER",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_printf("message", fmt, buf));
       break;
     case SMTP_CB_WRITING:
       msg_debug("SMTP Session: CLIENT",
@@ -471,7 +471,7 @@ __send_message(AFSMTPDriver *self, smtp_session_t session)
     {
       gchar error[1024] = {0};
 
-      smtp_strerror(smtp_errno(), error, sizeof (error) - 1);
+      smtp_strerror(smtp_errno(), error, sizeof(error) - 1);
 
       msg_error("SMTP server error, suspending",
                 evt_tag_str("driver", self->super.super.super.id),

@@ -44,7 +44,7 @@ CfgParser afstreams_parser =
 #endif
   .name = "afstreams",
   .keywords = afstreams_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) afstreams_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) afstreams_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

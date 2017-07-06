@@ -774,7 +774,7 @@ test_float_matches(void)
                       "float", "12.345E-12", NULL);
 
   test_search_matches(root, "v12345", NULL);
-  test_search_matches(root, "12345.hihihi","float", "12345.", NULL);
+  test_search_matches(root, "12345.hihihi", "float", "12345.", NULL);
 
   r_free_node(root, NULL);
 }
@@ -809,9 +809,9 @@ test_email_matches(void)
   RNode *root = r_new_node("", NULL);
   insert_node(root, "@EMAIL:email:[<]>@");
 
-  test_search_matches(root, "blint@balabit.hu","email", "blint@balabit.hu", NULL);
-  test_search_matches(root, "<blint@balabit.hu>","email", "blint@balabit.hu", NULL);
-  test_search_matches(root, "[blint@balabit.hu]","email", "blint@balabit.hu", NULL);
+  test_search_matches(root, "blint@balabit.hu", "email", "blint@balabit.hu", NULL);
+  test_search_matches(root, "<blint@balabit.hu>", "email", "blint@balabit.hu", NULL);
+  test_search_matches(root, "[blint@balabit.hu]", "email", "blint@balabit.hu", NULL);
 
   r_free_node(root, NULL);
 }
@@ -930,5 +930,5 @@ main(int argc, char *argv[])
   test_zorp_logs();
 
   app_shutdown();
-  return  (fail ? 1 : 0);
+  return (fail ? 1 : 0);
 }

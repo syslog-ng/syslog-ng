@@ -43,7 +43,7 @@ CfgParser afuser_parser =
 #endif
   .name = "afuser",
   .keywords = afuser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) afuser_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) afuser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

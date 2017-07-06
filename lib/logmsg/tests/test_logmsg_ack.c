@@ -147,7 +147,7 @@ ParameterizedTestParameters(msg_ack, test_cloned_clone)
     {"", ""}
   };
 
-  size_t nb_params = sizeof (params) / sizeof (struct nv_pair);
+  size_t nb_params = sizeof(params) / sizeof(struct nv_pair);
   return cr_make_param_array(struct nv_pair, params, nb_params);
 }
 

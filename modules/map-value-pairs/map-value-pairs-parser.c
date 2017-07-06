@@ -41,7 +41,7 @@ CfgParser map_value_pairs_parser =
 #endif
   .name = "map-value-pairs",
   .keywords = map_value_pairs_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) map_value_pairs_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) map_value_pairs_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

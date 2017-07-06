@@ -44,7 +44,7 @@ CfgParser systemd_journal_parser =
 #endif
   .name = "systemd-journal",
   .keywords = systemd_journal_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer arg)) systemd_journal_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer arg)) systemd_journal_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

@@ -106,7 +106,7 @@ static const _TimeLocale _DefaultTimeLocale =
 {
   /* abbreviated day */
   {
-    "Sun","Mon","Tue","Wed","Thu","Fri","Sat",
+    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
   },
   /* days */
   {
@@ -605,11 +605,11 @@ recurse:
                   /* Argh! No 'J'! */
                   if (*bp >= 'A' && *bp <= 'I')
                     *tm_gmtoff =
-                      (('A' - 1) - (int)*bp) * 3600;
+                      (('A' - 1) - (int) * bp) * 3600;
                   else if (*bp >= 'L' && *bp <= 'M')
-                    *tm_gmtoff = ('A' - (int)*bp) * 3600;
+                    *tm_gmtoff = ('A' - (int) * bp) * 3600;
                   else if (*bp >= 'N' && *bp <= 'Y')
-                    *tm_gmtoff = ((int)*bp - 'M') * 3600;
+                    *tm_gmtoff = ((int) * bp - 'M') * 3600;
                   *tm_zone = utc; /* XXX */
                   bp++;
                   continue;
@@ -617,7 +617,7 @@ recurse:
               return NULL;
             }
           offs = 0;
-          for (i = 0; i < 4; )
+          for (i = 0; i < 4;)
             {
               if (isdigit(*bp))
                 {

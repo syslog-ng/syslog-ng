@@ -62,22 +62,22 @@ struct _LogThrDestDriver
   struct
   {
     gboolean connected;
-    void (*thread_init) (LogThrDestDriver *s);
-    void (*thread_deinit) (LogThrDestDriver *s);
-    worker_insert_result_t (*insert) (LogThrDestDriver *s, LogMessage *msg);
-    gboolean (*connect) (LogThrDestDriver *s);
+    void (*thread_init)(LogThrDestDriver *s);
+    void (*thread_deinit)(LogThrDestDriver *s);
+    worker_insert_result_t (*insert)(LogThrDestDriver *s, LogMessage *msg);
+    gboolean(*connect)(LogThrDestDriver *s);
     void (*worker_message_queue_empty)(LogThrDestDriver *s);
-    void (*disconnect) (LogThrDestDriver *s);
+    void (*disconnect)(LogThrDestDriver *s);
   } worker;
 
   struct
   {
-    void (*retry_over) (LogThrDestDriver *s, LogMessage *msg);
+    void (*retry_over)(LogThrDestDriver *s, LogMessage *msg);
   } messages;
 
   struct
   {
-    gchar *(*stats_instance) (LogThrDestDriver *s);
+    gchar *(*stats_instance)(LogThrDestDriver *s);
   } format;
   gint stats_source;
   gint32 seq_num;
@@ -88,7 +88,7 @@ struct _LogThrDestDriver
     gint max;
   } retries;
 
-  void (*queue_method) (LogThrDestDriver *s);
+  void (*queue_method)(LogThrDestDriver *s);
   WorkerOptions worker_options;
   struct iv_event wake_up_event;
   struct iv_event shutdown_event;

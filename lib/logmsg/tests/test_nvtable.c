@@ -85,7 +85,7 @@ Test(nvtable, test_nv_registry)
   for (i = 0; builtins[i]; i++)
     {
       handle = nv_registry_alloc_handle(reg, builtins[i]);
-      cr_assert_eq(handle, (i+1));
+      cr_assert_eq(handle, (i + 1));
       name = nv_registry_get_handle_name(reg, handle, &len);
       cr_assert_str_eq(name, builtins[i]);
       cr_assert_eq(strlen(name), len);
@@ -344,7 +344,7 @@ Test(nvtable, test_nvtable_indirect)
   for (i = 0; i < sizeof(value); i++)
     value[i] = 'A' + (i % 26);
 
-  handle = DYN_HANDLE+1;
+  handle = DYN_HANDLE + 1;
   g_snprintf(name, sizeof(name), "VAL%d", handle);
   fprintf(stderr, "Testing indirect values, name: %s, handle: %d\n", name, handle);
 
@@ -374,7 +374,7 @@ Test(nvtable, test_nvtable_indirect)
   /* NOTE: the sizing of the NVTable can easily be broken, it is sized
      to make it possible to store one direct entry */
 
-  tab = nv_table_new(STATIC_VALUES, 0, 138+3);  // direct: +3
+  tab = nv_table_new(STATIC_VALUES, 0, 138 + 3); // direct: +3
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
 
@@ -446,7 +446,7 @@ Test(nvtable, test_nvtable_indirect)
   /* the new entry will not fit to the space allocated to the old and neither to the NVTable */
 
   /* setup code: add static and a dynamic-direct entry */
-  tab = nv_table_new(STATIC_VALUES, 1, 154+3+4);  // direct: +3, indirect: +4
+  tab = nv_table_new(STATIC_VALUES, 1, 154 + 3 + 4); // direct: +3, indirect: +4
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
   success = nv_table_add_value(tab, handle, name, strlen(name), value, 1, NULL);
@@ -664,7 +664,7 @@ Test(nvtable, test_nvtable_others)
   for (i = 0; i < sizeof(value); i++)
     value[i] = 'A' + (i % 26);
 
-  handle = DYN_HANDLE+1;
+  handle = DYN_HANDLE + 1;
   g_snprintf(name, sizeof(name), "VAL%d", handle);
   fprintf(stderr, "Testing other cases, name: %s, handle: %d\n", name, handle);
 

@@ -29,18 +29,18 @@
 
 extern TransportMapper *transport_mapper;
 
-#define transport_mapper_testcase_begin(init_name, func, args) 	        \
+#define transport_mapper_testcase_begin(init_name, func, args)          \
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      transport_mapper = transport_mapper_ ## init_name ## _new();	        \
+      transport_mapper = transport_mapper_ ## init_name ## _new();          \
     }                                                           \
   while (0)
 
 #define transport_mapper_testcase_end()                           \
   do                                                            \
     {                                                           \
-      transport_mapper_free(transport_mapper);             	\
+      transport_mapper_free(transport_mapper);              \
       testcase_end();                                           \
     }                                                           \
   while (0)
@@ -65,7 +65,8 @@ assert_transport_mapper_apply_fails(TransportMapper *self, const gchar *transpor
 {
   if (transport)
     transport_mapper_set_transport(self, transport);
-  assert_false(transport_mapper_apply_transport(self, configuration), "afsocket_apply_transport() succeeded while we expected failure");
+  assert_false(transport_mapper_apply_transport(self, configuration),
+               "afsocket_apply_transport() succeeded while we expected failure");
 }
 
 static inline void

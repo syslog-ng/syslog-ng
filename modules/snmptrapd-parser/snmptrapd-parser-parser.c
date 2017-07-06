@@ -43,7 +43,7 @@ CfgParser snmptrapd_parser_parser =
 #endif
   .name = "snmptrapd-parser",
   .keywords = snmptrapd_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) snmptrapd_parser_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) snmptrapd_parser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

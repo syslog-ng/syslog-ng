@@ -37,8 +37,8 @@ static void
 cfg_args_validate_callback(gpointer k, gpointer v, gpointer user_data)
 {
   CfgArgs *defs = ((gpointer *) user_data)[0];
-  gchar **bad_key = (gchar **) &((gpointer *) user_data)[1];
-  gchar **bad_value = (gchar **) &((gpointer *) user_data)[2];
+  gchar **bad_key = (gchar **) & ((gpointer *) user_data)[1];
+  gchar **bad_value = (gchar **) & ((gpointer *) user_data)[2];
 
   if ((*bad_key == NULL) && (!defs || cfg_args_get(defs, k) == NULL))
     {

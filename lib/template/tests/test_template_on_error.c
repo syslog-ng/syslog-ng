@@ -71,7 +71,7 @@ test_template_on_error(void)
 }
 
 int
-main (void)
+main(void)
 {
   app_startup();
 

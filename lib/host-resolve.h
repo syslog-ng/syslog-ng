@@ -35,7 +35,8 @@ typedef struct _HostResolveOptions
 } HostResolveOptions;
 
 /* name resolution */
-const gchar *resolve_sockaddr_to_hostname(gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options);
+const gchar *resolve_sockaddr_to_hostname(gsize *result_len, GSockAddr *saddr,
+                                          const HostResolveOptions *host_resolve_options);
 gboolean resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name);
 const gchar *resolve_hostname_to_hostname(gsize *result_len, const gchar *hostname, HostResolveOptions *options);
 

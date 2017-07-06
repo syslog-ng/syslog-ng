@@ -29,7 +29,7 @@
 
 typedef enum
 {
-  SC_TYPE_DROPPED=0, /* number of messages dropped */
+  SC_TYPE_DROPPED = 0, /* number of messages dropped */
   SC_TYPE_PROCESSED, /* number of messages processed */
   SC_TYPE_QUEUED,    /* number of messages on disk */
   SC_TYPE_SUPPRESSED,/* number of messages suppressed */

@@ -60,7 +60,7 @@ CfgParser affile_parser =
 #endif
   .name = "affile",
   .keywords = affile_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) affile_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) affile_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

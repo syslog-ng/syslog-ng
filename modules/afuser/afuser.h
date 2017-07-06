@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef AFUSER_H_INCLUDED
 #define AFUSER_H_INCLUDED
 

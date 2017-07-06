@@ -41,7 +41,7 @@ typedef struct _CfgParser
   CfgLexerKeyword *keywords;
 
   /* the parser entry point, returns the parsed object in *instance */
-  gint (*parse)(CfgLexer *lexer, gpointer *instance, gpointer arg);
+  gint(*parse)(CfgLexer *lexer, gpointer *instance, gpointer arg);
 
   /* in case of parse failure and instance != NULL, this should free instance */
   void (*cleanup)(gpointer instance);

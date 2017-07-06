@@ -52,7 +52,7 @@ CfgParser afsmtp_parser =
 #endif
   .name = "afsmtp",
   .keywords = afsmtp_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afsmtp_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) afsmtp_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

@@ -49,7 +49,7 @@ run_id_init(PersistState *state)
 
   if (handle == 0)
     {
-      handle = persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState) );
+      handle = persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState));
     }
 
   run_id_state = persist_state_map_entry(state, handle);

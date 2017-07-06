@@ -29,7 +29,8 @@
 #include <jni.h>
 #include <syslog-ng.h>
 
-typedef struct _ClassLoader {
+typedef struct _ClassLoader
+{
   jclass syslogng_class_loader;
   jobject loader_object;
   jmethodID loader_constructor;

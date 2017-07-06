@@ -358,7 +358,7 @@ python_dd_retry_error(PythonDestDriver *self, LogMessage *msg)
   PyObject *msg_object;
 
   gstate = PyGILState_Ensure();
-  if(_py_construct_message(self, msg, &msg_object))
+  if (_py_construct_message(self, msg, &msg_object))
     {
       _py_invoke_retry_error(self, msg_object);
       Py_DECREF(msg_object);

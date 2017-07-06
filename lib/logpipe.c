@@ -25,7 +25,7 @@
 #include "logpipe.h"
 #include "cfg-tree.h"
 
-gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
+gboolean(*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
 
 EVTTAG *
 log_pipe_location_tag(LogPipe *pipe)

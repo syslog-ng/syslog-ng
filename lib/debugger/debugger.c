@@ -183,7 +183,7 @@ _cmd_quit(Debugger *self, gint argc, gchar *argv[])
   return FALSE;
 }
 
-typedef gboolean (*DebuggerCommandFunc)(Debugger *self, gint argc, gchar *argv[]);
+typedef gboolean(*DebuggerCommandFunc)(Debugger *self, gint argc, gchar *argv[]);
 
 struct
 {

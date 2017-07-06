@@ -40,17 +40,17 @@ void multi_line_regexp_free(MultiLineRegexp *self);
  * when we reach a line that starts with non-whitespace, or EOF.
  */
 LogProtoServer *log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
-                                                      const LogProtoServerOptions *options,
-                                                      MultiLineRegexp *prefix,
-                                                      MultiLineRegexp *garbage);
+    const LogProtoServerOptions *options,
+    MultiLineRegexp *prefix,
+    MultiLineRegexp *garbage);
 void log_proto_regexp_multiline_server_init(LogProtoREMultiLineServer *self,
                                             LogTransport *transport,
                                             const LogProtoServerOptions *options,
                                             MultiLineRegexp *prefix,
                                             MultiLineRegexp *garbage);
 LogProtoServer *log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
-                                                      const LogProtoServerOptions *options,
-                                                      MultiLineRegexp *prefix,
-                                                      MultiLineRegexp *suffix);
+    const LogProtoServerOptions *options,
+    MultiLineRegexp *prefix,
+    MultiLineRegexp *suffix);
 
 #endif

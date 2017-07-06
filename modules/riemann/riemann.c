@@ -275,8 +275,8 @@ _set_timeout_on_connection(RiemannDestDriver *self)
       fd = riemann_client_get_fd(self->client);
       timeout.tv_sec = self->timeout;
       timeout.tv_usec = 0;
-      setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof (timeout));
-      setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof (timeout));
+      setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+      setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     }
 }
 
@@ -354,8 +354,8 @@ riemann_worker_init(LogPipe *s)
 
   if (self->event.batch_size_max <= 0)
     self->event.batch_size_max = 1;
-  self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->event.batch_size_max);
+  self->event.list = (riemann_event_t **)malloc(sizeof(riemann_event_t *) *
+                                                self->event.batch_size_max);
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("driver", self->super.super.super.id),
@@ -476,7 +476,7 @@ riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMes
   if (str->len == 0)
     return FALSE;
 
-  if (type_cast_to_double (str->str, &d, NULL))
+  if (type_cast_to_double(str->str, &d, NULL))
     riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, (float) d,
                       RIEMANN_EVENT_FIELD_NONE);
   else
@@ -577,8 +577,8 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
    * and save as many messages as possible.
    */
   self->event.n = 0;
-  self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->event.batch_size_max);
+  self->event.list = (riemann_event_t **)malloc(sizeof(riemann_event_t *) *
+                                                self->event.batch_size_max);
   if (r != 0)
     return WORKER_INSERT_RESULT_ERROR;
   else

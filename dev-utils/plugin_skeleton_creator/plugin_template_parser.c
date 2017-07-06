@@ -40,7 +40,7 @@ CfgParser @PLUGIN_NAME_US@_parser =
 #endif
   .name = "@PLUGIN_NAME@",
   .keywords = @PLUGIN_NAME_US@_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) @PLUGIN_NAME_US@_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) @PLUGIN_NAME_US@_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

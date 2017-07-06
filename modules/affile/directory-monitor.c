@@ -96,7 +96,7 @@ get_path_max()
  Resolve tricki symlinks like a -> ../a/../a/./b
 */
 gchar *
-resolve_to_absolute_path(const gchar *path, const gchar *basedir)
+resolve_to_absolute_path(const gchar * path, const gchar * basedir)
 {
   long path_max = get_path_max();
   gchar *res;
@@ -123,7 +123,7 @@ resolve_to_absolute_path(const gchar *path, const gchar *basedir)
 }
 
 static gchar *
-_get_real_path(DirectoryMonitor *self)
+_get_real_path(DirectoryMonitor * self)
 {
   gchar *dir_real_path = NULL;
   if (!g_path_is_absolute(self->dir))
@@ -140,7 +140,7 @@ _get_real_path(DirectoryMonitor *self)
 }
 
 void
-directory_monitor_stop(DirectoryMonitor *self)
+directory_monitor_stop(DirectoryMonitor * self)
 {
   if (iv_timer_registered(&self->check_timer))
     {
@@ -154,7 +154,7 @@ directory_monitor_stop(DirectoryMonitor *self)
 }
 
 static void
-_collect_all_files(DirectoryMonitor *self, GDir *directory)
+_collect_all_files(DirectoryMonitor * self, GDir * directory)
 {
   const gchar *filename = g_dir_read_name(directory);
   while (filename)
@@ -172,7 +172,7 @@ _collect_all_files(DirectoryMonitor *self, GDir *directory)
 }
 
 static void
-_arm_recheck_timer(DirectoryMonitor *self)
+_arm_recheck_timer(DirectoryMonitor * self)
 {
   iv_validate_now();
   self->check_timer.cookie = self;
@@ -183,7 +183,7 @@ _arm_recheck_timer(DirectoryMonitor *self)
 }
 
 static void
-_set_real_path(DirectoryMonitor *self)
+_set_real_path(DirectoryMonitor * self)
 {
   if (self->real_path)
     g_free(self->real_path);
@@ -191,7 +191,7 @@ _set_real_path(DirectoryMonitor *self)
 }
 
 void
-directory_monitor_start(DirectoryMonitor *self)
+directory_monitor_start(DirectoryMonitor * self)
 {
   GDir *directory = NULL;
   GError *error = NULL;
@@ -221,14 +221,14 @@ directory_monitor_start(DirectoryMonitor *self)
 }
 
 void
-directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCallback callback, gpointer user_data)
+directory_monitor_set_callback(DirectoryMonitor * self, DirectoryMonitorEventCallback callback, gpointer user_data)
 {
   self->callback = callback;
   self->callback_data = user_data;
 }
 
 void
-directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time)
+directory_monitor_init_instance(DirectoryMonitor * self, const gchar * dir, guint recheck_time)
 {
   self->dir = g_strdup(dir);
   self->recheck_time = recheck_time;
@@ -236,7 +236,7 @@ directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint 
 }
 
 DirectoryMonitor *
-directory_monitor_new(const gchar *dir, guint recheck_time)
+directory_monitor_new(const gchar * dir, guint recheck_time)
 {
   DirectoryMonitor *self = g_new0(DirectoryMonitor, 1);
   directory_monitor_init_instance(self, dir, recheck_time);
@@ -244,7 +244,7 @@ directory_monitor_new(const gchar *dir, guint recheck_time)
 }
 
 void
-directory_monitor_free(DirectoryMonitor *self)
+directory_monitor_free(DirectoryMonitor * self)
 {
   if (self)
     {

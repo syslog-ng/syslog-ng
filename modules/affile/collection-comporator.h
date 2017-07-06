@@ -35,7 +35,8 @@ void collection_comporator_stop(CollectionComporator *self);
 void collection_comporator_add_value(CollectionComporator *self, const gchar *value);
 void collection_comporator_add_initial_value(CollectionComporator *self, const gchar *value);
 
-void collection_comporator_set_callbacks(CollectionComporator *self, cc_callback handle_new, cc_callback handle_delete, gpointer user_data);
+void collection_comporator_set_callbacks(CollectionComporator *self, cc_callback handle_new, cc_callback handle_delete,
+                                         gpointer user_data);
 
 
 #endif /* MODULES_AFFILE_COLLECTION_COMPORATOR_H_ */

@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef DRIVER_H_INCLUDED
 #define DRIVER_H_INCLUDED
 
@@ -77,7 +77,7 @@ struct _LogDriverPlugin
    * methods).
    */
 
-  gboolean (*attach)(LogDriverPlugin *s, LogDriver *d);
+  gboolean(*attach)(LogDriverPlugin *s, LogDriver *d);
   void (*detach)(LogDriverPlugin *s, LogDriver *d);
   void (*free_fn)(LogDriverPlugin *s);
 };

@@ -349,7 +349,7 @@ timer_wheel_expire_all(TimerWheel *self)
   guint64 now;
 
   now = self->now;
-  timer_wheel_set_time(self, (guint64) -1);
+  timer_wheel_set_time(self, (guint64) - 1);
   self->now = now;
 }
 

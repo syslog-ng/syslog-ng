@@ -401,10 +401,10 @@ kmsg_init_boot_time(void)
   struct timeval curr_time;
   guint64 tdiff;
 
-  if ((fd = open ("/proc/uptime", O_RDONLY)) == -1)
+  if ((fd = open("/proc/uptime", O_RDONLY)) == -1)
     return;
 
-  if ((rc = read (fd, buf, sizeof(buf))) <= 0)
+  if ((rc = read(fd, buf, sizeof(buf))) <= 0)
     {
       close(fd);
       return;

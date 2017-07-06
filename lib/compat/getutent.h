@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef COMPAT_GETUTENT_H_INCLUDED
 #define COMPAT_GETUTENT_H_INCLUDED
 

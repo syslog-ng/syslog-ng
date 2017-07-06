@@ -209,5 +209,5 @@ main(int argc, char *argv[])
   test_filters(TRUE);
 
   app_shutdown();
-  return  (fail ? 1 : 0);
+  return (fail ? 1 : 0);
 }

@@ -33,7 +33,8 @@
 
 typedef struct _JavaDestinationProxy JavaDestinationProxy;
 
-JavaDestinationProxy *java_destination_proxy_new(const gchar *class_name, const gchar *class_path, gpointer handle, LogTemplate *template);
+JavaDestinationProxy *java_destination_proxy_new(const gchar *class_name, const gchar *class_path, gpointer handle,
+                                                 LogTemplate *template);
 
 gboolean java_destination_proxy_init(JavaDestinationProxy *self);
 void java_destination_proxy_deinit(JavaDestinationProxy *self);

@@ -36,7 +36,7 @@ tf_uuid(LogMessage *msg, gint argc, GString *argv[], GString *result)
   char uuid_str[37];
 
   uuid_gen_random(uuid_str, sizeof(uuid_str));
-  g_string_append (result, uuid_str);
+  g_string_append(result, uuid_str);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_uuid);

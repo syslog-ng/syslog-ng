@@ -43,7 +43,7 @@ CfgParser pseudofile_parser =
 #endif
   .name = "pseudofile",
   .keywords = pseudofile_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) pseudofile_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) pseudofile_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

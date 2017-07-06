@@ -90,9 +90,9 @@ assert_test_data_idx_range_in(RingBuffer *rb, int start, int end)
   TestData *td;
   int i;
 
-  cr_assert_eq(ring_buffer_count(rb), end-start + 1,
+  cr_assert_eq(ring_buffer_count(rb), end - start + 1,
                "invalid ringbuffer size; actual:%d, expected: %d",
-               ring_buffer_count(rb), end-start+1);
+               ring_buffer_count(rb), end - start + 1);
 
   for (i = start; i <= end; i++)
     {
@@ -174,7 +174,7 @@ Test(ringbuffer, test_pop_all_pushed_element_in_correct_order)
 
   while ((td = ring_buffer_pop(&rb)))
     {
-      cr_assert_eq((cnt+start_from), td->idx, "wrong order; %d != %d", td->idx, cnt);
+      cr_assert_eq((cnt + start_from), td->idx, "wrong order; %d != %d", td->idx, cnt);
       ++cnt;
     }
 
@@ -210,7 +210,7 @@ Test(ringbuffer, test_elements_ordering)
 
   _ringbuffer_fill(&rb, capacity, start_from, TRUE);
 
-  while ( (td = ring_buffer_pop(&rb)) )
+  while ((td = ring_buffer_pop(&rb)))
     {
       cr_assert_eq((cnt + start_from), td->idx, "wrong order; %d != %d", cnt, td->idx);
       ++cnt;
@@ -229,7 +229,7 @@ Test(ringbuffer, test_element_at)
 
   _ringbuffer_fill(&rb, capacity, 0, TRUE);
 
-  for ( i = 0; i < ring_buffer_count(&rb); i++ )
+  for (i = 0; i < ring_buffer_count(&rb); i++)
     {
       td = ring_buffer_element_at(&rb, i);
       cr_assert_not_null(td, "invalid element, i=%d", i);

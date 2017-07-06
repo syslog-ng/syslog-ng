@@ -181,7 +181,7 @@ _grow_store(PersistState *self, guint32 new_size)
 
   _wait_until_map_release(self);
 
-  if ((new_size & (pgsize-1)) != 0)
+  if ((new_size & (pgsize - 1)) != 0)
     {
       new_size = ((new_size / pgsize) + 1) * pgsize;
     }
@@ -550,7 +550,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
                       goto free_and_exit;
                     }
 
-                  value_header = (PersistValueHeader *) ((gchar *) map + entry_ofs - sizeof(PersistValueHeader));
+                  value_header = (PersistValueHeader *)((gchar *) map + entry_ofs - sizeof(PersistValueHeader));
                   if ((value_header->in_use) || load_all_entries)
                     {
                       gpointer new_block;
@@ -583,14 +583,14 @@ _load_v4(PersistState *self, gboolean load_all_entries)
                   if (chain_ofs == 0 || chain_ofs > file_size)
                     {
                       msg_error("Persistent file format error, key block chain offset is too large or zero",
-                                evt_tag_printf("key_block", "%08lx", (gulong) ((gchar *) key_block - (gchar *) map)),
+                                evt_tag_printf("key_block", "%08lx", (gulong)((gchar *) key_block - (gchar *) map)),
                                 evt_tag_printf("key_size", "%d", key_size),
                                 evt_tag_int("ofs", chain_ofs));
                       serialize_archive_free(sa);
                       goto free_and_exit;
                     }
                   key_block = ((gchar *) map) + chain_ofs;
-                  key_size = GUINT32_FROM_BE(*(guint32 *) (((gchar *) key_block) - sizeof(PersistValueHeader)));
+                  key_size = GUINT32_FROM_BE(*(guint32 *)(((gchar *) key_block) - sizeof(PersistValueHeader)));
                   if (chain_ofs + key_size > file_size)
                     {
                       msg_error("Persistent file format error, key block size is too large",
@@ -691,7 +691,7 @@ persist_state_map_entry(PersistState *self, PersistEntryHandle handle)
   g_mutex_lock(self->mapped_lock);
   self->mapped_counter++;
   g_mutex_unlock(self->mapped_lock);
-  return (gpointer) (((gchar *) self->current_map) + (guint32) handle);
+  return (gpointer)(((gchar *) self->current_map) + (guint32) handle);
 }
 
 /*

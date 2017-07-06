@@ -59,7 +59,7 @@ _free_test(void)
     }
 }
 
-typedef gboolean (*Checks)(const gchar *user_data);
+typedef gboolean(*Checks)(const gchar *user_data);
 
 static gboolean
 _execute(const gchar *testcase, Checks checks, const gchar *user_data)

@@ -21,20 +21,20 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef __SYSLOG_NAMES_H_INCLUDED
 #define __SYSLOG_NAMES_H_INCLUDED
 
 #include "syslog-ng.h"
 
-#define	LOG_FACMASK	0x03f8	/* mask to extract facility part */
-				/* facility of pri */
-#define	LOG_FAC(p)	(((p) & LOG_FACMASK) >> 3)
+#define LOG_FACMASK 0x03f8  /* mask to extract facility part */
+/* facility of pri */
+#define LOG_FAC(p)  (((p) & LOG_FACMASK) >> 3)
 #ifndef LOG_PRIMASK
-#define	LOG_PRIMASK	0x07	/* mask to extract priority part (internal) */
+#define LOG_PRIMASK 0x07  /* mask to extract priority part (internal) */
 #endif
-				/* extract priority */
-#define	LOG_PRI(p)	((p) & LOG_PRIMASK)
+/* extract priority */
+#define LOG_PRI(p)  ((p) & LOG_PRIMASK)
 
 struct sl_name
 {
@@ -53,13 +53,13 @@ const char *syslog_name_lookup_name_by_value(int value, struct sl_name names[]);
 guint32 syslog_make_range(guint32 r1, guint32 r2);
 
 static inline guint32
-syslog_name_lookup_level_by_name(const gchar *name) 
+syslog_name_lookup_level_by_name(const gchar *name)
 {
   return syslog_name_lookup_value_by_name(name, sl_levels);
 }
 
 static inline guint32
-syslog_name_lookup_facility_by_name(const gchar *name) 
+syslog_name_lookup_facility_by_name(const gchar *name)
 {
   return syslog_name_lookup_value_by_name(name, sl_facilities);
 }

@@ -49,7 +49,7 @@ struct _LogReader
   struct iv_task restart_task;
   struct iv_event schedule_wakeup;
   MainLoopIOWorkerJob io_job;
-  gboolean watches_running:1, suspended:1;
+  gboolean watches_running: 1, suspended: 1;
   gint notify_code;
 
 

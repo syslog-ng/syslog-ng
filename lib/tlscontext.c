@@ -46,7 +46,7 @@ tls_get_x509_digest(X509 *x, GString *hash_string)
 
   g_string_append(hash_string, "SHA1:");
   for (j = 0; j < (int) n; j++)
-    g_string_append_printf(hash_string, "%02X%c", md[j], (j + 1 == (int) n) ?'\0' : ':');
+    g_string_append_printf(hash_string, "%02X%c", md[j], (j + 1 == (int) n) ? '\0' : ':');
 
   return TRUE;
 }
@@ -246,18 +246,18 @@ void
 tls_session_info_callback(const SSL *ssl, int where, int ret)
 {
   TLSSession *self = (TLSSession *)SSL_get_app_data(ssl);
-  if( !self->peer_info.found && where == (SSL_ST_ACCEPT|SSL_CB_LOOP) )
+  if (!self->peer_info.found && where == (SSL_ST_ACCEPT | SSL_CB_LOOP))
     {
       X509 *cert = SSL_get_peer_certificate(ssl);
 
-      if(cert)
+      if (cert)
         {
           self->peer_info.found = 1; /* mark this found so we don't keep checking on every callback */
           X509_NAME *name = X509_get_subject_name(cert);
 
-          X509_NAME_get_text_by_NID( name, NID_commonName, self->peer_info.cn, X509_MAX_CN_LEN );
-          X509_NAME_get_text_by_NID( name, NID_organizationName, self->peer_info.o, X509_MAX_O_LEN );
-          X509_NAME_get_text_by_NID( name, NID_organizationalUnitName, self->peer_info.ou, X509_MAX_OU_LEN );
+          X509_NAME_get_text_by_NID(name, NID_commonName, self->peer_info.cn, X509_MAX_CN_LEN);
+          X509_NAME_get_text_by_NID(name, NID_organizationName, self->peer_info.o, X509_MAX_O_LEN);
+          X509_NAME_get_text_by_NID(name, NID_organizationalUnitName, self->peer_info.ou, X509_MAX_OU_LEN);
 
           X509_free(cert);
         }
@@ -369,17 +369,17 @@ tls_context_setup_session(TLSContext *self)
 
       if (self->ssl_options != TSO_NONE)
         {
-          ssl_options=0;
-          if(self->ssl_options & TSO_NOSSLv2)
+          ssl_options = 0;
+          if (self->ssl_options & TSO_NOSSLv2)
             ssl_options |= SSL_OP_NO_SSLv2;
-          if(self->ssl_options & TSO_NOSSLv3)
+          if (self->ssl_options & TSO_NOSSLv3)
             ssl_options |= SSL_OP_NO_SSLv3;
-          if(self->ssl_options & TSO_NOTLSv1)
+          if (self->ssl_options & TSO_NOTLSv1)
             ssl_options |= SSL_OP_NO_TLSv1;
 #ifdef SSL_OP_NO_TLSv1_2
-          if(self->ssl_options & TSO_NOTLSv11)
+          if (self->ssl_options & TSO_NOTLSv11)
             ssl_options |= SSL_OP_NO_TLSv1_1;
-          if(self->ssl_options & TSO_NOTLSv12)
+          if (self->ssl_options & TSO_NOTLSv12)
             ssl_options |= SSL_OP_NO_TLSv1_2;
 #endif
 #ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
@@ -467,22 +467,22 @@ tls_lookup_verify_mode(const gchar *mode_str)
 gint
 tls_lookup_options(GList *options)
 {
-  gint ret=TSO_NONE;
+  gint ret = TSO_NONE;
   GList *l;
-  for (l=options; l != NULL; l=l->next)
+  for (l = options; l != NULL; l = l->next)
     {
       msg_debug("ssl-option", evt_tag_str("opt", l->data));
       if (strcasecmp(l->data, "no-sslv2") == 0 || strcasecmp(l->data, "no_sslv2") == 0)
-        ret|=TSO_NOSSLv2;
+        ret |= TSO_NOSSLv2;
       else if (strcasecmp(l->data, "no-sslv3") == 0 || strcasecmp(l->data, "no_sslv3") == 0)
-        ret|=TSO_NOSSLv3;
+        ret |= TSO_NOSSLv3;
       else if (strcasecmp(l->data, "no-tlsv1") == 0 || strcasecmp(l->data, "no_tlsv1") == 0)
-        ret|=TSO_NOTLSv1;
+        ret |= TSO_NOTLSv1;
 #ifdef SSL_OP_NO_TLSv1_2
       else if (strcasecmp(l->data, "no-tlsv11") == 0 || strcasecmp(l->data, "no_tlsv11") == 0)
-        ret|=TSO_NOTLSv11;
+        ret |= TSO_NOTLSv11;
       else if (strcasecmp(l->data, "no-tlsv12") == 0 || strcasecmp(l->data, "no_tlsv12") == 0)
-        ret|=TSO_NOTLSv12;
+        ret |= TSO_NOTLSv12;
 #endif
       else
         msg_error("Unknown ssl-option", evt_tag_str("option", l->data));
@@ -545,8 +545,8 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
           goto exit;
         }
 
-      lower_pattern = g_ascii_strdown(pattern_parts[i],-1);
-      lower_hostname = g_ascii_strdown(hostname_parts[i],-1);
+      lower_pattern = g_ascii_strdown(pattern_parts[i], -1);
+      lower_hostname = g_ascii_strdown(hostname_parts[i], -1);
 
       if (!g_pattern_match_simple(lower_pattern, lower_hostname))
         goto exit;

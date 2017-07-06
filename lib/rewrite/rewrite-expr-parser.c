@@ -54,7 +54,7 @@ CfgParser rewrite_expr_parser =
   .name = "rewrite expression",
   .context = LL_CONTEXT_REWRITE,
   .keywords = rewrite_expr_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) rewrite_expr_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) rewrite_expr_parse,
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(rewrite_expr_, LogExprNode **)

@@ -74,7 +74,7 @@ void g_process_set_working_dir(const gchar *cwd);
 void g_process_set_caps(const gchar *caps);
 void g_process_set_argv_space(gint argc, gchar **argv);
 void g_process_set_use_fdlimit(gboolean use);
-void g_process_set_check(gint check_period, gboolean (*check_fn)(void));
+void g_process_set_check(gint check_period, gboolean(*check_fn)(void));
 
 gboolean g_process_check_cap_syslog(void);
 

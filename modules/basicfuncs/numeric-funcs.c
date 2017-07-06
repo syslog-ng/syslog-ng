@@ -21,7 +21,7 @@
  *
  */
 
-typedef gboolean (*AggregateFunc)(gpointer, gint64);
+typedef gboolean(*AggregateFunc)(gpointer, gint64);
 
 static gboolean
 tf_num_parse(gint argc, GString *argv[],

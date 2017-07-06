@@ -32,26 +32,27 @@ extern LogProtoServerOptions proto_server_options;
 
 #define PROTO_TESTCASE(x, ...) do { log_proto_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); log_proto_testcase_end(); } while(0)
 
-#define log_proto_testcase_begin(func, args) 			\
-  do                                          			\
-    {                                         			\
+#define log_proto_testcase_begin(func, args)      \
+  do                                                \
+    {                                               \
       testcase_begin("%s(%s)", func, args);                     \
-      log_proto_server_options_defaults(&proto_server_options);	\
-    }                                         			\
+      log_proto_server_options_defaults(&proto_server_options); \
+    }                                               \
   while (0)
 
-#define log_proto_testcase_end()				\
-  do								\
-    {								\
-      log_proto_server_options_destroy(&proto_server_options);	\
-      testcase_end();						\
-    }								\
+#define log_proto_testcase_end()        \
+  do                \
+    {               \
+      log_proto_server_options_destroy(&proto_server_options);  \
+      testcase_end();           \
+    }               \
   while (0)
 
 void assert_proto_server_status(LogProtoServer *proto, LogProtoStatus status, LogProtoStatus expected_status);
 void assert_proto_server_fetch(LogProtoServer *proto, const gchar *expected_msg, gssize expected_msg_len);
 void assert_proto_server_fetch_single_read(LogProtoServer *proto, const gchar *expected_msg, gssize expected_msg_len);
-void assert_proto_server_fetch_failure(LogProtoServer *proto, LogProtoStatus expected_status, const gchar *error_message);
+void assert_proto_server_fetch_failure(LogProtoServer *proto, LogProtoStatus expected_status,
+                                       const gchar *error_message);
 void assert_proto_server_fetch_ignored_eof(LogProtoServer *proto);
 
 LogProtoServer *construct_server_proto_plugin(const gchar *name, LogTransport *transport);

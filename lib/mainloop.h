@@ -38,7 +38,7 @@ typedef struct _MainLoopOptions
 
 extern ThreadId main_thread_handle;
 
-typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
+typedef gpointer(*MainLoopTaskFunc)(gpointer user_data);
 
 static inline void
 main_loop_assert_main_thread(void)

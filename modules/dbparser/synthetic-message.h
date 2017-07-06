@@ -42,14 +42,18 @@ typedef struct _SyntheticMessage
 } SyntheticMessage;
 
 LogMessage *synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *msg, GString *buffer);
-LogMessage *synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationContext *context, GString *buffer);
+LogMessage *synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationContext *context,
+                                                    GString *buffer);
 
 
 void synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer);
-gboolean synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name, const gchar *value, GError **error);
+gboolean synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name,
+                                                     const gchar *value, GError **error);
 void synthetic_message_set_inherit_mode(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode);
-void synthetic_message_set_inherit_properties_string(SyntheticMessage *self, const gchar *inherit_properties, GError **error);
-gboolean synthetic_message_set_inherit_mode_string(SyntheticMessage *self, const gchar *inherit_mode_name, GError **error);
+void synthetic_message_set_inherit_properties_string(SyntheticMessage *self, const gchar *inherit_properties,
+                                                     GError **error);
+gboolean synthetic_message_set_inherit_mode_string(SyntheticMessage *self, const gchar *inherit_mode_name,
+                                                   GError **error);
 void synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, LogTemplate *value);
 void synthetic_message_add_tag(SyntheticMessage *self, const gchar *text);
 void synthetic_message_init(SyntheticMessage *self);

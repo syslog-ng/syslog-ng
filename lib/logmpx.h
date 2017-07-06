@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOGMPX_H_INCLUDED
 #define LOGMPX_H_INCLUDED
 

@@ -44,7 +44,7 @@ CfgParser geoip_parser_parser =
 #endif
   .name = "geoip-parser",
   .keywords = geoip_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) geoip_parser_parse,
+  .parse = (gint(*)(CfgLexer *, gpointer *, gpointer)) geoip_parser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

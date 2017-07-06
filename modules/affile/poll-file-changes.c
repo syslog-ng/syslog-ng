@@ -62,7 +62,7 @@ poll_file_changes_check_file(gpointer s)
   if (fd >= 0)
     {
       pos = lseek(fd, 0, SEEK_CUR);
-      if (pos == (off_t) -1)
+      if (pos == (off_t) - 1)
         {
           msg_error("Error invoking seek on followed file",
                     evt_tag_errno("error", errno));

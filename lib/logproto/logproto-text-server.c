@@ -145,7 +145,7 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
   gsize avail_out, avail_in;
   gint ret;
 
-  if (self->reverse_convert == ((GIConv) -1) && !self->convert_scale)
+  if (self->reverse_convert == ((GIConv) - 1) && !self->convert_scale)
     {
       /* try to speed up raw size calculation by recognizing the most
        * prominent character encodings and in the case the encoding
@@ -175,7 +175,7 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
   in = buffer;
 
   ret = g_iconv(self->reverse_convert, (gchar **) &in, &avail_in, &out, &avail_out);
-  if (ret == (gsize) -1)
+  if (ret == (gsize) - 1)
     {
       /* oops, we cannot reverse that we ourselves converted to UTF-8,
        * this is simply impossible, but never say never */
@@ -223,7 +223,7 @@ log_proto_text_server_split_buffer(LogProtoTextServer *self, LogProtoBufferedSer
       else
         raw_split_size = buffer_bytes;
 
-      state->pending_raw_stream_pos += (gint64) (state->pending_raw_buffer_size - raw_split_size);
+      state->pending_raw_stream_pos += (gint64)(state->pending_raw_buffer_size - raw_split_size);
       state->pending_raw_buffer_size = raw_split_size;
 
       msg_trace("Buffer split",
@@ -433,7 +433,7 @@ static void
 log_proto_text_server_free(LogProtoServer *s)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
-  if (self->reverse_convert != (GIConv) -1)
+  if (self->reverse_convert != (GIConv) - 1)
     g_iconv_close(self->reverse_convert);
 
   g_free(self->reverse_buffer);
@@ -450,7 +450,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
   self->accumulate_line = log_proto_text_server_accumulate_line_method;
   self->super.stream_based = TRUE;
-  self->reverse_convert = (GIConv) -1;
+  self->reverse_convert = (GIConv) - 1;
   self->consumed_len = -1;
 }
 

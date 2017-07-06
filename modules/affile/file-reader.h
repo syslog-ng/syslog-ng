@@ -35,7 +35,8 @@ enum
   MLM_PREFIX_SUFFIX,
 };
 
-typedef struct _FileReaderOptions {
+typedef struct _FileReaderOptions
+{
   FilePermOptions file_perm_options;
   FileOpenOptions file_open_options;
   gint pad_size;
@@ -60,8 +61,10 @@ void file_reader_remove_persist_state(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
 gboolean file_reader_options_set_multi_line_mode(FileReaderOptions *options, const gchar *mode);
-gboolean file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
-gboolean file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
+gboolean file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp,
+                                                   GError **error);
+gboolean file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *prefix_regexp,
+                                                    GError **error);
 
 void file_reader_options_destroy(FileReaderOptions *options);
 

@@ -35,7 +35,7 @@ typedef struct _ModuleConfig ModuleConfig;
 struct _ModuleConfig
 {
   /* init/deinit is hooked into configuration init/deinit */
-  gboolean (*init)(ModuleConfig *s, GlobalConfig *cfg);
+  gboolean(*init)(ModuleConfig *s, GlobalConfig *cfg);
   void (*deinit)(ModuleConfig *s, GlobalConfig *cfg);
   void (*free_fn)(ModuleConfig *s);
 };

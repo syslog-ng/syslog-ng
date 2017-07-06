@@ -132,10 +132,10 @@ log_src_driver_init_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED,
                          &self->super.processed_group_messages);
-  stats_cluster_logpipe_key_set(&sc_key,  SCS_CENTER, NULL, "received" );
+  stats_cluster_logpipe_key_set(&sc_key,  SCS_CENTER, NULL, "received");
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
   stats_unlock();
 
@@ -152,10 +152,10 @@ log_src_driver_deinit_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
                            &self->super.processed_group_messages);
-  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, NULL, "received" );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, NULL, "received");
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
   stats_unlock();
   return TRUE;
@@ -261,10 +261,10 @@ log_dest_driver_init_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED,
                          &self->super.processed_group_messages);
-  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, NULL, "queued" );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, NULL, "queued");
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
   stats_unlock();
 
@@ -292,10 +292,10 @@ log_dest_driver_deinit_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
                            &self->super.processed_group_messages);
-  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, NULL, "queued" );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, NULL, "queued");
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
   stats_unlock();
 

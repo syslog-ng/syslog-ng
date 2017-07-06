@@ -36,7 +36,7 @@ typedef enum _QueryCommand
   QUERY_CMD_MAX
 } QueryCommand;
 
-typedef gboolean (*query_cmd)(const gchar *filter_expr, GString *result);
+typedef gboolean(*query_cmd)(const gchar *filter_expr, GString *result);
 
 const gint CMD_STR = 0;
 const gint QUERY_CMD_STR = 1;

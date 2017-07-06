@@ -166,7 +166,7 @@ tf_if_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *a
 TEMPLATE_FUNCTION(TFCondState, tf_if, tf_if_prepare, NULL, tf_if_call, tf_cond_free_state, NULL);
 
 static void
-tf_or (LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_or(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
   gint i;
 
@@ -175,7 +175,7 @@ tf_or (LogMessage *msg, gint argc, GString *argv[], GString *result)
       if (argv[i]->len == 0)
         continue;
 
-      g_string_append_len (result, argv[i]->str, argv[i]->len);
+      g_string_append_len(result, argv[i]->str, argv[i]->len);
       break;
     }
 }

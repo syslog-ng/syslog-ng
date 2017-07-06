@@ -72,7 +72,7 @@ test_diskq_become_full(gboolean reliable)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->dropped_messages);
   stats_counter_set(q->dropped_messages, 0);
   stats_unlock();
@@ -95,9 +95,9 @@ main()
   tzset();
 
   configuration = cfg_new(0x0308);
-  plugin_load_module("syslogformat", configuration, NULL );
-  plugin_load_module("disk-buffer", configuration, NULL );
-  plugin_load_module("builtin-serializer", configuration, NULL );
+  plugin_load_module("syslogformat", configuration, NULL);
+  plugin_load_module("disk-buffer", configuration, NULL);
+  plugin_load_module("builtin-serializer", configuration, NULL);
   msg_set_post_func(msg_post_function);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);

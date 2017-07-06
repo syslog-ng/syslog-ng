@@ -45,7 +45,7 @@ _construct_parser(gchar *timezone_, gchar *format, gint time_stamp)
 {
   LogParser *parser;
 
-  parser = date_parser_new (configuration);
+  parser = date_parser_new(configuration);
   if (format != NULL)
     date_parser_set_format(parser, format);
   if (timezone_ != NULL)
@@ -72,7 +72,7 @@ setup(void)
 {
   app_startup();
 
-  setlocale (LC_ALL, "C");
+  setlocale(LC_ALL, "C");
   putenv("TZ=CET-1");
   tzset();
 

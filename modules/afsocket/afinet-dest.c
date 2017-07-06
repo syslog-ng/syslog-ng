@@ -123,7 +123,7 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
 {
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) s;
   LogWriter *writer;
-  TransportMapperInet *transport_mapper_inet G_GNUC_UNUSED = ((TransportMapperInet *) (self->super.transport_mapper));
+  TransportMapperInet *transport_mapper_inet G_GNUC_UNUSED = ((TransportMapperInet *)(self->super.transport_mapper));
 
   writer = afsocket_dd_construct_writer_method(s);
   /* SSL is duplex, so we can certainly expect input from the server, which

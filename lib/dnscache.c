@@ -173,7 +173,7 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
     self->persistent_count++;
 
   /* persistent elements are not counted */
-  if ((gint) (g_hash_table_size(self->cache) - self->persistent_count) > self->options->cache_size)
+  if ((gint)(g_hash_table_size(self->cache) - self->persistent_count) > self->options->cache_size)
     {
       DNSCacheEntry *entry_to_remove = iv_list_entry(self->cache_list.next, DNSCacheEntry, list);
 
@@ -254,7 +254,7 @@ dns_cache_check_hosts(DNSCache *self, glong t)
 
               len = strlen(buf);
               if (buf[len - 1] == '\n')
-                buf[len-1] = 0;
+                buf[len - 1] = 0;
 
               p = strtok_r(buf, " \t", &strtok_saveptr);
               if (!p)

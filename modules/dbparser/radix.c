@@ -243,21 +243,21 @@ r_parser_email(guint8 *str, gint *len, const gchar *param, gpointer state, RPars
   while (g_ascii_isalnum(str[*len]) || (strchr(email, str[*len])))
     (*len)++;
   /* last character of e-mail can not be a period */
-  if (str[*len-1] == '.')
+  if (str[*len - 1] == '.')
     return FALSE;
 
-  if (str[*len] == '@' )
+  if (str[*len] == '@')
     (*len)++;
   else
     return FALSE;
 
   /* Be accepting of any hostnames - if they are in the logs, they
      probably were in the DNS */
-  while (g_ascii_isalnum(str[*len]) || (str[*len] == '-' ))
+  while (g_ascii_isalnum(str[*len]) || (str[*len] == '-'))
     {
       (*len)++;
       count++;
-      while (g_ascii_isalnum(str[*len]) || (str[*len] == '-' ))
+      while (g_ascii_isalnum(str[*len]) || (str[*len] == '-'))
         (*len)++;
 
       if (str[*len] == '.')
@@ -286,11 +286,11 @@ r_parser_hostname(guint8 *str, gint *len, const gchar *param, gpointer state, RP
 
   *len = 0;
 
-  while (g_ascii_isalnum(str[*len]) || (str[*len] == '-' ))
+  while (g_ascii_isalnum(str[*len]) || (str[*len] == '-'))
     {
       (*len)++;
       count++;
-      while (g_ascii_isalnum(str[*len]) || (str[*len] == '-' ))
+      while (g_ascii_isalnum(str[*len]) || (str[*len] == '-'))
         (*len)++;
 
       if (str[*len] == '.')
@@ -313,7 +313,7 @@ _r_parser_lladdr(guint8 *str, gint *len, gint count, gint parts, gpointer state,
     {
       if (!g_ascii_isxdigit(str[*len]) || !g_ascii_isxdigit(str[*len + 1]))
         {
-          if ( i > 1 )
+          if (i > 1)
             {
               (*len) -= 1;
               break;
@@ -707,7 +707,7 @@ r_new_pnode(guint8 *key)
     {
       if (params_len == 3)
         {
-          gchar *state = (gchar *) &(parser_node->state);
+          gchar *state = (gchar *) & (parser_node->state);
 
           parser_node->parse = r_parser_qstring;
           parser_node->type = RPT_QSTRING;

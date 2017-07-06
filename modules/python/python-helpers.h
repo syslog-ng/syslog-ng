@@ -35,10 +35,13 @@ PyObject *_py_create_arg_dict(GHashTable *args);
 PyObject *_py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
 void _py_invoke_void_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
 gboolean _py_invoke_bool_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
-PyObject * _py_get_method(PyObject *instance, const gchar *method_name, const gchar *module);
-void _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class, const gchar *module);
-gboolean _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method_name, GHashTable *args, const gchar *class, const gchar *module);
-gboolean _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class, const gchar *module);
+PyObject *_py_get_method(PyObject *instance, const gchar *method_name, const gchar *module);
+void _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
+                                    const gchar *module);
+gboolean _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method_name, GHashTable *args,
+                                                  const gchar *class, const gchar *module);
+gboolean _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
+                                        const gchar *module);
 void _py_perform_imports(GList *imports);
 
 #endif

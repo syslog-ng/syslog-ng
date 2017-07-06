@@ -29,7 +29,7 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-TestSuite(add_contextual_data, .init=scratch_buffers_allocator_init, .fini=scratch_buffers_allocator_deinit);
+TestSuite(add_contextual_data, .init = scratch_buffers_allocator_init, .fini = scratch_buffers_allocator_deinit);
 
 static void
 _count_records(gpointer arg, const ContextualDataRecord *record)
@@ -167,7 +167,7 @@ static void
 _foreach_get_nvpairs(gpointer arg, const ContextualDataRecord *record)
 {
   TestNVPairStore *store = (TestNVPairStore *) arg;
-  TestNVPair pair = {.name = record->name->str,.value = record->value->str };
+  TestNVPair pair = {.name = record->name->str, .value = record->value->str };
   store->pairs[store->ctr++] = pair;
 }
 
@@ -182,7 +182,7 @@ _assert_context_info_db_contains_name_value_pairs_by_selector(ContextInfoDB *
     number_of_expected_nvpairs)
 {
   TestNVPair result[number_of_expected_nvpairs];
-  TestNVPairStore result_store = {.pairs = result,.ctr = 0 };
+  TestNVPairStore result_store = {.pairs = result, .ctr = 0 };
 
   context_info_db_foreach_record(context_info_db, selector,
                                  _foreach_get_nvpairs,
@@ -225,9 +225,9 @@ Test(add_contextual_data, test_inserted_nv_pairs)
 
   TestNVPair expected_nvpairs[] =
   {
-    {.name = "name-0.0",.value = "value-0.0"},
-    {.name = "name-0.1",.value = "value-0.1"},
-    {.name = "name-0.2",.value = "value-0.2"}
+    {.name = "name-0.0", .value = "value-0.0"},
+    {.name = "name-0.1", .value = "value-0.1"},
+    {.name = "name-0.2", .value = "value-0.2"}
   };
 
   _assert_context_info_db_contains_name_value_pairs_by_selector
@@ -255,18 +255,18 @@ Test(add_contextual_data, test_import_with_valid_csv)
 
   TestNVPair expected_nvpairs_selector1[] =
   {
-    {.name = "name1",.value = "value1"},
-    {.name = "name1.1",.value = "value1.1"},
+    {.name = "name1", .value = "value1"},
+    {.name = "name1.1", .value = "value1.1"},
   };
 
   TestNVPair expected_nvpairs_selector2[] =
   {
-    {.name = "name2",.value = "value2"},
+    {.name = "name2", .value = "value2"},
   };
 
   TestNVPair expected_nvpairs_selector3[] =
   {
-    {.name = "name3",.value = "value3"},
+    {.name = "name3", .value = "value3"},
   };
 
   _assert_context_info_db_contains_name_value_pairs_by_selector(db,
@@ -294,8 +294,8 @@ Test(add_contextual_data, test_import_from_csv_with_crlf_line_ending,
 
   TestNVPair expected_nvpairs[] =
   {
-    {.name = "name1",.value = "value1"},
-    {.name = "name1.1",.value = "value1.1"},
+    {.name = "name1", .value = "value1"},
+    {.name = "name1.1", .value = "value1.1"},
   };
 
   _assert_import_csv_with_single_selector(csv_content, "selector1", expected_nvpairs, ARRAY_SIZE(expected_nvpairs));
@@ -309,7 +309,7 @@ Test(add_contextual_data, test_import_from_csv_with_escaped_double_quote,
 
   TestNVPair expected_nvpairs[] =
   {
-    {.name = "name1",.value = "c\"cc"},
+    {.name = "name1", .value = "c\"cc"},
   };
 
   _assert_import_csv_with_single_selector(csv_content, "selector1", expected_nvpairs, ARRAY_SIZE(expected_nvpairs));
@@ -369,35 +369,35 @@ ParameterizedTestParameters(add_contextual_data, test_import_with_prefix)
   static struct TestNVPairPrefix params[] =
   {
     {
-      .expected = {.name = "name1",.value = "value1"},
+      .expected = {.name = "name1", .value = "value1"},
       .prefix = NULL
     },
     {
-      .expected = {.name = "name1",.value = "value1"},
+      .expected = {.name = "name1", .value = "value1"},
       .prefix = ""
     },
     {
-      .expected = {.name = "aaaname1",.value = "value1"},
+      .expected = {.name = "aaaname1", .value = "value1"},
       .prefix = "aaa"
     },
     {
-      .expected = {.name = "aaa.name1",.value = "value1"},
+      .expected = {.name = "aaa.name1", .value = "value1"},
       .prefix = "aaa."
     },
     {
-      .expected = {.name = ".aaa.name1",.value = "value1"},
+      .expected = {.name = ".aaa.name1", .value = "value1"},
       .prefix = ".aaa."
     },
     {
-      .expected = {.name = ".name1",.value = "value1"},
+      .expected = {.name = ".name1", .value = "value1"},
       .prefix = "."
     },
     {
-      .expected = {.name = "....name1",.value = "value1"},
+      .expected = {.name = "....name1", .value = "value1"},
       .prefix = "...."
     }
   };
-  size_t nb_params = sizeof (params) / sizeof (struct TestNVPairPrefix);
+  size_t nb_params = sizeof(params) / sizeof(struct TestNVPairPrefix);
   return cr_make_param_array(struct TestNVPairPrefix, params, nb_params);
 }
 

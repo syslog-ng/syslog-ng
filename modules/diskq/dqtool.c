@@ -195,7 +195,7 @@ static struct
   const gchar *mode;
   const GOptionEntry *options;
   const gchar *description;
-  gint (*main)(gint argc, gchar *argv[]);
+  gint(*main)(gint argc, gchar *argv[]);
 } modes[] =
 {
   { "cat", cat_options, "Print the contents of a disk queue file", dqtool_cat },
@@ -214,7 +214,7 @@ dqtool_mode(int *argc, char **argv[])
       if ((*argv)[i][0] != '-')
         {
           mode = (*argv)[i];
-          memmove(&(*argv)[i], &(*argv)[i+1], ((*argc) - i) * sizeof(gchar *));
+          memmove(&(*argv)[i], &(*argv)[i + 1], ((*argc) - i) * sizeof(gchar *));
           (*argc)--;
           return mode;
         }

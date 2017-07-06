@@ -41,8 +41,8 @@ stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id,
                       StatsCounterGroupInit counter_group_init)
 {
   self->component = component;
-  self->id = (id?id:"");
-  self->instance = (instance?instance:"");
+  self->id = (id ? id : "");
+  self->instance = (instance ? instance : "");
   self->counter_group_init = counter_group_init;
 }
 
@@ -239,7 +239,7 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 {
   g_assert(type < self->counter_group.capacity);
 
-  return ((1<<type) & self->live_mask);
+  return ((1 << type) & self->live_mask);
 }
 
 gboolean
@@ -247,7 +247,7 @@ stats_cluster_is_indexed(StatsCluster *self, gint type)
 {
   g_assert(type < self->counter_group.capacity);
 
-  return ((1<<type) & self->indexed_mask);
+  return ((1 << type) & self->indexed_mask);
 }
 
 StatsCluster *
@@ -259,7 +259,7 @@ stats_cluster_new(const StatsClusterKey *key)
   self->use_count = 0;
   self->query_key = _stats_build_query_key(self);
   key->counter_group_init.init(&self->key.counter_group_init, &self->counter_group);
-  g_assert(self->counter_group.capacity <= sizeof(self->live_mask)*8);
+  g_assert(self->counter_group.capacity <= sizeof(self->live_mask) * 8);
   return self;
 }
 

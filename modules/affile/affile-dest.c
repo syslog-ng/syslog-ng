@@ -330,7 +330,7 @@ affile_dw_free(LogPipe *s)
 static void
 affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
-  switch(notify_code)
+  switch (notify_code)
     {
     case NC_REOPEN_REQUIRED:
       affile_dw_reopen((AFFileDestWriter *)s);
