@@ -206,6 +206,21 @@ log_proto_regexp_multiline_accumulate_line(LogProtoTextServer *s,
     }
 }
 
+static gboolean
+log_proto_regexp_multi_line_server_validate_options(LogProtoServer *s)
+{
+  LogProtoREMultiLineServer *self = (LogProtoREMultiLineServer *) s;
+
+  if (!self->prefix &&
+      !self->garbage)
+    {
+      msg_error("To follow files in multi-line-mode() 'regexp', 'prefix-garbage', 'prefix-suffix', "
+                "please also specifiy regexps using the multi-line-prefix/garbage options");
+      return FALSE;
+    }
+  return log_proto_text_server_validate_options_method(s);
+}
+
 void
 log_proto_regexp_multiline_server_init(LogProtoREMultiLineServer *self,
                                        LogTransport *transport,
@@ -214,6 +229,7 @@ log_proto_regexp_multiline_server_init(LogProtoREMultiLineServer *self,
                                        MultiLineRegexp *garbage_or_suffix)
 {
   log_proto_text_server_init(&self->super, transport, options);
+  self->super.super.super.validate_options = log_proto_regexp_multi_line_server_validate_options;
   self->super.accumulate_line = log_proto_regexp_multiline_accumulate_line;
   self->prefix = prefix;
   self->garbage = garbage_or_suffix;
