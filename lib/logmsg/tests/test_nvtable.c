@@ -250,7 +250,11 @@ Test(nvtable, test_nvtable_direct)
           tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
           success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
           cr_assert(success);
-          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+          success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                                &(NVReferencedSlice)
+          {
+            STATIC_HANDLE, 1, 126, 0
+          }, NULL);
           cr_assert(success);
           used = tab->used;
 
@@ -267,7 +271,11 @@ Test(nvtable, test_nvtable_direct)
           tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
           success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 64, NULL);
           cr_assert(success);
-          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 63, NULL);
+          success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                                &(NVReferencedSlice)
+          {
+            STATIC_HANDLE, 1, 63, 0
+          }, NULL);
           cr_assert(success);
 
           used = tab->used;
@@ -285,7 +293,11 @@ Test(nvtable, test_nvtable_direct)
           tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
           success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 64, NULL);
           cr_assert(success);
-          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 62, NULL);
+          success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                                &(NVReferencedSlice)
+          {
+            STATIC_HANDLE, 1, 62, 0
+          }, NULL);
           cr_assert(success);
           used = tab->used;
 
@@ -363,7 +375,11 @@ Test(nvtable, test_nvtable_indirect)
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   assert_nvtable(tab, STATIC_HANDLE, value, 128);
   assert_nvtable(tab, handle, value + 1, 126);
@@ -378,7 +394,11 @@ Test(nvtable, test_nvtable_indirect)
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert_not(success);
 
   nv_table_unref(tab);
@@ -390,11 +410,19 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 62, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 62, 0
+  }, NULL);
 
   cr_assert(success);
   cr_assert_eq(used, tab->used);
@@ -417,7 +445,11 @@ Test(nvtable, test_nvtable_indirect)
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   cr_assert_eq(tab->used, used);
   assert_nvtable(tab, STATIC_HANDLE, value, 128);
@@ -435,7 +467,11 @@ Test(nvtable, test_nvtable_indirect)
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   cr_assert_gt(tab->used, used);
   assert_nvtable(tab, STATIC_HANDLE, value, 128);
@@ -452,7 +488,11 @@ Test(nvtable, test_nvtable_indirect)
   success = nv_table_add_value(tab, handle, name, strlen(name), value, 1, NULL);
   cr_assert(success);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert_not(success);
   assert_nvtable(tab, STATIC_HANDLE, value, 128);
   assert_nvtable(tab, handle, value, 1);
@@ -474,10 +514,18 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 122, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    DYN_HANDLE, 1, 122, 0
+  }, NULL);
   cr_assert(success);
   assert_nvtable(tab, STATIC_HANDLE, value, 128);
   assert_nvtable(tab, DYN_HANDLE, value + 1, 126);
@@ -488,10 +536,18 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 122, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    DYN_HANDLE, 1, 122, 0
+  }, NULL);
   cr_assert_not(success);
   assert_nvtable(tab, STATIC_HANDLE, value, 128);
   assert_nvtable(tab, DYN_HANDLE, value + 1, 126);
@@ -507,13 +563,25 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 1, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    DYN_HANDLE, 1, 1, 0
+  }, NULL);
   cr_assert(success);
 
   cr_assert_eq(tab->used, used);
@@ -527,13 +595,25 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 16, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    DYN_HANDLE, 1, 16, 0
+  }, NULL);
   cr_assert(success);
 
   cr_assert_gt(tab->used, used);
@@ -547,13 +627,25 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, 4, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 124, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    DYN_HANDLE, 1, 124, 0
+  }, NULL);
   cr_assert_not(success);
 
   cr_assert_eq(tab->used, used);
@@ -571,13 +663,21 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   success = nv_table_add_value(tab, handle, name, strlen(name), value, 64, NULL);
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 16, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    DYN_HANDLE, 1, 16, 0
+  }, NULL);
   cr_assert(success);
 
   cr_assert_eq(tab->used, used);
@@ -592,13 +692,21 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   success = nv_table_add_value(tab, handle, name, strlen(name), value, 16, NULL);
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 32, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    DYN_HANDLE, 1, 32, 0
+  }, NULL);
   cr_assert(success);
 
   cr_assert_gt(tab->used, used);
@@ -612,13 +720,21 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, 4, 256);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   success = nv_table_add_value(tab, handle, name, strlen(name), value, 16, NULL);
   cr_assert(success);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 124, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    DYN_HANDLE, 1, 124, 0
+  }, NULL);
   cr_assert_not(success);
 
   cr_assert_eq(tab->used, used);
@@ -634,7 +750,11 @@ Test(nvtable, test_nvtable_indirect)
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   cr_assert_eq(used, tab->used);
   assert_nvtable(tab, STATIC_HANDLE, "", 0);
@@ -673,7 +793,11 @@ Test(nvtable, test_nvtable_others)
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value + 32, 32, NULL);
   cr_assert(success);
@@ -687,7 +811,11 @@ Test(nvtable, test_nvtable_others)
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   cr_assert(success);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name),
+                                        &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 126, 0
+  }, NULL);
   cr_assert(success);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value + 32, 32, NULL);
   cr_assert_not(success);

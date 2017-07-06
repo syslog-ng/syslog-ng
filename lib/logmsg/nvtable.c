@@ -458,9 +458,56 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
     }
 }
 
+static void
+nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, const gchar *name, gsize name_len,
+                            const NVReferencedSlice *referenced_slice)
+{
+  entry->vindirect.handle = referenced_slice->handle;
+  entry->vindirect.ofs = referenced_slice->ofs;
+  entry->vindirect.len = referenced_slice->len;
+  entry->vindirect.type = referenced_slice->type;
+
+  if (entry->indirect)
+    return;
+
+  /* previously a non-indirect entry, convert it */
+  entry->indirect = 1;
+
+  if (handle >= self->num_static_entries)
+    {
+      entry->name_len = name_len;
+      memmove(entry->vindirect.name, name, name_len + 1);
+    }
+  else
+    {
+      entry->name_len = 0;
+    }
+}
+
+static gboolean
+nv_table_copy_referenced_value(NVTable *self, NVEntry *ref_entry, NVHandle handle, const gchar *name,
+                               gsize name_len, NVReferencedSlice *ref_slice, gboolean *new_entry)
+{
+
+  gssize ref_length;
+  const gchar *ref_value = nv_table_resolve_entry(self, ref_entry, &ref_length);
+
+  if (ref_slice->ofs > ref_length)
+    {
+      ref_slice->len = 0;
+      ref_slice->ofs = 0;
+    }
+  else
+    {
+      ref_slice->len = MIN(ref_slice->ofs + ref_slice->len, ref_length) - ref_slice->ofs;
+    }
+
+  return nv_table_add_value(self, handle, name, name_len, ref_value + ref_slice->ofs, ref_slice->len, new_entry);
+}
+
 gboolean
-nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle,
-                            guint8 type, guint32 rofs, guint32 rlen, gboolean *new_entry)
+nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len,
+                            NVReferencedSlice *referenced_slice, gboolean *new_entry)
 {
   NVEntry *entry, *ref_entry;
   NVIndexEntry *index_entry;
@@ -468,31 +515,18 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
 
   if (new_entry)
     *new_entry = FALSE;
-  ref_entry = nv_table_get_entry(self, ref_handle, &index_entry);
-  if ((ref_entry && ref_entry->indirect) || handle == ref_handle)
-    {
-      const gchar *ref_value;
-      gssize ref_length;
+  ref_entry = nv_table_get_entry(self, referenced_slice->handle, &index_entry);
 
+  if ((ref_entry && ref_entry->indirect) || handle == referenced_slice->handle)
+    {
       /* NOTE: uh-oh, the to-be-referenced value is already an indirect
        * reference, this is not supported, copy the stuff */
-
-      ref_value = nv_table_resolve_entry(self, ref_entry, &ref_length);
-
-      if (rofs > ref_length)
-        {
-          rlen = 0;
-          rofs = 0;
-        }
-      else
-        {
-          rlen = MIN(rofs + rlen, ref_length) - rofs;
-        }
-      return nv_table_add_value(self, handle, name, name_len, ref_value + rofs, rlen, new_entry);
+      return nv_table_copy_referenced_value(self, ref_entry, handle, name, name_len, referenced_slice, new_entry);
     }
 
+
   entry = nv_table_get_entry(self, handle, &index_entry);
-  if (!entry && !new_entry && (rlen == 0 || !ref_entry))
+  if ((!entry && !new_entry && referenced_slice->len == 0) || !ref_entry)
     {
       /* we don't store zero length matches unless the caller is
        * interested in whether a new entry was created. It is used by
@@ -501,6 +535,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
 
       return TRUE;
     }
+
   if (entry && !entry->indirect && entry->referenced)
     {
       gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
@@ -508,32 +543,18 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
       if (!nv_table_foreach_entry(self, nv_table_make_direct, data))
         return FALSE;
     }
+
   if (entry && (((guint) entry->alloc_len) >= NV_ENTRY_INDIRECT_HDR + name_len + 1))
     {
-      /* this value already exists and the new reference  fits in the old space */
+      /* this value already exists and the new reference fits in the old space */
+      nv_table_set_indirect_entry(self, handle, entry, name, name_len, referenced_slice);
       ref_entry->referenced = TRUE;
-      entry->vindirect.handle = ref_handle;
-      entry->vindirect.ofs = rofs;
-      entry->vindirect.len = rlen;
-      entry->vindirect.type = type;
-      if (!entry->indirect)
-        {
-          /* previously a non-indirect entry, convert it */
-          entry->indirect = 1;
-          if (handle >= self->num_static_entries)
-            {
-              entry->name_len = name_len;
-              memmove(entry->vindirect.name, name, name_len + 1);
-            }
-          else
-            {
-              entry->name_len = 0;
-            }
-        }
       return TRUE;
     }
   else if (!entry && new_entry)
-    *new_entry = TRUE;
+    {
+      *new_entry = TRUE;
+    }
 
   if (!nv_table_reserve_table_entry(self, handle, &index_entry))
     return FALSE;
@@ -544,19 +565,9 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
     }
 
   ofs = nv_table_get_ofs_for_an_entry(self, entry);
-  entry->vindirect.handle = ref_handle;
-  entry->vindirect.ofs = rofs;
-  entry->vindirect.len = rlen;
-  entry->vindirect.type = type;
-  entry->indirect = 1;
+
+  nv_table_set_indirect_entry(self, handle, entry, name, name_len, referenced_slice);
   ref_entry->referenced = TRUE;
-  if (handle >= self->num_static_entries)
-    {
-      entry->name_len = name_len;
-      memmove(entry->vindirect.name, name, name_len + 1);
-    }
-  else
-    entry->name_len = 0;
 
   nv_table_set_table_entry(self, handle, ofs, index_entry);
 
