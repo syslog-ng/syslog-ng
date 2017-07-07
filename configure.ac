@@ -256,6 +256,10 @@ AC_ARG_ENABLE(geoip,
               [  --enable-geoip          Enable GeoIP support (default: auto)]
               ,,enable_geoip="auto")
 
+AC_ARG_ENABLE(geoip2,
+              [  --enable-geoip2          Enable GeoIP2 support (default: auto)]
+              ,,enable_geoip2="auto")
+
 AC_ARG_ENABLE(riemann,
               [  --disable-riemann       Disable riemann destination]
               ,,enable_riemann="auto")
@@ -302,7 +306,7 @@ if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
-            redis systemd geoip riemann ipv6 smtp native python java java_modules"
+            redis systemd geoip geoip2 riemann ipv6 smtp native python java java_modules"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
        if test "x$modstate" = "xauto"; then
@@ -837,6 +841,31 @@ if test "x$enable_geoip" = "xyes" || test "x$enable_geoip" = "xauto"; then
                 AC_MSG_ERROR([Could not find libgeoip, and geoip support was explicitly enabled.])
         fi
         enable_geoip="$with_geoip"
+fi
+
+dnl ***************************************************************************
+dnl geoip2 headers/libraries
+dnl ***************************************************************************
+if test "x$enable_geoip2" = "xyes" || test "x$enable_geoip2" = "xauto"; then
+        if test "x$MAXMINDDB_LIBS" != "x"; then
+                AC_MSG_CHECKING([for MAXMINDDB])
+                AC_MSG_RESULT([yes (MAXMINDDB_LIBS set, will use that.)])
+                with_maxminddb="yes"
+        else
+                AC_MSG_CHECKING([for MAXMINDDB])
+                AC_CHECK_LIB(maxminddb, MMDB_open, MAXMINDDB_LIBS="-lmaxminddb"; with_maxminddb="yes", with_maxminddb="no")
+                AC_SUBST(MAXMINDDB_LIBS)
+        fi
+
+        if test "x$with_maxminddb" = "xno" && test "x$enable_geoip2" = "xyes"; then
+                AC_MSG_ERROR([Could not find libmaxminddb, and geoip2 support was explicitly enabled.])
+        fi
+
+        if test "x$with_maxminddb" = "xyes"; then
+                AC_CONFIG_LINKS([modules/geoip2/tests/test.mmdb:modules/geoip2/tests/test.mmdb])
+        fi
+
+        enable_geoip2="$with_maxminddb"
 fi
 
 dnl ***************************************************************************
@@ -1606,6 +1635,7 @@ AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
+AM_CONDITIONAL(ENABLE_GEOIP2, [test "$enable_geoip2" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
 AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$with_ivykis" = "xinternal"])
 AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
@@ -1731,6 +1761,7 @@ echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
+echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}"
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
