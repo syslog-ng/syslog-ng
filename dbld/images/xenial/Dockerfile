@@ -19,9 +19,6 @@ RUN apt-get update -qq && cat dev-dependencies.txt | grep -v "#" | xargs apt-get
 ADD addons.txt .
 RUN apt-get update -qq && cat addons.txt | grep -v "#" | xargs apt-get install -y
 
-RUN cd /tmp && wget http://ftp.de.debian.org/debian/pool/main/libn/libnative-platform-java/libnative-platform-jni_0.11-5_$(dpkg --print-architecture).deb
-RUN cd /tmp && dpkg -i libnative-platform-jni*.deb
-
 ADD gosu.pubkey /tmp
 # grab gosu for easy step-down from root
 RUN (cat /tmp/gosu.pubkey | gpg --import) \
