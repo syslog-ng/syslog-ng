@@ -234,8 +234,6 @@ afprogram_sd_init(LogPipe *s)
       log_reader_set_options(self->reader,
                              s,
                              &self->reader_options,
-                             STATS_LEVEL0,
-                             SCS_PROGRAM,
                              self->super.super.id,
                              self->process_info.cmdline->str);
     }
@@ -308,6 +306,8 @@ afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg)
   afprogram_set_inherit_environment(&self->process_info, TRUE);
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
+  self->reader_options.super.stats_level = STATS_LEVEL0;
+  self->reader_options.super.stats_source = SCS_PROGRAM;
   return &self->super.super;
 }
 

@@ -163,6 +163,8 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->filename = g_string_new(filename);
 
   file_reader_options_defaults(&self->file_reader_options);
+  self->file_reader_options.reader_options.super.stats_level = STATS_LEVEL1;
+
   file_opener_options_defaults(&self->file_opener_options);
 
 
@@ -176,7 +178,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   /* FIXME: should be delegated to the opener */
   self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
-  self->file_reader_options.stats_source = SCS_FILE;
+  self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
@@ -213,7 +215,7 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
   self->file_opener_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
-  self->file_reader_options.stats_source = SCS_PIPE;
+  self->file_reader_options.reader_options.super.stats_source = SCS_PIPE;
 
   if (cfg_is_config_version_older(cfg, 0x0302))
     {

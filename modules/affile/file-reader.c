@@ -181,8 +181,6 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
   log_reader_set_options(self->reader,
                          s,
                          &self->options->reader_options,
-                         STATS_LEVEL1,
-                         self->options->stats_source,
                          self->owner->super.id,
                          self->filename->str);
   if (check_immediately)
