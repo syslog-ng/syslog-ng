@@ -472,14 +472,14 @@ log_reader_free(LogPipe *s)
 }
 
 void
-log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source,
+log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options,
                        const gchar *stats_id, const gchar *stats_instance)
 {
   LogReader *self = (LogReader *) s;
 
   gboolean pos_tracked = ((self->proto != NULL) && log_proto_server_is_position_tracked(self->proto));
 
-  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance,
+  log_source_set_options(&self->super, &options->super, stats_id, stats_instance,
                          (options->flags & LR_THREADED), pos_tracked, control->expr_node);
 
   log_pipe_unref(self->control);
