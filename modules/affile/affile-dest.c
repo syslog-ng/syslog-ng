@@ -176,7 +176,8 @@ affile_dw_reopen(AFFileDestWriter *self)
     {
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
-      proto = file_opener_construct_dst_proto(self->owner->file_opener, transport, &self->owner->writer_options.proto_options.super);
+      proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
+                                              &self->owner->writer_options.proto_options.super);
 
       main_loop_call((void *(*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }

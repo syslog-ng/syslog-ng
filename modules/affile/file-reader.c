@@ -329,7 +329,8 @@ file_reader_remove_persist_state(FileReader *self)
 }
 
 FileReader *
-file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner, GlobalConfig *cfg)
+file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
+                GlobalConfig *cfg)
 {
   FileReader *self = g_new0(FileReader, 1);
 
