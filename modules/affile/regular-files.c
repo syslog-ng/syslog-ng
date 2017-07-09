@@ -22,6 +22,7 @@
  */
 #include "file-specializations.h"
 #include "transport/transport-file.h"
+#include "logproto/logproto-multiline-server.h"
 #include "logproto-file-writer.h"
 #include "messages.h"
 
@@ -30,12 +31,11 @@
 #include <unistd.h>
 #include <errno.h>
 
-typedef struct _FileOpenerRegularFiles
+typedef struct _FileOpenerRegularSourceFiles
 {
   FileOpener super;
-  const LogWriterOptions *writer_options;
-  gboolean *use_fsync;
-} FileOpenerRegularFiles;
+  LogProtoMultiLineServerOptions *multi_line_options;
+} FileOpenerRegularSourceFiles;
 
 static gboolean
 _prepare_open(FileOpener *self, const gchar *name)
@@ -64,21 +64,38 @@ _construct_src_transport(FileOpener *self, gint fd)
   return transport;
 }
 
-FileOpener *
-file_opener_for_regular_source_files_new(void)
+static LogProtoServer *
+_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoServerOptions *proto_options)
 {
-  FileOpenerRegularFiles *self = g_new0(FileOpenerRegularFiles, 1);
+  FileOpenerRegularSourceFiles *self = (FileOpenerRegularSourceFiles *) s;
+
+  return log_proto_multiline_server_new(transport, proto_options, self->multi_line_options);
+}
+
+FileOpener *
+file_opener_for_regular_source_files_new(const LogProtoMultiLineServerOptions *multi_line_options)
+{
+  FileOpenerRegularSourceFiles *self = g_new0(FileOpenerRegularSourceFiles, 1);
 
   file_opener_init_instance(&self->super);
   self->super.prepare_open = _prepare_open;
   self->super.construct_transport = _construct_src_transport;
+  self->super.construct_src_proto = _construct_src_proto;
+  self->multi_line_options = multi_line_options;
   return &self->super;
 }
+
+typedef struct _FileOpenerRegularDestFiles
+{
+  FileOpener super;
+  const LogWriterOptions *writer_options;
+  gboolean *use_fsync;
+} FileOpenerRegularDestFiles;
 
 static LogProtoClient *
 _construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptions *proto_options)
 {
-  FileOpenerRegularFiles *self = (FileOpenerRegularFiles *) s;
+  FileOpenerRegularDestFiles *self = (FileOpenerRegularDestFiles *) s;
 
   return log_proto_file_writer_new(transport, proto_options,
                                    self->writer_options->flush_lines,
@@ -94,7 +111,7 @@ _construct_transport(FileOpener *s, gint fd)
 FileOpener *
 file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync)
 {
-  FileOpenerRegularFiles *self = g_new0(FileOpenerRegularFiles, 1);
+  FileOpenerRegularDestFiles *self = g_new0(FileOpenerRegularDestFiles, 1);
 
   file_opener_init_instance(&self->super);
   self->super.construct_transport = _construct_transport;

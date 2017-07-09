@@ -26,9 +26,9 @@
 
 #include "driver.h"
 #include "logreader.h"
-#include "logproto/logproto-regexp-multiline-server.h"
 #include "file-opener.h"
 #include "file-reader.h"
+#include "logproto/logproto-multiline-server.h"
 
 typedef struct _AFFileSourceDriver
 {
@@ -38,7 +38,7 @@ typedef struct _AFFileSourceDriver
   FileOpener *file_opener;
   FileReaderOptions file_reader_options;
   FileOpenerOptions file_opener_options;
-  /* state information to follow a set of files using a wildcard expression */
+  LogProtoMultiLineServerOptions multi_line_options;
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);

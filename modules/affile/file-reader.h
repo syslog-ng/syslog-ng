@@ -24,7 +24,6 @@
 
 #include "driver.h"
 #include "logreader.h"
-#include "logproto/logproto-multiline-server.h"
 #include "file-opener.h"
 
 typedef struct _FileReaderOptions
@@ -32,7 +31,6 @@ typedef struct _FileReaderOptions
   gint pad_size;
   gint follow_freq;
   gboolean restore_state;
-  LogProtoMultiLineServerOptions multi_line_options;
   LogReaderOptions reader_options;
   gboolean exit_on_eof;
 } FileReaderOptions;

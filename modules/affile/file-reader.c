@@ -133,20 +133,14 @@ _construct_proto(FileReader *self, gint fd)
       return format_handler->construct_proto(&reader_options->parse_options, transport, proto_options);
     }
 
-  if (self->opener->construct_src_proto)
-    return file_opener_construct_src_proto(self->opener, transport, proto_options);
-
-  /* FIXME: pad_size and multi_line_mode should be embedded in FileOpenerOptions and be delegated to it !!!! */
+  /* FIXME: pad_size */
   if (self->options->pad_size)
     {
       proto_options->position_tracking_enabled = TRUE;
       return log_proto_padded_record_server_new(transport, proto_options, self->options->pad_size);
     }
-  else
-    {
-      proto_options->position_tracking_enabled = TRUE;
-      return log_proto_multiline_server_new(transport, proto_options, &self->options->multi_line_options);
-    }
+
+  return file_opener_construct_src_proto(self->opener, transport, proto_options);
 }
 
 static void
@@ -367,7 +361,6 @@ void
 file_reader_options_defaults(FileReaderOptions *options)
 {
   log_reader_options_defaults(&options->reader_options);
-  log_proto_multi_line_server_options_defaults(&options->multi_line_options);
   options->reader_options.parse_options.flags |= LP_LOCAL;
   options->restore_state = FALSE;
 }
@@ -376,12 +369,10 @@ void
 file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group)
 {
   log_reader_options_init(&options->reader_options, cfg, group);
-  log_proto_multi_line_server_options_init(&options->multi_line_options);
 }
 
 void
 file_reader_options_deinit(FileReaderOptions *options)
 {
-  log_proto_multi_line_server_options_destroy(&options->multi_line_options);
   log_reader_options_destroy(&options->reader_options);
 }

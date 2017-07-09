@@ -84,11 +84,11 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 static gboolean
 _are_multi_line_settings_invalid(AFFileSourceDriver *self)
 {
-  gboolean is_garbage_mode = self->file_reader_options.multi_line_options.mode == MLM_PREFIX_GARBAGE;
-  gboolean is_suffix_mode = self->file_reader_options.multi_line_options.mode == MLM_PREFIX_SUFFIX;
+  gboolean is_garbage_mode = self->multi_line_options.mode == MLM_PREFIX_GARBAGE;
+  gboolean is_suffix_mode = self->multi_line_options.mode == MLM_PREFIX_SUFFIX;
 
-  return (!is_garbage_mode && !is_suffix_mode) && (self->file_reader_options.multi_line_options.prefix
-                                                   || self->file_reader_options.multi_line_options.garbage);
+  return (!is_garbage_mode && !is_suffix_mode) && (self->multi_line_options.prefix
+                                                   || self->multi_line_options.garbage);
 }
 
 static gboolean
@@ -102,6 +102,7 @@ affile_sd_init(LogPipe *s)
 
   file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
   file_opener_options_init(&self->file_opener_options, cfg);
+  log_proto_multi_line_server_options_init(&self->multi_line_options);
 
   file_opener_set_options(self->file_opener, &self->file_opener_options);
   self->file_reader = file_reader_new(self->filename->str, &self->file_reader_options,
@@ -142,6 +143,7 @@ affile_sd_free(LogPipe *s)
   g_string_free(self->filename, TRUE);
   file_reader_options_deinit(&self->file_reader_options);
   file_opener_options_deinit(&self->file_opener_options);
+  log_proto_multi_line_server_options_destroy(&self->multi_line_options);
   log_src_driver_free(s);
 }
 
@@ -163,7 +165,7 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->file_reader_options.reader_options.super.stats_level = STATS_LEVEL1;
 
   file_opener_options_defaults(&self->file_opener_options);
-
+  log_proto_multi_line_server_options_defaults(&self->multi_line_options);
 
   return self;
 }
@@ -189,7 +191,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
         self->file_reader_options.follow_freq = 1000;
     }
   if (self->file_reader_options.follow_freq > 0)
-    self->file_opener = file_opener_for_regular_source_files_new();
+    self->file_opener = file_opener_for_regular_source_files_new(&self->multi_line_options);
   else if (_is_linux_proc_kmsg(self->filename->str))
     {
       self->file_opener_options.needs_privileges = TRUE;
@@ -198,7 +200,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
   else if (_is_linux_dev_kmsg(self->filename->str))
     self->file_opener = file_opener_for_devkmsg_new();
   else
-    self->file_opener = file_opener_for_regular_source_files_new();
+    self->file_opener = file_opener_for_regular_source_files_new(&self->multi_line_options);
 
   self->file_reader_options.restore_state = self->file_reader_options.follow_freq > 0;
   return &self->super.super;

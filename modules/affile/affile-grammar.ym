@@ -99,6 +99,7 @@ source_affile
 		last_file_reader_options = &((WildcardSourceDriver *) last_driver)->file_reader_options;
 		last_reader_options = &last_file_reader_options->reader_options;
 	        last_file_perm_options = &((WildcardSourceDriver *) last_driver)->file_opener_options.file_perm_options;
+	        last_multi_line_options = &((WildcardSourceDriver *) last_driver)->multi_line_options;
 	} '(' source_wildcard_params ')' { $$ = last_driver; }
 	;
 	
@@ -118,6 +119,7 @@ source_affile_params
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
 	    last_reader_options = &last_file_reader_options->reader_options;
 	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
+	    last_multi_line_options = &((AFFileSourceDriver *) last_driver)->multi_line_options;
 	  }
           source_affile_options                 { $$ = last_driver; free($1); }
         ;
@@ -132,7 +134,7 @@ source_affile_option
 	| KW_FOLLOW_FREQ '(' nonnegative_integer ')'	{ file_reader_options_set_follow_freq(last_file_reader_options, ($3 * 1000)); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_file_reader_options->pad_size = $3; }
 	| KW_EXIT_ON_EOF '(' yesno ')'		        { file_reader_options_set_exit_on_eof(last_file_reader_options, $3); }
-	| { last_multi_line_options = &last_file_reader_options->multi_line_options; } multi_line_option
+	| multi_line_option
         | source_reader_option
         ;
 
@@ -155,6 +157,7 @@ source_afpipe_params
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
 	    last_reader_options = &last_file_reader_options->reader_options;
 	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
+	    last_multi_line_options = &((AFFileSourceDriver *) last_driver)->multi_line_options;
 	  }
 	  source_afpipe_options				{ $$ = last_driver; free($1); }
 	;
@@ -167,7 +170,7 @@ source_afpipe_options
 source_afpipe_option
 	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'			{ last_file_reader_options->pad_size = $3; }
-	| { last_multi_line_options = &last_file_reader_options->multi_line_options; } multi_line_option
+	| multi_line_option
 	| file_perm_option
 	| source_reader_option
 	;

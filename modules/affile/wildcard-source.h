@@ -27,6 +27,7 @@
 #include "file-reader.h"
 #include "directory-monitor.h"
 #include "directory-monitor-factory.h"
+#include "logproto/logproto-multiline-server.h"
 
 #define MINIMUM_WINDOW_SIZE 100
 #define DEFAULT_MAX_FILES 100
@@ -44,6 +45,7 @@ typedef struct _WildcardSourceDriver
 
   FileReaderOptions file_reader_options;
   FileOpenerOptions file_opener_options;
+  LogProtoMultiLineServerOptions multi_line_options;
 
   GPatternSpec *compiled_pattern;
   GHashTable *file_readers;

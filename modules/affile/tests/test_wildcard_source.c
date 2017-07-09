@@ -94,9 +94,9 @@ Test(wildcard_source, test_option_inheritance)
                                                              "multi-line-garbage(garbage)");
   cr_assert_eq(driver->file_reader_options.follow_freq, 10000);
   cr_assert_eq(driver->file_reader_options.pad_size, 5);
-  cr_assert_eq(driver->file_reader_options.multi_line_options.mode, MLM_PREFIX_GARBAGE);
-  cr_assert(driver->file_reader_options.multi_line_options.prefix != NULL);
-  cr_assert(driver->file_reader_options.multi_line_options.garbage != NULL);
+  cr_assert_eq(driver->multi_line_options.mode, MLM_PREFIX_GARBAGE);
+  cr_assert(driver->multi_line_options.prefix != NULL);
+  cr_assert(driver->multi_line_options.garbage != NULL);
 }
 
 Test(wildcard_source, test_option_duplication)
