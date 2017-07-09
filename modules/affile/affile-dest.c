@@ -773,6 +773,6 @@ afpipe_dd_new(gchar *filename, GlobalConfig *cfg)
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
   self->writer_options.stats_source = SCS_PIPE;
-  self->file_opener = file_opener_for_named_pipes_new();
+  self->file_opener = file_opener_for_dest_named_pipes_new();
   return &self->super.super;
 }

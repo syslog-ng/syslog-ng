@@ -34,7 +34,7 @@
 typedef struct _FileOpenerRegularSourceFiles
 {
   FileOpener super;
-  LogProtoMultiLineServerOptions *multi_line_options;
+  const LogProtoMultiLineServerOptions *multi_line_options;
 } FileOpenerRegularSourceFiles;
 
 static gboolean
@@ -69,6 +69,7 @@ _construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoServerOptio
 {
   FileOpenerRegularSourceFiles *self = (FileOpenerRegularSourceFiles *) s;
 
+  proto_options->position_tracking_enabled = TRUE;
   return log_proto_multiline_server_new(transport, proto_options, self->multi_line_options);
 }
 

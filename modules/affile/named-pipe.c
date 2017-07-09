@@ -32,6 +32,12 @@
 #include <fcntl.h>
 #include <errno.h>
 
+typedef struct _FileOpenerSourceNamedPipe
+{
+  FileOpener super;
+  const LogProtoMultiLineServerOptions *multi_line_options;
+} FileOpenerSourceNamedPipe;
+
 static gboolean
 _prepare_open(FileOpener *self, const gchar *name)
 {
@@ -82,6 +88,35 @@ _construct_src_transport(FileOpener *self, gint fd)
   return transport;
 }
 
+static LogProtoServer *
+_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoServerOptions *proto_options)
+{
+  FileOpenerSourceNamedPipe *self = (FileOpenerSourceNamedPipe *) s;
+
+  return log_proto_multiline_server_new(transport, proto_options, self->multi_line_options);
+}
+
+
+FileOpener *
+file_opener_for_source_named_pipes_new(const LogProtoMultiLineServerOptions *multi_line_options)
+{
+  FileOpenerSourceNamedPipe *self = g_new0(FileOpenerSourceNamedPipe, 1);
+
+  file_opener_init_instance(&self->super);
+  self->super.prepare_open = _prepare_open;
+  self->super.get_open_flags = _get_open_flags;
+  self->super.construct_transport = _construct_src_transport;
+  self->super.construct_src_proto = _construct_src_proto;
+  self->multi_line_options = multi_line_options;
+  return &self->super;
+}
+
+static LogTransport *
+_construct_dst_transport(FileOpener *self, gint fd)
+{
+  return log_transport_pipe_new(fd);
+}
+
 static LogProtoClient *
 _construct_dst_proto(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options)
 {
@@ -89,13 +124,13 @@ _construct_dst_proto(FileOpener *self, LogTransport *transport, LogProtoClientOp
 }
 
 FileOpener *
-file_opener_for_named_pipes_new(void)
+file_opener_for_dest_named_pipes_new(void)
 {
   FileOpener *self = file_opener_new();
 
   self->prepare_open = _prepare_open;
   self->get_open_flags = _get_open_flags;
-  self->construct_transport = _construct_src_transport;
+  self->construct_transport = _construct_dst_transport;
   self->construct_dst_proto = _construct_dst_proto;
   return self;
 }

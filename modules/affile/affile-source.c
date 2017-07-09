@@ -228,7 +228,7 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
   if (self->file_reader_options.exit_on_eof)
     self->file_opener = file_opener_for_stdin_new();
   else
-    self->file_opener = file_opener_for_named_pipes_new();
+    self->file_opener = file_opener_for_source_named_pipes_new(&self->multi_line_options);
 
   return &self->super.super;
 }

@@ -82,7 +82,7 @@ open_regular_source_file(gchar *fname, gint extra_flags, gint *fd)
 static gboolean
 open_named_pipe(gchar *fname, gint extra_flags, gint *fd)
 {
-  FileOpener *file_opener = file_opener_for_named_pipes_new();
+  FileOpener *file_opener = file_opener_for_dest_named_pipes_new();
   return open_fd(file_opener, fname, extra_flags, fd);
 }
 

@@ -28,7 +28,8 @@
 #include "logproto/logproto-multiline-server.h"
 #include "logwriter.h"
 
-FileOpener *file_opener_for_named_pipes_new(void);
+FileOpener *file_opener_for_source_named_pipes_new(const LogProtoMultiLineServerOptions *multi_line_options);
+FileOpener *file_opener_for_dest_named_pipes_new(void);
 FileOpener *file_opener_for_regular_source_files_new(const LogProtoMultiLineServerOptions *multi_line_options);
 FileOpener *file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync);
 FileOpener *file_opener_for_stdin_new(void);
