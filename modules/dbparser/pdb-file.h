@@ -28,5 +28,6 @@
 
 gint pdb_file_detect_version(const gchar *pdbfile, GError **error);
 gboolean pdb_file_validate(const gchar *filename, GError **error);
+gboolean pdb_file_validate_in_tests(const gchar *filename, GError **error);
 
 #endif
