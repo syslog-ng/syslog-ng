@@ -946,7 +946,6 @@ relex:
           msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file to indicate this explicitly");
           cfg_set_version(configuration, 0x0201);
         }
-      cfg_load_candidate_modules(configuration);
       self->non_pragma_seen = TRUE;
     }
 

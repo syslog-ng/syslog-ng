@@ -326,6 +326,7 @@ cfg_new(gint version)
 
   cfg_tree_init_instance(&self->tree, self);
   cfg_register_builtin_plugins(self);
+  cfg_load_candidate_modules(self);
   return self;
 }
 
@@ -373,10 +374,7 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 void
 cfg_load_candidate_modules(GlobalConfig *self)
 {
-  if (!self->candidate_plugins)
-    {
-      plugin_load_candidate_modules(self);
-    }
+  plugin_load_candidate_modules(self);
 
 #if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
   if (!plugin_load_module("license", self, NULL))
