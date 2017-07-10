@@ -8,6 +8,7 @@
 #   added nicer options field
 # Modified for BalaBit Ltd's syslog-ng package by Tamas Pal Mar, 1st 2006
 # Modified for BalaBit's syslog-ng package to make it multi-instance-able by György Pásztor Mar, 21th 2016
+# Minor modifications for Syslog-ng OSE by Janos Szigetvari Jul, 10th 2017
 
 . /lib/svc/share/smf_include.sh
 
@@ -42,11 +43,11 @@ then
 else
         CONFFILE=${CONFFILE:-${SYSLOGNG_PREFIX}/etc/syslog-ng:${instance}.conf}
         SYSLOGPIDFILE=/var/run/syslog:${instance}.pid
-	QDISKDIR="${SYSLOGNG_PREFIX}/var:${instance}"
-        PIDFILE=${QDISKDIR}/run/syslog-ng.pid
-        [ -d "$QDISKDIR" ] || mkdir "$QDISKDIR"
-        [ -d "$QDISKDIR/run" ] || mkdir "$QDISKDIR/run"
-        METHOD_OPTIONS="--cfgfile=$CONFFILE --pidfile=${PIDFILE} --qdisk-dir=${QDISKDIR} --persist-file=${QDISKDIR}/syslog-ng.persist --control=${QDISKDIR}/run/syslog-ng.ctl"
+        VARDIR="${SYSLOGNG_PREFIX}/var:${instance}"
+        PIDFILE=${VARDIR}/run/syslog-ng.pid
+        [ -d "$VARDIR" ] || mkdir "$VARDIR"
+        [ -d "$VARDIR/run" ] || mkdir "$VARDIR/run"
+        METHOD_OPTIONS="--cfgfile=$CONFFILE --pidfile=${PIDFILE} --persist-file=${VARDIR}/syslog-ng.persist --control=${VARDIR}/run/syslog-ng.ctl"
 fi
 
 export SYSLOGNG_PREFIX
@@ -82,7 +83,7 @@ slng_clean_pidfile() {
 
 slng_stop() {
         # if we have a contract, we should simply use smf_kill_contract to terminate the process
-	contract=`/usr/bin/svcprop -p restarter/contract ${SMF_FMRI}`
+        contract=`/usr/bin/svcprop -p restarter/contract ${SMF_FMRI}`
         if [ -n "${contract}" ]; then
                 smf_kill_contract ${contract} TERM 1 $MAXWAIT
                 [ $? -ne 0 ] && exit $SMF_EXIT_ERR_FATAL

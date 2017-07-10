@@ -45,6 +45,7 @@ EXTRA_DIST += \
 	\
 	contrib/solaris-packaging/solaris10_install.txt \
 	contrib/solaris-packaging/syslog-ng.example.xml \
+	contrib/solaris-packaging/syslog-ng-sol11-smf.example.xml \
 	contrib/solaris-packaging/syslog-ng.method \
 	\
 	contrib/freebsd-packaging/syslog-ng.rc.d \
