@@ -12,6 +12,24 @@ output of syslog-ng --version
 
 (Name and version of OS)
 
+## Debug bundle
+
+Create a debug bundle on your system with the syslog-ng-debun script which is included in the syslog-ng package.
+
+Overwiew of the CLI options of syslog-ng-debun:
+-r: run actual information gathering
+-d: run syslog-ng in debug mode
+-p: perform packet capture
+-s: do strace
+-t: timeout period for running debug/pcap/strace
+-w: wait period before starting debug mode
+-l: light information gathering (respects privacy)
+-R: alternate installation directory for syslog-ng
+
+```
+$ syslog-ng-debun -r
+```
+
 # Issue
 
 ## Failure
