@@ -13,7 +13,7 @@
             grouping='require_all'
             restart_on='none'
             type='service'>
-            <service_fmri value='svc:/milestone/sysconfig' />
+            <service_fmri value='svc:/milestone/self-assembly-complete' />
     </dependency>
 
     <dependency
@@ -97,7 +97,6 @@
     </property_group>
 
     <property_group name='config' type='application'>
-            <!-- default property settings for syslogd(1m) -->
 
             <!-- authorization to modify the configuration properties -->
             <propval name='value_authorization' type='astring'

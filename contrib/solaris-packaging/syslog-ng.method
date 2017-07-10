@@ -7,24 +7,55 @@
 # minor fix by Bojan Zdrnja, Apr, 11th 2003
 #   added nicer options field
 # Modified for BalaBit Ltd's syslog-ng package by Tamas Pal Mar, 1st 2006
-#
+# Modified for BalaBit's syslog-ng package to make it multi-instance-able by György Pásztor Mar, 21th 2016
 
-SYSLOGNG_PREFIX=/opt/syslog-ng
-SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
-CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
-PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
-SYSLOGPIDFILE=/var/run/syslog.pid
+. /lib/svc/share/smf_include.sh
+
+result=${SMF_EXIT_OK}
+
+# Read command line arguments
+method="$1"		# %m
+instance="$2" 		# %i
+
+# Set defaults; SMF_FMRI should have been set, but just in case.
+if [ -z "$SMF_FMRI" ]; then
+    SMF_FMRI="svc:/system/syslog-ng:${instance}"
+fi
 
 OPTIONS=
 MAXWAIT=30
 
-. /lib/svc/share/smf_include.sh
+DEFAULTFILE=/etc/default/syslog-ng
+[ -f ${DEFAULTFILE} ] && . ${DEFAULTFILE}
+
+[ -f ${DEFAULTFILE}:${instance} ] && . ${DEFAULTFILE}:${instance}
+
+SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
+SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
+
+if [ "$instance" = "default" ];
+then
+        CONFFILE=${CONFFILE:-${SYSLOGNG_PREFIX}/etc/syslog-ng.conf}
+        PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
+        SYSLOGPIDFILE=/var/run/syslog.pid
+        METHOD_OPTIONS=
+else
+        CONFFILE=${CONFFILE:-${SYSLOGNG_PREFIX}/etc/syslog-ng:${instance}.conf}
+        SYSLOGPIDFILE=/var/run/syslog:${instance}.pid
+	QDISKDIR="${SYSLOGNG_PREFIX}/var:${instance}"
+        PIDFILE=${QDISKDIR}/run/syslog-ng.pid
+        [ -d "$QDISKDIR" ] || mkdir "$QDISKDIR"
+        [ -d "$QDISKDIR/run" ] || mkdir "$QDISKDIR/run"
+        METHOD_OPTIONS="--cfgfile=$CONFFILE --pidfile=${PIDFILE} --qdisk-dir=${QDISKDIR} --persist-file=${QDISKDIR}/syslog-ng.persist --control=${QDISKDIR}/run/syslog-ng.ctl"
+fi
+
+export SYSLOGNG_PREFIX
 
 test -x ${SYSLOGNG} || exit $SMF_EXIT_ERR_FATAL
 test -r ${CONFFILE} || exit $SMF_EXIT_ERR_CONFIG
 
 check_syntax() {
-        ${SYSLOGNG} --syntax-only
+        ${SYSLOGNG} --syntax-only --cfgfile=${CONFFILE}
         _rval=$?
         [ $_rval -eq 0 ] || exit $SMF_EXIT_ERR_CONFIG
 }
@@ -42,11 +73,20 @@ slng_waitforpid() {
         return $_cnt
 }
 
+slng_clean_pidfile() {
+        if [ -h $SYSLOGPIDFILE ];then
+                rm -f $SYSLOGPIDFILE
+        fi
+        rm -f $PIDFILE
+}
+
 slng_stop() {
         # if we have a contract, we should simply use smf_kill_contract to terminate the process
-        if [ -n "$2" ]; then
-                smf_kill_contract $2 TERM 1 $MAXWAIT
+	contract=`/usr/bin/svcprop -p restarter/contract ${SMF_FMRI}`
+        if [ -n "${contract}" ]; then
+                smf_kill_contract ${contract} TERM 1 $MAXWAIT
                 [ $? -ne 0 ] && exit $SMF_EXIT_ERR_FATAL
+                slng_clean_pidfile
                 return $SMF_EXIT_OK
         fi
 
@@ -71,10 +111,7 @@ slng_stop() {
         fi
 
         if [ $_ret -eq 0 ] ;then
-                rm -f $PIDFILE
-                if [ -h $SYSLOGPIDFILE ];then
-                        rm -f $SYSLOGPIDFILE
-                fi
+                slng_clean_pidfile
                 return $SMF_EXIT_OK
         fi
         return $SMF_EXIT_ERR_FATAL
@@ -110,7 +147,7 @@ slng_start () {
                     fi
                 fi
                 check_syntax
-                $SYSLOGNG $OPTIONS
+                $SYSLOGNG $METHOD_OPTIONS $OPTIONS
                 # remove symlinks
                 if [ -h $SYSLOGPIDFILE ];then
                         rm -f $SYSLOGPIDFILE
@@ -123,13 +160,13 @@ slng_start () {
         return $SMF_EXIT_ERR_FATAL
 }
 
-case "$1" in
+case "$method" in
         start)
-                slng_start $*
+                slng_start
                 ;;
 
         stop)
-                slng_stop $*
+                slng_stop
                 ;;
         refresh)
                 if [ -f $PIDFILE ]; then
@@ -138,13 +175,13 @@ case "$1" in
                 fi
                 ;;
         restart)
-                slng_stop $*
+                slng_stop
                 retval=$?
                 [ $retval -ne 0 ] && exit $retval
-                slng_start $*
+                slng_start
                 ;;
         *)
-                echo "Usage: $0 { start | stop | restart | reload }"
+                echo "Usage: $0 { start | stop | restart | refresh }"
                 exit 1
                 ;;
 esac
