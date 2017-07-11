@@ -53,3 +53,4 @@ python-ply
 pylint
 gradle
 devscripts
+libmaxminddb-dev
