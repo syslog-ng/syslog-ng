@@ -84,7 +84,7 @@ exit:
 static const gchar *
 _get_xsddir_in_build(void)
 {
-#ifdef SYSLOG_NG_ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   const gchar *srcdir;
   static gchar path[256];
 
