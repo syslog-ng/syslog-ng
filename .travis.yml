@@ -70,9 +70,10 @@ script:
         return $S;
       };
     else
-      make --keep-going -j 3 install;
+      make --keep-going -j 3;
       S=$?;
       if [ "$S" = "0" ]; then
+        make install
         . scripts/get-libjvm-path.sh || return $?;
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
         make func-test V=1;
