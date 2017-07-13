@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.3.20170528"
+version="0.3.5.20170710"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -26,6 +26,7 @@ fi
 ###
 
 argv_backup="${@}"
+engage=0
 os="none"
 dist="none"
 default_debug_params="-Fedv --enable-core"
@@ -93,6 +94,7 @@ cat <<END
 Usage: syslog-ng-debun [OPTIONS]
 
 General Options:
+  -r		Run actual information gathering
   -h		Show this help page
   -R [dir]	Syslog-ng-PE's alternate install dir, instead of /opt/syslog-ng
   -W [dir]	Work dir, where debug bundle will be placed
@@ -127,8 +129,11 @@ exit ${1:-0}
 ### Parsing optional parameters
 ###
 
-while getopts "hldD:pP:w:i:W:R:t:s" opt ; do
+while getopts "rhldD:pP:w:i:W:R:t:s" opt ; do
 	case $opt in
+		r)
+			engage=1
+			;;
 		d)
 			[ -n "$debug_params" ] && debun_usage 2
 			debug_params="$default_debug_params"
@@ -180,14 +185,18 @@ while getopts "hldD:pP:w:i:W:R:t:s" opt ; do
 			;;
 	esac
 done
+
+if [ "${engage}" -eq 0 ]; then
+	debun_usage
+	exit 0
+fi
+
 # Parameter consistency checks
 [ -n "$pcap_iface" ] && [ -z "$pcap_params" ] && debun_usage 2 "Pcap interface without packet caputre params (-p|-P args)"
 [ -n "$waitforit" ] && [ -z "$debug_params" ] && debun_usage 2 "Waiting without debug mode run (-d|-D args)"
 [ -n "$timeout" ] && [ -z "$debug_mode" ] && debun_usage 2 "Timeout without debug mode or packet capture"
 [ -n "$privacy_mode" ] && [ "x$debug_params" = "x$default_debug_params" ] && debug_params="$default_ldebug_params"
-#if [ -n "$pcap_params" ]; then
-#	hash tcpdump 2>/dev/null || debun_usage 2 "Packet capture requested, but no tcpdump in your PATH"
-#fi
+
 syslogbin=${binprefix}/sbin/syslog-ng
 vardir=${binprefix}/var
 piddir=${vardir}/run
@@ -329,6 +338,7 @@ acquire_debun_info () {
 	pwd > ${tmpdir}/debun.pwd
 	echo "${0} ${argv_backup}" > ${tmpdir}/debun.argv
 	echo "${version}" > ${tmpdir}/debun.version
+	id > ${tmpdir}/debun.runas
 }
 
 acquire_system_info () {
@@ -634,6 +644,13 @@ acquire_syslog_info () {
 	head -1 ${tmpdir}/syslog.version
 	${syslogbin}-ctl stats > ${tmpdir}/syslog.stats 2>&1
 	echo ${syslogbin}-ctl stats
+	${syslogbin}-ctl query get "*" > ${tmpdir}/syslog.query.all 2>/dev/null
+	echo ${syslogbin}-ctl query get "*"
+	if [ -x ${syslogbin}-query ]; then
+		#if we reach this brach, then syslog.query.all - as generated above - will not contain any meaningful data
+		${syslogbin}-query sum "*" > ${tmpdir}/syslog.query.all 2>/dev/null
+		echo ${syslogbin}-query sum "*"
+	fi
 	if ${syslogbin}-ctl show-license-info > ${tmpdir}/syslog.license-usage 2>&1; then
 		${syslogbin}-ctl show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
 	fi
@@ -646,6 +663,8 @@ acquire_syslog_info () {
 }
 
 acquire_syslog_var () {
+	ls -laR "${vardir}/" >${tmpdir}/syslog.lslR.var 2>&1
+
 	$duks "${vardir}/" >${tmpdir}/syslog.duks.var
 	read vardu dir <${tmpdir}/syslog.duks.var
 	mkdir ${tmpdir}/var
@@ -703,7 +722,9 @@ acquire_syslog_startup_method () {
 	for i in /etc/default/syslog-ng* ; do
 		[ -f "${i}" ] && cp "${i}" "${tmpdir}/sys.startup.default.${i##*/}"
 	done
-	[ -f /etc/sysconfig/syslog-ng ] && cp /etc/sysconfig/syslog-ng "${tmpdir}/sys.startup.sysconfig"
+	for i in /etc/sysconfig/syslog-ng* ; do
+		[ -f "${i}" ] && cp "${i}" "${tmpdir}/sys.startup.sysconfig.${i##*/}"
+	done
 }
 
 acquire_syslog_startup_initscript () {
