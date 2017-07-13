@@ -73,10 +73,11 @@ EXTRA_DIST += \
 	contrib/balabit-initscripts/init-functions \
 	\
 	contrib/upstart/syslog-ng.conf.upstart	\
-	contrib/systemd/syslog-ng.service \
+	contrib/systemd/syslog-ng@.service \
+	contrib/systemd/syslog-ng@default \
 	\
 	contrib/valgrind/syslog-ng.supp
 
 if ENABLE_SYSTEMD_UNIT_INSTALL
-systemdsystemunit_DATA = contrib/systemd/syslog-ng.service
+systemdsystemunit_DATA = contrib/systemd/syslog-ng@.service
 endif
