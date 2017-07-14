@@ -26,7 +26,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/affile-grammar.y				\
 	modules/affile/affile-parser.c				\
 	modules/affile/affile-parser.h				\
-	modules/affile/affile-plugin.c
+	modules/affile/affile-plugin.c \
+  modules/affile/affile-dest-internal-queue-filter.h	
 
 if HAVE_INOTIFY
   modules_affile_libaffile_la_SOURCES +=      \
