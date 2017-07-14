@@ -181,6 +181,22 @@ plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar 
   return NULL;
 }
 
+static gboolean
+_is_log_pipe(Plugin *self)
+{
+  switch (self->type)
+    {
+    case LL_CONTEXT_SOURCE:
+    case LL_CONTEXT_DESTINATION:
+    case LL_CONTEXT_PARSER:
+    case LL_CONTEXT_FILTER:
+    case LL_CONTEXT_REWRITE:
+      return TRUE;
+    default:
+      return FALSE;
+    }
+}
+
 /* construct a plugin instance by parsing a configuration file */
 gpointer
 plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer arg)
@@ -217,6 +233,13 @@ plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer a
     {
       cfg_parser_cleanup(self->parser, instance);
       instance = NULL;
+      return NULL;
+    }
+
+  if (_is_log_pipe(self))
+    {
+      LogPipe *p = (LogPipe *)instance;
+      p->plugin_name = g_strdup(self->name);
     }
 
   return instance;
