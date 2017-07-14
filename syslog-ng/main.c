@@ -269,6 +269,7 @@ main(int argc, char *argv[])
    */
   g_process_start();
   app_startup();
+  main_loop_options.server_mode = ((SYSLOG_NG_ENABLE_FORCED_SERVER_MODE) == 1 ? TRUE : FALSE);
   main_loop_init(main_loop, &main_loop_options);
   rc = main_loop_read_and_init_config(main_loop);
   app_finish_app_startup_after_cfg_init();
