@@ -220,6 +220,7 @@ struct _LogPipe
      by a plugin, see the explanation in the comment on the top. */
   gpointer queue_data;
   void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
+  gchar *plugin_name;
   gboolean (*init)(LogPipe *self);
   gboolean (*deinit)(LogPipe *self);
 
