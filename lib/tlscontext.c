@@ -33,6 +33,21 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
 
+struct _TLSContext
+{
+  TLSMode mode;
+  gint verify_mode;
+  gchar *key_file;
+  gchar *cert_file;
+  gchar *ca_dir;
+  gchar *crl_dir;
+  gchar *cipher_suite;
+  SSL_CTX *ssl_ctx;
+  GList *trusted_fingerpint_list;
+  GList *trusted_dn_list;
+  gint ssl_options;
+};
+
 gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
 {
