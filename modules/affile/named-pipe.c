@@ -20,9 +20,11 @@
  * COPYING for details.
  *
  */
-#include "file-specializations.h"
+#include "named-pipe.h"
+#include "affile-source.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
+#include "file-opener.h"
 #include "logproto/logproto-text-client.h"
 #include "messages.h"
 
@@ -105,4 +107,28 @@ file_opener_for_named_pipes_new(void)
   self->construct_src_proto = _construct_src_proto;
   self->construct_dst_proto = _construct_dst_proto;
   return self;
+}
+
+LogDriver *
+pipe_sd_new(gchar *filename, GlobalConfig *cfg)
+{
+  AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
+
+  self->file_reader_options.reader_options.super.stats_source = SCS_PIPE;
+
+  if (cfg_is_config_version_older(cfg, 0x0302))
+    {
+      msg_warning_once("WARNING: the expected message format is being changed for pipe() to improve "
+                       "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
+                       "applications which bypass the syslog() API, you might "
+                       "need the 'expect-hostname' flag to get the old behaviour back");
+    }
+  else
+    {
+      self->file_reader_options.reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
+    }
+
+  self->file_opener = file_opener_for_named_pipes_new();
+
+  return &self->super.super;
 }

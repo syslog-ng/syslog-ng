@@ -23,6 +23,7 @@
 
 #include <criterion/criterion.h>
 #include "affile/file-opener.h"
+#include "affile/named-pipe.h"
 #include "affile/file-specializations.h"
 #include "messages.h"
 

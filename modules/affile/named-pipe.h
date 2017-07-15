@@ -21,15 +21,14 @@
  *
  */
 
-#ifndef AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
-#define AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
+#ifndef AFFILE_NAMED_PIPE_H_INCLUDED
+#define AFFILE_NAMED_PIPE_H_INCLUDED
 
+#include "driver.h"
+#include "cfg.h"
 #include "file-opener.h"
-#include "logwriter.h"
 
-FileOpener *file_opener_for_regular_source_files_new(void);
-FileOpener *file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync);
-FileOpener *file_opener_for_devkmsg_new(void);
-FileOpener *file_opener_for_prockmsg_new(void);
+FileOpener *file_opener_for_named_pipes_new(void);
+LogDriver *pipe_sd_new(gchar *filename, GlobalConfig *cfg);
 
 #endif

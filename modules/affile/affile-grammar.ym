@@ -40,6 +40,7 @@
 #include "plugin.h"
 #include "cfg-grammar.h"
 #include "stdin.h"
+#include "named-pipe.h"
 
 #include <string.h>
 
@@ -169,7 +170,7 @@ source_wildcard_option
 source_afpipe_params
 	: string
 	  {
-	    last_driver = *instance = afpipe_sd_new($1, configuration);
+	    last_driver = *instance = pipe_sd_new($1, configuration);
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
 	    last_reader_options = &last_file_reader_options->reader_options;
 	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;

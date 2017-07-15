@@ -25,6 +25,7 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/file-specializations.h			\
 	modules/affile/regular-files.c				\
 	modules/affile/named-pipe.c				\
+	modules/affile/named-pipe.h				\
 	modules/affile/linux-kmsg.c				\
 	modules/affile/stdin.c					\
 	modules/affile/stdin.h					\

@@ -41,7 +41,6 @@ typedef struct _AFFileSourceDriver
 
 AFFileSourceDriver *affile_sd_new_instance(gchar *filename, GlobalConfig *cfg);
 LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
-LogDriver *afpipe_sd_new(gchar *filename, GlobalConfig *cfg);
 
 
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
