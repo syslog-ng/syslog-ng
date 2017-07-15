@@ -89,16 +89,14 @@ _construct_src_transport(FileOpener *self, gint fd)
 }
 
 static LogProtoServer *
-_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoServerOptions *proto_options)
+_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
 {
-  FileOpenerSourceNamedPipe *self = (FileOpenerSourceNamedPipe *) s;
-
-  return log_proto_multiline_server_new(transport, proto_options, self->multi_line_options);
+  return log_proto_file_reader_new(transport, proto_options);
 }
 
 
 FileOpener *
-file_opener_for_source_named_pipes_new(const LogProtoMultiLineServerOptions *multi_line_options)
+file_opener_for_source_named_pipes_new(void)
 {
   FileOpenerSourceNamedPipe *self = g_new0(FileOpenerSourceNamedPipe, 1);
 
@@ -107,7 +105,6 @@ file_opener_for_source_named_pipes_new(const LogProtoMultiLineServerOptions *mul
   self->super.get_open_flags = _get_open_flags;
   self->super.construct_transport = _construct_src_transport;
   self->super.construct_src_proto = _construct_src_proto;
-  self->multi_line_options = multi_line_options;
   return &self->super;
 }
 

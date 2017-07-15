@@ -28,7 +28,6 @@
 
 typedef struct _FileReaderOptions
 {
-  gint pad_size;
   gint follow_freq;
   gboolean restore_state;
   LogReaderOptions reader_options;
@@ -45,6 +44,12 @@ typedef struct _FileReader
   LogReader *reader;
   gboolean is_pipe;
 } FileReader;
+
+static inline LogProtoFileReaderOptions *
+file_reader_options_get_log_proto_options(FileReaderOptions *options)
+{
+  return (LogProtoFileReaderOptions *) &options->reader_options.proto_options;
+}
 
 FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner, GlobalConfig *cfg);
 

@@ -21,19 +21,22 @@
  *
  */
 
-#ifndef AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
-#define AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
+#ifndef LOG_PROTO_FILE_READER_H_INCLUDED
+#define LOG_PROTO_FILE_READER_H_INCLUDED
 
-#include "file-opener.h"
 #include "logproto/logproto-multiline-server.h"
-#include "logwriter.h"
 
-FileOpener *file_opener_for_source_named_pipes_new(void);
-FileOpener *file_opener_for_dest_named_pipes_new(void);
-FileOpener *file_opener_for_regular_source_files_new(void);
-FileOpener *file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync);
-FileOpener *file_opener_for_stdin_new(void);
-FileOpener *file_opener_for_devkmsg_new(void);
-FileOpener *file_opener_for_prockmsg_new(void);
+typedef struct _LogProtoFileReaderOptions
+{
+  LogProtoMultiLineServerOptions super;
+  gint pad_size;
+} LogProtoFileReaderOptions;
+
+LogProtoServer *log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options);
+
+void log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options);
+void log_proto_file_reader_options_init(LogProtoFileReaderOptions *options);
+void log_proto_file_reader_options_destroy(LogProtoFileReaderOptions *options);
+
 
 #endif

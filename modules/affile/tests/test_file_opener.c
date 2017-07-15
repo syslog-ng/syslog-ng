@@ -75,7 +75,7 @@ open_fd(FileOpener *file_opener, gchar *fname, gint extra_flags, gint *fd)
 static gboolean
 open_regular_source_file(gchar *fname, gint extra_flags, gint *fd)
 {
-  FileOpener *file_opener = file_opener_for_regular_source_files_new(NULL);
+  FileOpener *file_opener = file_opener_for_regular_source_files_new();
   return open_fd(file_opener, fname, extra_flags, fd);
 }
 

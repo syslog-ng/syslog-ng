@@ -36,6 +36,7 @@ enum
 
 typedef struct _LogProtoMultiLineServerOptions
 {
+  LogProtoServerOptions super;
   gint mode;
   MultiLineRegexp *prefix;
   MultiLineRegexp *garbage;
@@ -43,9 +44,7 @@ typedef struct _LogProtoMultiLineServerOptions
 
 LogProtoServer *
 log_proto_multiline_server_new(LogTransport *transport,
-                               const LogProtoServerOptions *proto_options,
                                const LogProtoMultiLineServerOptions *options);
-
 
 gboolean log_proto_multi_line_server_options_set_mode(LogProtoMultiLineServerOptions *options, const gchar *mode);
 gboolean log_proto_multi_line_server_options_set_prefix(LogProtoMultiLineServerOptions *options, const gchar *prefix_regexp, GError **error);

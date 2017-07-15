@@ -21,19 +21,34 @@
  *
  */
 
-#ifndef AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
-#define AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
-
-#include "file-opener.h"
+#include "logproto-file-reader.h"
+#include "logproto/logproto-record-server.h"
 #include "logproto/logproto-multiline-server.h"
-#include "logwriter.h"
 
-FileOpener *file_opener_for_source_named_pipes_new(void);
-FileOpener *file_opener_for_dest_named_pipes_new(void);
-FileOpener *file_opener_for_regular_source_files_new(void);
-FileOpener *file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync);
-FileOpener *file_opener_for_stdin_new(void);
-FileOpener *file_opener_for_devkmsg_new(void);
-FileOpener *file_opener_for_prockmsg_new(void);
+LogProtoServer *
+log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options)
+{
+  if (options->pad_size > 0)
+    return log_proto_padded_record_server_new(transport, &options->super.super, options->pad_size);
+  else
+    return log_proto_multiline_server_new(transport, &options->super);
+}
 
-#endif
+void
+log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options)
+{
+  log_proto_multi_line_server_options_defaults(&options->super);
+  options->pad_size = 0;
+}
+
+void
+log_proto_file_reader_options_init(LogProtoFileReaderOptions *options)
+{
+  log_proto_multi_line_server_options_init(&options->super);
+}
+
+void
+log_proto_file_reader_options_destroy(LogProtoFileReaderOptions *options)
+{
+  log_proto_multi_line_server_options_destroy(&options->super);
+}

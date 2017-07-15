@@ -120,7 +120,7 @@ static LogProtoServer *
 _construct_proto(FileReader *self, gint fd)
 {
   LogReaderOptions *reader_options = &self->options->reader_options;
-  LogProtoServerOptions *proto_options = &reader_options->proto_options.super;
+  LogProtoFileReaderOptions *proto_options = file_reader_options_get_log_proto_options(self->options);
   LogTransport *transport;
   MsgFormatHandler *format_handler;
 
@@ -129,17 +129,18 @@ _construct_proto(FileReader *self, gint fd)
   format_handler = reader_options->parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
     {
-      proto_options->position_tracking_enabled = TRUE;
-      return format_handler->construct_proto(&reader_options->parse_options, transport, proto_options);
+      proto_options->super.super.position_tracking_enabled = TRUE;
+      return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super.super);
     }
 
+#if 0
   /* FIXME: pad_size */
   if (self->options->pad_size)
     {
       proto_options->position_tracking_enabled = TRUE;
       return log_proto_padded_record_server_new(transport, proto_options, self->options->pad_size);
     }
-
+#endif
   return file_opener_construct_src_proto(self->opener, transport, proto_options);
 }
 
@@ -361,6 +362,7 @@ void
 file_reader_options_defaults(FileReaderOptions *options)
 {
   log_reader_options_defaults(&options->reader_options);
+  log_proto_file_reader_options_defaults(file_reader_options_get_log_proto_options(options));
   options->reader_options.parse_options.flags |= LP_LOCAL;
   options->restore_state = FALSE;
 }
@@ -369,10 +371,12 @@ void
 file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group)
 {
   log_reader_options_init(&options->reader_options, cfg, group);
+  log_proto_file_reader_options_init(file_reader_options_get_log_proto_options(options));
 }
 
 void
 file_reader_options_deinit(FileReaderOptions *options)
 {
   log_reader_options_destroy(&options->reader_options);
+  log_proto_file_reader_options_destroy(file_reader_options_get_log_proto_options(options));
 }

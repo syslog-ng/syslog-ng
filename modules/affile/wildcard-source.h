@@ -45,7 +45,6 @@ typedef struct _WildcardSourceDriver
 
   FileReaderOptions file_reader_options;
   FileOpenerOptions file_opener_options;
-  LogProtoMultiLineServerOptions multi_line_options;
 
   GPatternSpec *compiled_pattern;
   GHashTable *file_readers;

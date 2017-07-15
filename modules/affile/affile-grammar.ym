@@ -43,7 +43,7 @@
 #include <string.h>
 
 FileReaderOptions *last_file_reader_options;
-LogProtoMultiLineServerOptions *last_multi_line_options;
+LogProtoFileReaderOptions *last_log_proto_options;
 }
 
 %name-prefix "affile_"
@@ -99,7 +99,7 @@ source_affile
 		last_file_reader_options = &((WildcardSourceDriver *) last_driver)->file_reader_options;
 		last_reader_options = &last_file_reader_options->reader_options;
 	        last_file_perm_options = &((WildcardSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-	        last_multi_line_options = &((WildcardSourceDriver *) last_driver)->multi_line_options;
+	        last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
 	} '(' source_wildcard_params ')' { $$ = last_driver; }
 	;
 	
@@ -119,7 +119,7 @@ source_affile_params
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
 	    last_reader_options = &last_file_reader_options->reader_options;
 	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-	    last_multi_line_options = &((AFFileSourceDriver *) last_driver)->multi_line_options;
+            last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
 	  }
           source_affile_options                 { $$ = last_driver; free($1); }
         ;
@@ -132,23 +132,24 @@ source_affile_options
 source_affile_option
 	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ file_reader_options_set_follow_freq(last_file_reader_options, (long) ($3 * 1000)); }
 	| KW_FOLLOW_FREQ '(' nonnegative_integer ')'	{ file_reader_options_set_follow_freq(last_file_reader_options, ($3 * 1000)); }
-	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_file_reader_options->pad_size = $3; }
+	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_log_proto_options->pad_size = $3; }
 	| KW_EXIT_ON_EOF '(' yesno ')'		        { file_reader_options_set_exit_on_eof(last_file_reader_options, $3); }
 	| multi_line_option
         | source_reader_option
         ;
 
 source_wildcard_option
-    : KW_BASE_DIR '(' string ')' { wildcard_sd_set_base_dir(last_driver, $3); free($3); }
-    | KW_FILENAME_PATTERN '(' string ')' {
-        wildcard_sd_set_filename_pattern(last_driver, $3);
-        free($3); }
-    | KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
-    | KW_MAX_FILES '(' LL_NUMBER ')' { wildcard_sd_set_max_files(last_driver, $3); }
-    | KW_MONITOR_METHOD '(' string ')' { CHECK_ERROR(wildcard_sd_set_monitor_method(last_driver, $3), @3, "Invalid monitor-method"); free($3); }
-    | source_affile_option
-    ;
-
+        : KW_BASE_DIR '(' string ')' { wildcard_sd_set_base_dir(last_driver, $3); free($3); }
+        | KW_FILENAME_PATTERN '(' string ')'
+          {
+	    wildcard_sd_set_filename_pattern(last_driver, $3);
+	    free($3);
+          }
+	| KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
+	| KW_MAX_FILES '(' LL_NUMBER ')' { wildcard_sd_set_max_files(last_driver, $3); }
+	| KW_MONITOR_METHOD '(' string ')' { CHECK_ERROR(wildcard_sd_set_monitor_method(last_driver, $3), @3, "Invalid monitor-method"); free($3); }
+	| source_affile_option
+	;
 
 source_afpipe_params
 	: string
@@ -157,7 +158,7 @@ source_afpipe_params
 	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
 	    last_reader_options = &last_file_reader_options->reader_options;
 	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-	    last_multi_line_options = &((AFFileSourceDriver *) last_driver)->multi_line_options;
+            last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
 	  }
 	  source_afpipe_options				{ $$ = last_driver; free($1); }
 	;
@@ -169,7 +170,7 @@ source_afpipe_options
 
 source_afpipe_option
 	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
-	| KW_PAD_SIZE '(' nonnegative_integer ')'			{ last_file_reader_options->pad_size = $3; }
+	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_log_proto_options->pad_size = $3; }
 	| multi_line_option
 	| file_perm_option
 	| source_reader_option
@@ -181,21 +182,21 @@ source_afpipe_option
 multi_line_option
 	: KW_MULTI_LINE_MODE '(' string ')'
           {
-            CHECK_ERROR(log_proto_multi_line_server_options_set_mode(last_multi_line_options, $3), @3, "Invalid multi-line mode");
+            CHECK_ERROR(log_proto_multi_line_server_options_set_mode(&last_log_proto_options->super, $3), @3, "Invalid multi-line mode");
 	    free($3);
           }
 	| KW_MULTI_LINE_PREFIX '(' string ')'
           {
             GError *error = NULL;
 
-            CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_prefix(last_multi_line_options, $3, &error), @3, error, "error compiling multi-line regexp");
+            CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_prefix(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
             free($3);
           }
 	| KW_MULTI_LINE_GARBAGE '(' string ')'
 	  {
             GError *error = NULL;
 
-	    CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(last_multi_line_options, $3, &error), @3, error, "error compiling multi-line regexp");
+	    CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
 	    free($3);
 	  }
 	;

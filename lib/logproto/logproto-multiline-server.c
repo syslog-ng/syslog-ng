@@ -32,23 +32,22 @@
 
 LogProtoServer *
 log_proto_multiline_server_new(LogTransport *transport,
-                               const LogProtoServerOptions *proto_options,
                                const LogProtoMultiLineServerOptions *options)
 {
   switch (options->mode)
     {
     case MLM_INDENTED:
-      return log_proto_indented_multiline_server_new(transport, proto_options);
+      return log_proto_indented_multiline_server_new(transport, &options->super);
     case MLM_PREFIX_GARBAGE:
-      return log_proto_prefix_garbage_multiline_server_new(transport, proto_options,
+      return log_proto_prefix_garbage_multiline_server_new(transport, &options->super,
                                                            options->prefix,
                                                            options->garbage);
     case MLM_PREFIX_SUFFIX:
-      return log_proto_prefix_suffix_multiline_server_new(transport, proto_options,
+      return log_proto_prefix_suffix_multiline_server_new(transport, &options->super,
                                                           options->prefix,
                                                           options->garbage);
     case MLM_NONE:
-      return log_proto_text_server_new(transport, proto_options);
+      return log_proto_text_server_new(transport, &options->super);
     }
   g_assert_not_reached();
 }

@@ -235,7 +235,6 @@ _init(LogPipe *s)
 
   _init_reader_options(self, cfg);
   _init_opener_options(self, cfg);
-  log_proto_multi_line_server_options_init(&self->multi_line_options);
 
   _add_directory_monitor(self, self->base_dir);
   return TRUE;
@@ -320,7 +319,6 @@ _free(LogPipe *s)
   g_hash_table_unref(self->directory_monitors);
   file_reader_options_deinit(&self->file_reader_options);
   file_opener_options_deinit(&self->file_opener_options);
-  log_proto_multi_line_server_options_destroy(&self->multi_line_options);
   log_src_driver_free(s);
 }
 
@@ -350,7 +348,6 @@ wildcard_sd_new(GlobalConfig *cfg)
 
   self->monitor_method = MM_AUTO;
 
-  log_proto_multi_line_server_options_defaults(&self->multi_line_options);
   file_reader_options_defaults(&self->file_reader_options);
   file_opener_options_defaults(&self->file_opener_options);
   self->file_reader_options.follow_freq = 1000;
@@ -360,7 +357,7 @@ wildcard_sd_new(GlobalConfig *cfg)
 
   self->max_files = DEFAULT_MAX_FILES;
 
-  self->file_opener = file_opener_for_regular_source_files_new(&self->multi_line_options);
+  self->file_opener = file_opener_for_regular_source_files_new();
 
   return &self->super.super;
 }

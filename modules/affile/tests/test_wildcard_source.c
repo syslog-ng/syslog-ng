@@ -93,10 +93,10 @@ Test(wildcard_source, test_option_inheritance)
                                                              "multi-line-prefix(\\d+)"
                                                              "multi-line-garbage(garbage)");
   cr_assert_eq(driver->file_reader_options.follow_freq, 10000);
-  cr_assert_eq(driver->file_reader_options.pad_size, 5);
-  cr_assert_eq(driver->multi_line_options.mode, MLM_PREFIX_GARBAGE);
-  cr_assert(driver->multi_line_options.prefix != NULL);
-  cr_assert(driver->multi_line_options.garbage != NULL);
+  cr_assert_eq(file_reader_options_get_log_proto_options(&driver->file_reader_options)->pad_size, 5);
+  cr_assert_eq(file_reader_options_get_log_proto_options(&driver->file_reader_options)->super.mode, MLM_PREFIX_GARBAGE);
+  cr_assert(file_reader_options_get_log_proto_options(&driver->file_reader_options)->super.prefix != NULL);
+  cr_assert(file_reader_options_get_log_proto_options(&driver->file_reader_options)->super.garbage != NULL);
 }
 
 Test(wildcard_source, test_option_duplication)

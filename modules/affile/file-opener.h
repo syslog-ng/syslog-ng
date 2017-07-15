@@ -31,6 +31,7 @@
 #include "transport/logtransport.h"
 #include "logproto/logproto-server.h"
 #include "logproto/logproto-client.h"
+#include "logproto-file-reader.h"
 #include <string.h>
 
 typedef enum
@@ -53,7 +54,7 @@ struct _FileOpener
   gboolean (*prepare_open)(FileOpener *self, const gchar *name);
   gint (*get_open_flags)(FileOpener *self, FileDirection dir);
   LogTransport *(*construct_transport)(FileOpener *self, gint fd);
-  LogProtoServer *(*construct_src_proto)(FileOpener *self, LogTransport *transport, LogProtoServerOptions *proto_options);
+  LogProtoServer *(*construct_src_proto)(FileOpener *self, LogTransport *transport, LogProtoFileReaderOptions *proto_options);
   LogProtoClient *(*construct_dst_proto)(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options);
 };
 
@@ -64,7 +65,7 @@ file_opener_construct_transport(FileOpener *self, gint fd)
 }
 
 static inline LogProtoServer *
-file_opener_construct_src_proto(FileOpener *self, LogTransport *transport, LogProtoServerOptions *proto_options)
+file_opener_construct_src_proto(FileOpener *self, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
 {
   return self->construct_src_proto(self, transport, proto_options);
 }

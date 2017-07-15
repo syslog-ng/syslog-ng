@@ -33,7 +33,7 @@
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
 
-#define LOG_PROTO_SERVER_OPTIONS_SIZE 32
+#define LOG_PROTO_SERVER_OPTIONS_SIZE 128
 
 struct _LogProtoServerOptions
 {

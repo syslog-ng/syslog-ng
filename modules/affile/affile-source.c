@@ -81,6 +81,8 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   log_src_driver_queue_method(s, msg, path_options, user_data);
 }
 
+#if 0
+/* FIXME */
 static gboolean
 _are_multi_line_settings_invalid(AFFileSourceDriver *self)
 {
@@ -90,6 +92,7 @@ _are_multi_line_settings_invalid(AFFileSourceDriver *self)
   return (!is_garbage_mode && !is_suffix_mode) && (self->multi_line_options.prefix
                                                    || self->multi_line_options.garbage);
 }
+#endif
 
 static gboolean
 affile_sd_init(LogPipe *s)
@@ -102,19 +105,20 @@ affile_sd_init(LogPipe *s)
 
   file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
   file_opener_options_init(&self->file_opener_options, cfg);
-  log_proto_multi_line_server_options_init(&self->multi_line_options);
 
   file_opener_set_options(self->file_opener, &self->file_opener_options);
   self->file_reader = file_reader_new(self->filename->str, &self->file_reader_options,
                                       self->file_opener,
                                       &self->super, cfg);
 
+#if 0
   if (_are_multi_line_settings_invalid(self))
     {
       msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based "
                 "(prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
       return FALSE;
     }
+#endif
 
   log_pipe_append(&self->file_reader->super, &self->super.super.super);
   return log_pipe_init(&self->file_reader->super);
@@ -143,7 +147,6 @@ affile_sd_free(LogPipe *s)
   g_string_free(self->filename, TRUE);
   file_reader_options_deinit(&self->file_reader_options);
   file_opener_options_deinit(&self->file_opener_options);
-  log_proto_multi_line_server_options_destroy(&self->multi_line_options);
   log_src_driver_free(s);
 }
 
@@ -165,7 +168,6 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->file_reader_options.reader_options.super.stats_level = STATS_LEVEL1;
 
   file_opener_options_defaults(&self->file_opener_options);
-  log_proto_multi_line_server_options_defaults(&self->multi_line_options);
 
   return self;
 }
@@ -191,7 +193,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
         self->file_reader_options.follow_freq = 1000;
     }
   if (self->file_reader_options.follow_freq > 0)
-    self->file_opener = file_opener_for_regular_source_files_new(&self->multi_line_options);
+    self->file_opener = file_opener_for_regular_source_files_new();
   else if (_is_linux_proc_kmsg(self->filename->str))
     {
       self->file_opener_options.needs_privileges = TRUE;
@@ -200,7 +202,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
   else if (_is_linux_dev_kmsg(self->filename->str))
     self->file_opener = file_opener_for_devkmsg_new();
   else
-    self->file_opener = file_opener_for_regular_source_files_new(&self->multi_line_options);
+    self->file_opener = file_opener_for_regular_source_files_new();
 
   self->file_reader_options.restore_state = self->file_reader_options.follow_freq > 0;
   return &self->super.super;
@@ -228,7 +230,7 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
   if (self->file_reader_options.exit_on_eof)
     self->file_opener = file_opener_for_stdin_new();
   else
-    self->file_opener = file_opener_for_source_named_pipes_new(&self->multi_line_options);
+    self->file_opener = file_opener_for_source_named_pipes_new();
 
   return &self->super.super;
 }
