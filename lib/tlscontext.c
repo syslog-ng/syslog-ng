@@ -305,10 +305,38 @@ file_exists(const gchar *fname)
   return TRUE;
 }
 
+static void
+tls_context_setup_verify_mode(TLSContext *self)
+{
+  gint verify_mode = 0;
+
+  switch (self->verify_mode)
+    {
+    case TVM_NONE:
+      verify_mode = SSL_VERIFY_NONE;
+      break;
+    case TVM_OPTIONAL | TVM_UNTRUSTED:
+      verify_mode = SSL_VERIFY_NONE;
+      break;
+    case TVM_OPTIONAL | TVM_TRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+      break;
+    case TVM_REQUIRED | TVM_UNTRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      break;
+    case TVM_REQUIRED | TVM_TRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      break;
+    default:
+      g_assert_not_reached();
+    }
+
+  SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
+}
+
 static gboolean
 tls_context_setup_context(TLSContext *self)
 {
-  gint verify_mode = 0;
   gint verify_flags = X509_V_FLAG_POLICY_CHECK;
 
   if (self->mode == TM_CLIENT)
@@ -337,28 +365,7 @@ tls_context_setup_context(TLSContext *self)
 
   X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
 
-  switch (self->verify_mode)
-    {
-    case TVM_NONE:
-      verify_mode = SSL_VERIFY_NONE;
-      break;
-    case TVM_OPTIONAL | TVM_UNTRUSTED:
-      verify_mode = SSL_VERIFY_NONE;
-      break;
-    case TVM_OPTIONAL | TVM_TRUSTED:
-      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-      break;
-    case TVM_REQUIRED | TVM_UNTRUSTED:
-      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-      break;
-    case TVM_REQUIRED | TVM_TRUSTED:
-      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-      break;
-    default:
-      g_assert_not_reached();
-    }
-
-  SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
+  tls_context_setup_verify_mode(self);
 
   if (self->ssl_options != TSO_NONE)
     {
