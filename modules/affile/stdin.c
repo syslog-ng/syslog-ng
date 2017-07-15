@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2017 Balabit
+ * Copyright (c) 2017 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,20 +20,20 @@
  * COPYING for details.
  *
  */
+#include "file-specializations.h"
+#include "transport/transport-file.h"
 
-#ifndef LOGPROTO_PROC_KMSG_READER_H_INCLUDED
-#define LOGPROTO_PROC_KMSG_READER_H_INCLUDED
-
-#include "logproto/logproto-text-server.h"
-
-static inline LogProtoServer *
-log_proto_linux_proc_kmsg_reader_new(LogTransport *transport, const LogProtoServerOptions *options)
+static LogTransport *
+_construct(FileOpener *self, gint fd)
 {
-  LogProtoServer *proto;
-
-  proto = log_proto_text_server_new(transport, options);
-  ((LogProtoTextServer *) proto)->super.no_multi_read = TRUE;
-  return proto;
+  return log_transport_file_new(fd);
 }
 
-#endif
+FileOpener *
+file_opener_for_stdin_new(void)
+{
+  FileOpener *self = file_opener_new();
+
+  self->construct_transport = _construct;
+  return self;
+}

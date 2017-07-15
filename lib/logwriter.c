@@ -75,8 +75,6 @@ struct _LogWriter
   guint32 last_msg_count;
   GString *line_buffer;
 
-  gint stats_level;
-  guint16 stats_source;
   gchar *stats_id;
   gchar *stats_instance;
 
@@ -1274,14 +1272,15 @@ _register_counters(LogWriter *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
+    stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                  self->stats_instance);
 
     if (self->options->suppress > 0)
-      stats_register_counter(self->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-    stats_register_counter(self->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+      stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
+    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
     stats_register_counter_and_index(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
 
   }
@@ -1347,7 +1346,8 @@ _unregister_counters(LogWriter *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance );
+    stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                  self->stats_instance);
 
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
@@ -1546,14 +1546,12 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
 }
 
 void
-log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options, gint stats_level,
-                       gint stats_source, const gchar *stats_id, const gchar *stats_instance)
+log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options,
+                       const gchar *stats_id, const gchar *stats_instance)
 {
   self->control = control;
   self->options = options;
 
-  self->stats_level = stats_level;
-  self->stats_source = stats_source;
   if (control)
     self->super.expr_node = control->expr_node;
 

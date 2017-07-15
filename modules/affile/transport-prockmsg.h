@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,33 +21,11 @@
  *
  */
 
-#ifndef AFFILE_COMMON_H_INCLUDED
-#define AFFILE_COMMON_H_INCLUDED
+#ifndef AFFILE_PROCKMSG_H_INCLUDED
+#define AFFILE_PROCKMSG_H_INCLUDED 1
 
-/* portable largefile support for affile */
-#include "compat/lfs.h"
+#include "transport/logtransport.h"
 
-#include "file-perms.h"
-#include <string.h>
-
-typedef struct _FileOpenOptions
-{
-  gboolean needs_privileges:1,
-           is_pipe:1;
-  gint open_flags;
-  gint create_dirs;
-} FileOpenOptions;
-
-gboolean affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd);
-
-static inline gboolean
-affile_is_linux_proc_kmsg(const gchar *filename)
-{
-#ifdef __linux__
-  if (strcmp(filename, "/proc/kmsg") == 0)
-    return TRUE;
-#endif
-  return FALSE;
-}
+LogTransport *log_transport_prockmsg_new(gint fd, gint timeout);
 
 #endif

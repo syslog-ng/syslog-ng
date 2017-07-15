@@ -26,7 +26,7 @@
 
 #include "driver.h"
 #include "logwriter.h"
-#include "affile-common.h"
+#include "file-opener.h"
 
 typedef struct _AFFileDestWriter AFFileDestWriter;
 
@@ -36,13 +36,14 @@ typedef struct _AFFileDestDriver
   GStaticMutex lock;
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
-  gboolean filename_is_a_template:1,
-    template_escape:1,
-    use_fsync:1;
-  FilePermOptions file_perm_options;
-  FileOpenOptions file_open_options;
+  gboolean filename_is_a_template;
+  gboolean template_escape;
+  gboolean use_fsync;
+  FileOpenerOptions file_opener_options;
+  FileOpener *file_opener;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
+  guint32 writer_flags;
   GHashTable *writer_hash;
     
   gint overwrite_if_older;

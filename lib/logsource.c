@@ -208,10 +208,10 @@ log_source_init(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance );
-  stats_register_counter(self->stats_level, &sc_key,
+  stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance);
+  stats_register_counter(self->options->stats_level, &sc_key,
                          SC_TYPE_PROCESSED, &self->recvd_messages);
-  stats_register_counter(self->stats_level, &sc_key, SC_TYPE_STAMP, &self->last_message_seen);
+  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
   return TRUE;
 }
@@ -223,7 +223,7 @@ log_source_deinit(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance );
+  stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
@@ -359,8 +359,9 @@ _create_ack_tracker_if_not_exists(LogSource *self, gboolean pos_tracked)
 }
 
 void
-log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source,
-                       const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node)
+log_source_set_options(LogSource *self, LogSourceOptions *options,
+                       const gchar *stats_id, const gchar *stats_instance,
+                       gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node)
 {
   /* NOTE: we don't adjust window_size even in case it was changed in the
    * configuration and we received a SIGHUP.  This means that opened
@@ -369,8 +370,6 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
   if (g_atomic_counter_get(&self->window_size) == -1)
     g_atomic_counter_set(&self->window_size, options->init_window_size);
   self->options = options;
-  self->stats_level = stats_level;
-  self->stats_source = stats_source;
   if (self->stats_id)
     g_free(self->stats_id);
   self->stats_id = stats_id ? g_strdup(stats_id) : NULL;

@@ -422,8 +422,6 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
   log_pipe_set_config((LogPipe *)self->writer, log_pipe_get_config(&self->super.super.super));
   log_writer_set_options(self->writer, &self->super.super.super,
                          &self->writer_options,
-                         STATS_LEVEL0,
-                         self->transport_mapper->stats_source,
                          self->super.super.id,
                          afsocket_dd_stats_instance(self));
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(
@@ -567,5 +565,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
 
 
   self->writer_options.mark_mode = MM_GLOBAL;
+  self->writer_options.stats_level = STATS_LEVEL0;
+  self->writer_options.stats_source = self->transport_mapper->stats_source;
   afsocket_dd_init_watches(self);
 }

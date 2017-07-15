@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2017 Balabit
+ * Copyright (c) 2017 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,32 +20,35 @@
  * COPYING for details.
  *
  */
-  
-#ifndef AFFILE_SOURCE_H_INCLUDED
-#define AFFILE_SOURCE_H_INCLUDED
 
-#include "driver.h"
-#include "logreader.h"
-#include "file-opener.h"
-#include "file-reader.h"
+#include "logproto-file-reader.h"
+#include "logproto/logproto-record-server.h"
 #include "logproto/logproto-multiline-server.h"
 
-typedef struct _AFFileSourceDriver
+LogProtoServer *
+log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options)
 {
-  LogSrcDriver super;
-  GString *filename;
-  FileReader *file_reader;
-  FileOpener *file_opener;
-  FileReaderOptions file_reader_options;
-  FileOpenerOptions file_opener_options;
-  LogProtoMultiLineServerOptions multi_line_options;
-} AFFileSourceDriver;
+  if (options->pad_size > 0)
+    return log_proto_padded_record_server_new(transport, &options->super.super, options->pad_size);
+  else
+    return log_proto_multiline_server_new(transport, &options->super);
+}
 
-LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
-LogDriver *afpipe_sd_new(gchar *filename, GlobalConfig *cfg);
+void
+log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options)
+{
+  log_proto_multi_line_server_options_defaults(&options->super);
+  options->pad_size = 0;
+}
 
-void affile_sd_set_recursion(LogDriver *s, const gint recursion);
-void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
-void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
+void
+log_proto_file_reader_options_init(LogProtoFileReaderOptions *options)
+{
+  log_proto_multi_line_server_options_init(&options->super);
+}
 
-#endif
+void
+log_proto_file_reader_options_destroy(LogProtoFileReaderOptions *options)
+{
+  log_proto_multi_line_server_options_destroy(&options->super);
+}

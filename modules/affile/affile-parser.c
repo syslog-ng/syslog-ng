@@ -46,6 +46,7 @@ static CfgLexerKeyword affile_keywords[] =
   { "remove_if_older",    KW_OVERWRITE_IF_OLDER, KWS_OBSOLETE, "overwrite_if_older" },
   { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
   { "follow_freq",        KW_FOLLOW_FREQ },
+  { "exit_on_eof",        KW_EXIT_ON_EOF },
   { "multi_line_mode",    KW_MULTI_LINE_MODE  },
   { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
   { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2017 Balabit
+ * Copyright (c) 2017 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,32 +20,20 @@
  * COPYING for details.
  *
  */
-  
-#ifndef AFFILE_SOURCE_H_INCLUDED
-#define AFFILE_SOURCE_H_INCLUDED
 
-#include "driver.h"
-#include "logreader.h"
+#ifndef AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
+#define AFFILE_FILE_SPECIALIZATIONS_H_INCLUDED
+
 #include "file-opener.h"
-#include "file-reader.h"
 #include "logproto/logproto-multiline-server.h"
+#include "logwriter.h"
 
-typedef struct _AFFileSourceDriver
-{
-  LogSrcDriver super;
-  GString *filename;
-  FileReader *file_reader;
-  FileOpener *file_opener;
-  FileReaderOptions file_reader_options;
-  FileOpenerOptions file_opener_options;
-  LogProtoMultiLineServerOptions multi_line_options;
-} AFFileSourceDriver;
-
-LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
-LogDriver *afpipe_sd_new(gchar *filename, GlobalConfig *cfg);
-
-void affile_sd_set_recursion(LogDriver *s, const gint recursion);
-void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
-void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
+FileOpener *file_opener_for_source_named_pipes_new(void);
+FileOpener *file_opener_for_dest_named_pipes_new(void);
+FileOpener *file_opener_for_regular_source_files_new(void);
+FileOpener *file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync);
+FileOpener *file_opener_for_stdin_new(void);
+FileOpener *file_opener_for_devkmsg_new(void);
+FileOpener *file_opener_for_prockmsg_new(void);
 
 #endif
