@@ -173,11 +173,7 @@ void openssl_ctx_setup_ecdh(SSL_CTX *ctx)
 
 #elif OPENSSL_VERSION_NUMBER >= 0x10001000L
 
-  int ecdh_nid = OBJ_sn2nid(SN_X9_62_prime256v1);
-  if (ecdh_nid == NID_undef)
-    return;
-
-  EC_KEY *ecdh = EC_KEY_new_by_curve_name(ecdh_nid);
+  EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
   if (!ecdh)
     return;
 
