@@ -168,6 +168,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TRUSTED_KEYS
 %token KW_TRUSTED_DN
 %token KW_CIPHER_SUITE
+%token KW_ECDH_CURVE_LIST
 %token KW_SSL_OPTIONS
 
 /* INCLUDE_DECLS */
@@ -709,6 +710,11 @@ tls_option
             tls_context_set_cipher_suite(last_tls_context, $3);
             free($3);
 	  }
+        | KW_ECDH_CURVE_LIST '(' string ')'
+          {
+            tls_context_set_ecdh_curve_list(last_tls_context, $3);
+            free($3);
+          }
 	| KW_SSL_OPTIONS '(' string_list ')'
 	  {
             CHECK_ERROR(tls_context_set_ssl_options_by_name(last_tls_context, $3), @3,
