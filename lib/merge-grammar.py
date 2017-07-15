@@ -1,6 +1,6 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2010-2013 Balabit
+# Copyright (c) 2010-2017 Balabit
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -22,50 +22,41 @@
 #
 #############################################################################
 #
-# This script imports the rules from the main grammar file. It was
-# originally written in perl in order not to require Python for plugin
-# development, but since Python is already used for the test suite, I guess
-# it is not so important anymore.
-#
 # TODOs:
-#  * rewrite it in Python
 #  * be more clever about which rules to include as bison generates a lot of
 #    warnings about unused rules
 #
 
-use File::Basename;
+from __future__ import print_function
+import fileinput
+import os
+import sys
 
-sub include_block
-{
-    my ($start_re, $end_re) = @_;
+grammar_file = os.path.join(os.environ.get('top_srcdir', ''), 'lib/cfg-grammar.y')
+if not os.path.isfile(grammar_file):
+    grammar_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cfg-grammar.y')
+if not os.path.isfile(grammar_file):
+    sys.exit('Error opening cfg-grammar.y')
 
-    open(GR, "<" .$ENV{'top_srcdir'}. "/lib/cfg-grammar.y") ||
-            open(GR, "<" . dirname($0) . "/cfg-grammar.y") || die "Error opening cfg-grammar.y";
+def include_block(block_type):
+    start_marker = 'START_' + block_type
+    end_marker = 'END_' + block_type
 
-    my $decl_started = 0;
-    while (<GR>) {
-        if (/$start_re/) {
-            $decl_started = 1;
-        }
-        elsif (/$end_re/) {
-            $decl_started = 0;
-            break;
-        }
-        elsif ($decl_started) {
-            print;
-        }
-    }
-    close(GR);
-}
+    with open(grammar_file) as f:
+        in_block = False
+        for line in f:
+            if start_marker in line:
+                in_block = True
+            elif end_marker in line:
+                in_block = False
+            elif in_block:
+                print(line, end='')
 
-while (<>) {
-    if (/INCLUDE_DECLS/) {
-        include_block("START_DECLS", "END_DECLS");
-    }
-    elsif (/INCLUDE_RULES/) {
-        include_block("START_RULES", "END_RULES");
-    }
-    else {
-        print;
-    }
-}
+for line in fileinput.input():
+    if 'INCLUDE_DECLS' in line:
+        include_block('DECLS')
+    elif 'INCLUDE_RULES' in line:
+        include_block('RULES')
+    else:
+        print(line, end='')
+

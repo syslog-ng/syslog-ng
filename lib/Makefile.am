@@ -291,7 +291,7 @@ BUILT_SOURCES += lib/cfg-lex.c lib/cfg-lex.h						\
 EXTRA_DIST += \
 	lib/block-ref-grammar.ym	\
 	lib/pragma-grammar.ym		\
-	lib/merge-grammar.pl		\
+	lib/merge-grammar.py		\
 	lib/hostname-unix.c		\
 	lib/ivykis/configure.gnu	\
 	lib/eventlog/configure.gnu
