@@ -102,7 +102,7 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
   X509 *cert = X509_STORE_CTX_get0_cert(ctx);
 
   if (ok && current_cert == cert && self->hostname
-      && (transport_mapper_inet->tls_context->verify_mode & TVM_TRUSTED))
+      && (tls_context_get_verify_mode(transport_mapper_inet->tls_context) & TVM_TRUSTED))
     {
       ok = tls_verify_certificate_name(cert, self->hostname);
     }

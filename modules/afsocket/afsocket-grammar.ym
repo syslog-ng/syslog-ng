@@ -667,33 +667,33 @@ tls_option
 
 	| KW_PEER_VERIFY '(' yesno ')'
 	  {
-	    last_tls_context->verify_mode = $3
-		? (TVM_REQUIRED | TVM_TRUSTED)
-		: (TVM_OPTIONAL | TVM_UNTRUSTED);
+	    gint verify_mode = $3 ? (TVM_REQUIRED | TVM_TRUSTED) : (TVM_OPTIONAL | TVM_UNTRUSTED);
+	    tls_context_set_verify_mode(last_tls_context, verify_mode);
           }
 	| KW_PEER_VERIFY '(' string ')'
 	  {
-	    tls_context_set_verify_mode_by_name(last_tls_context, $3);
+	    CHECK_ERROR(tls_context_set_verify_mode_by_name(last_tls_context, $3), @3,
+	                "unknown peer-verify() argument");
             free($3);
           }
 	| KW_KEY_FILE '(' string ')'
 	  {
-	    last_tls_context->key_file = g_strdup($3);
+	    tls_context_set_key_file(last_tls_context, $3);
             free($3);
           }
 	| KW_CERT_FILE '(' string ')'
 	  {
-	    last_tls_context->cert_file = g_strdup($3);
+	    tls_context_set_cert_file(last_tls_context, $3);
             free($3);
           }
 	| KW_CA_DIR '(' string ')'
 	  {
-	    last_tls_context->ca_dir = g_strdup($3);
+	    tls_context_set_ca_dir(last_tls_context, $3);
             free($3);
           }
 	| KW_CRL_DIR '(' string ')'
 	  {
-	    last_tls_context->crl_dir = g_strdup($3);
+	    tls_context_set_crl_dir(last_tls_context, $3);
             free($3);
           }
         | KW_TRUSTED_KEYS '(' string_list ')'
@@ -706,12 +706,13 @@ tls_option
           }
 	| KW_CIPHER_SUITE '(' string ')'
 	  {
-            last_tls_context->cipher_suite = g_strdup($3);
+            tls_context_set_cipher_suite(last_tls_context, $3);
             free($3);
 	  }
 	| KW_SSL_OPTIONS '(' string_list ')'
 	  {
-            tls_context_set_ssl_options_by_name(last_tls_context, $3);
+            CHECK_ERROR(tls_context_set_ssl_options_by_name(last_tls_context, $3), @3,
+                        "unknown ssl-options() argument");
 	  }
         | KW_ENDIF {
 }
