@@ -102,8 +102,8 @@ void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
 TLSContext *tls_context_new(TLSMode mode);
 void tls_context_free(TLSContext *s);
 
-TLSVerifyMode tls_lookup_verify_mode(const gchar *mode_str);
-gint tls_lookup_options(GList *options);
+gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
+gboolean tls_context_set_ssl_options_by_name(TLSContext *self, GList *options);
 
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);

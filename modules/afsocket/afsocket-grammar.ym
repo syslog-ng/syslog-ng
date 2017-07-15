@@ -228,7 +228,7 @@ driver
         | LL_CONTEXT_DESTINATION dest_afnetwork               { $$ = $2; }
         ;
 
-        
+
 source_afunix
         : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
 	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                                { $$ = $3; }
@@ -455,7 +455,7 @@ source_systemd_syslog_option
         : source_reader_option
         | socket_option
         ;
-        
+
 dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
@@ -673,7 +673,7 @@ tls_option
           }
 	| KW_PEER_VERIFY '(' string ')'
 	  {
-	    last_tls_context->verify_mode = tls_lookup_verify_mode($3);
+	    tls_context_set_verify_mode_by_name(last_tls_context, $3);
             free($3);
           }
 	| KW_KEY_FILE '(' string ')'
@@ -711,7 +711,7 @@ tls_option
 	  }
 	| KW_SSL_OPTIONS '(' string_list ')'
 	  {
-            last_tls_context->ssl_options = tls_lookup_options($3);
+            tls_context_set_ssl_options_by_name(last_tls_context, $3);
 	  }
         | KW_ENDIF {
 }
