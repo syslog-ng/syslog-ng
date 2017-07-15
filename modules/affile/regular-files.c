@@ -30,13 +30,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-typedef struct _FileOpenerRegularFiles
-{
-  FileOpener super;
-  const LogWriterOptions *writer_options;
-  gboolean *use_fsync;
-} FileOpenerRegularFiles;
-
 static gboolean
 _prepare_open(FileOpener *self, const gchar *name)
 {
@@ -64,21 +57,35 @@ _construct_src_transport(FileOpener *self, gint fd)
   return transport;
 }
 
+static LogProtoServer *
+_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
+{
+  proto_options->super.super.position_tracking_enabled = TRUE;
+  return log_proto_file_reader_new(transport, proto_options);
+}
+
 FileOpener *
 file_opener_for_regular_source_files_new(void)
 {
-  FileOpenerRegularFiles *self = g_new0(FileOpenerRegularFiles, 1);
+  FileOpener *self = file_opener_new();
 
-  file_opener_init_instance(&self->super);
-  self->super.prepare_open = _prepare_open;
-  self->super.construct_transport = _construct_src_transport;
-  return &self->super;
+  self->prepare_open = _prepare_open;
+  self->construct_transport = _construct_src_transport;
+  self->construct_src_proto = _construct_src_proto;
+  return self;
 }
+
+typedef struct _FileOpenerRegularDestFiles
+{
+  FileOpener super;
+  const LogWriterOptions *writer_options;
+  gboolean *use_fsync;
+} FileOpenerRegularDestFiles;
 
 static LogProtoClient *
 _construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptions *proto_options)
 {
-  FileOpenerRegularFiles *self = (FileOpenerRegularFiles *) s;
+  FileOpenerRegularDestFiles *self = (FileOpenerRegularDestFiles *) s;
 
   return log_proto_file_writer_new(transport, proto_options,
                                    self->writer_options->flush_lines,
@@ -94,7 +101,7 @@ _construct_transport(FileOpener *s, gint fd)
 FileOpener *
 file_opener_for_regular_dest_files_new(const LogWriterOptions *writer_options, gboolean *use_fsync)
 {
-  FileOpenerRegularFiles *self = g_new0(FileOpenerRegularFiles, 1);
+  FileOpenerRegularDestFiles *self = g_new0(FileOpenerRegularDestFiles, 1);
 
   file_opener_init_instance(&self->super);
   self->super.construct_transport = _construct_transport;

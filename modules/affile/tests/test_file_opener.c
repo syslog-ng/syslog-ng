@@ -122,7 +122,7 @@ Test(file_opener, test_spurious_path)
   gchar fname[] = "./../test.fname";
 
   cr_assert_not(open_regular_source_file(fname, DST_FILE, &fd), "file_opener_open_fd should not be able to open: %s",
-               fname);
+                fname);
 }
 
 Test(file_opener, test_create_file_in_nonexistent_dir)
