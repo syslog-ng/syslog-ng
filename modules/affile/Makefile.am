@@ -2,6 +2,8 @@ module_LTLIBRARIES			+= modules/affile/libaffile.la
 modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/logproto-file-writer.c 			\
 	modules/affile/logproto-file-writer.h			\
+	modules/affile/logproto-file-reader.c 			\
+	modules/affile/logproto-file-reader.h			\
 	modules/affile/poll-file-changes.c			\
 	modules/affile/poll-file-changes.h			\
 	modules/affile/transport-prockmsg.c			\
