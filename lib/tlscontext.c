@@ -308,11 +308,6 @@ file_exists(const gchar *fname)
 TLSSession *
 tls_context_setup_session(TLSContext *self)
 {
-  SSL *ssl;
-  TLSSession *session;
-  gulong ssl_error;
-  long ssl_options;
-
   if (!self->ssl_ctx)
     {
       gint verify_mode = 0;
@@ -369,7 +364,7 @@ tls_context_setup_session(TLSContext *self)
 
       if (self->ssl_options != TSO_NONE)
         {
-          ssl_options=0;
+          glong ssl_options = 0;
           if(self->ssl_options & TSO_NOSSLv2)
             ssl_options |= SSL_OP_NO_SSLv2;
           if(self->ssl_options & TSO_NOSSLv3)
@@ -397,19 +392,19 @@ tls_context_setup_session(TLSContext *self)
         }
     }
 
-  ssl = SSL_new(self->ssl_ctx);
+  SSL *ssl = SSL_new(self->ssl_ctx);
 
   if (self->mode == TM_CLIENT)
     SSL_set_connect_state(ssl);
   else
     SSL_set_accept_state(ssl);
 
-  session = tls_session_new(ssl, self);
+  TLSSession *session = tls_session_new(ssl, self);
   SSL_set_app_data(ssl, session);
   return session;
 
-error:
-  ssl_error = ERR_get_error();
+error:;
+  gulong ssl_error = ERR_get_error();
   msg_error("Error setting up TLS session context",
             evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error),
                            ERR_reason_error_string(ssl_error)));
