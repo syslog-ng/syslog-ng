@@ -250,7 +250,7 @@ dest_affile_option
 dest_afpipe_params
 	: string
 	  {
-	    last_driver = *instance = afpipe_dd_new($1, configuration);
+	    last_driver = *instance = pipe_dd_new($1, configuration);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
 	  }

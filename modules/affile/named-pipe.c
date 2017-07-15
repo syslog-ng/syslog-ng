@@ -22,6 +22,7 @@
  */
 #include "named-pipe.h"
 #include "affile-source.h"
+#include "affile-dest.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
 #include "file-opener.h"
@@ -130,5 +131,15 @@ pipe_sd_new(gchar *filename, GlobalConfig *cfg)
 
   self->file_opener = file_opener_for_named_pipes_new();
 
+  return &self->super.super;
+}
+
+LogDriver *
+pipe_dd_new(gchar *filename, GlobalConfig *cfg)
+{
+  AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
+
+  self->writer_options.stats_source = SCS_PIPE;
+  self->file_opener = file_opener_for_named_pipes_new();
   return &self->super.super;
 }

@@ -733,7 +733,7 @@ affile_dd_free(LogPipe *s)
   log_dest_driver_free(s);
 }
 
-static AFFileDestDriver *
+AFFileDestDriver *
 affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestDriver *self = g_new0(AFFileDestDriver, 1);
@@ -770,15 +770,5 @@ affile_dd_new(gchar *filename, GlobalConfig *cfg)
   self->writer_flags |= LW_SOFT_FLOW_CONTROL;
   self->writer_options.stats_source = SCS_FILE;
   self->file_opener = file_opener_for_regular_dest_files_new(&self->writer_options, &self->use_fsync);
-  return &self->super.super;
-}
-
-LogDriver *
-afpipe_dd_new(gchar *filename, GlobalConfig *cfg)
-{
-  AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
-
-  self->writer_options.stats_source = SCS_PIPE;
-  self->file_opener = file_opener_for_named_pipes_new();
   return &self->super.super;
 }
