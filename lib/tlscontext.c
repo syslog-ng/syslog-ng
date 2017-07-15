@@ -334,6 +334,36 @@ tls_context_setup_verify_mode(TLSContext *self)
   SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
 }
 
+static void
+tls_context_setup_ssl_options(TLSContext *self)
+{
+  if (self->ssl_options != TSO_NONE)
+    {
+      glong ssl_options = 0;
+      if(self->ssl_options & TSO_NOSSLv2)
+        ssl_options |= SSL_OP_NO_SSLv2;
+      if(self->ssl_options & TSO_NOSSLv3)
+        ssl_options |= SSL_OP_NO_SSLv3;
+      if(self->ssl_options & TSO_NOTLSv1)
+        ssl_options |= SSL_OP_NO_TLSv1;
+#ifdef SSL_OP_NO_TLSv1_2
+      if(self->ssl_options & TSO_NOTLSv11)
+        ssl_options |= SSL_OP_NO_TLSv1_1;
+      if(self->ssl_options & TSO_NOTLSv12)
+        ssl_options |= SSL_OP_NO_TLSv1_2;
+#endif
+#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
+      if (self->mode == TM_SERVER)
+        ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+#endif
+      SSL_CTX_set_options(self->ssl_ctx, ssl_options);
+    }
+  else
+    {
+      msg_debug("empty ssl options");
+    }
+}
+
 static gboolean
 tls_context_setup_context(TLSContext *self)
 {
@@ -366,30 +396,8 @@ tls_context_setup_context(TLSContext *self)
   X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
 
   tls_context_setup_verify_mode(self);
+  tls_context_setup_ssl_options(self);
 
-  if (self->ssl_options != TSO_NONE)
-    {
-      glong ssl_options = 0;
-      if(self->ssl_options & TSO_NOSSLv2)
-        ssl_options |= SSL_OP_NO_SSLv2;
-      if(self->ssl_options & TSO_NOSSLv3)
-        ssl_options |= SSL_OP_NO_SSLv3;
-      if(self->ssl_options & TSO_NOTLSv1)
-        ssl_options |= SSL_OP_NO_TLSv1;
-#ifdef SSL_OP_NO_TLSv1_2
-      if(self->ssl_options & TSO_NOTLSv11)
-        ssl_options |= SSL_OP_NO_TLSv1_1;
-      if(self->ssl_options & TSO_NOTLSv12)
-        ssl_options |= SSL_OP_NO_TLSv1_2;
-#endif
-#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
-      if (self->mode == TM_SERVER)
-        ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
-#endif
-      SSL_CTX_set_options(self->ssl_ctx, ssl_options);
-    }
-  else
-    msg_debug("empty ssl options");
   if (self->cipher_suite)
     {
       if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
