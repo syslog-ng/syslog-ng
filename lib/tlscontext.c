@@ -305,103 +305,91 @@ file_exists(const gchar *fname)
   return TRUE;
 }
 
-TLSSession *
-tls_context_setup_session(TLSContext *self)
+static gboolean
+tls_context_setup_context(TLSContext *self)
 {
-  if (!self->ssl_ctx)
-    {
-      gint verify_mode = 0;
-      gint verify_flags = X509_V_FLAG_POLICY_CHECK;
-
-      if (self->mode == TM_CLIENT)
-        self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-      else
-        self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
-
-      if (!self->ssl_ctx)
-        goto error;
-      if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
-        goto error;
-
-      if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
-        goto error;
-      if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
-        goto error;
-
-      if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
-        goto error;
-
-      if (file_exists(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
-        goto error;
-
-      if (self->crl_dir)
-        verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
-
-      X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
-
-      switch (self->verify_mode)
-        {
-        case TVM_NONE:
-          verify_mode = SSL_VERIFY_NONE;
-          break;
-        case TVM_OPTIONAL | TVM_UNTRUSTED:
-          verify_mode = SSL_VERIFY_NONE;
-          break;
-        case TVM_OPTIONAL | TVM_TRUSTED:
-          verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-          break;
-        case TVM_REQUIRED | TVM_UNTRUSTED:
-          verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-          break;
-        case TVM_REQUIRED | TVM_TRUSTED:
-          verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-          break;
-        default:
-          g_assert_not_reached();
-        }
-
-      SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
-
-      if (self->ssl_options != TSO_NONE)
-        {
-          glong ssl_options = 0;
-          if(self->ssl_options & TSO_NOSSLv2)
-            ssl_options |= SSL_OP_NO_SSLv2;
-          if(self->ssl_options & TSO_NOSSLv3)
-            ssl_options |= SSL_OP_NO_SSLv3;
-          if(self->ssl_options & TSO_NOTLSv1)
-            ssl_options |= SSL_OP_NO_TLSv1;
-#ifdef SSL_OP_NO_TLSv1_2
-          if(self->ssl_options & TSO_NOTLSv11)
-            ssl_options |= SSL_OP_NO_TLSv1_1;
-          if(self->ssl_options & TSO_NOTLSv12)
-            ssl_options |= SSL_OP_NO_TLSv1_2;
-#endif
-#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
-          if (self->mode == TM_SERVER)
-            ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
-#endif
-          SSL_CTX_set_options(self->ssl_ctx, ssl_options);
-        }
-      else
-        msg_debug("empty ssl options");
-      if (self->cipher_suite)
-        {
-          if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
-            goto error;
-        }
-    }
-
-  SSL *ssl = SSL_new(self->ssl_ctx);
+  gint verify_mode = 0;
+  gint verify_flags = X509_V_FLAG_POLICY_CHECK;
 
   if (self->mode == TM_CLIENT)
-    SSL_set_connect_state(ssl);
+    self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
   else
-    SSL_set_accept_state(ssl);
+    self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 
-  TLSSession *session = tls_session_new(ssl, self);
-  SSL_set_app_data(ssl, session);
-  return session;
+  if (!self->ssl_ctx)
+    goto error;
+  if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
+    goto error;
+
+  if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
+    goto error;
+  if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
+    goto error;
+
+  if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
+    goto error;
+
+  if (file_exists(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
+    goto error;
+
+  if (self->crl_dir)
+    verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
+
+  X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
+
+  switch (self->verify_mode)
+    {
+    case TVM_NONE:
+      verify_mode = SSL_VERIFY_NONE;
+      break;
+    case TVM_OPTIONAL | TVM_UNTRUSTED:
+      verify_mode = SSL_VERIFY_NONE;
+      break;
+    case TVM_OPTIONAL | TVM_TRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+      break;
+    case TVM_REQUIRED | TVM_UNTRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      break;
+    case TVM_REQUIRED | TVM_TRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      break;
+    default:
+      g_assert_not_reached();
+    }
+
+  SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
+
+  if (self->ssl_options != TSO_NONE)
+    {
+      glong ssl_options = 0;
+      if(self->ssl_options & TSO_NOSSLv2)
+        ssl_options |= SSL_OP_NO_SSLv2;
+      if(self->ssl_options & TSO_NOSSLv3)
+        ssl_options |= SSL_OP_NO_SSLv3;
+      if(self->ssl_options & TSO_NOTLSv1)
+        ssl_options |= SSL_OP_NO_TLSv1;
+#ifdef SSL_OP_NO_TLSv1_2
+      if(self->ssl_options & TSO_NOTLSv11)
+        ssl_options |= SSL_OP_NO_TLSv1_1;
+      if(self->ssl_options & TSO_NOTLSv12)
+        ssl_options |= SSL_OP_NO_TLSv1_2;
+#endif
+#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
+      if (self->mode == TM_SERVER)
+        ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+#endif
+      SSL_CTX_set_options(self->ssl_ctx, ssl_options);
+    }
+  else
+    msg_debug("empty ssl options");
+  if (self->cipher_suite)
+    {
+      if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
+        goto error;
+    }
+
+  return TRUE;
 
 error:;
   gulong ssl_error = ERR_get_error();
@@ -414,7 +402,28 @@ error:;
       SSL_CTX_free(self->ssl_ctx);
       self->ssl_ctx = NULL;
     }
-  return NULL;
+  return FALSE;
+}
+
+TLSSession *
+tls_context_setup_session(TLSContext *self)
+{
+  if (!self->ssl_ctx)
+    {
+      if (!tls_context_setup_context(self))
+        return NULL;
+    }
+
+  SSL *ssl = SSL_new(self->ssl_ctx);
+
+  if (self->mode == TM_CLIENT)
+    SSL_set_connect_state(ssl);
+  else
+    SSL_set_accept_state(ssl);
+
+  TLSSession *session = tls_session_new(ssl, self);
+  SSL_set_app_data(ssl, session);
+  return session;
 }
 
 TLSContext *
