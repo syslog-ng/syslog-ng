@@ -391,7 +391,7 @@ tls_context_setup_ssl_options(TLSContext *self)
     }
 }
 
-static gboolean
+gboolean
 tls_context_setup_context(TLSContext *self)
 {
   gint verify_flags = X509_V_FLAG_POLICY_CHECK;
