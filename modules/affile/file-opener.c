@@ -45,6 +45,12 @@ file_opener_prepare_open(FileOpener *self, const gchar *name)
   return TRUE;
 }
 
+static inline gint
+file_opener_open(FileOpener *self, const gchar *name, gint flags)
+{
+  return self->open(self, name, flags);
+}
+
 static gint
 file_opener_get_open_flags_method(FileOpener *self, FileDirection dir)
 {
@@ -123,8 +129,8 @@ _set_fd_permission(FileOpener *self, int fd)
     }
 }
 
-static inline int
-_open_fd(FileOpener *self, const gchar *name, gint open_flags)
+static int
+_open(FileOpener *self, const gchar *name, gint open_flags)
 {
   FilePermOptions *perm_opts = &self->options->file_perm_options;
   int fd;
@@ -159,7 +165,7 @@ file_opener_open_fd(FileOpener *self, gchar *name, FileDirection dir, gint *fd)
   if (!file_opener_prepare_open(self, name))
     return FALSE;
 
-  *fd = _open_fd(self, name, file_opener_get_open_flags(self, dir));
+  *fd = file_opener_open(self, name, file_opener_get_open_flags(self, dir));
 
   if (!is_file_device(name))
     _set_fd_permission(self, *fd);
@@ -183,6 +189,7 @@ void
 file_opener_init_instance(FileOpener *self)
 {
   self->get_open_flags = file_opener_get_open_flags_method;
+  self->open = _open;
 }
 
 FileOpener *
