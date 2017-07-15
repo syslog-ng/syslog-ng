@@ -464,6 +464,9 @@ afsocket_dd_init(LogPipe *s)
       return FALSE;
     }
 
+  if (!transport_mapper_init(self->transport_mapper))
+    return FALSE;
+
   if (!afsocket_dd_setup_writer(self))
     return FALSE;
 

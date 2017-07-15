@@ -447,10 +447,7 @@ TLSSession *
 tls_context_setup_session(TLSContext *self)
 {
   if (!self->ssl_ctx)
-    {
-      if (!tls_context_setup_context(self))
-        return NULL;
-    }
+    return NULL;
 
   SSL *ssl = SSL_new(self->ssl_ctx);
 

@@ -674,7 +674,8 @@ afsocket_sd_init_method(LogPipe *s)
          afsocket_sd_setup_transport(self) &&
          afsocket_sd_setup_addresses(self) &&
          afsocket_sd_restore_kept_alive_connections(self) &&
-         afsocket_sd_open_listener(self);
+         afsocket_sd_open_listener(self) &&
+         transport_mapper_init(self->transport_mapper);
 }
 
 gboolean
