@@ -160,3 +160,29 @@ openssl_init(void)
   OpenSSL_add_all_algorithms();
 #endif
 }
+
+void openssl_ctx_setup_ecdh(SSL_CTX *ctx)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+
+  /* No need to setup as ECDH auto is the default */
+
+#elif OPENSSL_VERSION_NUMBER >= 0x10002000L
+
+  SSL_CTX_set_ecdh_auto(ctx, 1);
+
+#elif OPENSSL_VERSION_NUMBER >= 0x10001000L
+
+  int ecdh_nid = OBJ_sn2nid(SN_X9_62_prime256v1);
+  if (ecdh_nid == NID_undef)
+    return;
+
+  EC_KEY *ecdh = EC_KEY_new_by_curve_name(ecdh_nid);
+  if (!ecdh)
+    return;
+
+  SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+  EC_KEY_free(ecdh);
+
+#endif
+}
