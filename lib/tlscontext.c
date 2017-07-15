@@ -306,6 +306,18 @@ file_exists(const gchar *fname)
 }
 
 static void
+_print_and_clear_tls_session_error(void)
+{
+  gulong ssl_error = ERR_get_error();
+  msg_error("Error setting up TLS session context",
+            evt_tag_printf("tls_error", "%s:%s:%s",
+                           ERR_lib_error_string(ssl_error),
+                           ERR_func_error_string(ssl_error),
+                           ERR_reason_error_string(ssl_error)));
+  ERR_clear_error();
+}
+
+static void
 tls_context_setup_verify_mode(TLSContext *self)
 {
   gint verify_mode = 0;
@@ -406,12 +418,8 @@ tls_context_setup_context(TLSContext *self)
 
   return TRUE;
 
-error:;
-  gulong ssl_error = ERR_get_error();
-  msg_error("Error setting up TLS session context",
-            evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error),
-                           ERR_reason_error_string(ssl_error)));
-  ERR_clear_error();
+error:
+  _print_and_clear_tls_session_error();
   if (self->ssl_ctx)
     {
       SSL_CTX_free(self->ssl_ctx);
