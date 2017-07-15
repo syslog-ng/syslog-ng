@@ -396,11 +396,6 @@ tls_context_setup_context(TLSContext *self)
 {
   gint verify_flags = X509_V_FLAG_POLICY_CHECK;
 
-  if (self->mode == TM_CLIENT)
-    self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-  else
-    self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
-
   if (!self->ssl_ctx)
     goto error;
   if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
@@ -469,6 +464,12 @@ tls_context_new(TLSMode mode)
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
   self->ssl_options = TSO_NOSSLv2;
+
+  if (self->mode == TM_CLIENT)
+    self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+  else
+    self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
+
   return self;
 }
 
