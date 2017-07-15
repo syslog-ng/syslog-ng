@@ -310,7 +310,7 @@ tls_context_setup_session(TLSContext *self)
 {
   SSL *ssl;
   TLSSession *session;
-  gint ssl_error;
+  gulong ssl_error;
   long ssl_options;
 
   if (!self->ssl_ctx)
