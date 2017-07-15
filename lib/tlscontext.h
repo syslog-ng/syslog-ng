@@ -99,11 +99,19 @@ struct _TLSContext
 TLSSession *tls_context_setup_session(TLSContext *self);
 void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints);
 void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
+
 TLSContext *tls_context_new(TLSMode mode);
 void tls_context_free(TLSContext *s);
 
 gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
 gboolean tls_context_set_ssl_options_by_name(TLSContext *self, GList *options);
+gint tls_context_get_verify_mode(const TLSContext *self);
+void tls_context_set_verify_mode(TLSContext *self, gint verify_mode);
+void tls_context_set_key_file(TLSContext *self, const gchar *key_file);
+void tls_context_set_cert_file(TLSContext *self, const gchar *cert_file);
+void tls_context_set_ca_dir(TLSContext *self, const gchar *ca_dir);
+void tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir);
+void tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite);
 
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);

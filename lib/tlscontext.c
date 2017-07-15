@@ -520,6 +520,52 @@ tls_context_set_ssl_options_by_name(TLSContext *self, GList *options)
   return TRUE;
 }
 
+gint
+tls_context_get_verify_mode(const TLSContext *self)
+{
+  return self->verify_mode;
+}
+
+void tls_context_set_verify_mode(TLSContext *self, gint verify_mode)
+{
+  self->verify_mode = verify_mode;
+}
+
+void
+tls_context_set_key_file(TLSContext *self, const gchar *key_file)
+{
+  g_free(self->key_file);
+  self->key_file = g_strdup(key_file);
+}
+
+void
+tls_context_set_cert_file(TLSContext *self, const gchar *cert_file)
+{
+  g_free(self->cert_file);
+  self->cert_file = g_strdup(cert_file);
+}
+
+void
+tls_context_set_ca_dir(TLSContext *self, const gchar *ca_dir)
+{
+  g_free(self->ca_dir);
+  self->ca_dir = g_strdup(ca_dir);
+}
+
+void
+tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir)
+{
+  g_free(self->crl_dir);
+  self->crl_dir = g_strdup(crl_dir);
+}
+
+void
+tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite)
+{
+  g_free(self->cipher_suite);
+  self->cipher_suite = g_strdup(cipher_suite);
+}
+
 void
 tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
 {
