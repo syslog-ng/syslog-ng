@@ -248,13 +248,17 @@ cfg_lexer_start_next_include(CfgLexer *self)
 
   /* reset the include state, should also handle initial invocations, in which case everything is NULL */
   if (level->yybuf)
-    _cfg_lexer__delete_buffer(level->yybuf, self->state);
+    {
+      _cfg_lexer__delete_buffer(level->yybuf, self->state);
+      level->yybuf = NULL;
+    }
 
   if (level->include_type == CFGI_FILE)
     {
       if (level->file.include_file)
         {
           fclose(level->file.include_file);
+          level->file.include_file = NULL;
         }
     }
 
