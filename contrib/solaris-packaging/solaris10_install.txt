@@ -91,7 +91,7 @@ Procedure 4.5. Installing syslog-ng on Sun Solaris 10
                   
    6.
 
-      Modify the syslog-ng.conf.to suit your needs. For details on how to configure syslog-ng, see The syslog-ng Administrator Guide, Chapter 3, Configuring syslog-ng.
+      Modify the syslog-ng.conf to suit your needs. For details on how to configure syslog-ng, see The syslog-ng Administrator Guide, Chapter 3, Configuring syslog-ng.
    7.
 
       Disable the original syslogd application.
@@ -104,8 +104,9 @@ Procedure 4.5. Installing syslog-ng on Sun Solaris 10
       Copy the following files to their proper places by issuing the following commands and modify them if needed.
 
 
-      # cp /opt/syslog-ng/doc/syslog-ng.example.xml /var/svc/manifest/system/syslog-ng.xml
-      # cp /opt/syslog-ng/doc/syslog-ng.method /lib/svc/method/syslog-ng
+      # cp <sourcedir>/contrib/solaris-packaging/syslog-ng.example.xml /var/svc/manifest/system/syslog-ng.xml
+      # cp <sourcedir>/contrib/solaris-packaging/syslog-ng.method /lib/svc/method/syslog-ng
+      # cp <sourcedir>/contrib/solaris-packaging/syslog-ng@default /etc/default/syslog-ng@default
                   
    9.
 
@@ -122,7 +123,7 @@ Procedure 4.5. Installing syslog-ng on Sun Solaris 10
       Enable and start syslog-ng.
 
 
-      # svcadm enable -t svc:/system/syslog-ng
+      # svcadm enable -t svc:/system/syslog-ng:default
                   
   11.
 
