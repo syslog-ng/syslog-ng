@@ -325,10 +325,9 @@ _seek_to_saved_state(JournalReader *self)
   persist_state_unmap_entry(self->persist_state, self->persist_handle);
   if (rc != 0)
     {
-      int err = rc != 0 ? rc : tc;
       msg_warning("Failed to seek journal to the saved cursor position",
                   evt_tag_str("cursor", state->cursor),
-                  evt_tag_errno("error", -err));
+                  evt_tag_errno("error", -rc));
       return _seek_to_head(self);
     }
   else
