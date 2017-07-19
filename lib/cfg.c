@@ -286,7 +286,7 @@ cfg_register_builtin_plugins(GlobalConfig *self)
 }
 
 GlobalConfig *
-cfg_new(gint version)
+cfg_new_snippet(gint version)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
@@ -329,6 +329,14 @@ cfg_new(gint version)
   return self;
 }
 
+GlobalConfig *
+cfg_new(gint version)
+{
+  GlobalConfig *self = cfg_new_snippet(version);
+  cfg_load_candidate_modules(self);
+  return self;
+}
+
 void
 cfg_set_global_paths(GlobalConfig *self)
 {
@@ -339,7 +347,6 @@ cfg_set_global_paths(GlobalConfig *self)
   cfg_args_set(self->lexer->globals, "syslog-ng-include", get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
   cfg_args_set(self->lexer->globals, "scl-root", get_installation_path_for(SYSLOG_NG_PATH_SCLDIR));
   cfg_args_set(self->lexer->globals, "module-path", resolvedConfigurablePaths.initial_module_path);
-  cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
 
   include_path = g_strdup_printf("%s:%s",
                                  get_installation_path_for(SYSLOG_NG_PATH_SYSCONFDIR),
@@ -374,14 +381,7 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 void
 cfg_load_candidate_modules(GlobalConfig *self)
 {
-  /* we enable autoload for pre-3.1 configs or when the user requested
-   * auto-load (the default) */
-
-  if ((cfg_is_config_version_older(self, 0x0302) ||
-       atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))) && !self->candidate_plugins)
-    {
-      plugin_load_candidate_modules(self);
-    }
+  plugin_load_candidate_modules(self);
 
 #if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
   if (!plugin_load_module("license", self, NULL))
