@@ -95,6 +95,7 @@ struct _GlobalConfig
 
   gboolean create_dirs;
   FilePermOptions file_perm_options;
+  GList *source_mangle_callback_list;
   gboolean use_uniqid;
 
   gboolean keep_timestamp;  
@@ -139,12 +140,16 @@ void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);
 
-
 PersistConfig *persist_config_new(void);
 void persist_config_free(PersistConfig *self);
 void cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
 void cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, const gchar *name);
+
+typedef gboolean(* mangle_callback)(GlobalConfig *cfg, LogMessage *msg, gpointer user_data);
+
+void register_source_mangle_callback(GlobalConfig *src,mangle_callback cb);
+void uregister_source_mangle_callback(GlobalConfig *src,mangle_callback cb);
 
 static inline gboolean
 cfg_is_config_version_older(GlobalConfig *cfg, gint req)

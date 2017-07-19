@@ -168,7 +168,12 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
       if (G_UNLIKELY(self->options->chain_hostnames))
         {
           msg->flags |= LF_CHAINED_HOSTNAME;
-          if (msg->flags & LF_LOCAL)
+          if (msg->flags & LF_SIMPLE_HOSTNAME)
+            {
+              /* local without group name */
+              host_len = g_snprintf(host, sizeof(host), "%s", resolved_name);
+            }
+          else if (msg->flags & LF_LOCAL)
             {
               /* local */
               host_len = g_snprintf(host, sizeof(host), "%s@%s", self->options->group_name, resolved_name);
@@ -261,6 +266,27 @@ log_source_post(LogSource *self, LogMessage *msg)
   log_pipe_queue(&self->super, msg, &path_options);
 }
 
+static gboolean
+_invoke_mangle_callbacks(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  LogSource *self = (LogSource *) s;
+  GList *next_item = g_list_first(self->options->source_queue_callbacks);
+
+  while(next_item)
+    {
+      if(next_item->data)
+        {
+          if(!((mangle_callback) (next_item->data))(log_pipe_get_config(s),msg,self))
+            {
+              log_msg_drop(msg, path_options, AT_PROCESSED);
+              return FALSE;
+            }
+        }
+      next_item = next_item->next;
+    }
+  return TRUE;
+}
+
 static void
 log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
@@ -327,6 +353,8 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   /* message setup finished, send it out */
 
+  if (!_invoke_mangle_callbacks(s, msg, path_options))
+    return;
 
   stats_counter_inc(self->recvd_messages);
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].tv_sec);
@@ -425,6 +453,8 @@ void
 log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gchar *group_name)
 {
   gchar *source_group_name;
+
+  options->source_queue_callbacks = cfg->source_mangle_callback_list;
 
   if (options->keep_hostname == -1)
     options->keep_hostname = cfg->keep_hostname;

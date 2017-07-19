@@ -1,3 +1,4 @@
+apply from: 'internal_repositories.gradle'
 project.buildDir = syslogBuildDir
 
 subprojects {

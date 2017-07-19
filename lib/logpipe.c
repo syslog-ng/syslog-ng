@@ -40,6 +40,7 @@ log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
   self->cfg = cfg;
   self->pipe_next = NULL;
   self->persist_name = NULL;
+  self->plugin_name = NULL;
 
   /* NOTE: queue == NULL means that this pipe simply forwards the
    * message along the pipeline, e.g. like it has called
@@ -77,6 +78,15 @@ log_pipe_ref(LogPipe *self)
   return self;
 }
 
+static void
+_free(LogPipe *self)
+{
+  if (self->free_fn)
+    self->free_fn(self);
+  g_free(self->plugin_name);
+  g_free(self);
+}
+
 void
 log_pipe_unref(LogPipe *self)
 {
@@ -84,9 +94,7 @@ log_pipe_unref(LogPipe *self)
 
   if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
     {
-      if (self->free_fn)
-        self->free_fn(self);
-      g_free(self);
+      _free(self);
     }
 }
 

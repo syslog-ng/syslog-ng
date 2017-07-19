@@ -25,7 +25,9 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
   libtest/config_parse_lib.c  \
   libtest/config_parse_lib.h  \
   libtest/queue_utils_lib.c \
-  libtest/queue_utils_lib.h
+  libtest/queue_utils_lib.h \
+  libtest/license_module_mock.c \
+  libtest/license_module_mock.h
 
 libtestinclude_HEADERS		    =	\
 	libtest/testutils.h		\
@@ -33,7 +35,8 @@ libtestinclude_HEADERS		    =	\
 	libtest/template_lib.h		\
 	libtest/proto_lib.h		\
 	libtest/persist_lib.h		\
-	libtest/mock-transport.h
+	libtest/mock-transport.h \
+	libtest/license_module_mock.h
 
 pkgconfig_DATA			   +=	\
 	libtest/syslog-ng-test.pc

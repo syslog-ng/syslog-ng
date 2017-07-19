@@ -30,6 +30,27 @@
 typedef struct _Plugin Plugin;
 typedef struct _ModuleInfo ModuleInfo;
 
+typedef struct _PluginFailureInfo
+{
+  gconstpointer aux_data;
+} PluginFailureInfo;
+
+typedef struct _PluginBase
+{
+  /* NOTE: the start of this structure must match the Plugin struct,
+     thus it has to be changed together with Plugin */
+  gint type;
+  gchar *name;
+  PluginFailureInfo failure_info;
+} PluginBase;
+
+typedef struct _PluginCandidate
+{
+  PluginBase super;
+  gchar *module_name;
+  gint preference;
+} PluginCandidate;
+
 /* A plugin actually registered by a module. See PluginCandidate in
  * the implementation module, which encapsulates a demand-loadable
  * plugin, not yet loaded.
@@ -44,6 +65,7 @@ struct _Plugin
      the plugin.c module, please modify them both at the same time! */
   gint type;
   const gchar *name;
+  PluginFailureInfo failure_info;
   CfgParser *parser;
   void (*setup_context)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
   gpointer (*construct)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
@@ -73,6 +95,8 @@ gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc,
 
 
 /* plugin side API */
+PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference);
+void plugin_candidate_free(PluginCandidate *self);
 
 void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);
 gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args);

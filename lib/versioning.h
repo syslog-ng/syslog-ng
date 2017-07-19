@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 Balabit
+ * Copyright (c) 2002-2016 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -122,4 +122,5 @@
 
 #define version_convert_from_user(v)  (v)
 
+#include "pe-versioning.h"
 #endif
