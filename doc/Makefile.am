@@ -9,7 +9,7 @@ EXTRA_DIST	+=  \
 		doc/man/dqtool.1.xml \
 		doc/man/loggen.1.xml \
 		doc/man/pdbtool.1.xml \
-		doc/man/syslog-debun.1.xml \
+		doc/man/syslog-ng-debun.1.xml \
 		doc/man/syslog-ng-ctl.1.xml \
 		doc/man/syslog-ng.8.xml \
 		doc/man/syslog-ng.conf.5.xml \
@@ -23,7 +23,7 @@ man_MANS	+= \
 		doc/man/dqtool.1 \
 		doc/man/loggen.1 \
 		doc/man/pdbtool.1 \
-		doc/man/syslog-debun.1 \
+		doc/man/syslog-ng-debun.1 \
 		doc/man/syslog-ng-ctl.1 \
 		doc/man/syslog-ng.8 \
 		doc/man/syslog-ng.conf.5
