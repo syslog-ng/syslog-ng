@@ -47,6 +47,7 @@
 %token KW_SERVER
 %token KW_STATE
 %token KW_SERVICE
+%token KW_EVENT_TIME
 %token KW_DESCRIPTION
 %token KW_METRIC
 %token KW_TTL
@@ -88,6 +89,10 @@ riemann_option
         | KW_SERVICE '(' template_content ')'
           {
             riemann_dd_set_field_service(last_driver, $3);
+          }
+        | KW_EVENT_TIME '(' template_content ')'
+          {
+            riemann_dd_set_field_event_time(last_driver, $3);
           }
         | KW_STATE '(' template_content ')'
           {

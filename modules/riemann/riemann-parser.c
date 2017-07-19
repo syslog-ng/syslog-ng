@@ -36,6 +36,7 @@ static CfgLexerKeyword riemann_keywords[] =
   { "timeout",                  KW_TIMEOUT },
   { "host",                     KW_HOST },
   { "service",                  KW_SERVICE },
+  { "event_time",               KW_EVENT_TIME },
   { "state",                    KW_STATE },
   { "description",              KW_DESCRIPTION },
   { "metric",                   KW_METRIC },

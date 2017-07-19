@@ -45,6 +45,7 @@ typedef struct
   {
     LogTemplate *host;
     LogTemplate *service;
+    LogTemplate *event_time;
     LogTemplate *state;
     LogTemplate *description;
     LogTemplate *metric;
@@ -106,6 +107,15 @@ riemann_dd_set_field_service(LogDriver *d, LogTemplate *value)
 
   self->fields.service = log_template_ref(value);
 }
+
+void
+riemann_dd_set_field_event_time(LogDriver *d, LogTemplate *value)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.event_time = log_template_ref(value);
+}
+
 
 void
 riemann_dd_set_field_state(LogDriver *d, LogTemplate *value)
@@ -350,6 +360,12 @@ riemann_worker_init(LogPipe *s)
       log_template_compile(self->fields.service, "${PROGRAM}", NULL);
     }
 
+  if (!self->fields.event_time)
+    {
+      self->fields.event_time = log_template_new(cfg, NULL);
+      log_template_compile(self->fields.event_time, "${UNIXTIME}", NULL);
+    }
+
   _value_pairs_always_exclude_properties(self);
 
   if (self->event.batch_size_max <= 0)
@@ -366,11 +382,11 @@ riemann_worker_init(LogPipe *s)
 }
 
 static void
-riemann_dd_field_maybe_add(riemann_event_t *event, LogMessage *msg,
-                           LogTemplate *template, const LogTemplateOptions *template_options,
-                           riemann_event_field_t ftype,
-                           gint32 seq_num,
-                           GString *target)
+riemann_dd_field_string_maybe_add(riemann_event_t *event, LogMessage *msg,
+                                  LogTemplate *template, const LogTemplateOptions *template_options,
+                                  riemann_event_field_t ftype,
+                                  gint32 seq_num,
+                                  GString *target)
 {
   if (!template)
     return;
@@ -380,6 +396,26 @@ riemann_dd_field_maybe_add(riemann_event_t *event, LogMessage *msg,
 
   if (target->len != 0)
     riemann_event_set(event, ftype, target->str, RIEMANN_EVENT_FIELD_NONE);
+}
+
+static void
+riemann_dd_field_integer_maybe_add(riemann_event_t *event, LogMessage *msg,
+                                   LogTemplate *template, const LogTemplateOptions *template_options,
+                                   riemann_event_field_t ftype,
+                                   gint32 seq_num,
+                                   GString *target)
+{
+  if (!template)
+    return;
+
+  log_template_format(template, msg, template_options, LTZ_SEND,
+                      seq_num, NULL, target);
+
+  if (target->len != 0)
+    {
+      gint64 as_int = g_ascii_strtoll(target->str, NULL, 10);
+      riemann_event_set(event, ftype, as_int, RIEMANN_EVENT_FIELD_NONE);
+    }
 }
 
 static void
@@ -515,22 +551,26 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 
   if (!need_drop)
     {
-      riemann_dd_field_maybe_add(event, msg, self->fields.host,
-                                 &self->template_options,
-                                 RIEMANN_EVENT_FIELD_HOST,
-                                 self->super.seq_num, str);
-      riemann_dd_field_maybe_add(event, msg, self->fields.service,
-                                 &self->template_options,
-                                 RIEMANN_EVENT_FIELD_SERVICE,
-                                 self->super.seq_num, str);
-      riemann_dd_field_maybe_add(event, msg, self->fields.description,
-                                 &self->template_options,
-                                 RIEMANN_EVENT_FIELD_DESCRIPTION,
-                                 self->super.seq_num, str);
-      riemann_dd_field_maybe_add(event, msg, self->fields.state,
-                                 &self->template_options,
-                                 RIEMANN_EVENT_FIELD_STATE,
-                                 self->super.seq_num, str);
+      riemann_dd_field_string_maybe_add(event, msg, self->fields.host,
+                                        &self->template_options,
+                                        RIEMANN_EVENT_FIELD_HOST,
+                                        self->super.seq_num, str);
+      riemann_dd_field_string_maybe_add(event, msg, self->fields.service,
+                                        &self->template_options,
+                                        RIEMANN_EVENT_FIELD_SERVICE,
+                                        self->super.seq_num, str);
+      riemann_dd_field_integer_maybe_add(event, msg, self->fields.event_time,
+                                         &self->template_options,
+                                         RIEMANN_EVENT_FIELD_TIME,
+                                         self->super.seq_num, str);
+      riemann_dd_field_string_maybe_add(event, msg, self->fields.description,
+                                        &self->template_options,
+                                        RIEMANN_EVENT_FIELD_DESCRIPTION,
+                                        self->super.seq_num, str);
+      riemann_dd_field_string_maybe_add(event, msg, self->fields.state,
+                                        &self->template_options,
+                                        RIEMANN_EVENT_FIELD_STATE,
+                                        self->super.seq_num, str);
 
       if (self->fields.tags)
         g_list_foreach(self->fields.tags, riemann_dd_field_add_tag,
@@ -641,6 +681,7 @@ riemann_dd_free(LogPipe *d)
 
   log_template_unref(self->fields.host);
   log_template_unref(self->fields.service);
+  log_template_unref(self->fields.event_time);
   log_template_unref(self->fields.state);
   log_template_unref(self->fields.description);
   log_template_unref(self->fields.metric);
