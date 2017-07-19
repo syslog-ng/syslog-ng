@@ -98,6 +98,7 @@ xsddir='${datadir}/syslog-ng/xsd'
 
 config_includedir='${datadir}/syslog-ng/include'
 scldir="${config_includedir}/scl"
+abs_topsrcdir=`(cd $srcdir && pwd)`
 
 AC_CONFIG_HEADERS(config.h)
 
@@ -1575,7 +1576,7 @@ fi
 AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory])
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 AC_DEFINE_UNQUOTED(JAVA_MODULE_PATH, "$java_module_path", [java module search path])
-
+AC_DEFINE_UNQUOTED(PATH_TOPSRC_DIR, "$abs_topsrcdir", [self-defined top_srcdir path])
 
 
 AC_DEFINE_UNQUOTED(WITH_COMPILE_DATE, $wcmp_date, [Include the compile date in the binary])

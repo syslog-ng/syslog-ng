@@ -84,18 +84,10 @@ exit:
 static const gchar *
 _get_xsddir_in_build(void)
 {
-#ifdef SYSLOG_NG_ENABLE_DEBUG
-  const gchar *srcdir;
   static gchar path[256];
 
-  srcdir = getenv("top_srcdir");
-  if (srcdir)
-    {
-      g_snprintf(path, sizeof(path), "%s/doc/xsd", srcdir);
-      return path;
-    }
-#endif
-  return NULL;
+  g_snprintf(path, sizeof(path), "%s/doc/xsd", SYSLOG_NG_PATH_TOPSRC_DIR);
+  return path;
 }
 
 static const gchar *
@@ -104,20 +96,16 @@ _get_xsddir_in_production(void)
   return get_installation_path_for(SYSLOG_NG_PATH_XSDDIR);
 }
 
-static const gchar *
-_get_xsddir(void)
-{
-  return _get_xsddir_in_build() ? : _get_xsddir_in_production();
-}
+typedef const gchar *(*PdbGetXsdDirFunc) (void);
 
 static gchar *
-_get_xsd_file(gint version)
+_get_xsd_file(gint version, PdbGetXsdDirFunc get_xsd_dir)
 {
-  return g_strdup_printf("%s/patterndb-%d.xsd", _get_xsddir(), version);
+  return g_strdup_printf("%s/patterndb-%d.xsd", get_xsd_dir(), version);
 }
 
-gboolean
-pdb_file_validate(const gchar *filename, GError **error)
+static gboolean
+_pdb_file_validate(const gchar *filename, GError **error, PdbGetXsdDirFunc get_xsd_dir)
 {
   gchar *xmllint_cmdline;
   gint version;
@@ -131,7 +119,7 @@ pdb_file_validate(const gchar *filename, GError **error)
   if (!version)
     return FALSE;
 
-  xsd_file = _get_xsd_file(version);
+  xsd_file = _get_xsd_file(version, get_xsd_dir);
   if (!is_file_regular(xsd_file))
     {
       g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "XSD file is not available at %s", xsd_file);
@@ -164,4 +152,16 @@ pdb_file_validate(const gchar *filename, GError **error)
   g_free(xmllint_cmdline);
   g_free(stderr_content);
   return TRUE;
+}
+
+gboolean
+pdb_file_validate(const gchar *filename, GError **error)
+{
+  return _pdb_file_validate(filename, error, _get_xsddir_in_production);
+}
+
+gboolean
+pdb_file_validate_in_tests(const gchar *filename, GError **error)
+{
+  return _pdb_file_validate(filename, error, _get_xsddir_in_build);
 }
