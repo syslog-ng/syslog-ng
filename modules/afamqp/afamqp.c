@@ -369,7 +369,7 @@ afamqp_dd_socket_init(AMQPDestDriver *self) {
         return FALSE;
       }
 
-    if(strcmp(self->ca_file,"") != 0)
+    if (self->ca_file)
       {
         int ca_file_ret;
         self->sockfd = amqp_ssl_socket_new(self->conn);
@@ -385,7 +385,7 @@ afamqp_dd_socket_init(AMQPDestDriver *self) {
 
           }
 
-        if(strcmp(self->key_file,"") != 0 && strcmp(self->cert_file,"") != 0)
+        if (self->key_file && self->cert_file)
           {
             int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->cert_file, self->key_file);
             if(setkey_ret != AMQP_STATUS_OK)
@@ -696,9 +696,6 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   log_template_options_defaults(&self->template_options);
   afamqp_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
-  afamqp_dd_set_ca_file((LogDriver *) self, "");
-  afamqp_dd_set_key_file((LogDriver *) self, "");
-  afamqp_dd_set_cert_file((LogDriver *) self, "");
   afamqp_dd_set_peer_verify((LogDriver *) self, TRUE);
 
   return (LogDriver *) self;
