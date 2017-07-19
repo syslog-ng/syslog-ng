@@ -513,6 +513,19 @@ tls_context_setup_dh(TLSContext *self)
   return ctx_dh_success;
 }
 
+static gboolean
+tls_context_load_key_and_cert(TLSContext *self)
+{
+  if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
+    return FALSE;
+  if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
+    return FALSE;
+  if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
+    return FALSE;
+
+  return TRUE;
+}
+
 gboolean
 tls_context_setup_context(TLSContext *self)
 {
@@ -520,13 +533,9 @@ tls_context_setup_context(TLSContext *self)
 
   if (!self->ssl_ctx)
     goto error;
-  if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
-    goto error;
 
-  if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
-    goto error;
-  if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
-    goto error;
+      if (!tls_context_load_key_and_cert(self))
+        goto error;
 
   if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
     goto error;
