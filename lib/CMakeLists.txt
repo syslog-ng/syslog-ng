@@ -300,7 +300,7 @@ install(FILES ${TRANSPORT_HEADERS} DESTINATION include/syslog-ng/transport)
 install(FILES ${CSV_SCANNER_HEADERS} DESTINATION include/syslog-ng/scanner/csv-scanner)
 
 set(TOOLS
-    merge-grammar.pl
+    merge-grammar.py
     cfg-grammar.y
 )
 

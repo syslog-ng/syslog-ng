@@ -8,4 +8,4 @@ tools_DATA	= \
 		lib/cfg-grammar.y
 
 tools_SCRIPTS	= \
-		lib/merge-grammar.pl
+		lib/merge-grammar.py
