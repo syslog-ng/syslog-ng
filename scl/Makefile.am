@@ -15,7 +15,8 @@ SCL_SUBDIRS	= \
 	cisco		\
 	loggly		\
 	logmatic	\
-	snmptrap
+	snmptrap        \
+	osquery
 SCL_CONFIGS	= scl.conf syslog-ng.conf
 
 EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS))
