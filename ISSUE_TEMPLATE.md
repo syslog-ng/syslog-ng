@@ -35,7 +35,7 @@ $ syslog-ng-debun -r
 ## Failure
 
 (Backtrace, error messages or detailed description of failure comes here.)
-(To create debug bundles, use `syslog-debun`. Details of its usage can be found [here](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/syslog-debun.1.html))
+(To create debug bundles, use `syslog-ng-debun`. Details of its usage can be found [on the documentation page](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/syslog-ng-debun.1.html))
 
 ```
 $ gdb syslog-ng

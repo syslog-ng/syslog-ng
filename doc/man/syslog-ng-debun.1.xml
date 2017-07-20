@@ -2,34 +2,42 @@
 <reference xmlns="http://docbook.org/ns/docbook" version="5.0">
   <info>
     <productname/>
-    <title>The syslog-debun manual page</title>
+    <title>The syslog-ng-debun manual page</title>
   </info>
-  <refentry xml:id="syslog-debun.1">
+  <refentry xml:id="syslog-ng-debun.1">
     <refmeta>
-      <refentrytitle>syslog-debun</refentrytitle>
+      <refentrytitle>syslog-ng-debun</refentrytitle>
       <manvolnum>1</manvolnum>
-      <refmiscinfo class="version">3.10</refmiscinfo>
+      <refmiscinfo class="version">3.11</refmiscinfo>
       <refmiscinfo class="source"/>
     </refmeta>
     <refnamediv>
-      <refname>syslog-debun</refname>
+      <refname>syslog-ng-debun</refname>
       <refpurpose>syslog-ng DEBUg buNdle generator</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
       <cmdsynopsis>
-        <command>syslog-debun</command>
+        <command>syslog-ng-debun</command>
         <arg>options</arg>
       </cmdsynopsis>
     </refsynopsisdiv>
-    <refsection xml:id="syslog-debun-mandescription">
+    <refsection xml:id="syslog-ng-debun-mandescription">
       <title>Description</title>
-      <para>NOTE: The <command>syslog-debun</command> application is distributed with the  system logging application, and is usually part of the  package. The latest version of the  application is available at .</para>
+      <para>NOTE: The <command>syslog-ng-debun</command> application is distributed with the  system logging application, and is usually part of the  package. The latest version of the  application is available at .</para>
       <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/">The syslog-ng Administrator Guide</link>.</para>
-      <para>The <command>syslog-debun</command> tool collects and saves information about your  installation, making troubleshooting easier, especially if you ask help about your  related problem.</para>
+      <para>The <command>syslog-ng-debun</command> tool collects and saves information about your  installation, making troubleshooting easier, especially if you ask help about your  related problem.</para>
     </refsection>
     <refsection>
       <title>General Options</title>
       <variablelist>
+        <varlistentry>
+          <term>
+            <command>-r</command>
+          </term>
+          <listitem>
+            <para>Run <command>syslog-ng-debun</command>. Using this option is required to actually execute the data collection with <command>syslog-ng-debun</command>. It is needed to prevent accidentally running <command>syslog-ng-debun</command>.</para>
+          </listitem>
+        </varlistentry>
         <varlistentry>
           <term>
             <command>-h</command>
@@ -117,7 +125,7 @@
     </refsection>
     <refsection>
       <title>Packet capture options</title>
-      <para>Capturing packets requires a packet capture tool on the host. The <command>syslog-debun</command> tool attempts to use <command>tcpdump</command> on most platforms, except for Solaris, where it uses <command>snoop</command>.</para>
+      <para>Capturing packets requires a packet capture tool on the host. The <command>syslog-ng-debun</command> tool attempts to use <command>tcpdump</command> on most platforms, except for Solaris, where it uses <command>snoop</command>.</para>
       <variablelist>
         <varlistentry>
           <term>
@@ -155,23 +163,23 @@
     </refsection>
     <refsection>
       <title>Examples</title>
-      <synopsis>syslog-debun</synopsis>
+      <synopsis>syslog-ng-debun -r</synopsis>
       <para>Create a simple debug bundle, collecting information about your environment, for example, list packages containing the word: syslog, ldd of your syslog-binary, and so on.</para>
-      <synopsis>syslog-debun -l</synopsis>
-      <para>Similar to <command>syslog-debun</command>, but without privacy-sensitive information. For example, the following is NOT collected: fstab, df output, mount info, ip / network interface configuration, DNS resolv info, and process tree.</para>
-      <synopsis>syslog-debun -d</synopsis>
-      <para>Similar to <command>syslog-debun</command>, but it also stops syslog-ng, then restarts it in debug mode (<userinput>-Fedv --enable-core</userinput>). To stop debug mode, press Enter. The output of the debug mode collected into a separate file, and also added to the debug bundle.</para>
-      <synopsis>syslog-debun -s</synopsis>
+      <synopsis>syslog-ng-debun -r -l</synopsis>
+      <para>Similar to <command>syslog-ng-debun -r</command>, but without privacy-sensitive information. For example, the following is NOT collected: fstab, df output, mount info, ip / network interface configuration, DNS resolv info, and process tree.</para>
+      <synopsis>syslog-ng-debun -r -d</synopsis>
+      <para>Similar to <command>syslog-ng-debun -r</command>, but it also stops syslog-ng, then restarts it in debug mode (<userinput>-Fedv --enable-core</userinput>). To stop debug mode, press Enter. The output of the debug mode collected into a separate file, and also added to the debug bundle.</para>
+      <synopsis>syslog-ng-debun -r -s</synopsis>
       <para>Trace the system calls (using <command>strace</command> or <command>truss</command>) of an already running  process.</para>
-      <synopsis>syslog-debun -d -s</synopsis>
+      <synopsis>syslog-ng-debun -r -d -s</synopsis>
       <para>Restart  in debug mode, and also trace the system calls (using <command>strace</command> or <command>truss</command>) of the  process.</para>
-      <synopsis>syslog-debun -p</synopsis>
+      <synopsis>syslog-ng-debun -r -p</synopsis>
       <para>Run packet capture (pcap) with the filter: <userinput>port 514 or port 601 or port 53</userinput> Also waits for pressing Enter, like debug mode.</para>
-      <synopsis>syslog-debun -p -t 10</synopsis>
-      <para>Noninteractive debug mode: Similar to <command>syslog-debun -p</command>, but automatically exit after 10 seconds.</para>
-      <synopsis>syslog-debun -P "host 1.2.3.4"  -D "-Fev --enable-core"</synopsis>
+      <synopsis>syslog-ng-debun -r -p -t 10</synopsis>
+      <para>Noninteractive debug mode: Similar to <command>syslog-ng-debun -r -p</command>, but automatically exit after 10 seconds.</para>
+      <synopsis>syslog-ng-debun -r -P "host 1.2.3.4"  -D "-Fev --enable-core"</synopsis>
       <para>Change the packet-capturing filter from the default to <userinput>host 1.2.3.4</userinput>. Also change debugging parameters from the default to <userinput>-Fev --enable-core</userinput>. Since a timeout (<userinput>-t</userinput>) is not given, waits for pressing Enter.</para>
-      <synopsis>syslog-debun -p -d -w 5 -t 10</synopsis>
+      <synopsis>syslog-ng-debun -r -p -d -w 5 -t 10</synopsis>
       <para>Collect pcap and debug mode output following this scenario:</para>
       <itemizedlist>
         <listitem>
@@ -212,7 +220,7 @@
         <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
       </para>
       <note version="5.0">
-        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.10 Administrator Guide</command></link></para>
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.11 Administrator Guide</command></link></para>
         <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
         <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
       </note>
