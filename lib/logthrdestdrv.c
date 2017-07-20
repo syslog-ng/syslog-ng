@@ -222,6 +222,7 @@ log_threaded_dest_driver_do_work(gpointer data)
   gint timeout_msec = 0;
 
   self->suspended = FALSE;
+  main_loop_worker_run_gc();
   log_threaded_dest_driver_stop_watches(self);
 
   if (!self->worker.connected)
