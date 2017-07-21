@@ -37,21 +37,6 @@
 #define G_MODULE_SUFFIX "a"
 #endif
 
-typedef struct _PluginBase
-{
-  /* NOTE: the start of this structure must match the Plugin struct,
-     thus it has to be changed together with Plugin */
-  gint type;
-  gchar *name;
-} PluginBase;
-
-typedef struct _PluginCandidate
-{
-  PluginBase super;
-  gchar *module_name;
-  gint preference;
-} PluginCandidate;
-
 static void
 plugin_candidate_set_preference(PluginCandidate *self, gint preference)
 {
@@ -65,7 +50,8 @@ plugin_candidate_set_module_name(PluginCandidate *self, const gchar *module_name
   self->module_name = g_strdup(module_name);
 }
 
-static PluginCandidate *
+
+PluginCandidate *
 plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference)
 {
   PluginCandidate *self = g_new0(PluginCandidate, 1);
@@ -74,10 +60,12 @@ plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_na
   self->super.name = g_strdup(name);
   self->module_name = g_strdup(module_name);
   self->preference = preference;
+  self->super.failure_info.aux_data = NULL;
+
   return self;
 }
 
-static void
+void
 plugin_candidate_free(PluginCandidate *self)
 {
   g_free(self->super.name);
@@ -144,7 +132,9 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
   /* try registered plugins first */
   p = plugin_find_in_list(cfg, cfg->plugins, plugin_type, plugin_name);
   if (p)
-    return p;
+    {
+      return p;
+    }
 
   candidate = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin_type, plugin_name);
   if (!candidate)
@@ -157,6 +147,7 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
   p = plugin_find_in_list(cfg, cfg->plugins, plugin_type, plugin_name);
   if (p)
     {
+      p->failure_info.aux_data = candidate->super.failure_info.aux_data;
       return p;
     }
   else
@@ -179,6 +170,22 @@ plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar 
       return self->construct(self, cfg, plugin_type, plugin_name);
     }
   return NULL;
+}
+
+static gboolean
+_is_log_pipe(Plugin *self)
+{
+  switch (self->type)
+    {
+    case LL_CONTEXT_SOURCE:
+    case LL_CONTEXT_DESTINATION:
+    case LL_CONTEXT_PARSER:
+    case LL_CONTEXT_FILTER:
+    case LL_CONTEXT_REWRITE:
+      return TRUE;
+    default:
+      return FALSE;
+    }
 }
 
 /* construct a plugin instance by parsing a configuration file */
@@ -217,6 +224,15 @@ plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer a
     {
       cfg_parser_cleanup(self->parser, instance);
       instance = NULL;
+      return NULL;
+    }
+
+  if (_is_log_pipe(self))
+    {
+      LogPipe *p = (LogPipe *)instance;
+      p->plugin_name = g_strdup(self->name);
+      if (self->failure_info.aux_data != NULL)
+        p->init = self->failure_info.aux_data;
     }
 
   return instance;

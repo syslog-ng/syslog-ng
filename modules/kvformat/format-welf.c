@@ -84,7 +84,7 @@ tf_format_welf_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvo
   for (i = 0; i < args->num_messages; i++)
     {
       value_pairs_foreach_sorted(state->vp,
-                                 tf_format_welf_foreach, (GCompareDataFunc) tf_format_welf_strcmp,
+                                 tf_format_welf_foreach, (GCompareFunc) tf_format_welf_strcmp,
                                  args->messages[i], 0, args->tz, args->opts, result);
     }
 

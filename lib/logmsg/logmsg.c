@@ -29,6 +29,7 @@
 #include "timeutils.h"
 #include "logmsg/nvtable.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 #include "template/templates.h"
 #include "tls-support.h"
 #include "compat/string.h"
@@ -210,6 +211,7 @@ gint logmsg_queue_node_max = 1;
 static StatsCounterItem *count_msg_clones;
 static StatsCounterItem *count_payload_reallocs;
 static StatsCounterItem *count_sdata_updates;
+static StatsCounterItem *count_allocated_bytes;
 static GStaticPrivate priv_macro_value = G_STATIC_PRIVATE_INIT;
 
 static inline gboolean
@@ -264,7 +266,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
 
   if (self->alloc_sdata <= self->num_sdata)
     {
-      alloc_sdata = MAX(self->num_sdata + 1, (self->num_sdata + 8) & ~7);
+      alloc_sdata = MAX(self->num_sdata + 1, STRICT_ROUND_TO_NEXT_EIGHT(self->num_sdata));
       if (alloc_sdata > 255)
         alloc_sdata = 255;
     }
@@ -290,8 +292,13 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
       self->sdata = sdata;
       log_msg_set_flag(self, LF_STATE_OWN_SDATA);
     }
+  guint16 old_alloc_sdata = self->alloc_sdata;
   self->alloc_sdata = alloc_sdata;
-
+  if (self->sdata)
+    {
+      self->allocated_bytes += ((self->alloc_sdata - old_alloc_sdata) * sizeof(self->sdata[0]));
+      stats_counter_add(count_allocated_bytes, (self->alloc_sdata - old_alloc_sdata) * sizeof(self->sdata[0]));
+    }
   /* ok, we have our own SDATA array now which has at least one free slot */
 
   if (!self->initial_parse)
@@ -497,6 +504,17 @@ log_msg_free_queue_node(LogMessageQueueNode *node)
     g_slice_free(LogMessageQueueNode, node);
 }
 
+static gboolean
+_log_name_value_updates(LogMessage *self)
+{
+  /* we don't log name value updates for internal messages that are
+   * initialized at this point, as that may generate an endless recursion.
+   * log_msg_new_internal() calling log_msg_set_value(), which in turn
+   * generates an internal message, again calling log_msg_set_value()
+   */
+  return (!self->initial_parse && (self->flags & LF_INTERNAL) == 0);
+}
+
 void
 log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len)
 {
@@ -512,6 +530,14 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
 
+  if (_log_name_value_updates(self))
+    {
+      msg_debug("Setting value",
+                evt_tag_printf("msg", "%p", self),
+                evt_tag_str("name", name),
+                evt_tag_printf("value", "%.*s", (gint) value_len, value));
+    }
+
   if (value_len < 0)
     value_len = strlen(value);
 
@@ -519,6 +545,8 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
     {
       self->payload = nv_table_clone(self->payload, name_len + value_len + 2);
       log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
+      self->allocated_bytes += self->payload->size;
+      stats_counter_add(count_allocated_bytes, self->payload->size);
     }
 
   /* we need a loop here as a single realloc may not be enough. Might help
@@ -527,6 +555,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   while (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, &new_entry))
     {
       /* error allocating string in payload, reallocate */
+      guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))
         {
           /* can't grow the payload, it has reached the maximum size */
@@ -535,6 +564,9 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
                    evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""));
           break;
         }
+      guint32 new_size = self->payload->size;
+      self->allocated_bytes += (new_size - old_size);
+      stats_counter_add(count_allocated_bytes, new_size-old_size);
       stats_counter_inc(count_payload_reallocs);
     }
 
@@ -574,13 +606,31 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
 
+  if (_log_name_value_updates(self))
+    {
+      msg_debug("Setting indirect value",
+                evt_tag_printf("msg", "%p", self),
+                evt_tag_str("name", name),
+                evt_tag_int("ref_handle", ref_handle),
+                evt_tag_int("ofs", ofs),
+                evt_tag_int("len", len));
+    }
+
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {
       self->payload = nv_table_clone(self->payload, name_len + 1);
       log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
     }
 
-  while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, ref_handle, type, ofs, len, &new_entry))
+  NVReferencedSlice referenced_slice =
+  {
+    .handle = ref_handle,
+    .ofs = ofs,
+    .len = len,
+    .type = type
+  };
+
+  while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, &referenced_slice, &new_entry))
     {
       /* error allocating string in payload, reallocate */
       if (!nv_table_realloc(self->payload, &self->payload))
@@ -1095,6 +1145,8 @@ log_msg_alloc(gsize payload_size)
     msg->payload = nv_table_init_borrowed(((gchar *) msg) + payload_ofs, payload_space, LM_V_MAX);
 
   msg->num_nodes = nodes;
+  msg->allocated_bytes = alloc_size + payload_space;
+  stats_counter_add(count_allocated_bytes, msg->allocated_bytes);
   return msg;
 }
 
@@ -1140,11 +1192,13 @@ LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
   LogMessage *self = log_msg_alloc(0);
+  gsize allocated_bytes = self->allocated_bytes;
 
   stats_counter_inc(count_msg_clones);
   log_msg_write_protect(msg);
 
   memcpy(self, msg, sizeof(*msg));
+  msg->allocated_bytes = allocated_bytes;
 
   /* every field _must_ be initialized explicitly if its direct
    * copying would cause problems (like copying a pointer by value) */
@@ -1239,11 +1293,13 @@ log_msg_new_internal(gint prio, const gchar *msg)
 
   g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
   self = log_msg_new_local();
+  self->flags |= LF_INTERNAL;
+  self->initial_parse = TRUE;
   log_msg_set_value(self, LM_V_PROGRAM, "syslog-ng", 9);
   log_msg_set_value(self, LM_V_PID, buf, -1);
   log_msg_set_value(self, LM_V_MESSAGE, msg, -1);
+  self->initial_parse = FALSE;
   self->pri = prio;
-  self->flags |= LF_INTERNAL;
 
   return self;
 }
@@ -1286,6 +1342,8 @@ log_msg_free(LogMessage *self)
 
   if (self->original)
     log_msg_unref(self->original);
+
+  stats_counter_sub(count_allocated_bytes, self->allocated_bytes);
 
   g_free(self);
 }
@@ -1718,10 +1776,24 @@ void
 log_msg_global_init(void)
 {
   log_msg_registry_init();
+}
+
+void
+log_msg_stats_global_init(void)
+{
   stats_lock();
-  stats_register_counter(0, SCS_GLOBAL, "msg_clones", NULL, SC_TYPE_PROCESSED, &count_msg_clones);
-  stats_register_counter(0, SCS_GLOBAL, "payload_reallocs", NULL, SC_TYPE_PROCESSED, &count_payload_reallocs);
-  stats_register_counter(0, SCS_GLOBAL, "sdata_updates", NULL, SC_TYPE_PROCESSED, &count_sdata_updates);
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "msg_clones", NULL );
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_msg_clones);
+
+  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "payload_reallocs", NULL );
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_payload_reallocs);
+
+  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "sdata_updates", NULL );
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_sdata_updates);
+
+  stats_cluster_single_key_set(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
   stats_unlock();
 }
 
@@ -1745,6 +1817,16 @@ log_msg_lookup_time_stamp_name(const gchar *name)
   else if (strcmp(name, "recvd") == 0)
     return LM_TS_RECVD;
   return -1;
+}
+
+gssize log_msg_get_size(LogMessage *self)
+{
+  return
+    sizeof(LogMessage) + // msg.static fields
+    + self->alloc_sdata * sizeof(self->sdata[0]) +
+    sizeof(GSockAddr) + sizeof (GSockAddrFuncs) + // msg.saddr + msg.saddr.sa_func
+    ((self->num_tags) ? sizeof(self->tags[0]) * self->num_tags : 0) +
+    nv_table_get_memory_consumption(self->payload); // msg.payload (nvtable)
 }
 
 #ifdef __linux__

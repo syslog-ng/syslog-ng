@@ -45,10 +45,9 @@ gboolean
 const ModuleInfo module_info =
 {
   .canonical_name = "@PLUGIN_NAME_US@",
-  .version = VERSION,
+  .version = SYSLOG_NG_VERSION,
   .description = "Please fill this description",
-  .core_revision = SOURCE_REVISION,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = @PLUGIN_NAME_US@_plugins,
   .plugins_len = G_N_ELEMENTS(@PLUGIN_NAME_US@_plugins),
 };
-

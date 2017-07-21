@@ -483,7 +483,10 @@ dns_caching_global_init(void)
 void
 dns_caching_global_deinit(void)
 {
+  G_LOCK(unused_dns_caches);
   g_list_foreach(unused_dns_caches, (GFunc) dns_cache_free, NULL);
   g_list_free(unused_dns_caches);
+  unused_dns_caches = NULL;
+  G_UNLOCK(unused_dns_caches);
   dns_cache_options_destroy(&effective_dns_cache_options);
 }

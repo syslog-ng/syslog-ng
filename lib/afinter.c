@@ -431,7 +431,9 @@ afinter_message_posted(LogMessage *msg)
       internal_msg_queue = g_queue_new();
 
       stats_lock();
-      stats_register_counter(0, SCS_GLOBAL, "internal_queue_length", NULL, SC_TYPE_PROCESSED, &internal_queue_length);
+      StatsClusterKey sc_key;
+      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL );
+      stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
       stats_unlock();
     }
 

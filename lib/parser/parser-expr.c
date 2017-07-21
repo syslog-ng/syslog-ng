@@ -70,6 +70,9 @@ log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOpti
       g_string_free(input, TRUE);
     }
 
+  if (!success)
+    stats_counter_inc(self->super.discarded_messages);
+
   return success;
 }
 
@@ -104,6 +107,13 @@ log_parser_init_method(LogPipe *s)
 
   if (!self->name && s->expr_node)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_PARSER, s->expr_node);
+
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, self->name, NULL );
+  stats_register_counter(1, &sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
+  stats_unlock();
+
   return TRUE;
 }
 
@@ -112,9 +122,16 @@ log_parser_free_method(LogPipe *s)
 {
   LogParser *self = (LogParser *) s;
 
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, self->name, NULL );
+  stats_unregister_counter(&sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
+  stats_unlock();
+
   g_free(self->name);
   log_template_unref(self->template);
   log_pipe_free_method(s);
+
 }
 
 void

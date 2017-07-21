@@ -8,6 +8,7 @@ Makefile.in
 aclocal.m4
 config.h.in
 configure
+configure.gnu
 depcomp
 install-sh
 missing
@@ -37,3 +38,9 @@ m4/ax*.m4
 /compile
 .deps
 /lib/cfg-grammar.h
+/test-driver
+dbld/build/
+dbld/release/
+debian/build-tree/
+debian/*.log
+debian/autoreconf.*

@@ -382,6 +382,10 @@ tls_context_setup_session(TLSContext *self)
           if(self->ssl_options & TSO_NOTLSv12)
             ssl_options |= SSL_OP_NO_TLSv1_2;
 #endif
+#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
+          if (self->mode == TM_SERVER)
+            ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+#endif
           SSL_CTX_set_options(self->ssl_ctx, ssl_options);
         }
       else

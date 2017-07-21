@@ -24,6 +24,9 @@
 #ifndef AFFILE_COMMON_H_INCLUDED
 #define AFFILE_COMMON_H_INCLUDED
 
+/* portable largefile support for affile */
+#include "compat/lfs.h"
+
 #include "file-perms.h"
 #include <string.h>
 

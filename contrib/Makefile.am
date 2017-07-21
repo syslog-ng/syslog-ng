@@ -1,5 +1,11 @@
+dist_sbin_SCRIPTS += \
+	contrib/syslog-ng-debun
+
 EXTRA_DIST += \
 	contrib/README \
+	\
+	contrib/README.syslog-ng-debun \
+	contrib/syslog-ng-debun \
 	\
 	contrib/init.d.solaris \
 	contrib/init.d.HP-UX \
@@ -42,6 +48,7 @@ EXTRA_DIST += \
 	\
 	contrib/solaris-packaging/solaris10_install.txt \
 	contrib/solaris-packaging/syslog-ng.example.xml \
+	contrib/solaris-packaging/syslog-ng-sol11-smf.example.xml \
 	contrib/solaris-packaging/syslog-ng.method \
 	\
 	contrib/freebsd-packaging/syslog-ng.rc.d \
@@ -67,10 +74,11 @@ EXTRA_DIST += \
 	contrib/balabit-initscripts/init-functions \
 	\
 	contrib/upstart/syslog-ng.conf.upstart	\
-	contrib/systemd/syslog-ng.service \
+	contrib/systemd/syslog-ng@.service \
+	contrib/systemd/syslog-ng@default \
 	\
 	contrib/valgrind/syslog-ng.supp
 
 if ENABLE_SYSTEMD_UNIT_INSTALL
-systemdsystemunit_DATA = contrib/systemd/syslog-ng.service
+systemdsystemunit_DATA = contrib/systemd/syslog-ng@.service
 endif

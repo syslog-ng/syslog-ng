@@ -39,6 +39,8 @@ typedef struct _LogFilterPipe
   LogPipe super;
   FilterExprNode *expr;
   gchar *name;
+  StatsCounterItem *matched;
+  StatsCounterItem *not_matched;
 } LogFilterPipe;
 
 LogPipe *log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg);

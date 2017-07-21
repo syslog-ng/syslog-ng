@@ -39,6 +39,7 @@
 #include "debugger/debugger-main.h"
 #include "plugin.h"
 #include "resolved-configurable-paths.h"
+#include "scratch-buffers.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -154,10 +155,23 @@ struct _MainLoop
 
 static MainLoop main_loop;
 
+
 MainLoop *
 main_loop_get_instance(void)
 {
   return &main_loop;
+}
+
+void
+main_loop_set_server_mode(MainLoop *self, gboolean server_mode)
+{
+  self->options->server_mode = server_mode;
+}
+
+gboolean
+main_loop_is_server_mode(MainLoop *self)
+{
+  return self->options->server_mode;
 }
 
 /* called when syslog-ng first starts up */
@@ -443,6 +457,7 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 
   self->options = options;
   main_thread_handle = get_thread_id();
+  scratch_buffers_automatic_gc_init();
   main_loop_worker_init();
   main_loop_io_worker_init();
   main_loop_call_init();
@@ -500,6 +515,7 @@ main_loop_deinit(MainLoop *self)
   main_loop_call_deinit();
   main_loop_io_worker_deinit();
   main_loop_worker_deinit();
+  scratch_buffers_automatic_gc_deinit();
 }
 
 void

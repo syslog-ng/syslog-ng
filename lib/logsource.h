@@ -42,6 +42,7 @@ typedef struct _LogSourceOptions
   gint host_override_len;
   LogTagId source_group_tag;
   GArray *tags;
+  GList *source_queue_callbacks;
 } LogSourceOptions;
 
 typedef struct _LogSource LogSource;

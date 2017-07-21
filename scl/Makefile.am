@@ -12,8 +12,11 @@ SCL_SUBDIRS	= \
 	kafka		\
 	hdfs		\
 	apache		\
+	cisco		\
 	loggly		\
-	logmatic
+	logmatic	\
+	snmptrap        \
+	osquery
 SCL_CONFIGS	= scl.conf syslog-ng.conf
 
 EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS))

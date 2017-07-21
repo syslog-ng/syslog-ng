@@ -24,6 +24,7 @@
 #include "csv-scanner.h"
 #include "str-utils.h"
 #include "string-list.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 
@@ -396,7 +397,7 @@ csv_scanner_init(CSVScanner *scanner, CSVScannerOptions *options, const gchar *i
 {
   memset(scanner, 0, sizeof(*scanner));
   scanner->src = input;
-  scanner->current_value = g_string_sized_new(128);
+  scanner->current_value = scratch_buffers_alloc();
   scanner->current_column = NULL;
   scanner->options = options;
 }
@@ -404,7 +405,6 @@ csv_scanner_init(CSVScanner *scanner, CSVScannerOptions *options, const gchar *i
 void
 csv_scanner_deinit(CSVScanner *self)
 {
-  g_string_free(self->current_value, TRUE);
 }
 
 const gchar *

@@ -47,6 +47,7 @@ EXTRA_DIST += \
 	modules/java-modules/http/build.gradle   \
 	modules/java-modules/settings.gradle \
 	modules/java-modules/build.gradle \
+	modules/java-modules/internal_repositories.gradle \
 	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/ESMessageProcessor.java \
 	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/DummyProcessor.java \
 	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/ESBulkMessageProcessor.java \

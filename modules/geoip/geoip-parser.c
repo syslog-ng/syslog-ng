@@ -24,24 +24,25 @@
 #include "geoip-parser.h"
 #include "parser/parser-expr.h"
 #include "scratch-buffers.h"
+#include "geoip-helper.h"
 
-#include <GeoIPCity.h>
+typedef struct _GeoIPParser GeoIPParser;
 
-typedef struct
+struct _GeoIPParser
 {
   LogParser super;
   GeoIP *gi;
 
   gchar *database;
   gchar *prefix;
-
+  void (*add_geoip_result)(GeoIPParser *, LogMessage *, const gchar *);
   struct
   {
     gchar *country_code;
     gchar *longitude;
     gchar *latitude;
   } dest;
-} GeoIPParser;
+};
 
 void
 geoip_parser_set_prefix(LogParser *s, const gchar *prefix)
@@ -74,6 +75,50 @@ geoip_parser_set_database(LogParser *s, const gchar *database)
   self->database = g_strdup(database);
 }
 
+static void
+add_geoip_record(GeoIPParser *self, LogMessage *msg, const gchar *ip)
+{
+  GeoIPRecord *record;
+  GString *value;
+
+  record = GeoIP_record_by_name(self->gi, ip);
+  if (record)
+    {
+      if (record->country_code)
+        log_msg_set_value_by_name(msg, self->dest.country_code,
+                                  record->country_code,
+                                  strlen(record->country_code));
+
+      value = scratch_buffers_alloc();
+
+      g_string_printf(value, "%f",
+                      record->latitude);
+      log_msg_set_value_by_name(msg, self->dest.latitude,
+                                value->str,
+                                value->len);
+
+      g_string_printf(value, "%f",
+                      record->longitude);
+      log_msg_set_value_by_name(msg, self->dest.longitude,
+                                value->str,
+                                value->len);
+
+      GeoIPRecord_delete(record);
+    }
+}
+
+static void
+add_geoip_country_code(GeoIPParser *self, LogMessage *msg, const gchar *ip)
+{
+  const char *country;
+
+  country = GeoIP_country_code_by_name(self->gi, ip);
+  if (country)
+    log_msg_set_value_by_name(msg, self->dest.country_code,
+                              country,
+                              strlen(country));
+}
+
 static gboolean
 geoip_parser_process(LogParser *s, LogMessage **pmsg,
                      const LogPathOptions *path_options,
@@ -81,50 +126,13 @@ geoip_parser_process(LogParser *s, LogMessage **pmsg,
 {
   GeoIPParser *self = (GeoIPParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  GeoIPRecord *record;
-  SBGString *value;
 
   if (!self->dest.country_code &&
       !self->dest.latitude &&
       !self->dest.longitude)
     return TRUE;
 
-  record = GeoIP_record_by_name(self->gi, input);
-
-  if (!record)
-    {
-      const char *country;
-
-      country = GeoIP_country_code_by_name(self->gi, input);
-      if (country)
-        log_msg_set_value_by_name(msg, self->dest.country_code,
-                                  country,
-                                  strlen(country));
-
-      return TRUE;
-    }
-
-  if (record->country_code)
-    log_msg_set_value_by_name(msg, self->dest.country_code,
-                              record->country_code,
-                              strlen(record->country_code));
-
-  value = sb_gstring_acquire();
-
-  g_string_printf(sb_gstring_string(value), "%f",
-                  record->latitude);
-  log_msg_set_value_by_name(msg, self->dest.latitude,
-                            sb_gstring_string(value)->str,
-                            sb_gstring_string(value)->len);
-
-  g_string_printf(sb_gstring_string(value), "%f",
-                  record->longitude);
-  log_msg_set_value_by_name(msg, self->dest.longitude,
-                            sb_gstring_string(value)->str,
-                            sb_gstring_string(value)->len);
-
-  GeoIPRecord_delete(record);
-  sb_gstring_release(value);
+  self->add_geoip_result(self, msg, input);
 
   return TRUE;
 }
@@ -175,6 +183,19 @@ geoip_parser_init(LogPipe *s)
 
   if (!self->gi)
     return FALSE;
+
+  if (is_country_type(self->gi->databaseType))
+    {
+      msg_debug("geoip: country type database detected",
+                evt_tag_int("database type", self->gi->databaseType));
+      self->add_geoip_result = add_geoip_country_code;
+    }
+  else
+    {
+      msg_debug("geoip: city type database detected",
+                evt_tag_int("database type", self->gi->databaseType));
+      self->add_geoip_result = add_geoip_record;
+    }
   return log_parser_init_method(s);
 }
 

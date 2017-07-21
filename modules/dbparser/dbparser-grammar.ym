@@ -66,6 +66,7 @@ SyntheticMessage *last_message;
 %token KW_HAVING
 %token KW_AGGREGATE
 %token KW_VALUE
+%token KW_DROP_UNMATCHED
 
 %type <num> stateful_parser_inject_mode
 %type <ptr> synthetic_message
@@ -100,6 +101,7 @@ parser_db_opts
 /* NOTE: we don't support parser_opt as we don't want the user to specify a template */
 parser_db_opt
         : KW_FILE '(' string ')'                		{ log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
+	| KW_DROP_UNMATCHED '(' yesno ')'			{ log_db_parser_set_drop_unmatched(((LogDBParser *) last_parser), $3); };
 	| stateful_parser_opt
         ;
 

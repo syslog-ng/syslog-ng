@@ -31,6 +31,7 @@
 #include "logqueue-disk-reliable.h"
 #include "logqueue-disk-non-reliable.h"
 #include "logmsg/logmsg-serialize.h"
+#include "scratch-buffers.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -82,14 +83,14 @@ open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options)
     {
       options->disk_buf_size = 128;
       options->mem_buf_size = 1024 * 1024;
-      *lq = log_queue_disk_reliable_new(options);
+      *lq = log_queue_disk_reliable_new(options, NULL);
     }
   else
     {
       options->disk_buf_size = 1;
       options->mem_buf_size = 128;
       options->qout_size = 128;
-      *lq = log_queue_disk_non_reliable_new(options);
+      *lq = log_queue_disk_non_reliable_new(options, NULL);
     }
 
   if (!log_queue_disk_load_queue(*lq, filename))
@@ -289,16 +290,22 @@ main(int argc, char *argv[])
       return 0;
     }
 
-  configuration = cfg_new(0x0307);
+  configuration = cfg_new(VERSION_VALUE);
   configuration->template_options.frac_digits = 3;
   configuration->template_options.time_zone_info[LTZ_LOCAL] = time_zone_info_new(NULL);
 
   msg_init(TRUE);
+  stats_init();
+  scratch_buffers_global_init();
+  scratch_buffers_allocator_init();
   log_template_global_init();
   log_msg_registry_init();
   log_tags_global_init();
   modes[mode].main(argc, argv);
   log_tags_global_deinit();
+  scratch_buffers_allocator_deinit();
+  scratch_buffers_global_deinit();
+  stats_destroy();
   msg_deinit();
   return 0;
 

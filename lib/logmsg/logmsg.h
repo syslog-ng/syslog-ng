@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOGMSG_H_INCLUDED
 #define LOGMSG_H_INCLUDED
 
@@ -55,6 +55,8 @@ typedef enum
 #define IS_ACK_SUSPENDED(x) ((x) == AT_SUSPENDED ? 1 : 0)
 
 #define IS_SUSPENDFLAG_ON(x) ((x) == 1 ? TRUE : FALSE)
+
+#define STRICT_ROUND_TO_NEXT_EIGHT(x)  ((x + 8) & ~7)
 
 typedef struct _LogPathOptions LogPathOptions;
 
@@ -110,7 +112,6 @@ enum
   LF_LOCAL             = 0x0004,
   /* message is a MARK mode */
   LF_MARK              = 0x0008,
-
   /* state flags that only matter during syslog-ng runtime and never
    * when a message is serialized */
   LF_STATE_MASK        = 0xFFF0,
@@ -119,6 +120,9 @@ enum
   LF_STATE_OWN_TAGS    = 0x0040,
   LF_STATE_OWN_SDATA   = 0x0080,
   LF_STATE_OWN_MASK    = 0x00F0,
+
+  /* In the log header the hostname shall be printed individually (no group name, no chain hosts)*/
+  LF_SIMPLE_HOSTNAME = 0x0100,
 
   LF_CHAINED_HOSTNAME  = 0x00010000,
 
@@ -138,7 +142,7 @@ typedef struct _LogMessageQueueNode
 } LogMessageQueueNode;
 
 
-/* NOTE: the members are ordered according to the presumed use frequency. 
+/* NOTE: the members are ordered according to the presumed use frequency.
  * The structure itself is 2 cachelines, the border is right after the "msg"
  * member */
 struct _LogMessage
@@ -162,9 +166,10 @@ struct _LogMessage
   AckRecord *ack_record;
   LMAckFunc ack_func;
   LogMessage *original;
+  gsize allocated_bytes;
 
-  /* message parts */ 
-  
+  /* message parts */
+
   /* the contents of the members below is directly copied into another
    * LogMessage with pointer values.  To change any of the fields please use
    * log_msg_set_*() functions, which will handle borrowed data members
@@ -328,8 +333,11 @@ void log_msg_registry_init(void);
 void log_msg_registry_deinit(void);
 void log_msg_global_init(void);
 void log_msg_global_deinit(void);
+void log_msg_stats_global_init(void);
 void log_msg_registry_foreach(GHFunc func, gpointer user_data);
 
 gint log_msg_lookup_time_stamp_name(const gchar *name);
+
+gssize log_msg_get_size(LogMessage *self);
 
 #endif

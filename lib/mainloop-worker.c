@@ -25,6 +25,7 @@
 #include "mainloop-call.h"
 #include "tls-support.h"
 #include "apphook.h"
+#include "scratch-buffers.h"
 
 #include <iv.h>
 
@@ -184,6 +185,12 @@ main_loop_worker_thread_stop(void)
 {
   app_thread_stop();
   _release_thread_id();
+}
+
+void
+main_loop_worker_run_gc(void)
+{
+  scratch_buffers_explicit_gc();
 }
 
 /*

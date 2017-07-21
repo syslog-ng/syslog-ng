@@ -66,7 +66,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
       if (self->push_tail(self, msg, &local_options, path_options))
         {
           log_queue_push_notify (&self->super);
-          stats_counter_inc(self->super.stored_messages);
+          stats_counter_inc(self->super.queued_messages);
           log_msg_ack(msg, &local_options, AT_PROCESSED);
           log_msg_unref(msg);
           g_static_mutex_unlock(&self->super.lock);
@@ -110,7 +110,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
     }
   if (msg != NULL)
     {
-      stats_counter_dec(self->super.stored_messages);
+      stats_counter_dec(self->super.queued_messages);
     }
   g_static_mutex_unlock(&self->super.lock);
   return msg;
@@ -135,7 +135,6 @@ static void
 _rewind_backlog(LogQueue *s, guint rewind_count)
 {
   LogQueueDisk *self = (LogQueueDisk *) s;
-
   g_static_mutex_lock(&self->super.lock);
 
   if (self->rewind_backlog)
@@ -216,7 +215,8 @@ _free(LogQueue *s)
 
   qdisk_deinit(self->qdisk);
   qdisk_free(self->qdisk);
-  g_free(self);
+
+  log_queue_free_method(s);
 }
 
 static gboolean
@@ -332,11 +332,12 @@ _restart_corrupted(LogQueueDisk *self)
 
 
 void
-log_queue_disk_init_instance(LogQueueDisk *self)
+log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
 {
-  log_queue_init_instance(&self->super,NULL);
+  log_queue_init_instance(&self->super, persist_name);
   self->qdisk = qdisk_new();
 
+  self->super.type = log_queue_disk_type;
   self->super.get_length = _get_length;
   self->super.push_tail = _push_tail;
   self->super.push_head = _push_head;

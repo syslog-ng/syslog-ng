@@ -1144,7 +1144,7 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
       msg_error("Error opening classifier configuration file",
                 evt_tag_str(EVT_TAG_FILENAME, config),
                 evt_tag_errno(EVT_TAG_OSERROR, errno));
-      goto error;
+      return FALSE;
     }
 
   memset(&state, 0x0, sizeof(state));

@@ -1123,7 +1123,9 @@ cfg_tree_start(CfgTree *self)
 
       if (!log_pipe_init(pipe))
         {
-          msg_error("Error initializing message pipeline");
+          msg_error("Error initializing message pipeline",
+                    evt_tag_str("plugin name", pipe->plugin_name ? pipe->plugin_name : "not a plugin"),
+                    log_pipe_location_tag(pipe));
           return FALSE;
         }
     }

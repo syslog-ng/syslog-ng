@@ -27,7 +27,8 @@
 #include "stats-cluster.h"
 #include "syslog-ng.h"
 
-typedef gboolean (*StatsFormatCb)(StatsCluster *sc, StatsCounterItem *ctr, const gchar *ctr_name, gpointer user_data);
+typedef gboolean (*StatsFormatCb)(StatsCounterItem *ctr, gpointer user_data);
+typedef void (*AggregatedMetricsCb)(GList *counters, StatsCounterItem **result);
 
 gboolean stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 gboolean stats_query_list_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result);
@@ -36,5 +37,9 @@ gboolean stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb for
 gboolean stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 gboolean stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 
-#endif
+void stats_query_init(void);
+void stats_query_deinit(void);
 
+void stats_register_view(gchar *name, GList *queries, const AggregatedMetricsCb aggregate);
+void stats_query_index_counter(StatsCluster *cluster, gint type);
+#endif

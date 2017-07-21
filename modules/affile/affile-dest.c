@@ -33,8 +33,8 @@
 #include "logproto-file-writer.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
-#include "compat/lfs.h"
 #include "logwriter.h"
+#include "affile-dest-internal-queue-filter.h"
 
 #include <iv.h>
 #include <sys/types.h>
@@ -266,6 +266,12 @@ affile_dw_deinit(LogPipe *s)
 static void
 affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, gpointer user_data)
 {
+  if (!affile_dw_queue_enabled_for_msg(lm))
+    {
+      log_msg_drop(lm, path_options, AT_PROCESSED);
+      return;
+    }
+
   AFFileDestWriter *self = (AFFileDestWriter *) s;
 
   g_static_mutex_lock(&self->lock);
@@ -427,8 +433,9 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
       g_static_mutex_unlock(&self->lock);
     }
 
-  log_dest_driver_release_queue(&self->super, log_writer_get_queue(writer));
+  LogQueue *queue = log_writer_get_queue(writer);
   log_pipe_deinit(&dw->super);
+  log_dest_driver_release_queue(&self->super, queue);
   log_pipe_unref(&dw->super);
 }
 

@@ -19,7 +19,7 @@
  * COPYING for details.
  */
 #include "linux-audit-parser.h"
-#include "kv-scanner.h"
+#include "scanner/kv-scanner/kv-scanner.h"
 #include "utf8utils.h"
 
 #include <string.h>

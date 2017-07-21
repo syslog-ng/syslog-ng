@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOGPIPE_H_INCLUDED
 #define LOGPIPE_H_INCLUDED
 
@@ -213,12 +213,14 @@ struct _LogPipe
   GlobalConfig *cfg;
   LogExprNode *expr_node;
   LogPipe *pipe_next;
+  StatsCounterItem *discarded_messages;
   const gchar *persist_name;
 
   /* user_data pointer of the "queue" method in case it is overridden
      by a plugin, see the explanation in the comment on the top. */
   gpointer queue_data;
   void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
+  gchar *plugin_name;
   gboolean (*init)(LogPipe *self);
   gboolean (*deinit)(LogPipe *self);
 

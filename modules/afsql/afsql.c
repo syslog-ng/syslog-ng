@@ -1047,6 +1047,7 @@ afsql_dd_database_thread(gpointer arg)
               evt_tag_str("driver", self->super.super.id));
   while (!self->db_thread_terminate)
     {
+      main_loop_worker_run_gc();
       g_mutex_lock(self->db_thread_mutex);
       if (self->db_thread_suspended)
         {
@@ -1188,10 +1189,14 @@ afsql_dd_init(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                         SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                         SC_TYPE_DROPPED, &self->dropped_messages);
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                  afsql_dd_format_stats_instance(self) );
+    stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  }
   stats_unlock();
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, afsql_dd_format_persist_sequence_number(self)));
@@ -1209,7 +1214,7 @@ afsql_dd_init(LogPipe *s)
       if (self->flags & AFSQL_DDF_EXPLICIT_COMMITS)
         log_queue_set_use_backlog(self->queue, TRUE);
     }
-  log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
+  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
   if (!self->fields)
     {
       GList *col, *value;
@@ -1316,10 +1321,14 @@ afsql_dd_init(LogPipe *s)
 error:
 
   stats_lock();
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                           SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                           SC_TYPE_DROPPED, &self->dropped_messages);
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                  afsql_dd_format_stats_instance(self) );
+    stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  }
   stats_unlock();
 
   return FALSE;
@@ -1332,15 +1341,16 @@ afsql_dd_deinit(LogPipe *s)
 
   log_queue_reset_parallel_push(self->queue);
 
-  log_queue_set_counters(self->queue, NULL, NULL);
+  log_queue_set_counters(self->queue, NULL, NULL, NULL);
   cfg_persist_config_add(log_pipe_get_config(s), afsql_dd_format_persist_sequence_number(self),
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
   stats_lock();
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                           SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self),
-                           SC_TYPE_DROPPED, &self->dropped_messages);
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_SQL | SCS_DESTINATION, self->super.super.id,
+                                afsql_dd_format_stats_instance(self) );
+  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))

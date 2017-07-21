@@ -25,23 +25,14 @@
 #define STATS_CLUSTER_H_INCLUDED 1
 
 #include "stats/stats-counter.h"
-
-typedef enum
-{
-  SC_TYPE_DROPPED=0, /* number of messages dropped */
-  SC_TYPE_PROCESSED, /* number of messages processed */
-  SC_TYPE_STORED,    /* number of messages on disk */
-  SC_TYPE_SUPPRESSED,/* number of messages suppressed */
-  SC_TYPE_STAMP,     /* timestamp */
-  SC_TYPE_MAX
-} StatsCounterType;
+#include "stats/stats-cluster-logpipe.h"
 
 enum
 {
   /* direction bits, used to distinguish between source/destination drivers */
   SCS_SOURCE         = 0x0100,
   SCS_DESTINATION    = 0x0200,
-  
+
   /* drivers, this should be registered dynamically */
   SCS_FILE           = 1,
   SCS_PIPE           = 2,
@@ -79,8 +70,43 @@ enum
   SCS_JOURNALD       = 34,
   SCS_JAVA           = 35,
   SCS_HTTP           = 36,
+  SCS_PYTHON         = 37,
+  SCS_FILTER         = 38,
+  SCS_PARSER         = 39,
+  SCS_MONITORING     = 40,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
+};
+
+typedef struct _StatsCounterGroup StatsCounterGroup;
+typedef struct _StatsCounterGroupInit StatsCounterGroupInit;
+
+struct _StatsCounterGroup
+{
+  StatsCounterItem *counters;
+  const gchar **counter_names;
+  guint16 capacity;
+  void (*free_fn)(StatsCounterGroup *self);
+};
+
+struct _StatsCounterGroupInit
+{
+  const gchar **counter_names;
+  void (*init)(StatsCounterGroupInit *self, StatsCounterGroup *counter_group);
+  gboolean (*equals)(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
+};
+
+gboolean stats_counter_group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
+
+void stats_counter_group_free(StatsCounterGroup *self);
+
+struct _StatsClusterKey
+{
+  /* syslog-ng component/driver/subsystem that registered this cluster */
+  guint16 component;
+  const gchar *id;
+  const gchar *instance;
+  StatsCounterGroupInit counter_group_init;
 };
 
 /* NOTE: This struct can only be used by the stats implementation and not by client code. */
@@ -94,33 +120,34 @@ enum
  * be registered with a single hash lookup */
 typedef struct _StatsCluster
 {
-  StatsCounterItem counters[SC_TYPE_MAX];
+  StatsClusterKey key;
+  StatsCounterGroup counter_group;
   guint16 use_count;
-  /* syslog-ng component/driver/subsystem that registered this cluster */
-  guint16 component;
-  gchar *id;
-  gchar *instance;
   guint16 live_mask;
+  guint16 indexed_mask;
   guint16 dynamic:1;
   gchar *query_key;
 } StatsCluster;
 
 typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data);
 
-const gchar *stats_cluster_get_type_name(gint type);
-gint stats_cluster_get_type_by_name(const gchar *name);
+const gchar *stats_cluster_get_type_name(StatsCluster *self, gint type);
 const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len);
 
 void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data);
 
+gboolean stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2);
 gboolean stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2);
 guint stats_cluster_hash(const StatsCluster *self);
 
 StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
+gboolean stats_cluster_is_indexed(StatsCluster *self, gint type);
 
-StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance);
+StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
+
+void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance, StatsCounterGroupInit counter_group_ctor);
 
 #endif

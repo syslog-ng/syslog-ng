@@ -22,6 +22,7 @@
 #############################################################################
 
 SUBDIRS			=
+DIST_SUBDIRS		=
 AM_MAKEFLAGS		= --no-print-directory
 AM_YFLAGS		= -Wno-yacc -Wno-other
 
@@ -101,6 +102,7 @@ check_PROGRAMS		=
 check_SCRIPTS		=
 TESTS			= $(check_PROGRAMS) $(check_SCRIPTS)
 bin_SCRIPTS		=
+dist_sbin_SCRIPTS	=
 bin_PROGRAMS		=
 sbin_PROGRAMS		=
 libexec_PROGRAMS	=
@@ -162,7 +164,6 @@ include tests/Makefile.am
 include doc/Makefile.am
 include contrib/Makefile.am
 include scl/Makefile.am
-include tgz2build/Makefile.am
 
 TEST_EXTENSIONS = .sh
 @VALGRIND_CHECK_RULES@

@@ -885,7 +885,7 @@ options_items
 
 options_item
 	: KW_MARK_FREQ '(' nonnegative_integer ')'		{ configuration->mark_freq = $3; }
-	| KW_FLUSH_LINES '(' positive_integer ')'		{ configuration->flush_lines = $3; }
+	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ configuration->flush_lines = $3; }
         | KW_MARK_MODE '(' KW_INTERNAL ')'         { cfg_set_mark_mode(configuration, "internal"); }
         | KW_MARK_MODE '(' string ')'
           {
@@ -1144,7 +1144,7 @@ dest_writer_option
         /* NOTE: plugins need to set "last_writer_options" in order to incorporate this rule in their grammar */
 
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
-	| KW_FLUSH_LINES '(' positive_integer ')'		{ last_writer_options->flush_lines = $3; }
+	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ last_writer_options->flush_timeout = $3; }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' string ')'       	{
@@ -1230,36 +1230,35 @@ vp_options
 
 vp_option
         : KW_PAIR '(' string ':' template_content ')'
-        {
-          value_pairs_add_pair(last_value_pairs, $3, $5);
-          free($3);
-        }
+          {
+            value_pairs_add_pair(last_value_pairs, $3, $5);
+            free($3);
+          }
         | KW_PAIR '(' string template_content ')'
-        {
-          value_pairs_add_pair(last_value_pairs, $3, $4);
-          free($3);
-        }
+          {
+            value_pairs_add_pair(last_value_pairs, $3, $4);
+            free($3);
+          }
         | KW_KEY '(' string KW_REKEY '('
-        {
-          last_vp_transset = value_pairs_transform_set_new($3);
-          value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE);
-          free($3);
-        }
-        vp_rekey_options
-        ')' { value_pairs_add_transforms(last_value_pairs, last_vp_transset); } ')'
+          {
+            last_vp_transset = value_pairs_transform_set_new($3);
+            value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE);
+            free($3);
+          }
+          vp_rekey_options ')'                           { value_pairs_add_transforms(last_value_pairs, last_vp_transset); } ')'
 	| KW_KEY '(' string_list ')'		         { value_pairs_add_glob_patterns(last_value_pairs, $3, TRUE); }
         | KW_REKEY '(' string
-        {
-          last_vp_transset = value_pairs_transform_set_new($3);
-          free($3);
-        }
-        vp_rekey_options ')'                     { value_pairs_add_transforms(last_value_pairs, last_vp_transset); }
-        | KW_EXCLUDE '(' string_list ')'         { value_pairs_add_glob_patterns(last_value_pairs, $3, FALSE); }
+          {
+            last_vp_transset = value_pairs_transform_set_new($3);
+            free($3);
+          }
+          vp_rekey_options ')'                           { value_pairs_add_transforms(last_value_pairs, last_vp_transset); }
+        | KW_EXCLUDE '(' string_list ')'                 { value_pairs_add_glob_patterns(last_value_pairs, $3, FALSE); }
 	| KW_SCOPE '(' vp_scope_list ')'
 	;
 
 vp_scope_list
-	: string vp_scope_list              { value_pairs_add_scope(last_value_pairs, $1); free($1); }
+	: string vp_scope_list                           { value_pairs_add_scope(last_value_pairs, $1); free($1); }
 	|
 	;
 

@@ -21,12 +21,15 @@
  */
 
 #include "context-info-db.h"
+#include "scratch-buffers.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 #include <stdio.h>
 #include <string.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
+TestSuite(add_contextual_data, .init=scratch_buffers_allocator_init, .fini=scratch_buffers_allocator_deinit);
 
 static void
 _count_records(gpointer arg, const ContextualDataRecord *record)

@@ -31,8 +31,6 @@
 
 typedef struct _LogQueueDisk LogQueueDisk;
 
-#define LOG_PATH_OPTIONS_FOR_BACKLOG GINT_TO_POINTER(0x80000000)
-
 struct _LogQueueDisk
 {
   LogQueue super;
@@ -60,6 +58,6 @@ gboolean log_queue_disk_is_reliable(LogQueue *s);
 const gchar *log_queue_disk_get_filename(LogQueue *self);
 gboolean log_queue_disk_save_queue(LogQueue *self, gboolean *persistent);
 gboolean log_queue_disk_load_queue(LogQueue *self, const gchar *filename);
-void log_queue_disk_init_instance(LogQueueDisk *self);
+void log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name);
 
 #endif

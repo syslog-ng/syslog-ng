@@ -54,7 +54,7 @@ void value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
 void value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts);
 
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
-                                    GCompareDataFunc compare_func,
+                                    GCompareFunc compare_func,
                                     LogMessage *msg, gint32 seq_num, gint tz,
                                     const LogTemplateOptions *template_options,
                                     gpointer user_data);

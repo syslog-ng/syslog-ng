@@ -8,7 +8,6 @@
     type='service'
     version='1'>
     <create_default_instance enabled='false' />
-    <single_instance />
     <dependency
             name='milestone'
             grouping='require_all'
@@ -54,7 +53,7 @@
     <exec_method
       type='method'
       name='start'
-      exec='/lib/svc/method/syslog-ng %m'
+      exec='/lib/svc/method/syslog-ng %m %i'
       timeout_seconds='60'>
       <method_context>
         <method_credential user='root' />
@@ -64,7 +63,7 @@
     <exec_method
       type='method'
       name='restart'
-      exec='/lib/svc/method/syslog-ng %m %{restarter/contract}'
+      exec='/lib/svc/method/syslog-ng %m %i'
       timeout_seconds='60'>
       <method_context>
         <method_credential user='root' />
@@ -74,7 +73,7 @@
     <exec_method
       type='method'
       name='stop'
-      exec='/lib/svc/method/syslog-ng %m %{restarter/contract}'
+      exec='/lib/svc/method/syslog-ng %m %i'
       timeout_seconds='60' >
       <method_context>
         <method_credential user='root' />
@@ -84,7 +83,7 @@
     <exec_method
       type='method'
       name='refresh'
-      exec='/lib/svc/method/syslog-ng %m'
+      exec='/lib/svc/method/syslog-ng %m %i'
       timeout_seconds='60' >
       <method_context>
         <method_credential user='root' />
@@ -100,16 +99,6 @@
     <property_group name='config' type='application'>
             <!-- default property settings for syslogd(1m) -->
 
-            <!-- Specifies whether remote messages are logged.
-                 log_from_remote=false is equivalent to the -t
-                 command-line option. The default value for
-                 log_from_remote is true.
-            -->
-            <propval
-                    name='log_from_remote'
-                    type='boolean'
-                    value='true' />
-
             <!-- authorization to modify the configuration properties -->
             <propval name='value_authorization' type='astring'
                     value='solaris.smf.value.system-log' />
@@ -118,7 +107,7 @@
     <template>
       <common_name>
         <loctext xml:lang='C'>
-          SAS Metadata Service
+          syslog-ng logging daemon
         </loctext>
       </common_name>
     </template>

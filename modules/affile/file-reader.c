@@ -37,7 +37,6 @@
 #include "logproto-linux-proc-kmsg-reader.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
-#include "compat/lfs.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -210,6 +209,12 @@ _deinit_sd_logreader(FileReader *self)
   self->reader = NULL;
 }
 
+static gint
+_get_stats_source(FileReader *self)
+{
+  return self->file_reader_options->file_open_options.is_pipe ? SCS_PIPE : SCS_FILE;
+}
+
 static void
 _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
 {
@@ -221,7 +226,7 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
                          s,
                          &self->file_reader_options->reader_options,
                          STATS_LEVEL1,
-                         SCS_FILE,
+                         _get_stats_source(self),
                          self->owner->super.id,
                          self->filename->str);
   if (check_immediately)

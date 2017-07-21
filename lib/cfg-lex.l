@@ -168,7 +168,7 @@ word	[^ \#'"\(\)\{\}\\;\r\n\t,|\.@:]
                              int ch;
 
                              ch = input(yyscanner);
-                             while (ch != '\n' && ch != EOF)
+                             while (ch != '\n' && ch != EOF && ch != 0)
                                {
                                  if (yyextra->token_text)
                                    g_string_append_c(yyextra->token_text, ch);

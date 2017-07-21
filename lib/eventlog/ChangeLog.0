@@ -1,0 +1,91 @@
+2004-12-28  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* evtctx.c (evt_ctx_init): set default flags not to add extra tags
+	by default
+
+2004-12-27  Balazs Scheidler  <bazsi@bzorp.balabit>
+
+	* evtctx.c (evt_ctx_free): fixed tag-hook leak
+
+	* tests/Makefile.am: fixed out-of-tree builds
+
+2004-08-20  Balazs Scheidler  <bazsi@szekszard.balabit.hu>
+
+	* configure.in: bumped version number to 0.2
+
+	* configure.in: updated to autoconf 2.59 and automake 1.7.1, 
+
+	* src/evtlog.h: added support to several independent logging
+	contexts, constructors directly return the constructed object
+	instead of returning it through an argument, renamed evtstr_
+	prefix to evt_str_ to be more consistent,
+
+	* src/evt_internals.h: renamed EVTCONFIG to EVTCONTEXT, made it
+	reference counted, separated EVTSYSLOG from EVTCONTEXT, made it a
+	separate global variable (as EVTCONFIG is not global anymore),
+	reference counting functions are moved here (e.g. it is not
+	publicly accessible)
+
+	* src/*.c: followed changes in evtlog.h and evt_internals.h
+
+2003-01-10  Balazs Scheidler  <bazsi@balabit.balabit>
+
+	* doc/API.txt: added doc on syslog compatibility
+
+	* COPYING: changed to BSD license
+
+	* src/evtout.c: instead of calling syslog() functions directly,
+	call them through the function pointer
+
+	* src/evtlog.h: added syslog compatibility by wrapper macros, only
+	defined if EVENTLOG_SYSLOG_MACROS preprocessor symbol is defined
+
+	* src/evtlog.c: call evt_syslog_wrapper_init() upon initialization
+
+	* src/evt_internals.h: added EVTSYSLOG structure which contains
+	function pointers for the libc syslog routines (it is needed to
+	avoid direct calling of openlog, closelog, syslog as they might be
+	defined inside the shared object)
+
+	* src/evtsyslog.c: new file, contains the syslog-like functions
+	and the dlsym based wrapper provided ENABLE_SYSLOG_WRAPPER is
+	defined
+
+	* configure.in: new configure option, --enable-syslog-wrapper
+	which enables the dlsym based syslog() wrapper
+
+2003-01-07  Balazs Scheidler  <bazsi@balabit.balabit>
+
+	* src/evt_internals.h (EVTTAG): et_prio member was dropped, log
+	format is consistent, so it is easy to reorder tags at log
+	analysis time
+
+	* src/evtlog.h (evt_tag_*): removed prio argument,
+	(evt_rec_ref): moved from internal to public API as it might be
+	needed to avoid the free evt_log() does
+	
+	* src/evttags.c (evt_tag_*): removed prio argument
+
+	* src/evtout.c (evt_log): the function consumes its argument, so
+	no need for explicit free
+
+	* src/evtmaps.h: removed priorities completely
+
+	* src/evtrec.c: all tags are prepended to the list, no specific
+	order is kept
+
+	* tests/evtfmt.c, tests/evtrec.c: updated test programs
+
+	* doc/configuration.txt: new file, contains the configuration file
+	format
+
+	* doc/DESIGN.txt: updated
+
+	* doc/API.txt: updated
+
+2003-01-06  Balazs Scheidler  <bazsi@balabit.balabit>
+
+	* configure.in: version 0.1 released
+
+	* changelog started
+

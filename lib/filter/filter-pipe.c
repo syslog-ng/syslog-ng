@@ -23,6 +23,7 @@
  */
 
 #include "filter/filter-pipe.h"
+#include "stats/stats-registry.h"
 
 /*******************************************************************
  * LogFilterPipe
@@ -37,6 +38,14 @@ log_filter_pipe_init(LogPipe *s)
   filter_expr_init(self->expr, log_pipe_get_config(s));
   if (!self->name)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_FILTER, s->expr_node);
+
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->name, NULL );
+  stats_register_counter(1, &sc_key, SC_TYPE_MATCHED, &self->matched);
+  stats_register_counter(1, &sc_key, SC_TYPE_NOT_MATCHED, &self->not_matched);
+  stats_unlock();
+
   return TRUE;
 }
 
@@ -47,23 +56,27 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   gboolean res;
 
   msg_debug("Filter rule evaluation begins",
+            evt_tag_printf("msg", "%p", msg),
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s));
 
   res = filter_expr_eval_root(self->expr, &msg, path_options);
   msg_debug("Filter rule evaluation result",
+            evt_tag_printf("msg", "%p", msg),
             evt_tag_str("result", res ? "match" : "not-match"),
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s));
   if (res)
     {
       log_pipe_forward_msg(s, msg, path_options);
+      stats_counter_inc(self->matched);
     }
   else
     {
       if (path_options->matched)
         (*path_options->matched) = FALSE;
       log_msg_drop(msg, path_options, AT_PROCESSED);
+      stats_counter_inc(self->not_matched);
     }
 }
 
@@ -71,14 +84,22 @@ static LogPipe *
 log_filter_pipe_clone(LogPipe *s)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
-
-  return log_filter_pipe_new(filter_expr_ref(self->expr), s->cfg);
+  LogPipe *cloned = log_filter_pipe_new(filter_expr_ref(self->expr), s->cfg);
+  ((LogFilterPipe *)cloned)->name = g_strdup(self->name);
+  return cloned;
 }
 
 static void
 log_filter_pipe_free(LogPipe *s)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
+
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->name, NULL );
+  stats_unregister_counter(&sc_key, SC_TYPE_MATCHED, &self->matched);
+  stats_unregister_counter(&sc_key, SC_TYPE_NOT_MATCHED, &self->not_matched);
+  stats_unlock();
 
   g_free(self->name);
   filter_expr_unref(self->expr);

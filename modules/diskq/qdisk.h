@@ -27,6 +27,7 @@
 #include "syslog-ng.h"
 #include "diskq-options.h"
 
+#define LOG_PATH_OPTIONS_FOR_BACKLOG GINT_TO_POINTER(0x80000000)
 #define QDISK_RESERVED_SPACE 4096
 #define LOG_PATH_OPTIONS_TO_POINTER(lpo) GUINT_TO_POINTER(0x80000000 | (lpo)->ack_needed)
 

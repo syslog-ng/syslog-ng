@@ -1,0 +1,16 @@
+## Makefile for building the GLib dlls with Microsoft C
+## Use: nmake -f makefile.msc
+
+PARTS = src
+
+all : \
+	sub-all
+
+sub-all:
+	@if not exist $(COMPILE_ENV)\dep\debug mkdir $(COMPILE_ENV)\dep\debug
+	for %d in ($(PARTS)) do @(cd %d && nmake -nologo -f makefile.msc all && cd .. || exit 2)
+
+clean : sub-clean
+
+sub-clean:
+	for %d in ($(PARTS)) do @(cd %d && nmake -nologo -f makefile.msc clean && cd .. || exit 2)

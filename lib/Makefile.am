@@ -1,5 +1,4 @@
-
-DIST_SUBDIRS				= lib/ivykis
+DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@ @EVTLOG_SUBDIRS@
 
 include lib/transport/Makefile.am
 include lib/logproto/Makefile.am
@@ -15,6 +14,7 @@ include lib/compat/Makefile.am
 include lib/logmsg/Makefile.am
 include lib/scanner/csv-scanner/Makefile.am
 include lib/scanner/list-scanner/Makefile.am
+include lib/scanner/kv-scanner/Makefile.am
 include lib/str-repr/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @PACKAGE_VERSION@ | cut -d. -f1,2)
@@ -44,8 +44,27 @@ lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release ${LSNG_RELEASE} \
 
 lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite lib_template lib_stats lib_control
 
+
+lib/eventlog/src/libevtlog.la:
+	${MAKE} CFLAGS="${CFLAGS} -Wno-error" -C lib/eventlog
+
+
+install-eventlog:
+	${MAKE} -C lib/eventlog/src install
+
+uninstall-eventlog:
+	${MAKE} -C lib/eventlog/src uninstall
+
+CLEAN_SUBDIRS				+= @EVTLOG_SUBDIRS@
+lib_libsyslog_ng_la_DEPENDENCIES	= lib/eventlog/src/libevtlog.la
+
+
+INSTALL_EXEC_HOOKS			+= install-eventlog
+UNINSTALL_HOOKS				+= uninstall-eventlog
+
+
 if IVYKIS_INTERNAL
-lib_libsyslog_ng_la_DEPENDENCIES	= lib/ivykis/src/libivykis.la
+lib_libsyslog_ng_la_DEPENDENCIES	+= lib/ivykis/src/libivykis.la 
 
 lib/ivykis/src/libivykis.la:
 	${MAKE} CFLAGS="${CFLAGS} -Wno-error" -C lib/ivykis
@@ -67,6 +86,8 @@ uninstall-ivykis:
 INSTALL_EXEC_HOOKS			+= install-ivykis
 UNINSTALL_HOOKS				+= uninstall-ivykis
 endif
+
+
 
 if JSON_INTERNAL
 lib/jsonc/libjson-c.la:
@@ -157,7 +178,8 @@ pkginclude_HEADERS			+= \
 	lib/ringbuffer.h		\
 	lib/ack_tracker.h		\
 	lib/host-id.h			\
-	lib/resolved-configurable-paths.h
+	lib/resolved-configurable-paths.h \
+	lib/pe-versioning.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_la_SOURCES		= \
@@ -240,6 +262,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/block-ref-grammar.y		\
 	lib/pragma-grammar.y		\
 	$(csvscanner_sources)		\
+	$(kvscanner_sources)		\
 	$(listscanner_sources)		\
 	$(transport_sources)		\
 	$(logproto_sources)		\
@@ -269,9 +292,10 @@ BUILT_SOURCES += lib/cfg-lex.c lib/cfg-lex.h						\
 EXTRA_DIST += \
 	lib/block-ref-grammar.ym	\
 	lib/pragma-grammar.ym		\
-	lib/merge-grammar.pl		\
+	lib/merge-grammar.py		\
 	lib/hostname-unix.c		\
-	lib/ivykis/configure.gnu
+	lib/ivykis/configure.gnu	\
+	lib/eventlog/configure.gnu
 
 lib/plugin-types.h: lib/cfg-grammar.h
 

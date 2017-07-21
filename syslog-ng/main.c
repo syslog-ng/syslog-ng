@@ -72,7 +72,7 @@ extern int cfg_parser_debug;
 
 static GOptionEntry syslogng_options[] =
 {
-  { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_VERSION ")", NULL },
+  { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
@@ -135,7 +135,7 @@ version(void)
     {
       installer_version = SYSLOG_NG_VERSION;
     }
-  printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_VERSION "\n"
+  printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
          "Installer-Version: %s\n"
          "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
          installer_version);
@@ -155,15 +155,16 @@ version(void)
          "Enable-IPv6: %s\n"
          "Enable-Spoof-Source: %s\n"
          "Enable-TCP-Wrapper: %s\n"
-         "Enable-Linux-Caps: %s\n",
+         "Enable-Linux-Caps: %s\n"
+         "Enable-Systemd: %s\n",
          ON_OFF_STR(SYSLOG_NG_ENABLE_DEBUG),
          ON_OFF_STR(SYSLOG_NG_ENABLE_GPROF),
          ON_OFF_STR(SYSLOG_NG_ENABLE_MEMTRACE),
          ON_OFF_STR(SYSLOG_NG_ENABLE_IPV6),
          ON_OFF_STR(SYSLOG_NG_ENABLE_SPOOF_SOURCE),
          ON_OFF_STR(SYSLOG_NG_ENABLE_TCP_WRAPPER),
-         ON_OFF_STR(SYSLOG_NG_ENABLE_LINUX_CAPS));
-
+         ON_OFF_STR(SYSLOG_NG_ENABLE_LINUX_CAPS),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_SYSTEMD));
 }
 
 #if SYSLOG_NG_ENABLE_LINUX_CAPS
@@ -268,8 +269,10 @@ main(int argc, char *argv[])
    */
   g_process_start();
   app_startup();
+  main_loop_options.server_mode = ((SYSLOG_NG_ENABLE_FORCED_SERVER_MODE) == 1 ? TRUE : FALSE);
   main_loop_init(main_loop, &main_loop_options);
   rc = main_loop_read_and_init_config(main_loop);
+  app_finish_app_startup_after_cfg_init();
 
   if (rc)
     {

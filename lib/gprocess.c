@@ -506,7 +506,6 @@ g_process_set_argv_space(gint argc, gchar **argv)
     ;
 
   environ = g_new(char *, i + 1);
-
   /*
    * Find the last argv string or environment variable within
    * our process memory area.
@@ -1441,6 +1440,30 @@ g_process_startup_ok(void)
 void
 g_process_finish(void)
 {
+#ifdef SYSLOG_NG_HAVE_ENVIRON
+  /**
+   * There is a memory leak for **environ and elements that should be
+   * freed here theoretically.
+   *
+   * The reason why environ is copied during g_process_set_argv_space
+   * so to be able to overwrite process title in ps/top commands to
+   * supervisor. In bsd there is setproctitle call which solve this,
+   * but currently it is not available for linux.
+   *
+   * The problem is that modules can add their own env variables to the
+   * list, which must not be freed here, otherwise it would result
+   * double free (e.g some version of Oracle Java). One might also would
+   * try to track which environment variables are added by syslog-ng,
+   * and free only those. There is still a problem with this, **environ
+   * itself cannot be freed in some cases. For example libcurl registers
+   * an atexit function which needs an environment variable, that would
+   * be freed here before at_exit is called, resulting in invalid read.
+   *
+   * As this leak does not cause any real problem like accumulating over
+   * time, it is safe to leave it as it is.
+  */
+#endif
+
   g_process_remove_pidfile();
 }
 
@@ -1502,4 +1525,3 @@ g_process_add_option_group(GOptionContext *ctx)
   g_option_group_add_entries(group, g_process_option_entries);
   g_option_context_add_group(ctx, group);
 }
-

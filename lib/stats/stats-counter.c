@@ -32,19 +32,29 @@ _reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer 
 }
 
 static inline void
-_reset_non_stored_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+_reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
-  if (type != SC_TYPE_STORED)
+  switch (type)
     {
+    case SC_TYPE_QUEUED:
+    case SC_TYPE_MEMORY_USAGE:
+      return;
+    default:
       _reset_counter(sc, type, counter, user_data);
     }
 }
 
 void
-stats_reset_non_stored_counters(void)
+stats_reset_counters(void)
 {
   stats_lock();
-  stats_foreach_counter(_reset_non_stored_counter, NULL);
+  stats_foreach_counter(_reset_counter_if_needed, NULL);
   stats_unlock();
 }
 
+void
+stats_counter_free(StatsCounterItem *counter)
+{
+  if (counter->name)
+    g_free(counter->name);
+}

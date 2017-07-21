@@ -43,7 +43,7 @@ test_hash(void)
   assert_template_failure("$(sha1 --length 5)", "$(hash) parsing failed, invalid number of arguments");
   assert_template_failure("$(sha1 ${missingbrace)", "Invalid macro, '}' is missing, error_pos='14'");
   assert_template_failure("$(sha1 --length invalid_length_specification foo)",
-                          "Cannot parse integer value 'invalid_length_specification' for --length");
+                          "Cannot parse integer value");
   assert_template_format("$(sha1 --length 99999 foo)", "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33");
   assert_template_format("$(sha1 foo bar)", "8843d7f92416211de9ebb963ff4ce28125932878");
   assert_template_format("$(sha1 \"foo bar\")", "3773dea65156909838fa6c22825cafe090ff8030");

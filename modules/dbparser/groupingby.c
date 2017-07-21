@@ -192,13 +192,29 @@ grouping_by_timer_tick(gpointer s)
 }
 
 static gboolean
+_evaluate_filter(FilterExprNode *expr, CorrellationContext *context)
+{
+  return filter_expr_eval_with_context(expr,
+                                       (LogMessage **) context->messages->pdata,
+                                       context->messages->len);
+}
+
+static gboolean
 _evaluate_having(GroupingBy *self, CorrellationContext *context)
 {
   if (!self->having_condition_expr)
     return TRUE;
 
-  return filter_expr_eval_with_context(self->having_condition_expr, (LogMessage **) context->messages->pdata,
-                                       context->messages->len);
+  return _evaluate_filter(self->having_condition_expr, context);
+}
+
+static gboolean
+_evaluate_trigger(GroupingBy *self, CorrellationContext *context)
+{
+  if (!self->trigger_condition_expr)
+    return TRUE;
+
+  return _evaluate_filter(self->trigger_condition_expr, context);
 }
 
 static void
@@ -303,8 +319,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
       g_ptr_array_add(context->messages, log_msg_ref(msg));
 
-      if (self->trigger_condition_expr &&
-          filter_expr_eval(self->trigger_condition_expr, msg))
+      if (_evaluate_trigger(self, context))
         {
           msg_verbose("Correllation trigger() met, closing state",
                       evt_tag_str("key", context->key.session_id),

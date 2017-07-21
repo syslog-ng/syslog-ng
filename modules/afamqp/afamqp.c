@@ -302,7 +302,6 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", "missing RPC reply type"),
                 evt_tag_int("time_reopen", self->super.time_reopen));
-      log_threaded_dest_driver_suspend(&self->super);
       return FALSE;
 
     case AMQP_RESPONSE_LIBRARY_EXCEPTION:
@@ -311,7 +310,6 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
                   evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_str("error", amqp_error_string2(ret.library_error)),
                   evt_tag_int("time_reopen", self->super.time_reopen));
-        log_threaded_dest_driver_suspend(&self->super);
         return FALSE;
       }
 
@@ -328,7 +326,6 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
                       evt_tag_int("code", m->reply_code),
                       evt_tag_str("text", m->reply_text.bytes),
                       evt_tag_int("time_reopen", self->super.time_reopen));
-            log_threaded_dest_driver_suspend(&self->super);
             return FALSE;
           }
         case AMQP_CHANNEL_CLOSE_METHOD:
@@ -341,7 +338,6 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
                       evt_tag_int("code", m->reply_code),
                       evt_tag_str("text", m->reply_text.bytes),
                       evt_tag_int("time_reopen", self->super.time_reopen));
-            log_threaded_dest_driver_suspend(&self->super);
             return FALSE;
           }
         default:
@@ -350,7 +346,6 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
                     evt_tag_str("error", "unknown server error"),
                     evt_tag_printf("method_id", "0x%08X", ret.reply.id),
                     evt_tag_int("time_reopen", self->super.time_reopen));
-          log_threaded_dest_driver_suspend(&self->super);
           return FALSE;
         }
       return FALSE;
@@ -524,8 +519,8 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   amqp_table_t table;
   amqp_basic_properties_t props;
   gboolean success = TRUE;
-  SBGString *routing_key = sb_gstring_acquire();
-  SBGString *body = sb_gstring_acquire();
+  GString *routing_key = scratch_buffers_alloc();
+  GString *body = scratch_buffers_alloc();
   amqp_bytes_t body_bytes = amqp_cstring_bytes("");
 
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };
@@ -545,22 +540,19 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
 
   log_template_format(self->routing_key_template, msg, NULL, LTZ_LOCAL,
                       self->super.seq_num,
-                      NULL, sb_gstring_string(routing_key));
+                      NULL, routing_key);
 
   if (self->body_template)
     {
       log_template_format(self->body_template, msg, NULL, LTZ_LOCAL,
                           self->super.seq_num,
-                          NULL, sb_gstring_string(body));
-      body_bytes = amqp_cstring_bytes(sb_gstring_string(body)->str);
+                          NULL, body);
+      body_bytes = amqp_cstring_bytes(body->str);
     }
 
   ret = amqp_basic_publish(self->conn, 1, amqp_cstring_bytes(self->exchange),
-                           amqp_cstring_bytes(sb_gstring_string(routing_key)->str),
+                           amqp_cstring_bytes(routing_key->str),
                            0, 0, &props, body_bytes);
-
-  sb_gstring_release(routing_key);
-  sb_gstring_release(body);
 
   if (ret < 0)
     {
@@ -658,6 +650,13 @@ afamqp_dd_free(LogPipe *d)
   log_threaded_dest_driver_free(d);
 }
 
+static gboolean
+afamqp_dd_worker_connect(LogThrDestDriver *s)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *)s;
+  return afamqp_dd_connect(self, FALSE);
+}
+
 /*
  * Plugin glue.
  */
@@ -674,6 +673,7 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.generate_persist_name = afamqp_dd_format_persist_name;
 
   self->super.worker.thread_init = afamqp_worker_thread_init;
+  self->super.worker.connect = afamqp_dd_worker_connect;
   self->super.worker.disconnect = afamqp_dd_disconnect;
   self->super.worker.insert = afamqp_worker_insert;
 

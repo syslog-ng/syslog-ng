@@ -27,6 +27,8 @@
 
 #include "syslog-ng.h"
 #include "logpipe.h"
+#include "stats/stats-registry.h"
+
 
 struct _GlobalConfig;
 typedef struct _FilterExprNode FilterExprNode;
@@ -40,6 +42,8 @@ struct _FilterExprNode
   void (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg);
   void (*free_fn)(FilterExprNode *self);
+  StatsCounterItem *matched;
+  StatsCounterItem *not_matched;
 };
 
 static inline void

@@ -917,6 +917,7 @@ relex:
 
           self->preprocess_suppress_tokens--;
           success = cfg_lexer_generate_block(self, cfg_lexer_get_context_type(self), yylval->cptr, gen, args);
+          free(yylval->cptr);
           cfg_args_unref(args);
           if (success)
             {
@@ -925,6 +926,7 @@ relex:
         }
       else
         {
+          free(yylval->cptr);
           self->preprocess_suppress_tokens--;
         }
       return LL_ERROR;
@@ -944,7 +946,6 @@ relex:
           msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file to indicate this explicitly");
           cfg_set_version(configuration, 0x0201);
         }
-      cfg_load_candidate_modules(configuration);
       self->non_pragma_seen = TRUE;
     }
 

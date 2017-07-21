@@ -24,7 +24,6 @@
 #include "testutils.h"
 #include "affile/affile-common.h"
 #include "lib/messages.h"
-#include "compat/lfs.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdarg.h>

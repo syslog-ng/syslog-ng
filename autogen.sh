@@ -25,7 +25,7 @@
 # This script is needed to setup build environment from checked out
 # source tree.
 #
-SUBMODULES="lib/ivykis modules/afmongodb/mongo-c-driver/src/libbson modules/afmongodb/mongo-c-driver modules/afamqp/rabbitmq-c lib/jsonc"
+SUBMODULES="lib/ivykis modules/afmongodb/mongo-c-driver/src/libbson modules/afmongodb/mongo-c-driver modules/afamqp/rabbitmq-c lib/jsonc lib/eventlog"
 GIT=`which git`
 
 autogen_submodules()

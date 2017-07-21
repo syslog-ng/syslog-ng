@@ -28,50 +28,68 @@
 
 typedef struct _StatsCounterItem
 {
-  gint value;
+  gssize value;
+  gchar *name;
+  gint type;
 } StatsCounterItem;
 
 
 static inline void
-stats_counter_add(StatsCounterItem *counter, gint add)
+stats_counter_add(StatsCounterItem *counter, gssize add)
 {
   if (counter)
-    g_atomic_int_add(&counter->value, add);
+    g_atomic_pointer_add(&counter->value, add);
+}
+
+static inline void
+stats_counter_sub(StatsCounterItem *counter, gssize sub)
+{
+  if (counter)
+    g_atomic_pointer_add(&counter->value, -1 * sub);
 }
 
 static inline void
 stats_counter_inc(StatsCounterItem *counter)
 {
   if (counter)
-    g_atomic_int_inc(&counter->value);
+    g_atomic_pointer_add(&counter->value, 1);
 }
 
 static inline void
 stats_counter_dec(StatsCounterItem *counter)
 {
   if (counter)
-    g_atomic_int_add(&counter->value, -1);
+    g_atomic_pointer_add(&counter->value, -1);
 }
 
 /* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
 static inline void
-stats_counter_set(StatsCounterItem *counter, guint32 value)
+stats_counter_set(StatsCounterItem *counter, gsize value)
 {
   if (counter)
     counter->value = value;
 }
 
 /* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
-static inline guint32
+static inline gsize
 stats_counter_get(StatsCounterItem *counter)
 {
-  guint32 result = 0;
+  gssize result = 0;
 
   if (counter)
     result = counter->value;
   return result;
 }
 
-void stats_reset_non_stored_counters(void);
+static inline gchar *
+stats_counter_get_name(StatsCounterItem *counter)
+{
+  if (counter && counter->name)
+    return counter->name;
+  return NULL;
+}
+
+void stats_reset_counters(void);
+void stats_counter_free(StatsCounterItem *counter);
 
 #endif

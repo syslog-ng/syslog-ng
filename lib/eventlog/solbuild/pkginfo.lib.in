@@ -1,0 +1,10 @@
+PKG=ZOSlibevt
+NAME="libevtlog runtime library"
+VERSION=@VERSION@
+ARCH=sparc
+CATEGORY=library
+CLASSES="library none"
+BASEDIR=/
+VENDOR="Balabit IT Ltd."
+EMAIL="zorpos@balabit.com"
+DESC="Eventlog for Syslog-NG 2.x series"

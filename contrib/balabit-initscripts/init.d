@@ -21,7 +21,12 @@
 ### END INIT INFO
 
 OS=`uname -s`
-SYSLOGNG_PREFIX=/opt/syslog-ng
+
+DEFAULTFILE=/etc/default/syslog-ng
+[ -f ${DEFAULTFILE} ] && . ${DEFAULTFILE}
+
+SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
+export SYSLOGNG_PREFIX
 SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
 CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
 PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
@@ -34,6 +39,12 @@ MAXWAIT=30
 SUBSYSDIR=/var/lock/subsys
 
 retval=0
+
+# in HPUX, PATH for init scripts does not contain standard dirs for binaries
+if [ "$OS" = "HP-UX" ]; then
+   PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+fi
+
 
 # OS specific I-didn't-do-anything exit function.
 exit_noop() {
@@ -48,9 +59,9 @@ exit_noop() {
 # Platform specific echo -n implementation.
 echo_n() {
 	case "$OS" in
-		SunOS) echo "$@\c " 
+		SunOS) echo "$@\c "
 			;;
-		HP-UX) echo "  $@\c " 
+		HP-UX) echo "  $@\c "
 			;;
 		*)     echo -n "$@"
 			;;
@@ -102,7 +113,7 @@ create_xconsole() {
 }
 
 check_syntax() {
-	${SYSLOGNG} --syntax-only
+	${SYSLOGNG} --no-caps --syntax-only
 	_rval=$?
 	[ $_rval -eq 0 ] || exit $_rval
 }
@@ -217,7 +228,7 @@ syslogng_restart() {
 
 syslogng_reload() {
 	echo_n "Reloading syslog-ng's config file: "
-	check_syntax 
+	check_syntax
 	killproc -p ${PIDFILE} ${SYSLOGNG} -HUP
 	retval=$?
 	returnmessage $retval
@@ -239,7 +250,7 @@ syslogng_status() {
 		log_success_msg "$pid running"
 	fi
 	return $retval
-}	
+}
 
 syslogng_probe() {
 	if [ ${CONFFILE} -nt ${PIDFILE} ]; then
@@ -306,10 +317,13 @@ case "$1" in
 		fi
 		;;
 	status)
-		syslogng_status 
+		syslogng_status
 		;;
 	condrestart|try-restart)
 		[ ! -f $lockfile ] || syslogng_restart
+		;;
+	rotate)
+		syslogng_reload
 		;;
 	*)
 		echo "Usage: $0 {start|stop|status|restart|try-restart|reload|force-reload|probe}"

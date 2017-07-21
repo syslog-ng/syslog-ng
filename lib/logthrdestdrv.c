@@ -22,6 +22,7 @@
  *
  */
 
+#include "stats/stats-cluster-logpipe.h"
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 
@@ -38,7 +39,7 @@ log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
   return persist_name;
 }
 
-void
+static void
 log_threaded_dest_driver_suspend(LogThrDestDriver *self)
 {
   iv_validate_now();
@@ -156,6 +157,9 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
       switch (result)
         {
         case WORKER_INSERT_RESULT_DROP:
+          msg_error("Message dropped while sending message to destinaton",
+                    evt_tag_str("driver", self->super.super.id));
+
           log_threaded_dest_driver_message_drop(self, msg);
           _disconnect_and_suspend(self);
           break;
@@ -167,6 +171,11 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
             {
               if (self->messages.retry_over)
                 self->messages.retry_over(self, msg);
+
+              msg_error("Multiple failures while sending message to destination, message dropped",
+                        evt_tag_str("driver", self->super.super.id),
+                        evt_tag_int("number_of_retries", self->retries.max));
+
               log_threaded_dest_driver_message_drop(self, msg);
             }
           else
@@ -186,6 +195,7 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
           break;
 
         case WORKER_INSERT_RESULT_SUCCESS:
+          stats_counter_inc(self->written_messages);
           log_threaded_dest_driver_message_accept(self, msg);
           break;
 
@@ -212,6 +222,7 @@ log_threaded_dest_driver_do_work(gpointer data)
   gint timeout_msec = 0;
 
   self->suspended = FALSE;
+  main_loop_worker_run_gc();
   log_threaded_dest_driver_stop_watches(self);
 
   if (!self->worker.connected)
@@ -309,6 +320,15 @@ log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
                                  self, &self->worker_options);
 }
 
+static void
+_update_memory_usage_counter_when_fifo_is_used(LogThrDestDriver *self)
+{
+  if (!g_strcmp0(self->queue->type, "FIFO") && self->memory_usage)
+    {
+      LogPipe *_pipe = &self->super.super.super;
+      load_counter_from_persistent_storage(log_pipe_get_config(_pipe), self->memory_usage);
+    }
+}
 
 gboolean
 log_threaded_dest_driver_start(LogPipe *s)
@@ -328,19 +348,20 @@ log_threaded_dest_driver_start(LogPipe *s)
     }
 
   stats_lock();
-  stats_register_counter(0, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                         self->format.stats_instance(self),
-                         SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                         self->format.stats_instance(self),
-                         SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_register_counter(0, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                         self->format.stats_instance(self),
-                         SC_TYPE_PROCESSED, &self->processed_messages);
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
+                                self->super.super.id,
+                                self->format.stats_instance(self));
+  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_register_counter_and_index(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  stats_register_counter(1, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   stats_unlock();
 
-  log_queue_set_counters(self->queue, self->stored_messages,
-                         self->dropped_messages);
+  log_queue_set_counters(self->queue, self->queued_messages,
+                         self->dropped_messages, self->memory_usage);
+  _update_memory_usage_counter_when_fifo_is_used(self);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                                            log_threaded_dest_driver_format_seqnum_for_persist(self)));
@@ -359,22 +380,24 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 
   log_queue_reset_parallel_push(self->queue);
 
-  log_queue_set_counters(self->queue, NULL, NULL);
+  log_queue_set_counters(self->queue, NULL, NULL, NULL);
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          log_threaded_dest_driver_format_seqnum_for_persist(self),
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
+  save_counter_to_persistent_storage(log_pipe_get_config(s), self->memory_usage);
+
   stats_lock();
-  stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->super.super.id,
-                           self->format.stats_instance(self),
-                           SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->super.super.id,
-                           self->format.stats_instance(self),
-                           SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->super.super.id,
-                           self->format.stats_instance(self),
-                           SC_TYPE_PROCESSED, &self->processed_messages);
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
+                                self->super.super.id,
+                                self->format.stats_instance(self));
+  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+  stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))

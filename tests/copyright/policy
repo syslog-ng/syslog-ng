@@ -7,6 +7,7 @@ scl/syslogconf/convert-syslogconf.awk$
 (.*/)?(README|\.gitignore|pylintrc)$
 lib/ivykis
 lib/jsonc
+lib/eventlog
 modules/afamqp/rabbitmq-c
 modules/afmongodb/mongo-c-driver
 modules/java/org_syslog_ng_[^./_-]+\.h$
@@ -34,6 +35,11 @@ scripts/update-patterndb$
 doc/ChangeLog\.[0-9]$
 (\.gitmodules|AUTHORS|COPYING|INSTALL|VERSION|aclocal\.m4|compile|configure|depcomp|install-sh|libtool|ltmain\.sh|missing|test-driver|ylwrap)$
 .*/[^/.]*$
+GPATH|GTAGS|GRTAGS|GSYMS
+dbld/build/.*$
+dbld/release/.*$
+dbld/install/.*$
+dbld/images/.*$
  LGPLv2.1+_SSL
 autogen\.sh$
 cmake
@@ -41,7 +47,7 @@ sub-configure\.sh$
 configure\.ac$
 Makefile\.am$
 lib/(compat|str-repr|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|[^/]*$)
-lib/scanner/(csv-scanner|list-scanner|[^/]*$)
+lib/scanner/(csv-scanner|list-scanner|kv-scanner|[^/]*$)
 libtest
 syslog-ng(-ctl)?
 modules/java-modules/common
@@ -52,7 +58,7 @@ dev-utils/plugin_skeleton_creator/create_plugin.sh
 tests
 modules/java/(tools|[^/]*$)
 modules/java-modules/(dummy|elastic|elastic-v2|hdfs|http|kafka|[^/]*$)
-modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|basicfuncs|cef|confgen|cryptofuncs|csvparser|date|diskq|dbparser|geoip|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|getent|system-source|[^/]*$)
+modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|basicfuncs|cef|confgen|cryptofuncs|csvparser|date|diskq|dbparser|geoip|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|getent|system-source|stardate|snmptrapd-parser|[^/]*$)
 modules/(add-contextual-data|map-value-pairs|[^/]*$)
 scl
 scripts

@@ -11,7 +11,7 @@ modules_affile_tests_test_affile_open_file_LDFLAGS 	=   \
 	$(PREOPEN_CORE)
 
 if ENABLE_CRITERION
-modules_affile_tests_TESTS 				= \
+modules_affile_tests_TESTS 				+= \
   modules/affile/tests/test_wildcard_source \
 	modules/affile/tests/test_directory_monitor \
 	modules/affile/tests/test_collection_comporator

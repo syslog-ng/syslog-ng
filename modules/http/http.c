@@ -24,6 +24,7 @@
 
 #include "syslog-names.h"
 #include "http-plugin.h"
+#include "scratch-buffers.h"
 
 static const gchar *
 _format_persist_name(const LogPipe *s)
@@ -85,10 +86,15 @@ _disconnect(LogThrDestDriver *s)
 {
 }
 
+static void
+_add_custom_curl_header(gpointer data, gpointer curl_headers)
+{
+  curl_headers = curl_slist_append((struct curl_slist *)curl_headers, data);
+}
+
 static struct curl_slist *
 _get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
 {
-  GList *header = NULL;
   struct curl_slist *curl_headers = NULL;
   gchar header_host[128] = {0};
   gchar header_program[32] = {0};
@@ -111,32 +117,28 @@ _get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
              "X-Syslog-Level: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
   curl_headers = curl_slist_append(curl_headers, header_level);
 
-  header = self->headers;
-  while (header != NULL)
-    {
-      curl_headers = curl_slist_append(curl_headers, (gchar *)header->data);
-      header = g_list_next(header);
-    }
+  g_list_foreach(self->headers, _add_custom_curl_header, curl_headers);
 
   return curl_headers;
 }
 
-static GString *
-_get_body_rendered(HTTPDestinationDriver *self, LogMessage *msg)
+static const gchar *
+_get_body(HTTPDestinationDriver *self, LogMessage *msg)
 {
-  GString *body_rendered = NULL;
+  GString *body_rendered = scratch_buffers_alloc();
 
   if (self->body_template)
     {
-      body_rendered = g_string_new(NULL);
       log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
                           self->super.seq_num, NULL, body_rendered);
+      return body_rendered->str;
     }
-  return body_rendered;
+  else
+    return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
 }
 
 static void
-_set_curl_opt(HTTPDestinationDriver *self, LogMessage *msg, struct curl_slist *curl_headers, GString *body_rendered)
+_set_curl_opt(HTTPDestinationDriver *self)
 {
   curl_easy_reset(self->curl);
 
@@ -153,47 +155,96 @@ _set_curl_opt(HTTPDestinationDriver *self, LogMessage *msg, struct curl_slist *c
   if (self->user_agent)
     curl_easy_setopt(self->curl, CURLOPT_USERAGENT, self->user_agent);
 
+  if (self->ca_dir)
+    curl_easy_setopt(self->curl, CURLOPT_CAPATH, self->ca_dir);
 
-  curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, curl_headers);
+  if (self->ca_file)
+    curl_easy_setopt(self->curl, CURLOPT_CAINFO, self->ca_file);
 
-  const gchar *body = body_rendered ? body_rendered->str : log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+  if (self->cert_file)
+    curl_easy_setopt(self->curl, CURLOPT_SSLCERT, self->cert_file);
 
-  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, body);
+  if (self->key_file)
+    curl_easy_setopt(self->curl, CURLOPT_SSLKEY, self->key_file);
+
+  if (self->ciphers)
+    curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, self->ciphers);
+
+  curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, self->ssl_version);
+
+  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
+  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
+
+  curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, self->timeout);
+
   if (self->method_type == METHOD_TYPE_PUT)
     curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
+}
+
+static void
+_set_payload(HTTPDestinationDriver *self, struct curl_slist *curl_headers, const gchar *body)
+{
+  curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, curl_headers);
+  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, body);
+}
+
+static worker_insert_result_t
+_map_http_status_to_worker_status(glong http_code)
+{
+  worker_insert_result_t retval;
+
+  switch (http_code/100)
+    {
+    case 4:
+      msg_debug("curl: 4XX: msg dropped",
+                evt_tag_int("status_code", http_code));
+      retval = WORKER_INSERT_RESULT_DROP;
+      break;
+    case 5:
+      msg_debug("curl: 5XX: message will be retried",
+                evt_tag_int("status_code", http_code));
+      retval = WORKER_INSERT_RESULT_ERROR;
+      break;
+    default:
+      msg_debug("curl: OK status code",
+                evt_tag_int("status_code", http_code));
+      retval = WORKER_INSERT_RESULT_SUCCESS;
+      break;
+    }
+
+  return retval;
 }
 
 static worker_insert_result_t
 _insert(LogThrDestDriver *s, LogMessage *msg)
 {
   CURLcode ret;
+  worker_insert_result_t retval;
 
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
   struct curl_slist *curl_headers = _get_curl_headers(self, msg);
-  GString *body_rendered = _get_body_rendered(self, msg);
-
-  _set_curl_opt(self, msg, curl_headers, body_rendered);
+  const gchar *body = _get_body(self, msg);
+  _set_payload(self, curl_headers, body);
 
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
     {
       msg_error("curl: error sending HTTP request",
-                evt_tag_str("error", curl_easy_strerror(ret)));
-
-      if (body_rendered)
-        g_string_free(body_rendered, TRUE);
+                evt_tag_str("error", curl_easy_strerror(ret)),
+                log_pipe_location_tag(&s->super.super.super));
 
       curl_slist_free_all(curl_headers);
 
-      return WORKER_INSERT_RESULT_ERROR;
+      return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
 
-  if (body_rendered)
-    g_string_free(body_rendered, TRUE);
+  glong http_code = 0;
+  curl_easy_getinfo (self->curl, CURLINFO_RESPONSE_CODE, &http_code);
+  retval = _map_http_status_to_worker_status(http_code);
 
   curl_slist_free_all(curl_headers);
 
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return retval;
 }
 
 void
@@ -282,6 +333,126 @@ http_dd_get_template_options(LogDriver *d)
   return &self->template_options;
 }
 
+void
+http_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->ca_dir);
+  self->ca_dir = g_strdup(ca_dir);
+}
+
+void
+http_dd_set_ca_file(LogDriver *d, const gchar *ca_file)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->ca_file);
+  self->ca_file = g_strdup(ca_file);
+}
+
+void
+http_dd_set_cert_file(LogDriver *d, const gchar *cert_file)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->cert_file);
+  self->cert_file = g_strdup(cert_file);
+}
+
+void
+http_dd_set_key_file(LogDriver *d, const gchar *key_file)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->key_file);
+  self->key_file = g_strdup(key_file);
+}
+
+void
+http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->ciphers);
+  self->ciphers = g_strdup(ciphers);
+}
+
+void
+http_dd_set_ssl_version(LogDriver *d, const gchar *value)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  if (strcmp(value, "default") == 0)
+    {
+      /*
+       * Negotiate the version based on what the remote server supports.
+       * SSLv2 is disabled by default as of libcurl 7.18.1.
+       * SSLv3 is disabled by default as of libcurl 7.39.0.
+       */
+      self->ssl_version = CURL_SSLVERSION_DEFAULT;
+
+    }
+  else if (strcmp(value, "tlsv1") == 0)
+    {
+      /* TLS 1.x */
+      self->ssl_version = CURL_SSLVERSION_TLSv1;
+    }
+  else if (strcmp(value, "sslv2") == 0)
+    {
+      /* SSL 2 only */
+      self->ssl_version = CURL_SSLVERSION_SSLv2;
+
+    }
+  else if (strcmp(value, "sslv3") == 0)
+    {
+      /* SSL 3 only */
+      self->ssl_version = CURL_SSLVERSION_SSLv3;
+    }
+#ifdef CURL_SSLVERSION_TLSv1_0
+  else if (strcmp(value, "tlsv1_0") == 0)
+    {
+      /* TLS 1.0 only */
+      self->ssl_version = CURL_SSLVERSION_TLSv1_0;
+    }
+#endif
+#ifdef CURL_SSLVERSION_TLSv1_1
+  else if (strcmp(value, "tlsv1_1") == 0)
+    {
+      /* TLS 1.1 only */
+      self->ssl_version = CURL_SSLVERSION_TLSv1_1;
+    }
+#endif
+#ifdef CURL_SSLVERSION_TLSv1_2
+  else if (strcmp(value, "tlsv1_2") == 0)
+    {
+      /* TLS 1.2 only */
+      self->ssl_version = CURL_SSLVERSION_TLSv1_2;
+    }
+#endif
+  else
+    {
+      msg_warning("curl: unsupported SSL version",
+                  evt_tag_str("ssl_version", value));
+    }
+}
+
+void
+http_dd_set_peer_verify(LogDriver *d, gboolean verify)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->peer_verify = verify;
+}
+
+void
+http_dd_set_timeout(LogDriver *d, glong timeout)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->timeout = timeout;
+}
+
 gboolean
 http_dd_init(LogPipe *s)
 {
@@ -293,10 +464,19 @@ http_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
 
+  if (!(self->curl = curl_easy_init()))
+    {
+      msg_error("curl: cannot initialize libcurl",
+                log_pipe_location_tag(s));
+      return FALSE;
+    }
+
   if (!self->url)
     {
       self->url = g_strdup(HTTP_DEFAULT_URL);
     }
+
+  _set_curl_opt(self);
 
   return log_threaded_dest_driver_start(s);
 }
@@ -312,6 +492,8 @@ http_dd_free(LogPipe *s)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
 
+  log_template_options_destroy(&self->template_options);
+
   curl_easy_cleanup(self->curl);
   curl_global_cleanup();
 
@@ -319,6 +501,11 @@ http_dd_free(LogPipe *s)
   g_free(self->user);
   g_free(self->password);
   g_free(self->user_agent);
+  g_free(self->ca_dir);
+  g_free(self->ca_file);
+  g_free(self->cert_file);
+  g_free(self->key_file);
+  g_free(self->ciphers);
   g_list_free_full(self->headers, g_free);
 
   log_threaded_dest_driver_free(s);
@@ -346,12 +533,8 @@ http_dd_new(GlobalConfig *cfg)
 
   curl_global_init(CURL_GLOBAL_ALL);
 
-  if (!(self->curl = curl_easy_init()))
-    {
-      msg_error("curl: cannot initialize libcurl", NULL);
-
-      return NULL;
-    }
+  self->ssl_version = CURL_SSLVERSION_DEFAULT;
+  self->peer_verify = TRUE;
 
   return &self->super.super.super;
 }
