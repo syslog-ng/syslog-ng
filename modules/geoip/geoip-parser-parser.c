@@ -31,7 +31,7 @@ int geoip_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword geoip_parser_keywords[] =
 {
-  { "geoip",          KW_GEOIP },
+  { "geoip",          KW_GEOIP, KWS_OBSOLETE, "geoip2"},
   { "database",       KW_DATABASE },
   { "prefix",         KW_PREFIX },
   { NULL }
