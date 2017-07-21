@@ -182,3 +182,33 @@ void openssl_ctx_setup_ecdh(SSL_CTX *ctx)
 
 #endif
 }
+
+#if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG
+int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g)
+{
+  if ((dh->p == NULL && p == NULL)
+      || (dh->g == NULL && g == NULL))
+    return 0;
+
+  if (p != NULL)
+    {
+      BN_free(dh->p);
+      dh->p = p;
+    }
+  if (q != NULL)
+    {
+      BN_free(dh->q);
+      dh->q = q;
+    }
+  if (g != NULL)
+    {
+      BN_free(dh->g);
+      dh->g = g;
+    }
+
+  if (q != NULL)
+    dh->length = BN_num_bits(q);
+
+  return 1;
+}
+#endif

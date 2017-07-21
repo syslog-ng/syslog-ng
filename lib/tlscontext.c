@@ -32,6 +32,8 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <openssl/dh.h>
+#include <openssl/bn.h>
 
 struct _TLSContext
 {
@@ -469,11 +471,12 @@ _load_dh_fallback(void)
    * RFC3526 specifies a generator of 2.
    */
 
-  dh->p = get_rfc3526_prime_2048(NULL);
-  BN_dec2bn(&dh->g, "2");
+  BIGNUM *g = NULL;
+  BN_dec2bn(&g, "2");
 
-  if (!dh->p || !dh->g)
+  if (!DH_set0_pqg(dh, get_rfc3526_prime_2048(NULL), NULL, g))
     {
+      BN_free(g);
       DH_free(dh);
       return NULL;
     }
