@@ -152,6 +152,9 @@ help:
 
 .PHONY: help populate-makefiles
 
+install_moduleLTLIBRARIES	= install-moduleLTLIBRARIES
+$(install_moduleLTLIBRARIES): install-libLTLIBRARIES
+
 include Mk/lex-rules.am
 include Mk/Makefile.am
 include libtest/Makefile.am
