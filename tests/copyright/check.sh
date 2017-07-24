@@ -107,7 +107,8 @@ main_logged() {
   . \
   -iname '.git' -prune \
   -o \
- -type f -print |
+ -type f \
+ -exec grep -Iq . {} \; -print |
  sed "s~^\./~~" |
  prune_ignored_paths |
  sort |
@@ -570,4 +571,3 @@ preview() {
 }
 
 main "$@"
-

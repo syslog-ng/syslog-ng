@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
- * Copyright (c) 2015 Gergely Nagy
+ * Copyright (c) 2017 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -25,27 +24,27 @@
 #include "cfg-parser.h"
 #include "geoip-parser-grammar.h"
 
-extern int geoip_parser_debug;
+extern int geoip2_parser_debug;
 
-int geoip_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
+int geoip2_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
-static CfgLexerKeyword geoip_parser_keywords[] =
+static CfgLexerKeyword geoip2_parser_keywords[] =
 {
-  { "geoip",          KW_GEOIP, KWS_OBSOLETE, "geoip2"},
+  { "geoip2",         KW_GEOIP2 },
   { "database",       KW_DATABASE },
   { "prefix",         KW_PREFIX },
   { NULL }
 };
 
-CfgParser geoip_parser_parser =
+CfgParser geoip2_parser_parser =
 {
 #if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &geoip_parser_debug,
+  .debug_flag = &geoip2_parser_debug,
 #endif
-  .name = "geoip-parser",
-  .keywords = geoip_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) geoip_parser_parse,
+  .name = "geoip2-parser",
+  .keywords = geoip2_parser_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) geoip2_parser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(geoip_parser_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(geoip2_parser_, LogParser **)

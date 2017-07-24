@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
- * Copyright (c) 2015 Gergely Nagy
+ * Copyright (c) 2017 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,31 +20,37 @@
  *
  */
 
-#include "geoip-parser.h"
 #include "cfg-parser.h"
-#include "geoip-parser-grammar.h"
+#include "geoip-parser.h"
+#include "tfgeoip.c"
+#include "plugin.h"
+#include "plugin-types.h"
 
-extern int geoip_parser_debug;
+extern CfgParser geoip2_parser_parser;
 
-int geoip_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
-
-static CfgLexerKeyword geoip_parser_keywords[] =
+static Plugin geoip2_plugins[] =
 {
-  { "geoip",          KW_GEOIP, KWS_OBSOLETE, "geoip2"},
-  { "database",       KW_DATABASE },
-  { "prefix",         KW_PREFIX },
-  { NULL }
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "geoip2",
+    .parser = &geoip2_parser_parser,
+  },
+  TEMPLATE_FUNCTION_PLUGIN(tf_geoip_maxminddb, "geoip2"),
 };
 
-CfgParser geoip_parser_parser =
+gboolean
+geoip2_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &geoip_parser_debug,
-#endif
-  .name = "geoip-parser",
-  .keywords = geoip_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) geoip_parser_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
+  plugin_register(cfg, geoip2_plugins, G_N_ELEMENTS(geoip2_plugins));
+  return TRUE;
+}
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(geoip_parser_, LogParser **)
+const ModuleInfo module_info =
+{
+  .canonical_name = "geoip2",
+  .version = SYSLOG_NG_VERSION,
+  .description = "The geoip2 module provides GeoIP2 (maxmind) support for syslog-ng.",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = geoip2_plugins,
+  .plugins_len = G_N_ELEMENTS(geoip2_plugins),
+};

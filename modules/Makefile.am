@@ -19,6 +19,7 @@ include modules/cryptofuncs/Makefile.am
 include modules/dbparser/Makefile.am
 include modules/json/Makefile.am
 include modules/geoip/Makefile.am
+include modules/geoip2/Makefile.am
 include modules/afstomp/Makefile.am
 include modules/redis/Makefile.am
 include modules/pseudofile/Makefile.am
