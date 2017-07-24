@@ -34,6 +34,7 @@ install:
       xsltproc
       criterion-dev
       libmaxminddb-dev
+      libxml2-utils
   - sudo pip install -r requirements.txt
 before_script:
   - ./autogen.sh
