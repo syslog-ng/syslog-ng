@@ -42,6 +42,11 @@ void afamqp_dd_set_persistent(LogDriver *d, gboolean persistent);
 void afamqp_dd_set_user(LogDriver *d, const gchar *user);
 void afamqp_dd_set_password(LogDriver *d, const gchar *password);
 void afamqp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
+void afamqp_dd_set_ca_file(LogDriver *d, const gchar *cacrt);
+void afamqp_dd_set_key_file(LogDriver *d, const gchar *key);
+void afamqp_dd_set_cert_file(LogDriver *d, const gchar *usercrt);
+void afamqp_dd_set_peer_verify(LogDriver *d, gboolean verify);
+
 
 LogTemplateOptions *afamqp_dd_get_template_options(LogDriver *s);
 

@@ -36,6 +36,7 @@
 #include <amqp.h>
 #include <amqp_framing.h>
 #include <amqp_tcp_socket.h>
+#include <amqp_ssl_socket.h>
 
 typedef struct
 {
@@ -65,6 +66,12 @@ typedef struct
   amqp_socket_t* sockfd;
   amqp_table_entry_t *entries;
   gint32 max_entries;
+
+  /* SSL props */
+  gchar *ca_file;
+  gchar *key_file;
+  gchar *cert_file;
+  gboolean peer_verify;
 } AMQPDestDriver;
 
 /*
@@ -185,6 +192,41 @@ afamqp_dd_get_template_options(LogDriver *s)
   AMQPDestDriver *self = (AMQPDestDriver *) s;
 
   return &self->template_options;
+}
+
+void
+afamqp_dd_set_ca_file(LogDriver *d, const gchar *cacrt)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  g_free(self->ca_file);
+  self->ca_file = g_strdup(cacrt);
+}
+
+void
+afamqp_dd_set_key_file(LogDriver *d, const gchar *key)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  g_free(self->key_file);
+  self->key_file = g_strdup(key);
+}
+
+void
+afamqp_dd_set_cert_file(LogDriver *d, const gchar *usercrt)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  g_free(self->cert_file);
+  self->cert_file = g_strdup(usercrt);
+}
+
+void
+afamqp_dd_set_peer_verify(LogDriver *d, gboolean verify)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  self->peer_verify = verify;
 }
 
 /*
@@ -312,6 +354,55 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
 }
 
 static gboolean
+afamqp_dd_socket_init(AMQPDestDriver *self) {
+
+    self->conn = amqp_new_connection();
+
+    if (self->conn == NULL)
+      {
+        msg_error("Error allocating AMQP connection.");
+        return FALSE;
+      }
+
+    if (self->ca_file)
+      {
+        int ca_file_ret;
+        self->sockfd = amqp_ssl_socket_new(self->conn);
+        ca_file_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ca_file);
+        if(ca_file_ret != AMQP_STATUS_OK)
+          {
+            msg_error("Error connecting to AMQP server while setting ca_file",
+                      evt_tag_str("driver", self->super.super.super.id),
+                      evt_tag_str("error", amqp_error_string2(ca_file_ret)),
+                      evt_tag_int("time_reopen", self->super.time_reopen));
+
+            return FALSE;
+
+          }
+
+        if (self->key_file && self->cert_file)
+          {
+            int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->cert_file, self->key_file);
+            if(setkey_ret != AMQP_STATUS_OK)
+              {
+                msg_error("Error connecting to AMQP server while setting key_file and cert_file",
+                          evt_tag_str("driver", self->super.super.super.id),
+                          evt_tag_str("error", amqp_error_string2(setkey_ret)),
+                          evt_tag_int("time_reopen", self->super.time_reopen));
+
+                return FALSE;
+
+              }
+          }
+        amqp_ssl_socket_set_verify(self->sockfd, self->peer_verify);
+      }
+    else
+      self->sockfd = amqp_tcp_socket_new(self->conn);
+
+    return TRUE;
+}
+
+static gboolean
 afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 {
   int sockfd_ret;
@@ -330,15 +421,9 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
         }
     }
 
-  self->conn = amqp_new_connection();
-
-  if (self->conn == NULL)
-    {
-      msg_error("Error allocating AMQP connection.");
+  if(!afamqp_dd_socket_init(self))
       goto exception_amqp_dd_connect_failed_init;
-    }
 
-  self->sockfd = amqp_tcp_socket_new(self->conn);
   struct timeval delay;
   delay.tv_sec = 1;
   delay.tv_usec = 0;
@@ -348,7 +433,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
     {
       msg_error("Error connecting to AMQP server",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("error", amqp_error_string2(-sockfd_ret)),
+                evt_tag_str("error", amqp_error_string2(sockfd_ret)),
                 evt_tag_int("time_reopen", self->super.time_reopen));
 
       goto exception_amqp_dd_connect_failed_init;
@@ -558,6 +643,9 @@ afamqp_dd_free(LogPipe *d)
   g_free(self->vhost);
   g_free(self->entries);
   value_pairs_unref(self->vp);
+  g_free(self->ca_file);
+  g_free(self->key_file);
+  g_free(self->cert_file);
 
   log_threaded_dest_driver_free(d);
 }
@@ -608,6 +696,7 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   log_template_options_defaults(&self->template_options);
   afamqp_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
+  afamqp_dd_set_peer_verify((LogDriver *) self, TRUE);
 
   return (LogDriver *) self;
 }
