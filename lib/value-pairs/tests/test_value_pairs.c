@@ -151,7 +151,7 @@ main(int argc, char *argv[])
   putenv("TZ=MET-1METDST");
   tzset();
 
-  cfg = cfg_new(VERSION_VALUE);
+  cfg = cfg_new_snippet(VERSION_VALUE);
   plugin_load_module("syslogformat", cfg, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, cfg);

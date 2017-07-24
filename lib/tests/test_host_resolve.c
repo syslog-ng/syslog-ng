@@ -308,7 +308,7 @@ main(int argc, char *argv[])
 {
   app_startup();
 
-  configuration = cfg_new(VERSION_VALUE);
+  configuration = cfg_new_snippet(VERSION_VALUE);
   test_resolve_hostname_to_hostname();
   test_resolve_hostname_to_sockaddr();
   test_resolve_sockaddr_to_hostname();

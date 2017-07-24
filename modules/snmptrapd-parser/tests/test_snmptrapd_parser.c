@@ -125,7 +125,7 @@ assert_log_message_name_values(const gchar *input, TestNameValue *expected, gsiz
 void
 setup(void)
 {
-  configuration = cfg_new(0x0390);
+  configuration = cfg_new_snippet(0x0390);
   app_startup();
 }
 

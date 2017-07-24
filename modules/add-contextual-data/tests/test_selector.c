@@ -54,7 +54,7 @@ Test(add_contextual_data_template_selector, test_given_empty_selector_when_resol
 static AddContextualDataSelector *
 _create_template_selector(const gchar *template_string)
 {
-  GlobalConfig *cfg = cfg_new(VERSION_VALUE);
+  GlobalConfig *cfg = cfg_new_snippet(VERSION_VALUE);
   AddContextualDataSelector *selector = add_contextual_data_template_selector_new(cfg, template_string);
   add_contextual_data_selector_init(selector, NULL);
 

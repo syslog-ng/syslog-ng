@@ -176,7 +176,7 @@ _assert_logwriter_output(LogWriterTestCase c)
 
 Test(logwriter, test_logwriter)
 {
-  configuration = cfg_new(0x0300);
+  configuration = cfg_new_snippet(0x0300);
   LogWriterTestCase test_cases[] =
   {
     {MSG_SYSLOG_STR, TRUE, NULL, LW_SYSLOG_PROTOCOL, EXPECTED_MSG_SYSLOG_STR},
