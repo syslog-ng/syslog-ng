@@ -304,7 +304,7 @@ _setup(void)
 
   log_msg_registry_init();
 
-  test_cfg = cfg_new(0x0308);
+  test_cfg = cfg_new_snippet(0x0308);
   g_assert(test_cfg);
 
   const gchar *persist_filename = "";

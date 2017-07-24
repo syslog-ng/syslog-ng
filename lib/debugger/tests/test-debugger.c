@@ -37,7 +37,7 @@ int
 main()
 {
   app_startup();
-  configuration = cfg_new(VERSION_VALUE);
+  configuration = cfg_new_snippet(VERSION_VALUE);
   test_debugger();
   cfg_free(configuration);
 }

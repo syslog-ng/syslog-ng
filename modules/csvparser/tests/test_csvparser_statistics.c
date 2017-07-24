@@ -74,7 +74,7 @@ _parse_msg(LogParser *self, gchar *msg)
 Test(test_filters_statistics, filter_stastistics)
 {
   app_startup();
-  configuration = cfg_new(VERSION_VALUE);
+  configuration = cfg_new_snippet(VERSION_VALUE);
   configuration->stats_options.level = 1;
   cr_assert(cfg_init(configuration));
 

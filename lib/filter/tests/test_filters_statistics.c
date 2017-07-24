@@ -72,7 +72,7 @@ Test(test_filters_statistics, filter_stastistics)
 {
   app_startup();
 
-  configuration = cfg_new(VERSION_VALUE);
+  configuration = cfg_new_snippet(VERSION_VALUE);
   configuration->stats_options.level = 1;
   plugin_load_module("syslogformat", configuration, NULL);
   cr_assert(cfg_init(configuration));

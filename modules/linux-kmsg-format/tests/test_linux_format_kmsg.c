@@ -173,7 +173,7 @@ test_kmsg_device_parsing(void)
 void
 init_and_load_kmsgformat_module()
 {
-  configuration = cfg_new(VERSION_VALUE);
+  configuration = cfg_new_snippet(VERSION_VALUE);
   plugin_load_module("linux-kmsg-format", configuration, NULL);
   parse_options.format = "linux-kmsg";
 

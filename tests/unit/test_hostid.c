@@ -37,7 +37,7 @@
 static GlobalConfig *
 _create_cfg()
 {
-  GlobalConfig *cfg = cfg_new(0x0302);
+  GlobalConfig *cfg = cfg_new_snippet(0x0302);
   return cfg;
 }
 

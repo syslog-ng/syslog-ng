@@ -268,7 +268,7 @@ int
 main(int argc, char **argv)
 {
   app_startup();
-  cfg = cfg_new(0x0307);
+  cfg = cfg_new_snippet(0x0307);
   plugin_load_module("syslogformat", cfg, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, cfg);
