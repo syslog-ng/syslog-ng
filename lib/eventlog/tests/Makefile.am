@@ -1,16 +1,20 @@
-AM_CPPFLAGS=-I$(top_srcdir)/src
+lib_eventlog_tests_TESTS = \
+	lib/eventlog/tests/evtrec \
+	lib/eventlog/tests/evtfmt \
+	lib/eventlog/tests/evtsyslog \
+	lib/eventlog/tests/evtsyslog-macros
 
-noinst_PROGRAMS = evtrec evtfmt evtsyslog evtsyslog-macros
+check_PROGRAMS += ${lib_eventlog_tests_TESTS}
 
-evtrec_SOURCES = evtrec.c
-evtrec_LDADD = ../src/libevtlog.la
+lib_eventlog_tests_evtrec_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/eventlog/src
+lib_eventlog_tests_evtrec_LDADD = $(top_builddir)/lib/eventlog/src/libevtlog.la
 
-evtfmt_SOURCES = evtfmt.c
-evtfmt_LDADD = ../src/libevtlog.la
+lib_eventlog_tests_evtfmt_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/eventlog/src
+lib_eventlog_tests_evtfmt_LDADD = $(top_builddir)/lib/eventlog/src/libevtlog.la
 
-evtsyslog_SOURCES = evtsyslog.c
-evtsyslog_LDADD = ../src/libevtlog.la
+lib_eventlog_tests_evtsyslog_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/eventlog/src
+lib_eventlog_tests_evtsyslog_LDADD = $(top_builddir)/lib/eventlog/src/libevtlog.la
 
-evtsyslog_macros_SOURCES = evtsyslog.c
-evtsyslog_macros_CFLAGS = -DEVENTLOG_SYSLOG_MACROS=1
-evtsyslog_macros_LDADD = ../src/libevtlog.la
+lib_eventlog_tests_evtsyslog_macros_SOURCES = lib/eventlog/tests/evtsyslog.c
+lib_eventlog_tests_evtsyslog_macros_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/eventlog/src -DEVENTLOG_SYSLOG_MACROS=1
+lib_eventlog_tests_evtsyslog_macros_LDADD = $(top_builddir)/lib/eventlog/src/libevtlog.la

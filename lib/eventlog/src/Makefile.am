@@ -1,10 +1,23 @@
 
-lib_LTLIBRARIES = libevtlog.la
+lib_LTLIBRARIES += lib/eventlog/src/libevtlog.la
 
-libevtlog_la_SOURCES = evtrec.c evtfmt.c evtout.c evtstr.c evtctx.c evttags.c evtsyslog.c
-	
-noinst_HEADERS = evt_internals.h 
+lib_eventlog_src_libevtlog_la_SOURCES = \
+		lib/eventlog/src/evtrec.c \
+		lib/eventlog/src/evtfmt.c \
+		lib/eventlog/src/evtout.c \
+		lib/eventlog/src/evtstr.c \
+		lib/eventlog/src/evtctx.c \
+		lib/eventlog/src/evttags.c \
+		lib/eventlog/src/evtsyslog.c
 
-pkginclude_HEADERS = evtmaps.h evtlog.h 
+lib_eventlog_src_libevtlog_la_LDFLAGS = -no-undefined -release ${LSNG_RELEASE} \
+					-version-info ${LSNG_CURRENT}:${LSNG_REVISION}:${LSNG_AGE}
 
-EXTRA_DIST=makefile.msc
+lib_eventlog_src_libevtlog_la_CFLAGS = $(AM_CFLAGS)
+
+
+noinst_HEADERS = lib/eventlog/src/evt_internals.h
+
+pkginclude_HEADERS += \
+		lib/eventlog/src/evtmaps.h \
+		lib/eventlog/src/evtlog.h

@@ -734,14 +734,9 @@ dnl ***************************************************************************
 dnl libevtlog headers/libraries
 dnl ***************************************************************************
 
-AC_CONFIG_SUBDIRS([lib/eventlog])
-EVTLOG_SUBDIRS=lib/eventlog
-
-
 EVTLOG_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/eventlog/src -levtlog -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 EVTLOG_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/eventlog/src/.libs -levtlog -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 EVTLOG_CFLAGS="-I\$(top_srcdir)/lib/eventlog/src -I\$(top_builddir)/lib/eventlog/src"
-EVTLOG_SUBDIRS=lib/eventlog
 
 dnl ***************************************************************************
 dnl libwrap headers/libraries
@@ -1736,7 +1731,6 @@ AC_SUBST(JSON_CFLAGS)
 AC_SUBST(JSON_SUBDIRS)
 AC_SUBST(JSON_DEPENDENCY)
 AC_SUBST(IVYKIS_SUBDIRS)
-AC_SUBST(EVTLOG_SUBDIRS)
 AC_SUBST(RESOLV_LIBS)
 AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
 AC_SUBST(UUID_CFLAGS)

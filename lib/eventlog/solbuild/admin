@@ -1,6 +1,0 @@
-basedir=default
-conflict=nocheck
-partial=nocheck
-instance=overwrite
-idepend=nocheck
-rdepend=nocheck

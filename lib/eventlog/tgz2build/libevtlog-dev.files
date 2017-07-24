@@ -1,5 +1,0 @@
-opt/syslog-ng/include/eventlog/*
-opt/syslog-ng/lib/*.dylib
-opt/syslog-ng/lib/pkgconfig/eventlog.pc
-opt/syslog-ng/lib/libevtlog.a
-opt/syslog-ng/lib/libevtlog.la

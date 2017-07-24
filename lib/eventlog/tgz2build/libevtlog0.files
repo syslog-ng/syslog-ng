@@ -1,3 +1,0 @@
-opt/syslog-ng/lib/libevtlog.s[l,o]*
-opt/syslog-ng/lib/*.dylib
-opt/syslog-ng/lib/libevtlog.a
