@@ -84,6 +84,7 @@ void main_loop_worker_init(void);
 void main_loop_worker_deinit(void);
 
 extern volatile gboolean main_loop_workers_quit;
+extern volatile gboolean is_reloading_scheduled;
 
 static inline gboolean
 main_loop_worker_job_quit(void)

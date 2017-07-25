@@ -52,7 +52,8 @@ static void
 log_threaded_dest_driver_message_became_available_in_the_queue(gpointer user_data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *) user_data;
-  iv_event_post(&self->wake_up_event);
+  if (!self->under_termination)
+    iv_event_post(&self->wake_up_event);
 }
 
 static void
@@ -146,7 +147,8 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
   worker_insert_result_t result;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-  while (!self->suspended &&
+  while (G_LIKELY(!self->under_termination) &&
+         !self->suspended &&
          (msg = log_queue_pop_head(self->queue, &path_options)) != NULL)
     {
       msg_set_context(msg);
@@ -308,7 +310,7 @@ static void
 log_threaded_dest_driver_stop_thread(gpointer s)
 {
   LogThrDestDriver *self = (LogThrDestDriver *) s;
-
+  self->under_termination = TRUE;
   iv_event_post(&self->shutdown_event);
 }
 
