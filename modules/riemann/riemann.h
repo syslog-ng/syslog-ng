@@ -35,6 +35,7 @@ LogTemplateOptions *riemann_dd_get_template_options(LogDriver *d);
 
 void riemann_dd_set_field_host(LogDriver *d, LogTemplate *value);
 void riemann_dd_set_field_service(LogDriver *d, LogTemplate *value);
+void riemann_dd_set_field_event_time(LogDriver *d, LogTemplate *value);
 void riemann_dd_set_field_state(LogDriver *d, LogTemplate *value);
 void riemann_dd_set_field_description(LogDriver *d, LogTemplate *value);
 void riemann_dd_set_field_metric(LogDriver *d, LogTemplate *value);
