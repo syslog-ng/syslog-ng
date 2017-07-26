@@ -99,6 +99,8 @@ tf_geoip_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   TFGeoIPState *state = (TFGeoIPState *) s;
   state->database = NULL;
 
+  msg_notice("The geoip template function is deprecated. Please use geoip2 template function instead");
+
   GOptionEntry geoip_options[] =
   {
     { "database", 'd', 0, G_OPTION_ARG_FILENAME, &state->database, "geoip database location", NULL },
