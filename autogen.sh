@@ -28,6 +28,21 @@
 SUBMODULES="lib/ivykis modules/afmongodb/mongo-c-driver/src/libbson modules/afmongodb/mongo-c-driver modules/afamqp/rabbitmq-c lib/jsonc"
 GIT=`which git`
 
+include_automake_from_dir_if_exists()
+{
+  local dir=$1
+  if [ -f "$1/Makefile.am" ];
+  then
+    grep "include $dir/Makefile.am" Makefile.am
+    if [ "$?" -eq "1" ];
+    then
+      last_include=$(grep ^include Makefile.am|grep Makefile.am|tail -n 1)
+      sed -i s@"$last_include"@"$last_include\ninclude $dir/Makefile.am"@g Makefile.am
+    fi
+  fi
+}
+
+
 autogen_submodules()
 {
 	origdir=`pwd`
@@ -86,6 +101,9 @@ esac
 $LIBTOOLIZE --force --copy
 aclocal -I m4 --install
 sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
+
+include_automake_from_dir_if_exists debian
+include_automake_from_dir_if_exists tgz2build
 
 autoheader
 automake --foreign --add-missing --copy
