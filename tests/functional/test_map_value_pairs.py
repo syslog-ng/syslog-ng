@@ -27,7 +27,7 @@ from messagecheck import *
 from control import flush_files, stop_syslogng
 import os
 
-config = """@version: 3.10
+config = """@version: 3.11
 
 options { keep-hostname(yes); };
 

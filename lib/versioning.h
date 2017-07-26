@@ -102,6 +102,7 @@
 #define VERSION_3_8 "syslog-ng 3.8"
 #define VERSION_3_9 "syslog-ng 3.9"
 #define VERSION_3_10 "syslog-ng 3.10"
+#define VERSION_3_11 "syslog-ng 3.11"
 
 #define VERSION_VALUE_3_0  0x0300
 #define VERSION_VALUE_3_1  0x0301
@@ -114,11 +115,12 @@
 #define VERSION_VALUE_3_8  0x0308
 #define VERSION_VALUE_3_9  0x0309
 #define VERSION_VALUE_3_10 0x030a
+#define VERSION_VALUE_3_11 0x030b
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE   0x030a
-#define VERSION_CURRENT VERSION_3_10
-#define VERSION_CURRENT_VER_ONLY "3.10"
+#define VERSION_VALUE   0x030b
+#define VERSION_CURRENT VERSION_3_11
+#define VERSION_CURRENT_VER_ONLY "3.11"
 
 #define version_convert_from_user(v)  (v)
 
