@@ -318,8 +318,8 @@ testcase_with_threads()
 static gboolean
 is_valid_msg_size(guint32 one_msg_size)
 {
-  /* 460 as of writing */
-  return (one_msg_size < 500 && one_msg_size > 400);
+  /* 460 as of writing on x86-64 and 384 on x86*/
+  return (one_msg_size < 500 && one_msg_size > 300);
 }
 
 struct diskq_tester_parameters;
