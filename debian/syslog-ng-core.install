@@ -2,6 +2,8 @@ etc/syslog-ng/*
 usr/bin/*
 usr/sbin/*
 usr/lib/syslog-ng/libsyslog-ng-*.so.*
+usr/lib/syslog-ng/*/libsdjournal.so
+usr/lib/syslog-ng/libevtlog-*.so.*
 usr/lib/syslog-ng/*/libaffile.so
 usr/lib/syslog-ng/*/libafprog.so
 usr/lib/syslog-ng/*/libafsocket.so
@@ -26,4 +28,4 @@ usr/share/syslog-ng/xsd/*
 debian/syslog-ng.conf                   /etc/syslog-ng/
 debian/scl.conf                         /etc/syslog-ng/
 
-contrib/systemd/syslog-ng.service       /lib/systemd/system/
+contrib/systemd/*       /lib/systemd/system/

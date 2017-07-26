@@ -1,3 +1,15 @@
+syslog-ng (3.11.1-1) experimental; urgency=low
+
+  [ Laszlo Budai <laszlo.budai@balabit.com>]
+  * 3.11.1 release
+  * https://github.com/balabit/syslog-ng/releases/tag/syslog-ng-3.11.1
+  * new package:
+    * syslog-ng-mod-geoip2
+  * eventlog is bundled with source tarball
+
+ -- Laszlo Budai <laszlo.budai@balabit.com>  Wed, 26 Jul 2017 13:17:49 +0200
+
+
 syslog-ng (3.10.1-1) experimental; urgency=low
 
   [ Laszlo Budai <laszlo.budai@balabit.com>]

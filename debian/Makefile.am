@@ -5,7 +5,6 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-mod-kafka.install \
 		debian/syslog-ng-mod-http.install \
 		debian/syslog-ng-mod-java-http.install \
-		debian/syslog-ng-mod-journal.install \
 		debian/syslog-ng-mod-elastic.install \
 		debian/syslog-ng-mod-mongodb.postinst \
 		debian/syslog-ng-mod-geoip.install \
@@ -69,7 +68,8 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-mod-stardate.install \
 		debian/syslog-ng-mod-map-value-pairs.install \
 		debian/syslog-ng-mod-pacctformat.install \
-		debian/syslog-ng-mod-snmptrapd-parser.install
+		debian/syslog-ng-mod-snmptrapd-parser.install \
+		debian/syslog-ng-mod-geoip2.install
 
 
 
