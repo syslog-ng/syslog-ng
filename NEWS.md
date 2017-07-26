@@ -1,216 +1,82 @@
-3.10.1
+3.11.1
 
-<!-- Sun, 18 Jun 2017 16:26:18 +0200 -->
+<!-- Tue, 25 Jul 2017 13:43:52 +0200 -->
 
 # Features
 
- * Support https in http (curl) module
+ * Add geoip2 parser and template function.
+   It is based on the libmaxminddb(MaxMindDB).
+   It will replace the old geoip parser and template function,
+   so they are deprecated from 3.11 (but still available).
 
- * Docker support : from now Dockerfile for CentOS7, Ubuntu Zesty and for
-   Debian Jessie is part of our upstream
+ * Add SSL support to AMQP.
 
- * Add --database parameter for geoip template function
+ * Add template option to apache-accesslog-parser.
 
- * Metric improvements
-     * add discarded messages for parsers
-     * add matched/not matched counter for filters
-     * add memory_usage counter to logqueue
-     * add written counter
-        * Written is a calculated counter which return the written messages
-          by destinations. Written message is which was processed but not
-          queued and not dropped. (written = processed - queued - dropped)
-     * stats-counters: rename stored counter to queued
-     * add global_allocated_logmsg_size counter for tracking memory logmsg
-       related allocations
+ * Add configurable event time to Riemann destination.
 
- * Add snmp-parser (v1, v2)
-     * parses snmptrapd log
-     * The parsed information is available as key-value pairs, which can be
-       used/serialized (macros, format-json, etc.) in the log path.
-       If you want to send the message in a structured way, you can disable the
-       default message generation with the `generate-message(no)` option.
+ * Add drop-unmatched() option to dbparser.
 
- * Add snmp-soure
-    * available as an SCL block that containing a filesource and an SNMP parser
-    modules: add snmptrapd parser
+ * Add Ubuntu Xenial to the bundled docker images.
 
- * Add osquery source
-   * available as an SCL block
-   * It reads the osquery log file and parses with the JSON parser,
-     creating name-vaule pairs with an .osquery. prefix by default.
+ * Support multi-instance support for Solaris 10 and 11.
 
- * Add cisco-parser
-   * available as an SCL block
+ * Support multi-instance for systemd.
 
- * Add wildcard filesource
+ * Add configurable timeout to HTTP destination.
 
- * Add startdate template function
-
- * Add $(basename) and $(dirname) template functions
-
- * Add Kerberos support for HDFS destination
-
- * Add AUTH support for redis destination
-
- * Add map-value-pairs() parser
-    * it can be used to map existing name-value pairs to a different set during
-      processing, in bulk.  Normal value-pairs expressions can be used, just
-      like with value-pairs based destinations.
-
- * Extend Python language binding by Python parser
-
- * Add support for extract-stray-words() option in kv-parser()
-    * stray words: those words that happen to be between key-value pairs and
-      are otherwise not recognized either as keys nor as values.
-
- * Add $(context-values) template function
-
- * Add $(context-lookup) function
-
- * Add list related template functions
-    * $(list-head list ...)          returns the first element (unquoted)
-    * $(list-nth NDX list ...)       returns the specific element (unquoted)
-    * $(list-concat list1 list2 ...) returns a list containing the concatenated
-                                     list
-    * $(list-append list elem1 elem2 ...) returns a list, appending elem1,
-                                     elem2 ...
-    * $(list-tail list ...)          returns a list containing everything except
-                                     for the first element
-    * $(list-slice FROM:TO list ...) returns a list containing the slice
-                                     [FROM:TO), Python style slice
-                                   boundaries are supported (e.g. negative)
-    * $(list-count ...)              returns the number of elements in list
-
- * Add add query commands to syslog-ng-ctl
-    * query list	<filter>		 List names of counters which match the filter
-    * query get <filter>			 Get names and values of counters which match the
-                               filter
-    * query get --sum <filter> Get the sum of values of counters which match the
-                               filter
-
- * Support multiple servers in elasticsearch2-http destination
-
- * Implements elastic-v2 https in http mode
-
- * Add getent module (ported from incubator)
-    * This module adds $(getent) that allows one to look up various NSS based
-      databases, such as passwd, services or protocols.
-
- *  Add support for IP_FREEBIND
-
+ * Add prefix() option to cisco-parser.
 
 # Bugfixes
 
- * Fix a libnet detection check error that caused problem configuring
-   enable-spoof-source.
+ * Fix a memory usage counter underflow for threaded destination drivers
+   and writers.
 
- * Avoid warnings about _DEFAULT_SOURCE on recent glibc versions
-   With the glibc on zesty, using _GNU_SOURCE and not defining _DEFAULT_SOURCE
-   results in a warning, avoid that by defining _DEFAULT_SOURCE as well.
+ * Fix a potential crash in AMQP.
 
- * Fix invalid database warning for geoip parser
+ * Fix a potential crash during reload.
 
- * Fix prefix() default in systemd-journal for new config versions
+ * Fix a reload/shutdown issue.
+   Under heavy load, worker might never exit from the fetch loop from the
+   queue.
 
- * Fix a potential message loss in Riemann destination
+ * Fix a potential crash in afsocket destination during reload.
 
- * Fix a potential crash in the Riemann destination when the client is not
-   connected to the Riemann server.
+ * Fix a counter registration bug.
+   In some cases not all the required counters are registered.
 
- * Fix a possible add-contextual-data() related data loss in case of multiple
-   reference to the same add-contextual-data parser in several logpaths.
+ * Fix a build issue on FreeBSD.
 
- * Fix dbparser deadlock
+ * Fix a memory leak in diskq plugin.
 
- * Fix Python destination
-     * open() was not called in every time_reopen()
-     * python destination is not defined in stats output
+ * Fix systemd-journal error codes validation.
 
- * Fix processed stats counter for afsocket
+ * Fix a potential crash in diskq when it is used with file
+   destination and the file is reaped.
 
- * Fix stats source for pipes
-   * Previously pipe source is shown as file
+ * Fix a memory leak in HTTP destination
 
- * Fix csv-parser multithreaded support
-   In some cases (when csv-parser attached to network source), the parser
-   randomly filled the column macros with garbage.
+ * Fix ENABLE_DEBUG in dbparser.
 
- * Fix a message loss in case of filesource when syslog-ng was restarted and
-   the log_msg_size > file size.
-
- * Fix a potential crash in cryptofuncs
-
- * Fix a potential crash in syslog-ng-ctl when no command line parameters was
-   set.
-
- * Fix token duplication in the output of '--preprocess-into'
-
- * Fix UTF-8 support in syslog-ng-ctl
-
- * Fix a potential crash during X.509 certificate validation.
-
- * Fix a segfault in Python module startup
-
- * Fix a possible endless reading loop issue in case of multi-line filesource.
-
- * Fix soname for the http module from "curl" to "http"
-
- * Avoid openssl 1.1.0 deprecated APIs
-   When openssl is built with `--api=1.1 disable-deprecated`, use of deprecated
-   APIs results in build failure.
-
-
+ * Fix a unit tests that caused build issue on 32 bit platforms.
 
 # Other changes
 
- * Increase processed counter by queued counter after reload or restart when
-   diskqueue is used otherwise the newly added written counter would underflow.
+ * The eventlog library is part of syslog-ng from now.
 
- * Set the default time-zone to UTC for elasticsearch2
-   Elasticsearch and Kibana use UTC internally.
+ * Improve error messages when the config cannot be initialized.
 
- * Add retries support for python destination
+ * Improve source suspended/resumed debug messages.
 
- * Prefer server side cipher suite order
+ * Rename syslog-debun to syslog-ng-debun.
 
- * Always include librabbitmq in the dist tarball
+ * Update manpages to v3.11
 
- * Always include ivykis in the dist tarball
-
- * Marking parse error locations with >@<.
-
- * Default log_msg_size is increased to 64Kbyte from 8Kb
- 
- * Tons of syslog-debun improvements
-
- * Exit with 0 return code when --help is specified for syslog-ng-ctl
-
- * syslog-ng: make '--preprocess-into' foreground only
-
- * Add debug messages on log_msg_set_value()
-
- * Add more detail to filter evaluation related debug messages
-
+ * Remove tgz2build directory.
 
 # Notes to the Developers
 
- * Extract template perf test function to testlib
-
- * Print a debug message when logmsg passed to the Python side
-
- * Allow http module (curl) to be build with cmake
-
- * astylerc: allow continuation lines to start until column 60
-
- * Move kv-scanner under syslog-ng/lib
-
- * scratch-buffers2: implement an alternative to current scratch buffers
-    This new API is aimed a bit easier to use in situations where a throw away
-    buffer is needed that will automatically be freed at the next message.
-    It also gets does away with GTrashStack that is deprecated in recent glib
-    versions.
-
- * Several refactors in stats module.
+ * Rewrite merge-grammar script from Perl to Python.
 
 # Credits
 
@@ -223,9 +89,8 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Andras Mitzki, Antal Nemes, Balazs Scheidler, eroen, Fabien Wernli, Gabor Nagy,
-Gergely Nagy, Jason Hensley, Laszlo Varady, Laszlo Budai, Mate Farkas, 
-Noemi Vanyi, Peter Czanik, Peter Gervai, Todd C. Miller, Philip Prindeville,
-Zoltan Pallagi
-
+Andras Mitzki, Antal Nemes, Attila Szalay, Balazs Scheidler, Fabien Wernli,
+Gabor Nagy, Giuseppe D'Anna, Janos Szigetvari, Laszlo Budai, Laszlo Varady,
+Lorand Muzamel, Mate Farkas, Noemi Vanyi, Peter Czanik, Tamas Nagy,
+Tibor Bodnar, Tomasz Kazimierczak, Zoltan Pallagi
 
