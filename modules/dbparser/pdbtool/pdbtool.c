@@ -1233,7 +1233,7 @@ main(int argc, char *argv[])
   pattern_db_global_init();
   crypto_init();
 
-  configuration = cfg_new(VERSION_VALUE);
+  configuration = cfg_new_snippet(VERSION_VALUE);
 
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
