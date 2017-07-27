@@ -152,7 +152,7 @@ else
 TTY10_CONF = tty10.linux.conf
 endif
 
-# Upstream installs the merge-grammar.pl as data, thus not
+# Upstream installs the merge-grammar.py as data, thus not
 # executable. Yet, it needs to be, since the Makefiles that upstream
 # also installs expect it so.
 #
@@ -164,7 +164,7 @@ endif
 override_dh_install:
 	dh_install
 ifneq (,$(filter syslog-ng-dev,$(shell dh_listpackages)))
-	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
+	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.py
 endif
 ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
 	install -m 0644 debian/${TTY10_CONF} \
