@@ -31,6 +31,7 @@
 #include "messages.h"
 #include "pathutils.h"
 #include "syslog-ng-config.h"
+#include "plugin.h"
 
 #include <string.h>
 #include <glob.h>
@@ -949,7 +950,7 @@ relex:
         }
 
 #if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
-      if (!plugin_load_module("license", self, NULL))
+      if (!plugin_load_module("license", configuration, NULL))
         {
           msg_error("Error loading the license module, forcing exit");
           exit(1);
