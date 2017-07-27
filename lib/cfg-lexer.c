@@ -30,6 +30,7 @@
 #include "pragma-parser.h"
 #include "messages.h"
 #include "pathutils.h"
+#include "syslog-ng-config.h"
 
 #include <string.h>
 #include <glob.h>
@@ -946,6 +947,15 @@ relex:
           msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file to indicate this explicitly");
           cfg_set_version(configuration, 0x0201);
         }
+
+#if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
+      if (!plugin_load_module("license", self, NULL))
+        {
+          msg_error("Error loading the license module, forcing exit");
+          exit(1);
+        }
+#endif
+
       self->non_pragma_seen = TRUE;
     }
 
