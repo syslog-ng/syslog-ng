@@ -69,7 +69,8 @@ EXTRA_DIST		+= \
 		debian/syslog-ng-mod-map-value-pairs.install \
 		debian/syslog-ng-mod-pacctformat.install \
 		debian/syslog-ng-mod-snmptrapd-parser.install \
-		debian/syslog-ng-mod-geoip2.install
+		debian/syslog-ng-mod-geoip2.install\
+		debian/syslog-ng.service
 
 
 
