@@ -38,6 +38,10 @@ public abstract class LogDestination extends LogPipe {
 		return getTemplateOptionsHandle(getHandle());
 	}
 
+	public int getSeqNum() {
+ 		return getSeqNum(getHandle());
+        }
+
 	protected abstract boolean open();
 
 	protected abstract void close();
@@ -49,6 +53,8 @@ public abstract class LogDestination extends LogPipe {
 	private native String getOption(long ptr, String key);
 
 	private native long getTemplateOptionsHandle(long ptr);
+
+	private native int getSeqNum(long ptr);
 
 	protected void onMessageQueueEmpty() {
 		return;

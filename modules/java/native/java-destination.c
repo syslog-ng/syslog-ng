@@ -64,6 +64,13 @@ Java_org_syslog_1ng_LogDestination_getTemplateOptionsHandle(JNIEnv *env, jobject
   return (jlong)(&self->template_options);
 }
 
+JNIEXPORT jint JNICALL
+Java_org_syslog_1ng_LogDestination_getSeqNum(JNIEnv *env, jobject obj, jlong handle)
+{
+  JavaDestDriver *self = (JavaDestDriver *)handle;
+  return (jint)(self->super.seq_num);
+}
+
 JNIEXPORT jlong JNICALL
 Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong handle)
 {
@@ -124,7 +131,7 @@ java_dd_init(LogPipe *s)
     }
 
   self->proxy = java_destination_proxy_new(self->class_name, self->class_path->str, self, self->template,
-                                           cfg->jvm_options);
+                                           &self->super.seq_num, cfg->jvm_options);
   if (!self->proxy)
     return FALSE;
 
