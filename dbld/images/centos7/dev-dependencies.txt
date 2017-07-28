@@ -52,3 +52,4 @@ vim
 docbook-xsl
 python-nose
 python-ply
+libmaxminddb-devel
