@@ -845,8 +845,6 @@ qdisk_deinit(QDisk *self)
       close(self->fd);
       self->fd = -1;
     }
-
-  self->options = NULL;
 }
 
 gssize
