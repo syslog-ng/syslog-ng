@@ -45,7 +45,6 @@ struct _LogQueueDisk
   gboolean (*load_queue)(LogQueueDisk *s, const gchar *filename);
   gboolean (*start)(LogQueueDisk *s, const gchar *filename);
   void (*free_fn)(LogQueueDisk *s);
-  gboolean (*is_reliable)(LogQueueDisk *s);
   LogMessage * (*read_message)(LogQueueDisk *self, LogPathOptions *path_options);
   gboolean (*write_message)(LogQueueDisk *self, LogMessage *msg);
   void (*restart)(LogQueueDisk *self);

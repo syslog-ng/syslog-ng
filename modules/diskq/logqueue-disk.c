@@ -193,9 +193,7 @@ gboolean
 log_queue_disk_is_reliable(LogQueue *s)
 {
   LogQueueDisk *self = (LogQueueDisk *) s;
-  if (self->is_reliable)
-    return self->is_reliable(self);
-  return FALSE;
+  return qdisk_is_reliable(self->qdisk);
 }
 
 const gchar *
