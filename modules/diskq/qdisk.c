@@ -845,8 +845,6 @@ qdisk_deinit(QDisk *self)
       close(self->fd);
       self->fd = -1;
     }
-
-  self->options = NULL;
 }
 
 gssize
@@ -1001,6 +999,12 @@ gboolean
 qdisk_is_read_only(QDisk *self)
 {
   return self->options->read_only;
+}
+
+gboolean
+qdisk_is_reliable(QDisk *self)
+{
+  return self->options->reliable;
 }
 
 void

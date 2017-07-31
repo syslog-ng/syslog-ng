@@ -44,15 +44,21 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name, gpointer user_data)
 
   if (queue)
     {
-      log_queue_unref(queue);
-      queue = NULL;
+      if (queue->type != log_queue_disk_type || self->options.reliable != log_queue_disk_is_reliable(queue))
+        {
+          log_queue_unref(queue);
+          queue = NULL;
+        }
     }
 
-  if (self->options.reliable)
-    queue = log_queue_disk_reliable_new(&self->options, persist_name);
-  else
-    queue = log_queue_disk_non_reliable_new(&self->options, persist_name);
-  log_queue_set_throttle(queue, dd->throttle);
+  if (!queue)
+    {
+      if (self->options.reliable)
+        queue = log_queue_disk_reliable_new(&self->options, persist_name);
+      else
+        queue = log_queue_disk_non_reliable_new(&self->options, persist_name);
+      log_queue_set_throttle(queue, dd->throttle);
+    }
 
   qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
   success = log_queue_disk_load_queue(queue, qfile_name);
