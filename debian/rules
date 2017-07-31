@@ -170,6 +170,8 @@ ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
 	install -m 0644 debian/${TTY10_CONF} \
 			debian/syslog-ng-core/usr/share/syslog-ng/include/scl/system/tty10.conf
 endif
+	install -m 0644 debian/syslog-ng.service debian/syslog-ng-core/lib/systemd/system/syslog-ng.service
+	rm debian/syslog-ng.service
 
 # Install the NEWS file as upstream changelog.
 # Rationale: the ChangeLog file is an old artifact from the Arch
