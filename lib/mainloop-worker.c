@@ -381,6 +381,7 @@ main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
   if (main_loop_workers_running == 0)
     {
       _invoke_sync_call_actions();
+      _reenable_worker_jobs(NULL);
     }
   else
     {
