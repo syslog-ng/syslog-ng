@@ -70,8 +70,13 @@ start
           {
             gboolean result;
 
-	    result = python_evaluate_global_code(configuration, $4);
-	    free($4);
+            gsize output_len = 0;
+            GError *err = NULL;
+            gchar *substituted_python_code = cfg_lexer_subst_args(lexer->globals, NULL, NULL, $4, strlen($4), &output_len, &err);
+            free($4);
+            CHECK_ERROR(substituted_python_code, @1, "Error substituting Python block: %s", err->message);
+            result = python_evaluate_global_code(configuration, substituted_python_code);
+            g_free(substituted_python_code);
             CHECK_ERROR(result, @1, "Error processing global python block");
             *instance = (void *) 1;
             YYACCEPT;
