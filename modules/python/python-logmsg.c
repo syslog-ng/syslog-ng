@@ -68,10 +68,11 @@ _is_key_blacklisted(const gchar *key)
 static PyObject *
 _py_log_message_getattr(PyObject *o, PyObject *key)
 {
-  if (!PyBytes_Check(key))
+  if (!py_is_string(key))
     return NULL;
 
-  gchar *name = PyBytes_AsString(key);
+  const gchar *name = py_object_as_string(key);
+
   if (_is_key_blacklisted(name))
     {
       msg_error("Blacklisted attribute requested", evt_tag_str("key", name));
@@ -91,16 +92,16 @@ _py_log_message_getattr(PyObject *o, PyObject *key)
 static int
 _py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
 {
-  if (!PyBytes_Check(key))
+  if (!py_is_string(key))
     return -1;
 
   PyLogMessage *py_msg = (PyLogMessage *)o;
-  gchar *name = PyBytes_AsString(key);
+  const gchar *name = py_object_as_string(key);
   NVHandle handle = log_msg_get_value_handle(name);
   PyObject *value_as_strobj = PyObject_Str(value);
   if (value_as_strobj)
     {
-      log_msg_set_value(py_msg->msg, handle, PyBytes_AsString(value_as_strobj), -1);
+      log_msg_set_value(py_msg->msg, handle, py_object_as_string(value_as_strobj), -1);
       Py_DECREF(value_as_strobj);
     }
   else

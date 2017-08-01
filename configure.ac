@@ -1308,11 +1308,18 @@ dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
 if test "x$enable_python" != "xno"; then
-  if test "x$with_python" != "xauto"; then
+  if test "x$with_python" = "xauto"; then
+    PKG_CHECK_MODULES(PYTHON, python3 >= 3, python_found="yes", python_found="no")
+    if test "$python_found" = "yes"; then
+      with_python="python3"
+    else
+      PKG_CHECK_MODULES(PYTHON, python2 >= 2.6, python_found="yes", python_found="no")
+      if test "$python_found" = "yes"; then
+        with_python="python2"
+      fi
+    fi
+  else
     case "$with_python" in
-      auto)
-          with_python="python"
-          ;;
       [[0-9]])
           with_python="python${with_python}"
           ;;
@@ -1320,11 +1327,10 @@ if test "x$enable_python" != "xno"; then
           with_python="python-${with_python}"
           ;;
     esac
-  else
-    with_python="python"
+
+    PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, python_found="yes", python_found="no")
   fi
 
-  PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, python_found="yes", python_found="no")
   if test "x$enable_python" = "xyes" -a "x$python_found" = "xno"; then
     AC_MSG_ERROR([Could not find the requested Python development libraries])
   fi
@@ -1659,6 +1665,8 @@ AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enab
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(echo "$with_python" | grep -Eq "python-?2.*") && echo 1 || echo 0`, [Python2 c api])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(echo "$with_python" | grep -Eq "python-?3.*") && echo 1 || echo 0`, [Python3 c api])
 
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])

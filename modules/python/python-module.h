@@ -62,7 +62,5 @@
 #error "_POSIX_C_SOURCE or _XOPEN_SOURCE is already defined, python-module.h should be included first. Check out the comment in python-module.h for more information"
 #endif
 
-#include <Python.h>
-#include "syslog-ng.h"
-
+#include "compat/compat-python.h"
 #endif
