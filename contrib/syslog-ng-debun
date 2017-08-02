@@ -344,6 +344,12 @@ acquire_debun_info () {
 acquire_system_info () {
 	printf "System's full uname: "
 	uname -a | tee "${tmpdir}/sys.uname"
+	free >${tmpdir}/sys.free
+	vmstat >${tmpdir}/sys.vmstat
+
+	if is_available ${opensslcmd}; then
+		${opensslcmd} version >${tmpdir}/sys.openssl.version
+	fi
 }
 
 acquire_network_info () {
@@ -385,13 +391,7 @@ acquire_system_other_info () {
 	netstatnlp >${tmpdir}/sys.netstat.ltn
 	$netstatpunt >${tmpdir}/sys.netstat.est
 	$netstatsu >${tmpdir}/sys.netstat.su
-	free >${tmpdir}/sys.free
-	vmstat >${tmpdir}/sys.vmstat
 	[ -f /proc/net/udp ] && cp /proc/net/udp ${tmpdir}/sys.proc.net.udp
-
-	if is_available ${opensslcmd}; then
-		${opensslcmd} version >${tmpdir}/sys.openssl.version
-	fi
 }
 
 ### Here comes the general info acquiring parts
@@ -584,7 +584,7 @@ acquire_syslog_pki_info () {
 		read OPENSSL OPENSSLVER OPENSSLDAY OPENSSLMONTH OPENSSLYEAR REST <${tmpdir}/sys.openssl.version
 		opensslmajor=${OPENSSLVER%%.*}
 		cd "${confdir}"
-		find . -name '*.0' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
+		find . -name '*.0' -o -name '*.1' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
 		while read FILE; do
 			pki_process_file "${FILE}" >>${tmpdir}/syslog.etc.pki.info.csv
 		done <${tmpdir}/syslog.etc.pki.files
@@ -656,6 +656,7 @@ acquire_syslog_pids () {
 }
 
 acquire_syslog_info () {
+	ls -la "${binprefix}" > ${tmpdir}/syslog.lsl.install_dir 2>&1
 	printf "Syslog-ng's exact version: "
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
@@ -682,7 +683,7 @@ acquire_syslog_info () {
 }
 
 acquire_syslog_var () {
-	ls -laR "${vardir}/" >${tmpdir}/syslog.lslR.var 2>&1
+	ls -laR "${vardir}" >${tmpdir}/syslog.lslR.var 2>&1
 
 	$duks "${vardir}/" >${tmpdir}/syslog.duks.var
 	read vardu dir <${tmpdir}/syslog.duks.var
