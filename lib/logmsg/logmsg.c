@@ -1799,11 +1799,6 @@ void
 log_msg_global_init(void)
 {
   log_msg_registry_init();
-}
-
-void
-log_msg_stats_global_init(void)
-{
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "msg_clones", NULL );

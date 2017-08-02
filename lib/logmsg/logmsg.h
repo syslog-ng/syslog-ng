@@ -333,7 +333,6 @@ void log_msg_registry_init(void);
 void log_msg_registry_deinit(void);
 void log_msg_global_init(void);
 void log_msg_global_deinit(void);
-void log_msg_stats_global_init(void);
 void log_msg_registry_foreach(GHFunc func, gpointer user_data);
 
 gint log_msg_lookup_time_stamp_name(const gchar *name);
