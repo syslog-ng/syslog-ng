@@ -3,11 +3,13 @@ MAINTAINER Andras Mitzki <andras.mitzki@balabit.com>
 
 RUN yum install -y wget epel-release
 
-RUN cd /etc/yum.repos.d && wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng39/repo/epel-7/czanik-syslog-ng39-epel-7.repo
+RUN cd /etc/yum.repos.d && wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng311/repo/epel-7/czanik-syslog-ng311-epel-7.repo
 
 ADD dev-dependencies.txt .
 RUN cat dev-dependencies.txt | grep -v "#" | xargs yum -y  install
-
+ADD gradle_installer.sh .
+RUN ./gradle_installer.sh
+RUN echo "/usr/lib/jvm/jre/lib/amd64/server" | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf && ldconfig
 
 #
 # if you want to add further packages, add them to addons.txt to make image
