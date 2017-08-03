@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.5.20170710"
+version="0.3.6.20170802"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -55,7 +55,7 @@ duks="du -ks"
 grepq="fgrep -q"
 lddcmd="ldd"
 opensslcmd="openssl"
-pki_pubkey_parser_cmd="sed -E"
+sed_equivalent_cmd="sed -E"
 mount=mount
 varlimit=1000
 myplimit () { echo "Plimit query is not supported on this platform" >&3 ; }
@@ -344,6 +344,12 @@ acquire_debun_info () {
 acquire_system_info () {
 	printf "System's full uname: "
 	uname -a | tee "${tmpdir}/sys.uname"
+	free >${tmpdir}/sys.free
+	vmstat >${tmpdir}/sys.vmstat
+
+	if is_available ${opensslcmd}; then
+		${opensslcmd} version >${tmpdir}/sys.openssl.version
+	fi
 }
 
 acquire_network_info () {
@@ -385,13 +391,7 @@ acquire_system_other_info () {
 	netstatnlp >${tmpdir}/sys.netstat.ltn
 	$netstatpunt >${tmpdir}/sys.netstat.est
 	$netstatsu >${tmpdir}/sys.netstat.su
-	free >${tmpdir}/sys.free
-	vmstat >${tmpdir}/sys.vmstat
 	[ -f /proc/net/udp ] && cp /proc/net/udp ${tmpdir}/sys.proc.net.udp
-
-	if is_available ${opensslcmd}; then
-		${opensslcmd} version >${tmpdir}/sys.openssl.version
-	fi
 }
 
 ### Here comes the general info acquiring parts
@@ -458,7 +458,7 @@ pki_parse_public_key () {
 		if echo "${oneline_cert}" | $grepq "PublicKey:X509v3extensions"; then
 			printf "NO_PUBLIC_KEY_COULD_BE_EXTRACTED;"
 		else
-			echo "${oneline_cert}" | ${pki_pubkey_parser_cmd} 's/^.*(Modulus|modulus|pub)(\([0-9]+bit\))?:([a-f0-9:]+).*$/Public Key=\3;/'
+			echo "${oneline_cert}" | ${sed_equivalent_cmd} 's/^.*(Modulus|modulus|pub)(\([0-9]+bit\))?:([a-f0-9:]+).*$/Public Key=\3;/'
 		fi
 	fi
 }
@@ -584,7 +584,7 @@ acquire_syslog_pki_info () {
 		read OPENSSL OPENSSLVER OPENSSLDAY OPENSSLMONTH OPENSSLYEAR REST <${tmpdir}/sys.openssl.version
 		opensslmajor=${OPENSSLVER%%.*}
 		cd "${confdir}"
-		find . -name '*.0' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
+		find . -name '*.0' -o -name '*.1' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
 		while read FILE; do
 			pki_process_file "${FILE}" >>${tmpdir}/syslog.etc.pki.info.csv
 		done <${tmpdir}/syslog.etc.pki.files
@@ -594,13 +594,25 @@ acquire_syslog_pki_info () {
 	fi
 }
 
+remove_passwords_from_file () {
+	#
+	# Double quotes are used because escaping single quotes within a single quoted string is ugly.
+	# [ \t\r\n\v\f] class is used for matching whitespaces, because \s is unavailable.
+	# The goal is matching substrings that look like this, to replace the password string, and preserve original formatting:
+	# password ( 'password-string' ) -->  password ( '___PASSWORD_REMOVED___' )
+	###
+	${sed_equivalent_cmd} "s|password([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+([\"']?)([ \t\r\n\v\f]*)\)|password\1(\2\3___PASSWORD_REMOVED___\4\5)|g" <"${1}" >"${1}.bak" 2>/dev/null
+	mv "${1}.bak" "${1}"
+}
+
 acquire_syslog_config () {
 	echo "Copy configs from $confdir"
 	cd "${confdir}"
 	mkdir ${tmpdir}/config
 	find . > ${tmpdir}/syslog.etc.files
 	grep '\.key$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep -v '\.key$' ${tmpdir}/syslog.etc.files | \
+	grep '\.jks$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
+	grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks' | \
 		while read FILE; do \
 			if pki_is_private_key "${FILE}" 2>/dev/null; then
 				echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
@@ -609,6 +621,11 @@ acquire_syslog_config () {
 			fi
 		done | \
 		cpio -pd ${tmpdir}/config
+
+	find ${tmpdir}/config -name "*.conf*" | \
+		while read FILE; do \
+			remove_passwords_from_file "${FILE}"
+		done
 }
 
 acquire_syslog_pids () {
@@ -639,6 +656,7 @@ acquire_syslog_pids () {
 }
 
 acquire_syslog_info () {
+	ls -la "${binprefix}" > ${tmpdir}/syslog.lsl.install_dir 2>&1
 	printf "Syslog-ng's exact version: "
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
@@ -659,11 +677,13 @@ acquire_syslog_info () {
 		is_available ${lsof%% *} && $lsof $i >${tmpdir}/syslog.$i.lsof 2>/dev/null || echo "No lsof in path." >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
 	done
-	$syslogbin -s --preprocess-into ${tmpdir}/syslog.pp.conf
+
+	$syslogbin -s --preprocess-into "${tmpdir}/syslog.pp.conf"
+	remove_passwords_from_file "${tmpdir}/syslog.pp.conf"
 }
 
 acquire_syslog_var () {
-	ls -laR "${vardir}/" >${tmpdir}/syslog.lslR.var 2>&1
+	ls -laR "${vardir}" >${tmpdir}/syslog.lslR.var 2>&1
 
 	$duks "${vardir}/" >${tmpdir}/syslog.duks.var
 	read vardu dir <${tmpdir}/syslog.duks.var
@@ -1097,7 +1117,7 @@ setup_env_genlinux () {
 	if echo "eee" | sed -E 's/eee/fff/g' >/dev/null 2>/dev/null ; then
 		:
 	else
-		pki_pubkey_parser_cmd="perl -p -e"
+		sed_equivalent_cmd="perl -p -e"
 	fi
 }
 
@@ -1139,7 +1159,7 @@ setup_env_solaris () {
 	netstatpunt="netstat -n"
 	netstatsu="netstat -s"
 	grepq="/usr/xpg4/bin/grep -q"
-	pki_pubkey_parser_cmd="perl -p -e"
+	sed_equivalent_cmd="perl -p -e"
 
 	unset mypidof
 	unset getsyslogpids
@@ -1222,7 +1242,7 @@ setup_env_hpux () {
 	service_stop="${initfile} stop"
 	service_start="${initfile} start"
 	service_status="${initfile} status"
-	pki_pubkey_parser_cmd="perl -p -e"
+	sed_equivalent_cmd="perl -p -e"
 
 	unset -f free
 	unset -f netstatnlp
@@ -1307,7 +1327,7 @@ setup_env_aix () {
 	service_stop="/usr/bin/stopsrc -s syslog-ng"
 	service_start="/usr/bin/startsrc -s syslog-ng"
 	service_status="/usr/bin/lssrc -s syslog-ng"
-	pki_pubkey_parser_cmd="perl -p -e"
+	sed_equivalent_cmd="perl -p -e"
 
 	unset initfile
 	unset netstatnlp
