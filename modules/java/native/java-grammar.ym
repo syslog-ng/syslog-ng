@@ -49,7 +49,6 @@
 %token KW_CLASS_PATH
 %token KW_CLASS_NAME
 %token KW_OPTION
-%token KW_JVM_OPTIONS
 
 %%
 
@@ -79,7 +78,6 @@ java_dest_option
           }
         | KW_TEMPLATE '(' string ')' { java_dd_set_template_string(last_driver, $3); free($3); }
         | KW_OPTION '(' java_dest_custom_options ')'
-        | KW_JVM_OPTIONS '(' string ')' { java_dd_set_jvm_options(last_driver, $3); free($3); }
         | threaded_dest_driver_option
         | dest_driver_option
         | { last_template_options = java_dd_get_template_options(last_driver); } template_option

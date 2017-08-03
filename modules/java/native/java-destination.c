@@ -103,14 +103,6 @@ java_dd_set_template_string(LogDriver *s, const gchar *template_string)
   self->template_string = g_strdup(template_string);
 }
 
-void
-java_dd_set_jvm_options(LogDriver *s, const gchar *jvm_options)
-{
-  JavaDestDriver *self = (JavaDestDriver *)s;
-  g_free(self->jvm_options);
-  self->jvm_options = g_strdup(jvm_options);
-}
-
 gboolean
 java_dd_init(LogPipe *s)
 {
@@ -132,7 +124,7 @@ java_dd_init(LogPipe *s)
     }
 
   self->proxy = java_destination_proxy_new(self->class_name, self->class_path->str, self, self->template,
-                                           self->jvm_options);
+                                           cfg->jvm_options);
   if (!self->proxy)
     return FALSE;
 

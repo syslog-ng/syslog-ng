@@ -49,7 +49,6 @@ typedef struct
   GString *formatted_message;
   GHashTable *options;
   LogTemplateOptions template_options;
-  gchar *jvm_options;
 } JavaDestDriver;
 
 LogDriver *java_dd_new(GlobalConfig *cfg);
@@ -58,7 +57,6 @@ void java_dd_set_class_name(LogDriver *s, const gchar *class_name);
 void java_dd_set_template_string(LogDriver *s, const gchar *template_string);
 void java_dd_set_retries(LogDriver *s, guint retries);
 void java_dd_set_option(LogDriver *s, const gchar *key, const gchar *value);
-void java_dd_set_jvm_options(LogDriver *s, const gchar *jvm_options);
 LogTemplateOptions *java_dd_get_template_options(LogDriver *s);
 
 #endif
