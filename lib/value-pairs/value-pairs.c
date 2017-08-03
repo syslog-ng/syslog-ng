@@ -986,4 +986,5 @@ value_pairs_global_init(void)
 void
 value_pairs_global_deinit(void)
 {
+  g_free(all_macros);
 }
