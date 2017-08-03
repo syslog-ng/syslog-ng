@@ -32,17 +32,14 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.Locale;
 import java.util.UUID;
 
-public class HdfsDestination extends TextLogDestination {
+public class HdfsDestination extends StructuredLogDestination {
     private static final String LOG_TAG = "HDFS:";
     private static final String HADOOP_SECURITY_AUTH_KEY = "hadoop.security.authentication";
 
@@ -124,7 +121,7 @@ public class HdfsDestination extends TextLogDestination {
     }
 
     @Override
-    public boolean send(String message) {
+    public boolean send(LogMessage logMessage) {
         isOpened = false;
 
         if (!ensureDataOutputStream()) {
@@ -132,8 +129,9 @@ public class HdfsDestination extends TextLogDestination {
         }
 
         try {
-            logger.debug("Outgoing message: " + message);
-            fsDataOutputStream.write(message.getBytes(Charset.forName("UTF-8")));
+            String formattedMessage = options.getTemplate().getResolvedString(logMessage);
+            logger.debug("Outgoing message: " + formattedMessage);
+            fsDataOutputStream.write(formattedMessage.getBytes(Charset.forName("UTF-8")));
         } catch (IOException e) {
             printStackTrace(e);
             closeAll(false);
@@ -281,4 +279,5 @@ public class HdfsDestination extends TextLogDestination {
         logger.debug("Deinitialize hdfs destination");
         options.deinit();
     }
+
 }

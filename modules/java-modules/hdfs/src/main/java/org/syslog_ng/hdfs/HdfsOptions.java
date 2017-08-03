@@ -39,6 +39,8 @@ public class HdfsOptions {
   public static String MAX_FILENAME_LENGTH_DEFAULT = "255";
   public static String KERBEROS_PRINCIPAL = "kerberos_principal";
   public static String KERBEROS_KEYTAB_FILE = "kerberos_keytab_file";
+  public static String TEMPLATE = "template";
+  public static String TEMPLATE_DEFAULT = "${ISODATE} ${HOST} ${MSGHDR}${MSG}\n";
 
   private LogDestination owner;
   private Options options;
@@ -47,6 +49,7 @@ public class HdfsOptions {
 		this.owner = owner;
 		options = new Options();
 		fillOptions();
+		fillTemplateOptions();
 	}
 
 	public void init() throws InvalidOptionException {
@@ -88,19 +91,28 @@ public class HdfsOptions {
   public String getKerberosKeytabFile() {
       return options.get(KERBEROS_KEYTAB_FILE).getValue();
   }
+  
+  public TemplateOption getTemplate() {
+      return options.getTemplateOption(TEMPLATE);
+  }
 
   private void fillOptions() {
     fillStringOptions();
   }
 
   private void fillStringOptions() {
+        options.put(new RequiredOptionDecorator(new StringOption(owner, FILE)));
 		options.put(new RequiredOptionDecorator(new StringOption(owner, URI)));
-		options.put(new RequiredOptionDecorator(new StringOption(owner, FILE)));
 		options.put(new StringOption(owner, ARCHIVE_DIR));
 		options.put(new StringOption(owner, RESOURCES));
 		options.put(new StringOption(owner, MAX_FILENAME_LENGTH, MAX_FILENAME_LENGTH_DEFAULT));
 		options.put(new StringOption(owner, KERBEROS_PRINCIPAL));
 		options.put(new StringOption(owner, KERBEROS_KEYTAB_FILE));
   }
+  
+  private void fillTemplateOptions() {
+      options.put(new TemplateOption(owner.getConfigHandle(), new StringOption(owner, TEMPLATE, TEMPLATE_DEFAULT)));
+  }
+
 
 }
