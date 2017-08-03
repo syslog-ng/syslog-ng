@@ -233,6 +233,8 @@ extern struct _StatsOptions *last_stats_options;
 
 %token KW_PERSIST_NAME                10302
 
+%token KW_JVM_OPTIONS                 10303
+
 /* log statement options */
 %token KW_FLAGS                       10190
 
@@ -916,6 +918,7 @@ options_item
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
+  | KW_JVM_OPTIONS '(' string ')' {configuration->jvm_options = g_strdup($3); free($3);}
 	| { last_template_options = &configuration->template_options; } template_option
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
 	| { last_stats_options = &configuration->stats_options; } stat_option
