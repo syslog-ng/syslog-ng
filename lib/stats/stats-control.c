@@ -49,3 +49,9 @@ stats_register_control_commands(void)
   control_register_command("STATS", NULL, control_connection_send_stats, NULL);
   control_register_command("RESET_STATS", NULL, control_connection_reset_stats, NULL);
 }
+
+void
+stats_unregister_control_commands(void)
+{
+  reset_control_command_list();
+}

@@ -29,6 +29,19 @@
 
 static GList *command_list = NULL;
 
+GList *
+get_control_command_list()
+{
+  return command_list;
+}
+
+void
+reset_control_command_list()
+{
+  g_list_free_full(command_list, (GDestroyNotify)g_free);
+  command_list = NULL;
+}
+
 void
 control_register_command(const gchar *command_name, const gchar *description, CommandFunction function,
                          gpointer user_data)
