@@ -10,7 +10,6 @@ flex
 libcap-dev
 libdbi-dev
 libesmtp-dev
-libevtlog-dev
 libgeoip-dev
 libglib2.0-dev
 libhiredis-dev
