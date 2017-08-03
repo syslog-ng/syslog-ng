@@ -30,11 +30,11 @@
 #include "lib/reloc.h"
 #include "plugin.h"
 #include "resolved-configurable-paths.h"
+#include <string.h>
 
 struct _JavaVMSingleton
 {
   GAtomicCounter ref_cnt;
-  JavaVMOption options[3];
   JNIEnv *env;
   JavaVM *jvm;
   JavaVMInitArgs vm_args;
@@ -92,24 +92,92 @@ java_machine_unref(JavaVMSingleton *self)
     }
 }
 
+static GArray *
+_jvm_options_array_append(GArray *jvm_options_array, char *option_string)
+{
+  JavaVMOption opt;
+  opt.optionString = option_string;
+  return g_array_append_val(jvm_options_array, opt);
+}
+
+static gboolean
+_is_jvm_option_predefined(const gchar *option)
+{
+  static const gchar *predefined_options[] =
+  {
+    "Djava.class.path",
+    "Djava.library.path",
+    NULL
+  };
+
+  for (gint i = 0; predefined_options[i] != NULL; i++)
+    {
+      if (!strcmp(option, predefined_options[i]))
+        {
+          msg_info("JVM option is set by syslog-ng, cannot be overridden by user-defined values.",
+                   evt_tag_str("option", option));
+          return TRUE;
+        }
+    }
+
+  return FALSE;
+}
+
+static GArray *
+_jvm_options_split(const gchar *jvm_options_str)
+{
+  GArray *jvm_options_array = g_array_new(FALSE, TRUE, sizeof(JavaVMOption));
+
+  if (!jvm_options_str)
+    return jvm_options_array;
+
+  gchar **options_str_array = g_strsplit_set(jvm_options_str, "- \t", 0);
+
+  for (gint i = 0; options_str_array[i]; i++)
+    {
+      if (options_str_array[i][0] == '\0' || _is_jvm_option_predefined(options_str_array[i]))
+        {
+          g_free(options_str_array[i]);
+          continue;
+        }
+
+      jvm_options_array = _jvm_options_array_append(jvm_options_array, g_strdup_printf("-%s", options_str_array[i]));
+      g_free(options_str_array[i]);
+    }
+  g_free(options_str_array);
+
+  return jvm_options_array;
+}
+
+static void
+_setup_jvm_options_array(JavaVMSingleton *self, const gchar *jvm_options_str)
+{
+  GArray *jvm_options_array = _jvm_options_split(jvm_options_str);
+
+  jvm_options_array = _jvm_options_array_append(jvm_options_array,
+                                                g_strdup_printf("-Djava.class.path=%s",
+                                                    self->class_path->str));
+
+  jvm_options_array = _jvm_options_array_append(jvm_options_array,
+                                                g_strdup_printf("-Djava.library.path=%s",
+                                                    resolvedConfigurablePaths.initial_module_path));
+
+  jvm_options_array = _jvm_options_array_append(jvm_options_array,
+                                                g_strdup("-Xrs"));
+
+  self->vm_args.nOptions = jvm_options_array->len;
+  self->vm_args.options = (JavaVMOption *)jvm_options_array->data;
+}
+
 gboolean
-java_machine_start(JavaVMSingleton *self)
+java_machine_start(JavaVMSingleton *self, const gchar *jvm_options)
 {
   g_assert(self == g_jvm_s);
   if (!self->jvm)
     {
       long status;
-      self->options[0].optionString = g_strdup_printf(
-                                        "-Djava.class.path=%s", self->class_path->str);
-
-      self->options[1].optionString = g_strdup_printf(
-                                        "-Djava.library.path=%s", resolvedConfigurablePaths.initial_module_path);
-
-      self->options[2].optionString = g_strdup("-Xrs");
-
+      _setup_jvm_options_array(self, jvm_options);
       self->vm_args.version = JNI_VERSION_1_6;
-      self->vm_args.nOptions = 3;
-      self->vm_args.options = self->options;
       status = JNI_CreateJavaVM(&self->jvm, (void **) &self->env,
                                 &self->vm_args);
       if (status == JNI_ERR)
