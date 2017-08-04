@@ -33,6 +33,9 @@
 
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+
 #include <stdio.h>
 
 static gboolean randfile_loaded;
@@ -48,6 +51,10 @@ crypto_deinit(void)
       if (rnd_file[0])
         RAND_write_file(rnd_file);
     }
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  ERR_free_strings();
+  EVP_cleanup();
+#endif
   openssl_crypto_deinit_threading();
 }
 
@@ -73,4 +80,3 @@ crypto_init(void)
                 "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
     }
 }
-
