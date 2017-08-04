@@ -1147,6 +1147,13 @@ dnl ***************************************************************************
 
 enable_json="no"
 
+JSON_INTERNAL_SOURCE_EXISTS="test -f $srcdir/lib/jsonc/json.h"
+
+if $JSON_INTERNAL_SOURCE_EXISTS; then
+  AC_CONFIG_SUBDIRS([lib/jsonc])
+  JSON_SUBDIRS="lib/jsonc"
+fi
+
 if test "x$with_jsonc" = "xsystem" -o "x$with_jsonc" = "xauto"; then
    enable_json="yes"
    PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
@@ -1158,17 +1165,16 @@ if test "x$with_jsonc" = "xsystem" -o "x$with_jsonc" = "xauto"; then
 fi
 if test "x$with_jsonc" = "xinternal" -o "x$with_jsonc" = "xauto"; then
   AC_MSG_CHECKING(for JSON)
-  if test -f "$srcdir/lib/jsonc/json.h"; then
-      AC_CONFIG_SUBDIRS([lib/jsonc])
+  if $JSON_INTERNAL_SOURCE_EXISTS; then
       JSON_LIBS="\$(top_builddir)/lib/jsonc/libjson-c.la"
       JSON_DEPENDENCY="$JSON_LIBS"
       JSON_CFLAGS="-I\$(top_srcdir)/lib/jsonc -I\$(top_builddir)/lib/jsonc"
-      JSON_SUBDIRS="lib/jsonc"
       enable_json="yes"
       with_jsonc="internal"
   else
       AC_MSG_WARN([Internal jsonc sources not found in lib/jsonc])
       enable_json="no"
+      with_jsonc="no"
   fi
   AC_MSG_RESULT($enable_json)
 fi
@@ -1774,7 +1780,7 @@ AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP2, [test "$enable_geoip2" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
 AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$with_ivykis" = "xinternal"])
-AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
+AM_CONDITIONAL(JSON_INTERNAL, [test "x$with_jsonc" = "xinternal"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$with_librabbitmq_client" = "xinternal"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])

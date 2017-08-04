@@ -1,4 +1,4 @@
-DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@
+DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@ @JSON_SUBDIRS@
 
 include lib/eventlog/src/Makefile.am
 include lib/eventlog/tests/Makefile.am
