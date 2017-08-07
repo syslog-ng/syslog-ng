@@ -73,6 +73,7 @@ tcpdumpopts="-p -s 1500 -w"
 opensslmajor=0
 getsyslogpids () { pidof syslog-ng ; }
 os_hash_helper () { xargs md5sum ; }
+dfk_parser () { tail -1 | while read FS ALL USED AVAIL UPERC MP; do if echo ${AVAIL} | ${grepq} '%'; then echo ${USED} ; else echo ${AVAIL} ; fi done ; }
 trace="strace -s256 -ff -ttT -f"
 initfile="/etc/init.d/syslog-ng"
 service_stop="${initfile} stop"
@@ -697,13 +698,26 @@ acquire_syslog_var () {
 	read vardu dir <${tmpdir}/syslog.duks.var
 	mkdir ${tmpdir}/var
 	cd "${vardir}"
-	if [ "$vardu" -lt "$varlimit" ] ; then
-		find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
+
+	freek_tmp=$( ${dfk} ${tmpdir} | dfk_parser )
+	#
+	# low disk-space => only copy the persist file and the pid file
+	###
+	if [ "${freek_tmp}" -gt "${vardu}" ] ; then
+		if [ "$vardu" -lt "$varlimit" ] ; then
+			find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
+		else
+			printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
+			printf "Do you really want to copy its contents? Type 'YES' with all capitals: "
+			read ans
+			if [ "$ans" = "YES" ]; then
+				find . |grep -v grep -v "syslog-ng*\.ctl" | cpio -pd ${tmpdir}/var
+			fi
+		fi
 	else
-		printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
-		printf "Do you really want to copy its contents? Type 'YES' with all capitals: "
-		read ans
-		[ "$ans" = "YES" ] && find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
+		printf "TOO LOW free disk space on the filesystem holding ${tmpdir}\n"
+		printf "to create a full copy of ${vardir}!\nOnly copying most important files.\n"
+		find . -name "*.persist" -o -name "*.pid" | grep -v "syslog-ng.*\.ctl" | cpio -pd ${tmpdir}/var
 	fi
 }
 
@@ -1272,6 +1286,7 @@ setup_env_hpux () {
 	unset -f getparent
 	unset -f getchilds
 	unset -f is_available
+	unset -f dfk_parser
 	unset -f distpkgoffile
 	unset -f distpkgstatus
 	unset -f distpkgoffile_cleanup
@@ -1279,6 +1294,7 @@ setup_env_hpux () {
 	is_available () { which "$1" | $grepq "no $1 in" && return 1 || return 0 ; }
 	free () { swapinfo -tam ; }
 	netstatnlp () { netstat -na ; }
+	dfk_parser () { grep free | while read AVAIL REST_TEXT; do echo ${AVAIL}; done }
 	mypidof () { ps -e -f | while read uid pid ppid c stime tty time command extra ; do
 		if [ "${stime%%:*}" = "${stime}" ]
 		then
@@ -1354,6 +1370,7 @@ setup_env_aix () {
 	unset -f netstatnlp
 	unset -f routeconfig
 	unset -f free
+	unset -f dfk_parser
 	unset -f getsyslogpids
 	unset -f mypidof
 	unset -f format_ldd_output
@@ -1361,6 +1378,7 @@ setup_env_aix () {
 
 	format_ldd_output () { sed -e 's:^[^/]*\(.*\)$:\1:' -e 's:^\(.*\)(.*)$:\1:'; }
 	netstatnlp () { netstat -na | grep LISTEN ; }
+	dfk_parser () { tail -1 | while read FS ALL AVAIL UPERC IUPERC MP; do echo ${AVAIL}; done }
 	routeconfig () { if netstat -nr 2>&1 | $grepq 'Permission error' ; then echo 'WPAR without its own routing table.' ; else netstat -nr ; fi ; }
 	free () { svmon -G -O unit=KB ; }
 	mypidof () { ps -eaf | while read user pid ppid c stime tty time cmd extra; do
