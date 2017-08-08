@@ -37,6 +37,10 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 public class HdfsDestination extends StructuredLogDestination {
@@ -47,12 +51,11 @@ public class HdfsDestination extends StructuredLogDestination {
     Logger logger;
 
     private FileSystem hdfs;
-    private FSDataOutputStream fsDataOutputStream;
-
-    private Path currentFilePath;
 
     private boolean isOpened;
     private int maxFileNameLength = 255;
+    
+    HashMap<String, HdfsFile> openedFiles;
 
     public HdfsDestination(long handle) {
         super(handle);
@@ -80,6 +83,7 @@ public class HdfsDestination extends StructuredLogDestination {
     @Override
     public boolean open() {
         logger.debug("Opening hdfs");
+        openedFiles = new HashMap<String, HdfsFile>();
         isOpened = false;
         try {
             Configuration configuration = new Configuration();
@@ -123,8 +127,11 @@ public class HdfsDestination extends StructuredLogDestination {
     @Override
     public boolean send(LogMessage logMessage) {
         isOpened = false;
-
-        if (!ensureDataOutputStream()) {
+        String resolvedFileName = options.getFileNameTemplate().getResolvedString(logMessage);
+        FSDataOutputStream fsDataOutputStream = getFSDataOutputStream(resolvedFileName);
+        if (fsDataOutputStream == null) {
+            // Unable to open file
+            closeAll(options.getArchiveDir() != null);
             return false;
         }
 
@@ -141,6 +148,37 @@ public class HdfsDestination extends StructuredLogDestination {
         isOpened = true;
         return true;
     }
+    
+    private FSDataOutputStream getFSDataOutputStream(String resolvedFileName) {
+        HdfsFile hdfsFile = openedFiles.get(resolvedFileName);
+
+        if (hdfsFile == null) {
+            hdfsFile = createHdfsFile(resolvedFileName);
+            openedFiles.put(resolvedFileName, hdfsFile);
+        }
+        return hdfsFile.getFsDataOutputStream();
+    }
+
+    private HdfsFile createHdfsFile(String resolvedFileName) {
+        HdfsFile hdfsFile = new HdfsFile();
+        Path filePath = getFilePathWithUUID(resolvedFileName);
+        hdfsFile.setPath(filePath);
+        hdfsFile.setFsDataOutputStream(createFsDataOutputStream(hdfs, filePath));
+        return hdfsFile;
+    }
+
+    private Path getFilePathWithUUID(String resolvedFileName) {
+        String resolvedFileNameWithUUID = String.format("%s.%s", resolvedFileName, UUID.randomUUID());
+        Path filePath = new Path(String.format("%s/%s", options.getUri(), resolvedFileNameWithUUID));
+
+        if (filePath.getName().length() > options.getMaxFilenameLength()) {
+            String fileName = truncateFileName(filePath.getName(), options.getMaxFilenameLength());
+            logger.debug(String.format("Maximum file name length (%s) exceeded, truncated to %s", maxFileNameLength,
+                    fileName));
+            filePath = new Path(filePath.getParent(), fileName);
+        }
+        return filePath;
+    }
 
     private String truncateFileName(String fileName, int maxLength) {
         if (fileName.length() > maxLength) {
@@ -149,42 +187,15 @@ public class HdfsDestination extends StructuredLogDestination {
         return fileName;
     }
 
-    private boolean ensureDataOutputStream() {
-        if (fsDataOutputStream == null) {
-            // file not yet opened
-            String currentFile = String.format("%s.%s", options.getFile(), UUID.randomUUID());
-            currentFilePath = new Path(String.format("%s/%s", options.getUri(), currentFile));
-
-            if (currentFilePath.getName().length() > options.getMaxFilenameLength()) {
-                String fileName = truncateFileName(currentFilePath.getName(), options.getMaxFilenameLength());
-                logger.debug(String.format("Maximum file name length (%s) exceeded, truncated to %s", maxFileNameLength, fileName));
-
-                currentFilePath = new Path(currentFilePath.getParent(), fileName);
-            }
-
-            fsDataOutputStream = getFsDataOutputStream(hdfs, currentFilePath);
-            if (fsDataOutputStream == null) {
-                closeAll(false);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private FSDataOutputStream getFsDataOutputStream(FileSystem hdfs, Path file) {
+    private FSDataOutputStream createFsDataOutputStream(FileSystem hdfs, Path file) {
         FSDataOutputStream fsDataOutputStream = null;
         try {
-            fsDataOutputStream = createFile(file);
+            hdfs.mkdirs(file.getParent());
+            logger.debug(String.format("Creating file %s", file.toString()));
+            fsDataOutputStream = hdfs.create(file);
         } catch (IOException e) {
             printStackTrace(e);
         }
-        return fsDataOutputStream;
-    }
-
-    private FSDataOutputStream createFile(Path file) throws IOException {
-        logger.debug(String.format("Creating file %s", file.toString()));
-        hdfs.mkdirs(file.getParent());
-        FSDataOutputStream fsDataOutputStream = hdfs.create(file);
         return fsDataOutputStream;
     }
 
@@ -196,16 +207,21 @@ public class HdfsDestination extends StructuredLogDestination {
 
     @Override
     public void onMessageQueueEmpty() {
-        if (fsDataOutputStream != null) {
-            try {
-                // Trying to flush however the effect is
-                // questionable... (It is not guaranteed that data has been
-                // flushed to persistent store on the datanode)
-                logger.debug("Flushing hdfs");
-                fsDataOutputStream.hflush();
-                fsDataOutputStream.hsync();
-            } catch (IOException e) {
-                logger.debug(String.format("Flush failed, reason: %s", e.getMessage()));
+        /*
+         * Trying to flush however the effect is questionable... (It is not guaranteed
+         * that data has been flushed to persistent store on the datanode)
+         */
+
+        logger.debug("Flushing hdfs");
+        for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
+            FSDataOutputStream outputStream = entry.getValue().getFsDataOutputStream();
+            if (outputStream != null) {
+                try {
+                    outputStream.hflush();
+                    outputStream.hsync();
+                } catch (IOException e) {
+                    logger.debug(String.format("Flush failed on file %s, reason: %s", entry.getKey(), e.getMessage()));
+                }
             }
         }
     }
@@ -218,24 +234,28 @@ public class HdfsDestination extends StructuredLogDestination {
     }
 
     private void closeAll(boolean isArchiving) {
-        closeDataOutputStream();
+        closeDataOutputStreams();
 
         if (isArchiving) {
-            archiveFile();
+            archiveFiles();
         }
 
         closeHdfs();
         isOpened = false;
     }
 
-    private void closeDataOutputStream() {
-        if (fsDataOutputStream != null) {
-            try {
-                fsDataOutputStream.close();
-            } catch (IOException e) {
-                fsDataOutputStream = null;
-                printStackTrace(e);
+    private void closeDataOutputStreams() {
+        for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
+            FSDataOutputStream outputStream = entry.getValue().getFsDataOutputStream();
+            if (outputStream != null) {
+                try {
+                    logger.debug(String.format("Closing file: %s", entry.getKey()));
+                    outputStream.close();
+                } catch (IOException e) {
+                    printStackTrace(e);
+                }
             }
+            entry.getValue().setFsDataOutputStream(null);
         }
     }
 
@@ -250,15 +270,18 @@ public class HdfsDestination extends StructuredLogDestination {
         }
     }
 
-    private void archiveFile() {
-        if (options.getArchiveDir() != null && currentFilePath != null) {
-            logger.debug(String.format("Trying to archive %s to %s", currentFilePath.getName(), options.getArchiveDir()));
-            Path archiveDirPath = new Path(String.format("%s/%s", options.getUri(), options.getArchiveDir()));
-            try {
-                hdfs.mkdirs(archiveDirPath);
-                hdfs.rename(currentFilePath, archiveDirPath);
-            } catch (IOException e) {
-                logger.debug(String.format("Unable to archive, reason: %s", e.getMessage()));
+    private void archiveFiles() {
+        if (options.getArchiveDir() != null) {
+            for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
+                Path filePath = entry.getValue().getPath();
+                logger.debug(String.format("Trying to archive %s to %s", filePath.getName(), options.getArchiveDir()));
+                Path archiveDirPath = new Path(String.format("%s/%s", options.getUri(), options.getArchiveDir()));
+                try {
+                    hdfs.mkdirs(archiveDirPath);
+                    hdfs.rename(filePath, archiveDirPath);
+                } catch (IOException e) {
+                    logger.debug(String.format("Unable to archive, reason: %s", e.getMessage()));
+                }
             }
         }
 
@@ -271,7 +294,7 @@ public class HdfsDestination extends StructuredLogDestination {
 
     @Override
     public String getNameByUniqOptions() {
-        return String.format("hdfs,%s,%s", options.getUri(), options.getFile());
+        return String.format("hdfs,%s,%s", options.getUri(), options.getFileNameTemplate().getValue());
     }
 
     @Override

@@ -68,10 +68,6 @@ public class HdfsOptions {
     return options.get(URI).getValue();
   }
 
-  public String getFile() {
-    return options.get(FILE).getValue();
-  }
-
   public String getArchiveDir() {
     return options.get(ARCHIVE_DIR).getValue();
   }
@@ -95,13 +91,17 @@ public class HdfsOptions {
   public TemplateOption getTemplate() {
       return options.getTemplateOption(TEMPLATE);
   }
+  
+  public TemplateOption getFileNameTemplate() {
+      return options.getTemplateOption(FILE);
+  }
+
 
   private void fillOptions() {
     fillStringOptions();
   }
 
   private void fillStringOptions() {
-        options.put(new RequiredOptionDecorator(new StringOption(owner, FILE)));
 		options.put(new RequiredOptionDecorator(new StringOption(owner, URI)));
 		options.put(new StringOption(owner, ARCHIVE_DIR));
 		options.put(new StringOption(owner, RESOURCES));
@@ -112,6 +112,7 @@ public class HdfsOptions {
   
   private void fillTemplateOptions() {
       options.put(new TemplateOption(owner.getConfigHandle(), new StringOption(owner, TEMPLATE, TEMPLATE_DEFAULT)));
+      options.put(new TemplateOption(owner.getConfigHandle(), new RequiredOptionDecorator(new StringOption(owner, FILE))));
   }
 
 
