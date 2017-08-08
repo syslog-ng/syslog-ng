@@ -123,7 +123,8 @@ java_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  self->proxy = java_destination_proxy_new(self->class_name, self->class_path->str, self, self->template);
+  self->proxy = java_destination_proxy_new(self->class_name, self->class_path->str, self, self->template,
+                                           cfg->jvm_options);
   if (!self->proxy)
     return FALSE;
 

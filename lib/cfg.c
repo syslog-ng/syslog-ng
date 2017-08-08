@@ -321,6 +321,7 @@ cfg_new_snippet(gint version)
   self->keep_timestamp = TRUE;
 
   self->use_uniqid = FALSE;
+  self->jvm_options = NULL;
 
   stats_options_defaults(&self->stats_options);
 

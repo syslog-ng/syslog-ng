@@ -192,14 +192,15 @@ java_destination_proxy_free(JavaDestinationProxy *self)
 }
 
 JavaDestinationProxy *
-java_destination_proxy_new(const gchar *class_name, const gchar *class_path, gpointer handle, LogTemplate *template)
+java_destination_proxy_new(const gchar *class_name, const gchar *class_path, gpointer handle, LogTemplate *template,
+                           const gchar *jvm_options)
 {
   JavaDestinationProxy *self = g_new0(JavaDestinationProxy, 1);
   self->java_machine = java_machine_ref();
   self->formatted_message = g_string_sized_new(1024);
   self->template = log_template_ref(template);
 
-  if (!java_machine_start(self->java_machine))
+  if (!java_machine_start(self->java_machine, jvm_options))
     goto error;
 
   if (!__load_destination_object(self, class_name, class_path, handle))
