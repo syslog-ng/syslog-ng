@@ -1,0 +1,42 @@
+#! /usr/bin/dh-exec
+
+etc/syslog-ng/*
+usr/bin/*
+usr/sbin/*
+usr/lib/syslog-ng/libsyslog-ng-*.so.*
+usr/lib/syslog-ng/libevtlog-*.so.*
+usr/lib/syslog-ng/*/libsdjournal.so
+usr/lib/syslog-ng/*/libaffile.so
+usr/lib/syslog-ng/*/libafprog.so
+usr/lib/syslog-ng/*/libafsocket.so
+usr/lib/syslog-ng/*/libafuser.so
+usr/lib/syslog-ng/*/libbasicfuncs.so
+usr/lib/syslog-ng/*/libconfgen.so
+usr/lib/syslog-ng/*/libcryptofuncs.so
+usr/lib/syslog-ng/*/libcsvparser.so
+usr/lib/syslog-ng/*/libdbparser.so
+usr/lib/syslog-ng/*/libkvformat.so
+usr/lib/syslog-ng/*/liblinux-kmsg-format.so
+usr/lib/syslog-ng/*/libpseudofile.so
+usr/lib/syslog-ng/*/libsyslogformat.so
+usr/lib/syslog-ng/*/libsystem-source.so
+usr/lib/syslog-ng/*/libdate.so
+usr/lib/syslog-ng/*/libcef.so
+usr/lib/syslog-ng/*/libdisk-buffer.so
+usr/share/syslog-ng/include/scl/system/*
+usr/share/syslog-ng/include/scl/syslogconf/*
+usr/share/syslog-ng/include/scl/rewrite/*
+usr/share/syslog-ng/include/scl/mbox/*
+usr/share/syslog-ng/include/scl/apache/*
+usr/share/syslog-ng/include/scl/loggly/*
+usr/share/syslog-ng/include/scl/logmatic/*
+usr/share/syslog-ng/include/scl/solaris/*
+usr/share/syslog-ng/include/scl/cisco/*
+usr/share/syslog-ng/xsd/*
+[!kfreebsd-any] debian/syslog-ng.systemd =>  lib/systemd/system/syslog-ng.service
+
+debian/syslog-ng.conf                   /etc/syslog-ng/
+debian/scl.conf                         /etc/syslog-ng/
+
+[kfreebsd-any] debian/tty10.kfreebsd.conf => /usr/share/syslog-ng/include/scl/system/tty10.conf
+[!kfreebsd-any] debian/tty10.linux.conf   => /usr/share/syslog-ng/include/scl/system/tty10.conf

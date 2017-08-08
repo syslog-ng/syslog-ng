@@ -1,0 +1,12 @@
+syslog-ng (3.3.6-1) unstable; urgency=low
+
+  Between Squeeze and Wheezy OpenSSL changed the default certificate
+  directory hashing algorithm from MD5 to SHA1, which may affect syslog-ng
+  users who use TLS sources or destinations.
+
+  Due to the change in OpenSSL, certificate verification may fail, and one
+  will need to update their certificate directories by calling c_rehash in
+  them. If you're experiencing verification failures after upgrading
+  syslog-ng from Squeeze, consider rehashing your certificate directories.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 17 Aug 2012 11:05:39 +0200

@@ -1,0 +1,2 @@
+usr/lib/syslog-ng/*/libmod-java.so
+usr/lib/syslog-ng/*/java-modules/syslog-ng-core.jar

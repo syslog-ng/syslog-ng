@@ -1,0 +1,9 @@
+Description: Debian-specific changes mixed together.
+ This patch contains all the Debian-specific changes mixed together. To
+ review them separately, please inspect the Git history (see the
+ Vcs-Git field in debian/control); the patches against upstream are all
+ on the patched branch.
+ .
+ For more information, please see debian/README.source.
+Origin: Debian
+

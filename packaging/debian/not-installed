@@ -1,0 +1,4 @@
+usr/share/syslog-ng/include/scl/pacct/plugin.conf
+usr/share/syslog-ng/include/scl/elasticsearch/plugin.conf
+usr/share/syslog-ng/include/scl/kafka/plugin.conf
+usr/share/syslog-ng/include/scl/hdfs/plugin.conf

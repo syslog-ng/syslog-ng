@@ -1,0 +1,12 @@
+#! /bin/sh
+
+set -e
+
+# Stop the socket on remove so syslog-ng is not restarted via socket activation
+if [ -x "/usr/bin/deb-systemd-invoke" ] && [ "$1" = remove ]; then
+	deb-systemd-invoke stop syslog.socket || true
+fi
+
+#DEBHELPER#
+
+exit 0
