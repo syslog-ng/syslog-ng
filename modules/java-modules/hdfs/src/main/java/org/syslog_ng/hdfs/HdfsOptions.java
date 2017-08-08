@@ -31,89 +31,88 @@ import org.syslog_ng.options.*;
 
 public class HdfsOptions {
 
-  public static String URI = "hdfs_uri";
-  public static String FILE = "hdfs_file";
-  public static String ARCHIVE_DIR = "hdfs_archive_dir";
-  public static String RESOURCES = "hdfs_resources";
-  public static String MAX_FILENAME_LENGTH = "hdfs_max_filename_length";
-  public static String MAX_FILENAME_LENGTH_DEFAULT = "255";
-  public static String KERBEROS_PRINCIPAL = "kerberos_principal";
-  public static String KERBEROS_KEYTAB_FILE = "kerberos_keytab_file";
-  public static String TEMPLATE = "template";
-  public static String TEMPLATE_DEFAULT = "${ISODATE} ${HOST} ${MSGHDR}${MSG}\n";
+    public static String URI = "hdfs_uri";
+    public static String FILE = "hdfs_file";
+    public static String ARCHIVE_DIR = "hdfs_archive_dir";
+    public static String RESOURCES = "hdfs_resources";
+    public static String MAX_FILENAME_LENGTH = "hdfs_max_filename_length";
+    public static String MAX_FILENAME_LENGTH_DEFAULT = "255";
+    public static String KERBEROS_PRINCIPAL = "kerberos_principal";
+    public static String KERBEROS_KEYTAB_FILE = "kerberos_keytab_file";
+    public static String TEMPLATE = "template";
+    public static String TEMPLATE_DEFAULT = "${ISODATE} ${HOST} ${MSGHDR}${MSG}\n";
 
-  private LogDestination owner;
-  private Options options;
+    private LogDestination owner;
+    private Options options;
 
-	public HdfsOptions(LogDestination owner) {
-		this.owner = owner;
-		options = new Options();
-		fillOptions();
-		fillTemplateOptions();
-	}
+    public HdfsOptions(LogDestination owner) {
+        this.owner = owner;
+        options = new Options();
+        fillOptions();
+        fillTemplateOptions();
+    }
 
-	public void init() throws InvalidOptionException {
-		options.validate();
-	}
+    public void init() throws InvalidOptionException {
+        options.validate();
+    }
 
-	public void deinit() {
-		options.deinit();
-	}
+    public void deinit() {
+        options.deinit();
+    }
 
-  public Option getOption(String optionName) {
-    return options.get(optionName);
-  }
+    public Option getOption(String optionName) {
+        return options.get(optionName);
+    }
 
-  public String getUri() {
-    return options.get(URI).getValue();
-  }
+    public String getUri() {
+        return options.get(URI).getValue();
+    }
 
-  public String getArchiveDir() {
-    return options.get(ARCHIVE_DIR).getValue();
-  }
+    public String getArchiveDir() {
+        return options.get(ARCHIVE_DIR).getValue();
+    }
 
-  public String[] getResouces() {
-    return options.get(RESOURCES).getValueAsStringList(";");
-  }
+    public String[] getResouces() {
+        return options.get(RESOURCES).getValueAsStringList(";");
+    }
 
-  public int getMaxFilenameLength() {
-     return options.get(MAX_FILENAME_LENGTH).getValueAsInteger();
-  }
+    public int getMaxFilenameLength() {
+        return options.get(MAX_FILENAME_LENGTH).getValueAsInteger();
+    }
 
-  public String getKerberosPrincipal() {
-      return options.get(KERBEROS_PRINCIPAL).getValue();
-  }
+    public String getKerberosPrincipal() {
+        return options.get(KERBEROS_PRINCIPAL).getValue();
+    }
 
-  public String getKerberosKeytabFile() {
-      return options.get(KERBEROS_KEYTAB_FILE).getValue();
-  }
-  
-  public TemplateOption getTemplate() {
-      return options.getTemplateOption(TEMPLATE);
-  }
-  
-  public TemplateOption getFileNameTemplate() {
-      return options.getTemplateOption(FILE);
-  }
+    public String getKerberosKeytabFile() {
+        return options.get(KERBEROS_KEYTAB_FILE).getValue();
+    }
 
+    public TemplateOption getTemplate() {
+        return options.getTemplateOption(TEMPLATE);
+    }
 
-  private void fillOptions() {
-    fillStringOptions();
-  }
+    public TemplateOption getFileNameTemplate() {
+        return options.getTemplateOption(FILE);
+    }
 
-  private void fillStringOptions() {
-		options.put(new RequiredOptionDecorator(new StringOption(owner, URI)));
-		options.put(new StringOption(owner, ARCHIVE_DIR));
-		options.put(new StringOption(owner, RESOURCES));
-		options.put(new StringOption(owner, MAX_FILENAME_LENGTH, MAX_FILENAME_LENGTH_DEFAULT));
-		options.put(new StringOption(owner, KERBEROS_PRINCIPAL));
-		options.put(new StringOption(owner, KERBEROS_KEYTAB_FILE));
-  }
-  
-  private void fillTemplateOptions() {
-      options.put(new TemplateOption(owner.getConfigHandle(), new StringOption(owner, TEMPLATE, TEMPLATE_DEFAULT)));
-      options.put(new TemplateOption(owner.getConfigHandle(), new RequiredOptionDecorator(new StringOption(owner, FILE))));
-  }
+    private void fillOptions() {
+        fillStringOptions();
+    }
 
+    private void fillStringOptions() {
+        options.put(new RequiredOptionDecorator(new StringOption(owner, URI)));
+        options.put(new StringOption(owner, ARCHIVE_DIR));
+        options.put(new StringOption(owner, RESOURCES));
+        options.put(new StringOption(owner, MAX_FILENAME_LENGTH, MAX_FILENAME_LENGTH_DEFAULT));
+        options.put(new StringOption(owner, KERBEROS_PRINCIPAL));
+        options.put(new StringOption(owner, KERBEROS_KEYTAB_FILE));
+    }
+
+    private void fillTemplateOptions() {
+        options.put(new TemplateOption(owner.getConfigHandle(), new StringOption(owner, TEMPLATE, TEMPLATE_DEFAULT)));
+        options.put(new TemplateOption(owner.getConfigHandle(),
+                new RequiredOptionDecorator(new StringOption(owner, FILE))));
+    }
 
 }

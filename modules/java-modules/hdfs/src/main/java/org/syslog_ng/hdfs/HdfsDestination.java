@@ -54,7 +54,7 @@ public class HdfsDestination extends StructuredLogDestination {
 
     private boolean isOpened;
     private int maxFileNameLength = 255;
-    
+
     HashMap<String, HdfsFile> openedFiles;
 
     public HdfsDestination(long handle) {
@@ -67,10 +67,10 @@ public class HdfsDestination extends StructuredLogDestination {
     @Override
     public boolean init() {
         try {
-          options.init();
-        } catch(InvalidOptionException e) {
-          logger.error(e.getMessage());
-          return false;
+            options.init();
+        } catch (InvalidOptionException e) {
+            logger.error(e.getMessage());
+            return false;
         }
         return true;
     }
@@ -105,7 +105,7 @@ public class HdfsDestination extends StructuredLogDestination {
     private void loadConfigResources(Configuration configuration) {
         String[] resources = options.getResouces();
         if (resources == null) {
-          return;
+            return;
         }
         for (int i = 0; i < resources.length; i++) {
             String resource = resources[i];
@@ -148,7 +148,7 @@ public class HdfsDestination extends StructuredLogDestination {
         isOpened = true;
         return true;
     }
-    
+
     private FSDataOutputStream getFSDataOutputStream(String resolvedFileName) {
         HdfsFile hdfsFile = openedFiles.get(resolvedFileName);
 
