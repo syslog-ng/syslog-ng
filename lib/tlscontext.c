@@ -305,6 +305,33 @@ file_exists(const gchar *fname)
   return TRUE;
 }
 
+static gboolean
+tls_context_setup_ecdh(SSL_CTX *ctx, const char *ecdh_curve_name)
+{
+  int ecdh_nid = OBJ_sn2nid(ecdh_curve_name);
+  if (ecdh_nid == NID_undef)
+    return FALSE;
+
+#if OPENSSL_VERSION_NUMBER > 0x10100000L
+  /* No need to setup as ECDH auto is the default */
+#elif OPENSSL_VERSION_NUMBER > 0x10002000L
+  if (SSL_CTX_set_ecdh_auto(ctx, 1) != 1)
+    return FALSE;
+#elif OPENSSL_VERSION_NUMBER > 0x10001000L
+  EC_KEY *ecdh = EC_KEY_new_by_curve_name(ecdh_nid);
+  if (!ecdh)
+    return FALSE;
+
+  if (SSL_CTX_set_tmp_ecdh(ctx, ecdh) != 1)
+    return FALSE;
+  EC_KEY_free(ecdh);
+#else
+  return FALSE;
+#endif
+
+  return TRUE;
+}
+
 TLSSession *
 tls_context_setup_session(TLSContext *self)
 {
@@ -390,6 +417,10 @@ tls_context_setup_session(TLSContext *self)
         }
       else
         msg_debug("empty ssl options");
+
+      if (!tls_context_setup_ecdh(self->ssl_ctx, SN_X9_62_prime256v1))
+          goto error;
+
       if (self->cipher_suite)
         {
           if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
