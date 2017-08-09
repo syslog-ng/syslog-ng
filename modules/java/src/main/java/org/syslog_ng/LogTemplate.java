@@ -49,7 +49,11 @@ public class LogTemplate {
   }
 
   public String format(LogMessage msg, long logTemplateOptionsHandle, int timezone) {
-    return format(templateHandle, msg.getHandle(), logTemplateOptionsHandle, timezone);
+    return format(templateHandle, msg.getHandle(), logTemplateOptionsHandle, timezone, 0);
+  }
+
+  public String format(LogMessage msg, long logTemplateOptionsHandle, int timezone, int seqnum) {
+    return format(templateHandle, msg.getHandle(), logTemplateOptionsHandle, timezone, seqnum);
   }
 
   public void release() {
@@ -58,6 +62,6 @@ public class LogTemplate {
 
   private native long create_new_template_instance(long configHandle);
   private native boolean compile(long templateHandle, String template);
-  private native String format(long templateHandle, long msgHandle, long templateOptionsHandle, int timezone);
+  private native String format(long templateHandle, long msgHandle, long templateOptionsHandle, int timezone, int seqnum);
   private native void unref(long templateHandle);
 }

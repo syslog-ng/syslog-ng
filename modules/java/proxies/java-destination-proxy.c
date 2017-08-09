@@ -51,6 +51,7 @@ struct _JavaDestinationProxy
   jclass loaded_class;
   JavaDestinationImpl dest_impl;
   LogTemplate *template;
+  gint32 *seq_num;
   GString *formatted_message;
   JavaLogMessageProxy *msg_builder;
   gchar *name_by_uniq_options;
@@ -193,12 +194,13 @@ java_destination_proxy_free(JavaDestinationProxy *self)
 
 JavaDestinationProxy *
 java_destination_proxy_new(const gchar *class_name, const gchar *class_path, gpointer handle, LogTemplate *template,
-                           const gchar *jvm_options)
+                           gint32 *seq_num, const gchar *jvm_options)
 {
   JavaDestinationProxy *self = g_new0(JavaDestinationProxy, 1);
   self->java_machine = java_machine_ref();
   self->formatted_message = g_string_sized_new(1024);
   self->template = log_template_ref(template);
+  self->seq_num = seq_num;
 
   if (!java_machine_start(self->java_machine, jvm_options))
     goto error;
@@ -237,7 +239,7 @@ __queue_native_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
 static gboolean
 __queue_formatted_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
 {
-  log_template_format(self->template, msg, NULL, LTZ_SEND, 0, NULL, self->formatted_message);
+  log_template_format(self->template, msg, NULL, LTZ_SEND, *self->seq_num, NULL, self->formatted_message);
   jstring message = CALL_JAVA_FUNCTION(env, NewStringUTF, self->formatted_message->str);
   jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_send,
                                     message);
@@ -357,7 +359,6 @@ java_destination_proxy_is_opened(JavaDestinationProxy *self)
 
   return !!(res);
 }
-
 
 void
 java_destination_proxy_close(JavaDestinationProxy *self)
