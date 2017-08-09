@@ -1,0 +1,11 @@
+--- syslog-ng-3.7.0beta2/contrib/systemd/syslog-ng.service.old	2015-08-07 13:18:52.650666865 +0200
++++ syslog-ng-3.7.0beta2/contrib/systemd/syslog-ng.service	2015-08-07 13:20:20.762689543 +0200
+@@ -4,7 +4,7 @@
+
+ [Service]
+ Type=notify
+-ExecStart=/usr/sbin/syslog-ng -F $SYSLOGNG_OPTS
++ExecStart=/usr/sbin/syslog-ng -F $SYSLOGNG_OPTS -p /var/run/syslogd.pid
+ ExecReload=/bin/kill -HUP $MAINPID
+ EnvironmentFile=-/etc/default/syslog-ng
+ EnvironmentFile=-/etc/sysconfig/syslog-ng

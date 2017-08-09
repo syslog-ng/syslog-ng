@@ -1,0 +1,4 @@
+version=3
+
+opts=dversionmangle=s/\.dfsg// \
+https://github.com/balabit/syslog-ng/releases /download/syslog-ng-(\d\S*)/syslog-ng-(\d\S*)\.tar\.gz
