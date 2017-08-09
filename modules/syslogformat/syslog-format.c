@@ -635,6 +635,47 @@ _init_parse_hostname_invalid_chars(void)
     }
 }
 
+typedef struct _IPv6Heuristics
+{
+  gint8 current_segment;
+  gint8 digits_in_segment;
+  gboolean heuristic_failed;
+} IPv6Heuristics;
+
+static gboolean
+ipv6_heuristics_feed_gchar(IPv6Heuristics *self, gchar c)
+{
+  if (self->heuristic_failed)
+    return FALSE;
+
+  if (c != ':' && !g_ascii_isxdigit(c))
+    {
+      self->heuristic_failed = TRUE;
+      return FALSE;
+    }
+
+  if (g_ascii_isxdigit(c))
+    {
+      if (++self->digits_in_segment > 4)
+        {
+          self->heuristic_failed = TRUE;
+          return FALSE;
+        }
+    }
+
+  if (c == ':')
+    {
+      self->digits_in_segment = 0;
+      if (++self->current_segment >= 8)
+        {
+          self->heuristic_failed = TRUE;
+          return FALSE;
+        }
+    }
+
+  return TRUE;
+}
+
 static void
 log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
                        const guchar **hostname_start, int *hostname_len,
@@ -646,6 +687,8 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
   gchar hostname_buf[256];
   gint dst = 0;
 
+  IPv6Heuristics ipv6_heuristics = {0};
+
   src = *data;
   left = *length;
 
@@ -655,8 +698,15 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
   oldsrc = src;
   oldleft = left;
 
-  while (left && *src != ' ' && *src != ':' && *src != '[' && dst < sizeof(hostname_buf) - 1)
+  while (left && *src != ' ' && *src != '[' && dst < sizeof(hostname_buf) - 1)
     {
+      ipv6_heuristics_feed_gchar(&ipv6_heuristics, *src);
+
+      if (*src == ':' && ipv6_heuristics.heuristic_failed)
+        {
+          break;
+        }
+
       if (G_UNLIKELY((flags & LP_CHECK_HOSTNAME) && (invalid_chars[((guint) *src) >> 8] & (1 << (((guint) *src) % 8)))))
         {
           break;

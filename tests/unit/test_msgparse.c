@@ -1067,6 +1067,68 @@ Test(msgparse, test_expected_sd_pairs_without_sd_param)
   run_parameterized_test(params);
 }
 
+Test(msgparse, test_ip_in_host)
+{
+  struct msgparse_params params[] =
+  {
+    (struct msgparse_params)
+    {
+      .msg = "<0>Jan 10 01:00:00 1.2.3.4 prg0",
+      .parse_flags = LP_EXPECT_HOSTNAME,
+      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_ofs = 3600,
+      .expected_program = "prg0",
+      .expected_host = "1.2.3.4"
+    },
+    (struct msgparse_params)
+    {
+      .msg = "<0>Jan 10 01:00:00 0000:BABA:BA00:DAB:BABA:BABA:BABA:BAB0 prg0",
+      .parse_flags = LP_EXPECT_HOSTNAME,
+      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_ofs = 3600,
+      .expected_program = "prg0",
+      .expected_host = "0000:BABA:BA00:DAB:BABA:BABA:BABA:BAB0"
+    },
+    (struct msgparse_params)
+    {
+      .msg = "<0>Jan 10 01:00:00 0001:BABA:BA00:DAB::BAB0 prg0",
+      .parse_flags = LP_EXPECT_HOSTNAME,
+      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_ofs = 3600,
+      .expected_program = "prg0",
+      .expected_host = "0001:BABA:BA00:DAB::BAB0"
+    },
+    {
+      .msg = "<0>Jan 10 01:00:00 0002:: prg0: msgtxt",
+      .parse_flags = LP_EXPECT_HOSTNAME,
+      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_ofs = 3600,
+      .expected_program = "prg0",
+      .expected_host = "0002::",
+      .expected_msg = "msgtxt"
+    },
+    (struct msgparse_params)
+    {
+      .msg = "<0>Jan 10 01:00:00 prg0", // No ip no msg
+      .parse_flags = LP_EXPECT_HOSTNAME,
+      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_ofs = 3600,
+      .expected_program = "prg0",
+      .expected_host = ""
+    },
+    (struct msgparse_params)
+    {
+      .msg = "<0>Jan 10 01:00:00 prg0: msgtxt", // program name with message, no ip
+      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_ofs = 3600,
+      .expected_program = "prg0",
+      .expected_msg = "msgtxt"
+    },
+    {NULL}
+  };
+  run_parameterized_test(params);
+}
+
 Test(msgparse, test_simple_message)
 {
   struct msgparse_params params[] =
