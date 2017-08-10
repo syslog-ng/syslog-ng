@@ -47,6 +47,7 @@ struct _TransportMapper
 
   gboolean (*apply_transport)(TransportMapper *self, GlobalConfig *cfg);
   LogTransport *(*construct_log_transport)(TransportMapper *self, gint fd);
+  gboolean (*init)(TransportMapper *self);
   void (*free_fn)(TransportMapper *self);
 };
 
@@ -76,6 +77,15 @@ static inline LogTransport *
 transport_mapper_construct_log_transport(TransportMapper *self, gint fd)
 {
   return self->construct_log_transport(self, fd);
+}
+
+static inline gboolean
+transport_mapper_init(TransportMapper *self)
+{
+  if (self->init)
+    return self->init(self);
+
+  return TRUE;
 }
 
 #endif

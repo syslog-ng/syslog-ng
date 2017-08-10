@@ -80,30 +80,25 @@ typedef struct _TLSSession
 void tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data, GDestroyNotify verify_destroy);
 void tls_session_free(TLSSession *self);
 
-struct _TLSContext
-{
-  TLSMode mode;
-  gint verify_mode;
-  gchar *key_file;
-  gchar *cert_file;
-  gchar *ca_dir;
-  gchar *crl_dir;
-  gchar *cipher_suite;
-  SSL_CTX *ssl_ctx;
-  GList *trusted_fingerpint_list;
-  GList *trusted_dn_list;
-  gint ssl_options;
-};
-
-
+gboolean tls_context_setup_context(TLSContext *self);
 TLSSession *tls_context_setup_session(TLSContext *self);
 void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints);
 void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
+
 TLSContext *tls_context_new(TLSMode mode);
 void tls_context_free(TLSContext *s);
 
-TLSVerifyMode tls_lookup_verify_mode(const gchar *mode_str);
-gint tls_lookup_options(GList *options);
+gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
+gboolean tls_context_set_ssl_options_by_name(TLSContext *self, GList *options);
+gint tls_context_get_verify_mode(const TLSContext *self);
+void tls_context_set_verify_mode(TLSContext *self, gint verify_mode);
+void tls_context_set_key_file(TLSContext *self, const gchar *key_file);
+void tls_context_set_cert_file(TLSContext *self, const gchar *cert_file);
+void tls_context_set_ca_dir(TLSContext *self, const gchar *ca_dir);
+void tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir);
+void tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite);
+void tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_list);
+void tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file);
 
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);

@@ -32,6 +32,25 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <openssl/dh.h>
+#include <openssl/bn.h>
+
+struct _TLSContext
+{
+  TLSMode mode;
+  gint verify_mode;
+  gchar *key_file;
+  gchar *cert_file;
+  gchar *dhparam_file;
+  gchar *ca_dir;
+  gchar *crl_dir;
+  gchar *cipher_suite;
+  gchar *ecdh_curve_list;
+  SSL_CTX *ssl_ctx;
+  GList *trusted_fingerpint_list;
+  GList *trusted_dn_list;
+  gint ssl_options;
+};
 
 gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
@@ -305,121 +324,267 @@ file_exists(const gchar *fname)
   return TRUE;
 }
 
+static void
+_print_and_clear_tls_session_error(void)
+{
+  gulong ssl_error = ERR_get_error();
+  msg_error("Error setting up TLS session context",
+            evt_tag_printf("tls_error", "%s:%s:%s",
+                           ERR_lib_error_string(ssl_error),
+                           ERR_func_error_string(ssl_error),
+                           ERR_reason_error_string(ssl_error)));
+  ERR_clear_error();
+}
+
+static void
+tls_context_setup_verify_mode(TLSContext *self)
+{
+  gint verify_mode = 0;
+
+  switch (self->verify_mode)
+    {
+    case TVM_NONE:
+      verify_mode = SSL_VERIFY_NONE;
+      break;
+    case TVM_OPTIONAL | TVM_UNTRUSTED:
+      verify_mode = SSL_VERIFY_NONE;
+      break;
+    case TVM_OPTIONAL | TVM_TRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+      break;
+    case TVM_REQUIRED | TVM_UNTRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      break;
+    case TVM_REQUIRED | TVM_TRUSTED:
+      verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      break;
+    default:
+      g_assert_not_reached();
+    }
+
+  SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
+}
+
+static void
+tls_context_setup_ssl_options(TLSContext *self)
+{
+  if (self->ssl_options != TSO_NONE)
+    {
+      glong ssl_options = 0;
+      if(self->ssl_options & TSO_NOSSLv2)
+        ssl_options |= SSL_OP_NO_SSLv2;
+      if(self->ssl_options & TSO_NOSSLv3)
+        ssl_options |= SSL_OP_NO_SSLv3;
+      if(self->ssl_options & TSO_NOTLSv1)
+        ssl_options |= SSL_OP_NO_TLSv1;
+#ifdef SSL_OP_NO_TLSv1_2
+      if(self->ssl_options & TSO_NOTLSv11)
+        ssl_options |= SSL_OP_NO_TLSv1_1;
+      if(self->ssl_options & TSO_NOTLSv12)
+        ssl_options |= SSL_OP_NO_TLSv1_2;
+#endif
+#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
+      if (self->mode == TM_SERVER)
+        ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+#endif
+      SSL_CTX_set_options(self->ssl_ctx, ssl_options);
+    }
+  else
+    {
+      msg_debug("empty ssl options");
+    }
+}
+
+static gboolean
+_set_optional_ecdh_curve_list(SSL_CTX *ctx, const gchar *ecdh_curve_list)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+  if (ecdh_curve_list && !SSL_CTX_set1_curves_list(ctx, ecdh_curve_list))
+    {
+      msg_error("Error setting up TLS session context, invalid curve name in list",
+                evt_tag_str("ecdh_curve_list", ecdh_curve_list));
+      return FALSE;
+    }
+#endif
+
+  return TRUE;
+}
+
+static gboolean
+_is_dh_valid(DH *dh)
+{
+  if (!dh)
+    return FALSE;
+
+  gint check_flags;
+  if (!DH_check(dh, &check_flags))
+    return FALSE;
+
+  gboolean error_flag_is_set = check_flags &
+                               (DH_CHECK_P_NOT_PRIME
+                                | DH_UNABLE_TO_CHECK_GENERATOR
+                                | DH_CHECK_P_NOT_SAFE_PRIME
+                                | DH_NOT_SUITABLE_GENERATOR);
+
+  return !error_flag_is_set;
+}
+
+static DH *
+_load_dh_from_file(const gchar *dhparam_file)
+{
+  if (!file_exists(dhparam_file))
+    return NULL;
+
+  BIO *bio = BIO_new_file(dhparam_file, "r");
+  if (!bio)
+    return NULL;
+
+  DH *dh = PEM_read_bio_DHparams(bio, NULL, NULL, NULL);
+  BIO_free(bio);
+
+  if (!_is_dh_valid(dh))
+    {
+      msg_error("Error setting up TLS session context, invalid DH parameters",
+                evt_tag_str("dhparam_file", dhparam_file),
+                NULL);
+
+      DH_free(dh);
+      return NULL;
+    }
+
+  return dh;
+}
+
+static DH *
+_load_dh_fallback(void)
+{
+  DH *dh = DH_new();
+
+  if (!dh)
+    return NULL;
+
+  /*
+   * "2048-bit MODP Group" from RFC3526, Section 3.
+   *
+   * The prime is: 2^2048 - 2^1984 - 1 + 2^64 * { [2^1918 pi] + 124476 }
+   *
+   * RFC3526 specifies a generator of 2.
+   */
+
+  BIGNUM *g = NULL;
+  BN_dec2bn(&g, "2");
+
+  if (!DH_set0_pqg(dh, get_rfc3526_prime_2048(NULL), NULL, g))
+    {
+      BN_free(g);
+      DH_free(dh);
+      return NULL;
+    }
+
+  return dh;
+}
+
+static gboolean
+tls_context_setup_ecdh(TLSContext *self)
+{
+  /* server only */
+  if (self->mode != TM_SERVER)
+    return TRUE;
+
+  if (!_set_optional_ecdh_curve_list(self->ssl_ctx, self->ecdh_curve_list))
+    return FALSE;
+
+  openssl_ctx_setup_ecdh(self->ssl_ctx);
+
+  return TRUE;
+}
+
+static gboolean
+tls_context_setup_dh(TLSContext *self)
+{
+  DH *dh = self->dhparam_file ? _load_dh_from_file(self->dhparam_file) : _load_dh_fallback();
+
+  if (!dh)
+    return FALSE;
+
+  gboolean ctx_dh_success = SSL_CTX_set_tmp_dh(self->ssl_ctx, dh);
+
+  DH_free(dh);
+  return ctx_dh_success;
+}
+
+gboolean
+tls_context_setup_context(TLSContext *self)
+{
+  gint verify_flags = X509_V_FLAG_POLICY_CHECK;
+
+  if (!self->ssl_ctx)
+    goto error;
+  if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
+    goto error;
+
+  if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
+    goto error;
+  if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
+    goto error;
+
+  if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
+    goto error;
+
+  if (file_exists(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
+    goto error;
+
+  if (self->crl_dir)
+    verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
+
+  X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
+
+  tls_context_setup_verify_mode(self);
+  tls_context_setup_ssl_options(self);
+  if (!tls_context_setup_ecdh(self))
+    {
+      SSL_CTX_free(self->ssl_ctx);
+      self->ssl_ctx = NULL;
+      return FALSE;
+    }
+
+  if (!tls_context_setup_dh(self))
+    goto error;
+
+  if (self->cipher_suite)
+    {
+      if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
+        goto error;
+    }
+
+  return TRUE;
+
+error:
+  _print_and_clear_tls_session_error();
+  if (self->ssl_ctx)
+    {
+      SSL_CTX_free(self->ssl_ctx);
+      self->ssl_ctx = NULL;
+    }
+  return FALSE;
+}
+
 TLSSession *
 tls_context_setup_session(TLSContext *self)
 {
-  SSL *ssl;
-  TLSSession *session;
-  gint ssl_error;
-  long ssl_options;
-
   if (!self->ssl_ctx)
-    {
-      gint verify_mode = 0;
-      gint verify_flags = X509_V_FLAG_POLICY_CHECK;
+    return NULL;
 
-      if (self->mode == TM_CLIENT)
-        self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-      else
-        self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
-
-      if (!self->ssl_ctx)
-        goto error;
-      if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
-        goto error;
-
-      if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
-        goto error;
-      if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
-        goto error;
-
-      if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
-        goto error;
-
-      if (file_exists(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
-        goto error;
-
-      if (self->crl_dir)
-        verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
-
-      X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
-
-      switch (self->verify_mode)
-        {
-        case TVM_NONE:
-          verify_mode = SSL_VERIFY_NONE;
-          break;
-        case TVM_OPTIONAL | TVM_UNTRUSTED:
-          verify_mode = SSL_VERIFY_NONE;
-          break;
-        case TVM_OPTIONAL | TVM_TRUSTED:
-          verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-          break;
-        case TVM_REQUIRED | TVM_UNTRUSTED:
-          verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-          break;
-        case TVM_REQUIRED | TVM_TRUSTED:
-          verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-          break;
-        default:
-          g_assert_not_reached();
-        }
-
-      SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
-
-      if (self->ssl_options != TSO_NONE)
-        {
-          ssl_options=0;
-          if(self->ssl_options & TSO_NOSSLv2)
-            ssl_options |= SSL_OP_NO_SSLv2;
-          if(self->ssl_options & TSO_NOSSLv3)
-            ssl_options |= SSL_OP_NO_SSLv3;
-          if(self->ssl_options & TSO_NOTLSv1)
-            ssl_options |= SSL_OP_NO_TLSv1;
-#ifdef SSL_OP_NO_TLSv1_2
-          if(self->ssl_options & TSO_NOTLSv11)
-            ssl_options |= SSL_OP_NO_TLSv1_1;
-          if(self->ssl_options & TSO_NOTLSv12)
-            ssl_options |= SSL_OP_NO_TLSv1_2;
-#endif
-#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
-          if (self->mode == TM_SERVER)
-            ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
-#endif
-          SSL_CTX_set_options(self->ssl_ctx, ssl_options);
-        }
-      else
-        msg_debug("empty ssl options");
-      if (self->cipher_suite)
-        {
-          if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
-            goto error;
-        }
-    }
-
-  ssl = SSL_new(self->ssl_ctx);
+  SSL *ssl = SSL_new(self->ssl_ctx);
 
   if (self->mode == TM_CLIENT)
     SSL_set_connect_state(ssl);
   else
     SSL_set_accept_state(ssl);
 
-  session = tls_session_new(ssl, self);
+  TLSSession *session = tls_session_new(ssl, self);
   SSL_set_app_data(ssl, session);
   return session;
-
-error:
-  ssl_error = ERR_get_error();
-  msg_error("Error setting up TLS session context",
-            evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error),
-                           ERR_reason_error_string(ssl_error)));
-  ERR_clear_error();
-  if (self->ssl_ctx)
-    {
-      SSL_CTX_free(self->ssl_ctx);
-      self->ssl_ctx = NULL;
-    }
-  return NULL;
 }
 
 TLSContext *
@@ -430,6 +595,12 @@ tls_context_new(TLSMode mode)
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
   self->ssl_options = TSO_NOSSLv2;
+
+  if (self->mode == TM_CLIENT)
+    self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+  else
+    self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
+
   return self;
 }
 
@@ -441,54 +612,118 @@ tls_context_free(TLSContext *self)
   g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
   g_free(self->key_file);
   g_free(self->cert_file);
+  g_free(self->dhparam_file);
   g_free(self->ca_dir);
   g_free(self->crl_dir);
   g_free(self->cipher_suite);
+  g_free(self->ecdh_curve_list);
   g_free(self);
 }
 
-TLSVerifyMode
-tls_lookup_verify_mode(const gchar *mode_str)
+gboolean
+tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str)
 {
   if (strcasecmp(mode_str, "none") == 0)
-    return TVM_NONE;
+    self->verify_mode = TVM_NONE;
   else if (strcasecmp(mode_str, "optional-trusted") == 0 || strcasecmp(mode_str, "optional_trusted") == 0)
-    return TVM_OPTIONAL | TVM_TRUSTED;
+    self->verify_mode = TVM_OPTIONAL | TVM_TRUSTED;
   else if (strcasecmp(mode_str, "optional-untrusted") == 0 || strcasecmp(mode_str, "optional_untrusted") == 0)
-    return TVM_OPTIONAL | TVM_UNTRUSTED;
+    self->verify_mode = TVM_OPTIONAL | TVM_UNTRUSTED;
   else if (strcasecmp(mode_str, "required-trusted") == 0 || strcasecmp(mode_str, "required_trusted") == 0)
-    return TVM_REQUIRED | TVM_TRUSTED;
+    self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
   else if (strcasecmp(mode_str, "required-untrusted") == 0 || strcasecmp(mode_str, "required_untrusted") == 0)
-    return TVM_REQUIRED | TVM_UNTRUSTED;
+    self->verify_mode = TVM_REQUIRED | TVM_UNTRUSTED;
+  else
+    return FALSE;
 
-  return TVM_REQUIRED | TVM_TRUSTED;
+  return TRUE;
 }
 
-gint
-tls_lookup_options(GList *options)
+gboolean
+tls_context_set_ssl_options_by_name(TLSContext *self, GList *options)
 {
-  gint ret=TSO_NONE;
+  self->ssl_options = TSO_NONE;
+
   GList *l;
   for (l=options; l != NULL; l=l->next)
     {
-      msg_debug("ssl-option", evt_tag_str("opt", l->data));
       if (strcasecmp(l->data, "no-sslv2") == 0 || strcasecmp(l->data, "no_sslv2") == 0)
-        ret|=TSO_NOSSLv2;
+        self->ssl_options |= TSO_NOSSLv2;
       else if (strcasecmp(l->data, "no-sslv3") == 0 || strcasecmp(l->data, "no_sslv3") == 0)
-        ret|=TSO_NOSSLv3;
+        self->ssl_options |= TSO_NOSSLv3;
       else if (strcasecmp(l->data, "no-tlsv1") == 0 || strcasecmp(l->data, "no_tlsv1") == 0)
-        ret|=TSO_NOTLSv1;
+        self->ssl_options |= TSO_NOTLSv1;
 #ifdef SSL_OP_NO_TLSv1_2
       else if (strcasecmp(l->data, "no-tlsv11") == 0 || strcasecmp(l->data, "no_tlsv11") == 0)
-        ret|=TSO_NOTLSv11;
+        self->ssl_options |= TSO_NOTLSv11;
       else if (strcasecmp(l->data, "no-tlsv12") == 0 || strcasecmp(l->data, "no_tlsv12") == 0)
-        ret|=TSO_NOTLSv12;
+        self->ssl_options |= TSO_NOTLSv12;
 #endif
       else
-        msg_error("Unknown ssl-option", evt_tag_str("option", l->data));
+        return FALSE;
     }
-  msg_debug("ssl-options parsed", evt_tag_printf("parsed value", "%d", ret));
-  return ret;
+
+  return TRUE;
+}
+
+gint
+tls_context_get_verify_mode(const TLSContext *self)
+{
+  return self->verify_mode;
+}
+
+void tls_context_set_verify_mode(TLSContext *self, gint verify_mode)
+{
+  self->verify_mode = verify_mode;
+}
+
+void
+tls_context_set_key_file(TLSContext *self, const gchar *key_file)
+{
+  g_free(self->key_file);
+  self->key_file = g_strdup(key_file);
+}
+
+void
+tls_context_set_cert_file(TLSContext *self, const gchar *cert_file)
+{
+  g_free(self->cert_file);
+  self->cert_file = g_strdup(cert_file);
+}
+
+void
+tls_context_set_ca_dir(TLSContext *self, const gchar *ca_dir)
+{
+  g_free(self->ca_dir);
+  self->ca_dir = g_strdup(ca_dir);
+}
+
+void
+tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir)
+{
+  g_free(self->crl_dir);
+  self->crl_dir = g_strdup(crl_dir);
+}
+
+void
+tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite)
+{
+  g_free(self->cipher_suite);
+  self->cipher_suite = g_strdup(cipher_suite);
+}
+
+void
+tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_list)
+{
+  g_free(self->ecdh_curve_list);
+  self->ecdh_curve_list = g_strdup(ecdh_curve_list);
+}
+
+void
+tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file)
+{
+  g_free(self->dhparam_file);
+  self->dhparam_file = g_strdup(dhparam_file);
 }
 
 void

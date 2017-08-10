@@ -160,3 +160,55 @@ openssl_init(void)
   OpenSSL_add_all_algorithms();
 #endif
 }
+
+void openssl_ctx_setup_ecdh(SSL_CTX *ctx)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+
+  /* No need to setup as ECDH auto is the default */
+
+#elif OPENSSL_VERSION_NUMBER >= 0x10002000L
+
+  SSL_CTX_set_ecdh_auto(ctx, 1);
+
+#elif OPENSSL_VERSION_NUMBER >= 0x10001000L
+
+  EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+  if (!ecdh)
+    return;
+
+  SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+  EC_KEY_free(ecdh);
+
+#endif
+}
+
+#if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG
+int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g)
+{
+  if ((dh->p == NULL && p == NULL)
+      || (dh->g == NULL && g == NULL))
+    return 0;
+
+  if (p != NULL)
+    {
+      BN_free(dh->p);
+      dh->p = p;
+    }
+  if (q != NULL)
+    {
+      BN_free(dh->q);
+      dh->q = q;
+    }
+  if (g != NULL)
+    {
+      BN_free(dh->g);
+      dh->g = g;
+    }
+
+  if (q != NULL)
+    dh->length = BN_num_bits(q);
+
+  return 1;
+}
+#endif
