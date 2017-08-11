@@ -24,25 +24,14 @@
 
 #include "driver.h"
 #include "logreader.h"
-#include "logproto/logproto-regexp-multiline-server.h"
-#include "affile-common.h"
+#include "file-opener.h"
 
-enum
+typedef struct _FileReaderOptions
 {
-  MLM_NONE,
-  MLM_INDENTED,
-  MLM_PREFIX_GARBAGE,
-  MLM_PREFIX_SUFFIX,
-};
-
-typedef struct _FileReaderOptions {
-  FilePermOptions file_perm_options;
-  FileOpenOptions file_open_options;
-  gint pad_size;
   gint follow_freq;
-  gint multi_line_mode;
-  MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
+  gboolean restore_state;
   LogReaderOptions reader_options;
+  gboolean exit_on_eof;
 } FileReaderOptions;
 
 typedef struct _FileReader
@@ -50,20 +39,27 @@ typedef struct _FileReader
   LogPipe super;
   LogSrcDriver *owner;
   GString *filename;
-  FileReaderOptions *file_reader_options;
+  FileReaderOptions *options;
+  FileOpener *opener;
   LogReader *reader;
+  gboolean is_pipe;
 } FileReader;
 
-FileReader *file_reader_new(const gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg);
+static inline LogProtoFileReaderOptions *
+file_reader_options_get_log_proto_options(FileReaderOptions *options)
+{
+  return (LogProtoFileReaderOptions *) &options->reader_options.proto_options;
+}
+
+FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner, GlobalConfig *cfg);
 
 void file_reader_remove_persist_state(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
-gboolean file_reader_options_set_multi_line_mode(FileReaderOptions *options, const gchar *mode);
-gboolean file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
-gboolean file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *prefix_regexp, GError **error);
 
-void file_reader_options_destroy(FileReaderOptions *options);
+void file_reader_options_defaults(FileReaderOptions *options);
+void file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group);
+void file_reader_options_deinit(FileReaderOptions *options);
 
 
 #endif /* MODULES_AFFILE_FILE_READER_H_ */

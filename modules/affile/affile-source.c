@@ -24,7 +24,7 @@
 #include "driver.h"
 #include "messages.h"
 #include "gprocess.h"
-#include "mainloop.h"
+#include "file-specializations.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -37,11 +37,29 @@
 
 #include <iv.h>
 
-#define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
-#define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
+
+static gboolean
+_is_linux_proc_kmsg(const gchar *filename)
+{
+#ifdef __linux__
+  if (strcmp(filename, "/proc/kmsg") == 0)
+    return TRUE;
+#endif
+  return FALSE;
+}
+
+static gboolean
+_is_linux_dev_kmsg(const gchar *filename)
+{
+#ifdef __linux__
+  if (strcmp(filename, "/dev/kmsg") == 0)
+    return TRUE;
+#endif
+  return FALSE;
+}
 
 static inline gboolean
-affile_is_device_node(const gchar *filename)
+_is_device_node(const gchar *filename)
 {
   struct stat st;
 
@@ -66,11 +84,14 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 static gboolean
 _are_multi_line_settings_invalid(AFFileSourceDriver *self)
 {
-  gboolean is_garbage_mode = self->file_reader_options.multi_line_mode == MLM_PREFIX_GARBAGE;
-  gboolean is_suffix_mode = self->file_reader_options.multi_line_mode == MLM_PREFIX_SUFFIX;
+  LogProtoMultiLineServerOptions *multi_line_options =
+    (LogProtoMultiLineServerOptions *) &self->file_reader_options.reader_options.proto_options;
 
-  return (!is_garbage_mode && !is_suffix_mode) && (self->file_reader_options.multi_line_prefix
-                                                   || self->file_reader_options.multi_line_garbage);
+  gboolean is_garbage_mode = multi_line_options->mode == MLM_PREFIX_GARBAGE;
+  gboolean is_suffix_mode = multi_line_options->mode == MLM_PREFIX_SUFFIX;
+
+  return (!is_garbage_mode && !is_suffix_mode) && (multi_line_options->prefix
+                                                   || multi_line_options->garbage);
 }
 
 static gboolean
@@ -82,7 +103,13 @@ affile_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-  log_reader_options_init(&self->file_reader_options.reader_options, cfg, self->super.super.group);
+  file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
+  file_opener_options_init(&self->file_opener_options, cfg);
+
+  file_opener_set_options(self->file_opener, &self->file_opener_options);
+  self->file_reader = file_reader_new(self->filename->str, &self->file_reader_options,
+                                      self->file_opener,
+                                      &self->super, cfg);
 
   if (_are_multi_line_settings_invalid(self))
     {
@@ -113,32 +140,33 @@ affile_sd_free(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
+  file_opener_free(self->file_opener);
   log_pipe_unref(&self->file_reader->super);
   g_string_free(self->filename, TRUE);
-  file_reader_options_destroy(&self->file_reader_options);
+  file_reader_options_deinit(&self->file_reader_options);
+  file_opener_options_deinit(&self->file_opener_options);
   log_src_driver_free(s);
 }
 
-static AFFileSourceDriver *
+AFFileSourceDriver *
 affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = g_new0(AFFileSourceDriver, 1);
 
   log_src_driver_init_instance(&self->super, cfg);
-  self->filename = g_string_new(filename);
-  self->file_reader = file_reader_new(filename, &self->super, cfg);
-  self->file_reader->file_reader_options = &self->file_reader_options;
   self->super.super.super.init = affile_sd_init;
   self->super.super.super.queue = affile_sd_queue;
   self->super.super.super.deinit = affile_sd_deinit;
   self->super.super.super.free_fn = affile_sd_free;
   self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
-  log_reader_options_defaults(&self->file_reader_options.reader_options);
-  file_perm_options_defaults(&self->file_reader_options.file_perm_options);
-  self->file_reader_options.reader_options.parse_options.flags |= LP_LOCAL;
 
-  if (affile_is_linux_proc_kmsg(filename))
-    self->file_reader_options.file_open_options.needs_privileges = TRUE;
+  self->filename = g_string_new(filename);
+
+  file_reader_options_defaults(&self->file_reader_options);
+  self->file_reader_options.reader_options.super.stats_level = STATS_LEVEL1;
+
+  file_opener_options_defaults(&self->file_opener_options);
+
   return self;
 }
 
@@ -147,8 +175,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_reader_options.file_open_options.is_pipe = FALSE;
-  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+  self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
 
   if (cfg_is_config_version_older(cfg, 0x0300))
     {
@@ -158,34 +185,23 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
     }
   else
     {
-      if (affile_is_device_node(filename) || affile_is_linux_proc_kmsg(filename))
+      if (_is_device_node(filename) || _is_linux_proc_kmsg(filename))
         self->file_reader_options.follow_freq = 0;
       else
         self->file_reader_options.follow_freq = 1000;
     }
-
-  return &self->super.super;
-}
-
-LogDriver *
-afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
-{
-  AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
-
-  self->file_reader_options.file_open_options.is_pipe = TRUE;
-  self->file_reader_options.file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
-
-  if (cfg_is_config_version_older(cfg, 0x0302))
+  if (self->file_reader_options.follow_freq > 0)
+    self->file_opener = file_opener_for_regular_source_files_new();
+  else if (_is_linux_proc_kmsg(self->filename->str))
     {
-      msg_warning_once("WARNING: the expected message format is being changed for pipe() to improve "
-                       "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
-                       "applications which bypass the syslog() API, you might "
-                       "need the 'expect-hostname' flag to get the old behaviour back");
+      self->file_opener_options.needs_privileges = TRUE;
+      self->file_opener = file_opener_for_prockmsg_new();
     }
+  else if (_is_linux_dev_kmsg(self->filename->str))
+    self->file_opener = file_opener_for_devkmsg_new();
   else
-    {
-      self->file_reader_options.reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
-    }
+    self->file_opener = file_opener_for_regular_source_files_new();
 
+  self->file_reader_options.restore_state = self->file_reader_options.follow_freq > 0;
   return &self->super.super;
 }

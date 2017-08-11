@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2017 Balabit
+ * Copyright (c) 2017 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,31 +20,23 @@
  * COPYING for details.
  *
  */
-  
-#ifndef AFFILE_SOURCE_H_INCLUDED
-#define AFFILE_SOURCE_H_INCLUDED
 
-#include "driver.h"
-#include "logreader.h"
-#include "file-opener.h"
-#include "file-reader.h"
+#ifndef LOG_PROTO_FILE_READER_H_INCLUDED
+#define LOG_PROTO_FILE_READER_H_INCLUDED
 
-typedef struct _AFFileSourceDriver
+#include "logproto/logproto-multiline-server.h"
+
+typedef struct _LogProtoFileReaderOptions
 {
-  LogSrcDriver super;
-  GString *filename;
-  FileReader *file_reader;
-  FileOpener *file_opener;
-  FileReaderOptions file_reader_options;
-  FileOpenerOptions file_opener_options;
-} AFFileSourceDriver;
+  LogProtoMultiLineServerOptions super;
+  gint pad_size;
+} LogProtoFileReaderOptions;
 
-AFFileSourceDriver *affile_sd_new_instance(gchar *filename, GlobalConfig *cfg);
-LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
+LogProtoServer *log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options);
 
+void log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options);
+void log_proto_file_reader_options_init(LogProtoFileReaderOptions *options);
+void log_proto_file_reader_options_destroy(LogProtoFileReaderOptions *options);
 
-void affile_sd_set_recursion(LogDriver *s, const gint recursion);
-void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
-void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
 
 #endif

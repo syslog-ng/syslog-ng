@@ -190,8 +190,6 @@ afstreams_sd_init(LogPipe *s)
       log_reader_set_options(self->reader,
                              s,
                              &self->reader_options,
-                             STATS_LEVEL1,
-                             SCS_SUN_STREAMS,
                              self->super.super.id,
                              self->dev_filename->str);
       log_pipe_append((LogPipe *) self->reader, s);
@@ -277,5 +275,7 @@ afstreams_sd_new(gchar *filename, GlobalConfig *cfg)
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
   self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
+  self->reader_options.stats_level = STATS_LEVEL1;
+  self->reader_options.stats_source = SCS_SUN_STREAMS;
   return &self->super.super;
 }

@@ -320,7 +320,7 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   AFInterSource *self = g_new0(AFInterSource, 1);
 
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
-  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE, FALSE,
+  log_source_set_options(&self->super, options, owner->super.super.id, NULL, FALSE, FALSE,
                          owner->super.super.super.expr_node);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
@@ -346,6 +346,8 @@ afinter_sd_init(LogPipe *s)
     }
 
   log_source_options_init(&self->source_options, cfg, self->super.super.group);
+  self->source_options.stats_level = STATS_LEVEL0;
+  self->source_options.stats_source = SCS_INTERNAL;
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
 

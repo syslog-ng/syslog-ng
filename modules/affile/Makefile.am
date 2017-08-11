@@ -1,10 +1,13 @@
 module_LTLIBRARIES			+= modules/affile/libaffile.la
 modules_affile_libaffile_la_SOURCES	=			\
-	modules/affile/logproto-linux-proc-kmsg-reader.h	\
 	modules/affile/logproto-file-writer.c 			\
 	modules/affile/logproto-file-writer.h			\
+	modules/affile/logproto-file-reader.c 			\
+	modules/affile/logproto-file-reader.h			\
 	modules/affile/poll-file-changes.c			\
 	modules/affile/poll-file-changes.h			\
+	modules/affile/transport-prockmsg.c			\
+	modules/affile/transport-prockmsg.h			\
 	modules/affile/file-reader.c				\
 	modules/affile/file-reader.h				\
 	modules/affile/wildcard-source.h			\
@@ -17,8 +20,15 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/collection-comporator.c		\
 	modules/affile/directory-monitor-poll.h   \
 	modules/affile/directory-monitor-poll.c   \
-	modules/affile/affile-common.c				\
-	modules/affile/affile-common.h				\
+	modules/affile/file-opener.c				\
+	modules/affile/file-opener.h				\
+	modules/affile/file-specializations.h			\
+	modules/affile/regular-files.c				\
+	modules/affile/named-pipe.c				\
+	modules/affile/named-pipe.h				\
+	modules/affile/linux-kmsg.c				\
+	modules/affile/stdin.c					\
+	modules/affile/stdin.h					\
 	modules/affile/affile-source.c				\
 	modules/affile/affile-source.h				\
 	modules/affile/affile-dest.c				\

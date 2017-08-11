@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2017 Balabit
+ * Copyright (c) 2017 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,19 +21,12 @@
  *
  */
 
-#ifndef LOGPROTO_PROC_KMSG_READER_H_INCLUDED
-#define LOGPROTO_PROC_KMSG_READER_H_INCLUDED
+#ifndef AFFILE_STDIN_H_INCLUDED
+#define AFFILE_STDIN_H_INCLUDED
 
-#include "logproto/logproto-text-server.h"
+#include "driver.h"
+#include "cfg.h"
 
-static inline LogProtoServer *
-log_proto_linux_proc_kmsg_reader_new(LogTransport *transport, const LogProtoServerOptions *options)
-{
-  LogProtoServer *proto;
-
-  proto = log_proto_text_server_new(transport, options);
-  ((LogProtoTextServer *) proto)->super.no_multi_read = TRUE;
-  return proto;
-}
+LogDriver *stdin_sd_new(GlobalConfig *cfg);
 
 #endif

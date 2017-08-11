@@ -226,16 +226,17 @@ afprogram_sd_init(LogPipe *s)
   if (!self->reader)
     {
       LogTransport *transport;
+      LogProtoServer *proto;
 
       transport = log_transport_pipe_new(fd);
+      proto = log_proto_text_server_new(transport, &self->reader_options.proto_options.super);
+
       self->reader = log_reader_new(s->cfg);
-      log_reader_reopen(self->reader, log_proto_text_server_new(transport, &self->reader_options.proto_options.super),
+      log_reader_reopen(self->reader, proto,
                         poll_fd_events_new(fd));
       log_reader_set_options(self->reader,
                              s,
                              &self->reader_options,
-                             STATS_LEVEL0,
-                             SCS_PROGRAM,
                              self->super.super.id,
                              self->process_info.cmdline->str);
     }
@@ -308,6 +309,8 @@ afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg)
   afprogram_set_inherit_environment(&self->process_info, TRUE);
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
+  self->reader_options.super.stats_level = STATS_LEVEL0;
+  self->reader_options.super.stats_source = SCS_PROGRAM;
   return &self->super.super;
 }
 
@@ -446,8 +449,6 @@ afprogram_dd_init(LogPipe *s)
   log_writer_set_options(self->writer,
                          s,
                          &self->writer_options,
-                         STATS_LEVEL0,
-                         SCS_PROGRAM,
                          self->super.super.id,
                          self->process_info.cmdline->str);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super,
@@ -546,6 +547,8 @@ afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg)
   self->process_info.pid = -1;
   afprogram_set_inherit_environment(&self->process_info, TRUE);
   log_writer_options_defaults(&self->writer_options);
+  self->writer_options.stats_level = STATS_LEVEL0;
+  self->writer_options.stats_source = SCS_PROGRAM;
   return &self->super.super;
 }
 

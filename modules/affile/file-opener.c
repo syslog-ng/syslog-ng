@@ -20,11 +20,13 @@
  * COPYING for details.
  *
  */
-#include "affile-common.h"
+#include "file-opener.h"
 #include "messages.h"
 #include "gprocess.h"
 #include "fdhelpers.h"
 #include "pathutils.h"
+#include "cfg.h"
+#include "transport/transport-file.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,6 +36,40 @@
 #include <errno.h>
 #include <time.h>
 #include <stdlib.h>
+
+static inline gboolean
+file_opener_prepare_open(FileOpener *self, const gchar *name)
+{
+  if (self->prepare_open)
+    return self->prepare_open(self, name);
+  return TRUE;
+}
+
+static inline gint
+file_opener_open(FileOpener *self, const gchar *name, gint flags)
+{
+  return self->open(self, name, flags);
+}
+
+static gint
+file_opener_get_open_flags_method(FileOpener *self, FileDirection dir)
+{
+  switch (dir)
+    {
+    case AFFILE_DIR_READ:
+      return O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
+    case AFFILE_DIR_WRITE:
+      return O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE | O_APPEND;
+    default:
+      g_assert_not_reached();
+    }
+}
+
+static inline gint
+file_opener_get_open_flags(FileOpener *self, FileDirection dir)
+{
+  return self->get_open_flags(self, dir);
+}
 
 static const gchar *spurious_paths[] = {"../", "/..", NULL};
 
@@ -58,9 +94,9 @@ _is_path_spurious(const gchar *name)
 }
 
 static inline gboolean
-_obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, cap_t *act_caps)
+_obtain_capabilities(FileOpener *self, gchar *name, cap_t *act_caps)
 {
-  if (open_opts->needs_privileges)
+  if (self->options->needs_privileges)
     {
       g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
       g_process_cap_modify(CAP_SYSLOG, TRUE);
@@ -70,8 +106,8 @@ _obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *p
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
     }
 
-  if (open_opts->create_dirs && perm_opts &&
-      !file_perm_options_create_containing_directory(perm_opts, name))
+  if (self->options->create_dirs &&
+      !file_perm_options_create_containing_directory(&self->options->file_perm_options, name))
     {
       return FALSE;
     }
@@ -80,7 +116,7 @@ _obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *p
 }
 
 static inline void
-_set_fd_permission(FilePermOptions *perm_opts, int fd)
+_set_fd_permission(FileOpener *self, int fd)
 {
   if (fd != -1)
     {
@@ -89,51 +125,25 @@ _set_fd_permission(FilePermOptions *perm_opts, int fd)
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
 
-      if (perm_opts)
-        file_perm_options_apply_fd(perm_opts, fd);
+      file_perm_options_apply_fd(&self->options->file_perm_options, fd);
     }
 }
 
-static inline int
-_open_fd(const gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts)
+static int
+_open(FileOpener *self, const gchar *name, gint open_flags)
 {
+  FilePermOptions *perm_opts = &self->options->file_perm_options;
   int fd;
   int mode = (perm_opts && (perm_opts->file_perm >= 0))
              ? perm_opts->file_perm : 0600;
 
-  fd = open(name, open_opts->open_flags, mode);
-
-  if (open_opts->is_pipe && fd < 0 && errno == ENOENT)
-    {
-      if (mkfifo(name, mode) >= 0)
-        fd = open(name, open_opts->open_flags, mode);
-    }
+  fd = open(name, open_flags, mode);
 
   return fd;
 }
 
-static inline void
-_validate_file_type(const gchar *name, FileOpenOptions *open_opts)
-{
-  struct stat st;
-
-  if (stat(name, &st) >= 0)
-    {
-      if (open_opts->is_pipe && !S_ISFIFO(st.st_mode))
-        {
-          msg_warning("WARNING: you are using the pipe driver, underlying file is not a FIFO, it should be used by file()",
-                      evt_tag_str("filename", name));
-        }
-      else if (!open_opts->is_pipe && S_ISFIFO(st.st_mode))
-        {
-          msg_warning("WARNING: you are using the file driver, underlying file is a FIFO, it should be used by pipe()",
-                      evt_tag_str("filename", name));
-        }
-    }
-}
-
 gboolean
-affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_opts, gint *fd)
+file_opener_open_fd(FileOpener *self, gchar *name, FileDirection dir, gint *fd)
 {
   cap_t saved_caps;
 
@@ -146,18 +156,19 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
 
   saved_caps = g_process_cap_save();
 
-  if (!_obtain_capabilities(name, open_opts, perm_opts, &saved_caps))
+  if (!_obtain_capabilities(self, name, &saved_caps))
     {
       g_process_cap_restore(saved_caps);
       return FALSE;
     }
 
-  _validate_file_type(name, open_opts);
+  if (!file_opener_prepare_open(self, name))
+    return FALSE;
 
-  *fd = _open_fd(name, open_opts, perm_opts);
+  *fd = file_opener_open(self, name, file_opener_get_open_flags(self, dir));
 
   if (!is_file_device(name))
-    _set_fd_permission(perm_opts, *fd);
+    _set_fd_permission(self, *fd);
 
   g_process_cap_restore(saved_caps);
 
@@ -166,4 +177,52 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
             evt_tag_int("fd", *fd));
 
   return (*fd != -1);
+}
+
+void
+file_opener_set_options(FileOpener *self, FileOpenerOptions *options)
+{
+  self->options = options;
+}
+
+void
+file_opener_init_instance(FileOpener *self)
+{
+  self->get_open_flags = file_opener_get_open_flags_method;
+  self->open = _open;
+}
+
+FileOpener *
+file_opener_new(void)
+{
+  FileOpener *self = g_new0(FileOpener, 1);
+
+  file_opener_init_instance(self);
+  return self;
+}
+
+void
+file_opener_free(FileOpener *self)
+{
+  g_free(self);
+}
+
+void
+file_opener_options_defaults(FileOpenerOptions *options)
+{
+  file_perm_options_defaults(&options->file_perm_options);
+  options->create_dirs = -1;
+  options->needs_privileges = FALSE;
+}
+
+void
+file_opener_options_init(FileOpenerOptions *options, GlobalConfig *cfg)
+{
+  file_perm_options_inherit_from(&options->file_perm_options, &cfg->file_perm_options);
+}
+
+void
+file_opener_options_deinit(FileOpenerOptions *options)
+{
+  /* empty, this function only serves to meet the conventions of *Options */
 }

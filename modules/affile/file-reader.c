@@ -26,15 +26,9 @@
 #include "serialize.h"
 #include "gprocess.h"
 #include "stats/stats-registry.h"
-#include "mainloop.h"
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
-#include "transport/transport-device.h"
-#include "logproto/logproto-record-server.h"
-#include "logproto/logproto-text-server.h"
-#include "logproto/logproto-dgram-server.h"
-#include "logproto/logproto-indented-multiline-server.h"
-#include "logproto-linux-proc-kmsg-reader.h"
+#include "transport-prockmsg.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
 
@@ -48,25 +42,6 @@
 #include <stdlib.h>
 
 #include <iv.h>
-
-
-static inline gboolean
-_is_linux_dev_kmsg(const gchar *filename)
-{
-#ifdef __linux__
-  if (strcmp(filename, "/dev/kmsg") == 0)
-    return TRUE;
-#endif
-  return FALSE;
-}
-
-static gboolean
-_sd_open_file(FileReader *self, gchar *name, gint *fd)
-{
-  return affile_open_file(name,
-                          &self->file_reader_options->file_open_options,
-                          &self->file_reader_options->file_perm_options, fd);
-}
 
 static inline const gchar *
 _format_persist_name(const LogPipe *s)
@@ -87,7 +62,7 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
-  if (self->file_reader_options->file_open_options.is_pipe || self->file_reader_options->follow_freq <= 0)
+  if (!self->options->restore_state)
     return;
 
   if (!log_proto_server_restart_with_state(proto, cfg->state, _format_persist_name(s)))
@@ -117,8 +92,8 @@ _is_fd_pollable(gint fd)
 static PollEvents *
 _construct_poll_events(FileReader *self, gint fd)
 {
-  if (self->file_reader_options->follow_freq > 0)
-    return poll_file_changes_new(fd, self->filename->str, self->file_reader_options->follow_freq, &self->super);
+  if (self->options->follow_freq > 0)
+    return poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
   else if (fd >= 0 && _is_fd_pollable(fd))
     return poll_fd_events_new(fd);
   else
@@ -135,30 +110,14 @@ _construct_poll_events(FileReader *self, gint fd)
 static LogTransport *
 _construct_transport(FileReader *self, gint fd)
 {
-  if (self->file_reader_options->file_open_options.is_pipe)
-    return log_transport_pipe_new(fd);
-  else if (self->file_reader_options->follow_freq > 0)
-    return log_transport_file_new(fd);
-  else if (affile_is_linux_proc_kmsg(self->filename->str))
-    return log_transport_device_new(fd, 10);
-  else if (_is_linux_dev_kmsg(self->filename->str))
-    {
-      if (lseek(fd, 0, SEEK_END) < 0)
-        {
-          msg_error("Error seeking /dev/kmsg to the end",
-                    evt_tag_str("error", g_strerror(errno)));
-        }
-      return log_transport_device_new(fd, 0);
-    }
-  else
-    return log_transport_pipe_new(fd);
+  return file_opener_construct_transport(self->opener, fd);
 }
 
 static LogProtoServer *
 _construct_proto(FileReader *self, gint fd)
 {
-  LogReaderOptions *reader_options = &self->file_reader_options->reader_options;
-  LogProtoServerOptions *proto_options = &reader_options->proto_options.super;
+  LogReaderOptions *reader_options = &self->options->reader_options;
+  LogProtoFileReaderOptions *proto_options = file_reader_options_get_log_proto_options(self->options);
   LogTransport *transport;
   MsgFormatHandler *format_handler;
 
@@ -167,38 +126,11 @@ _construct_proto(FileReader *self, gint fd)
   format_handler = reader_options->parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
     {
-      proto_options->position_tracking_enabled = TRUE;
-      return format_handler->construct_proto(&reader_options->parse_options, transport, proto_options);
+      proto_options->super.super.position_tracking_enabled = TRUE;
+      return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super.super);
     }
 
-  if (self->file_reader_options->pad_size)
-    {
-      proto_options->position_tracking_enabled = TRUE;
-      return log_proto_padded_record_server_new(transport, proto_options, self->file_reader_options->pad_size);
-    }
-  else if (affile_is_linux_proc_kmsg(self->filename->str))
-    return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
-  else if (_is_linux_dev_kmsg(self->filename->str))
-    return log_proto_dgram_server_new(transport, proto_options);
-  else
-    {
-      proto_options->position_tracking_enabled = TRUE;
-      switch (self->file_reader_options->multi_line_mode)
-        {
-        case MLM_INDENTED:
-          return log_proto_indented_multiline_server_new(transport, proto_options);
-        case MLM_PREFIX_GARBAGE:
-          return log_proto_prefix_garbage_multiline_server_new(transport, proto_options,
-                                                               self->file_reader_options->multi_line_prefix,
-                                                               self->file_reader_options->multi_line_garbage);
-        case MLM_PREFIX_SUFFIX:
-          return log_proto_prefix_suffix_multiline_server_new(transport, proto_options,
-                                                              self->file_reader_options->multi_line_prefix,
-                                                              self->file_reader_options->multi_line_garbage);
-        default:
-          return log_proto_text_server_new(transport, proto_options);
-        }
-    }
+  return file_opener_construct_src_proto(self->opener, transport, proto_options);
 }
 
 static void
@@ -209,26 +141,19 @@ _deinit_sd_logreader(FileReader *self)
   self->reader = NULL;
 }
 
-static gint
-_get_stats_source(FileReader *self)
-{
-  return self->file_reader_options->file_open_options.is_pipe ? SCS_PIPE : SCS_FILE;
-}
-
 static void
 _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
 {
   FileReader *self = (FileReader *) s;
+
   self->reader = log_reader_new(log_pipe_get_config(s));
   log_reader_reopen(self->reader, proto, poll_events);
-
   log_reader_set_options(self->reader,
                          s,
-                         &self->file_reader_options->reader_options,
-                         STATS_LEVEL1,
-                         _get_stats_source(self),
+                         &self->options->reader_options,
                          self->owner->super.id,
                          self->filename->str);
+
   if (check_immediately)
     log_reader_set_immediate_check(self->reader);
 
@@ -256,8 +181,8 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   gint fd;
   gboolean file_opened, open_deferred = FALSE;
 
-  file_opened = _sd_open_file(self, self->filename->str, &fd);
-  if (!file_opened && self->file_reader_options->follow_freq > 0)
+  file_opened = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
+  if (!file_opened && self->options->follow_freq > 0)
     {
       msg_info("Follow-mode file source not found, deferring open", evt_tag_str("filename", self->filename->str));
       open_deferred = TRUE;
@@ -319,20 +244,23 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
 
   switch (notify_code)
     {
+    case NC_CLOSE:
+      if (self->options->exit_on_eof)
+        cfg_shutdown(log_pipe_get_config(s));
+      break;
+
     case NC_FILE_MOVED:
-    {
       msg_verbose("Follow-mode file source moved, tracking of the new file is started",
                   evt_tag_str("filename", self->filename->str));
       _reopen_on_notify(s, TRUE);
       break;
-    }
+
     case NC_READ_ERROR:
-    {
       msg_verbose("Error while following source file, reopening in the hope it would work",
                   evt_tag_str("filename", self->filename->str));
       _reopen_on_notify(s, FALSE);
       break;
-    }
+
     default:
       break;
     }
@@ -369,9 +297,11 @@ _deinit(LogPipe *s)
 static void
 _free(LogPipe *s)
 {
-  FileReader *self = (FileReader *)s;
-  g_string_free(self->filename, TRUE);
+  FileReader *self = (FileReader *) s;
+
   g_assert(!self->reader);
+
+  g_string_free(self->filename, TRUE);
 }
 
 void
@@ -385,53 +315,25 @@ file_reader_remove_persist_state(FileReader *self)
 }
 
 FileReader *
-file_reader_new(const gchar *filename, LogSrcDriver *owner, GlobalConfig *cfg)
+file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
+                GlobalConfig *cfg)
 {
   FileReader *self = g_new0(FileReader, 1);
+
   log_pipe_init_instance(&self->super, cfg);
-  self->owner = owner;
-  self->filename = g_string_new(filename);
   self->super.init = _init;
   self->super.queue = _queue;
   self->super.deinit = _deinit;
   self->super.notify = _notify;
   self->super.free_fn = _free;
   self->super.generate_persist_name = _format_persist_name;
+
+  self->filename = g_string_new(filename);
+  self->options = options;
+  self->opener = opener;
+  self->owner = owner;
   return self;
 }
-
-gboolean
-file_reader_options_set_multi_line_mode(FileReaderOptions *options, const gchar *mode)
-{
-  if (strcasecmp(mode, "indented") == 0)
-    options->multi_line_mode = MLM_INDENTED;
-  else if (strcasecmp(mode, "regexp") == 0)
-    options->multi_line_mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-garbage") == 0)
-    options->multi_line_mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-suffix") == 0)
-    options->multi_line_mode = MLM_PREFIX_SUFFIX;
-  else if (strcasecmp(mode, "none") == 0)
-    options->multi_line_mode = MLM_NONE;
-  else
-    return FALSE;
-  return TRUE;
-}
-
-gboolean
-file_reader_options_set_multi_line_prefix(FileReaderOptions *options, const gchar *prefix_regexp, GError **error)
-{
-  options->multi_line_prefix = multi_line_regexp_compile(prefix_regexp, error);
-  return options->multi_line_prefix != NULL;
-}
-
-gboolean
-file_reader_options_set_multi_line_garbage(FileReaderOptions *options, const gchar *garbage_regexp, GError **error)
-{
-  options->multi_line_garbage = multi_line_regexp_compile(garbage_regexp, error);
-  return options->multi_line_garbage != NULL;
-}
-
 
 void
 file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq)
@@ -440,10 +342,24 @@ file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq
 }
 
 void
-file_reader_options_destroy(FileReaderOptions *options)
+file_reader_options_defaults(FileReaderOptions *options)
+{
+  log_reader_options_defaults(&options->reader_options);
+  log_proto_file_reader_options_defaults(file_reader_options_get_log_proto_options(options));
+  options->reader_options.parse_options.flags |= LP_LOCAL;
+  options->restore_state = FALSE;
+}
+
+void
+file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group)
+{
+  log_reader_options_init(&options->reader_options, cfg, group);
+  log_proto_file_reader_options_init(file_reader_options_get_log_proto_options(options));
+}
+
+void
+file_reader_options_deinit(FileReaderOptions *options)
 {
   log_reader_options_destroy(&options->reader_options);
-
-  multi_line_regexp_free(options->multi_line_prefix);
-  multi_line_regexp_free(options->multi_line_garbage);
+  log_proto_file_reader_options_destroy(file_reader_options_get_log_proto_options(options));
 }

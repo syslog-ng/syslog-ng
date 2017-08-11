@@ -33,7 +33,7 @@
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
 
-#define LOG_PROTO_SERVER_OPTIONS_SIZE 32
+#define LOG_PROTO_SERVER_OPTIONS_SIZE 128
 
 struct _LogProtoServerOptions
 {
@@ -119,7 +119,9 @@ log_proto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gb
 static inline gint
 log_proto_server_get_fd(LogProtoServer *s)
 {
-  /* FIXME: Layering violation */
+  /* FIXME: Layering violation, as transport may not be fd based at all.
+   * But LogReader assumes it is.  */
+
   return s->transport->fd;
 }
 

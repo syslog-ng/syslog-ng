@@ -43,6 +43,8 @@ typedef struct _LogSourceOptions
   LogTagId source_group_tag;
   GArray *tags;
   GList *source_queue_callbacks;
+  gint stats_level;
+  gint stats_source;
 } LogSourceOptions;
 
 typedef struct _LogSource LogSource;
@@ -59,8 +61,6 @@ struct _LogSource
 {
   LogPipe super;
   LogSourceOptions *options;
-  guint16 stats_level;
-  guint16 stats_source;
   gboolean threaded;
   gboolean pos_tracked;
   gchar *stats_id;
@@ -95,7 +95,7 @@ gboolean log_source_deinit(LogPipe *s);
 
 void log_source_post(LogSource *self, LogMessage *msg);
 
-void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node);
+void log_source_set_options(LogSource *self, LogSourceOptions *options, const gchar *stats_id, const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
 void log_source_init_instance(LogSource *self, GlobalConfig *cfg);
 void log_source_options_defaults(LogSourceOptions *options);

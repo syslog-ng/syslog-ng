@@ -565,12 +565,12 @@ _free(LogPipe *s)
 }
 
 void
-journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options, gint stats_level,
-                           gint stats_source, const gchar *stats_id, const gchar *stats_instance)
+journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options,
+                           const gchar *stats_id, const gchar *stats_instance)
 {
   JournalReader *self = (JournalReader *) s;
 
-  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance,
+  log_source_set_options(&self->super, &options->super, stats_id, stats_instance,
                          (options->flags & JR_THREADED), TRUE, control->expr_node);
 
   log_pipe_unref(self->control);
@@ -649,6 +649,8 @@ void
 journal_reader_options_defaults(JournalReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
+  options->super.stats_level = STATS_LEVEL0;
+  options->super.stats_source = SCS_JOURNALD;
   options->fetch_limit = DEFAULT_FETCH_LIMIT;
   options->default_pri = DEFAULT_PRIO;
   options->max_field_size = DEFAULT_FIELD_SIZE;
