@@ -20,13 +20,11 @@ libcurl-devel
 #ivykis-devel
 json-c-devel
 ivykis-devel
-gradle
 libdbi
 libdbi-drivers
 librdkafka
 riemann-c-client-devel
 syslog-ng-java-deps
-eventlog-devel
 autoconf-archive
 GeoIP-devel
 python-pep8
