@@ -341,7 +341,6 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   static GModule *main_module_handle;
   gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
   gchar *module_init_func;
-  const gchar *mp;
   gboolean result;
   ModuleInfo *module_info;
 
@@ -357,15 +356,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
     }
 
   /* try to load it from external .so */
-  if (cfg->lexer)
-    mp = cfg_args_get(cfg->lexer->globals, "module-path");
-  else
-    mp = NULL;
-
-  if (!mp)
-    mp = resolvedConfigurablePaths.initial_module_path;
-
-  mod = plugin_dlopen_module(module_name, mp);
+  mod = plugin_dlopen_module(module_name, cfg->plugin_context.module_path);
   if (!mod)
     {
       g_free(module_init_func);
