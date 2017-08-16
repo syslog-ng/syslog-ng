@@ -464,6 +464,8 @@ cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
     {
       /* first reference to the pipe uses the same instance, further ones will get cloned */
       pipe->flags |= PIF_INLINED;
+      /* The pipe object is borrowed, so the reference counter must be increased. */
+      log_pipe_ref(pipe);
     }
   else
     {
@@ -477,7 +479,7 @@ cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
         }
       pipe->flags |= PIF_INLINED;
     }
-  g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
+  g_ptr_array_add(self->initialized_pipes, pipe);
   pipe->expr_node = node;
 
   if ((pipe->flags & PIF_SOURCE) == 0)
