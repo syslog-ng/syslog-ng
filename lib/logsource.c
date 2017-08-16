@@ -444,6 +444,7 @@ log_source_options_defaults(LogSourceOptions *options)
   options->program_override_len = -1;
   options->host_override_len = -1;
   options->tags = NULL;
+  options->read_old_records = TRUE;
   host_resolve_options_defaults(&options->host_resolve_options);
 }
 

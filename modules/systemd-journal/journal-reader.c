@@ -317,6 +317,36 @@ _seek_to_head(JournalReader *self)
   return TRUE;
 }
 
+static gboolean
+_seek_to_tail(JournalReader *self)
+{
+  gint rc = journald_seek_tail(self->journal);
+
+  if (rc != 0)
+    {
+      msg_error("Failed to seek to the end position of the journal",
+                evt_tag_errno("error", -rc));
+      return FALSE;
+    }
+
+  msg_debug("Seeking to the journal to the end position");
+
+  return TRUE;
+}
+
+static gboolean
+_skip_old_records(JournalReader *self)
+{
+  if (!_seek_to_tail(self))
+    return FALSE;
+  if (journald_next(self->journal) <= 0)
+    {
+      msg_error("Can't move cursor to the next position after seek to tail.");
+      return FALSE;
+    }
+  return TRUE;
+}
+
 static inline gboolean
 _seek_to_saved_state(JournalReader *self)
 {
@@ -345,7 +375,9 @@ _set_starting_position(JournalReader *self)
   if (!_load_state(self))
     {
       _alloc_state(self);
-      return _seek_to_head(self);
+      if (self->super.options->read_old_records)
+        return _seek_to_head(self);
+      return _skip_old_records(self);
     }
   return _seek_to_saved_state(self);
 }
@@ -654,6 +686,7 @@ journal_reader_options_defaults(JournalReaderOptions *options)
   options->fetch_limit = DEFAULT_FETCH_LIMIT;
   options->default_pri = DEFAULT_PRIO;
   options->max_field_size = DEFAULT_FIELD_SIZE;
+  options->super.read_old_records = TRUE;
 }
 
 void
