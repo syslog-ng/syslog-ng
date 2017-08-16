@@ -29,6 +29,7 @@
 typedef struct _AddContextualDataSelector AddContextualDataSelector;
 
 struct _AddContextualDataSelector{
+  gboolean ordering_required;
   gchar *(*resolve)(AddContextualDataSelector *self, LogMessage *msg);
   void (*free)(AddContextualDataSelector *self);
   AddContextualDataSelector*(*clone)(AddContextualDataSelector *self, GlobalConfig *cfg);
@@ -75,6 +76,12 @@ add_contextual_data_selector_clone(AddContextualDataSelector *self, GlobalConfig
     }
 
   return NULL;
+}
+
+static inline gboolean
+add_contextual_data_selector_is_ordering_required(AddContextualDataSelector *self)
+{
+  return self->ordering_required;
 }
 
 #endif

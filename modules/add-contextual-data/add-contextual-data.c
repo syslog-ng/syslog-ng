@@ -251,6 +251,9 @@ _load_context_info_db(AddContextualData *self)
 static gboolean
 _init_context_info_db(AddContextualData *self)
 {
+  if (self->selector && add_contextual_data_selector_is_ordering_required(self->selector))
+    context_info_db_enable_ordering(self->context_info_db);
+
   if (self->filename == NULL)
     {
       msg_error("No database file set.");

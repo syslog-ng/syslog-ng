@@ -119,6 +119,7 @@ _g_strcmp(const gconstpointer a, gconstpointer b)
 Test(add_contextual_data, test_insert)
 {
   ContextInfoDB *context_info_db = context_info_db_new();
+  context_info_db_enable_ordering(context_info_db);
 
   _fill_context_info_db(context_info_db, "selector", "name", "value", 2, 5);
   int ctr = 0;
