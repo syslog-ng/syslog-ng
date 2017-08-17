@@ -52,13 +52,6 @@ typedef struct _PluginCandidate
   gint preference;
 } PluginCandidate;
 
-struct _PluginContext
-{
-  GList *plugins;
-  GList *candidate_plugins;
-  gchar *module_path;
-};
-
 /* A plugin actually registered by a module. See PluginCandidate in
  * the implementation module, which encapsulates a demand-loadable
  * plugin, not yet loaded.
@@ -67,6 +60,7 @@ struct _PluginContext
  * contrast with the "module" which is the shared object itself which
  * registers plugins.  Each module can register a number of plugins,
  * not just one.  */
+typedef struct _Plugin Plugin;
 struct _Plugin
 {
   /* NOTE: the first two fields must match PluginCandidate struct defined in
@@ -79,6 +73,10 @@ struct _Plugin
   void (*free_fn)(Plugin *s);
 };
 
+gpointer plugin_construct(Plugin *self);
+gpointer plugin_construct_from_config(Plugin *self, CfgLexer *lexer, gpointer arg);
+
+typedef struct _ModuleInfo ModuleInfo;
 struct _ModuleInfo
 {
   /* name of the module to be loaded as */
@@ -95,10 +93,16 @@ struct _ModuleInfo
   gint preference;
 };
 
+typedef struct _PluginContext PluginContext;
+struct _PluginContext
+{
+  GList *plugins;
+  GList *candidate_plugins;
+  gchar *module_path;
+};
+
 /* instantiate a new plugin */
 Plugin *plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name);
-gpointer plugin_construct(Plugin *self);
-gpointer plugin_construct_from_config(Plugin *self, CfgLexer *lexer, gpointer arg);
 
 /* plugin side API */
 PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference);
