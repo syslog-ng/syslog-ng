@@ -24,6 +24,14 @@
 
 ## Miscellaneous non-leaks and false alarms
 {
+   suppress_journald_open: see https://github.com/systemd/systemd/issues/6539
+   Memcheck:Leak
+   ...
+   fun:journald_open
+   ...
+}
+
+{
    suppress_syslog_ng_set_argv_space
    Memcheck:Leak
    fun:*alloc
@@ -48,17 +56,6 @@
    ...
    fun:app_startup
    fun:main
-}
-
-{
-    suppress_syslog_ng_path_resolver
-    Memcheck:Leak
-    fun:*alloc
-    ...
-    fun:path_resolver_new
-    ...
-    fun:main_loop_global_init
-    fun:main
 }
 
 {
@@ -105,15 +102,6 @@
 }
 
 {
-     suppress_syslog_ng_reloc
-     Memcheck:Leak
-     fun:*alloc
-     ...
-     fun:cache_*
-     fun:get_installation_path_for
-}
-
-{
      suppress_syslog_ng_msg_limit_internal_message
      Memcheck:Leak
      fun:*alloc
@@ -130,14 +118,6 @@
      ...
      fun:msg_event_create
      fun:main_loop_run
-}
-
-{
-     suppress_syslog_ng_aftiner_message_posted
-     Memcheck:Leak
-     fun:*alloc
-     ...
-     fun:afinter_message_posted
 }
 
 {
@@ -190,30 +170,12 @@
 }
 
 {
-   suppress_crypto_ERR_leaks
-   Memcheck:Leak
-   fun:*alloc
-   ...
-   obj:*/libcrypto.so.*
-   fun:ERR_*
-}
-
-{
    suppress_crypto_OCSP_leaks
    Memcheck:Leak
    fun:*alloc
    ...
    obj:*/libcrypto.so.*
    fun:OCSP_*
-}
-
-{
-   suppress_crypto_EVP_leaks
-   Memcheck:Leak
-   fun:*alloc
-   ...
-   obj:*/libcrypto.so.*
-   fun:EVP_*
 }
 
 ## TLS/SSL related syslog-ng leaks
