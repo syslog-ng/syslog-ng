@@ -132,7 +132,6 @@ struct _CfgLexer
   gint brace_count;
   gint tokenize_eol;
   GList *token_blocks;
-  GList *generators;
   GString *string_buffer;
   GString *preprocess_output;
   gint preprocess_suppress_tokens;

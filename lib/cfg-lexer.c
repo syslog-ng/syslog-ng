@@ -1062,13 +1062,6 @@ cfg_lexer_free(CfgLexer *self)
 
   while (self->context_stack)
     cfg_lexer_pop_context(self);
-  while (self->generators)
-    {
-      CfgBlockGenerator *gen = self->generators->data;
-
-      cfg_block_generator_free(gen);
-      self->generators = g_list_delete_link(self->generators, self->generators);
-    }
   cfg_args_unref(self->globals);
   g_list_foreach(self->token_blocks, (GFunc) cfg_token_block_free, NULL);
   g_list_free(self->token_blocks);
