@@ -26,7 +26,6 @@
 
 #include "parser/parser-expr.h"
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 
 extern CfgParser map_value_pairs_parser;
 

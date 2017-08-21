@@ -22,6 +22,7 @@
  *
  */
 #include "cfg-block.h"
+#include "cfg-lexer.h"
 
 /*
  * This class encapsulates a configuration block that the user defined
@@ -35,6 +36,7 @@
  * parameterized. The set of allowed NV pairs is defined at block
  * definition time
  */
+typedef struct _CfgBlock CfgBlock;
 struct _CfgBlock
 {
   CfgBlockGenerator super;

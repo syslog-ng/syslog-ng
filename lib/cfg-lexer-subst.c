@@ -24,7 +24,6 @@
 
 #include "cfg-lexer-subst.h"
 #include "cfg-args.h"
-#include "cfg-lexer.h"
 #include "cfg-grammar.h"
 
 #include <string.h>

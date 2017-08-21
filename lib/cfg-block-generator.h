@@ -26,7 +26,7 @@
 #define CFG_BLOCK_GENERATOR_H_INCLUDED 1
 
 #include "syslog-ng.h"
-#include "cfg-lexer.h"
+#include "cfg-args.h"
 
 /**
  * CfgBlockGenerator:
@@ -38,6 +38,7 @@
  * generate syslog-ng configuration on the fly, based on system
  * settings for example.
  **/
+typedef struct _CfgBlockGenerator CfgBlockGenerator;
 struct _CfgBlockGenerator
 {
   gint context;

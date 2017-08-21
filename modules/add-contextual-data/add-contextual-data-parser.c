@@ -21,7 +21,6 @@
  */
 
 #include "add-contextual-data.h"
-#include "cfg-lexer.h"
 #include "cfg-parser.h"
 #include "add-contextual-data-grammar.h"
 #include "logpipe.h"

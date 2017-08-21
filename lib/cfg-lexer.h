@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "cfg-args.h"
+#include "cfg-block-generator.h"
 #include "messages.h"
 
 #include <stdio.h>
@@ -39,9 +40,6 @@
 
 typedef struct _CfgIncludeLevel CfgIncludeLevel;
 typedef struct _CfgTokenBlock CfgTokenBlock;
-typedef struct _CfgBlockGenerator CfgBlockGenerator;
-typedef struct _CfgBlock CfgBlock;
-typedef struct _CfgLexer CfgLexer;
 
 /* the location type to carry location information from the lexer to the grammar */
 #define YYLTYPE YYLTYPE

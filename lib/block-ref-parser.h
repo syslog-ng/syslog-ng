@@ -26,7 +26,6 @@
 #define BLOCK_REF_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 
 extern CfgParser block_ref_parser;
 extern CfgLexerKeyword *block_def_keywords;

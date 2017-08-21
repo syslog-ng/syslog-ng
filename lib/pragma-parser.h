@@ -26,7 +26,6 @@
 #define PRAGMA_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 
 extern CfgParser pragma_parser;
 

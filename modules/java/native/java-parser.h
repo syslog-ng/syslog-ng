@@ -26,7 +26,6 @@
 #define MODJAVA_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "java-destination.h"
 
 extern CfgParser java_parser;

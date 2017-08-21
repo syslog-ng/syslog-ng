@@ -23,7 +23,6 @@
  */
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "cfg-grammar.h"
 
 #include <string.h>

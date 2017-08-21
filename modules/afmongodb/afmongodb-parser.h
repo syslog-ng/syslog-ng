@@ -26,7 +26,6 @@
 
 #include "syslog-ng.h"
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "afmongodb.h"
 
 #if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS

@@ -24,7 +24,6 @@
 #define @PLUGIN_NAME_US@_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "driver.h"
 
 extern CfgParser @PLUGIN_NAME_US@_parser;
