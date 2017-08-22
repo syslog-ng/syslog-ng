@@ -43,6 +43,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 /*
  * Reference/ACK counting for LogMessage structures
@@ -862,6 +863,27 @@ log_msg_is_tag_by_name(LogMessage *self, const gchar *name)
 /* structured data elements */
 
 static void
+log_msg_sdata_append_key_escaped(GString *result, const gchar *sstr, gssize len)
+{
+  /* The specification does not have any way to escape keys.
+   * The goal is to create syntactically valid structured data fields. */
+  const guchar *ustr = (const guchar *) sstr;
+
+  for (gssize i = 0; i < len; i++)
+    {
+      if (!isascii(ustr[i]) || ustr[i] == '=' || ustr[i] == ' '
+          || ustr[i] == '[' || ustr[i] == ']' || ustr[i] == '"')
+        {
+          gchar hex_code[4];
+          g_sprintf(hex_code, "%%%02X", ustr[i]);
+          g_string_append(result, hex_code);
+        }
+      else
+        g_string_append_c(result, ustr[i]);
+    }
+}
+
+static void
 log_msg_sdata_append_escaped(GString *result, const gchar *sstr, gssize len)
 {
   gint i;
@@ -993,7 +1015,7 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
           if (value)
             {
               g_string_append_c(result, ' ');
-              g_string_append_len(result, sdata_param, sdata_param_len);
+              log_msg_sdata_append_key_escaped(result, sdata_param, sdata_param_len);
               g_string_append(result, "=\"");
               log_msg_sdata_append_escaped(result, value, len);
               g_string_append_c(result, '"');
