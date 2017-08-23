@@ -17,7 +17,7 @@ SCL_SUBDIRS	= \
 	logmatic	\
 	snmptrap        \
 	osquery	        \
-        windows
+        windowseventlog
 SCL_CONFIGS	= scl.conf syslog-ng.conf
 
 EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS))
