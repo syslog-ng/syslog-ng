@@ -36,12 +36,6 @@
 #endif
 
 static void
-plugin_candidate_set_preference(PluginCandidate *self, gint preference)
-{
-  self->preference = preference;
-}
-
-static void
 plugin_candidate_set_module_name(PluginCandidate *self, const gchar *module_name)
 {
   g_free(self->module_name);
@@ -50,14 +44,13 @@ plugin_candidate_set_module_name(PluginCandidate *self, const gchar *module_name
 
 
 PluginCandidate *
-plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference)
+plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name)
 {
   PluginCandidate *self = g_new0(PluginCandidate, 1);
 
   self->super.type = plugin_type;
   self->super.name = g_strdup(name);
   self->module_name = g_strdup(module_name);
-  self->preference = preference;
   self->super.failure_info.aux_data = NULL;
 
   return self;
@@ -448,21 +441,21 @@ plugin_load_candidate_modules(PluginContext *context)
                       msg_debug("Registering candidate plugin",
                                 evt_tag_str("module", module_name),
                                 evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin->type)),
-                                evt_tag_str("name", plugin->name),
-                                evt_tag_int("preference", module_info->preference));
+                                evt_tag_str("name", plugin->name));
                       if (candidate_plugin)
                         {
-                          if (candidate_plugin->preference < module_info->preference)
-                            {
-                              plugin_candidate_set_module_name(candidate_plugin, module_name);
-                              plugin_candidate_set_preference(candidate_plugin, module_info->preference);
-                            }
+                          msg_debug("Duplicate plugin candidate, overriding previous registration with the new one",
+                                    evt_tag_str("old-module", candidate_plugin->module_name),
+                                    evt_tag_str("new-module", module_name),
+                                    evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin->type)),
+                                    evt_tag_str("name", plugin->name));
+                          plugin_candidate_set_module_name(candidate_plugin, module_name);
                         }
                       else
                         {
                           context->candidate_plugins = g_list_prepend(context->candidate_plugins,
                                                                       plugin_candidate_new(plugin->type, plugin->name,
-                                                                      module_name, module_info->preference));
+                                                                                           module_name));
                         }
                     }
                 }

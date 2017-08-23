@@ -49,7 +49,6 @@ typedef struct _PluginCandidate
 {
   PluginBase super;
   gchar *module_name;
-  gint preference;
 } PluginCandidate;
 
 /* A plugin actually registered by a module. See PluginCandidate in
@@ -90,7 +89,6 @@ struct _ModuleInfo
   Plugin *plugins;
   gint plugins_len;
   /* the higher the better */
-  gint preference;
 };
 
 typedef struct _PluginContext PluginContext;
@@ -105,7 +103,7 @@ struct _PluginContext
 Plugin *plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name);
 
 /* plugin side API */
-PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference);
+PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name);
 void plugin_candidate_free(PluginCandidate *self);
 
 void plugin_register(PluginContext *context, Plugin *p, gint number);
