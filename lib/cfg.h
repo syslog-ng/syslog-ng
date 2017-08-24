@@ -55,6 +55,7 @@ struct _PluginContext
 {
   GList *plugins;
   GList *candidate_plugins;
+  gchar *module_path;
 };
 
 

@@ -589,9 +589,17 @@ plugin_free_candidate_modules(PluginContext *context)
 }
 
 void
+plugin_context_set_module_path(PluginContext *context, const gchar *module_path)
+{
+  g_free(context->module_path);
+  context->module_path = g_strdup(module_path);
+}
+
+void
 plugin_context_init_instance(PluginContext *context)
 {
   memset(context, 0, sizeof(*context));
+  plugin_context_set_module_path(context, resolvedConfigurablePaths.initial_module_path);
 }
 
 void
@@ -599,4 +607,5 @@ plugin_context_deinit_instance(PluginContext *context)
 {
   plugin_free_plugins(context);
   plugin_free_candidate_modules(context);
+  g_free(context->module_path);
 }
