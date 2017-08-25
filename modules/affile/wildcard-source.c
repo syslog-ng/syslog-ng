@@ -204,7 +204,8 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
   DirectoryMonitorOptions options =
   {
     .dir = directory,
-    .follow_freq = self->file_reader_options.follow_freq
+    .follow_freq = self->file_reader_options.follow_freq,
+    .method = self->monitor_method
   };
   DirectoryMonitor *monitor = create_directory_monitor(&options);
 
