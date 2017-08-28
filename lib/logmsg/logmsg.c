@@ -38,6 +38,7 @@
 #include "lib/host-id.h"
 #include "ack_tracker.h"
 
+#include <glib/gprintf.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
