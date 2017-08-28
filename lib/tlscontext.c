@@ -606,6 +606,9 @@ tls_context_setup_context(TLSContext *self)
 
   if (self->pkcs12_file)
     {
+      if (self->cert_file || self->key_file)
+        msg_warning("WARNING: pkcs12-file() is specified, key-file() and cert-file() will be omitted");
+
       if (!tls_context_load_pkcs12(self))
         goto error;
     }
