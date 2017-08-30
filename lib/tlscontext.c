@@ -28,12 +28,14 @@
 
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
 #include <openssl/dh.h>
 #include <openssl/bn.h>
+#include <openssl/pkcs12.h>
 
 struct _TLSContext
 {
@@ -42,6 +44,7 @@ struct _TLSContext
   gchar *key_file;
   gchar *cert_file;
   gchar *dhparam_file;
+  gchar *pkcs12_file;
   gchar *ca_dir;
   gchar *crl_dir;
   gchar *cipher_suite;
@@ -513,6 +516,86 @@ tls_context_setup_dh(TLSContext *self)
   return ctx_dh_success;
 }
 
+static PKCS12 *
+_load_pkcs12_file(const gchar *pkcs12_file)
+{
+  if (!file_exists(pkcs12_file))
+    return NULL;
+
+  FILE *p12_file = fopen(pkcs12_file, "rb");
+
+  if (!p12_file)
+    return NULL;
+
+  PKCS12 *pkcs12 = d2i_PKCS12_fp(p12_file, NULL);
+  fclose(p12_file);
+
+  return pkcs12;
+}
+
+static gboolean
+_extract_pkcs12_content(PKCS12 *pkcs12, EVP_PKEY **private_key, X509 **cert, STACK_OF(X509) **ca_list)
+{
+  return PKCS12_parse(pkcs12, "", private_key, cert, ca_list);
+}
+
+static gboolean
+tls_context_add_certs(TLSContext *self, STACK_OF(X509) *ca_list)
+{
+  for (gint ca_index = 0; ca_index < sk_X509_num(ca_list); ++ca_index)
+    {
+      X509 *current_ca = sk_X509_value(ca_list, ca_index);
+
+      if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(self->ssl_ctx), current_ca))
+        return FALSE;
+      if (self->mode == TM_SERVER && !SSL_CTX_add_client_CA(self->ssl_ctx, current_ca))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+tls_context_load_pkcs12(TLSContext *self)
+{
+  PKCS12 *pkcs12 = _load_pkcs12_file(self->pkcs12_file);
+
+  if (!pkcs12)
+    return FALSE;
+
+  EVP_PKEY *private_key;
+  X509 *cert;
+  STACK_OF(X509) *ca_list = NULL;
+
+  if (!_extract_pkcs12_content(pkcs12, &private_key, &cert, &ca_list))
+    {
+      PKCS12_free(pkcs12);
+      return FALSE;
+    }
+
+  PKCS12_free(pkcs12);
+
+  if (ca_list && !tls_context_add_certs(self, ca_list))
+    return FALSE;
+
+  return SSL_CTX_use_certificate(self->ssl_ctx, cert)
+         && SSL_CTX_use_PrivateKey(self->ssl_ctx, private_key)
+         && SSL_CTX_check_private_key(self->ssl_ctx);
+}
+
+static gboolean
+tls_context_load_key_and_cert(TLSContext *self)
+{
+  if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
+    return FALSE;
+  if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
+    return FALSE;
+  if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
+    return FALSE;
+
+  return TRUE;
+}
+
 gboolean
 tls_context_setup_context(TLSContext *self)
 {
@@ -520,13 +603,20 @@ tls_context_setup_context(TLSContext *self)
 
   if (!self->ssl_ctx)
     goto error;
-  if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
-    goto error;
 
-  if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
-    goto error;
-  if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
-    goto error;
+  if (self->pkcs12_file)
+    {
+      if (self->cert_file || self->key_file)
+        msg_warning("WARNING: pkcs12-file() is specified, key-file() and cert-file() will be omitted");
+
+      if (!tls_context_load_pkcs12(self))
+        goto error;
+    }
+  else
+    {
+      if (!tls_context_load_key_and_cert(self))
+        goto error;
+    }
 
   if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
     goto error;
@@ -611,6 +701,7 @@ tls_context_free(TLSContext *self)
   g_list_foreach(self->trusted_fingerpint_list, (GFunc) g_free, NULL);
   g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
   g_free(self->key_file);
+  g_free(self->pkcs12_file);
   g_free(self->cert_file);
   g_free(self->dhparam_file);
   g_free(self->ca_dir);
@@ -689,6 +780,13 @@ tls_context_set_cert_file(TLSContext *self, const gchar *cert_file)
 {
   g_free(self->cert_file);
   self->cert_file = g_strdup(cert_file);
+}
+
+void
+tls_context_set_pkcs12_file(TLSContext *self, const gchar *pkcs12_file)
+{
+  g_free(self->pkcs12_file);
+  self->pkcs12_file = g_strdup(pkcs12_file);
 }
 
 void

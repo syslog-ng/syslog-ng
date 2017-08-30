@@ -48,6 +48,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "key_file",           KW_KEY_FILE },
   { "cert_file",          KW_CERT_FILE },
   { "dhparam_file",       KW_DHPARAM_FILE },
+  { "pkcs12_file",        KW_PKCS12_FILE },
   { "ca_dir",             KW_CA_DIR },
   { "crl_dir",            KW_CRL_DIR },
   { "trusted_keys",       KW_TRUSTED_KEYS },
