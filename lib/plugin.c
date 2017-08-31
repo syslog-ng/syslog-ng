@@ -389,6 +389,16 @@ call_init:
   return result;
 }
 
+/************************************************************
+ * Candidate modules
+ ************************************************************/
+
+static void
+_free_candidate_plugin_list(GList *candidate_plugins)
+{
+  g_list_foreach(candidate_plugins, (GFunc) plugin_candidate_free, NULL);
+  g_list_free(candidate_plugins);
+}
 void
 plugin_load_candidate_modules(PluginContext *context)
 {
@@ -486,14 +496,6 @@ plugin_free_plugins(PluginContext *context)
   context->plugins = NULL;
 }
 
-static void
-plugin_free_candidate_modules(PluginContext *context)
-{
-  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
-  g_list_free(context->candidate_plugins);
-  context->candidate_plugins = NULL;
-}
-
 void
 plugin_context_set_module_path(PluginContext *context, const gchar *module_path)
 {
@@ -512,7 +514,9 @@ void
 plugin_context_deinit_instance(PluginContext *context)
 {
   plugin_free_plugins(context);
-  plugin_free_candidate_modules(context);
+  _free_candidate_plugin_list(context->candidate_plugins);
+  context->candidate_plugins = NULL;
+
   g_free(context->module_path);
 }
 
