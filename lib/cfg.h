@@ -67,7 +67,7 @@ struct _GlobalConfig
   gint parsed_version;
   const gchar *filename;
   PluginContext plugin_context;
-  gboolean autoload_compiled_modules;
+  gboolean use_plugin_discovery;
   CfgLexer *lexer;
 
   StatsOptions stats_options;
