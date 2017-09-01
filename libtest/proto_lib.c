@@ -69,7 +69,7 @@ construct_server_proto_plugin(const gchar *name, LogTransport *transport)
   LogProtoServerFactory *proto_factory;
 
   log_proto_server_options_init(&proto_server_options, configuration);
-  proto_factory = log_proto_server_get_factory(configuration, name);
+  proto_factory = log_proto_server_get_factory(&configuration->plugin_context, name);
   assert_true(proto_factory != NULL, "error looking up proto factory");
   return log_proto_server_factory_construct(proto_factory, transport, &proto_server_options);
 }

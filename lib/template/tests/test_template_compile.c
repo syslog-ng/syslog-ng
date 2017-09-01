@@ -148,7 +148,7 @@ get_template_function_ops(const gchar *name)
   assert_not_null(plugin, "Template function %s is not found", name);
 
   if (plugin)
-    return plugin->construct(plugin, configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
+    return plugin->construct(plugin);
   return NULL;
 }
 

@@ -162,12 +162,12 @@ plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
 
 /* construct a plugin without having a configuration file to parse */
 gpointer
-plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+plugin_construct(Plugin *self)
 {
   g_assert(self->parser == NULL);
   if (self->construct)
     {
-      return self->construct(self, cfg, plugin_type, plugin_name);
+      return self->construct(self);
     }
   return NULL;
 }

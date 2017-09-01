@@ -26,8 +26,8 @@
 #include "plugin.h"
 #include "plugin-types.h"
 
-static MsgFormatHandler *
-pacct_format_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+static gpointer
+pacct_format_construct(Plugin *self)
 {
   return &pacct_handler;
 }
@@ -36,7 +36,7 @@ static Plugin pacct_format_plugin =
 {
   .type = LL_CONTEXT_FORMAT,
   .name = "pacct",
-  .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) pacct_format_construct,
+  .construct = pacct_format_construct,
 };
 
 gboolean

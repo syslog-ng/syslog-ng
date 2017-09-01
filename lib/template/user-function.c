@@ -90,7 +90,7 @@ typedef struct _UserTemplateFunctionPlugin
 } UserTemplateFunctionPlugin;
 
 static gpointer
-user_template_function_construct(Plugin *s, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+user_template_function_construct(Plugin *s)
 {
   UserTemplateFunctionPlugin *self = (UserTemplateFunctionPlugin *) s;
 

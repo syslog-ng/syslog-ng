@@ -138,9 +138,7 @@ void log_proto_client_free_method(LogProtoClient *s);
 
 #define DEFINE_LOG_PROTO_CLIENT(prefix) \
   static gpointer                                                       \
-  prefix ## _client_plugin_construct(Plugin *self,                      \
-                  GlobalConfig *cfg,                                    \
-                  gint plugin_type, const gchar *plugin_name)           \
+  prefix ## _client_plugin_construct(Plugin *self) 		        \
   {                                                                     \
     static LogProtoClientFactory proto = {                              \
       .construct = prefix ## _client_new,                               \
@@ -168,6 +166,6 @@ log_proto_client_factory_construct(LogProtoClientFactory *self, LogTransport *tr
   return self->construct(transport, options);
 }
 
-LogProtoClientFactory *log_proto_client_get_factory(GlobalConfig *cfg, const gchar *name);
+LogProtoClientFactory *log_proto_client_get_factory(PluginContext *context, const gchar *name);
 
 #endif

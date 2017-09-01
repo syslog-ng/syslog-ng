@@ -337,7 +337,7 @@ afsocket_dd_setup_proto_factory(AFSocketDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  self->proto_factory = log_proto_client_get_factory(cfg, self->transport_mapper->logproto);
+  self->proto_factory = log_proto_client_get_factory(&cfg->plugin_context, self->transport_mapper->logproto);
   if (!self->proto_factory)
     {
       msg_error("Unknown value specified in the transport() option, no such LogProto plugin found",

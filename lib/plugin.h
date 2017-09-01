@@ -68,7 +68,7 @@ struct _Plugin
   const gchar *name;
   PluginFailureInfo failure_info;
   CfgParser *parser;
-  gpointer (*construct)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+  gpointer (*construct)(Plugin *self);
   void (*free_fn)(Plugin *s);
 };
 
@@ -90,9 +90,8 @@ struct _ModuleInfo
 
 /* instantiate a new plugin */
 Plugin *plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name);
-gpointer plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+gpointer plugin_construct(Plugin *self);
 gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer arg);
-
 
 /* plugin side API */
 PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference);
