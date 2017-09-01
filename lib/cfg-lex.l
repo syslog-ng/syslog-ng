@@ -25,6 +25,7 @@
 
 #include "syslog-ng.h"
 #include "cfg-lexer.h"
+#include "cfg-lexer-subst.h"
 #include "cfg-grammar.h"
 #include "messages.h"
 #include "parse-number.h"
@@ -40,7 +41,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
   GError *error = NULL;
   YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
 
-  res = cfg_lexer_subst_args(self->globals, NULL, NULL, buf, -1, &len, &error);
+  res = cfg_lexer_subst_args_in_input(self->globals, NULL, NULL, buf, -1, &len, &error);
   if (!res)
     {
       msg_error("Error performing backtick substitution in configuration file",

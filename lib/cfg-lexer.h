@@ -139,10 +139,6 @@ struct _CfgLexer
   gboolean non_pragma_seen:1, ignore_pragma:1;
 };
 
-/* preprocessor help */
-gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length, gsize *output_length, GError **error);
-
 /* pattern buffer */
 void cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval);
 
@@ -150,7 +146,6 @@ void cfg_lexer_start_block_state(CfgLexer *self, gchar block_boundary[2]);
 
 void cfg_lexer_append_string(CfgLexer *self, int length, char *str);
 void cfg_lexer_append_char(CfgLexer *self, char c);
-
 
 /* keyword handling */
 void cfg_lexer_set_current_keywords(CfgLexer *self, CfgLexerKeyword *keywords);

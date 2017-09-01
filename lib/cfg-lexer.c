@@ -133,18 +133,6 @@ cfg_lexer_get_context_description(CfgLexer *self)
   return "configuration";
 }
 
-gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length,
-                     gsize *output_length, GError **error)
-{
-  CfgLexerSubst *subst = cfg_lexer_subst_new(cfg_args_ref(globals), cfg_args_ref(defs), cfg_args_ref(args));
-  gchar *result;
-
-  result = cfg_lexer_subst_invoke(subst, input, input_length, output_length, error);
-  cfg_lexer_subst_free(subst);
-  return result;
-}
-
 /* this can only be called from the grammar */
 static CfgIncludeLevel *
 _find_closest_file_inclusion(CfgLexer *self, YYLTYPE *yylloc)
@@ -644,7 +632,7 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer,
   GError *error = NULL;
   gboolean result = FALSE;
 
-  substituted_buffer = cfg_lexer_subst_args(self->globals, NULL, NULL, buffer, length, &substituted_length, &error);
+  substituted_buffer = cfg_lexer_subst_args_in_input(self->globals, NULL, NULL, buffer, length, &substituted_length, &error);
   if (!substituted_buffer)
     {
       msg_error("Error resolving backtick references in block or buffer",

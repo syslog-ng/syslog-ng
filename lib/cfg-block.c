@@ -23,6 +23,7 @@
  */
 #include "cfg-block.h"
 #include "cfg-lexer.h"
+#include "cfg-lexer-subst.h"
 
 /*
  * This class encapsulates a configuration block that the user defined
@@ -87,7 +88,7 @@ cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgLexer *lexer, Cfg
   g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(self->super.context), self->super.name);
   _fill_varargs(self, args);
 
-  value = cfg_lexer_subst_args(lexer->globals, self->arg_defs, args, self->content, -1, &length, &error);
+  value = cfg_lexer_subst_args_in_input(lexer->globals, self->arg_defs, args, self->content, -1, &length, &error);
 
   if (!value)
     {
