@@ -26,3 +26,5 @@ modules_xml_libxml_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/xml modules/xml/ mod-xml mod-file: modules/xml/libxml.la
 .PHONY: modules/xml/ mod-xml mod-file
+
+include modules/xml/tests/Makefile.am
