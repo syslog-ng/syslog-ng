@@ -94,7 +94,7 @@ parse_plugin_config(const gchar *config_to_parse, gint context, gpointer arg)
   cfg_set_global_paths(configuration);
 
   cfg_lexer_push_context(lexer, main_parser.context, main_parser.keywords, main_parser.name);
-  result = plugin_parse_config(plugin, configuration, yylloc, arg);
+  result = cfg_parse_plugin(configuration, plugin, yylloc, arg);
   cfg_lexer_pop_context(lexer);
 
   if (!result)

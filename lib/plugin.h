@@ -91,7 +91,7 @@ struct _ModuleInfo
 /* instantiate a new plugin */
 Plugin *plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name);
 gpointer plugin_construct(Plugin *self);
-gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer arg);
+gpointer plugin_construct_from_config(Plugin *self, CfgLexer *lexer, gpointer arg);
 
 /* plugin side API */
 PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference);

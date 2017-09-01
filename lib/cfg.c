@@ -23,6 +23,7 @@
  */
 
 #include "cfg.h"
+#include "cfg-grammar.h"
 #include "module-config.h"
 #include "cfg-tree.h"
 #include "messages.h"
@@ -168,6 +169,43 @@ Plugin *
 cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
 {
   return plugin_find(&cfg->plugin_context, plugin_type, plugin_name);
+}
+
+/* construct a plugin instance by parsing its relevant portion from the
+ * configuration file */
+gpointer
+cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc, gpointer arg)
+{
+  CfgTokenBlock *block;
+  YYSTYPE token;
+
+
+  /* we add two tokens to an inserted token-block:
+   *  1) the plugin type (in order to make it possible to support different
+   *  plugins from the same grammar)
+   *
+   *  2) the keyword equivalent of the plugin name
+   */
+  block = cfg_token_block_new();
+
+  /* add plugin->type as a token */
+  memset(&token, 0, sizeof(token));
+  token.type = LL_TOKEN;
+  token.token = plugin->type;
+  cfg_token_block_add_and_consume_token(block, &token);
+
+  /* start a new lexer context, so plugin specific keywords are recognized,
+   * we only do this to lookup the parser name. */
+  cfg_lexer_push_context(cfg->lexer, plugin->parser->context, plugin->parser->keywords, plugin->parser->name);
+  cfg_lexer_lookup_keyword(cfg->lexer, &token, yylloc, plugin->name);
+  cfg_lexer_pop_context(cfg->lexer);
+
+  /* add plugin name token */
+  cfg_token_block_add_and_consume_token(block, &token);
+
+  cfg_lexer_inject_token_block(cfg->lexer, block);
+
+  return plugin_construct_from_config(plugin, cfg->lexer, arg);
 }
 
 static gboolean

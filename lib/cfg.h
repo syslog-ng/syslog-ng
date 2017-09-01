@@ -132,6 +132,8 @@ gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);
 /* FIXME: once we are done with the transition to "cfg.h depends on
  * plugin.h" we can use a normal typedef here */
 struct _Plugin *cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+gpointer cfg_parse_plugin(GlobalConfig *cfg, struct _Plugin *plugin, YYLTYPE *yylloc, gpointer arg);
+
 gboolean cfg_allow_config_dups(GlobalConfig *self);
 
 void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);
