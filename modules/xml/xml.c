@@ -25,12 +25,6 @@
 
 typedef struct
 {
-  LogParser super;
-  gchar *prefix;
-} XMLParser;
-
-typedef struct
-{
   LogMessage *msg;
   GString *key;
 } InserterState;
@@ -158,7 +152,14 @@ err:
   msg_error("xml: error", evt_tag_str("str", error->message));
   g_error_free(error);
   g_markup_parse_context_free(xml_ctx);
-  return FALSE;
+  return self->forward_invalid;
+}
+
+void
+xml_parser_set_forward_invalid(LogParser *s, gboolean setting)
+{
+  XMLParser *self = (XMLParser *) s;
+  self->forward_invalid = setting;
 }
 
 void
@@ -180,6 +181,7 @@ xml_parser_clone(LogPipe *s)
 
   xml_parser_set_prefix(&cloned->super, self->prefix);
   log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
+  xml_parser_set_forward_invalid(&cloned->super, self->forward_invalid);
 
   return &cloned->super.super;
 }
@@ -214,6 +216,7 @@ xml_parser_new(GlobalConfig *cfg)
   self->super.super.free_fn = xml_parser_free;
   self->super.super.clone = xml_parser_clone;
   self->super.process = xml_parser_process;
+  self->forward_invalid = TRUE;
 
   xml_parser_set_prefix(&self->super, ".xml");
 

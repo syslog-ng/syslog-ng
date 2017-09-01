@@ -25,7 +25,15 @@
 
 #include "parser/parser-expr.h"
 
+typedef struct
+{
+  LogParser super;
+  gchar *prefix;
+  gboolean forward_invalid;
+} XMLParser;
+
 LogParser * xml_parser_new(GlobalConfig *cfg);
 void xml_parser_set_prefix(LogParser *s, const gchar *prefix);
+void xml_parser_set_forward_invalid(LogParser *s, gboolean setting);
 
 #endif

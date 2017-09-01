@@ -80,8 +80,8 @@ xml_options
         ;
 
 xml_opt
-        : KW_PREFIX '(' string ')'
-          { xml_parser_set_prefix(last_parser, $3); free($3); }
+        : KW_PREFIX '(' string ')'      { xml_parser_set_prefix(last_parser, $3); free($3); }
+        | KW_DROP_INVALID '(' yesno ')' { xml_parser_set_forward_invalid(last_parser, !$3); };
         | parser_opt
         ;
 

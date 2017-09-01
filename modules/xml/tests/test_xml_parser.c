@@ -47,6 +47,49 @@ TestSuite(xmlparser, .init = setup, .fini = teardown);
 typedef struct
 {
   const gchar *input;
+} XMLFailTestCase;
+
+ParameterizedTestParameters(xmlparser, invalid_inputs)
+{
+  static XMLFailTestCase test_cases[] =
+  {
+    {"simple string"},
+    {"<tag></missingtag>"},
+    {"<tag></tag></extraclosetag>"},
+    {"<tag><tag></tag>"},
+    {"<tag1><tag2>closewrongorder</tag1></tag2>"},
+    {"<tag id=\"missingquote></tag>"},
+    {"<tag id='missingquote></tag>"},
+    {"<tag id=missingquote\"></tag>"},
+    {"<tag id=missingquote'></tag>"},
+    {"<space in tag/>"},
+    {"</>"},
+    {"<tag></tag>>"},
+  };
+
+  return cr_make_param_array(XMLFailTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(XMLFailTestCase *test_case, xmlparser, invalid_inputs)
+{
+  LogParser *xml_parser = xml_parser_new(configuration);
+  xml_parser_set_forward_invalid(xml_parser, FALSE);
+  log_pipe_init((LogPipe *)xml_parser);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE, test_case->input, -1);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  cr_assert_not(log_parser_process_message(xml_parser, &msg, &path_options));
+
+  log_pipe_deinit((LogPipe *)xml_parser);
+  log_pipe_unref((LogPipe *)xml_parser);
+  log_msg_unref(msg);
+}
+
+typedef struct
+{
+  const gchar *input;
   const gchar *key;
   const gchar *value;
 } XMLTestCase;
@@ -86,4 +129,28 @@ ParameterizedTest(XMLTestCase *test_cases, xmlparser, valid_inputs)
   log_pipe_deinit((LogPipe *)xml_parser);
   log_pipe_unref((LogPipe *)xml_parser);
   log_msg_unref(msg);
+}
+
+Test(xml_parser, test_drop_invalid)
+{
+  setup();
+
+  LogParser *xml_parser = xml_parser_new(configuration);
+  log_pipe_init((LogPipe *)xml_parser);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE, "<tag>", -1);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  xml_parser_set_forward_invalid(xml_parser, FALSE);
+  cr_assert_not(log_parser_process_message(xml_parser, &msg, &path_options));
+
+  xml_parser_set_forward_invalid(xml_parser, TRUE);
+  cr_assert(log_parser_process_message(xml_parser, &msg, &path_options));
+
+  log_pipe_deinit((LogPipe *)xml_parser);
+  log_pipe_unref((LogPipe *)xml_parser);
+  log_msg_unref(msg);
+
+  teardown();
 }
