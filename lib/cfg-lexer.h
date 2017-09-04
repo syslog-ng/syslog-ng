@@ -202,7 +202,6 @@ gint cfg_lexer_get_context_type(CfgLexer *self);
 
 /* token blocks */
 void cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block);
-gboolean cfg_lexer_register_block_generator(CfgLexer *self, CfgBlockGenerator *gen);
 
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 void cfg_lexer_free_token(YYSTYPE *token);
@@ -222,6 +221,8 @@ YYSTYPE *cfg_token_block_get_token(CfgTokenBlock *self);
 
 CfgTokenBlock *cfg_token_block_new(void);
 void cfg_token_block_free(CfgTokenBlock *self);
+
+void cfg_lexer_register_generator_plugin(PluginContext *context, CfgBlockGenerator *gen);
 
 
 #define CFG_LEXER_ERROR cfg_lexer_error_quark()

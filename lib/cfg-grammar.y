@@ -856,7 +856,7 @@ block_stmt
             cfg_lexer_pop_context(lexer);
 
             block = cfg_block_new(cfg_lexer_lookup_context_type_by_name($3), $4, $10, last_block_args);
-            cfg_lexer_register_block_generator(lexer, block);
+            cfg_lexer_register_generator_plugin(&configuration->plugin_context, block);
             free($3);
             free($4);
             free($10);

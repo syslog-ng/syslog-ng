@@ -392,15 +392,29 @@ system_source_generator_new(gint context, const gchar *name)
   return self;
 }
 
-gboolean
-system_source_module_init(GlobalConfig *cfg, CfgArgs *args)
+gpointer
+system_source_construct(Plugin *p)
 {
-  cfg_lexer_register_block_generator(cfg->lexer,
-                                     system_source_generator_new(cfg_lexer_lookup_context_type_by_name("source"),
-                                                                 "system"));
+  return system_source_generator_new(LL_CONTEXT_SOURCE, "system");
+}
+
+Plugin system_plugins[] =
+{
+  {
+    .type = LL_CONTEXT_SOURCE | LL_CONTEXT_FLAG_GENERATOR,
+    .name = "system",
+    .construct = system_source_construct
+  }
+};
+
+gboolean
+system_source_module_init(PluginContext *context, CfgArgs *args)
+{
+  plugin_register(context, system_plugins, 1);
 
   return TRUE;
 }
+
 
 const ModuleInfo module_info =
 {
@@ -408,6 +422,6 @@ const ModuleInfo module_info =
   .version = SYSLOG_NG_VERSION,
   .description = "The system-source module provides support for determining the system log sources at run time.",
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = NULL,
-  .plugins_len = 0,
+  .plugins = system_plugins,
+  .plugins_len = G_N_ELEMENTS(system_plugins),
 };

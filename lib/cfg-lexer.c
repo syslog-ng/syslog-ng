@@ -30,8 +30,8 @@
 #include "pragma-parser.h"
 #include "messages.h"
 #include "pathutils.h"
-#include "syslog-ng-config.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 #include <string.h>
 #include <glob.h>
@@ -664,38 +664,63 @@ cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block)
   self->token_blocks = g_list_append(self->token_blocks, block);
 }
 
-static CfgBlockGenerator *
-cfg_lexer_find_generator(CfgLexer *self, gint context, const gchar *name)
+
+typedef struct _GeneratorPlugin
 {
-  GList *l;
+  Plugin super;
+  CfgBlockGenerator *gen;
+} GeneratorPlugin;
 
-  for (l = self->generators; l; l = l->next)
-    {
-      CfgBlockGenerator *gen = (CfgBlockGenerator *) l->data;
+static gpointer
+_generator_plugin_construct(Plugin *s)
+{
+  GeneratorPlugin *self = (GeneratorPlugin *) s;
 
-      if ((gen->context == 0 || gen->context == context) && strcmp(gen->name, name) == 0)
-        {
-          return gen;
-        }
-    }
-  return NULL;
+  return self->gen;
 }
 
-gboolean
-cfg_lexer_register_block_generator(CfgLexer *self, CfgBlockGenerator *gen)
+static void
+_generator_plugin_free(Plugin *s)
 {
-  gboolean res = TRUE;
-  CfgBlockGenerator *old_gen;
+  GeneratorPlugin *self = (GeneratorPlugin *) s;
 
-  old_gen = cfg_lexer_find_generator(self, gen->context, gen->name);
-  if (old_gen)
-    {
-      self->generators = g_list_remove(self->generators, old_gen);
-      cfg_block_generator_free(old_gen);
-      res = FALSE;
-    }
-  self->generators = g_list_append(self->generators, gen);
-  return res;
+  cfg_block_generator_free(self->gen);
+  g_free((gchar *) self->super.name);
+  g_free(s);
+}
+
+void
+cfg_lexer_register_generator_plugin(PluginContext *context, CfgBlockGenerator *gen)
+{
+  GeneratorPlugin *plugin = g_new0(GeneratorPlugin, 1);
+
+  plugin->super.type = gen->context | LL_CONTEXT_FLAG_GENERATOR;
+  plugin->super.name = g_strdup(gen->name);
+  plugin->super.free_fn = _generator_plugin_free;
+  plugin->super.construct = _generator_plugin_construct;
+  plugin->gen = gen;
+
+  plugin_register(context, &plugin->super, 1);
+}
+
+static gboolean
+_is_generator_plugin(Plugin *p)
+{
+  return p->type & LL_CONTEXT_FLAG_GENERATOR;
+}
+
+static CfgBlockGenerator *
+cfg_lexer_find_generator(CfgLexer *self, GlobalConfig *cfg, gint context, const gchar *name)
+{
+  Plugin *p;
+  CfgBlockGenerator *gen;
+
+  p = plugin_find(&cfg->plugin_context, context | LL_CONTEXT_FLAG_GENERATOR, name);
+  if (!p || !_is_generator_plugin(p))
+    return NULL;
+
+  gen = plugin_construct(p);
+  return gen;
 }
 
 static YYSTYPE
@@ -876,7 +901,7 @@ relex:
       g_free(include_file);
       goto relex;
     }
-  else if (tok == LL_IDENTIFIER && (gen = cfg_lexer_find_generator(self, cfg_lexer_get_context_type(self), yylval->cptr)))
+  else if (tok == LL_IDENTIFIER && (gen = cfg_lexer_find_generator(self, configuration, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
       CfgArgs *args;
 
@@ -887,6 +912,7 @@ relex:
 
           self->preprocess_suppress_tokens--;
           success = cfg_block_generator_generate(gen, configuration, self, args);
+
           free(yylval->cptr);
           cfg_args_unref(args);
           if (success)
@@ -1086,6 +1112,7 @@ cfg_lexer_lookup_context_type_by_name(const gchar *name)
 const gchar *
 cfg_lexer_lookup_context_name_by_type(gint type)
 {
+  type &= ~LL_CONTEXT_FLAGS;
   g_assert(type < G_N_ELEMENTS(lexer_contexts));
   return lexer_contexts[type];
 }
