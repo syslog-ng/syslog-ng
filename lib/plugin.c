@@ -165,12 +165,15 @@ plugin_register(PluginContext *context, Plugin *p, gint number)
 
   for (i = 0; i < number; i++)
     {
-      if (plugin_find_in_list(context->plugins, p[i].type, p[i].name))
+      Plugin *existing_plugin;
+
+      existing_plugin = plugin_find_in_list(context->plugins, p[i].type, p[i].name);
+      if (existing_plugin)
         {
-          msg_debug("Attempted to register the same plugin multiple times, ignoring",
+          msg_debug("Attempted to register the same plugin multiple times, dropping the old one",
                     evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
                     evt_tag_str("name", p[i].name));
-          continue;
+          context->plugins = g_list_remove(context->plugins, existing_plugin);
         }
       context->plugins = g_list_prepend(context->plugins, &p[i]);
     }
