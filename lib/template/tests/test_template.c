@@ -116,7 +116,7 @@ test_macros(void)
   assert_template_format("$LEVEL", "err");
   assert_template_format("$LEVEL_NUM", "3");
   assert_template_format("$TAG", "9b");
-  assert_template_format("$TAGS", "alma,korte,citrom");
+  assert_template_format("$TAGS", "alma,korte,citrom,\"tag,containing,comma\"");
   assert_template_format("$PRI", "155");
   assert_template_format("$DATE", "Feb 11 10:34:56.000");
   assert_template_format("$FULLDATE", "2006 Feb 11 10:34:56.000");

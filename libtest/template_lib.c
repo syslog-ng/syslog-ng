@@ -82,6 +82,7 @@ create_empty_message(void)
   log_msg_set_tag_by_name(msg, "korte");
   log_msg_clear_tag_by_name(msg, "narancs");
   log_msg_set_tag_by_name(msg, "citrom");
+  log_msg_set_tag_by_name(msg, "tag,containing,comma");
   msg->rcptid = 555;
   msg->host_id = 0xcafebabe;
 
