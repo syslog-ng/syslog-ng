@@ -39,6 +39,7 @@ include modules/getent/Makefile.am
 include modules/map-value-pairs/Makefile.am
 include modules/stardate/Makefile.am
 include modules/snmptrapd-parser/Makefile.am
+include modules/tagsparser/Makefile.am
 
 SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 
@@ -51,7 +52,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-redis mod-pseudofile mod-graphite mod-riemann \
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
 	mod-native mod-cef mod-add-contextual-data mod-diskq mod-getent \
-	mod-map-value-pairs mod-snmptrapd-parser
+	mod-map-value-pairs mod-snmptrapd-parser mod-tags-parser
 
 
 modules modules/: ${SYSLOG_NG_MODULES}
@@ -67,6 +68,6 @@ modules_test_subdirs	=	\
 	modules_graphite modules_riemann modules_python \
 	modules_systemd_journal modules_kvformat modules_date \
 	modules_cef modules_diskq modules-add-contextual-data modules_getent \
-	modules_map-value-pairs
+	modules_map-value-pairs modules_tagsparser
 
 .PHONY: modules modules/
