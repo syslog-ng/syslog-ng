@@ -27,6 +27,8 @@ typedef struct
 {
   LogMessage *msg;
   GString *key;
+  gboolean pop_next_time;
+  XMLParser *parser;
 } InserterState;
 
 static void
@@ -60,9 +62,28 @@ msg_add_attributes(LogMessage *msg, GString *key, const gchar **names, const gch
       log_msg_set_value_by_name(msg, attr_key->str, values[attrs], -1);
       attrs++;
     }
-
-
 }
+
+static gboolean
+tag_matches_patterns(const gchar *element_name, const GPtrArray *patterns)
+{
+  gboolean retval = FALSE;
+  guint tag_length = strlen(element_name);
+  gchar *reversed = g_utf8_strreverse (element_name, tag_length);
+
+  for (int i = 0; i < patterns->len; i++)
+    if (g_pattern_match((GPatternSpec *)g_ptr_array_index(patterns, i),
+                        tag_length, element_name, reversed))
+      {
+        retval = TRUE;
+        break;
+      }
+
+  g_free(reversed);
+  return retval;
+}
+
+static GMarkupParser skip = {};
 
 static void
 start_element_cb(GMarkupParseContext  *context,
@@ -73,6 +94,14 @@ start_element_cb(GMarkupParseContext  *context,
                  GError              **error)
 {
   InserterState *state = (InserterState *)user_data;
+
+  if (tag_matches_patterns(element_name, state->parser->exclude_patterns))
+    {
+      msg_debug("xml: subtree skipped", evt_tag_str("tag", element_name));
+      state->pop_next_time = 1;
+      g_markup_parse_context_push(context, &skip, NULL);
+      return;
+    }
 
   g_string_append_c(state->key, '.');
   g_string_append(state->key, element_name);
@@ -94,6 +123,13 @@ end_element_cb(GMarkupParseContext *context,
                GError              **error)
 {
   InserterState *state = (InserterState *)user_data;
+
+  if (state->pop_next_time)
+    {
+      g_markup_parse_context_pop(context);
+      state->pop_next_time = 0;
+      return;
+    }
   g_string_truncate(state->key, before_last_dot(state->key));
 }
 
@@ -115,6 +151,7 @@ text_cb(GMarkupParseContext *context,
   log_msg_set_value_by_name(state->msg, state->key->str, value->str, value->len);
 }
 
+
 static GMarkupParser xml_scanner =
 {
   .start_element = start_element_cb,
@@ -133,7 +170,7 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
   GString *key = scratch_buffers_alloc();
   key = g_string_append(key, self->prefix);
 
-  InserterState state = { .msg = msg, .key = key };
+  InserterState state = { .msg = msg, .key = key, .parser = self };
   GMarkupParseContext *xml_ctx = g_markup_parse_context_new(&xml_scanner, 0, &state, NULL);
 
   GError *error = NULL;
@@ -155,6 +192,19 @@ err:
   return self->forward_invalid;
 }
 
+static void
+_compile_and_add(gpointer tag_glob, gpointer exclude_patterns)
+{
+  g_ptr_array_add(exclude_patterns, g_pattern_spec_new(tag_glob));
+}
+
+void
+xml_parser_set_exclude_tags(LogParser *s, GList *exclude_tags)
+{
+  XMLParser *self = (XMLParser *) s;
+  g_list_foreach(exclude_tags, _compile_and_add, self->exclude_patterns);
+}
+
 void
 xml_parser_set_forward_invalid(LogParser *s, gboolean setting)
 {
@@ -171,6 +221,15 @@ xml_parser_set_prefix(LogParser *s, const gchar *prefix)
   self->prefix = g_strdup(prefix);
 }
 
+static GPtrArray *
+_clone_exclude_patterns(XMLParser *self)
+{
+  GPtrArray *array = g_ptr_array_new_full(self->exclude_patterns->len, (GDestroyNotify)g_pattern_spec_free);
+  for (int i = 0; i < self->exclude_patterns->len; i++)
+    g_ptr_array_add(array, g_ptr_array_index(self->exclude_patterns, i));
+  return array;
+}
+
 static LogPipe *
 xml_parser_clone(LogPipe *s)
 {
@@ -182,6 +241,7 @@ xml_parser_clone(LogPipe *s)
   xml_parser_set_prefix(&cloned->super, self->prefix);
   log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
   xml_parser_set_forward_invalid(&cloned->super, self->forward_invalid);
+  cloned->exclude_patterns = _clone_exclude_patterns(self);
 
   return &cloned->super.super;
 }
@@ -192,6 +252,8 @@ xml_parser_free(LogPipe *s)
   XMLParser *self = (XMLParser *) s;
   g_free(self->prefix);
   self->prefix = NULL;
+  g_ptr_array_free(self->exclude_patterns, TRUE);
+  self->exclude_patterns = NULL;
 
   log_parser_free_method(s);
 }
@@ -219,6 +281,6 @@ xml_parser_new(GlobalConfig *cfg)
   self->forward_invalid = TRUE;
 
   xml_parser_set_prefix(&self->super, ".xml");
-
+  self->exclude_patterns = g_ptr_array_new_with_free_func((GDestroyNotify)g_pattern_spec_free);
   return &self->super;
 }

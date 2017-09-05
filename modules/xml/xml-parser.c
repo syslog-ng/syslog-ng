@@ -33,6 +33,7 @@ static CfgLexerKeyword xml_keywords[] =
   { "xml",          KW_XML },
   { "prefix",       KW_PREFIX },
   { "drop_invalid", KW_DROP_INVALID },
+  { "exclude_tags", KW_EXCLUDE_TAGS },
   { NULL }
 };
 

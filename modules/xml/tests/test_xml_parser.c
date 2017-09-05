@@ -92,11 +92,11 @@ typedef struct
   const gchar *input;
   const gchar *key;
   const gchar *value;
-} XMLTestCase;
+} ValidXMLTestCase;
 
 ParameterizedTestParameters(xmlparser, valid_inputs)
 {
-  static XMLTestCase test_cases[] =
+  static ValidXMLTestCase test_cases[] =
   {
     {"<tag1>value1</tag1>", ".xml.tag1", "value1"},
     {"<tag1 attr='attr_value'>value1</tag1>", ".xml.tag1._attr", "attr_value"},
@@ -107,11 +107,11 @@ ParameterizedTestParameters(xmlparser, valid_inputs)
     {"<tag1><tag11></tag11><tag12><tag121 attr1='1' attr2='2'>value</tag121></tag12></tag1>", ".xml.tag1.tag12.tag121._attr2", "2"},
   };
 
-  return cr_make_param_array(XMLTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+  return cr_make_param_array(ValidXMLTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
 }
 
 
-ParameterizedTest(XMLTestCase *test_cases, xmlparser, valid_inputs)
+ParameterizedTest(ValidXMLTestCase *test_cases, xmlparser, valid_inputs)
 {
   LogParser *xml_parser = xml_parser_new(configuration);
   log_pipe_init((LogPipe *)xml_parser);
@@ -124,7 +124,8 @@ ParameterizedTest(XMLTestCase *test_cases, xmlparser, valid_inputs)
 
   const gchar *value = log_msg_get_value_by_name(msg, test_cases->key, NULL);
 
-  cr_assert_str_eq(value, test_cases->value, "key: %s | value: %s != %s (expected)", test_cases->key, value, test_cases->value);
+  cr_assert_str_eq(value, test_cases->value, "key: %s | value: %s != %s (expected)", test_cases->key, value,
+                   test_cases->value);
 
   log_pipe_deinit((LogPipe *)xml_parser);
   log_pipe_unref((LogPipe *)xml_parser);
@@ -151,6 +152,128 @@ Test(xml_parser, test_drop_invalid)
   log_pipe_deinit((LogPipe *)xml_parser);
   log_pipe_unref((LogPipe *)xml_parser);
   log_msg_unref(msg);
+
+  teardown();
+}
+
+typedef struct
+{
+  const gchar *input;
+  gchar *pattern;
+  const gchar *key;
+  const gchar *value;
+} SingleExcludeTagTestCase;
+
+ParameterizedTestParameters(xmlparser, single_exclude_tags)
+{
+  static SingleExcludeTagTestCase test_cases[] =
+  {
+    /* Negative */
+    {"<longtag>Text</longtag>", "longtag", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "longt?g", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "?ongtag", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "longta?", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "lon?ta?", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "longt*", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "*tag", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "lo*gtag", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "long*ag", ".xml.longtag", ""},
+    {"<longtag>Text</longtag>", "*", ".xml.longtag", ""},
+    /* Positive */
+    {"<longtag>Text</longtag>", "longtag_break", ".xml.longtag", "Text"},
+    {"<longtag>Text</longtag>", "longt?g_break", ".xml.longtag", "Text"},
+    {"<longtag>Text</longtag>", "?ongtag_break", ".xml.longtag", "Text"},
+    {"<longtag>Text</longtag>", "longta?_break", ".xml.longtag", "Text"},
+    {"<longtag>Text</longtag>", "lon?ta?_break", ".xml.longtag", "Text"},
+    {"<longtag>Text</longtag>", "break_longt*", ".xml.longtag", "Text"},
+    {"<longtag>Text</longtag>", "lo*gtag_break", ".xml.longtag", "Text"},
+    {"<longtag>Text</longtag>", "break_long*ag", ".xml.longtag", "Text"},
+    {"<longtag>Text</longtag>", "*tag_break", ".xml.longtag", "Text"},
+    /* Complex */
+    {"<longtag>Outer<inner>Inner</inner></longtag>", "inner", ".xml.longtag", "Outer"},
+    {"<longtag>Outer<inner>Inner</inner></longtag>", "inner", ".xml.longtag.inner", ""},
+    {
+      "<exclude>excude1Text</exclude><notexclude>notexcludeText<exclude>excude2Text</exclude></notexclude>",
+      "exclude", ".xml.exclude", ""
+    },
+    {
+      "<exclude>excude1Text</exclude><notexclude>notexcludeText<exclude>excude2Text</exclude></notexclude>",
+      "exclude", ".xml.exclude", ""
+    },
+    {
+      "<exclude>excude1Text</exclude><notexclude>notexcludeText<exclude>excude2Text</exclude></notexclude>",
+      "exclude", ".xml.notexclude.exclude", ""
+    },
+    {
+      "<exclude>excude1Text</exclude><notexclude>notexcludeText<exclude>excude2Text</exclude></notexclude>",
+      "exclude", ".xml.notexclude", "notexcludeText"
+    },
+  };
+
+  return cr_make_param_array(SingleExcludeTagTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(SingleExcludeTagTestCase *test_cases, xmlparser, single_exclude_tags)
+{
+  GList *exclude_tags = NULL;
+  exclude_tags = g_list_append(exclude_tags, test_cases->pattern);
+
+  LogParser *xml_parser = xml_parser_new(configuration);
+  xml_parser_set_exclude_tags(xml_parser, exclude_tags);
+  log_pipe_init((LogPipe *)xml_parser);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE, test_cases->input, -1);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_parser_process_message(xml_parser, &msg, &path_options);
+
+  const gchar *value = log_msg_get_value_by_name(msg, test_cases->key, NULL);
+  cr_assert_str_eq(value, test_cases->value, "key: %s | value: %s, should be %s", test_cases->key, value,
+                   test_cases->value);
+
+  log_pipe_deinit((LogPipe *)xml_parser);
+  log_pipe_unref((LogPipe *)xml_parser);
+  log_msg_unref(msg);
+
+  g_list_free(exclude_tags);
+}
+
+Test(xml_parser, test_multiple_exclude_tags)
+{
+  setup();
+
+  GList *exclude_tags = NULL;
+  exclude_tags = g_list_append(exclude_tags, "tag1");
+  exclude_tags = g_list_append(exclude_tags, "tag2");
+  exclude_tags = g_list_append(exclude_tags, "inner*");
+
+  LogParser *xml_parser = xml_parser_new(configuration);
+  xml_parser_set_exclude_tags(xml_parser, exclude_tags);
+  log_pipe_init((LogPipe *)xml_parser);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE,
+                    "<tag1>Text1</tag1><tag2>Text2</tag2><tag3>Text3<innertag>TextInner</innertag></tag3>", -1);
+
+  const gchar *value;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_parser_process_message(xml_parser, &msg, &path_options);
+
+  value = log_msg_get_value_by_name(msg, ".xml.tag1", NULL);
+  cr_assert_str_eq(value, "");
+  value = log_msg_get_value_by_name(msg, ".xml.tag2", NULL);
+  cr_assert_str_eq(value, "");
+  value = log_msg_get_value_by_name(msg, ".xml.tag3", NULL);
+  cr_assert_str_eq(value, "Text3");
+  value = log_msg_get_value_by_name(msg, ".xml.tag3.innertag", NULL);
+  cr_assert_str_eq(value, "");
+
+  log_pipe_deinit((LogPipe *)xml_parser);
+  log_pipe_unref((LogPipe *)xml_parser);
+  log_msg_unref(msg);
+
+  g_list_free(exclude_tags);
 
   teardown();
 }

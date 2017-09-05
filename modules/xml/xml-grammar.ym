@@ -53,6 +53,7 @@
 %token KW_XML
 %token KW_PREFIX
 %token KW_DROP_INVALID
+%token KW_EXCLUDE_TAGS
 
 %type	<ptr> parser_xml
 %%
@@ -82,6 +83,7 @@ xml_options
 xml_opt
         : KW_PREFIX '(' string ')'      { xml_parser_set_prefix(last_parser, $3); free($3); }
         | KW_DROP_INVALID '(' yesno ')' { xml_parser_set_forward_invalid(last_parser, !$3); };
+        | KW_EXCLUDE_TAGS '(' string_list ')' { xml_parser_set_exclude_tags(last_parser, $3); g_list_free_full($3, free); }
         | parser_opt
         ;
 
