@@ -31,11 +31,14 @@ typedef struct
   gchar *prefix;
   gboolean forward_invalid;
   GPtrArray *exclude_patterns;
+  gboolean matchstring_shouldreverse;
 } XMLParser;
 
 LogParser * xml_parser_new(GlobalConfig *cfg);
 void xml_parser_set_prefix(LogParser *s, const gchar *prefix);
 void xml_parser_set_forward_invalid(LogParser *s, gboolean setting);
 void xml_parser_set_exclude_tags(LogParser *s, GList *exclude_tags);
+
+gboolean joker_or_wildcard(GList *patterns);
 
 #endif

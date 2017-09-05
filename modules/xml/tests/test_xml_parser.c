@@ -277,3 +277,30 @@ Test(xml_parser, test_multiple_exclude_tags)
 
   teardown();
 }
+
+Test(xml_parser, shouldreverse)
+{
+  GList *with_wildcard;
+
+  with_wildcard = NULL;
+  with_wildcard = g_list_append(with_wildcard, "tag1");
+  with_wildcard = g_list_append(with_wildcard, "tag2");
+  with_wildcard = g_list_append(with_wildcard, "tag*");
+  cr_assert(joker_or_wildcard(with_wildcard));
+  g_list_free(with_wildcard);
+
+  GList *with_joker = NULL;
+  with_joker = g_list_append(with_joker, "tag1");
+  with_joker = g_list_append(with_joker, "t?g2");
+  with_joker = g_list_append(with_joker, "tag3");
+  cr_assert(joker_or_wildcard(with_joker));
+  g_list_free(with_joker);
+
+  GList *no_joker_or_wildcard = NULL;
+  no_joker_or_wildcard = g_list_append(no_joker_or_wildcard, "tag1");
+  no_joker_or_wildcard = g_list_append(no_joker_or_wildcard, "tag2");
+  no_joker_or_wildcard = g_list_append(no_joker_or_wildcard, "tag3");
+  cr_assert_not(joker_or_wildcard(no_joker_or_wildcard));
+  g_list_free(no_joker_or_wildcard);
+
+}
