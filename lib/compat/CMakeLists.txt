@@ -13,6 +13,7 @@ set(COMPAT_HEADERS
 
 set(COMPAT_SOURCES
     compat/getutent.c
+    compat/glib.c
     compat/inet_aton.c
     compat/memrchr.c
     compat/pio.c

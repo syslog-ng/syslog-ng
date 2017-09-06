@@ -17,6 +17,7 @@ compat_sources			= 	\
 	lib/compat/inet_aton.c		\
 	lib/compat/memrchr.c		\
 	lib/compat/pio.c		\
+	lib/compat/glib.c		\
 	lib/compat/strcasestr.c		\
 	lib/compat/strtok_r.c		\
 	lib/compat/time.c		\
