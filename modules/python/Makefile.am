@@ -21,6 +21,8 @@ modules_python_libmod_python_la_LIBADD		= \
 	$(IVYKIS_LIBS)
 
 modules_python_libmod_python_la_SOURCES		= \
+	modules/python/compat/compat-python.h     \
+	modules/python/compat/compat-python.c     \
 	modules/python/python-module.h		  \
 	modules/python/python-config.h		  \
 	modules/python/python-config.c		  \
@@ -65,9 +67,10 @@ endif
 include modules/python/pylib/Makefile.am
 
 EXTRA_DIST					+= \
+	modules/python/compat/compat-python-v2.c   \
+	modules/python/compat/compat-python-v3.c   \
 	modules/python/python-grammar.ym	   \
 	modules/python/python-example.conf	   \
 	modules/python/sngexample.py
 
 .PHONY: modules/python mod-python
-
