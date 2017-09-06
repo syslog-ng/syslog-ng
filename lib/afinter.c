@@ -458,3 +458,19 @@ afinter_global_init(void)
 {
   register_application_hook(AH_POST_CONFIG_LOADED, afinter_register_posted_hook, NULL);
 }
+
+void
+afinter_global_deinit(void)
+{
+  if (internal_msg_queue)
+    {
+      stats_lock();
+      StatsClusterKey sc_key;
+      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL );
+      stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
+      stats_unlock();
+      g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);
+      internal_msg_queue = NULL;
+    }
+  current_internal_source = NULL;
+}

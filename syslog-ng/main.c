@@ -306,6 +306,6 @@ main(int argc, char *argv[])
   app_shutdown();
   z_mem_trace_dump();
   g_process_finish();
+  reloc_deinit();
   return rc;
 }
-

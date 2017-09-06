@@ -179,3 +179,13 @@ get_installation_path_for(const gchar *template)
     path_cache = cache_new(path_resolver_new(lookup_sysprefix()));
   return cache_lookup(path_cache, template);
 }
+
+void
+reloc_deinit(void)
+{
+  if (path_cache)
+    {
+      cache_free(path_cache);
+      path_cache = NULL;
+    }
+}

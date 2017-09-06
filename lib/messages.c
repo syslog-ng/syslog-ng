@@ -261,6 +261,9 @@ msg_post_message(LogMessage *msg)
     log_msg_unref(msg);
 }
 
+static guint g_log_handler_id;
+static guint glib_handler_id;
+
 void
 msg_init(gboolean interactive)
 {
@@ -269,8 +272,8 @@ msg_init(gboolean interactive)
 
   if (!interactive)
     {
-      g_log_set_handler(G_LOG_DOMAIN, 0xff, msg_log_func, NULL);
-      g_log_set_handler("GLib", 0xff, msg_log_func, NULL);
+      g_log_handler_id = g_log_set_handler(G_LOG_DOMAIN, 0xff, msg_log_func, NULL);
+      glib_handler_id = g_log_set_handler("GLib", 0xff, msg_log_func, NULL);
     }
   else
     {
@@ -285,7 +288,19 @@ void
 msg_deinit(void)
 {
   evt_ctx_free(evt_context);
+  evt_context = NULL;
   log_stderr = TRUE;
+
+  if (g_log_handler_id)
+    {
+      g_log_remove_handler(G_LOG_DOMAIN, g_log_handler_id);
+      g_log_handler_id = 0;
+    }
+  if (glib_handler_id)
+    {
+      g_log_remove_handler("GLib", glib_handler_id);
+      glib_handler_id = 0;
+    }
 }
 
 static GOptionEntry msg_option_entries[] =

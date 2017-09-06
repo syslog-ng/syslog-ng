@@ -176,6 +176,7 @@ app_shutdown(void)
   log_tags_global_deinit();
   log_msg_global_deinit();
 
+  afinter_global_deinit();
   stats_destroy();
   child_manager_deinit();
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
