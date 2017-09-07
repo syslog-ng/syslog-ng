@@ -39,7 +39,7 @@ tf_getent_protocols(gchar *key, gchar *member_name, GString *result)
   if (is_num)
     g_string_append(result, res->p_name);
   else
-    g_string_append_printf(result, "%i", htons(res->p_proto));
+    g_string_append_printf(result, "%d", res->p_proto);
 
   return TRUE;
 }
