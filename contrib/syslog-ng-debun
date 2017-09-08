@@ -72,7 +72,7 @@ tcpdumpcmd="tcpdump"
 tcpdumpopts="-p -s 1500 -w"
 opensslmajor=0
 getsyslogpids () { pidof syslog-ng ; }
-os_hash_helper () { xargs md5sum ; }
+os_hash_helper () { find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -print0 | xargs -0 md5sum ; }
 dfk_parser () { tail -1 | while read FS ALL USED AVAIL UPERC MP; do if echo ${AVAIL} | ${grepq} '%'; then echo ${USED} ; else echo ${AVAIL} ; fi done ; }
 trace="strace -s256 -ff -ttT -f"
 initfile="/etc/init.d/syslog-ng"
@@ -277,7 +277,7 @@ debun_do_tarball () {
 
 debun_generate_hashes () {
 	cd ${tmpdir}
-	find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f | os_hash_helper > debun.manifest
+	os_hash_helper > debun.manifest
 }
 
 debun_final() {
@@ -473,8 +473,8 @@ pki_parse_public_key () {
 }
 
 pki_guess_certificate () {
-	local header wccout buffer_pubkey buffer_rest hashopts hashnum
-	wccout=$( wc -c "${1}" )
+	local header fsize buffer_pubkey buffer_rest hashopts hashnum
+	fsize=$( wc -c "${1}" | ${sed_equivalent_cmd} 's:^ *([0-9]+) .*$:\1:' )
 
 	if [ ${opensslmajor} -gt 0 ]; then
 			hashopts="-subject_hash -subject_hash_old"
@@ -488,12 +488,13 @@ pki_guess_certificate () {
 	[ "${certcount}" -gt 1 ] && header="STACKED_CERTIFICATE(${certcount});${1};" || header="CERTIFICATE;${1};"
 	buffer_pubkey=$( ${opensslcmd} x509 -in "${1}" -text -noout  2>/dev/null | pki_parse_public_key )
 	buffer_rest=$( ${opensslcmd} x509 -in "${1}" -noout ${hashopts} -serial -dates -fingerprint -subject -issuer | tr '\n' ';' )
-	printf "${header}${wccout% *};${buffer_pubkey}${hashnum}${buffer_rest}"
+	printf "${header}${fsize};${buffer_pubkey}${hashnum}${buffer_rest}"
 }
 
 pki_guess_private_key () {
-	local header wccout buffer_pubkey buffer_error
-	wccout=$( wc -c "${1}" )
+	local header fsize buffer_pubkey buffer_error
+	fsize=$( wc -c "${1}" | ${sed_equivalent_cmd} 's:^ *([0-9]+) .*$:\1:' )
+
 	if pki_is_encrypted "${1}"; then
 		header="PRIVATE_ENCRYPTED;${1};"
 	else
@@ -518,15 +519,16 @@ pki_guess_private_key () {
 			buffer_pubkey=";"
 		fi
 	fi
-	printf "${header}${wccout% *};${buffer_pubkey}"
+	printf "${header}${fsize};${buffer_pubkey}"
 }
 
 pki_guess_public_key () {
 	# Public keys do not have their type in the PEM header/footer
 
-	local header wccout buffer_pubkey buffer_error
+	local header fsize buffer_pubkey buffer_error
 	header="PUBLIC;${1};"
-	wccout=$( wc -c "${1}" )
+	fsize=$( wc -c "${1}" | ${sed_equivalent_cmd} 's:^ *([0-9]+) .*$:\1:' )
+
 	if [ ${opensslmajor} -gt 0 ]; then
 		buffer_error=$( ${opensslcmd} pkey -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
 		if echo "${buffer_error}" | ${grepq} "unable to load"; then
@@ -560,13 +562,13 @@ pki_guess_public_key () {
 			buffer_pubkey=$( ${opensslcmd} rsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
 		fi
 	fi
-	printf "${header}${wccout% *};${buffer_pubkey}"
+	printf "${header}${fsize};${buffer_pubkey}"
 }
 
 pki_other_file () {
-	local wccout
-	wccout=$( wc -c "${1}" )
-	printf "OTHER_FILE;${1};${wccout% *};"
+	local fsize
+	fsize=$( wc -c "${1}" | ${sed_equivalent_cmd} 's:^ *([0-9]+) .*$:\1:' )
+	printf "OTHER_FILE;${1};${fsize};"
 }
 
 pki_process_file () {
@@ -688,7 +690,7 @@ acquire_syslog_info () {
 	done
 
 	$syslogbin -s --preprocess-into "${tmpdir}/syslog.pp.conf"
-	remove_passwords_from_file "${tmpdir}/syslog.pp.conf"
+	[ -f "${tmpdir}/syslog.pp.conf" ] && remove_passwords_from_file "${tmpdir}/syslog.pp.conf"
 }
 
 acquire_syslog_var () {
@@ -717,7 +719,7 @@ acquire_syslog_var () {
 	else
 		printf "TOO LOW free disk space on the filesystem holding ${tmpdir}\n"
 		printf "to create a full copy of ${vardir}!\nOnly copying most important files.\n"
-		find . -name "*.persist" -o -name "*.pid" | grep -v "syslog-ng.*\.ctl" | cpio -pd ${tmpdir}/var
+		find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | cpio -pd ${tmpdir}/var
 	fi
 }
 
@@ -1213,12 +1215,16 @@ setup_env_solaris () {
 		echo ""
 	}
 
-	if is_available digest; then
+	if is_available md5sum; then
 		os_hash_helper () {
-			xargs digest -a md5 -v | /usr/xpg4/bin/awk -F'[()= ]' '{print $7"  "$3;}'
+			find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -print0 | xargs -0 md5sum ;
+		}
+	elif is_available digest; then
+		os_hash_helper () {
+			find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec digest -a md5 -v '{}' \; | sed -e 's:^md5 (\(.*\)) = \([a-z0-9]\{32\}\)$:\2  \1:'
 		}
 	else
-		os_hash_helper () { cat &>/dev/null ; }
+		os_hash_helper () { : ; }
 	fi
 
 	if is_available svcadm ; then
@@ -1260,7 +1266,7 @@ setup_env_freebsd () {
 	distpkgoffile () { : ; }
 	distpkgstatus () { : ; }
 	os_hash_helper () {
-		xargs md5 | awk -F'[()= ]' '{print $7"  "$3;}'
+		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5 '{}' \; | sed -e 's:^MD5 (\(.*\)) = \([a-z0-9]\{32\}\)$:\2  \1:'
 	}
 }
 
@@ -1282,6 +1288,7 @@ setup_env_hpux () {
 	unset -f free
 	unset -f netstatnlp
 	unset -f mypidof
+	unset -f os_hash_helper
 	unset -f getsyslogpids
 	unset -f getparent
 	unset -f getchilds
@@ -1295,6 +1302,9 @@ setup_env_hpux () {
 	free () { swapinfo -tam ; }
 	netstatnlp () { netstat -na ; }
 	dfk_parser () { grep free | while read AVAIL REST_TEXT; do echo ${AVAIL}; done }
+	os_hash_helper () {
+		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5sum '{}' \;
+	}
 	mypidof () { ps -e -f | while read uid pid ppid c stime tty time command extra ; do
 		if [ "${stime%%:*}" = "${stime}" ]
 		then
@@ -1405,7 +1415,7 @@ setup_env_aix () {
 		printf "\n"
 	}
 	os_hash_helper () {
-		xargs csum -h MD5
+		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec csum -h MD5 '{}' \;
 	}
 }
 
