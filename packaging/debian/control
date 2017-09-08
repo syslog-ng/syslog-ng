@@ -207,7 +207,7 @@ Package: syslog-ng-mod-sql
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
+Suggests: syslog-ng-mod-mysql, syslog-ng-mod-pgsql, syslog-ng-mod-sqlite3, syslog-ng-mod-freetds
 Description: Enhanced system logging daemon (SQL plugin)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
@@ -227,6 +227,98 @@ Description: Enhanced system logging daemon (SQL plugin)
  This package provides the SQL destination plugin, which allows one to
  log system messages to a multitude of SQL databases (including, but
  not limited to MySQL, PostgreSQL and SQLite).
+
+Package: syslog-ng-mod-mysql
+Architecture: any
+Multi-Arch: foreign
+Depends: syslog-ng-mod-sql, libdbd-mysql
+Description: Enhanced system logging daemon (SQL plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the SQL destination plugin, which allows one to
+ log system messages to MySQL databases.
+
+Package: syslog-ng-mod-pgsql
+Architecture: any
+Multi-Arch: foreign
+Depends: syslog-ng-mod-sql, libdbd-pgsql
+Description: Enhanced system logging daemon (SQL plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the SQL destination plugin, which allows one to
+ log system messages to PostgreSQL databases.
+
+Package: syslog-ng-mod-sqlite3
+Architecture: any
+Multi-Arch: foreign
+Depends: syslog-ng-mod-sql, libdbd-sqlite3
+Description: Enhanced system logging daemon (SQL plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the SQL destination plugin, which allows one to
+ log system messages to SQLite databases.
+
+Package: syslog-ng-mod-freetds
+Architecture: any
+Multi-Arch: foreign
+Depends: syslog-ng-mod-sql, libdbd-freetds
+Description: Enhanced system logging daemon (SQL plugin)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the SQL destination plugin, which allows one to
+ log system messages to MSSql/FreeTDS databases.
 
 Package: syslog-ng-mod-smtp
 Architecture: any
