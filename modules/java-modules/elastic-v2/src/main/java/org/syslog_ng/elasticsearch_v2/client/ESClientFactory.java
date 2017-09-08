@@ -32,26 +32,21 @@ import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpsClient;
 
 public class ESClientFactory {
-	public static ESClient getESClient(ElasticSearchOptions options) throws UnknownESClientModeException {
-		String client_type = options.getClientMode();
-		if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_TRANSPORT)) {
-			return new ESTransportClient(options);
-		}
-		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_NODE)) {
-			return new ESNodeClient(options);
-		}
-		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_SHIELD)) {
+    public static ESClient getESClient(ElasticSearchOptions options) throws UnknownESClientModeException {
+        String client_type = options.getClientMode();
+        if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_TRANSPORT)) {
+            return new ESTransportClient(options);
+        } else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_NODE)) {
+            return new ESNodeClient(options);
+        } else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_SHIELD)) {
             return new ESTransportShieldClient(options);
+        } else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_HTTP)) {
+            return new ESHttpClient(options);
+        } else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_HTTPS)) {
+            return new ESHttpsClient(options);
+        } else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_SEARCHGUARD)) {
+            return new ESTransportSearchGuardClient(options);
         }
-		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_HTTP)) {
-			return new ESHttpClient(options);
-		}
-		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_HTTPS)) {
-			return new ESHttpsClient(options);
-		}
-		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_SEARCHGUARD)) {
-			return new ESTransportSearchGuardClient(options);
-		}
-		throw new UnknownESClientModeException(client_type);
-	}
+        throw new UnknownESClientModeException(client_type);
+    }
 }

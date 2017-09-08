@@ -32,21 +32,20 @@ import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESNativeMessageP
 
 public class ESSingleNativeMessageProcessor extends ESNativeMessageProcessor {
 
-	public ESSingleNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
-		super(options, client);
-	}
+    public ESSingleNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+        super(options, client);
+    }
 
-	@Override
-	protected boolean send(IndexRequest req) {
-		try {
-			IndexResponse response = client.getClient().index(req).actionGet();
-			logger.debug("Message inserted with id: " + response.getId());
-			return true;
-		}
-		catch (ElasticsearchException e) {
-			logger.error("Failed to send message: " + e.getMessage());
-			return false;
-		}
-	}
+    @Override
+    protected boolean send(IndexRequest req) {
+        try {
+            IndexResponse response = client.getClient().index(req).actionGet();
+            logger.debug("Message inserted with id: " + response.getId());
+            return true;
+        } catch (ElasticsearchException e) {
+            logger.error("Failed to send message: " + e.getMessage());
+            return false;
+        }
+    }
 
 }

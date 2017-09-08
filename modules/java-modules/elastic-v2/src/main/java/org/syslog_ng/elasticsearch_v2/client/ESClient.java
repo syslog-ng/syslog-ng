@@ -26,11 +26,17 @@ package org.syslog_ng.elasticsearch_v2.client;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 
 public interface ESClient {
-	boolean open();
-	void close();
-	boolean isOpened();
-	void init();
-	void deinit();
-	boolean send(ESIndex index);
-	String getClusterName();
+    boolean open();
+
+    void close();
+
+    boolean isOpened();
+
+    void init();
+
+    void deinit();
+
+    boolean send(ESIndex index);
+
+    String getClusterName();
 }

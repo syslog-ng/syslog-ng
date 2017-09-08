@@ -35,26 +35,24 @@ import org.syslog_ng.elasticsearch_v2.messageprocessor.http.HttpMessageProcessor
 import org.syslog_ng.elasticsearch_v2.messageprocessor.http.HttpSingleMessageProcessor;
 
 public class ESMessageProcessorFactory {
-	public static ESNativeMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
-		int flush_limit = options.getFlushLimit();
-		if (flush_limit > 1) {
-			return new ESBulkNativeMessageProcessor(options, client);
-		}
-		if (flush_limit == -1) {
-			return new DummyProcessorNative(options, client);
-		}
-		else {
-			return new ESSingleNativeMessageProcessor(options, client);
-		}
-	}
+    public static ESNativeMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+        int flush_limit = options.getFlushLimit();
+        if (flush_limit > 1) {
+            return new ESBulkNativeMessageProcessor(options, client);
+        }
+        if (flush_limit == -1) {
+            return new DummyProcessorNative(options, client);
+        } else {
+            return new ESSingleNativeMessageProcessor(options, client);
+        }
+    }
 
-	public static HttpMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
-		int flush_limit = options.getFlushLimit();
-		if (flush_limit > 1) {
-			return new HttpBulkMessageProcessor(options, client);
-		}
-		else {
-			return new HttpSingleMessageProcessor(options, client);
-		}
-	}
+    public static HttpMessageProcessor getMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
+        int flush_limit = options.getFlushLimit();
+        if (flush_limit > 1) {
+            return new HttpBulkMessageProcessor(options, client);
+        } else {
+            return new HttpSingleMessageProcessor(options, client);
+        }
+    }
 }

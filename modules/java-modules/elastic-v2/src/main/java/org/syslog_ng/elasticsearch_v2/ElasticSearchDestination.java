@@ -36,81 +36,82 @@ import org.apache.log4j.Logger;
 
 public class ElasticSearchDestination extends StructuredLogDestination {
 
-	ESClient client;
-	ElasticSearchOptions options;
-	Logger logger;
+    ESClient client;
+    ElasticSearchOptions options;
+    Logger logger;
 
-	boolean opened;
+    boolean opened;
 
-	public ElasticSearchDestination(long handle) {
-		super(handle);
-		logger = Logger.getRootLogger();
-		SyslogNgInternalLogger.register(logger);
-		options = new ElasticSearchOptions(this);
-	}
-
-	@Override
-	protected boolean init() {
-		boolean result = false;
-		try {
-			options.init();
-			client = ESClientFactory.getESClient(options);
-			client.init();
-			result = true;
-		}
-		catch (InvalidOptionException | UnknownESClientModeException e){
-			logger.error(e.getMessage());
-			return false;
-		}
-		return result;
-	}
-
-	@Override
-	protected boolean isOpened() {
-		return opened;
-	}
-
-	@Override
-	protected boolean open() {
-		opened = client.open();
-		return opened;
-	}
-
-    private ESIndex createIndexRequest(LogMessage msg) {
-    	String formattedMessage = options.getMessageTemplate().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
-    	String customId = options.getCustomId().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
-    	String index = options.getIndex().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
-    	String type = options.getType().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
-    	logger.debug("Outgoing log entry, json='" + formattedMessage + "'");
-
-		return new ESIndex.Builder().formattedMessage(formattedMessage).index(index).id(customId).type(type).build();
+    public ElasticSearchDestination(long handle) {
+        super(handle);
+        logger = Logger.getRootLogger();
+        SyslogNgInternalLogger.register(logger);
+        options = new ElasticSearchOptions(this);
     }
 
-	@Override
-	protected boolean send(LogMessage msg) {
-		if (!client.isOpened()) {
-			close();
-			return false;
-		}
-		return client.send(createIndexRequest(msg));
-	}
+    @Override
+    protected boolean init() {
+        boolean result = false;
+        try {
+            options.init();
+            client = ESClientFactory.getESClient(options);
+            client.init();
+            result = true;
+        } catch (InvalidOptionException | UnknownESClientModeException e) {
+            logger.error(e.getMessage());
+            return false;
+        }
+        return result;
+    }
 
-	@Override
-	protected void close() {
-		if (opened) {
-			client.close();
-			opened = false;
-		}
-	}
+    @Override
+    protected boolean isOpened() {
+        return opened;
+    }
 
-	@Override
-	protected String getNameByUniqOptions() {
-		return String.format("ElasticSearch_v2,%s,%s", client.getClusterName(), options.getIndex().getValue());
-	}
+    @Override
+    protected boolean open() {
+        opened = client.open();
+        return opened;
+    }
 
-	@Override
-	protected void deinit() {
-		client.deinit();
-		options.deinit();
-	}
+    private ESIndex createIndexRequest(LogMessage msg) {
+        String formattedMessage = options.getMessageTemplate().getResolvedString(msg, getTemplateOptionsHandle(),
+                LogTemplate.LTZ_SEND);
+        String customId = options.getCustomId().getResolvedString(msg, getTemplateOptionsHandle(),
+                LogTemplate.LTZ_SEND);
+        String index = options.getIndex().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
+        String type = options.getType().getResolvedString(msg, getTemplateOptionsHandle(), LogTemplate.LTZ_SEND);
+        logger.debug("Outgoing log entry, json='" + formattedMessage + "'");
+
+        return new ESIndex.Builder().formattedMessage(formattedMessage).index(index).id(customId).type(type).build();
+    }
+
+    @Override
+    protected boolean send(LogMessage msg) {
+        if (!client.isOpened()) {
+            close();
+            return false;
+        }
+        return client.send(createIndexRequest(msg));
+    }
+
+    @Override
+    protected void close() {
+        if (opened) {
+            client.close();
+            opened = false;
+        }
+    }
+
+    @Override
+    protected String getNameByUniqOptions() {
+        return String.format("ElasticSearch_v2,%s,%s", client.getClusterName(), options.getIndex().getValue());
+    }
+
+    @Override
+    protected void deinit() {
+        client.deinit();
+        options.deinit();
+    }
 }

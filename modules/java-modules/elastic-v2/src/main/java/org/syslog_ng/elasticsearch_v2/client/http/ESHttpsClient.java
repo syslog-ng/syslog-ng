@@ -143,13 +143,14 @@ public class ESHttpsClient extends ESHttpClient {
         try {
             sslContext = sslContextBuilder.build();
         } catch (Exception e) {
-            throw new ESHttpClient.HttpClientBuilderException("Error initializing SSL context",e);
+            throw new ESHttpClient.HttpClientBuilderException("Error initializing SSL context", e);
         }
         return sslContext;
     }
 
     @Override
-    protected void setupHttpClientBuilder(HttpClientConfig.Builder httpClientConfigBuilder, ElasticSearchOptions options) {
+    protected void setupHttpClientBuilder(HttpClientConfig.Builder httpClientConfigBuilder,
+            ElasticSearchOptions options) {
         SSLContextBuilder sslContextBuilder = setupSSLContextBuilder(options);
         SSLContext sslContext = buildSSLContext(sslContextBuilder);
         HostnameVerifier hostnameVerifier = setupHostnameVerifier(options);

@@ -31,34 +31,34 @@ import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
 
 public abstract class ESNativeMessageProcessor implements ESMessageProcessor {
-	protected ElasticSearchOptions options;
-	protected ESNativeClient client;
-	protected Logger logger;
+    protected ElasticSearchOptions options;
+    protected ESNativeClient client;
+    protected Logger logger;
 
+    public ESNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+        this.options = options;
+        this.client = client;
+        logger = Logger.getRootLogger();
+    }
 
-	public ESNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
-		this.options = options;
-		this.client = client;
-		logger = Logger.getRootLogger();
-	}
+    public void init() {
 
-	public void init() {
+    }
 
-	}
+    public void flush() {
 
-	public void flush() {
+    }
 
-	}
+    public void deinit() {
 
-	public void deinit() {
+    }
 
-	}
+    protected abstract boolean send(IndexRequest req);
 
-	protected abstract boolean send(IndexRequest req);
-
-	@Override
-	public final boolean send(ESIndex index) {
-		IndexRequest req = new IndexRequest(index.getIndex(), index.getType(), index.getId()).source(index.getFormattedMessage());
-		return send(req);
-	}
+    @Override
+    public final boolean send(ESIndex index) {
+        IndexRequest req = new IndexRequest(index.getIndex(), index.getType(), index.getId())
+                .source(index.getFormattedMessage());
+        return send(req);
+    }
 }
