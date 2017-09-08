@@ -30,12 +30,17 @@ import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 
 	private Bulk.Builder bulk;
 	private int flushLimit;
 	private int messageCounter;
+	private int flushTimeout;
+	private Timer timer;
+	private long lastSentTime;
 
 	public HttpBulkMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
 		super(options, client);
@@ -45,6 +50,10 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 		bulk = new Bulk.Builder();
 		messageCounter = 0;
 		flushLimit = options.getFlushLimit();
+		flushTimeout = options.getFlushTimeout();
+		if (flushTimeout > 0) {
+		    startFlushTimer();
+		}
 	}
 
 	@Override
@@ -69,7 +78,31 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 			flush();
 		}
 		bulk = bulk.addAction(index);
+		lastSentTime = getCurrentUnixEpochSecond();
 		messageCounter++;
 		return true;
 	}
+
+    private long getCurrentUnixEpochSecond() {
+        return System.currentTimeMillis() / 1000L;
+    }
+
+    private void startFlushTimer() {
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (messageCounter > 0 && (getCurrentUnixEpochSecond() - lastSentTime) >= flushTimeout) {
+                    flush();
+                }
+            }
+        }, 1000, 1000);
+    }
+
+    @Override
+    public void deinit() {
+        if (timer != null) {
+            timer.cancel();
+        }
+    }
 }

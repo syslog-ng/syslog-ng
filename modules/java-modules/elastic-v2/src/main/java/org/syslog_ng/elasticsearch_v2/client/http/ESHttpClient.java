@@ -143,6 +143,7 @@ public class ESHttpClient implements ESClient {
 
 	@Override
 	public void deinit() {
+	    messageProcessor.deinit();
 		client.shutdownClient();
 		options.deinit();
 	}
