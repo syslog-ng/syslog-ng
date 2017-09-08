@@ -82,7 +82,7 @@ public class ESBulkNativeMessageProcessor extends ESNativeMessageProcessor {
 				new BulkProcessorListener()
 			)
 			.setBulkActions(options.getFlushLimit())
-			.setFlushInterval(new TimeValue(1000))
+			.setFlushInterval(new TimeValue(options.getFlushTimeout()*1000))
 			.setConcurrentRequests(options.getConcurrentRequests())
 			.build();
 	}

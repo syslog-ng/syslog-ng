@@ -47,6 +47,7 @@ public class ElasticSearchOptions {
 	public static String CONFIG_FILE = "resource";
 	public static String CONCURRENT_REQUESTS = "concurrent_requests";
 	public static String CLUSTER_URL = "cluster_url";
+	public static String FLUSH_TIMEOUT = "flush_timeout";
 
 	public static String SERVER_DEFAULT = "localhost";
 	private static final String PORT_DEFAULT = "0";
@@ -85,6 +86,7 @@ public class ElasticSearchOptions {
 	public static String CLIENT_MODE_DEFAULT = CLIENT_MODE_TRANSPORT;
 	public static String HTTP_AUTH_TYPE_DEFAULT = HTTP_AUTH_TYPE_NONE;
 	public static String CONCURRENT_REQUESTS_DEFAULT = "1";
+	public static String FLUSH_TIMEOUT_DEFAULT = "1";
 
 	private LogDestination owner;
 	private Options options;
@@ -209,6 +211,11 @@ public class ElasticSearchOptions {
 	}
 
 
+	public int getFlushTimeout() {
+        return options.get(FLUSH_TIMEOUT).getValueAsInteger();
+    }
+
+
 	private void fillOptions() {
 		fillStringOptions();
 		fillTemplateOptions();
@@ -238,6 +245,7 @@ public class ElasticSearchOptions {
 		options.put(new StringOption(owner, JAVA_TRUSTSTORE_PASSWORD, ""));
 		options.put(new StringOption(owner, HTTP_AUTH_TYPE_BASIC_USERNAME, ""));
 		options.put(new StringOption(owner, HTTP_AUTH_TYPE_BASIC_PASSWORD, ""));
+		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, FLUSH_TIMEOUT, FLUSH_TIMEOUT_DEFAULT), 0, Integer.MAX_VALUE));
 	}
 
 	private void fillBooleanOptions() {
