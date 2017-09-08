@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.6.20170807"
+version="0.3.8.20170909"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -41,6 +41,7 @@ tracepids=""
 ipconfig="ip addr"
 routeconfig () { netstat -nr ; }
 netstatnlp () { netstat -nlp ; }
+netstatlunp () { netstat -lunp ; }
 netstatsu="netstat -su"
 netstatpunt="netstat -punt"
 binprefix=/opt/syslog-ng
@@ -54,6 +55,7 @@ dfi="df -i"
 duks="du -ks"
 grepq="fgrep -q"
 lddcmd="ldd"
+topcmd () { top -b -n 1 -c >"${1}"; }
 opensslcmd="openssl"
 sed_equivalent_cmd="sed -E"
 mount=mount
@@ -355,7 +357,7 @@ acquire_system_info () {
 	uname -a | tee "${tmpdir}/sys.uname"
 	free >${tmpdir}/sys.free
 	vmstat >${tmpdir}/sys.vmstat
-
+	topcmd "${tmpdir}/sys.top"
 	if is_available ${opensslcmd}; then
 		${opensslcmd} version >${tmpdir}/sys.openssl.version
 	fi
@@ -399,6 +401,7 @@ acquire_system_other_info () {
 	$dmesg >${tmpdir}/sys.dmesg
 	netstatnlp >${tmpdir}/sys.netstat.ltn
 	$netstatpunt >${tmpdir}/sys.netstat.est
+	netstatlunp >${tmpdir}/sys.netstat.lunp
 	$netstatsu >${tmpdir}/sys.netstat.su
 	[ -f /proc/net/udp ] && cp /proc/net/udp ${tmpdir}/sys.proc.net.udp
 }
@@ -892,6 +895,17 @@ debun_extra_genlinux () {
 		echo "No getenforce in path." >"${tmpdir}/sys.selinux"
 	fi
 
+	if is_available sysstat ; then
+		sysstat -P ALL 1 5 >${tmpdir}/sys.sar.cpu
+		sysstat -d 1 5 >${tmpdir}/sys.sar.disk
+	elif is_available sar ; then
+		sar -P ALL 1 5 >${tmpdir}/sys.sar.cpu
+		sar -d 1 5 >${tmpdir}/sys.sar.disk
+	fi
+	if is_available top; then
+		top -b -H -n 1 -c >${tmpdir}/sys.top.threads
+	fi
+
 	[ -n "$privacy_mode" ] && return
 	if is_available dmidecode; then
 		dmidecode >"${tmpdir}/sys.dmidecode"
@@ -939,6 +953,13 @@ debun_extra_gensolaris () {
 	if is_available showrev ; then
 		showrev >${tmpdir}/sys.showrev
 	fi
+	if is_available sar ; then
+		sar -u 1 5 >${tmpdir}/sys.sar.cpu
+		sar -d 1 5 >${tmpdir}/sys.sar.disk
+	fi
+	if is_available top; then
+		top -b -t -n 1 -c >${tmpdir}/sys.top.threads
+	fi
 }
 
 ### Here comes solaris specific parts
@@ -949,7 +970,9 @@ debun_solaris () {
 }
 
 debun_extra_freebsd() {
-	:
+	if is_available top; then
+		top -b -d1 -H >${tmpdir}/sys.top.threads
+	fi
 }
 
 debun_freebsd() {
@@ -959,6 +982,11 @@ debun_freebsd() {
 debun_extra_hpux () {
 	sysdef >${tmpdir}/sys.sysdef
 	swlist >${tmpdir}/sys.swlist
+
+	if is_available sar ; then
+		sar -u 1 5 >${tmpdir}/sys.sar.cpu
+		sar -d 1 5 >${tmpdir}/sys.sar.disk
+	fi
 }
 
 debun_hpux () {
@@ -967,6 +995,11 @@ debun_hpux () {
 
 debun_extra_aix () {
 	alog -o -t console >${tmpdir}/sys.console-log
+
+	if is_available sar ; then
+		sar -u 1 5 >${tmpdir}/sys.sar.cpu 2>/dev/null
+		sar -b 1 5 >${tmpdir}/sys.sar.disk 2>/dev/null1
+	fi
 }
 
 debun_aix () {
@@ -1187,8 +1220,10 @@ setup_env_solaris () {
 
 	unset -f mypidof
 	unset -f getsyslogpids
+	unset -f netstatlunp
 	unset -f netstatnlp
 	unset -f myplimit
+	unset -f topcmd
 	unset -f free
 	unset -f distpkgoffile
 	unset -f distpkgstatus
@@ -1199,6 +1234,7 @@ setup_env_solaris () {
 	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done ; }
 	getsyslogpids () { mypidof "${syslogrealbin}" ; }
 	netstatnlp () { netstat -na ; }
+	netstatlunp () { netstat -P udp -na ; }
 	myplimit () { plimit $1 ; }
 	free () { prtconf | grep Mem ; printf Pagesize:\  ; pagesize -a ; }
 	distpkgoffile () {
@@ -1214,6 +1250,12 @@ setup_env_solaris () {
 		pkginfo -l $1
 		echo ""
 	}
+
+	if is_available top; then
+		topcmd ()  { top -b -n 1 -c > "${1}" ; }
+	else
+		topcmd () { ( uptime ; echo ; echo "::memstat" | mdb -k ; sar -u 1 1 ; echo ; ps -eao user,pid,ppid,pcpu,pmem,vsz,rss,tty,s,stime,args | head -n 1; ps -eao user,pid,ppid,pcpu,pmem,vsz,rss,tty,s,stime,args | grep -v COMMAND | sort -rn +3 ) >"${1}" 2>/dev/null ; }
+	fi
 
 	if is_available md5sum; then
 		os_hash_helper () {
@@ -1253,7 +1295,9 @@ setup_env_freebsd () {
 
 	unset -f free
 	unset -f netstatnlp
+	unset -f netstatlunp
 	unset -f mypidof
+	unset -f topcmd
 	unset -f getsyslogpids
 	unset -f distpkgoffile
 	unset -f distpkgstatus
@@ -1261,6 +1305,8 @@ setup_env_freebsd () {
 
 	free () { top -bt 0 ; }
 	netstatnlp () { sockstat ; }
+	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
+	topcmd ()  { top -b -d1 > "${1}" ; }
 	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done; }
 	getsyslogpids () { mypidof syslog-ng ; }
 	distpkgoffile () { : ; }
@@ -1287,7 +1333,9 @@ setup_env_hpux () {
 
 	unset -f free
 	unset -f netstatnlp
+	unset -f netstatlunp
 	unset -f mypidof
+	unset -f topcmd
 	unset -f os_hash_helper
 	unset -f getsyslogpids
 	unset -f getparent
@@ -1300,7 +1348,9 @@ setup_env_hpux () {
 
 	is_available () { which "$1" | $grepq "no $1 in" && return 1 || return 0 ; }
 	free () { swapinfo -tam ; }
-	netstatnlp () { netstat -na ; }
+	netstatnlp () { netstat -na | grep -E "(Internet|Proto|LISTEN)" ; }
+	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
+	topcmd ()  { top -d 1 -f "${1}" ; }
 	dfk_parser () { grep free | while read AVAIL REST_TEXT; do echo ${AVAIL}; done }
 	os_hash_helper () {
 		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5sum '{}' \;
@@ -1378,19 +1428,23 @@ setup_env_aix () {
 
 	unset -f initfile
 	unset -f netstatnlp
+	unset -f netstatlunp
 	unset -f routeconfig
 	unset -f free
 	unset -f dfk_parser
 	unset -f getsyslogpids
 	unset -f mypidof
+	unset -f topcmd
 	unset -f format_ldd_output
 	unset -f os_hash_helper
 
 	format_ldd_output () { sed -e 's:^[^/]*\(.*\)$:\1:' -e 's:^\(.*\)(.*)$:\1:'; }
-	netstatnlp () { netstat -na | grep LISTEN ; }
+	netstatnlp () { netstat -na | grep -E "(Active|Proto|LISTEN)" ; }
+	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
 	dfk_parser () { tail -1 | while read FS ALL AVAIL UPERC IUPERC MP; do echo ${AVAIL}; done }
 	routeconfig () { if netstat -nr 2>&1 | $grepq 'Permission error' ; then echo 'WPAR without its own routing table.' ; else netstat -nr ; fi ; }
 	free () { svmon -G -O unit=KB ; }
+	topcmd () { ( uptime ; svmon -G | head -n 3 ; sar -u 1 1 ; echo ; ps auxwww | head -n 1; ps auxwww | grep -v COMMAND | sort -rn +2 ) >"${1}" 2>/dev/null ; }
 	mypidof () { ps -eaf | while read user pid ppid c stime tty time cmd extra; do
 		if [ "${stime%%:*}" = "${stime}" ]
 		then
@@ -1426,11 +1480,13 @@ setup_env_generic_pre () {
 setup_env_generic_post () {
 	### Check if ss is available (should only be present on Linux)
 	if is_available ss ; then
-		unset routeconfig
-		unset netstatnlp
+		unset -f routeconfig
+		unset -f netstatnlp
+		unset -f netstatlunp
 
 		routeconfig () { ip route show ; }
 		netstatnlp () { ss -nlp ; }
+		netstatlunp () { ss -lunp ; }
 		netstatpunt="ss -punt"
 	fi
 	if is_available netstat; then
