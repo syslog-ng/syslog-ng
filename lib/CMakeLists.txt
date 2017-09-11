@@ -38,6 +38,9 @@ set(LIB_SUBDIR_HEADERS
     ${TRANSPORT_HEADERS}
     ${VALUE_PAIRS_HEADERS}
     ${CSV_SCANNER_HEADERS}
+    ${LIST_SCANNER_HEADERS}
+    ${KV_SCANNER_HEADERS}
+    ${STR_REPR_HEADERS}
     ${CMAKE_CURRENT_BINARY_DIR}/filter/filter-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/rewrite/rewrite-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/parser/parser-expr-grammar.h
@@ -216,6 +219,9 @@ set(LIB_SOURCES
     ${TRANSPORT_SOURCES}
     ${VALUE_PAIRS_SOURCES}
     ${CSV_SCANNER_SOURCES}
+    ${LIST_SCANNER_SOURCES}
+    ${KV_SCANNER_SOURCES}
+    ${STR_REPR_SOURCES}
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.c
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.c
     ${PROJECT_BINARY_DIR}/lib/cfg-lex.c
