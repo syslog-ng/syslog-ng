@@ -1310,13 +1310,11 @@ dnl python checks
 dnl ***************************************************************************
 if test "x$enable_python" != "xno"; then
   if test "x$with_python" = "xauto"; then
-    PKG_CHECK_MODULES(PYTHON, python3 >= 3, python_found="yes", python_found="no")
-    if test "$python_found" = "yes"; then
-      with_python="python3"
-    else
-      PKG_CHECK_MODULES(PYTHON, python2 >= 2.6, python_found="yes", python_found="no")
-      if test "$python_found" = "yes"; then
-        with_python="python2"
+    PKG_CHECK_MODULES(PYTHON, python3, python_found="yes", python_found="no")
+    if test "$python_found" = "no"; then
+      PKG_CHECK_MODULES(PYTHON, python2, python_found="yes", python_found="no")
+      if test "$python_found" = "no"; then
+        PKG_CHECK_MODULES(PYTHON, python, python_found="yes", python_found="no")
       fi
     fi
   else
@@ -1329,7 +1327,14 @@ if test "x$enable_python" != "xno"; then
           ;;
     esac
 
-    PKG_CHECK_MODULES(PYTHON, $with_python >= 2.6, python_found="yes", python_found="no")
+    PKG_CHECK_MODULES(PYTHON, $with_python, python_found="yes", python_found="no")
+  fi
+
+  if test "x$python_found" = "xyes"; then
+    old_LIBS=$LIBS
+    LIBS="$LIBS $PYTHON_LIBS"
+    AC_CHECK_FUNCS(PyUnicode_AsUTF8, with_python=python3, with_python=python2)
+    LIBS=$old_LIBS
   fi
 
   if test "x$enable_python" = "xyes" -a "x$python_found" = "xno"; then
