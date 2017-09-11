@@ -58,7 +58,7 @@ volatile gboolean main_loop_workers_quit;
 volatile gboolean is_reloading_scheduled;
 
 /* number of I/O worker jobs running */
-static gint main_loop_workers_running;
+static gint main_loop_jobs_running;
 
 static struct iv_task main_loop_workers_reenable_jobs_task;
 
@@ -202,7 +202,7 @@ main_loop_worker_job_start(void)
 {
   main_loop_assert_main_thread();
 
-  main_loop_workers_running++;
+  main_loop_jobs_running++;
 }
 
 typedef struct
@@ -250,8 +250,8 @@ main_loop_worker_job_complete(void)
 {
   main_loop_assert_main_thread();
 
-  main_loop_workers_running--;
-  if (main_loop_workers_quit && main_loop_workers_running == 0)
+  main_loop_jobs_running--;
+  if (main_loop_workers_quit && main_loop_jobs_running == 0)
     {
       /* NOTE: we can't reenable I/O jobs by setting
        * main_loop_io_workers_quit to FALSE right here, because a task
@@ -378,7 +378,7 @@ main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
 
   _register_sync_call_action(&sync_call_actions, func, user_data);
 
-  if (main_loop_workers_running == 0)
+  if (main_loop_jobs_running == 0)
     {
       _invoke_sync_call_actions();
       _reenable_worker_jobs(NULL);
