@@ -27,6 +27,8 @@
 #include "syslog-ng.h"
 #include "thread-utils.h"
 
+volatile gint main_loop_workers_running;
+
 typedef struct _MainLoop MainLoop;
 
 typedef struct _MainLoopOptions
@@ -38,6 +40,8 @@ typedef struct _MainLoopOptions
 } MainLoopOptions;
 
 extern ThreadId main_thread_handle;
+extern GCond thread_halt_cond;
+extern GMutex workers_running_lock;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 
