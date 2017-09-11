@@ -42,91 +42,90 @@ import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessorFactory
 import org.syslog_ng.elasticsearch_v2.messageprocessor.esnative.ESNativeMessageProcessor;
 
 public abstract class ESNativeClient implements ESClient {
-	private Client client;
-	protected ESNativeMessageProcessor messageProcessor;
-	private static final String TIMEOUT = "5s";
-	protected Logger logger;
-	protected ElasticSearchOptions options;
+    private Client client;
+    protected ESNativeMessageProcessor messageProcessor;
+    private static final String TIMEOUT = "5s";
+    protected Logger logger;
+    protected ElasticSearchOptions options;
 
-	public ESNativeClient(ElasticSearchOptions options) {
-		this.options = options;
-		logger = Logger.getRootLogger();
-		messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
-	}
+    public ESNativeClient(ElasticSearchOptions options) {
+        this.options = options;
+        logger = Logger.getRootLogger();
+        messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
+    }
 
-	private boolean waitForStatus(ClusterHealthStatus status) {
-		ClusterHealthRequestBuilder healthRequest = client.admin().cluster().prepareHealth();
-		healthRequest.setTimeout(TIMEOUT);
-		healthRequest.setWaitForStatus(status);
-		ClusterHealthResponse response = (ClusterHealthResponse) healthRequest.execute().actionGet();
-		return !response.isTimedOut();
-	}
+    private boolean waitForStatus(ClusterHealthStatus status) {
+        ClusterHealthRequestBuilder healthRequest = client.admin().cluster().prepareHealth();
+        healthRequest.setTimeout(TIMEOUT);
+        healthRequest.setWaitForStatus(status);
+        ClusterHealthResponse response = (ClusterHealthResponse) healthRequest.execute().actionGet();
+        return !response.isTimedOut();
+    }
 
-	protected void connect() throws ElasticsearchException {
-		String clusterName = getClusterName();
-		if (options.getSkipClusterHealthCheck()) {
-		        logger.warn("Skip checking cluster state, cluster_name='" + clusterName + '"');
-		        return;
-		}
-		logger.info("Checking cluster state..., cluster_name='" + clusterName + "'");
-		if (!waitForStatus(ClusterHealthStatus.GREEN)) {
-			logger.debug("Failed to wait for green");
-			logger.debug("Wait for read yellow status...");
+    protected void connect() throws ElasticsearchException {
+        String clusterName = getClusterName();
+        if (options.getSkipClusterHealthCheck()) {
+            logger.warn("Skip checking cluster state, cluster_name='" + clusterName + '"');
+            return;
+        }
+        logger.info("Checking cluster state..., cluster_name='" + clusterName + "'");
+        if (!waitForStatus(ClusterHealthStatus.GREEN)) {
+            logger.debug("Failed to wait for green");
+            logger.debug("Wait for read yellow status...");
 
-			if (!waitForStatus(ClusterHealthStatus.YELLOW)) {
-				logger.debug("Timedout");
-				throw new ElasticsearchException("Can't connect to cluster: " + clusterName);
-			}
-		}
-		logger.info("Cluster is ready to work, cluster_name='" + clusterName + "'");
-	}
+            if (!waitForStatus(ClusterHealthStatus.YELLOW)) {
+                logger.debug("Timedout");
+                throw new ElasticsearchException("Can't connect to cluster: " + clusterName);
+            }
+        }
+        logger.info("Cluster is ready to work, cluster_name='" + clusterName + "'");
+    }
 
-	public final boolean open() {
-		if (client == null) {
-			client = createClient();
-		}
-		try {
-			connect();
-		}
-		catch (ElasticsearchException e) {
-			logger.error("Failed to connect to " + getClusterName() + ", reason='" + e.getMessage() + "'");
-			close();
-			return false;
-		}
+    public final boolean open() {
+        if (client == null) {
+            client = createClient();
+        }
+        try {
+            connect();
+        } catch (ElasticsearchException e) {
+            logger.error("Failed to connect to " + getClusterName() + ", reason='" + e.getMessage() + "'");
+            close();
+            return false;
+        }
         messageProcessor.init();
-		return true;
-	}
+        return true;
+    }
 
-	@Override
-	public String getClusterName() {
-		return client.settings().get("cluster.name");
-	}
+    @Override
+    public String getClusterName() {
+        return client.settings().get("cluster.name");
+    }
 
-	public final void close() {
-		messageProcessor.flush();
-		messageProcessor.deinit();
-		client.close();
-		resetClient();
-	}
+    public final void close() {
+        messageProcessor.flush();
+        messageProcessor.deinit();
+        client.close();
+        resetClient();
+    }
 
-	public abstract boolean isOpened();
+    public abstract boolean isOpened();
 
-	public abstract void deinit();
+    public abstract void deinit();
 
-	public final void init() {
-		client = createClient();
-	}
+    public final void init() {
+        client = createClient();
+    }
 
-	public abstract Client createClient();
+    public abstract Client createClient();
 
-	public Client getClient() {
-		return client;
-	}
+    public Client getClient() {
+        return client;
+    }
 
-	private void resetClient() {
-		this.client = null;
-	}
-	
+    private void resetClient() {
+        this.client = null;
+    }
+
     protected void loadConfigFile(String cfgFile, Builder settingsBuilder) {
         if (cfgFile == null || cfgFile.isEmpty()) {
             return;
@@ -139,8 +138,8 @@ public abstract class ESNativeClient implements ESClient {
         }
     }
 
-	@Override
-	public boolean send(ESIndex index) {
-		return messageProcessor.send(index);
-	}
+    @Override
+    public boolean send(ESIndex index) {
+        return messageProcessor.send(index);
+    }
 }

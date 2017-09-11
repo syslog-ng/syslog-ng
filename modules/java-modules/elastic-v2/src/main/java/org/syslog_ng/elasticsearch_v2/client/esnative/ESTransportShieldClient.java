@@ -33,15 +33,15 @@ import org.syslog_ng.elasticsearch_v2.client.esnative.ESTransportClient;
 
 public class ESTransportShieldClient extends ESTransportClient {
 
-	public ESTransportShieldClient(ElasticSearchOptions options) {
-		super(options);
-	}
-	
-	@Override
+    public ESTransportShieldClient(ElasticSearchOptions options) {
+        super(options);
+    }
+
+    @Override
     public Client createClient() {
-	    ArrayList<Class<? extends Plugin>> plugins = new ArrayList<Class<? extends Plugin>>();    
+        ArrayList<Class<? extends Plugin>> plugins = new ArrayList<Class<? extends Plugin>>();
         plugins.add(ShieldPlugin.class);
-        
+
         super.createClient(plugins);
         return transportClient;
     }

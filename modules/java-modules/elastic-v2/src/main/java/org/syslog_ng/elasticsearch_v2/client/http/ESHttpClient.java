@@ -56,114 +56,117 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 public class ESHttpClient implements ESClient {
-	private ElasticSearchOptions options;
-	private String authtype;
-	private JestClient client;
-	private HttpMessageProcessor messageProcessor;
-	protected Logger logger;
+    private ElasticSearchOptions options;
+    private String authtype;
+    private JestClient client;
+    private HttpMessageProcessor messageProcessor;
+    protected Logger logger;
 
-  public class HttpClientBuilderException extends RuntimeException {
-    public HttpClientBuilderException() {}
+    public class HttpClientBuilderException extends RuntimeException {
+        public HttpClientBuilderException() {
+        }
 
-    public HttpClientBuilderException(String msg) {
-      super(msg);
+        public HttpClientBuilderException(String msg) {
+            super(msg);
+        }
+
+        public HttpClientBuilderException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
+
+        public HttpClientBuilderException(Throwable cause) {
+            super(cause);
+        }
     }
 
-    public HttpClientBuilderException(String msg, Throwable cause) {
-      super(msg, cause);
+    public ESHttpClient(ElasticSearchOptions options) {
+        this.options = options;
+        logger = Logger.getRootLogger();
+        messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
     }
 
-    public HttpClientBuilderException(Throwable cause) {
-      super(cause);
+    protected void setupHttpClientBuilder(HttpClientConfig.Builder httpClientConfigBuilder,
+            ElasticSearchOptions options) {
     }
-  }
 
-	public ESHttpClient(ElasticSearchOptions options) {
-		this.options = options;
-		logger = Logger.getRootLogger();
-		messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
-	}
+    private HttpClientConfig buildHttpClientConfig() {
+        HttpClientConfig.Builder httpClientConfigBuilder = new HttpClientConfig.Builder(options.getClusterUrls())
+                .multiThreaded(true).defaultSchemeForDiscoveredNodes(options.getClientMode());
 
-  protected void setupHttpClientBuilder(HttpClientConfig.Builder httpClientConfigBuilder, ElasticSearchOptions options) {}
+        /* HTTP Basic authentication requested */
+        if (options.getHttpAuthType().equals("basic")) {
+            httpClientConfigBuilder.defaultCredentials(options.getHttpAuthTypeBasicUsername(),
+                    options.getHttpAuthTypeBasicPassword());
+        }
+        setupHttpClientBuilder(httpClientConfigBuilder, this.options);
 
-  private HttpClientConfig buildHttpClientConfig() {
- 		HttpClientConfig.Builder httpClientConfigBuilder = new HttpClientConfig
-			.Builder(options.getClusterUrls())
-			.multiThreaded(true)
-			.defaultSchemeForDiscoveredNodes(options.getClientMode());
+        return httpClientConfigBuilder.build();
+    }
 
-		/* HTTP Basic authentication requested */
-		if (options.getHttpAuthType().equals("basic")) {
-			httpClientConfigBuilder.defaultCredentials(options.getHttpAuthTypeBasicUsername(), options.getHttpAuthTypeBasicPassword());
-    } 
-    setupHttpClientBuilder(httpClientConfigBuilder, this.options);
+    private JestClient createClient() {
+        JestClientFactory clientFactory = new JestClientFactory();
+        clientFactory.setHttpClientConfig(buildHttpClientConfig());
+        return clientFactory.getObject();
+    }
 
-    return httpClientConfigBuilder.build();
-  }
+    public JestClient getClient() {
+        return client;
+    }
 
-	private JestClient createClient() {
-		JestClientFactory clientFactory = new JestClientFactory();
-	  clientFactory.setHttpClientConfig(buildHttpClientConfig());
-		return clientFactory.getObject();
-	}
+    @Override
+    public boolean open() {
+        if (client == null) {
+            try {
+                client = createClient();
+            } catch (ESHttpClient.HttpClientBuilderException e) {
+                logger.error(e.getMessage());
+                return false;
+            }
+        }
+        messageProcessor.init();
+        return true;
+    }
 
-	public JestClient getClient() {
-		return client;
-	}
+    @Override
+    public void close() {
+        messageProcessor.flush();
+    }
 
-	@Override
-	public boolean open() {
-		if (client == null) {
-      try {
-			  client = createClient();
-      }
-      catch (ESHttpClient.HttpClientBuilderException e) {
-        logger.error(e.getMessage());
-        return false;
-      }
-		}
-		messageProcessor.init();
-		return true;
-	}
+    @Override
+    public boolean isOpened() {
+        return true;
+    }
 
-	@Override
-	public void close() {
-		messageProcessor.flush();
-	}
+    @Override
+    public void init() {
+        this.client = createClient();
+    }
 
-	@Override
-	public boolean isOpened() {
-		return true;
-	}
+    @Override
+    public void deinit() {
+        messageProcessor.deinit();
+        client.shutdownClient();
+        options.deinit();
+    }
 
-	@Override
-	public void init() {
-		this.client = createClient();
-	}
+    @Override
+    public boolean send(ESIndex index) {
+        return messageProcessor.send(index);
+    }
 
-	@Override
-	public void deinit() {
-		client.shutdownClient();
-		options.deinit();
-	}
-
-	@Override
-	public boolean send(ESIndex index) {
-		return messageProcessor.send(index);
-	}
-
-	@Override
-	public String getClusterName() {
-		NodesInfo nodesinfo = new NodesInfo.Builder().build();
-		String clusterName = options.getCluster();
-		try {
-			JestResult result = client.execute(nodesinfo);
-			if (result != null ) {
-				clusterName = result.getValue("cluster_name").toString();
-			} 
-		} catch (IOException e) {
-      logger.info("Failed to get cluster name from the client, use the name set in the config file: " + clusterName);
-		}
-		return clusterName;
-	}
+    @Override
+    public String getClusterName() {
+        NodesInfo nodesinfo = new NodesInfo.Builder().build();
+        String clusterName = options.getCluster();
+        try {
+            JestResult result = client.execute(nodesinfo);
+            if (result != null) {
+                clusterName = result.getValue("cluster_name").toString();
+            }
+        } catch (IOException e) {
+            logger.info(
+                    "Failed to get cluster name from the client, use the name set in the config file: " + clusterName);
+        }
+        return clusterName;
+    }
 }

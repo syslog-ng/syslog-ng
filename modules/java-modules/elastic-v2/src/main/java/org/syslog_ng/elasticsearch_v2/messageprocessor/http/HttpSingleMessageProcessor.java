@@ -31,29 +31,27 @@ import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 
 import java.io.IOException;
 
-public class HttpSingleMessageProcessor extends  HttpMessageProcessor {
+public class HttpSingleMessageProcessor extends HttpMessageProcessor {
 
-	public HttpSingleMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
-		super(options, client);
-	}
+    public HttpSingleMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
+        super(options, client);
+    }
 
-	@Override
-	public boolean send(Index req) {
-		boolean result = true;
-	  JestResult jestResult = null;
-		try {
-			jestResult = client.getClient().execute(req);
-		}
-		catch (IOException e)
-		{
-			logger.error(e.getMessage());
-			result = false;
-		}
-		if (! jestResult.isSucceeded()) {
-			logger.error(jestResult.getErrorMessage());
-			result = false;
-		}
-		return result;
-	}
+    @Override
+    public boolean send(Index req) {
+        boolean result = true;
+        JestResult jestResult = null;
+        try {
+            jestResult = client.getClient().execute(req);
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+            result = false;
+        }
+        if (!jestResult.isSucceeded()) {
+            logger.error(jestResult.getErrorMessage());
+            result = false;
+        }
+        return result;
+    }
 
 }

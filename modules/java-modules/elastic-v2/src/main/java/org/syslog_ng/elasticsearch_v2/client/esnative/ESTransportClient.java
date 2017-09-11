@@ -37,70 +37,72 @@ import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
 public class ESTransportClient extends ESNativeClient {
-	private Settings settings;
-	protected TransportClient transportClient;
+    private Settings settings;
+    protected TransportClient transportClient;
 
-	public ESTransportClient(ElasticSearchOptions options) {
-		super(options);
-	}
+    public ESTransportClient(ElasticSearchOptions options) {
+        super(options);
+    }
 
-	private void validate() {
-		if (options.getFlushLimit() > 1) {
-			logger.warn("Using transport based client mode with bulk message processing (flush_limit > 1) can cause high message dropping rate in case of connection broken, using node client mode is suggested");
-		}
-	}
+    private void validate() {
+        if (options.getFlushLimit() > 1) {
+            logger.warn(
+                    "Using transport based client mode with bulk message processing (flush_limit > 1) can cause high message dropping rate in case of connection broken, using node client mode is suggested");
+        }
+    }
 
     @Override
     public Client createClient() {
-        return createClient(null);        
+        return createClient(null);
     }
 
-	protected Client createClient(List<Class<? extends Plugin>> plugins) {
-	    settings = initSettingsBuilder();		
+    protected Client createClient(List<Class<? extends Plugin>> plugins) {
+        settings = initSettingsBuilder();
 
-	    org.elasticsearch.client.transport.TransportClient.Builder transportClientBuilder = TransportClient.builder().settings(settings);
-		
+        org.elasticsearch.client.transport.TransportClient.Builder transportClientBuilder = TransportClient.builder()
+                .settings(settings);
+
         if (plugins != null) {
             Iterator<Class<? extends Plugin>> iterator = plugins.iterator();
             while (iterator.hasNext()) {
                 transportClientBuilder.addPlugin(iterator.next());
             }
         }
-		
-		transportClient = transportClientBuilder.build();
-		
-		addServersToClient(transportClient);
 
-		validate();
+        transportClient = transportClientBuilder.build();
 
-		return transportClient;
-	}
+        addServersToClient(transportClient);
 
-	@Override
-	public boolean isOpened() {
-		return !transportClient.connectedNodes().isEmpty();
-	}
+        validate();
 
-	@Override
-	public void deinit() {
+        return transportClient;
+    }
 
-	}
-	
-	protected Settings initSettingsBuilder() {
+    @Override
+    public boolean isOpened() {
+        return !transportClient.connectedNodes().isEmpty();
+    }
+
+    @Override
+    public void deinit() {
+
+    }
+
+    protected Settings initSettingsBuilder() {
         Builder settingsBuilder = Settings.builder();
         String clusterName = options.getCluster();
         loadConfigFile(options.getConfigFile(), settingsBuilder);
         settingsBuilder = settingsBuilder.put("client.transport.sniff", true);
-                
+
         if (clusterName != null) {
             settingsBuilder = settingsBuilder.put("cluster.name", clusterName);
         }
 
         return settingsBuilder.build();
-	}
-	
-	protected void addServersToClient(TransportClient transportClient) {
-	    String[] servers =  options.getServerList();
+    }
+
+    protected void addServersToClient(TransportClient transportClient) {
+        String[] servers = options.getServerList();
         for (String server : servers) {
             InetSocketAddress inetSocketAddress = new InetSocketAddress(server, options.getPort());
             if (inetSocketAddress.isUnresolved()) {
@@ -109,5 +111,5 @@ public class ESTransportClient extends ESNativeClient {
                 transportClient.addTransportAddress(new InetSocketTransportAddress(inetSocketAddress));
             }
         }
-	}
+    }
 }

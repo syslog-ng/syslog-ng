@@ -37,52 +37,51 @@ import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
 public class ESNodeClient extends ESNativeClient {
-	private Node node;
+    private Node node;
 
-	public ESNodeClient(ElasticSearchOptions options) {
-		super(options);
-	}
+    public ESNodeClient(ElasticSearchOptions options) {
+        super(options);
+    }
 
-	private NodeBuilder createNodeBuilder(String cluster) {
-		NodeBuilder result = nodeBuilder().data(false)
-				  .client(true);
+    private NodeBuilder createNodeBuilder(String cluster) {
+        NodeBuilder result = nodeBuilder().data(false).client(true);
 
-		if (cluster != null) {
-			result = result.clusterName(cluster);
-		}
-		return result;
-	}
+        if (cluster != null) {
+            result = result.clusterName(cluster);
+        }
+        return result;
+    }
 
-	private void loadConfigFile(String cfgFile, NodeBuilder nodeBuilder) {
-		if (cfgFile == null || cfgFile.isEmpty()) {
-			return;
-		}
-		try {
-			URI url = new File(cfgFile).toURI();			
-			Builder builder = nodeBuilder().settings().loadFromPath(Paths.get(url));			
-			nodeBuilder = nodeBuilder.settings(builder);
-		} catch (SettingsException e) {
-			logger.warn("Can't load settings from file, file = '" + cfgFile + "', reason = '" + e.getMessage() + "'");
-		}
-	}
+    private void loadConfigFile(String cfgFile, NodeBuilder nodeBuilder) {
+        if (cfgFile == null || cfgFile.isEmpty()) {
+            return;
+        }
+        try {
+            URI url = new File(cfgFile).toURI();
+            Builder builder = nodeBuilder().settings().loadFromPath(Paths.get(url));
+            nodeBuilder = nodeBuilder.settings(builder);
+        } catch (SettingsException e) {
+            logger.warn("Can't load settings from file, file = '" + cfgFile + "', reason = '" + e.getMessage() + "'");
+        }
+    }
 
-	@Override
-	public Client createClient() {
-		NodeBuilder nodeBuilder = createNodeBuilder(options.getCluster());
-		nodeBuilder.settings().put("discovery.initial_state_timeout", "5s");
-		nodeBuilder.settings().put("path.home", "/tmp");
-		loadConfigFile(options.getConfigFile(), nodeBuilder);
-		node = nodeBuilder.node();
-	    return node.client();
-	}
+    @Override
+    public Client createClient() {
+        NodeBuilder nodeBuilder = createNodeBuilder(options.getCluster());
+        nodeBuilder.settings().put("discovery.initial_state_timeout", "5s");
+        nodeBuilder.settings().put("path.home", "/tmp");
+        loadConfigFile(options.getConfigFile(), nodeBuilder);
+        node = nodeBuilder.node();
+        return node.client();
+    }
 
-	@Override
-	public boolean isOpened() {
-		return true;
-	}
+    @Override
+    public boolean isOpened() {
+        return true;
+    }
 
-	@Override
-	public void deinit() {
-		node.close();
-	}
+    @Override
+    public void deinit() {
+        node.close();
+    }
 }

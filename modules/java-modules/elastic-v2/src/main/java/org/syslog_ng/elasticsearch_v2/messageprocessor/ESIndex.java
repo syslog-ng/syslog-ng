@@ -24,62 +24,62 @@
 package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
 public class ESIndex {
-	private String formattedMessage;
-	private String index;
-	private String type;
-	private String id;
+    private String formattedMessage;
+    private String index;
+    private String type;
+    private String id;
 
-	public static class Builder {
-		String formattedMessage;
-		String index;
-		String type;
-		String id;
+    public static class Builder {
+        String formattedMessage;
+        String index;
+        String type;
+        String id;
 
-		public Builder formattedMessage(String formattedMessage) {
-			Builder.this.formattedMessage = formattedMessage;
-			return Builder.this;
-		}
+        public Builder formattedMessage(String formattedMessage) {
+            Builder.this.formattedMessage = formattedMessage;
+            return Builder.this;
+        }
 
-		public Builder index(String index) {
-			Builder.this.index = index;
-			return Builder.this;
-		}
+        public Builder index(String index) {
+            Builder.this.index = index;
+            return Builder.this;
+        }
 
-		public Builder type(String type) {
-			Builder.this.type = type;
-			return Builder.this;
-		}
+        public Builder type(String type) {
+            Builder.this.type = type;
+            return Builder.this;
+        }
 
-		public Builder id(String id) {
-			Builder.this.id = id;
-			return Builder.this;
-		}
+        public Builder id(String id) {
+            Builder.this.id = id;
+            return Builder.this;
+        }
 
-		public ESIndex build() {
-			return new ESIndex(Builder.this);
-		}
-	}
+        public ESIndex build() {
+            return new ESIndex(Builder.this);
+        }
+    }
 
-	private ESIndex(Builder builder) {
-		this.formattedMessage = builder.formattedMessage;
-		this.index = builder.index;
-		this.type = builder.type;
-		this.id = builder.id;
-	}
+    private ESIndex(Builder builder) {
+        this.formattedMessage = builder.formattedMessage;
+        this.index = builder.index;
+        this.type = builder.type;
+        this.id = builder.id;
+    }
 
-	public String getFormattedMessage() {
-		return formattedMessage;
-	}
+    public String getFormattedMessage() {
+        return formattedMessage;
+    }
 
-	public String getIndex() {
-		return index;
-	}
+    public String getIndex() {
+        return index;
+    }
 
-	public String getType() {
-		return type;
-	}
+    public String getType() {
+        return type;
+    }
 
-	public String getId() {
-		return id;
-	}
+    public String getId() {
+        return id;
+    }
 }

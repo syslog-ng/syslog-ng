@@ -34,66 +34,60 @@ import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
 public class ESBulkNativeMessageProcessor extends ESNativeMessageProcessor {
-	private BulkProcessor bulkProcessor;
+    private BulkProcessor bulkProcessor;
 
-	private class BulkProcessorListener implements BulkProcessor.Listener {
-		@Override
-		public void beforeBulk(long executionId, BulkRequest request) {
-			logger.debug("Start bulk processing, id='" + executionId + "'");
-		}
+    private class BulkProcessorListener implements BulkProcessor.Listener {
+        @Override
+        public void beforeBulk(long executionId, BulkRequest request) {
+            logger.debug("Start bulk processing, id='" + executionId + "'");
+        }
 
-		@Override
-		public void afterBulk(long executionId, BulkRequest request,
-				BulkResponse response) {
-			logger.debug("Bulk processing finished successfully, id='" + executionId + "'"
-					+ ", numberOfMessages='" + request.numberOfActions() + "'");
-		}
+        @Override
+        public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
+            logger.debug("Bulk processing finished successfully, id='" + executionId + "'" + ", numberOfMessages='"
+                    + request.numberOfActions() + "'");
+        }
 
-		@Override
-		public void afterBulk(long executionId, BulkRequest request,
-				Throwable failure) {
-			String errorMessage = "Bulk processing failed,";
-			errorMessage += " id='" + executionId + "'";
-			errorMessage += ", numberOfMessages='" + request.numberOfActions() + "'";
-			errorMessage += ", error='" + failure.getMessage() + "'";
-			logger.error(errorMessage);
-		}
-	}
+        @Override
+        public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
+            String errorMessage = "Bulk processing failed,";
+            errorMessage += " id='" + executionId + "'";
+            errorMessage += ", numberOfMessages='" + request.numberOfActions() + "'";
+            errorMessage += ", error='" + failure.getMessage() + "'";
+            logger.error(errorMessage);
+        }
+    }
 
-	public ESBulkNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
-		super(options, client);
-	}
+    public ESBulkNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
+        super(options, client);
+    }
 
-	@Override
-	protected boolean send(IndexRequest req) {
-		bulkProcessor.add(req);
-		return true;
-	}
+    @Override
+    protected boolean send(IndexRequest req) {
+        bulkProcessor.add(req);
+        return true;
+    }
 
-	@Override
-	public void flush() {
-		bulkProcessor.flush();
-	}
+    @Override
+    public void flush() {
+        bulkProcessor.flush();
+    }
 
-	@Override
-	public void init() {
-		bulkProcessor = BulkProcessor.builder(
-				client.getClient(),
-				new BulkProcessorListener()
-			)
-			.setBulkActions(options.getFlushLimit())
-			.setFlushInterval(new TimeValue(1000))
-			.setConcurrentRequests(options.getConcurrentRequests())
-			.build();
-	}
+    @Override
+    public void init() {
+        bulkProcessor = BulkProcessor.builder(client.getClient(), new BulkProcessorListener())
+                .setBulkActions(options.getFlushLimit())
+                .setFlushInterval(new TimeValue(options.getFlushTimeout() * 1000))
+                .setConcurrentRequests(options.getConcurrentRequests()).build();
+    }
 
-	@Override
-	public void deinit() {
-		try {
-			bulkProcessor.awaitClose(1, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
+    @Override
+    public void deinit() {
+        try {
+            bulkProcessor.awaitClose(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
 }

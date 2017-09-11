@@ -29,19 +29,20 @@ import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
 
 public class DummyProcessorNative extends ESNativeMessageProcessor {
 
-	public DummyProcessorNative(ElasticSearchOptions options, ESNativeClient client) {
-		super(options, client);
-		
-	}
+    public DummyProcessorNative(ElasticSearchOptions options, ESNativeClient client) {
+        super(options, client);
 
-	@Override
-	public void init() {
-		logger.warn("Using option(\"flush_limit\", \"0\"), means only testing the Elasticsearch client site without sending logs to the ES");
-	}
+    }
 
-	@Override
-	public boolean send(IndexRequest req) {
-		return true;
-	}
+    @Override
+    public void init() {
+        logger.warn(
+                "Using option(\"flush_limit\", \"0\"), means only testing the Elasticsearch client site without sending logs to the ES");
+    }
+
+    @Override
+    public boolean send(IndexRequest req) {
+        return true;
+    }
 
 }

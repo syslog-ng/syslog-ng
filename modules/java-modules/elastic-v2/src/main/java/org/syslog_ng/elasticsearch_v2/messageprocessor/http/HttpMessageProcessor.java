@@ -32,32 +32,33 @@ import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESMessageProcessor;
 
 public abstract class HttpMessageProcessor implements ESMessageProcessor {
-	protected ElasticSearchOptions options;
-	protected ESHttpClient client;
-	protected Logger logger;
+    protected ElasticSearchOptions options;
+    protected ESHttpClient client;
+    protected Logger logger;
 
-	public HttpMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
-		this.options = options;
-		this.client = client;
-		this.logger = Logger.getRootLogger();
-	}
+    public HttpMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
+        this.options = options;
+        this.client = client;
+        this.logger = Logger.getRootLogger();
+    }
 
-	public void init() {
-	}
+    public void init() {
+    }
 
-	public void flush() {
+    public void flush() {
 
-	}
+    }
 
-	public void deinit() {
+    public void deinit() {
 
-	}
+    }
 
-	protected abstract boolean send(Index req);
+    protected abstract boolean send(Index req);
 
-	@Override
-	public boolean send(ESIndex index) {
-		Index req = new Index.Builder(index.getFormattedMessage()).index(index.getIndex()).type(index.getType()).id(index.getId()).build();
-		return send(req);
-	}
+    @Override
+    public boolean send(ESIndex index) {
+        Index req = new Index.Builder(index.getFormattedMessage()).index(index.getIndex()).type(index.getType())
+                .id(index.getId()).build();
+        return send(req);
+    }
 }

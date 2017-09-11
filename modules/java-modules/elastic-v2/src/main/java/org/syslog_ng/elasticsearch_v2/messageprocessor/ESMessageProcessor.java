@@ -24,5 +24,5 @@
 package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
 public interface ESMessageProcessor {
-	boolean send(ESIndex index);
+    boolean send(ESIndex index);
 }
