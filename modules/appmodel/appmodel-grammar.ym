@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "appmodel.h"
+#include "appmodel-parser.h"
+}
+
+
+%code {
+
+#include "cfg-parser.h"
+#include "cfg-grammar.h"
+#include "appmodel-grammar.h"
+#include "messages.h"
+
+Application *last_application;
+
+}
+
+%name-prefix "appmodel_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {gpointer *instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_APPLICATION
+
+%type	<ptr> application_definition
+
+%%
+
+start
+        : LL_CONTEXT_ROOT application_definition
+          {
+	    appmodel_register_application(configuration, last_application);
+            *instance = last_application;
+            YYACCEPT;
+          }
+        ;
+
+
+application_definition
+        : KW_APPLICATION string '[' string ']'
+          {
+	    last_application = application_new($2, $4);
+          }
+	  '{' application_options '}'
+	  {
+	    $$ = last_application;
+          }
+        ;
+
+application_options
+	: application_option ';' application_options
+	|
+	;
+
+application_option
+	: KW_FILTER
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "app filter block"); }
+	  LL_BLOCK
+          { cfg_lexer_pop_context(lexer); }
+          {
+            application_set_filter(last_application, $3);
+          }
+	| KW_PARSER
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "app parser block"); }
+	  LL_BLOCK
+          { cfg_lexer_pop_context(lexer); }
+          {
+            application_set_parser(last_application, $3);
+          }
+	;
+
+/* INCLUDE_RULES */
+
+%%
