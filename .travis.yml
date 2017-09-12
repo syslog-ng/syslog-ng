@@ -59,6 +59,9 @@ before_script:
       --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
       --enable-extra-warnings
       "
+  - if [ "$CC" = "clang" ]; then
+      CONFIGURE_FLAGS="$CONFIGURE_FLAGS --disable-mongodb" ;
+    fi
   - ./configure $CONFIGURE_FLAGS
 script:
   - . tests/build-log-cflags-propagation.sh;

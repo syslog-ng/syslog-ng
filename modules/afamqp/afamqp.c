@@ -394,7 +394,8 @@ afamqp_dd_socket_init(AMQPDestDriver *self) {
 
               }
           }
-        amqp_ssl_socket_set_verify(self->sockfd, self->peer_verify);
+        amqp_ssl_socket_set_verify_peer(self->sockfd, self->peer_verify);
+        amqp_ssl_socket_set_verify_hostname(self->sockfd, self->peer_verify);
       }
     else
       self->sockfd = amqp_tcp_socket_new(self->conn);

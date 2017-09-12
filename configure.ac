@@ -671,7 +671,6 @@ fi
 AC_CACHE_CHECK(for modern utmp,
                blb_cv_c_modern_utmp,
 [AC_TRY_COMPILE([
-#include <time.h>
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
 #else
@@ -684,7 +683,7 @@ AC_CACHE_CHECK(for modern utmp,
 #else
         struct utmp ut;
 #endif
-        return &ut.ut_type && &ut.ut_user;
+  return sizeof(ut.ut_type) & sizeof(ut.ut_user);
 ],
 blb_cv_c_modern_utmp=yes,
 blb_cv_c_modern_utmp=no)])
