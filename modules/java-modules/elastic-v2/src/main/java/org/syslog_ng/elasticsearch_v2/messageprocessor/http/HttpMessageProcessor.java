@@ -60,4 +60,8 @@ public abstract class HttpMessageProcessor implements ESMessageProcessor {
 		Index req = new Index.Builder(index.getFormattedMessage()).index(index.getIndex()).type(index.getType()).id(index.getId()).build();
 		return send(req);
 	}
+
+    public void onMessageQueueEmpty() {
+
+    }
 }

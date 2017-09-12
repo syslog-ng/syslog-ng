@@ -166,4 +166,9 @@ public class ESHttpClient implements ESClient {
 		}
 		return clusterName;
 	}
+
+    @Override
+    public void onMessageQueueEmpty() {
+        messageProcessor.onMessageQueueEmpty();
+    }
 }

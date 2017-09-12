@@ -33,4 +33,5 @@ public interface ESClient {
 	void deinit();
 	boolean send(ESIndex index);
 	String getClusterName();
+	void onMessageQueueEmpty();
 }
