@@ -92,7 +92,7 @@ log_rewrite_subst_clone(LogPipe *s)
   LogRewriteSubst *self = (LogRewriteSubst *) s;
   LogRewriteSubst *cloned;
 
-  cloned = (LogRewriteSubst *) log_rewrite_subst_new(log_template_ref(self->replacement), s->cfg);
+  cloned = (LogRewriteSubst *) log_rewrite_subst_new(self->replacement, s->cfg);
   cloned->matcher = log_matcher_ref(self->matcher);
   cloned->super.value_handle = self->super.value_handle;
 
