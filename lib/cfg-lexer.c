@@ -896,7 +896,7 @@ relex:
       goto relex;
     }
   else if (tok == LL_IDENTIFIER
-           && (gen = cfg_lexer_find_generator(self, configuration, cfg_lexer_get_context_type(self), yylval->cptr)))
+           && (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
       CfgArgs *args;
 
@@ -908,7 +908,7 @@ relex:
           GString *result = g_string_sized_new(256);
 
           self->preprocess_suppress_tokens--;
-          success = cfg_block_generator_generate(gen, configuration, args, result);
+          success = cfg_block_generator_generate(gen, self->cfg, args, result);
 
           free(yylval->cptr);
           cfg_args_unref(args);
@@ -934,26 +934,26 @@ relex:
         }
       return LL_ERROR;
     }
-  else if (configuration->user_version == 0 && configuration->parsed_version != 0)
+  else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
     {
-      if (!cfg_set_version(configuration, configuration->parsed_version))
+      if (!cfg_set_version(self->cfg, configuration->parsed_version))
         return LL_ERROR;
     }
   else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
     {
       /* first non-pragma token */
 
-      if (configuration->user_version == 0 && configuration->parsed_version == 0)
+      if (self->cfg->user_version == 0 && self->cfg->parsed_version == 0)
         {
           msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
                     ", please specify a version number using @version and update your configuration accordingly");
           return LL_ERROR;
         }
 
-      cfg_load_candidate_modules(configuration);
+      cfg_load_candidate_modules(self->cfg);
 
 #if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
-      if (!cfg_load_module(configuration, "license"))
+      if (!cfg_load_module(self->cfg, "license"))
         {
           msg_error("Error loading the license module, forcing exit");
           exit(1);
@@ -974,7 +974,7 @@ relex:
 }
 
 static void
-cfg_lexer_init(CfgLexer *self)
+cfg_lexer_init(CfgLexer *self, GlobalConfig *cfg)
 {
   self->globals = cfg_args_new();
   CfgIncludeLevel *level;
@@ -983,6 +983,7 @@ cfg_lexer_init(CfgLexer *self)
   self->string_buffer = g_string_sized_new(32);
   self->token_text = g_string_sized_new(32);
   self->token_pretext = g_string_sized_new(32);
+  self->cfg = cfg;
 
   level = &self->include_stack[0];
   level->lloc.first_line = level->lloc.last_line = 1;
@@ -991,13 +992,13 @@ cfg_lexer_init(CfgLexer *self)
 }
 
 CfgLexer *
-cfg_lexer_new(FILE *file, const gchar *filename, GString *preprocess_output)
+cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *preprocess_output)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
 
   self = g_new0(CfgLexer, 1);
-  cfg_lexer_init(self);
+  cfg_lexer_init(self, cfg);
   self->preprocess_output = preprocess_output;
 
   level = &self->include_stack[0];
@@ -1010,13 +1011,13 @@ cfg_lexer_new(FILE *file, const gchar *filename, GString *preprocess_output)
 }
 
 CfgLexer *
-cfg_lexer_new_buffer(const gchar *buffer, gsize length)
+cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
 
   self = g_new0(CfgLexer, 1);
-  cfg_lexer_init(self);
+  cfg_lexer_init(self, cfg);
   self->ignore_pragma = TRUE;
 
   level = &self->include_stack[0];

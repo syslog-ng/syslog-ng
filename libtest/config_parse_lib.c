@@ -69,7 +69,7 @@ parse_plugin_config(const gchar *config_to_parse, gint context, gpointer arg)
       return NULL;
     }
 
-  lexer = cfg_lexer_new_buffer(delimited[1], strlen(delimited[1]));
+  lexer = cfg_lexer_new_buffer(configuration, delimited[1], strlen(delimited[1]));
   if (!lexer)
     {
       fprintf(stderr, "Error parsing expression\n");
@@ -116,7 +116,7 @@ static gboolean
 parse_general_config(const gchar *config_to_parse, gint context, gpointer arg)
 {
   gpointer result = NULL;
-  CfgLexer *lexer = cfg_lexer_new_buffer(config_to_parse, strlen(config_to_parse));
+  CfgLexer *lexer = cfg_lexer_new_buffer(configuration, config_to_parse, strlen(config_to_parse));
 
   if (!cfg_run_parser(configuration, lexer, &main_parser, &result, arg))
     {

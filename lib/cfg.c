@@ -501,7 +501,7 @@ cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, 
   CfgLexer *lexer;
   GString *preprocess_output = g_string_sized_new(8192);
 
-  lexer = cfg_lexer_new_buffer(config_string, strlen(config_string));
+  lexer = cfg_lexer_new_buffer(self, config_string, strlen(config_string));
   lexer->preprocess_output = preprocess_output;
 
   res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
@@ -530,7 +530,7 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gc
       CfgLexer *lexer;
       GString *preprocess_output = g_string_sized_new(8192);
 
-      lexer = cfg_lexer_new(cfg_file, fname, preprocess_output);
+      lexer = cfg_lexer_new(self, cfg_file, fname, preprocess_output);
       res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
       fclose(cfg_file);
       if (preprocess_into)

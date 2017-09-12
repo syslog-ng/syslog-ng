@@ -53,7 +53,7 @@ test_parser_input(TestParser *self, const gchar *buffer)
 {
   if (self->lexer)
     cfg_lexer_free(self->lexer);
-  self->lexer = cfg_lexer_new_buffer(buffer, strlen(buffer));
+  self->lexer = cfg_lexer_new_buffer(configuration, buffer, strlen(buffer));
 }
 
 TestParser *
