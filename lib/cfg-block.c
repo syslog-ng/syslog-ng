@@ -24,6 +24,8 @@
 #include "cfg-block.h"
 #include "cfg-lexer.h"
 #include "cfg-lexer-subst.h"
+#include "cfg.h"
+#include "str-utils.h"
 
 /*
  * This class encapsulates a configuration block that the user defined
@@ -76,21 +78,16 @@ _fill_varargs(CfgBlock *block, CfgArgs *args)
  * for the lexer.
  */
 gboolean
-cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args)
+cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result)
 {
   CfgBlock *self = (CfgBlock *) s;
   gchar *value;
-  gchar buf[256];
   gsize length;
   GError *error = NULL;
-  gboolean result;
 
-  g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(self->super.context),
-             self->super.name);
   _fill_varargs(self, args);
 
-  value = cfg_lexer_subst_args_in_input(lexer->globals, self->arg_defs, args, self->content, -1, &length, &error);
-
+  value = cfg_lexer_subst_args_in_input(cfg->lexer->globals, self->arg_defs, args, self->content, -1, &length, &error);
   if (!value)
     {
       msg_warning("Syntax error while resolving backtick references in block",
@@ -102,9 +99,9 @@ cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgLexer *lexer, Cfg
       return FALSE;
     }
 
-  result = cfg_lexer_include_buffer_without_backtick_substitution(lexer, buf, value, length);
+  g_string_assign_len(result, value, length);
   g_free(value);
-  return result;
+  return TRUE;
 }
 
 /*
@@ -132,6 +129,7 @@ cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *ar
   cfg_block_generator_init_instance(&self->super, context, name);
   self->super.free_fn = cfg_block_free_instance;
   self->super.generate = cfg_block_generate;
+  self->super.suppress_backticks = TRUE;
   self->content = g_strdup(content);
   self->arg_defs = arg_defs;
   return &self->super;

@@ -904,12 +904,24 @@ relex:
       if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
         {
           gboolean success;
+          gchar buf[256];
+          GString *result = g_string_sized_new(256);
 
           self->preprocess_suppress_tokens--;
-          success = cfg_block_generator_generate(gen, configuration, self, args);
+          success = cfg_block_generator_generate(gen, configuration, args, result);
 
           free(yylval->cptr);
           cfg_args_unref(args);
+          g_snprintf(buf, sizeof(buf), "%s generator %s",
+                     cfg_lexer_lookup_context_name_by_type(gen->context),
+                     gen->name);
+
+          if (gen->suppress_backticks)
+            success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
+          else
+            success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
+          g_string_free(result, TRUE);
+
           if (success)
             {
               goto relex;

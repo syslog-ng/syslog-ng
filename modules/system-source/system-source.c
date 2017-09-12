@@ -351,15 +351,9 @@ system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
 }
 
 static gboolean
-system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args)
+system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *sysblock)
 {
-  gchar buf[256];
-  GString *sysblock;
   gboolean result = FALSE;
-
-  g_snprintf(buf, sizeof(buf), "source confgen system");
-
-  sysblock = g_string_sized_new(1024);
 
   g_string_append(sysblock,
                   "channel {\n"
@@ -375,9 +369,8 @@ system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lex
   system_generate_cim_parser(cfg, sysblock);
 
   g_string_append(sysblock, "}; # channel\n");
-  result = cfg_lexer_include_buffer(lexer, buf, sysblock->str, sysblock->len);
+  result = TRUE;
 exit:
-  g_string_free(sysblock, TRUE);
   return result;
 }
 
