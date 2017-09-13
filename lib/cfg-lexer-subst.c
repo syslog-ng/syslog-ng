@@ -299,7 +299,7 @@ cfg_lexer_subst_free(CfgLexerSubst *self)
 
 gchar *
 cfg_lexer_subst_args_in_input(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length,
-                     gsize *output_length, GError **error)
+                              gsize *output_length, GError **error)
 {
   CfgLexerSubst *subst = cfg_lexer_subst_new(cfg_args_ref(globals), cfg_args_ref(defs), cfg_args_ref(args));
   gchar *result;

@@ -260,7 +260,8 @@ plugin_dlopen_module_as_filename(const gchar *module_file_name, const gchar *mod
 }
 
 static GModule *
-plugin_dlopen_module_as_dir_and_filename(const gchar *module_dir_name, const gchar *module_file_name, const gchar *module_name)
+plugin_dlopen_module_as_dir_and_filename(const gchar *module_dir_name, const gchar *module_file_name,
+                                         const gchar *module_name)
 {
   gchar *path;
   GModule *mod;
@@ -481,9 +482,9 @@ _parse_and_load_plugin_info_in_modules(int input_fd)
     }
 
   while (fscanf(discovery, "%4095s %d %255s\n",
-                  module_name,
-                  &plugin_type,
-                  plugin_name) == 3)
+                module_name,
+                &plugin_type,
+                plugin_name) == 3)
     {
       PluginCandidate *candidate_plugin;
 
