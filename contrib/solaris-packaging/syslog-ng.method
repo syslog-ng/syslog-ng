@@ -8,7 +8,7 @@
 #   added nicer options field
 # Modified for BalaBit Ltd's syslog-ng package by Tamas Pal Mar, 1st 2006
 # Modified for BalaBit's syslog-ng package to make it multi-instance-able by György Pásztor Mar, 21th 2016
-# Minor modifications for Syslog-ng OSE by Janos Szigetvari Jul, 19th 2017
+# Minor modifications for Syslog-ng OSE by Janos Szigetvari Aug, 15th 2017
 
 . /lib/svc/share/smf_include.sh
 
@@ -34,22 +34,23 @@ DEFAULTFILE=/etc/default/syslog-ng
 
 SYSLOGNG_PREFIX=${SYSLOGNG_PREFIX:-/usr/local}
 SYSLOGNG="${SYSLOGNG_PREFIX}/sbin/syslog-ng"
-VAR_DIR=${VAR_DIR:-${SYSLOGNG_PREFIX}/var}
 
 if [ "$instance" = "default" ];
 then
         CONFIG_FILE=${CONFIG_FILE:-${SYSLOGNG_PREFIX}/etc/syslog-ng.conf}
+        VAR_DIR=${VAR_DIR:-${SYSLOGNG_PREFIX}/var/lib/syslog-ng}
         PID_FILE=${PID_FILE:-${SYSLOGPID_FILE}}
 else
         CONFIG_FILE=${CONFIG_FILE:-${SYSLOGNG_PREFIX}/etc/syslog-ng@${instance}.conf}
-        PID_FILE=${PID_FILE:-${VAR_DIR}/run/syslog-ng.pid}
+        VAR_DIR=${VAR_DIR:-${SYSLOGNG_PREFIX}/var/lib/syslog-ng@${instance}}
 
         [ -d "${VAR_DIR}" ] || mkdir "${VAR_DIR}"
         [ -d "${VAR_DIR}/run" ] || mkdir "${VAR_DIR}/run"
 fi
 
-PERSIST_FILE=${PERSIST_FILE:-${VAR_DIR}/syslog-ng@${instance}.persist}
-CONTROL_FILE=${CONTROL_FILE:-${VAR_DIR}/run/syslog-ng@${instance}.ctl}
+PID_FILE=${PID_FILE:-${VAR_DIR}/run/syslog-ng.pid}
+PERSIST_FILE=${PERSIST_FILE:-${VAR_DIR}/syslog-ng.persist}
+CONTROL_FILE=${CONTROL_FILE:-${VAR_DIR}/run/syslog-ng.ctl}
 
 METHOD_OPTIONS="--cfgfile=${CONFIG_FILE} --pidfile=${PID_FILE} --persist-file=${PERSIST_FILE} --control=${CONTROL_FILE}"
 
