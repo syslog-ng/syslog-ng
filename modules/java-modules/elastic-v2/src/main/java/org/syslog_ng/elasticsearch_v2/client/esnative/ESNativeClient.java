@@ -143,4 +143,9 @@ public abstract class ESNativeClient implements ESClient {
 	public boolean send(ESIndex index) {
 		return messageProcessor.send(index);
 	}
+
+    @Override
+    public void onMessageQueueEmpty() {
+
+    }
 }

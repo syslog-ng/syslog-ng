@@ -113,4 +113,9 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 		client.deinit();
 		options.deinit();
 	}
+
+	@Override
+	public void onMessageQueueEmpty() {
+	    client.onMessageQueueEmpty();
+	}
 }
