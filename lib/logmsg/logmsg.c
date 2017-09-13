@@ -24,6 +24,7 @@
 
 #include "logmsg/logmsg.h"
 #include "str-utils.h"
+#include "str-repr/encode.h"
 #include "messages.h"
 #include "logpipe.h"
 #include "timeutils.h"
@@ -1060,7 +1061,7 @@ log_msg_append_tags_callback(const LogMessage *self, LogTagId tag_id, const gcha
   if (result->len > original_length)
     g_string_append_c(result, ',');
 
-  g_string_append(result, name);
+  str_repr_encode_append(result, name, -1, ",");
   return TRUE;
 }
 
