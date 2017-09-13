@@ -137,6 +137,48 @@ _get_body(HTTPDestinationDriver *self, LogMessage *msg)
     return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
 }
 
+static
+void _http_trace_sanitize_dump(const gchar *text, gchar *data, size_t size)
+{
+  gchar *sanitized = g_new0(gchar, size+1);
+  int i;
+  for (i = 0; i < size && data[i]; i++)
+    {
+      sanitized[i] = g_ascii_isprint(data[i]) ? data[i] : '.';
+    }
+  sanitized[i] = 0;
+  msg_debug("curl trace log",
+            evt_tag_str("curl_info_type", text),
+            evt_tag_str("data", sanitized));
+  g_free(sanitized);
+}
+
+gchar *curl_infotype_to_text[] =
+{
+  "curl_trace_text",
+  "curl_trace_header_in",
+  "curl_trace_header_out",
+  "curl_trace_data_in",
+  "curl_trace_data_out",
+  "curl_trace_ssl_data_in",
+  "curl_trace_ssl_data_out",
+};
+
+static
+gint _http_trace(CURL *handle, curl_infotype type,
+                 char *data, size_t size,
+                 void *userp)
+{
+  if (!G_UNLIKELY(debug_flag))
+    return 0;
+
+  g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
+
+  _http_trace_sanitize_dump(curl_infotype_to_text[type], data, size);
+
+  return 0;
+}
+
 static void
 _set_curl_opt(HTTPDestinationDriver *self)
 {
@@ -174,6 +216,9 @@ _set_curl_opt(HTTPDestinationDriver *self)
 
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
+
+  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _http_trace);
+  curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
 
   curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, self->timeout);
 
