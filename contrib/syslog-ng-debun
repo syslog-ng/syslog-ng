@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.8.20170909"
+version="0.3.8.20170913"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -360,6 +360,9 @@ acquire_system_info () {
 	topcmd "${tmpdir}/sys.top"
 	if is_available ${opensslcmd}; then
 		${opensslcmd} version >${tmpdir}/sys.openssl.version
+	fi
+	if is_available java; then
+		java -version >${tmpdir}/sys.java.version 2>&1
 	fi
 }
 
