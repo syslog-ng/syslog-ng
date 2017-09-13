@@ -32,12 +32,14 @@ typedef struct
   gboolean forward_invalid;
   GPtrArray *exclude_patterns;
   gboolean matchstring_shouldreverse;
+  gboolean strip_whitespaces;
 } XMLParser;
 
 LogParser * xml_parser_new(GlobalConfig *cfg);
 void xml_parser_set_prefix(LogParser *s, const gchar *prefix);
 void xml_parser_set_forward_invalid(LogParser *s, gboolean setting);
 void xml_parser_set_exclude_tags(LogParser *s, GList *exclude_tags);
+void xml_parser_set_strip_whitespaces(LogParser *s, gboolean setting);
 
 gboolean joker_or_wildcard(GList *patterns);
 

@@ -138,6 +138,43 @@ end_element_cb(GMarkupParseContext *context,
   g_string_truncate(state->key, before_last_dot(state->key));
 }
 
+static GString *
+_append_strip(const gchar *current, const gchar *text, gsize text_len)
+{
+  gchar *text_to_append = NULL;
+  text_to_append = g_strndup(text, text_len);
+  g_strstrip(text_to_append);
+
+  if (!text_to_append[0])
+    {
+      g_free(text_to_append);
+      return NULL;
+    }
+
+  GString *value = scratch_buffers_alloc();
+  g_string_assign(value, current);
+  g_string_append(value, text_to_append);
+  g_free(text_to_append);
+
+  return value;
+}
+
+static GString *
+_append_text(const gchar *current, const gchar *text, gsize text_len, XMLParser *parser)
+{
+  if (parser->strip_whitespaces)
+    {
+      return _append_strip(current, text, text_len);
+    }
+  else
+    {
+      GString *value = scratch_buffers_alloc();
+      g_string_assign(value, current);
+      g_string_append_len(value, text, text_len);
+      return value;
+    }
+}
+
 static void
 text_cb(GMarkupParseContext *context,
         const gchar         *text,
@@ -150,10 +187,10 @@ text_cb(GMarkupParseContext *context,
 
   InserterState *state = (InserterState *)user_data;
   const gchar *current_value = log_msg_get_value_by_name(state->msg, state->key->str, NULL);
-  GString *value = scratch_buffers_alloc();
-  g_string_assign(value, current_value);
-  g_string_append(value, text);
-  log_msg_set_value_by_name(state->msg, state->key->str, value->str, value->len);
+
+  GString *value = _append_text(current_value, text, text_len, state->parser);
+  if (value)
+    log_msg_set_value_by_name(state->msg, state->key->str, value->str, value->len);
 }
 
 
@@ -217,6 +254,14 @@ xml_parser_set_forward_invalid(LogParser *s, gboolean setting)
   XMLParser *self = (XMLParser *) s;
   self->forward_invalid = setting;
 }
+
+void
+xml_parser_set_strip_whitespaces(LogParser *s, gboolean setting)
+{
+  XMLParser *self = (XMLParser *) s;
+  self->strip_whitespaces = setting;
+}
+
 
 void
 xml_parser_set_prefix(LogParser *s, const gchar *prefix)

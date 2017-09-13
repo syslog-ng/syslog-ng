@@ -304,3 +304,29 @@ Test(xml_parser, shouldreverse)
   g_list_free(no_joker_or_wildcard);
 
 }
+
+Test(xml_parser, test_strip_whitespaces)
+{
+  setup();
+
+  LogParser *xml_parser = xml_parser_new(configuration);
+  xml_parser_set_strip_whitespaces(xml_parser, TRUE);
+  log_pipe_init((LogPipe *)xml_parser);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE,
+                    "<tag> \n\t part1 <tag2/> part2 \n\n<tag>", -1);
+
+  const gchar *value;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_parser_process_message(xml_parser, &msg, &path_options);
+
+  value = log_msg_get_value_by_name(msg, ".xml.tag", NULL);
+  cr_assert_str_eq(value, "part1part2");
+
+  log_pipe_deinit((LogPipe *)xml_parser);
+  log_pipe_unref((LogPipe *)xml_parser);
+  log_msg_unref(msg);
+
+  teardown();
+}
