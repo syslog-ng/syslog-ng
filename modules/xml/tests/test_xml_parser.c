@@ -105,6 +105,7 @@ ParameterizedTestParameters(xmlparser, valid_inputs)
     {"<tag1><tag11></tag11><tag12><tag121>value</tag121></tag12></tag1>", ".xml.tag1.tag12.tag121", "value"},
     {"<tag1><tag11></tag11><tag12><tag121 attr1='1' attr2='2'>value</tag121></tag12></tag1>", ".xml.tag1.tag12.tag121._attr1", "1"},
     {"<tag1><tag11></tag11><tag12><tag121 attr1='1' attr2='2'>value</tag121></tag12></tag1>", ".xml.tag1.tag12.tag121._attr2", "2"},
+    {"<tag1><tag1>t11.1</tag1><tag1>t11.2</tag1></tag1>", ".xml.tag1.tag1", "t11.1t11.2"},
   };
 
   return cr_make_param_array(ValidXMLTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
