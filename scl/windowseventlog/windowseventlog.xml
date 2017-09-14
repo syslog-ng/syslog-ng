@@ -1,0 +1,235 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<patterndb version='4' pub_date='2017-08-23'>
+    <ruleset name='WindowsAudit' id='bee1a302-68fc-469e-80e9-2799c5b709d9'>
+        <pattern>Microsoft_Windows_security_auditing.</pattern>
+        <rules>
+            <rule id='logon' provider='user' class='logon'>
+                <patterns>
+                    <pattern>@ESTRING:::@ Security Microsoft Windows security auditing.: [Success Audit] An account was successfully logged on.
+
+Subject:
+ Security ID:  @NLSTRING:@
+ Account Name:  @NLSTRING:@
+ Account Domain:  @NLSTRING:.win.SubjectDomainName@
+ Logon ID:  @NLSTRING:@
+
+Logon Type:   @NLSTRING:.win.LogonType@
+
+New Logon:
+ Security ID:  @NLSTRING:@
+ Account Name:  @NLSTRING:.win.TargetUserName@
+ Account Domain:  @NLSTRING:.win.TargetDomainName@
+ Logon ID:  @NLSTRING:.win.TargetLogonId@
+ Logon GUID:  @NLSTRING:.win.LogonGuid@
+
+Process Information:
+ Process ID:  @NLSTRING:.win.ProcessId@
+ Process Name:  @NLSTRING:.win.ProcessName@
+
+Network Information:
+ Workstation Name: @NLSTRING:.win.WorkstationName@
+ Source Network Address: @NLSTRING:.win.IpAddress@
+ Source Port:  @NLSTRING:.win.IpPort@
+
+Detailed Authentication Information:
+ Logon Process:  @NLSTRING:.win.LogonProcessName@
+ Authentication Package: @NLSTRING:.win.AuthenticationPackageName@
+ Transited Services: @NLSTRING:.win.TransmittedServices@
+ Package Name (NTLM only): @NLSTRING:.win.LmPackageName@
+ Key Length:  @NLSTRING:.win.KeyLength@
+
+This event is generated when a logon session is created. It is generated on the computer that was accessed.
+
+The subject fields indicate the account on the local system which requested the logon. This is most commonly a service such as the Server service, or a local process such as Winlogon.exe or Services.exe.
+
+The logon type field indicates the kind of logon that occurred. The most common types are 2 (interactive) and 3 (network).
+
+The New Logon fields indicate the account for whom the new logon was created, i.e. the account that was logged on.
+
+The network fields indicate where a remote logon request originated. Workstation name is not always available and may be left blank in some cases.
+
+The authentication information fields provide detailed information about this specific logon request.
+ - Logon GUID is a unique identifier that can be used to correlate this event with a KDC event.
+ - Transited services indicate which intermediate services have participated in this logon request.
+ - Package name indicates which sub-protocol was used among the NTLM protocols.
+ - Key length indicates the length of the generated session key. This will be 0 if no session key was requested. (EventID @ESTRING:.win.EventID:)@</pattern>
+                </patterns>
+                <tags></tags>
+                <values></values>
+                <examples>
+                    <example>
+                        <test_message program='Microsoft_Windows_security_auditing.'>BSP-WIN2K8R2-EN\Administrator: Security Microsoft Windows security auditing.: [Success Audit] An account was successfully logged on.
+
+Subject:
+ Security ID:  NT AUTHORITY\SYSTEM
+ Account Name:  BSP-WIN2K8R2-EN$
+ Account Domain:  BSP
+ Logon ID:  0x3e7
+
+Logon Type:   10
+
+New Logon:
+ Security ID:  BSP-WIN2K8R2-EN\Administrator
+ Account Name:  Administrator
+ Account Domain:  BSP-WIN2K8R2-EN
+ Logon ID:  0xdeadbeef
+ Logon GUID:  {00000000-0000-0000-0000-000000000000}
+
+Process Information:
+ Process ID:  0xabc
+ Process Name:  C:\Windows\System32\winlogon.exe
+
+Network Information:
+ Workstation Name: BSP-WIN2K8R2-EN
+ Source Network Address: 10.20.30.40
+ Source Port:  56789
+
+Detailed Authentication Information:
+ Logon Process:  User32 
+ Authentication Package: Negotiate
+ Transited Services: -
+ Package Name (NTLM only): -
+ Key Length:  0
+
+This event is generated when a logon session is created. It is generated on the computer that was accessed.
+
+The subject fields indicate the account on the local system which requested the logon. This is most commonly a service such as the Server service, or a local process such as Winlogon.exe or Services.exe.
+
+The logon type field indicates the kind of logon that occurred. The most common types are 2 (interactive) and 3 (network).
+
+The New Logon fields indicate the account for whom the new logon was created, i.e. the account that was logged on.
+
+The network fields indicate where a remote logon request originated. Workstation name is not always available and may be left blank in some cases.
+
+The authentication information fields provide detailed information about this specific logon request.
+ - Logon GUID is a unique identifier that can be used to correlate this event with a KDC event.
+ - Transited services indicate which intermediate services have participated in this logon request.
+ - Package name indicates which sub-protocol was used among the NTLM protocols.
+ - Key length indicates the length of the generated session key. This will be 0 if no session key was requested. (EventID 4624)</test_message>
+                         <test_values>
+                             <test_value name='.win.EventID'>4624</test_value>
+                             <test_value name='.win.TargetUserName'>Administrator</test_value>
+                             <test_value name='.win.SubjectDomainName'>BSP</test_value>
+                             <test_value name='.win.IpAddress'>10.20.30.40</test_value>
+                             <test_value name='.win.IpPort'>56789</test_value>
+                             <test_value name='.win.WorkstationName'>BSP-WIN2K8R2-EN</test_value>
+                             <test_value name='.win.TargetLogonId'>0xdeadbeef</test_value>
+                             <test_value name='.win.ProcessName'>C:\Windows\System32\winlogon.exe</test_value>
+                             <test_value name='.win.ProcessId'>0xabc</test_value>
+                             <test_value name='.win.LogonType'>10</test_value>
+                             <test_value name='.win.TargetDomainName'>BSP-WIN2K8R2-EN</test_value>
+                             <test_value name='.win.LogonGuid'>{00000000-0000-0000-0000-000000000000}</test_value>
+                             <test_value name='.win.AuthenticationPackageName'>Negotiate</test_value>
+                             <test_value name='.win.LogonProcessName'>User32 </test_value>
+                             <test_value name='.win.LmPackageName'>-</test_value>
+                             <test_value name='.win.TransmittedServices'>-</test_value>
+                             <test_value name='.win.KeyLength'>0</test_value>
+                         </test_values>
+                     </example>
+                </examples>
+            </rule>
+            <rule id='logoff' provider='user' class='logoff'>
+                <patterns>
+                    <pattern>@ESTRING:::@ Security Microsoft Windows security auditing.: [Success Audit] An account was logged off.
+
+Subject:
+ Security ID:  @NLSTRING:.win.TargetUserSid@
+ Account Name:  @NLSTRING:.win.TargetUserName@
+ Account Domain:  @NLSTRING:.win.TargetDomainName@
+ Logon ID:  @NLSTRING:.win.TargetLogonId@
+
+Logon Type:   @NLSTRING:.win.LogonType@
+
+This event is generated when a logon session is destroyed. It may be positively correlated with a logon event using the Logon ID value. Logon IDs are only unique between reboots on the same computer. (EventID @ESTRING:.win.EventID:)@</pattern>
+                </patterns>
+                <tags></tags>
+                <values></values>
+                <examples>
+                    <example>
+                        <test_message program='Microsoft_Windows_security_auditing.'>BSP-WIN2K8R2-EN\Administrator: Security Microsoft Windows security auditing.: [Success Audit] An account was logged off.
+
+Subject:
+ Security ID:  BSP-WIN2K8R2-EN\Administrator
+ Account Name:  Administrator
+ Account Domain:  BSP-WIN2K8R2-EN
+ Logon ID:  0xdeadbeef
+
+Logon Type:   10
+
+This event is generated when a logon session is destroyed. It may be positively correlated with a logon event using the Logon ID value. Logon IDs are only unique between reboots on the same computer. (EventID 4634)</test_message>
+                        <test_values>
+                             <test_value name='.win.EventID'>4634</test_value>
+                             <test_value name='.win.TargetUserSid'>BSP-WIN2K8R2-EN\Administrator</test_value>
+                             <test_value name='.win.TargetUserName'>Administrator</test_value>
+                             <test_value name='.win.TargetDomainName'>BSP-WIN2K8R2-EN</test_value>
+                             <test_value name='.win.LogonType'>10</test_value>
+                             <test_value name='.win.TargetLogonId'>0xdeadbeef</test_value>
+                        </test_values>
+                    </example>
+                </examples>
+            </rule>
+            <rule id='processcreation' provider='user' class='processcreation'>
+                <patterns>
+                    <pattern>@ESTRING:::@ Security Microsoft Windows security auditing.: [Success Audit] A new process has been created.
+
+Subject:
+ Security ID:  @NLSTRING:.win.TargetUserSid@
+ Account Name:  @NLSTRING:.win.TargetUserName@
+ Account Domain:  @NLSTRING:.win.SubjectDomainName@
+ Logon ID:  @NLSTRING:.win.TargetLogonId@
+
+Process Information:
+ New Process ID:  @NLSTRING:.win.NewProcessId@
+ New Process Name: @NLSTRING:.win.NewProcessName@
+ Token Elevation Type: @NLSTRING:@
+ Creator Process ID: @NLSTRING:.win.ParentProcessId@
+
+Token Elevation Type indicates the type of token that was assigned to the new process in accordance with User Account Control policy.
+
+Type 1 is a full token with no privileges removed or groups disabled.  A full token is only used if User Account Control is disabled or if the user is the built-in Administrator account or a service account.
+
+Type 2 is an elevated token with no privileges removed or groups disabled.  An elevated token is used when User Account Control is enabled and the user chooses to start the program using Run as administrator.  An elevated token is also used when an application is configured to always require administrative privilege or to always require maximum privilege, and the user is a member of the Administrators group.
+
+Type 3 is a limited token with administrative privileges removed and administrative groups disabled.  The limited token is used when User Account Control is enabled, the application does not require administrative privilege, and the user does not choose to start the program using Run as administrator. (EventID @ESTRING:.win.EventID:)@</pattern>
+                </patterns>
+                <tags></tags>
+                <values></values>
+                <examples>
+                    <example>
+                        <test_message program="Microsoft_Windows_security_auditing.">BSP\BSP-WIN2K8R2-EN$: Security Microsoft Windows security auditing.: [Success Audit] A new process has been created.
+
+Subject:
+ Security ID:  NT AUTHORITY\SYSTEM
+ Account Name:  BSP-WIN2K8R2-EN$
+ Account Domain:  BSP
+ Logon ID:  0x3e7
+
+Process Information:
+ New Process ID:  0x8ec
+ New Process Name: C:\Windows\System32\smss.exe
+ Token Elevation Type: TokenElevationTypeDefault (1)
+ Creator Process ID: 0xe8
+
+Token Elevation Type indicates the type of token that was assigned to the new process in accordance with User Account Control policy.
+
+Type 1 is a full token with no privileges removed or groups disabled.  A full token is only used if User Account Control is disabled or if the user is the built-in Administrator account or a service account.
+
+Type 2 is an elevated token with no privileges removed or groups disabled.  An elevated token is used when User Account Control is enabled and the user chooses to start the program using Run as administrator.  An elevated token is also used when an application is configured to always require administrative privilege or to always require maximum privilege, and the user is a member of the Administrators group.
+
+Type 3 is a limited token with administrative privileges removed and administrative groups disabled.  The limited token is used when User Account Control is enabled, the application does not require administrative privilege, and the user does not choose to start the program using Run as administrator. (EventID 4688)</test_message>
+                        <test_values>
+                            <test_value name='.win.EventID'>4688</test_value>
+                            <test_value name='.win.TargetUserSid'>NT AUTHORITY\SYSTEM</test_value>
+                            <test_value name='.win.TargetUserName'>BSP-WIN2K8R2-EN$</test_value>
+                            <test_value name='.win.SubjectDomainName'>BSP</test_value>
+                            <test_value name='.win.TargetLogonId'>0x3e7</test_value>
+                            <test_value name='.win.NewProcessId'>0x8ec</test_value>
+                            <test_value name='.win.NewProcessName'>C:\Windows\System32\smss.exe</test_value>
+                            <test_value name='.win.ParentProcessId'>0xe8</test_value>
+                        </test_values>
+                    </example>
+                </examples>
+            </rule>
+        </rules>
+    </ruleset>
+</patterndb>
