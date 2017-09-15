@@ -41,6 +41,8 @@ public class HdfsOptions {
     public static String KERBEROS_KEYTAB_FILE = "kerberos_keytab_file";
     public static String TEMPLATE = "template";
     public static String TEMPLATE_DEFAULT = "${ISODATE} ${HOST} ${MSGHDR}${MSG}\n";
+    public static String APPEND_ENABLED = "hdfs_append_enabled";
+    public static String APPEND_ENABLED_DEFAULT = "false";
 
     private LogDestination owner;
     private Options options;
@@ -98,6 +100,11 @@ public class HdfsOptions {
 
     private void fillOptions() {
         fillStringOptions();
+        fillBooleanOptions();
+    }
+
+    public boolean getAppendEnabled() {
+        return options.get(APPEND_ENABLED).getValueAsBoolean();
     }
 
     private void fillStringOptions() {
@@ -107,6 +114,10 @@ public class HdfsOptions {
         options.put(new StringOption(owner, MAX_FILENAME_LENGTH, MAX_FILENAME_LENGTH_DEFAULT));
         options.put(new StringOption(owner, KERBEROS_PRINCIPAL));
         options.put(new StringOption(owner, KERBEROS_KEYTAB_FILE));
+    }
+
+    private void fillBooleanOptions() {
+        options.put(new BooleanOptionDecorator(new StringOption(owner, APPEND_ENABLED, APPEND_ENABLED_DEFAULT)));
     }
 
     private void fillTemplateOptions() {

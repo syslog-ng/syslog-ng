@@ -46,6 +46,7 @@ import java.util.UUID;
 public class HdfsDestination extends StructuredLogDestination {
     private static final String LOG_TAG = "HDFS:";
     private static final String HADOOP_SECURITY_AUTH_KEY = "hadoop.security.authentication";
+    private static final String DFS_SUPPORT_APPEND_KEY = "dfs.support.append";
 
     HdfsOptions options;
     Logger logger;
@@ -54,6 +55,7 @@ public class HdfsDestination extends StructuredLogDestination {
 
     private boolean isOpened;
     private int maxFileNameLength = 255;
+    private boolean appendEnabled;
 
     HashMap<String, HdfsFile> openedFiles;
 
@@ -85,11 +87,15 @@ public class HdfsDestination extends StructuredLogDestination {
         logger.debug("Opening hdfs");
         openedFiles = new HashMap<String, HdfsFile>();
         isOpened = false;
+        appendEnabled = options.getAppendEnabled();
         try {
             Configuration configuration = new Configuration();
             loadConfigResources(configuration);
             if (isKerberosAuthEnabled()) {
                 setKerberosAuth(configuration);
+            }
+            if (appendEnabled) {
+                enableDfsSupportAppend(configuration);
             }
 
             hdfs = FileSystem.get(new URI(options.getUri()), configuration);
@@ -151,7 +157,6 @@ public class HdfsDestination extends StructuredLogDestination {
 
     private FSDataOutputStream getFSDataOutputStream(String resolvedFileName) {
         HdfsFile hdfsFile = openedFiles.get(resolvedFileName);
-
         if (hdfsFile == null) {
             hdfsFile = createHdfsFile(resolvedFileName);
             openedFiles.put(resolvedFileName, hdfsFile);
@@ -161,15 +166,18 @@ public class HdfsDestination extends StructuredLogDestination {
 
     private HdfsFile createHdfsFile(String resolvedFileName) {
         HdfsFile hdfsFile = new HdfsFile();
-        Path filePath = getFilePathWithUUID(resolvedFileName);
+        Path filePath = getFilePath(resolvedFileName);
         hdfsFile.setPath(filePath);
         hdfsFile.setFsDataOutputStream(createFsDataOutputStream(hdfs, filePath));
         return hdfsFile;
     }
 
-    private Path getFilePathWithUUID(String resolvedFileName) {
-        String resolvedFileNameWithUUID = String.format("%s.%s", resolvedFileName, UUID.randomUUID());
-        Path filePath = new Path(String.format("%s/%s", options.getUri(), resolvedFileNameWithUUID));
+    private Path getFilePath(String resolvedFileName) {
+        if (!appendEnabled) {
+            // when append is not enabled, we create a unique filename for every file
+            resolvedFileName = String.format("%s.%s", resolvedFileName, UUID.randomUUID());
+        }
+        Path filePath = new Path(String.format("%s/%s", options.getUri(), resolvedFileName));
 
         if (filePath.getName().length() > options.getMaxFilenameLength()) {
             String fileName = truncateFileName(filePath.getName(), options.getMaxFilenameLength());
@@ -191,18 +199,21 @@ public class HdfsDestination extends StructuredLogDestination {
         FSDataOutputStream fsDataOutputStream = null;
         try {
             hdfs.mkdirs(file.getParent());
-            logger.debug(String.format("Creating file %s", file.toString()));
-            fsDataOutputStream = hdfs.create(file);
+            if (appendEnabled && hdfs.exists(file)) {
+                logger.debug(String.format("Appending file %s", file.toString()));
+                fsDataOutputStream = hdfs.append(file);
+            } else {
+                logger.debug(String.format("Creating file %s", file.toString()));
+                fsDataOutputStream = hdfs.create(file);
+            }
         } catch (IOException e) {
             printStackTrace(e);
         }
         return fsDataOutputStream;
     }
 
-    @SuppressWarnings("unused")
-    private boolean isDfsSupportAppendEnabled(FileSystem hdfs) {
-        // This is for future usage when we enable append
-        return Boolean.valueOf(hdfs.getConf().get("dfs.support.append"));
+    private void enableDfsSupportAppend(Configuration configuration) {
+        configuration.setBoolean(DFS_SUPPORT_APPEND_KEY, true);
     }
 
     @Override
