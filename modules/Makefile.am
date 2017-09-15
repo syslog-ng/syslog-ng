@@ -40,6 +40,7 @@ include modules/map-value-pairs/Makefile.am
 include modules/stardate/Makefile.am
 include modules/snmptrapd-parser/Makefile.am
 include modules/tagsparser/Makefile.am
+include modules/xml/Makefile.am
 
 SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2017 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,21 +20,39 @@
  * COPYING for details.
  *
  */
-#ifndef COMPAT_GLIB_H_INCLUDED
-#define COMPAT_GLIB_H_INCLUDED 1
 
-#include "compat/compat.h"
-
-#define GLIB_DISABLE_DEPRECATION_WARNINGS 1
-
-#include <glib.h>
-
-#if !SYSLOG_NG_HAVE_G_MAPPED_FILE_UNREF
-#define g_mapped_file_unref g_mapped_file_free
-#endif
+#include "glib.h"
 
 #if !SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
-GList *g_list_copy_deep (GList *list, GCopyFunc func, gpointer user_data);
-#endif
 
+/*
+  Less efficient than the original implementation in glib 2.53.2 that
+  I wanted to port back, because this version iterates through the
+  list twice. Though the original version depends on the internal api
+  of GList (for example in terms on memory allocation), so I felt
+  safer to reduce the problem to use public glib api only: g_list_copy
+  and iteration.
+ */
+
+GList *
+g_list_copy_deep(GList     *list,
+                 GCopyFunc  func,
+                 gpointer   user_data)
+{
+  if (!list)
+    return NULL;
+
+  GList *new_list = g_list_copy(list);
+  if (func)
+    {
+      GList *iter = list;
+      while (iter != NULL)
+        {
+          iter->data = func(iter->data, user_data);
+          iter = g_list_next(iter);
+        }
+    }
+
+  return new_list;
+}
 #endif
