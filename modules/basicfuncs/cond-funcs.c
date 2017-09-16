@@ -40,7 +40,8 @@ tf_cond_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   lexer = cfg_lexer_new_buffer(argv[1], strlen(argv[1]));
   if (!cfg_run_parser(parent->cfg, lexer, &filter_expr_parser, (gpointer *) &state->filter, NULL))
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Error parsing conditional filter expression");
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "$(%s) Error parsing conditional filter expression", argv[0]);
       return FALSE;
     }
   memmove(&argv[1], &argv[2], sizeof(argv[0]) * (argc - 2));
