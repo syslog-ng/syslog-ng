@@ -9,6 +9,7 @@ SCL_SUBDIRS	= \
 	solaris		\
 	mbox		\
 	elasticsearch	\
+	graylog2	\
 	kafka		\
 	hdfs		\
 	iptables	\
