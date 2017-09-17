@@ -37,8 +37,12 @@
 
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
-static NVHandle is_synced;
-static NVHandle cisco_seqid;
+static struct
+{
+  gboolean initialized;
+  NVHandle is_synced;
+  NVHandle cisco_seqid;
+} handles;
 
 static gboolean
 log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint flags, guint16 default_pri)
@@ -196,7 +200,7 @@ log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
   if (*src != ' ')
     return FALSE;
 
-  log_msg_set_value(self, cisco_seqid, (gchar *) *data, *length - left - 1);
+  log_msg_set_value(self, handles.cisco_seqid, (gchar *) *data, *length - left - 1);
 
   *data = src;
   *length = left;
@@ -470,14 +474,14 @@ log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *len
       if (G_UNLIKELY(src[0] == '*'))
         {
           if (!(parse_flags & LP_NO_PARSE_DATE))
-            log_msg_set_value(self, is_synced, "0", 1);
+            log_msg_set_value(self, handles.is_synced, "0", 1);
           src++;
           left--;
         }
       else if (G_UNLIKELY(src[0] == '.'))
         {
           if (!(parse_flags & LP_NO_PARSE_DATE))
-            log_msg_set_value(self, is_synced, "1", 1);
+            log_msg_set_value(self, handles.is_synced, "1", 1);
           src++;
           left--;
         }
@@ -1302,13 +1306,11 @@ syslog_format_handler(const MsgFormatOptions *parse_options,
 void
 syslog_format_init(void)
 {
-  static gboolean handles_initialized = FALSE;
-
-  if (!handles_initialized)
+  if (!handles.initialized)
     {
-      is_synced = log_msg_get_value_handle(".SDATA.timeQuality.isSynced");
-      cisco_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
-      handles_initialized = TRUE;
+      handles.is_synced = log_msg_get_value_handle(".SDATA.timeQuality.isSynced");
+      handles.cisco_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
+      handles.initialized = TRUE;
     }
 
   _init_parse_hostname_invalid_chars();
