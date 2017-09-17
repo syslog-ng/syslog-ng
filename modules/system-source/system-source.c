@@ -395,7 +395,7 @@ system_source_generator_new(gint context, const gchar *name)
 gpointer
 system_source_construct(Plugin *p)
 {
-  return system_source_generator_new(LL_CONTEXT_SOURCE, "system");
+  return system_source_generator_new(p->type, p->name);
 }
 
 Plugin system_plugins[] =
