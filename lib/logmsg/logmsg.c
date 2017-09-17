@@ -1251,6 +1251,19 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   return self;
 }
 
+static gsize
+_determine_payload_size(gint length, MsgFormatOptions *parse_options)
+{
+  gsize payload_size;
+
+  if ((parse_options->flags & LP_STORE_RAW_MESSAGE))
+    payload_size = length * 4;
+  else
+    payload_size = length * 2;
+
+  return MAX(payload_size, 256);
+}
+
 /**
  * log_msg_new:
  * @msg: message to parse
@@ -1265,7 +1278,7 @@ log_msg_new(const gchar *msg, gint length,
             GSockAddr *saddr,
             MsgFormatOptions *parse_options)
 {
-  LogMessage *self = log_msg_alloc(length == 0 ? 256 : length * 2);
+  LogMessage *self = log_msg_alloc(_determine_payload_size(length, parse_options));
 
   log_msg_init(self, saddr);
 
