@@ -845,6 +845,46 @@ relex:
         g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
     }
 
+  if (tok == LL_IDENTIFIER
+           && (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
+    {
+      CfgArgs *args;
+
+      self->preprocess_suppress_tokens++;
+      if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
+        {
+          gboolean success;
+          gchar buf[256];
+          GString *result = g_string_sized_new(256);
+
+          self->preprocess_suppress_tokens--;
+          success = cfg_block_generator_generate(gen, self->cfg, args, result);
+
+          free(yylval->cptr);
+          cfg_args_unref(args);
+          g_snprintf(buf, sizeof(buf), "%s generator %s",
+                     cfg_lexer_lookup_context_name_by_type(gen->context),
+                     gen->name);
+
+          if (gen->suppress_backticks)
+            success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
+          else
+            success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
+          g_string_free(result, TRUE);
+
+          if (success)
+            {
+              goto relex;
+            }
+        }
+      else
+        {
+          free(yylval->cptr);
+          self->preprocess_suppress_tokens--;
+        }
+      return LL_ERROR;
+    }
+
   if (self->ignore_pragma)
     {
       /* only process @pragma/@include tokens in case pragma allowed is set */
@@ -894,45 +934,6 @@ relex:
       self->preprocess_suppress_tokens--;
       g_free(include_file);
       goto relex;
-    }
-  else if (tok == LL_IDENTIFIER
-           && (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
-    {
-      CfgArgs *args;
-
-      self->preprocess_suppress_tokens++;
-      if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
-        {
-          gboolean success;
-          gchar buf[256];
-          GString *result = g_string_sized_new(256);
-
-          self->preprocess_suppress_tokens--;
-          success = cfg_block_generator_generate(gen, self->cfg, args, result);
-
-          free(yylval->cptr);
-          cfg_args_unref(args);
-          g_snprintf(buf, sizeof(buf), "%s generator %s",
-                     cfg_lexer_lookup_context_name_by_type(gen->context),
-                     gen->name);
-
-          if (gen->suppress_backticks)
-            success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
-          else
-            success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
-          g_string_free(result, TRUE);
-
-          if (success)
-            {
-              goto relex;
-            }
-        }
-      else
-        {
-          free(yylval->cptr);
-          self->preprocess_suppress_tokens--;
-        }
-      return LL_ERROR;
     }
   else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
     {
