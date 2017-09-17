@@ -42,6 +42,7 @@ static struct
   gboolean initialized;
   NVHandle is_synced;
   NVHandle cisco_seqid;
+  NVHandle raw_message;
 } handles;
 
 static gboolean
@@ -1262,6 +1263,9 @@ syslog_format_handler(const MsgFormatOptions *parse_options,
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
 
+  if (parse_options->flags & LP_STORE_RAW_MESSAGE)
+    log_msg_set_value(self, handles.raw_message, (gchar *) data, length);
+
   if (parse_options->flags & LP_NOPARSE)
     {
       log_msg_set_value(self, LM_V_MESSAGE, (gchar *) data, length);
@@ -1310,6 +1314,7 @@ syslog_format_init(void)
     {
       handles.is_synced = log_msg_get_value_handle(".SDATA.timeQuality.isSynced");
       handles.cisco_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
+      handles.raw_message = log_msg_get_value_handle("RAWMSG");
       handles.initialized = TRUE;
     }
 
