@@ -22,7 +22,6 @@
  *
  */
 #include "cfg-block.h"
-#include "cfg-lexer.h"
 #include "cfg-lexer-subst.h"
 #include "cfg.h"
 #include "str-utils.h"
@@ -87,7 +86,7 @@ cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GStri
 
   _fill_varargs(self, args);
 
-  value = cfg_lexer_subst_args_in_input(cfg->lexer->globals, self->arg_defs, args, self->content, -1, &length, &error);
+  value = cfg_lexer_subst_args_in_input(cfg->globals, self->arg_defs, args, self->content, -1, &length, &error);
   if (!value)
     {
       msg_warning("Syntax error while resolving backtick references in block",

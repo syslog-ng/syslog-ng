@@ -136,7 +136,6 @@ struct _CfgLexer
   GString *token_pretext;
   GString *token_text;
   GlobalConfig *cfg;
-  CfgArgs *globals;
   gboolean non_pragma_seen:1, ignore_pragma:1;
 };
 

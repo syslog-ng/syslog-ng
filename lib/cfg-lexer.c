@@ -520,7 +520,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 static gboolean
 cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
 {
-  const gchar *path = cfg_args_get(self->globals, "include-path");
+  const gchar *path = cfg_args_get(self->cfg->globals, "include-path");
   gboolean process = FALSE;
 
   self->include_depth++;
@@ -568,7 +568,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
       return FALSE;
     }
 
-  filename = find_file_in_path(cfg_args_get(self->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
+  filename = find_file_in_path(cfg_args_get(self->cfg->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
   if (!filename || stat(filename, &st) < 0)
     {
       if (cfg_lexer_include_file_glob(self, filename_))
@@ -576,7 +576,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 
       msg_error("Include file/directory not found",
                 evt_tag_str("filename", filename_),
-                evt_tag_str("include-path", cfg_args_get(self->globals, "include-path")),
+                evt_tag_str("include-path", cfg_args_get(self->cfg->globals, "include-path")),
                 evt_tag_errno("error", errno));
       return FALSE;
     }
@@ -636,8 +636,8 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer,
   GError *error = NULL;
   gboolean result = FALSE;
 
-  substituted_buffer = cfg_lexer_subst_args_in_input(self->globals, NULL, NULL, buffer, length, &substituted_length,
-                                                     &error);
+  substituted_buffer = cfg_lexer_subst_args_in_input(self->cfg->globals, NULL, NULL, buffer, length, 
+                                                     &substituted_length, &error);
   if (!substituted_buffer)
     {
       msg_error("Error resolving backtick references in block or buffer",
@@ -976,7 +976,6 @@ relex:
 static void
 cfg_lexer_init(CfgLexer *self, GlobalConfig *cfg)
 {
-  self->globals = cfg_args_new();
   CfgIncludeLevel *level;
 
   _cfg_lexer_lex_init_extra(self, &self->state);
@@ -1069,7 +1068,6 @@ cfg_lexer_free(CfgLexer *self)
 
   while (self->context_stack)
     cfg_lexer_pop_context(self);
-  cfg_args_unref(self->globals);
   g_list_foreach(self->token_blocks, (GFunc) cfg_token_block_free, NULL);
   g_list_free(self->token_blocks);
   g_free(self);

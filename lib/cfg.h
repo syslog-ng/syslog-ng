@@ -69,6 +69,7 @@ struct _GlobalConfig
   PluginContext plugin_context;
   gboolean use_plugin_discovery;
   CfgLexer *lexer;
+  CfgArgs *globals;
 
   StatsOptions stats_options;
   gint mark_freq;
