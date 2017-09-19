@@ -629,7 +629,6 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
   if ((flags & LP_STORE_LEGACY_MSGHDR))
     {
       log_msg_set_value(self, LM_V_LEGACY_MSGHDR, (gchar *) *data, *length - left);
-      self->flags |= LF_LEGACY_MSGHDR;
     }
   *data = src;
   *length = left;

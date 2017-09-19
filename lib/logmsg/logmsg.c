@@ -180,12 +180,6 @@ log_msg_set_flag(LogMessage *self, gint32 flag)
 }
 
 static inline void
-log_msg_unset_flag(LogMessage *self, gint32 flag)
-{
-  self->flags &= ~flag;
-}
-
-static inline void
 log_msg_set_host_id(LogMessage *msg)
 {
   msg->host_id = host_id_get();
@@ -576,7 +570,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   if (new_entry)
     log_msg_update_sdata(self, handle, name, name_len);
   if (handle == LM_V_PROGRAM || handle == LM_V_PID)
-    log_msg_unset_flag(self, LF_LEGACY_MSGHDR);
+    log_msg_unset_value(self, LM_V_LEGACY_MSGHDR);
 }
 
 void

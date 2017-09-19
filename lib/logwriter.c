@@ -1004,9 +1004,9 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           g_string_append_len(result, p, len);
           g_string_append_c(result, ' ');
 
-          if ((lm->flags & LF_LEGACY_MSGHDR))
+          p = log_msg_get_value(lm, LM_V_LEGACY_MSGHDR, &len);
+          if (len > 0)
             {
-              p = log_msg_get_value(lm, LM_V_LEGACY_MSGHDR, &len);
               g_string_append_len(result, p, len);
             }
           else

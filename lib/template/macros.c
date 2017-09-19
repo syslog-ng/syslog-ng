@@ -320,17 +320,16 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
         }
       break;
     case M_MSGHDR:
-      if ((msg->flags & LF_LEGACY_MSGHDR))
-        {
-          /* fast path for now, as most messages come from legacy devices */
+    {
+      gssize len;
+      const gchar *p;
 
-          _result_append_value(result, msg, LM_V_LEGACY_MSGHDR, escape);
-        }
+      p = log_msg_get_value(msg, LM_V_LEGACY_MSGHDR, &len);
+      if (len > 0)
+        result_append(result, p, len, escape);
       else
         {
           /* message, complete with program name and pid */
-          gssize len;
-
           len = result->len;
           _result_append_value(result, msg, LM_V_PROGRAM, escape);
           if (len != result->len)
@@ -346,6 +345,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
             }
         }
       break;
+    }
     case M_MESSAGE:
       _result_append_value(result, msg, LM_V_MESSAGE, escape);
       break;
