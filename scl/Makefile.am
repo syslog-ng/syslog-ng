@@ -13,6 +13,7 @@ SCL_SUBDIRS	= \
 	hdfs		\
 	apache		\
 	cisco		\
+	default-network-drivers		\
 	loggly		\
 	logmatic	\
 	snmptrap        \
