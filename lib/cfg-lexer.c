@@ -517,10 +517,16 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
   return TRUE;
 }
 
+static const gchar *
+_get_include_path(CfgLexer *self)
+{
+  return self->cfg ? cfg_args_get(self->cfg->globals, "include-path") : NULL;
+}
+
 static gboolean
 cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
 {
-  const gchar *path = cfg_args_get(self->cfg->globals, "include-path");
+  const gchar *path = _get_include_path(self);
   gboolean process = FALSE;
 
   self->include_depth++;
@@ -568,7 +574,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
       return FALSE;
     }
 
-  filename = find_file_in_path(cfg_args_get(self->cfg->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
+  filename = find_file_in_path(_get_include_path(self), filename_, G_FILE_TEST_EXISTS);
   if (!filename || stat(filename, &st) < 0)
     {
       if (cfg_lexer_include_file_glob(self, filename_))
@@ -576,7 +582,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 
       msg_error("Include file/directory not found",
                 evt_tag_str("filename", filename_),
-                evt_tag_str("include-path", cfg_args_get(self->cfg->globals, "include-path")),
+                evt_tag_str("include-path", _get_include_path(self)),
                 evt_tag_errno("error", errno));
       return FALSE;
     }
@@ -636,7 +642,7 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer,
   GError *error = NULL;
   gboolean result = FALSE;
 
-  substituted_buffer = cfg_lexer_subst_args_in_input(self->cfg->globals, NULL, NULL, buffer, length, 
+  substituted_buffer = cfg_lexer_subst_args_in_input(self->cfg ? self->cfg->globals : NULL, NULL, NULL, buffer, length,
                                                      &substituted_length, &error);
   if (!substituted_buffer)
     {
@@ -845,8 +851,35 @@ relex:
         g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
     }
 
-  if (tok == LL_IDENTIFIER
-           && (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
+  /* NOTE: most of the code below is a monster, which should be factored out
+   * to tiny little functions.  This is not very simple and I am in the
+   * middle of something that I would rather close than doing the
+   * refactoring desperately needed here.  I am silencing my conscience with
+   * this note and also take the time to document some of the quirks below.
+   *
+   * 1) This code is deeply coupled with GlobalConfig and most of it does
+   * not make sense to execute if self->cfg is NULL.  Thus, some of the
+   * conditionals contain an explicit self->cfg check, in other cases it is
+   * implicitly checked by the first conditional of a series of if-then-else
+   * statements.
+   *
+   * 2) the role of the relex label is to restart the lexing process once
+   * new tokens were injected into the input stream.  (e.g.  after a
+   * generator was called).  This should really be a loop, and quite
+   * possible any refactors should start here by eliminating that
+   * loop-using-goto
+   *
+   * 3) make note that string tokens are allocated by malloc/free and not
+   * g_malloc/g_free, this is significant.  The grammar contains the free()
+   * call, so getting rid of that would require a lot of changes to the
+   * grammar. (on Windows glib, malloc/g_malloc are NOT equivalent)
+   *
+   */
+
+
+  if (tok == LL_IDENTIFIER &&
+      self->cfg &&
+      (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
       CfgArgs *args;
 
@@ -885,9 +918,10 @@ relex:
       return LL_ERROR;
     }
 
-  if (self->ignore_pragma)
+  if (self->ignore_pragma || self->cfg == NULL)
     {
-      /* only process @pragma/@include tokens in case pragma allowed is set */
+      /* only process @pragma/@include tokens in case pragma allowed is set
+       * and the associated configuration is not NULL */
       ;
     }
   else if (tok == LL_PRAGMA)
@@ -991,6 +1025,11 @@ cfg_lexer_init(CfgLexer *self, GlobalConfig *cfg)
   level->lloc.level = level;
 }
 
+
+/* NOTE: cfg might be NULL in some call sites, but in those cases the lexer
+ * should remain operational, obviously skipping cases where it would be
+ * using the configuration instance.  The lexer and the configuration stuff
+ * should be one-way dependent, right now it is a circular dependency. */
 CfgLexer *
 cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *preprocess_output)
 {
