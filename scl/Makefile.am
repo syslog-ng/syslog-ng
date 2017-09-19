@@ -14,6 +14,7 @@ SCL_SUBDIRS	= \
 	apache		\
 	cisco		\
 	default-network-drivers		\
+	ewmm		\
 	loggly		\
 	logmatic	\
 	snmptrap        \
