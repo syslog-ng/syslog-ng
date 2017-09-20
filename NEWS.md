@@ -34,6 +34,7 @@
 * Fix getent protocol number returns incorrect value (#1665)
 * Fix elasticsearch2 destination flush mechanism (#1668)
 * Fix file destination related memory leak (#1685)
+* Fix a possible memory leak around affile destination (#1685)
 
 # Other changes
 
@@ -47,6 +48,7 @@
 
 # Notes to the Developers
 
+* Update internal RabbitMQ (#1662)
 * Update internal ivykis to v0.42 (#1566)
 * Fix Travis and test related issues (#1566, #1644, #1674)
 * Update docker images (#1637)
