@@ -30,6 +30,7 @@ typedef struct
   LogParser super;
   gchar *prefix;
   gboolean forward_invalid;
+  GList *exclude_tags;
   GPtrArray *exclude_patterns;
   gboolean matchstring_shouldreverse;
   gboolean strip_whitespaces;

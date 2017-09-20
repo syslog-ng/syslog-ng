@@ -244,7 +244,9 @@ void
 xml_parser_set_exclude_tags(LogParser *s, GList *exclude_tags)
 {
   XMLParser *self = (XMLParser *) s;
-  g_list_foreach(exclude_tags, _compile_and_add, self->exclude_patterns);
+
+  g_list_free_full(self->exclude_tags, g_free);
+  self->exclude_tags = g_list_copy_deep(exclude_tags, ((GCopyFunc)g_strdup), NULL);
   self->matchstring_shouldreverse = joker_or_wildcard(exclude_tags);
 }
 
@@ -272,15 +274,6 @@ xml_parser_set_prefix(LogParser *s, const gchar *prefix)
   self->prefix = g_strdup(prefix);
 }
 
-static GPtrArray *
-_clone_exclude_patterns(XMLParser *self)
-{
-  GPtrArray *array = g_ptr_array_new_full(self->exclude_patterns->len, (GDestroyNotify)g_pattern_spec_free);
-  for (int i = 0; i < self->exclude_patterns->len; i++)
-    g_ptr_array_add(array, g_ptr_array_index(self->exclude_patterns, i));
-  return array;
-}
-
 LogPipe *
 xml_parser_clone(LogPipe *s)
 {
@@ -293,7 +286,7 @@ xml_parser_clone(LogPipe *s)
   log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
   xml_parser_set_forward_invalid(&cloned->super, self->forward_invalid);
   xml_parser_set_strip_whitespaces(&cloned->super, self->strip_whitespaces);
-  cloned->exclude_patterns = _clone_exclude_patterns(self);
+  xml_parser_set_exclude_tags(&cloned->super, self->exclude_tags);
   cloned->matchstring_shouldreverse = self->matchstring_shouldreverse;
 
   return &cloned->super.super;
@@ -305,6 +298,8 @@ xml_parser_free(LogPipe *s)
   XMLParser *self = (XMLParser *) s;
   g_free(self->prefix);
   self->prefix = NULL;
+  g_list_free_full(self->exclude_tags, g_free);
+  self->exclude_tags = NULL;
   g_ptr_array_free(self->exclude_patterns, TRUE);
   self->exclude_patterns = NULL;
 
@@ -358,7 +353,7 @@ xml_parser_init(LogPipe *s)
 {
   XMLParser *self = (XMLParser *)s;
   remove_trailing_dot(self->prefix);
-
+  g_list_foreach(self->exclude_tags, _compile_and_add, self->exclude_patterns);
   return log_parser_init_method(s);
 }
 

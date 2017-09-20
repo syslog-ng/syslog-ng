@@ -236,9 +236,10 @@ ParameterizedTest(SingleExcludeTagTestCase *test_cases, xmlparser, single_exclud
   GList *exclude_tags = NULL;
   exclude_tags = g_list_append(exclude_tags, test_cases->pattern);
 
-  LogParser *xml_parser = xml_parser_new(configuration);
-  xml_parser_set_exclude_tags(xml_parser, exclude_tags);
-  log_pipe_init((LogPipe *)xml_parser);
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions)
+  {
+    .exclude_tags = exclude_tags
+  });
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE, test_cases->input, -1);
@@ -266,9 +267,10 @@ Test(xml_parser, test_multiple_exclude_tags)
   exclude_tags = g_list_append(exclude_tags, "tag2");
   exclude_tags = g_list_append(exclude_tags, "inner*");
 
-  LogParser *xml_parser = xml_parser_new(configuration);
-  xml_parser_set_exclude_tags(xml_parser, exclude_tags);
-  log_pipe_init((LogPipe *)xml_parser);
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions)
+  {
+    .exclude_tags = exclude_tags
+  });
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE,
