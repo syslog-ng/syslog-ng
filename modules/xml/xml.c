@@ -103,6 +103,7 @@ start_element_cb(GMarkupParseContext  *context,
       msg_debug("xml: subtree skipped", evt_tag_str("tag", element_name));
       state->pop_next_time = 1;
       g_markup_parse_context_push(context, &skip, NULL);
+      g_free(reversed);
       return;
     }
 
