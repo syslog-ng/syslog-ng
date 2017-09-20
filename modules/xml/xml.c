@@ -281,7 +281,7 @@ _clone_exclude_patterns(XMLParser *self)
   return array;
 }
 
-static LogPipe *
+LogPipe *
 xml_parser_clone(LogPipe *s)
 {
   XMLParser *self = (XMLParser *) s;
@@ -292,6 +292,7 @@ xml_parser_clone(LogPipe *s)
   xml_parser_set_prefix(&cloned->super, self->prefix);
   log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
   xml_parser_set_forward_invalid(&cloned->super, self->forward_invalid);
+  xml_parser_set_strip_whitespaces(&cloned->super, self->strip_whitespaces);
   cloned->exclude_patterns = _clone_exclude_patterns(self);
   cloned->matchstring_shouldreverse = self->matchstring_shouldreverse;
 
