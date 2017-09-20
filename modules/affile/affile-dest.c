@@ -730,6 +730,7 @@ affile_dd_free(LogPipe *s)
   log_template_unref(self->filename_template);
   log_writer_options_destroy(&self->writer_options);
   file_opener_options_deinit(&self->file_opener_options);
+  file_opener_free(self->file_opener);
   log_dest_driver_free(s);
 }
 
