@@ -982,11 +982,11 @@ string_or_number
         ;
 
 string_list
-        : string_list_build                     { $$ = g_list_reverse($1); }
+        : string_list_build                     { $$ = $1; }
         ;
 
 string_list_build
-        : string string_list_build		{ $$ = g_list_append($2, g_strdup($1)); free($1); }
+        : string string_list_build		{ $$ = g_list_prepend($2, g_strdup($1)); free($1); }
         |					{ $$ = NULL; }
         ;
 
