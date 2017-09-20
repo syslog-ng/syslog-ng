@@ -42,6 +42,27 @@ teardown(void)
   cfg_free(configuration);
 }
 
+typedef struct
+{
+  gboolean forward_invalid;
+  gboolean strip_whitespaces;
+  GList *exclude_tags;
+} XMLParserTestOptions;
+
+static LogParser *
+_construct_xml_parser(XMLParserTestOptions options)
+{
+  LogParser *xml_parser = xml_parser_new(configuration);
+  xml_parser_set_forward_invalid(xml_parser, options.forward_invalid);
+  xml_parser_set_strip_whitespaces(xml_parser, options.strip_whitespaces);
+  xml_parser_set_exclude_tags(xml_parser, options.exclude_tags);
+
+  LogPipe *cloned = xml_parser_clone(&xml_parser->super);
+  log_pipe_init(cloned);
+  log_pipe_unref(&xml_parser->super);
+  return (LogParser *)cloned;
+}
+
 TestSuite(xmlparser, .init = setup, .fini = teardown);
 
 typedef struct
@@ -72,9 +93,7 @@ ParameterizedTestParameters(xmlparser, invalid_inputs)
 
 ParameterizedTest(XMLFailTestCase *test_case, xmlparser, invalid_inputs)
 {
-  LogParser *xml_parser = xml_parser_new(configuration);
-  xml_parser_set_forward_invalid(xml_parser, FALSE);
-  log_pipe_init((LogPipe *)xml_parser);
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions) {});
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE, test_case->input, -1);
@@ -114,8 +133,7 @@ ParameterizedTestParameters(xmlparser, valid_inputs)
 
 ParameterizedTest(ValidXMLTestCase *test_cases, xmlparser, valid_inputs)
 {
-  LogParser *xml_parser = xml_parser_new(configuration);
-  log_pipe_init((LogPipe *)xml_parser);
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions) {});
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE, test_cases->input, -1);
@@ -137,8 +155,7 @@ Test(xml_parser, test_drop_invalid)
 {
   setup();
 
-  LogParser *xml_parser = xml_parser_new(configuration);
-  log_pipe_init((LogPipe *)xml_parser);
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions) {});
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE, "<tag>", -1);
@@ -219,9 +236,10 @@ ParameterizedTest(SingleExcludeTagTestCase *test_cases, xmlparser, single_exclud
   GList *exclude_tags = NULL;
   exclude_tags = g_list_append(exclude_tags, test_cases->pattern);
 
-  LogParser *xml_parser = xml_parser_new(configuration);
-  xml_parser_set_exclude_tags(xml_parser, exclude_tags);
-  log_pipe_init((LogPipe *)xml_parser);
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions)
+  {
+    .exclude_tags = exclude_tags
+  });
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE, test_cases->input, -1);
@@ -249,9 +267,10 @@ Test(xml_parser, test_multiple_exclude_tags)
   exclude_tags = g_list_append(exclude_tags, "tag2");
   exclude_tags = g_list_append(exclude_tags, "inner*");
 
-  LogParser *xml_parser = xml_parser_new(configuration);
-  xml_parser_set_exclude_tags(xml_parser, exclude_tags);
-  log_pipe_init((LogPipe *)xml_parser);
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions)
+  {
+    .exclude_tags = exclude_tags
+  });
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE,
@@ -310,9 +329,10 @@ Test(xml_parser, test_strip_whitespaces)
 {
   setup();
 
-  LogParser *xml_parser = xml_parser_new(configuration);
-  xml_parser_set_strip_whitespaces(xml_parser, TRUE);
-  log_pipe_init((LogPipe *)xml_parser);
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions)
+  {
+    .strip_whitespaces = TRUE
+  });
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE,
