@@ -45,7 +45,7 @@ g_list_copy_deep(GList     *list,
   GList *new_list = g_list_copy(list);
   if (func)
     {
-      GList *iter = list;
+      GList *iter = new_list;
       while (iter != NULL)
         {
           iter->data = func(iter->data, user_data);
