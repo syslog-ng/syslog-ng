@@ -63,6 +63,10 @@ test_format_json(void)
   assert_template_format("$(format-json @.program=${PROGRAM})", "{\"@\":{\"program\":\"syslog-ng\"}}");
   assert_template_format("$(format-json .program.n@me=${PROGRAM})", "{\"_program\":{\"n@me\":\"syslog-ng\"}}");
   assert_template_format("$(format-json .program.@name=${PROGRAM})", "{\"_program\":{\"@name\":\"syslog-ng\"}}");
+  assert_template_format("$(format-json --leave-initial-dot .program.@name=${PROGRAM})",
+                         "{\".program\":{\"@name\":\"syslog-ng\"}}");
+  assert_template_format("$(format-json --leave-initial-dot .program.@name=${PROGRAM} .program.foo .program.bar)",
+                         "{\".program\":{\"@name\":\"syslog-ng\"}}");
 }
 
 void
@@ -152,6 +156,13 @@ test_format_json_performance(void)
 {
   perftest_template("$(format-json APP.*)\n");
   perftest_template("<$PRI>1 $ISODATE $LOGHOST @syslog-ng - - ${SDATA:--} $(format-json --scope all-nv-pairs "
+                    "--exclude 0* --exclude 1* --exclude 2* --exclude 3* --exclude 4* --exclude 5* "
+                    "--exclude 6* --exclude 7* --exclude 8* --exclude 9* "
+                    "--exclude SOURCE "
+                    "--exclude .SDATA.* "
+                    "..RSTAMP='${R_UNIXTIME}${R_TZ}' "
+                    "..TAGS=${TAGS})\n");
+  perftest_template("<$PRI>1 $ISODATE $LOGHOST @syslog-ng - - ${SDATA:--} $(format-json --leave-initial-dot --scope all-nv-pairs "
                     "--exclude 0* --exclude 1* --exclude 2* --exclude 3* --exclude 4* --exclude 5* "
                     "--exclude 6* --exclude 7* --exclude 8* --exclude 9* "
                     "--exclude SOURCE "
