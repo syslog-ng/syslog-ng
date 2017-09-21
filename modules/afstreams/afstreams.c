@@ -275,7 +275,7 @@ afstreams_sd_new(gchar *filename, GlobalConfig *cfg)
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
   self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
-  self->reader_options.stats_level = STATS_LEVEL1;
-  self->reader_options.stats_source = SCS_SUN_STREAMS;
+  self->reader_options.super.stats_level = STATS_LEVEL1;
+  self->reader_options.super.stats_source = SCS_SUN_STREAMS;
   return &self->super.super;
 }
