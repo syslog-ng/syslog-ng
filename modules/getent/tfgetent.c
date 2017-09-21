@@ -20,6 +20,10 @@
  * COPYING for details.
  */
 
+#if defined(sun) || defined(__sun)
+#define _POSIX_PTHREAD_SEMANTICS
+#endif
+
 #include "syslog-ng.h"
 #include "logmsg/logmsg.h"
 #include "plugin.h"
@@ -27,6 +31,7 @@
 #include "cfg.h"
 #include "parse-number.h"
 #include "template/simple-function.h"
+#include "compat/getent.h"
 
 #include <grp.h>
 #include <pwd.h>

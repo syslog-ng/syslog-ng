@@ -10,7 +10,9 @@ compatinclude_HEADERS		= 	\
 	lib/compat/string.h		\
 	lib/compat/time.h		\
 	lib/compat/openssl_support.h	\
-	lib/compat/pcre.h
+	lib/compat/pcre.h	\
+	lib/compat/getent.h	\
+	lib/compat/getent-bb.h
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\
@@ -21,6 +23,7 @@ compat_sources			= 	\
 	lib/compat/strcasestr.c		\
 	lib/compat/strtok_r.c		\
 	lib/compat/time.c		\
-	lib/compat/openssl_support.c
+	lib/compat/openssl_support.c	\
+	lib/compat/getent.c
 
 include lib/compat/tests/Makefile.am
