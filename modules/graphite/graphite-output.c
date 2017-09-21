@@ -96,7 +96,7 @@ tf_graphite_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
       log_template_compile(state->timestamp_template, "$R_UNIXTIME", NULL);
     }
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
+  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, FALSE, error);
   if (!state->vp)
     return FALSE;
 

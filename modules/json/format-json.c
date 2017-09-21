@@ -45,7 +45,7 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   TFJsonState *state = (TFJsonState *)s;
   ValuePairsTransformSet *vpts;
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
+  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, TRUE, error);
   if (!state->vp)
     return FALSE;
 
