@@ -390,6 +390,9 @@ AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 LT_INIT([dlopen disable-static])
 AC_PATH_PROG(PYTHON, python)
+if test -z "${PYTHON}"; then
+	AC_MSG_ERROR([Python interpreter is required])
+fi
 
 dnl ***************************************************************************
 dnl Validate yacc
@@ -1253,7 +1256,7 @@ if $LIBRABBITMQ_INTERNAL_SOURCE_EXISTS; then
     PYTHON_VERSION=`python -V 2>&1 | cut -d ' ' -f 2`
     PYTHON_MAJOR=`echo $PYTHON_VERSION | cut -d '.' -f 1`
     PYTHON_MINOR=`echo $PYTHON_VERSION | cut -d '.' -f 2`
-    if test ${PYTHON} = "" || test $PYTHON_MAJOR -eq 2 && test $PYTHON_MINOR -lt 5; then
+    if test $PYTHON_MAJOR -eq 2 && test $PYTHON_MINOR -lt 5; then
         AC_MSG_WARN([Was about to execute rabbitmq configure script, but that requires Python >= 2.5, which you don't seem to have, reverting to system rabbitmq])
         with_librabbitmq_client="system"
     else
