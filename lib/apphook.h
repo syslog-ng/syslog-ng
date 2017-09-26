@@ -35,6 +35,7 @@ enum
   AH_PRE_CONFIG_LOADED,
   AH_POST_CONFIG_LOADED,
   AH_SHUTDOWN,
+  AH_REOPEN,
 };
 
 typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
@@ -48,5 +49,6 @@ void app_post_config_loaded();
 void app_thread_start(void);
 void app_thread_stop(void);
 void app_shutdown();
+void app_reopen(void);
 
 #endif

@@ -24,6 +24,7 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "affile-dest.h"
 
 extern CfgParser affile_parser;
 
@@ -65,6 +66,7 @@ gboolean
 affile_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, affile_plugins, G_N_ELEMENTS(affile_plugins));
+  affile_dd_global_init();
   return TRUE;
 }
 

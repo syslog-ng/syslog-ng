@@ -130,6 +130,7 @@ struct _MainLoop
   struct iv_signal sigterm_poll;
   struct iv_signal sigint_poll;
   struct iv_signal sigchild_poll;
+  struct iv_signal sigusr1_poll;
 
   struct iv_event exit_requested;
   struct iv_event reload_config_requested;
@@ -382,6 +383,12 @@ sig_child_handler(gpointer user_data)
 }
 
 static void
+sig_usr1_handler(gpointer user_data)
+{
+  app_reopen();
+}
+
+static void
 _ignore_signal(gint signum)
 {
   struct sigaction sa;
@@ -410,6 +417,7 @@ setup_signals(MainLoop *self)
   _register_signal_handler(&self->sigchild_poll, SIGCHLD, sig_child_handler, self);
   _register_signal_handler(&self->sigterm_poll, SIGTERM, sig_term_handler, self);
   _register_signal_handler(&self->sigint_poll, SIGINT, sig_term_handler, self);
+  _register_signal_handler(&self->sigusr1_poll, SIGUSR1, sig_usr1_handler, self);
 }
 
 /************************************************************************************

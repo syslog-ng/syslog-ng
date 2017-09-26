@@ -25,6 +25,7 @@
 #include "control/control-main.h"
 #include "mainloop.h"
 #include "messages.h"
+#include "apphook.h"
 #include "stats/stats-query-commands.h"
 
 static GList *command_list = NULL;
@@ -120,11 +121,20 @@ control_connection_reload(GString *command, gpointer user_data)
   return result;
 }
 
+static GString *
+control_connection_reopen(GString *command, gpointer user_data)
+{
+  GString *result = g_string_new("OK Re-open of log destination files initiated");
+  app_reopen();
+  return result;
+}
+
 ControlCommand default_commands[] =
 {
   { "LOG", NULL, control_connection_message_log },
   { "STOP", NULL, control_connection_stop_process },
   { "RELOAD", NULL, control_connection_reload },
+  { "REOPEN", NULL, control_connection_reopen },
   { "QUERY", NULL, process_query_command },
   { NULL, NULL, NULL },
 };
