@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.8.20170913"
+version="0.3.8.20170926"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -719,7 +719,7 @@ acquire_syslog_var () {
 			printf "Do you really want to copy its contents? Type 'YES' with all capitals: "
 			read ans
 			if [ "$ans" = "YES" ]; then
-				find . |grep -v grep -v "syslog-ng*\.ctl" | cpio -pd ${tmpdir}/var
+				find . | grep -v "syslog-ng*\.ctl" | cpio -pd ${tmpdir}/var
 			fi
 		fi
 	else
