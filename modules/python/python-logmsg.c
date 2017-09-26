@@ -24,6 +24,7 @@
 #include "python-logmsg.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
+#include "str-utils.h"
 
 typedef struct _PyLogMessage
 {
@@ -80,12 +81,17 @@ _py_log_message_getattr(PyObject *o, PyObject *key)
     }
   NVHandle handle = log_msg_get_value_handle(name);
   PyLogMessage *py_msg = (PyLogMessage *)o;
-  const gchar *value = log_msg_get_value(py_msg->msg, handle, NULL);
+  gssize value_len = 0;
+  const gchar *value = log_msg_get_value(py_msg->msg, handle, &value_len);
+
   if (!value)
     {
       PyErr_SetString(PyExc_AttributeError, "No such attribute");
       return NULL;
     }
+
+  APPEND_ZERO(value, value, value_len);
+
   return PyBytes_FromString(value);
 }
 

@@ -187,6 +187,8 @@ nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
    * non-zero terminated strings properly handled, thus the caller has
    * to supply a non-NULL value_len */
 
+  g_assert(length != NULL);
+
   *length = MIN(entry->vindirect.ofs + entry->vindirect.len, referenced_length) - entry->vindirect.ofs;
   return referenced_value + entry->vindirect.ofs;
 }

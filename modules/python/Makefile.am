@@ -65,6 +65,7 @@ modules/python mod-python:
 endif
 
 include modules/python/pylib/Makefile.am
+include modules/python/tests/Makefile.am
 
 EXTRA_DIST					+= \
 	modules/python/compat/compat-python-v2.c   \

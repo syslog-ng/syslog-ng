@@ -515,3 +515,14 @@ Test(log_message, test_message_size)
 
   log_msg_unref(msg);
 }
+
+Test(log_message, when_get_indirect_value_with_null_value_len_abort_instead_of_sigsegv, .signal=SIGABRT)
+{
+  LogMessageTestParams *params = log_message_test_params_new();
+
+  NVHandle indirect = log_msg_get_value_handle("INDIRECT");
+  log_msg_set_value_indirect(params->message, indirect, params->nv_handle, 0, 0, 5);
+  log_msg_get_value(params->message, indirect, NULL);
+
+  log_message_test_params_free(params);
+}
