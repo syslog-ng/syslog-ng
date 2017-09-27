@@ -371,7 +371,7 @@ affile_dd_reopen_all_writers(gpointer data, gpointer user_data)
   AFFileDestDriver *driver = (AFFileDestDriver *) data;
   if (driver->single_writer)
     affile_dw_reopen(driver->single_writer);
-  else
+  else if (driver->writer_hash)
     g_hash_table_foreach(driver->writer_hash, affile_dw_reopen_writer, NULL);
 }
 
