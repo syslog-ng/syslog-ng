@@ -36,7 +36,8 @@ tf_template_lookup_invoked_template(TFTemplateState *state, GlobalConfig *cfg, c
   state->invoked_template = cfg_tree_lookup_template(&cfg->tree, function_name);
   if (!state->invoked_template)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function or template \"%s\"",
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "$(template) Unknown template function or template \"%s\"",
                   function_name);
       return FALSE;
     }

@@ -433,3 +433,75 @@ tf_string_padding(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_string_padding);
+
+typedef struct _TFBinaryState
+{
+  TFSimpleFuncState super;
+  GString *octets;
+} TFBinaryState;
+
+static void
+tf_binary_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+{
+  TFBinaryState *state = (TFBinaryState *) s;
+
+  g_string_append_len(result, state->octets->str, state->octets->len);
+}
+
+static gboolean
+tf_binary_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
+{
+  TFBinaryState *state = (TFBinaryState *) s;
+  GString *octets = g_string_new("");
+
+  if (argc < 2)
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "$(binary) Incorrect parameters, usage $(binary <number> <number> ...)");
+      goto error;
+    }
+
+  for (gint i = 1; i < argc; i++)
+    {
+      gint64 number;
+
+      gchar *token = argv[i];
+      if (!parse_number(token, &number))
+        {
+          g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                      "$(binary) template function requires list of dec/hex/oct numbers as arguments, unable to parse %s as a number",
+                      token);
+          goto error;
+        }
+      if (number > 0xFF)
+        {
+          g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                      "$(binary) template function only supports 8 bit values as characters, %" G_GUINT64_FORMAT " is above 255", number);
+          goto error;
+        }
+      g_string_append_c(octets, (gchar) number);
+    }
+
+  if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
+    {
+      goto error;
+    }
+
+  state->octets = octets;
+  return TRUE;
+error:
+  g_string_free(octets, TRUE);
+  return FALSE;
+}
+
+static void
+tf_binary_free_state(gpointer s)
+{
+  TFBinaryState *state = (TFBinaryState *) s;
+
+  g_string_free(state->octets, TRUE);
+  tf_simple_func_free_state(&state->super);
+}
+
+TEMPLATE_FUNCTION(TFBinaryState, tf_binary, tf_binary_prepare, tf_simple_func_eval, tf_binary_call,
+                  tf_binary_free_state, NULL);
