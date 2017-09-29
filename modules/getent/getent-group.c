@@ -85,7 +85,7 @@ tf_getent_group(gchar *key, gchar *member_name, GString *result)
     }
 
   r = group_field_map[s].format(member_name,
-                                ((uint8_t *)res) + group_field_map[s].offset,
+                                res->gr_mem,
                                 result);
   g_free(buf);
   return r;
