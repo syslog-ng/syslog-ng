@@ -28,7 +28,7 @@ modules_snmptrapd_parser_libsnmptrapd_parser_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_snmptrapd_parser_libsnmptrapd_parser_la_LDFLAGS = $(MODULE_LDFLAGS)
 modules_snmptrapd_parser_libsnmptrapd_parser_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
-modules/snmptrapd-parser modules/snmptrapd-parser/ mod-snmptrapd-parser mod-file: modules/snmptrapd-parser/libsnmptrapd-parser.la
-.PHONY: modules/snmptrapd-parser/ mod-snmptrapd-parser mod-file
+modules/snmptrapd-parser modules/snmptrapd-parser/ mod-snmptrapd-parser: modules/snmptrapd-parser/libsnmptrapd-parser.la
+.PHONY: modules/snmptrapd-parser/ mod-snmptrapd-parser
 
 include modules/snmptrapd-parser/tests/Makefile.am
