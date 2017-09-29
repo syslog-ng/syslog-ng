@@ -21,6 +21,6 @@ modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_LDFLAGS = $(MODULE_LDFLAGS)
 modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
-modules/@PLUGIN_NAME@ modules/@PLUGIN_NAME@/ mod-@PLUGIN_NAME@ mod-file: modules/@PLUGIN_NAME@/lib@PLUGIN_NAME@.la
-.PHONY: modules/@PLUGIN_NAME@/ mod-@PLUGIN_NAME@ mod-file
+modules/@PLUGIN_NAME@ modules/@PLUGIN_NAME@/ mod-@PLUGIN_NAME@: modules/@PLUGIN_NAME@/lib@PLUGIN_NAME@.la
+.PHONY: modules/@PLUGIN_NAME@/ mod-@PLUGIN_NAME@
 

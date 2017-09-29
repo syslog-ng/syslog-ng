@@ -24,7 +24,7 @@ modules_xml_libxml_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_xml_libxml_la_LDFLAGS = $(MODULE_LDFLAGS)
 modules_xml_libxml_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
-modules/xml modules/xml/ mod-xml mod-file: modules/xml/libxml.la
-.PHONY: modules/xml/ mod-xml mod-file
+modules/xml modules/xml/ mod-xml: modules/xml/libxml.la
+.PHONY: modules/xml/ mod-xml
 
 include modules/xml/tests/Makefile.am

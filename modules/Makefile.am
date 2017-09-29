@@ -53,7 +53,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-redis mod-pseudofile mod-graphite mod-riemann \
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
 	mod-native mod-cef mod-add-contextual-data mod-diskq mod-getent \
-	mod-map-value-pairs mod-snmptrapd-parser mod-tags-parser
+	mod-map-value-pairs mod-snmptrapd-parser mod-tags-parser mod-xml
 
 
 modules modules/: ${SYSLOG_NG_MODULES}

@@ -13,7 +13,7 @@ modules_stardate_libstardate_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_stardate_libstardate_la_LDFLAGS = $(MODULE_LDFLAGS) -lm
 modules_stardate_libstardate_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
-modules/stardate modules/stardate/ mod-stardate mod-file: modules/stardate/libstardate.la
-.PHONY: modules/stardate/ mod-stardate mod-file
+modules/stardate modules/stardate/ mod-stardate: modules/stardate/libstardate.la
+.PHONY: modules/stardate/ mod-stardate
 
 include modules/stardate/tests/Makefile.am
