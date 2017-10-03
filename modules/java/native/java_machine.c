@@ -131,7 +131,7 @@ _jvm_options_split(const gchar *jvm_options_str)
   if (!jvm_options_str)
     return jvm_options_array;
 
-  gchar **options_str_array = g_strsplit_set(jvm_options_str, "- \t", 0);
+  gchar **options_str_array = g_strsplit_set(jvm_options_str, " \t", 0);
 
   for (gint i = 0; options_str_array[i]; i++)
     {
@@ -141,8 +141,7 @@ _jvm_options_split(const gchar *jvm_options_str)
           continue;
         }
 
-      jvm_options_array = _jvm_options_array_append(jvm_options_array, g_strdup_printf("-%s", options_str_array[i]));
-      g_free(options_str_array[i]);
+      jvm_options_array = _jvm_options_array_append(jvm_options_array, options_str_array[i]);
     }
   g_free(options_str_array);
 
