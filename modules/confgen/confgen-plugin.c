@@ -30,6 +30,24 @@
 
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
+
+
+static void
+confgen_set_args_as_env(gpointer k, gpointer v, gpointer user_data)
+{
+  gchar buf[1024];
+  g_snprintf(buf, sizeof(buf), "confgen_%s", (gchar *)k);
+  setenv(buf, (gchar *)v, 1);
+}
+
+static void
+confgen_unset_args_from_env(gpointer k, gpointer v, gpointer user_data)
+{
+  gchar buf[1024];
+  g_snprintf(buf, sizeof(buf), "confgen_%s", (gchar *)k);
+  unsetenv(buf);
+}
 
 gboolean
 confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, gpointer user_data)
@@ -43,15 +61,11 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
   gboolean result;
 
   g_snprintf(buf, sizeof(buf), "%s confgen %s", cfg_lexer_lookup_context_name_by_type(type), name);
-  if (!cfg_args_validate(args, NULL, buf))
-    {
-      msg_error("confgen: confgen invocations do not process arguments, but your argument list is not empty",
-                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(type)),
-                evt_tag_str("block", name));
-      return FALSE;
-    }
 
+  cfg_args_foreach(args, confgen_set_args_as_env, NULL);
   out = popen((gchar *) user_data, "r");
+  cfg_args_foreach(args, confgen_unset_args_from_env, NULL);
+
   if (!out)
     {
       msg_error("confgen: Error executing generator program",
