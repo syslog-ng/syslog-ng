@@ -40,8 +40,6 @@ struct _LogReader
   LogReaderOptions *options;
   PollEvents *poll_events;
   GSockAddr *peer_addr;
-  ino_t inode;
-  gint64 size;
 
   /* NOTE: these used to be LogReaderWatch members, which were merged into
    * LogReader with the multi-thread refactorization */
