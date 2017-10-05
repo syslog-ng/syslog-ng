@@ -1,0 +1,17 @@
+systemctl stop syslog-ng
+/usr/sbin/syslog-ng --syntax-only --cfgfile /etc/syslog-ng/syslog-ng.conf
+/usr/sbin/syslog-ng --no-caps --process-mode=background --cfgfile /etc/syslog-ng/syslog-ng.conf --persist-file=/tmp/persist_file --pidfile=/tmp/syslog-ng.pid --control=/tmp/syslog-ng.control
+
+sleep 2
+
+PID=$(cat /tmp/syslog-ng.pid)
+
+echo "Syslog-ng pid is $PID"
+
+if [ ! -L /proc/$PID/exe ]
+then
+  echo "syslog-ng could not start"
+  exit 1
+fi
+
+kill $PID

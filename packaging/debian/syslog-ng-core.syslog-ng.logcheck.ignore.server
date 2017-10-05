@@ -1,0 +1,5 @@
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ syslog-ng\[[[:digit:]]{1,5}\]: new configuration initialized$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ syslog-ng\[[[:digit:]]{1,5}\]: Configuration reload request received, reloading configuration;$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ syslog-ng\[[[:digit:]]{1,5}\]: Duplicate stats counter; (counter='[^']+'(, )?)$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ syslog-ng\[[[:digit:]]{1,5}\]: Changing permissions on special file /dev/xconsole$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ syslog-ng\[[[:digit:]]{1,5}\]: Cannot open file /dev/xconsole for writing \(No such file or directory\)$

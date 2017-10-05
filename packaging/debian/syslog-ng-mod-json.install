@@ -1,0 +1,5 @@
+usr/lib/syslog-ng/*/libjson-plugin.so
+usr/share/syslog-ng/include/scl/nodejs/*
+
+#Templates with json dependencies
+usr/share/syslog-ng/include/scl/cim/*

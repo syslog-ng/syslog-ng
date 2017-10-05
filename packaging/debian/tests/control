@@ -1,0 +1,63 @@
+Tests: basic
+Depends: syslog-ng-core
+
+Tests: basic
+Depends: syslog-ng
+
+Tests: basic
+Depends: @
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-json
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-mongodb
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-sql
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-smtp
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-amqp
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-geoip
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-redis
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-stomp
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-riemann
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-graphite
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-python
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-add-contextual-data
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-getent
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-stardate
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-map-value-pairs
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-snmptrapd-parser
+
+Tests: upgrade
+Restrictions: needs-root
+Depends: apt-utils
+
+Tests: baseconfig
+Restrictions: needs-root

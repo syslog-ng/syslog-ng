@@ -1,0 +1,3 @@
+version=3
+
+https://github.com/balabit/syslog-ng/tags .*/syslog-ng-([\d\.]+)\.tar\.gz
