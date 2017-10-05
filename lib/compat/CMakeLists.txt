@@ -9,6 +9,8 @@ set(COMPAT_HEADERS
     compat/time.h
     compat/openssl_support.h
     compat/pcre.h
+    compat/getent.h
+    compat/getent-bb.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES
@@ -21,4 +23,5 @@ set(COMPAT_SOURCES
     compat/strtok_r.c
     compat/time.c
     compat/openssl_support.c
+    compat/getent.c
     PARENT_SCOPE)
