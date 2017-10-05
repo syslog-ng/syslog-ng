@@ -347,8 +347,6 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
         }
       break;
     case M_MESSAGE:
-      if (cfg_is_config_version_older(configuration, 0x0300))
-        log_macro_expand(result, M_MSGHDR, escape, opts, tz, seq_num, context_id, msg);
       _result_append_value(result, msg, LM_V_MESSAGE, escape);
       break;
     case M_SOURCE_IP:
@@ -595,12 +593,6 @@ log_macro_lookup(gchar *macro, gint len)
   g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
-
-  if (cfg_is_config_version_older(configuration, 0x0300) && (macro_id == M_MESSAGE))
-    {
-      msg_warning_once("WARNING: template: the meaning of the $MSG/$MESSAGE macros has changed from " VERSION_3_0
-                       ", please prepend a $MSGHDR when upgrading to " VERSION_3_0 " config format");
-    }
   return macro_id;
 }
 

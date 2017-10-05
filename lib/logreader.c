@@ -580,12 +580,6 @@ log_reader_options_defaults(LogReaderOptions *options)
   log_proto_server_options_defaults(&options->proto_options.super);
   msg_format_options_defaults(&options->parse_options);
   options->fetch_limit = 10;
-  if (configuration && cfg_is_config_version_older(configuration, 0x0300))
-    {
-      msg_warning_once("WARNING: input: sources do not remove new-line characters from messages by default from " VERSION_3_0
-                       ", please add 'no-multi-line' flag to your configuration if you want to retain this functionality");
-      options->parse_options.flags |= LP_NO_MULTI_LINE;
-    }
 }
 
 /*
