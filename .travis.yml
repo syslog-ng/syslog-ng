@@ -113,7 +113,8 @@ matrix:
           astyle
       before_script:
       script:
-      - scripts/style-checker.sh check
+      - scripts/style-checker.sh format
+      - git diff --exit-code
     - env: B=copyright-check
       sudo: false
       compiler: gcc

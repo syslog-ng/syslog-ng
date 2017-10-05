@@ -29,24 +29,25 @@
 extern int afamqp_debug;
 int afamqp_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword afamqp_keywords[] = {
-  { "amqp",			KW_AMQP },
-  { "vhost",			KW_VHOST },
-  { "host",			KW_HOST },
-  { "port",			KW_PORT },
-  { "exchange",			KW_EXCHANGE },
-  { "exchange_declare",		KW_EXCHANGE_DECLARE },
-  { "exchange_type",		KW_EXCHANGE_TYPE },
-  { "routing_key",		KW_ROUTING_KEY },
-  { "persistent",		KW_PERSISTENT },
-  { "username",			KW_USERNAME },
-  { "password",			KW_PASSWORD },
-  { "log_fifo_size",		KW_LOG_FIFO_SIZE  },
-  { "body",			KW_BODY },
-  { "ca_file",     		KW_CA_FILE },
-  { "key_file",       		KW_KEY_FILE },
-  { "cert_file",   		KW_CERT_FILE },
-  { "peer_verify",    		KW_PEER_VERIFY },
+static CfgLexerKeyword afamqp_keywords[] =
+{
+  { "amqp",     KW_AMQP },
+  { "vhost",      KW_VHOST },
+  { "host",     KW_HOST },
+  { "port",     KW_PORT },
+  { "exchange",     KW_EXCHANGE },
+  { "exchange_declare",   KW_EXCHANGE_DECLARE },
+  { "exchange_type",    KW_EXCHANGE_TYPE },
+  { "routing_key",    KW_ROUTING_KEY },
+  { "persistent",   KW_PERSISTENT },
+  { "username",     KW_USERNAME },
+  { "password",     KW_PASSWORD },
+  { "log_fifo_size",    KW_LOG_FIFO_SIZE  },
+  { "body",     KW_BODY },
+  { "ca_file",        KW_CA_FILE },
+  { "key_file",           KW_KEY_FILE },
+  { "cert_file",      KW_CERT_FILE },
+  { "peer_verify",        KW_PEER_VERIFY },
   { NULL }
 };
 
