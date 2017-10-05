@@ -27,10 +27,6 @@
 
 #include "cfg-parser.h"
 
-typedef struct _Plugin Plugin;
-typedef struct _ModuleInfo ModuleInfo;
-typedef struct _PluginContext PluginContext;
-
 typedef struct _PluginFailureInfo
 {
   gconstpointer aux_data;
@@ -91,7 +87,6 @@ struct _ModuleInfo
   /* the higher the better */
 };
 
-typedef struct _PluginContext PluginContext;
 struct _PluginContext
 {
   GList *plugins;
