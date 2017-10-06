@@ -1308,6 +1308,14 @@ if test "$enable_riemann" != "no"; then
  else
    enable_riemann="yes";
  fi
+
+ if test "$enable_riemann" = "yes"; then
+
+    old_CFLAGS=$CFLAGS
+    CFLAGS=`pkg-config --cflags riemann-client`
+    AC_CHECK_DECLS(RIEMANN_EVENT_FIELD_TIME_MICROS, [riemann_micros="yes"], [riemann_micros="no"], [[#include <riemann/event.h>]])
+    CFLAGS=$old_CFLAGS
+ fi
 fi
 
 dnl ***************************************************************************
@@ -1678,6 +1686,7 @@ AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal suppo
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(echo "$with_python" | grep -Eq "python-?2.*") && echo 1 || echo 0`, [Python2 c api])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(echo "$with_python" | grep -Eq "python-?3.*") && echo 1 || echo 0`, [Python3 c api])
+AC_DEFINE_UNQUOTED(HAVE_RIEMANN_MICROSECONDS, `enable_value $riemann_micros`, [Riemann microseconds support])
 
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
@@ -1826,7 +1835,7 @@ echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
-echo "  Riemann destination (module): ${enable_riemann:=no}"
+echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
 echo "  java                        : ${enable_java:=no}"
 echo "  java modules                : ${enable_java_modules:=no}"
