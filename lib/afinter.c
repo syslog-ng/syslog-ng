@@ -96,7 +96,7 @@ struct _AFInterSource
   struct iv_event schedule_wakeup;
   struct iv_timer mark_timer;
   struct iv_task restart_task;
-  gboolean watches_running:1;
+  gboolean watches_running:1, free_to_send:1;
 };
 
 static void afinter_source_update_watches(AFInterSource *self);
@@ -219,7 +219,7 @@ afinter_source_update_watches(AFInterSource *self)
        * current_internal_source to NULL.  Messages get accumulated into
        * internal_msg_queue.  */
       g_static_mutex_lock(&internal_msg_lock);
-      current_internal_source = NULL;
+      self->free_to_send = FALSE;
       g_static_mutex_unlock(&internal_msg_lock);
 
       /* Possible race:
@@ -263,7 +263,7 @@ afinter_source_update_watches(AFInterSource *self)
       g_static_mutex_lock(&internal_msg_lock);
       if (internal_msg_queue && g_queue_get_length(internal_msg_queue) > 0)
         iv_task_register(&self->restart_task);
-      current_internal_source = self;
+      self->free_to_send = TRUE;
       g_static_mutex_unlock(&internal_msg_lock);
     }
 }
@@ -290,6 +290,7 @@ afinter_source_init(LogPipe *s)
 
   g_static_mutex_lock(&internal_msg_lock);
   current_internal_source = self;
+  self->free_to_send = TRUE;
   g_static_mutex_unlock(&internal_msg_lock);
 
   return TRUE;
@@ -424,10 +425,33 @@ afinter_postpone_mark(gint mark_freq)
     }
 }
 
+static void
+_release_internal_msg_queue()
+{
+  LogMessage *internal_message = g_queue_pop_head(internal_msg_queue);
+  while (internal_message)
+    {
+      log_msg_unref(internal_message);
+      internal_message = g_queue_pop_head(internal_msg_queue);
+    }
+  g_queue_free(internal_msg_queue);
+  internal_msg_queue = NULL;
+}
+
 void
 afinter_message_posted(LogMessage *msg)
 {
   g_static_mutex_lock(&internal_msg_lock);
+  if (!current_internal_source)
+    {
+      if (internal_msg_queue)
+        {
+          _release_internal_msg_queue();
+        }
+      log_msg_unref(msg);
+      goto exit;
+    }
+
   if (!internal_msg_queue)
     {
       internal_msg_queue = g_queue_new();
@@ -442,8 +466,9 @@ afinter_message_posted(LogMessage *msg)
   g_queue_push_tail(internal_msg_queue, msg);
   stats_counter_inc(internal_queue_length);
 
-  if (current_internal_source)
+  if (current_internal_source->free_to_send)
     iv_event_post(&current_internal_source->post);
+exit:
   g_static_mutex_unlock(&internal_msg_lock);
 }
 
