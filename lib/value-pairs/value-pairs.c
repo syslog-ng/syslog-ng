@@ -454,7 +454,8 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
-  vp_merge_builtins(vp, &results, msg, seq_num, time_zone_mode, template_options);
+  if (NULL != template_options)
+    vp_merge_builtins(vp, &results, msg, seq_num, time_zone_mode, template_options);
 
   /* Merge the explicit key-value pairs too */
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
