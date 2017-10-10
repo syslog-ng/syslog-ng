@@ -230,12 +230,6 @@ log_matcher_posix_re_new(GlobalConfig *cfg, const LogMatcherOptions *options)
   self->super.replace = log_matcher_posix_re_replace;
   self->super.free_fn = log_matcher_posix_re_free;
 
-  if (cfg_is_config_version_older(cfg, 0x0300))
-    {
-      msg_warning_once("WARNING: filters do not store matches in macros by default from " VERSION_3_0
-                       ", please update your configuration by using an explicit 'store-matches' flag to achieve that");
-      self->super.flags = LMF_STORE_MATCHES;
-    }
   return &self->super;
 }
 
@@ -796,14 +790,6 @@ log_matcher_pcre_re_new(GlobalConfig *cfg, const LogMatcherOptions *options)
   self->super.match = log_matcher_pcre_re_match;
   self->super.replace = log_matcher_pcre_re_replace;
   self->super.free_fn = log_matcher_pcre_re_free;
-
-  if (cfg_is_config_version_older(cfg, 0x0300))
-    {
-      msg_warning_once("WARNING: filters do not store matches in macros by default from " VERSION_3_0
-                       ", please update your configuration by using an explicit 'store-matches' flag to achieve that");
-      self->super.flags = LMF_STORE_MATCHES;
-    }
-
 
   return &self->super;
 }

@@ -177,19 +177,11 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
 
-  if (cfg_is_config_version_older(cfg, 0x0300))
-    {
-      msg_warning_once("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0
-                       " to '1' for all files except /proc/kmsg");
-      self->file_reader_options.follow_freq = -1;
-    }
+  if (_is_device_node(filename) || _is_linux_proc_kmsg(filename))
+    self->file_reader_options.follow_freq = 0;
   else
-    {
-      if (_is_device_node(filename) || _is_linux_proc_kmsg(filename))
-        self->file_reader_options.follow_freq = 0;
-      else
-        self->file_reader_options.follow_freq = 1000;
-    }
+    self->file_reader_options.follow_freq = 1000;
+
   if (self->file_reader_options.follow_freq > 0)
     self->file_opener = file_opener_for_regular_source_files_new();
   else if (_is_linux_proc_kmsg(self->filename->str))

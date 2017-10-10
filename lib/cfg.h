@@ -129,7 +129,7 @@ void cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode);
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 
-void cfg_set_version(GlobalConfig *self, gint version);
+gboolean cfg_set_version(GlobalConfig *self, gint version);
 void cfg_load_candidate_modules(GlobalConfig *self);
 
 void cfg_set_global_paths(GlobalConfig *self);

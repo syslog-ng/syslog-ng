@@ -237,15 +237,21 @@ cfg_deinit(GlobalConfig *cfg)
   return cfg_tree_stop(&cfg->tree);
 }
 
-void
+gboolean
 cfg_set_version(GlobalConfig *self, gint version)
 {
   self->user_version = version;
+  if (cfg_is_config_version_older(self, 0x0300))
+    {
+      msg_error("ERROR: compatibility with configurations below 3.0 was dropped in " VERSION_3_13
+                ", please update your configuration accordingly");
+      return FALSE;
+    }
+
   if (cfg_is_config_version_older(self, VERSION_VALUE))
     {
-      msg_warning("WARNING: Configuration file format is too old, syslog-ng is running in compatibility mode "
-                  "Please update it to use the " VERSION_CURRENT " format at your time of convenience, "
-                  "compatibility mode can operate less efficiently in some cases. "
+      msg_warning("WARNING: Configuration file format is too old, syslog-ng is running in compatibility mode. "
+                  "Please update it to use the " VERSION_CURRENT " format at your time of convenience. "
                   "To upgrade the configuration, please review the warnings about incompatible changes printed "
                   "by syslog-ng, and once completed change the @version header at the top of the configuration "
                   "file.");
@@ -258,18 +264,12 @@ cfg_set_version(GlobalConfig *self, gint version)
       self->user_version = VERSION_VALUE;
     }
 
-  if (cfg_is_config_version_older(self, 0x0300))
-    {
-      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in " VERSION_3_0
-                  ", please update your configuration accordingly");
-      self->chain_hostnames = TRUE;
-    }
   if (cfg_is_config_version_older(self, 0x0303))
     {
       msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3
                   " to reflect log_iw_size() changes for tcp()/udp() window size changes");
     }
-
+  return TRUE;
 }
 
 gboolean

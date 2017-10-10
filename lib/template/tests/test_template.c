@@ -245,34 +245,6 @@ test_syntax_errors(void)
 }
 
 static void
-test_compat(void)
-{
-  gint old_version;
-
-  old_version = configuration->user_version;
-  /* old version for various macros */
-  configuration->user_version = 0x0201;
-
-  start_grabbing_messages();
-  assert_template_format("$MSGHDR", "syslog-ng[23323]:");
-  gchar *expected_msg_default_value_changed =
-    g_strdup_printf("the default value for template-escape has changed to 'no' from %s", VERSION_3_0);
-  assert_grabbed_messages_contain(expected_msg_default_value_changed, NULL);
-  reset_grabbed_messages();
-  assert_template_format("$MSG", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
-  gchar *expected_msg_macros_changed = g_strdup_printf("the meaning of the $MSG/$MESSAGE macros has changed from %s",
-                                                       VERSION_3_0);
-  assert_grabbed_messages_contain(expected_msg_macros_changed, NULL);
-  stop_grabbing_messages();
-  g_free(expected_msg_default_value_changed);
-  g_free(expected_msg_macros_changed);
-  assert_template_format("$MSGONLY", "árvíztűrőtükörfúrógép");
-  assert_template_format("$MESSAGE", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
-
-  configuration->user_version = old_version;
-}
-
-static void
 test_multi_thread(void)
 {
   /* name-value pair */
@@ -333,7 +305,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_template_functions();
   test_message_refs();
   test_syntax_errors();
-  test_compat();
   test_multi_thread();
   test_escaping();
   test_template_function_args();

@@ -935,7 +935,8 @@ relex:
     }
   else if (configuration->user_version == 0 && configuration->parsed_version != 0)
     {
-      cfg_set_version(configuration, configuration->parsed_version);
+      if (!cfg_set_version(configuration, configuration->parsed_version))
+        return LL_ERROR;
     }
   else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
     {
@@ -943,10 +944,9 @@ relex:
 
       if (configuration->user_version == 0 && configuration->parsed_version == 0)
         {
-          /* no version selected yet, and we have a non-pragma token, this
-           * means that the configuration is meant for syslog-ng 2.1 */
-          msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file to indicate this explicitly");
-          cfg_set_version(configuration, 0x0201);
+          msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
+                    ", please specify a version number using @version and update your configuration accordingly");
+          return LL_ERROR;
         }
 
 #if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
