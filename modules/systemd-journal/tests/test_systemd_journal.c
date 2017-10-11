@@ -333,7 +333,7 @@ _test_default_working_test(TestCase *self, TestSource *src, LogMessage *msg)
   assert_gint(msg->pri, options->default_pri, ASSERTION_ERROR("Bad default prio"));
   assert_gint(options->fetch_limit, 10, ASSERTION_ERROR("Bad default fetch_limit"));
   assert_gint(options->max_field_size, 64 * 1024, ASSERTION_ERROR("Bad max field size"));
-  assert_gpointer(options->prefix, NULL, ASSERTION_ERROR("Bad default prefix value"));
+  assert_string(options->prefix, ".journald.", ASSERTION_ERROR("Bad default prefix value"));
   assert_string(options->recv_time_zone, configuration->recv_time_zone, ASSERTION_ERROR("Bad default timezone"));
   test_source_finish_tc(src);
 }
@@ -527,7 +527,7 @@ main(int argc, char **argv)
 {
   app_startup();
   main_thread_handle =  get_thread_id();
-  configuration = cfg_new_snippet(0x306);
+  configuration = cfg_new_snippet(VERSION_VALUE);
   configuration->threaded = FALSE;
   configuration->state = persist_state_new(TEST_PERSIST_FILE_NAME);
   configuration->keep_hostname = TRUE;
