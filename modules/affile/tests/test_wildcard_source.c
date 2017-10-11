@@ -32,7 +32,7 @@ static void
 _init(void)
 {
   app_startup();
-  configuration = cfg_new_snippet(VERSION_VALUE);
+  configuration = cfg_new_snippet();
   cr_assert(plugin_load_module("affile", configuration, NULL));
 }
 

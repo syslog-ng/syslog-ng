@@ -527,7 +527,7 @@ main(int argc, char **argv)
 {
   app_startup();
   main_thread_handle =  get_thread_id();
-  configuration = cfg_new_snippet(VERSION_VALUE);
+  configuration = cfg_new_snippet();
   configuration->threaded = FALSE;
   configuration->state = persist_state_new(TEST_PERSIST_FILE_NAME);
   configuration->keep_hostname = TRUE;

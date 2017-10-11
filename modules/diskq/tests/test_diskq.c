@@ -489,7 +489,7 @@ main()
   putenv("TZ=MET-1METDST");
   tzset();
 
-  configuration = cfg_new_snippet(VERSION_VALUE);
+  configuration = cfg_new_snippet();
   configuration->stats_options.level = 1;
   assert_true(cfg_init(configuration), "cfg_init failed!");
   plugin_load_module("syslogformat", configuration, NULL);

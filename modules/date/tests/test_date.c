@@ -76,7 +76,7 @@ setup(void)
   putenv("TZ=CET-1");
   tzset();
 
-  configuration = cfg_new_snippet(0x0302);
+  configuration = cfg_new_snippet();
 }
 
 void

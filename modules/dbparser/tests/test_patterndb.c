@@ -1119,7 +1119,7 @@ main(int argc, char *argv[])
 
   msg_init(TRUE);
 
-  configuration = cfg_new_snippet(0x0302);
+  configuration = cfg_new_snippet();
   plugin_load_module("basicfuncs", configuration, NULL);
   plugin_load_module("syslogformat", configuration, NULL);
 
