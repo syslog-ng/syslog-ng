@@ -249,7 +249,7 @@ gchar *test12 [] =
 gchar **parsers[] = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10, test11, test12, NULL};
 
 void
-test_patterndb_parsers()
+test_patterndb_parsers(void)
 {
   gint i;
 

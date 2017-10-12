@@ -36,7 +36,7 @@ typedef struct _TestData
 static const gchar *TEST = "test";
 
 TestData *
-test_data_new()
+test_data_new(void)
 {
   TestData *self = g_new0(TestData, 1);
   self->deleted_entries = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);

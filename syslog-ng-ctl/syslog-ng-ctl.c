@@ -137,7 +137,7 @@ static GOptionEntry stats_options[] =
 };
 
 static const gchar *
-_stats_command_builder()
+_stats_command_builder(void)
 {
   return stats_options_reset_is_set ? "RESET_STATS" : "STATS";
 }
@@ -222,7 +222,7 @@ slng_license(int argc, char *argv[], const gchar *mode)
 }
 
 static gint
-_get_query_list_cmd()
+_get_query_list_cmd(void)
 {
   if (query_is_get_sum)
     return -1;
@@ -234,7 +234,7 @@ _get_query_list_cmd()
 }
 
 static gint
-_get_query_get_cmd()
+_get_query_get_cmd(void)
 {
   if (query_is_get_sum)
     {
@@ -264,13 +264,13 @@ _get_query_cmd(gchar *cmd)
 }
 
 static gboolean
-_is_query_params_empty()
+_is_query_params_empty(void)
 {
   return raw_query_params == NULL;
 }
 
 static gchar *
-_shift_query_command_out_of_params()
+_shift_query_command_out_of_params(void)
 {
   if (raw_query_params[QUERY_COMMAND] != NULL)
     return *(raw_query_params++);
@@ -308,7 +308,7 @@ _get_query_command_string(gint query_cmd)
 }
 
 static gchar *
-_get_dispatchable_query_command()
+_get_dispatchable_query_command(void)
 {
   gint query_cmd;
 

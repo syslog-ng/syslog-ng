@@ -171,7 +171,7 @@ test_kmsg_device_parsing(void)
 }
 
 void
-init_and_load_kmsgformat_module()
+init_and_load_kmsgformat_module(void)
 {
   configuration = cfg_new_snippet();
   plugin_load_module("linux-kmsg-format", configuration, NULL);
@@ -182,7 +182,7 @@ init_and_load_kmsgformat_module()
 }
 
 void
-deinit_kmsgformat_module()
+deinit_kmsgformat_module(void)
 {
   if (configuration)
     cfg_free(configuration);

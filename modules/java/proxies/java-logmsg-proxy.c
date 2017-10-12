@@ -122,7 +122,7 @@ java_log_message_proxy_free(JavaLogMessageProxy *self)
 }
 
 JavaLogMessageProxy *
-java_log_message_proxy_new(LogMessage *msg)
+java_log_message_proxy_new(void)
 {
   JavaLogMessageProxy *self = g_new0(JavaLogMessageProxy, 1);
   self->java_machine = java_machine_ref();

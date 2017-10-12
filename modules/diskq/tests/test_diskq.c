@@ -52,7 +52,7 @@
 MsgFormatOptions parse_options;
 
 static void
-testcase_zero_diskbuf_and_normal_acks()
+testcase_zero_diskbuf_and_normal_acks(void)
 {
   LogQueue *q;
   gint i;
@@ -86,7 +86,7 @@ testcase_zero_diskbuf_and_normal_acks()
 }
 
 static void
-testcase_zero_diskbuf_alternating_send_acks()
+testcase_zero_diskbuf_alternating_send_acks(void)
 {
   LogQueue *q;
   gint i;
@@ -121,7 +121,7 @@ testcase_zero_diskbuf_alternating_send_acks()
 }
 
 static void
-testcase_ack_and_rewind_messages()
+testcase_ack_and_rewind_messages(void)
 {
   LogQueue *q;
   gint i;
@@ -273,7 +273,7 @@ threaded_consume(gpointer st)
 
 
 static void
-testcase_with_threads()
+testcase_with_threads(void)
 {
   LogQueue *q;
   GThread *thread_feed[FEEDERS], *thread_consume;
@@ -478,7 +478,7 @@ testcase_diskq_statistics(diskq_tester_parameters_t parameters)
 }
 
 int
-main()
+main(void)
 {
 #if _AIX
   fprintf(stderr,

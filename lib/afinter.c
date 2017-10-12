@@ -426,7 +426,7 @@ afinter_postpone_mark(gint mark_freq)
 }
 
 static void
-_release_internal_msg_queue()
+_release_internal_msg_queue(void)
 {
   LogMessage *internal_message = g_queue_pop_head(internal_msg_queue);
   while (internal_message)

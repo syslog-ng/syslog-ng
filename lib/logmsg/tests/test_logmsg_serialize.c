@@ -102,7 +102,7 @@ _alloc_dummy_values_to_change_handle_values_accross_restarts(void)
 }
 
 static void
-_reset_log_msg_registry()
+_reset_log_msg_registry(void)
 {
   log_msg_registry_deinit();
   log_msg_registry_init();

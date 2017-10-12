@@ -99,7 +99,7 @@ _register_counters(const CounterHashContent *counters, size_t n, ClusterKeySet k
 }
 
 static void
-_register_single_counter_with_name()
+_register_single_counter_with_name(void)
 {
   stats_lock();
   {

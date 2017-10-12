@@ -47,8 +47,8 @@ typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gchar *value, gpointer user_da
 void journald_foreach_data(Journald *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
 
 
-gboolean load_journald_subsystem();
-Journald *journald_new();
+gboolean load_journald_subsystem(void);
+Journald *journald_new(void);
 void journald_free(Journald *self);
 
 int journald_open(Journald *self, int flags);

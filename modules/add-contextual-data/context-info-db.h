@@ -34,7 +34,7 @@ typedef void (*ADD_CONTEXT_INFO_CB) (gpointer arg,
 
 void context_info_db_enable_ordering(ContextInfoDB *self);
 GList * context_info_db_ordered_selectors(ContextInfoDB *self);
-ContextInfoDB *context_info_db_new();
+ContextInfoDB *context_info_db_new(void);
 void context_info_db_free(ContextInfoDB *self);
 
 ContextInfoDB *context_info_db_ref(ContextInfoDB *self);

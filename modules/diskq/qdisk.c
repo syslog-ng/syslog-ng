@@ -1010,7 +1010,7 @@ qdisk_free(QDisk *self)
 }
 
 QDisk *
-qdisk_new()
+qdisk_new(void)
 {
   QDisk *self = g_new0(QDisk, 1);
   return self;

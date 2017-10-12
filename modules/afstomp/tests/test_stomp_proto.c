@@ -45,7 +45,7 @@ assert_stomp_body(stomp_frame *frame, char *body)
 }
 
 void
-test_only_command()
+test_only_command(void)
 {
   stomp_frame frame;
 
@@ -55,7 +55,7 @@ test_only_command()
 }
 
 void
-test_command_and_data()
+test_command_and_data(void)
 {
   stomp_frame frame;
 
@@ -66,7 +66,7 @@ test_command_and_data()
 };
 
 void
-test_command_and_header_and_data()
+test_command_and_header_and_data(void)
 {
   stomp_frame frame;
 
@@ -78,7 +78,7 @@ test_command_and_header_and_data()
 };
 
 void
-test_command_and_header()
+test_command_and_header(void)
 {
   stomp_frame frame;
 
@@ -89,7 +89,7 @@ test_command_and_header()
 };
 
 void
-test_generate_gstring_from_frame()
+test_generate_gstring_from_frame(void)
 {
   stomp_frame frame;
   GString *actual;

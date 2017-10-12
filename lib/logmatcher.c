@@ -920,7 +920,7 @@ log_matcher_options_destroy(LogMatcherOptions *options)
 }
 
 GQuark
-log_matcher_error_quark()
+log_matcher_error_quark(void)
 {
   return g_quark_from_static_string("log-matcher-error-quark");
 }

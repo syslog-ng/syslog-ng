@@ -29,7 +29,7 @@ msg_event(int prio, const char *desc, void *tag1, ...)
 }
 
 void
-main_loop_wakeup()
+main_loop_wakeup(void)
 {
   ;
 }

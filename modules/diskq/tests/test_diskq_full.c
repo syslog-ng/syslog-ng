@@ -88,7 +88,7 @@ test_diskq_become_full(gboolean reliable)
 }
 
 int
-main()
+main(void)
 {
   app_startup();
   putenv("TZ=MET-1METDST");

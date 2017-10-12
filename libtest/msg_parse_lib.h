@@ -49,8 +49,8 @@ MsgFormatOptions parse_options;
   while (0)
 
 
-void init_and_load_syslogformat_module();
-void deinit_syslogformat_module();
+void init_and_load_syslogformat_module(void);
+void deinit_syslogformat_module(void);
 
 void assert_log_messages_equal(LogMessage *log_message_a, LogMessage *log_message_b);
 

@@ -33,7 +33,7 @@ struct _Journald
 };
 
 gboolean
-load_journald_subsystem()
+load_journald_subsystem(void)
 {
   return TRUE;
 }
@@ -96,7 +96,7 @@ static SD_JOURNAL_PROCESS sd_journal_process;
 static SD_JOURNAL_GET_REALTIME_USEC sd_journal_get_realtime_usec;
 
 static GModule *
-_journald_module_open()
+_journald_module_open(void)
 {
   for (gint i = 0; (journald_libraries[i] != NULL) && !journald_module; i++)
     journald_module = g_module_open(journald_libraries[i], 0);
@@ -105,7 +105,7 @@ _journald_module_open()
 }
 
 static gboolean
-_load_journald_symbols()
+_load_journald_symbols(void)
 {
   if (!LOAD_SYMBOL(journald_module, sd_journal_open))
     return FALSE;
@@ -147,7 +147,7 @@ _load_journald_symbols()
 }
 
 gboolean
-load_journald_subsystem()
+load_journald_subsystem(void)
 {
   if (!journald_module)
     {
@@ -243,7 +243,7 @@ journald_get_realtime_usec(Journald *self, guint64 *usec)
 }
 
 Journald *
-journald_new()
+journald_new(void)
 {
   Journald *self = g_new0(Journald, 1);
   return self;

@@ -323,7 +323,7 @@ log_template_options_defaults(LogTemplateOptions *options)
 }
 
 GQuark
-log_template_error_quark()
+log_template_error_quark(void)
 {
   return g_quark_from_static_string("log-template-error-quark");
 }

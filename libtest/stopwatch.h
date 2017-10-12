@@ -28,7 +28,7 @@
 
 #include <glib.h>
 
-void start_stopwatch();
+void start_stopwatch(void);
 void stop_stopwatch_and_display_result(gint iterations, gchar *message_template, ...);
 
 #endif

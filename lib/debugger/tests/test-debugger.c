@@ -34,7 +34,7 @@ test_debugger(void)
 }
 
 int
-main()
+main(void)
 {
   app_startup();
   configuration = cfg_new_snippet();

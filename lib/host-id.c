@@ -29,7 +29,7 @@
 guint32 global_host_id = 0;
 
 static guint32
-_create_host_id()
+_create_host_id(void)
 {
   union
   {

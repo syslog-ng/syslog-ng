@@ -1154,7 +1154,7 @@ cfg_token_block_get_token(CfgTokenBlock *self)
 }
 
 CfgTokenBlock *
-cfg_token_block_new()
+cfg_token_block_new(void)
 {
   CfgTokenBlock *self = g_new0(CfgTokenBlock, 1);
 

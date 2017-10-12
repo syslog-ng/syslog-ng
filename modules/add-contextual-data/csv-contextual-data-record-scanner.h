@@ -33,6 +33,6 @@ typedef struct _CSVContextualDataRecordScanner
   CSVScannerOptions options;
 } CSVContextualDataRecordScanner;
 
-ContextualDataRecordScanner *csv_contextual_data_record_scanner_new();
+ContextualDataRecordScanner *csv_contextual_data_record_scanner_new(void);
 
 #endif

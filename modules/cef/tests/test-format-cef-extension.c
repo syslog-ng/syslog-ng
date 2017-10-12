@@ -76,7 +76,7 @@ _expect_cef_result_format_va(const gchar *format, const gchar *expected, ...)
 }
 
 static void
-_test_null_in_value()
+_test_null_in_value(void)
 {
   LogMessage *msg = create_empty_message();
 

@@ -84,7 +84,7 @@ parse_geoip_into_log_message(const gchar *input)
 }
 
 static void
-test_geoip_parser_basics()
+test_geoip_parser_basics(void)
 {
   LogMessage *msg;
 
@@ -101,7 +101,7 @@ test_geoip_parser_basics()
 }
 
 static void
-test_geoip_parser_uses_template_to_parse_input()
+test_geoip_parser_uses_template_to_parse_input(void)
 {
   LogMessage *msg;
   LogTemplate *template;

@@ -891,7 +891,7 @@ gchar *pdb_inheritance_enabled_skeleton = "<patterndb version='4' pub_date='2010
 </patterndb>";
 
 void
-test_patterndb_message_property_inheritance_enabled()
+test_patterndb_message_property_inheritance_enabled(void)
 {
   _load_pattern_db_from_string(pdb_inheritance_enabled_skeleton);
 
@@ -937,7 +937,7 @@ gchar *pdb_inheritance_disabled_skeleton = "<patterndb version='4' pub_date='201
 </patterndb>";
 
 void
-test_patterndb_message_property_inheritance_disabled()
+test_patterndb_message_property_inheritance_disabled(void)
 {
   _load_pattern_db_from_string(pdb_inheritance_disabled_skeleton);
 
@@ -1068,7 +1068,7 @@ gchar *pdb_msg_count_skeleton = "<patterndb version='4' pub_date='2010-02-22'>\
 </patterndb>";
 
 void
-test_patterndb_context_length()
+test_patterndb_context_length(void)
 {
   _load_pattern_db_from_string(pdb_msg_count_skeleton);
 
@@ -1095,7 +1095,7 @@ gchar *tag_outside_of_rule_skeleton = "<patterndb version='3' pub_date='2010-02-
 </patterndb>";
 
 void
-test_patterndb_tags_outside_of_rule()
+test_patterndb_tags_outside_of_rule(void)
 {
   patterndb = pattern_db_new();
   messages = NULL;

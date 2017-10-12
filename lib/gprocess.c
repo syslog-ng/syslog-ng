@@ -358,7 +358,7 @@ g_process_set_mode(GProcessMode mode)
  * Return the processing mode applied to the daemon.
  **/
 GProcessMode
-g_process_get_mode()
+g_process_get_mode(void)
 {
   return process_opts.mode;
 }

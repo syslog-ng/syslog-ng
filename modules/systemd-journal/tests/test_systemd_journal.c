@@ -214,7 +214,7 @@ __test_fd_handling(Journald *journald)
 }
 
 void
-test_journald_mock()
+test_journald_mock(void)
 {
   Journald *journald = journald_mock_new();
   gint result = journald_open(journald, 0);
@@ -241,7 +241,7 @@ __helper_test(gchar *key, gchar *value, gpointer user_data)
 
 
 void
-test_journald_helper()
+test_journald_helper(void)
 {
   Journald *journald = journald_mock_new();
   journald_open(journald, 0);
@@ -499,7 +499,7 @@ _test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
-test_journal_reader()
+test_journal_reader(void)
 {
   TestSource *src = test_source_new(configuration);
   TestCase tc_default_working = { _test_default_working_init, _test_default_working_test, NULL, NULL };

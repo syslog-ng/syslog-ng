@@ -128,7 +128,7 @@ test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
   log_msg_unref(msg);
 };
 
-int main()
+int main(void)
 {
   app_startup();
 

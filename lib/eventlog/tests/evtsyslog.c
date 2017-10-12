@@ -5,7 +5,7 @@
 #endif
 
 int
-main()
+main(void)
 {
   openlog("evtsyslog", LOG_PID, 0);
   syslog(LOG_AUTH | LOG_NOTICE, "test message");

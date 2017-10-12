@@ -106,7 +106,7 @@ get_serialized_message_size(LogMessage *msg)
 }
 
 static void
-set_mark_message_serialized_size()
+set_mark_message_serialized_size(void)
 {
   LogMessage *mark_message = log_msg_new_mark();
   mark_message_serialized_size = get_serialized_message_size(mark_message);
@@ -216,7 +216,7 @@ test_ack_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
 /* TODO: add 3 messages and rewind 1 instead of 0 */
 /* TODO: split this test into 3 tests (read ack rewind mechanism  (setup method) */
 static void
-test_over_EOF()
+test_over_EOF(void)
 {
   LogQueueDiskReliable *dq = _init_diskq_for_test(TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
   LogMessage *msg1;
@@ -360,7 +360,7 @@ test_rewind_backlog_use_whole_qbacklog(LogQueueDiskReliable *dq)
  * qbacklog must be always in sync with backlog
  */
 void
-test_rewind_backlog()
+test_rewind_backlog(void)
 {
   LogQueueDiskReliable *dq = _init_diskq_for_test(QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
                                                   mark_message_serialized_size * 5);

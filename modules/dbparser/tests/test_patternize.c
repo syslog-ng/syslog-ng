@@ -151,7 +151,7 @@ testcase_frequent_words(gchar *logs, guint support, gchar *expected)
 }
 
 void
-frequent_words_tests()
+frequent_words_tests(void)
 {
 
   /* simple tests */
@@ -367,7 +367,7 @@ testcase_find_clusters_slct(gchar *logs, guint support, gchar *expected)
 }
 
 void
-find_clusters_slct_tests()
+find_clusters_slct_tests(void)
 {
   testcase_find_clusters_slct(
     "a\n", 0,
@@ -445,7 +445,7 @@ find_clusters_slct_tests()
 }
 
 int
-main()
+main(void)
 {
   app_startup();
   configuration = cfg_new_snippet();

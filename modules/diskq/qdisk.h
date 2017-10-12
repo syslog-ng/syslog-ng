@@ -39,7 +39,7 @@
 
 typedef struct _QDisk QDisk;
 
-QDisk *qdisk_new();
+QDisk *qdisk_new(void);
 
 gboolean qdisk_is_space_avail(QDisk *self, gint at_least);
 gboolean qdisk_push_tail(QDisk *self, GString *record);

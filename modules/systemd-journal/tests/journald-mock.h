@@ -28,7 +28,7 @@
 
 typedef struct _MockEntry MockEntry;
 
-Journald *journald_mock_new();
+Journald *journald_mock_new(void);
 
 MockEntry *mock_entry_new(const gchar *cursor);
 

@@ -72,7 +72,7 @@ assert_netmask6(const gchar *ipv6, gint prefix, gchar *expected_network)
 }
 
 int
-main()
+main(void)
 {
   const gchar *ipv6 = "2001:db80:85a3:8d30:1319:8a2e:3700:7348";
 

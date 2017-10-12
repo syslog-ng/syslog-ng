@@ -40,7 +40,7 @@ level_bits(gchar *lev)
 MsgFormatOptions parse_options;
 
 static LogFilterPipe *
-create_log_filter_pipe()
+create_log_filter_pipe(void)
 {
   FilterExprNode *filter = filter_level_new(level_bits("debug"));
   filter_expr_init(filter, configuration);

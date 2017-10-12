@@ -31,13 +31,13 @@
 static GList *command_list = NULL;
 
 GList *
-get_control_command_list()
+get_control_command_list(void)
 {
   return command_list;
 }
 
 void
-reset_control_command_list()
+reset_control_command_list(void)
 {
   g_list_free_full(command_list, (GDestroyNotify)g_free);
   command_list = NULL;

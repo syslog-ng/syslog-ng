@@ -60,19 +60,19 @@ service_management_systemd_publish_status(const gchar *status)
 }
 
 static inline void
-service_management_systemd_clear_status()
+service_management_systemd_clear_status(void)
 {
   sd_notify(0, "STATUS=");
 }
 
 static inline void
-service_management_systemd_indicate_readiness()
+service_management_systemd_indicate_readiness(void)
 {
   sd_notify(0, "READY=1");
 }
 
 static gboolean
-service_management_systemd_is_active()
+service_management_systemd_is_active(void)
 {
   struct stat st;
 
@@ -120,17 +120,17 @@ service_management_dummy_publish_status(const gchar *status)
 }
 
 static inline void
-service_management_dummy_clear_status()
+service_management_dummy_clear_status(void)
 {
 }
 
 static inline void
-service_management_dummy_indicate_readiness()
+service_management_dummy_indicate_readiness(void)
 {
 }
 
 static gboolean
-service_management_dummy_is_active()
+service_management_dummy_is_active(void)
 {
   return TRUE;
 }
@@ -156,7 +156,7 @@ ServiceManagement service_managements[] =
 };
 
 void
-service_management_init()
+service_management_init(void)
 {
   gint i = 0;
   while (i < sizeof(service_managements) / sizeof(ServiceManagement))

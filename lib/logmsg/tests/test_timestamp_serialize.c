@@ -42,7 +42,7 @@
   g_string_free(stream, TRUE);
 
 static void
-test_normal_working()
+test_normal_working(void)
 {
   PREPARE_TEST
   assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
@@ -56,7 +56,7 @@ test_normal_working()
 }
 
 static void
-test_derializing_injured_timestamp()
+test_derializing_injured_timestamp(void)
 {
   PREPARE_TEST
 

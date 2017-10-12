@@ -345,7 +345,7 @@ _cfg_new_object(gint version)
 }
 
 GlobalConfig *
-cfg_new_snippet()
+cfg_new_snippet(void)
 {
   return _cfg_new_object(VERSION_VALUE);
 }
