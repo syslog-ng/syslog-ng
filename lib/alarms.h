@@ -28,10 +28,10 @@
 #include "syslog-ng.h"
 
 void alarm_set(int timeout);
-void alarm_cancel();
-gboolean alarm_has_fired();
+void alarm_cancel(void);
+gboolean alarm_has_fired(void);
 
-void alarm_init();
+void alarm_init(void);
 
 
 #endif

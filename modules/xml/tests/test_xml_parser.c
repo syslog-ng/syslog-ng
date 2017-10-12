@@ -30,7 +30,7 @@
 void
 setup(void)
 {
-  configuration = cfg_new_snippet(0x0390);
+  configuration = cfg_new_snippet();
   app_startup();
 }
 

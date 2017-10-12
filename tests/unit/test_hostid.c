@@ -35,9 +35,9 @@
 #include <unistd.h>
 
 static GlobalConfig *
-_create_cfg()
+_create_cfg(void)
 {
-  GlobalConfig *cfg = cfg_new_snippet(0x0302);
+  GlobalConfig *cfg = cfg_new_snippet();
   return cfg;
 }
 

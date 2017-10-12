@@ -26,7 +26,7 @@
 #include "transport-mapper-lib.h"
 
 static void
-test_transport_mapper_unix_stream_apply_transport_sets_defaults()
+test_transport_mapper_unix_stream_apply_transport_sets_defaults(void)
 {
   assert_transport_mapper_apply(transport_mapper, NULL);
   assert_transport_mapper_transport(transport_mapper, "unix-stream");
@@ -38,7 +38,7 @@ test_transport_mapper_unix_stream_apply_transport_sets_defaults()
 }
 
 static void
-test_transport_mapper_unix_dgram_apply_transport_sets_defaults()
+test_transport_mapper_unix_dgram_apply_transport_sets_defaults(void)
 {
   assert_transport_mapper_apply(transport_mapper, NULL);
   assert_transport_mapper_transport(transport_mapper, "unix-dgram");

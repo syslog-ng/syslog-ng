@@ -102,7 +102,7 @@ _alloc_dummy_values_to_change_handle_values_accross_restarts(void)
 }
 
 static void
-_reset_log_msg_registry()
+_reset_log_msg_registry(void)
 {
   log_msg_registry_deinit();
   log_msg_registry_init();
@@ -268,7 +268,7 @@ int
 main(int argc, char **argv)
 {
   app_startup();
-  cfg = cfg_new_snippet(0x0307);
+  cfg = cfg_new_snippet();
   plugin_load_module("syslogformat", cfg, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, cfg);

@@ -214,7 +214,7 @@ __test_fd_handling(Journald *journald)
 }
 
 void
-test_journald_mock()
+test_journald_mock(void)
 {
   Journald *journald = journald_mock_new();
   gint result = journald_open(journald, 0);
@@ -241,7 +241,7 @@ __helper_test(gchar *key, gchar *value, gpointer user_data)
 
 
 void
-test_journald_helper()
+test_journald_helper(void)
 {
   Journald *journald = journald_mock_new();
   journald_open(journald, 0);
@@ -333,7 +333,7 @@ _test_default_working_test(TestCase *self, TestSource *src, LogMessage *msg)
   assert_gint(msg->pri, options->default_pri, ASSERTION_ERROR("Bad default prio"));
   assert_gint(options->fetch_limit, 10, ASSERTION_ERROR("Bad default fetch_limit"));
   assert_gint(options->max_field_size, 64 * 1024, ASSERTION_ERROR("Bad max field size"));
-  assert_gpointer(options->prefix, NULL, ASSERTION_ERROR("Bad default prefix value"));
+  assert_string(options->prefix, ".journald.", ASSERTION_ERROR("Bad default prefix value"));
   assert_string(options->recv_time_zone, configuration->recv_time_zone, ASSERTION_ERROR("Bad default timezone"));
   test_source_finish_tc(src);
 }
@@ -499,7 +499,7 @@ _test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
-test_journal_reader()
+test_journal_reader(void)
 {
   TestSource *src = test_source_new(configuration);
   TestCase tc_default_working = { _test_default_working_init, _test_default_working_test, NULL, NULL };
@@ -527,7 +527,7 @@ main(int argc, char **argv)
 {
   app_startup();
   main_thread_handle =  get_thread_id();
-  configuration = cfg_new_snippet(0x306);
+  configuration = cfg_new_snippet();
   configuration->threaded = FALSE;
   configuration->state = persist_state_new(TEST_PERSIST_FILE_NAME);
   configuration->keep_hostname = TRUE;

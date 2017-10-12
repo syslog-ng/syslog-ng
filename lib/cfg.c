@@ -300,7 +300,7 @@ cfg_register_builtin_plugins(GlobalConfig *self)
 }
 
 GlobalConfig *
-cfg_new_snippet(gint version)
+_cfg_new_object(gint version)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
@@ -345,9 +345,15 @@ cfg_new_snippet(gint version)
 }
 
 GlobalConfig *
+cfg_new_snippet(void)
+{
+  return _cfg_new_object(VERSION_VALUE);
+}
+
+GlobalConfig *
 cfg_new(gint version)
 {
-  GlobalConfig *self = cfg_new_snippet(version);
+  GlobalConfig *self = _cfg_new_object(version);
   cfg_load_candidate_modules(self);
   return self;
 }

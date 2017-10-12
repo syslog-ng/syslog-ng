@@ -171,7 +171,7 @@ test_aux_data(void)
   AUX_DATA_TESTCASE(test_add_nv_pair_to_a_NULL_aux_data_will_do_nothing);
 }
 
-int main()
+int main(void)
 {
   test_aux_data();
   return 0;

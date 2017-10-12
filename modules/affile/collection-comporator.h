@@ -28,7 +28,7 @@ typedef struct _CollectionComporator CollectionComporator;
 
 typedef void (*cc_callback)(const gchar *value, gpointer user_data);
 
-CollectionComporator *collection_comporator_new();
+CollectionComporator *collection_comporator_new(void);
 void collection_comporator_free(CollectionComporator *self);
 void collection_comporator_start(CollectionComporator *self);
 void collection_comporator_stop(CollectionComporator *self);

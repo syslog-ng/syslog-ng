@@ -136,7 +136,7 @@ test_wheel(gint seed)
 }
 
 int
-main()
+main(void)
 {
   test_wheel(1234567890);
   test_wheel(time(NULL));

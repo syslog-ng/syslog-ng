@@ -51,7 +51,7 @@ alarm_set(int timeout)
 }
 
 void
-alarm_cancel()
+alarm_cancel(void)
 {
   alarm(0);
   sig_alarm_received = FALSE;
@@ -59,14 +59,14 @@ alarm_cancel()
 }
 
 gboolean
-alarm_has_fired()
+alarm_has_fired(void)
 {
   gboolean res = sig_alarm_received;
   return res;
 }
 
 void
-alarm_init()
+alarm_init(void)
 {
   struct sigaction sa;
 

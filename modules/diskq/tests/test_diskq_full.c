@@ -88,13 +88,13 @@ test_diskq_become_full(gboolean reliable)
 }
 
 int
-main()
+main(void)
 {
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
 
-  configuration = cfg_new_snippet(0x0308);
+  configuration = cfg_new_snippet();
   plugin_load_module("syslogformat", configuration, NULL );
   plugin_load_module("disk-buffer", configuration, NULL );
   plugin_load_module("builtin-serializer", configuration, NULL );

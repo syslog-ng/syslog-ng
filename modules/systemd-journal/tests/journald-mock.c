@@ -179,7 +179,7 @@ journald_get_realtime_usec(Journald *self, guint64 *usec)
 }
 
 Journald *
-journald_mock_new()
+journald_mock_new(void)
 {
   Journald *self = g_new0(Journald, 1);
 

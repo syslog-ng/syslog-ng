@@ -46,7 +46,7 @@ test_is_directory_return_false_in_case_of_regular_file(void)
 }
 
 int
-main()
+main(void)
 {
   test_is_directory_return_false_in_case_of_regular_file();
 }

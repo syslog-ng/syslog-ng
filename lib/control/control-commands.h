@@ -30,7 +30,7 @@
 
 void control_register_command(const gchar *command_name, const gchar *description, CommandFunction function, gpointer user_data);
 GList *control_register_default_commands(MainLoop *main_loop);
-GList *get_control_command_list();
-void reset_control_command_list();
+GList *get_control_command_list(void);
+void reset_control_command_list(void);
 
 #endif

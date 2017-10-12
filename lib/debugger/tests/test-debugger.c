@@ -34,10 +34,10 @@ test_debugger(void)
 }
 
 int
-main()
+main(void)
 {
   app_startup();
-  configuration = cfg_new_snippet(VERSION_VALUE);
+  configuration = cfg_new_snippet();
   test_debugger();
   cfg_free(configuration);
 }

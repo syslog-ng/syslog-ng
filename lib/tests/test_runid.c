@@ -152,7 +152,7 @@ test_run_id_macro__macro_is_empty_if_run_id_is_not_inited(void)
 
 
 int
-main()
+main(void)
 {
   app_startup();
   test_run_id__first_run__run_id_is_one();

@@ -104,7 +104,7 @@ test_tags(void)
 }
 
 void
-test_msg_tags()
+test_msg_tags(void)
 {
   gchar *name;
   gint i, set;

@@ -290,7 +290,7 @@ main(int argc, char *argv[])
       return 0;
     }
 
-  configuration = cfg_new_snippet(VERSION_VALUE);
+  configuration = cfg_new_snippet();
 
   configuration->template_options.frac_digits = 3;
   configuration->template_options.time_zone_info[LTZ_LOCAL] = time_zone_info_new(NULL);

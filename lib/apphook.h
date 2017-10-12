@@ -41,14 +41,14 @@ enum
 typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
 
 void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
-void app_startup();
-void app_finish_app_startup_after_cfg_init();
-void app_post_daemonized();
-void app_pre_config_loaded();
-void app_post_config_loaded();
+void app_startup(void);
+void app_finish_app_startup_after_cfg_init(void);
+void app_post_daemonized(void);
+void app_pre_config_loaded(void);
+void app_post_config_loaded(void);
 void app_thread_start(void);
 void app_thread_stop(void);
-void app_shutdown();
+void app_shutdown(void);
 void app_reopen(void);
 
 #endif

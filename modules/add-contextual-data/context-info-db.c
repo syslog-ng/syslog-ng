@@ -159,7 +159,7 @@ _free(ContextInfoDB *self)
 }
 
 ContextInfoDB *
-context_info_db_new()
+context_info_db_new(void)
 {
   ContextInfoDB *self = g_new0(ContextInfoDB, 1);
 

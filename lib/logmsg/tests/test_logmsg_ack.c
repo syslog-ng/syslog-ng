@@ -70,7 +70,7 @@ ack_record_free(AckRecord *self)
 }
 
 static AckRecord *
-ack_record_new()
+ack_record_new(void)
 {
   AckRecord *self = g_new0(AckRecord, 1);
   self->init = _init;

@@ -60,9 +60,9 @@ int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g);
 
 void openssl_ctx_setup_ecdh(SSL_CTX *ctx);
 
-void openssl_init();
-void openssl_crypto_init_threading();
-void openssl_crypto_deinit_threading();
+void openssl_init(void);
+void openssl_crypto_init_threading(void);
+void openssl_crypto_deinit_threading(void);
 
 #endif
 

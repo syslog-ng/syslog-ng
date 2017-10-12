@@ -32,7 +32,7 @@
 #include <stdlib.h>
 
 GQuark
-type_hinting_error_quark()
+type_hinting_error_quark(void)
 {
   return g_quark_from_static_string("type-hinting-error-quark");
 }

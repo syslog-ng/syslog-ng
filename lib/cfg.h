@@ -135,7 +135,7 @@ void cfg_load_candidate_modules(GlobalConfig *self);
 void cfg_set_global_paths(GlobalConfig *self);
 
 GlobalConfig *cfg_new(gint version);
-GlobalConfig *cfg_new_snippet(gint version);
+GlobalConfig *cfg_new_snippet(void);
 gboolean cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg);
 gboolean cfg_read_config(GlobalConfig *cfg, const gchar *fname, gboolean syntax_only, gchar *preprocess_into);
 gboolean cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, gchar *preprocess_into);

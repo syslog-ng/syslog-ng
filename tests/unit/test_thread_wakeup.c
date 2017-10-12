@@ -122,7 +122,7 @@ accept_thread_func(gpointer args)
 }
 
 int
-test_accept_wakeup()
+test_accept_wakeup(void)
 {
   struct sockaddr_un s;
 
@@ -173,7 +173,7 @@ read_thread_func(gpointer args)
 }
 
 int
-test_read_wakeup()
+test_read_wakeup(void)
 {
   gint pair[2];
 

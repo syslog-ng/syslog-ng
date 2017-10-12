@@ -40,7 +40,7 @@ level_bits(gchar *lev)
 MsgFormatOptions parse_options;
 
 static LogFilterPipe *
-create_log_filter_pipe()
+create_log_filter_pipe(void)
 {
   FilterExprNode *filter = filter_level_new(level_bits("debug"));
   filter_expr_init(filter, configuration);
@@ -72,7 +72,7 @@ Test(test_filters_statistics, filter_stastistics)
 {
   app_startup();
 
-  configuration = cfg_new_snippet(VERSION_VALUE);
+  configuration = cfg_new_snippet();
   configuration->stats_options.level = 1;
   plugin_load_module("syslogformat", configuration, NULL);
   cr_assert(cfg_init(configuration));

@@ -61,7 +61,7 @@ collection_comporator_free(CollectionComporator *self)
 }
 
 CollectionComporator *
-collection_comporator_new()
+collection_comporator_new(void)
 {
   CollectionComporator *self = g_new0(CollectionComporator, 1);
   self->original_map = g_hash_table_new(g_str_hash, g_str_equal);

@@ -54,7 +54,7 @@ build_filename(const gchar *basedir, const gchar *path)
 #define PATH_MAX_GUESS 1024
 
 static inline long
-get_path_max()
+get_path_max(void)
 {
   static long path_max = 0;
   if (path_max == 0)

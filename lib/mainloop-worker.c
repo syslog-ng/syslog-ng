@@ -231,7 +231,7 @@ _consume_action(SyncCallAction *action, gpointer dummy)
 }
 
 static void
-_invoke_sync_call_actions()
+_invoke_sync_call_actions(void)
 {
   g_queue_foreach(&sync_call_actions, (GFunc)_consume_action, NULL);
   g_queue_clear(&sync_call_actions);

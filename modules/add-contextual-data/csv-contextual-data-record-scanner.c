@@ -90,7 +90,7 @@ csv_contextual_data_record_scanner_free(ContextualDataRecordScanner *s)
 }
 
 ContextualDataRecordScanner *
-csv_contextual_data_record_scanner_new()
+csv_contextual_data_record_scanner_new(void)
 {
   CSVContextualDataRecordScanner *self =
     g_new0(CSVContextualDataRecordScanner, 1);
