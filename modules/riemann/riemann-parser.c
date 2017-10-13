@@ -51,6 +51,8 @@ static CfgLexerKeyword riemann_keywords[] =
   { "cacert",                   KW_CA_FILE, KWS_OBSOLETE, "The cacert() option is deprecated in favour of ca-file()" },
   { "cert",                     KW_CERT_FILE, KWS_OBSOLETE, "The cert() option is deprecated in favour of cert-file()" },
 
+  { "tls",                      KW_TLS },
+
   { NULL }
 };
 
