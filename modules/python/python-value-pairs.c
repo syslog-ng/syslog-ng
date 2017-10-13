@@ -23,10 +23,45 @@
  *
  */
 #include "python-value-pairs.h"
+#include "python-helpers.h"
+#include "messages.h"
 
 /** Value pairs **/
 
-/* TODO escape '\0' when passing down the value */
+static void
+add_long_to_dict(PyObject *dict, const gchar *name, long num)
+{
+  gchar buf[256];
+
+  PyObject *pyobject_to_add = PyLong_FromLong(num);
+  if (!pyobject_to_add)
+    {
+      msg_error("Error while constructing python object",
+                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+      return;
+    }
+
+  PyDict_SetItemString(dict, name, pyobject_to_add);
+  Py_DECREF(pyobject_to_add);
+}
+
+static void
+add_string_to_dict(PyObject *dict, const gchar *name, const char *value, gsize value_len)
+{
+  gchar buf[256];
+
+  PyObject *pyobject_to_add = PyBytes_FromStringAndSize(value, value_len);
+  if (!pyobject_to_add)
+    {
+      msg_error("Error while constructing python object",
+                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+      return;
+    }
+
+  PyDict_SetItemString(dict, name, pyobject_to_add);
+  Py_DECREF(pyobject_to_add);
+}
+
 static gboolean
 python_worker_vp_add_one(const gchar *name,
                          TypeHint type, const gchar *value, gsize value_len,
@@ -45,25 +80,30 @@ python_worker_vp_add_one(const gchar *name,
       gint64 i;
 
       if (type_cast_to_int64(value, &i, NULL))
-        PyDict_SetItemString(dict, name, PyLong_FromLong(i));
+        {
+          add_long_to_dict(dict, name, i);
+        }
       else
         {
           need_drop = type_cast_drop_helper(template_options->on_error,
                                             value, "int");
 
           if (fallback)
-            PyDict_SetItemString(dict, name, PyUnicode_FromString(value));
+            {
+              add_string_to_dict(dict, name, value, value_len);
+            }
         }
       break;
     }
     case TYPE_HINT_STRING:
-      PyDict_SetItemString(dict, name, PyUnicode_FromString(value));
+      add_string_to_dict(dict, name, value, value_len);
       break;
     default:
       need_drop = type_cast_drop_helper(template_options->on_error,
                                         value, "<unknown>");
       break;
     }
+
   return need_drop;
 }
 
