@@ -58,6 +58,10 @@ TEST_LDADD		= $(top_builddir)/libtest/libsyslog-ng-test.a \
 if ENABLE_CRITERION
 TEST_CFLAGS		+= $(CRITERION_CFLAGS)
 TEST_LDADD		+= $(CRITERION_LIBS)
+
+# Disable ASLR, needed for parameterized Criterion tests,
+# see https://github.com/Snaipe/Criterion/issues/208
+AM_TESTS_ENVIRONMENT	+= setarch `uname -m` --addr-no-randomize
 endif
 
 test_ldflags		= -no-install
