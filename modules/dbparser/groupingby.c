@@ -212,7 +212,7 @@ static gboolean
 _evaluate_trigger(GroupingBy *self, CorrellationContext *context)
 {
   if (!self->trigger_condition_expr)
-    return TRUE;
+    return FALSE;
 
   return _evaluate_filter(self->trigger_condition_expr, context);
 }
