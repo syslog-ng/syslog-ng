@@ -387,6 +387,25 @@ grouping_by_init(LogPipe *s)
   GroupingBy *self = (GroupingBy *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (!self->synthetic_message)
+    {
+      msg_error("The aggregate() option for grouping-by() is mandatory",
+                log_pipe_location_tag(s));
+      return FALSE;
+    }
+  if (self->timeout < 1)
+    {
+      msg_error("timeout() needs to be specified explicitly and must be greater than 0 in the grouping-by() parser",
+                log_pipe_location_tag(s));
+      return FALSE;
+    }
+  if (!self->key_template)
+    {
+      msg_error("The key() option is mandatory for the grouping-by() parser",
+                log_pipe_location_tag(s));
+      return FALSE;
+    }
+
   self->correllation = cfg_persist_config_fetch(cfg, grouping_by_format_persist_name(self));
   if (!self->correllation)
     {
@@ -462,6 +481,7 @@ grouping_by_new(GlobalConfig *cfg)
   self->timer_wheel = timer_wheel_new();
   timer_wheel_set_associated_data(self->timer_wheel, self, NULL);
   cached_g_current_time(&self->last_tick);
+  self->timeout = -1;
   return &self->super.super;
 }
 
