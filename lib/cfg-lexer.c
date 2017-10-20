@@ -897,15 +897,18 @@ relex:
       if (tok != ';')
         {
           self->preprocess_suppress_tokens--;
+          g_free(include_file);
           return LL_ERROR;
         }
 
       if (!cfg_lexer_include_file(self, include_file))
         {
+          g_free(include_file);
           self->preprocess_suppress_tokens--;
           return LL_ERROR;
         }
       self->preprocess_suppress_tokens--;
+      g_free(include_file);
       goto relex;
     }
   else if (tok == LL_IDENTIFIER && (gen = cfg_lexer_find_generator(self, cfg_lexer_get_context_type(self), yylval->cptr)))
