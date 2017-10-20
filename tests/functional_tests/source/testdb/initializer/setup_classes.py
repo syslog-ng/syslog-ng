@@ -2,6 +2,7 @@ from source.testdb.common.common import get_current_date, get_testcase_name
 from source.testdb.path.path_database import TestdbPathDatabase
 from source.testdb.config.config_context import TestdbConfigContext
 from source.testdb.logger.logger import TestdbLogger
+from source.register.file import FileRegister
 
 
 class SetupClasses(object):
@@ -49,10 +50,18 @@ class SetupClasses(object):
         self.log_writer.info(">>> Testcase log file: %s", getattr(self, "testdb_path_database_for_%s" % topology).testcase_report_file)
         self.log_writer.info(">>> Testcase log level: %s", getattr(self, "testdb_config_context_for_%s" % topology).log_level)
 
+        setattr(self, "file_register_for_%s" % topology,
+                FileRegister(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                    testdb_path_database=getattr(self, "testdb_path_database_for_%s" % topology),
+                ))
+
         if topology == "server":
             self.testdb_path_database = self.testdb_path_database_for_server
             self.testdb_config_context = self.testdb_config_context_for_server
             self.testdb_logger = self.testdb_logger_for_server
+
+            self.file_register = self.file_register_for_server
 
     def teardown(self):
         self.log_writer.info("=============================Testcase finish: [%s]================================" % self.testcase_name)
