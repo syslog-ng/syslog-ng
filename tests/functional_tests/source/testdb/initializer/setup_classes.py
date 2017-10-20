@@ -1,6 +1,7 @@
 from source.testdb.common.common import get_current_date, get_testcase_name
 from source.testdb.path.path_database import TestdbPathDatabase
 from source.testdb.config.config_context import TestdbConfigContext
+from source.testdb.logger.logger import TestdbLogger
 
 
 class SetupClasses(object):
@@ -37,10 +38,23 @@ class SetupClasses(object):
                     testdb_path_database=getattr(self, "testdb_path_database_for_%s" % topology),
                     testcase_context=testcase_context
                 ))
+        setattr(self, "testdb_logger_for_%s" % topology,
+                TestdbLogger(
+                    testdb_path_database=getattr(self, "testdb_path_database_for_%s" % topology),
+                    testdb_config_context=getattr(self, "testdb_config_context_for_%s" % topology)
+                ))
+
+        self.log_writer = self.testdb_logger_for_server.set_logger(logsource="SetupClasses")
+        self.log_writer.info("=============================Testcase start: [%s]================================" % self.testcase_name)
+        self.log_writer.info(">>> Testcase log file: %s", getattr(self, "testdb_path_database_for_%s" % topology).testcase_report_file)
+        self.log_writer.info(">>> Testcase log level: %s", getattr(self, "testdb_config_context_for_%s" % topology).log_level)
 
         if topology == "server":
             self.testdb_path_database = self.testdb_path_database_for_server
             self.testdb_config_context = self.testdb_config_context_for_server
+            self.testdb_logger = self.testdb_logger_for_server
 
     def teardown(self):
-        pass
+        self.log_writer.info("=============================Testcase finish: [%s]================================" % self.testcase_name)
+        self.log_writer.info(">>> Testcase log file: %s" % self.testdb_path_database.testcase_report_file)
+
