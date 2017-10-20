@@ -67,7 +67,6 @@ struct _LogProtoServer
   /* FIXME: rename to something else */
   gboolean (*is_position_tracked)(LogProtoServer *s);
   gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond);
-  gboolean (*is_preemptable)(LogProtoServer *s);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark);
   gboolean (*validate_options)(LogProtoServer *s);
@@ -90,14 +89,6 @@ static inline gboolean
 log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond)
 {
   return s->prepare(s, cond);
-}
-
-static inline gboolean
-log_proto_server_is_preemptable(LogProtoServer *s)
-{
-  if (s->is_preemptable)
-    return s->is_preemptable(s);
-  return TRUE;
 }
 
 static inline gboolean

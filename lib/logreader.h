@@ -35,7 +35,6 @@
 #define LR_EMPTY_LINES     0x0004
 #define LR_IGNORE_TIMEOUT  0x0008
 #define LR_SYSLOG_PROTOCOL 0x0010
-#define LR_PREEMPT         0x0020
 #define LR_THREADED        0x0040
 
 /* options */
