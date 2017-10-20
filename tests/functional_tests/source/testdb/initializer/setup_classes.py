@@ -15,6 +15,7 @@ from source.driver_io.common.threaded_listener import ThreadedListener
 from source.driver_io.common.threaded_sender import ThreadedSender
 from source.syslog_ng.path.path_database import SyslogNgPathDatabase
 from source.syslog_ng.binaries.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
+from source.syslog_ng.binaries.syslog_ng.syslog_ng import SyslogNg
 
 
 class SetupClasses(object):
@@ -159,7 +160,17 @@ class SetupClasses(object):
                     syslog_ng_config_interface=getattr(self, "syslog_ng_config_interface_for_%s" % topology),
                     syslog_ng_path_database=getattr(self, "syslog_ng_path_database_for_%s" % topology),
                 ))
-
+        setattr(self, "syslog_ng_for_%s" % topology,
+                SyslogNg(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                    testdb_path_database=getattr(self, "testdb_path_database_for_%s" % topology),
+                    testcase_name=self.testcase_name,
+                    file_common=getattr(self, "file_common_for_%s" % topology),
+                    file_listener=getattr(self, "file_listener_for_%s" % topology),
+                    executor=getattr(self, "executor_interface_for_%s" % topology),
+                    syslog_ng_path_database=getattr(self, "syslog_ng_path_database_for_%s" % topology),
+                    syslog_ng_ctl=getattr(self, "syslog_ng_ctl_for_%s" % topology),
+                ))
 
         if topology == "server":
             self.testdb_path_database = self.testdb_path_database_for_server
@@ -181,8 +192,12 @@ class SetupClasses(object):
 
             self.syslog_ng_path_database = self.syslog_ng_path_database_for_server
             self.syslog_ng_ctl = self.syslog_ng_ctl_for_server
+            self.syslog_ng = self.syslog_ng_for_server
 
     def teardown(self):
+        if self.syslog_ng.syslog_ng_process and self.syslog_ng.syslog_ng_pid or self.executor_interface.get_pid_for_process_name(substring='valgrind'):
+            self.syslog_ng.stop()
         self.log_writer.info("=============================Testcase finish: [%s]================================" % self.testcase_name)
         self.log_writer.info(">>> Testcase log file: %s" % self.testdb_path_database.testcase_report_file)
-
+        self.syslog_ng.stdout_fd = None
+        self.syslog_ng.stderr_fd = None
