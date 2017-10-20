@@ -11,6 +11,8 @@ from source.syslog_ng.configuration.interface import SyslogNgConfigInterface
 from source.message.interface import MessageInterface
 from source.executor.executor_interface import ExecutorInterface
 from source.reporter.reporter import Reporter
+from source.driver_io.common.threaded_listener import ThreadedListener
+from source.driver_io.common.threaded_sender import ThreadedSender
 
 
 class SetupClasses(object):
@@ -124,6 +126,21 @@ class SetupClasses(object):
                     message_interface=getattr(self, "message_interface_for_%s" % topology),
                     driver_data_provider=getattr(self, "driver_data_provider_for_%s" % topology),
                 ))
+        setattr(self, "threaded_listener_for_%s" % topology,
+                ThreadedListener(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                    syslog_ng_config_interface=getattr(self, "syslog_ng_config_interface_for_%s" % topology),
+                    testdb_reporter=getattr(self, "testdb_reporter_for_%s" % topology),
+                    driver_data_provider=getattr(self, "driver_data_provider_for_%s" % topology),
+                ))
+
+        setattr(self, "threaded_sender_for_%s" % topology,
+                ThreadedSender(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                    syslog_ng_config_interface=getattr(self, "syslog_ng_config_interface_for_%s" % topology),
+                    message_interface=getattr(self, "message_interface_for_%s" % topology),
+                    testdb_reporter=getattr(self, "testdb_reporter_for_%s" % topology)
+                ))
 
         if topology == "server":
             self.testdb_path_database = self.testdb_path_database_for_server
@@ -140,6 +157,9 @@ class SetupClasses(object):
             self.message_interface = self.message_interface_for_server
             self.executor_interface = self.executor_interface_for_server
             self.testdb_reporter = self.testdb_reporter_for_server
+            self.threaded_sender = self.threaded_sender_for_server
+            self.threaded_listener = self.threaded_listener_for_server
+
 
     def teardown(self):
         self.log_writer.info("=============================Testcase finish: [%s]================================" % self.testcase_name)
