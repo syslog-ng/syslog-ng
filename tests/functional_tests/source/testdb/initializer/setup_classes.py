@@ -1,5 +1,6 @@
 from source.testdb.common.common import get_current_date, get_testcase_name
 from source.testdb.path.path_database import TestdbPathDatabase
+from source.testdb.config.config_context import TestdbConfigContext
 
 
 class SetupClasses(object):
@@ -31,10 +32,15 @@ class SetupClasses(object):
                     topology=topology,
                     current_date=self.current_date
                 ))
+        setattr(self, "testdb_config_context_for_%s" % topology,
+                TestdbConfigContext(
+                    testdb_path_database=getattr(self, "testdb_path_database_for_%s" % topology),
+                    testcase_context=testcase_context
+                ))
 
         if topology == "server":
             self.testdb_path_database = self.testdb_path_database_for_server
-
+            self.testdb_config_context = self.testdb_config_context_for_server
 
     def teardown(self):
         pass
