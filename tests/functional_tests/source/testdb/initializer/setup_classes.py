@@ -6,6 +6,7 @@ from source.register.file import FileRegister
 from source.driver_io.file.common import FileCommon
 from source.driver_io.file.writer import FileWriter
 from source.driver_io.file.listener import FileListener
+from source.syslog_ng.drivers.driver_data_provider import DriverDataProvider
 
 
 class SetupClasses(object):
@@ -73,6 +74,26 @@ class SetupClasses(object):
                     file_common=getattr(self, "file_common_for_%s" % topology)
                 ))
 
+        writers = {
+            "file": getattr(self, "file_writer_for_%s" % topology),
+        }
+
+        listeners = {
+            "file": getattr(self, "file_listener_for_%s" % topology),
+        }
+
+        registers = {
+            "file": getattr(self, "file_register_for_%s" % topology),
+        }
+
+        setattr(self, "driver_data_provider_for_%s" % topology,
+                DriverDataProvider(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                    writers=writers,
+                    listeners=listeners,
+                    registers=registers
+                ))
+
         if topology == "server":
             self.testdb_path_database = self.testdb_path_database_for_server
             self.testdb_config_context = self.testdb_config_context_for_server
@@ -83,6 +104,7 @@ class SetupClasses(object):
             self.file_writer = self.file_writer_for_server
             self.file_listener = self.file_listener_for_server
 
+            self.driver_data_provider = self.driver_data_provider_for_server
 
     def teardown(self):
         self.log_writer.info("=============================Testcase finish: [%s]================================" % self.testcase_name)
