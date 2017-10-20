@@ -3,6 +3,9 @@ from source.testdb.path.path_database import TestdbPathDatabase
 from source.testdb.config.config_context import TestdbConfigContext
 from source.testdb.logger.logger import TestdbLogger
 from source.register.file import FileRegister
+from source.driver_io.file.common import FileCommon
+from source.driver_io.file.writer import FileWriter
+from source.driver_io.file.listener import FileListener
 
 
 class SetupClasses(object):
@@ -55,6 +58,20 @@ class SetupClasses(object):
                     testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
                     testdb_path_database=getattr(self, "testdb_path_database_for_%s" % topology),
                 ))
+        setattr(self, "file_common_for_%s" % topology,
+                FileCommon(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                ))
+        setattr(self, "file_writer_for_%s" % topology,
+                FileWriter(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                    file_common=getattr(self, "file_common_for_%s" % topology)
+                ))
+        setattr(self, "file_listener_for_%s" % topology,
+                FileListener(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                    file_common=getattr(self, "file_common_for_%s" % topology)
+                ))
 
         if topology == "server":
             self.testdb_path_database = self.testdb_path_database_for_server
@@ -62,6 +79,10 @@ class SetupClasses(object):
             self.testdb_logger = self.testdb_logger_for_server
 
             self.file_register = self.file_register_for_server
+            self.file_common = self.file_common_for_server
+            self.file_writer = self.file_writer_for_server
+            self.file_listener = self.file_listener_for_server
+
 
     def teardown(self):
         self.log_writer.info("=============================Testcase finish: [%s]================================" % self.testcase_name)
