@@ -14,6 +14,7 @@ from source.reporter.reporter import Reporter
 from source.driver_io.common.threaded_listener import ThreadedListener
 from source.driver_io.common.threaded_sender import ThreadedSender
 from source.syslog_ng.path.path_database import SyslogNgPathDatabase
+from source.syslog_ng.binaries.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 
 class SetupClasses(object):
@@ -150,6 +151,15 @@ class SetupClasses(object):
                     file_register=getattr(self, "file_register_for_%s" % topology),
                     topology=topology
                 ))
+        setattr(self, "syslog_ng_ctl_for_%s" % topology,
+                SyslogNgCtl(
+                    testdb_logger=getattr(self, "testdb_logger_for_%s" % topology),
+                    executor=getattr(self, "executor_interface_for_%s" % topology),
+                    driver_data_provider=getattr(self, "driver_data_provider_for_%s" % topology),
+                    syslog_ng_config_interface=getattr(self, "syslog_ng_config_interface_for_%s" % topology),
+                    syslog_ng_path_database=getattr(self, "syslog_ng_path_database_for_%s" % topology),
+                ))
+
 
         if topology == "server":
             self.testdb_path_database = self.testdb_path_database_for_server
@@ -170,6 +180,7 @@ class SetupClasses(object):
             self.threaded_listener = self.threaded_listener_for_server
 
             self.syslog_ng_path_database = self.syslog_ng_path_database_for_server
+            self.syslog_ng_ctl = self.syslog_ng_ctl_for_server
 
     def teardown(self):
         self.log_writer.info("=============================Testcase finish: [%s]================================" % self.testcase_name)
