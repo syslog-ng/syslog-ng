@@ -1,4 +1,5 @@
 from source.testdb.common.common import get_current_date, get_testcase_name
+from source.testdb.path.path_database import TestdbPathDatabase
 
 
 class SetupClasses(object):
@@ -24,7 +25,16 @@ class SetupClasses(object):
             assert False
 
     def init_classes_for_topology(self, testcase_context, topology):
-        pass
+        setattr(self, "testdb_path_database_for_%s" % topology,
+                TestdbPathDatabase(
+                    testcase_name=self.testcase_name,
+                    topology=topology,
+                    current_date=self.current_date
+                ))
+
+        if topology == "server":
+            self.testdb_path_database = self.testdb_path_database_for_server
+
 
     def teardown(self):
         pass
