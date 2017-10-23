@@ -179,16 +179,15 @@ log_proto_file_writer_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboole
   ++self->buf_count;
   self->sum_len += msg_len;
 
+  *consumed = TRUE;
+  log_proto_client_msg_ack(&self->super, 1);
+
   if (self->buf_count == self->buf_size)
     {
       /* we have reached the max buffer size -> we need to write the messages */
-      result = log_proto_file_writer_flush(s);
-      if (result != LPS_SUCCESS)
-        return result;
+      return log_proto_file_writer_flush(s);
     }
 
-  *consumed = TRUE;
-  log_proto_client_msg_ack(&self->super, 1);
   return LPS_SUCCESS;
 }
 
