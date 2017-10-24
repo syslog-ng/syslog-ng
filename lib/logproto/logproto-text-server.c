@@ -83,25 +83,6 @@ log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
 }
 
 
-/**
- * This function is called in cases when several files are continously
- * polled for changes.  Whenever the caller would like to switch to another
- * file, it will call this function to check whether it should be allowed to do so.
- *
- * This function returns true if the current state of this LogProtoServer would
- * allow preemption, e.g.  the contents of the current buffer can be
- * discarded.
- **/
-static gboolean
-log_proto_text_server_is_preemptable(LogProtoServer *s)
-{
-  LogProtoTextServer *self = (LogProtoTextServer *) s;
-  gboolean preemptable;
-
-  preemptable = (self->cached_eol_pos == 0);
-  return preemptable;
-}
-
 static gboolean
 log_proto_text_server_prepare(LogProtoServer *s, GIOCondition *cond)
 {
@@ -444,7 +425,6 @@ void
 log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options)
 {
   log_proto_buffered_server_init(&self->super, transport, options);
-  self->super.super.is_preemptable = log_proto_text_server_is_preemptable;
   self->super.super.prepare = log_proto_text_server_prepare;
   self->super.super.free_fn = log_proto_text_server_free;
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;

@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOGREADER_H_INCLUDED
 #define LOGREADER_H_INCLUDED
 
@@ -33,9 +33,6 @@
 /* flags */
 #define LR_KERNEL          0x0002
 #define LR_EMPTY_LINES     0x0004
-#define LR_IGNORE_TIMEOUT  0x0008
-#define LR_SYSLOG_PROTOCOL 0x0010
-#define LR_PREEMPT         0x0020
 #define LR_THREADED        0x0040
 
 /* options */
