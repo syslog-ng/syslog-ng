@@ -25,9 +25,8 @@
 #include "java-logmsg-proxy.h"
 #include "java_machine.h"
 #include "messages.h"
+#include "str-utils.h"
 #include "logmsg/logmsg.h"
-
-#include <string.h>
 
 
 #define LOG_MESSAGE "org.syslog_ng.LogMessage"
@@ -65,10 +64,8 @@ Java_org_syslog_1ng_LogMessage_getValue(JNIEnv *env, jobject obj, jlong handle, 
 
   if (value)
     {
-      gchar stripped_value[value_len + 1];
-      memcpy(stripped_value, value, value_len);
-      stripped_value[value_len] = '\0';
-      return (*env)->NewStringUTF(env, stripped_value);
+      APPEND_ZERO(value, value, value_len);
+      return (*env)->NewStringUTF(env, value);
     }
   else
     {
