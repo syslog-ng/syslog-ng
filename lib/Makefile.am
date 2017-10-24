@@ -56,6 +56,9 @@ lib/ivykis/src/libivykis.la:
 
 CLEAN_SUBDIRS				+= @IVYKIS_SUBDIRS@
 
+EXTRA_DIST += \
+	lib/ivykis/configure.gnu
+
 install-ivykis:
 	${MAKE} -C lib/ivykis/src \
 		install-includeHEADERS \
@@ -278,8 +281,7 @@ EXTRA_DIST += \
 	lib/block-ref-grammar.ym	\
 	lib/pragma-grammar.ym		\
 	lib/merge-grammar.py		\
-	lib/hostname-unix.c		\
-	lib/ivykis/configure.gnu
+	lib/hostname-unix.c
 
 lib/plugin-types.h: lib/cfg-grammar.h
 
