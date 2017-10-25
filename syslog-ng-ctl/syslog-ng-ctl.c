@@ -154,9 +154,21 @@ slng_stop(int argc, char *argv[], const gchar *mode)
   return _dispatch_command("STOP");
 }
 
+static gboolean reload_wait = FALSE;
+
+static GOptionEntry reload_options[] =
+{
+  { "wait", 'W', 0, G_OPTION_ARG_NONE, &reload_wait, "wait reload", NULL },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
 static gint
 slng_reload(int argc, char *argv[], const gchar *mode)
 {
+  if (reload_wait)
+    {
+      return _dispatch_command("SYNCRELOAD");
+    }
   return _dispatch_command("RELOAD");
 }
 
@@ -388,7 +400,7 @@ static struct
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
   { "stop", no_options, "Stop syslog-ng process", slng_stop },
-  { "reload", no_options, "Reload syslog-ng", slng_reload },
+  { "reload", reload_options, "Reload syslog-ng. --wait will wait until syslog-ng reloads the config", slng_reload },
   { "reopen", no_options, "Re-open of log destination files", slng_reopen },
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query },
   { "show-license-info", license_options, "Show information about the license", slng_license },

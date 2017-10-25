@@ -121,6 +121,75 @@ control_connection_reload(GString *command, gpointer user_data)
   return result;
 }
 
+typedef struct _ReloadCondvar
+{
+  GMutex mutex;
+  GCond condvar;
+  gboolean reloaded;
+} ReloadCondvar;
+
+static ReloadCondvar *
+_reload_condvar_new()
+{
+  ReloadCondvar *self = g_new0(ReloadCondvar, 1);
+  g_mutex_init(&self->mutex);
+  g_cond_init(&self->condvar);
+  self->reloaded = FALSE;
+
+  return self;
+}
+
+static void
+_reload_condvar_free(ReloadCondvar *self)
+{
+  g_mutex_clear(&self->mutex);
+  g_cond_clear(&self->condvar);
+  g_free(self);
+}
+
+static void
+_reload_condvar_emit(ReloadCondvar *self)
+{
+  g_mutex_lock(&self->mutex);
+  self->reloaded = TRUE;
+  g_cond_signal(&self->condvar);
+  g_mutex_unlock(&self->mutex);
+}
+
+static void
+_reload_condvar_wait(ReloadCondvar *self)
+{
+  g_mutex_lock(&self->mutex);
+  while (!self->reloaded)
+    g_cond_wait(&self->condvar, &self->mutex);
+  self->reloaded = FALSE;
+  g_mutex_unlock(&self->mutex);
+}
+
+static void
+_config_reloaded(gint hook_type, gpointer user_data)
+{
+  ReloadCondvar *self = (ReloadCondvar *)user_data;
+  _reload_condvar_emit(self);
+}
+
+static void
+_wait_for_syslog_ng_reload()
+{
+  ReloadCondvar *reload_condvar = _reload_condvar_new();
+  register_application_hook_without_checking_current_state(AH_POST_CONFIG_LOADED, _config_reloaded, reload_condvar);
+  _reload_condvar_wait(reload_condvar);
+  _reload_condvar_free(reload_condvar);
+}
+
+static GString *
+control_connection_reload_sync(GString *command, gpointer user_data)
+{
+  GString *result = control_connection_reload(command, user_data);
+  _wait_for_syslog_ng_reload();
+  return result;
+}
+
 static GString *
 control_connection_reopen(GString *command, gpointer user_data)
 {
@@ -136,6 +205,7 @@ ControlCommand default_commands[] =
   { "RELOAD", NULL, control_connection_reload },
   { "REOPEN", NULL, control_connection_reopen },
   { "QUERY", NULL, process_query_command },
+  { "SYNCRELOAD", NULL, control_connection_reload_sync },
   { NULL, NULL, NULL },
 };
 
