@@ -25,6 +25,7 @@
 #include "java-logmsg-proxy.h"
 #include "java_machine.h"
 #include "messages.h"
+#include "str-utils.h"
 #include "logmsg/logmsg.h"
 
 
@@ -49,6 +50,7 @@ Java_org_syslog_1ng_LogMessage_getValue(JNIEnv *env, jobject obj, jlong handle, 
 {
   LogMessage *msg = (LogMessage *)handle;
   const gchar *value;
+  gssize value_len;
 
   const char *name_str = (*env)->GetStringUTFChars(env, name, NULL);
   if (name_str == NULL)
@@ -56,12 +58,13 @@ Java_org_syslog_1ng_LogMessage_getValue(JNIEnv *env, jobject obj, jlong handle, 
       return NULL;
     }
 
-  value = log_msg_get_value_by_name(msg, name_str, NULL);
+  value = log_msg_get_value_by_name(msg, name_str, &value_len);
 
   (*env)->ReleaseStringUTFChars(env, name, name_str);
 
   if (value)
     {
+      APPEND_ZERO(value, value, value_len);
       return (*env)->NewStringUTF(env, value);
     }
   else
