@@ -42,7 +42,7 @@ static gboolean
 filter_in_list_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterInList *self = (FilterInList *)s;
-  LogMessage *msg = msgs[0];
+  LogMessage *msg = msgs[num_msg - 1];
   const gchar *value;
   gssize len = 0;
 

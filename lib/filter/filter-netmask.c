@@ -41,7 +41,7 @@ filter_netmask_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterNetmask *self = (FilterNetmask *) s;
   struct in_addr addr;
-  LogMessage *msg = msgs[0];
+  LogMessage *msg = msgs[num_msg - 1];
 
   if (msg->saddr && g_sockaddr_inet_check(msg->saddr))
     {

@@ -36,7 +36,7 @@ static gboolean
 filter_tags_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterTags *self = (FilterTags *)s;
-  LogMessage *msg = msgs[0];
+  LogMessage *msg = msgs[num_msg - 1];
   gint i;
 
   for (i = 0; i < self->tags->len; i++)
