@@ -162,7 +162,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   app_startup();
 
   configuration = cfg_new_snippet();
-  plugin_load_module("syslogformat", configuration, NULL);
+  cfg_load_module(configuration, "syslogformat");
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 

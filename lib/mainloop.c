@@ -555,7 +555,7 @@ main_loop_run(MainLoop *self)
   service_management_clear_status();
   if (self->options->interactive_mode)
     {
-      plugin_load_module("python", self->current_configuration, NULL);
+      cfg_load_module(self->current_configuration, "python");
       debugger_start(self, self->current_configuration);
     }
   iv_main();

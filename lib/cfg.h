@@ -120,6 +120,7 @@ struct _GlobalConfig
 
 };
 
+gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);
 gboolean cfg_allow_config_dups(GlobalConfig *self);
 
 void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);

@@ -29,7 +29,7 @@ void
 init_and_load_syslogformat_module(void)
 {
   configuration = cfg_new_snippet();
-  plugin_load_module("syslogformat", configuration, NULL);
+  cfg_load_module(configuration, "syslogformat");
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 }
