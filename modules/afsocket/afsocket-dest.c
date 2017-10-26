@@ -384,12 +384,11 @@ afsocket_dd_restore_writer(AFSocketDestDriver *self)
   GlobalConfig *cfg;
   ReloadStoreItem *item;
 
-  g_assert(self->writer == NULL);
-
   cfg = log_pipe_get_config(&self->super.super.super);
   item = cfg_persist_config_fetch(cfg, afsocket_dd_format_connections_name(self));
 
-  if (item && !_is_protocol_type_changed_during_reload(self, item))
+  /* If we are reinitializing an old config, an existing writer may be present */
+  if (!self->writer && item && !_is_protocol_type_changed_during_reload(self, item))
     self->writer = _reload_store_item_release_writer(item);
 
   _reload_store_item_free(item);
