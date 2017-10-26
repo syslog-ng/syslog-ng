@@ -36,7 +36,7 @@ static gboolean
 filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterPri *self = (FilterPri *) s;
-  LogMessage *msg = msgs[0];
+  LogMessage *msg = msgs[num_msg - 1];
   guint32 fac_num = (msg->pri & LOG_FACMASK) >> 3;
 
   if (G_UNLIKELY(self->valid & 0x80000000))
@@ -67,7 +67,7 @@ static gboolean
 filter_level_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterPri *self = (FilterPri *) s;
-  LogMessage *msg = msgs[0];
+  LogMessage *msg = msgs[num_msg - 1];
   guint32 pri = msg->pri & LOG_PRIMASK;
 
 

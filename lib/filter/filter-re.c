@@ -49,7 +49,7 @@ filter_re_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterRE *self = (FilterRE *) s;
   const gchar *value;
-  LogMessage *msg = msgs[0];
+  LogMessage *msg = msgs[num_msg - 1];
   gssize len = 0;
 
   value = log_msg_get_value(msg, self->value_handle, &len);
@@ -125,7 +125,7 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   FilterRE *self = (FilterRE *) s;
   gchar *str;
   gboolean res;
-  LogMessage *msg = msgs[0];
+  LogMessage *msg = msgs[num_msg - 1];
 
   if (G_UNLIKELY(!self->value_handle))
     {

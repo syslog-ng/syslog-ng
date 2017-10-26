@@ -46,6 +46,8 @@ filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msg, gint num_m
 {
   gboolean res;
 
+  g_assert(num_msg > 0);
+
   res = self->eval(self, msg, num_msg);
   msg_debug("Filter node evaluation result",
             evt_tag_printf("msg", "%p", *msg),
@@ -64,8 +66,10 @@ gboolean
 filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg,
                                    const LogPathOptions *path_options)
 {
+  g_assert(num_msg > 0);
+
   if (self->modify)
-    log_msg_make_writable(&msg[0], path_options);
+    log_msg_make_writable(&msg[num_msg - 1], path_options);
 
   return filter_expr_eval_with_context(self, msg, num_msg);
 }

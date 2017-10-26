@@ -93,7 +93,7 @@ static gboolean
 _eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterNetmask6 *self = (FilterNetmask6 *) s;
-  LogMessage *msg = msgs[0];
+  LogMessage *msg = msgs[num_msg - 1];
   gboolean result = FALSE;
   struct in6_addr network_address;
   struct in6_addr address;
