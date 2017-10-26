@@ -57,7 +57,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=UTC");
   tzset();
   init_template_tests();
-  plugin_load_module("kvformat", configuration, NULL);
+  cfg_load_module(configuration, "kvformat");
 
   test_format_welf();
   test_format_welf_performance();

@@ -27,9 +27,6 @@
 
 #include "cfg-parser.h"
 
-typedef struct _Plugin Plugin;
-typedef struct _ModuleInfo ModuleInfo;
-
 typedef struct _PluginFailureInfo
 {
   gconstpointer aux_data;
@@ -48,7 +45,6 @@ typedef struct _PluginCandidate
 {
   PluginBase super;
   gchar *module_name;
-  gint preference;
 } PluginCandidate;
 
 /* A plugin actually registered by a module. See PluginCandidate in
@@ -59,6 +55,7 @@ typedef struct _PluginCandidate
  * contrast with the "module" which is the shared object itself which
  * registers plugins.  Each module can register a number of plugins,
  * not just one.  */
+typedef struct _Plugin Plugin;
 struct _Plugin
 {
   /* NOTE: the first two fields must match PluginCandidate struct defined in
@@ -67,11 +64,14 @@ struct _Plugin
   const gchar *name;
   PluginFailureInfo failure_info;
   CfgParser *parser;
-  void (*setup_context)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
-  gpointer (*construct)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+  gpointer (*construct)(Plugin *self);
   void (*free_fn)(Plugin *s);
 };
 
+gpointer plugin_construct(Plugin *self);
+gpointer plugin_construct_from_config(Plugin *self, CfgLexer *lexer, gpointer arg);
+
+typedef struct _ModuleInfo ModuleInfo;
 struct _ModuleInfo
 {
   /* name of the module to be loaded as */
@@ -85,26 +85,31 @@ struct _ModuleInfo
   Plugin *plugins;
   gint plugins_len;
   /* the higher the better */
-  gint preference;
+};
+
+struct _PluginContext
+{
+  GList *plugins;
+  GList *candidate_plugins;
+  gchar *module_path;
 };
 
 /* instantiate a new plugin */
-Plugin *plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
-gpointer plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
-gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer arg);
-
+Plugin *plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name);
 
 /* plugin side API */
-PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference);
+PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name);
 void plugin_candidate_free(PluginCandidate *self);
 
-void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);
-gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args);
+void plugin_register(PluginContext *context, Plugin *p, gint number);
+gboolean plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *args);
 
 void plugin_list_modules(FILE *out, gboolean verbose);
 
-void plugin_load_candidate_modules(GlobalConfig *cfg);
-void plugin_free_candidate_modules(GlobalConfig *cfg);
-void plugin_free_plugins(GlobalConfig *cfg);
+void plugin_load_candidate_modules(PluginContext *context);
+
+void plugin_context_set_module_path(PluginContext *context, const gchar *module_path);
+void plugin_context_init_instance(PluginContext *context);
+void plugin_context_deinit_instance(PluginContext *context);
 
 #endif

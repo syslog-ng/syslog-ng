@@ -26,7 +26,6 @@
 #define NATIVE_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "parser/parser-expr.h"
 
 CFG_PARSER_DECLARE_LEXER_BINDING(native_, LogParser **)

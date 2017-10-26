@@ -153,10 +153,10 @@ filter_plugin
             gint context = LL_CONTEXT_FILTER;
             FilterExprNode *node;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found OR you may not used double quotes in your filter expression", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            node = (FilterExprNode *) plugin_parse_config(p, configuration, &@1, NULL);
+            node = (FilterExprNode *) cfg_parse_plugin(configuration, p, &@1, NULL);
             free($1);
             if (!node)
               {

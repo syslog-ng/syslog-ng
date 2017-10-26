@@ -23,6 +23,7 @@
  */
 
 #include "cfg.h"
+#include "cfg-grammar.h"
 #include "module-config.h"
 #include "cfg-tree.h"
 #include "messages.h"
@@ -156,6 +157,88 @@ _invoke_module_deinit(gchar *key, ModuleConfig *mc, gpointer user_data)
   GlobalConfig *cfg = (GlobalConfig *) user_data;
 
   module_config_deinit(mc, cfg);
+}
+
+static void
+_sync_plugin_module_path_with_global_define(GlobalConfig *self)
+{
+  const gchar *module_path;
+
+  /* Sync the @define module-path with the actual module search path as implemented by plugin.
+   *
+   * if @define module-path is not defined, we use whatever there's in
+   * PluginContext by default */
+  if (self->lexer)
+    {
+      module_path = cfg_args_get(self->lexer->globals, "module-path");
+      if (module_path)
+        {
+          plugin_context_set_module_path(&self->plugin_context, module_path);
+        }
+    }
+}
+
+gboolean
+cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
+{
+  _sync_plugin_module_path_with_global_define(cfg);
+  return plugin_load_module(&cfg->plugin_context, module_name, NULL);
+}
+
+void
+cfg_load_candidate_modules(GlobalConfig *self)
+{
+  gboolean autoload_enabled = atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules") ? : "1");
+
+  if (self->use_plugin_discovery &&
+      autoload_enabled)
+    {
+      _sync_plugin_module_path_with_global_define(self);
+      plugin_load_candidate_modules(&self->plugin_context);
+    }
+}
+
+Plugin *
+cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+{
+  return plugin_find(&cfg->plugin_context, plugin_type, plugin_name);
+}
+
+/* construct a plugin instance by parsing its relevant portion from the
+ * configuration file */
+gpointer
+cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc, gpointer arg)
+{
+  CfgTokenBlock *block;
+  YYSTYPE token;
+
+
+  /* we add two tokens to an inserted token-block:
+   *  1) the plugin type (in order to make it possible to support different
+   *  plugins from the same grammar)
+   *
+   *  2) the keyword equivalent of the plugin name
+   */
+  block = cfg_token_block_new();
+
+  /* add plugin->type as a token */
+  memset(&token, 0, sizeof(token));
+  token.type = LL_TOKEN;
+  token.token = plugin->type;
+  cfg_token_block_add_and_consume_token(block, &token);
+
+  /* start a new lexer context, so plugin specific keywords are recognized,
+   * we only do this to lookup the parser name. */
+  cfg_lexer_push_context(cfg->lexer, plugin->parser->context, plugin->parser->keywords, plugin->parser->name);
+  cfg_lexer_lookup_keyword(cfg->lexer, &token, yylloc, plugin->name);
+  cfg_lexer_pop_context(cfg->lexer);
+
+  /* add plugin name token */
+  cfg_token_block_add_and_consume_token(block, &token);
+
+  cfg_lexer_inject_token_block(cfg->lexer, block);
+
+  return plugin_construct_from_config(plugin, cfg->lexer, arg);
 }
 
 static gboolean
@@ -296,11 +379,11 @@ cfg_allow_config_dups(GlobalConfig *self)
 static void
 cfg_register_builtin_plugins(GlobalConfig *self)
 {
-  log_proto_register_builtin_plugins(self);
+  log_proto_register_builtin_plugins(&self->plugin_context);
 }
 
 GlobalConfig *
-_cfg_new_object(gint version)
+cfg_new(gint version)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
@@ -340,6 +423,9 @@ _cfg_new_object(gint version)
   stats_options_defaults(&self->stats_options);
 
   cfg_tree_init_instance(&self->tree, self);
+  plugin_context_init_instance(&self->plugin_context);
+  self->use_plugin_discovery = TRUE;
+
   cfg_register_builtin_plugins(self);
   return self;
 }
@@ -347,14 +433,9 @@ _cfg_new_object(gint version)
 GlobalConfig *
 cfg_new_snippet(void)
 {
-  return _cfg_new_object(VERSION_VALUE);
-}
+  GlobalConfig *self = cfg_new(VERSION_VALUE);
 
-GlobalConfig *
-cfg_new(gint version)
-{
-  GlobalConfig *self = _cfg_new_object(version);
-  cfg_load_candidate_modules(self);
+  self->use_plugin_discovery = FALSE;
   return self;
 }
 
@@ -368,6 +449,7 @@ cfg_set_global_paths(GlobalConfig *self)
   cfg_args_set(self->lexer->globals, "syslog-ng-include", get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
   cfg_args_set(self->lexer->globals, "scl-root", get_installation_path_for(SYSLOG_NG_PATH_SCLDIR));
   cfg_args_set(self->lexer->globals, "module-path", resolvedConfigurablePaths.initial_module_path);
+  cfg_args_set(self->lexer->globals, "module-install-dir", resolvedConfigurablePaths.initial_module_path);
 
   include_path = g_strdup_printf("%s:%s",
                                  get_installation_path_for(SYSLOG_NG_PATH_SYSCONFDIR),
@@ -397,12 +479,6 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   self->lexer = old_lexer;
   configuration = old_cfg;
   return res;
-}
-
-void
-cfg_load_candidate_modules(GlobalConfig *self)
-{
-  plugin_load_candidate_modules(self);
 }
 
 static void
@@ -499,8 +575,7 @@ cfg_free(GlobalConfig *self)
   g_free(self->bad_hostname_re);
   dns_cache_options_destroy(&self->dns_cache_options);
   g_free(self->custom_domain);
-  plugin_free_plugins(self);
-  plugin_free_candidate_modules(self);
+  plugin_context_deinit_instance(&self->plugin_context);
   cfg_tree_free_instance(&self->tree);
   g_hash_table_unref(self->module_config);
   g_free(self);

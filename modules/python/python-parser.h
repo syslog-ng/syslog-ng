@@ -29,7 +29,6 @@
 #include "driver.h"
 #include "parser/parser-expr.h"
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 
 extern CfgParser python_parser;
 

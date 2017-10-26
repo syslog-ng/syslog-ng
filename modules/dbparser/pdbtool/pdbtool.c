@@ -1024,7 +1024,7 @@ pdbtool_dictionary(int argc, char *argv[])
 static gboolean
 pdbtool_load_module(const gchar *option_name, const gchar *value, gpointer data, GError **error)
 {
-  return plugin_load_module(value, configuration, NULL);
+  return cfg_load_module(configuration, value);
 }
 
 static gchar *input_logfile = NULL;
@@ -1244,8 +1244,8 @@ main(int argc, char *argv[])
     }
   g_option_context_free(ctx);
 
-  plugin_load_module("syslogformat", configuration, NULL);
-  plugin_load_module("basicfuncs", configuration, NULL);
+  cfg_load_module(configuration, "syslogformat");
+  cfg_load_module(configuration, "basicfuncs");
 
   if (color_out)
     colors = full_colors;

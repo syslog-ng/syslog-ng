@@ -29,6 +29,7 @@
 #include "cfg-tree.h"
 #include "cfg-lexer.h"
 #include "cfg-parser.h"
+#include "plugin.h"
 #include "persist-state.h"
 #include "template/templates.h"
 #include "host-resolve.h"
@@ -65,9 +66,8 @@ struct _GlobalConfig
    * multiple times if the user uses @version multiple times */
   gint parsed_version;
   const gchar *filename;
-  GList *plugins;
-  GList *candidate_plugins;
-  gboolean autoload_compiled_modules;
+  PluginContext plugin_context;
+  gboolean use_plugin_discovery;
   CfgLexer *lexer;
 
   StatsOptions stats_options;
@@ -119,6 +119,11 @@ struct _GlobalConfig
   CfgTree tree;
 
 };
+
+gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);
+
+Plugin *cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+gpointer cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc, gpointer arg);
 
 gboolean cfg_allow_config_dups(GlobalConfig *self);
 

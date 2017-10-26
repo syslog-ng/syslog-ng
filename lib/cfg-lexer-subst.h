@@ -35,5 +35,7 @@ gchar *cfg_lexer_subst_invoke(CfgLexerSubst *self, const gchar *input, gssize in
 CfgLexerSubst *cfg_lexer_subst_new(CfgArgs *globals, CfgArgs *defs, CfgArgs *args);
 void cfg_lexer_subst_free(CfgLexerSubst *self);
 
+gchar *
+cfg_lexer_subst_args_in_input(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length, gsize *output_length, GError **error);
 
 #endif

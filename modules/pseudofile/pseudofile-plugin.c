@@ -37,9 +37,9 @@ static Plugin pseudofile_plugins[] =
 };
 
 gboolean
-pseudofile_module_init(GlobalConfig *cfg, CfgArgs *args)
+pseudofile_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, pseudofile_plugins, G_N_ELEMENTS(pseudofile_plugins));
+  plugin_register(context, pseudofile_plugins, G_N_ELEMENTS(pseudofile_plugins));
   return TRUE;
 }
 

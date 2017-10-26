@@ -23,25 +23,20 @@
  */
 
 #include "plugin.h"
-#include "driver.h"
-#include "messages.h"
-#include "cfg-lexer.h"
 #include "plugin-types.h"
+#include "messages.h"
 #include "pathutils.h"
 #include "resolved-configurable-paths.h"
 
-#include <gmodule.h>
+#include <sys/types.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <gmodule.h>
 
 #ifdef _AIX
 #define G_MODULE_SUFFIX "a"
 #endif
-
-static void
-plugin_candidate_set_preference(PluginCandidate *self, gint preference)
-{
-  self->preference = preference;
-}
 
 static void
 plugin_candidate_set_module_name(PluginCandidate *self, const gchar *module_name)
@@ -52,14 +47,13 @@ plugin_candidate_set_module_name(PluginCandidate *self, const gchar *module_name
 
 
 PluginCandidate *
-plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference)
+plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name)
 {
   PluginCandidate *self = g_new0(PluginCandidate, 1);
 
   self->super.type = plugin_type;
   self->super.name = g_strdup(name);
   self->module_name = g_strdup(module_name);
-  self->preference = preference;
   self->super.failure_info.aux_data = NULL;
 
   return self;
@@ -73,8 +67,63 @@ plugin_candidate_free(PluginCandidate *self)
   g_free(self);
 }
 
+/* construct a plugin without having a configuration file to parse */
+gpointer
+plugin_construct(Plugin *self)
+{
+  g_assert(self->parser == NULL);
+  if (self->construct)
+    {
+      return self->construct(self);
+    }
+  return NULL;
+}
+
+static gboolean
+_is_log_pipe(Plugin *self)
+{
+  switch (self->type)
+    {
+    case LL_CONTEXT_SOURCE:
+    case LL_CONTEXT_DESTINATION:
+    case LL_CONTEXT_PARSER:
+    case LL_CONTEXT_FILTER:
+    case LL_CONTEXT_REWRITE:
+      return TRUE;
+    default:
+      return FALSE;
+    }
+}
+
+gpointer
+plugin_construct_from_config(Plugin *self, CfgLexer *lexer, gpointer arg)
+{
+  gpointer instance = NULL;
+
+  g_assert(self->construct == NULL);
+  if (!cfg_parser_parse(self->parser, lexer, &instance, arg))
+    {
+      cfg_parser_cleanup(self->parser, instance);
+      return NULL;
+    }
+
+  if (_is_log_pipe(self))
+    {
+      LogPipe *p = (LogPipe *)instance;
+      p->plugin_name = g_strdup(self->name);
+      if (self->failure_info.aux_data != NULL)
+        p->init = self->failure_info.aux_data;
+    }
+
+  return instance;
+}
+
+/*****************************************************************************
+ * Implementation of PluginContext
+ *****************************************************************************/
+
 static Plugin *
-plugin_find_in_list(GlobalConfig *cfg, GList *head, gint plugin_type, const gchar *plugin_name)
+plugin_find_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
 {
   GList *p;
   Plugin *plugin;
@@ -106,45 +155,48 @@ plugin_find_in_list(GlobalConfig *cfg, GList *head, gint plugin_type, const gcha
 }
 
 void
-plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
+plugin_register(PluginContext *context, Plugin *p, gint number)
 {
   gint i;
 
   for (i = 0; i < number; i++)
     {
-      if (plugin_find_in_list(cfg, cfg->plugins, p[i].type, p[i].name))
+      Plugin *existing_plugin;
+
+      existing_plugin = plugin_find_in_list(context->plugins, p[i].type, p[i].name);
+      if (existing_plugin)
         {
-          msg_debug("Attempted to register the same plugin multiple times, ignoring",
+          msg_debug("Attempted to register the same plugin multiple times, dropping the old one",
                     evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
                     evt_tag_str("name", p[i].name));
-          continue;
+          context->plugins = g_list_remove(context->plugins, existing_plugin);
         }
-      cfg->plugins = g_list_prepend(cfg->plugins, &p[i]);
+      context->plugins = g_list_prepend(context->plugins, &p[i]);
     }
 }
 
 Plugin *
-plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
 {
   Plugin *p;
   PluginCandidate *candidate;
 
   /* try registered plugins first */
-  p = plugin_find_in_list(cfg, cfg->plugins, plugin_type, plugin_name);
+  p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
   if (p)
     {
       return p;
     }
 
-  candidate = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin_type, plugin_name);
+  candidate = (PluginCandidate *) plugin_find_in_list(context->candidate_plugins, plugin_type, plugin_name);
   if (!candidate)
     return NULL;
 
   /* try to autoload the module */
-  plugin_load_module(candidate->module_name, cfg, NULL);
+  plugin_load_module(context, candidate->module_name, NULL);
 
   /* by this time it should've registered */
-  p = plugin_find_in_list(cfg, cfg->plugins, plugin_type, plugin_name);
+  p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
   if (p)
     {
       p->failure_info.aux_data = candidate->super.failure_info.aux_data;
@@ -158,84 +210,6 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
                 evt_tag_str("name", plugin_name));
     }
   return NULL;
-}
-
-/* construct a plugin without having a configuration file to parse */
-gpointer
-plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
-{
-  g_assert(self->parser == NULL);
-  if (self->construct)
-    {
-      return self->construct(self, cfg, plugin_type, plugin_name);
-    }
-  return NULL;
-}
-
-static gboolean
-_is_log_pipe(Plugin *self)
-{
-  switch (self->type)
-    {
-    case LL_CONTEXT_SOURCE:
-    case LL_CONTEXT_DESTINATION:
-    case LL_CONTEXT_PARSER:
-    case LL_CONTEXT_FILTER:
-    case LL_CONTEXT_REWRITE:
-      return TRUE;
-    default:
-      return FALSE;
-    }
-}
-
-/* construct a plugin instance by parsing a configuration file */
-gpointer
-plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer arg)
-{
-  gpointer instance = NULL;
-
-  g_assert(self->construct == NULL);
-
-  /* make sure '_' and '-' are handled equally in plugin name */
-  if (!self->setup_context)
-    {
-      CfgTokenBlock *block;
-      YYSTYPE token;
-
-      block = cfg_token_block_new();
-
-      memset(&token, 0, sizeof(token));
-      token.type = LL_TOKEN;
-      token.token = self->type;
-      cfg_token_block_add_and_consume_token(block, &token);
-      cfg_lexer_push_context(cfg->lexer, self->parser->context, self->parser->keywords, self->parser->name);
-      cfg_lexer_lookup_keyword(cfg->lexer, &token, yylloc, self->name);
-      cfg_lexer_pop_context(cfg->lexer);
-      cfg_token_block_add_and_consume_token(block, &token);
-
-      cfg_lexer_inject_token_block(cfg->lexer, block);
-    }
-  else
-    {
-      (self->setup_context)(self, cfg, self->type, self->name);
-    }
-
-  if (!cfg_parser_parse(self->parser, cfg->lexer, &instance, arg))
-    {
-      cfg_parser_cleanup(self->parser, instance);
-      instance = NULL;
-      return NULL;
-    }
-
-  if (_is_log_pipe(self))
-    {
-      LogPipe *p = (LogPipe *)instance;
-      p->plugin_name = g_strdup(self->name);
-      if (self->failure_info.aux_data != NULL)
-        p->init = self->failure_info.aux_data;
-    }
-
-  return instance;
 }
 
 static ModuleInfo *
@@ -264,7 +238,43 @@ plugin_get_module_init_name(const gchar *module_name)
 }
 
 static GModule *
-plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
+plugin_dlopen_module_as_filename(const gchar *module_file_name, const gchar *module_name)
+{
+  GModule *mod = NULL;
+
+  msg_trace("Trying to open module",
+            evt_tag_str("module", module_name),
+            evt_tag_str("filename", module_file_name),
+            NULL);
+
+  mod = g_module_open(module_file_name, G_MODULE_BIND_LAZY);
+  if (!mod)
+    {
+      msg_error("Error opening plugin module",
+                evt_tag_str("module", module_name),
+                evt_tag_str("error", g_module_error()),
+                NULL);
+      return NULL;
+    }
+  return mod;
+}
+
+static GModule *
+plugin_dlopen_module_as_dir_and_filename(const gchar *module_dir_name, const gchar *module_file_name,
+                                         const gchar *module_name)
+{
+  gchar *path;
+  GModule *mod;
+
+  path = g_build_path(G_DIR_SEPARATOR_S, module_dir_name, module_file_name, NULL);
+  mod = plugin_dlopen_module_as_filename(path, module_name);
+  g_free(path);
+  return mod;
+}
+
+
+static GModule *
+plugin_dlopen_module_on_path(const gchar *module_name, const gchar *module_path)
 {
   gchar *plugin_module_name = NULL;
   gchar **module_path_dirs, *p, *dot;
@@ -318,30 +328,19 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
                 evt_tag_str("module", module_name));
       return NULL;
     }
-  msg_trace("Trying to open module",
-            evt_tag_str("module", module_name),
-            evt_tag_str("filename", plugin_module_name));
 
-  mod = g_module_open(plugin_module_name, G_MODULE_BIND_LAZY);
+  mod = plugin_dlopen_module_as_filename(plugin_module_name, module_name);
   g_free(plugin_module_name);
-  if (!mod)
-    {
-      msg_debug("Error opening plugin module",
-                evt_tag_str("module", module_name),
-                evt_tag_str("error", g_module_error()));
-      return NULL;
-    }
   return mod;
 }
 
 gboolean
-plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
+plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *args)
 {
   GModule *mod;
   static GModule *main_module_handle;
-  gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
+  gboolean (*init_func)(PluginContext *context, CfgArgs *args);
   gchar *module_init_func;
-  const gchar *mp;
   gboolean result;
   ModuleInfo *module_info;
 
@@ -357,15 +356,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
     }
 
   /* try to load it from external .so */
-  if (cfg->lexer)
-    mp = cfg_args_get(cfg->lexer->globals, "module-path");
-  else
-    mp = NULL;
-
-  if (!mp)
-    mp = resolvedConfigurablePaths.initial_module_path;
-
-  mod = plugin_dlopen_module(module_name, mp);
+  mod = plugin_dlopen_module_on_path(module_name, context->module_path);
   if (!mod)
     {
       g_free(module_init_func);
@@ -392,7 +383,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
 
 call_init:
   g_free(module_init_func);
-  result = (*init_func)(cfg, args);
+  result = (*init_func)(context, args);
   if (result)
     msg_verbose("Module loaded and initialized successfully",
                 evt_tag_str("module", module_name));
@@ -402,21 +393,37 @@ call_init:
   return result;
 }
 
-void
-plugin_load_candidate_modules(GlobalConfig *cfg)
+/************************************************************
+ * Candidate modules
+ ************************************************************/
+
+static void
+_free_candidate_plugin_list(GList *candidate_plugins)
+{
+  g_list_foreach(candidate_plugins, (GFunc) plugin_candidate_free, NULL);
+  g_list_free(candidate_plugins);
+}
+
+/* This functions runs in a separate process during startup, thus we don't
+ * really have a means to report errors, stderr may not be available.  */
+static void
+_enumerate_and_dump_plugin_info_in_modules(const gchar *module_path, int output_fd)
 {
   GModule *mod;
   gchar **mod_paths;
   gint i, j;
+  FILE *discovery;
 
-  mod_paths = g_strsplit(resolvedConfigurablePaths.initial_module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
+  discovery = fdopen(output_fd, "w");
+  if (!discovery)
+    return;
+
+  mod_paths = g_strsplit(module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
     {
       GDir *dir;
       const gchar *fname;
 
-      msg_debug("Reading path for candidate modules",
-                evt_tag_str("path", mod_paths[i]));
       dir = g_dir_open(mod_paths[i], 0, NULL);
       if (!dir)
         continue;
@@ -426,16 +433,13 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
             {
               gchar *module_name;
               ModuleInfo *module_info;
+              const gchar *so_basename = fname;
 
               if (g_str_has_prefix(fname, "lib"))
-                fname += 3;
-              module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
+                so_basename = fname + 3;
+              module_name = g_strndup(so_basename, (gint) (strlen(so_basename) - strlen(G_MODULE_SUFFIX) - 1));
 
-              msg_debug("Reading shared object for a candidate module",
-                        evt_tag_str("path", mod_paths[i]),
-                        evt_tag_str("fname", fname),
-                        evt_tag_str("module", module_name));
-              mod = plugin_dlopen_module(module_name, resolvedConfigurablePaths.initial_module_path);
+              mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
               module_info = plugin_get_module_info(mod);
 
               if (module_info)
@@ -443,28 +447,8 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
                   for (j = 0; j < module_info->plugins_len; j++)
                     {
                       Plugin *plugin = &module_info->plugins[j];
-                      PluginCandidate *candidate_plugin;
 
-                      candidate_plugin = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin->type, plugin->name);
-
-                      msg_debug("Registering candidate plugin",
-                                evt_tag_str("module", module_name),
-                                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin->type)),
-                                evt_tag_str("name", plugin->name),
-                                evt_tag_int("preference", module_info->preference));
-                      if (candidate_plugin)
-                        {
-                          if (candidate_plugin->preference < module_info->preference)
-                            {
-                              plugin_candidate_set_module_name(candidate_plugin, module_name);
-                              plugin_candidate_set_preference(candidate_plugin, module_info->preference);
-                            }
-                        }
-                      else
-                        {
-                          cfg->candidate_plugins = g_list_prepend(cfg->candidate_plugins, plugin_candidate_new(plugin->type, plugin->name,
-                                                                  module_name, module_info->preference));
-                        }
+                      fprintf(discovery, "%s %d %s\n", module_name, plugin->type, plugin->name);
                     }
                 }
               g_free(module_name);
@@ -477,15 +461,168 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
       g_dir_close(dir);
     }
   g_strfreev(mod_paths);
+  fclose(discovery);
+}
+
+static GList *
+_parse_and_load_plugin_info_in_modules(int input_fd)
+{
+  FILE *discovery;
+  GList *candidate_plugins = NULL;
+  gchar module_name[4096];
+  gint plugin_type;
+  gchar plugin_name[256];
+
+  discovery = fdopen(input_fd, "r");
+  if (!discovery)
+    {
+      msg_error("Error happened while opening plugin discovery output, fdopen() failed",
+                evt_tag_errno("error", errno));
+      return NULL;
+    }
+
+  while (fscanf(discovery, "%4095s %d %255s\n",
+                module_name,
+                &plugin_type,
+                plugin_name) == 3)
+    {
+      PluginCandidate *candidate_plugin;
+
+      candidate_plugin = (PluginCandidate *) plugin_find_in_list(candidate_plugins, plugin_type, plugin_name);
+
+      msg_debug("Registering candidate plugin",
+                evt_tag_str("module", module_name),
+                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin_type)),
+                evt_tag_str("name", plugin_name));
+      if (candidate_plugin)
+        {
+          msg_debug("Duplicate plugin candidate, overriding previous registration with the new one",
+                    evt_tag_str("old-module", candidate_plugin->module_name),
+                    evt_tag_str("new-module", module_name),
+                    evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin_type)),
+                    evt_tag_str("name", plugin_name));
+          plugin_candidate_set_module_name(candidate_plugin, module_name);
+        }
+      else
+        {
+          candidate_plugins = g_list_prepend(candidate_plugins,
+                                             plugin_candidate_new(plugin_type, plugin_name, module_name));
+        }
+
+    }
+
+  if (!feof(discovery))
+    {
+      msg_error("Error parsing the output of the discovery process, "
+                "not all lines were consumed, this is an internal error.");
+    }
+
+  fclose(discovery);
+  return candidate_plugins;
+}
+
+GList *
+plugin_discover_candidate_modules(const gchar *module_path)
+{
+  pid_t discover_pid;
+  int discover_pipe[2];
+
+  if (pipe(discover_pipe) < 0)
+    {
+      msg_error("Error creating pipe for discover process",
+                evt_tag_errno("error", errno));
+      return NULL;
+    }
+
+  if ((discover_pid = fork()) < 0)
+    {
+      msg_error("Error creating discover process, fork() failed",
+                evt_tag_errno("error", errno));
+      return NULL;
+    }
+
+  if (discover_pid == 0)
+    {
+      close(discover_pipe[0]);
+      _enumerate_and_dump_plugin_info_in_modules(module_path, dup(discover_pipe[1]));
+      close(discover_pipe[1]);
+      _exit(0);
+    }
+  else
+    {
+      int exit_code;
+      GList *candidate_modules;
+
+      close(discover_pipe[1]);
+      candidate_modules = _parse_and_load_plugin_info_in_modules(dup(discover_pipe[0]));
+      close(discover_pipe[0]);
+      if (waitpid(discover_pid, &exit_code, 0) < 0)
+        {
+          msg_error("Error waiting for discover process, waitpid() failed",
+                    evt_tag_errno("error", errno));
+          _free_candidate_plugin_list(candidate_modules);
+          return NULL;
+        }
+      if (exit_code != 0)
+        {
+          msg_error("Error in discover process, exit code is not zero",
+                    evt_tag_int("exit_code", WEXITSTATUS(exit_code)),
+                    evt_tag_int("status", exit_code));
+          _free_candidate_plugin_list(candidate_modules);
+          return NULL;
+        }
+      return candidate_modules;
+    }
 }
 
 void
-plugin_free_candidate_modules(GlobalConfig *cfg)
+plugin_load_candidate_modules(PluginContext *context)
 {
-  g_list_foreach(cfg->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
-  g_list_free(cfg->candidate_plugins);
-  cfg->candidate_plugins = NULL;
+  if (context->candidate_plugins)
+    return;
+  context->candidate_plugins = plugin_discover_candidate_modules(context->module_path);
 }
+
+static void
+_free_plugin(Plugin *plugin, gpointer user_data)
+{
+  if (plugin->free_fn)
+    plugin->free_fn(plugin);
+}
+
+static void
+plugin_free_plugins(PluginContext *context)
+{
+  g_list_foreach(context->plugins, (GFunc) _free_plugin, NULL);
+  g_list_free(context->plugins);
+  context->plugins = NULL;
+}
+
+void
+plugin_context_set_module_path(PluginContext *context, const gchar *module_path)
+{
+  g_free(context->module_path);
+  context->module_path = g_strdup(module_path);
+}
+
+void
+plugin_context_init_instance(PluginContext *context)
+{
+  memset(context, 0, sizeof(*context));
+  plugin_context_set_module_path(context, resolvedConfigurablePaths.initial_module_path);
+}
+
+void
+plugin_context_deinit_instance(PluginContext *context)
+{
+  plugin_free_plugins(context);
+  _free_candidate_plugin_list(context->candidate_plugins);
+  context->candidate_plugins = NULL;
+
+  g_free(context->module_path);
+}
+
+/* global functions */
 
 void
 plugin_list_modules(FILE *out, gboolean verbose)
@@ -510,12 +647,13 @@ plugin_list_modules(FILE *out, gboolean verbose)
             {
               gchar *module_name;
               ModuleInfo *module_info;
+              const gchar *so_basename = fname;
 
               if (g_str_has_prefix(fname, "lib"))
-                fname += 3;
-              module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
+                so_basename = fname + 3;
+              module_name = g_strndup(so_basename, (gint) (strlen(so_basename) - strlen(G_MODULE_SUFFIX) - 1));
 
-              mod = plugin_dlopen_module(module_name, resolvedConfigurablePaths.initial_module_path);
+              mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
               module_info = plugin_get_module_info(mod);
               if (verbose)
                 {
@@ -570,18 +708,4 @@ plugin_list_modules(FILE *out, gboolean verbose)
   g_strfreev(mod_paths);
   if (!verbose)
     fprintf(out, "\n");
-}
-
-static void
-_free_plugin(Plugin *plugin, gpointer user_data)
-{
-  if (plugin->free_fn)
-    plugin->free_fn(plugin);
-}
-
-void
-plugin_free_plugins(GlobalConfig *cfg)
-{
-  g_list_foreach(cfg->plugins, (GFunc) _free_plugin, NULL);
-  g_list_free(cfg->plugins);
 }

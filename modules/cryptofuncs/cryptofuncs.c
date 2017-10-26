@@ -168,9 +168,9 @@ static Plugin cryptofuncs_plugins[] =
 };
 
 gboolean
-cryptofuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
+cryptofuncs_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, cryptofuncs_plugins, G_N_ELEMENTS(cryptofuncs_plugins));
+  plugin_register(context, cryptofuncs_plugins, G_N_ELEMENTS(cryptofuncs_plugins));
   return TRUE;
 }
 

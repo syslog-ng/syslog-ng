@@ -390,7 +390,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   app_startup();
   init_template_tests();
   add_dummy_template_to_configuration();
-  plugin_load_module("basicfuncs", configuration, NULL);
+  cfg_load_module(configuration, "basicfuncs");
 
   test_cond_funcs();
   test_str_funcs();

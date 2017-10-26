@@ -144,11 +144,11 @@ get_template_function_ops(const gchar *name)
 {
   Plugin *plugin;
 
-  plugin = plugin_find(configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
+  plugin = cfg_find_plugin(configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
   assert_not_null(plugin, "Template function %s is not found", name);
 
   if (plugin)
-    return plugin->construct(plugin, configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
+    return plugin->construct(plugin);
   return NULL;
 }
 
@@ -466,7 +466,7 @@ int main(int argc, char **argv)
   configuration = cfg_new_snippet();
   log_msg_registry_init();
   log_template_global_init();
-  plugin_register(configuration, &hello_plugin, 1);
+  plugin_register(&configuration->plugin_context, &hello_plugin, 1);
 
   test_template_compile_macro();
   test_template_compile_value();

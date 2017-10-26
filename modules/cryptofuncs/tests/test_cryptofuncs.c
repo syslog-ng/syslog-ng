@@ -23,7 +23,7 @@
 
 #include "template_lib.h"
 #include "apphook.h"
-#include "plugin.h"
+#include "cfg.h"
 
 void
 test_hash(void)
@@ -55,7 +55,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
   init_template_tests();
-  plugin_load_module("cryptofuncs", configuration, NULL);
+  cfg_load_module(configuration, "cryptofuncs");
 
   test_hash();
 

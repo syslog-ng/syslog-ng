@@ -36,9 +36,9 @@ static Plugin @PLUGIN_NAME_US@_plugins[] =
 };
 
 gboolean
-@PLUGIN_NAME_US@_module_init(GlobalConfig *cfg, CfgArgs *args)
+@PLUGIN_NAME_US@_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, @PLUGIN_NAME_US@_plugins, G_N_ELEMENTS(@PLUGIN_NAME_US@_plugins));
+  plugin_register(context, @PLUGIN_NAME_US@_plugins, G_N_ELEMENTS(@PLUGIN_NAME_US@_plugins));
   return TRUE;
 }
 

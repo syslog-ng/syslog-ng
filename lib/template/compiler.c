@@ -71,7 +71,7 @@ log_template_prepare_function_call(LogTemplateCompiler *self, Plugin *p, LogTemp
   gchar *argv_copy[argc + 1];
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  e->func.ops = plugin_construct(p, self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+  e->func.ops = plugin_construct(p);
   e->func.state = e->func.ops->size_of_state > 0 ? g_malloc0(e->func.ops->size_of_state) : NULL;
 
   /* prepare may modify the argv array: remove and rearrange elements */
@@ -99,8 +99,7 @@ log_template_lookup_and_setup_function_call(LogTemplateCompiler *self, LogTempla
   Plugin *p;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-
-  p = plugin_find(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+  p = cfg_find_plugin(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
 
   if (!p)
     {

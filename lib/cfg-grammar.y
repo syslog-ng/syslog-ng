@@ -340,6 +340,7 @@ extern struct _StatsOptions *last_stats_options;
 #include "cfg-parser.h"
 #include "cfg.h"
 #include "cfg-tree.h"
+#include "cfg-block.h"
 #include "template/templates.h"
 #include "template/user-function.h"
 #include "logreader.h"
@@ -549,10 +550,10 @@ plugin_stmt
             gint context = LL_CONTEXT_ROOT;
             gpointer result;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            result = plugin_parse_config(p, configuration, &@1, NULL);
+            result = cfg_parse_plugin(configuration, p, &@1, NULL);
             free($1);
             if (!result)
               YYERROR;
@@ -588,10 +589,10 @@ source_plugin
             Plugin *p;
             gint context = LL_CONTEXT_SOURCE;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1, NULL);
+            last_driver = (LogDriver *) cfg_parse_plugin(configuration, p, &@1, NULL);
             free($1);
             if (!last_driver)
               {
@@ -680,10 +681,10 @@ dest_plugin
             Plugin *p;
             gint context = LL_CONTEXT_DESTINATION;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1, NULL);
+            last_driver = (LogDriver *) cfg_parse_plugin(configuration, p, &@1, NULL);
             free($1);
             if (!last_driver)
               {
@@ -848,15 +849,15 @@ block_stmt
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }
           LL_BLOCK
           {
-            CfgBlock *block;
+            CfgBlockGenerator *block;
 
             /* block content */
             cfg_lexer_pop_context(lexer);
             /* block definition */
             cfg_lexer_pop_context(lexer);
 
-            block = cfg_block_new($10, last_block_args);
-            CHECK_ERROR(cfg_lexer_register_block_generator(lexer, cfg_lexer_lookup_context_type_by_name($3), $4, cfg_block_generate, block, (GDestroyNotify) cfg_block_free) || cfg_allow_config_dups(configuration), @4, "duplicate block definition");
+            block = cfg_block_new(cfg_lexer_lookup_context_type_by_name($3), $4, $10, last_block_args);
+            cfg_lexer_register_generator_plugin(&configuration->plugin_context, block);
             free($3);
             free($4);
             free($10);
@@ -1125,10 +1126,10 @@ dest_driver_option
             gint context = LL_CONTEXT_INNER_DEST;
             gpointer value;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            value = plugin_parse_config(p, configuration, &@1, last_driver);
+            value = cfg_parse_plugin(configuration, p, &@1, last_driver);
 
             free($1);
             if (!value)

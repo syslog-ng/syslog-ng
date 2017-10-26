@@ -38,9 +38,9 @@ static Plugin tags_parser_plugins[] =
 };
 
 gboolean
-tags_parser_module_init(GlobalConfig *cfg, CfgArgs *args)
+tags_parser_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, tags_parser_plugins, G_N_ELEMENTS(tags_parser_plugins));
+  plugin_register(context, tags_parser_plugins, G_N_ELEMENTS(tags_parser_plugins));
   return TRUE;
 }
 

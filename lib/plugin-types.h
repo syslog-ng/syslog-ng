@@ -39,4 +39,18 @@
 
 #include "cfg-grammar.h"
 
+
+/* bitmask to cover non-context flags in the "plugin_type", e.g.
+ * LL_CONTEXT_FLAG_* */
+
+#define LL_CONTEXT_FLAGS 0xF00
+
+/* indicates that a plugin is actually a generator, e.g.  it is registered
+ * as LL_CONTEXT_SOURCE but instead of running through the normal plugin
+ * instantiation via Plugin->parse, let it generate a configuration snippet
+ * that will be parsed normally.
+ */
+
+#define LL_CONTEXT_FLAG_GENERATOR 0x0100
+
 #endif

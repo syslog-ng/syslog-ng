@@ -292,7 +292,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   app_startup();
 
   init_template_tests();
-  plugin_load_module("basicfuncs", configuration, NULL);
+  cfg_load_module(configuration, "basicfuncs");
   configuration->template_options.frac_digits = 3;
   configuration->template_options.time_zone_info[LTZ_LOCAL] = time_zone_info_new(NULL);
 

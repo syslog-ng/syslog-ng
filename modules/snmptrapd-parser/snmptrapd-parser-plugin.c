@@ -36,9 +36,9 @@ static Plugin snmptrapd_parser_plugins[] =
 };
 
 gboolean
-snmptrapd_parser_module_init(GlobalConfig *cfg, CfgArgs *args)
+snmptrapd_parser_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, snmptrapd_parser_plugins, G_N_ELEMENTS(snmptrapd_parser_plugins));
+  plugin_register(context, snmptrapd_parser_plugins, G_N_ELEMENTS(snmptrapd_parser_plugins));
   return TRUE;
 }
 

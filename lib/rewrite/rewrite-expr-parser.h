@@ -26,7 +26,6 @@
 #define REWRITE_EXPR_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "cfg-tree.h"
 
 extern CfgParser rewrite_expr_parser;

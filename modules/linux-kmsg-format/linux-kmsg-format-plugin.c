@@ -31,24 +31,24 @@ static MsgFormatHandler linux_kmsg_handler =
   .parse = &linux_kmsg_format_handler
 };
 
-static MsgFormatHandler *
-linux_kmsg_format_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+static gpointer
+linux_kmsg_format_construct(Plugin *self)
 {
-  return &linux_kmsg_handler;
+  return (gpointer) &linux_kmsg_handler;
 }
 
 static Plugin linux_kmsg_format_plugin =
 {
   .type = LL_CONTEXT_FORMAT,
   .name = "linux-kmsg",
-  .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) linux_kmsg_format_construct,
+  .construct = linux_kmsg_format_construct,
 };
 
 gboolean
-linux_kmsg_format_module_init(GlobalConfig *cfg, CfgArgs *args)
+linux_kmsg_format_module_init(PluginContext *context, CfgArgs *args)
 {
   linux_msg_format_init();
-  plugin_register(cfg, &linux_kmsg_format_plugin, 1);
+  plugin_register(context, &linux_kmsg_format_plugin, 1);
   return TRUE;
 }
 

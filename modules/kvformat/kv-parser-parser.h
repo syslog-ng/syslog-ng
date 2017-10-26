@@ -23,7 +23,6 @@
 #define KVPARSER_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "parser/parser-expr.h"
 
 extern CfgParser kv_parser_parser;

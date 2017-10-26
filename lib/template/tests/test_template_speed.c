@@ -49,7 +49,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  plugin_load_module("basicfuncs", configuration, NULL);
+  cfg_load_module(configuration, "syslogformat");
+  cfg_load_module(configuration, "basicfuncs");
 
   perftest_template("$DATE\n");
   perftest_template("<$PRI>$DATE $HOST $MSGHDR$MSG\n");

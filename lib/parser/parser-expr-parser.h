@@ -26,9 +26,7 @@
 #define PARSER_EXPR_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "parser/parser-expr.h"
-#include "cfg-tree.h"
 
 extern CfgParser parser_expr_parser;
 

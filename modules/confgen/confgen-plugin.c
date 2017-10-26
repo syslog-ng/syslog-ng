@@ -23,10 +23,9 @@
 
 #include "confgen.h"
 #include "cfg.h"
-#include "cfg-lexer.h"
+#include "cfg-block-generator.h"
 #include "messages.h"
 #include "plugin.h"
-#include "plugin-types.h"
 
 #include <string.h>
 #include <errno.h>
@@ -49,29 +48,36 @@ confgen_unset_args_from_env(gpointer k, gpointer v, gpointer user_data)
   unsetenv(buf);
 }
 
-gboolean
-confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, gpointer user_data)
+typedef struct _ConfgenExec
 {
+  CfgBlockGenerator super;
+  gchar *exec;
+} ConfgenExec;
+
+gboolean
+confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args)
+{
+  ConfgenExec *self = (ConfgenExec *) s;
   gchar *value;
   gsize value_len = 0;
   FILE *out;
-  gchar *exec = (gchar *) user_data;
   gsize res;
   gchar buf[256];
   gboolean result;
 
-  g_snprintf(buf, sizeof(buf), "%s confgen %s", cfg_lexer_lookup_context_name_by_type(type), name);
+  g_snprintf(buf, sizeof(buf), "%s confgen %s", cfg_lexer_lookup_context_name_by_type(self->super.context),
+             self->super.name);
 
   cfg_args_foreach(args, confgen_set_args_as_env, NULL);
-  out = popen((gchar *) user_data, "r");
+  out = popen(self->exec, "r");
   cfg_args_foreach(args, confgen_unset_args_from_env, NULL);
 
   if (!out)
     {
       msg_error("confgen: Error executing generator program",
-                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(type)),
-                evt_tag_str("block", name),
-                evt_tag_str("exec", exec),
+                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(self->super.context)),
+                evt_tag_str("block", self->super.name),
+                evt_tag_str("exec", self->exec),
                 evt_tag_errno("error", errno));
       return FALSE;
     }
@@ -85,8 +91,9 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
   if (res != 0)
     {
       msg_error("confgen: Generator program returned with non-zero exit code",
-                evt_tag_str("block", name),
-                evt_tag_str("exec", exec),
+                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(self->super.context)),
+                evt_tag_str("block", self->super.name),
+                evt_tag_str("exec", self->exec),
                 evt_tag_int("rc", res));
       g_free(value);
       return FALSE;
@@ -96,8 +103,29 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
   return result;
 }
 
+static void
+confgen_exec_free(CfgBlockGenerator *s)
+{
+  ConfgenExec *self = (ConfgenExec *) s;
+
+  g_free(self->exec);
+  cfg_block_generator_free_instance(s);
+}
+
+static CfgBlockGenerator *
+confgen_exec_new(gint context, const gchar *name, const gchar *exec)
+{
+  ConfgenExec *self = g_new0(ConfgenExec, 1);
+
+  cfg_block_generator_init_instance(&self->super, context, name);
+  self->super.generate = confgen_exec_generate;
+  self->super.free_fn = confgen_exec_free;
+  self->exec = g_strdup(exec);
+  return &self->super;
+}
+
 gboolean
-confgen_module_init(GlobalConfig *cfg, CfgArgs *args)
+confgen_module_init(PluginContext *plugin_context, CfgArgs *args)
 {
   const gchar *name, *context, *exec;
 
@@ -119,8 +147,8 @@ confgen_module_init(GlobalConfig *cfg, CfgArgs *args)
       msg_error("confgen: exec argument expected");
       return FALSE;
     }
-  cfg_lexer_register_block_generator(cfg->lexer, cfg_lexer_lookup_context_type_by_name(context), name, confgen_generate,
-                                     g_strdup(exec), g_free);
+  cfg_lexer_register_generator_plugin(plugin_context, confgen_exec_new(cfg_lexer_lookup_context_type_by_name(context),
+                                      name, exec));
   return TRUE;
 }
 

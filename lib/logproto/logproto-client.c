@@ -74,17 +74,13 @@ log_proto_client_options_destroy(LogProtoClientOptions *options)
 }
 
 LogProtoClientFactory *
-log_proto_client_get_factory(GlobalConfig *cfg, const gchar *name)
+log_proto_client_get_factory(PluginContext *context, const gchar *name)
 {
   Plugin *plugin;
 
-  plugin = plugin_find(cfg, LL_CONTEXT_CLIENT_PROTO, name);
+  plugin = plugin_find(context, LL_CONTEXT_CLIENT_PROTO, name);
   if (plugin && plugin->construct)
-    {
-      return plugin->construct(plugin, cfg, LL_CONTEXT_CLIENT_PROTO, name);
-    }
-  else
-    {
-      return NULL;
-    }
+    return plugin->construct(plugin);
+
+  return NULL;
 }

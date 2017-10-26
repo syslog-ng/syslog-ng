@@ -39,14 +39,14 @@ static Plugin systemd_journal_plugins[] =
 };
 
 gboolean
-systemd_journal_module_init(GlobalConfig *cfg, CfgArgs *args)
+systemd_journal_module_init(PluginContext *context, CfgArgs *args)
 {
   if (!load_journald_subsystem())
     {
       msg_error("Can't find systemd-journal on this system");
       return FALSE;
     }
-  plugin_register(cfg, systemd_journal_plugins, G_N_ELEMENTS(systemd_journal_plugins));
+  plugin_register(context, systemd_journal_plugins, G_N_ELEMENTS(systemd_journal_plugins));
   return TRUE;
 }
 

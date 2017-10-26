@@ -32,10 +32,10 @@ static MsgFormatHandler syslog_handler =
   .parse = &syslog_format_handler
 };
 
-static MsgFormatHandler *
-syslog_format_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+static gpointer
+syslog_format_construct(Plugin *self)
 {
-  return &syslog_handler;
+  return (gpointer) &syslog_handler;
 }
 
 static Plugin syslog_format_plugins[] =
@@ -43,7 +43,7 @@ static Plugin syslog_format_plugins[] =
   {
     .type = LL_CONTEXT_FORMAT,
     .name = "syslog",
-    .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) syslog_format_construct,
+    .construct = syslog_format_construct,
   },
   {
     .type = LL_CONTEXT_PARSER,
@@ -53,10 +53,10 @@ static Plugin syslog_format_plugins[] =
 };
 
 gboolean
-syslogformat_module_init(GlobalConfig *cfg, CfgArgs *args)
+syslogformat_module_init(PluginContext *context, CfgArgs *args)
 {
   syslog_format_init();
-  plugin_register(cfg, syslog_format_plugins, G_N_ELEMENTS(syslog_format_plugins));
+  plugin_register(context, syslog_format_plugins, G_N_ELEMENTS(syslog_format_plugins));
   return TRUE;
 }
 

@@ -47,6 +47,9 @@ typedef struct _CfgParser
   void (*cleanup)(gpointer instance);
 } CfgParser;
 
+gboolean cfg_parser_parse(CfgParser *self, CfgLexer *lexer, gpointer *instance, gpointer arg);
+void cfg_parser_cleanup(CfgParser *self, gpointer instance);
+
 enum
 {
   CFH_SET,
@@ -65,36 +68,6 @@ typedef struct _CfgFlagHandler
 gboolean
 cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag);
 
-/* the debug flag for the main parser will be used for all parsers */
-extern int cfg_parser_debug;
-
-static inline gboolean
-cfg_parser_parse(CfgParser *self, CfgLexer *lexer, gpointer *instance, gpointer arg)
-{
-  gboolean success;
-
-  if (cfg_parser_debug)
-    {
-      fprintf(stderr, "\n\nStarting parser %s\n", self->name);
-    }
-  if (self->debug_flag)
-    (*self->debug_flag) = cfg_parser_debug;
-  cfg_lexer_push_context(lexer, self->context, self->keywords, self->name);
-  success = (self->parse(lexer, instance, arg) == 0);
-  cfg_lexer_pop_context(lexer);
-  if (cfg_parser_debug)
-    {
-      fprintf(stderr, "\nStopping parser %s, result: %d\n", self->name, success);
-    }
-  return success;
-}
-
-static inline void
-cfg_parser_cleanup(CfgParser *self, gpointer instance)
-{
-  if (instance && self->cleanup)
-    self->cleanup(instance);
-}
 
 extern CfgParser main_parser;
 

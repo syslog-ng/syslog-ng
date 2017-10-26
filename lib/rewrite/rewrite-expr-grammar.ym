@@ -136,10 +136,10 @@ rewrite_expr
             Plugin *p;
             gint context = LL_CONTEXT_REWRITE;
 
-            p = plugin_find(configuration, context, $1);
+            p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            last_rewrite = (LogRewrite *) plugin_parse_config(p, configuration, &@1, NULL);
+            last_rewrite = (LogRewrite *) cfg_parse_plugin(configuration, p, &@1, NULL);
             free($1);
             if (!last_rewrite)
               {

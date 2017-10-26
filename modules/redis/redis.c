@@ -418,9 +418,9 @@ static Plugin redis_plugin =
 };
 
 gboolean
-redis_module_init(GlobalConfig *cfg, CfgArgs *args)
+redis_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, &redis_plugin, 1);
+  plugin_register(context, &redis_plugin, 1);
 
   return TRUE;
 }

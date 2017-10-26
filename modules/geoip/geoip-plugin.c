@@ -40,9 +40,9 @@ static Plugin geoip_plugins[] =
 };
 
 gboolean
-geoip_module_init(GlobalConfig *cfg, CfgArgs *args)
+geoip_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, geoip_plugins, G_N_ELEMENTS(geoip_plugins));
+  plugin_register(context, geoip_plugins, G_N_ELEMENTS(geoip_plugins));
   return TRUE;
 }
 

@@ -26,7 +26,6 @@
 #define AFAMQP_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "afamqp.h"
 
 extern CfgParser afamqp_parser;

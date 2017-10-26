@@ -25,7 +25,6 @@
 #define REDIS_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "redis.h"
 
 extern CfgParser redis_parser;

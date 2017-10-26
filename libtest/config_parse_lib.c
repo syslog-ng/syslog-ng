@@ -83,7 +83,7 @@ parse_plugin_config(const gchar *config_to_parse, gint context, gpointer arg)
   yylloc->last_line = 1;
   yylloc->level = &lexer->include_stack[0];
 
-  plugin = plugin_find(configuration, context, delimited[0]);
+  plugin = cfg_find_plugin(configuration, context, delimited[0]);
   if (!plugin)
     {
       fprintf(stderr, "Error parsing expression\n");
@@ -94,7 +94,7 @@ parse_plugin_config(const gchar *config_to_parse, gint context, gpointer arg)
   cfg_set_global_paths(configuration);
 
   cfg_lexer_push_context(lexer, main_parser.context, main_parser.keywords, main_parser.name);
-  result = plugin_parse_config(plugin, configuration, yylloc, arg);
+  result = cfg_parse_plugin(configuration, plugin, yylloc, arg);
   cfg_lexer_pop_context(lexer);
 
   if (!result)

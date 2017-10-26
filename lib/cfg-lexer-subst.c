@@ -24,7 +24,6 @@
 
 #include "cfg-lexer-subst.h"
 #include "cfg-args.h"
-#include "cfg-lexer.h"
 #include "cfg-grammar.h"
 
 #include <string.h>
@@ -296,4 +295,16 @@ cfg_lexer_subst_free(CfgLexerSubst *self)
   cfg_args_unref(self->defs);
   cfg_args_unref(self->args);
   g_free(self);
+}
+
+gchar *
+cfg_lexer_subst_args_in_input(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length,
+                              gsize *output_length, GError **error)
+{
+  CfgLexerSubst *subst = cfg_lexer_subst_new(cfg_args_ref(globals), cfg_args_ref(defs), cfg_args_ref(args));
+  gchar *result;
+
+  result = cfg_lexer_subst_invoke(subst, input, input_length, output_length, error);
+  cfg_lexer_subst_free(subst);
+  return result;
 }

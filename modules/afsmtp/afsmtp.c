@@ -695,9 +695,9 @@ static Plugin afsmtp_plugin =
 };
 
 gboolean
-afsmtp_module_init(GlobalConfig *cfg, CfgArgs *args)
+afsmtp_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, &afsmtp_plugin, 1);
+  plugin_register(context, &afsmtp_plugin, 1);
   return TRUE;
 }
 

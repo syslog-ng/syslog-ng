@@ -26,7 +26,6 @@
 
 #include "date-parser.h"
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 
 extern CfgParser date_parser;
 

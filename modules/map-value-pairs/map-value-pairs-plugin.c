@@ -36,9 +36,9 @@ static Plugin map_value_pairs_plugins[] =
 };
 
 gboolean
-map_value_pairs_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
+map_value_pairs_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
 {
-  plugin_register(cfg, map_value_pairs_plugins, G_N_ELEMENTS(map_value_pairs_plugins));
+  plugin_register(context, map_value_pairs_plugins, G_N_ELEMENTS(map_value_pairs_plugins));
   return TRUE;
 }
 

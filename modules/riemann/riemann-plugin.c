@@ -37,9 +37,9 @@ static Plugin riemann_plugin =
 };
 
 gboolean
-riemann_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
+riemann_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
 {
-  plugin_register(cfg, &riemann_plugin, 1);
+  plugin_register(context, &riemann_plugin, 1);
   return TRUE;
 }
 

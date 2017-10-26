@@ -42,9 +42,9 @@ static Plugin afprog_plugins[] =
 };
 
 gboolean
-afprog_module_init(GlobalConfig *cfg, CfgArgs *args)
+afprog_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, afprog_plugins, G_N_ELEMENTS(afprog_plugins));
+  plugin_register(context, afprog_plugins, G_N_ELEMENTS(afprog_plugins));
   return TRUE;
 }
 

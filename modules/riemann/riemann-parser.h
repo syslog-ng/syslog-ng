@@ -25,7 +25,6 @@
 #define SNG_RIEMANN_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "riemann.h"
 
 extern CfgParser riemann_parser;

@@ -36,9 +36,9 @@ static Plugin xml_plugins[] =
 };
 
 gboolean
-xml_module_init(GlobalConfig *cfg, CfgArgs *args)
+xml_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, xml_plugins, G_N_ELEMENTS(xml_plugins));
+  plugin_register(context, xml_plugins, G_N_ELEMENTS(xml_plugins));
   return TRUE;
 }
 

@@ -1120,8 +1120,8 @@ main(int argc, char *argv[])
   msg_init(TRUE);
 
   configuration = cfg_new_snippet();
-  plugin_load_module("basicfuncs", configuration, NULL);
-  plugin_load_module("syslogformat", configuration, NULL);
+  cfg_load_module(configuration, "basicfuncs");
+  cfg_load_module(configuration, "syslogformat");
 
   pattern_db_global_init();
 

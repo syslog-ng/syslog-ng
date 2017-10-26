@@ -24,7 +24,6 @@
 #define GEOIP2_PARSER_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "parser/parser-expr.h"
 
 extern CfgParser geoip2_parser_parser;

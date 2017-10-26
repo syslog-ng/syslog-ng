@@ -23,7 +23,6 @@
  */
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "cfg-grammar.h"
 
 #include <string.h>
@@ -282,6 +281,39 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
           "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n");
 
 }
+
+/* the debug flag for the main parser will be used for all parsers */
+extern int cfg_parser_debug;
+
+
+gboolean
+cfg_parser_parse(CfgParser *self, CfgLexer *lexer, gpointer *instance, gpointer arg)
+{
+  gboolean success;
+
+  if (cfg_parser_debug)
+    {
+      fprintf(stderr, "\n\nStarting parser %s\n", self->name);
+    }
+  if (self->debug_flag)
+    (*self->debug_flag) = cfg_parser_debug;
+  cfg_lexer_push_context(lexer, self->context, self->keywords, self->name);
+  success = (self->parse(lexer, instance, arg) == 0);
+  cfg_lexer_pop_context(lexer);
+  if (cfg_parser_debug)
+    {
+      fprintf(stderr, "\nStopping parser %s, result: %d\n", self->name, success);
+    }
+  return success;
+}
+
+void
+cfg_parser_cleanup(CfgParser *self, gpointer instance)
+{
+  if (instance && self->cleanup)
+    self->cleanup(instance);
+}
+
 
 /*
  * This function can be used to parse flags in a flags(...) option. It

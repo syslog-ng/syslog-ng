@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,13 +22,13 @@
  *
  */
 
-#ifndef PRAGMA_PARSER_H_INCLUDED
-#define PRAGMA_PARSER_H_INCLUDED
+#ifndef CFG_BLOCK_H_INCLUDED
+#define CFG_BLOCK_H_INCLUDED 1
 
-#include "cfg-parser.h"
+#include "cfg-block-generator.h"
 
-extern CfgParser pragma_parser;
+/* user defined configuration block */
 
-CFG_PARSER_DECLARE_LEXER_BINDING(pragma_, gpointer *)
+CfgBlockGenerator *cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs);
 
 #endif

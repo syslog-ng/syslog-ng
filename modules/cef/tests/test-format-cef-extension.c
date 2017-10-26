@@ -221,7 +221,7 @@ main(int argc, char *argv[])
   putenv("TZ=UTC");
   tzset();
   init_template_tests();
-  plugin_load_module("cef", configuration, NULL);
+  cfg_load_module(configuration, "cef");
 
   _test_filter();
   _test_multiple_properties_with_space();

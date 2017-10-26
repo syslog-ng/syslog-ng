@@ -117,9 +117,9 @@ static Plugin afsocket_plugins[] =
 };
 
 gboolean
-afsocket_module_init(GlobalConfig *cfg, CfgArgs *args)
+afsocket_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, afsocket_plugins, G_N_ELEMENTS(afsocket_plugins));
+  plugin_register(context, afsocket_plugins, G_N_ELEMENTS(afsocket_plugins));
   return TRUE;
 }
 
@@ -127,7 +127,6 @@ const ModuleInfo module_info =
 {
   .canonical_name = "afsocket",
   .version = SYSLOG_NG_VERSION,
-  .preference = 100,
   .description = "The afsocket module provides socket based transports for syslog-ng, such as the udp(), tcp() and syslog() drivers. This module is compiled with SSL support.",
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = afsocket_plugins,

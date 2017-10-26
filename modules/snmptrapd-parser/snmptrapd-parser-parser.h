@@ -24,7 +24,6 @@
 #define SNMPTRAPD_PARSER_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "parser/parser-expr.h"
 
 extern CfgParser snmptrapd_parser_parser;

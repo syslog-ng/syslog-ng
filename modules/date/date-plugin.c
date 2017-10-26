@@ -37,9 +37,9 @@ static Plugin date_plugin =
 };
 
 gboolean
-date_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
+date_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
 {
-  plugin_register(cfg, &date_plugin, 1);
+  plugin_register(context, &date_plugin, 1);
   return TRUE;
 }
 

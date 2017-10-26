@@ -37,9 +37,9 @@ static Plugin afuser_plugins[] =
 };
 
 gboolean
-afuser_module_init(GlobalConfig *cfg, CfgArgs *args)
+afuser_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, afuser_plugins, G_N_ELEMENTS(afuser_plugins));
+  plugin_register(context, afuser_plugins, G_N_ELEMENTS(afuser_plugins));
   return TRUE;
 }
 
