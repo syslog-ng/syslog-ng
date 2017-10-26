@@ -89,6 +89,8 @@
  */
 
 ThreadId main_thread_handle;
+GCond thread_halt_cond;
+GMutex workers_running_lock = G_STATIC_MUTEX_INIT;
 
 struct _MainLoop
 {
@@ -296,6 +298,25 @@ main_loop_reload_config_initiate(gpointer user_data)
 
   is_reloading_scheduled = TRUE;
   main_loop_worker_sync_call(main_loop_reload_config_apply, self);
+}
+
+static void
+block_till_workers_exit()
+{
+  gint64 end_time;
+  end_time = g_get_monotonic_time() + 15*G_TIME_SPAN_SECOND;
+
+  g_mutex_lock(&workers_running_lock);
+  while (main_loop_workers_running)
+    if (!g_cond_wait_until(&thread_halt_cond, &workers_running_lock, end_time))
+      {
+        /* timeout has passed. */
+        fprintf(stderr, "Main thread timed out (15s) while waiting workers threads to exit. "
+                "workers_running: %d. Continuing ...\n", main_loop_workers_running);
+        break;
+      }
+
+  g_mutex_unlock (&workers_running_lock);
 }
 
 /************************************************************************************
@@ -519,6 +540,7 @@ main_loop_deinit(MainLoop *self)
   main_loop_call_deinit();
   main_loop_io_worker_deinit();
   main_loop_worker_deinit();
+  block_till_workers_exit();
   scratch_buffers_automatic_gc_deinit();
 }
 
