@@ -713,9 +713,9 @@ static Plugin afamqp_plugin =
 };
 
 gboolean
-afamqp_module_init(GlobalConfig *cfg, CfgArgs *args)
+afamqp_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, &afamqp_plugin, 1);
+  plugin_register(context, &afamqp_plugin, 1);
   return TRUE;
 }
 

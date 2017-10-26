@@ -33,9 +33,9 @@ static Plugin stardate_plugins[] =
 };
 
 gboolean
-stardate_module_init(GlobalConfig *cfg, CfgArgs *args)
+stardate_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, stardate_plugins, G_N_ELEMENTS(stardate_plugins));
+  plugin_register(context, stardate_plugins, G_N_ELEMENTS(stardate_plugins));
   return TRUE;
 }
 

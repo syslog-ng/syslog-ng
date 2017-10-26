@@ -106,20 +106,20 @@ plugin_find_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
 }
 
 void
-plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
+plugin_register(PluginContext *context, Plugin *p, gint number)
 {
   gint i;
 
   for (i = 0; i < number; i++)
     {
-      if (plugin_find_in_list(cfg->plugin_context.plugins, p[i].type, p[i].name))
+      if (plugin_find_in_list(context->plugins, p[i].type, p[i].name))
         {
           msg_debug("Attempted to register the same plugin multiple times, ignoring",
                     evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
                     evt_tag_str("name", p[i].name));
           continue;
         }
-      cfg->plugin_context.plugins = g_list_prepend(cfg->plugin_context.plugins, &p[i]);
+      context->plugins = g_list_prepend(context->plugins, &p[i]);
     }
 }
 
@@ -141,7 +141,7 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
     return NULL;
 
   /* try to autoload the module */
-  plugin_load_module(candidate->module_name, cfg, NULL);
+  plugin_load_module(candidate->module_name, &cfg->plugin_context, NULL);
 
   /* by this time it should've registered */
   p = plugin_find_in_list(cfg->plugin_context.plugins, plugin_type, plugin_name);
@@ -328,11 +328,11 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
 }
 
 gboolean
-plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
+plugin_load_module(const gchar *module_name, PluginContext *context, CfgArgs *args)
 {
   GModule *mod;
   static GModule *main_module_handle;
-  gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
+  gboolean (*init_func)(PluginContext *context, CfgArgs *args);
   gchar *module_init_func;
   gboolean result;
   ModuleInfo *module_info;
@@ -349,7 +349,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
     }
 
   /* try to load it from external .so */
-  mod = plugin_dlopen_module(module_name, cfg->plugin_context.module_path);
+  mod = plugin_dlopen_module(module_name, context->module_path);
   if (!mod)
     {
       g_free(module_init_func);
@@ -376,7 +376,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
 
 call_init:
   g_free(module_init_func);
-  result = (*init_func)(cfg, args);
+  result = (*init_func)(context, args);
   if (result)
     msg_verbose("Module loaded and initialized successfully",
                 evt_tag_str("module", module_name));

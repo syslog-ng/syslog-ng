@@ -78,7 +78,7 @@ Test(test_filters_statistics, filter_stastistics)
   configuration->stats_options.level = 1;
   cr_assert(cfg_init(configuration));
 
-  plugin_load_module("syslogformat", configuration, NULL);
+  cfg_load_module(configuration, "syslogformat");
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 

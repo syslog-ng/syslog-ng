@@ -74,11 +74,11 @@ _py_init_interpreter(void)
 }
 
 gboolean
-python_module_init(GlobalConfig *cfg, CfgArgs *args G_GNUC_UNUSED)
+python_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
 {
   _py_init_interpreter();
   python_debugger_init();
-  plugin_register(cfg, python_plugins, G_N_ELEMENTS(python_plugins));
+  plugin_register(context, python_plugins, G_N_ELEMENTS(python_plugins));
   return TRUE;
 }
 

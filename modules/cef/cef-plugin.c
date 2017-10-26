@@ -29,9 +29,9 @@ static Plugin cef_plugins[] =
 };
 
 gboolean
-cef_module_init(GlobalConfig *cfg, CfgArgs *args)
+cef_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, cef_plugins, G_N_ELEMENTS(cef_plugins));
+  plugin_register(context, cef_plugins, G_N_ELEMENTS(cef_plugins));
   return TRUE;
 }
 

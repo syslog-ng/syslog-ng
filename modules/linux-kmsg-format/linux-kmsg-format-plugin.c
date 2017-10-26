@@ -45,10 +45,10 @@ static Plugin linux_kmsg_format_plugin =
 };
 
 gboolean
-linux_kmsg_format_module_init(GlobalConfig *cfg, CfgArgs *args)
+linux_kmsg_format_module_init(PluginContext *context, CfgArgs *args)
 {
   linux_msg_format_init();
-  plugin_register(cfg, &linux_kmsg_format_plugin, 1);
+  plugin_register(context, &linux_kmsg_format_plugin, 1);
   return TRUE;
 }
 

@@ -54,7 +54,7 @@ static Plugin framed_server_plugins[] =
 };
 
 void
-log_proto_register_builtin_plugins(GlobalConfig *cfg)
+log_proto_register_builtin_plugins(PluginContext *context)
 {
-  plugin_register(cfg, framed_server_plugins, G_N_ELEMENTS(framed_server_plugins));
+  plugin_register(context, framed_server_plugins, G_N_ELEMENTS(framed_server_plugins));
 }

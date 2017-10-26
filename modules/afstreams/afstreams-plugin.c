@@ -37,9 +37,9 @@ static Plugin afstreams_plugins[] =
 };
 
 gboolean
-afstreams_module_init(GlobalConfig *cfg, CfgArgs *args)
+afstreams_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, afstreams_plugins, G_N_ELEMENTS(afstreams_plugins));
+  plugin_register(context, afstreams_plugins, G_N_ELEMENTS(afstreams_plugins));
   return TRUE;
 }
 

@@ -44,11 +44,11 @@ static Plugin dbparser_plugins[] =
 };
 
 gboolean
-dbparser_module_init(GlobalConfig *cfg, CfgArgs *args)
+dbparser_module_init(PluginContext *context, CfgArgs *args)
 {
   pattern_db_global_init();
   grouping_by_global_init();
-  plugin_register(cfg, dbparser_plugins, G_N_ELEMENTS(dbparser_plugins));
+  plugin_register(context, dbparser_plugins, G_N_ELEMENTS(dbparser_plugins));
   return TRUE;
 }
 

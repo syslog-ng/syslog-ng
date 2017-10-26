@@ -53,10 +53,10 @@ static Plugin syslog_format_plugins[] =
 };
 
 gboolean
-syslogformat_module_init(GlobalConfig *cfg, CfgArgs *args)
+syslogformat_module_init(PluginContext *context, CfgArgs *args)
 {
   syslog_format_init();
-  plugin_register(cfg, syslog_format_plugins, G_N_ELEMENTS(syslog_format_plugins));
+  plugin_register(context, syslog_format_plugins, G_N_ELEMENTS(syslog_format_plugins));
   return TRUE;
 }
 

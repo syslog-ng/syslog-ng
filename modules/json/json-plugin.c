@@ -38,9 +38,9 @@ static Plugin json_plugins[] =
 };
 
 gboolean
-json_plugin_module_init(GlobalConfig *cfg, CfgArgs *args)
+json_plugin_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, json_plugins, G_N_ELEMENTS(json_plugins));
+  plugin_register(context, json_plugins, G_N_ELEMENTS(json_plugins));
   return TRUE;
 }
 

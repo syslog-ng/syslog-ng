@@ -106,9 +106,9 @@ static Plugin basicfuncs_plugins[] =
 };
 
 gboolean
-basicfuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
+basicfuncs_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, basicfuncs_plugins, G_N_ELEMENTS(basicfuncs_plugins));
+  plugin_register(context, basicfuncs_plugins, G_N_ELEMENTS(basicfuncs_plugins));
   return TRUE;
 }
 

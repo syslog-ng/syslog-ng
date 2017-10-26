@@ -119,5 +119,5 @@ user_template_function_register(GlobalConfig *cfg, const gchar *name, LogTemplat
   plugin->super.construct = user_template_function_construct;
   plugin->super.free_fn = user_template_function_plugin_free;
   plugin->template = log_template_ref(template);
-  plugin_register(cfg, &plugin->super, 1);
+  plugin_register(&cfg->plugin_context, &plugin->super, 1);
 }

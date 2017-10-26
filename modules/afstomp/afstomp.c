@@ -416,9 +416,9 @@ static Plugin afstomp_plugin =
 };
 
 gboolean
-afstomp_module_init(GlobalConfig *cfg, CfgArgs *args)
+afstomp_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, &afstomp_plugin, 1);
+  plugin_register(context, &afstomp_plugin, 1);
   return TRUE;
 }
 

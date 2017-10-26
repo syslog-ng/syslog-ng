@@ -26,6 +26,6 @@
 
 #include "cfg.h"
 
-void log_proto_register_builtin_plugins(GlobalConfig *cfg);
+void log_proto_register_builtin_plugins(PluginContext *context);
 
 #endif

@@ -42,9 +42,9 @@ static Plugin kvformat_plugins[] =
 };
 
 gboolean
-kvformat_module_init(GlobalConfig *cfg, CfgArgs *args)
+kvformat_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, kvformat_plugins, G_N_ELEMENTS(kvformat_plugins));
+  plugin_register(context, kvformat_plugins, G_N_ELEMENTS(kvformat_plugins));
   return TRUE;
 }
 

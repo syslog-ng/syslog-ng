@@ -37,9 +37,9 @@ static Plugin afsql_plugins[] =
 };
 
 gboolean
-afsql_module_init(GlobalConfig *cfg, CfgArgs *args)
+afsql_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, afsql_plugins, G_N_ELEMENTS(afsql_plugins));
+  plugin_register(context, afsql_plugins, G_N_ELEMENTS(afsql_plugins));
   return TRUE;
 }
 

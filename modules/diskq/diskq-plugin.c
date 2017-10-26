@@ -49,8 +49,8 @@ const ModuleInfo module_info =
 #endif
 
 gboolean
-disk_buffer_module_init(GlobalConfig *cfg, CfgArgs *args)
+disk_buffer_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, diskq_plugins, G_N_ELEMENTS(diskq_plugins));
+  plugin_register(context, diskq_plugins, G_N_ELEMENTS(diskq_plugins));
   return TRUE;
 }

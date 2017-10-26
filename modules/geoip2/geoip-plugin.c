@@ -39,9 +39,9 @@ static Plugin geoip2_plugins[] =
 };
 
 gboolean
-geoip2_module_init(GlobalConfig *cfg, CfgArgs *args)
+geoip2_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, geoip2_plugins, G_N_ELEMENTS(geoip2_plugins));
+  plugin_register(context, geoip2_plugins, G_N_ELEMENTS(geoip2_plugins));
   return TRUE;
 }
 

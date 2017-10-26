@@ -184,9 +184,9 @@ static Plugin getent_plugins[] =
 };
 
 gboolean
-getent_plugin_module_init(GlobalConfig *cfg, CfgArgs *args)
+getent_plugin_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, getent_plugins, G_N_ELEMENTS(getent_plugins));
+  plugin_register(context, getent_plugins, G_N_ELEMENTS(getent_plugins));
   return TRUE;
 }
 

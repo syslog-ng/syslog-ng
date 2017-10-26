@@ -98,8 +98,8 @@ gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc,
 PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name, gint preference);
 void plugin_candidate_free(PluginCandidate *self);
 
-void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);
-gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args);
+void plugin_register(PluginContext *context, Plugin *p, gint number);
+gboolean plugin_load_module(const gchar *module_name, PluginContext *context, CfgArgs *args);
 
 void plugin_list_modules(FILE *out, gboolean verbose);
 

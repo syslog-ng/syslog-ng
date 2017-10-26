@@ -31,9 +31,9 @@ static Plugin graphite_plugins[] =
 };
 
 gboolean
-graphite_module_init(GlobalConfig *cfg, CfgArgs *args)
+graphite_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, graphite_plugins, G_N_ELEMENTS(graphite_plugins));
+  plugin_register(context, graphite_plugins, G_N_ELEMENTS(graphite_plugins));
   return TRUE;
 }
 

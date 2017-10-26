@@ -40,9 +40,9 @@ static Plugin pacct_format_plugin =
 };
 
 gboolean
-pacctformat_module_init(GlobalConfig *cfg, CfgArgs *args)
+pacctformat_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, &pacct_format_plugin, 1);
+  plugin_register(context, &pacct_format_plugin, 1);
   return TRUE;
 }
 

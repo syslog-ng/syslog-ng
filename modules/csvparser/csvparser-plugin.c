@@ -38,9 +38,9 @@ static Plugin csvparser_plugins[] =
 };
 
 gboolean
-csvparser_module_init(GlobalConfig *cfg, CfgArgs *args)
+csvparser_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, csvparser_plugins, G_N_ELEMENTS(csvparser_plugins));
+  plugin_register(context, csvparser_plugins, G_N_ELEMENTS(csvparser_plugins));
   return TRUE;
 }
 

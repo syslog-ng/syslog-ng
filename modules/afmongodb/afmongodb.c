@@ -617,9 +617,9 @@ static Plugin afmongodb_plugin =
 };
 
 gboolean
-afmongodb_module_init(GlobalConfig *cfg, CfgArgs *args)
+afmongodb_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, &afmongodb_plugin, 1);
+  plugin_register(context, &afmongodb_plugin, 1);
   return TRUE;
 }
 

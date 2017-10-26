@@ -37,9 +37,9 @@ static Plugin add_contextual_data_plugins[] =
 };
 
 gboolean
-add_contextual_data_module_init(GlobalConfig *cfg, CfgArgs *args)
+add_contextual_data_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, add_contextual_data_plugins,
+  plugin_register(context, add_contextual_data_plugins,
                   G_N_ELEMENTS(add_contextual_data_plugins));
   return TRUE;
 }

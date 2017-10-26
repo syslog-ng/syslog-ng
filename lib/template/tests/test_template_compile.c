@@ -466,7 +466,7 @@ int main(int argc, char **argv)
   configuration = cfg_new_snippet();
   log_msg_registry_init();
   log_template_global_init();
-  plugin_register(configuration, &hello_plugin, 1);
+  plugin_register(&configuration->plugin_context, &hello_plugin, 1);
 
   test_template_compile_macro();
   test_template_compile_value();
