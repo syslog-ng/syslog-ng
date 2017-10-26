@@ -937,7 +937,7 @@ relex:
       cfg_load_candidate_modules(configuration);
 
 #if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
-      if (!plugin_load_module("license", configuration, NULL))
+      if (!cfg_load_module(configuration, "license"))
         {
           msg_error("Error loading the license module, forcing exit");
           exit(1);
