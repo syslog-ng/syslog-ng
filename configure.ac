@@ -233,7 +233,7 @@ AC_ARG_ENABLE(mongodb,
 AC_ARG_WITH(mongoc,
               [  --with-mongoc=[system/internal/auto/no]
                                          Link against the system supplied or the built-in mongo-c-driver library. (default: auto)]
-              ,,with_mongoc="auto")
+              ,,with_mongoc="internal")
 
 AC_ARG_ENABLE(legacy-mongodb-options,
               [  --enable-legacy-mongodb-options=[yes/no]
@@ -243,7 +243,7 @@ AC_ARG_ENABLE(legacy-mongodb-options,
 AC_ARG_WITH(jsonc,
               [  --with-jsonc=[system/internal/auto/no]
                                          Link against the system supplied or the built-in jsonc library or explicitly disable it. (default:auto)]
-              ,,with_jsonc="auto")
+              ,,with_jsonc="internal")
 
 AC_ARG_ENABLE(json,
              [ --enable-json=[yes/no]            Enable JSON support (default: yes)]

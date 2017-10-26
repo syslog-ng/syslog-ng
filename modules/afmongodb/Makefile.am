@@ -52,13 +52,19 @@ else
 modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb:
 endif
 
+if LIBMONGO_INTERNAL
+
+EXTRA_DIST					+=	\
+	modules/afmongodb/mongo-c-driver/configure.gnu
+
+endif
+
 BUILT_SOURCES					+=	\
 	modules/afmongodb/afmongodb-grammar.y		\
 	modules/afmongodb/afmongodb-grammar.c		\
 	modules/afmongodb/afmongodb-grammar.h
 
 EXTRA_DIST					+=	\
-	modules/afmongodb/afmongodb-grammar.ym		\
-	modules/afmongodb/mongo-c-driver/configure.gnu
+	modules/afmongodb/afmongodb-grammar.ym
 
 .PHONY: modules/afmongodb/ mod-afmongodb mod-mongodb

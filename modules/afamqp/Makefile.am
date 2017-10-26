@@ -38,13 +38,19 @@ else
 modules/afamqp modules/afamqp/ mod-afamqp mod-amqp:
 endif
 
+if LIBRABBITMQ_INTERNAL
+
+EXTRA_DIST				+=	\
+		modules/afamqp/rabbitmq-c/configure.gnu
+
+endif
+
 BUILT_SOURCES				+=	\
 		modules/afamqp/afamqp-grammar.y \
 		modules/afamqp/afamqp-grammar.c \
 		modules/afamqp/afamqp-grammar.h
 
 EXTRA_DIST				+=	\
-		modules/afamqp/afamqp-grammar.ym	\
-		modules/afamqp/rabbitmq-c/configure.gnu
+		modules/afamqp/afamqp-grammar.ym
 
 .PHONY: modules/afamqp/ mod-afamqp mod-amqp
