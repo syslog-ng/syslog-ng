@@ -125,25 +125,18 @@ _index_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer 
 }
 
 static void
-_update_indexes_of_cluster_if_needed(gpointer key, gpointer value)
+_update_indexes_of_cluster_if_needed(StatsCluster *sc, gpointer user_data)
 {
-  StatsCluster *sc = (StatsCluster *)key;
   stats_cluster_foreach_counter(sc, _index_counter, NULL);
 }
 
 static void
 _update_index(void)
 {
-  GHashTable *counter_container = stats_registry_get_container();
-  gpointer key, value;
-  GHashTableIter iter;
-
   g_static_mutex_lock(&stats_query_mutex);
-  g_hash_table_iter_init(&iter, counter_container);
-  while (g_hash_table_iter_next(&iter, &key, &value))
-    {
-      _update_indexes_of_cluster_if_needed(key, value);
-    }
+  stats_lock();
+  stats_foreach_cluster(_update_indexes_of_cluster_if_needed, NULL);
+  stats_unlock();
   g_static_mutex_unlock(&stats_query_mutex);
 }
 
