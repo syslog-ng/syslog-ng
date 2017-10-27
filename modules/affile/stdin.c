@@ -24,6 +24,8 @@
 #include "transport/transport-file.h"
 #include "affile-source.h"
 
+#include <unistd.h>
+
 static LogTransport *
 _construct_transport(FileOpener *self, gint fd)
 {
@@ -39,7 +41,7 @@ _construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderO
 static gint
 _open(FileOpener *self, const gchar *name, gint flags)
 {
-  return 0;
+  return dup(0);
 }
 
 FileOpener *
