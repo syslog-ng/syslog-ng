@@ -136,6 +136,7 @@ version(void)
       installer_version = SYSLOG_NG_VERSION;
     }
   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
+         "Config version: " VERSION_CURRENT_VER_ONLY "\n"
          "Installer-Version: %s\n"
          "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
          installer_version);
