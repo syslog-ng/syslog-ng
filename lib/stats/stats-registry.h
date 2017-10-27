@@ -50,8 +50,6 @@ void stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer u
 void stats_registry_init(void);
 void stats_registry_deinit(void);
 
-GHashTable* stats_registry_get_container(void);
-
 void save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
 void load_counter_from_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
 

@@ -307,8 +307,3 @@ stats_registry_deinit(void)
   g_static_mutex_free(&stats_mutex);
 }
 
-GHashTable *
-stats_registry_get_container(void)
-{
-  return stats_cluster_container;
-}
