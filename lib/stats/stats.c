@@ -257,6 +257,7 @@ stats_options_defaults(StatsOptions *options)
   options->level = 0;
   options->log_freq = 600;
   options->lifetime = 600;
+  options->max_dynamic = -1;
 }
 
 gboolean
@@ -267,3 +268,22 @@ stats_check_level(gint level)
   else
     return level == 0;
 }
+
+gboolean
+stats_check_dynamic_clusters_limit(guint number_of_clusters)
+{
+  if (!stats_options)
+    return TRUE;
+  if (stats_options->max_dynamic == -1)
+    return TRUE;
+  return (stats_options->max_dynamic > number_of_clusters);
+}
+
+gint
+stats_number_of_dynamic_clusters_limit()
+{
+  if (!stats_options)
+    return -1;
+  return stats_options->max_dynamic;
+}
+

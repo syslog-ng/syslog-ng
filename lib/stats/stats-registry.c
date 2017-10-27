@@ -34,6 +34,12 @@ typedef struct _StatsClusterContainer
 
 static StatsClusterContainer stats_cluster_container;
 
+static guint
+_number_of_dynamic_clusters(void)
+{
+  return g_hash_table_size(stats_cluster_container.dynamic_clusters);
+}
+
 static GStaticMutex stats_mutex = G_STATIC_MUTEX_INIT;
 gboolean stats_locked;
 
@@ -68,8 +74,15 @@ _grab_dynamic_cluster(const StatsClusterKey *sc_key)
   sc = g_hash_table_lookup(stats_cluster_container.dynamic_clusters, sc_key);
   if (!sc)
     {
+      if (!stats_check_dynamic_clusters_limit(_number_of_dynamic_clusters()))
+        return NULL;
       sc = stats_cluster_dynamic_new(sc_key);
       _insert_cluster(sc);
+      if ( !stats_check_dynamic_clusters_limit(_number_of_dynamic_clusters()))
+        {
+          msg_warning("Number of dynamic cluster limit has been reached.",
+                      evt_tag_int("allowed_clusters", stats_number_of_dynamic_clusters_limit()));
+        }
     }
 
   return sc;

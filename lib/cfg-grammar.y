@@ -192,6 +192,7 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_MARK_MODE                   10081
 %token KW_ENCODING                    10082
 %token KW_TYPE                        10083
+%token KW_STATS_MAX_DYNAMIC           10084
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -931,6 +932,7 @@ stat_option
 	: KW_STATS_FREQ '(' nonnegative_integer ')'          { last_stats_options->log_freq = $3; }
 	| KW_STATS_LEVEL '(' nonnegative_integer ')'         { last_stats_options->level = $3; }
 	| KW_STATS_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
+  | KW_STATS_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
 	;
 
 dns_cache_option

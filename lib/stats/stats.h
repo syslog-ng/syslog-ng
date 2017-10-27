@@ -33,6 +33,7 @@ typedef struct _StatsOptions
   gint log_freq;
   gint level;
   gint lifetime;
+  gint max_dynamic;
 } StatsOptions;
 
 enum
@@ -48,7 +49,6 @@ void stats_init(void);
 void stats_destroy(void);
 
 void stats_options_defaults(StatsOptions *options);
-
 
 #endif
 

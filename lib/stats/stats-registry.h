@@ -53,4 +53,7 @@ void stats_registry_deinit(void);
 void save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
 void load_counter_from_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
 
+gboolean stats_check_dynamic_clusters_limit(guint number_of_clusters);
+gint stats_number_of_dynamic_clusters_limit(void);
+
 #endif
