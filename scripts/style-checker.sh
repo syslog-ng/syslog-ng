@@ -34,7 +34,7 @@ function setup_root_dir
 
 function astyle_c_check
 {
-    astyle --options="$root_dir/.astylerc" --dry-run "$root_dir/*.c" | grep "Formatted" | tee badly-formatted-files.list | wc -l | while read badly_formatted_c_files
+    astyle --options="$root_dir/.astylerc" --dry-run "$root_dir/*.h" "$root_dir/*.c" | grep "Formatted" | tee badly-formatted-files.list | wc -l | while read badly_formatted_c_files
     do
         echo "Number of badly formatted files: $badly_formatted_c_files"
         if [ "$badly_formatted_c_files" == "0" ]; then
@@ -48,7 +48,7 @@ function astyle_c_check
 
 function astyle_c_format
 {
-    astyle --options="$root_dir/.astylerc" "$root_dir/*.c" | grep "Formatted"
+    astyle --options="$root_dir/.astylerc" "$root_dir/*.h" "$root_dir/*.c" | grep "Formatted"
     exit 0
 }
 
