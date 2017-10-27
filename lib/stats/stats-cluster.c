@@ -264,6 +264,15 @@ stats_cluster_new(const StatsClusterKey *key)
   return self;
 }
 
+StatsCluster *
+stats_cluster_dynamic_new(const StatsClusterKey *key)
+{
+  StatsCluster *sc = stats_cluster_new(key);
+  sc->dynamic = TRUE;
+
+  return sc;
+}
+
 void
 stats_counter_group_free(StatsCounterGroup *self)
 {
