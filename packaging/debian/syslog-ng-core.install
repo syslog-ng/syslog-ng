@@ -33,6 +33,8 @@ usr/share/syslog-ng/include/scl/loggly/*
 usr/share/syslog-ng/include/scl/logmatic/*
 usr/share/syslog-ng/include/scl/solaris/*
 usr/share/syslog-ng/include/scl/cisco/*
+usr/share/syslog-ng/include/scl/windowseventlog/*
+usr/share/syslog-ng/include/scl/loadbalancer/*
 usr/share/syslog-ng/xsd/*
 [!kfreebsd-any] debian/syslog-ng.systemd =>  lib/systemd/system/syslog-ng.service
 
