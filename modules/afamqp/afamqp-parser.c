@@ -48,6 +48,7 @@ static CfgLexerKeyword afamqp_keywords[] =
   { "key_file",           KW_KEY_FILE },
   { "cert_file",      KW_CERT_FILE },
   { "peer_verify",        KW_PEER_VERIFY },
+  { "tls",        KW_TLS },
   { NULL }
 };
 

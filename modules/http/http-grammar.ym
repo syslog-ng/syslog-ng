@@ -64,6 +64,7 @@
 %token KW_SSL_VERSION
 %token KW_PEER_VERIFY
 %token KW_TIMEOUT
+%token KW_TLS
 
 %type   <ptr> driver
 %type   <ptr> http_destination
@@ -107,17 +108,27 @@ http_option
     | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free_full($3, free); }
     | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
     | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
-    | KW_CA_DIR     '(' string ')'            { http_dd_set_ca_dir(last_driver, $3); free($3); }
+    | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
+    | dest_driver_option
+    | threaded_dest_driver_option
+    | http_tls_option
+    | KW_TLS '(' http_tls_options ')'
+    | { last_template_options = http_dd_get_template_options(last_driver); } template_option
+    ;
+
+http_tls_options
+    : http_tls_option http_tls_options
+    |
+    ;
+
+http_tls_option
+    : KW_CA_DIR     '(' string ')'            { http_dd_set_ca_dir(last_driver, $3); free($3); }
     | KW_CA_FILE    '(' string ')'            { http_dd_set_ca_file(last_driver, $3); free($3); }
     | KW_CERT_FILE  '(' string ')'            { http_dd_set_cert_file(last_driver, $3); free($3); }
     | KW_KEY_FILE   '(' string ')'            { http_dd_set_key_file(last_driver, $3); free($3); }
     | KW_CIPHER_SUITE '(' string ')'          { http_dd_set_cipher_suite(last_driver, $3); free($3); }
     | KW_SSL_VERSION '(' string ')'           { http_dd_set_ssl_version(last_driver, $3); free($3); }
     | KW_PEER_VERIFY '(' yesno ')'            { http_dd_set_peer_verify(last_driver, $3); }
-    | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
-    | dest_driver_option
-    | threaded_dest_driver_option
-    | { last_template_options = http_dd_get_template_options(last_driver); } template_option
     ;
 
 /* INCLUDE_RULES */

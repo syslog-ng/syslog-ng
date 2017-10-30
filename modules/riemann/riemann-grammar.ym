@@ -56,6 +56,7 @@
 %token KW_CA_FILE
 %token KW_CERT_FILE
 %token KW_KEY_FILE
+%token KW_TLS
 
 %%
 
@@ -114,13 +115,7 @@ riemann_option
           {
             riemann_dd_set_field_tags(last_driver, $3);
           }
-        | KW_TYPE '(' LL_IDENTIFIER riemann_type_options ')'
-          {
-            CHECK_ERROR(riemann_dd_set_connection_type(last_driver, $3), @3,
-                        "Unknown Riemann connection type: %s", $3);
-            free($3);
-          }
-        | KW_TYPE '(' LL_STRING riemann_type_options ')'
+        | KW_TYPE '(' string riemann_tls_options ')'
           {
             CHECK_ERROR(riemann_dd_set_connection_type(last_driver, $3), @3,
                         "Unknown Riemann connection type: %s", $3);
@@ -144,6 +139,7 @@ riemann_option
           }
         | dest_driver_option
         | threaded_dest_driver_option
+        | KW_TLS '(' riemann_tls_options ')'
         | { last_template_options = riemann_dd_get_template_options(last_driver); } template_option
         ;
 
@@ -161,12 +157,12 @@ attribute_option
         | vp_option
         ;
 
-riemann_type_options
-        : riemann_type_option riemann_type_options
+riemann_tls_options
+        : riemann_tls_option riemann_tls_options
         |
         ;
 
-riemann_type_option
+riemann_tls_option
         : KW_CA_FILE '(' string ')' { riemann_dd_set_tls_cacert(last_driver, $3); free($3); }
         | KW_CERT_FILE '(' string ')' { riemann_dd_set_tls_cert(last_driver, $3); free($3); }
         | KW_KEY_FILE '(' string ')' { riemann_dd_set_tls_key(last_driver, $3); free($3); }
