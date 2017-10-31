@@ -489,7 +489,7 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 
   main_loop_init_events(self);
   if (!self->options->syntax_only)
-    control_init(self, resolvedConfigurablePaths.ctlfilename);
+    control_thread_start(self, resolvedConfigurablePaths.ctlfilename);
   setup_signals(self);
 }
 
@@ -533,7 +533,7 @@ main_loop_deinit(MainLoop *self)
   main_loop_free_config(self);
 
   if (!self->options->syntax_only)
-    control_destroy();
+    control_thread_stop();
 
   iv_event_unregister(&self->exit_requested);
   iv_event_unregister(&self->reload_config_requested);

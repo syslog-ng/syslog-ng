@@ -26,18 +26,61 @@
 #include "control-server.h"
 #include "control-commands.h"
 
-static ControlServer *control_server;
+#include <iv.h>
+#include <iv_event.h>
 
-void
-control_init(MainLoop *main_loop, const gchar *control_name)
+typedef struct _ControlServerThread
 {
-  control_server = control_server_new(control_name,
-                                      control_register_default_commands(main_loop));
-  control_server_start(control_server);
+  GThread *thread;
+  MainLoop *main_loop;
+  const gchar *control_name;
+  struct iv_event stop_requested;
+} ControlServerThread;
+
+static ControlServerThread control_server_thread;
+
+static void
+_thread_stop()
+{
+  iv_quit();
+}
+
+static void
+_register_stop_requested_event(ControlServerThread *self)
+{
+  IV_EVENT_INIT(&self->stop_requested);
+  self->stop_requested.handler = _thread_stop;
+  iv_event_register(&self->stop_requested);
+}
+
+static void
+_thread(gpointer user_data)
+{
+  ControlServerThread *cs_thread = (ControlServerThread *)user_data;
+  ControlServer *control_server = control_server_new(cs_thread->control_name,
+                                                     control_register_default_commands(cs_thread->main_loop));
+  iv_init();
+  {
+    _register_stop_requested_event(cs_thread);
+    control_server_start(control_server);
+    iv_main();
+    control_server_free(control_server);
+  }
+  iv_deinit();
 }
 
 void
-control_destroy(void)
+control_thread_start(MainLoop *main_loop, const gchar *control_name)
 {
-  control_server_free(control_server);
+  control_server_thread.main_loop = main_loop;
+  control_server_thread.control_name = control_name;
+  control_server_thread.thread = g_thread_create((GThreadFunc) _thread, &control_server_thread, TRUE, NULL);
 }
+
+void
+control_thread_stop(void)
+{
+  iv_event_post(&control_server_thread.stop_requested);
+  g_thread_join(control_server_thread.thread);
+}
+

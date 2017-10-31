@@ -28,7 +28,7 @@
 #include "mainloop.h"
 #include "control/control-commands.h"
 
-void control_init(MainLoop *main_loop, const gchar *control_name);
-void control_destroy(void);
+void control_thread_start(MainLoop *main_loop, const gchar *control_name);
 
+void control_thread_stop();
 #endif
