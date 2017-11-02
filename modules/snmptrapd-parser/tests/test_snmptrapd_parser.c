@@ -155,6 +155,7 @@ Test(snmptrapd_parser, test_general_v2_message_with_oids)
     { ".snmp.iso.3.6.1.6.3.1.1.4.1.0", "iso.3.6.1.4.1.8072.2.3.0.1" },
     { ".snmp.iso.3.6.1.4.1.8072.2.3.2.1", "60" },
     { ".snmp.iso.3.6.1.4.1.8072.2.1.3", "" },
+    { "DATE", "May 10 12:46:14" },
   };
 
   assert_log_message_name_values(input, expected, SIZE_OF_ARRAY(expected));
@@ -163,7 +164,7 @@ Test(snmptrapd_parser, test_general_v2_message_with_oids)
 Test(snmptrapd_parser, test_general_v1_message_with_oids)
 {
   const gchar *input =
-    "2017-05-10 13:23:16 localhost [UDP: [127.0.0.1]:53831->[127.0.0.1]:162]: iso.3.6.1.4.1.8072.2.3.1\n"
+    "2017-11-10 13:23:16 localhost [UDP: [127.0.0.1]:53831->[127.0.0.1]:162]: iso.3.6.1.4.1.8072.2.3.1\n"
     "\t Enterprise Specific Trap (.17) Uptime: 18:41:07.83\n"
     "iso.3.6.1.4.1.8072.2.1.1 = INTEGER: 123456";
 
@@ -175,7 +176,8 @@ Test(snmptrapd_parser, test_general_v1_message_with_oids)
     { ".snmp.type", "Enterprise Specific Trap" },
     { ".snmp.subtype", ".17" },
     { ".snmp.uptime", "18:41:07.83" },
-    { ".snmp.iso.3.6.1.4.1.8072.2.1.1", "123456" }
+    { ".snmp.iso.3.6.1.4.1.8072.2.1.1", "123456" },
+    { "DATE", "Nov 10 13:23:16" }
   };
 
   assert_log_message_name_values(input, expected, SIZE_OF_ARRAY(expected));
