@@ -69,9 +69,9 @@ _reload_store_item_release_writer(ReloadStoreItem *self)
 }
 
 static inline gboolean
-_is_protocol_type_changed_during_reload(AFSocketDestDriver *self, ReloadStoreItem *item)
+_is_protocol_compatible_with_writer_after_reload(AFSocketDestDriver *self, ReloadStoreItem *item)
 {
-  return (self->proto_factory->construct != item->proto_factory->construct);
+  return (self->proto_factory->construct == item->proto_factory->construct);
 }
 
 void
@@ -379,16 +379,22 @@ afsocket_dd_setup_addresses_method(AFSocketDestDriver *self)
 }
 
 static void
-afsocket_dd_restore_writer(AFSocketDestDriver *self)
+_afsocket_dd_try_to_restore_writer(AFSocketDestDriver *self)
 {
-  GlobalConfig *cfg;
-  ReloadStoreItem *item;
-
-  cfg = log_pipe_get_config(&self->super.super.super);
-  item = cfg_persist_config_fetch(cfg, afsocket_dd_format_connections_name(self));
-
   /* If we are reinitializing an old config, an existing writer may be present */
-  if (!self->writer && item && !_is_protocol_type_changed_during_reload(self, item))
+  if (self->writer)
+    return;
+
+  ReloadStoreItem *item = cfg_persist_config_fetch(
+                            log_pipe_get_config(&self->super.super.super),
+                            afsocket_dd_format_connections_name(self));
+
+  /* We don't have an item stored in the reload cache, which means */
+  /* it is the first time when we try to initialize the writer */
+  if (!item)
+    return;
+
+  if (_is_protocol_compatible_with_writer_after_reload(self, item))
     self->writer = _reload_store_item_release_writer(item);
 
   _reload_store_item_free(item);
@@ -409,7 +415,7 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
 static gboolean
 afsocket_dd_setup_writer(AFSocketDestDriver *self)
 {
-  afsocket_dd_restore_writer(self);
+  _afsocket_dd_try_to_restore_writer(self);
 
   if (!self->writer)
     {
