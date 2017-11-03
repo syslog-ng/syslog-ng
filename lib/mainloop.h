@@ -74,6 +74,7 @@ gboolean main_loop_is_server_mode(MainLoop *self);
 void main_loop_set_server_mode(MainLoop *self, gboolean server_mode);
 
 gboolean main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename);
-
+MainLoop *main_loop_ref(MainLoop *self);
+void main_loop_unref(MainLoop *self);
 
 #endif

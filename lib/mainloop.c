@@ -154,6 +154,7 @@ struct _MainLoop
   GlobalConfig *new_config;
 
   MainLoopOptions *options;
+  GAtomicCounter ref_cnt;
 };
 
 static MainLoop main_loop;
@@ -480,6 +481,7 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 {
   service_management_publish_status("Starting up...");
 
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->options = options;
   main_thread_handle = get_thread_id();
   scratch_buffers_automatic_gc_init();
@@ -530,8 +532,8 @@ main_loop_free_config(MainLoop *self)
   self->current_configuration = NULL;
 }
 
-void
-main_loop_deinit(MainLoop *self)
+static void
+_deinit(MainLoop *self)
 {
   main_loop_free_config(self);
 
@@ -548,6 +550,12 @@ main_loop_deinit(MainLoop *self)
   main_loop_worker_deinit();
   block_till_workers_exit();
   scratch_buffers_automatic_gc_deinit();
+}
+
+void
+main_loop_deinit(MainLoop *self)
+{
+  main_loop_unref(self);
 }
 
 void
@@ -572,4 +580,23 @@ void
 main_loop_add_options(GOptionContext *ctx)
 {
   main_loop_io_worker_add_options(ctx);
+}
+
+MainLoop *
+main_loop_ref(MainLoop *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+  g_atomic_counter_inc(&self->ref_cnt);
+
+  return self;
+}
+
+void
+main_loop_unref(MainLoop *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
+    {
+      _deinit(self);
+    }
 }
