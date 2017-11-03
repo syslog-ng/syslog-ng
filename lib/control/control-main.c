@@ -43,19 +43,29 @@ _register_stop_requested_event(ControlServerLoop *self)
 }
 
 static void
+_control_server_loop_init(ControlServerLoop *self)
+{
+  self->control_server = control_server_new(self->control_name,
+                                            control_register_default_commands(self->main_loop));
+  iv_init();
+  _register_stop_requested_event(self);
+  control_server_start(self->control_server);
+}
+
+static void
+_control_server_loop_deinit(ControlServerLoop *self)
+{
+  control_server_free(self->control_server);
+  iv_deinit();
+}
+
+static void
 _thread(gpointer user_data)
 {
-  ControlServerLoop *cs_thread = (ControlServerLoop *)user_data;
-  ControlServer *control_server = control_server_new(cs_thread->control_name,
-                                                     control_register_default_commands(cs_thread->main_loop));
-  iv_init();
-  {
-    _register_stop_requested_event(cs_thread);
-    control_server_start(control_server);
-    iv_main();
-    control_server_free(control_server);
-  }
-  iv_deinit();
+  ControlServerLoop *cs_loop = (ControlServerLoop *)user_data;
+  _control_server_loop_init(cs_loop);
+  iv_main();
+  _control_server_loop_deinit(cs_loop);
 }
 
 void

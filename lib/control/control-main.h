@@ -27,6 +27,7 @@
 
 #include "mainloop.h"
 #include "control/control-commands.h"
+#include "control-server.h"
 #include <iv_event.h>
 
 typedef struct _ControlServerLoop
@@ -35,6 +36,7 @@ typedef struct _ControlServerLoop
   MainLoop *main_loop;
   gchar *control_name;
   struct iv_event stop_requested;
+  ControlServer *control_server;
 } ControlServerLoop;
 
 void control_server_loop_init_instance(ControlServerLoop *self, MainLoop *main_loop, const gchar *control_name);
