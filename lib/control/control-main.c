@@ -69,18 +69,24 @@ _thread(gpointer user_data)
   iv_deinit();
 }
 
-void
-control_thread_start(MainLoop *main_loop, const gchar *control_name)
+ControlServerLoop *
+control_server_loop_get_instance(void)
 {
-  control_server_loop.main_loop = main_loop;
-  control_server_loop.control_name = control_name;
-  control_server_loop.thread = g_thread_create((GThreadFunc) _thread, &control_server_loop, TRUE, NULL);
+  return &control_server_loop;
 }
 
 void
-control_thread_stop(void)
+control_server_loop_start(ControlServerLoop *self, MainLoop *main_loop, const gchar *control_name)
 {
-  iv_event_post(&control_server_loop.stop_requested);
-  g_thread_join(control_server_loop.thread);
+  self->main_loop = main_loop;
+  self->control_name = control_name;
+  self->thread = g_thread_create((GThreadFunc) _thread, self, TRUE, NULL);
+}
+
+void
+control_server_loop_stop(ControlServerLoop *self)
+{
+  iv_event_post(&self->stop_requested);
+  g_thread_join(self->thread);
 }
 

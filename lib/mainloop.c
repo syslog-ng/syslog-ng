@@ -489,7 +489,10 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 
   main_loop_init_events(self);
   if (!self->options->syntax_only)
-    control_thread_start(self, resolvedConfigurablePaths.ctlfilename);
+    {
+      ControlServerLoop *cs_loop = control_server_loop_get_instance();
+      control_server_loop_start(cs_loop, self, resolvedConfigurablePaths.ctlfilename);
+    }
   setup_signals(self);
 }
 
@@ -533,7 +536,10 @@ main_loop_deinit(MainLoop *self)
   main_loop_free_config(self);
 
   if (!self->options->syntax_only)
-    control_thread_stop();
+    {
+      ControlServerLoop *cs_loop = control_server_loop_get_instance();
+      control_server_loop_stop(cs_loop);
+    }
 
   iv_event_unregister(&self->exit_requested);
   iv_event_unregister(&self->reload_config_requested);

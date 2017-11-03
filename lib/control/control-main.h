@@ -28,7 +28,9 @@
 #include "mainloop.h"
 #include "control/control-commands.h"
 
-void control_thread_start(MainLoop *main_loop, const gchar *control_name);
+typedef struct _ControlServerLoop ControlServerLoop;
 
-void control_thread_stop();
+ControlServerLoop *control_server_loop_get_instance(void);
+void control_server_loop_start(ControlServerLoop *self, MainLoop *main_loop, const gchar *control_name);
+void control_server_loop_stop(ControlServerLoop *self);
 #endif
