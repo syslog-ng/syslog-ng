@@ -27,10 +27,18 @@
 
 #include "mainloop.h"
 #include "control/control-commands.h"
+#include <iv_event.h>
 
-typedef struct _ControlServerLoop ControlServerLoop;
+typedef struct _ControlServerLoop
+{
+  GThread *thread;
+  MainLoop *main_loop;
+  gchar *control_name;
+  struct iv_event stop_requested;
+} ControlServerLoop;
 
-ControlServerLoop *control_server_loop_get_instance(void);
-void control_server_loop_start(ControlServerLoop *self, MainLoop *main_loop, const gchar *control_name);
+void control_server_loop_init_instance(ControlServerLoop *self, MainLoop *main_loop, const gchar *control_name);
+void control_server_loop_deinit_instance(ControlServerLoop *self);
+void control_server_loop_start(ControlServerLoop *self);
 void control_server_loop_stop(ControlServerLoop *self);
 #endif

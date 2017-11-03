@@ -30,7 +30,6 @@
 #include "stats/stats-registry.h"
 #include "messages.h"
 #include "children.h"
-#include "control/control-main.h"
 #include "reloc.h"
 #include "service-management.h"
 #include "persist-state.h"
@@ -490,11 +489,7 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
   main_loop_call_init();
 
   main_loop_init_events(self);
-  if (!self->options->syntax_only)
-    {
-      ControlServerLoop *cs_loop = control_server_loop_get_instance();
-      control_server_loop_start(cs_loop, self, resolvedConfigurablePaths.ctlfilename);
-    }
+
   setup_signals(self);
 }
 
@@ -536,12 +531,6 @@ static void
 _deinit(MainLoop *self)
 {
   main_loop_free_config(self);
-
-  if (!self->options->syntax_only)
-    {
-      ControlServerLoop *cs_loop = control_server_loop_get_instance();
-      control_server_loop_stop(cs_loop);
-    }
 
   iv_event_unregister(&self->exit_requested);
   iv_event_unregister(&self->reload_config_requested);

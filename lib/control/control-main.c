@@ -27,17 +27,6 @@
 #include "control-commands.h"
 
 #include <iv.h>
-#include <iv_event.h>
-
-typedef struct _ControlServerLoop
-{
-  GThread *thread;
-  MainLoop *main_loop;
-  const gchar *control_name;
-  struct iv_event stop_requested;
-} ControlServerLoop;
-
-static ControlServerLoop control_server_loop;
 
 static void
 _thread_stop()
@@ -69,17 +58,23 @@ _thread(gpointer user_data)
   iv_deinit();
 }
 
-ControlServerLoop *
-control_server_loop_get_instance(void)
+void
+control_server_loop_init_instance(ControlServerLoop *self, MainLoop *main_loop, const gchar *control_name)
 {
-  return &control_server_loop;
+  self->control_name = g_strdup(control_name);
+  self->main_loop = main_loop_ref(main_loop);
 }
 
 void
-control_server_loop_start(ControlServerLoop *self, MainLoop *main_loop, const gchar *control_name)
+control_server_loop_deinit_instance(ControlServerLoop *self)
 {
-  self->main_loop = main_loop;
-  self->control_name = control_name;
+  g_free(self->control_name);
+  main_loop_unref(self->main_loop);
+}
+
+void
+control_server_loop_start(ControlServerLoop *self)
+{
   self->thread = g_thread_create((GThreadFunc) _thread, self, TRUE, NULL);
 }
 
