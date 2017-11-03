@@ -37,6 +37,8 @@ static CfgLexerKeyword riemann_keywords[] =
   { "host",                     KW_HOST },
   { "service",                  KW_SERVICE },
   { "event_time",               KW_EVENT_TIME },
+  { "seconds",                  KW_SECONDS },
+  { "microseconds",             KW_MICROSECONDS },
   { "state",                    KW_STATE },
   { "description",              KW_DESCRIPTION },
   { "metric",                   KW_METRIC },

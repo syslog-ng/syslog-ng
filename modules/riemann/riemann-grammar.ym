@@ -33,6 +33,7 @@
 #include "cfg-grammar.h"
 #include "cfg-parser.h"
 #include "plugin.h"
+#include "riemann/event.h"
 }
 
 %name-prefix "riemann_"
@@ -48,6 +49,8 @@
 %token KW_STATE
 %token KW_SERVICE
 %token KW_EVENT_TIME
+%token KW_SECONDS
+%token KW_MICROSECONDS
 %token KW_DESCRIPTION
 %token KW_METRIC
 %token KW_TTL
@@ -91,7 +94,7 @@ riemann_option
           {
             riemann_dd_set_field_service(last_driver, $3);
           }
-        | KW_EVENT_TIME '(' template_content ')'
+        | KW_EVENT_TIME '(' template_content event_time_unit ')'
           {
             riemann_dd_set_field_event_time(last_driver, $3);
           }
@@ -142,6 +145,20 @@ riemann_option
         | KW_TLS '(' riemann_tls_options ')'
         | { last_template_options = riemann_dd_get_template_options(last_driver); } template_option
         ;
+
+
+event_time_unit
+	: KW_SECONDS { riemann_dd_set_event_time_unit(last_driver, RIEMANN_EVENT_FIELD_TIME); }
+	| KW_MICROSECONDS
+           {
+#if SYSLOG_NG_HAVE_RIEMANN_MICROSECONDS
+	     riemann_dd_set_event_time_unit(last_driver, RIEMANN_EVENT_FIELD_TIME_MICROS);
+#else
+            CHECK_ERROR(0, @1, "Riemann destination was not compiled with microseconds support");
+#endif
+           }
+	| { riemann_dd_set_event_time_unit(last_driver, RIEMANN_EVENT_FIELD_TIME); }
+	;
 
 attribute_options
         : attribute_option attribute_options

@@ -46,6 +46,7 @@ typedef struct
     LogTemplate *host;
     LogTemplate *service;
     LogTemplate *event_time;
+    gint event_time_unit;
     LogTemplate *state;
     LogTemplate *description;
     LogTemplate *metric;
@@ -116,6 +117,12 @@ riemann_dd_set_field_event_time(LogDriver *d, LogTemplate *value)
   self->fields.event_time = log_template_ref(value);
 }
 
+void riemann_dd_set_event_time_unit(LogDriver *d, gint unit)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.event_time_unit = unit;
+}
 
 void
 riemann_dd_set_field_state(LogDriver *d, LogTemplate *value)
@@ -364,6 +371,7 @@ riemann_worker_init(LogPipe *s)
     {
       self->fields.event_time = log_template_new(cfg, NULL);
       log_template_compile(self->fields.event_time, "${UNIXTIME}", NULL);
+      self->fields.event_time_unit = RIEMANN_EVENT_FIELD_TIME;
     }
 
   _value_pairs_always_exclude_properties(self);
@@ -561,7 +569,7 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
                                         self->super.seq_num, str);
       riemann_dd_field_integer_maybe_add(event, msg, self->fields.event_time,
                                          &self->template_options,
-                                         RIEMANN_EVENT_FIELD_TIME,
+                                         self->fields.event_time_unit,
                                          self->super.seq_num, str);
       riemann_dd_field_string_maybe_add(event, msg, self->fields.description,
                                         &self->template_options,
