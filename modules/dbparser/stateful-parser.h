@@ -38,6 +38,18 @@ typedef struct _StatefulParser
   LogDBParserInjectMode inject_mode;
 } StatefulParser;
 
+static inline gboolean
+stateful_parser_init_method(LogPipe *s)
+{
+  return log_parser_init_method(s);
+}
+
+static inline gboolean
+stateful_parser_deinit_method(LogPipe *s)
+{
+  return log_parser_deinit_method(s);
+}
+
 void stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inject_mode);
 void stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg);
 void stateful_parser_init_instance(StatefulParser *self, GlobalConfig *cfg);

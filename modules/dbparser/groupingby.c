@@ -419,7 +419,7 @@ grouping_by_init(LogPipe *s)
   self->tick.expires.tv_sec++;
   self->tick.expires.tv_nsec = 0;
   iv_timer_register(&self->tick);
-  return TRUE;
+  return stateful_parser_init_method(s);
 }
 
 static gboolean
@@ -436,7 +436,7 @@ grouping_by_deinit(LogPipe *s)
   cfg_persist_config_add(cfg, grouping_by_format_persist_name(self), self->correllation,
                          (GDestroyNotify) correllation_state_free, FALSE);
   self->correllation = NULL;
-  return TRUE;
+  return stateful_parser_deinit_method(s);
 }
 
 static LogPipe *
