@@ -263,6 +263,7 @@ _parse_timestamp(SnmpTrapdHeaderParser *self)
   if (!scan_std_timestamp(self->input, (gint *)self->input_len, &tm))
     return FALSE;
 
+  tm.tm_isdst = -1;
   stamp->tv_sec = cached_mktime(&tm);
   stamp->zone_offset = get_local_timezone_ofs(stamp->tv_sec);
 

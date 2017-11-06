@@ -40,6 +40,8 @@ install:
       libxml2-utils
   - sudo pip install -r requirements.txt
 before_script:
+  - echo 'Europe/Budapest' | sudo tee /etc/timezone
+  - sudo dpkg-reconfigure --frontend noninteractive tzdata
   - ./autogen.sh
   - unset PYTHON_CFLAGS # HACK
   - CONFIGURE_FLAGS="
