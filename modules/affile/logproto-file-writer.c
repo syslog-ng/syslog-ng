@@ -39,6 +39,7 @@ typedef struct _LogProtoFileWriter
   gint fd;
   gint sum_len;
   gboolean fsync;
+  GMutex mutex_write;
   struct iovec buffer[0];
 } LogProtoFileWriter;
 
@@ -122,10 +123,17 @@ log_proto_file_writer_flush(LogProtoClient *s)
     }
 
   /* free the previous message strings (the remaning part has been copied to the partial buffer) */
-  for (i = 0; i < self->buf_count; ++i)
-    g_free(self->buffer[i].iov_base);
-  self->buf_count = 0;
-  self->sum_len = 0;
+  if (g_mutex_trylock(&self->mutex_write)) /* guard against double-free from another thread */
+    {
+      for (i = 0; i < self->buf_count; ++i)
+        g_free(self->buffer[i].iov_base);
+      self->buf_count = 0;
+      self->sum_len = 0;
+
+      g_mutex_unlock(&self->mutex_write);
+    }
+  else /* other thread is doing the free, log a message and continue */
+    msg_warning("Multiple threads detected in log_proto_file_writer_flush", NULL);
 
   return LPS_SUCCESS;
 
@@ -225,6 +233,7 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
   self->fd = transport->fd;
   self->buf_size = flush_lines;
   self->fsync = fsync_;
+  g_mutex_init(&self->mutex_write);
   self->super.prepare = log_proto_file_writer_prepare;
   self->super.post = log_proto_file_writer_post;
   self->super.flush = log_proto_file_writer_flush;
