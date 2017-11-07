@@ -88,7 +88,9 @@ native_parser_deinit(LogPipe *s)
 {
   ParserNative *self = (ParserNative *) s;
 
-  return !!native_parser_proxy_deinit(self->native_object);
+  if (!native_parser_proxy_deinit(self->native_object))
+    return FALSE;
+  return log_parser_deinit_method(s);
 }
 
 static void
