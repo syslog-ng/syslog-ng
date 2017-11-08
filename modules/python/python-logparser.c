@@ -234,7 +234,7 @@ python_parser_deinit(LogPipe *d)
   _py_invoke_deinit(self);
   PyGILState_Release(gstate);
 
-  return TRUE;
+  return log_parser_deinit_method(d);
 }
 
 static void

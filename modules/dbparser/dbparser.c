@@ -156,7 +156,7 @@ log_db_parser_init(LogPipe *s)
   iv_timer_register(&self->tick);
   if (!self->db)
     return FALSE;
-  return log_parser_init_method(s);
+  return stateful_parser_init_method(s);
 }
 
 static gboolean
@@ -172,7 +172,7 @@ log_db_parser_deinit(LogPipe *s)
 
   cfg_persist_config_add(cfg, log_db_parser_format_persist_name(self), self->db, (GDestroyNotify) pattern_db_free, FALSE);
   self->db = NULL;
-  return TRUE;
+  return stateful_parser_deinit_method(s);
 }
 
 static gboolean

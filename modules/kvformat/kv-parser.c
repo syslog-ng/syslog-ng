@@ -178,7 +178,7 @@ kv_parser_deinit_method(LogPipe *s)
 
   kv_scanner_free(self->kv_scanner);
   self->kv_scanner = NULL;
-  return TRUE;
+  return log_parser_deinit_method(s);
 }
 
 void

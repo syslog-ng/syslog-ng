@@ -139,6 +139,7 @@ log_parser_init_instance(LogParser *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
   self->super.init = log_parser_init_method;
+  self->super.deinit = log_parser_deinit_method;
   self->super.free_fn = log_parser_free_method;
   self->super.queue = log_parser_queue;
 }
