@@ -401,25 +401,56 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
 }
 
 static inline void
-__set_zone_offset(LogStamp *const timestamp, glong const assumed_timezone)
+__determine_recv_timezone_offset(LogStamp *const timestamp, glong const recv_timezone_ofs)
 {
-  if(timestamp->zone_offset == -1)
-    {
-      timestamp->zone_offset = assumed_timezone;
-    }
-  if (timestamp->zone_offset == -1)
-    {
-      timestamp->zone_offset = get_local_timezone_ofs(timestamp->tv_sec);
-    }
+  if (!log_stamp_is_timezone_set(timestamp))
+    timestamp->zone_offset = recv_timezone_ofs;
+
+  if (!log_stamp_is_timezone_set(timestamp))
+    timestamp->zone_offset = get_local_timezone_ofs(timestamp->tv_sec);
 }
 
-static inline time_t
-__get_normalized_time(LogStamp const timestamp, gint const normalized_hour, gint const unnormalized_hour)
+static void
+__fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, struct tm *tm, glong recv_timezone_ofs)
 {
-  return timestamp.tv_sec
-         + get_local_timezone_ofs(timestamp.tv_sec)
-         - (normalized_hour - unnormalized_hour) * 3600
-         - timestamp.zone_offset;
+  /* save the tm_hour value as received from the client */
+  gint unnormalized_hour = tm->tm_hour;
+
+  /* NOTE: mktime() returns the time assuming that the timestamp we
+   * received was in local time. */
+
+  /* tell cached_mktime() that we have no clue whether Daylight Saving is enabled or not */
+  tm->tm_isdst = -1;
+  stamp->tv_sec = cached_mktime(tm);
+
+  /* We need to determine the timezone we want to assume the message was
+   * received from.  This depends on the recv-time-zone() setting and the
+   * the tv_sec value as converted by mktime() above. */
+  __determine_recv_timezone_offset(stamp, recv_timezone_ofs);
+
+  /* save the tm_hour as adjusted by mktime() */
+  gint normalized_hour = tm->tm_hour;
+
+  /* fix up the tv_sec value by transposing it into the target timezone:
+   *
+   * First we add the local time zone offset then substract the target time
+   * zone offset.  This is not trivial however, as we have to determine
+   * exactly what the local timezone offset is at the current second, as
+   * used by mktime(). It is composed of these values:
+   *
+   *  1) get_local_timezone_ofs()
+   *  2) then in transition periods, mktime() will change tm->tm_hour
+   *     according to its understanding (e.g.  sprint time, 02:01 is changed
+   *     to 03:01), which is an additional factor that needs to be taken care
+   *     of.  This is the (normalized_hour - unnormalized_hour) part below
+   *
+   */
+  stamp->tv_sec = stamp->tv_sec
+                  /* these two components are the zone offset as used by mktime() */
+                  + get_local_timezone_ofs(stamp->tv_sec)
+                  - (normalized_hour - unnormalized_hour) * 3600
+                  /* this is the zone offset value we want to be */
+                  - stamp->zone_offset;
 }
 
 /* FIXME: this function should really be exploded to a lot of smaller functions... (Bazsi) */
@@ -489,18 +520,9 @@ error:
   return FALSE;
 }
 
-static void
-_normalize_time(LogStamp *stamp, struct tm *tm, glong assume_timezone)
-{
-  tm->tm_isdst = -1;
-  gint unnormalized_hour = tm->tm_hour;
-  stamp->tv_sec = cached_mktime(tm);
-  __set_zone_offset(stamp, assume_timezone);
-  stamp->tv_sec = __get_normalized_time(*stamp, tm->tm_hour, unnormalized_hour);
-}
 
 static gboolean
-log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
+log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
   struct tm tm;
 
@@ -521,7 +543,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
     }
   else
     {
-      _normalize_time(stamp, &tm, assume_timezone);
+      __fixup_hour_in_struct_tm_within_transition_periods(stamp, &tm, recv_timezone_ofs);
     }
 
   return TRUE;
