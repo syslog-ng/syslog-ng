@@ -79,14 +79,14 @@ disk_queue_options_check_plugin_settings(DiskQueueOptions *self)
     {
       if (self->mem_buf_length > 0)
         {
-          msg_warning("WARNING: Reliable queue: the mem-buf-length parameter is omitted");
+          msg_warning("WARNING: mem-buf-length parameter was ignored as it is not compatible with reliable queue. Did you mean mem-buf-size?");
         }
     }
   else
     {
       if (self->mem_buf_size > 0)
         {
-          msg_warning("WARNING: Non-reliable queue: the mem-buf-size parameter is omitted");
+          msg_warning("WARNING: mem-buf-size parameter was ignored as it is not compatible with non-reliable queue. Did you mean mem-buf-length?");
         }
     }
 }
