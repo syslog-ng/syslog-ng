@@ -111,13 +111,30 @@ control_connection_stop_process(GString *command, gpointer user_data)
   return result;
 }
 
+
+static gboolean
+_reload(GString *command, gpointer user_data, GString **result)
+{
+  MainLoop *main_loop = (MainLoop *) user_data;
+  gboolean reload_initiated = main_loop_reload_config(main_loop);
+
+  if (reload_initiated)
+    {
+      *result = g_string_new("OK Config reload initiated");
+    }
+  else
+    {
+      *result = g_string_new("FAIL Failed to request config reload");
+    }
+
+  return reload_initiated;
+}
+
 static GString *
 control_connection_reload(GString *command, gpointer user_data)
 {
-  GString *result = g_string_new("OK Config reload initiated");
-  MainLoop *main_loop = (MainLoop *) user_data;
-
-  main_loop_reload_config(main_loop);
+  GString *result = NULL;
+  _reload(command, user_data, &result);
   return result;
 }
 
@@ -185,8 +202,14 @@ _wait_for_syslog_ng_reload()
 static GString *
 control_connection_reload_sync(GString *command, gpointer user_data)
 {
-  GString *result = control_connection_reload(command, user_data);
+  GString *result = NULL;
+  gboolean success = _reload(command, user_data, &result);
+
+  if (!success)
+    return result;
+
   _wait_for_syslog_ng_reload();
+
   return result;
 }
 
