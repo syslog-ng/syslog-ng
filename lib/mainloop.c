@@ -125,6 +125,7 @@ struct _MainLoop
    * would be gone.
    */
   gboolean _is_terminating;
+  gboolean _is_terminate_requested;
 
   /* signal handling */
   struct iv_signal sighup_poll;
@@ -465,14 +466,17 @@ void
 main_loop_exit(MainLoop *self)
 {
   iv_event_post(&self->exit_requested);
+  self->_is_terminate_requested = TRUE;
   return;
 }
 
-void
+gboolean
 main_loop_reload_config(MainLoop *self)
 {
+  if (self->_is_terminate_requested)
+    return FALSE;
   iv_event_post(&self->reload_config_requested);
-  return;
+  return TRUE;
 }
 
 void
