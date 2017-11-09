@@ -307,8 +307,13 @@ word	[^ \#'"\(\)\{\}\\;\r\n\t,|\.@:]
 <INITIAL><<EOF>>           {
                              if (!cfg_lexer_start_next_include(yyextra))
                                {
-                                 *yylloc = yyextra->include_stack[0].lloc;
-                                 yyterminate();
+                                 if (yyextra->include_depth == 0)
+                                   {
+                                     *yylloc = yyextra->include_stack[0].lloc;
+                                     yyterminate();
+                                   }
+                                 else
+                                    return LL_ERROR;
                                }
                            }
 
