@@ -11,6 +11,7 @@ SCL_SUBDIRS	= \
 	elasticsearch	\
 	kafka		\
 	hdfs		\
+	iptables	\
 	apache		\
 	cisco		\
 	default-network-drivers		\
