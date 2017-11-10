@@ -437,6 +437,22 @@ if test $lex_ok = 0 ; then
 fi
 
 dnl ***************************************************************************
+dnl Set up NO_PIE_LDFLAG: -no-pie is compatible with $CC.
+old_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS -no-pie"
+
+AC_LINK_IFELSE([AC_LANG_SOURCE([int main(void) {return 0;}])],
+	[no_pie_option_available=yes],
+	[no_pie_option_available=no])
+
+LDFLAGS="$old_LDFLAGS"
+
+if test "$no_pie_option_available" = "yes"; then
+  NO_PIE_LDFLAG="-no-pie"
+fi
+AC_SUBST([NO_PIE_LDFLAG])
+
+dnl ***************************************************************************
 dnl Set up CFLAGS
 
 if test "x$ac_compiler_gnu" = "xyes"; then
