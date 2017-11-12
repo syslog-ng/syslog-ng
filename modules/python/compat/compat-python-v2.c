@@ -24,7 +24,7 @@
 gboolean
 py_is_string(PyObject *object)
 {
-  return PyBytes_Check(object);
+  return PyBytes_Check(object) || PyUnicode_Check(object);
 }
 
 const gchar *
