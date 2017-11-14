@@ -114,6 +114,7 @@ matrix:
       - sudo apt-get install -qq
           astyle
       before_script:
+      - astyle --version
       script:
       - scripts/style-checker.sh format
       - git diff --exit-code
