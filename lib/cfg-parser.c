@@ -85,6 +85,7 @@ static CfgLexerKeyword main_keywords[] =
   { "stats_lifetime",     KW_STATS_LIFETIME },
   { "stats_level",        KW_STATS_LEVEL },
   { "stats",              KW_STATS_FREQ, KWS_OBSOLETE, "stats_freq" },
+  { "stats_max_dynamics", KW_STATS_MAX_DYNAMIC },
   { "flush_lines",        KW_FLUSH_LINES },
   { "flush_timeout",      KW_FLUSH_TIMEOUT },
   { "suppress",           KW_SUPPRESS },

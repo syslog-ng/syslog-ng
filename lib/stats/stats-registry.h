@@ -50,9 +50,10 @@ void stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer u
 void stats_registry_init(void);
 void stats_registry_deinit(void);
 
-GHashTable* stats_registry_get_container(void);
-
 void save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
 void load_counter_from_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
+
+gboolean stats_check_dynamic_clusters_limit(guint number_of_clusters);
+gint stats_number_of_dynamic_clusters_limit(void);
 
 #endif

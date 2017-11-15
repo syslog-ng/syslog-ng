@@ -26,14 +26,30 @@
 #include "cfg.h"
 #include <string.h>
 
-static GHashTable *stats_cluster_container;
+typedef struct _StatsClusterContainer
+{
+  GHashTable *static_clusters;
+  GHashTable *dynamic_clusters;
+} StatsClusterContainer;
+
+static StatsClusterContainer stats_cluster_container;
+
+static guint
+_number_of_dynamic_clusters(void)
+{
+  return g_hash_table_size(stats_cluster_container.dynamic_clusters);
+}
+
 static GStaticMutex stats_mutex = G_STATIC_MUTEX_INIT;
 gboolean stats_locked;
 
 static void
 _insert_cluster(StatsCluster *sc)
 {
-  g_hash_table_insert(stats_cluster_container, &sc->key, sc);
+  if (sc->dynamic)
+    g_hash_table_insert(stats_cluster_container.dynamic_clusters, &sc->key, sc);
+  else
+    g_hash_table_insert(stats_cluster_container.static_clusters, &sc->key, sc);
 }
 
 void
@@ -51,31 +67,65 @@ stats_unlock(void)
 }
 
 static StatsCluster *
-_grab_cluster(gint stats_level, const StatsClusterKey *sc_key, gboolean dynamic)
+_grab_dynamic_cluster(const StatsClusterKey *sc_key)
 {
   StatsCluster *sc;
 
+  sc = g_hash_table_lookup(stats_cluster_container.dynamic_clusters, sc_key);
+  if (!sc)
+    {
+      if (!stats_check_dynamic_clusters_limit(_number_of_dynamic_clusters()))
+        return NULL;
+      sc = stats_cluster_dynamic_new(sc_key);
+      _insert_cluster(sc);
+      if ( !stats_check_dynamic_clusters_limit(_number_of_dynamic_clusters()))
+        {
+          msg_warning("Number of dynamic cluster limit has been reached.",
+                      evt_tag_int("allowed_clusters", stats_number_of_dynamic_clusters_limit()));
+        }
+    }
+
+  return sc;
+
+}
+
+static StatsCluster *
+_grab_static_cluster(const StatsClusterKey *sc_key)
+{
+  StatsCluster *sc;
+
+  sc = g_hash_table_lookup(stats_cluster_container.static_clusters, sc_key);
+  if (!sc)
+    {
+      sc = stats_cluster_new(sc_key);
+      _insert_cluster(sc);
+    }
+
+  return sc;
+}
+
+static StatsCluster *
+_grab_cluster(gint stats_level, const StatsClusterKey *sc_key, gboolean dynamic)
+{
   if (!stats_check_level(stats_level))
     return NULL;
 
-  sc = g_hash_table_lookup(stats_cluster_container, sc_key);
-  if (!sc)
-    {
-      /* no such StatsCluster instance, register one */
-      sc = stats_cluster_new(sc_key);
-      sc->dynamic = dynamic;
-      _insert_cluster(sc);
-    }
+  StatsCluster *sc = NULL;
+
+  if (dynamic)
+    sc = _grab_dynamic_cluster(sc_key);
   else
-    {
-      /* check that we are not overwriting a dynamic counter with a
-       * non-dynamic one or vica versa.  This could only happen if the same
-       * key is used for both a dynamic counter and a non-dynamic one, which
-       * is a programming error */
+    sc = _grab_static_cluster(sc_key);
 
-      g_assert(sc->dynamic == dynamic);
-    }
+  if (!sc)
+    return NULL;
 
+  /* check that we are not overwriting a dynamic counter with a
+   * non-dynamic one or vica versa.  This could only happen if the same
+   * key is used for both a dynamic counter and a non-dynamic one, which
+   * is a programming error */
+
+  g_assert(sc->dynamic == dynamic);
   return sc;
 }
 
@@ -156,6 +206,8 @@ stats_register_and_increment_dynamic_counter(gint stats_level, const StatsCluste
 
   g_assert(stats_locked);
   handle = stats_register_dynamic_counter(stats_level, sc_key, SC_TYPE_PROCESSED, &counter);
+  if (!handle)
+    return;
   stats_counter_inc(counter);
   if (timestamp >= 0)
     {
@@ -199,7 +251,7 @@ stats_unregister_counter(const StatsClusterKey *sc_key, gint type,
   if (*counter == NULL)
     return;
 
-  sc = g_hash_table_lookup(stats_cluster_container, sc_key);
+  sc = g_hash_table_lookup(stats_cluster_container.static_clusters, sc_key);
 
   stats_cluster_untrack_counter(sc, type, counter);
 }
@@ -251,7 +303,8 @@ stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data)
   gpointer args[] = { func, user_data };
 
   g_assert(stats_locked);
-  g_hash_table_foreach(stats_cluster_container, _foreach_cluster_helper, args);
+  g_hash_table_foreach(stats_cluster_container.static_clusters, _foreach_cluster_helper, args);
+  g_hash_table_foreach(stats_cluster_container.dynamic_clusters, _foreach_cluster_helper, args);
 }
 
 static gboolean
@@ -269,7 +322,8 @@ void
 stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer user_data)
 {
   gpointer args[] = { func, user_data };
-  g_hash_table_foreach_remove(stats_cluster_container, _foreach_cluster_remove_helper, args);
+  g_hash_table_foreach_remove(stats_cluster_container.static_clusters, _foreach_cluster_remove_helper, args);
+  g_hash_table_foreach_remove(stats_cluster_container.dynamic_clusters, _foreach_cluster_remove_helper, args);
 }
 
 static void
@@ -294,21 +348,23 @@ stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data)
 void
 stats_registry_init(void)
 {
-  stats_cluster_container = g_hash_table_new_full((GHashFunc) stats_cluster_hash, (GEqualFunc) stats_cluster_equal, NULL,
-                                                  (GDestroyNotify) stats_cluster_free);
+  stats_cluster_container.static_clusters = g_hash_table_new_full((GHashFunc) stats_cluster_hash,
+                                            (GEqualFunc) stats_cluster_equal, NULL,
+                                            (GDestroyNotify) stats_cluster_free);
+  stats_cluster_container.dynamic_clusters = g_hash_table_new_full((GHashFunc) stats_cluster_hash,
+                                             (GEqualFunc) stats_cluster_equal, NULL,
+                                             (GDestroyNotify) stats_cluster_free);
+
   g_static_mutex_init(&stats_mutex);
 }
 
 void
 stats_registry_deinit(void)
 {
-  g_hash_table_destroy(stats_cluster_container);
-  stats_cluster_container = NULL;
+  g_hash_table_destroy(stats_cluster_container.static_clusters);
+  g_hash_table_destroy(stats_cluster_container.dynamic_clusters);
+  stats_cluster_container.static_clusters = NULL;
+  stats_cluster_container.dynamic_clusters = NULL;
   g_static_mutex_free(&stats_mutex);
 }
 
-GHashTable *
-stats_registry_get_container(void)
-{
-  return stats_cluster_container;
-}
