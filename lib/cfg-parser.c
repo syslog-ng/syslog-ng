@@ -277,8 +277,8 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
       _report_buffer_location(level->buffer.content, yylloc);
     }
 
-  fprintf(stderr, "\nsyslog-ng documentation: https://www.balabit.com/support/documentation?product=syslog-ng-ose\n"
-          "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n");
+  fprintf(stderr, "\nsyslog-ng documentation: https://www.balabit.com/support/documentation?product=%s\n"
+          "contact: %s\n", PRODUCT_NAME, PRODUCT_CONTACT);
 
 }
 
