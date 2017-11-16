@@ -29,7 +29,7 @@ out="$(mktemp)"
 create_config () {
         local cfg="$1"
         cat >"${cfg}" <<EOF
-@version: 3.12
+@version: 3.13
 @include "scl.conf"
 source s_system {
 # ----- Cut here -----
