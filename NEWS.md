@@ -1,58 +1,57 @@
-3.12.1
+3.13.1
 
-<!-- Tue, 19 Sep 2017 12:59:40 +0200 -->
+<!-- Thu, 30 Nov 2017 13:38:22 +0100 -->
 
 # Features
 
-* HDFS: support macro in filename (#1638)
-* HDFS: add append support (#1675)
-* Java: allow to use sequence numbers in templates (#1628)
-* TLS improvements (#1603, #1636)
-    - Add **PKCS 12** support with the new `pkcs12-file()` TLS option
-    - startup time `ssl-options()` and `peer-verify()` check
-    - startup time `key_file`, `cert_file`, `ca_dir`, `crl_dir` and `cipher_suite` check
-    - **ECDH  cipher support** (OpenSSL 1.0.1, 1.0.2, 1.1.0) with the `ecdh-curve-list()` option (only available >= 1.0.2)
-        - for < 1.0.2, a hard-coded curve is used
-        - for >= 1.0.2, automatic curve selection is used (the `ecdh-curve-list()` option can restrict this list)
-    - **DH cipher support** with the `dhparam-file()` option
-        - if the option is not specified, fallback RFC 3526 parameters are used
-    - minor fixes
-* `stdin()` source driver (#1605)
-* Implement `read_old_records` option for systemd-journal source (#1642)
-* Add tags-parser: a new module to parse $TAGS values (#1658)
-* Add a Windows eventlog parser scl module (#1572)
-* Add XML parser module (#1659, #1684)
+ * Add app-parser() framework (automatic parsing of log messages) (#1689)
+ * Support microseconds in Riemann destination (#1710)
+ * Add osquery destination as an SCL plugin (#1728)
+ * Add network load balancer destination (#1706)
+ * Add possibility to only signal re-open of file handles (SIGUSR1) (#1530)
+ * It is possible from now to limit the number of registered dynamic counters (#1743)
+ * Add $(binary) template function (#1679)
+ * Add experimental transport for transferring messages in whole between syslog-ng instances (EWMM) (#1689)
 
 # Bugfixes
 
-* Fix cannot parse ipv6 into hostname (#1617)
-* Speedup add-contextual-data by making ordering optional (#1645)
-* Fix `monitor-method()` option not working for `wildcard-file()` source (#1651)
-* Sanitize SDATA keys in syslog-protocol messages to avoid generating non-valid messages (#1650, #1654)
-* Fix memory leaks reported using Valgrind (#1649)
-* Fix memory leak related to cloning pipes and reload (#1647)
-* Fix getent protocol number returns incorrect value (#1665)
-* Fix elasticsearch2 destination flush mechanism (#1668)
-* Fix file destination related memory leak (#1685)
-* Fix a possible memory leak around affile destination (#1685)
+ * Exit when a read fails on an included config file instead of
+   starting up with an empty configuration. (#1721)
+ * Fix double free (#1720)
+ * Add missing discarded counter to groupingby (#1748)
+ * Fix a reference leak in Python destination (#1716)
+ * Fix timezone issue in snmptrapd parser (#1746)
+ * Fix potential crash in stdin driver (#1741)
+ * Fix a crash when initializing new config fails for socket with keep_alive off (#1723)
+ * Fix filter evaluation in case of contexts with multiple elements (#1718)
+ * Various grouping-by fixes (#1718)
+ * Fix potential use after free around dns-cache during shutdown (#1666)
+ * Fix access to indirect values within Java destination (#1732)
+ * Fix a crash in affile (#1725)
+ * Fix a memory leak (#1724)
+ * Fix a crash when getent is used empty group (#1691)
+ * Fix jvm-options() (#1704)
+ * Fix a crash in Python language binding (#1694)
+ * Fix a crash in afmongodb (#1765)
+ * Fix a memory leak in afmongodb (#1766)
+ * Fix name-to-GID calculation in the $(getent) template function (#1764)
+ * Fix a crash when redis is configured without the command() option (#1767)
 
 # Other changes
 
-* Improve syslog-ng debun functionality (#1633, #1641, #1663)
-* Java: allow to set JVM options form global syslog-ng options (#1639)
-* Do steps towards Python 3 support:
-    * Fix string compatibility for Python 3 (#1632)
-    * Improve Python version auto detection (#1660)
-* HTTP destination: display verbose logs on debug level (#1526)
-* Improvements for Solaris packing (#1664)
+ * Cleanup diskq related warning messages (#1752)
+ * Provide tls block for tls options in amqp(), http(), riemann() destination drivers (#1715)
+ * It it possible from now to register blocks and generators as plugins (#1657)
+ * Drop compatiblity with configurations below 3.0 (#1709)
+ * Do not change permissions of a file by default (#1782)
+ * Allow source files to specify permissions locally (#1782)
+ * Minor performance improvement (#1729)
+ * The current config version can be queried with "--version" (#1740)
 
-# Notes to the Developers
+# Notes to the developers
 
-* Update internal RabbitMQ (#1662)
-* Update internal ivykis to v0.42 (#1566)
-* Fix Travis and test related issues (#1566, #1644, #1674)
-* Update docker images (#1637)
-* Fix some clang compile errors (#1662)
+ * Change configure default option for jsonc and mongoc from auto to internal (#1735)
+ * Disable ASLR when running unit tests (#1753)
 
 # Credits
 
@@ -65,6 +64,7 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 Andras Mitzki, Antal Nemes, Attila Szalay, Balazs Scheidler, Gabor Nagy,
-Gergely Orosz, Janos Szigetvari, Laszlo Budai, Laszlo Varady, Mate Farkas,
-Marton Suranyi, Peter Kokai, Szilard Pfeiffer, Tamas Nagy, Zoltan Pallagi.
+Jakub Jankowski, Janos Szigetvari, Laszlo Budai, Laszlo Varady, Laszlo Szemere,
+Marton Illes, Mate Farkas, Peter Kokai, Pontus Andersson, Sam Stephenson,
+Sebastian Roland, Viktor Juhasz, Zoltan Pallagi.
 
