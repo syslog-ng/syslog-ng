@@ -558,7 +558,8 @@ _free(LogPipe *d)
     mongoc_uri_destroy(self->uri_obj);
   if (self->coll_obj)
     mongoc_collection_destroy(self->coll_obj);
-  mongoc_cleanup();
+  if (self->client)
+    mongoc_cleanup();
   log_threaded_dest_driver_free(d);
 }
 
