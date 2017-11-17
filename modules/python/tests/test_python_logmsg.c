@@ -32,6 +32,8 @@ static void
 _py_init_interpreter(void)
 {
   Py_Initialize();
+  py_init_argv();
+
   PyEval_InitThreads();
   python_log_message_init();
   PyEval_SaveThread();
@@ -130,4 +132,3 @@ Test(python_log_message, test_python_logmessage_set_value_indirect)
   }
   PyGILState_Release(gstate);
 }
-

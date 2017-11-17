@@ -38,4 +38,5 @@ const gchar *py_object_as_string(PyObject *object);
 #define PYTHON_BUILTIN_MODULE_NAME "builtins"
 #endif
 
+void py_init_argv(void);
 #endif
