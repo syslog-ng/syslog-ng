@@ -166,8 +166,8 @@ _test_uri_correct(void)
 {
   _expect_uri_in_log("default_uri", "127.0.0.1:27017/syslog" SAFEOPTS, "syslog", "messages");
 
-  afmongodb_dd_set_uri(mongodb, "mongodb:///tmp/mongo.sock");
-  _expect_uri_in_log("socket", "/tmp/mongo.sock", "tmp/mongo.sock", "messages");
+  afmongodb_dd_set_uri(mongodb, "mongodb://%2Ftmp%2Fmongo.sock/syslog");
+  _expect_uri_in_log("socket", "%2Ftmp%2Fmongo.sock/syslog", "syslog", "messages");
 
   afmongodb_dd_set_uri(mongodb, "mongodb://localhost:1234/syslog-ng");
   _expect_uri_in_log("uri", "localhost:1234/syslog-ng", "syslog-ng", "messages");
@@ -215,9 +215,6 @@ _test_legacy_correct(void)
 
   afmongodb_dd_set_port(mongodb, 1234);
   _expect_uri_in_log("port", "127.0.0.1:1234/syslog" SAFEOPTS, "syslog", "messages");
-
-  afmongodb_dd_set_path(mongodb, "/tmp/mongo.sock");
-  _expect_uri_in_log("path", "/tmp/mongo.sock" SAFEOPTS, "tmp/mongo.sock", "messages");
 
   afmongodb_dd_set_database(mongodb, "syslog-ng");
   _expect_uri_in_log("database", "127.0.0.1:27017/syslog-ng" SAFEOPTS, "syslog-ng", "messages");
