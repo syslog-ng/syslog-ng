@@ -118,7 +118,6 @@ set (WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB 2.10.1 REQUIRED)
 find_package(Ivykis REQUIRED)
-find_package(Eventlog REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(LibNet REQUIRED)
@@ -143,8 +142,10 @@ else()
     find_package(Gettext REQUIRED QUIET)
 endif()
 
+set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/eventlog/src")
+set(Eventlog_LIBRARY "eventlog")
 set(CORE_INCLUDE_DIRS
-    ${Eventlog_INCLUDE_DIRS}
+    ${Eventlog_INCLUDE_DIR}
     ${GLIB_INCLUDE_DIRS}
     ${Gettext_INCLUDE_DIR}
     ${Ivykis_INCLUDE_DIRS}
@@ -154,7 +155,7 @@ set(CORE_INCLUDE_DIRS
 
 set(CORE_LIBRARIES
     ${BISON_LIBRARIES}
-    ${Eventlog_LIBRARIES}
+    ${Eventlog_LIBRARY}
     ${FLEX_LIBRARIES}
     ${GLIB_GMODULE_LIBRARIES}
     ${GLIB_GTHREAD_LIBRARIES}

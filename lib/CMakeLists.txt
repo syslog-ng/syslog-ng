@@ -23,6 +23,7 @@ add_subdirectory(transport)
 add_subdirectory(value-pairs)
 add_subdirectory(scanner)
 add_subdirectory(str-repr)
+add_subdirectory(eventlog)
 
 set(LIB_SUBDIR_HEADERS
     ${COMPAT_HEADERS}
