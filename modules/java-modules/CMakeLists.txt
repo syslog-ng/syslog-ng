@@ -1,3 +1,4 @@
+if (ENABLE_JAVA)
 find_package(Gradle 2.2)
 
 set (GRADLE_WORKDIR ${CMAKE_CURRENT_BINARY_DIR}/.gradle)
@@ -18,4 +19,5 @@ if (ENABLE_GRADLE)
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/built-jars/ DESTINATION lib/syslog-ng/java-modules)
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ".gradle")
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "built-jars")
+endif()
 endif()
