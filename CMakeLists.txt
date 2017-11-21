@@ -22,6 +22,7 @@ set (BISON_FLAGS "-Wno-other")
 add_compile_options("-Wno-initializer-overrides")
 
 include (CheckIncludeFiles)
+include (ExternalProject)
 
 set (SYSLOG_NG_VERSION_MAJOR 3)
 set (SYSLOG_NG_VERSION_MINOR 9)
@@ -117,7 +118,37 @@ set (WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.
 
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB 2.10.1 REQUIRED)
-find_package(Ivykis REQUIRED)
+
+SET(Ivykis_SOURCE "internal" CACHE STRING "Ivykis library source")
+
+SET_PROPERTY(CACHE Ivykis_SOURCE PROPERTY STRINGS internal system auto)
+
+if     ("internal" STREQUAL ${Ivykis_SOURCE} OR "auto" STREQUAL ${Ivykis_SOURCE})
+  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
+    message("-- Ivykis Source: internal")
+
+    ExternalProject_Add(
+        Ivykis
+        PREFIX            ${CMAKE_CURRENT_BINARY_DIR}
+        INSTALL_DIR       ${CMAKE_CURRENT_BINARY_DIR}
+        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/
+        BUILD_COMMAND     make
+        INSTALL_COMMAND   make install
+        CONFIGURE_COMMAND autoreconf -i ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis && ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}
+        STEP_TARGETS build install
+    )
+
+    set(Ivykis_FOUND TRUE)
+    set(Ivykis_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/src/include" CACHE STRING "Ivykis include path")
+    set(Ivykis_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lib/libivykis.so" CACHE STRING "Ivykis library path")
+
+  endif()
+elseif ("system"   STREQUAL ${Ivykis_SOURCE} OR "auto" STREQUAL ${Ivykis_SOURCE})
+  find_package(Ivykis REQUIRED)
+else()
+  message(FATAL_ERROR "-- Library Ivykis is mandatory ${Ivykis_SOURCE}")
+endif()
+
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(LibNet REQUIRED)
@@ -148,7 +179,7 @@ set(CORE_INCLUDE_DIRS
     ${Eventlog_INCLUDE_DIR}
     ${GLIB_INCLUDE_DIRS}
     ${Gettext_INCLUDE_DIR}
-    ${Ivykis_INCLUDE_DIRS}
+    ${Ivykis_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIRS}
     ${LIBPCRE_INCLUDE_DIRS}
 )
@@ -161,7 +192,7 @@ set(CORE_LIBRARIES
     ${GLIB_GTHREAD_LIBRARIES}
     ${GLIB_LIBRARIES}
     ${Gettext_LIBRARIES}
-    ${Ivykis_LIBRARIES}
+    ${Ivykis_LIBRARY}
     ${OPENSSL_LIBRARIES}
     ${RESOLV_LIBRARIES}
     ${LIBPCRE_LIBRARIES}
