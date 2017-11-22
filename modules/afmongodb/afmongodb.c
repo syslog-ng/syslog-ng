@@ -181,12 +181,12 @@ _connect(MongoDBDestDriver *self, gboolean reconnect)
         }
     }
 
-  bson_t *status = bson_new();
+  bson_t reply;
   bson_error_t error;
   const mongoc_read_prefs_t *read_prefs = mongoc_collection_get_read_prefs(self->coll_obj);
   gboolean ok = mongoc_client_get_server_status(self->client, (mongoc_read_prefs_t *)read_prefs,
-                                                status, &error);
-  bson_destroy(status);
+                                                &reply, &error);
+  bson_destroy(&reply);
   if (!ok)
     {
       msg_error("Error connecting to MongoDB",
