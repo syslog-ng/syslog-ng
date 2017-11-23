@@ -24,7 +24,7 @@ static formatter_map_t group_field_map[] =
 {
   { "name", _getent_format_string, offsetof(struct group, gr_name) },
   { "gid", _getent_format_uid_gid, offsetof(struct group, gr_gid) },
-  { "members", _getent_format_array, offsetof(struct group, gr_mem) },
+  { "members", _getent_format_array_at_location, offsetof(struct group, gr_mem) },
   { NULL, NULL, 0 }
 };
 
@@ -85,7 +85,7 @@ tf_getent_group(gchar *key, gchar *member_name, GString *result)
     }
 
   r = group_field_map[s].format(member_name,
-                                res->gr_mem,
+                                ((uint8_t *)res) + group_field_map[s].offset,
                                 result);
   g_free(buf);
   return r;

@@ -78,6 +78,13 @@ _getent_format_array(gchar *name_or_gid, gpointer members, GString *result)
 }
 
 static gboolean
+_getent_format_array_at_location(gchar *name_or_gid, gpointer location, GString *result)
+{
+  gpointer members = *((gchar **)location);
+  return _getent_format_array(name_or_gid, members, result);
+}
+
+static gboolean
 _getent_format_string(gchar *member_name, gpointer member, GString *result)
 {
   char *value = *(char **)member;
