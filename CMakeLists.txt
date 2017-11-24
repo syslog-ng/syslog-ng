@@ -173,7 +173,7 @@ else()
 endif()
 
 set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/eventlog/src")
-set(Eventlog_LIBRARY "eventlog")
+
 set(CORE_INCLUDE_DIRS
     ${Eventlog_INCLUDE_DIR}
     ${GLIB_INCLUDE_DIRS}
@@ -183,26 +183,12 @@ set(CORE_INCLUDE_DIRS
     ${LIBPCRE_INCLUDE_DIRS}
 )
 
-set(CORE_LIBRARIES
-    ${BISON_LIBRARIES}
-    ${Eventlog_LIBRARY}
-    ${FLEX_LIBRARIES}
-    ${GLIB_GMODULE_LIBRARIES}
-    ${GLIB_GTHREAD_LIBRARIES}
-    ${GLIB_LIBRARIES}
-    ${Gettext_LIBRARIES}
-    ${IVYKIS_LIBRARY}
-    ${OPENSSL_LIBRARIES}
-    ${RESOLV_LIBRARIES}
-    ${LIBPCRE_LIBRARIES}
-    )
-
-include_directories(SYSTEM ${CORE_INCLUDE_DIRS})
 
 include_directories (${PROJECT_BINARY_DIR}/lib)
 include_directories (${PROJECT_BINARY_DIR})
 include_directories (${PROJECT_SOURCE_DIR}/lib)
 include_directories (${PROJECT_SOURCE_DIR})
+
 add_subdirectory(Mk)
 add_subdirectory(scl)
 add_subdirectory(lib)
