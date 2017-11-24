@@ -10,3 +10,4 @@ add_library(eventlog SHARED
    ${CMAKE_CURRENT_SOURCE_DIR}/src/evttags.c
 )
 
+install(TARGETS eventlog DESTINATION lib)
