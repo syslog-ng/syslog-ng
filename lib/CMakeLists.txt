@@ -292,7 +292,7 @@ set_target_properties(syslog-ng
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
     SOVERSION ${SYSLOG_NG_VERSION})
 
-if     ("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE})
+if     (${IVYKIS_INTERNAL})
    add_dependencies(syslog-ng IVYKIS)
 endif()
 
