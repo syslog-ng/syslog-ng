@@ -119,16 +119,16 @@ set (WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB 2.10.1 REQUIRED)
 
-SET(Ivykis_SOURCE "internal" CACHE STRING "Ivykis library source")
+SET(IVYKIS_SOURCE "internal" CACHE STRING "IVYKIS library source")
 
-SET_PROPERTY(CACHE Ivykis_SOURCE PROPERTY STRINGS internal system auto)
+SET_PROPERTY(CACHE IVYKIS_SOURCE PROPERTY STRINGS internal system auto)
 
-if     ("internal" STREQUAL ${Ivykis_SOURCE} OR "auto" STREQUAL ${Ivykis_SOURCE})
+if     ("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE})
   if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
-    message("-- Ivykis Source: internal")
+    message("-- IVYKIS Source: internal")
 
     ExternalProject_Add(
-        Ivykis
+        IVYKIS
         PREFIX            ${CMAKE_CURRENT_BINARY_DIR}
         INSTALL_DIR       ${CMAKE_CURRENT_BINARY_DIR}
         SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/
@@ -138,15 +138,15 @@ if     ("internal" STREQUAL ${Ivykis_SOURCE} OR "auto" STREQUAL ${Ivykis_SOURCE}
         STEP_TARGETS build install
     )
 
-    set(Ivykis_FOUND TRUE)
-    set(Ivykis_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/src/include" CACHE STRING "Ivykis include path")
-    set(Ivykis_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lib/libivykis.so" CACHE STRING "Ivykis library path")
+    set(IVYKIS_FOUND TRUE)
+    set(IVYKIS_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE STRING "IVYKIS include path")
+    set(IVYKIS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lib/libivykis.so" CACHE STRING "IVYKIS library path")
 
   endif()
-elseif ("system"   STREQUAL ${Ivykis_SOURCE} OR "auto" STREQUAL ${Ivykis_SOURCE})
-  find_package(Ivykis REQUIRED)
+elseif ("system"   STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE})
+  find_package(IVYKIS REQUIRED)
 else()
-  message(FATAL_ERROR "-- Library Ivykis is mandatory ${Ivykis_SOURCE}")
+  message(FATAL_ERROR "-- Library IVYKIS is mandatory ${IVYKIS_SOURCE}")
 endif()
 
 find_package(OpenSSL REQUIRED)
@@ -179,7 +179,7 @@ set(CORE_INCLUDE_DIRS
     ${Eventlog_INCLUDE_DIR}
     ${GLIB_INCLUDE_DIRS}
     ${Gettext_INCLUDE_DIR}
-    ${Ivykis_INCLUDE_DIR}
+    ${IVYKIS_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIRS}
     ${LIBPCRE_INCLUDE_DIRS}
 )
@@ -192,7 +192,7 @@ set(CORE_LIBRARIES
     ${GLIB_GTHREAD_LIBRARIES}
     ${GLIB_LIBRARIES}
     ${Gettext_LIBRARIES}
-    ${Ivykis_LIBRARY}
+    ${IVYKIS_LIBRARY}
     ${OPENSSL_LIBRARIES}
     ${RESOLV_LIBRARIES}
     ${LIBPCRE_LIBRARIES}
@@ -227,9 +227,9 @@ set (PKG_CONFIG_TOOLSDIR ${TOOLSDIR})
 set (PKG_CONFIG_MODULEDIR ${SYSLOG_NG_PATH_MODULEDIR})
 set (PKG_CONFIG_CONFIG_INCLUDEDIR ${SYSLOG_NG_PATH_CONFIG_INCLUDEDIR})
 set (PKG_CONFIG_SCLDIR ${SYSLOG_NG_PATH_SCLDIR})
-set (PKG_CONFIG_IVYKIS ${Ivykis_INCLUDE_DIRS})
+set (PKG_CONFIG_IVYKIS ${IVYKIS_INCLUDE_DIRS})
 set (PKG_CONFIG_PACKAGE_VERSION ${SYSLOG_NG_VERSION})
-set (PKG_CONFIG_INTERNAL_IVYKIS_CFLAGS ${Ivykis_INCLUDE_DIRS})
+set (PKG_CONFIG_INTERNAL_IVYKIS_CFLAGS ${IVYKIS_INCLUDE_DIRS})
 set (libdir "\${libdir}")
 set (includedir "\${includedir}")
 

@@ -23,9 +23,9 @@
 
 include(LibFindMacros)
 
-libfind_pkg_check_modules(Ivykis_PKGCONF ivykis)
+libfind_pkg_check_modules(IVYKIS_PKGCONF ivykis)
 
-libfind_pkg_detect(Ivykis ivykis FIND_PATH iv.h FIND_LIBRARY ivykis)
-set(Ivykis_PROCESS_INCLUDES Ivykis_INCLUDE_DIR)
-set(Ivykis_PROCESS_LIBS Ivykis_LIBRARY)
-libfind_process(Ivykis)
+libfind_pkg_detect(IVYKIS ivykis FIND_PATH iv.h FIND_LIBRARY ivykis)
+set(IVYKIS_PROCESS_INCLUDES IVYKIS_INCLUDE_DIR)
+set(IVYKIS_PROCESS_LIBS IVYKIS_LIBRARY)
+libfind_process(IVYKIS)
