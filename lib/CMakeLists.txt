@@ -292,6 +292,10 @@ set_target_properties(syslog-ng
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
     SOVERSION ${SYSLOG_NG_VERSION})
 
+if     ("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE})
+   add_dependencies(syslog-ng IVYKIS)
+endif()
+
 install(TARGETS syslog-ng LIBRARY DESTINATION lib)
 
 install(FILES ${LIB_HEADERS} DESTINATION include/syslog-ng)
