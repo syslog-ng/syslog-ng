@@ -117,12 +117,11 @@ set (WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB 2.10.1 REQUIRED)
 
-SET(IVYKIS_SOURCE "internal" CACHE STRING "IVYKIS library source")
+SET(IVYKIS_SOURCE "auto" CACHE STRING "IVYKIS library source")
 
 SET_PROPERTY(CACHE IVYKIS_SOURCE PROPERTY STRINGS internal system auto)
 
-if     ("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE})
-  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
+if     (("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE} ) AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
     message("-- IVYKIS Source: internal")
 
     ExternalProject_Add(
@@ -130,6 +129,7 @@ if     ("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE}
         PREFIX            ${CMAKE_CURRENT_BINARY_DIR}
         INSTALL_DIR       ${CMAKE_CURRENT_BINARY_DIR}
         SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/
+        DOWNLOAD_COMMAND  echo
         BUILD_COMMAND     make
         INSTALL_COMMAND   make install
         CONFIGURE_COMMAND autoreconf -i ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis && ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}
@@ -142,7 +142,6 @@ if     ("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE}
     set(IVYKIS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lib/libivykis.so" CACHE STRING "IVYKIS library path")
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib/ DESTINATION lib USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "libivykis.so*")
 
-  endif()
 elseif ("system"   STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE})
   find_package(IVYKIS REQUIRED)
 else()
