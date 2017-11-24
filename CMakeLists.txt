@@ -141,7 +141,7 @@ if     ("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE}
     set(IVYKIS_FOUND TRUE)
     set(IVYKIS_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE STRING "IVYKIS include path")
     set(IVYKIS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lib/libivykis.so" CACHE STRING "IVYKIS library path")
-
+    install(FILES "${IVYKIS_LIBRARY}" DESTINATION lib)
   endif()
 elseif ("system"   STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE})
   find_package(IVYKIS REQUIRED)
