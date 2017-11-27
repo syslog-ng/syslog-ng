@@ -38,7 +38,7 @@ typedef struct
   LogThrDestDriver super;
 
   gchar *class;
-  GList *imports;
+  GList *loaders;
 
   LogTemplateOptions template_options;
   GHashTable *options;
@@ -83,12 +83,12 @@ python_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 }
 
 void
-python_dd_set_imports(LogDriver *d, GList *imports)
+python_dd_set_loaders(LogDriver *d, GList *loaders)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
-  string_list_free(self->imports);
-  self->imports = imports;
+  string_list_free(self->loaders);
+  self->loaders = loaders;
 }
 
 PyObject *
@@ -432,7 +432,7 @@ python_dd_init(LogPipe *d)
 
   gstate = PyGILState_Ensure();
 
-  _py_perform_imports(self->imports);
+  _py_perform_imports(self->loaders);
   if (!_py_init_bindings(self) ||
       !_py_init_object(self))
     goto fail;

@@ -33,7 +33,11 @@ static CfgLexerKeyword python_keywords[] =
 {
   { "python",                   KW_PYTHON  },
   { "class",                    KW_CLASS   },
-  { "imports",                  KW_IMPORTS },
+  {
+    "imports",                  KW_IMPORTS, KWS_OBSOLETE,
+    "imports() has been deprecated, please use loaders()"
+  },
+  { "loaders",                    KW_LOADERS   },
   { NULL }
 };
 
