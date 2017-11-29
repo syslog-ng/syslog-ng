@@ -85,6 +85,7 @@ FileOpener *file_opener_new(void);
 void file_opener_free(FileOpener *self);
 
 void file_opener_options_defaults(FileOpenerOptions *options);
+void file_opener_options_defaults_dont_change_permissions(FileOpenerOptions *options);
 void file_opener_options_init(FileOpenerOptions *options, GlobalConfig *cfg);
 void file_opener_options_deinit(FileOpenerOptions *options);
 

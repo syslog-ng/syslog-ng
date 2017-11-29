@@ -350,7 +350,7 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->monitor_method = MM_AUTO;
 
   file_reader_options_defaults(&self->file_reader_options);
-  file_opener_options_defaults(&self->file_opener_options);
+  file_opener_options_defaults_dont_change_permissions(&self->file_opener_options);
   self->file_reader_options.follow_freq = 1000;
   self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE * DEFAULT_MAX_FILES;
   self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
