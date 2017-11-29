@@ -77,6 +77,8 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
       g_free(value);
       return FALSE;
     }
+  msg_debug("confgen: output from the executed program to be included is",
+            evt_tag_printf("block", "%.*s", (gint) value_len, value));
   result = cfg_lexer_include_buffer(lexer, buf, value, value_len);
   g_free(value);
   return result;
