@@ -26,8 +26,6 @@
 #include "serialize.h"
 #include "messages.h"
 #include "fdhelpers.h"
-#include "misc.h"
-#include "mainloop.h"
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -63,6 +61,12 @@ typedef struct _PersistFileHeader
 #define PERSIST_FILE_INITIAL_SIZE 16384
 #define PERSIST_STATE_KEY_BLOCK_SIZE 4096
 #define PERSIST_FILE_WATERMARK 4096
+
+typedef struct
+{
+  void (*handler)(gpointer user_data);
+  gpointer cookie;
+} PersistStateErrorHandler;
 
 /*
  * The syslog-ng persistent state is a set of name-value pairs,
@@ -144,6 +148,7 @@ struct _PersistState
   guint32 current_ofs;
   gpointer current_map;
   PersistFileHeader *header;
+  PersistStateErrorHandler error_handler;
 
   /* keys being used */
   GHashTable *keys;
@@ -270,6 +275,13 @@ _check_free_space(PersistState *self, guint32 size)
   return (size + sizeof(PersistValueHeader) +  self->current_ofs) <= self->current_size;
 }
 
+static void
+persist_state_run_error_handler(PersistState *self)
+{
+  if (self->error_handler.handler)
+    self->error_handler.handler(self->error_handler.cookie);
+}
+
 /* "value" layer that handles memory block allocation in the file, without working with keys */
 
 static PersistEntryHandle
@@ -305,7 +317,7 @@ _alloc_value(PersistState *self, guint32 orig_size, gboolean in_use, guint8 vers
       msg_error("Can't preallocate space for persist file",
                 evt_tag_int("current", self->current_size),
                 evt_tag_int("new_size", self->current_size + PERSIST_FILE_INITIAL_SIZE));
-      main_loop_exit();
+      persist_state_run_error_handler(self);
     }
 
   return result;
@@ -1020,4 +1032,11 @@ persist_state_free(PersistState *self)
 {
   _destroy(self);
   g_free(self);
+}
+
+void
+persist_state_set_global_error_handler(PersistState *self, void (*handler)(gpointer user_data), gpointer user_data)
+{
+  self->error_handler.handler = handler;
+  self->error_handler.cookie = user_data;
 }

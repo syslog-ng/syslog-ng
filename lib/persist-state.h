@@ -59,4 +59,7 @@ void persist_state_cancel(PersistState *self);
 PersistState *persist_state_new(const gchar *filename);
 void persist_state_free(PersistState *self);
 
+void persist_state_set_global_error_handler(PersistState *self, void (*handler)(gpointer user_data),
+                                            gpointer user_data);
+
 #endif
