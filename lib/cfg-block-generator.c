@@ -25,9 +25,9 @@
 #include "cfg-block-generator.h"
 
 gboolean
-cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args)
+cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result)
 {
-  return self->generate(self, cfg, lexer, args);
+  return self->generate(self, cfg, args, result);
 }
 
 void

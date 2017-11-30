@@ -30,6 +30,12 @@ typedef struct _TFWelfState
   ValuePairs *vp;
 } TFWelfState;
 
+typedef struct _TFWelfIterState
+{
+  GString *result;
+  gboolean initial_kv_pair_printed;
+} TFWelfIterState;
+
 static gboolean
 tf_format_welf_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
                        gint argc, gchar *argv[],
@@ -37,7 +43,7 @@ tf_format_welf_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
 {
   TFWelfState *state = (TFWelfState *) s;
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
+  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, FALSE, error);
   if (!state->vp)
     return FALSE;
 
@@ -48,10 +54,14 @@ static gboolean
 tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value,
                        gsize value_len, gpointer user_data)
 {
-  GString *result = (GString *) user_data;
+  TFWelfIterState *iter_state = (TFWelfIterState *) user_data;
+  GString *result = iter_state->result;
 
-  if (result->len > 0)
+  if (iter_state->initial_kv_pair_printed)
     g_string_append(result, " ");
+  else
+    iter_state->initial_kv_pair_printed = TRUE;
+
   g_string_append(result, name);
   g_string_append_c(result, '=');
   if (memchr(value, ' ', value_len) == NULL)
@@ -79,13 +89,18 @@ static void
 tf_format_welf_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
   TFWelfState *state = (TFWelfState *) s;
+  TFWelfIterState iter_state =
+  {
+    .result = result,
+    .initial_kv_pair_printed = FALSE
+  };
   gint i;
 
   for (i = 0; i < args->num_messages; i++)
     {
       value_pairs_foreach_sorted(state->vp,
                                  tf_format_welf_foreach, (GCompareFunc) tf_format_welf_strcmp,
-                                 args->messages[i], 0, args->tz, args->opts, result);
+                                 args->messages[i], 0, args->tz, args->opts, &iter_state);
     }
 
 }

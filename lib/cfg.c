@@ -170,7 +170,7 @@ _sync_plugin_module_path_with_global_define(GlobalConfig *self)
    * PluginContext by default */
   if (self->lexer)
     {
-      module_path = cfg_args_get(self->lexer->globals, "module-path");
+      module_path = cfg_args_get(self->globals, "module-path");
       if (module_path)
         {
           plugin_context_set_module_path(&self->plugin_context, module_path);
@@ -188,7 +188,7 @@ cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
 void
 cfg_load_candidate_modules(GlobalConfig *self)
 {
-  gboolean autoload_enabled = atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules") ? : "1");
+  gboolean autoload_enabled = atoi(cfg_args_get(self->globals, "autoload-compiled-modules") ? : "1");
 
   if (self->use_plugin_discovery &&
       autoload_enabled)
@@ -363,7 +363,7 @@ cfg_allow_config_dups(GlobalConfig *self)
   if (cfg_is_config_version_older(self, 0x0303))
     return TRUE;
 
-  s = cfg_args_get(self->lexer->globals, "allow-config-dups");
+  s = cfg_args_get(self->globals, "allow-config-dups");
   if (s && atoi(s))
     {
       return TRUE;
@@ -388,6 +388,7 @@ cfg_new(gint version)
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
   self->module_config = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) module_config_free);
+  self->globals = cfg_args_new();
   self->user_version = version;
 
   self->flush_lines = 100;
@@ -444,17 +445,17 @@ cfg_set_global_paths(GlobalConfig *self)
 {
   gchar *include_path;
 
-  cfg_args_set(self->lexer->globals, "syslog-ng-root", get_installation_path_for(SYSLOG_NG_PATH_PREFIX));
-  cfg_args_set(self->lexer->globals, "syslog-ng-data", get_installation_path_for(SYSLOG_NG_PATH_DATADIR));
-  cfg_args_set(self->lexer->globals, "syslog-ng-include", get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
-  cfg_args_set(self->lexer->globals, "scl-root", get_installation_path_for(SYSLOG_NG_PATH_SCLDIR));
-  cfg_args_set(self->lexer->globals, "module-path", resolvedConfigurablePaths.initial_module_path);
-  cfg_args_set(self->lexer->globals, "module-install-dir", resolvedConfigurablePaths.initial_module_path);
+  cfg_args_set(self->globals, "syslog-ng-root", get_installation_path_for(SYSLOG_NG_PATH_PREFIX));
+  cfg_args_set(self->globals, "syslog-ng-data", get_installation_path_for(SYSLOG_NG_PATH_DATADIR));
+  cfg_args_set(self->globals, "syslog-ng-include", get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
+  cfg_args_set(self->globals, "scl-root", get_installation_path_for(SYSLOG_NG_PATH_SCLDIR));
+  cfg_args_set(self->globals, "module-path", resolvedConfigurablePaths.initial_module_path);
+  cfg_args_set(self->globals, "module-install-dir", resolvedConfigurablePaths.initial_module_path);
 
   include_path = g_strdup_printf("%s:%s",
                                  get_installation_path_for(SYSLOG_NG_PATH_SYSCONFDIR),
                                  get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
-  cfg_args_set(self->lexer->globals, "include-path", include_path);
+  cfg_args_set(self->globals, "include-path", include_path);
   g_free(include_path);
 }
 
@@ -501,7 +502,7 @@ cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, 
   CfgLexer *lexer;
   GString *preprocess_output = g_string_sized_new(8192);
 
-  lexer = cfg_lexer_new_buffer(config_string, strlen(config_string));
+  lexer = cfg_lexer_new_buffer(self, config_string, strlen(config_string));
   lexer->preprocess_output = preprocess_output;
 
   res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
@@ -530,7 +531,7 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gc
       CfgLexer *lexer;
       GString *preprocess_output = g_string_sized_new(8192);
 
-      lexer = cfg_lexer_new(cfg_file, fname, preprocess_output);
+      lexer = cfg_lexer_new(self, cfg_file, fname, preprocess_output);
       res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
       fclose(cfg_file);
       if (preprocess_into)
@@ -578,6 +579,7 @@ cfg_free(GlobalConfig *self)
   plugin_context_deinit_instance(&self->plugin_context);
   cfg_tree_free_instance(&self->tree);
   g_hash_table_unref(self->module_config);
+  cfg_args_unref(self->globals);
   g_free(self);
 }
 

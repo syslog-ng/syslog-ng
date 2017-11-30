@@ -664,13 +664,18 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
           token_end = vp_walker_skip_sdata_enterprise_id(token_end);
           break;
         case '.':
-          g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
-          ++token_end;
-          token_start = token_end;
-          break;
+          if (token_start != token_end)
+            {
+              g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
+              ++token_end;
+              token_start = token_end;
+              break;
+            }
+        /* fall through, zero length token is not considered a separate token */
         default:
           ++token_end;
           token_end += strcspn(token_end, "@.");
+          break;
         }
     }
 

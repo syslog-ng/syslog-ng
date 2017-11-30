@@ -37,7 +37,7 @@ tf_cond_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-  lexer = cfg_lexer_new_buffer(argv[1], strlen(argv[1]));
+  lexer = cfg_lexer_new_buffer(parent->cfg, argv[1], strlen(argv[1]));
   if (!cfg_run_parser(parent->cfg, lexer, &filter_expr_parser, (gpointer *) &state->filter, NULL))
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,

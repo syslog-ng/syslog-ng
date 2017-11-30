@@ -517,10 +517,16 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
   return TRUE;
 }
 
+static const gchar *
+_get_include_path(CfgLexer *self)
+{
+  return self->cfg ? cfg_args_get(self->cfg->globals, "include-path") : NULL;
+}
+
 static gboolean
 cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
 {
-  const gchar *path = cfg_args_get(self->globals, "include-path");
+  const gchar *path = _get_include_path(self);
   gboolean process = FALSE;
 
   self->include_depth++;
@@ -568,7 +574,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
       return FALSE;
     }
 
-  filename = find_file_in_path(cfg_args_get(self->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
+  filename = find_file_in_path(_get_include_path(self), filename_, G_FILE_TEST_EXISTS);
   if (!filename || stat(filename, &st) < 0)
     {
       if (cfg_lexer_include_file_glob(self, filename_))
@@ -576,7 +582,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 
       msg_error("Include file/directory not found",
                 evt_tag_str("filename", filename_),
-                evt_tag_str("include-path", cfg_args_get(self->globals, "include-path")),
+                evt_tag_str("include-path", _get_include_path(self)),
                 evt_tag_errno("error", errno));
       return FALSE;
     }
@@ -636,8 +642,8 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer,
   GError *error = NULL;
   gboolean result = FALSE;
 
-  substituted_buffer = cfg_lexer_subst_args_in_input(self->globals, NULL, NULL, buffer, length, &substituted_length,
-                                                     &error);
+  substituted_buffer = cfg_lexer_subst_args_in_input(self->cfg ? self->cfg->globals : NULL, NULL, NULL, buffer, length,
+                                                     &substituted_length, &error);
   if (!substituted_buffer)
     {
       msg_error("Error resolving backtick references in block or buffer",
@@ -845,9 +851,77 @@ relex:
         g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
     }
 
-  if (self->ignore_pragma)
+  /* NOTE: most of the code below is a monster, which should be factored out
+   * to tiny little functions.  This is not very simple and I am in the
+   * middle of something that I would rather close than doing the
+   * refactoring desperately needed here.  I am silencing my conscience with
+   * this note and also take the time to document some of the quirks below.
+   *
+   * 1) This code is deeply coupled with GlobalConfig and most of it does
+   * not make sense to execute if self->cfg is NULL.  Thus, some of the
+   * conditionals contain an explicit self->cfg check, in other cases it is
+   * implicitly checked by the first conditional of a series of if-then-else
+   * statements.
+   *
+   * 2) the role of the relex label is to restart the lexing process once
+   * new tokens were injected into the input stream.  (e.g.  after a
+   * generator was called).  This should really be a loop, and quite
+   * possible any refactors should start here by eliminating that
+   * loop-using-goto
+   *
+   * 3) make note that string tokens are allocated by malloc/free and not
+   * g_malloc/g_free, this is significant.  The grammar contains the free()
+   * call, so getting rid of that would require a lot of changes to the
+   * grammar. (on Windows glib, malloc/g_malloc are NOT equivalent)
+   *
+   */
+
+
+  if (tok == LL_IDENTIFIER &&
+      self->cfg &&
+      (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
-      /* only process @pragma/@include tokens in case pragma allowed is set */
+      CfgArgs *args;
+
+      self->preprocess_suppress_tokens++;
+      if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
+        {
+          gboolean success;
+          gchar buf[256];
+          GString *result = g_string_sized_new(256);
+
+          self->preprocess_suppress_tokens--;
+          success = cfg_block_generator_generate(gen, self->cfg, args, result);
+
+          free(yylval->cptr);
+          cfg_args_unref(args);
+          g_snprintf(buf, sizeof(buf), "%s generator %s",
+                     cfg_lexer_lookup_context_name_by_type(gen->context),
+                     gen->name);
+
+          if (gen->suppress_backticks)
+            success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
+          else
+            success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
+          g_string_free(result, TRUE);
+
+          if (success)
+            {
+              goto relex;
+            }
+        }
+      else
+        {
+          free(yylval->cptr);
+          self->preprocess_suppress_tokens--;
+        }
+      return LL_ERROR;
+    }
+
+  if (self->ignore_pragma || self->cfg == NULL)
+    {
+      /* only process @pragma/@include tokens in case pragma allowed is set
+       * and the associated configuration is not NULL */
       ;
     }
   else if (tok == LL_PRAGMA)
@@ -895,53 +969,26 @@ relex:
       g_free(include_file);
       goto relex;
     }
-  else if (tok == LL_IDENTIFIER
-           && (gen = cfg_lexer_find_generator(self, configuration, cfg_lexer_get_context_type(self), yylval->cptr)))
+  else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
     {
-      CfgArgs *args;
-
-      self->preprocess_suppress_tokens++;
-      if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
-        {
-          gboolean success;
-
-          self->preprocess_suppress_tokens--;
-          success = cfg_block_generator_generate(gen, configuration, self, args);
-
-          free(yylval->cptr);
-          cfg_args_unref(args);
-          if (success)
-            {
-              goto relex;
-            }
-        }
-      else
-        {
-          free(yylval->cptr);
-          self->preprocess_suppress_tokens--;
-        }
-      return LL_ERROR;
-    }
-  else if (configuration->user_version == 0 && configuration->parsed_version != 0)
-    {
-      if (!cfg_set_version(configuration, configuration->parsed_version))
+      if (!cfg_set_version(self->cfg, configuration->parsed_version))
         return LL_ERROR;
     }
   else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
     {
       /* first non-pragma token */
 
-      if (configuration->user_version == 0 && configuration->parsed_version == 0)
+      if (self->cfg->user_version == 0 && self->cfg->parsed_version == 0)
         {
           msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
                     ", please specify a version number using @version and update your configuration accordingly");
           return LL_ERROR;
         }
 
-      cfg_load_candidate_modules(configuration);
+      cfg_load_candidate_modules(self->cfg);
 
 #if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
-      if (!cfg_load_module(configuration, "license"))
+      if (!cfg_load_module(self->cfg, "license"))
         {
           msg_error("Error loading the license module, forcing exit");
           exit(1);
@@ -962,15 +1009,15 @@ relex:
 }
 
 static void
-cfg_lexer_init(CfgLexer *self)
+cfg_lexer_init(CfgLexer *self, GlobalConfig *cfg)
 {
-  self->globals = cfg_args_new();
   CfgIncludeLevel *level;
 
   _cfg_lexer_lex_init_extra(self, &self->state);
   self->string_buffer = g_string_sized_new(32);
   self->token_text = g_string_sized_new(32);
   self->token_pretext = g_string_sized_new(32);
+  self->cfg = cfg;
 
   level = &self->include_stack[0];
   level->lloc.first_line = level->lloc.last_line = 1;
@@ -978,14 +1025,19 @@ cfg_lexer_init(CfgLexer *self)
   level->lloc.level = level;
 }
 
+
+/* NOTE: cfg might be NULL in some call sites, but in those cases the lexer
+ * should remain operational, obviously skipping cases where it would be
+ * using the configuration instance.  The lexer and the configuration stuff
+ * should be one-way dependent, right now it is a circular dependency. */
 CfgLexer *
-cfg_lexer_new(FILE *file, const gchar *filename, GString *preprocess_output)
+cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *preprocess_output)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
 
   self = g_new0(CfgLexer, 1);
-  cfg_lexer_init(self);
+  cfg_lexer_init(self, cfg);
   self->preprocess_output = preprocess_output;
 
   level = &self->include_stack[0];
@@ -998,13 +1050,13 @@ cfg_lexer_new(FILE *file, const gchar *filename, GString *preprocess_output)
 }
 
 CfgLexer *
-cfg_lexer_new_buffer(const gchar *buffer, gsize length)
+cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
 
   self = g_new0(CfgLexer, 1);
-  cfg_lexer_init(self);
+  cfg_lexer_init(self, cfg);
   self->ignore_pragma = TRUE;
 
   level = &self->include_stack[0];
@@ -1056,7 +1108,6 @@ cfg_lexer_free(CfgLexer *self)
 
   while (self->context_stack)
     cfg_lexer_pop_context(self);
-  cfg_args_unref(self->globals);
   g_list_foreach(self->token_blocks, (GFunc) cfg_token_block_free, NULL);
   g_list_free(self->token_blocks);
   g_free(self);

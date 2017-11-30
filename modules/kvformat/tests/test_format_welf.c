@@ -29,6 +29,7 @@ void
 test_format_welf(void)
 {
   assert_template_format("$(format-welf MSG=$MSG)", "MSG=árvíztűrőtükörfúrógép");
+  assert_template_format("xxx$(format-welf MSG=$MSG)yyy", "xxxMSG=árvíztűrőtükörfúrógépyyy");
   assert_template_format("$(format-welf MSG=$escaping)",
                          "MSG=\"binary stuff follows \\\"\\xad árvíztűrőtükörfúrógép\"");
   assert_template_format("$(format-welf MSG=$escaping2)", "MSG=\\xc3");

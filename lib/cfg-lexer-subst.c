@@ -105,7 +105,7 @@ _extract_string_literal(const gchar *value)
   YYLTYPE yylloc, look_ahead_yylloc;
   gchar *result = NULL;
 
-  lexer = cfg_lexer_new_buffer(value, strlen(value));
+  lexer = cfg_lexer_new_buffer(configuration, value, strlen(value));
   token = cfg_lexer_lex(lexer, &yylval, &yylloc);
   if (token == LL_STRING)
     {

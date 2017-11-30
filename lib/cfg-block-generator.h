@@ -43,11 +43,12 @@ struct _CfgBlockGenerator
 {
   gint context;
   gchar *name;
-  gboolean (*generate)(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args);
+  gboolean suppress_backticks;
+  gboolean (*generate)(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result);
   void (*free_fn)(CfgBlockGenerator *self);
 };
 
-gboolean cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args);
+gboolean cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result);
 void cfg_block_generator_init_instance(CfgBlockGenerator *self, gint context, const gchar *name);
 void cfg_block_generator_free_instance(CfgBlockGenerator *self);
 void cfg_block_generator_free(CfgBlockGenerator *self);

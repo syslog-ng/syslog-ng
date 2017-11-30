@@ -127,6 +127,7 @@ CfgFlagHandler msg_format_flag_handlers[] =
   { "sanitize-utf8",              CFH_SET, offsetof(MsgFormatOptions, flags), LP_SANITIZE_UTF8 },
   { "no-multi-line",              CFH_SET, offsetof(MsgFormatOptions, flags), LP_NO_MULTI_LINE },
   { "store-legacy-msghdr",        CFH_SET, offsetof(MsgFormatOptions, flags), LP_STORE_LEGACY_MSGHDR },
+  { "store-raw-message",          CFH_SET, offsetof(MsgFormatOptions, flags), LP_STORE_RAW_MESSAGE },
   { "dont-store-legacy-msghdr", CFH_CLEAR, offsetof(MsgFormatOptions, flags), LP_STORE_LEGACY_MSGHDR },
   { "expect-hostname",            CFH_SET, offsetof(MsgFormatOptions, flags), LP_EXPECT_HOSTNAME },
   { "no-hostname",              CFH_CLEAR, offsetof(MsgFormatOptions, flags), LP_EXPECT_HOSTNAME },

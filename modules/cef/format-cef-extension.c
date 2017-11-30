@@ -41,7 +41,7 @@ tf_cef_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
 {
   TFCefState *state = (TFCefState *)s;
 
-  state->vp = value_pairs_new_from_cmdline(parent->cfg, argc, argv, error);
+  state->vp = value_pairs_new_from_cmdline(parent->cfg, &argc, &argv, FALSE, error);
   if (!state->vp)
     return FALSE;
 

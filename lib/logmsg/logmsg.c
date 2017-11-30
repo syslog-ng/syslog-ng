@@ -180,12 +180,6 @@ log_msg_set_flag(LogMessage *self, gint32 flag)
 }
 
 static inline void
-log_msg_unset_flag(LogMessage *self, gint32 flag)
-{
-  self->flags &= ~flag;
-}
-
-static inline void
 log_msg_set_host_id(LogMessage *msg)
 {
   msg->host_id = host_id_get();
@@ -576,7 +570,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   if (new_entry)
     log_msg_update_sdata(self, handle, name, name_len);
   if (handle == LM_V_PROGRAM || handle == LM_V_PID)
-    log_msg_unset_flag(self, LF_LEGACY_MSGHDR);
+    log_msg_unset_value(self, LM_V_LEGACY_MSGHDR);
 }
 
 void
@@ -1251,6 +1245,19 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   return self;
 }
 
+static gsize
+_determine_payload_size(gint length, MsgFormatOptions *parse_options)
+{
+  gsize payload_size;
+
+  if ((parse_options->flags & LP_STORE_RAW_MESSAGE))
+    payload_size = length * 4;
+  else
+    payload_size = length * 2;
+
+  return MAX(payload_size, 256);
+}
+
 /**
  * log_msg_new:
  * @msg: message to parse
@@ -1265,7 +1272,7 @@ log_msg_new(const gchar *msg, gint length,
             GSockAddr *saddr,
             MsgFormatOptions *parse_options)
 {
-  LogMessage *self = log_msg_alloc(length == 0 ? 256 : length * 2);
+  LogMessage *self = log_msg_alloc(_determine_payload_size(length, parse_options));
 
   log_msg_init(self, saddr);
 

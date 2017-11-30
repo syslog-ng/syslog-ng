@@ -347,7 +347,8 @@ vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
 
 ValuePairs *
 value_pairs_new_from_cmdline (GlobalConfig *cfg,
-                              gint argc, gchar **argv,
+                              gint *argc, gchar ***argv,
+                              gboolean ignore_unknown_options,
                               GError **error)
 {
   ValuePairs *vp;
@@ -411,18 +412,19 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   user_data_args[2] = NULL;
   user_data_args[3] = NULL;
 
-  ctx = g_option_context_new ("value-pairs");
-  og = g_option_group_new (NULL, NULL, NULL, user_data_args, NULL);
-  g_option_group_add_entries (og, vp_options);
-  g_option_context_set_main_group (ctx, og);
+  ctx = g_option_context_new("value-pairs");
+  og = g_option_group_new(NULL, NULL, NULL, user_data_args, NULL);
+  g_option_group_add_entries(og, vp_options);
+  g_option_context_set_main_group(ctx, og);
+  g_option_context_set_ignore_unknown_options(ctx, ignore_unknown_options);
 
-  success = g_option_context_parse (ctx, &argc, &argv, error);
-  vp_cmdline_parse_rekey_finish (user_data_args);
-  g_option_context_free (ctx);
+  success = g_option_context_parse(ctx, argc, argv, error);
+  vp_cmdline_parse_rekey_finish(user_data_args);
+  g_option_context_free(ctx);
 
   if (!success)
     {
-      value_pairs_unref (vp);
+      value_pairs_unref(vp);
       vp = NULL;
     }
 

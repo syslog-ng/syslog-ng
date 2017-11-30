@@ -135,7 +135,7 @@ struct _CfgLexer
   gint preprocess_suppress_tokens;
   GString *token_pretext;
   GString *token_text;
-  CfgArgs *globals;
+  GlobalConfig *cfg;
   gboolean non_pragma_seen:1, ignore_pragma:1;
 };
 
@@ -172,8 +172,8 @@ void cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block);
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 void cfg_lexer_free_token(YYSTYPE *token);
 
-CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename, GString *preprocess_output);
-CfgLexer *cfg_lexer_new_buffer(const gchar *buffer, gsize length);
+CfgLexer *cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *preprocess_output);
+CfgLexer *cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length);
 void  cfg_lexer_free(CfgLexer *self);
 
 gint cfg_lexer_lookup_context_type_by_name(const gchar *name);

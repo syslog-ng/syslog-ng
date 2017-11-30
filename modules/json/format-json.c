@@ -38,21 +38,48 @@ typedef struct _TFJsonState
 } TFJsonState;
 
 static gboolean
+_parse_additional_options(gint argc, gchar **argv, gboolean *transform_initial_dot, GError **error)
+{
+  *transform_initial_dot = TRUE;
+  for (gint i = 1; i < argc; i++)
+    {
+      if (argv[i][0] != '-')
+        continue;
+
+      if (strcmp(argv[i], "--leave-initial-dot") == 0)
+        *transform_initial_dot = FALSE;
+      else
+        {
+          g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_UNKNOWN_OPTION, "$(format-json) unknown option: %s", argv[i]);
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
+
+static gboolean
 tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
                 gint argc, gchar *argv[],
                 GError **error)
 {
   TFJsonState *state = (TFJsonState *)s;
   ValuePairsTransformSet *vpts;
+  gboolean transform_initial_dot;
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
+  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, TRUE, error);
   if (!state->vp)
     return FALSE;
 
-  /* Always replace a leading dot with an underscore. */
-  vpts = value_pairs_transform_set_new(".*");
-  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
-  value_pairs_add_transforms(state->vp, vpts);
+  if (!_parse_additional_options(argc, argv, &transform_initial_dot, error))
+    return FALSE;
+
+  if (transform_initial_dot)
+    {
+      /* Always replace a leading dot with an underscore. */
+      vpts = value_pairs_transform_set_new(".*");
+      value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
+      value_pairs_add_transforms(state->vp, vpts);
+    }
 
   return TRUE;
 }

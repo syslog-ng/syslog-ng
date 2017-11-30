@@ -316,50 +316,26 @@ system_generate_system_transports(GString *sysblock)
   return TRUE;
 }
 
-static gboolean
-_is_json_parser_available(GlobalConfig *cfg)
-{
-  return cfg_find_plugin(cfg, LL_CONTEXT_PARSER, "json-parser") != NULL;
-}
-
 static void
-system_generate_cim_parser(GlobalConfig *cfg, GString *sysblock)
+system_generate_app_parser(GlobalConfig *cfg, GString *sysblock)
 {
-  if (cfg_is_config_version_older(cfg, 0x0306))
-    {
-      msg_warning_once("WARNING: Starting with " VERSION_3_6
-                       ", the system() source performs JSON parsing of messages starting with the '@cim:' prefix. No additional action is needed");
-      return;
-    }
-
-  if (!_is_json_parser_available(cfg))
-    {
-      msg_debug("system(): json-parser() is missing, skipping the automatic JSON parsing of messages submitted via syslog(3), Please install the json module");
-      return;
-    }
-
   g_string_append(sysblock,
                   "channel {\n"
                   "  channel {\n"
                   "    parser {\n"
-                  "      json-parser(prefix('.cim.') marker('@cim:'));\n"
+                  "      app-parser(topic(system-unix));\n"
+                  "      app-parser(topic(syslog));\n"
                   "    };\n"
                   "    flags(final);\n"
                   "  };\n"
-                  "  channel { };\n"
+                  "  channel { flags(final); };\n"
                   "};\n");
 }
 
 static gboolean
-system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lexer, CfgArgs *args)
+system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *sysblock)
 {
-  gchar buf[256];
-  GString *sysblock;
   gboolean result = FALSE;
-
-  g_snprintf(buf, sizeof(buf), "source confgen system");
-
-  sysblock = g_string_sized_new(1024);
 
   g_string_append(sysblock,
                   "channel {\n"
@@ -372,12 +348,11 @@ system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgLexer *lex
 
   g_string_append(sysblock, "    }; # source\n");
 
-  system_generate_cim_parser(cfg, sysblock);
+  system_generate_app_parser(cfg, sysblock);
 
   g_string_append(sysblock, "}; # channel\n");
-  result = cfg_lexer_include_buffer(lexer, buf, sysblock->str, sysblock->len);
+  result = TRUE;
 exit:
-  g_string_free(sysblock, TRUE);
   return result;
 }
 
@@ -395,7 +370,7 @@ system_source_generator_new(gint context, const gchar *name)
 gpointer
 system_source_construct(Plugin *p)
 {
-  return system_source_generator_new(LL_CONTEXT_SOURCE, "system");
+  return system_source_generator_new(p->type, p->name);
 }
 
 Plugin system_plugins[] =
