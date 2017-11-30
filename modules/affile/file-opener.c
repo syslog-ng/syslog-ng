@@ -216,6 +216,13 @@ file_opener_options_defaults(FileOpenerOptions *options)
 }
 
 void
+file_opener_options_defaults_dont_change_permissions(FileOpenerOptions *options)
+{
+  file_opener_options_defaults(options);
+  file_perm_options_inherit_dont_change(&options->file_perm_options);
+}
+
+void
 file_opener_options_init(FileOpenerOptions *options, GlobalConfig *cfg)
 {
   file_perm_options_inherit_from(&options->file_perm_options, &cfg->file_perm_options);
