@@ -23,7 +23,8 @@
 #include <criterion/criterion.h>
 #include <stdio.h>
 #include "stopwatch.h"
-
+#include "scratch-buffers.h"
+#include "apphook.h"
 #include "kv-scanner.h"
 
 static gboolean
@@ -988,6 +989,7 @@ _test_performance(Testcase *tcs, gchar *title)
               g_free(error);
             }
           kv_scanner_deinit(&scanner);
+          scratch_buffers_explicit_gc();
         }
       stop_stopwatch_and_display_result(iteration_index, "%.64s...",
                                         tc->input);
@@ -1000,3 +1002,18 @@ Test(kv_scanner, performance_tests)
   _test_performance(_provide_cases_for_performance_test_nothing_to_parse(), "Nothing to parse in the message");
   _test_performance(_provide_cases_for_performance_test_parse_long_msg(), "Parse long strings");
 }
+
+static void
+setup(void)
+{
+  app_startup();
+}
+
+static void
+teardown(void)
+{
+  scratch_buffers_explicit_gc();
+  app_shutdown();
+}
+
+TestSuite(kv_scanner, .init = setup, .fini = teardown);

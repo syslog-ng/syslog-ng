@@ -23,6 +23,7 @@
 #include "kv-scanner.h"
 #include "str-repr/decode.h"
 #include "str-repr/encode.h"
+#include "scratch-buffers.h"
 #include <string.h>
 
 static inline gboolean
@@ -325,12 +326,6 @@ kv_scanner_scan_next(KVScanner *s)
 void
 kv_scanner_deinit(KVScanner *self)
 {
-  g_string_free(self->key, TRUE);
-  g_string_free(self->value, TRUE);
-  g_string_free(self->decoded_value, TRUE);
-  if (self->stray_words)
-    g_string_free(self->stray_words, TRUE);
-  g_free(self->pair_separator);
 }
 
 void
@@ -338,14 +333,14 @@ kv_scanner_init(KVScanner *self, gchar value_separator, const gchar *pair_separa
                 gboolean extract_stray_words)
 {
   memset(self, 0, sizeof(*self));
-  self->key = g_string_sized_new(32);
-  self->value = g_string_sized_new(64);
-  self->decoded_value = g_string_sized_new(64);
+  self->key = scratch_buffers_alloc();
+  self->value = scratch_buffers_alloc();
+  self->decoded_value = scratch_buffers_alloc();
   if (extract_stray_words)
-    self->stray_words = g_string_sized_new(64);
+    self->stray_words = scratch_buffers_alloc();
   self->value_separator = value_separator;
-  self->pair_separator = g_strdup(pair_separator ? : ", ");
-  self->pair_separator_len = self->pair_separator ? strlen(self->pair_separator) : 0;
+  self->pair_separator = pair_separator ? : ", ";
+  self->pair_separator_len = strlen(self->pair_separator);
   self->is_valid_key_character = _is_valid_key_character;
   self->stop_char = 0;
 }

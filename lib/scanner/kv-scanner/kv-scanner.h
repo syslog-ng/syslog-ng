@@ -43,7 +43,7 @@ struct _KVScanner
   GString *stray_words;
   gboolean value_was_quoted;
   gchar value_separator;
-  gchar *pair_separator;
+  const gchar *pair_separator;
   gsize pair_separator_len;
   gchar stop_char;
 
