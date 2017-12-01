@@ -1,0 +1,26 @@
+#!/bin/bash
+
+cd /source
+
+VERSION=`cat /source/VERSION`
+MODE=$1
+SYSLOGNG_DIR=syslog-ng-${VERSION}
+SYSLOGNG_TARBALL=${SYSLOGNG_DIR}.tar.gz
+
+if [ $MODE = "release" ]; then
+    if ! git diff-index --quiet HEAD; then
+            echo "Your source tree has changed, you can't generate a release tarball this way."
+            exit 1
+    fi
+fi
+
+cd /build
+tar xfz $SYSLOGNG_TARBALL
+cp $SYSLOGNG_TARBALL ${SYSLOGNG_TARBALL}.orig
+cd $SYSLOGNG_DIR
+
+/source/dbld/generate-debian-directory $MODE
+/source/dbld/generate-rpm-specfile $MODE
+
+cd ..
+tar cfz $SYSLOGNG_TARBALL $SYSLOGNG_DIR

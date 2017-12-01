@@ -1,0 +1,19 @@
+#!/bin/bash
+
+MODE=$1
+VERSION=`cat /source/VERSION`
+
+cp /source/packaging/rhel/* .
+
+if [ $MODE = "snapshot" ]; then
+    echo "Generating snapshot version in syslog-ng.spec"
+    sed -e "s/^Version: \([0-9.]\+\)/Version: $VERSION/" \
+            -e "s/^Release: \([0-9.]\+\)/Release: \1+`date +%Y%m%dT%H%M%S`/" -i syslog-ng.spec
+elif [ $MODE = "release" ]; then
+    echo "Validating that your RPM specfile matches the current version"
+    RPM_VERSION=`grep ^Version syslog-ng.spec | cut -d ' ' -f2`
+    if [ "${RPM_VERSION}" != "${VERSION}" ]; then
+	echo "The version numbers in syslog-ng.spec do not match the current version number. Cannot generate a release tarball this way"
+	exit 1
+    fi
+fi
