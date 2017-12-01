@@ -295,11 +295,11 @@ _alloc_value(PersistState *self, guint32 orig_size, gboolean in_use, guint8 vers
   if ((size & 0x7))
     size = ((size >> 3) + 1) << 3;
 
-  /*
-   * The pre-allocated size should be enough (min PERSIST_FILE_WATERMARK)
-   * if not we should assert here
-   */
-  g_assert(_check_free_space(self, size));
+  if (!_check_free_space(self, size))
+    {
+      msg_error("No more free space exhausted in persist file", NULL);
+      return 0;
+    }
 
   result = self->current_ofs + sizeof(PersistValueHeader);
 
