@@ -39,19 +39,6 @@ varbindlist_scanner_input(VarBindListScanner *self, const gchar *input)
   kv_scanner_input(&self->super, input);
 }
 
-static inline VarBindListScanner *
-varbindlist_scanner_clone(VarBindListScanner *self)
-{
-  return (VarBindListScanner *)kv_scanner_clone(&self->super);
-}
-
-static inline void
-varbindlist_scanner_free(VarBindListScanner *self)
-{
-  if (self)
-    kv_scanner_free(&self->super);
-}
-
 static inline const gchar *
 varbindlist_scanner_get_current_key(VarBindListScanner *self)
 {
@@ -75,5 +62,12 @@ VarBindListScanner *varbindlist_scanner_new(void);
 
 void varbindlist_scanner_init(VarBindListScanner *self);
 void varbindlist_scanner_deinit(VarBindListScanner *self);
+
+static inline void
+varbindlist_scanner_free(VarBindListScanner *self)
+{
+  varbindlist_scanner_deinit(self);
+  g_free(self);
+}
 
 #endif

@@ -50,12 +50,10 @@ struct _KVScanner
   KVTransformValueFunc transform_value;
   KVExtractAnnotationFunc extract_annotation;
   KVIsValidKeyCharFunc is_valid_key_character;
-  KVScanner* (*clone)(KVScanner *self);
-  void (*free_fn)(KVScanner *self);
 };
 
-void kv_scanner_init_instance(KVScanner *self, gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words);
-void kv_scanner_free_method(KVScanner *self);
+void kv_scanner_init(KVScanner *self, gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words);
+void kv_scanner_deinit(KVScanner *self);
 
 static inline void
 kv_scanner_input(KVScanner *self, const gchar *input)
@@ -64,12 +62,6 @@ kv_scanner_input(KVScanner *self, const gchar *input)
   self->input_pos = 0;
   if (self->stray_words)
     g_string_truncate(self->stray_words, 0);
-}
-
-static inline KVScanner *
-kv_scanner_clone(KVScanner *self)
-{
-  return self->clone(self);
 }
 
 static inline const gchar *
@@ -117,10 +109,7 @@ kv_scanner_set_stop_character(KVScanner *self, gchar stop_char)
 static inline void
 kv_scanner_free(KVScanner *self)
 {
-  if (!self || !self->free_fn)
-    return;
-
-  self->free_fn(self);
+  kv_scanner_deinit(self);
   g_free(self);
 }
 

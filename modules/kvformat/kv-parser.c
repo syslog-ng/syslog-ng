@@ -87,28 +87,37 @@ _get_formatted_key(KVParser *self, const gchar *key)
   return self->formatted_key->str;
 }
 
+void
+kv_parser_init_scanner_method(KVParser *self, KVScanner *kv_scanner)
+{
+  kv_scanner_init(kv_scanner, self->value_separator, self->pair_separator, self->stray_words_value_name != NULL);
+}
+
 static gboolean
 _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
          gsize input_len)
 {
   KVParser *self = (KVParser *) s;
+  KVScanner kv_scanner;
 
+  kv_parser_init_scanner(self, &kv_scanner);
   log_msg_make_writable(pmsg, path_options);
   /* FIXME: input length */
-  kv_scanner_input(self->kv_scanner, input);
-  while (kv_scanner_scan_next(self->kv_scanner))
+  kv_scanner_input(&kv_scanner, input);
+  while (kv_scanner_scan_next(&kv_scanner))
     {
 
       /* FIXME: value length */
       log_msg_set_value_by_name(*pmsg,
-                                _get_formatted_key(self, kv_scanner_get_current_key(self->kv_scanner)),
-                                kv_scanner_get_current_value(self->kv_scanner), -1);
+                                _get_formatted_key(self, kv_scanner_get_current_key(&kv_scanner)),
+                                kv_scanner_get_current_value(&kv_scanner), -1);
     }
   if (self->stray_words_value_name)
     log_msg_set_value_by_name(*pmsg,
                               self->stray_words_value_name,
-                              kv_scanner_get_stray_words(self->kv_scanner), -1);
+                              kv_scanner_get_stray_words(&kv_scanner), -1);
 
+  kv_scanner_deinit(&kv_scanner);
   return TRUE;
 }
 
@@ -120,9 +129,6 @@ kv_parser_clone_method(KVParser *dst, KVParser *src)
   kv_parser_set_value_separator(&dst->super, src->value_separator);
   kv_parser_set_pair_separator(&dst->super, src->pair_separator);
   kv_parser_set_stray_words_value_name(&dst->super, src->stray_words_value_name);
-
-  if (src->kv_scanner)
-    dst->kv_scanner = kv_scanner_clone(src->kv_scanner);
 
   return &dst->super.super;
 }
@@ -141,55 +147,19 @@ _free(LogPipe *s)
 {
   KVParser *self = (KVParser *)s;
 
-  kv_scanner_free(self->kv_scanner);
   g_string_free(self->formatted_key, TRUE);
   g_free(self->prefix);
   g_free(self->pair_separator);
   log_parser_free_method(s);
 }
 
-static gboolean
-_process_threaded(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
-                  gsize input_len)
-{
-  LogParser *self = (LogParser *)log_pipe_clone(&s->super);
-
-  gboolean ok = _process(self, pmsg, path_options, input, input_len);
-
-  log_pipe_unref(&self->super);
-  return ok;
-}
-
-gboolean
-kv_parser_init_method(LogPipe *s)
-{
-  KVParser *self = (KVParser *)s;
-  g_assert(self->kv_scanner == NULL);
-
-  self->kv_scanner = kv_scanner_new(self->value_separator, self->pair_separator, self->stray_words_value_name != NULL);
-
-  return log_parser_init_method(s);
-}
-
-gboolean
-kv_parser_deinit_method(LogPipe *s)
-{
-  KVParser *self = (KVParser *)s;
-
-  kv_scanner_free(self->kv_scanner);
-  self->kv_scanner = NULL;
-  return log_parser_deinit_method(s);
-}
-
 void
 kv_parser_init_instance(KVParser *self, GlobalConfig *cfg)
 {
   log_parser_init_instance(&self->super, cfg);
-  self->super.super.init = kv_parser_init_method;
-  self->super.super.deinit = kv_parser_deinit_method;
   self->super.super.free_fn = _free;
-  self->super.process = _process_threaded;
-  self->kv_scanner = NULL;
+  self->super.process = _process;
+  self->init_scanner = kv_parser_init_scanner_method;
   self->value_separator = '=';
   self->pair_separator = g_strdup(", ");
   self->formatted_key = g_string_sized_new(32);

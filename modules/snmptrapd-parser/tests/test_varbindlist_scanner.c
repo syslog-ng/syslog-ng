@@ -52,9 +52,7 @@ create_scanner(void)
 {
   VarBindListScanner *scanner = varbindlist_scanner_new();
 
-  VarBindListScanner *cloned = varbindlist_scanner_clone(scanner);
-  varbindlist_scanner_free(scanner);
-  return cloned;
+  return scanner;
 }
 
 static void

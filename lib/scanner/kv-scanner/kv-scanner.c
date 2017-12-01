@@ -322,20 +322,8 @@ kv_scanner_scan_next(KVScanner *s)
   return TRUE;
 }
 
-static KVScanner *
-_clone(KVScanner *self)
-{
-  KVScanner *scanner = kv_scanner_new(self->value_separator,
-                                      self->pair_separator,
-                                      self->stray_words != NULL);
-  kv_scanner_set_transform_value(scanner, self->transform_value);
-  kv_scanner_set_valid_key_character_func(scanner, self->is_valid_key_character);
-  kv_scanner_set_stop_character(scanner, self->stop_char);
-  kv_scanner_set_extract_annotation_func(scanner, self->extract_annotation);
-  return scanner;
-}
-
-void kv_scanner_free_method(KVScanner *self)
+void
+kv_scanner_deinit(KVScanner *self)
 {
   g_string_free(self->key, TRUE);
   g_string_free(self->value, TRUE);
@@ -346,9 +334,10 @@ void kv_scanner_free_method(KVScanner *self)
 }
 
 void
-kv_scanner_init_instance(KVScanner *self, gchar value_separator, const gchar *pair_separator,
-                         gboolean extract_stray_words)
+kv_scanner_init(KVScanner *self, gchar value_separator, const gchar *pair_separator,
+                gboolean extract_stray_words)
 {
+  memset(self, 0, sizeof(*self));
   self->key = g_string_sized_new(32);
   self->value = g_string_sized_new(64);
   self->decoded_value = g_string_sized_new(64);
@@ -359,16 +348,13 @@ kv_scanner_init_instance(KVScanner *self, gchar value_separator, const gchar *pa
   self->pair_separator_len = self->pair_separator ? strlen(self->pair_separator) : 0;
   self->is_valid_key_character = _is_valid_key_character;
   self->stop_char = 0;
-
-  self->clone = _clone;
-  self->free_fn = kv_scanner_free_method;
 }
 
 KVScanner *
 kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words)
 {
   KVScanner *self = g_new0(KVScanner, 1);
-  kv_scanner_init_instance(self, value_separator, pair_separator, extract_stray_words);
 
+  kv_scanner_init(self, value_separator, pair_separator, extract_stray_words);
   return self;
 }

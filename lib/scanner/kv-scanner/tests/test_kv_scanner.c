@@ -143,10 +143,7 @@ create_kv_scanner(const ScannerConfig config)
 {
   KVScanner *scanner = kv_scanner_new(config.kv_separator, config.pair_separator, config.extract_stray_words);
   scanner->transform_value = config.transform_value;
-
-  KVScanner *cloned = kv_scanner_clone(scanner);
-  kv_scanner_free(scanner);
-  return cloned;
+  return scanner;
 }
 
 #define VARARG_STRUCT(VARARG_STRUCT_cont, VARARG_STRUCT_elem, ...) \

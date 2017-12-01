@@ -26,7 +26,8 @@
 #include "scanner/kv-scanner/kv-scanner.h"
 
 /* base class */
-typedef struct _KVParser
+typedef struct _KVParser KVParser;
+struct _KVParser
 {
   LogParser super;
   gchar value_separator;
@@ -35,14 +36,22 @@ typedef struct _KVParser
   gchar *stray_words_value_name;
   gsize prefix_len;
   GString *formatted_key;
-  KVScanner *kv_scanner;
-} KVParser;
+  void (*init_scanner)(KVParser *self, KVScanner *kv_scanner);
+};
+
+static inline void
+kv_parser_init_scanner(KVParser *self, KVScanner *kv_scanner)
+{
+  self->init_scanner(self, kv_scanner);
+}
 
 void kv_parser_set_prefix(LogParser *p, const gchar *prefix);
 void kv_parser_set_value_separator(LogParser *p, gchar value_separator);
 void kv_parser_set_pair_separator(LogParser *p, const gchar *pair_separator);
 void kv_parser_set_stray_words_value_name(LogParser *s, const gchar *value_name);
 gboolean kv_parser_is_valid_separator_character(gchar c);
+
+void kv_parser_init_scanner_method(KVParser *self, KVScanner *kv_scanner);
 
 gboolean kv_parser_init_method(LogPipe *s);
 gboolean kv_parser_deinit_method(LogPipe *s);
