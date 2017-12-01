@@ -92,17 +92,46 @@ _generate_application(Application *app, Application *base_app, gpointer user_dat
 }
 
 static void
-_generate_applications(AppParserGenerator *self, GlobalConfig *cfg)
+_generate_applications(AppParserGenerator *self, AppModelContext *appmodel)
 {
-  AppModelContext *appmodel = appmodel_get_context(cfg);
-
   appmodel_context_iter_applications(appmodel, _generate_application, self);
+}
+
+static gboolean
+_is_parsing_enabled(CfgArgs *args)
+{
+  const gchar *v = cfg_args_get(args, "auto-parse");
+
+  if (!v)
+    return TRUE;
+
+  return cfg_process_yesno(v);
+}
+
+static void
+_generate_framing(AppParserGenerator *self, AppModelContext *appmodel)
+{
+  g_string_append(self->block,
+                  "\nchannel {\n"
+                  "    junction {\n");
+
+  _generate_applications(self, appmodel);
+
+  g_string_append(self->block, "    };\n");
+  g_string_append(self->block, "}");
+}
+
+static void
+_generate_empty_frame(AppParserGenerator *self)
+{
+  g_string_append(self->block, "\nchannel {}");
 }
 
 static gboolean
 _generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result)
 {
   AppParserGenerator *self = (AppParserGenerator *) s;
+  AppModelContext *appmodel = appmodel_get_context(cfg);
 
   g_assert(args != NULL);
   self->topic = cfg_args_get(args, "topic");
@@ -113,14 +142,10 @@ _generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *resul
     }
 
   self->block = result;
-  g_string_append(self->block,
-                  "\nchannel {\n"
-                  "    junction {\n");
-
-  _generate_applications(self, cfg);
-
-  g_string_append(self->block, "    };\n");
-  g_string_append(self->block, "}");
+  if (_is_parsing_enabled(args))
+    _generate_framing(self, appmodel);
+  else
+    _generate_empty_frame(self);
   self->block = NULL;
 
   return TRUE;

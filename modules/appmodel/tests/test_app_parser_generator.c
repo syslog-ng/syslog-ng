@@ -45,14 +45,37 @@ _construct_app_parser(void)
   return app_parser_generator_new(LL_CONTEXT_PARSER, "app-parser");
 }
 
-static void
-_app_parser_generate(const gchar *topic)
+static CfgArgs *
+_build_cfg_args(const gchar *key, const gchar *value, ...)
 {
   CfgArgs *args = cfg_args_new();
+  va_list va;
 
+  va_start(va, value);
+  while (key)
+    {
+      cfg_args_set(args, key, value);
+      key = va_arg(va, gchar *);
+      if (!key)
+        break;
+      value = va_arg(va, gchar *);
+    }
+  va_end(va);
+  return args;
+}
+
+static void
+_app_parser_generate_with_args(const gchar *topic, CfgArgs *args)
+{
   cfg_args_set(args, "topic", topic);
   cfg_block_generator_generate(app_parser, configuration, args, result);
   cfg_args_unref(args);
+}
+
+static void
+_app_parser_generate(const gchar *topic)
+{
+  _app_parser_generate_with_args(topic, cfg_args_new());
 }
 
 static void
@@ -184,5 +207,22 @@ Test(app_parser_generator, app_parser_base_topics_are_skipped)
   _assert_snippet_is_not_present("program('bar')");
   _assert_config_is_valid("port514");
 }
+
+Test(app_parser_generator, app_parser_is_disabled_if_auto_parse_is_set_to_no)
+{
+  _register_application("application foo[*] {\n"
+                        "    filter { program('foo'); };\n"
+                        "    parser { kv-parser(prefix('foo.')); };\n"
+                        "};");
+
+  _register_application("application bar[*] {\n"
+                        "    filter { program('bar'); };\n"
+                        "    parser { kv-parser(prefix('bar.')); };\n"
+                        "};");
+
+  _app_parser_generate_with_args("port514", _build_cfg_args("auto-parse", "no", NULL));
+  cr_assert_str_eq(result->str, "\nchannel {}", "result is expected to be an empty channel, but it is %s", result->str);
+}
+
 
 TestSuite(app_parser_generator, .init = startup, .fini = teardown);
