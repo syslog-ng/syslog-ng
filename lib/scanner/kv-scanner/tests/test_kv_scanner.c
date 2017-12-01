@@ -973,24 +973,24 @@ _test_performance(Testcase *tcs, gchar *title)
 
   for (tc = tcs; tc->input; tc++)
     {
-      KVScanner *scanner = create_kv_scanner(((ScannerConfig)
-      {'='
-      }));
+      KVScanner scanner;
+
       start_stopwatch();
       for (iteration_index = 0; iteration_index < ITERATION_NUMBER; iteration_index++)
         {
           gchar *error = NULL;
 
-          kv_scanner_input(scanner, tc->input);
-          if (!_expect_kv_pairs(scanner, tc->expected, &error))
+          kv_scanner_init(&scanner, '=', ",", FALSE);
+          kv_scanner_input(&scanner, tc->input);
+          if (!_expect_kv_pairs(&scanner, tc->expected, &error))
             {
               cr_expect(FALSE, "%s", error);
               g_free(error);
             }
+          kv_scanner_deinit(&scanner);
         }
       stop_stopwatch_and_display_result(iteration_index, "%.64s...",
                                         tc->input);
-      kv_scanner_free(scanner);
     }
   g_free(tcs);
 }
