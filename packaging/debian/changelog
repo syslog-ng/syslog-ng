@@ -1,3 +1,9 @@
+syslog-ng (3.13.1-1) unstable; urgency=medium
+
+  * upstream upgrade to 3.13.1
+
+ -- Balazs Scheidler <balazs.scheidler@balabit.com>  Thu, 30 Nov 2017 21:17:14 -0800
+
 syslog-ng (3.11.1-1) unstable; urgency=medium
 
   * test release
