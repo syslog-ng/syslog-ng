@@ -39,7 +39,7 @@ UMAJOR		   = $(shell dpkg-parsechangelog | sed -n '/^Version:/s/^Version: //p' |
 # To better support the Incubator, and have looser dependencies, we
 # track the ABI version here. Whenever the soname of libsyslog-ng
 # changes, up this one too!
-ABI_VERSION	   = 3.11-0
+ABI_VERSION	   = 3.13-0
 
 export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg
 
