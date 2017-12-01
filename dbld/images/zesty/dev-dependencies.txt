@@ -4,6 +4,7 @@ autoconf-archive
 automake
 libtool
 pkg-config
+
 # required for configure
 bison
 flex
@@ -27,11 +28,18 @@ openjdk-8-jdk
 python-dev
 uuid-dev
 xsltproc
+libmaxminddb-dev
+libmongoc-dev
+libbson-dev
+librabbitmq-dev
+
 # required for make
 make
+
 # required for make check
 criterion-dev
 libxml2-utils
+
 python-pip
 # other tools
 gdb
@@ -39,6 +47,7 @@ git
 lsof
 strace
 vim
+
 # debian packaging tools
 debhelper
 dh-autoreconf
@@ -52,4 +61,4 @@ python-ply
 pylint
 gradle
 devscripts
-libmaxminddb-dev
+dh-exec

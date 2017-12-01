@@ -8,7 +8,7 @@ RUN wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/sys
 RUN echo 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_17.04 ./' | tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
 
 ADD dev-dependencies.txt .
-RUN apt-get update -qq && cat dev-dependencies.txt | grep -v "#" | xargs apt-get install -y
+RUN apt-get update -qq && cat dev-dependencies.txt | grep -v "#" | xargs apt-get install -y --allow-unauthenticated
 
 #
 # if you want to add further packages, add them to addons.txt to make image

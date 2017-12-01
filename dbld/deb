@@ -3,22 +3,19 @@
 set -e
 
 cd /source
-if [ ! -d debian ]; then
-	echo "You don't seem to have a debian subdirectory, which means one of the followings:"
-	echo "  1) you don't do this from a release tarball"
-	echo "  2) you haven't merged the 'release' branch"
-	echo "  3) you didn't create debian packaging manually"
-	echo ""
-	echo "Please make sure you have obtained a source distribution with a debian dir and rerun this command"
-	exit 1
-fi
 VERSION=`cat VERSION`
-
+GITREF=`git describe`
 cd /build
 
-tar xvf syslog-ng-${VERSION}.tar.gz
+rm -rf syslog-ng-${VERSION}
+tar xf syslog-ng-${VERSION}.tar.gz
 cp syslog-ng-${VERSION}.tar.gz syslog-ng_${VERSION}.orig.tar.gz
 cd syslog-ng-${VERSION}
+
+if [ ! -d debian ]; then
+	echo "You have no Debian packaging in debian/, this should already by in the tarball at this point"
+	exit 1
+fi
 dpkg-buildpackage -rfakeroot
 
 echo "Your debs are in /build, also available on the host in \$(top_srcdir)/dbld/build"

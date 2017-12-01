@@ -36,6 +36,8 @@ cyrus-sasl-devel
 rpm-build
 java-1.8.0-openjdk-devel
 libuuid-devel
+libmaxminddb-devel
+libmongo-client-devel
 # required for make
 make
 # required for make check
@@ -50,4 +52,3 @@ vim
 docbook-xsl
 python-nose
 python-ply
-libmaxminddb-devel
