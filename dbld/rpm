@@ -3,18 +3,16 @@
 set -e
 
 cd /source
-if [ ! -f syslog-ng.spec ]; then
-	echo "You don't seem to have an RPM specfile in the root of your source tree, this means one of the followings:"
-	echo "  1) you don't do this from a release tarball"
-	echo "  2) you haven't merged the 'release' branch"
-	echo "  3) you didn't create rpm packaging manually"
-	echo ""
-	echo "Please make sure you have obtained a source distribution with a spec file and rerun this command"
-	exit 1
-fi
 VERSION=`cat VERSION`
+USER=`whoami`
+RPMBUILD=/home/${USER}/rpmbuild
+RPMBUILD_SOURCES=$RPMBUILD/SOURCES
 
 cd /build
+mkdir -p $RPMBUILD_SOURCES
+cp  syslog-ng-${VERSION}.tar.gz $RPMBUILD_SOURCES
+
 rpmbuild -ta syslog-ng-${VERSION}.tar.gz
-mv ~/rpmbuild/RPMS/*/*.rpm /build
+mv $RPMBUILD/RPMS/*/*.rpm /build
+mv $RPMBUILD/SRPMS/*.rpm /build
 echo "Your rpms are in /build, also available on the host in \$(top_srcdir)/dbld/build"

@@ -2,6 +2,7 @@
 
 DOCKER=docker
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
+        --network=host \
 	-v $(ROOT_DIR):/source \
 	-v $(DBLD_DIR)/build:/build \
 	-v $(DBLD_DIR)/install:/install \
@@ -13,6 +14,7 @@ RELEASE_DIR=$(DBLD_DIR)/release
 IMAGE_SHELL=balabit/syslog-ng-jessie
 VERSION=$(shell cat VERSION)
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
+MODE=snapshot
 
 help:
 	@echo "This script allows you to build release/snapshot artifacts, such "
@@ -42,11 +44,6 @@ rpm: rpm-centos7
 
 release: release-deb release-rpm
 
-deb-%: tarball
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
-
-rpm-%: tarball
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
 
 tarball: setup
 	if [ -f $(TARBALL) ]; then \
@@ -56,21 +53,19 @@ tarball: setup
 	fi; \
 	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-zesty /source/dbld/tarball || true
 
-release-tarball: clean
-	$(DBLD_DIR)/rules tarball
-	cp $(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz $(RELEASE_DIR)
+pkg-tarball: tarball
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-zesty /source/dbld/pkg-tarball $(MODE)
+
+deb-%: pkg-tarball
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
+
+rpm-%: pkg-tarball
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
+
+release: MODE=release
+release: deb-zesty
 
 
-release-deb: release-tarball
-	$(DBLD_DIR)/rules deb
-
-	# Debian sources and binaries
-	cp $(BUILD_DIR)/syslog-ng_*{dsc,orig.tar.gz,deb} $(RELEASE_DIR)
-
-release-rpm: release-tarball
-	$(DBLD_DIR)/rules rpm
-	# RPM sources and binaries
-	cp $(BUILD_DIR)/syslog-ng*rpm $(RELEASE_DIR)
 
 clean:
 	rm -rf $(BUILD_DIR)/*
@@ -83,7 +78,7 @@ images: image-jessie image-zesty image-xenial image-centos7
 
 
 image-%:
-	cd $(DBLD_DIR)/images/$* && docker build -t balabit/syslog-ng-$* .
+	cd $(DBLD_DIR)/images/$* && docker build --network=host -t balabit/syslog-ng-$* .
 
 setup:
 	mkdir -p dbld/build || true
