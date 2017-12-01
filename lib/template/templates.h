@@ -29,6 +29,7 @@
 #include "common-template-typedefs.h"
 #include "timeutils.h"
 #include "type-hinting.h"
+#include "atomic.h"
 
 #define LTZ_LOCAL 0
 #define LTZ_SEND  1
@@ -56,7 +57,7 @@ typedef enum
 /* structure that represents an expandable syslog-ng template */
 typedef struct _LogTemplate
 {
-  gint ref_cnt;
+  GAtomicCounter ref_cnt;
   gchar *name;
   gchar *template;
   GList *compiled_template;

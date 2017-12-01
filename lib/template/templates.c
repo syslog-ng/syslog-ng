@@ -227,7 +227,7 @@ log_template_new(GlobalConfig *cfg, const gchar *name)
   LogTemplate *self = g_new0(LogTemplate, 1);
 
   log_template_set_name(self, name);
-  self->ref_cnt = 1;
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->cfg = cfg;
   g_static_mutex_init(&self->arg_lock);
   return self;
@@ -256,8 +256,8 @@ log_template_ref(LogTemplate *s)
 {
   if (s)
     {
-      g_assert(s->ref_cnt > 0);
-      s->ref_cnt++;
+      g_assert(g_atomic_counter_get(&s->ref_cnt) > 0);
+      g_atomic_counter_inc(&s->ref_cnt);
     }
   return s;
 }
@@ -267,8 +267,8 @@ log_template_unref(LogTemplate *s)
 {
   if (s)
     {
-      g_assert(s->ref_cnt > 0);
-      if (--s->ref_cnt == 0)
+      g_assert(g_atomic_counter_get(&s->ref_cnt) > 0);
+      if (g_atomic_counter_dec_and_test(&s->ref_cnt))
         log_template_free(s);
     }
 }
