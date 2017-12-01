@@ -317,19 +317,23 @@ system_generate_system_transports(GString *sysblock)
 }
 
 static void
-system_generate_app_parser(GlobalConfig *cfg, GString *sysblock)
+system_generate_app_parser(GlobalConfig *cfg, GString *sysblock, CfgArgs *args)
 {
-  g_string_append(sysblock,
-                  "channel {\n"
-                  "  channel {\n"
-                  "    parser {\n"
-                  "      app-parser(topic(system-unix));\n"
-                  "      app-parser(topic(syslog));\n"
-                  "    };\n"
-                  "    flags(final);\n"
-                  "  };\n"
-                  "  channel { flags(final); };\n"
-                  "};\n");
+  gchar *varargs = cfg_args_format_varargs(args, NULL);
+
+  g_string_append_printf(sysblock,
+                         "channel {\n"
+                         "  channel {\n"
+                         "    parser {\n"
+                         "      app-parser(topic(system-unix) %s);\n"
+                         "      app-parser(topic(syslog) %s);\n"
+                         "    };\n"
+                         "    flags(final);\n"
+                         "  };\n"
+                         "  channel { flags(final); };\n"
+                         "};\n",
+                         varargs, varargs);
+  g_free(varargs);
 }
 
 static gboolean
@@ -348,7 +352,7 @@ system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args
 
   g_string_append(sysblock, "    }; # source\n");
 
-  system_generate_app_parser(cfg, sysblock);
+  system_generate_app_parser(cfg, sysblock, args);
 
   g_string_append(sysblock, "}; # channel\n");
   result = TRUE;
