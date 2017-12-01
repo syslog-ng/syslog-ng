@@ -1,9 +1,9 @@
-EXTRA_DIST +=
-	tarball \
-	pkg-tarball \
-	rpm \
-	deb \
-	generate-rpm-specfile \
-	generate-debian-directory \
-	shell \
-	rules
+EXTRA_DIST += \
+	dbld/tarball \
+	dbld/pkg-tarball \
+	dbld/rpm \
+	dbld/deb \
+	dbld/generate-rpm-specfile \
+	dbld/generate-debian-directory \
+	dbld/shell \
+	dbld/rules
