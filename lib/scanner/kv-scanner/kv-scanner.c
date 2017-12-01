@@ -358,3 +358,10 @@ kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extr
   kv_scanner_init(self, value_separator, pair_separator, extract_stray_words);
   return self;
 }
+
+void
+kv_scanner_free(KVScanner *self)
+{
+  kv_scanner_deinit(self);
+  g_free(self);
+}
