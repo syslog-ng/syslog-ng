@@ -39,6 +39,19 @@ _register_application(const char *appmodel)
             "Parsing the given configuration failed: %s", appmodel);
 }
 
+void
+_register_sample_application(const gchar *name, const gchar *topic)
+{
+  gchar *app;
+
+  app = g_strdup_printf("application %s[%s] {\n"
+                        "    filter { program('%s'); };\n"
+                        "    parser { kv-parser(prefix('%s.')); };\n"
+                        "};", name, topic, name, name);
+  _register_application(app);
+  g_free(app);
+}
+
 static CfgBlockGenerator *
 _construct_app_parser(void)
 {
@@ -155,19 +168,13 @@ Test(app_parser_generator, app_parser_with_no_apps_registered_generates_empty_fr
 
 Test(app_parser_generator, app_parser_generates_references_to_apps)
 {
-  _register_application("application foo[port514] {\n"
-                        "    filter { program('foo'); };\n"
-                        "    parser { kv-parser(prefix('foo.')); };\n"
-                        "};");
+  _register_sample_application("foo", "port514");
+  _register_sample_application("bar", "port514");
 
-  _register_application("application bar[port514] {\n"
-                        "    filter { program('bar'); };\n"
-                        "    parser { kv-parser(prefix('bar.')); };\n"
-                        "};");
   _app_parser_generate("port514");
   _assert_parser_framing_is_present();
   _assert_application_is_present("foo");
-  _assert_application_is_present("foo");
+  _assert_application_is_present("bar");
   _assert_config_is_valid("port514");
 }
 
@@ -176,10 +183,7 @@ Test(app_parser_generator, app_parser_uses_filter_or_parser_from_base_topics)
   _register_application("application foo[port514] {\n"
                         "};");
 
-  _register_application("application foo[*] {\n"
-                        "    filter { program('foo'); };\n"
-                        "    parser { kv-parser(prefix('foo.')); };\n"
-                        "};");
+  _register_sample_application("foo", "*");
 
   _app_parser_generate("port514");
   _assert_parser_framing_is_present();
@@ -191,15 +195,8 @@ Test(app_parser_generator, app_parser_uses_filter_or_parser_from_base_topics)
 
 Test(app_parser_generator, app_parser_base_topics_are_skipped)
 {
-  _register_application("application foo[*] {\n"
-                        "    filter { program('foo'); };\n"
-                        "    parser { kv-parser(prefix('foo.')); };\n"
-                        "};");
-
-  _register_application("application bar[*] {\n"
-                        "    filter { program('bar'); };\n"
-                        "    parser { kv-parser(prefix('bar.')); };\n"
-                        "};");
+  _register_sample_application("foo", "*");
+  _register_sample_application("bar", "*");
 
   _app_parser_generate("port514");
   _assert_parser_framing_is_present();
@@ -210,15 +207,8 @@ Test(app_parser_generator, app_parser_base_topics_are_skipped)
 
 Test(app_parser_generator, app_parser_is_disabled_if_auto_parse_is_set_to_no)
 {
-  _register_application("application foo[*] {\n"
-                        "    filter { program('foo'); };\n"
-                        "    parser { kv-parser(prefix('foo.')); };\n"
-                        "};");
-
-  _register_application("application bar[*] {\n"
-                        "    filter { program('bar'); };\n"
-                        "    parser { kv-parser(prefix('bar.')); };\n"
-                        "};");
+  _register_sample_application("foo", "port514");
+  _register_sample_application("bar", "port514");
 
   _app_parser_generate_with_args("port514", _build_cfg_args("auto-parse", "no", NULL));
   cr_assert_str_eq(result->str, "\nchannel {}", "result is expected to be an empty channel, but it is %s", result->str);
