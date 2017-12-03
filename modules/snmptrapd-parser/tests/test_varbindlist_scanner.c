@@ -22,6 +22,9 @@
 #include <criterion/criterion.h>
 #include "varbindlist-scanner.h"
 
+#include "apphook.h"
+#include "scratch-buffers.h"
+
 #define SIZE_OF_ARRAY(array) (sizeof(array) / sizeof((array)[0]))
 
 typedef struct
@@ -52,9 +55,7 @@ create_scanner(void)
 {
   VarBindListScanner *scanner = varbindlist_scanner_new();
 
-  VarBindListScanner *cloned = varbindlist_scanner_clone(scanner);
-  varbindlist_scanner_free(scanner);
-  return cloned;
+  return scanner;
 }
 
 static void
@@ -185,3 +186,18 @@ Test(varbindlist_scanner, test_multiline_quouted_value)
 
   expect_varbindlist(input, expected, SIZE_OF_ARRAY(expected));
 }
+
+static void
+setup(void)
+{
+  app_startup();
+}
+
+static void
+teardown(void)
+{
+  scratch_buffers_explicit_gc();
+  app_shutdown();
+}
+
+TestSuite(varbindlist_scanner, .init = setup, .fini = teardown);

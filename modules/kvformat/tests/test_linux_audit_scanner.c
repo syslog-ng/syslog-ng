@@ -20,6 +20,7 @@
  */
 #include "scanner/kv-scanner/kv-scanner.h"
 #include "linux-audit-parser.h"
+#include "apphook.h"
 #include "testutils.h"
 
 #define kv_scanner_testcase_begin(func, args)             \
@@ -128,5 +129,7 @@ test_kv_scanner(void)
 
 int main(int argc, char *argv[])
 {
+  app_startup();
   test_kv_scanner();
+  app_shutdown();
 }

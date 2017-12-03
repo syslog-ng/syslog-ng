@@ -23,7 +23,8 @@
 #include <criterion/criterion.h>
 #include <stdio.h>
 #include "stopwatch.h"
-
+#include "scratch-buffers.h"
+#include "apphook.h"
 #include "kv-scanner.h"
 
 static gboolean
@@ -143,10 +144,7 @@ create_kv_scanner(const ScannerConfig config)
 {
   KVScanner *scanner = kv_scanner_new(config.kv_separator, config.pair_separator, config.extract_stray_words);
   scanner->transform_value = config.transform_value;
-
-  KVScanner *cloned = kv_scanner_clone(scanner);
-  kv_scanner_free(scanner);
-  return cloned;
+  return scanner;
 }
 
 #define VARARG_STRUCT(VARARG_STRUCT_cont, VARARG_STRUCT_elem, ...) \
@@ -976,24 +974,25 @@ _test_performance(Testcase *tcs, gchar *title)
 
   for (tc = tcs; tc->input; tc++)
     {
-      KVScanner *scanner = create_kv_scanner(((ScannerConfig)
-      {'='
-      }));
+      KVScanner scanner;
+
       start_stopwatch();
       for (iteration_index = 0; iteration_index < ITERATION_NUMBER; iteration_index++)
         {
           gchar *error = NULL;
 
-          kv_scanner_input(scanner, tc->input);
-          if (!_expect_kv_pairs(scanner, tc->expected, &error))
+          kv_scanner_init(&scanner, '=', ",", FALSE);
+          kv_scanner_input(&scanner, tc->input);
+          if (!_expect_kv_pairs(&scanner, tc->expected, &error))
             {
               cr_expect(FALSE, "%s", error);
               g_free(error);
             }
+          kv_scanner_deinit(&scanner);
+          scratch_buffers_explicit_gc();
         }
       stop_stopwatch_and_display_result(iteration_index, "%.64s...",
                                         tc->input);
-      kv_scanner_free(scanner);
     }
   g_free(tcs);
 }
@@ -1003,3 +1002,18 @@ Test(kv_scanner, performance_tests)
   _test_performance(_provide_cases_for_performance_test_nothing_to_parse(), "Nothing to parse in the message");
   _test_performance(_provide_cases_for_performance_test_parse_long_msg(), "Parse long strings");
 }
+
+static void
+setup(void)
+{
+  app_startup();
+}
+
+static void
+teardown(void)
+{
+  scratch_buffers_explicit_gc();
+  app_shutdown();
+}
+
+TestSuite(kv_scanner, .init = setup, .fini = teardown);

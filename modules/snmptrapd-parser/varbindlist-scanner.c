@@ -68,39 +68,23 @@ _extract_type(KVScanner *scanner)
   scanner->input_pos = type_end - scanner->input + 1;
 }
 
-static KVScanner *
-_clone(KVScanner *s)
-{
-  VarBindListScanner *scanner = varbindlist_scanner_new();
-  return &scanner->super;
-}
-
-static void
-_free(KVScanner *s)
-{
-  VarBindListScanner *self = (VarBindListScanner *) s;
-  varbindlist_scanner_deinit(self);
-}
-
 void
 varbindlist_scanner_init(VarBindListScanner *self)
 {
   memset(self, 0, sizeof(VarBindListScanner));
-  kv_scanner_init_instance(&self->super, '=', "\t", FALSE);
+  kv_scanner_init(&self->super, '=', "\t", FALSE);
   kv_scanner_set_extract_annotation_func(&self->super, _extract_type);
   kv_scanner_set_valid_key_character_func(&self->super, _is_valid_key_character);
   kv_scanner_set_stop_character(&self->super, '\n');
 
   self->varbind_type = g_string_sized_new(16);
-  self->super.clone = _clone;
-  self->super.free_fn = _free;
 }
 
 void
 varbindlist_scanner_deinit(VarBindListScanner *self)
 {
-  kv_scanner_free_method(&self->super);
   g_string_free(self->varbind_type, TRUE);
+  kv_scanner_deinit(&self->super);
 }
 
 gboolean
