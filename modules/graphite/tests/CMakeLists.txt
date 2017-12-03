@@ -1,0 +1,1 @@
+add_unit_test(LIBTEST CRITERION TARGET test_graphite_output DEPENDS syslogformat graphite)
