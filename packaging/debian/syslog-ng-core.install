@@ -25,6 +25,8 @@ usr/lib/syslog-ng/*/libdate.so
 usr/lib/syslog-ng/*/libcef.so
 usr/lib/syslog-ng/*/libdisk-buffer.so
 usr/lib/syslog-ng/*/libxml.so
+usr/lib/syslog-ng/*/libappmodel.so
+usr/lib/syslog-ng/*/libjson-plugin.so
 usr/share/syslog-ng/include/scl/system/*
 usr/share/syslog-ng/include/scl/syslogconf/*
 usr/share/syslog-ng/include/scl/rewrite/*
@@ -36,7 +38,17 @@ usr/share/syslog-ng/include/scl/solaris/*
 usr/share/syslog-ng/include/scl/cisco/*
 usr/share/syslog-ng/include/scl/windowseventlog/*
 usr/share/syslog-ng/include/scl/loadbalancer/*
+usr/share/syslog-ng/include/scl/iptables/*
+usr/share/syslog-ng/include/scl/default-network-drivers/*
+usr/share/syslog-ng/include/scl/sudo/*
+usr/share/syslog-ng/include/scl/nodejs/*
+usr/share/syslog-ng/include/scl/osquery/*
+usr/share/syslog-ng/include/scl/ewmm/*
+usr/share/syslog-ng/include/scl/graylog2/*
 usr/share/syslog-ng/xsd/*
+
+#Templates with json dependencies
+usr/share/syslog-ng/include/scl/cim/*
 [!kfreebsd-any] debian/syslog-ng.systemd =>  lib/systemd/system/syslog-ng.service
 
 debian/syslog-ng.conf                   /etc/syslog-ng/
