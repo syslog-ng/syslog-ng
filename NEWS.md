@@ -12,6 +12,9 @@
  * It is possible from now to limit the number of registered dynamic counters (#1743)
  * Add $(binary) template function (#1679)
  * Add experimental transport for transferring messages in whole between syslog-ng instances (EWMM) (#1689)
+ * Docker based build and debian package generation (#1783)
+ * Add auto-parse(yes/no) to app-paser(), system() and default-network-drivers() (#1788)
+ * Add Graylog2 destination and $(format-gelf) template function (#1680)
 
 # Bugfixes
 
@@ -36,6 +39,7 @@
  * Fix a memory leak in afmongodb (#1766)
  * Fix name-to-GID calculation in the $(getent) template function (#1764)
  * Fix a crash when redis is configured without the command() option (#1767)
+ * Fix a race condition in kv-parser() (#1789)
 
 # Other changes
 
@@ -47,6 +51,7 @@
  * Allow source files to specify permissions locally (#1782)
  * Minor performance improvement (#1729)
  * The current config version can be queried with "--version" (#1740)
+ * Increase the performance of kv-parser() (#1789)
 
 # Notes to the developers
 
