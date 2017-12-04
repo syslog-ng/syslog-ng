@@ -32,6 +32,9 @@ typedef struct _AppParserGenerator
   CfgBlockGenerator super;
   GString *block;
   const gchar *topic;
+  const gchar *included_apps;
+  const gchar *excluded_apps;
+  gboolean is_parsing_enabled;
 } AppParserGenerator;
 
 static const gchar *
@@ -75,12 +78,35 @@ _generate_action(AppParserGenerator *self, Application *app)
   g_string_append(self->block, "    flags(final);\n");
 }
 
+static gboolean
+_is_application_included(AppParserGenerator *self, Application *app)
+{
+  /* include everything if we don't have the option */
+  if (!self->included_apps)
+    return TRUE;
+  return strstr(self->included_apps, app->name) != NULL;
+}
+
+static gboolean
+_is_application_excluded(AppParserGenerator *self, Application *app)
+{
+  if (!self->excluded_apps)
+    return FALSE;
+  return strstr(self->excluded_apps, app->name) != NULL;
+}
+
 static void
 _generate_application(Application *app, Application *base_app, gpointer user_data)
 {
   AppParserGenerator *self = (AppParserGenerator *) user_data;
 
   if (strcmp(self->topic, app->topic) != 0)
+    return;
+
+  if (!_is_application_included(self, app))
+    return;
+
+  if (_is_application_excluded(self, app))
     return;
 
   g_string_append(self->block, "channel {\n");
@@ -92,35 +118,105 @@ _generate_application(Application *app, Application *base_app, gpointer user_dat
 }
 
 static void
-_generate_applications(AppParserGenerator *self, GlobalConfig *cfg)
+_generate_applications(AppParserGenerator *self, AppModelContext *appmodel)
 {
-  AppModelContext *appmodel = appmodel_get_context(cfg);
-
   appmodel_context_iter_applications(appmodel, _generate_application, self);
 }
 
-static gboolean
-_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result)
-{
-  AppParserGenerator *self = (AppParserGenerator *) s;
 
-  g_assert(args != NULL);
+static void
+_generate_framing(AppParserGenerator *self, AppModelContext *appmodel)
+{
+  g_string_append(self->block,
+                  "\nchannel {\n"
+                  "    junction {\n");
+
+  _generate_applications(self, appmodel);
+
+  g_string_append(self->block, "    };\n");
+  g_string_append(self->block, "}");
+}
+
+static void
+_generate_empty_frame(AppParserGenerator *self)
+{
+  g_string_append(self->block, "\nchannel {}");
+}
+
+static gboolean
+_parse_auto_parse_arg(AppParserGenerator *self, CfgArgs *args)
+{
+  const gchar *v = cfg_args_get(args, "auto-parse");
+
+  if (v)
+    self->is_parsing_enabled = cfg_process_yesno(v);
+  else
+    self->is_parsing_enabled = TRUE;
+  return TRUE;
+}
+
+static gboolean
+_parse_auto_parse_exclude_arg(AppParserGenerator *self, CfgArgs *args)
+{
+  const gchar *v = cfg_args_get(args, "auto-parse-exclude");
+  if (!v)
+    return TRUE;
+  self->excluded_apps = g_strdup(v);
+  return TRUE;
+}
+
+static gboolean
+_parse_auto_parse_include_arg(AppParserGenerator *self, CfgArgs *args)
+{
+  const gchar *v = cfg_args_get(args, "auto-parse-include");
+  if (!v)
+    return TRUE;
+  self->included_apps = g_strdup(v);
+  return TRUE;
+}
+
+static gboolean
+_parse_topic_arg(AppParserGenerator *self, CfgArgs *args)
+{
   self->topic = cfg_args_get(args, "topic");
   if (!self->topic)
     {
       msg_error("app-parser() requires a topic() argument");
       return FALSE;
     }
+  return TRUE;
+}
+
+static gboolean
+_parse_arguments(AppParserGenerator *self, CfgArgs *args)
+{
+  g_assert(args != NULL);
+
+  if (!_parse_topic_arg(self, args))
+    return FALSE;
+  if (!_parse_auto_parse_arg(self, args))
+    return FALSE;
+  if (!_parse_auto_parse_exclude_arg(self, args))
+    return FALSE;
+  if (!_parse_auto_parse_include_arg(self, args))
+    return FALSE;
+  return TRUE;
+}
+
+static gboolean
+_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result)
+{
+  AppParserGenerator *self = (AppParserGenerator *) s;
+  AppModelContext *appmodel = appmodel_get_context(cfg);
+
+  if (!_parse_arguments(self, args))
+    return FALSE;
 
   self->block = result;
-  g_string_append(self->block,
-                  "\nchannel {\n"
-                  "    junction {\n");
-
-  _generate_applications(self, cfg);
-
-  g_string_append(self->block, "    };\n");
-  g_string_append(self->block, "}");
+  if (self->is_parsing_enabled)
+    _generate_framing(self, appmodel);
+  else
+    _generate_empty_frame(self);
   self->block = NULL;
 
   return TRUE;

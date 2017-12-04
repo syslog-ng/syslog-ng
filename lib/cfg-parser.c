@@ -26,6 +26,7 @@
 #include "cfg-grammar.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 extern int main_debug;
 
@@ -364,5 +365,13 @@ cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag_)
             }
         }
     }
+  return FALSE;
+}
+
+gboolean
+cfg_process_yesno(const gchar *yesno)
+{
+  if (strcasecmp(yesno, "yes") == 0 || atoi(yesno) > 0)
+    return TRUE;
   return FALSE;
 }

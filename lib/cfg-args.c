@@ -24,6 +24,7 @@
 #include "cfg-args.h"
 #include "messages.h"
 #include "str-utils.h"
+#include "str-repr/encode.h"
 
 struct _CfgArgs
 {
@@ -69,6 +70,31 @@ cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context)
       return FALSE;
     }
   return TRUE;
+}
+
+static void
+_resolve_unknown_blockargs_as_varargs(gpointer key, gpointer value, gpointer user_data)
+{
+  CfgArgs *defaults = ((gpointer *) user_data)[0];
+  GString *varargs = ((gpointer *) user_data)[1];
+
+  if (!defaults || cfg_args_get(defaults, key) == NULL)
+    {
+      g_string_append(varargs, key);
+      g_string_append_c(varargs, '(');
+      str_repr_encode_append(varargs, value, -1, NULL);
+      g_string_append(varargs, ") ");
+    }
+}
+
+gchar *
+cfg_args_format_varargs(CfgArgs *self, CfgArgs *defaults)
+{
+  GString *varargs = g_string_new("");
+  gpointer user_data[] = { defaults, varargs };
+
+  cfg_args_foreach(self, _resolve_unknown_blockargs_as_varargs, user_data);
+  return g_string_free(varargs, FALSE);
 }
 
 void

@@ -39,32 +39,68 @@ _register_application(const char *appmodel)
             "Parsing the given configuration failed: %s", appmodel);
 }
 
+void
+_register_sample_application(const gchar *name, const gchar *topic)
+{
+  gchar *app;
+
+  app = g_strdup_printf("application %s[%s] {\n"
+                        "    filter { program('%s'); };\n"
+                        "    parser { kv-parser(prefix('%s.')); };\n"
+                        "};", name, topic, name, name);
+  _register_application(app);
+  g_free(app);
+}
+
 static CfgBlockGenerator *
 _construct_app_parser(void)
 {
   return app_parser_generator_new(LL_CONTEXT_PARSER, "app-parser");
 }
 
-static void
-_app_parser_generate(const gchar *topic)
+static CfgArgs *
+_build_cfg_args(const gchar *key, const gchar *value, ...)
 {
   CfgArgs *args = cfg_args_new();
+  va_list va;
 
+  va_start(va, value);
+  while (key)
+    {
+      cfg_args_set(args, key, value);
+      key = va_arg(va, gchar *);
+      if (!key)
+        break;
+      value = va_arg(va, gchar *);
+    }
+  va_end(va);
+  return args;
+}
+
+static void
+_app_parser_generate_with_args(const gchar *topic, CfgArgs *args)
+{
   cfg_args_set(args, "topic", topic);
   cfg_block_generator_generate(app_parser, configuration, args, result);
   cfg_args_unref(args);
 }
 
 static void
-_assert_config_is_valid(const gchar *topic)
+_app_parser_generate(const gchar *topic)
+{
+  _app_parser_generate_with_args(topic, cfg_args_new());
+}
+
+static void
+_assert_config_is_valid(const gchar *topic, const gchar *varargs)
 {
   const gchar *config_fmt = ""
                             "parser p_test {\n"
-                            "    app-parser(topic(\"%s\"));\n"
+                            "    app-parser(topic(\"%s\") %s);\n"
                             "};\n";
   gchar *config;
 
-  config = g_strdup_printf(config_fmt, topic);
+  config = g_strdup_printf(config_fmt, topic, varargs ? : "");
   cr_assert(parse_config(config, LL_CONTEXT_ROOT, NULL, NULL),
             "Parsing the given configuration failed: %s", config);
   g_free(config);
@@ -127,25 +163,19 @@ Test(app_parser_generator, app_parser_with_no_apps_registered_generates_empty_fr
 {
   _app_parser_generate("port514");
   _assert_parser_framing_is_present();
-  _assert_config_is_valid("port514");
+  _assert_config_is_valid("port514", NULL);
 }
 
 Test(app_parser_generator, app_parser_generates_references_to_apps)
 {
-  _register_application("application foo[port514] {\n"
-                        "    filter { program('foo'); };\n"
-                        "    parser { kv-parser(prefix('foo.')); };\n"
-                        "};");
+  _register_sample_application("foo", "port514");
+  _register_sample_application("bar", "port514");
 
-  _register_application("application bar[port514] {\n"
-                        "    filter { program('bar'); };\n"
-                        "    parser { kv-parser(prefix('bar.')); };\n"
-                        "};");
   _app_parser_generate("port514");
   _assert_parser_framing_is_present();
   _assert_application_is_present("foo");
-  _assert_application_is_present("foo");
-  _assert_config_is_valid("port514");
+  _assert_application_is_present("bar");
+  _assert_config_is_valid("port514", NULL);
 }
 
 Test(app_parser_generator, app_parser_uses_filter_or_parser_from_base_topics)
@@ -153,36 +183,82 @@ Test(app_parser_generator, app_parser_uses_filter_or_parser_from_base_topics)
   _register_application("application foo[port514] {\n"
                         "};");
 
-  _register_application("application foo[*] {\n"
-                        "    filter { program('foo'); };\n"
-                        "    parser { kv-parser(prefix('foo.')); };\n"
-                        "};");
+  _register_sample_application("foo", "*");
 
   _app_parser_generate("port514");
   _assert_parser_framing_is_present();
   _assert_application_is_present("foo");
   _assert_snippet_is_present("program('foo')");
   _assert_snippet_is_present("kv-parser(prefix('foo.'))");
-  _assert_config_is_valid("port514");
+  _assert_config_is_valid("port514", NULL);
 }
 
 Test(app_parser_generator, app_parser_base_topics_are_skipped)
 {
-  _register_application("application foo[*] {\n"
-                        "    filter { program('foo'); };\n"
-                        "    parser { kv-parser(prefix('foo.')); };\n"
-                        "};");
-
-  _register_application("application bar[*] {\n"
-                        "    filter { program('bar'); };\n"
-                        "    parser { kv-parser(prefix('bar.')); };\n"
-                        "};");
+  _register_sample_application("foo", "*");
+  _register_sample_application("bar", "*");
 
   _app_parser_generate("port514");
   _assert_parser_framing_is_present();
   _assert_snippet_is_not_present("program('foo')");
   _assert_snippet_is_not_present("program('bar')");
-  _assert_config_is_valid("port514");
+  _assert_config_is_valid("port514", NULL);
 }
+
+Test(app_parser_generator, app_parser_is_disabled_if_auto_parse_is_set_to_no)
+{
+  _register_sample_application("foo", "port514");
+  _register_sample_application("bar", "port514");
+
+  _app_parser_generate_with_args("port514", _build_cfg_args("auto-parse", "no", NULL));
+  cr_assert_str_eq(result->str, "\nchannel {}", "result is expected to be an empty channel, but it is %s", result->str);
+
+  _app_parser_generate_with_args("port514", _build_cfg_args("auto-parse", "yes", NULL));
+  _assert_parser_framing_is_present();
+  _assert_snippet_is_present("program('foo')");
+  _assert_snippet_is_present("program('bar')");
+  _assert_config_is_valid("port514", "auto-parse(yes)");
+}
+
+Test(app_parser_generator, app_parser_excludes_apps)
+{
+  _register_sample_application("foo", "port514");
+  _register_sample_application("bar", "port514");
+
+  _app_parser_generate_with_args("port514", _build_cfg_args("auto-parse-exclude", "foo", NULL));
+  _assert_parser_framing_is_present();
+  _assert_snippet_is_not_present("program('foo')");
+  _assert_snippet_is_present("program('bar')");
+}
+
+Test(app_parser_generator, app_parser_includes_apps)
+{
+  _register_sample_application("foo", "port514");
+  _register_sample_application("bar", "port514");
+  _register_sample_application("baz", "port514");
+
+  _app_parser_generate_with_args("port514", _build_cfg_args("auto-parse-include", "foo", NULL));
+  _assert_parser_framing_is_present();
+  _assert_snippet_is_present("program('foo')");
+  _assert_snippet_is_not_present("program('bar')");
+  _assert_snippet_is_not_present("program('baz')");
+}
+
+Test(app_parser_generator, app_parser_includes_and_excludes_apps)
+{
+  _register_sample_application("foo", "port514");
+  _register_sample_application("bar", "port514");
+  _register_sample_application("baz", "port514");
+
+  _app_parser_generate_with_args("port514",
+                                 _build_cfg_args("auto-parse-include", "foo,bar",
+                                                 "auto-parse-exclude", "bar",
+                                                 NULL));
+  _assert_parser_framing_is_present();
+  _assert_snippet_is_present("program('foo')");
+  _assert_snippet_is_not_present("program('bar')");
+  _assert_snippet_is_not_present("program('baz')");
+}
+
 
 TestSuite(app_parser_generator, .init = startup, .fini = teardown);
