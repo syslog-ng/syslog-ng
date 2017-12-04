@@ -15,7 +15,7 @@ set(CMAKE_MACOSX_RPATH 1)
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 project (syslog-ng)
-set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
+set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set (CMAKE_POSITION_INDEPENDENT_CODE 1)
 set (BISON_FLAGS "-Wno-other")
 
@@ -23,6 +23,7 @@ add_compile_options("-Wno-initializer-overrides")
 
 include (CheckIncludeFiles)
 include (ExternalProject)
+include (external_or_find_package)
 
 file (STRINGS "${CMAKE_SOURCE_DIR}/VERSION" VERSION_FROM_FILE)
 set (SYSLOG_NG_VERSION "${VERSION_FROM_FILE}")
@@ -117,36 +118,7 @@ set (WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB 2.10.1 REQUIRED)
 
-SET(IVYKIS_SOURCE "auto" CACHE STRING "IVYKIS library source")
-
-SET_PROPERTY(CACHE IVYKIS_SOURCE PROPERTY STRINGS internal system auto)
-
-if     (("internal" STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE} ) AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
-    message("-- IVYKIS Source: internal")
-
-    ExternalProject_Add(
-        IVYKIS
-        PREFIX            ${CMAKE_CURRENT_BINARY_DIR}
-        INSTALL_DIR       ${CMAKE_CURRENT_BINARY_DIR}
-        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/
-        DOWNLOAD_COMMAND  echo
-        BUILD_COMMAND     make
-        INSTALL_COMMAND   make install
-        CONFIGURE_COMMAND autoreconf -i ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis && ${CMAKE_CURRENT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}
-        STEP_TARGETS build install
-    )
-
-    set(IVYKIS_FOUND TRUE)
-    set(IVYKIS_INTERNAL TRUE)
-    set(IVYKIS_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE STRING "IVYKIS include path")
-    set(IVYKIS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lib/libivykis.so" CACHE STRING "IVYKIS library path")
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib/ DESTINATION lib USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "libivykis.so*")
-
-elseif ("system"   STREQUAL ${IVYKIS_SOURCE} OR "auto" STREQUAL ${IVYKIS_SOURCE})
-  find_package(IVYKIS REQUIRED)
-else()
-  message(FATAL_ERROR "-- Library IVYKIS is mandatory ${IVYKIS_SOURCE}")
-endif()
+external_or_find_package(IVYKIS REQUIRED)
 
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
