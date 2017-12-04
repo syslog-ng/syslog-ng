@@ -250,10 +250,9 @@ plugin_dlopen_module_as_filename(const gchar *module_file_name, const gchar *mod
   mod = g_module_open(module_file_name, G_MODULE_BIND_LAZY);
   if (!mod)
     {
-      msg_error("Error opening plugin module",
-                evt_tag_str("module", module_name),
-                evt_tag_str("error", g_module_error()),
-                NULL);
+      msg_info("Error opening plugin module",
+               evt_tag_str("module", module_name),
+               evt_tag_str("error", g_module_error()));
       return NULL;
     }
   return mod;
