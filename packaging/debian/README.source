@@ -56,27 +56,12 @@ to maintain the whole.
 
 Upstream builds a `libsyslog-ng-$MAJOR.so.$N` shared library, which we
 ship in `syslog-ng-core`, because it is not a general purpose library.
-We also want third party modules (like the ones in the Incubator) to
-not have overly strict dependencies on the syslog-ng version they were
-compiled against. Having to rebuild the Incubator on every syslog-ng
-upload would be a disaster.
-
-For this reason, `syslog-ng-core` provides
-`syslog-ng-abi-$MAJOR-$ABI`, where **$MAJOR** is the major version,
-and **$ABI** is the ABI version: the **$N** part of
-`libsyslog-ng-$MAJOR.so.$N`. Whenever upstream bumps the version, the
-**$ABI** variable in `debian/rules` needs to be bumped too.
-
-If upstream forgets to bump the version, but introduces an
-ABI-incompatible change, it should be bumped anyway, and dependent
-modules will need to be rebuilt.
 
 ### Control variables
 
 We have three custom control variables, which are referenced by
-`debian/control`: **${sng:CoreModules}**, **${sng:Modules}** and
-**${sng:ABI}}**. The first two will be used for dependencies, and last
-one will be used to provide an ABI version.
+`debian/control`: **${sng:CoreModules}**, and **${sng:Modules}**. They will be
+used for dependencies.
 
 The `syslog-ng` meta package has to depend on core modules, because at
 some point in the past, they were part of the monolithic `syslog-ng`
@@ -91,13 +76,7 @@ starting with `syslog-ng-mod-`.
 
 We use the `debian/tools/list-modules.sh` script to construct these
 lists for us, and in `debian/rules`, we override `dh_gencontrol` to
-pass these along, along with **${sng:ABI}**.
-
-The **${sng:ABI}** is used for module dependencies. To have a looser
-dependency for modules, so that third party (and Incubator) modules do
-not have to get recompiled for every single syslog-ng update, we track
-the ABI with a `Provides` field. Whenever the version of
-`libsyslog-ng.so` changes, the ABI version should be updated too.
+pass these along.
 
  -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 07 Nov 2014 08:44:36 +0100
 

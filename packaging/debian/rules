@@ -36,11 +36,6 @@ endif
 # it out from the changelog instead.
 UMAJOR		   = $(shell dpkg-parsechangelog | sed -n '/^Version:/s/^Version: //p' | cut -d. -f1,2)
 
-# To better support the Incubator, and have looser dependencies, we
-# track the ABI version here. Whenever the soname of libsyslog-ng
-# changes, up this one too!
-ABI_VERSION	   = 3.13-0
-
 export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg
 
 CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
@@ -163,16 +158,8 @@ override_dh_installlogcheck:
 # directory. On the other hand, we do want correct dependencies on
 # anything that build-depends on syslog-ng-dev, so lets make a correct
 # shlibs file for that, shall we?
-#
-# See the comment at the top of this file about ABI_VERSION, which
-# explains how the dependency is calculated.
 override_dh_makeshlibs:
-ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
-	dh_makeshlibs -V "syslog-ng-abi-${ABI_VERSION}" \
-		      -n -Xusr/lib/syslog-ng/${UMAJOR}
-else
 	dh_makeshlibs -n -Xusr/lib/syslog-ng/${UMAJOR}
-endif
 
 # Since syslog-ng depends on all the modules, and syslog-ng-core
 # suggests the same set, and modules can come and go as new versions
@@ -182,8 +169,7 @@ endif
 # part of syslog-ng (or it depended on them) previously, in 3.3.
 override_dh_gencontrol:
 	dh_gencontrol -- -Vsng:Modules=$(shell debian/tools/list-modules.sh optional) \
-			 -Vsng:CoreModules=$(shell debian/tools/list-modules.sh core) \
-			 -Vsng:ABI=${ABI_VERSION}
+			 -Vsng:CoreModules=$(shell debian/tools/list-modules.sh core)
 
 # Sadly, dh_python2 barfs on --dbg-package=, so we work it around by
 # clearing DH_OPTIONS here.
