@@ -35,8 +35,6 @@ function(external_or_find_package LIB_NAME)
 
     if (NOT EXISTS ${EXT_${LIB_NAME}_PATH})
         set(${LIB_NAME}_INTERNAL FALSE)
-    else()
-      set_target_properties(${LIB_NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     endif()
 
     if  (${${LIB_NAME}_INTERNAL} AND ("internal" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE} ))
@@ -66,6 +64,7 @@ function(external_or_find_package LIB_NAME)
 
     if (${LIB_NAME}_INTERNAL)
        set(${LIB_NAME}_INTERNAL "${${LIB_NAME}_INTERNAL}" PARENT_SCOPE)
+       set_target_properties(${LIB_NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     endif()
 endfunction()
 
