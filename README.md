@@ -125,7 +125,11 @@ Releases and tarballs ready to compile are are made available at [GitHub][github
 
  [github-repo]: https://github.com/balabit/syslog-ng/releases
 
-To compile from source, the usual drill applies (assuming you have
+To generate the configure script and compile from source:
+
+    $ ./autogen.sh
+
+After that, the usual drill applies (assuming you have
 the required dependencies):
 
     $ ./configure && make && make install
