@@ -1,3 +1,26 @@
+3.13.2
+
+<!-- Tue, 05 Dec 2017 14:30:24 +0100 -->
+
+
+# Fixes
+ * Missing manpages from release tarball (#1793)
+ * Package syslog-ng-mod-json is removed from (#1794)
+ * Drop syslog-ng-abi virtual packages (#1797)
+
+# Credits
+
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessarily to produce syslog-ng.
+
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
+
+We would like to thank the following people for their contribution:
+Andras Mitzki, Gergely Nagy, Laszlo Budai, Laszlo Varady, Peter Czanik.
+
+
 3.13.1
 
 <!-- Thu, 30 Nov 2017 13:38:22 +0100 -->
