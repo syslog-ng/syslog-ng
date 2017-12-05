@@ -7,7 +7,7 @@ VERSION=`cat VERSION`
 ./autogen.sh
 
 cd /build
-/source/configure
+/source/configure --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
 make dist
 
 echo "Your tarball is in /build, also available on the host in \$(top_srcdir)/dbld/build"
