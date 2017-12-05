@@ -11,7 +11,6 @@ EXTRA_DIST		+= \
 		packaging/debian/watch \
 		packaging/debian/syslog-ng-mod-sql.preinst \
 		packaging/debian/syslog-ng-core.syslog-ng.logcheck.ignore.paranoid \
-		packaging/debian/syslog-ng-mod-json.install \
 		packaging/debian/syslog-ng-core.postrm \
 		packaging/debian/tools \
 		packaging/debian/tools/list-modules.sh \
@@ -19,12 +18,10 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-mod-amqp.install \
 		packaging/debian/syslog-ng-dev.install \
 		packaging/debian/syslog-ng-mod-sql.postrm \
-		packaging/debian/syslog-ng-mod-json.postinst \
 		packaging/debian/syslog-ng.conf \
 		packaging/debian/syslog-ng-core.syslog-ng.init \
 		packaging/debian/syslog-ng-mod-java-common-lib.install \
 		packaging/debian/tty10.linux.conf \
-		packaging/debian/syslog-ng-mod-json.preinst \
 		packaging/debian/syslog-ng-mod-sql.postinst \
 		packaging/debian/scl.conf \
 		packaging/debian/syslog-ng-core.syslog-ng.logrotate \
@@ -47,7 +44,6 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-mod-riemann.install \
 		packaging/debian/syslog-ng-mod-redis.install \
 		packaging/debian/syslog-ng-core.syslog-ng.logcheck.violations.ignore \
-		packaging/debian/syslog-ng-mod-json.postrm \
 		packaging/debian/syslog-ng-mod-sql.install \
 		packaging/debian/control \
 		packaging/debian/syslog-ng-mod-http.install \

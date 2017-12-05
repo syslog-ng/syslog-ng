@@ -132,8 +132,8 @@ Suggests: ${sng:CoreModules}, ${sng:Modules}
 Provides: system-log-daemon, linux-kernel-log-daemon, libsyslog-ng-dev,
  syslog-ng-abi-${sng:ABI}
 Conflicts: system-log-daemon, linux-kernel-log-daemon
-Replaces: syslog-ng (<< 3.3.0~), libsyslog-ng-dev
-Breaks: syslog-ng (<< 3.3.0~), libsyslog-ng-dev
+Replaces: syslog-ng (<< 3.3.0~), libsyslog-ng-dev, syslog-ng-mod-json (<< 3.13.1~)
+Breaks: syslog-ng (<< 3.3.0~), libsyslog-ng-dev, syslog-ng-mod-json (<< 3.13.1~)
 Description: Enhanced system logging daemon (core)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
@@ -152,32 +152,6 @@ Description: Enhanced system logging daemon (core)
  .
  This package provides the core syslog-ng, with all the plugins
  required for a standard installation.
-
-Package: syslog-ng-mod-json
-Architecture: any
-Breaks: syslog-ng-core (<< 3.8.1-7)
-Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Enhanced system logging daemon (JSON plugin)
- syslog-ng is an enhanced log daemon, supporting a wide range of input
- and output methods: syslog, unstructured text, message queues,
- databases (SQL and NoSQL alike) and more.
- .
- Key features:
- .
-  * receive and send RFC3164 and RFC5424 style syslog messages
-  * work with any kind of unstructured data
-  * receive and send JSON formatted messages
-  * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), etc.)
-  * normalize, crunch and process logs as they flow through the system
-  * hand on messages for further processing using message queues (like
-    AMQP), files or databases (like PostgreSQL or MongoDB).
- .
- This package provides the $(format-json) template function plugin,
- which makes it possible to conveniently serialize system log messages
- to JSON. Along with the template function, this module also provides
- a json-parser plugin, allowing syslog-ng to parse JSON input.
 
 Package: syslog-ng-mod-mongodb
 Architecture: any
@@ -729,7 +703,7 @@ Description: Enhanced system logging daemon (Java module common library)
 Package: syslog-ng-mod-elastic
 Architecture: any
 Multi-Arch: foreign
-Depends: syslog-ng-core (= ${binary:Version}), syslog-ng-mod-java-common-lib, syslog-ng-mod-java, syslog-ng-mod-json
+Depends: syslog-ng-core (= ${binary:Version}), syslog-ng-mod-java-common-lib, syslog-ng-mod-java
 Description: Enhanced system logging daemon (Elasticsearch destination)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
@@ -841,4 +815,27 @@ Description: Enhanced system logging daemon (HTTP destination)
  .
  This package provides an HTTP destination, allowing one to send syslog messages as HTTP 
  PUT messages to an http server.
+
+Package: syslog-ng-mod-json
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (HTTP destination)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides a transitional package for syslog-ng-mod-json which is
+ part of syslog-ng-core from 3.13.1 .
 
