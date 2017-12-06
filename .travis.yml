@@ -125,6 +125,26 @@ matrix:
       script:
         - export COPYRIGHTVERBOSITY=1
         - tests/copyright/check.sh . .
+    - env: B=trusty-cmake-internal
+      compiler: gcc
+      dist: trusty
+      sudo: required
+      before_script:
+      git:
+        submodules: true
+      script:
+        - mkdir build
+        - cd build
+        - cmake
+            -DCMAKE_C_FLAGS=-Werror
+            -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
+            ..
+        - make --keep-going -j 3 install ||
+          {
+            S=$?;
+            make V=1 install;
+            return $S;
+          }
     - env: B=trusty-cmake
       compiler: clang
       dist: trusty
