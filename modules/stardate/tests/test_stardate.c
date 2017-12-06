@@ -25,8 +25,8 @@
 #include <template_lib.h>
 #include <apphook.h>
 #include <plugin.h>
-#include "date/date-parser.h"
 
+#include "cfg.h"
 
 MsgFormatOptions parse_options;
 
