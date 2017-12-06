@@ -25,14 +25,14 @@
 
 #include <string.h>
 
-typedef struct _AppModelContext
+struct _AppModelContext
 {
   /* the context structure is registered into GlobalConfig, thus it must be
    * derived from ModuleConfig */
   ModuleConfig super;
   GHashTable *applications;
   GPtrArray *application_ptrs;
-} AppModelContext;
+};
 
 static gboolean
 _application_equal(gconstpointer v1, gconstpointer v2)
