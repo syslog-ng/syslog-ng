@@ -139,12 +139,7 @@ matrix:
             -DCMAKE_C_FLAGS=-Werror
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j 3 install ||
-          {
-            S=$?;
-            make V=1 install;
-            return $S;
-          }
+        - make --keep-going -j $(nproc) all test install
     - env: B=trusty-cmake
       compiler: clang
       dist: trusty
@@ -157,12 +152,7 @@ matrix:
             -DCMAKE_C_FLAGS=-Werror
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j 3 install ||
-          {
-            S=$?;
-            make V=1 install;
-            return $S;
-          }
+        - make --keep-going -j $(nproc) all test install
     - env: B=check
       os: osx
       osx_image: xcode8
