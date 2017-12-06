@@ -282,15 +282,9 @@ set(CORE_INCLUDE_DIRS
 
 include_directories(SYSTEM ${CORE_INCLUDE_DIRS})
 
-add_library(syslog-ng
-    SHARED
-    ${LIB_SOURCES}
-    ${LIB_HEADERS}
-    ${LIB_SUBDIR_HEADERS})
+add_library(syslog-ng SHARED ${LIB_SOURCES})
 
-target_include_directories(syslog-ng
-    SYSTEM INTERFACE
-    ${CORE_INCLUDE_DIRS})
+target_include_directories(syslog-ng SYSTEM INTERFACE ${CORE_INCLUDE_DIRS})
 
 target_link_libraries(
     syslog-ng
