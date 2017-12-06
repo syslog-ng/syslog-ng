@@ -130,6 +130,9 @@ the required dependencies):
 
     $ ./configure && make && make install
 
+If you don't have a configure script (because of cloning from git, for example),
+run `./autogen.sh` to generate it.
+
 Some of the functionality is compiled only in case the required
 development libraries are present. The configure script displays a
 summary of enabled features at the end of its run.
