@@ -547,13 +547,19 @@ log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_han
 
   for (i = 0; i < (RE_MAX_MATCHES) && i < match_num; i++)
     {
+      gint begin_index = matches[2 * i];
+      gint end_index = matches[2 * i + 1];
+
+      if (begin_index < 0 || end_index < 0)
+        continue;
+
       if (indirect)
         {
-          log_msg_set_match_indirect(msg, i, value_handle, 0, matches[2 * i], matches[2 * i + 1] - matches[2 * i]);
+          log_msg_set_match_indirect(msg, i, value_handle, 0, begin_index, end_index - begin_index);
         }
       else
         {
-          log_msg_set_match(msg, i, &value[matches[2 * i]], matches[2 * i + 1] - matches[2 * i]);
+          log_msg_set_match(msg, i, &value[begin_index], end_index - begin_index);
         }
     }
 }
@@ -583,7 +589,13 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcher *s, LogMessage *msg, int *m
       for (i = 0; i < namecount; i++)
         {
           int n = (tabptr[0] << 8) | tabptr[1];
-          log_msg_set_value_by_name(msg, tabptr + 2, value + matches[2*n], matches[2*n+1] - matches[2*n]);
+          gint begin_index = matches[2 * n];
+          gint end_index = matches[2 * n + 1];
+
+          if (begin_index < 0 || end_index < 0)
+            continue;
+
+          log_msg_set_value_by_name(msg, tabptr + 2, value + begin_index, end_index - begin_index);
           tabptr += name_entry_size;
         }
     }
