@@ -46,8 +46,8 @@ public abstract class HttpMessageProcessor implements ESMessageProcessor {
 	public void init() {
 	}
 
-	public void flush() throws IOException {
-
+	public boolean flush() {
+		return true;
 	}
 
 	public void deinit() {

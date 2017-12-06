@@ -49,9 +49,9 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 	}
 
 	@Override
-	public void flush() throws IOException {
+	public boolean flush() {
 		JestResult jestResult = null;
-    logger.debug("Flushing messages for ES destination [mode=" + options.getClientMode() + "]");
+		logger.debug("Flushing messages for ES destination [mode=" + options.getClientMode() + "]");
 		Bulk bulkActions = bulk.build();
 		try {
 			jestResult = client.getClient().execute(bulkActions);
@@ -59,25 +59,23 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 		catch (IOException e)
 		{
 			logger.error(e.getMessage());
+			return false;
 		}
 		if (! jestResult.isSucceeded()) {
-			throw new IOException(jestResult.getErrorMessage());
-		} else {
-			bulk = new Bulk.Builder();
-			messageCounter = 0;
+			logger.error(jestResult.getErrorMessage());
+			return false;
 		}
+		bulk = new Bulk.Builder();
+		messageCounter = 0;
+		return true;
 	}
 
 	@Override
 	public boolean send(Index index) {
 		if (messageCounter >= flushLimit)
 		{
-			try {
-				flush();
-			} catch (IOException e) {
-				logger.error(e.getMessage());
+			if (!flush())
 				return false;
-			}
 		}
 		bulk = bulk.addAction(index);
 		messageCounter++;
