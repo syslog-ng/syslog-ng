@@ -1,19 +1,29 @@
 set(SCL_DIRS
     apache
     cim
+    cisco
+    default-network-drivers
     elasticsearch
+    ewmm
     graphite
+    graylog2
     hdfs
+    iptables
     kafka
+    loadbalancer
     loggly
     logmatic
     mbox
     nodejs
+    osquery
     pacct
     rewrite
+    snmptrap
     solaris
+    sudo
     syslogconf
     system
+    windowseventlog
 )
 
 install(DIRECTORY ${SCL_DIRS} DESTINATION share/syslog-ng/include/scl)
