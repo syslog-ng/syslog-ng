@@ -23,6 +23,7 @@
 
 # origin: https://raw.githubusercontent.com/bro/cmake/master/FindLibGeoIP.cmake
 # - Try to find GeoIP headers and libraries
+# - Patched to use C compiler instead of CXX
 #
 # Usage of this module as follows:
 #
@@ -72,13 +73,13 @@ find_package_handle_standard_args(LibGeoIP DEFAULT_MSG
 )
 
 if (LIBGEOIP_FOUND)
-    include(CheckCXXSourceCompiles)
+    include(CheckCSourceCompiles)
     set(CMAKE_REQUIRED_INCLUDES ${LibGeoIP_INCLUDE_DIR})
-    check_cxx_source_compiles("
+    check_c_source_compiles("
     #include <GeoIPCity.h>
     int main() { GEOIP_COUNTRY_EDITION_V6; return 0; }
     " HAVE_GEOIP_COUNTRY_EDITION_V6)
-    check_cxx_source_compiles("
+    check_c_source_compiles("
     #include <GeoIPCity.h>
     int main() { GEOIP_CITY_EDITION_REV0_V6; return 0; }
     " HAVE_GEOIP_CITY_EDITION_REV0_V6)

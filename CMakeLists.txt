@@ -14,7 +14,11 @@ set(CMAKE_MACOSX_RPATH 1)
 # which point to directories outside the build tree to the install RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-project (syslog-ng)
+project (syslog-ng C)
+
+set (CMAKE_C_STANDARD 99)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99") #only from cmake 3.1 the CMAKE_C_STANDARD supported
+
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set (CMAKE_POSITION_INDEPENDENT_CODE 1)
 set (BISON_FLAGS "-Wno-other")
