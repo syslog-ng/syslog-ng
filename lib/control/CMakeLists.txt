@@ -10,3 +10,5 @@ set(CONTROL_SOURCES
     control/control-main.c
     control/control-server.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)

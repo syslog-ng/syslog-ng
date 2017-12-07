@@ -335,3 +335,5 @@ set(TOOLS
 )
 
 install(FILES ${TOOLS} DESTINATION share/syslog-ng/tools)
+
+add_subdirectory(tests)

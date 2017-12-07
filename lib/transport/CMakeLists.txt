@@ -15,3 +15,5 @@ set(TRANSPORT_SOURCES
     transport/transport-socket.c
     transport/transport-tls.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)

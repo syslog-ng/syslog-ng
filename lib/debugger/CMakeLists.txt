@@ -9,3 +9,5 @@ set(DEBUGGER_SOURCES
     debugger/tracer.c
     debugger/debugger-main.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)

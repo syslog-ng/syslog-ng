@@ -25,3 +25,5 @@ set(COMPAT_SOURCES
     compat/openssl_support.c
     compat/getent.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)

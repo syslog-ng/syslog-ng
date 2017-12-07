@@ -19,7 +19,9 @@ bison_target(DateParserGrammar
 
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
-add_library(date MODULE ${DATE_PARSER_SOURCES})
+add_library(date SHARED ${DATE_PARSER_SOURCES})
 target_link_libraries(date PRIVATE syslog-ng)
 
 install(TARGETS date LIBRARY DESTINATION lib/syslog-ng/ COMPONENT date)
+
+add_subdirectory(tests)

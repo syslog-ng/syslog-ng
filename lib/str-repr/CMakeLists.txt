@@ -7,3 +7,5 @@ set(STR_REPR_SOURCES
     str-repr/encode.c
     str-repr/decode.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)

@@ -26,7 +26,9 @@ bison_target(add_contextual_dataGrammar
 
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
-add_library(add_contextual_data MODULE ${add_contextual_data_SOURCES})
+add_library(add_contextual_data SHARED ${add_contextual_data_SOURCES})
 target_link_libraries(add_contextual_data PRIVATE syslog-ng)
 
 install(TARGETS add_contextual_data LIBRARY DESTINATION lib/syslog-ng/ COMPONENT add_contextual_data)
+
+add_subdirectory(tests)

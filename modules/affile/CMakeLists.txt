@@ -54,9 +54,11 @@ bison_target(AffileGrammar
 
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
-add_library(affile MODULE ${AFFILE_SOURCES})
+add_library(affile SHARED ${AFFILE_SOURCES})
 target_link_libraries(affile PRIVATE syslog-ng)
 
 install(TARGETS affile
     LIBRARY DESTINATION lib/syslog-ng/
     COMPONENT affile)
+
+add_subdirectory(tests)
