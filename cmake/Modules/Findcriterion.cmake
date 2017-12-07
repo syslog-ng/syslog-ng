@@ -1,5 +1,5 @@
 #############################################################################
-# Copyright (c) 2016 Balabit
+# Copyright (c) 2017 Balabit
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -21,11 +21,9 @@
 #
 #############################################################################
 
-include(LibFindMacros)
+libfind_pkg_check_modules(CRITERION_PKGCONF criterion)
 
-libfind_pkg_check_modules(Ivykis_PKGCONF ivykis)
-
-libfind_pkg_detect(Ivykis ivykis FIND_PATH iv.h FIND_LIBRARY ivykis)
-set(Ivykis_PROCESS_INCLUDES Ivykis_INCLUDE_DIR)
-set(Ivykis_PROCESS_LIBS Ivykis_LIBRARY)
-libfind_process(Ivykis)
+libfind_pkg_detect(CRITERION criterion FIND_PATH criterion/criterion.h FIND_LIBRARY criterion)
+set(CRITERION_PROCESS_INCLUDES CRITERION_INCLUDE_DIR)
+set(CRITERION_PROCESS_LIBS CRITERION_LIBRARY)
+libfind_process(CRITERION)

@@ -1,0 +1,5 @@
+add_executable(test_basicfuncs test_basicfuncs.c)
+target_link_libraries(test_basicfuncs libtest basicfuncs syslogformat syslog-ng)
+target_include_directories(test_basicfuncs PUBLIC "${CMAKE_SOURCE_DIR}/libtest")
+set_property(TARGET test_basicfuncs APPEND PROPERTY LINK_FLAGS " -Wl,--no-as-needed")
+add_test(test_basicfuncs test_basicfuncs)

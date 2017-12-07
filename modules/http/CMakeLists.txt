@@ -1,4 +1,3 @@
-option (ENABLE_CURL "Enable http destination" ON)
 
 set(HTTP_DESTINATION_SOURCES
     http-plugin.h
@@ -17,7 +16,7 @@ bison_target(HttpParserGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-find_package(Curl REQUIRED)
+find_package(Curl)
 
 if (Curl_FOUND)
     option(ENABLE_CURL "Enable http destination" ON)

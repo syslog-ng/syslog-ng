@@ -23,6 +23,7 @@ add_subdirectory(transport)
 add_subdirectory(value-pairs)
 add_subdirectory(scanner)
 add_subdirectory(str-repr)
+add_subdirectory(eventlog)
 
 set(LIB_SUBDIR_HEADERS
     ${COMPAT_HEADERS}
@@ -222,9 +223,7 @@ set(LIB_SOURCES
     ${TEMPLATE_SOURCES}
     ${TRANSPORT_SOURCES}
     ${VALUE_PAIRS_SOURCES}
-    ${CSV_SCANNER_SOURCES}
-    ${LIST_SCANNER_SOURCES}
-    ${KV_SCANNER_SOURCES}
+    ${SCANNER_SOURCES}
     ${STR_REPR_SOURCES}
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.c
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.c
@@ -270,26 +269,47 @@ bison_target(ParserExprGrammar
     COMPILE_FLAGS ${BISON_FLAGS})
 add_flex_bison_dependency(CfgLexer ParserExprGrammar)
 
+set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/eventlog/src/")
+
+set(CORE_INCLUDE_DIRS
+    ${Eventlog_INCLUDE_DIR}
+    ${GLIB_INCLUDE_DIRS}
+    ${Gettext_INCLUDE_DIR}
+    ${IVYKIS_INCLUDE_DIR}
+    ${OPENSSL_INCLUDE_DIRS}
+    ${LIBPCRE_INCLUDE_DIRS}
+)
+
 include_directories(SYSTEM ${CORE_INCLUDE_DIRS})
 
-add_library(syslog-ng
-    SHARED
-    ${LIB_SOURCES}
-    ${LIB_HEADERS}
-    ${LIB_SUBDIR_HEADERS})
+add_library(syslog-ng SHARED ${LIB_SOURCES})
 
-target_include_directories(syslog-ng
-    SYSTEM INTERFACE
-    ${CORE_INCLUDE_DIRS})
+target_include_directories(syslog-ng SYSTEM INTERFACE ${CORE_INCLUDE_DIRS})
 
 target_link_libraries(
     syslog-ng
     LINK_PUBLIC
-        ${CORE_LIBRARIES})
+    eventlog
+    ${BISON_LIBRARIES}
+    ${Eventlog_LIBRARY}
+    ${FLEX_LIBRARIES}
+    ${GLIB_GMODULE_LIBRARIES}
+    ${GLIB_GTHREAD_LIBRARIES}
+    ${GLIB_LIBRARIES}
+    ${Gettext_LIBRARIES}
+    ${IVYKIS_LIBRARY}
+    ${OPENSSL_LIBRARIES}
+    ${RESOLV_LIBRARIES}
+    ${LIBPCRE_LIBRARIES}
+    )
 
 set_target_properties(syslog-ng
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
     SOVERSION ${SYSLOG_NG_VERSION})
+
+if     (${IVYKIS_INTERNAL})
+   add_dependencies(syslog-ng IVYKIS)
+endif()
 
 install(TARGETS syslog-ng LIBRARY DESTINATION lib)
 

@@ -14,19 +14,23 @@ set(CMAKE_MACOSX_RPATH 1)
 # which point to directories outside the build tree to the install RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-project (syslog-ng)
-set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
+project (syslog-ng C)
+
+set (CMAKE_C_STANDARD 99)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99") #only from cmake 3.1 the CMAKE_C_STANDARD supported
+
+set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set (CMAKE_POSITION_INDEPENDENT_CODE 1)
 set (BISON_FLAGS "-Wno-other")
 
 add_compile_options("-Wno-initializer-overrides")
 
 include (CheckIncludeFiles)
+include (ExternalProject)
+include (external_or_find_package)
 
-set (SYSLOG_NG_VERSION_MAJOR 3)
-set (SYSLOG_NG_VERSION_MINOR 9)
-set (SYSLOG_NG_VERSION_PATCH 1)
-set (SYSLOG_NG_VERSION "${SYSLOG_NG_VERSION_MAJOR}.${SYSLOG_NG_VERSION_MINOR}.${SYSLOG_NG_VERSION_PATCH}")
+file (STRINGS "${CMAKE_SOURCE_DIR}/VERSION" VERSION_FROM_FILE)
+set (SYSLOG_NG_VERSION "${VERSION_FROM_FILE}")
 set (SYSLOG_NG_COMBINED_VERSION ${SYSLOG_NG_VERSION})
 set (SYSLOG_NG_SOURCE_REVISION ${SYSLOG_NG_VERSION})
 
@@ -62,9 +66,10 @@ ELSE()
   set (SYSLOG_NG_ENABLE_DEBUG 0)
 ENDIF()
 
+# The inclusion of CTest triggers enable_testing()
 # CMake will generate tests only if the enable_testing() command has been invoked.
 # The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
-enable_testing()
+include(CTest)
 
 include (CheckTypeSize)
 include (CheckStructMember)
@@ -117,13 +122,15 @@ set (WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.
 
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB 2.10.1 REQUIRED)
-find_package(Ivykis REQUIRED)
-find_package(Eventlog REQUIRED)
+
+external_or_find_package(IVYKIS REQUIRED)
+
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(LibNet REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(Wrap)
+find_package(criterion)
 
 pkg_check_modules(LIBPCRE REQUIRED libpcre)
 
@@ -143,35 +150,23 @@ else()
     find_package(Gettext REQUIRED QUIET)
 endif()
 
+set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/eventlog/src")
+
 set(CORE_INCLUDE_DIRS
-    ${Eventlog_INCLUDE_DIRS}
+    ${Eventlog_INCLUDE_DIR}
     ${GLIB_INCLUDE_DIRS}
     ${Gettext_INCLUDE_DIR}
-    ${Ivykis_INCLUDE_DIRS}
+    ${IVYKIS_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIRS}
     ${LIBPCRE_INCLUDE_DIRS}
 )
 
-set(CORE_LIBRARIES
-    ${BISON_LIBRARIES}
-    ${Eventlog_LIBRARIES}
-    ${FLEX_LIBRARIES}
-    ${GLIB_GMODULE_LIBRARIES}
-    ${GLIB_GTHREAD_LIBRARIES}
-    ${GLIB_LIBRARIES}
-    ${Gettext_LIBRARIES}
-    ${Ivykis_LIBRARIES}
-    ${OPENSSL_LIBRARIES}
-    ${RESOLV_LIBRARIES}
-    ${LIBPCRE_LIBRARIES}
-    )
-
-include_directories(SYSTEM ${CORE_INCLUDE_DIRS})
 
 include_directories (${PROJECT_BINARY_DIR}/lib)
 include_directories (${PROJECT_BINARY_DIR})
 include_directories (${PROJECT_SOURCE_DIR}/lib)
 include_directories (${PROJECT_SOURCE_DIR})
+
 add_subdirectory(Mk)
 add_subdirectory(scl)
 add_subdirectory(lib)
@@ -179,6 +174,9 @@ add_subdirectory(modules)
 add_subdirectory(scripts)
 add_subdirectory(syslog-ng)
 add_subdirectory(syslog-ng-ctl)
+add_subdirectory(libtest)
+add_subdirectory(tests)
+
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h DESTINATION include/syslog-ng)
@@ -195,9 +193,9 @@ set (PKG_CONFIG_TOOLSDIR ${TOOLSDIR})
 set (PKG_CONFIG_MODULEDIR ${SYSLOG_NG_PATH_MODULEDIR})
 set (PKG_CONFIG_CONFIG_INCLUDEDIR ${SYSLOG_NG_PATH_CONFIG_INCLUDEDIR})
 set (PKG_CONFIG_SCLDIR ${SYSLOG_NG_PATH_SCLDIR})
-set (PKG_CONFIG_IVYKIS ${Ivykis_INCLUDE_DIRS})
+set (PKG_CONFIG_IVYKIS ${IVYKIS_INCLUDE_DIRS})
 set (PKG_CONFIG_PACKAGE_VERSION ${SYSLOG_NG_VERSION})
-set (PKG_CONFIG_INTERNAL_IVYKIS_CFLAGS ${Ivykis_INCLUDE_DIRS})
+set (PKG_CONFIG_INTERNAL_IVYKIS_CFLAGS ${IVYKIS_INCLUDE_DIRS})
 set (libdir "\${libdir}")
 set (includedir "\${includedir}")
 

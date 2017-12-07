@@ -19,7 +19,7 @@ bison_target(SyslogParserGrammar
 
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
-add_library(syslogformat MODULE ${SYSLOGFORMAT_SOURCES})
+add_library(syslogformat SHARED ${SYSLOGFORMAT_SOURCES})
 target_link_libraries(syslogformat PRIVATE syslog-ng)
 
 install(TARGETS syslogformat LIBRARY DESTINATION lib/syslog-ng/)
