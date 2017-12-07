@@ -157,6 +157,20 @@ void test_subst_field_exist_and_substring_substituted(void)
   rewrite_teardown(msg);
 }
 
+void test_subst_pcre_unused_subpattern(void)
+{
+  LogRewrite *test_rewrite =
+    create_rewrite_rule("subst('(a|(z))(bc)', '.', value('field1') type(pcre) flags('store-matches'));");
+  LogMessage *msg = create_message_with_fields("field1", "abc", NULL);
+  invoke_rewrite_rule(test_rewrite, msg);
+  assert_msg_field_equals(msg, "field1", ".", -1, ASSERTION_ERROR("Couldn't subst message field with literal"));
+  assert_msg_field_equals(msg, "0", "abc", -1, ASSERTION_ERROR("Invalid subpattern match"));
+  assert_msg_field_equals(msg, "1", "a", -1, ASSERTION_ERROR("Invalid subpattern match"));
+  assert_msg_field_equals(msg, "2", "", -1, ASSERTION_ERROR("Invalid subpattern match"));
+  assert_msg_field_equals(msg, "3", "bc", -1, ASSERTION_ERROR("Invalid subpattern match"));
+  rewrite_teardown(msg);
+}
+
 void test_subst_field_exist_and_substring_substituted_with_template(void)
 {
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"$field2\" value(\"field1\") );");
@@ -337,6 +351,7 @@ main(int argc, char **argv)
   test_set_field_not_exist_and_set_literal_string();
   test_set_field_exist_and_set_template_string();
   test_subst_field_exist_and_substring_substituted();
+  test_subst_pcre_unused_subpattern();
   test_subst_field_exist_and_substring_substituted_with_template();
   test_subst_field_exist_and_substring_substituted_only_once_without_global();
   test_subst_field_exist_and_substring_substituted_every_occurence_with_global();
