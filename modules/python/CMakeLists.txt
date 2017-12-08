@@ -1,5 +1,29 @@
+set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
 
-find_package(PythonLibs)
+if ("${PYTHON_VERSION}" STREQUAL "AUTO")
+  find_package(PythonInterp)
+  find_package(PythonLibs)
+
+  if (PYTHONLIBS_FOUND)
+    option(ENABLE_PYTHON "Enable Python module" ON)
+  else()
+    option(ENABLE_PYTHON "Enable Python module" OFF)
+  endif()
+
+  if (NOT ENABLE_PYTHON)
+    return()
+  endif ()
+
+  if (NOT PYTHONLIBS_FOUND)
+    message(FATAL_ERROR "Python module enabled, but python library not found.")
+  endif()
+
+else ()
+  find_package(PythonInterp EXACT "${PYTHON_VERSION}" REQUIRED)
+  find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
+endif ()
+
+MESSAGE(STATUS "Found python ${PYTHONLIBS_VERSION_STRING}")
 
 set(PYTHON_SOURCES
     python-module.h
@@ -24,9 +48,12 @@ set(PYTHON_SOURCES
     python-debugger.h
     python-logparser.h
     python-logparser.c
+    compat/compat-python.c
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.h
 )
+
+set (PYTHON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
 generate_y_from_ym(modules/python/python-grammar)
 
@@ -35,19 +62,21 @@ bison_target(PythonGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-if (PYTHONLIBS_FOUND)
-    option(ENABLE_PYTHON "Enable Python module" ON)
-else()
-    option(ENABLE_PYTHON "Enable Python module" OFF)
-endif()
+add_subdirectory(pylib)
+add_library(mod-python SHARED ${PYTHON_SOURCES})
+target_include_directories (mod-python PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories (mod-python PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (mod-python PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(mod-python PRIVATE syslog-ng ${PYTHON_LIBRARIES} ${Eventlog_LIBRARIES} ${IVYKIS_LIBRARIES})
 
-if (ENABLE_PYTHON)
-    add_subdirectory(pylib)
-    add_library(mod-python MODULE ${PYTHON_SOURCES})
-    target_include_directories (mod-python PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories (mod-python PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_include_directories (mod-python PRIVATE ${PYTHON_INCLUDE_DIRS})
-    target_link_libraries(mod-python PRIVATE syslog-ng ${PYTHON_LIBRARIES} ${Eventlog_LIBRARIES} ${IVYKIS_LIBRARIES})
-    add_dependencies(mod-python SetupPylib)
-    install(TARGETS mod-python DESTINATION lib/syslog-ng/)
-endif()
+include(CheckFunctionExists)
+if (PYTHONLIBS_VERSION_STRING VERSION_LESS 3)
+  target_compile_definitions(mod-python PRIVATE SYSLOG_NG_ENABLE_PYTHONv2=1)
+else ()
+  target_compile_definitions(mod-python PRIVATE SYSLOG_NG_ENABLE_PYTHONv3=1)
+endif ()
+
+add_dependencies(mod-python SetupPylib)
+install(TARGETS mod-python DESTINATION lib/syslog-ng/)
+
+add_subdirectory(tests)
