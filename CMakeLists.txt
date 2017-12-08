@@ -132,6 +132,8 @@ find_package(LibNet REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(Wrap)
 find_package(criterion)
+find_package(Inotify)
+set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
 
 pkg_check_modules(LIBPCRE REQUIRED libpcre)
 
