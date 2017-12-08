@@ -103,6 +103,7 @@ check_symbol_exists (inet_aton "sys/socket.h;netinet/in.h;arpa/inet.h" SYSLOG_NG
 check_symbol_exists (getutent utmp.h SYSLOG_NG_HAVE_GETUTENT)
 check_symbol_exists (getutxent utmpx.h SYSLOG_NG_HAVE_GETUTXENT)
 check_symbol_exists (getaddrinfo "netdb.h;sys/socket.h;sys/types.h" SYSLOG_NG_HAVE_GETADDRINFO)
+check_symbol_exists (getnameinfo "netdb.h;sys/socket.h" SYSLOG_NG_HAVE_GETNAMEINFO)
 
 check_include_files (utmp.h SYSLOG_NG_HAVE_UTMP_H)
 check_include_files (utmpx.h SYSLOG_NG_HAVE_UTMPX_H)
