@@ -43,6 +43,7 @@ dbld/build/.*$
 dbld/release/.*$
 dbld/install/.*$
 dbld/images/.*$
+cmake/Modules/FindInotify.cmake
  LGPLv2.1+_SSL
 autogen\.sh$
 cmake

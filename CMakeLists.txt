@@ -16,9 +16,6 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 project (syslog-ng C)
 
-set (CMAKE_C_STANDARD 99)
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99") #only from cmake 3.1 the CMAKE_C_STANDARD supported
-
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set (CMAKE_POSITION_INDEPENDENT_CODE 1)
 set (BISON_FLAGS "-Wno-other")
@@ -105,6 +102,7 @@ check_symbol_exists (strtoimax inttypes.h SYSLOG_NG_HAVE_STRTOIMAX)
 check_symbol_exists (inet_aton "sys/socket.h;netinet/in.h;arpa/inet.h" SYSLOG_NG_HAVE_INET_ATON)
 check_symbol_exists (getutent utmp.h SYSLOG_NG_HAVE_GETUTENT)
 check_symbol_exists (getutxent utmpx.h SYSLOG_NG_HAVE_GETUTXENT)
+check_symbol_exists (getaddrinfo "netdb.h;sys/socket.h;sys/types.h" SYSLOG_NG_HAVE_GETADDRINFO)
 
 check_include_files (utmp.h SYSLOG_NG_HAVE_UTMP_H)
 check_include_files (utmpx.h SYSLOG_NG_HAVE_UTMPX_H)
@@ -120,6 +118,9 @@ endif()
 
 set (WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g. /usr)")
 
+set (CMAKE_C_STANDARD 99)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99") #only from cmake 3.1 the CMAKE_C_STANDARD supported
+
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB 2.10.1 REQUIRED)
 
@@ -131,6 +132,8 @@ find_package(LibNet REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(Wrap)
 find_package(criterion)
+find_package(Inotify)
+set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
 
 pkg_check_modules(LIBPCRE REQUIRED libpcre)
 
