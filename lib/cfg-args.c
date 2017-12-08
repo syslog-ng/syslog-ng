@@ -80,10 +80,7 @@ _resolve_unknown_blockargs_as_varargs(gpointer key, gpointer value, gpointer use
 
   if (!defaults || cfg_args_get(defaults, key) == NULL)
     {
-      g_string_append(varargs, key);
-      g_string_append_c(varargs, '(');
-      str_repr_encode_append(varargs, value, -1, NULL);
-      g_string_append(varargs, ") ");
+      g_string_append_printf(varargs, "%s(%s) ", (gchar *)key, (gchar *)value);
     }
 }
 
