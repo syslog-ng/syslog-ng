@@ -30,6 +30,4 @@ libfind_pkg_detect(Curl libcurl FIND_PATH curl.h PATH_SUFFIXES curl FIND_LIBRARY
 set(Curl_PROCESS_INCLUDES Curl_INCLUDE_DIR)
 set(Curl_PROCESS_LIBS Curl_LIBRARY)
 
-# silence warnings
-set(Curl_FIND_QUIETLY 1)
 libfind_process(Curl QUIET)
