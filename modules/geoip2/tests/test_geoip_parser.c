@@ -28,7 +28,7 @@
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
       geoip_parser = maxminddb_parser_new(configuration);     \
-      geoip_parser_set_database_path(geoip_parser, "modules/geoip2/tests/test.mmdb"); \
+      geoip_parser_set_database_path(geoip_parser, TOP_SRCDIR "/modules/geoip2/tests/test.mmdb"); \
     }                                                           \
   while (0)
 
