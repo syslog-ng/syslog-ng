@@ -25,6 +25,8 @@ add_compile_options("-Wno-initializer-overrides")
 include (CheckIncludeFiles)
 include (ExternalProject)
 include (external_or_find_package)
+include (add_tests)
+
 
 file (STRINGS "${CMAKE_SOURCE_DIR}/VERSION" VERSION_FROM_FILE)
 set (SYSLOG_NG_VERSION "${VERSION_FROM_FILE}")
@@ -180,7 +182,6 @@ add_subdirectory(syslog-ng)
 add_subdirectory(syslog-ng-ctl)
 add_subdirectory(libtest)
 add_subdirectory(tests)
-
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h DESTINATION include/syslog-ng)

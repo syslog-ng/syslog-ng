@@ -19,3 +19,5 @@ set(REWRITE_SOURCES
     rewrite/rewrite-unset.c
     PARENT_SCOPE
     )
+
+add_subdirectory(tests)

@@ -19,3 +19,5 @@ set(TEMPLATE_SOURCES
     template/user-function.c
     template/escaping.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)

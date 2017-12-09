@@ -40,6 +40,8 @@ set(PATTERNDB_SOURCES
     patternize.h
 )
 
+set(PATTERNDB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(patterndb ${PATTERNDB_SOURCES})
 # The radix tree uses unsigned char internally but passes these values to
 # string.h functions, which trigger a lot of harmless warnings.  Of course
@@ -71,7 +73,7 @@ bison_target(DBParserGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/dbparser-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-add_library(dbparser MODULE ${DBPARSER_SOURCES})
+add_library(dbparser SHARED ${DBPARSER_SOURCES})
 target_link_libraries(dbparser PRIVATE patterndb)
 target_include_directories(dbparser PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dbparser PRIVATE syslog-ng)
@@ -80,3 +82,4 @@ install(TARGETS dbparser
         LIBRARY DESTINATION lib/syslog-ng/
         COMPONENT dbparser)
 add_subdirectory(pdbtool)
+add_subdirectory(tests)

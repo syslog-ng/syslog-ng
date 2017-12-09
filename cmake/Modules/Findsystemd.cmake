@@ -30,5 +30,4 @@ set(Libsystemd_PROCESS_INCLUDES Libsystemd_INCLUDE_DIR)
 set(Libsystemd_PROCESS_LIBS Libsystemd_LIBRARY)
 
 # silence warnings
-set(Libsystemd_FIND_QUIETLY 1)
 libfind_process(Libsystemd QUIET)

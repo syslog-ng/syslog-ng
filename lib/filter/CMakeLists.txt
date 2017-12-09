@@ -29,3 +29,5 @@ set(FILTER_SOURCES
     filter/filter-expr-parser.c
     PARENT_SCOPE
     )
+
+add_subdirectory(tests)

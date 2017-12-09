@@ -40,4 +40,6 @@ if (BUILD_JOURNALD)
     target_include_directories(sdjournal PRIVATE SYSTEM ${Libsystemd_INCLUDE_DIRS})
 
     install(TARGETS sdjournal LIBRARY DESTINATION lib/syslog-ng/)
+
+    add_subdirectory(tests)
 endif()

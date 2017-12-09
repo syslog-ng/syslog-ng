@@ -25,7 +25,7 @@
 set(LIB_NAME "JSONC")
 
 if (EXISTS ${PROJECT_SOURCE_DIR}/lib/jsonc/json.h)
-   
+
     ExternalProject_Add(
         ${LIB_NAME}
         PREFIX            ${CMAKE_CURRENT_BINARY_DIR}
@@ -48,13 +48,10 @@ if (EXISTS ${PROJECT_SOURCE_DIR}/lib/jsonc/json.h)
      )
 
     set(${LIB_NAME}_INTERNAL TRUE)
-    set(${LIB_NAME}_INTERNAL_INCLUDE_DIR "${PROJECT_BINARY_DIR}/include/json-c/" INTERNAL)
-    set(${LIB_NAME}_INTERNAL_LIBRARY "${PROJECT_BINARY_DIR}/lib/libjson-c.so" INTERNAL)
+    set(${LIB_NAME}_INTERNAL_INCLUDE_DIR "${PROJECT_BINARY_DIR}/include/json-c/")
+    set(${LIB_NAME}_INTERNAL_LIBRARY "${PROJECT_BINARY_DIR}/lib/libjson-c.so")
     install(DIRECTORY ${PROJECT_BINARY_DIR}/lib/ DESTINATION lib USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "libjson-c.so*")
 
 else()
   set(${LIB_NAME}_INTERNAL FALSE)
 endif()
-
-
-

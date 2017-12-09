@@ -9,6 +9,8 @@ set(AFSTOMP_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/afstomp-grammar.c
 )
 
+set(AFSTOMP_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
 option(ENABLE_STOMP "Enable STOMP destination" ON)
 
 if (ENABLE_STOMP)
@@ -19,9 +21,11 @@ if (ENABLE_STOMP)
         ${CMAKE_CURRENT_BINARY_DIR}/afstomp-grammar.c
         COMPILE_FLAGS ${BISON_FLAGS})
 
-    add_library(afstomp MODULE ${AFSTOMP_SOURCES})
+    add_library(afstomp SHARED ${AFSTOMP_SOURCES})
     target_include_directories (afstomp PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(afstomp PRIVATE syslog-ng)
 
     install(TARGETS afstomp LIBRARY DESTINATION lib/syslog-ng/ COMPONENT afstomp)
+
+    add_subdirectory(tests)
 endif()

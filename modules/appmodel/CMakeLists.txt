@@ -12,6 +12,8 @@ set (APPMODEL_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/appmodel-grammar.c
 )
 
+set (APPMODEL_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
 generate_y_from_ym(modules/appmodel/appmodel-grammar)
 
 bison_target(AppModelGrammar
@@ -25,5 +27,6 @@ target_link_libraries(appmodel PRIVATE syslog-ng)
 
 install(TARGETS appmodel LIBRARY DESTINATION lib/syslog-ng/ COMPONENT appmodel)
 
-endif()
+add_subdirectory(tests)
 
+endif()

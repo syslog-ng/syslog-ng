@@ -1,5 +1,1 @@
-add_executable(test_stardate test_stardate.c)
-target_link_libraries(test_stardate stardate libtest syslogformat)
-target_include_directories(test_stardate PUBLIC "${CMAKE_SOURCE_DIR}/libtest")
-set_property(TARGET test_stardate APPEND PROPERTY LINK_FLAGS " -Wl,--no-as-needed")
-add_test (test_stardate test_stardate)
+add_unit_test(LIBTEST TARGET test_stardate DEPENDS syslogformat stardate)

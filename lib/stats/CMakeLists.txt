@@ -27,3 +27,5 @@ set(STATS_SOURCES
     stats/stats-cluster-logpipe.c
     stats/stats-cluster-single.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)

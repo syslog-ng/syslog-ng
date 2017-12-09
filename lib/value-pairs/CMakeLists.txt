@@ -11,3 +11,5 @@ set(VALUE_PAIRS_SOURCES
     value-pairs/cmdline.c
     value-pairs/evttag.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)

@@ -22,3 +22,5 @@ set(LOGMSG_SOURCES
     logmsg/timestamp-serialize.c
     logmsg/tags.c
     PARENT_SCOPE)
+
+add_subdirectory(tests)
