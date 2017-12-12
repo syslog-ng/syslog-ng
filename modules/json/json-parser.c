@@ -20,6 +20,8 @@
  * COPYING for details.
  */
 
+#define JSON_C_VER_013 (13 << 8)
+
 #include "json-parser.h"
 #include "dot-notation.h"
 #include "scratch-buffers.h"
@@ -28,7 +30,10 @@
 #include <ctype.h>
 
 #include <json.h>
+
+#if (!defined(JSON_C_VERSION_NUM)) || (JSON_C_VERSION_NUM < JSON_C_VER_013)
 #include <json_object_private.h>
+#endif
 
 typedef struct _JSONParser
 {
