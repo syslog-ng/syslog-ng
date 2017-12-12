@@ -22,6 +22,7 @@
  *
  */
 #include "python-main.h"
+#include "python-module.h"
 #include "python-helpers.h"
 #include "messages.h"
 
@@ -72,7 +73,7 @@ _py_construct_main_module(void)
   module_dict = PyModule_GetDict(module);
   if (PyDict_GetItemString(module_dict, "__builtins__") == NULL)
     {
-      PyObject *builtins_module = PyImport_ImportModule("__builtin__");
+      PyObject *builtins_module = PyImport_ImportModule(PYTHON_BUILTIN_MODULE_NAME);
       if (builtins_module == NULL ||
           PyDict_SetItemString(module_dict, "__builtins__", builtins_module) < 0)
         g_assert_not_reached();
