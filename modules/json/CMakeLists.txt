@@ -31,7 +31,7 @@ if (ENABLE_JSON)
         COMPILE_FLAGS ${BISON_FLAGS})
 
     add_library(json-plugin SHARED ${JSON_SOURCES})
-    target_link_libraries (json-plugin PUBLIC ${JSONC_LIBRARIES})
+    target_link_libraries (json-plugin PUBLIC ${JSONC_LIBRARY})
     target_include_directories (json-plugin SYSTEM PRIVATE ${JSONC_INCLUDE_DIR})
     target_include_directories (json-plugin PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(json-plugin PRIVATE syslog-ng)
