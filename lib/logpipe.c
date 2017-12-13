@@ -83,6 +83,7 @@ _free(LogPipe *self)
 {
   if (self->free_fn)
     self->free_fn(self);
+  g_free((gpointer)self->persist_name);
   g_free(self->plugin_name);
   g_free(self);
 }
