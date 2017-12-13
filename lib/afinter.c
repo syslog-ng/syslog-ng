@@ -421,7 +421,9 @@ afinter_postpone_mark(gint mark_freq)
     }
   else
     {
+      g_static_mutex_lock(&internal_mark_target_lock);
       next_mark_target.tv_sec = -1;
+      g_static_mutex_unlock(&internal_mark_target_lock);
     }
 }
 
