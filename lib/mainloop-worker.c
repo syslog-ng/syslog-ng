@@ -194,9 +194,8 @@ main_loop_worker_thread_stop(void)
 
   g_mutex_lock(&workers_running_lock);
   main_loop_workers_running--;
-  g_mutex_unlock(&workers_running_lock);
-
   g_cond_signal(&thread_halt_cond);
+  g_mutex_unlock(&workers_running_lock);
 }
 
 void
