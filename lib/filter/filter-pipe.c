@@ -35,7 +35,7 @@ log_filter_pipe_init(LogPipe *s)
   LogFilterPipe *self = (LogFilterPipe *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  filter_expr_init(self->expr, log_pipe_get_config(s));
+  filter_expr_init(self->expr, cfg);
   if (!self->name)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_FILTER, s->expr_node);
 
