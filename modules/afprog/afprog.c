@@ -402,11 +402,23 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
    * handling restarting the command before this handler is run. */
   if (self->process_info.pid != -1 && self->process_info.pid == pid)
     {
-      msg_verbose("Child program exited, restarting",
-                  evt_tag_str("cmdline", self->process_info.cmdline->str),
-                  evt_tag_int("status", status));
-      self->process_info.pid = -1;
-      afprogram_dd_reopen(self);
+      if ((status >> 8) == 127 && ((status & 0x00ff) == 0))
+        {
+          msg_error("Child program exited with command not found, stopping the destination.",
+                    evt_tag_str("cmdline", self->process_info.cmdline->str),
+                    evt_tag_int("status", status));
+
+          self->process_info.pid = -1;
+        }
+      else
+        {
+          msg_info("Child program exited, restarting",
+                   evt_tag_str("cmdline", self->process_info.cmdline->str),
+                   evt_tag_int("status", status));
+
+          self->process_info.pid = -1;
+          afprogram_dd_reopen(self);
+        }
     }
 }
 
@@ -526,8 +538,12 @@ afprogram_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
   switch (notify_code)
     {
     case NC_CLOSE:
-    case NC_WRITE_ERROR:
       afprogram_dd_reopen(self);
+      break;
+    case NC_WRITE_ERROR:
+      /* We let this fall through, to be handled by the child manager. We do
+         this to have access to the exit status, and which we use to decide
+         whether to restart immediately, or stop the destination. */
       break;
     }
 }
