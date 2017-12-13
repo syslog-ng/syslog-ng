@@ -103,7 +103,8 @@ _release_thread_id(void)
   g_static_mutex_lock(&main_loop_workers_idmap_lock);
   if (main_loop_worker_id)
     {
-      main_loop_workers_idmap[main_loop_worker_type] &= ~(1 << (main_loop_worker_id - 1));
+      const gint id = main_loop_worker_id & (sizeof(guint64) * CHAR_BIT - 1);
+      main_loop_workers_idmap[main_loop_worker_type] &= ~(1 << (id - 1));
       main_loop_worker_id = 0;
     }
   g_static_mutex_unlock(&main_loop_workers_idmap_lock);
