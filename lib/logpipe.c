@@ -83,6 +83,7 @@ _free(LogPipe *self)
 {
   if (self->free_fn)
     self->free_fn(self);
+  g_free((gpointer)self->persist_name);
   g_free(self->plugin_name);
   g_free(self);
 }
@@ -108,7 +109,7 @@ void
 log_pipe_set_persist_name(LogPipe *self, const gchar *persist_name)
 {
   g_free((gpointer)self->persist_name);
-  self->persist_name = persist_name;
+  self->persist_name = g_strdup(persist_name);
 }
 
 const gchar *
