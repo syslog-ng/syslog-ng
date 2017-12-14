@@ -37,13 +37,16 @@ function(external_or_find_package LIB_NAME)
         set(${LIB_NAME}_INTERNAL FALSE)
     endif()
 
+    if (${LIB_NAME}_INTERNAL)
+       set_target_properties(${LIB_NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    endif()
+
     if  (${${LIB_NAME}_INTERNAL} AND ("internal" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE} ))
 
         message(STATUS "Found ${LIB_NAME}: internal")
         set(${LIB_NAME}_FOUND TRUE PARENT_SCOPE)
         set(${LIB_NAME}_INCLUDE_DIR "${${LIB_NAME}_INTERNAL_INCLUDE_DIR}" CACHE STRING "${LIB_NAME} include path")
         set(${LIB_NAME}_LIBRARY "${${LIB_NAME}_INTERNAL_LIBRARY}" CACHE STRING "${LIB_NAME} library path")
-        #install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib/ DESTINATION lib USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "libivykis.so*")
 
     elseif ("system"   STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE})
       if (${EXTERNAL_OR_FIND_PACKAGE_REQUIRED})
@@ -64,7 +67,6 @@ function(external_or_find_package LIB_NAME)
 
     if (${LIB_NAME}_INTERNAL)
        set(${LIB_NAME}_INTERNAL "${${LIB_NAME}_INTERNAL}" PARENT_SCOPE)
-       set_target_properties(${LIB_NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     endif()
 endfunction()
 
