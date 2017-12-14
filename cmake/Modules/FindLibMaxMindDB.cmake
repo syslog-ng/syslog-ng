@@ -1,6 +1,5 @@
 #############################################################################
-# Copyright (c) 2016 Balabit
-# Copyright (c) 2016 Todd C. Miller
+# Copyright (c) 2017 Balabit
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -22,12 +21,16 @@
 #
 #############################################################################
 
-include(LibFindMacros)
+find_path(LIBMAXMINDDB_INCLUDE_DIR NAMES maxminddb.h)
+find_library(LIBMAXMINDDB_LIBRARY NAMES maxminddb maxminddb.a)
 
-libfind_pkg_check_modules(Curl_PKGCONF libcurl)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(LIBMAXMINDDB DEFAULT_MSG
+    LIBMAXMINDDB_LIBRARY
+    LIBMAXMINDDB_INCLUDE_DIR
+)
 
-libfind_pkg_detect(Curl libcurl FIND_PATH curl.h PATH_SUFFIXES curl FIND_LIBRARY curl)
-set(Curl_PROCESS_INCLUDES Curl_INCLUDE_DIR)
-set(Curl_PROCESS_LIBS Curl_LIBRARY)
-
-libfind_process(Curl QUIET)
+mark_as_advanced(
+    LIBMAXMINDDB_LIBRARY
+    LIBMAXMINDDB_INCLUDE_DIR
+)

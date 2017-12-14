@@ -137,9 +137,11 @@ matrix:
         - cd build
         - cmake
             -DCMAKE_C_FLAGS=-Werror
+            -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
         - make --keep-going -j $(nproc) all test install
+        - make VERBOSE=1 func-test
     - env: B=trusty-cmake
       compiler: clang
       dist: trusty
@@ -150,6 +152,7 @@ matrix:
         - cd build
         - cmake
             -DCMAKE_C_FLAGS=-Werror
+            -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
         - make --keep-going -j $(nproc) all test install

@@ -1,0 +1,4 @@
+add_unit_test(LIBTEST CRITERION
+  TARGET test_python_logmsg
+  INCLUDES "${PYTHON_INCLUDE_DIR}" "${PYTHON_INCLUDE_DIRS}"
+  DEPENDS mod-python "${PYTHON_LIBRARIES}")

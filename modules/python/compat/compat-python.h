@@ -29,4 +29,13 @@
 
 gboolean py_is_string(PyObject *object);
 const gchar *py_object_as_string(PyObject *object);
+
+#if (SYSLOG_NG_ENABLE_PYTHONv2)
+#define PYTHON_BUILTIN_MODULE_NAME "__builtin__"
+#endif
+
+#if (SYSLOG_NG_ENABLE_PYTHONv3)
+#define PYTHON_BUILTIN_MODULE_NAME "builtins"
+#endif
+
 #endif
