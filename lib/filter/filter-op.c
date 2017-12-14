@@ -34,10 +34,12 @@ fop_init(FilterExprNode *s, GlobalConfig *cfg)
 {
   FilterOp *self = (FilterOp *) s;
 
-  if (self->left && self->left->init)
-    self->left->init(self->left, cfg);
-  if (self->right && self->right->init)
-    self->right->init(self->right, cfg);
+  g_assert(self->left);
+  g_assert(self->right);
+
+  filter_expr_init(self->left, cfg);
+  filter_expr_init(self->right, cfg);
+
   self->super.modify = self->left->modify || self->right->modify;
 }
 

@@ -48,7 +48,7 @@ filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
     {
       return !!(self->valid & (1 << fac_num)) ^ self->super.comp;
     }
-  return self->super.comp;
+  g_assert_not_reached();
 }
 
 FilterExprNode *
