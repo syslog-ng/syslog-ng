@@ -66,8 +66,8 @@ log_rewrite_init_method(LogPipe *s)
   LogRewrite *self = (LogRewrite *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (self->condition && self->condition->init)
-    self->condition->init(self->condition, log_pipe_get_config(s));
+  if (self->condition)
+    filter_expr_init(self->condition, cfg);
 
   if (!self->name)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_REWRITE, s->expr_node);
