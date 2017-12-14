@@ -1111,7 +1111,7 @@ source_reader_option_flags
 	;
 
 driver_option
-    : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, g_strdup($3)); free($3); }
+    : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
     ;
 
 threaded_dest_driver_option
