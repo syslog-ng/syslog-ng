@@ -58,6 +58,10 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
   FilterCall *self = (FilterCall *) s;
   LogExprNode *rule;
 
+  /* skip initialize if filter_call_init already called. */
+  if (self->filter_expr)
+    return;
+
   rule = cfg_tree_get_object(&cfg->tree, ENC_FILTER, self->rule);
   if (rule)
     {
