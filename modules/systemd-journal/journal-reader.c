@@ -274,16 +274,19 @@ _handle_message(JournalReader *self)
   return log_source_free_to_send(&self->super);
 }
 
-static void
+static gboolean
 _alloc_state(JournalReader *self)
 {
   self->persist_handle = persist_state_alloc_entry(self->persist_state, self->persist_name, sizeof(JournalReaderState));
   JournalReaderState *state = persist_state_map_entry(self->persist_state, self->persist_handle);
+  if (!state)
+    return FALSE;
 
   state->header.version = 0;
   state->header.big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
 
   persist_state_unmap_entry(self->persist_state, self->persist_handle);
+  return TRUE;
 }
 
 static gboolean
@@ -374,7 +377,11 @@ _set_starting_position(JournalReader *self)
 {
   if (!_load_state(self))
     {
-      _alloc_state(self);
+      if (!_alloc_state(self))
+        {
+          msg_error("JournalReader: Failed to allocate state");
+          return FALSE;
+        }
       if (self->super.options->read_old_records)
         return _seek_to_head(self);
       return _skip_old_records(self);
