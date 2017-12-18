@@ -190,9 +190,11 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 
   if (!persist_state_start(cfg->state))
     return FALSE;
+  if (!run_id_init(cfg->state))
+    return FALSE;
+  if (!host_id_init(cfg->state))
+    return FALSE;
 
-  run_id_init(cfg->state);
-  host_id_init(cfg->state);
   success = cfg_init(cfg);
 
   if (success)
