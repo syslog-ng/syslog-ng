@@ -64,12 +64,20 @@ DiskQueueOptions *last_options;
 %token KW_QOUT_SIZE
 %token KW_DIR
 
+%type <num> nonnegative_integer64
 
 %%
 
 start
 	: LL_CONTEXT_INNER_DEST dest_diskq { YYACCEPT; }
 	;
+
+nonnegative_integer64
+  : LL_NUMBER
+    {
+      CHECK_ERROR(($1 >= 0), @1, "It cannot be negative");
+    }
+  ;
 
 dest_diskq
         : KW_DISK_BUFFER
@@ -90,7 +98,7 @@ dest_diskq_option
         : KW_RELIABLE '(' yesno ')'            { disk_queue_options_reliable_set(last_options, $3); }
         | KW_MEM_BUF_SIZE '(' nonnegative_integer ')'    { disk_queue_options_mem_buf_size_set(last_options, $3); }
         | KW_MEM_BUF_LENGTH '(' nonnegative_integer ')'  { disk_queue_options_mem_buf_length_set(last_options, $3); }
-        | KW_DISK_BUF_SIZE '(' nonnegative_integer ')'   { disk_queue_options_disk_buf_size_set(last_options, $3); }
+        | KW_DISK_BUF_SIZE '(' nonnegative_integer64 ')'   { disk_queue_options_disk_buf_size_set(last_options, $3); }
         | KW_QOUT_SIZE '(' nonnegative_integer ')'       { disk_queue_options_qout_size_set(last_options, $3); }
         | KW_DIR '(' string ')'                { disk_queue_options_set_dir(last_options, $3); free($3); }
         ;

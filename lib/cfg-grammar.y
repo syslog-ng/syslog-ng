@@ -971,6 +971,7 @@ nonnegative_integer
         : LL_NUMBER
           {
             CHECK_ERROR(($1 >= 0), @1, "It cannot be negative");
+            CHECK_ERROR((($1 >= G_MININT32) && ($1 <= G_MAXINT32)), @1, "Must fit into 32 bits!");
           }
         ;
 
@@ -978,6 +979,7 @@ positive_integer
         : LL_NUMBER
           {
             CHECK_ERROR(($1 > 0), @1, "Must be positive");
+            CHECK_ERROR((($1 >= G_MININT32) && ($1 <= G_MAXINT32)), @1, "Must fit into 32 bits!");
           }
         ;
 
