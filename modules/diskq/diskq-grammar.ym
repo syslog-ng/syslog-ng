@@ -64,20 +64,12 @@ DiskQueueOptions *last_options;
 %token KW_QOUT_SIZE
 %token KW_DIR
 
-%type <num> nonnegative_integer64
 
 %%
 
 start
 	: LL_CONTEXT_INNER_DEST dest_diskq { YYACCEPT; }
 	;
-
-nonnegative_integer64
-  : LL_NUMBER
-    {
-      CHECK_ERROR(($1 >= 0), @1, "It cannot be negative");
-    }
-  ;
 
 dest_diskq
         : KW_DISK_BUFFER
