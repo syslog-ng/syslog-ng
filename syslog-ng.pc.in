@@ -14,6 +14,6 @@ ivykis=@with_ivykis@
 Name: syslog-ng-dev
 Description: Dev package for syslog-ng module
 Version: @PACKAGE_VERSION@
-Requires: glib-2.0 eventlog
+Requires: glib-2.0
 Libs: -L${libdir} @GLIB_LIBS@ -lsyslog-ng
 Cflags: -I${includedir}/syslog-ng @INTERNAL_IVYKIS_CFLAGS@
