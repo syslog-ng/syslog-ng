@@ -33,9 +33,9 @@ class CompleterLangTestCase(unittest.TestCase):
     def _assert_token_follows(self, text, tokens, pos=None, replaced_token=None):
         (expected_tokens, rtoken, rtoken_pos) = self._get_expected_tokens(text)
         if pos is not None:
-            self.assertEquals(pos, rtoken_pos)
+            self.assertEqual(pos, rtoken_pos)
         if replaced_token is not None:
-            self.assertEquals(rtoken.value if rtoken is not None else '', replaced_token)
+            self.assertEqual(rtoken.value if rtoken is not None else '', replaced_token)
         self.assertLessEqual(set(tokens), set(expected_tokens))
 
 

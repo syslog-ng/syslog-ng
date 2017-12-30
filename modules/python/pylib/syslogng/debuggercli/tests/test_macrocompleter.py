@@ -120,6 +120,6 @@ class TestMacroCompleter(CompleterTestCase):
 
     def test_nothing_is_offered_if_the_entire_input_diverged_already(self):
         completions = self._get_completions('', entire_input='$(echo ')
-        self.assertEquals(completions, [])
+        self.assertEqual(completions, [])
         completions = self._get_completions('', entire_input='almafa ')
-        self.assertEquals(completions, [])
+        self.assertEqual(completions, [])

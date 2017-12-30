@@ -42,7 +42,7 @@ class CompleterTestCase(unittest.TestCase):
 
     def _assert_no_completions_are_offered(self, word, entire_input=None):
         completions = self._get_completions(word, entire_input=entire_input)
-        self.assertEquals(completions, [])
+        self.assertEqual(completions, [])
 
     def _assert_completions_offered(self, word, expected_completions, entire_input=None):
         completions = self._get_completions(word, entire_input=entire_input)
