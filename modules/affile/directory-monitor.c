@@ -62,29 +62,29 @@ get_path_max(void)
 #ifdef PATH_MAX
       path_max = PATH_MAX;
 #else
-      {
-        /* This code based on example from the Advanced Programming in the UNIX environment
-         * on how to determine the max path length
-         */
-        static long posix_version = 0;
-        static long xsi_version = 0;
-        if (posix_version == 0)
-          posix_version = sysconf(_SC_VERSION);
+      /* This code based on example from the Advanced Programming in the UNIX environment
+       * on how to determine the max path length
+       */
+      static long posix_version = 0;
+      static long xsi_version = 0;
+      if (posix_version == 0)
+        posix_version = sysconf(_SC_VERSION);
 
-        if (xsi_version == 0)
-          xsi_version = sysconf(_SC_XOPEN_VERSION);
+      if (xsi_version == 0)
+        xsi_version = sysconf(_SC_XOPEN_VERSION);
 
-        if ((path_max = pathconf("/", _PC_PATH_MAX)) < 0)
-          path_max = PATH_MAX_GUESS;
-        else
-          path_max++;    /* add one since it's relative to root */
+      if ((path_max = pathconf("/", _PC_PATH_MAX)) < 0)
+        path_max = PATH_MAX_GUESS;
+      else
+        path_max++;    /* add one since it's relative to root */
 
-        /*
-         * Before POSIX.1-2001, we aren't guaranteed that PATH_MAX includes
-         * the terminating null byte.  Same goes for XPG3.
-         */
-        if ((posix_version < 200112L) && (xsi_version < 4))
-          pathmax++;
+      /*
+       * Before POSIX.1-2001, we aren't guaranteed that PATH_MAX includes
+       * the terminating null byte.  Same goes for XPG3.
+       */
+      if ((posix_version < 200112L) && (xsi_version < 4))
+        path_max++;
+
 #endif
     }
   return path_max;
