@@ -73,27 +73,27 @@ class TestTabLexer(TestLexer):
     def test_tab_lexer_token_returns_none_if_the_underlying_lexer_is_empty(self):
         self._lexer = self._construct_lexer(0)
         self._assert_next_token_is_tab(tab_position=0)
-        self.assertEquals(self._lexer.token(), None)
+        self.assertEqual(self._lexer.token(), None)
 
     def test_tab_lexer_token_returns_token_if_the_underlying_lexer_has_elements(self):
         self._lexer = self._construct_lexer(2)
-        self.assertEquals(self._lexer.token().value, '1')
-        self.assertEquals(self._lexer.token().value, '2')
+        self.assertEqual(self._lexer.token().value, '1')
+        self.assertEqual(self._lexer.token().value, '2')
         self._assert_next_token_is_tab(tab_position=4)
         self.assertIsNone(self._lexer.token())
 
     def test_partial_is_replaced_by_tab(self):
         self._lexer = self._construct_lexer(2, mark_last_partial=True)
-        self.assertEquals(self._lexer.token().value, '1')
+        self.assertEqual(self._lexer.token().value, '1')
         self._assert_next_token_is_tab(tab_position=2)
         self.assertIsNone(self._lexer.token())
-        self.assertEquals(self._lexer.get_replaced_token().value, '2')
+        self.assertEqual(self._lexer.get_replaced_token().value, '2')
 
     def test_tab_is_appended_if_no_partial_token(self):
         self._lexer = self._construct_lexer(2, mark_last_partial=False)
         self._lexer.set_drop_last_token(False)
-        self.assertEquals(self._lexer.token().value, '1')
-        self.assertEquals(self._lexer.token().value, '2')
+        self.assertEqual(self._lexer.token().value, '1')
+        self.assertEqual(self._lexer.token().value, '2')
         self._assert_next_token_is_tab(tab_position=4)
         self.assertIsNone(self._lexer.token())
         self.assertIsNone(self._lexer.get_replaced_token())
@@ -101,10 +101,10 @@ class TestTabLexer(TestLexer):
     def test_last_token_is_replaced_by_a_tab_if_theres_no_partial_and_after_last_insertion_is_not_requested(self):
         self._lexer = self._construct_lexer(2, mark_last_partial=False)
         self._lexer.set_drop_last_token(True)
-        self.assertEquals(self._lexer.token().value, '1')
+        self.assertEqual(self._lexer.token().value, '1')
         self._assert_next_token_is_tab(tab_position=2)
         self.assertIsNone(self._lexer.token())
-        self.assertEquals(self._lexer.get_replaced_token().value, '2')
+        self.assertEqual(self._lexer.get_replaced_token().value, '2')
 
     def test_tab_lexer_returns_tab_token_at_the_end_of_the_sequence(self):
         self._lexer = self._construct_lexer(2)
@@ -137,10 +137,10 @@ class TestTabLexer(TestLexer):
 
     def _assert_n_numbered_tokens_available(self, n):
         for i in range(1, n + 1):
-            self.assertEquals(self._lexer.token().value, str(i))
+            self.assertEqual(self._lexer.token().value, str(i))
 
     def _assert_current_token_position_equals(self, lexpos):
-        self.assertEquals(self._current_token.lexpos, lexpos)
+        self.assertEqual(self._current_token.lexpos, lexpos)
 
     def _assert_next_token_is_tab(self, tab_position=None):
         self._next_token()

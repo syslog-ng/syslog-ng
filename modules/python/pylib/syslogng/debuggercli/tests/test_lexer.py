@@ -37,13 +37,13 @@ class TestLexer(unittest.TestCase):
         return self._current_token
 
     def _assert_current_token_type_equals(self, token_type):
-        self.assertEquals(self._current_token.type, token_type)
+        self.assertEqual(self._current_token.type, token_type)
 
     def _assert_current_token_value_equals(self, value):
-        self.assertEquals(self._current_token.value, value)
+        self.assertEqual(self._current_token.value, value)
 
     def _assert_current_token_pos_equals(self, pos):
-        self.assertEquals(self._current_token.lexpos, pos)
+        self.assertEqual(self._current_token.lexpos, pos)
 
     def _assert_current_token_is_partial(self):
         self.assertTrue(self._current_token.partial)
