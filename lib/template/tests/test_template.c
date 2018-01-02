@@ -240,7 +240,7 @@ test_syntax_errors(void)
   assert_template_failure("${unbalanced_brace", "'}' is missing");
   assert_template_format("$unbalanced_brace}", "}");
   assert_template_format("$}", "$}");
-  assert_template_failure("$(unbalanced_paren", "missing function name or inbalanced '('");
+  assert_template_failure("$(unbalanced_paren", "missing function name or imbalanced '('");
   assert_template_format("$unbalanced_paren)", ")");
 }
 

@@ -104,7 +104,7 @@ control_client_read_reply(ControlClient *self)
 
       if (len == 0)
         {
-          fprintf(stderr, "EOF occured while reading control socket\n");
+          fprintf(stderr, "EOF occurred while reading control socket\n");
           g_string_free(reply, TRUE);
           return NULL;
         }

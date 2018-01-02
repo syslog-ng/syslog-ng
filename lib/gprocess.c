@@ -149,7 +149,7 @@ static struct
  * @return same as sd_listen_fds
  *   r == 0: no socket activation or this process is not responsible
  *   r >  0: success, number of sockets
- *   r <  0: an error occured
+ *   r <  0: an error occurred
  */
 static int
 inherit_systemd_activation(void)

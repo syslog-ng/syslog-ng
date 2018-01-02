@@ -455,7 +455,7 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
  * This function is called as a g_hash_table_foreach() callback to set the
  * owner of each writer, previously connected to an AFileDestDriver instance
  * in an earlier configuration. This way AFFileDestWriter instances are
- * remembered accross reloads.
+ * remembered across reloads.
  *
  **/
 static void

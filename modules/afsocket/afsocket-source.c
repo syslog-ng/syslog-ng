@@ -241,7 +241,7 @@ afsocket_sd_set_keep_alive(LogDriver *s, gint enable)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  self->connections_kept_alive_accross_reloads = enable;
+  self->connections_kept_alive_across_reloads = enable;
 }
 
 void
@@ -511,7 +511,7 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
   /* fetch persistent connections first */
-  if (self->connections_kept_alive_accross_reloads)
+  if (self->connections_kept_alive_across_reloads)
     {
       GList *p = NULL;
       self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
@@ -547,7 +547,7 @@ afsocket_sd_open_listener(AFSocketSourceDriver *self)
   sock = -1;
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
-      if (self->connections_kept_alive_accross_reloads)
+      if (self->connections_kept_alive_across_reloads)
         {
           /* NOTE: this assumes that fd 0 will never be used for listening fds,
            * main.c opens fd 0 so this assumption can hold */
@@ -611,7 +611,7 @@ afsocket_sd_save_connections(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  if (!self->connections_kept_alive_accross_reloads || !cfg->persist)
+  if (!self->connections_kept_alive_across_reloads || !cfg->persist)
     {
       afsocket_sd_kill_connection_list(self->connections);
     }
@@ -640,7 +640,7 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
       afsocket_sd_stop_watches(self);
-      if (!self->connections_kept_alive_accross_reloads)
+      if (!self->connections_kept_alive_across_reloads)
         {
           msg_verbose("Closing listener fd",
                       evt_tag_int("fd", self->fd));
@@ -733,7 +733,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->transport_mapper = transport_mapper;
   self->max_connections = 10;
   self->listen_backlog = 255;
-  self->connections_kept_alive_accross_reloads = TRUE;
+  self->connections_kept_alive_across_reloads = TRUE;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.super.stats_level = STATS_LEVEL1;
   self->reader_options.super.stats_source = transport_mapper->stats_source;

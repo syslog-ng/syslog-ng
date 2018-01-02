@@ -818,7 +818,7 @@ r_add_child_check(RNode *root, guint8 *key, gpointer value, RNodeGetValueFunc va
           RNode *child = r_new_node(key, NULL);
           r_add_child(root, child);
 
-          /* and insert the rest begining from @ under the newly created literal node */
+          /* and insert the rest beginning from @ under the newly created literal node */
           *at = '@';
           r_insert_node(child, at, value, value_func);
         }

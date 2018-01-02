@@ -191,13 +191,13 @@ void test_subst_field_exist_and_substring_substituted_only_once_without_global(v
   rewrite_teardown(msg);
 }
 
-void test_subst_field_exist_and_substring_substituted_every_occurence_with_global(void)
+void test_subst_field_exist_and_substring_substituted_every_occurrence_with_global(void)
 {
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"substitute\" value(\"field1\") flags(global) );");
   LogMessage *msg = create_message_with_fields("field1", "substring substring", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
   assert_msg_field_equals(msg, "field1", "substitute substitute", -1,
-                          ASSERTION_ERROR("Field substituted less than every occurence with global flag"));
+                          ASSERTION_ERROR("Field substituted less than every occurrence with global flag"));
   rewrite_teardown(msg);
 }
 
@@ -354,7 +354,7 @@ main(int argc, char **argv)
   test_subst_pcre_unused_subpattern();
   test_subst_field_exist_and_substring_substituted_with_template();
   test_subst_field_exist_and_substring_substituted_only_once_without_global();
-  test_subst_field_exist_and_substring_substituted_every_occurence_with_global();
+  test_subst_field_exist_and_substring_substituted_every_occurrence_with_global();
   test_subst_field_exist_and_substring_substituted_when_regexp_matched();
   test_set_field_honors_time_zone();
   test_set_field_exist_and_group_set_literal_string();

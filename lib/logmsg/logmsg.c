@@ -108,7 +108,7 @@
  *      references is not represented in the refcounter).  This is solved by
  *      adding a large-enough number (so called BIAS) to the ref counter in
  *      refcache_start(), which ensures that all possible writers will see a
- *      positive value.  This is then substracted in refcache_stop() the
+ *      positive value.  This is then subtracted in refcache_stop() the
  *      same way as the other references.
  *
  * Since we use the same atomic variable to store two things, updating that
@@ -1633,7 +1633,7 @@ log_msg_refcache_start_producer(LogMessage *self)
  * This function is to be called by the consumer threads (e.g. the
  * ones that consume messages).
  *
- * This function can be called from mutliple consumer threads at the
+ * This function can be called from multiple consumer threads at the
  * same time, even for the same message.
  *
  */

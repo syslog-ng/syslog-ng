@@ -40,7 +40,7 @@ enum
   RECURSE_STATE_OK = 0,
   /* processing an internal message currently, followup internal messages will be suppressed */
   RECURSE_STATE_WATCH = 1,
-  /* supress all internal messages */
+  /* suppress all internal messages */
   RECURSE_STATE_SUPPRESS = 2
 };
 

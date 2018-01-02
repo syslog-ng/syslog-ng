@@ -366,7 +366,7 @@ log_template_compiler_process_template_function(LogTemplateCompiler *self, GErro
   if (!log_template_compiler_process_arg_list(self, strv))
     {
       log_template_compiler_fill_compile_error(error,
-                                               "Invalid template function reference, missing function name or inbalanced '('",
+                                               "Invalid template function reference, missing function name or imbalanced '('",
                                                self->cursor - self->template->template);
       goto error;
     }

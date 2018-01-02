@@ -159,7 +159,7 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
       switch (result)
         {
         case WORKER_INSERT_RESULT_DROP:
-          msg_error("Message dropped while sending message to destinaton",
+          msg_error("Message dropped while sending message to destination",
                     evt_tag_str("driver", self->super.super.id));
 
           log_threaded_dest_driver_message_drop(self, msg);

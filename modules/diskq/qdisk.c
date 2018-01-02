@@ -174,7 +174,7 @@ _is_write_head_less_than_max_size(QDisk *self)
 }
 
 static inline gboolean
-_is_able_to_reset_write_head_to_begining_of_qdisk(QDisk *self)
+_is_able_to_reset_write_head_to_beginning_of_qdisk(QDisk *self)
 {
   return self->hdr->backlog_head != QDISK_RESERVED_SPACE;
 }
@@ -192,7 +192,7 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
   gint64 msg_len = at_least + sizeof(guint32);
   return (
            (_is_backlog_head_prevent_write_head(self)) &&
-           (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_begining_of_qdisk(self))
+           (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
          ) || (_is_free_space_between_write_head_and_backlog_head(self, msg_len));
 
 }
@@ -725,7 +725,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       memset(&tmp, 0, sizeof(tmp));
       if (!pwrite_strict(self->fd, &tmp, sizeof(tmp), 0))
         {
-          msg_error("Error occured while initalizing the new queue file",evt_tag_str("filename",self->filename),
+          msg_error("Error occurred while initalizing the new queue file",evt_tag_str("filename",self->filename),
                     evt_tag_errno("error",errno));
           munmap((void *)self->hdr, sizeof(QDiskFileHeader));
           self->hdr = NULL;

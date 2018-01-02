@@ -215,7 +215,7 @@ log_proto_regexp_multi_line_server_validate_options(LogProtoServer *s)
       !self->garbage)
     {
       msg_error("To follow files in multi-line-mode() 'regexp', 'prefix-garbage', 'prefix-suffix', "
-                "please also specifiy regexps using the multi-line-prefix/garbage options");
+                "please also specify regexps using the multi-line-prefix/garbage options");
       return FALSE;
     }
   return log_proto_text_server_validate_options_method(s);

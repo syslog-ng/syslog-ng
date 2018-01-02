@@ -341,7 +341,7 @@ Test(nvtable, test_nvtable_direct)
  *        - value that fits into the current entry
  *        - value that doesn't fit into the current entry, but fits into NVTable
  *        - value that doesn't fit into the current entry and neither to NVTable
- *    - set/get dynamic NV entries that refer to a non-existant entry
+ *    - set/get dynamic NV entries that refer to a non-existent entry
  *        -
  */
 Test(nvtable, test_nvtable_indirect)
@@ -744,7 +744,7 @@ Test(nvtable, test_nvtable_indirect)
   nv_table_unref(tab);
 
   /*************************************************************/
-  /* indirect that refers to non-existant entry */
+  /* indirect that refers to non-existent entry */
   /*************************************************************/
   /* one that fits */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);

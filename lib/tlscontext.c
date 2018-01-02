@@ -50,7 +50,7 @@ struct _TLSContext
   gchar *cipher_suite;
   gchar *ecdh_curve_list;
   SSL_CTX *ssl_ctx;
-  GList *trusted_fingerpint_list;
+  GList *trusted_fingerprint_list;
   GList *trusted_dn_list;
   gint ssl_options;
 };
@@ -78,7 +78,7 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
 {
   SSL *ssl = (SSL *)X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
   TLSSession *self = SSL_get_app_data(ssl);
-  GList *current_fingerprint = self->ctx->trusted_fingerpint_list;
+  GList *current_fingerprint = self->ctx->trusted_fingerprint_list;
   GString *hash;
   gboolean match = FALSE;
   X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
@@ -244,7 +244,7 @@ tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints)
 {
   g_assert(fingerprints);
 
-  self->trusted_fingerpint_list = fingerprints;
+  self->trusted_fingerprint_list = fingerprints;
 }
 
 void
@@ -698,7 +698,7 @@ void
 tls_context_free(TLSContext *self)
 {
   SSL_CTX_free(self->ssl_ctx);
-  g_list_foreach(self->trusted_fingerpint_list, (GFunc) g_free, NULL);
+  g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
   g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
   g_free(self->key_file);
   g_free(self->pkcs12_file);

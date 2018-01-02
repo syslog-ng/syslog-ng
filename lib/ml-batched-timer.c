@@ -118,7 +118,7 @@ ml_batched_timer_postpone(MlBatchedTimer *self, glong sec)
 
   iv_validate_now();
 
-  /* we deliberately use nsec == 0 in order to increase the likelyhood that
+  /* we deliberately use nsec == 0 in order to increase the likelihood that
    * we target the same second, in case only a fraction of a second has
    * passed between two updates.  */
   next_expires.tv_nsec = 0;

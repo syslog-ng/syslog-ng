@@ -64,7 +64,7 @@
  *     configuration is reloaded
  *   - the _queue() operation for LogPipe instances can happen in
  *     multiple threads
- *   - notifications accross LogPipe instances happen in the main thread
+ *   - notifications across LogPipe instances happen in the main thread
  *
  * This boils down to:
  * ===================

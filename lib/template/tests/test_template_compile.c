@@ -415,7 +415,7 @@ static void
 test_template_function_bad1(void)
 {
   assert_failed_template_compile("$( hello \\tes\t\t\t value(xyz \"value with spaces\" 'test value with spa\"ces')",
-                                 "Invalid template function reference, missing function name or inbalanced '(', error_pos='73'");
+                                 "Invalid template function reference, missing function name or imbalanced '(', error_pos='73'");
   assert_compiled_template(text =
                            "error in template: $( hello \\tes\t\t\t value(xyz \"value with spaces\" 'test value with spa\"ces')",
                            default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
@@ -425,7 +425,7 @@ static void
 test_template_function_bad2(void)
 {
   assert_failed_template_compile("$( hello \\tes\t\t\t value xyz \"value with spaces\" 'test value with spa\"ces'",
-                                 "Invalid template function reference, missing function name or inbalanced '(', error_pos='72'");
+                                 "Invalid template function reference, missing function name or imbalanced '(', error_pos='72'");
   assert_compiled_template(text =
                            "error in template: $( hello \\tes\t\t\t value xyz \"value with spaces\" 'test value with spa\"ces'",
                            default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
@@ -435,7 +435,7 @@ static void
 test_template_function_bad3(void)
 {
   assert_failed_template_compile("$(hello \"This is an unclosed quoted string)",
-                                 "Invalid template function reference, missing function name or inbalanced '(', error_pos='8'");
+                                 "Invalid template function reference, missing function name or imbalanced '(', error_pos='8'");
   assert_compiled_template(text = "error in template: $(hello \"This is an unclosed quoted string)", default_value = NULL,
                            macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
