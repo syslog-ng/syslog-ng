@@ -124,7 +124,7 @@ test_dot_notation_eval_fails_with_an_incorrect_array_reference(void)
 }
 
 static void
-test_dot_notation_eval_suceeds_with_an_identifier_that_contains_all_possible_character_classes(void)
+test_dot_notation_eval_succeeds_with_an_identifier_that_contains_all_possible_character_classes(void)
 {
   assert_dot_notation_eval_equals("{'fOo123_': 'bar'}", "fOo123_", "'bar'");
 }
@@ -198,7 +198,7 @@ test_dot_notation_eval(void)
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_fails_with_an_identifier_that_doesnt_start_with_a_letter);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_fails_with_an_identifier_that_contains_a_non_alnum_character);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_fails_with_an_incorrect_array_reference);
-  DOT_NOTATION_TESTCASE(test_dot_notation_eval_suceeds_with_an_identifier_that_contains_all_possible_character_classes);
+  DOT_NOTATION_TESTCASE(test_dot_notation_eval_succeeds_with_an_identifier_that_contains_all_possible_character_classes);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_object_member_from_non_object_fails);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_array_item_from_non_array_fails);
   DOT_NOTATION_TESTCASE(test_dot_notation_eval_array_item_by_index);

@@ -130,7 +130,7 @@ typedef struct _PersistFileHeader
 struct _PersistState
 {
   gint version;
-  gchar *commited_filename;
+  gchar *committed_filename;
   gchar *temp_filename;
   gint fd;
   gint mapped_counter;
@@ -234,7 +234,7 @@ static gboolean
 _commit_store(PersistState *self)
 {
   /* NOTE: we don't need to remap the file in case it is renamed */
-  return rename(self->temp_filename, self->commited_filename) >= 0;
+  return rename(self->temp_filename, self->committed_filename) >= 0;
 }
 
 /* "value" layer that handles memory block allocation in the file, without working with keys */
@@ -489,7 +489,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
   PersistFileHeader *header;
   gint key_count, i;
 
-  fd = open(self->commited_filename, O_RDONLY);
+  fd = open(self->committed_filename, O_RDONLY);
   if (fd < 0)
     {
       /* no previous data found */
@@ -500,7 +500,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
   if (file_size > ((1LL << 31) - 1))
     {
       msg_error("Persistent file too large",
-                evt_tag_str("filename", self->commited_filename),
+                evt_tag_str("filename", self->committed_filename),
                 evt_tag_printf("size", "%" G_GINT64_FORMAT, file_size));
       return FALSE;
     }
@@ -509,7 +509,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
   if (map == MAP_FAILED)
     {
       msg_error("Error mapping persistent file into memory",
-                evt_tag_str("filename", self->commited_filename),
+                evt_tag_str("filename", self->committed_filename),
                 evt_tag_errno("error", errno));
       return FALSE;
     }
@@ -621,7 +621,7 @@ _load(PersistState *self, gboolean all_errors_are_fatal, gboolean load_all_entri
   FILE *persist_file;
   gboolean success = FALSE;
 
-  persist_file = fopen(self->commited_filename, "r");
+  persist_file = fopen(self->committed_filename, "r");
   if (persist_file)
     {
       SerializeArchive *sa;
@@ -660,7 +660,7 @@ close_and_exit:
       if (all_errors_are_fatal)
         {
           msg_error("Failed to open persist file!",
-                    evt_tag_str("filename", self->commited_filename),
+                    evt_tag_str("filename", self->committed_filename),
                     evt_tag_str("error", strerror(errno)));
           success = FALSE;
         }
@@ -864,7 +864,7 @@ persist_state_alloc_string(PersistState *self, const gchar *persist_name, const 
 const gchar *
 persist_state_get_filename(PersistState *self)
 {
-  return self->commited_filename;
+  return self->committed_filename;
 }
 
 gboolean
@@ -928,12 +928,12 @@ _destroy(PersistState *self)
   g_mutex_free(self->mapped_lock);
   g_cond_free(self->mapped_release_cond);
   g_free(self->temp_filename);
-  g_free(self->commited_filename);
+  g_free(self->committed_filename);
   g_hash_table_destroy(self->keys);
 }
 
 static void
-_init(PersistState *self, gchar *commited_filename, gchar *temp_filename)
+_init(PersistState *self, gchar *committed_filename, gchar *temp_filename)
 {
   self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->current_ofs = sizeof(PersistFileHeader);
@@ -941,7 +941,7 @@ _init(PersistState *self, gchar *commited_filename, gchar *temp_filename)
   self->mapped_release_cond = g_cond_new();
   self->version = 4;
   self->fd = -1;
-  self->commited_filename = commited_filename;
+  self->committed_filename = committed_filename;
   self->temp_filename = temp_filename;
 }
 
@@ -952,15 +952,15 @@ _init(PersistState *self, gchar *commited_filename, gchar *temp_filename)
 void
 persist_state_cancel(PersistState *self)
 {
-  gchar *commited_filename, *temp_filename;
-  commited_filename = g_strdup(self->commited_filename);
+  gchar *committed_filename, *temp_filename;
+  committed_filename = g_strdup(self->committed_filename);
   temp_filename = g_strdup(self->temp_filename);
 
   _destroy(self);
 
   memset(self, 0, sizeof(*self));
 
-  _init(self, commited_filename, temp_filename);
+  _init(self, committed_filename, temp_filename);
 }
 
 PersistState *

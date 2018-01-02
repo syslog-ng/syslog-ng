@@ -106,14 +106,14 @@ testcase_frequent_words(gchar *logs, guint support, gchar *expected)
         {
           char **expected_item;
           char *expected_word;
-          int expected_occurance;
+          int expected_occurrence;
           guint ret;
           gpointer retp;
 
           expected_item = g_strsplit(expecteds[i], ":", 2);
 
           expected_word = expected_item[0];
-          sscanf(expected_item[1], "%d", &expected_occurance);
+          sscanf(expected_item[1], "%d", &expected_occurrence);
 
           retp = g_hash_table_lookup(wordlist, expected_word);
           if (retp)
@@ -125,11 +125,11 @@ testcase_frequent_words(gchar *logs, guint support, gchar *expected)
               ret = 0;
             }
 
-          if (ret != (guint) expected_occurance)
+          if (ret != (guint) expected_occurrence)
             {
               fail = TRUE;
               fprintf(stderr, "Frequent words test case failed; word: '%s', expected=%d, got=%d, support=%d\n",
-                      expected_word, expected_occurance, ret, support);
+                      expected_word, expected_occurrence, ret, support);
 
               fprintf(stderr, "Input:\n%s\n", logs);
               fprintf(stderr, "Full results:\n");

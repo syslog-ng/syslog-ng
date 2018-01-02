@@ -79,7 +79,7 @@ afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
-  self->connections_kept_alive_accross_reloads = enable;
+  self->connections_kept_alive_across_reloads = enable;
 }
 
 static const gchar *_module_name = "afsocket_dd";
@@ -489,7 +489,7 @@ afsocket_dd_save_connection(AFSocketDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  if (self->connections_kept_alive_accross_reloads)
+  if (self->connections_kept_alive_across_reloads)
     {
       ReloadStoreItem *item = _reload_store_item_new(self);
       cfg_persist_config_add(cfg, afsocket_dd_format_connections_name(self), item,
@@ -567,7 +567,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->construct_writer = afsocket_dd_construct_writer_method;
   self->transport_mapper = transport_mapper;
   self->socket_options = socket_options;
-  self->connections_kept_alive_accross_reloads = TRUE;
+  self->connections_kept_alive_across_reloads = TRUE;
   self->time_reopen = cfg->time_reopen;
   self->connection_initialized = FALSE;
 

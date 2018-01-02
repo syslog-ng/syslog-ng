@@ -438,7 +438,7 @@ __fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, struct tm *
 
   /* fix up the tv_sec value by transposing it into the target timezone:
    *
-   * First we add the local time zone offset then substract the target time
+   * First we add the local time zone offset then subtract the target time
    * zone offset.  This is not trivial however, as we have to determine
    * exactly what the local timezone offset is at the current second, as
    * used by mktime(). It is composed of these values:

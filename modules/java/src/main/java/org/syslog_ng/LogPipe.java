@@ -56,7 +56,7 @@ public abstract class LogPipe {
 	}
 
 	protected void sendExceptionMessage(Exception e) {
-		InternalMessageSender.error("Exception occured: " + getStackTrace(e));
+		InternalMessageSender.error("Exception occurred: " + getStackTrace(e));
 	}
 
 	public boolean initProxy() {

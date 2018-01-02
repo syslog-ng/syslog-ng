@@ -518,7 +518,7 @@ g_sockaddr_unix_new(const gchar *name)
 /*+
 
   Allocate and initialize a GSockAddrUnix instance, using libc
-  sockaddr_un strucutre.
+  sockaddr_un structure.
 
   Parameters:
     saun        sockaddr_un structure to convert

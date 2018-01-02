@@ -687,7 +687,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
   last_match_was_empty = FALSE;
   do
     {
-      /* loop over the string, replacing one occurence at a time. */
+      /* loop over the string, replacing one occurrence at a time. */
 
       /* NOTE: zero length matches need special care, as we could spin
        * forever otherwise (since the current position wouldn't be

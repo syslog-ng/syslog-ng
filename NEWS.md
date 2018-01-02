@@ -69,7 +69,7 @@ Andras Mitzki, Gergely Nagy, Laszlo Budai, Laszlo Varady, Peter Czanik.
  * Cleanup diskq related warning messages (#1752)
  * Provide tls block for tls options in amqp(), http(), riemann() destination drivers (#1715)
  * It it possible from now to register blocks and generators as plugins (#1657)
- * Drop compatiblity with configurations below 3.0 (#1709)
+ * Drop compatibility with configurations below 3.0 (#1709)
  * Do not change permissions of a file by default (#1782)
  * Allow source files to specify permissions locally (#1782)
  * Minor performance improvement (#1729)

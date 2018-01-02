@@ -208,7 +208,7 @@ afinet_dd_init(LogPipe *s)
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   if (self->spoof_source)
-    self->super.connections_kept_alive_accross_reloads = TRUE;
+    self->super.connections_kept_alive_across_reloads = TRUE;
 #endif
 
   if (!afsocket_dd_init(s))

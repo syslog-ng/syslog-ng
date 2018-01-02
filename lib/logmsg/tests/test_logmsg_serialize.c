@@ -87,7 +87,7 @@ unsigned char _serialized_pe_msg[] =
 unsigned int _serialized_pe_msg_len = sizeof(_serialized_pe_msg);
 
 static void
-_alloc_dummy_values_to_change_handle_values_accross_restarts(void)
+_alloc_dummy_values_to_change_handle_values_across_restarts(void)
 {
   static gint iteration = 1;
 
@@ -106,7 +106,7 @@ _reset_log_msg_registry(void)
 {
   log_msg_registry_deinit();
   log_msg_registry_init();
-  _alloc_dummy_values_to_change_handle_values_accross_restarts();
+  _alloc_dummy_values_to_change_handle_values_across_restarts();
 }
 
 static void

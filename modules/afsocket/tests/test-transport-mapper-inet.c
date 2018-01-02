@@ -116,7 +116,7 @@ assert_create_socket_fails_with_address(GSockAddr *addr)
 {
   gint sock;
 
-  assert_false(create_socket_with_address(addr, &sock), "transport_mapper_open_socket() suceeded unexpectedly");
+  assert_false(create_socket_with_address(addr, &sock), "transport_mapper_open_socket() succeeded unexpectedly");
   assert_gint(sock, -1, "failed create_socket returned a non-extremal value on failure");
 }
 
@@ -125,7 +125,7 @@ assert_create_socket_fails(void)
 {
   gint sock;
 
-  assert_false(create_socket(&sock), "transport_mapper_open_socket() suceeded unexpectedly");
+  assert_false(create_socket(&sock), "transport_mapper_open_socket() succeeded unexpectedly");
   assert_gint(sock, -1, "failed create_socket returned a non-extremal value on failure");
 }
 

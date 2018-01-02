@@ -34,7 +34,7 @@
  * NOTE: when looking for the end-of-message here, it either needs to be
  * terminated via NUL or via NL, when terminating via NL we have to make
  * sure that there's no NUL left in the message. This function iterates over
- * the input data and returns a pointer to the first occurence of NL or NUL.
+ * the input data and returns a pointer to the first occurrence of NL or NUL.
  *
  * It uses an algorithm similar to what there's in libc memchr/strchr.
  *

@@ -224,7 +224,7 @@ _parse_character_with_quotation(CSVScanner *self)
   self->src++;
 }
 
-/* searches for str in list and returns the first occurence, otherwise NULL */
+/* searches for str in list and returns the first occurrence, otherwise NULL */
 static const gboolean
 _match_string_delimiters_at_current_position(const char *input, GList *string_delimiters, int *result_length)
 {

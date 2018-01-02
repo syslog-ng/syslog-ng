@@ -326,7 +326,7 @@ Test(add_contextual_data, test_import_with_invalid_csv_content)
     create_contextual_data_record_scanner_by_type("csv");
 
   cr_assert_not(context_info_db_import(db, fp, scanner),
-                "Sucessfully import an invalid CSV file.");
+                "Successfully import an invalid CSV file.");
   cr_assert_not(context_info_db_is_loaded(db),
                 "The context_info_db_is_loaded reports True after a failing import operation. ");
   cr_assert_not(context_info_db_is_indexed(db),
@@ -348,7 +348,7 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
     create_contextual_data_record_scanner_by_type("csv");
 
   cr_assert_not(context_info_db_import(db, fp, scanner),
-                "Sucessfully import an invalid CSV file.");
+                "Successfully import an invalid CSV file.");
   cr_assert_not(context_info_db_is_loaded(db),
                 "The context_info_db_is_loaded reports True after a failing import operation. ");
   cr_assert_not(context_info_db_is_indexed(db),
