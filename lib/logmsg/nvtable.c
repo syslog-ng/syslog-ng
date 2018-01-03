@@ -79,8 +79,8 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
       goto exit;
     }
 
-  /* flags (2 bytes) || length (1 byte) || name (len bytes) || NUL */
-  /* memory layout: flags || length || name (NUL terminated) */
+  /* name (len bytes) || NULL || flags (2 bytes) || length (1 byte)  */
+  /* memory layout: name (NUL terminated) || flags || length */
   stored.flags = 0;
   stored.name_len = len;
   stored.name = g_strdup(name);
