@@ -24,6 +24,7 @@
 
 action="$1"
 root_dir="$2"
+exclude_dir="$3"
 
 function setup_root_dir
 {
@@ -34,7 +35,7 @@ function setup_root_dir
 
 function astyle_c_check
 {
-    astyle --options="$root_dir/.astylerc" --dry-run "$root_dir/*.h" "$root_dir/*.c" | grep "Formatted" | tee badly-formatted-files.list | wc -l | while read badly_formatted_c_files
+    astyle --options="$root_dir/.astylerc" --exclude="$exclude_dir" --dry-run "$root_dir/*.h" "$root_dir/*.c" | grep "Formatted" | tee badly-formatted-files.list | wc -l | while read badly_formatted_c_files
     do
         echo "Number of badly formatted files: $badly_formatted_c_files"
         if [ "$badly_formatted_c_files" == "0" ]; then
@@ -48,17 +49,23 @@ function astyle_c_check
 
 function astyle_c_format
 {
-    astyle --options="$root_dir/.astylerc" "$root_dir/*.h" "$root_dir/*.c" | grep "Formatted"
+    astyle --options="$root_dir/.astylerc" --exclude="$exclude_dir" "$root_dir/*.h" "$root_dir/*.c" | grep "Formatted"
     exit 0
 }
 
 function print_help
 {
+    echo
     echo "Format C source files to comply with coding standards of syslog-ng"
+    echo "${0} ACTION [ROOT_DIR] [EXCLUDE_DIR]"
     echo "Possible actions:"
     echo "    check    Check the format of sources in current directory"
     echo "    format   Format sources in current directory"
     echo "    help     Print this message"
+    echo
+    echo "Additional options:"
+    echo "  ROOT_DIR     Path for the source and .astylerc (default: current directory)"
+    echo "  EXCLUDE_DIR  Path for the build directory (excluded from style-check)  (default: '')"
 }
 
 function run_checker
