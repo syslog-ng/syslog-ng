@@ -26,4 +26,8 @@ from syslogng.debuggercli.readline import setup_readline
 
 def fetch_command():
     setup_readline()
-    return raw_input("(syslog-ng) ")
+    try:
+        input_function = raw_input
+    except NameError:
+        input_function = input
+    return input_function("(syslog-ng) ")
