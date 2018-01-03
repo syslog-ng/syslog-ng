@@ -30,7 +30,8 @@
 #include "presented-persistable-state.h"
 #include "persistable-state-header.h"
 
-struct _PersistableStatePresenter {
+struct _PersistableStatePresenter
+{
   gboolean (*dump)(PersistableStateHeader *state, PresentedPersistableState *representation);
   gboolean (*load)(PersistableStateHeader *state, PresentedPersistableState *representation);
   PersistEntryHandle (*alloc)(PersistState *state, const gchar *name);
@@ -39,14 +40,16 @@ struct _PersistableStatePresenter {
 typedef struct _PersistableStatePresenter PersistableStatePresenter;
 
 static inline gboolean
-persistable_state_presenter_load(PersistableStatePresenter *self, PersistableStateHeader *state, PresentedPersistableState *representation)
+persistable_state_presenter_load(PersistableStatePresenter *self, PersistableStateHeader *state,
+                                 PresentedPersistableState *representation)
 {
   g_assert(self->load != NULL);
   return self->load(state, representation);
 }
 
 static inline gboolean
-persistable_state_presenter_dump(PersistableStatePresenter *self, PersistableStateHeader *state, PresentedPersistableState *representation)
+persistable_state_presenter_dump(PersistableStatePresenter *self, PersistableStateHeader *state,
+                                 PresentedPersistableState *representation)
 {
   g_assert(self->dump != NULL);
   return self->dump(state, representation);
@@ -59,9 +62,10 @@ persistable_state_presenter_alloc(PersistableStatePresenter *self, PersistState 
   return self->alloc(state, name);
 }
 
-typedef PersistableStatePresenter* (*PersistableStatePresenterConstructFunc)(const gchar *name);
+typedef PersistableStatePresenter *(*PersistableStatePresenterConstructFunc)(const gchar *name);
 
 PersistableStatePresenterConstructFunc persistable_state_presenter_get_constructor_by_prefix(const gchar *prefix);
-void persistable_state_presenter_register_constructor(const gchar *prefix, PersistableStatePresenterConstructFunc handler);
+void persistable_state_presenter_register_constructor(const gchar *prefix,
+                                                      PersistableStatePresenterConstructFunc handler);
 
 #endif

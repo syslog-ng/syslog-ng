@@ -35,7 +35,7 @@ typedef struct _JavaVMSingleton JavaVMSingleton;
 
 JavaVMSingleton *java_machine_ref(void);
 void java_machine_unref(JavaVMSingleton *self);
-gboolean java_machine_start(JavaVMSingleton* self, const gchar *jvm_options);
+gboolean java_machine_start(JavaVMSingleton *self, const gchar *jvm_options);
 
 void java_machine_detach_thread(void);
 

@@ -157,7 +157,7 @@ gboolean cfg_lexer_start_next_include(CfgLexer *self);
 gboolean cfg_lexer_include_file(CfgLexer *self, const gchar *filename);
 gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer, gssize length);
 gboolean cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self,
-                                                                const gchar *name, const gchar *buffer, gsize length);
+    const gchar *name, const gchar *buffer, gsize length);
 EVTTAG *cfg_lexer_format_location_tag(CfgLexer *self, YYLTYPE *yylloc);
 
 /* context tracking */

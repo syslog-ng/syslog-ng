@@ -54,7 +54,8 @@ transport_mapper_inet_get_port_change_warning(TransportMapper *s)
 }
 
 static inline void
-transport_mapper_inet_set_tls_context(TransportMapperInet *self, TLSContext *tls_context, TLSSessionVerifyFunc tls_verify_callback, gpointer tls_verify_data)
+transport_mapper_inet_set_tls_context(TransportMapperInet *self, TLSContext *tls_context,
+                                      TLSSessionVerifyFunc tls_verify_callback, gpointer tls_verify_data)
 {
   self->tls_context = tls_context;
   self->tls_verify_callback = tls_verify_callback;

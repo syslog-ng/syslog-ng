@@ -32,11 +32,12 @@
 typedef struct _TestSource TestSource;
 typedef struct _TestCase TestCase;
 
-struct _TestCase {
-    void (*init)(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader, JournalReaderOptions *options);
-    void (*checker)(TestCase *self, TestSource *src, LogMessage *msg);
-    void (*finish)(TestCase *self);
-    gpointer user_data;
+struct _TestCase
+{
+  void (*init)(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader, JournalReaderOptions *options);
+  void (*checker)(TestCase *self, TestSource *src, LogMessage *msg);
+  void (*finish)(TestCase *self);
+  gpointer user_data;
 };
 
 

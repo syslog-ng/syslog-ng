@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef ZORP_MEMTRACE_H_INCLUDED
 #define ZORP_MEMTRACE_H_INCLUDED
 

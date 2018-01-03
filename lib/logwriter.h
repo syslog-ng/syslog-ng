@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOG_WRITER_H_INCLUDED
 #define LOG_WRITER_H_INCLUDED
 
@@ -53,16 +53,16 @@ typedef struct _LogWriterOptions
   gboolean initialized;
   /* bitmask of LWO_* */
   guint32 options;
-  
+
   /* minimum number of entries to trigger a flush */
   gint flush_lines;
-  
+
   /* flush anyway if this time was elapsed */
   gint flush_timeout;
   LogTemplate *template;
   LogTemplate *file_template;
   LogTemplate *proto_template;
-  
+
   LogTemplateOptions template_options;
   HostResolveOptions host_resolve_options;
   LogProtoClientOptionsStorage proto_options;
@@ -80,7 +80,8 @@ typedef struct _LogWriter LogWriter;
 
 void log_writer_set_flags(LogWriter *self, guint32 flags);
 guint32 log_writer_get_flags(LogWriter *self);
-void log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options, const gchar *stats_id, const gchar *stats_instance);
+void log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options, const gchar *stats_id,
+                            const gchar *stats_instance);
 void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_has_pending_writes(LogWriter *self);
 gboolean log_writer_opened(LogWriter *self);

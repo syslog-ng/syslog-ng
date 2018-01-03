@@ -68,11 +68,12 @@ struct _LogMatcher
   /* value_len can be -1 to indicate unknown length */
   gboolean (*match)(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len);
   /* value_len can be -1 to indicate unknown length, new_length can be returned as -1 to indicate unknown length */
-  gchar *(*replace)(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length);
+  gchar *(*replace)(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len,
+                    LogTemplate *replacement, gssize *new_length);
   void (*free_fn)(LogMatcher *s);
 };
 
-static inline gboolean 
+static inline gboolean
 log_matcher_compile(LogMatcher *s, const gchar *re, GError **error)
 {
   return s->compile(s, re, error);
@@ -85,7 +86,8 @@ log_matcher_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar
 }
 
 static inline gchar *
-log_matcher_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length)
+log_matcher_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len,
+                    LogTemplate *replacement, gssize *new_length)
 {
   if (s->replace)
     return s->replace(s, msg, value_handle, value, value_len, replacement, new_length);

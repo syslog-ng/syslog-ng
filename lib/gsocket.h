@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef G_SOCKET_H_INCLUDED
 #define G_SOCKET_H_INCLUDED
 

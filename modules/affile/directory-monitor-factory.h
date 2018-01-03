@@ -26,14 +26,16 @@
 
 typedef DirectoryMonitor *(*DirectoryMonitorConstructor)(const gchar *dir, guint recheck_time);
 
-typedef enum {
+typedef enum
+{
   MM_AUTO,
   MM_POLL,
   MM_INOTIFY,
   MM_UNKNOWN
 } MonitorMethod;
 
-typedef struct _DirectoryMonitorOptions {
+typedef struct _DirectoryMonitorOptions
+{
   const gchar *dir;
   guint follow_freq;
   MonitorMethod method;

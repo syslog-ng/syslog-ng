@@ -60,7 +60,7 @@ nv_entry_swap_bytes(NVEntry *entry)
 }
 
 static inline void
-nv_table_dyn_value_swap_bytes(NVIndexEntry* self)
+nv_table_dyn_value_swap_bytes(NVIndexEntry *self)
 {
   self->handle = GUINT32_SWAP_LE_BE(self->handle);
   self->ofs = GUINT32_SWAP_LE_BE(self->handle);

@@ -36,7 +36,7 @@
  * SUCH DAMAGE.
  *
  */
- 
+
 #ifndef __EVTLOG_H_INCLUDED
 #define __EVTLOG_H_INCLUDED
 
@@ -69,7 +69,7 @@
 #define EVT_FAC_AUTHPRIV    (10<<3) /* security/authorization messages (private) */
 #define EVT_FAC_FTP         (11<<3) /* ftp daemon */
 
-        /* other codes through 15 reserved for system use */
+/* other codes through 15 reserved for system use */
 #define EVT_FAC_LOCAL0      (16<<3) /* reserved for local use */
 #define EVT_FAC_LOCAL1      (17<<3) /* reserved for local use */
 #define EVT_FAC_LOCAL2      (18<<3) /* reserved for local use */
@@ -151,7 +151,7 @@ EVTTAG *evt_tag_printf(const char *tag, const char *format, ...) EVT_GNUC_PRINTF
  * @e: event record
  *
  * Formats the given event as specified by the current configuration.
- * 
+ *
  * Return value: returns a newly allocated string. The caller is responsible
  * for freeing the returned value.
  **/

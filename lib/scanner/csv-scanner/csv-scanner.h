@@ -59,12 +59,14 @@ void csv_scanner_options_set_flags(CSVScannerOptions *options, guint32 flags);
 void csv_scanner_options_set_columns(CSVScannerOptions *options, GList *columns);
 void csv_scanner_options_set_delimiters(CSVScannerOptions *options, const gchar *delimiters);
 void csv_scanner_options_set_string_delimiters(CSVScannerOptions *options, GList *string_delimiters);
-void csv_scanner_options_set_quotes_start_and_end(CSVScannerOptions *options, const gchar *quotes_start, const gchar *quotes_end);
+void csv_scanner_options_set_quotes_start_and_end(CSVScannerOptions *options, const gchar *quotes_start,
+                                                  const gchar *quotes_end);
 void csv_scanner_options_set_quotes(CSVScannerOptions *options, const gchar *quotes);
 void csv_scanner_options_set_quote_pairs(CSVScannerOptions *options, const gchar *quote_pairs);
 void csv_scanner_options_set_null_value(CSVScannerOptions *options, const gchar *null_value);
 
-typedef struct {
+typedef struct
+{
   CSVScannerOptions *options;
   GList *current_column;
   const gchar *src;

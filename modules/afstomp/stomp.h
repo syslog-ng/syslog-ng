@@ -37,7 +37,7 @@ typedef struct stomp_connection
 typedef struct stomp_frame
 {
   char *command;
-  GHashTable* headers;
+  GHashTable *headers;
   char *body;
   int body_length;
 } stomp_frame;

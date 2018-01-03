@@ -40,7 +40,8 @@ typedef struct _DNSCache DNSCache;
 
 void dns_cache_store_persistent(DNSCache *self, gint family, void *addr, const gchar *hostname);
 void dns_cache_store_dynamic(DNSCache *self, gint family, void *addr, const gchar *hostname, gboolean positive);
-gboolean dns_cache_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive);
+gboolean dns_cache_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname, gsize *hostname_len,
+                          gboolean *positive);
 DNSCache *dns_cache_new(const DNSCacheOptions *options);
 void dns_cache_free(DNSCache *self);
 

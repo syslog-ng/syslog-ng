@@ -25,7 +25,7 @@
 
 #include "add-contextual-data-selector.h"
 
-AddContextualDataSelector*
+AddContextualDataSelector *
 add_contextual_data_template_selector_new(GlobalConfig *cfg, const gchar *selector_template_string);
 
 #endif

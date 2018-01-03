@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef SDINTER_H_INCLUDED
 #define SDINTER_H_INCLUDED
 

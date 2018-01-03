@@ -26,10 +26,11 @@
 
 #include "syslog-ng.h"
 
-typedef enum _ServiceManagementType {
-    SMT_NONE,
-    SMT_SYSTEMD,
-    SMT_MAX
+typedef enum _ServiceManagementType
+{
+  SMT_NONE,
+  SMT_SYSTEMD,
+  SMT_MAX
 } ServiceManagementType;
 
 void service_management_publish_status(const gchar *status);

@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef MESSAGES_H_INCLUDED
 #define MESSAGES_H_INCLUDED
 
@@ -60,55 +60,55 @@ void msg_add_option_group(GOptionContext *ctx);
 
 /* just like msg_info, but prepends the message with a timestamp -- useful in interactive
  * tools with long running time to provide some feedback */
-#define msg_progress(desc, tags...) 					  \
-        do { 									  \
-          time_t t;								  \
-          char *timestamp, *newdesc; 						  \
+#define msg_progress(desc, tags...)             \
+        do {                    \
+          time_t t;                 \
+          char *timestamp, *newdesc;              \
                                                                                   \
-          t = time(0); 							          \
-          timestamp = ctime(&t); 						  \
-          timestamp[strlen(timestamp) - 1] = 0; 				  \
-          newdesc = g_strdup_printf("[%s] %s", timestamp, desc); 		  \
+          t = time(0);                        \
+          timestamp = ctime(&t);              \
+          timestamp[strlen(timestamp) - 1] = 0;           \
+          newdesc = g_strdup_printf("[%s] %s", timestamp, desc);      \
           msg_event_send(msg_event_create(EVT_PRI_INFO, newdesc, ##tags, NULL )); \
-          g_free(newdesc); 							  \
+          g_free(newdesc);                \
         } while (0)
 
 #define msg_verbose(desc, tags...)                                          \
-	do {                                                                      \
-	  if (G_UNLIKELY(verbose_flag))                                           \
-	    msg_info(desc, ##tags );                                        \
-	} while (0)
+  do {                                                                      \
+    if (G_UNLIKELY(verbose_flag))                                           \
+      msg_info(desc, ##tags );                                        \
+  } while (0)
 
-#define msg_debug(desc, tags...) 						  \
-	do { 									  \
-	  if (G_UNLIKELY(debug_flag))                                             \
-	    msg_event_suppress_recursions_and_send(                               \
-	          msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
-	} while (0)
+#define msg_debug(desc, tags...)              \
+  do {                    \
+    if (G_UNLIKELY(debug_flag))                                             \
+      msg_event_suppress_recursions_and_send(                               \
+            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
+  } while (0)
 
 #if SYSLOG_NG_ENABLE_DEBUG
-#define msg_trace(desc, tags...) 						  \
-	do { 									  \
-	  if (G_UNLIKELY(trace_flag))            				  \
+#define msg_trace(desc, tags...)              \
+  do {                    \
+    if (G_UNLIKELY(trace_flag))                     \
             msg_event_suppress_recursions_and_send(                               \
                   msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
-	} while (0)
+  } while (0)
 #else
 #define msg_trace(desc, tags...)
 #endif
 
-#define __once()					\
-        ({						\
-          static gboolean __guard = TRUE;		\
-          gboolean __current_guard = __guard;		\
-          __guard = FALSE;				\
-          __current_guard;				\
+#define __once()          \
+        ({            \
+          static gboolean __guard = TRUE;   \
+          gboolean __current_guard = __guard;   \
+          __guard = FALSE;        \
+          __current_guard;        \
         })
 
-#define msg_warning_once(desc, tags...)	\
-        do {				\
-          if (__once())			\
-            msg_warning(desc, ##tags );	\
+#define msg_warning_once(desc, tags...) \
+        do {        \
+          if (__once())     \
+            msg_warning(desc, ##tags ); \
         } while (0)
 
 void msg_post_message(LogMessage *msg);

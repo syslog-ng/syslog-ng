@@ -79,7 +79,8 @@ struct _MsgFormatHandler
    * match the requirements of the "format" in question.  This is used by
    * the "pacct" plugin to set the record length the proper size
    */
-  LogProtoServer *(*construct_proto)(const MsgFormatOptions *options, LogTransport *transport, const LogProtoServerOptions *proto_options);
+  LogProtoServer *(*construct_proto)(const MsgFormatOptions *options, LogTransport *transport,
+                                     const LogProtoServerOptions *proto_options);
   void (*parse)(const MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg);
 };
 

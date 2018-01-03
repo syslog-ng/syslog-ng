@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef CFG_H_INCLUDED
 #define CFG_H_INCLUDED
 
@@ -61,7 +61,7 @@ struct _GlobalConfig
   /* version number specified by the user, set _after_ parsing is complete */
   /* hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
   gint user_version;
-  
+
   /* version number as parsed from the configuration file, it can be set
    * multiple times if the user uses @version multiple times */
   gint parsed_version;
@@ -99,24 +99,24 @@ struct _GlobalConfig
   GList *source_mangle_callback_list;
   gboolean use_uniqid;
 
-  gboolean keep_timestamp;  
+  gboolean keep_timestamp;
 
   gchar *recv_time_zone;
   LogTemplateOptions template_options;
   HostResolveOptions host_resolve_options;
-  
+
   gchar *file_template_name;
   gchar *proto_template_name;
 
   gchar *jvm_options;
-  
+
   LogTemplate *file_template;
   LogTemplate *proto_template;
-  
+
   PersistConfig *persist;
   PersistState *state;
   GHashTable *module_config;
-  
+
   CfgTree tree;
 
 };
@@ -153,7 +153,8 @@ gboolean cfg_deinit(GlobalConfig *cfg);
 PersistConfig *persist_config_new(void);
 void persist_config_free(PersistConfig *self);
 void cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
-void cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);
+void cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDestroyNotify destroy,
+                            gboolean force);
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, const gchar *name);
 
 typedef gboolean(* mangle_callback)(GlobalConfig *cfg, LogMessage *msg, gpointer user_data);
@@ -179,6 +180,6 @@ cfg_set_use_uniqid(gboolean flag)
 
 gint cfg_get_user_version(const GlobalConfig *cfg);
 gint cfg_get_parsed_version(const GlobalConfig *cfg);
-const gchar* cfg_get_filename(const GlobalConfig *cfg);
+const gchar *cfg_get_filename(const GlobalConfig *cfg);
 
 #endif

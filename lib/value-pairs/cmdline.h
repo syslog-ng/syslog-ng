@@ -27,8 +27,8 @@
 #include "value-pairs/value-pairs.h"
 
 ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
-					 gint *argc, gchar ***argv,
-					 gboolean ignore_unknown_options,
-					 GError **error);
+                                         gint *argc, gchar ***argv,
+                                         gboolean ignore_unknown_options,
+                                         GError **error);
 
 #endif

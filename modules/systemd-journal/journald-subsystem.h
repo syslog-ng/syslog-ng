@@ -32,10 +32,11 @@
 #include <systemd/sd-journal.h>
 #else
 /* Open flags */
-enum {
-        SD_JOURNAL_LOCAL_ONLY = 1,
-        SD_JOURNAL_RUNTIME_ONLY = 2,
-        SD_JOURNAL_SYSTEM_ONLY = 4
+enum
+{
+  SD_JOURNAL_LOCAL_ONLY = 1,
+  SD_JOURNAL_RUNTIME_ONLY = 2,
+  SD_JOURNAL_SYSTEM_ONLY = 4
 };
 #endif
 

@@ -98,7 +98,7 @@ struct _PluginContext
 Plugin *plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name);
 
 /* plugin side API */
-PluginCandidate * plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name);
+PluginCandidate *plugin_candidate_new(gint plugin_type, const gchar *name, const gchar *module_name);
 void plugin_candidate_free(PluginCandidate *self);
 
 void plugin_register(PluginContext *context, Plugin *p, gint number);

@@ -138,7 +138,7 @@ void log_proto_client_free_method(LogProtoClient *s);
 
 #define DEFINE_LOG_PROTO_CLIENT(prefix) \
   static gpointer                                                       \
-  prefix ## _client_plugin_construct(Plugin *self) 		        \
+  prefix ## _client_plugin_construct(Plugin *self)            \
   {                                                                     \
     static LogProtoClientFactory proto = {                              \
       .construct = prefix ## _client_new,                               \
@@ -147,10 +147,10 @@ void log_proto_client_free_method(LogProtoClient *s);
   }
 
 #define LOG_PROTO_CLIENT_PLUGIN(prefix, __name) \
-  {							\
-    .type = LL_CONTEXT_CLIENT_PROTO,		        \
-    .name = __name,					\
-    .construct = prefix ## _client_plugin_construct,	\
+  {             \
+    .type = LL_CONTEXT_CLIENT_PROTO,            \
+    .name = __name,         \
+    .construct = prefix ## _client_plugin_construct,  \
   }
 
 typedef struct _LogProtoClientFactory LogProtoClientFactory;
@@ -161,7 +161,8 @@ struct _LogProtoClientFactory
 };
 
 static inline LogProtoClient *
-log_proto_client_factory_construct(LogProtoClientFactory *self, LogTransport *transport, const LogProtoClientOptions *options)
+log_proto_client_factory_construct(LogProtoClientFactory *self, LogTransport *transport,
+                                   const LogProtoClientOptions *options)
 {
   return self->construct(transport, options);
 }

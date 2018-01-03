@@ -68,7 +68,8 @@ struct _LogProtoServer
   gboolean (*is_position_tracked)(LogProtoServer *s);
   gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
-  LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark);
+  LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
+                          LogTransportAuxData *aux, Bookmark *bookmark);
   gboolean (*validate_options)(LogProtoServer *s);
   void (*free_fn)(LogProtoServer *s);
 };
@@ -100,7 +101,8 @@ log_proto_server_restart_with_state(LogProtoServer *s, PersistState *state, cons
 }
 
 static inline LogProtoStatus
-log_proto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark)
+log_proto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
+                       LogTransportAuxData *aux, Bookmark *bookmark)
 {
   if (s->status == LPS_SUCCESS)
     return s->fetch(s, msg, msg_len, may_read, aux, bookmark);
@@ -141,16 +143,16 @@ void log_proto_server_free(LogProtoServer *s);
   prefix ## _server_plugin_construct(Plugin *self)                      \
   {                                                                     \
     static LogProtoServerFactory proto = {                              \
-      .construct = prefix ## _server_new,                    		\
+      .construct = prefix ## _server_new,                       \
     };                                                                  \
     return &proto;                                                      \
   }
 
 #define LOG_PROTO_SERVER_PLUGIN(prefix, __name) \
-  {							\
-    .type = LL_CONTEXT_SERVER_PROTO,		        \
-    .name = __name,					\
-    .construct = prefix ## _server_plugin_construct,	\
+  {             \
+    .type = LL_CONTEXT_SERVER_PROTO,            \
+    .name = __name,         \
+    .construct = prefix ## _server_plugin_construct,  \
   }
 
 typedef struct _LogProtoServerFactory LogProtoServerFactory;
@@ -161,7 +163,8 @@ struct _LogProtoServerFactory
 };
 
 static inline LogProtoServer *
-log_proto_server_factory_construct(LogProtoServerFactory *self, LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_server_factory_construct(LogProtoServerFactory *self, LogTransport *transport,
+                                   const LogProtoServerOptions *options)
 {
   return self->construct(transport, options);
 }

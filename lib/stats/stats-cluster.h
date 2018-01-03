@@ -74,7 +74,7 @@ enum
   SCS_FILTER         = 38,
   SCS_PARSER         = 39,
   SCS_MONITORING     = 40,
-  SCS_STDIN	     = 41,
+  SCS_STDIN      = 41,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };
@@ -150,6 +150,7 @@ StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 StatsCluster *stats_cluster_dynamic_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
 
-void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance, StatsCounterGroupInit counter_group_ctor);
+void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+                           StatsCounterGroupInit counter_group_ctor);
 
 #endif
