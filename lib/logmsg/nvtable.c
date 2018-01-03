@@ -60,22 +60,25 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
 
   len = strlen(name);
   if (len == 0)
+    goto exit;
+
+  if (len > 255)
     {
-      goto exit;
-    }
-  else if (len > 255)
-    {
-      msg_error("Value names cannot be longer than 255 characters, this value will always expand to the emptry string",
+      msg_error("Value names cannot be longer than 255 characters, "
+                "this value will always expand to the emptry string",
                 evt_tag_str("value", name));
       goto exit;
     }
-  else if (self->names->len >= self->nvhandle_max_value)
+
+  if (self->names->len >= self->nvhandle_max_value)
     {
-      msg_error("Hard wired limit of name-value pairs have been reached, all further name-value pair will expand to nothing",
+      msg_error("Hard wired limit of name-value pairs have been reached, "
+                "all further name-value pair will expand to nothing",
                 evt_tag_printf("limit", "%"G_GUINT32_FORMAT, self->nvhandle_max_value),
                 evt_tag_str("value", name));
       goto exit;
     }
+
   /* flags (2 bytes) || length (1 byte) || name (len bytes) || NUL */
   /* memory layout: flags || length || name (NUL terminated) */
   stored.flags = 0;
