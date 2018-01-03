@@ -90,7 +90,7 @@ dest_diskq_option
         : KW_RELIABLE '(' yesno ')'            { disk_queue_options_reliable_set(last_options, $3); }
         | KW_MEM_BUF_SIZE '(' nonnegative_integer ')'    { disk_queue_options_mem_buf_size_set(last_options, $3); }
         | KW_MEM_BUF_LENGTH '(' nonnegative_integer ')'  { disk_queue_options_mem_buf_length_set(last_options, $3); }
-        | KW_DISK_BUF_SIZE '(' nonnegative_integer ')'   { disk_queue_options_disk_buf_size_set(last_options, $3); }
+        | KW_DISK_BUF_SIZE '(' nonnegative_integer64 ')'   { disk_queue_options_disk_buf_size_set(last_options, $3); }
         | KW_QOUT_SIZE '(' nonnegative_integer ')'       { disk_queue_options_qout_size_set(last_options, $3); }
         | KW_DIR '(' string ')'                { disk_queue_options_set_dir(last_options, $3); free($3); }
         ;

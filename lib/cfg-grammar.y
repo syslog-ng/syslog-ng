@@ -443,7 +443,9 @@ DNSCacheOptions *last_dns_cache_options;
 %type   <num> level_string
 
 %type   <num> positive_integer
+%type   <num> positive_integer64
 %type   <num> nonnegative_integer
+%type   <num> nonnegative_integer64
 
 /* END_DECLS */
 
@@ -967,17 +969,31 @@ dnsmode
 	| KW_PERSIST_ONLY                       { $$ = 2; }
 	;
 
-nonnegative_integer
+nonnegative_integer64
         : LL_NUMBER
           {
             CHECK_ERROR(($1 >= 0), @1, "It cannot be negative");
           }
         ;
 
-positive_integer
+nonnegative_integer
+        : nonnegative_integer64
+          {
+            CHECK_ERROR(($1 <= G_MAXINT32), @1, "Must be smaller than 2^31");
+          }
+        ;
+
+positive_integer64
         : LL_NUMBER
           {
             CHECK_ERROR(($1 > 0), @1, "Must be positive");
+          }
+        ;
+
+positive_integer
+        : positive_integer64
+          {
+            CHECK_ERROR(($1 <= G_MAXINT32), @1, "Must be smaller than 2^31");
           }
         ;
 
