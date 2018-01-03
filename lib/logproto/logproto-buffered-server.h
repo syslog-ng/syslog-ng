@@ -64,23 +64,24 @@ typedef struct _LogProtoBufferedServer LogProtoBufferedServer;
 struct _LogProtoBufferedServer
 {
   LogProtoServer super;
-  gboolean (*fetch_from_buffer)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len);
+  gboolean (*fetch_from_buffer)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes,
+                                const guchar **msg, gsize *msg_len);
   gint (*read_data)(LogProtoBufferedServer *self, guchar *buf, gsize len, LogTransportAuxData *aux);
 
   gboolean
-    /* track & record the position in the input, to be used for file
-     * position tracking.  It's not always on as it's expensive when
-     * an encoding is specified and the last record in the input is
-     * not complete.
-     */
-    pos_tracking:1,
+  /* track & record the position in the input, to be used for file
+   * position tracking.  It's not always on as it's expensive when
+   * an encoding is specified and the last record in the input is
+   * not complete.
+   */
+  pos_tracking:1,
 
-    /* specifies that the input is a stream of bytes, size of chunks
-     * read split the input randomly.  Non-stream based stuff is udp
-     * or fixed-size records read from a file.  */
-    stream_based:1,
+               /* specifies that the input is a stream of bytes, size of chunks
+                * read split the input randomly.  Non-stream based stuff is udp
+                * or fixed-size records read from a file.  */
+               stream_based:1,
 
-    no_multi_read:1;
+               no_multi_read:1;
   gint fetch_state;
   GIOStatus io_status;
   LogProtoBufferedServerState *state1;
@@ -106,7 +107,8 @@ void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
 
 /* LogProtoBufferedServer */
 gboolean log_proto_buffered_server_validate_options_method(LogProtoServer *s);
-void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport, const LogProtoServerOptions *options);
+void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport,
+                                    const LogProtoServerOptions *options);
 void log_proto_buffered_server_free_method(LogProtoServer *s);
 
 #endif

@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef DRIVER_H_INCLUDED
 #define DRIVER_H_INCLUDED
 

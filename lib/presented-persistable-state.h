@@ -30,12 +30,12 @@ typedef struct _PresentedPersistableState PresentedPersistableState;
 
 struct _PresentedPersistableState
 {
-  void (*add_string)(PresentedPersistableState *self, gchar* name, gchar* value);
-  void (*add_boolean)(PresentedPersistableState *self, gchar* name, gboolean value);
+  void (*add_string)(PresentedPersistableState *self, gchar *name, gchar *value);
+  void (*add_boolean)(PresentedPersistableState *self, gchar *name, gboolean value);
   void (*add_int64)(PresentedPersistableState *self, gchar *name, gint64 value);
   void (*add_int)(PresentedPersistableState *self, gchar *name, gint value);
 
-  const gchar* (*get_string)(PresentedPersistableState *self, gchar *name);
+  const gchar *(*get_string)(PresentedPersistableState *self, gchar *name);
   gboolean (*get_boolean)(PresentedPersistableState *self, gchar *name);
   gint (*get_int)(PresentedPersistableState *self, gchar *name);
   gint64 (*get_int64)(PresentedPersistableState *self, gchar *name);
@@ -95,7 +95,8 @@ presented_persistable_state_get_int64(PresentedPersistableState *self, gchar *na
 }
 
 static inline void
-presented_persistable_state_foreach(PresentedPersistableState *self, void (callback)(gchar *name, const gchar *value, gpointer user_data), gpointer user_data)
+presented_persistable_state_foreach(PresentedPersistableState *self, void (callback)(gchar *name, const gchar *value,
+                                    gpointer user_data), gpointer user_data)
 {
   self->foreach(self, callback, user_data);
 }

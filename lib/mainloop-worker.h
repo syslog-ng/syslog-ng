@@ -76,7 +76,8 @@ void main_loop_worker_thread_start(void *cookie);
 void main_loop_worker_thread_stop(void);
 void main_loop_worker_run_gc(void);
 
-void main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data, WorkerOptions *worker_options);
+void main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
+                                    WorkerOptions *worker_options);
 
 void main_loop_worker_sync_call(void (*func)(void *user_data), void *user_data);
 

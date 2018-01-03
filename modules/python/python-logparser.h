@@ -30,6 +30,6 @@
 LogParser *python_parser_new(GlobalConfig *cfg);
 void python_parser_set_imports(LogParser *s, GList *imports);
 void python_parser_set_class(LogParser *s, gchar *class_name);
-void python_parser_set_option(LogParser*  s, gchar* key, gchar* value);
+void python_parser_set_option(LogParser  *s, gchar *key, gchar *value);
 
 #endif

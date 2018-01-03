@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef G_SOCKADDR_H_INCLUDED
 #define G_SOCKADDR_H_INCLUDED
 
@@ -51,7 +51,7 @@ typedef struct _GSockAddr
   struct sockaddr sa;
 } GSockAddr;
 
-struct _GSockAddrFuncs 
+struct _GSockAddrFuncs
 {
   GIOStatus (*bind_prepare)(gint sock, GSockAddr *addr);
   GIOStatus (*bind)(int sock, GSockAddr *addr);
@@ -82,10 +82,10 @@ static inline struct sockaddr_in *
 g_sockaddr_inet_get_sa(GSockAddr *s)
 {
   g_assert(g_sockaddr_inet_check(s));
-  
+
   return (struct sockaddr_in *) g_sockaddr_get_sa(s);
 }
-    
+
 
 /**
  * g_sockaddr_inet_get_address:
@@ -124,7 +124,7 @@ static inline struct sockaddr_in6 *
 g_sockaddr_inet6_get_sa(GSockAddr *s)
 {
   g_assert(g_sockaddr_inet6_check(s));
-  
+
   return (struct sockaddr_in6 *) g_sockaddr_get_sa(s);
 }
 

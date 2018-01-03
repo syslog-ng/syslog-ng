@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef PSEUDOFILE_H_INCLUDED
 #define PSEUDOFILE_H_INCLUDED
 

@@ -36,7 +36,7 @@
  * SUCH DAMAGE.
  *
  */
-                                   
+
 #ifndef __EVT_INTERNALS_H_INCLUDED
 #define __EVT_INTERNALS_H_INCLUDED
 
@@ -53,13 +53,13 @@
 #include <sys/types.h>
 
 /* whether to add the given default tag */
-#define EF_ADD_PID	0x0001
-#define EF_ADD_PROG	0x0002
-#define EF_ADD_ISOSTAMP	0x0004
-#define EF_ADD_UTCSTAMP	0x0008
-#define EF_ADD_TIMEZONE	0x0010
-#define EF_ADD_MSGID	0x0020
-#define EF_ADD_ALL	0x003F
+#define EF_ADD_PID  0x0001
+#define EF_ADD_PROG 0x0002
+#define EF_ADD_ISOSTAMP 0x0004
+#define EF_ADD_UTCSTAMP 0x0008
+#define EF_ADD_TIMEZONE 0x0010
+#define EF_ADD_MSGID  0x0020
+#define EF_ADD_ALL  0x003F
 
 #define EF_INITIALIZED  0x8000
 

@@ -61,7 +61,7 @@ g_string_append_unichar_optimized(GString *string, gunichar wc)
  * would be freed when the inline function exits (e.g.  when it is in fact
  * not inlined).
  */
-#define APPEND_ZERO(dest, value, value_len)	\
+#define APPEND_ZERO(dest, value, value_len) \
   do { \
     gchar *__buf; \
     if (G_UNLIKELY(value[value_len] != 0)) \
@@ -80,7 +80,7 @@ g_string_append_unichar_optimized(GString *string, gunichar wc)
     dest = __buf; \
   } while (0)
 
-gchar *__normalize_key(const gchar* buffer);
+gchar *__normalize_key(const gchar *buffer);
 
 
 /* This version of strchr() is optimized for cases where the string we are

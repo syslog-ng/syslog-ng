@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef AFFILE_DEST_H_INCLUDED
 #define AFFILE_DEST_H_INCLUDED
 
@@ -45,7 +45,7 @@ typedef struct _AFFileDestDriver
   LogWriterOptions writer_options;
   guint32 writer_flags;
   GHashTable *writer_hash;
-    
+
   gint overwrite_if_older;
   gboolean use_time_recvd;
   gint time_reap;

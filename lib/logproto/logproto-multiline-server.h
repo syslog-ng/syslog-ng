@@ -47,8 +47,10 @@ log_proto_multiline_server_new(LogTransport *transport,
                                const LogProtoMultiLineServerOptions *options);
 
 gboolean log_proto_multi_line_server_options_set_mode(LogProtoMultiLineServerOptions *options, const gchar *mode);
-gboolean log_proto_multi_line_server_options_set_prefix(LogProtoMultiLineServerOptions *options, const gchar *prefix_regexp, GError **error);
-gboolean log_proto_multi_line_server_options_set_garbage(LogProtoMultiLineServerOptions *options, const gchar *garbage_regexp, GError **error);
+gboolean log_proto_multi_line_server_options_set_prefix(LogProtoMultiLineServerOptions *options,
+                                                        const gchar *prefix_regexp, GError **error);
+gboolean log_proto_multi_line_server_options_set_garbage(LogProtoMultiLineServerOptions *options,
+                                                         const gchar *garbage_regexp, GError **error);
 
 void log_proto_multi_line_server_options_defaults(LogProtoMultiLineServerOptions *options);
 void log_proto_multi_line_server_options_init(LogProtoMultiLineServerOptions *options);

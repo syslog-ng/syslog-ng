@@ -175,14 +175,14 @@
 
 struct _LogPathOptions
 {
-   /* an acknowledgement is "passed" to this path, an ACK is still
-    * needed to close the window slot. This was called "flow-control"
-    * and meant both of these things: the user requested
-    * flags(flow-control), _AND_ an acknowledgement was needed. With
-    * the latest change, the one below specifies the user option,
-    * while the "ack is still needed" condition is stored in
-    * ack_needed.
-    */
+  /* an acknowledgement is "passed" to this path, an ACK is still
+   * needed to close the window slot. This was called "flow-control"
+   * and meant both of these things: the user requested
+   * flags(flow-control), _AND_ an acknowledgement was needed. With
+   * the latest change, the one below specifies the user option,
+   * while the "ack is still needed" condition is stored in
+   * ack_needed.
+   */
 
   gboolean ack_needed;
 

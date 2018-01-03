@@ -21,14 +21,15 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef CHILDREN_H_INCLUDED
 #define CHILDREN_H_INCLUDED
 
 #include "syslog-ng.h"
 #include <sys/types.h>
 
-void child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpointer user_data, GDestroyNotify user_data_destroy);
+void child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpointer user_data,
+                            GDestroyNotify user_data_destroy);
 void child_manager_unregister(pid_t pid);
 void child_manager_sigchild(pid_t pid, int status);
 

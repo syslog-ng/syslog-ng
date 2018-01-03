@@ -55,7 +55,8 @@ struct _FileOpener
   gint (*open)(FileOpener *self, const gchar *name, gint flags);
   gint (*get_open_flags)(FileOpener *self, FileDirection dir);
   LogTransport *(*construct_transport)(FileOpener *self, gint fd);
-  LogProtoServer *(*construct_src_proto)(FileOpener *self, LogTransport *transport, LogProtoFileReaderOptions *proto_options);
+  LogProtoServer *(*construct_src_proto)(FileOpener *self, LogTransport *transport,
+                                         LogProtoFileReaderOptions *proto_options);
   LogProtoClient *(*construct_dst_proto)(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options);
 };
 

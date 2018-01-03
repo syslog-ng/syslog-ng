@@ -62,7 +62,8 @@ struct _LogTemplateFunction
 
   /* called when parsing the arguments to be compiled into an internal
    * representation if necessary.  Returns the compiled state in state */
-  gboolean (*prepare)(LogTemplateFunction *self, gpointer state, LogTemplate *parent, gint argc, gchar *argv[], GError **error);
+  gboolean (*prepare)(LogTemplateFunction *self, gpointer state, LogTemplate *parent, gint argc, gchar *argv[],
+                      GError **error);
 
   /* evaluate arguments, storing argument buffers in arg_bufs in case it
    * makes sense to reuse those buffers */
@@ -85,12 +86,12 @@ struct _LogTemplateFunction
   gpointer                                                              \
   prefix ## _construct(Plugin *self)
 
-#define TEMPLATE_FUNCTION_DECLARE(prefix)	\
+#define TEMPLATE_FUNCTION_DECLARE(prefix) \
   TEMPLATE_FUNCTION_PROTOTYPE(prefix);
 
 /* helper macros for template function plugins */
 #define TEMPLATE_FUNCTION(state_struct, prefix, prepare, eval, call, free_state, arg) \
-  TEMPLATE_FUNCTION_PROTOTYPE(prefix) 					\
+  TEMPLATE_FUNCTION_PROTOTYPE(prefix)           \
   {                                                                     \
     static LogTemplateFunction func = {                                 \
       sizeof(state_struct),                                             \
@@ -98,7 +99,7 @@ struct _LogTemplateFunction
       eval,                                                             \
       call,                                                             \
       free_state,                                                       \
-      NULL,								\
+      NULL,               \
       arg                                                               \
     };                                                                  \
     return &func;                                                       \

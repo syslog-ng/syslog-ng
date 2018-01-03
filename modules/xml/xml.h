@@ -36,8 +36,8 @@ typedef struct
   gboolean strip_whitespaces;
 } XMLParser;
 
-LogParser * xml_parser_new(GlobalConfig *cfg);
-LogPipe * xml_parser_clone(LogPipe *s);
+LogParser *xml_parser_new(GlobalConfig *cfg);
+LogPipe *xml_parser_clone(LogPipe *s);
 void xml_parser_set_prefix(LogParser *s, const gchar *prefix);
 void xml_parser_set_forward_invalid(LogParser *s, gboolean setting);
 void xml_parser_set_exclude_tags(LogParser *s, GList *exclude_tags);

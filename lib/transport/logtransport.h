@@ -39,7 +39,7 @@ struct _LogTransport
   void (*free_fn)(LogTransport *self);
 };
 
-static inline gssize 
+static inline gssize
 log_transport_write(LogTransport *self, const gpointer buf, gsize count)
 {
   return self->write(self, buf, count);

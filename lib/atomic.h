@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef ATOMIC_H_INCLUDED
 #define ATOMIC_H_INCLUDED
 
@@ -73,7 +73,7 @@ g_atomic_counter_set(GAtomicCounter *c, gint value)
    * thus atomic write is not strictly needed as there's no concurrency
    * while initializing a refcounter.
    */
-  
+
   c->counter = value;
 }
 

@@ -51,7 +51,8 @@ file_reader_options_get_log_proto_options(FileReaderOptions *options)
   return (LogProtoFileReaderOptions *) &options->reader_options.proto_options;
 }
 
-FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner, GlobalConfig *cfg);
+FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
+                            GlobalConfig *cfg);
 
 void file_reader_remove_persist_state(FileReader *self);
 

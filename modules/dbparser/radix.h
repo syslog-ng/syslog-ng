@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef RADIX_H_INCLUDED
 #define RADIX_H_INCLUDED
 
@@ -113,36 +113,36 @@ r_parser_type_name(guint8 type)
 {
   switch (type)
     {
-      case RPT_STRING:
-        return "STRING";
-      case RPT_QSTRING:
-        return "QSTRING";
-      case RPT_ESTRING:
-        return "ESTRING";
-      case RPT_IPV4:
-        return "IPv4";
-      case RPT_NUMBER:
-        return "NUMBER";
-      case RPT_ANYSTRING:
-        return "ANYSTRING";
-      case RPT_IPV6:
-        return "IPv6";
-      case RPT_IP:
-        return "IP";
-      case RPT_FLOAT:
-        return "FLOAT";
-      case RPT_SET:
-        return "SET";
-      case RPT_MACADDR:
-        return "MACADDR";
-      case RPT_EMAIL:
-        return "EMAIL";
-      case RPT_HOSTNAME:
-        return "HOSTNAME";
-      case RPT_LLADDR:
-        return "LLADDR";
-      default:
-        return "UNKNOWN";
+    case RPT_STRING:
+      return "STRING";
+    case RPT_QSTRING:
+      return "QSTRING";
+    case RPT_ESTRING:
+      return "ESTRING";
+    case RPT_IPV4:
+      return "IPv4";
+    case RPT_NUMBER:
+      return "NUMBER";
+    case RPT_ANYSTRING:
+      return "ANYSTRING";
+    case RPT_IPV6:
+      return "IPv6";
+    case RPT_IP:
+      return "IP";
+    case RPT_FLOAT:
+      return "FLOAT";
+    case RPT_SET:
+      return "SET";
+    case RPT_MACADDR:
+      return "MACADDR";
+    case RPT_EMAIL:
+      return "EMAIL";
+    case RPT_HOSTNAME:
+      return "HOSTNAME";
+    case RPT_LLADDR:
+      return "LLADDR";
+    default:
+      return "UNKNOWN";
     }
 }
 

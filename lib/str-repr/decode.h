@@ -38,7 +38,9 @@ typedef struct _StrReprDecodeOptions
 gboolean str_repr_decode(GString *value, const gchar *input, const gchar **end);
 gboolean str_repr_decode_append(GString *value, const gchar *input, const gchar **end);
 
-gboolean str_repr_decode_with_options(GString *value, const gchar *input, const gchar **end, const StrReprDecodeOptions *options);
-gboolean str_repr_decode_append_with_options(GString *value, const gchar *input, const gchar **end, const StrReprDecodeOptions *options);
+gboolean str_repr_decode_with_options(GString *value, const gchar *input, const gchar **end,
+                                      const StrReprDecodeOptions *options);
+gboolean str_repr_decode_append_with_options(GString *value, const gchar *input, const gchar **end,
+                                             const StrReprDecodeOptions *options);
 
 #endif

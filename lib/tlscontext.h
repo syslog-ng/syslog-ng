@@ -77,7 +77,8 @@ typedef struct _TLSSession
   } peer_info;
 } TLSSession;
 
-void tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data, GDestroyNotify verify_destroy);
+void tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data,
+                            GDestroyNotify verify_destroy);
 void tls_session_free(TLSSession *self);
 
 gboolean tls_context_setup_context(TLSContext *self);

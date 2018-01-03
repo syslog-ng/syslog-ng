@@ -60,16 +60,21 @@ gboolean assert_guint16_non_fatal(guint16 actual, guint16 expected, const gchar 
 gboolean assert_gint64_non_fatal(gint64 actual, gint64 expected, const gchar *error_message, ...);
 gboolean assert_guint64_non_fatal(guint64 actual, guint64 expected, const gchar *error_message, ...);
 gboolean assert_gdouble_non_fatal(gdouble actual, gdouble expected, const gchar *error_message, ...);
-gboolean assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expected, gint expected_len, const gchar *error_message, ...);
-gboolean assert_guint32_array_non_fatal(guint32 *actual, guint32 actual_length, guint32 *expected, guint32 expected_length, const gchar *error_message, ...);
-gboolean assert_string_array_non_fatal(gchar **actual, guint32 actual_length, gchar **expected, guint32 expected_length, const gchar *error_message, ...);
+gboolean assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expected, gint expected_len,
+                                  const gchar *error_message, ...);
+gboolean assert_guint32_array_non_fatal(guint32 *actual, guint32 actual_length, guint32 *expected,
+                                        guint32 expected_length, const gchar *error_message, ...);
+gboolean assert_string_array_non_fatal(gchar **actual, guint32 actual_length, gchar **expected, guint32 expected_length,
+                                       const gchar *error_message, ...);
 gboolean assert_gboolean_non_fatal(gboolean actual, gboolean expected, const gchar *error_message, ...);
 gboolean assert_null_non_fatal(const void *pointer, const gchar *error_message, ...);
 gboolean assert_not_null_non_fatal(void *pointer, const gchar *error_message, ...);
 gboolean assert_no_error_non_fatal(GError *error, const gchar *error_message, ...);
-gboolean assert_guint32_set_non_fatal(guint32 *actual, guint32 actual_length, guint32 *expected, guint32 expected_length, const gchar *error_message, ...);
+gboolean assert_guint32_set_non_fatal(guint32 *actual, guint32 actual_length, guint32 *expected,
+                                      guint32 expected_length, const gchar *error_message, ...);
 gboolean assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gchar *error_message, ...);
-gboolean assert_msg_field_equals_non_fatal(LogMessage *msg, gchar *field_name, gchar *expected_value, gssize expected_value_len, const gchar *error_message, ...);
+gboolean assert_msg_field_equals_non_fatal(LogMessage *msg, gchar *field_name, gchar *expected_value,
+                                           gssize expected_value_len, const gchar *error_message, ...);
 gboolean assert_msg_field_unset_non_fatal(LogMessage *msg, gchar *field_name, const gchar *error_message, ...);
 gboolean expect_not_reached(const gchar *error_message, ...);
 

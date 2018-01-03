@@ -56,7 +56,8 @@ filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
 gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg);
 gboolean filter_expr_eval_root(FilterExprNode *self, LogMessage **msg, const LogPathOptions *path_options);
-gboolean filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg, const LogPathOptions *path_options);
+gboolean filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg,
+                                            const LogPathOptions *path_options);
 void filter_expr_node_init_instance(FilterExprNode *self);
 FilterExprNode *filter_expr_ref(FilterExprNode *self);
 void filter_expr_unref(FilterExprNode *self);
