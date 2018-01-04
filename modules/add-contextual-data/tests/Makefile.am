@@ -21,4 +21,12 @@ modules_add_contextual_data_tests_test_selector_LDADD    =       \
 modules_add_contextual_data_tests_test_selector_LDFLAGS  =       \
         $(PREOPEN_SYSLOGFORMAT)                         \
         -dlpreopen $(top_builddir)/modules/add-contextual-data/libadd-contextual-data.la
+
+modules_add_contextual_data_tests_test_selector_filter_CFLAGS   =       \
+        $(TEST_CFLAGS) -I$(top_srcdir)/modules/add-contextual-data-selector-filter
+modules_add_contextual_data_tests_test_selector_filter_LDADD    =       \
+        $(TEST_LDADD)
+modules_add_contextual_data_tests_test_selector_filter_LDFLAGS  =       \
+        -dlpreopen $(top_builddir)/modules/add-contextual-data-selector-filter/libadd-contextual-data-selector-filter.la
+
 endif

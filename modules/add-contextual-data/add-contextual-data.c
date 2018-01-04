@@ -29,6 +29,7 @@
 #include "contextual-data-record-scanner.h"
 #include "add-contextual-data-selector.h"
 #include "add-contextual-data-template-selector.h"
+#include "add-contextual-data-filter-selector.h"
 #include "template/templates.h"
 #include "context-info-db.h"
 #include "pathutils.h"

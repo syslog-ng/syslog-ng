@@ -35,6 +35,7 @@ include modules/native/Makefile.am
 include modules/cef/Makefile.am
 include modules/diskq/Makefile.am
 include modules/add-contextual-data/Makefile.am
+include modules/add-contextual-data-filter/Makefile.am
 include modules/getent/Makefile.am
 include modules/map-value-pairs/Makefile.am
 include modules/stardate/Makefile.am
