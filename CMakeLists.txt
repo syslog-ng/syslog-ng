@@ -167,6 +167,9 @@ set(CORE_INCLUDE_DIRS
     ${LIBPCRE_INCLUDE_DIRS}
 )
 
+add_custom_target(style-check  COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh check  ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+add_custom_target(style-format COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh format ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+
 
 include_directories (${PROJECT_BINARY_DIR}/lib)
 include_directories (${PROJECT_BINARY_DIR})
