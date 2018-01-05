@@ -19,6 +19,7 @@ logmsg_sources =             \
  lib/logmsg/logmsg.c              \
  lib/logmsg/logmsg-serialize.c    \
  lib/logmsg/logmsg-serialize-fixup.c \
+ lib/logmsg/nvhandle-descriptors.c  \
  lib/logmsg/nvtable.c             \
  lib/logmsg/nvtable-serialize.c   \
  lib/logmsg/tags-serialize.c      \

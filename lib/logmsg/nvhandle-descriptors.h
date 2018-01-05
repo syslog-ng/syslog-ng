@@ -34,4 +34,19 @@ struct _NVHandleDesc
   guint8 name_len;
 };
 
+typedef struct
+{
+  NVHandleDesc *data;
+  guint   len;
+  guint   allocated_len;
+  GPtrArray *old_buffers;
+} NVHandleDescArray;
+
+#define NVHANDLE_DESC_ARRAY_INITIAL_SIZE 256
+
+NVHandleDescArray *nvhandle_desc_array_new(guint reserved_size);
+void nvhandle_desc_array_free(NVHandleDescArray *self);
+void nvhandle_desc_array_append(NVHandleDescArray *self, NVHandleDesc *desc);
+#define nvhandle_desc_array_index(self, i)      (((NVHandleDesc*) (self)->data) [(i)])
+
 #endif

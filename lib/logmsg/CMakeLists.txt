@@ -17,6 +17,7 @@ set(LOGMSG_SOURCES
     logmsg/logmsg.c
     logmsg/logmsg-serialize.c
     logmsg/logmsg-serialize-fixup.c
+    logmsg/nvhandle-descriptors.c
     logmsg/nvtable.c
     logmsg/nvtable-serialize.c
     logmsg/tags-serialize.c
