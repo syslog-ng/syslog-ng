@@ -6,6 +6,7 @@ logmsginclude_HEADERS =     \
  lib/logmsg/serialization.h                 \
  lib/logmsg/logmsg-serialize.h              \
  lib/logmsg/logmsg-serialize-fixup.h        \
+ lib/logmsg/nvhandle-descriptors.h          \
  lib/logmsg/nvtable.h                       \
  lib/logmsg/nvtable-serialize.h             \
  lib/logmsg/nvtable-serialize-endianutils.h \

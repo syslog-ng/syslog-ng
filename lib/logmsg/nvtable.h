@@ -26,13 +26,13 @@
 #define PAYLOAD_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "nvhandle-descriptors.h"
 
 typedef struct _NVTable NVTable;
 typedef struct _NVRegistry NVRegistry;
 typedef struct _NVIndexEntry NVIndexEntry;
 typedef struct _NVEntry NVEntry;
 typedef guint32 NVHandle;
-typedef struct _NVHandleDesc NVHandleDesc;
 typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
                                        gpointer user_data);
 typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
@@ -53,13 +53,6 @@ struct _NVIndexEntry
 {
   NVHandle handle;
   guint32 ofs;
-};
-
-struct _NVHandleDesc
-{
-  gchar *name;
-  guint16 flags;
-  guint8 name_len;
 };
 
 struct _NVRegistry

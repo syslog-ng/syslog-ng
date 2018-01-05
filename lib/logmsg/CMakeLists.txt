@@ -3,6 +3,7 @@ set(LOGMSG_HEADERS
     logmsg/logmsg.h
     logmsg/logmsg-serialize.h
     logmsg/logmsg-serialize-fixup.h
+    logmsg/nvhandle-descriptors.h
     logmsg/nvtable.h
     logmsg/nvtable-serialize.h
     logmsg/nvtable-serialize-endianutils.h
