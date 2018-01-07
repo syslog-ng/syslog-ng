@@ -178,9 +178,9 @@ main_loop_worker_thread_start(void *cookie)
   _allocate_thread_id();
   INIT_IV_LIST_HEAD(&batch_callbacks);
 
-  g_mutex_lock(&workers_running_lock);
+  g_static_mutex_lock(&workers_running_lock);
   main_loop_workers_running++;
-  g_mutex_unlock(&workers_running_lock);
+  g_static_mutex_unlock(&workers_running_lock);
 
   app_thread_start();
 }
@@ -192,10 +192,10 @@ main_loop_worker_thread_stop(void)
   app_thread_stop();
   _release_thread_id();
 
-  g_mutex_lock(&workers_running_lock);
+  g_static_mutex_lock(&workers_running_lock);
   main_loop_workers_running--;
-  g_cond_signal(&thread_halt_cond);
-  g_mutex_unlock(&workers_running_lock);
+  g_cond_signal(thread_halt_cond);
+  g_static_mutex_unlock(&workers_running_lock);
 }
 
 void

@@ -40,8 +40,8 @@ typedef struct _MainLoopOptions
 } MainLoopOptions;
 
 extern ThreadId main_thread_handle;
-extern GCond thread_halt_cond;
-extern GMutex workers_running_lock;
+extern GCond *thread_halt_cond;
+extern GStaticMutex workers_running_lock;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 
