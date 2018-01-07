@@ -37,4 +37,8 @@
 GList *g_list_copy_deep (GList *list, GCopyFunc func, gpointer user_data);
 #endif
 
+#if !SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL
+void g_queue_free_full(GQueue *queue, GDestroyNotify free_func);
+#endif
+
 #endif
