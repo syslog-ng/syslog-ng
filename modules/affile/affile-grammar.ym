@@ -81,7 +81,6 @@ LogProtoFileReaderOptions *last_log_proto_options;
 %type	<ptr> source_affile
 %type	<ptr> source_affile_params
 %type	<ptr> source_afpipe_params
-%type   <ptr> source_wildcard_params
 %type	<ptr> source_stdin_params
 %type   <ptr> dest_affile
 %type	<ptr> dest_affile_params

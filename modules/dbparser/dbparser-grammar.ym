@@ -57,8 +57,6 @@ SyntheticMessage *last_message;
 %token KW_DB_PARSER
 %token KW_GROUPING_BY
 %token KW_INJECT_MODE
-%token KW_KEY
-%token KW_SCOPE
 %token KW_INHERIT_MODE
 %token KW_TIMEOUT
 %token KW_TRIGGER
