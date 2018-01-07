@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2002-2013 Balabit
+ * Copyright © 2011 Ryan Lortie
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,6 +36,24 @@
 
 #if !SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
 GList *g_list_copy_deep (GList *list, GCopyFunc func, gpointer user_data);
+#endif
+
+#ifndef g_atomic_pointer_add
+
+/* This implementation was copied from glib 2.46, copyright Ryan Lortie
+ * under the LGPL 2 or later, which is compatible with our LGPL 2.1 license.
+ * NOTE: this code only runs if we are running on an old glib version (e.g.
+ * older than 2.32)
+ * */
+
+#define g_atomic_pointer_add(atomic, val) \
+  (G_GNUC_EXTENSION ({                                                       \
+    G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
+    (void) (0 ? (gpointer) *(atomic) : 0);                                   \
+    (void) (0 ? (val) ^ (val) : 0);                                          \
+    (gssize) __sync_fetch_and_add ((atomic), (val));                         \
+  }))
+
 #endif
 
 #if !SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL
