@@ -19,13 +19,15 @@
  * COPYING for details.
  *
  */
-#include "add-contextual-data-filter.h"
+#include "add-contextual-data-filter-selector.h"
 #include "logmsg/logmsg.h"
 #include "template/macros.h"
 #include "cfg.h"
 #include "apphook.h"
 #include <criterion/criterion.h>
 #include <unistd.h>
+
+static gchar *test_filter_conf;
 
 static LogMessage *
 _create_log_msg(const gchar *message, const gchar *host)
@@ -39,7 +41,7 @@ _create_log_msg(const gchar *message, const gchar *host)
 }
 
 
-static const gchar *
+static gchar *
 _setup_filter_cfg(const gchar *cfg_content, gint size)
 {
   gchar tmp_filename[] = "testfiltersXXXXXX";
@@ -55,8 +57,8 @@ static AddContextualDataSelector *
 _create_filter_selector(const gchar *filter_cfg, gint size, GList *ordered_filters)
 {
   GlobalConfig *cfg = cfg_new(VERSION_VALUE);
-  const gchar *filter_path = _setup_filter_cfg(filter_cfg, size);
-  AddContextualDataSelector *selector = add_contextual_data_selector_filter_new(cfg, filter_path);
+  test_filter_conf = _setup_filter_cfg(filter_cfg, size);
+  AddContextualDataSelector *selector = add_contextual_data_selector_filter_new(cfg, test_filter_conf);
   if (!add_contextual_data_selector_init(selector, ordered_filters))
     return NULL;
 
@@ -67,12 +69,19 @@ static void
 setup(void)
 {
   app_startup();
+  /* Force to link the libtest library */
+  test_filter_conf = NULL;
 }
 
 static void
 teardown(void)
 {
   app_shutdown();
+  if (test_filter_conf)
+    {
+      unlink(test_filter_conf);
+    }
+  g_free(test_filter_conf);
 }
 
 TestSuite(add_contextual_data_filter_selector, .init = setup, .fini = teardown);

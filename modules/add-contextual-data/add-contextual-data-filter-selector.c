@@ -20,7 +20,7 @@
  *
  */
 
-#include "add-contextual-data-filter.h"
+#include "add-contextual-data-filter-selector.h"
 #include "syslog-ng.h"
 #include "cfg.h"
 #include "messages.h"
@@ -180,7 +180,7 @@ _filter_store_order_by_selectors(FilterStore *self, GList *ordered_selectors)
 }
 
 static gboolean
-_init(AddContextualDataSelector *s, GList *ordered_selectors)
+add_contextual_data_selector_filter_init(AddContextualDataSelector *s, GList *ordered_selectors)
 {
   AddContextualDataFilterSelector *self = (AddContextualDataFilterSelector *)s;
 
@@ -196,14 +196,14 @@ _init(AddContextualDataSelector *s, GList *ordered_selectors)
 }
 
 static gchar *
-_resolve(AddContextualDataSelector *s, LogMessage *msg)
+add_contextual_data_selector_filter_resolve(AddContextualDataSelector *s, LogMessage *msg)
 {
   AddContextualDataFilterSelector *self = (AddContextualDataFilterSelector *)s;
   return g_strdup(_filter_store_get_first_matching_name(self->filter_store, msg));
 }
 
 static void
-_free(AddContextualDataSelector *s)
+add_contextual_data_selector_filter_free(AddContextualDataSelector *s)
 {
   AddContextualDataFilterSelector *self = (AddContextualDataFilterSelector *)s;
   if (self->cfg)
@@ -213,22 +213,23 @@ _free(AddContextualDataSelector *s)
   g_free(self);
 }
 
-static AddContextualDataSelector *_clone(AddContextualDataSelector *s, GlobalConfig *cfg);
+static AddContextualDataSelector *add_contextual_data_selector_filter_clone(AddContextualDataSelector *s,
+    GlobalConfig *cfg);
 
 static AddContextualDataFilterSelector *
 _create_empty_add_contextual_data_filter_selector()
 {
   AddContextualDataFilterSelector *new_instance = g_new0(AddContextualDataFilterSelector, 1);
   new_instance->super.ordering_required = TRUE;
-  new_instance->super.resolve = _resolve;
-  new_instance->super.free = _free;
-  new_instance->super.init = _init;
-  new_instance->super.clone = _clone;
+  new_instance->super.resolve = add_contextual_data_selector_filter_resolve;
+  new_instance->super.free = add_contextual_data_selector_filter_free;
+  new_instance->super.init = add_contextual_data_selector_filter_init;
+  new_instance->super.clone = add_contextual_data_selector_filter_clone;
   return new_instance;
 }
 
 static AddContextualDataSelector *
-_clone(AddContextualDataSelector *s, GlobalConfig *cfg)
+add_contextual_data_selector_filter_clone(AddContextualDataSelector *s, GlobalConfig *cfg)
 {
   AddContextualDataFilterSelector *self = (AddContextualDataFilterSelector *)s;
   AddContextualDataFilterSelector *cloned = _create_empty_add_contextual_data_filter_selector();

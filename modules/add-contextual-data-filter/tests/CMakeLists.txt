@@ -1,1 +1,0 @@
-add_unit_test(CRITERION TARGET test_selector_filter DEPENDS add_contextual_data_filter)

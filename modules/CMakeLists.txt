@@ -1,5 +1,4 @@
 add_subdirectory(add-contextual-data)
-add_subdirectory(add-contextual-data-filter)
 add_subdirectory(afamqp)
 add_subdirectory(affile)
 add_subdirectory(afprog)

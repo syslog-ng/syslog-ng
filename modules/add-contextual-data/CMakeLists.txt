@@ -13,6 +13,8 @@ set(add_contextual_data_SOURCES
     add-contextual-data-selector.h
     add-contextual-data-template-selector.h
     add-contextual-data-template-selector.c
+    add-contextual-data-filter-selector.h
+    add-contextual-data-filter-selector.c
     ${CMAKE_CURRENT_BINARY_DIR}/add-contextual-data-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/add-contextual-data-grammar.c
 )
