@@ -499,7 +499,8 @@ tf_binary_free_state(gpointer s)
 {
   TFBinaryState *state = (TFBinaryState *) s;
 
-  g_string_free(state->octets, TRUE);
+  if (state->octets)
+    g_string_free(state->octets, TRUE);
   tf_simple_func_free_state(&state->super);
 }
 
