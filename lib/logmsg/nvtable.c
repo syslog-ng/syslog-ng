@@ -60,28 +60,31 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
 
   len = strlen(name);
   if (len == 0)
+    goto exit;
+
+  if (len > 255)
     {
-      goto exit;
-    }
-  else if (len > 255)
-    {
-      msg_error("Value names cannot be longer than 255 characters, this value will always expand to the emptry string",
+      msg_error("Value names cannot be longer than 255 characters, "
+                "this value will always expand to the emptry string",
                 evt_tag_str("value", name));
       goto exit;
     }
-  else if (self->names->len >= self->nvhandle_max_value)
+
+  if (self->names->len >= self->nvhandle_max_value)
     {
-      msg_error("Hard wired limit of name-value pairs have been reached, all further name-value pair will expand to nothing",
+      msg_error("Hard wired limit of name-value pairs have been reached, "
+                "all further name-value pair will expand to nothing",
                 evt_tag_printf("limit", "%"G_GUINT32_FORMAT, self->nvhandle_max_value),
                 evt_tag_str("value", name));
       goto exit;
     }
-  /* flags (2 bytes) || length (1 byte) || name (len bytes) || NUL */
-  /* memory layout: flags || length || name (NUL terminated) */
+
+  /* name (len bytes) || NULL || flags (2 bytes) || length (1 byte)  */
+  /* memory layout: name (NUL terminated) || flags || length */
   stored.flags = 0;
   stored.name_len = len;
   stored.name = g_strdup(name);
-  g_array_append_val(self->names, stored);
+  nvhandle_desc_array_append(self->names, &stored);
   g_hash_table_insert(self->name_map, stored.name, GUINT_TO_POINTER(self->names->len));
   res = self->names->len;
 exit:
@@ -110,7 +113,7 @@ nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags)
   if (G_UNLIKELY(!handle))
     return;
 
-  stored = &g_array_index(self->names, NVHandleDesc, handle - 1);
+  stored = &nvhandle_desc_array_index(self->names, handle - 1);
   stored->flags = flags;
 }
 
@@ -128,7 +131,7 @@ nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value)
 
   self->nvhandle_max_value = nvhandle_max_value;
   self->name_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-  self->names = g_array_new(FALSE, FALSE, sizeof(NVHandleDesc));
+  self->names = nvhandle_desc_array_new(NVHANDLE_DESC_ARRAY_INITIAL_SIZE);
   for (i = 0; static_names[i]; i++)
     {
       nv_registry_alloc_handle(self, static_names[i]);
@@ -139,7 +142,7 @@ nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value)
 void
 nv_registry_free(NVRegistry *self)
 {
-  g_array_free(self->names, TRUE);
+  nvhandle_desc_array_free(self->names);
   g_hash_table_destroy(self->name_map);
   g_free(self);
 }

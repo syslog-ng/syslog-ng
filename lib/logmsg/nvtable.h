@@ -26,13 +26,13 @@
 #define PAYLOAD_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "nvhandle-descriptors.h"
 
 typedef struct _NVTable NVTable;
 typedef struct _NVRegistry NVRegistry;
 typedef struct _NVIndexEntry NVIndexEntry;
 typedef struct _NVEntry NVEntry;
 typedef guint32 NVHandle;
-typedef struct _NVHandleDesc NVHandleDesc;
 typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
                                        gpointer user_data);
 typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
@@ -55,18 +55,11 @@ struct _NVIndexEntry
   guint32 ofs;
 };
 
-struct _NVHandleDesc
-{
-  gchar *name;
-  guint16 flags;
-  guint8 name_len;
-};
-
 struct _NVRegistry
 {
   /* number of static names that are statically allocated in each payload */
   gint num_static_names;
-  GArray *names;
+  NVHandleDescArray *names;
   GHashTable *name_map;
   guint32 nvhandle_max_value;
 };
@@ -89,7 +82,7 @@ nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle)
   if (G_UNLIKELY(!handle))
     return 0;
 
-  stored = &g_array_index(self->names, NVHandleDesc, handle - 1);
+  stored = &nvhandle_desc_array_index(self->names, handle - 1);
   return stored->flags;
 }
 
@@ -108,7 +101,7 @@ nv_registry_get_handle_name(NVRegistry *self, NVHandle handle, gssize *length)
   if (handle - 1 >= self->names->len)
     return NULL;
 
-  stored = &g_array_index(self->names, NVHandleDesc, handle - 1);
+  stored = &nvhandle_desc_array_index(self->names, handle - 1);
   if (G_LIKELY(length))
     *length = stored->name_len;
   return stored->name;
