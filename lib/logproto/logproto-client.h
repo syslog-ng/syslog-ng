@@ -63,7 +63,7 @@ struct _LogProtoClient
   LogTransport *transport;
   /* FIXME: rename to something else */
   gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond);
-  LogProtoStatus (*post)(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed);
+  LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProtoClient *s);
   gboolean (*validate_options)(LogProtoClient *s);
   void (*free_fn)(LogProtoClient *s);
@@ -113,9 +113,9 @@ log_proto_client_flush(LogProtoClient *s)
 }
 
 static inline LogProtoStatus
-log_proto_client_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
-  return s->post(s, msg, msg_len, consumed);
+  return s->post(s, logmsg, msg, msg_len, consumed);
 }
 
 static inline gint

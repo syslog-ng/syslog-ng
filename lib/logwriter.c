@@ -1105,7 +1105,8 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
 
   if (self->line_buffer->len)
     {
-      LogProtoStatus status = log_proto_client_post(self->proto, (guchar *)self->line_buffer->str, self->line_buffer->len,
+      LogProtoStatus status = log_proto_client_post(self->proto, msg, (guchar *)self->line_buffer->str,
+                                                    self->line_buffer->len,
                                                     &consumed);
 
       if (consumed)

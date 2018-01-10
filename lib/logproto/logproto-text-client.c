@@ -116,7 +116,7 @@ log_proto_text_client_submit_write(LogProtoClient *s, guchar *msg, gsize msg_len
  * successfully sent this message, or if it should be resent by the caller.
  **/
 static LogProtoStatus
-log_proto_text_client_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_text_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   gint rc;
