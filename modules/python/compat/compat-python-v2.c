@@ -24,11 +24,18 @@
 gboolean
 py_is_string(PyObject *object)
 {
-  return PyBytes_Check(object);
+  return PyBytes_Check(object) || PyUnicode_Check(object);
 }
 
 const gchar *
 py_object_as_string(PyObject *object)
 {
   return PyBytes_AsString(object);
+}
+
+void
+py_init_argv(void)
+{
+  static char *argv[] = {"syslog-ng"};
+  PySys_SetArgvEx(1, argv, 0);
 }

@@ -32,7 +32,7 @@ typedef struct
   LogParser super;
 
   gchar *class;
-  GList *imports;
+  GList *loaders;
 
   GHashTable *options;
 
@@ -62,12 +62,12 @@ python_parser_set_option(LogParser *d, gchar *key, gchar *value)
 }
 
 void
-python_parser_set_imports(LogParser *d, GList *imports)
+python_parser_set_loaders(LogParser *d, GList *loaders)
 {
   PythonParser *self = (PythonParser *)d;
 
-  string_list_free(self->imports);
-  self->imports = imports;
+  string_list_free(self->loaders);
+  self->loaders = loaders;
 }
 
 static gboolean
@@ -207,7 +207,7 @@ python_parser_init(LogPipe *s)
 
   gstate = PyGILState_Ensure();
 
-  _py_perform_imports(self->imports);
+  _py_perform_imports(self->loaders);
   if (!_py_init_bindings(self) ||
       !_py_init_object(self))
     goto fail;
@@ -252,7 +252,7 @@ python_parser_free(LogPipe *d)
   if (self->options)
     g_hash_table_unref(self->options);
 
-  string_list_free(self->imports);
+  string_list_free(self->loaders);
 
   log_parser_free_method(d);
 }
@@ -264,7 +264,7 @@ python_parser_clone(LogPipe *s)
   PythonParser *cloned = (PythonParser *) python_parser_new(log_pipe_get_config(s));
   g_hash_table_unref(cloned->options);
   python_parser_set_class(&cloned->super, self->class);
-  cloned->imports = string_list_clone(self->imports);
+  cloned->loaders = string_list_clone(self->loaders);
   cloned->options = g_hash_table_ref(self->options);
 
   return &cloned->super.super;

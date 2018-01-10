@@ -32,3 +32,10 @@ py_object_as_string(PyObject *object)
 {
   return PyUnicode_AsUTF8(object);
 }
+
+void
+py_init_argv(void)
+{
+  static wchar_t *argv[] = {L"syslog-ng"};
+  PySys_SetArgvEx(1, argv, 0);
+}

@@ -64,6 +64,7 @@ _py_init_interpreter(void)
       python_debugger_append_inittab();
 
       Py_Initialize();
+      py_init_argv();
 
       PyEval_InitThreads();
       python_log_message_init();

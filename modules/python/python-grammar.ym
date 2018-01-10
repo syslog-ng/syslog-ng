@@ -49,6 +49,7 @@
 %token KW_PYTHON
 %token KW_CLASS
 %token KW_IMPORTS
+%token KW_LOADERS
 
 %%
 
@@ -89,10 +90,8 @@ python_dd_option
             python_dd_set_class(last_driver, $3);
             free($3);
           }
-        | KW_IMPORTS '(' string_list ')'
-          {
-            python_dd_set_imports(last_driver, $3);
-          }
+        | KW_LOADERS python_dd_loaders
+        | KW_IMPORTS python_dd_loaders
         | KW_OPTIONS '(' python_dd_custom_options ')'
         | threaded_dest_driver_option
         | value_pair_option
@@ -123,11 +122,8 @@ python_parser_option
             python_parser_set_class(last_parser, $3);
             free($3);
           }
-        | KW_IMPORTS '(' string_list ')'
-          {
-            python_parser_set_imports(last_parser, $3);
-            free($3);
-          }
+        | KW_LOADERS python_parser_loaders
+        | KW_IMPORTS python_parser_loaders
         | KW_OPTIONS '(' python_parser_custom_options ')'
         ;
 
@@ -144,6 +140,18 @@ python_parser_custom_option
            free($2);
         }
 
+
+python_dd_loaders
+          : '(' string_list ')'
+          {
+            python_dd_set_loaders(last_driver, $2);
+          }
+
+python_parser_loaders
+          : '(' string_list ')'
+          {
+            python_parser_set_loaders(last_parser, $2);
+          }
 
 /* INCLUDE_RULES */
 

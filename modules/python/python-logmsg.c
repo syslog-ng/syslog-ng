@@ -70,7 +70,10 @@ static PyObject *
 _py_log_message_getattr(PyObject *o, PyObject *key)
 {
   if (!py_is_string(key))
-    return NULL;
+    {
+      PyErr_SetString(PyExc_TypeError, "key is not a string object");
+      return NULL;
+    }
 
   const gchar *name = py_object_as_string(key);
 
@@ -99,7 +102,10 @@ static int
 _py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
 {
   if (!py_is_string(key))
-    return -1;
+    {
+      PyErr_SetString(PyExc_TypeError, "key is not a string object");
+      return -1;
+    }
 
   PyLogMessage *py_msg = (PyLogMessage *)o;
   const gchar *name = py_object_as_string(key);
