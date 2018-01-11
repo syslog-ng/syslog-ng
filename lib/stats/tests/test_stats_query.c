@@ -126,7 +126,7 @@ _initialize_counter_hash(void)
 
   const CounterHashContent single_cluster_counters[] =
   {
-    {SCS_GLOBAL, NULL, "guba", SC_TYPE_SINGLE_VALUE}
+    {SCS_GLOBAL, "", "guba", SC_TYPE_SINGLE_VALUE}
   };
 
   app_startup();
