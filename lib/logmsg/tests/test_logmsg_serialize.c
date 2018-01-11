@@ -249,18 +249,18 @@ test_deserialization_performance(void)
   GString *stream = g_string_sized_new(512);
   SerializeArchive *sa = _serialize_message_for_test(stream);
   const int iterations = 100000;
-  LogMessage *msg = log_msg_new_empty();
+  LogMessage *msg;
 
   start_stopwatch();
   for (int i = 0; i < iterations; i++)
     {
       serialize_string_archive_reset(sa);
-      log_msg_clear(msg);
+      msg = log_msg_new_empty();
       log_msg_deserialize(msg, sa);
+      log_msg_unref(msg);
     }
   stop_stopwatch_and_display_result(iterations, "serializing %d times took", iterations);
   serialize_archive_free(sa);
-  log_msg_unref(msg);
   g_string_free(stream, TRUE);
 }
 
