@@ -40,11 +40,10 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 
 	public HttpBulkMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
 		super(options, client);
+		bulk = new Bulk.Builder();
 	}
 	@Override
 	public void init() {
-		bulk = new Bulk.Builder();
-		messageCounter = 0;
 		flushLimit = options.getFlushLimit();
 	}
 
