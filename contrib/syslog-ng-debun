@@ -716,10 +716,13 @@ acquire_syslog_var () {
 			find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
 		else
 			printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
-			printf "Do you really want to copy its contents? Type 'YES' with all capitals: "
+			printf "Do you really want to copy all of its contents? Type 'YES' with all capitals: "
 			read ans
 			if [ "$ans" = "YES" ]; then
 				find . | grep -v "syslog-ng*\.ctl" | cpio -pd ${tmpdir}/var
+			else
+				printf "Only copying most important files on user request.\n"
+				find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | cpio -pd ${tmpdir}/var
 			fi
 		fi
 	else
