@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.8.20170926"
+version="0.3.10.20180114"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -70,6 +70,7 @@ pcapifparm=-i
 w=w
 vmstat=vmstat
 dmesg=dmesg
+timestamp () { date +%s ; }
 tcpdumpcmd="tcpdump"
 tcpdumpopts="-p -s 1500 -w"
 opensslmajor=0
@@ -285,6 +286,11 @@ debun_generate_hashes () {
 debun_final() {
 	debun_finish_debug
 	[ -n "$service_status" ] && $service_status >${tmpdir}/svc.post
+
+	# Generating stats again for the EPS counter
+	printf 'Generating second batch of statistics\n'
+	acquire_syslog_stats
+
 	printf "\nGenerating hashes..."
 	debun_generate_hashes
 	printf " done.\nDebug Bundle generation: Done.\n"
@@ -672,20 +678,34 @@ acquire_syslog_pids () {
 	[ -n "$service_status" ] && $service_status >${tmpdir}/svc.pre
 }
 
+acquire_syslog_stats () {
+	local tsdata
+	tsdata=$( timestamp )
+	#handy-dandy delay magic, triggered when we'd step on our own foot
+	[ -f ${tmpdir}/syslog.stats.${tsdata} ] && sleep 5 && tsdata=$( timestamp )
+
+	${syslogbin}-ctl stats > ${tmpdir}/syslog.stats.${tsdata} 2>&1
+	echo ${syslogbin}-ctl stats
+	tsdata=$( timestamp )
+	${syslogbin}-ctl query get "*" > ${tmpdir}/syslog.query.all.${tsdata} 2>/dev/null
+	echo ${syslogbin}-ctl query get "*"
+	if [ -x ${syslogbin}-query ]; then
+		#if we reach this brach, then syslog.query.all - as generated above - will not contain any meaningful data
+		rm ${tmpdir}/syslog.query.all.${tsdata}
+		tsdata=$( timestamp )
+		${syslogbin}-query sum "*" > ${tmpdir}/syslog.query.all.${tsdata} 2>/dev/null
+		echo ${syslogbin}-query sum "*"
+	fi
+}
+
 acquire_syslog_info () {
 	ls -la "${binprefix}" > ${tmpdir}/syslog.lsl.install_dir 2>&1
 	printf "Syslog-ng's exact version: "
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
-	${syslogbin}-ctl stats > ${tmpdir}/syslog.stats 2>&1
-	echo ${syslogbin}-ctl stats
-	${syslogbin}-ctl query get "*" > ${tmpdir}/syslog.query.all 2>/dev/null
-	echo ${syslogbin}-ctl query get "*"
-	if [ -x ${syslogbin}-query ]; then
-		#if we reach this brach, then syslog.query.all - as generated above - will not contain any meaningful data
-		${syslogbin}-query sum "*" > ${tmpdir}/syslog.query.all 2>/dev/null
-		echo ${syslogbin}-query sum "*"
-	fi
+
+	acquire_syslog_stats
+
 	if ${syslogbin}-ctl show-license-info > ${tmpdir}/syslog.license-usage 2>&1; then
 		${syslogbin}-ctl show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
 	fi
@@ -1235,6 +1255,7 @@ setup_env_solaris () {
 	unset -f distpkgstatus
 	unset -f is_available
 	unset -f os_hash_helper
+	unset -f timestamp
 
 	is_available () { which "$1" | $grepq "no $1 in" && return 1 || return 0 ; }
 	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done ; }
@@ -1243,6 +1264,7 @@ setup_env_solaris () {
 	netstatlunp () { netstat -P udp -na ; }
 	myplimit () { plimit $1 ; }
 	free () { prtconf | grep Mem ; printf Pagesize:\  ; pagesize -a ; }
+	timestamp () { perl -e 'print time, "\n";' ; }
 	distpkgoffile () {
 		FILE="$1"
 		if [ -L "/lib/64" ]; then
