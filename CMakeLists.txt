@@ -138,6 +138,9 @@ find_package(criterion)
 find_package(Inotify)
 set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
 
+include (openssl_functions)
+openssl_set_defines()
+
 pkg_check_modules(LIBPCRE REQUIRED libpcre)
 
 if (WRAP_FOUND)
