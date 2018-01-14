@@ -86,7 +86,7 @@ service_status="${initfile} status"
 #for reference: http://pubs.opengroup.org/onlinepubs/009695399/functions/kill.html
 checkpid () { [ -n "$1" ] && kill -0 "$1" 2>/dev/null ; }
 #mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "\<$tailpid\>" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
-mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "^$tailpid\$" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
+mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in $( grep -v "^$tailpid\$" ${tmpdir}/sdn.jobs ) ; do wait $i ; done ; }
 is_available () { which "$1" >/dev/null 2>&1; }
 distpkgoffile_cleanup () { : ; }
 
@@ -213,8 +213,8 @@ fi
 
 debun_init () {
 	#Create temp dir, to place files into
-	host=`uname -n`
-	date=`date '+%Y-%m-%d_%H-%M'`
+	host=$( uname -n )
+	date=$( date '+%Y-%m-%d_%H-%M' )
 	tmpdir=${workdir}/syslog.debun.${host}.${date}.$$
 	( umask 077 ; mkdir ${tmpdir} )
 	[ -d "$tmpdir" ] || { printf "Could not create a temp directory\n" >&2 ; exit 1 ; }
@@ -335,12 +335,12 @@ getchilds () {
 getallchilds () {
 	local childs
 	local subchilds
-	childs="`getchilds $1`"
+	childs=$( getchilds ${1} )
 	local i
 	# Default value, learned after getchilds()'s forkbomb case
 	unset subchilds
 	for i in ${childs} ; do
-		subchilds="${subchilds}${subchilds:+ }`getallchilds $i`"
+		subchilds="${subchilds}${subchilds:+ }$(getallchilds $i)"
 	done
 	echo ${childs} ${subchilds}
 }
@@ -649,22 +649,22 @@ acquire_syslog_pids () {
 	echo 'Old "getsyslogpids":' >${tmpdir}/syslog.pids
 	getsyslogpids >>${tmpdir}/syslog.pids
 	if [ -r "${piddir}/syslog-ng.pid" ]; then
-		sngpid=`cat ${piddir}/syslog-ng.pid`
+		sngpid=$( cat ${piddir}/syslog-ng.pid )
 	else
 		# Handle when fhs is "linux"-like
-		sngpid=`cat ${piddir}/syslog-ng.pid`
+		sngpid=$( cat ${piddir}/syslog-ng.pid )
 	fi
-	ppid=`getparent $sngpid`
-	sngallpids="`getallchilds $sngpid`"
+	ppid=$( getparent $sngpid )
+	sngallpids="$( getallchilds $sngpid )"
 	echo "SVpid: $ppid SNGpid: $sngpid Chpids: ${sngallpids}" >>${tmpdir}/syslog.pids
 	tail -1 ${tmpdir}/syslog.pids
 	if [ -n "$ppid" ]; then
 		sngallpids="$ppid $sngpid ${sngallpids}"
 	else
-		sngallpids="` getsyslogpids `"
+		sngallpids="$( getsyslogpids )"
 	fi
 	# drop out the unneeded white spaces, since that disturb the ps command
-	sngallpids=`echo ${sngallpids}`
+	sngallpids=$( echo ${sngallpids} )
 	if [ -n "${sngallpids}" ]; then
 		printf 'ps -l -f -p "%s"\n' "${sngallpids}" >>${tmpdir}/syslog.pids
 		ps -l -f -p "${sngallpids}" >>${tmpdir}/syslog.pids
@@ -749,13 +749,13 @@ format_ldd_output () {
 acquire_syslog_ldinfo () {
 	$lddcmd $syslogrealbin |grep -v needs >${tmpdir}/syslog.ldd
 	format_ldd_output <${tmpdir}/syslog.ldd >${tmpdir}/syslog.ldfiles
-	for i in `cat ${tmpdir}/syslog.ldfiles ` ; do
+	for i in $( cat ${tmpdir}/syslog.ldfiles ) ; do
 		distpkgoffile $i >>${tmpdir}/syslog.ldpkg
 	done
 	distpkgoffile_cleanup
 	sort <${tmpdir}/syslog.ldpkg | uniq >${tmpdir}/syslog.ldpkg.u
 	mv ${tmpdir}/syslog.ldpkg.u ${tmpdir}/syslog.ldpkg
-	for i in `cat ${tmpdir}/syslog.ldpkg ` ; do
+	for i in $( cat ${tmpdir}/syslog.ldpkg ) ; do
 		distpkgstatus $i >>${tmpdir}/syslog.ldinfos
 	done
 }
@@ -1018,7 +1018,7 @@ debun_aix () {
 detect_env_linux () {
 	if is_available lsb_release ; then
 		lsb_release -a | tee ${tmpdir}/lsb.all
-		dist=`lsb_release -si`
+		dist=$( lsb_release -si )
 	elif [ -r /etc/debian_version ]; then
 		dist="Debian"
 	elif [ -r /etc/redhat-release ]; then
@@ -1048,7 +1048,7 @@ detect_env () {
 		echo "No syslog-ng detected"
 	fi
 
-	os=`uname -s`
+	os=$( uname -s )
 	if [ "$os" = "Linux" ]; then
 		detect_env_linux
 	fi
@@ -1569,9 +1569,9 @@ run_debug () {
 		echo "Waiting ${waitforit} secs before stop system's syslog-ng, and restart in debug mode."
 		pad=''
 		bs=''
-		for i in `seq 1 ${#waitforit}`; do pad="${pad} " ; bs="\b${bs}" ; done
+		for i in $( seq 1 ${#waitforit} ); do pad="${pad} " ; bs="\b${bs}" ; done
 		printf "Start countdown: ${pad}" >&3
-		for i in `seq ${waitforit} -1 1 `; do printf "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
+		for i in $( seq ${waitforit} -1 1 ); do printf "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
 		print "0\n">&3
 		touch ${tmpdir}/syslog.debug
 	fi
@@ -1585,7 +1585,7 @@ run_debug () {
 				${trace} -o ${tmpdir}/trace.dbg.txt ${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
 				i=${!}
 				tracepids="${i}"
-				debugpid="`getchilds ${i}`"
+				debugpid="$( getchilds ${i} )"
 				echo "Trace: ${i} Debug: ${debugpid}"
 			else
 				echo "Tracing was requested but ${trace%% *} was not available!"
