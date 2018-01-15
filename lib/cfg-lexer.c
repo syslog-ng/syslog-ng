@@ -1132,7 +1132,6 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_INNER_SRC] = "inner-src",
   [LL_CONTEXT_CLIENT_PROTO] = "client-proto",
   [LL_CONTEXT_SERVER_PROTO] = "server-proto",
-  [LL_CONTEXT_SELECTOR] = "selector",
 };
 
 gint

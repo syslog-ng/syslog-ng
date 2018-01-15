@@ -40,6 +40,7 @@ static CfgLexerKeyword add_contextual_data_keywords[] =
   {"selector", KW_ADD_CONTEXTUAL_DATA_SELECTOR},
   {"default_selector", KW_ADD_CONTEXTUAL_DATA_DEFAULT_SELECTOR},
   {"prefix", KW_ADD_CONTEXTUAL_DATA_PREFIX},
+  {"filters", KW_ADD_CONTEXTUAL_DATA_FILTERS},
   {NULL}
 };
 
