@@ -1,3 +1,3 @@
 add_unit_test(CRITERION TARGET test_context_info_db DEPENDS add_contextual_data)
 add_unit_test(CRITERION TARGET test_selector DEPENDS add_contextual_data)
-add_unit_test(CRITERION TARGET test_selector_filter DEPENDS add_contextual_data)
+add_unit_test(CRITERION LIBTEST TARGET test_selector_filter DEPENDS add_contextual_data)
