@@ -131,9 +131,11 @@ _write_message(PseudoFileDestDriver *self, const GString *msg)
     }
 
   success = TRUE;
-  close(fd);
 
 exit:
+  if (fd >= 0)
+    close(fd);
+
   return success;
 }
 
