@@ -429,6 +429,7 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
       if (linelen > message_length)
         {
           fprintf(stderr, "Warning: message length is too small, the minimum is %d bytes\n", linelen);
+          free(testsdata);
           return 0;
         }
     }
