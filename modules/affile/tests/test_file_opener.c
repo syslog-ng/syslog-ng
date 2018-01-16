@@ -160,7 +160,7 @@ static void
 setup(void)
 {
   msg_init(FALSE);
-  configuration = cfg_new(VERSION_VALUE);
+  configuration = cfg_new_snippet();
 }
 
 void
