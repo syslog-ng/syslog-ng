@@ -502,6 +502,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
       msg_error("Persistent file too large",
                 evt_tag_str("filename", self->committed_filename),
                 evt_tag_printf("size", "%" G_GINT64_FORMAT, file_size));
+      close(fd);
       return FALSE;
     }
   map = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0);
