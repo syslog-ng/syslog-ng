@@ -22,6 +22,7 @@
 #include "add-contextual-data-filter-selector.h"
 #include "logmsg/logmsg.h"
 #include "template/macros.h"
+#include "license_module_mock.h"
 #include "cfg.h"
 #include "apphook.h"
 #include <criterion/criterion.h>
@@ -70,6 +71,7 @@ setup(void)
 {
   app_startup();
   /* Force to link the libtest library */
+  license_module_init(NULL,NULL);
   test_filter_conf = NULL;
 }
 
