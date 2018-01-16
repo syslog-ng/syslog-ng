@@ -676,6 +676,7 @@ active_thread(gpointer st)
               char cbuf[bufsize];
               snprintf(cbuf, bufsize, "fopen: %s", read_file);
               perror(cbuf);
+              close(sock);
               return NULL;
             }
         }
