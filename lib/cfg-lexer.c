@@ -990,13 +990,7 @@ relex:
 
       cfg_load_candidate_modules(self->cfg);
 
-#if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
-      if (!cfg_load_module(self->cfg, "license"))
-        {
-          msg_error("Error loading the license module, forcing exit");
-          exit(1);
-        }
-#endif
+      cfg_load_forced_modules(self->cfg);
 
       self->non_pragma_seen = TRUE;
     }
@@ -1213,7 +1207,6 @@ cfg_token_block_free(CfgTokenBlock *self)
   g_array_free(self->tokens, TRUE);
   g_free(self);
 }
-
 
 GQuark
 cfg_lexer_error_quark(void)
