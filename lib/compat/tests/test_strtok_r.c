@@ -22,7 +22,8 @@
  */
 
 #include "syslog-ng.h"
-#include "testutils.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -84,56 +85,41 @@ assert_if_tokenizer_concatenated_result_not_match(STRTOK_R_FUN tokenizer,
   if (result_idx)
     result_ref = result;
 
-  assert_string(result_ref, expected, "strtok return value mismatch");
+  if (NULL == expected)
+    cr_assert_null(result_ref);
+  else
+    cr_expect_str_eq(result_ref, expected, "strtok return value mismatch");
 
   g_free(raw_string);
   g_free(result);
 }
 
-void
-test_strtok_with_literals(STRTOK_R_FUN tokenizer_func)
+struct strtok_params
 {
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, ".",
-                                                    "token1.token2",
-                                                    "token1token2");
+  char *delim;
+  char *input;
+  char *expected;
+};
 
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, ".",
-                                                    ".token",
-                                                    "token");
+ParameterizedTestParameters(strtok, with_literals)
+{
+  static struct strtok_params params[] =
+  {
+    { ".",       "token1.token2", "token1token2" },
+    { ".",       ".token", "token" },
+    { ".",       "token.", "token" },
+    { ".",       ".", NULL },
+    { "...",     ".", NULL },
+    { "... ",    "      ", NULL },
+    { "..*,;-",  ";-*token1...*****token2**,;;;.", "token1token2" },
+    { "..*,;- ", ";-*token1...*****token2**,;;;.token3", "token1token2token3" },
+    { "..*,;- ", ";-*token1...*****token2**,;;;.token3 ", "token1token2token3" }
+  };
 
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, ".",
-                                                    "token.",
-                                                    "token");
-
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, ".",
-                                                    ".",
-                                                    NULL);
-
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "...",
-                                                    ".",
-                                                    NULL);
-
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "... ",
-                                                    "      ",
-                                                    NULL);
-
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "..*,;-",
-                                                    ";-*token1...*****token2**,;;;.",
-                                                    "token1token2");
-
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "..*,;- ",
-                                                    ";-*token1...*****token2**,;;;.token3",
-                                                    "token1token2token3");
-
-  assert_if_tokenizer_concatenated_result_not_match(tokenizer_func, "..*,;- ",
-                                                    ";-*token1...*****token2**,;;;.token3 ",
-                                                    "token1token2token3");
+  return cr_make_param_array(struct strtok_params, params, sizeof(params)/sizeof(params[0]));
 }
 
-int
-main(int argc, char *argv[])
+ParameterizedTest(struct strtok_params *param, strtok, with_literals)
 {
-  test_strtok_with_literals(__test_strtok_r);
-
-  return EXIT_SUCCESS;
+  assert_if_tokenizer_concatenated_result_not_match(__test_strtok_r, param->delim, param->input, param->expected);
 }

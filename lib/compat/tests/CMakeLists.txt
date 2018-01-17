@@ -1,1 +1,1 @@
-add_unit_test(LIBTEST TARGET test_strtok_r)
+add_unit_test(CRITERION TARGET test_strtok_r)
