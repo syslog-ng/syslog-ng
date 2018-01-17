@@ -13,7 +13,7 @@ source:
 $ dbld/rules shell-trusty
 ```
 
-You can also build an RPM using:
+You can also build a DEB using:
 
 ```bash
 $ dbld/rules deb-trusty
