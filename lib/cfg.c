@@ -198,6 +198,32 @@ cfg_load_candidate_modules(GlobalConfig *self)
     }
 }
 
+void
+cfg_load_forced_modules(GlobalConfig *self)
+{
+  const static gchar *module_list[] =
+  {
+#if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
+    "license"
+#endif
+  };
+
+  if (!self->enable_forced_modules)
+    return;
+
+  int i;
+  for (i=0; i<sizeof(module_list)/sizeof(gchar *); ++i)
+    {
+      const gchar *name = module_list[i];
+
+      if (!cfg_load_module(self, name))
+        {
+          msg_error("Error loading module, forcing exit", evt_tag_str("module", name));
+          exit(1);
+        }
+    }
+}
+
 Plugin *
 cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
 {
@@ -426,6 +452,7 @@ cfg_new(gint version)
   cfg_tree_init_instance(&self->tree, self);
   plugin_context_init_instance(&self->plugin_context);
   self->use_plugin_discovery = TRUE;
+  self->enable_forced_modules = TRUE;
 
   cfg_register_builtin_plugins(self);
   return self;
@@ -437,6 +464,7 @@ cfg_new_snippet(void)
   GlobalConfig *self = cfg_new(VERSION_VALUE);
 
   self->use_plugin_discovery = FALSE;
+  self->enable_forced_modules = FALSE;
   return self;
 }
 

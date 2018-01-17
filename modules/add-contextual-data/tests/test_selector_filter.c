@@ -56,7 +56,7 @@ _setup_filter_cfg(const gchar *cfg_content, gint size)
 static AddContextualDataSelector *
 _create_filter_selector(const gchar *filter_cfg, gint size, GList *ordered_filters)
 {
-  GlobalConfig *cfg = cfg_new(VERSION_VALUE);
+  GlobalConfig *cfg = cfg_new_snippet();
   test_filter_conf = _setup_filter_cfg(filter_cfg, size);
   AddContextualDataSelector *selector = add_contextual_data_selector_filter_new(cfg, test_filter_conf);
   if (!add_contextual_data_selector_init(selector, ordered_filters))
@@ -94,7 +94,7 @@ Test(add_contextual_data_filter_selector, test_clone_selector_with_filters)
   GList *ordered_filters = NULL;
   ordered_filters = g_list_append(ordered_filters, "f_localhost");
   AddContextualDataSelector *selector = _create_filter_selector(cfg_content, strlen(cfg_content), ordered_filters);
-  AddContextualDataSelector *cloned_selector = add_contextual_data_selector_clone(selector, cfg_new(VERSION_VALUE));
+  AddContextualDataSelector *cloned_selector = add_contextual_data_selector_clone(selector, cfg_new_snippet());
   LogMessage *msg = _create_log_msg("testmsg", "localhost");
   gchar *resolved_selector = add_contextual_data_selector_resolve(cloned_selector, msg);
 

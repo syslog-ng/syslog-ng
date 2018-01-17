@@ -1,6 +1,5 @@
 set(LIBTEST_HEADERS
     config_parse_lib.h
-    license_module_mock.h
     mock-transport.h
     msg_parse_lib.h
     persist_lib.h
@@ -14,7 +13,6 @@ set(LIBTEST_HEADERS
 set(LIBTEST_SOURCES
     config_parse_lib.c
     libtest.c
-    license_module_mock.c
     mock-transport.c
     msg_parse_lib.c
     persist_lib.c
