@@ -28,7 +28,7 @@ help:
 	@echo "  shell-<os>: start a shell in the specified OS"
 	@echo "  tarball: generate a tarball"
 	@echo ""
-	@echo "Supported OSs are: centos7, jessie, zesty, xenial."
+	@echo "Supported OSs are: centos7, jessie, zesty, xenial, trusty."
 	@echo ""
 	@echo "NOTE: this script requires that debian/rpm packaging are"
 	@echo "already merged to your tree, which is not there by default"
@@ -74,7 +74,7 @@ clean:
 shell-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/shell
 
-images: image-jessie image-zesty image-xenial image-centos7
+images: image-jessie image-zesty image-xenial image-trusty image-centos7
 
 
 image-%:

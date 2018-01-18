@@ -1,4 +1,4 @@
-# `balabit/syslog-ng-xenial`
+# `balabit/syslog-ng-trusty`
 This image provides a development environment to build and install syslog-ng from source. You have to clone the source
 code of [syslog-ng ](https://github.com/balabit/syslog-ng.git) into a directory on your host machine then you can mount it
 into the container (under `/source`).
@@ -10,13 +10,13 @@ directory.  The following commands starts a container mounted with the
 source:
 
 ```bash
-$ dbld/rules shell-xenial
+$ dbld/rules shell-trusty
 ```
 
 You can also build a DEB using:
 
 ```bash
-$ dbld/rules deb-xenial
+$ dbld/rules deb-trusty
 ```
 
 You can find the resulting debs in `$(top_srcdir)/dbld/build`.
