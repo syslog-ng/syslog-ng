@@ -24,6 +24,7 @@ add_subdirectory(value-pairs)
 add_subdirectory(scanner)
 add_subdirectory(str-repr)
 add_subdirectory(eventlog)
+add_subdirectory(secret-storage)
 
 set(LIB_SUBDIR_HEADERS
     ${COMPAT_HEADERS}
