@@ -39,7 +39,6 @@ typedef struct
 SecretStorage *secret_storage INTERNAL;
 volatile gint secret_storage_uninitialized INTERNAL = 1;
 
-
 static SecretStorage *
 secret_storage_new(gsize len)
 {
