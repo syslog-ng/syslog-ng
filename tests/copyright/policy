@@ -50,7 +50,7 @@ cmake
 sub-configure\.sh$
 configure\.ac$
 Makefile\.am$
-lib/(compat|str-repr|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|[^/]*$)
+lib/(compat|str-repr|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|secret-storage|[^/]*$)
 lib/scanner/(csv-scanner|list-scanner|kv-scanner|[^/]*$)
 libtest
 syslog-ng(-ctl)?
@@ -68,4 +68,3 @@ scl
 scripts
  GPLv2+_SSL,non-balabit
 modules/http
-
