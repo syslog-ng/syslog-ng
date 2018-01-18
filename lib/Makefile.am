@@ -18,6 +18,7 @@ include lib/scanner/csv-scanner/Makefile.am
 include lib/scanner/list-scanner/Makefile.am
 include lib/scanner/kv-scanner/Makefile.am
 include lib/str-repr/Makefile.am
+include lib/secret-storage/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @PACKAGE_VERSION@ | cut -d. -f1,2)
 
