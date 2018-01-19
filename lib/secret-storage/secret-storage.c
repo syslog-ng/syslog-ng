@@ -29,21 +29,23 @@
 #include "secret-storage.h"
 
 #define SECRET_HEADER_SIZE offsetof(Secret, data)
+#define SECRET_STORAGE_HEADER_SIZE (SECRET_HEADER_SIZE + offsetof(SecretStorage, secret))
 #define SECRET_STORAGE_INITIAL_SIZE 2048
 
 typedef struct
 {
+  /* Placeholder for nonce, refcount */
   Secret secret;
 } SecretStorage;
 
-SecretStorage *secret_storage INTERNAL;
-volatile gint secret_storage_uninitialized INTERNAL = 1;
+GHashTable *secret_manager INTERNAL;
+volatile gint secret_manager_uninitialized INTERNAL = 1;
 
 static SecretStorage *
 secret_storage_new(gsize len)
 {
   g_assert(len > 0);
-  SecretStorage *storage = nondumpable_buffer_alloc(len + SECRET_HEADER_SIZE);
+  SecretStorage *storage = nondumpable_buffer_alloc(len + SECRET_STORAGE_HEADER_SIZE);
   return storage;
 }
 
@@ -56,10 +58,14 @@ secret_storage_free(SecretStorage *self)
 void
 secret_storage_init()
 {
-  if (g_atomic_int_dec_and_test(&secret_storage_uninitialized))
+  if (g_atomic_int_dec_and_test(&secret_manager_uninitialized))
     {
-      secret_storage = secret_storage_new(SECRET_STORAGE_INITIAL_SIZE);
-      g_assert(secret_storage);
+      secret_manager = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
+                                             (GDestroyNotify)secret_storage_free);
+      g_assert(secret_manager);
+      SecretStorage *single_secret_storage = secret_storage_new(SECRET_STORAGE_INITIAL_SIZE);
+      g_assert(single_secret_storage);
+      g_hash_table_insert(secret_manager, g_strdup("ONLY_SECRET"), single_secret_storage);
     }
   else
     g_assert_not_reached();
@@ -68,8 +74,9 @@ secret_storage_init()
 void
 secret_storage_deinit()
 {
-  g_assert(!secret_storage_uninitialized);
-  secret_storage_free(secret_storage);
+  g_assert(!secret_manager_uninitialized);
+  g_hash_table_destroy(secret_manager);
+  secret_manager = NULL;
 }
 
 gboolean
@@ -81,9 +88,9 @@ secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
   if (len > SECRET_STORAGE_INITIAL_SIZE)
     return FALSE;
 
-  Secret *stored_secret = (Secret *)&secret_storage->secret;
-  stored_secret->len = len;
-  memcpy(&stored_secret->data, secret, len);
+  SecretStorage *secret_storage = g_hash_table_lookup(secret_manager, "ONLY_SECRET");
+  secret_storage->secret.len = len;
+  memcpy(&secret_storage->secret.data, secret, len);
 
   return TRUE;
 }
@@ -105,8 +112,8 @@ Secret *secret_storage_clone_secret(Secret *self)
 Secret *
 secret_storage_get_secret_by_name(gchar *key)
 {
-  Secret *secret = (Secret *)&secret_storage->secret;
-  return secret_storage_clone_secret(secret);
+  SecretStorage *secret_storage = g_hash_table_lookup(secret_manager, "ONLY_SECRET");
+  return secret_storage_clone_secret(&secret_storage->secret);
 }
 
 void
