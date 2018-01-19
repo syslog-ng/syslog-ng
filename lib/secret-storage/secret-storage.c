@@ -24,8 +24,8 @@
 #include <errno.h>
 #include <string.h>
 #include <stddef.h>
-#include <stdlib.h>
 
+#include "nondumpable-allocator.h"
 #include "secret-storage.h"
 
 #define SECRET_HEADER_SIZE offsetof(Secret, data)
@@ -43,14 +43,14 @@ static SecretStorage *
 secret_storage_new(gsize len)
 {
   g_assert(len > 0);
-  SecretStorage *storage = malloc(len + SECRET_HEADER_SIZE);
+  SecretStorage *storage = nondumpable_buffer_alloc(len + SECRET_HEADER_SIZE);
   return storage;
 }
 
 static void
 secret_storage_free(SecretStorage *self)
 {
-  free(self);
+  nondumpable_buffer_free(self);
 }
 
 void
@@ -96,7 +96,7 @@ secret_storage_store_string(gchar *key, gchar *secret)
 
 Secret *secret_storage_clone_secret(Secret *self)
 {
-  Secret *copy = malloc(self->len + SECRET_HEADER_SIZE);
+  Secret *copy = nondumpable_buffer_alloc(self->len + SECRET_HEADER_SIZE);
   copy->len = self->len;
   memcpy(copy->data, self->data, self->len);
   return copy;
@@ -112,7 +112,7 @@ secret_storage_get_secret_by_name(gchar *key)
 void
 secret_storage_put_secret(Secret *self)
 {
-  free(self);
+  nondumpable_buffer_free(self);
 }
 
 void
