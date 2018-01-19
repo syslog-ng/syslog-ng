@@ -7,7 +7,7 @@
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.10.20180114"
+version="0.3.10.20180119"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
@@ -203,6 +203,8 @@ fi
 [ -n "$privacy_mode" ] && [ "x$debug_params" = "x$default_debug_params" ] && debug_params="$default_ldebug_params"
 
 syslogbin=${binprefix}/sbin/syslog-ng
+syslogngctlbin=${binprefix}/sbin/syslog-ng-ctl
+syslogngquerybin=${binprefix}/sbin/syslog-ng-query
 vardir=${binprefix}/var
 piddir=${vardir}/run
 confdir=${binprefix}/etc
@@ -684,17 +686,17 @@ acquire_syslog_stats () {
 	#handy-dandy delay magic, triggered when we'd step on our own foot
 	[ -f ${tmpdir}/syslog.stats.${tsdata} ] && sleep 5 && tsdata=$( timestamp )
 
-	${syslogbin}-ctl stats > ${tmpdir}/syslog.stats.${tsdata} 2>&1
-	echo ${syslogbin}-ctl stats
+	${syslogngctlbin} stats > ${tmpdir}/syslog.stats.${tsdata} 2>&1
+	echo ${syslogngctlbin} stats
 	tsdata=$( timestamp )
-	${syslogbin}-ctl query get "*" > ${tmpdir}/syslog.query.all.${tsdata} 2>/dev/null
-	echo ${syslogbin}-ctl query get "*"
-	if [ -x ${syslogbin}-query ]; then
+	${syslogngctlbin} query get "*" > ${tmpdir}/syslog.query.all.${tsdata} 2>/dev/null
+	echo ${syslogngctlbin} query get "*"
+	if [ -x ${syslogngquerybin} ]; then
 		#if we reach this brach, then syslog.query.all - as generated above - will not contain any meaningful data
 		rm ${tmpdir}/syslog.query.all.${tsdata}
 		tsdata=$( timestamp )
-		${syslogbin}-query sum "*" > ${tmpdir}/syslog.query.all.${tsdata} 2>/dev/null
-		echo ${syslogbin}-query sum "*"
+		${syslogngquerybin} sum "*" > ${tmpdir}/syslog.query.all.${tsdata} 2>/dev/null
+		echo ${syslogngquerybin} sum "*"
 	fi
 }
 
@@ -706,10 +708,10 @@ acquire_syslog_info () {
 
 	acquire_syslog_stats
 
-	if ${syslogbin}-ctl show-license-info > ${tmpdir}/syslog.license-usage 2>&1; then
-		${syslogbin}-ctl show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
+	if ${syslogngctlbin} show-license-info > ${tmpdir}/syslog.license-usage 2>&1; then
+		${syslogngctlbin} show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
 	fi
-	echo ${syslogbin}-ctl show-license-info
+	echo ${syslogngctlbin} show-license-info
 	for i in ${sngallpids} ; do
 		is_available ${lsof%% *} && $lsof $i >${tmpdir}/syslog.$i.lsof 2>/dev/null || echo "No lsof in path." >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
@@ -850,6 +852,8 @@ fhs_set_linux () {
 	vardir=/var/lib/syslog-ng
 	piddir=/var/lib/syslog-ng
 	syslogbin=/usr/sbin/syslog-ng
+	syslogngctlbin=/usr/sbin/syslog-ng-ctl
+	syslogngquerybin=/usr/sbin/syslog-ng-query
 	syslogrealbin=/usr/sbin/syslog-ng
 }
 

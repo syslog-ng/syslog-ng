@@ -49,7 +49,7 @@ usage examples:
 	* start system's syslog-ng
 	* stops packet capturing
 
-# syslog-ng-debun -r -W /var/tmp -P /usr/local
+# syslog-ng-debun -r -W /var/tmp -R /usr/local
 	Collect debug info, but the temporary files, and the result will be
 	in /var/tmp instead of /tmp and don't try to search syslog-ng in
 	/opt/syslog-ng, it will search in /usr/local
