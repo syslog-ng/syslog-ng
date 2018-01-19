@@ -349,7 +349,8 @@ if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
-            redis systemd geoip geoip2 riemann ipv6 smtp native python java java_modules"
+            redis systemd geoip geoip2 riemann ipv6 smtp native python java java_modules \
+            http"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
        if test "x$modstate" = "xauto"; then
@@ -1735,6 +1736,7 @@ AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_LEGACY_MONGODB_OPTIONS, [test x"$enable_legacy_mongodb_options" != x"no"])
 AM_CONDITIONAL(ENABLE_CRITERION, [test "$with_criterion" != "no"])
 AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
+AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)

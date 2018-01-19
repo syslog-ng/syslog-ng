@@ -1,7 +1,10 @@
 lib_filter_tests_TESTS		 =              \
     lib/filter/tests/test_filters               \
-    lib/filter/tests/test_filters_in_list       \
-    lib/filter/tests/test_filters_netmask6
+    lib/filter/tests/test_filters_in_list
+
+if ENABLE_IPV6
+lib_filter_tests_TESTS += lib/filter/tests/test_filters_netmask6
+endif
 
 check_PROGRAMS				+= ${lib_filter_tests_TESTS}
 
@@ -17,10 +20,12 @@ lib_filter_tests_test_filters_in_list_CFLAGS     = $(TEST_CFLAGS) \
 lib_filter_tests_test_filters_in_list_LDADD      = $(TEST_LDADD)  \
 	$(PREOPEN_SYSLOGFORMAT)
 
+if ENABLE_IPV6
 lib_filter_tests_test_filters_netmask6_CFLAGS    = $(TEST_CFLAGS) \
     -I${top_srcdir}/lib/filter/tests
 lib_filter_tests_test_filters_netmask6_LDADD     = $(TEST_LDADD)  \
     $(PREOPEN_SYSLOGFORMAT)
+endif
 
 if ENABLE_CRITERION
 lib_filter_tests_TESTS += lib/filter/tests/test_filters_statistics
