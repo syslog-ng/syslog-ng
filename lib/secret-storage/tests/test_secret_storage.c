@@ -53,3 +53,22 @@ Test(secretstorage, simple_store_single_string)
   cr_assert_str_eq(secret->data, "value1");
   secret_storage_put_secret(secret);
 }
+
+Test(secretstorage, store_multiple_secrets)
+{
+  secret_storage_store_string("key1", "value1");
+  secret_storage_store_string("key2", "value2");
+  Secret *secret1 = secret_storage_get_secret_by_name("key1");
+  cr_assert_str_eq(secret1->data, "value1");
+  Secret *secret2 = secret_storage_get_secret_by_name("key2");
+  cr_assert_str_eq(secret2->data, "value2");
+
+  secret_storage_put_secret(secret1);
+  secret_storage_put_secret(secret2);
+}
+
+Test(secretstorage, read_nonexistent_secret)
+{
+  Secret *secret = secret_storage_get_secret_by_name("key");
+  cr_assert_eq(secret, NULL);
+}
