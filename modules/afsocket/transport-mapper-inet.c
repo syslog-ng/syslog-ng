@@ -113,6 +113,20 @@ transport_mapper_inet_init(TransportMapper *s)
   return TRUE;
 }
 
+static gboolean
+transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB func, gpointer func_args)
+{
+  TransportMapperInet *self = (TransportMapperInet *)s;
+
+  if (!self->tls_context)
+    return TRUE;
+
+  if (!tls_context_setup_context(self->tls_context))
+    return FALSE;
+
+  return func(func_args);
+}
+
 void
 transport_mapper_inet_free_method(TransportMapper *s)
 {
@@ -130,6 +144,7 @@ transport_mapper_inet_init_instance(TransportMapperInet *self, const gchar *tran
   self->super.apply_transport = transport_mapper_inet_apply_transport_method;
   self->super.construct_log_transport = transport_mapper_inet_construct_log_transport;
   self->super.init = transport_mapper_inet_init;
+  self->super.async_init = transport_mapper_inet_async_init;
   self->super.free_fn = transport_mapper_inet_free_method;
   self->super.address_family = AF_INET;
 }

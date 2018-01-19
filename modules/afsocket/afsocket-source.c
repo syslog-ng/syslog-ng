@@ -537,66 +537,82 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
 }
 
 static gboolean
-afsocket_sd_open_listener(AFSocketSourceDriver *self)
+_finalize_init(gpointer arg)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *)arg;
+  /* set up listening source */
+  if (listen(self->fd, self->listen_backlog) < 0)
+    {
+      msg_error("Error during listen()",
+                evt_tag_errno(EVT_TAG_OSERROR, errno));
+      close(self->fd);
+      self->fd = -1;
+      return FALSE;
+    }
+
+  afsocket_sd_start_watches(self);
+  return TRUE;
+}
+
+static gboolean
+_sd_open_stream(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-  gint sock;
-  gboolean res = FALSE;
+  gint sock = -1;
+  if (self->connections_kept_alive_across_reloads)
+    {
+      /* NOTE: this assumes that fd 0 will never be used for listening fds,
+       * main.c opens fd 0 so this assumption can hold */
+      sock = GPOINTER_TO_UINT(
+               cfg_persist_config_fetch(cfg, afsocket_sd_format_listener_name(self))) -
+             1;
+    }
 
-  /* ok, we have connection list, check if we need to open a listener */
-  sock = -1;
+  if (sock == -1)
+    {
+      if (!afsocket_sd_acquire_socket(self, &sock))
+        return self->super.super.optional;
+      if (sock == -1
+          && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_RECV,
+                                           &sock))
+        return self->super.super.optional;
+    }
+  self->fd = sock;
+  return transport_mapper_async_init(self->transport_mapper, _finalize_init, self);
+}
+
+static gboolean
+_sd_open_dgram(AFSocketSourceDriver *self)
+{
+  gint sock = -1;
+  if (!self->connections)
+    {
+      if (!afsocket_sd_acquire_socket(self, &sock))
+        return self->super.super.optional;
+      if (sock == -1
+          && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_RECV,
+                                           &sock))
+        return self->super.super.optional;
+    }
+  self->fd = -1;
+
+  /* we either have self->connections != NULL, or sock contains a new fd */
+  if (self->connections || afsocket_sd_process_connection(self, NULL, self->bind_addr, sock))
+    return transport_mapper_init(self->transport_mapper);
+  return FALSE;
+}
+
+static gboolean
+afsocket_sd_open_listener(AFSocketSourceDriver *self)
+{
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
-      if (self->connections_kept_alive_across_reloads)
-        {
-          /* NOTE: this assumes that fd 0 will never be used for listening fds,
-           * main.c opens fd 0 so this assumption can hold */
-          sock = GPOINTER_TO_UINT(
-                   cfg_persist_config_fetch(cfg, afsocket_sd_format_listener_name(self))) -
-                 1;
-        }
-
-      if (sock == -1)
-        {
-          if (!afsocket_sd_acquire_socket(self, &sock))
-            return self->super.super.optional;
-          if (sock == -1
-              && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_RECV,
-                                               &sock))
-            return self->super.super.optional;
-        }
-
-      /* set up listening source */
-      if (listen(sock, self->listen_backlog) < 0)
-        {
-          msg_error("Error during listen()",
-                    evt_tag_errno(EVT_TAG_OSERROR, errno));
-          close(sock);
-          return FALSE;
-        }
-
-      self->fd = sock;
-      afsocket_sd_start_watches(self);
-      res = TRUE;
+      return _sd_open_stream(self);
     }
   else
     {
-      if (!self->connections)
-        {
-          if (!afsocket_sd_acquire_socket(self, &sock))
-            return self->super.super.optional;
-          if (sock == -1
-              && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_RECV,
-                                               &sock))
-            return self->super.super.optional;
-        }
-      self->fd = -1;
-
-      /* we either have self->connections != NULL, or sock contains a new fd */
-      if (self->connections || afsocket_sd_process_connection(self, NULL, self->bind_addr, sock))
-        res = TRUE;
+      return _sd_open_dgram(self);
     }
-  return res;
 }
 
 static void
@@ -673,8 +689,7 @@ afsocket_sd_init_method(LogPipe *s)
          afsocket_sd_setup_transport(self) &&
          afsocket_sd_setup_addresses(self) &&
          afsocket_sd_restore_kept_alive_connections(self) &&
-         afsocket_sd_open_listener(self) &&
-         transport_mapper_init(self->transport_mapper);
+         afsocket_sd_open_listener(self);
 }
 
 gboolean
