@@ -29,6 +29,7 @@
 #include "gsockaddr.h"
 
 typedef struct _TransportMapper TransportMapper;
+typedef gboolean (*TransportMapperAsyncInitCB)(gpointer arg);
 
 struct _TransportMapper
 {
@@ -48,6 +49,7 @@ struct _TransportMapper
   gboolean (*apply_transport)(TransportMapper *self, GlobalConfig *cfg);
   LogTransport *(*construct_log_transport)(TransportMapper *self, gint fd);
   gboolean (*init)(TransportMapper *self);
+  gboolean (*async_init)(TransportMapper *self, TransportMapperAsyncInitCB func, gpointer arg);
   void (*free_fn)(TransportMapper *self);
 };
 
@@ -88,4 +90,14 @@ transport_mapper_init(TransportMapper *self)
   return TRUE;
 }
 
+static inline gboolean
+transport_mapper_async_init(TransportMapper *self, TransportMapperAsyncInitCB func, gpointer arg)
+{
+  if (self->async_init)
+    {
+      return self->async_init(self, func, arg);
+    }
+
+  return FALSE;
+}
 #endif
