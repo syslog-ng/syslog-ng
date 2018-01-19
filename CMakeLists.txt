@@ -138,6 +138,9 @@ find_package(criterion)
 find_package(Inotify)
 set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
 
+include (openssl_functions)
+openssl_set_defines()
+
 pkg_check_modules(LIBPCRE REQUIRED libpcre)
 
 if (WRAP_FOUND)
@@ -157,15 +160,6 @@ else()
 endif()
 
 set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/eventlog/src")
-
-set(CORE_INCLUDE_DIRS
-    ${Eventlog_INCLUDE_DIR}
-    ${GLIB_INCLUDE_DIRS}
-    ${Gettext_INCLUDE_DIR}
-    ${IVYKIS_INCLUDE_DIR}
-    ${OPENSSL_INCLUDE_DIRS}
-    ${LIBPCRE_INCLUDE_DIRS}
-)
 
 add_custom_target(style-check  COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh check  ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 add_custom_target(style-format COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh format ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
