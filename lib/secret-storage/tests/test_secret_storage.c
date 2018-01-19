@@ -72,3 +72,12 @@ Test(secretstorage, read_nonexistent_secret)
   Secret *secret = secret_storage_get_secret_by_name("key");
   cr_assert_eq(secret, NULL);
 }
+
+Test(secretstorage, store_secret_with_embedded_zero)
+{
+  secret_storage_store_secret("key", "a\0b", 4);
+  Secret *secret = secret_storage_get_secret_by_name("key");
+  gint result = memcmp(secret->data, "a\0b", 4);
+  cr_assert_eq(result, 0);
+  secret_storage_put_secret(secret);
+}
