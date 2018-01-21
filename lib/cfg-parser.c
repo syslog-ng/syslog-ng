@@ -60,6 +60,9 @@ static CfgLexerKeyword main_keywords[] =
   { "options",            KW_OPTIONS },
   { "include",            KW_INCLUDE, },
   { "block",              KW_BLOCK },
+  { "if",                 KW_IF },
+  { "else",               KW_ELSE },
+  { "elif",               KW_ELIF },
 
   /* source or destination items */
   { "internal",           KW_INTERNAL },
