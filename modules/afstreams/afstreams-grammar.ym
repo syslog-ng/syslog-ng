@@ -51,8 +51,8 @@ extern LogDriver *last_driver;
 
 /* INCLUDE_DECLS */
 
-%token KW_DOOR                        10020
-%token KW_SUN_STREAMS                 10021
+%token KW_DOOR
+%token KW_SUN_STREAMS
 
 
 %type	<ptr> source_afstreams
