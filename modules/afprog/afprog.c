@@ -392,6 +392,25 @@ afprogram_dd_reopen(AFProgramDestDriver *self)
   return TRUE;
 }
 
+static gboolean
+afprogram_dd_is_command_not_found(int status)
+{
+  /*
+   * Status here is a 16-bit int, the real exit status is the 8 least
+   * significant bits of it, and an exit status of 127 from the shell is
+   * supposed to signal a command-not-found case. The other 8 bits are one bit
+   * to signal if the child dumped core, the other 7 the signal - if any - with
+   * which it exited.
+   *
+   * In our case, we want to make sure that the other 8 bits are all empty (no
+   * core dump; and normal exit, not one due to a signal), hence the second part
+   * of the check.
+   *
+   * See wait(2) for more information.
+   */
+  return (status >> 8) == 127 && ((status & 0x00ff) == 0);
+}
+
 static void
 afprogram_dd_exit(pid_t pid, int status, gpointer s)
 {
@@ -402,11 +421,23 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
    * handling restarting the command before this handler is run. */
   if (self->process_info.pid != -1 && self->process_info.pid == pid)
     {
-      msg_verbose("Child program exited, restarting",
-                  evt_tag_str("cmdline", self->process_info.cmdline->str),
-                  evt_tag_int("status", status));
-      self->process_info.pid = -1;
-      afprogram_dd_reopen(self);
+      if (afprogram_dd_is_command_not_found(status))
+        {
+          msg_error("Child program exited with command not found, stopping the destination.",
+                    evt_tag_str("cmdline", self->process_info.cmdline->str),
+                    evt_tag_int("status", status));
+
+          self->process_info.pid = -1;
+        }
+      else
+        {
+          msg_info("Child program exited, restarting",
+                   evt_tag_str("cmdline", self->process_info.cmdline->str),
+                   evt_tag_int("status", status));
+
+          self->process_info.pid = -1;
+          afprogram_dd_reopen(self);
+        }
     }
 }
 
@@ -526,8 +557,12 @@ afprogram_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
   switch (notify_code)
     {
     case NC_CLOSE:
-    case NC_WRITE_ERROR:
       afprogram_dd_reopen(self);
+      break;
+    case NC_WRITE_ERROR:
+      /* We let this fall through, to be handled by the child manager. We do
+         this to have access to the exit status, and which we use to decide
+         whether to restart immediately, or stop the destination. */
       break;
     }
 }
