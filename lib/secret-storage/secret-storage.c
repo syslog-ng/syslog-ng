@@ -87,7 +87,7 @@ secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
     return FALSE;
 
   secret_storage->secret.len = len;
-  memcpy(&secret_storage->secret.data, secret, len);
+  nondumpable_memcpy(&secret_storage->secret.data, secret, len);
   g_hash_table_insert(secret_manager, strdup(key), secret_storage);
 
   return TRUE;
@@ -103,7 +103,7 @@ Secret *secret_storage_clone_secret(Secret *self)
 {
   Secret *copy = nondumpable_buffer_alloc(self->len + SECRET_HEADER_SIZE);
   copy->len = self->len;
-  memcpy(copy->data, self->data, self->len);
+  nondumpable_memcpy(copy->data, self->data, self->len);
   return copy;
 }
 

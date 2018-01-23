@@ -116,7 +116,21 @@ nondumpable_buffer_realloc(gpointer buffer, gsize len)
     }
 
   gpointer new_buffer = nondumpable_buffer_alloc(len);
-  memmove(new_buffer, allocation->user_data, allocation->data_len);
+  nondumpable_memcpy(new_buffer, allocation->user_data, allocation->data_len);
   nondumpable_buffer_free(buffer);
   return new_buffer;
+}
+
+/* glibc implementation of memcpy can use stack, exposing parts of the secrets */
+gpointer
+nondumpable_memcpy(gpointer dest, gpointer src, gsize len)
+{
+  gchar *_dest = dest;
+  gchar *_src = src;
+  for (int i = 0; i < len; i++)
+    {
+      _dest[i] = _src[i];
+    }
+
+  return dest;
 }
