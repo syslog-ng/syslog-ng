@@ -125,6 +125,20 @@ serialize_read_uint32_array(SerializeArchive *archive, guint32 *values, gsize el
 }
 
 static inline gboolean
+serialize_read_uint16_array(SerializeArchive *archive, guint32 *values, gsize elements)
+{
+  guint16 buffer[elements];
+
+  if (serialize_archive_read_bytes(archive, (void *) &buffer, elements * sizeof(guint16)))
+    {
+      for (int i = 0; i < elements; i++)
+        values[i] = GUINT16_FROM_BE(buffer[i]);
+      return TRUE;
+    }
+  return FALSE;
+}
+
+static inline gboolean
 serialize_write_uint64(SerializeArchive *archive, guint64 value)
 {
   guint64 n;

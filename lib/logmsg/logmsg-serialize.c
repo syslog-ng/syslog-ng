@@ -68,8 +68,11 @@ log_msg_serialize(LogMessage *self, SerializeArchive *sa)
 }
 
 static gboolean
-_deserialize_sdata(LogMessage *self, SerializeArchive *sa)
+_deserialize_sdata(LogMessageSerializationState *state)
 {
+  LogMessage *self = state->msg;
+  SerializeArchive *sa = state->sa;
+
   if (!serialize_read_uint8(sa, &self->num_sdata))
     return FALSE;
 
@@ -78,18 +81,29 @@ _deserialize_sdata(LogMessage *self, SerializeArchive *sa)
 
   g_assert(!self->sdata);
   self->sdata = (NVHandle *) g_malloc(sizeof(NVHandle)*self->alloc_sdata);
-  serialize_read_uint32_array(sa, (guint32 *) self->sdata, self->num_sdata);
+
+  if (state->version <= 20)
+    return TRUE;
+
+  if ((state->version < 26) && !serialize_read_uint16_array(sa, (guint32 *) self->sdata, self->num_sdata))
+    return FALSE;
+
+  if ((state->version == 26) && !serialize_read_uint32_array(sa, (guint32 *) self->sdata, self->num_sdata))
+    return FALSE;
+
   return TRUE;
 }
 
 static gboolean
-_deserialize_message(LogMessageSerializationState *state)
+_deserialize_message_version_2x(LogMessageSerializationState *state)
 {
+  g_assert(state->version >= 20);
+
   guint8 initial_parse = 0;
   LogMessage *msg = state->msg;
   SerializeArchive *sa = state->sa;
 
-  if (!serialize_read_uint64(sa, &msg->rcptid))
+  if ((state->version > 22) && !serialize_read_uint64(sa, &msg->rcptid))
     return FALSE;
   if (!serialize_read_uint32(sa, &msg->flags))
     return FALSE;
@@ -98,9 +112,9 @@ _deserialize_message(LogMessageSerializationState *state)
     return FALSE;
   if (!g_sockaddr_deserialize(sa, &msg->saddr))
     return FALSE;
-  if (!timestamp_deserialize(sa, msg->timestamps))
+  if (!timestamp_deserialize(state->version, sa, msg->timestamps))
     return FALSE;
-  if (!serialize_read_uint32(sa, &msg->host_id))
+  if ((state->version >= 25) && (!serialize_read_uint32(sa, &msg->host_id)))
     return FALSE;
 
   if (!tags_deserialize(msg, sa))
@@ -113,7 +127,7 @@ _deserialize_message(LogMessageSerializationState *state)
   if (!serialize_read_uint8(sa, &msg->num_matches))
     return FALSE;
 
-  if (!_deserialize_sdata(msg, sa))
+  if (!_deserialize_sdata(state))
     return FALSE;
 
   nv_table_unref(msg->payload);
@@ -127,16 +141,30 @@ _deserialize_message(LogMessageSerializationState *state)
 }
 
 static gboolean
+_deserialize_message_version_0_1(LogMessageSerializationState *state)
+{
+  //TODO: not yet implemented
+  g_assert_not_reached();
+  return FALSE;
+}
+
+static gboolean
+_deserialize_message_version_1x(LogMessageSerializationState *state)
+{
+  //TODO: not yet implemented
+  g_assert_not_reached();
+  return FALSE;
+}
+
+static gboolean
 _check_msg_version(LogMessageSerializationState *state)
 {
   if (!serialize_read_uint8(state->sa, &state->version))
     return FALSE;
 
-  if (state->version != 26)
+  if ((state->version > 1 && state->version < 10) || state->version > 26)
     {
-      msg_error("Error deserializing log message, unsupported version, "
-                "we only support v26 introduced in " VERSION_3_8 ", "
-                "earlier versions in syslog-ng Premium Editions are not supported",
+      msg_error("Error deserializing log message, unsupported version, ",
                 evt_tag_int("version", state->version));
       return FALSE;
     }
@@ -154,5 +182,14 @@ log_msg_deserialize(LogMessage *self, SerializeArchive *sa)
     {
       return FALSE;
     }
-  return _deserialize_message(&state);
+
+  if (state.version < 10)
+    return _deserialize_message_version_0_1(&state);
+  else if (state.version < 20)
+    return _deserialize_message_version_1x(&state);
+  else if (state.version <= 26)
+    return _deserialize_message_version_2x(&state);
+
+  g_assert_not_reached();
+  return FALSE;
 }

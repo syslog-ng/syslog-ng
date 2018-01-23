@@ -56,7 +56,8 @@ _read_log_stamp(SerializeArchive *sa, LogStamp *stamp)
 gboolean
 timestamp_serialize(SerializeArchive *sa, LogStamp *timestamps)
 {
-  LogStamp additional_timestamp;
+  //TODO: check effect LogStamp additional_timestamp;
+  LogStamp additional_timestamp = {0};
   return _write_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
          _write_log_stamp(sa, &timestamps[LM_TS_RECVD]) &&
          _write_log_stamp(sa, &additional_timestamp);
@@ -64,10 +65,19 @@ timestamp_serialize(SerializeArchive *sa, LogStamp *timestamps)
 
 
 gboolean
-timestamp_deserialize(SerializeArchive *sa, LogStamp *timestamps)
+timestamp_deserialize(const guint8 version, SerializeArchive *sa, LogStamp *timestamps)
 {
+  if (!_read_log_stamp(sa, &timestamps[LM_TS_STAMP]) ||
+      !_read_log_stamp(sa, &timestamps[LM_TS_RECVD]))
+    return FALSE;
+
+  if (version < 24)
+    {
+      //timestamps[LM_TS_PROCESSED] = timestamps[LM_TS_RECVD];
+      return TRUE;
+    }
+
   LogStamp additional_timestamp = {0};
-  return _read_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
-         _read_log_stamp(sa, &timestamps[LM_TS_RECVD]) &&
-         _read_log_stamp(sa, &additional_timestamp);
+
+  return _read_log_stamp(sa, &additional_timestamp);
 }

@@ -26,6 +26,7 @@
 
 #include "logmsg/nvtable-serialize.h"
 #include "logmsg/nvtable-serialize-endianutils.h"
+#include "logmsg/nvtable-serialize-legacy.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 
@@ -167,7 +168,7 @@ _read_payload(SerializeArchive *sa, NVTable *res)
 }
 
 NVTable *
-nv_table_deserialize(LogMessageSerializationState *state)
+_nv_table_deserialize_26(LogMessageSerializationState *state)
 {
   SerializeArchive *sa = state->sa;
   NVTableMetaData meta_data;
@@ -196,6 +197,24 @@ nv_table_deserialize(LogMessageSerializationState *state)
 error:
   if (res)
     g_free(res);
+  return NULL;
+}
+
+NVTable *
+nv_table_deserialize(LogMessageSerializationState *state)
+{
+  if (state->version == 26)
+    {
+      return _nv_table_deserialize_26(state);
+    }
+  else if ((state->version < 26) && (state->version >= 22))
+    {
+      state->nvtable = nv_table_deserialize_22(state->sa);
+
+      return state->nvtable;
+    }
+
+  g_assert_not_reached();
   return NULL;
 }
 
