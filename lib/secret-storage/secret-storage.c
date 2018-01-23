@@ -76,6 +76,9 @@ secret_storage_deinit()
   secret_manager = NULL;
 }
 
+SecretStorageCB g_func;
+gpointer g_user_data;
+
 gboolean
 secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
 {
@@ -89,6 +92,9 @@ secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
   secret_storage->secret.len = len;
   nondumpable_memcpy(&secret_storage->secret.data, secret, len);
   g_hash_table_insert(secret_manager, strdup(key), secret_storage);
+
+  if (g_func)
+    secret_storage_with_secret(key, g_func, g_user_data);
 
   return TRUE;
 }
@@ -128,4 +134,18 @@ secret_storage_with_secret(gchar *key, SecretStorageCB func, gpointer user_data)
   Secret *secret = secret_storage_get_secret_by_name(key);
   func(secret, user_data);
   secret_storage_put_secret(secret);
+}
+
+gboolean
+secret_storage_subscribe_for_key(gchar *key, SecretStorageCB func, gpointer user_data)
+{
+  g_func = func;
+  g_user_data = user_data;
+
+  if (secret_storage_get_secret_by_name(key))
+    {
+      secret_storage_with_secret(key, g_func, g_user_data);
+    }
+
+  return TRUE;
 }

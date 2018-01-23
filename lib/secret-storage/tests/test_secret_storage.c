@@ -81,3 +81,25 @@ Test(secretstorage, store_secret_with_embedded_zero)
   cr_assert_eq(result, 0);
   secret_storage_put_secret(secret);
 }
+
+void set_variable_to_true_cb(Secret *secret, gpointer user_data)
+{
+  *((gboolean *)user_data) = TRUE;
+}
+
+Test(secretstorage, subscribe_before_store)
+{
+  gboolean test_variable = FALSE;
+  secret_storage_subscribe_for_key("key", set_variable_to_true_cb, &test_variable);
+  cr_assert_not(test_variable);
+  secret_storage_store_string("key", "secret");
+  cr_assert(test_variable);
+}
+
+Test(secretstorage, subscribe_after_store)
+{
+  gboolean test_variable = FALSE;
+  secret_storage_store_string("key", "secret");
+  secret_storage_subscribe_for_key("key", set_variable_to_true_cb, &test_variable);
+  cr_assert(test_variable);
+}
