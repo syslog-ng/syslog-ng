@@ -23,10 +23,12 @@
  */
 #include "control/control.h"
 #include "control/control-main.h"
+#include "lib/secret-storage/secret-storage.h"
 #include "mainloop.h"
 #include "messages.h"
 #include "apphook.h"
 #include "stats/stats-query-commands.h"
+#include "string.h"
 
 static GList *command_list = NULL;
 
@@ -129,6 +131,49 @@ control_connection_reopen(GString *command, gpointer user_data)
   return result;
 }
 
+static GString *
+process_pwd(GString *command, gpointer user_data)
+{
+  GString *result = g_string_new("\n");
+  gchar **cmds = g_strsplit(command->str, " ", 4);
+//  gint buffer_size = 255;
+//  gchar buff[buffer_size+1];
+
+  if (g_strcmp0(cmds[1],"store")==0)
+    {
+      if (!cmds[2] || strlen(cmds[2])==0)
+        {
+          g_string_assign(result,"error: invalid key\n");
+        }
+      else if (!cmds[3] || strlen(cmds[3])==0)
+        {
+          g_string_assign(result,"error: invalid password\n");
+        }
+      else
+        {
+//      snprintf(buff, buffer_size, "---> New password to set: %s-->%s", cmds[2], cmds[3]);
+          secret_storage_store_string(cmds[2],cmds[3]);
+        }
+    }
+  else if (strcmp(cmds[1],"list")==0)
+    {
+//    snprintf(buff, buffer_size, "---> list passwords <%s>",strlen(cmds[2]) == 0 ? "ALL" : cmds[2]);
+    }
+  else
+    {
+      g_string_assign(result,"error: invalid password option\n");
+      //snprintf(buff, buffer_size, "---> invalid password option %s %s %s",cmds[1],cmds[2],cmds[3]);
+    }
+
+//  msg_debug(buff);
+
+  if (result->len == 0)
+    g_string_assign(result, "\n");
+
+  g_strfreev(cmds);
+  return result;
+}
+
 ControlCommand default_commands[] =
 {
   { "LOG", NULL, control_connection_message_log },
@@ -136,6 +181,7 @@ ControlCommand default_commands[] =
   { "RELOAD", NULL, control_connection_reload },
   { "REOPEN", NULL, control_connection_reopen },
   { "QUERY", NULL, process_query_command },
+  { "PWD", NULL, process_pwd },
   { NULL, NULL, NULL },
 };
 

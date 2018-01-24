@@ -32,12 +32,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <sgtty.h>
+#include <termios.h>
+#include <unistd.h>
 
 #if SYSLOG_NG_HAVE_GETOPT_H
 #include <getopt.h>
 #endif
 
 static const gchar *control_name;
+static const gchar *password;
 static ControlClient *control_client;
 
 static gboolean
@@ -347,6 +351,71 @@ static GOptionEntry no_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
+static GOptionEntry password_options[] =
+{
+  {
+    "store", 0, 0, G_OPTION_ARG_STRING, &password,
+    "password to store for SSL authentication", "key password"
+  },
+  {
+    "list", 0, 0, G_OPTION_ARG_STRING, &password,
+    "list stored passwords", "<key>"
+  },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+static void
+console_echo_on(gboolean turn_on)
+{
+  struct termios t;
+
+  if (tcgetattr(STDIN_FILENO, &t))
+    {
+      return;
+    }
+
+  if (turn_on)
+    {
+      t.c_lflag |= ECHO;
+    }
+  else
+    {
+      t.c_lflag &= ~((tcflag_t) ECHO);
+    }
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+}
+
+static void
+get_password_from_stdin(gchar *buffer, gulong *length)
+{
+  printf("enter password:");
+  console_echo_on(FALSE);
+  getline(&buffer,length,stdin);
+  console_echo_on(TRUE);
+}
+
+static gint
+slng_passwd(int argc, char *argv[], const gchar *mode)
+{
+  gint buff_size = 255;
+  gchar buff[buff_size+1];
+  if (g_strcmp0(argv[1],"store")==0 && (argv[3]==NULL || strlen(argv[3])==0))
+    {
+      gulong password_length = buff_size;
+      gchar password[password_length+1];
+      get_password_from_stdin(password,&password_length);
+      snprintf(buff, buff_size, "PWD %s %s %s", argv[1], argv[2], password);
+    }
+  else
+    {
+      snprintf(buff, buff_size, "PWD %s %s %s", argv[1], argv[2], argv[3]);
+    }
+  //printf("-->> %s\n",buff);
+
+  return _dispatch_command(buff);
+}
+
 const gchar *
 get_mode(int *argc, char **argv[])
 {
@@ -392,6 +461,7 @@ static struct
   { "reopen", no_options, "Re-open of log destination files", slng_reopen },
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query },
   { "show-license-info", license_options, "Show information about the license", slng_license },
+  { "password", password_options, "Store/List SSL passwords", slng_passwd },
   { NULL, NULL },
 };
 
