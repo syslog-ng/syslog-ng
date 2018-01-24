@@ -23,10 +23,12 @@
  */
 #include "control/control.h"
 #include "control/control-main.h"
+#include "lib/secret-storage/secret-storage.h"
 #include "mainloop.h"
 #include "messages.h"
 #include "apphook.h"
 #include "stats/stats-query-commands.h"
+#include "string.h"
 
 static GList *command_list = NULL;
 
@@ -129,6 +131,41 @@ control_connection_reopen(GString *command, gpointer user_data)
   return result;
 }
 
+static GString *
+process_credentials(GString *command, gpointer user_data)
+{
+  gchar **arguments = g_strsplit(command->str, " ", 4);
+  guint argc = g_strv_length(arguments);
+
+  GString *result = g_string_new(NULL);
+
+  if (argc < 4)
+    {
+      g_string_assign(result,"error: missing arguments\n");
+      g_strfreev(arguments);
+      return result;
+    }
+
+  gchar *subcommand = arguments[1];
+  gchar *id = arguments[2];
+  gchar *secret = arguments[3];
+
+  if (g_strcmp0(subcommand,"add") == 0)
+    {
+      if (secret_storage_store_string(id,secret))
+        g_string_assign(result,"Credentials stored successfully\n");
+      else
+        g_string_assign(result,"Error while saving credentials\n");
+    }
+  else
+    {
+      g_string_printf(result,"error: invalid subcommand %s\n", subcommand);
+    }
+
+  g_strfreev(arguments);
+  return result;
+}
+
 ControlCommand default_commands[] =
 {
   { "LOG", NULL, control_connection_message_log },
@@ -136,6 +173,7 @@ ControlCommand default_commands[] =
   { "RELOAD", NULL, control_connection_reload },
   { "REOPEN", NULL, control_connection_reopen },
   { "QUERY", NULL, process_query_command },
+  { "PWD", NULL, process_credentials },
   { NULL, NULL, NULL },
 };
 

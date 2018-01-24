@@ -32,6 +32,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <sgtty.h>
+#include <termios.h>
+#include <unistd.h>
+#include <errno.h>
 
 #if SYSLOG_NG_HAVE_GETOPT_H
 #include <getopt.h>
@@ -39,6 +43,7 @@
 
 static const gchar *control_name;
 static ControlClient *control_client;
+static void print_usage(const gchar *bin_name);
 
 static gboolean
 slng_send_cmd(const gchar *cmd)
@@ -107,10 +112,10 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
   gchar buff[256];
 
   if (!verbose_set)
-    snprintf(buff, 255, "LOG %s\n", mode);
+    g_snprintf(buff, 255, "LOG %s\n", mode);
   else
-    snprintf(buff, 255, "LOG %s %s\n", mode,
-             strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
+    g_snprintf(buff, 255, "LOG %s %s\n", mode,
+               strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
 
   g_strup(buff);
 
@@ -207,9 +212,9 @@ slng_license(int argc, char *argv[], const gchar *mode)
   gchar buff[256];
 
   if (license_json)
-    snprintf(buff, 255, "LICENSE JSON\n");
+    g_snprintf(buff, 255, "LICENSE JSON\n");
   else
-    snprintf(buff, 255, "LICENSE\n");
+    g_snprintf(buff, 255, "LICENSE\n");
 
   if (!(slng_send_cmd(buff) && ((rsp = control_client_read_reply(control_client)) != NULL)))
     return 1;
@@ -347,6 +352,114 @@ static GOptionEntry no_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
+static void
+set_console_echo(gboolean new_state)
+{
+  struct termios t;
+
+  if (tcgetattr(STDIN_FILENO, &t))
+    {
+      fprintf(stderr, "syslog-ng-ctl: error while tcgetattr: %s\n", strerror(errno));
+      return;
+    }
+
+  if (new_state)
+    t.c_lflag |= ECHO;
+  else
+    t.c_lflag &= ~((tcflag_t) ECHO);
+
+  if (tcsetattr(STDIN_FILENO, TCSANOW, &t))
+    fprintf(stderr, "syslog-ng-ctl: error while tcsetattr: %s\n", strerror(errno));
+}
+
+static void
+get_password_from_stdin(gchar *buffer, gulong *length)
+{
+  printf("enter password:");
+  set_console_echo(FALSE);
+  if (-1 == getline(&buffer, length, stdin))
+    {
+      fprintf(stderr, "error while reading password from terminal: %s", strerror(errno));
+      g_assert_not_reached();
+    }
+  set_console_echo(TRUE);
+  printf("\n");
+}
+
+static gboolean
+is_syslog_ng_running()
+{
+  if (control_client_connect(control_client))
+    return TRUE;
+  else
+    return FALSE;
+}
+
+static gint
+slng_passwd_add(int argc, char *argv[], const gchar *mode)
+{
+  gchar *answer;
+
+  if (argc < 2 || strlen(argv[1]) == 0)
+    {
+      print_usage(argv[0]);
+      return 1;
+    }
+
+  gchar *id = argv[1];
+
+  if (!is_syslog_ng_running())
+    return 1;
+
+  gboolean secret_missing = argc < 3;
+  if (secret_missing)
+    {
+      gchar *password_buffer = g_malloc0(256);
+      if (!password_buffer)
+        return 1;
+
+      gulong buff_size;
+      get_password_from_stdin(password_buffer, &buff_size);
+      gint retval = asprintf(&answer, "PWD %s %s %s", "add", id, password_buffer);
+      if (retval == -1)
+        g_assert_not_reached();
+
+      memset(password_buffer, 0, buff_size);
+      g_free(password_buffer);
+    }
+  else
+    {
+      gchar *secret = argv[2];
+
+      gint retval = asprintf(&answer, "PWD %s %s %s", "add", id, secret);
+      if (retval == -1)
+        g_assert_not_reached();
+
+      memset(secret, 0, strlen(secret));
+    }
+
+  gint result = _dispatch_command(answer);
+
+  gint answer_length = strlen(answer);
+  memset(answer, 0, answer_length);
+  g_free(answer);
+
+  return result;
+
+}
+
+static gint
+slng_passwd_status(int argc, char *argv[], const gchar *mode)
+{
+  gchar *answer;
+
+  gint retval = asprintf(&answer, "PWD %s", "status");
+  if (retval == -1)
+    g_assert_not_reached();
+
+  return _dispatch_command(answer);
+}
+
 const gchar *
 get_mode(int *argc, char **argv[])
 {
@@ -392,10 +505,12 @@ static struct
   { "reopen", no_options, "Re-open of log destination files", slng_reopen },
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query },
   { "show-license-info", license_options, "Show information about the license", slng_license },
+  { "password-add", no_options, "Add key-password pairs. syslog-ng-ctl password-add key [password]", slng_passwd_add },
+  { "password-status", no_options, "Query stored key/password status)", slng_passwd_status },
   { NULL, NULL },
 };
 
-void
+static void
 print_usage(const gchar *bin_name)
 {
   gint mode;
