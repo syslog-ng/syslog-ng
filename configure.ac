@@ -210,6 +210,10 @@ AC_ARG_ENABLE(sun-streams,
               [  --enable-sun-streams    Enable support for Solaris /dev/log STREAMS device.]
               ,,enable_sun_streams="auto")
 
+AC_ARG_ENABLE(openbsd-system-source,
+              [  --enable-openbsd-system-source    Enable support for OpenBSD /dev/klog device.]
+              ,,enable_openbsd_system_source="auto")
+
 AC_ARG_ENABLE(sql,
 	      [  --enable-sql            Enable support for SQL destinations. (default: auto)]
 	      ,,enable_sql="auto")
@@ -1425,6 +1429,18 @@ else
         AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(whether to enable OpenBSD system source support)
+if test "x$enable_openbsd_system_source" = "xyes"; then
+        enable_openbsd_system_source="yes"
+        AC_MSG_RESULT(yes)
+elif test "x$enable_openbsd_system_source" = "xauto" -a \
+        "$ostype" = "OpenBSD" ; then
+        enable_openbsd_system_source="yes"
+        AC_MSG_RESULT(yes)
+else
+        enable_openbsd_system_source="no"
+        AC_MSG_RESULT(no)
+fi
 
 if test "x$enable_env_wrapper" = "xauto"; then
 	if test "x$env_ld_library_path" != "x"; then
@@ -1711,6 +1727,7 @@ AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD_UNIT_INSTALL, [test "$systemdsystemunitdir" != ""])
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
+AM_CONDITIONAL(ENABLE_OPENBSD_SYSTEM_SOURCE, [test "$enable_openbsd_system_source" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
@@ -1843,6 +1860,7 @@ echo "  libmongo-client options     : ${enable_legacy_mongodb_options}"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
+echo "  OpenBSD syslog (module)     : ${enable_openbsd_system_source:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"

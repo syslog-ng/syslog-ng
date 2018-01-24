@@ -304,6 +304,10 @@ system_generate_system_transports(GString *sysblock)
     {
       system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, NULL);
     }
+  else if (strcmp(u.sysname, "OpenBSD") == 0)
+    {
+      g_string_append(sysblock, "openbsd();");
+    }
   else
     {
       msg_error("system(): Error detecting platform, unable to define the system() source. "
