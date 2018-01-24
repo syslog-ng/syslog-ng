@@ -52,6 +52,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.io.FileInputStream;
+import org.apache.log4j.PropertyConfigurator;
 
 import java.io.IOException;
 
@@ -61,6 +62,11 @@ public class ESHttpClient implements ESClient {
 	private JestClient client;
 	private HttpMessageProcessor messageProcessor;
 	protected Logger logger;
+
+  static  {
+      PropertyConfigurator.configure(System.getProperty("log4j.configuration"));
+  }
+
 
   public class HttpClientBuilderException extends RuntimeException {
     public HttpClientBuilderException() {}
