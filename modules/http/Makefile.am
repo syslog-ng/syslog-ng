@@ -9,11 +9,6 @@ modules_http_libhttp_la_SOURCES = \
   modules/http/http-parser.h        \
   modules/http/http-plugin.c
 
-BUILT_SOURCES       +=      \
-  modules/http/http-grammar.y       \
-  modules/http/http-grammar.c       \
-  modules/http/http-grammar.h
-
 modules_http_libhttp_la_CPPFLAGS  =     \
   $(AM_CPPFLAGS)            \
   $(LIBCURL_CFLAGS)          \
@@ -30,6 +25,11 @@ modules/http modules/http/ mod-http: modules/http/libhttp.la
 else
 modules/http modules/http/ mod-http:
 endif
+
+BUILT_SOURCES       +=      \
+  modules/http/http-grammar.y       \
+  modules/http/http-grammar.c       \
+  modules/http/http-grammar.h
 
 EXTRA_DIST        +=      \
   modules/http/http-grammar.ym

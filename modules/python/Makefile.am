@@ -54,11 +54,6 @@ modules_python_libmod_python_la_LDFLAGS		 = \
 modules_python_libmod_python_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)
 
-BUILT_SOURCES					+= \
-	modules/python/python-grammar.y		   \
-	modules/python/python-grammar.c		   \
-	modules/python/python-grammar.h
-
 modules/python mod-python: modules/python/libmod-python.la
 
 include modules/python/tests/Makefile.am
@@ -67,6 +62,11 @@ modules/python mod-python:
 endif
 
 include modules/python/pylib/Makefile.am
+
+BUILT_SOURCES					+= \
+	modules/python/python-grammar.y		   \
+	modules/python/python-grammar.c		   \
+	modules/python/python-grammar.h
 
 EXTRA_DIST					+= \
 	modules/python/compat/compat-python-v2.c   \
