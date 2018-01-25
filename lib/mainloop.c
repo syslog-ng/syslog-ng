@@ -48,6 +48,8 @@
 #include <iv_signal.h>
 #include <iv_event.h>
 
+volatile gint main_loop_workers_running;
+
 /**
  * Processing model
  * ================
