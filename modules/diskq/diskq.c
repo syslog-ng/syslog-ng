@@ -30,6 +30,16 @@
 #include "logqueue-disk-non-reliable.h"
 #include "persist-state.h"
 
+static gboolean
+log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
+{
+  gchar *basedir = g_path_get_dirname(file);
+  const gboolean result = (0 == strcmp(basedir, directory));
+
+  g_free(basedir);
+  return result;
+}
+
 static LogQueue *
 _acquire_queue(LogDestDriver *dd, const gchar *persist_name, gpointer user_data)
 {
@@ -55,6 +65,14 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name, gpointer user_data)
   log_queue_set_throttle(queue, dd->throttle);
 
   qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
+
+  if (qfile_name && !log_queue_disk_is_file_in_directory(qfile_name, self->options.dir))
+    {
+      msg_warning("The disk buffer directory has changed in the configuration, but the disk queue file cannot be moved",
+                  evt_tag_str("qfile", qfile_name),
+                  evt_tag_str("dir", self->options.dir));
+    }
+
   success = log_queue_disk_load_queue(queue, qfile_name);
   if (!success)
     {

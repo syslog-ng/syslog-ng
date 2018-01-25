@@ -91,6 +91,17 @@ disk_queue_options_check_plugin_settings(DiskQueueOptions *self)
     }
 }
 
+gchar *
+_normalize_path(const gchar *path)
+{
+  const int length = strlen(path);
+
+  if ('/' == path[length-1] || '\\' == path[length-1])
+    return g_path_get_dirname(path);
+
+  return g_strdup(path);
+}
+
 void
 disk_queue_options_set_dir(DiskQueueOptions *self, const gchar *dir)
 {
@@ -98,7 +109,8 @@ disk_queue_options_set_dir(DiskQueueOptions *self, const gchar *dir)
     {
       g_free(self->dir);
     }
-  self->dir = g_strdup(dir);
+
+  self->dir = _normalize_path(dir);
 }
 
 void
