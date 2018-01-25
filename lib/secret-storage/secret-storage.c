@@ -36,6 +36,11 @@ typedef struct
 {
   SecretStorageCB func;
   gpointer user_data;
+} Subscription;
+
+typedef struct
+{
+  GArray *subscriptions;
   Secret secret;
 } SecretStorage;
 
@@ -52,6 +57,7 @@ secret_storage_new(gsize len)
 static void
 secret_storage_free(SecretStorage *self)
 {
+  g_array_free(self->subscriptions, TRUE);
   nondumpable_buffer_free(self);
 }
 
@@ -120,10 +126,20 @@ create_secret_storage_with_secret(gchar *key, gchar *secret, gsize len)
   secret_storage->secret.len = len;
   nondumpable_memcpy(&secret_storage->secret.data, secret, len);
   g_hash_table_insert(secret_manager, strdup(key), secret_storage);
-  secret_storage->func = NULL;
-  secret_storage->user_data = NULL;
+  secret_storage->subscriptions = g_array_new(FALSE, FALSE, sizeof(Subscription));
 
   return secret_storage;
+}
+
+static void
+run_callbacks(gchar *key, GArray *subscriptions)
+{
+  for (int i = 0; i < subscriptions->len; i++)
+    {
+      Subscription sub = g_array_index(subscriptions, Subscription, i);
+      secret_storage_with_secret(key, sub.func, sub.user_data);
+    }
+  g_array_remove_range(subscriptions, 0, subscriptions->len);
 }
 
 gboolean
@@ -144,8 +160,7 @@ secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
   if (!secret_storage)
     return FALSE;
 
-  if (secret_storage->func)
-    secret_storage_with_secret(key, secret_storage->func, secret_storage->user_data);
+  run_callbacks(key, secret_storage->subscriptions);
 
   return TRUE;
 }
@@ -210,8 +225,8 @@ secret_storage_subscribe_for_key(gchar *key, SecretStorageCB func, gpointer user
     }
 
   secret_storage = g_hash_table_lookup(secret_manager, key);
-  secret_storage->func = func;
-  secret_storage->user_data = user_data;
+  Subscription new_subscription = {.func = func, .user_data = user_data};
+  g_array_append_val(secret_storage->subscriptions, new_subscription);
 
   return TRUE;
 }
