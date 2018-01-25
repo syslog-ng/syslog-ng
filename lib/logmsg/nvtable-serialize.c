@@ -203,15 +203,19 @@ error:
 NVTable *
 nv_table_deserialize(LogMessageSerializationState *state)
 {
-  if (state->version == 26)
+  if (state->version < 22)
     {
-      return _nv_table_deserialize_26(state);
+      return nv_table_deserialize_legacy(state->sa);
     }
-  else if ((state->version < 26) && (state->version >= 22))
+  else if (state->version < 26)
     {
       state->nvtable = nv_table_deserialize_22(state->sa);
 
       return state->nvtable;
+    }
+  else
+    {
+      return _nv_table_deserialize_26(state);
     }
 
   g_assert_not_reached();
