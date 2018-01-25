@@ -34,7 +34,8 @@
 
 typedef struct
 {
-  /* Placeholder for nonce, refcount */
+  SecretStorageCB func;
+  gpointer user_data;
   Secret secret;
 } SecretStorage;
 
@@ -44,7 +45,6 @@ volatile gint secret_manager_uninitialized INTERNAL = 1;
 static SecretStorage *
 secret_storage_new(gsize len)
 {
-  g_assert(len > 0);
   SecretStorage *storage = nondumpable_buffer_alloc(len + SECRET_STORAGE_HEADER_SIZE);
   return storage;
 }
@@ -76,25 +76,76 @@ secret_storage_deinit()
   secret_manager = NULL;
 }
 
-SecretStorageCB g_func;
-gpointer g_user_data;
+static void
+write_secret(SecretStorage *storage, gchar *secret, gsize len)
+{
+  storage->secret.len = len;
+  nondumpable_memcpy(storage->secret.data, secret, len);
+}
+
+static SecretStorage *
+overwrite_secret(SecretStorage *storage, gchar *secret, gsize len)
+{
+  memset(storage->secret.data, 0, storage->secret.len);
+  write_secret(storage, secret, len);
+  return storage;
+}
+
+static SecretStorage *
+realloc_and_write_secret(SecretStorage *secret_storage, gchar *key, gchar *secret, gsize len)
+{
+  SecretStorage *maybe_new_storage = nondumpable_buffer_realloc(secret_storage, len);
+  write_secret(maybe_new_storage, secret, len);
+  if (secret_storage != maybe_new_storage)
+    g_hash_table_insert(secret_manager, strdup(key), maybe_new_storage);
+  return maybe_new_storage;
+}
+
+static SecretStorage *
+update_storage_with_secret(SecretStorage *secret_storage, gchar *key, gchar *secret, gsize len)
+{
+  gboolean fits_into_storage = secret_storage->secret.len > len;
+  if (fits_into_storage)
+    return overwrite_secret(secret_storage, secret, len);
+  else
+    return realloc_and_write_secret(secret_storage, key, secret, len);
+}
+
+static SecretStorage *
+create_secret_storage_with_secret(gchar *key, gchar *secret, gsize len)
+{
+  SecretStorage *secret_storage = secret_storage_new(len);
+  if (!secret_storage)
+    return NULL;
+  secret_storage->secret.len = len;
+  nondumpable_memcpy(&secret_storage->secret.data, secret, len);
+  g_hash_table_insert(secret_manager, strdup(key), secret_storage);
+  secret_storage->func = NULL;
+  secret_storage->user_data = NULL;
+
+  return secret_storage;
+}
 
 gboolean
 secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
 {
-  if (len == -1)
+  if (!secret)
+    len = 0;
+  else if (len == -1)
     len = strlen(secret) + 1;
 
-  SecretStorage *secret_storage = secret_storage_new(len);
+  SecretStorage *secret_storage;
+  secret_storage = g_hash_table_lookup(secret_manager, key);
+  if (secret_storage)
+    secret_storage = update_storage_with_secret(secret_storage, key, secret, len);
+  else
+    secret_storage = create_secret_storage_with_secret(key, secret, len);
+
   if (!secret_storage)
     return FALSE;
 
-  secret_storage->secret.len = len;
-  nondumpable_memcpy(&secret_storage->secret.data, secret, len);
-  g_hash_table_insert(secret_manager, strdup(key), secret_storage);
-
-  if (g_func)
-    secret_storage_with_secret(key, g_func, g_user_data);
+  if (secret_storage->func)
+    secret_storage_with_secret(key, secret_storage->func, secret_storage->user_data);
 
   return TRUE;
 }
@@ -136,16 +187,31 @@ secret_storage_with_secret(gchar *key, SecretStorageCB func, gpointer user_data)
   secret_storage_put_secret(secret);
 }
 
+static gboolean
+insert_empty_secret_storage(gchar *key)
+{
+  return secret_storage_store_string(key, NULL);
+}
+
 gboolean
 secret_storage_subscribe_for_key(gchar *key, SecretStorageCB func, gpointer user_data)
 {
-  g_func = func;
-  g_user_data = user_data;
 
-  if (secret_storage_get_secret_by_name(key))
+  SecretStorage *secret_storage;
+  if (!g_hash_table_contains(secret_manager, key))
+    if (!insert_empty_secret_storage(key))
+      return FALSE;
+
+  secret_storage = g_hash_table_lookup(secret_manager, key);
+  if (secret_storage->secret.len != 0)
     {
-      secret_storage_with_secret(key, g_func, g_user_data);
+      secret_storage_with_secret(key, func, user_data);
+      return TRUE;
     }
+
+  secret_storage = g_hash_table_lookup(secret_manager, key);
+  secret_storage->func = func;
+  secret_storage->user_data = user_data;
 
   return TRUE;
 }
