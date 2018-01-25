@@ -1,2 +1,2 @@
-add_unit_test(TARGET test_value_pairs DEPENDS syslogformat)
-add_unit_test(LIBTEST TARGET test_value_pairs_walk)
+add_unit_test(CRITERION TARGET test_value_pairs DEPENDS syslogformat)
+add_unit_test(CRITERION TARGET test_value_pairs_walk DEPENDS syslogformat)

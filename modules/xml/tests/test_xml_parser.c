@@ -22,7 +22,6 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
-#include "msg_parse_lib.h"
 #include "xml.h"
 #include "apphook.h"
 #include "scratch-buffers.h"

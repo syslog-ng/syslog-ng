@@ -22,8 +22,11 @@
  *
  */
 
-#include <libtest/testutils.h>
 #include <value-pairs/value-pairs.h>
+
+#include <criterion/criterion.h>
+#include <libtest/testutils.h>
+
 #include <apphook.h>
 #include <plugin.h>
 #include <cfg.h>
@@ -31,6 +34,7 @@
 
 MsgFormatOptions parse_options;
 LogTemplateOptions template_options;
+GlobalConfig *cfg;
 
 int root_data = 1;
 int root_test_data = 2;
@@ -46,20 +50,20 @@ test_vp_obj_start(const gchar *name,
   switch(times_called)
     {
     case 0:
-      assert_true(prefix == 0, "First vp_obj_start but prefix is not NULL!");
+      cr_expect_null(prefix, "First vp_obj_start but prefix is not NULL!");
       break;
     case 1:
-      assert_string(prefix, "root", "Second vp_obj_start but prefix is not 'root'!");
+      cr_expect_str_eq(prefix, "root", "Second vp_obj_start but prefix is not 'root'!");
       *prefix_data = &root_data;
       break;
     case 2:
-      assert_string(prefix, "root.test", "Third vp_obj_start but prefix is not 'root.test'!");
-      assert_string(prev, "root", "Wrong previous prefix");
-      assert_gint(*((gint *)(*prev_data)), root_data, "Wrong previous data");
+      cr_expect_str_eq(prefix, "root.test", "Third vp_obj_start but prefix is not 'root.test'!");
+      cr_expect_str_eq(prev, "root", "Wrong previous prefix");
+      cr_expect_eq(*((gint *)(*prev_data)), root_data, "Wrong previous data");
       *prefix_data = &root_test_data;
       break;
     default:
-      assert_false(TRUE, "vp_obj_start called more times than number of path elements!");
+      cr_expect_fail("vp_obj_start called more times than number of path elements!");
     }
   times_called++;
   return FALSE;
@@ -76,18 +80,18 @@ test_vp_obj_stop(const gchar *name,
   switch(times_called)
     {
     case 0:
-      assert_string(prefix, "root.test", "First vp_obj_stop but prefix is not 'root.test'!");
-      assert_string(prev, "root", "Wrong previous prefix");
-      assert_gint(*((gint *)(*prev_data)), root_data, "Wrong previous data");
+      cr_expect_str_eq(prefix, "root.test", "First vp_obj_stop but prefix is not 'root.test'!");
+      cr_expect_str_eq(prev, "root", "Wrong previous prefix");
+      cr_expect_eq(*((gint *)(*prev_data)), root_data, "Wrong previous data");
       break;
     case 1:
-      assert_string(prefix, "root", "Second vp_obj_stop but prefix is not 'root'!");
+      cr_expect_str_eq(prefix, "root", "Second vp_obj_stop but prefix is not 'root'!");
       break;
     case 2:
-      assert_true(prefix == 0, "Third vp_obj_stop but prefix is not NULL!");
+      cr_expect_null(prefix, "Third vp_obj_stop but prefix is not NULL!");
       break;
     default:
-      assert_false(TRUE, "vp_obj_stop called more times than number of path elements!");
+      cr_expect_fail("vp_obj_stop called more times than number of path elements!");
     }
   times_called++;
   return FALSE;
@@ -99,15 +103,14 @@ test_vp_value(const gchar *name, const gchar *prefix,
               TypeHint type, const gchar *value, gsize value_len,
               gpointer *prefix_data, gpointer user_data)
 {
-  assert_string(prefix, "root.test", "Wrong prefix");
-  assert_nstring(value, value_len, "value", -1, "Wrong value");
-  assert_gint(*((gint *)(*prefix_data)), root_test_data, "Wrong prefix data");
+  cr_expect_str_eq(prefix, "root.test", "Wrong prefix");
+  cr_expect_str_eq(value, "value", "Wrong value");
+  cr_expect_eq(*((gint *)(*prefix_data)), root_test_data, "Wrong prefix data");
 
   return FALSE;
 }
 
-void
-test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
+Test(value_pairs_walker, prefix_dat)
 {
   ValuePairs *vp;
   LogMessage *msg;
@@ -128,15 +131,24 @@ test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
   log_msg_unref(msg);
 };
 
-int main(void)
+
+void
+setup(void)
 {
+
   app_startup();
 
-  configuration = cfg_new_snippet();
-  cfg_load_module(configuration, "syslogformat");
+  cfg = cfg_new_snippet();
+  cfg_load_module(cfg, "syslogformat");
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
+  msg_format_options_init(&parse_options, cfg);
+}
 
-  test_value_pairs_walk_prefix_data(configuration);
+void
+teardown(void)
+{
   app_shutdown();
-};
+}
+
+TestSuite(value_pairs_walker, .init = setup, .fini = teardown);
+
