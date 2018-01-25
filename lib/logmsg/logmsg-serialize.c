@@ -309,7 +309,7 @@ error:
 static gboolean
 log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, LogMessage *self, gboolean *has_more)
 {
-  gchar *name, *value;
+  gchar *name = NULL, *value = NULL;
   gsize name_len, value_len;
   gchar sd_param_name[256]= {0};
   gboolean success = FALSE;
