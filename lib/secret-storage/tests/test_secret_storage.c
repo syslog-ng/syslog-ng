@@ -103,3 +103,41 @@ Test(secretstorage, subscribe_after_store)
   secret_storage_subscribe_for_key("key", set_variable_to_true_cb, &test_variable);
   cr_assert(test_variable);
 }
+
+Test(secretstorage, subscriptions_per_keys)
+{
+  gboolean key1_test_variable = FALSE;
+  gboolean key2_test_variable = FALSE;
+  secret_storage_subscribe_for_key("key1", set_variable_to_true_cb, &key1_test_variable);
+  secret_storage_subscribe_for_key("key2", set_variable_to_true_cb, &key2_test_variable);
+  cr_assert_not(key1_test_variable);
+  cr_assert_not(key2_test_variable);
+
+  secret_storage_store_string("key1", "secret");
+  cr_assert(key1_test_variable);
+  cr_assert_not(key2_test_variable);
+
+  secret_storage_store_string("key2", "secret");
+  cr_assert(key1_test_variable);
+  cr_assert(key2_test_variable);
+}
+
+Test(secretstorage, two_subscribe_without_store)
+{
+  gboolean test_variable = FALSE;
+  secret_storage_subscribe_for_key("key", set_variable_to_true_cb, &test_variable);
+  secret_storage_subscribe_for_key("key", set_variable_to_true_cb, &test_variable);
+  cr_assert_not(test_variable);
+}
+
+void
+check_secret(Secret *secret, gpointer user_data)
+{
+  cr_assert_str_eq(secret->data, user_data);
+}
+
+Test(secretstorage, subscribe_cb_check_secret)
+{
+  secret_storage_subscribe_for_key("key", check_secret, "secret");
+  secret_storage_store_string("key", "secret");
+}
