@@ -55,6 +55,14 @@ struct _TLSContext
   gint ssl_options;
 };
 
+typedef enum
+{
+  TLS_CONTEXT_OK,
+  TLS_CONTEXT_ERROR,
+  TLS_CONTEXT_FILE_ACCES_ERROR,
+  TLS_CONTEXT_PASSWORD_ERROR
+} TLSContextLoadResult;
+
 gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
 {
@@ -584,19 +592,28 @@ tls_context_load_pkcs12(TLSContext *self)
 }
 
 static gboolean
-tls_context_load_key_and_cert(TLSContext *self)
+_are_key_and_cert_files_accessible(TLSContext *self)
 {
-  if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
-    return FALSE;
-  if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
-    return FALSE;
-  if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
-    return FALSE;
-
-  return TRUE;
+  return file_exists(self->key_file) &&
+         file_exists(self->cert_file);
 }
 
-gboolean
+static TLSContextLoadResult
+tls_context_load_key_and_cert(TLSContext *self)
+{
+  if (!_are_key_and_cert_files_accessible(self))
+    return TLS_CONTEXT_FILE_ACCES_ERROR;
+  if (!SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
+    return TLS_CONTEXT_PASSWORD_ERROR;
+  if (!SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
+    return TLS_CONTEXT_ERROR;
+  if (self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
+    return TLS_CONTEXT_PASSWORD_ERROR;
+
+  return TLS_CONTEXT_OK;
+}
+
+TLSContextSetupResult
 tls_context_setup_context(TLSContext *self)
 {
   gint verify_flags = X509_V_FLAG_POLICY_CHECK;
@@ -614,7 +631,10 @@ tls_context_setup_context(TLSContext *self)
     }
   else
     {
-      if (!tls_context_load_key_and_cert(self))
+      TLSContextLoadResult r = tls_context_load_key_and_cert(self);
+      if (r == TLS_CONTEXT_PASSWORD_ERROR)
+        goto password_error;
+      if (r != TLS_CONTEXT_OK)
         goto error;
     }
 
@@ -635,7 +655,7 @@ tls_context_setup_context(TLSContext *self)
     {
       SSL_CTX_free(self->ssl_ctx);
       self->ssl_ctx = NULL;
-      return FALSE;
+      return TLS_CONTEXT_SETUP_ERROR;
     }
 
   if (!tls_context_setup_dh(self))
@@ -647,7 +667,7 @@ tls_context_setup_context(TLSContext *self)
         goto error;
     }
 
-  return TRUE;
+  return TLS_CONTEXT_SETUP_OK;
 
 error:
   _print_and_clear_tls_session_error();
@@ -656,7 +676,10 @@ error:
       SSL_CTX_free(self->ssl_ctx);
       self->ssl_ctx = NULL;
     }
-  return FALSE;
+  return TLS_CONTEXT_SETUP_ERROR;
+password_error:
+  _print_and_clear_tls_session_error();
+  return TLS_CONTEXT_SETUP_BAD_PASSWORD;
 }
 
 TLSSession *

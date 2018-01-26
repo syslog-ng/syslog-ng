@@ -107,7 +107,7 @@ transport_mapper_inet_init(TransportMapper *s)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
-  if (self->tls_context && !tls_context_setup_context(self->tls_context))
+  if (self->tls_context && (tls_context_setup_context(self->tls_context) != TLS_CONTEXT_SETUP_OK))
     return FALSE;
 
   return TRUE;
@@ -121,7 +121,7 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
   if (!self->tls_context)
     return func(func_args);
 
-  if (!tls_context_setup_context(self->tls_context))
+  if (tls_context_setup_context(self->tls_context) != TLS_CONTEXT_SETUP_OK)
     return FALSE;
 
   return func(func_args);
