@@ -169,6 +169,12 @@ set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/eventlog/src")
 
 add_custom_target(style-check  COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh check  ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 add_custom_target(style-format COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh format ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+add_custom_target(check-copyright
+  COMMAND ${PROJECT_SOURCE_DIR}/tests/copyright/check.sh . ${PROJECT_BINARY_DIR} policy
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_target_properties(check-copyright PROPERTIES
+  ADDITIONAL_MAKE_CLEAN_FILES
+  "copyright-run.log;copyright-err.log")
 
 
 include_directories (${PROJECT_BINARY_DIR}/lib)
