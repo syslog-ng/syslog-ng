@@ -54,6 +54,13 @@ typedef enum
   TSO_NOTLSv12=0x0010,
 } TLSSslOptions;
 
+typedef enum
+{
+  TLS_CONTEXT_SETUP_OK,
+  TLS_CONTEXT_SETUP_ERROR,
+  TLS_CONTEXT_SETUP_BAD_PASSWORD
+} TLSContextSetupResult;
+
 typedef gint (*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
 typedef struct _TLSContext TLSContext;
 
@@ -81,7 +88,7 @@ void tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, 
                             GDestroyNotify verify_destroy);
 void tls_session_free(TLSSession *self);
 
-gboolean tls_context_setup_context(TLSContext *self);
+TLSContextSetupResult tls_context_setup_context(TLSContext *self);
 TLSSession *tls_context_setup_session(TLSContext *self);
 void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints);
 void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
