@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "transport/transport-tls.h"
+#include "secret-storage/secret-storage.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -113,6 +114,38 @@ transport_mapper_inet_init(TransportMapper *s)
   return TRUE;
 }
 
+typedef struct _call_finalize_init_args
+{
+  TransportMapperInet *transport_mapper_inet;
+  TransportMapperAsyncInitCB func;
+  gpointer func_args;
+} call_finalize_init_args;
+
+static void
+_call_finalize_init(Secret *secret, gpointer user_data)
+{
+  call_finalize_init_args *args = user_data;
+  TransportMapperInet *self = args->transport_mapper_inet;
+  if (!self)
+    return;
+  TLSContextSetupResult r = tls_context_setup_context(self->tls_context);
+  switch (r)
+    {
+    case TLS_CONTEXT_SETUP_ERROR:
+      return;
+      break;
+    case TLS_CONTEXT_SETUP_BAD_PASSWORD:
+    {
+      const gchar *key = tls_context_get_key_file(self->tls_context);
+      secret_storage_subscribe_for_key(key, _call_finalize_init, args);
+      break;
+    }
+    default:
+      args->func(args->func_args);
+      g_free(args);
+    }
+}
+
 static gboolean
 transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB func, gpointer func_args)
 {
@@ -121,10 +154,22 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
   if (!self->tls_context)
     return func(func_args);
 
-  if (tls_context_setup_context(self->tls_context) != TLS_CONTEXT_SETUP_OK)
-    return FALSE;
+  TLSContextSetupResult r = tls_context_setup_context(self->tls_context);
 
-  return func(func_args);
+  if (r == TLS_CONTEXT_SETUP_OK)
+    return func(func_args);
+
+  if (r == TLS_CONTEXT_SETUP_BAD_PASSWORD)
+    {
+      call_finalize_init_args *args = g_new0(call_finalize_init_args, 1);
+      args->transport_mapper_inet = self;
+      args->func = func;
+      args->func_args = func_args;
+      const gchar *key = tls_context_get_key_file(self->tls_context);
+      return secret_storage_subscribe_for_key(key, _call_finalize_init, args);
+    }
+
+  return FALSE;
 }
 
 void
