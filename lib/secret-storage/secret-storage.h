@@ -49,4 +49,12 @@ void secret_storage_put_secret(Secret *self) PUBLIC;
 Secret *secret_storage_clone_secret(Secret *self) PUBLIC;
 
 gboolean secret_storage_subscribe_for_key(gchar *key, SecretStorageCB func, gpointer user_data) PUBLIC;
+
+typedef struct
+{
+  gchar *key;
+} SecretStatus;
+typedef gboolean (*SecretStatusCB)(SecretStatus *secret_status, gpointer user_data);
+void secret_storage_status_foreach(SecretStatusCB cb, gpointer user_data) PUBLIC;
+
 #endif
