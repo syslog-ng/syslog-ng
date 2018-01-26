@@ -27,7 +27,7 @@
 #include "syslog-ng.h"
 #include "thread-utils.h"
 
-volatile gint main_loop_workers_running;
+extern volatile gint main_loop_workers_running;
 
 typedef struct _MainLoop MainLoop;
 
