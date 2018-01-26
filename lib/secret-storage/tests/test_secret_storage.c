@@ -167,3 +167,47 @@ Test(secretstorage, subscription_reset_after_called)
   secret_storage_store_string("key", "secret");
   cr_assert_not(key_test_variable);
 }
+
+typedef struct
+{
+  gpointer user_data;
+  gpointer evidence;
+} UserDataWithEvidence;
+
+gboolean
+check_status_callback(SecretStatus *secret_status, gpointer user_data)
+{
+  cr_assert_str_eq(secret_status->key, ((UserDataWithEvidence *)user_data)->user_data);
+  gboolean *evidence = ((UserDataWithEvidence *)user_data)->evidence;
+  *evidence = TRUE;
+  return TRUE;
+}
+
+Test(secretstorage, check_secret_status)
+{
+  gboolean test_variable = FALSE;
+  secret_storage_store_string("key", "secret");
+  UserDataWithEvidence user_data = {.user_data = "key", .evidence = &test_variable};
+  secret_store_status_foreach(check_status_callback, &user_data);
+  cr_assert(test_variable);
+}
+
+gboolean
+stop_in_the_middle_callback(SecretStatus *secret_status, gpointer user_data)
+{
+  gint *test_variable = user_data;
+  gboolean should_continue = (1 != *test_variable);
+  (*test_variable)++;
+  return should_continue;
+}
+
+Test(secretstorage, secret_status_can_stop_in_the_middle)
+{
+  gint test_variable = 0;
+  secret_storage_store_string("key1", "secret");
+  secret_storage_store_string("key2", "secret");
+  secret_storage_store_string("key3", "secret");
+  secret_storage_store_string("key4", "secret");
+  secret_store_status_foreach(stop_in_the_middle_callback, &test_variable);
+  cr_assert_eq(test_variable, 2);
+}

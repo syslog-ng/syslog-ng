@@ -230,3 +230,28 @@ secret_storage_subscribe_for_key(gchar *key, SecretStorageCB func, gpointer user
 
   return TRUE;
 }
+
+typedef struct
+{
+  SecretStatusCB func;
+  gpointer user_data;
+} SecretCallBackAction;
+
+static gboolean
+run_callback_for_status(gpointer key, gpointer value, gpointer user_data)
+{
+  SecretCallBackAction *action = (SecretCallBackAction *)user_data;
+  gchar *key_with_obscured_location = g_strdup(key);
+  SecretStatus secret_status = {.key = key_with_obscured_location};
+  gboolean should_continue = !action->func(&secret_status, action->user_data);
+  g_free(key_with_obscured_location);
+
+  return should_continue;
+}
+
+void
+secret_store_status_foreach(SecretStatusCB cb, gpointer user_data)
+{
+  SecretCallBackAction action = {.func = cb, .user_data = user_data};
+  g_hash_table_find(secret_manager, run_callback_for_status, &action);
+}
