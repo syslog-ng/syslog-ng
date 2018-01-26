@@ -131,44 +131,47 @@ control_connection_reopen(GString *command, gpointer user_data)
   return result;
 }
 
+gboolean
+secret_storage_status_iterator(SecretStatus *status, gpointer user_data)
+{
+  GString *status_str = (GString *) user_data;
+  g_string_append_printf(status_str,"%s\n",status->key);
+  return TRUE;
+}
+
 static GString *
 process_pwd(GString *command, gpointer user_data)
 {
   GString *result = g_string_new("\n");
   gchar **cmds = g_strsplit(command->str, " ", 4);
-//  gint buffer_size = 255;
-//  gchar buff[buffer_size+1];
 
   if (g_strcmp0(cmds[1],"store")==0)
     {
       if (!cmds[2] || strlen(cmds[2])==0)
         {
-          g_string_assign(result,"error: invalid key\n");
+          g_string_assign(result,"Invalid arguments received (missing key)\n");
         }
       else if (!cmds[3] || strlen(cmds[3])==0)
         {
-          g_string_assign(result,"error: invalid password\n");
+          g_string_assign(result,"Invalid arguments received (missing secret)\n");
         }
       else
         {
-//      snprintf(buff, buffer_size, "---> New password to set: %s-->%s", cmds[2], cmds[3]);
-          secret_storage_store_string(cmds[2],cmds[3]);
+          if (!secret_storage_store_string(cmds[2],cmds[3]))
+            {
+              g_string_assign(result,"Error during store process in secret store\n");
+            }
         }
     }
-  else if (strcmp(cmds[1],"list")==0)
+  else if (strcmp(cmds[1],"status")==0)
     {
-//    snprintf(buff, buffer_size, "---> list passwords <%s>",strlen(cmds[2]) == 0 ? "ALL" : cmds[2]);
+      g_string_assign(result,"Secret store status:\n");
+      secret_store_status_foreach(secret_storage_status_iterator, (gpointer) result);
     }
   else
     {
-      g_string_assign(result,"error: invalid password option\n");
-      //snprintf(buff, buffer_size, "---> invalid password option %s %s %s",cmds[1],cmds[2],cmds[3]);
+      g_string_assign(result,"Invalid arguments received\n");
     }
-
-//  msg_debug(buff);
-
-  if (result->len == 0)
-    g_string_assign(result, "\n");
 
   g_strfreev(cmds);
   return result;

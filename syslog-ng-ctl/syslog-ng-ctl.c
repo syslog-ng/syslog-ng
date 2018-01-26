@@ -78,18 +78,34 @@ _is_response_empty(GString *response)
 static gint
 _dispatch_command(const gchar *cmd)
 {
-  gchar *dispatchable_command = g_strdup_printf("%s\n", cmd);
-  GString *rsp = slng_run_command(dispatchable_command);
-
-  if (_is_response_empty(rsp))
+  if (!cmd)
     return 1;
 
-  printf("%s\n", rsp->str);
+  gchar *dispatchable_command = g_strdup_printf("%s\n", cmd);
+  GString *rsp = slng_run_command(dispatchable_command);
+  gint result;
 
-  g_string_free(rsp, TRUE);
+  if (!rsp || _is_response_empty(rsp))
+    {
+      result = 1;
+    }
+  else
+    {
+      printf("%s\n", rsp->str);
+      result = 0;
+    }
+
+  //Fill buffers with '?' to avoid security sensitive data remanins on heap
+  if (rsp)
+    {
+      g_string_overwrite(rsp,rsp->len,"?");
+      g_string_free(rsp, TRUE);
+    }
+
+  memset(dispatchable_command,'?',strlen(dispatchable_command));
   g_free(dispatchable_command);
 
-  return 0;
+  return result;
 }
 
 static gchar *verbose_set = NULL;
@@ -355,11 +371,11 @@ static GOptionEntry password_options[] =
 {
   {
     "store", 0, 0, G_OPTION_ARG_STRING, &password,
-    "password to store for SSL authentication", "key password"
+    "password to store for authentication", "key <password>"
   },
   {
-    "list", 0, 0, G_OPTION_ARG_STRING, &password,
-    "list stored passwords", "<key>"
+    "status", 0, 0, G_OPTION_ARG_STRING, &password,
+    "list status of stored secrets", ""
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -370,18 +386,12 @@ console_echo_on(gboolean turn_on)
   struct termios t;
 
   if (tcgetattr(STDIN_FILENO, &t))
-    {
-      return;
-    }
+    return;
 
   if (turn_on)
-    {
-      t.c_lflag |= ECHO;
-    }
+    t.c_lflag |= ECHO;
   else
-    {
-      t.c_lflag &= ~((tcflag_t) ECHO);
-    }
+    t.c_lflag &= ~((tcflag_t) ECHO);
 
   tcsetattr(STDIN_FILENO, TCSANOW, &t);
 }
@@ -400,20 +410,27 @@ slng_passwd(int argc, char *argv[], const gchar *mode)
 {
   gint buff_size = 255;
   gchar buff[buff_size+1];
+
   if (g_strcmp0(argv[1],"store")==0 && (argv[3]==NULL || strlen(argv[3])==0))
     {
       gulong password_length = buff_size;
       gchar password[password_length+1];
       get_password_from_stdin(password,&password_length);
       snprintf(buff, buff_size, "PWD %s %s %s", argv[1], argv[2], password);
+      memset(password,'?',password_length);
     }
   else
     {
       snprintf(buff, buff_size, "PWD %s %s %s", argv[1], argv[2], argv[3]);
     }
-  //printf("-->> %s\n",buff);
 
-  return _dispatch_command(buff);
+  gint result = _dispatch_command(buff);
+
+  //Fill buffers with '?' to avoid security sensitive data remanins on stack/heap
+  memset(buff,'?',buff_size);
+  if (argv[2]) memset(argv[2],'?',strlen(argv[2]));
+  if (argv[3]) memset(argv[3],'?',strlen(argv[3]));
+  return result;
 }
 
 const gchar *
@@ -461,7 +478,7 @@ static struct
   { "reopen", no_options, "Re-open of log destination files", slng_reopen },
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query },
   { "show-license-info", license_options, "Show information about the license", slng_license },
-  { "password", password_options, "Store/List SSL passwords", slng_passwd },
+  { "password", password_options, "Store/List key-password pairs. syslog-ng-ctl password (store|status)", slng_passwd },
   { NULL, NULL },
 };
 
