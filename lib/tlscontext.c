@@ -25,6 +25,7 @@
 #include "str-utils.h"
 #include "messages.h"
 #include "compat/openssl_support.h"
+#include "secret-storage/secret-storage.h"
 
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -791,11 +792,31 @@ void tls_context_set_verify_mode(TLSContext *self, gint verify_mode)
   self->verify_mode = verify_mode;
 }
 
+static int
+_pem_passwd_callback(char *buf, int size, int rwflag, void *user_data)
+{
+  if (!user_data)
+    return 0;
+
+  char *key = (gchar *)user_data;
+  Secret *secret = secret_storage_get_secret_by_name(key);
+  if (!secret)
+    return 0;
+
+  strncpy(buf, secret->data, secret->len);
+  buf[size-1] = '\0';
+  secret_storage_put_secret(secret);
+
+  return strlen(buf);
+}
+
 void
 tls_context_set_key_file(TLSContext *self, const gchar *key_file)
 {
   g_free(self->key_file);
   self->key_file = g_strdup(key_file);
+  SSL_CTX_set_default_passwd_cb(self->ssl_ctx, _pem_passwd_callback);
+  SSL_CTX_set_default_passwd_cb_userdata(self->ssl_ctx, self->key_file);
 }
 
 void
@@ -1000,3 +1021,8 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
   return result;
 }
 
+const gchar *
+tls_context_get_key_file(TLSContext *self)
+{
+  return self->key_file;
+}
