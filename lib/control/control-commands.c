@@ -131,6 +131,41 @@ control_connection_reopen(GString *command, gpointer user_data)
   return result;
 }
 
+gboolean
+secret_storage_status_iterator(SecretStatus *status, gpointer user_data)
+{
+  GString *status_str = (GString *) user_data;
+  g_string_append_printf(status_str, "%s\n", status->key);
+  return TRUE;
+}
+
+static GString *
+process_credentials_status(GString *result)
+{
+  g_string_assign(result,"Credential storage status:\n");
+  secret_storage_status_foreach(secret_storage_status_iterator, (gpointer) result);
+  return result;
+}
+
+static GString *
+process_credentials_add(GString *result, guint argc, gchar **arguments)
+{
+  if (argc < 4)
+    {
+      g_string_assign(result,"error: missing arguments\n");
+      return result;
+    }
+
+  gchar *id = arguments[2];
+  gchar *secret = arguments[3];
+
+  if (secret_storage_store_string(id,secret))
+    g_string_assign(result,"Credentials stored successfully\n");
+  else
+    g_string_assign(result,"Error while saving credentials\n");
+  return result;
+}
+
 static GString *
 process_credentials(GString *command, gpointer user_data)
 {
@@ -139,28 +174,21 @@ process_credentials(GString *command, gpointer user_data)
 
   GString *result = g_string_new(NULL);
 
-  if (argc < 4)
+  if (argc < 1)
     {
-      g_string_assign(result,"error: missing arguments\n");
+      g_string_assign(result,"error: missing subcommand\n");
       g_strfreev(arguments);
       return result;
     }
 
   gchar *subcommand = arguments[1];
-  gchar *id = arguments[2];
-  gchar *secret = arguments[3];
 
-  if (g_strcmp0(subcommand,"add") == 0)
-    {
-      if (secret_storage_store_string(id,secret))
-        g_string_assign(result,"Credentials stored successfully\n");
-      else
-        g_string_assign(result,"Error while saving credentials\n");
-    }
+  if (strcmp(arguments[1],"status")==0)
+    result = process_credentials_status(result);
+  else if (g_strcmp0(subcommand,"add") == 0)
+    result = process_credentials_add(result, argc, arguments);
   else
-    {
-      g_string_printf(result,"error: invalid subcommand %s\n", subcommand);
-    }
+    g_string_printf(result,"error: invalid subcommand %s\n", subcommand);
 
   g_strfreev(arguments);
   return result;

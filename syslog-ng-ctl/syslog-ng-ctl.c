@@ -76,21 +76,34 @@ _is_response_empty(GString *response)
   return (response == NULL || g_str_equal(response->str, ""));
 }
 
+static void
+clear_and_free(GString *str)
+{
+  if (str)
+    {
+      memset(str->str, 0, str->len);
+      g_string_free(str, TRUE);
+    }
+}
+
 static gint
 _dispatch_command(const gchar *cmd)
 {
+  gint retval = 0;
   gchar *dispatchable_command = g_strdup_printf("%s\n", cmd);
   GString *rsp = slng_run_command(dispatchable_command);
 
   if (_is_response_empty(rsp))
-    return 1;
+    retval = 1;
+  else
+    printf("%s\n", rsp->str);
 
-  printf("%s\n", rsp->str);
+  clear_and_free(rsp);
 
-  g_string_free(rsp, TRUE);
+  memset(dispatchable_command, 0, strlen(dispatchable_command));
   g_free(dispatchable_command);
 
-  return 0;
+  return retval;
 }
 
 static gchar *verbose_set = NULL;
