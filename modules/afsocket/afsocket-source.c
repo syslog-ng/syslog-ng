@@ -551,6 +551,9 @@ _finalize_init(gpointer arg)
     }
 
   afsocket_sd_start_watches(self);
+  char buf[256];
+  msg_info("Accepting connections",
+           evt_tag_str("addr", g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL)));
   return TRUE;
 }
 
