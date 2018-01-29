@@ -25,6 +25,8 @@ EXTRA_DIST += \
 	contrib/syslog-ng.conf.doc \
 	contrib/relogger.pl \
 	\
+	contrib/Brewfile \
+	\
 	contrib/fedora-packaging/syslog-ng.conf	\
 	contrib/fedora-packaging/syslog-ng.init	\
 	contrib/fedora-packaging/syslog-ng.sysconfig	\
