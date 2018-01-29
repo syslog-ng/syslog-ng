@@ -152,7 +152,7 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
   TransportMapperInet *self = (TransportMapperInet *)s;
 
   if (!self->tls_context)
-    return TRUE;
+    return func(func_args);
 
   TLSContextSetupResult r = tls_context_setup_context(self->tls_context);
 
