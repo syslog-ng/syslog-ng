@@ -22,10 +22,34 @@
  */
 
 #include <criterion/criterion.h>
+#include <stdio.h>
+#include <sys/resource.h>
+#include <unistd.h>
 
 #include "secret-storage.h"
+#include "nondumpable-allocator.h"
 
-TestSuite(secretstorage, .init = secret_storage_init, .fini = secret_storage_deinit);
+void
+logger(char *summary, char *reason)
+{
+  fprintf(stderr, "%s : reason=%s", summary, reason);
+}
+
+void
+secret_storage_testsuite_init()
+{
+  secret_storage_init();
+  nondumpable_setlogger(logger);
+}
+
+void
+secret_storage_testsuite_deinit()
+{
+  secret_storage_deinit();
+}
+
+
+TestSuite(secretstorage, .init = secret_storage_testsuite_init, .fini = secret_storage_testsuite_deinit);
 
 Test(secretstorage, simple_store_get)
 {
@@ -231,4 +255,26 @@ Test(secretstorage, subscribe_until_success)
   cr_assert_not(test_variable);
   secret_storage_store_string("key", "good_password");
   cr_assert(test_variable);
+}
+
+Test(secretstorage, test_rlimit)
+{
+  struct rlimit locked_limit;
+  cr_assert(!getrlimit(RLIMIT_MEMLOCK, &locked_limit));
+  locked_limit.rlim_cur = MIN(locked_limit.rlim_max, 64 * 1024);
+  cr_assert(!setrlimit(RLIMIT_MEMLOCK, &locked_limit));
+  const gsize PAGESIZE = sysconf(_SC_PAGE_SIZE);
+
+  gchar *key_fmt = g_strdup("keyXXX");
+  int i = 0;
+  int for_limit = locked_limit.rlim_cur/PAGESIZE;
+  for (; i < for_limit; i++)
+    {
+      sprintf(key_fmt, "key%03d", i);
+      cr_assert(secret_storage_store_string(key_fmt, "value"), "offending_key: %s, for_limit: %d", key_fmt, for_limit);
+    }
+
+  sprintf(key_fmt, "key%03d", i);
+  cr_assert_not(secret_storage_store_string(key_fmt, "value"), "offending_key: %s", key_fmt);
+  cr_assert(secret_storage_subscribe_for_key("key000", secret_checker, "value"));
 }

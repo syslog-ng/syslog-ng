@@ -182,6 +182,8 @@ secret_storage_store_string(gchar *key, gchar *secret)
 Secret *secret_storage_clone_secret(Secret *self)
 {
   Secret *copy = nondumpable_buffer_alloc(self->len + SECRET_HEADER_SIZE);
+  if (!copy)
+    return NULL;
   copy->len = self->len;
   nondumpable_memcpy(copy->data, self->data, self->len);
   return copy;
@@ -206,6 +208,8 @@ void
 secret_storage_with_secret(gchar *key, SecretStorageCB func, gpointer user_data)
 {
   Secret *secret = secret_storage_get_secret_by_name(key);
+  if (!secret)
+    return;
   func(secret, user_data);
   secret_storage_put_secret(secret);
 }
