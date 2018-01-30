@@ -132,14 +132,22 @@ create_secret_storage_with_secret(gchar *key, gchar *secret, gsize len)
 }
 
 static void
-run_callbacks(gchar *key, GArray *subscriptions)
+run_callbacks_initiate(gchar *key, GArray *subscriptions)
 {
-  for (int i = 0; i < subscriptions->len; i++)
+  static gboolean initiated = FALSE;
+
+  if (initiated)
+    return;
+
+  initiated = TRUE;
+  gsize original_length = subscriptions->len;
+  for (int i = 0; i < original_length; i++)
     {
       Subscription sub = g_array_index(subscriptions, Subscription, i);
       secret_storage_with_secret(key, sub.func, sub.user_data);
     }
-  g_array_remove_range(subscriptions, 0, subscriptions->len);
+  g_array_remove_range(subscriptions, 0, original_length);
+  initiated = FALSE;
 }
 
 gboolean
@@ -160,7 +168,7 @@ secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
   if (!secret_storage)
     return FALSE;
 
-  run_callbacks(key, secret_storage->subscriptions);
+  run_callbacks_initiate(key, secret_storage->subscriptions);
 
   return TRUE;
 }
@@ -218,15 +226,13 @@ secret_storage_subscribe_for_key(gchar *key, SecretStorageCB func, gpointer user
       return FALSE;
 
   secret_storage = g_hash_table_lookup(secret_manager, key);
-  if (secret_storage->secret.len != 0)
-    {
-      secret_storage_with_secret(key, func, user_data);
-      return TRUE;
-    }
-
-  secret_storage = g_hash_table_lookup(secret_manager, key);
   Subscription new_subscription = {.func = func, .user_data = user_data};
   g_array_append_val(secret_storage->subscriptions, new_subscription);
+
+  if (secret_storage->secret.len != 0)
+    {
+      run_callbacks_initiate(key, secret_storage->subscriptions);
+    }
 
   return TRUE;
 }

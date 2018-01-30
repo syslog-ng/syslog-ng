@@ -211,3 +211,24 @@ Test(secretstorage, secret_status_can_stop_in_the_middle)
   secret_store_status_foreach(stop_in_the_middle_callback, &test_variable);
   cr_assert_eq(test_variable, 2);
 }
+
+void
+subscribe_until_success(Secret *secret, gpointer user_data)
+{
+  if (strcmp(secret->data, "good_password"))
+    {
+      secret_storage_subscribe_for_key("key", subscribe_until_success, user_data);
+      return;
+    }
+  *((gboolean *)user_data) = TRUE;
+}
+
+Test(secretstorage, subscribe_until_success)
+{
+  gboolean test_variable = FALSE;
+  secret_storage_subscribe_for_key("key", subscribe_until_success, &test_variable);
+  secret_storage_store_string("key", "wrong_password");
+  cr_assert_not(test_variable);
+  secret_storage_store_string("key", "good_password");
+  cr_assert(test_variable);
+}
