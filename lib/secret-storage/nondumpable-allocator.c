@@ -26,12 +26,20 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdio.h>
 
-#include "messages.h"
 #include "nondumpable-allocator.h"
 
 #define ALLOCATION_HEADER_SIZE offsetof(Allocation, user_data)
 #define BUFFER_TO_ALLOCATION(buffer) (buffer - ALLOCATION_HEADER_SIZE)
+
+void(*logger)(gchar *summary, gchar *reason) INTERNAL;
+
+void
+nondumpable_setlogger(void(*_logger)(gchar *summary, gchar *reason))
+{
+  logger = _logger;
+}
 
 typedef struct
 {
@@ -46,26 +54,37 @@ _mmap(gsize len)
   gpointer area = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
   if (!area)
     {
-      msg_fatal("secret storage: cannot mmap buffer",
-                evt_tag_int("len", len),
-                evt_tag_errno("errno", errno));
+      if (logger)
+        {
+          char reason[32] = { 0 };
+          snprintf(reason, sizeof(reason), "len: %lu, errno: %d\n", len, errno);
+          logger("secret storage: cannot mmap buffer", reason);
+        }
       return NULL;
     }
 
 #if defined(MADV_DONTDUMP)
   if (madvise(area, len, MADV_DONTDUMP) < 0)
     {
-      msg_fatal("secret storage: cannot madvisebuffer",
-                evt_tag_errno("errno", errno));
+      if (logger)
+        {
+          char reason[32] = { 0 };
+          snprintf(reason, sizeof(reason), "errno: %d\n", errno);
+          logger("secret storage: cannot madvisebuffer", reason);
+        }
       goto err_munmap;
     }
 #endif
 
   if (mlock(area, len) < 0)
     {
-      msg_fatal("secret storage: cannot lock buffer",
-                evt_tag_int("len", len),
-                evt_tag_errno("errno", errno));
+      if (logger)
+        {
+          char reason[200] = { 0 };
+          gchar *hint = (errno == ENOMEM) ? ". Maybe RLIMIT_MEMLOCK is too small?" : "";
+          snprintf(reason, sizeof(reason), "len: %lu, errno: %d%s\n", len, errno, hint);
+          logger("secret storage: cannot lock buffer", reason);
+        }
       goto err_munmap;
     }
 

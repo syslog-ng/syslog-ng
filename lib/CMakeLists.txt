@@ -302,6 +302,7 @@ target_link_libraries(
     ${OPENSSL_LIBRARIES}
     ${RESOLV_LIBRARIES}
     ${LIBPCRE_LIBRARIES}
+    secret-storage
     )
 
 set_target_properties(syslog-ng
