@@ -33,6 +33,7 @@
 #include "logqueue.h"
 #include "gprocess.h"
 #include "control/control.h"
+#include "control/control-main.h"
 #include "timeutils.h"
 #include "logsource.h"
 #include "mainloop.h"
@@ -65,6 +66,7 @@ static gboolean display_module_registry = FALSE;
 static gboolean dummy = FALSE;
 
 static MainLoopOptions main_loop_options;
+static ControlServerLoop control_server_loop;
 
 #ifdef YYDEBUG
 extern int cfg_parser_debug;
@@ -290,6 +292,11 @@ main(int argc, char *argv[])
 
   /* we are running as a non-root user from this point */
 
+  if (!main_loop_options.syntax_only)
+    {
+      control_server_loop_init_instance(&control_server_loop, main_loop, resolvedConfigurablePaths.ctlfilename);
+      control_server_loop_start(&control_server_loop);
+    }
   app_post_daemonized();
   app_post_config_loaded();
 
@@ -302,6 +309,10 @@ main(int argc, char *argv[])
   /* from now on internal messages are written to the system log as well */
 
   main_loop_run(main_loop);
+  if (!main_loop_options.syntax_only)
+    {
+      control_server_loop_stop(&control_server_loop);
+    }
   main_loop_deinit(main_loop);
 
   app_shutdown();

@@ -41,6 +41,7 @@ enum
 typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
 
 void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
+void register_application_hook_without_checking_current_state(gint type, ApplicationHookFunc func, gpointer user_data);
 void app_startup(void);
 void app_finish_app_startup_after_cfg_init(void);
 void app_post_daemonized(void);

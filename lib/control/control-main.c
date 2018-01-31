@@ -26,18 +26,72 @@
 #include "control-server.h"
 #include "control-commands.h"
 
-static ControlServer *control_server;
+#include <iv.h>
 
-void
-control_init(MainLoop *main_loop, const gchar *control_name)
+static void
+_thread_stop()
 {
-  control_server = control_server_new(control_name,
-                                      control_register_default_commands(main_loop));
-  control_server_start(control_server);
+  iv_quit();
+}
+
+static void
+_register_stop_requested_event(ControlServerLoop *self)
+{
+  IV_EVENT_INIT(&self->stop_requested);
+  self->stop_requested.handler = _thread_stop;
+  iv_event_register(&self->stop_requested);
+}
+
+static void
+_control_server_loop_init(ControlServerLoop *self)
+{
+  self->control_server = control_server_new(self->control_name,
+                                            control_register_default_commands(self->main_loop));
+  iv_init();
+  _register_stop_requested_event(self);
+  control_server_start(self->control_server);
+}
+
+static void
+_control_server_loop_deinit(ControlServerLoop *self)
+{
+  control_server_free(self->control_server);
+  iv_deinit();
+}
+
+static void
+_thread(gpointer user_data)
+{
+  ControlServerLoop *cs_loop = (ControlServerLoop *)user_data;
+  _control_server_loop_init(cs_loop);
+  iv_main();
+  _control_server_loop_deinit(cs_loop);
 }
 
 void
-control_destroy(void)
+control_server_loop_init_instance(ControlServerLoop *self, MainLoop *main_loop, const gchar *control_name)
 {
-  control_server_free(control_server);
+  self->control_name = g_strdup(control_name);
+  self->main_loop = main_loop_ref(main_loop);
 }
+
+void
+control_server_loop_deinit_instance(ControlServerLoop *self)
+{
+  g_free(self->control_name);
+  main_loop_unref(self->main_loop);
+}
+
+void
+control_server_loop_start(ControlServerLoop *self)
+{
+  self->thread = g_thread_create((GThreadFunc) _thread, self, TRUE, NULL);
+}
+
+void
+control_server_loop_stop(ControlServerLoop *self)
+{
+  iv_event_post(&self->stop_requested);
+  g_thread_join(self->thread);
+}
+

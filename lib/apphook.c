@@ -60,13 +60,7 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
 {
   if (current_state < type)
     {
-      ApplicationHookEntry *entry = g_new0(ApplicationHookEntry, 1);
-
-      entry->type = type;
-      entry->func = func;
-      entry->user_data = user_data;
-
-      application_hooks = g_list_append(application_hooks, entry);
+      register_application_hook_without_checking_current_state(type, func, user_data);
     }
   else
     {
@@ -76,6 +70,18 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
                 evt_tag_int("hook", type));
       func(type, user_data);
     }
+}
+
+void
+register_application_hook_without_checking_current_state(gint type, ApplicationHookFunc func, gpointer user_data)
+{
+  ApplicationHookEntry *entry = g_new0(ApplicationHookEntry, 1);
+
+  entry->type = type;
+  entry->func = func;
+  entry->user_data = user_data;
+
+  application_hooks = g_list_append(application_hooks, entry);
 }
 
 static void
