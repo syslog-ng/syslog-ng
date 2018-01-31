@@ -142,7 +142,6 @@ _call_finalize_init(Secret *secret, gpointer user_data)
     }
     default:
       args->func(args->func_args);
-      g_free(args);
     }
 }
 
@@ -166,6 +165,7 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
       args->func = func;
       args->func_args = func_args;
       const gchar *key = tls_context_get_key_file(self->tls_context);
+      self->secret_store_cb_data = args;
       return secret_storage_subscribe_for_key(key, _call_finalize_init, args);
     }
 
@@ -177,8 +177,16 @@ transport_mapper_inet_free_method(TransportMapper *s)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
+  if (self->secret_store_cb_data)
+    {
+      const gchar *key = tls_context_get_key_file(self->tls_context);
+      secret_storage_unsubscribe(key, _call_finalize_init, self->secret_store_cb_data);
+      g_free(self->secret_store_cb_data);
+    }
+
   if (self->tls_context)
     tls_context_free(self->tls_context);
+
   transport_mapper_free_method(s);
 }
 
