@@ -205,11 +205,11 @@ Test(value_pairs, test_transformers)
   g_ptr_array_free(transformers, TRUE);
 }
 
+GlobalConfig *cfg;
+
 void
 setup(void)
 {
-  GlobalConfig *cfg;
-
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
@@ -224,8 +224,8 @@ setup(void)
 void
 teardown(void)
 {
+  cfg_free(cfg);
   app_shutdown();
 }
 
 TestSuite(value_pairs, .init = setup, .fini = teardown);
-
