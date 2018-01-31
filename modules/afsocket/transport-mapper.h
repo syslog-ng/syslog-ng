@@ -98,6 +98,6 @@ transport_mapper_async_init(TransportMapper *self, TransportMapperAsyncInitCB fu
       return self->async_init(self, func, arg);
     }
 
-  return FALSE;
+  return func(arg);
 }
 #endif
