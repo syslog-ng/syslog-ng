@@ -50,6 +50,8 @@ Secret *secret_storage_clone_secret(Secret *self) PUBLIC;
 
 gboolean secret_storage_subscribe_for_key(const gchar *key, SecretStorageCB func, gpointer user_data) PUBLIC;
 
+void secret_storage_unsubscribe(const gchar *key, SecretStorageCB func, gpointer user_data) PUBLIC;
+
 typedef struct
 {
   gchar *key;
