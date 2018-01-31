@@ -414,10 +414,10 @@ slng_passwd(int argc, char *argv[], const gchar *mode)
   if (g_strcmp0(argv[1],"store")==0 && (argv[3]==NULL || strlen(argv[3])==0))
     {
       gulong password_length = buff_size;
-      gchar password[password_length+1];
-      get_password_from_stdin(password,&password_length);
-      snprintf(buff, buff_size, "PWD %s %s %s", argv[1], argv[2], password);
-      memset(password,'?',password_length);
+      gchar passwd[password_length+1];
+      get_password_from_stdin(passwd,&password_length);
+      snprintf(buff, buff_size, "PWD %s %s %s", argv[1], argv[2], passwd);
+      memset(passwd,'?',password_length);
     }
   else
     {
