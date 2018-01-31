@@ -633,10 +633,10 @@ tls_context_setup_context(TLSContext *self)
   else
     {
       TLSContextLoadResult r = tls_context_load_key_and_cert(self);
-      if (r == TLS_CONTEXT_ERROR)
-        goto error;
       if (r == TLS_CONTEXT_PASSWORD_ERROR)
         goto password_error;
+      if (r != TLS_CONTEXT_OK)
+        goto error;
     }
 
   if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
