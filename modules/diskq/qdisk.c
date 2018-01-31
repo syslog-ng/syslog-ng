@@ -420,7 +420,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
             }
           else
             {
-              msg_error("Error reading message from disk-queue file (maybe currupted file) some messages will be lost",
+              msg_error("Error reading message from disk-queue file (maybe corrupted file) some messages will be lost",
                         evt_tag_str("filename", self->filename),
                         evt_tag_int("lost messages", q_count - i));
               log_msg_unref(msg);
