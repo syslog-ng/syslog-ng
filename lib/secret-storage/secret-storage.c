@@ -98,7 +98,7 @@ overwrite_secret(SecretStorage *storage, gchar *secret, gsize len)
 }
 
 static SecretStorage *
-realloc_and_write_secret(SecretStorage *secret_storage, gchar *key, gchar *secret, gsize len)
+realloc_and_write_secret(SecretStorage *secret_storage, const gchar *key, gchar *secret, gsize len)
 {
   SecretStorage *maybe_new_storage = nondumpable_buffer_realloc(secret_storage, len);
   write_secret(maybe_new_storage, secret, len);
@@ -108,7 +108,7 @@ realloc_and_write_secret(SecretStorage *secret_storage, gchar *key, gchar *secre
 }
 
 static SecretStorage *
-update_storage_with_secret(SecretStorage *secret_storage, gchar *key, gchar *secret, gsize len)
+update_storage_with_secret(SecretStorage *secret_storage, const gchar *key, gchar *secret, gsize len)
 {
   gboolean fits_into_storage = secret_storage->secret.len > len;
   if (fits_into_storage)
@@ -118,7 +118,7 @@ update_storage_with_secret(SecretStorage *secret_storage, gchar *key, gchar *sec
 }
 
 static SecretStorage *
-create_secret_storage_with_secret(gchar *key, gchar *secret, gsize len)
+create_secret_storage_with_secret(const gchar *key, gchar *secret, gsize len)
 {
   SecretStorage *secret_storage = secret_storage_new(len);
   if (!secret_storage)
@@ -132,7 +132,7 @@ create_secret_storage_with_secret(gchar *key, gchar *secret, gsize len)
 }
 
 static void
-run_callbacks_initiate(gchar *key, GArray *subscriptions)
+run_callbacks_initiate(const gchar *key, GArray *subscriptions)
 {
   static gboolean initiated = FALSE;
 
@@ -151,7 +151,7 @@ run_callbacks_initiate(gchar *key, GArray *subscriptions)
 }
 
 gboolean
-secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
+secret_storage_store_secret(const gchar *key, gchar *secret, gsize len)
 {
   if (!secret)
     len = 0;
@@ -174,7 +174,7 @@ secret_storage_store_secret(gchar *key, gchar *secret, gsize len)
 }
 
 gboolean
-secret_storage_store_string(gchar *key, gchar *secret)
+secret_storage_store_string(const gchar *key, gchar *secret)
 {
   return secret_storage_store_secret(key, secret, -1);
 }
@@ -190,7 +190,7 @@ Secret *secret_storage_clone_secret(Secret *self)
 }
 
 Secret *
-secret_storage_get_secret_by_name(gchar *key)
+secret_storage_get_secret_by_name(const gchar *key)
 {
   SecretStorage *secret_storage = g_hash_table_lookup(secret_manager, key);
   if (!secret_storage)
@@ -205,7 +205,7 @@ secret_storage_put_secret(Secret *self)
 }
 
 void
-secret_storage_with_secret(gchar *key, SecretStorageCB func, gpointer user_data)
+secret_storage_with_secret(const gchar *key, SecretStorageCB func, gpointer user_data)
 {
   Secret *secret = secret_storage_get_secret_by_name(key);
   if (!secret)
@@ -215,13 +215,13 @@ secret_storage_with_secret(gchar *key, SecretStorageCB func, gpointer user_data)
 }
 
 static gboolean
-insert_empty_secret_storage(gchar *key)
+insert_empty_secret_storage(const gchar *key)
 {
   return secret_storage_store_string(key, NULL);
 }
 
 gboolean
-secret_storage_subscribe_for_key(gchar *key, SecretStorageCB func, gpointer user_data)
+secret_storage_subscribe_for_key(const gchar *key, SecretStorageCB func, gpointer user_data)
 {
 
   SecretStorage *secret_storage;
@@ -248,10 +248,10 @@ typedef struct
 } SecretCallBackAction;
 
 static gboolean
-run_callback_for_status(gpointer key, gpointer value, gpointer user_data)
+run_callback_for_status(const gpointer key, gpointer value, gpointer user_data)
 {
   SecretCallBackAction *action = (SecretCallBackAction *)user_data;
-  gchar *key_with_obscured_location = g_strdup(key);
+  gchar *key_with_obscured_location = g_strdup((const gchar *)key);
   SecretStatus secret_status = {.key = key_with_obscured_location};
   gboolean should_continue = !action->func(&secret_status, action->user_data);
   g_free(key_with_obscured_location);
