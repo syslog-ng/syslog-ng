@@ -241,6 +241,30 @@ secret_storage_subscribe_for_key(const gchar *key, SecretStorageCB func, gpointe
   return TRUE;
 }
 
+void
+secret_storage_unsubscribe(const gchar *key, SecretStorageCB func, gpointer user_data)
+{
+  SecretStorage *secret_storage;
+  if (!g_hash_table_contains(secret_manager, key))
+    return;
+
+  secret_storage = g_hash_table_lookup(secret_manager, key);
+  if (!secret_storage->subscriptions)
+    return;
+
+  GArray *subscriptions = secret_storage->subscriptions;
+
+  for (gsize i = 0; i < subscriptions->len; i++)
+    {
+      Subscription sub = g_array_index(subscriptions, Subscription, i);
+      if (sub.func == func && sub.user_data == user_data)
+        {
+          secret_storage->subscriptions = g_array_remove_index(subscriptions, i);
+          break;
+        }
+    }
+}
+
 typedef struct
 {
   SecretStatusCB func;
