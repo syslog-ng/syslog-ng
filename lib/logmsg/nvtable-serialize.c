@@ -205,7 +205,9 @@ nv_table_deserialize(LogMessageSerializationState *state)
 {
   if (state->version < 22)
     {
-      return nv_table_deserialize_legacy(state->sa);
+      state->nvtable = nv_table_deserialize_legacy(state->sa);
+
+      return state->nvtable;
     }
   else if (state->version < 26)
     {
