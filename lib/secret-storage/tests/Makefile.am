@@ -1,3 +1,5 @@
+if ENABLE_CRITERION
+
 lib_secret_storage_tests_TESTS			= \
 	lib/secret-storage/tests/test_secret_storage \
 	lib/secret-storage/tests/test_nondumpable_allocator
@@ -17,3 +19,5 @@ lib_secret_storage_tests_test_nondumpable_allocator_CFLAGS	= $(TEST_CFLAGS) \
 lib_secret_storage_tests_test_nondumpable_allocator_LDADD	= \
 	$(TEST_LDADD) \
 	$(PREOPEN_SYSLOGFORMAT) -dlpreopen $(top_builddir)/lib/secret-storage/libsecret-storage.la
+
+endif
