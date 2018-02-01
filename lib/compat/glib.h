@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2013 Balabit
- * Copyright © 2011 Ryan Lortie
+ * Copyright (c) 2011 Ryan Lortie
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
