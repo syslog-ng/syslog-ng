@@ -486,9 +486,7 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 {
   service_management_publish_status("Starting up...");
 
-  thread_halt_cond = g_cond_new();
   self->options = options;
-  main_thread_handle = get_thread_id();
   scratch_buffers_automatic_gc_init();
   main_loop_worker_init();
   main_loop_io_worker_init();
@@ -549,7 +547,6 @@ main_loop_deinit(MainLoop *self)
   main_loop_worker_deinit();
   block_till_workers_exit();
   scratch_buffers_automatic_gc_deinit();
-  g_cond_free(thread_halt_cond);
   g_static_mutex_free(&workers_running_lock);
 }
 
@@ -575,4 +572,16 @@ void
 main_loop_add_options(GOptionContext *ctx)
 {
   main_loop_io_worker_add_options(ctx);
+}
+
+void
+main_loop_thread_resource_init(void)
+{
+  thread_halt_cond = g_cond_new();
+  main_thread_handle = get_thread_id();
+}
+
+void main_loop_thread_resource_deinit(void)
+{
+  g_cond_free(thread_halt_cond);
 }

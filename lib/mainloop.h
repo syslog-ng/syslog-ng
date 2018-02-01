@@ -75,5 +75,8 @@ void main_loop_set_server_mode(MainLoop *self, gboolean server_mode);
 
 gboolean main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename);
 
+void main_loop_thread_resource_init(void);
+void main_loop_thread_resource_deinit(void);
+
 
 #endif
