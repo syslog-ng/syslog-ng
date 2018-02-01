@@ -146,7 +146,8 @@ run_callbacks_initiate(const gchar *key, GArray *subscriptions)
       Subscription sub = g_array_index(subscriptions, Subscription, i);
       secret_storage_with_secret(key, sub.func, sub.user_data);
     }
-  g_array_remove_range(subscriptions, 0, original_length);
+  if (original_length)
+    g_array_remove_range(subscriptions, 0, original_length);
   initiated = FALSE;
 }
 
