@@ -91,8 +91,8 @@ volatile gint main_loop_workers_running;
  */
 
 ThreadId main_thread_handle;
-GCond thread_halt_cond;
-GMutex workers_running_lock = G_STATIC_MUTEX_INIT;
+GCond *thread_halt_cond;
+GStaticMutex workers_running_lock = G_STATIC_MUTEX_INIT;
 
 struct _MainLoop
 {
@@ -305,20 +305,24 @@ main_loop_reload_config_initiate(gpointer user_data)
 static void
 block_till_workers_exit()
 {
-  gint64 end_time;
-  end_time = g_get_monotonic_time() + 15*G_TIME_SPAN_SECOND;
+  GTimeVal end_time;
 
-  g_mutex_lock(&workers_running_lock);
+  g_get_current_time(&end_time);
+  g_time_val_add(&end_time, 15 * G_USEC_PER_SEC);
+
+  g_static_mutex_lock(&workers_running_lock);
   while (main_loop_workers_running)
-    if (!g_cond_wait_until(&thread_halt_cond, &workers_running_lock, end_time))
-      {
-        /* timeout has passed. */
-        fprintf(stderr, "Main thread timed out (15s) while waiting workers threads to exit. "
-                "workers_running: %d. Continuing ...\n", main_loop_workers_running);
-        break;
-      }
+    {
+      if (!g_cond_timed_wait(thread_halt_cond, g_static_mutex_get_mutex(&workers_running_lock), &end_time))
+        {
+          /* timeout has passed. */
+          fprintf(stderr, "Main thread timed out (15s) while waiting workers threads to exit. "
+                  "workers_running: %d. Continuing ...\n", main_loop_workers_running);
+          break;
+        }
+    }
 
-  g_mutex_unlock (&workers_running_lock);
+  g_static_mutex_unlock(&workers_running_lock);
 }
 
 /************************************************************************************
@@ -483,7 +487,6 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
   service_management_publish_status("Starting up...");
 
   self->options = options;
-  main_thread_handle = get_thread_id();
   scratch_buffers_automatic_gc_init();
   main_loop_worker_init();
   main_loop_io_worker_init();
@@ -544,6 +547,7 @@ main_loop_deinit(MainLoop *self)
   main_loop_worker_deinit();
   block_till_workers_exit();
   scratch_buffers_automatic_gc_deinit();
+  g_static_mutex_free(&workers_running_lock);
 }
 
 void
@@ -568,4 +572,16 @@ void
 main_loop_add_options(GOptionContext *ctx)
 {
   main_loop_io_worker_add_options(ctx);
+}
+
+void
+main_loop_thread_resource_init(void)
+{
+  thread_halt_cond = g_cond_new();
+  main_thread_handle = get_thread_id();
+}
+
+void main_loop_thread_resource_deinit(void)
+{
+  g_cond_free(thread_halt_cond);
 }

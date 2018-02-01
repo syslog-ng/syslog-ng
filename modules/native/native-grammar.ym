@@ -58,7 +58,6 @@
 
 %type <ptr> native
 %type <ptr> native_parser
-%type <ptr> native_parser_params
 %%
 
 start

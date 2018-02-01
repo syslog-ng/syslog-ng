@@ -856,7 +856,7 @@ LDFLAGS="$LDFLAGS $GLIB_LIBS"
 
 old_LIBS=$LIBS
 LIBS="$LIBS $GLIB_LIBS"
-AC_CHECK_FUNCS(g_mapped_file_unref g_list_copy_deep)
+AC_CHECK_FUNCS(g_mapped_file_unref g_list_copy_deep g_queue_free_full)
 LIBS=$old_LIBS
 
 AC_CACHE_CHECK(sanity checking Glib headers,

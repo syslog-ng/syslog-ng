@@ -56,3 +56,14 @@ g_list_copy_deep(GList     *list,
   return new_list;
 }
 #endif
+
+#if !SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL
+
+void
+g_queue_free_full(GQueue *queue, GDestroyNotify free_func)
+{
+  g_queue_foreach(queue, (GFunc) free_func, NULL);
+  g_queue_free(queue);
+}
+
+#endif
