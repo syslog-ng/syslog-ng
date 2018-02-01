@@ -344,19 +344,3 @@ kv_scanner_init(KVScanner *self, gchar value_separator, const gchar *pair_separa
   self->is_valid_key_character = _is_valid_key_character;
   self->stop_char = 0;
 }
-
-KVScanner *
-kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words)
-{
-  KVScanner *self = g_new0(KVScanner, 1);
-
-  kv_scanner_init(self, value_separator, pair_separator, extract_stray_words);
-  return self;
-}
-
-void
-kv_scanner_free(KVScanner *self)
-{
-  kv_scanner_deinit(self);
-  g_free(self);
-}

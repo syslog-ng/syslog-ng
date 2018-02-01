@@ -139,12 +139,19 @@ typedef struct Testcase_t
   KVContainer expected;
 } Testcase;
 
-KVScanner *
-create_kv_scanner(const ScannerConfig config)
+static KVScanner *
+create_kv_scanner(const ScannerConfig *config)
 {
-  KVScanner *scanner = kv_scanner_new(config.kv_separator, config.pair_separator, config.extract_stray_words);
-  scanner->transform_value = config.transform_value;
+  KVScanner *scanner = g_new(KVScanner, 1);
+  kv_scanner_init(scanner, config->kv_separator, config->pair_separator, config->extract_stray_words);
+  kv_scanner_set_transform_value(scanner, config->transform_value);
   return scanner;
+}
+
+static inline void
+kv_scanner_free(KVScanner *scanner)
+{
+  g_free(scanner);
 }
 
 #define VARARG_STRUCT(VARARG_STRUCT_cont, VARARG_STRUCT_elem, ...) \
@@ -189,7 +196,7 @@ _expect_kvq_triplets(KVScanner *scanner, KVQContainer args, gchar **error)
 
 #define _IMPL_EXPECT_KVQ(SCANNER_config, TEST_KV_SCAN_input, ...) \
   do { \
-    KVScanner *scanner = create_kv_scanner(SCANNER_config); \
+    KVScanner *scanner = create_kv_scanner(&SCANNER_config); \
     gchar *error = NULL; \
     \
     kv_scanner_input(scanner, TEST_KV_SCAN_input);            \
@@ -210,7 +217,7 @@ _expect_kvq_triplets(KVScanner *scanner, KVQContainer args, gchar **error)
 
 #define _IMPL_EXPECT_KV(TEST_KV_SCAN_config, TEST_KV_SCAN_input, ...) \
   do { \
-    KVScanner *scanner = create_kv_scanner(TEST_KV_SCAN_config); \
+    KVScanner *scanner = create_kv_scanner(&TEST_KV_SCAN_config); \
     gchar *error = NULL; \
     \
     kv_scanner_input(scanner, TEST_KV_SCAN_input);            \
@@ -236,7 +243,7 @@ _expect_kvq_triplets(KVScanner *scanner, KVQContainer args, gchar **error)
 
 #define _EXPECT_KV_AND_STRAY_WORDS(INPUT, STRAY, ...) \
   do { \
-    KVScanner *scanner = create_kv_scanner(((ScannerConfig) {     \
+    KVScanner *scanner = create_kv_scanner(&((ScannerConfig) {     \
       .kv_separator = '=',              \
       .extract_stray_words=TRUE})); \
     gchar *error = NULL; \

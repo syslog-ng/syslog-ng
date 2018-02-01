@@ -107,7 +107,5 @@ kv_scanner_set_stop_character(KVScanner *self, gchar stop_char)
 }
 
 gboolean kv_scanner_scan_next(KVScanner *self);
-KVScanner *kv_scanner_new(gchar value_separator, const gchar *pair_separator, gboolean extract_stray_words);
-void kv_scanner_free(KVScanner *self);
 
 #endif
