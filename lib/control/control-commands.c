@@ -145,7 +145,7 @@ process_pwd(GString *command, gpointer user_data)
   GString *result = g_string_new("\n");
   gchar **cmds = g_strsplit(command->str, " ", 4);
 
-  if (g_strcmp0(cmds[1],"store")==0)
+  if (g_strcmp0(cmds[1],"add")==0)
     {
       if (!cmds[2] || strlen(cmds[2])==0)
         {
