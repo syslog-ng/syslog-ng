@@ -63,6 +63,7 @@ _mmap(gsize len)
       return NULL;
     }
 
+#if defined(MADV_DONTDUMP)
   if (madvise(area, len, MADV_DONTDUMP) < 0)
     {
       if (logger)
@@ -73,6 +74,7 @@ _mmap(gsize len)
         }
       goto err_munmap;
     }
+#endif
 
   if (mlock(area, len) < 0)
     {
