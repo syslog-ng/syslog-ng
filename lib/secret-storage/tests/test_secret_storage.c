@@ -257,6 +257,7 @@ Test(secretstorage, subscribe_until_success)
   cr_assert(test_variable);
 }
 
+#if (SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
 Test(secretstorage, test_rlimit)
 {
   struct rlimit locked_limit;
@@ -278,3 +279,4 @@ Test(secretstorage, test_rlimit)
   cr_assert_not(secret_storage_store_string(key_fmt, "value"), "offending_key: %s", key_fmt);
   cr_assert(secret_storage_subscribe_for_key("key000", secret_checker, "value"));
 }
+#endif
