@@ -36,6 +36,7 @@ struct _LogTransport
   GIOCondition cond;
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
+  gint (*get_id)(LogTransport *self);
   void (*free_fn)(LogTransport *self);
 };
 
@@ -49,6 +50,15 @@ static inline gssize
 log_transport_read(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
   return self->read(self, buf, count, aux);
+}
+
+static inline gint
+log_transport_get_id(LogTransport *self)
+{
+  if (self->get_id)
+    return self->get_id(self);
+
+  return -1;
 }
 
 void log_transport_init_instance(LogTransport *s, gint fd);

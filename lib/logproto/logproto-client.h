@@ -65,6 +65,7 @@ struct _LogProtoClient
   gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond);
   LogProtoStatus (*post)(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProtoClient *s);
+  gint (*get_id)(LogProtoClient *s);
   gboolean (*validate_options)(LogProtoClient *s);
   void (*free_fn)(LogProtoClient *s);
   LogProtoClientFlowControlFuncs flow_control_funcs;
@@ -119,10 +120,12 @@ log_proto_client_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *c
 }
 
 static inline gint
-log_proto_client_get_fd(LogProtoClient *s)
+log_proto_client_get_id(LogProtoClient *s)
 {
-  /* FIXME: Layering violation */
-  return s->transport->fd;
+  if (s->get_id)
+    return s->get_id(s);
+
+  return -1;
 }
 
 static inline void

@@ -215,8 +215,8 @@ log_writer_work_finished(gpointer s)
       if (self->proto)
         {
           log_writer_suspend(self);
-          msg_notice("Suspending write operation because of an I/O error",
-                     evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
+          msg_notice("Suspending write operation because of write error",
+                     evt_tag_int("id", log_proto_client_get_id(self->proto)),
                      evt_tag_int("time_reopen", self->options->time_reopen));
         }
       goto exit;
@@ -272,7 +272,7 @@ log_writer_io_error(gpointer s)
   if (self->fd_watch.handler_out == NULL && self->fd_watch.handler_in == NULL)
     {
       msg_debug("POLLERR occurred while idle",
-                evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
+                evt_tag_int("id", log_proto_client_get_id(self->proto)));
       log_writer_broken(self, NC_WRITE_ERROR);
       return;
     }
@@ -291,7 +291,7 @@ log_writer_io_check_eof(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   msg_error("EOF occurred while idle",
-            evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
+            evt_tag_int("id", log_proto_client_get_id(self->proto)));
   log_writer_broken(self, NC_CLOSE);
 }
 
@@ -302,7 +302,7 @@ log_writer_error_suspend_elapsed(gpointer s)
 
   self->suspended = FALSE;
   msg_notice("Error suspend timeout has elapsed, attempting to write again",
-             evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
+             evt_tag_int("id", log_proto_client_get_id(self->proto)));
   log_writer_start_watches(self);
 }
 
