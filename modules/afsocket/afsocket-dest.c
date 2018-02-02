@@ -456,6 +456,39 @@ afsocket_dd_setup_connection(AFSocketDestDriver *self)
   return TRUE;
 }
 
+static gboolean
+_finalize_init(gpointer arg)
+{
+  AFSocketDestDriver *self = (AFSocketDestDriver *)arg;
+  afsocket_dd_try_connect(self);
+  return TRUE;
+}
+
+static gboolean
+_dd_init_stream(AFSocketDestDriver *self)
+{
+  if (!afsocket_dd_setup_writer(self))
+    return FALSE;
+
+  return transport_mapper_async_init(self->transport_mapper, _finalize_init, self);
+}
+
+static gboolean
+_dd_init_dgram(AFSocketDestDriver *self)
+{
+  if (!transport_mapper_init(self->transport_mapper))
+    {
+      return FALSE;
+    }
+
+  if (!afsocket_dd_setup_writer(self))
+    {
+      return FALSE;
+    }
+
+  return _finalize_init(self);
+}
+
 gboolean
 afsocket_dd_init(LogPipe *s)
 {
@@ -467,14 +500,12 @@ afsocket_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  if (!transport_mapper_init(self->transport_mapper))
-    return FALSE;
+  if (self->transport_mapper->sock_type == SOCK_STREAM)
+    {
+      return _dd_init_stream(self);
+    }
 
-  if (!afsocket_dd_setup_writer(self))
-    return FALSE;
-
-  afsocket_dd_try_connect(self);
-  return TRUE;
+  return _dd_init_dgram(self);
 }
 
 static void
