@@ -46,6 +46,8 @@
 /*pessimistic default for reliable disk queue 10000 x 16 kbyte*/
 #define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
 
+#define MAX_RECORD_LENGTH 10 * 1024 * 1024
+
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
 typedef union _QDiskFileHeader
@@ -294,6 +296,12 @@ qdisk_push_tail(QDisk *self, GString *record)
   return TRUE;
 }
 
+static inline gboolean
+_is_record_length_reached_hard_limit(guint32 record_length)
+{
+  return record_length > MAX_RECORD_LENGTH;
+}
+
 gboolean
 qdisk_pop_head(QDisk *self, GString *record)
 {
@@ -318,7 +326,7 @@ qdisk_pop_head(QDisk *self, GString *record)
         }
 
       n = GUINT32_FROM_BE(n);
-      if (n > 10 * 1024 * 1024)
+      if (_is_record_length_reached_hard_limit(n))
         {
           msg_warning("Disk-queue file contains possibly invalid record-length",
                       evt_tag_int("rec_length", n),
