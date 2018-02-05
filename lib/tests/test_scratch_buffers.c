@@ -167,6 +167,7 @@ setup(void)
 static void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   scratch_buffers_allocator_deinit();
   scratch_buffers_global_deinit();
   stats_destroy();
