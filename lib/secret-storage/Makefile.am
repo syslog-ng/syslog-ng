@@ -10,6 +10,6 @@ lib_secret_storage_libsecret_storage_la_SOURCES =             \
   lib/secret-storage/secret-storage.c	\
   lib/secret-storage/nondumpable-allocator.c
 
-lib_secret_storage_libsecret_storage_la_CFLAGS = -fvisibility=hidden
+lib_secret_storage_libsecret_storage_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden
 
 include lib/secret-storage/tests/Makefile.am
