@@ -46,7 +46,7 @@
 /*pessimistic default for reliable disk queue 10000 x 16 kbyte*/
 #define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
 
-#define MAX_RECORD_LENGTH 10 * 1024 * 1024
+#define MAX_RECORD_LENGTH 100 * 1024 * 1024
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
