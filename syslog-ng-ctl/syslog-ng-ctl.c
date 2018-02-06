@@ -51,6 +51,8 @@ typedef struct _CommandDescriptor
 
 static const gchar *control_name;
 static ControlClient *control_client;
+static gchar *credentials_key;
+static gchar *credentials_secret;
 static void print_usage(const gchar *bin_name, CommandDescriptor *descriptors);
 
 static gboolean
@@ -407,9 +409,9 @@ slng_passwd(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   gulong buff_size = 255;
   gchar buff[buff_size+1];
 
-  if (g_strcmp0(mode,"password-add")==0)
+  if (g_strcmp0(mode,"add")==0)
     {
-      if (argc<2 || argv[1]==NULL || strlen(argv[1])==0)
+      if (!credentials_key)
         {
           gchar *usage = g_option_context_get_help(ctx, TRUE, NULL);
           fprintf(stderr, "Error: missing arguments!\n%s\n", usage);
@@ -417,23 +419,23 @@ slng_passwd(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
           return 1;
         }
 
-      if (argc<3 || argv[2]==NULL || strlen(argv[2])==0)
+      if (!credentials_secret)
         {
           gchar *password_buffer = g_malloc0((gsize)buff_size+1);
           if (!password_buffer)
             return 1;
 
           get_password_from_stdin(password_buffer,&buff_size);
-          g_snprintf(buff, buff_size, "PWD %s %s %s", "add", argv[1], password_buffer);
+          g_snprintf(buff, buff_size, "PWD %s %s %s", "add", credentials_key, password_buffer);
           memset(password_buffer,0,buff_size);
           g_free(password_buffer);
         }
       else
         {
-          g_snprintf(buff, buff_size, "PWD %s %s %s", "add", argv[1], argv[2]);
+          g_snprintf(buff, buff_size, "PWD %s %s %s", "add", credentials_key, credentials_secret);
         }
     }
-  else if (g_strcmp0(mode,"password-status")==0)
+  else if (g_strcmp0(mode,"status")==0)
     {
       g_snprintf(buff, buff_size, "PWD %s", "status");
     }
@@ -481,6 +483,21 @@ static GOptionEntry slng_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
+static GOptionEntry credentials_options_add[] =
+{
+  { "id", 'i', 0, G_OPTION_ARG_STRING, &credentials_key, "ID of the credential", "<id>" },
+  { "secret", 's', 0, G_OPTION_ARG_STRING, &credentials_secret, "Secret part of the credential", "<secret>" },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+
+static CommandDescriptor credentials_commands[] =
+{
+  { "add", credentials_options_add, "Add credentials to credential store", slng_passwd },
+  { "status", no_options, "Query stored credential status", slng_passwd },
+  { NULL }
+};
+
 static CommandDescriptor modes[] =
 {
   { "stats", stats_options, "Get syslog-ng statistics in CSV format", slng_stats, NULL },
@@ -492,8 +509,7 @@ static CommandDescriptor modes[] =
   { "reopen", no_options, "Re-open of log destination files", slng_reopen, NULL },
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query, NULL },
   { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
-  { "password-add", no_options, "Add key-password pairs. syslog-ng-ctl password-add key [password]", slng_passwd, NULL },
-  { "password-status", no_options, "Query stored key/password status)", slng_passwd, NULL },
+  { "credentials", no_options, "Credentials manager", NULL, credentials_commands },
   { NULL, NULL },
 };
 
