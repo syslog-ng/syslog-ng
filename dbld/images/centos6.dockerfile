@@ -1,37 +1,38 @@
 FROM centos:6
-MAINTAINER Andras Mitzki <andras.mitzki@balabit.com>
+MAINTAINER Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>
 
-RUN yum install -y wget epel-release
+ADD helpers/functions.sh .
 
-RUN cd /etc/yum.repos.d && wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng39epel6/repo/epel-6/czanik-syslog-ng39epel6-epel-6.repo
+RUN yum install -y \
+#  python-pip \
+#  python-setuptools \
+  wget \
+  epel-release
 
-ADD dev-dependencies.txt .
-RUN cat dev-dependencies.txt | grep -v "#" | xargs yum -y  install
-ADD gradle_installer.sh .
-RUN ./gradle_installer.sh
+#ADD required-packages/centos6-pip.txt .
+#RUN cat centos6-pip.txt | grep -v "#" | xargs pip install 
+
+ADD required-packages/centos6-dist.txt .
+RUN cat centos6-dist.txt | grep -v "#" | xargs yum install -y
+
+ADD required-packages/centos6-czanik.txt .
+RUN ./functions.sh add_czanik_repo_centos6
+RUN cat centos6-czanik.txt | grep -v "#" | xargs yum install -y
+
+RUN ./functions.sh gradle_installer
 RUN echo "/usr/lib/jvm/jre/lib/amd64/server" | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf && ldconfig
 
-#
-# if you want to add further packages, add them to addons.txt to make image
-# creation faster.  If you are done, move them to dev-dependencies and leave
-# addons.txt empty.  The image creation will be faster, as the results of
-# the original dev-dependencies will be reused by docker.
-#
-ADD addons.txt .
-RUN cat addons.txt | grep -v "#" | xargs -r yum -y install
 
-ADD gosu.pubkey /tmp
 # grab gosu for easy step-down from root
-RUN (cat /tmp/gosu.pubkey | gpg --import) \
-    && wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.7/gosu-amd64" \
-    && wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/1.7/gosu-amd64.asc" \
-    && gpg --verify /usr/local/bin/gosu.asc \
-    && rm /usr/local/bin/gosu.asc \
-    && chmod +x /usr/local/bin/gosu
+ADD helpers/gosu.pubkey /tmp
+RUN ./functions.sh step_down_from_root_with_gosu amd64
 
 
-ADD entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]
+# mount points for source code
 RUN mkdir /source
 VOLUME /source
 VOLUME /build
+
+
+ADD helpers/entrypoint-centos.sh /
+ENTRYPOINT ["/entrypoint-centos.sh"]

@@ -30,9 +30,12 @@ xsltproc
 # required for make
 make
 # required for make check
-criterion-dev
 libxml2-utils
-python-pip
+# required for make check - TODO: pip alternatives detection
+python-nose
+python-ply
+python-pep8
+pylint
 # other tools
 gdb
 git
@@ -45,11 +48,13 @@ dh-autoreconf
 docbook-xsl
 docbook
 dh-systemd
-python-nose
-python-pep8
-pep8
-python-ply
-pylint
 gradle
 devscripts
-libmaxminddb-dev
+fakeroot
+build-essential
+tzdata
+libbson-dev
+librabbitmq-dev
+libmongoc-dev
+dh-exec
+geoip-database

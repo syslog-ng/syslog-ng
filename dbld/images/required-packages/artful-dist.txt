@@ -4,6 +4,7 @@ autoconf-archive
 automake
 libtool
 pkg-config
+
 # required for configure
 bison
 flex
@@ -23,14 +24,20 @@ libcurl4-openssl-dev
 libivykis-dev
 libmongo-client-dev
 libjson-c-dev
-openjdk-7-jdk
+openjdk-8-jdk
 python-dev
 uuid-dev
 xsltproc
+libmongoc-dev
+libbson-dev
+librabbitmq-dev
+
 # required for make
 make
+
 # required for make check
 libxml2-utils
+
 python-pip
 # other tools
 gdb
@@ -38,6 +45,7 @@ git
 lsof
 strace
 vim
+
 # debian packaging tools
 debhelper
 dh-autoreconf
@@ -45,8 +53,10 @@ docbook-xsl
 docbook
 dh-systemd
 python-nose
+python-pep8
 pep8
 python-ply
 pylint
 gradle
 devscripts
+dh-exec

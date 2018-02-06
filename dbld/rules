@@ -28,7 +28,7 @@ help:
 	@echo "  shell-<os>: start a shell in the specified OS"
 	@echo "  tarball: generate a tarball"
 	@echo ""
-	@echo "Supported OSs are: centos7, jessie, zesty, xenial, trusty."
+	@echo "Supported OSs are: centos6, centos7, jessie, artful, xenial, trusty."
 	@echo ""
 	@echo "NOTE: this script requires that debian/rpm packaging are"
 	@echo "already merged to your tree, which is not there by default"
@@ -36,9 +36,9 @@ help:
 	@echo "branch. Make sure you have that merged, OR work from a release tarball"
 
 
-deb: deb-zesty
+deb: deb-xenial
 
-shell: shell-zesty
+shell: shell-xenial
 
 rpm: rpm-centos7
 
@@ -51,10 +51,10 @@ tarball: setup
 	else \
 		count=1; \
 	fi; \
-	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-zesty /source/dbld/tarball || true
+	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-xenial /source/dbld/tarball || true
 
 pkg-tarball: tarball
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-zesty /source/dbld/pkg-tarball $(MODE)
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-xenial /source/dbld/pkg-tarball $(MODE)
 
 deb-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
@@ -63,7 +63,7 @@ rpm-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
 
 release: MODE=release
-release: deb-zesty
+release: deb-xenial
 
 
 
@@ -74,11 +74,11 @@ clean:
 shell-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/shell
 
-images: image-jessie image-zesty image-xenial image-trusty image-centos7
+images: image-jessie image-artful image-xenial image-trusty image-centos6 image-centos7
 
 
 image-%:
-	cd $(DBLD_DIR)/images/$* && docker build --network=host -t balabit/syslog-ng-$* .
+	cd $(DBLD_DIR)/images/ && docker build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 setup:
 	mkdir -p dbld/build || true

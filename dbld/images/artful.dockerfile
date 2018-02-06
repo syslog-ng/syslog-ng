@@ -1,4 +1,4 @@
-FROM ubuntu:17.04
+FROM ubuntu:17.10
 MAINTAINER Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>
 
 ADD helpers/functions.sh .
@@ -9,15 +9,15 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y \
     python-setuptools \
     wget
 
-ADD required-packages/zesty-pip.txt .
-RUN cat zesty-pip.txt | grep -v "#" | xargs pip install 
+ADD required-packages/artful-pip.txt .
+RUN cat artful-pip.txt | grep -v "#" | xargs pip install 
 
-ADD required-packages/zesty-dist.txt .
-RUN cat zesty-dist.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+ADD required-packages/artful-dist.txt .
+RUN cat artful-dist.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
 
-ADD required-packages/zesty-obs.txt .
+ADD required-packages/artful-obs.txt .
 RUN ./functions.sh add_obs_repo_debian xUbuntu_17.04
-RUN cat zesty-obs.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+RUN cat artful-obs.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
 
 
 RUN cd /tmp && wget http://ftp.de.debian.org/debian/pool/main/libn/libnative-platform-java/libnative-platform-jni_0.11-5_$(dpkg --print-architecture).deb

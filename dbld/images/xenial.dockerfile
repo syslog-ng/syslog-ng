@@ -1,36 +1,35 @@
 FROM ubuntu:16.04
-MAINTAINER Andras Mitzki <andras.mitzki@balabit.com>
+MAINTAINER Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>
 
-RUN apt-get update -qq && apt-get install -y \
-    wget
+ADD helpers/functions.sh .
 
-RUN wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_16.04/Release.key | apt-key add -
-RUN echo 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_16.04 ./' | tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
+# Install packages
+RUN apt-get update -qq && apt-get install --no-install-recommends -y \
+  python-pip \
+  python-setuptools \
+  wget
 
-ADD dev-dependencies.txt .
-RUN apt-get update -qq && cat dev-dependencies.txt | grep -v "#" | xargs apt-get install -y
+ADD required-packages/xenial-pip.txt .
+RUN cat xenial-pip.txt | grep -v "#" | xargs pip install --upgrade pip
 
-#
-# if you want to add further packages, add them to addons.txt to make image
-# creation faster.  If you are done, move them to dev-dependencies and leave
-# addons.txt empty.  The image creation will be faster, as the results of
-# the original dev-dependencies will be reused by docker.
-#
-ADD addons.txt .
-RUN apt-get update -qq && cat addons.txt | grep -v "#" | xargs apt-get install -y
+ADD required-packages/xenial-dist.txt .
+RUN cat xenial-dist.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
 
-ADD gosu.pubkey /tmp
+ADD required-packages/xenial-obs.txt .
+RUN ./functions.sh add_obs_repo_debian xUbuntu_16.04
+RUN cat xenial-obs.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+
+
 # grab gosu for easy step-down from root
-RUN (cat /tmp/gosu.pubkey | gpg --import) \
-    && wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.7/gosu-$(dpkg --print-architecture)" \
-    && wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/1.7/gosu-$(dpkg --print-architecture).asc" \
-    && gpg --verify /usr/local/bin/gosu.asc \
-    && rm /usr/local/bin/gosu.asc \
-    && chmod +x /usr/local/bin/gosu
+ADD helpers/gosu.pubkey /tmp
+RUN ./functions.sh step_down_from_root_with_gosu $(dpkg --print-architecture)
 
 
-ADD entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]
+# mount points for source code
 RUN mkdir /source
 VOLUME /source
 VOLUME /build
+
+
+ADD helpers/entrypoint-debian.sh /
+ENTRYPOINT ["/entrypoint-debian.sh"]
