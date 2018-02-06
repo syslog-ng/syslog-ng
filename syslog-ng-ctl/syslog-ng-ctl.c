@@ -52,6 +52,8 @@ typedef struct _CommandDescriptor
 
 static const gchar *control_name;
 static ControlClient *control_client;
+static gchar *credentials_key;
+static gchar *credentials_secret;
 static void print_usage(const gchar *bin_name, CommandDescriptor *descriptors);
 
 static gboolean
@@ -422,7 +424,7 @@ slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   gchar *answer;
 
-  if (argc < 2 || strlen(argv[1]) == 0)
+  if (!credentials_key)
     {
       gchar *usage = g_option_context_get_help(ctx, TRUE, NULL);
       fprintf(stderr, "Error: missing arguments!\n%s\n", usage);
@@ -430,46 +432,42 @@ slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
       return 1;
     }
 
-  gchar *id = argv[1];
-
   if (!is_syslog_ng_running())
     return 1;
 
-  gboolean secret_missing = argc < 3;
-  if (secret_missing)
+  gchar *secret_to_store;
+  if (credentials_secret)
     {
-      gchar *password_buffer = g_malloc0(256);
-      if (!password_buffer)
-        return 1;
-
-      gulong buff_size;
-      get_password_from_stdin(password_buffer, &buff_size);
-      gint retval = asprintf(&answer, "PWD %s %s %s", "add", id, password_buffer);
-      if (retval == -1)
+      secret_to_store = g_strdup(credentials_secret);
+      if (!secret_to_store)
         g_assert_not_reached();
-
-      memset(password_buffer, 0, buff_size);
-      g_free(password_buffer);
     }
   else
     {
-      gchar *secret = argv[2];
-
-      gint retval = asprintf(&answer, "PWD %s %s %s", "add", id, secret);
-      if (retval == -1)
+      gulong buff_size = 256;
+      secret_to_store = g_malloc0(buff_size);
+      if (!secret_to_store)
         g_assert_not_reached();
 
-      memset(secret, 0, strlen(secret));
+      get_password_from_stdin(secret_to_store, &buff_size);
     }
+
+  gint retval = asprintf(&answer, "PWD %s %s %s", "add", credentials_key, secret_to_store);
+  if (retval == -1)
+    g_assert_not_reached();
+
+  memset(secret_to_store, 0, strlen(secret_to_store));
+  g_free(secret_to_store);
+
+  if (credentials_secret)
+    memset(credentials_secret, 0, strlen(credentials_secret));
 
   gint result = _dispatch_command(answer);
 
-  gint answer_length = strlen(answer);
-  memset(answer, 0, answer_length);
+  memset(answer, 0, strlen(answer));
   g_free(answer);
 
   return result;
-
 }
 
 static gint
@@ -512,6 +510,21 @@ static GOptionEntry slng_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
+static GOptionEntry credentials_options_add[] =
+{
+  { "id", 'i', 0, G_OPTION_ARG_STRING, &credentials_key, "ID of the credential", "<id>" },
+  { "secret", 's', 0, G_OPTION_ARG_STRING, &credentials_secret, "Secret part of the credential", "<secret>" },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+
+static CommandDescriptor credentials_commands[] =
+{
+  { "add", credentials_options_add, "Add credentials to credential store", slng_passwd_add },
+  { "status", no_options, "Query stored credential status", slng_passwd_status },
+  { NULL }
+};
+
 static CommandDescriptor modes[] =
 {
   { "stats", stats_options, "Get syslog-ng statistics in CSV format", slng_stats, NULL },
@@ -523,8 +536,7 @@ static CommandDescriptor modes[] =
   { "reopen", no_options, "Re-open of log destination files", slng_reopen, NULL },
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query, NULL },
   { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
-  { "password-add", no_options, "Add key-password pairs. syslog-ng-ctl password-add key [password]", slng_passwd_add, NULL },
-  { "password-status", no_options, "Query stored key/password status)", slng_passwd_status, NULL },
+  { "credentials", no_options, "Credentials manager", NULL, credentials_commands },
   { NULL, NULL },
 };
 
