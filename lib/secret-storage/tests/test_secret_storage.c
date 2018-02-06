@@ -280,3 +280,23 @@ Test(secretstorage, test_rlimit)
   cr_assert(secret_storage_subscribe_for_key("key000", secret_checker, "value"));
 }
 #endif
+
+static void
+update_state_callback(Secret *secret, gpointer user_data)
+{
+  secret_storage_update_status("key", SECRET_STORAGE_STATUS_INVALID_PASSWORD);
+}
+
+static gboolean
+assert_invalid_password_state(SecretStatus *secret_status, gpointer user_data)
+{
+  cr_assert_eq(secret_status->state, SECRET_STORAGE_STATUS_INVALID_PASSWORD);
+  return FALSE;
+}
+
+Test(secretstorage, test_state_update)
+{
+  secret_storage_subscribe_for_key("key", update_state_callback, NULL);
+  secret_storage_store_string("key", "wrong_password");
+  secret_storage_status_foreach(assert_invalid_password_state, NULL);
+}

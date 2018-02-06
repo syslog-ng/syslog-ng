@@ -41,6 +41,7 @@ typedef struct
 typedef struct
 {
   GArray *subscriptions;
+  SecretStorageSecretState state;
   Secret secret;
 } SecretStorage;
 
@@ -127,6 +128,7 @@ create_secret_storage_with_secret(const gchar *key, gchar *secret, gsize len)
   nondumpable_memcpy(&secret_storage->secret.data, secret, len);
   g_hash_table_insert(secret_manager, strdup(key), secret_storage);
   secret_storage->subscriptions = g_array_new(FALSE, FALSE, sizeof(Subscription));
+  secret_storage->state = SECRET_STORAGE_STATUS_PENDING;
 
   return secret_storage;
 }
@@ -275,9 +277,11 @@ typedef struct
 static gboolean
 run_callback_for_status(const gpointer key, gpointer value, gpointer user_data)
 {
+  SecretStorage *storage = (SecretStorage *)value;
+
   SecretCallBackAction *action = (SecretCallBackAction *)user_data;
   gchar *key_with_obscured_location = g_strdup((const gchar *)key);
-  SecretStatus secret_status = {.key = key_with_obscured_location};
+  SecretStatus secret_status = {.key = key_with_obscured_location, .state = storage->state};
   gboolean should_continue = !action->func(&secret_status, action->user_data);
   g_free(key_with_obscured_location);
 
@@ -289,4 +293,15 @@ secret_storage_status_foreach(SecretStatusCB cb, gpointer user_data)
 {
   SecretCallBackAction action = {.func = cb, .user_data = user_data};
   g_hash_table_find(secret_manager, run_callback_for_status, &action);
+}
+
+void
+secret_storage_update_status(const gchar *key, SecretStorageSecretState state)
+{
+  SecretStorage *secret_storage;
+  secret_storage = g_hash_table_lookup(secret_manager, key);
+  if (!secret_storage)
+    return;
+
+  secret_storage->state = state;
 }

@@ -49,12 +49,23 @@ void secret_storage_put_secret(Secret *self) PUBLIC;
 Secret *secret_storage_clone_secret(Secret *self) PUBLIC;
 
 gboolean secret_storage_subscribe_for_key(const gchar *key, SecretStorageCB func, gpointer user_data) PUBLIC;
-
 void secret_storage_unsubscribe(const gchar *key, SecretStorageCB func, gpointer user_data) PUBLIC;
+
+typedef
+enum
+{
+  SECRET_STORAGE_STATUS_PENDING = 0,
+  SECRET_STORAGE_SUCCESS,
+  SECRET_STORAGE_STATUS_FAILED,
+  SECRET_STORAGE_STATUS_INVALID_PASSWORD
+} SecretStorageSecretState;
+
+void secret_storage_update_status(const gchar *key, SecretStorageSecretState state) PUBLIC;
 
 typedef struct
 {
   gchar *key;
+  SecretStorageSecretState state;
 } SecretStatus;
 typedef gboolean (*SecretStatusCB)(SecretStatus *secret_status, gpointer user_data);
 void secret_storage_status_foreach(SecretStatusCB cb, gpointer user_data) PUBLIC;
