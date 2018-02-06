@@ -11,6 +11,7 @@ libcap-dev
 libdbi-dev
 libesmtp-dev
 libgeoip-dev
+geoip-database
 libglib2.0-dev
 libhiredis-dev
 libnet1-dev
@@ -48,5 +49,4 @@ python-nose
 pep8
 python-ply
 pylint
-gradle
 devscripts

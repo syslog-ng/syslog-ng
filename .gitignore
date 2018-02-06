@@ -41,6 +41,7 @@ m4/ax*.m4
 /test-driver
 dbld/build/
 dbld/release/
+dbld/install/
 debian/build-tree/
 debian/*.log
 debian/autoreconf.*

@@ -57,6 +57,5 @@ python-pep8
 pep8
 python-ply
 pylint
-gradle
 devscripts
 dh-exec

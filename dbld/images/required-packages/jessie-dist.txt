@@ -48,5 +48,4 @@ python-nose
 pep8
 python-ply
 pylint
-gradle
 devscripts

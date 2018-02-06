@@ -15,11 +15,10 @@ else
     then
         groupadd --gid $GROUP_ID $GROUP_NAME &>/dev/null || \
             groupadd --gid $GROUP_ID dockerguest &>/dev/null || \
-            echo "Failed to add group $GROUP_NAME/$GROUP_ID in docker entrypoint.sh";
+            echo "Failed to add group $GROUP_NAME/$GROUP_ID in docker entrypoint-debian.sh";
         useradd $USER_NAME --uid=$USER_ID --gid=$GROUP_ID &>/dev/null || \
             useradd dockerguest --uid=$USER_ID --gid=$GROUP_ID &>/dev/null || \
-            echo "Failed to add user $USER_NAME/$USER_ID in docker entrypoint.sh";
-        adduser $USER_NAME root &>/dev/null
+            echo "Failed to add user $USER_NAME/$USER_ID in docker entrypoint-debian.sh";
         mkdir -p /home/$USER_NAME
         chown $USER_NAME:$GROUP_ID /home/$USER_NAME
     fi

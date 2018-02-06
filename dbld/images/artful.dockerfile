@@ -28,6 +28,10 @@ ADD helpers/gosu.pubkey /tmp
 RUN ./functions.sh step_down_from_root_with_gosu $(dpkg --print-architecture)
 
 
+# add a fake sudo command
+ADD helpers/fake-sudo.sh /usr/bin/sudo
+
+
 # mount points for source code
 RUN mkdir /source
 VOLUME /source

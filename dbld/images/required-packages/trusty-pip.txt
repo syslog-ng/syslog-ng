@@ -1,1 +1,7 @@
-# note: pip will accept version restrictions in the "package==version" format.
+# note: pip will accept version restrictions in the "package
+nose
+ply
+pep8
+pylint
+astroid
+logilab-common<=0.63.0

@@ -48,7 +48,6 @@ dh-autoreconf
 docbook-xsl
 docbook
 dh-systemd
-gradle
 devscripts
 fakeroot
 build-essential
