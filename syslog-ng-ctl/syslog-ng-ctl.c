@@ -53,6 +53,7 @@ static const gchar *control_name;
 static ControlClient *control_client;
 static gchar *credentials_key;
 static gchar *credentials_secret;
+static gchar **credentials_remaining;
 static void print_usage(const gchar *bin_name, CommandDescriptor *descriptors);
 
 static gboolean
@@ -403,14 +404,28 @@ get_password_from_stdin(gchar *buffer, gulong *length)
   console_echo_on(TRUE);
 }
 
+static gchar *
+fetch_next_remaining(gchar **remaining, gint *available_index)
+{
+  if (!remaining)
+    return NULL;
+
+  return remaining[(*available_index)++];
+}
+
 static gint
 slng_passwd(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   gulong buff_size = 255;
   gchar buff[buff_size+1];
+  gint remaining_unused_index = 0;
 
   if (g_strcmp0(mode,"add")==0)
     {
+
+      if (!credentials_key)
+        credentials_key = fetch_next_remaining(credentials_remaining, &remaining_unused_index);
+
       if (!credentials_key)
         {
           gchar *usage = g_option_context_get_help(ctx, TRUE, NULL);
@@ -418,6 +433,9 @@ slng_passwd(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
           g_free(usage);
           return 1;
         }
+
+      if (!credentials_secret)
+        credentials_secret = fetch_next_remaining(credentials_remaining, &remaining_unused_index);
 
       if (!credentials_secret)
         {
@@ -487,6 +505,7 @@ static GOptionEntry credentials_options_add[] =
 {
   { "id", 'i', 0, G_OPTION_ARG_STRING, &credentials_key, "ID of the credential", "<id>" },
   { "secret", 's', 0, G_OPTION_ARG_STRING, &credentials_secret, "Secret part of the credential", "<secret>" },
+  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &credentials_remaining, NULL, NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
