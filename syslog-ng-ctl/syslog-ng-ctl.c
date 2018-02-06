@@ -41,6 +41,15 @@
 #include <getopt.h>
 #endif
 
+typedef struct _CommandDescriptor
+{
+  const gchar *mode;
+  const GOptionEntry *options;
+  const gchar *description;
+  gint (*main)(gint argc, gchar *argv[], const gchar *mode);
+  struct _CommandDescriptor *subcommands;
+} CommandDescriptor;
+
 static const gchar *control_name;
 static ControlClient *control_client;
 static void print_usage(const gchar *bin_name);
@@ -501,25 +510,19 @@ static GOptionEntry slng_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
-static struct
+static CommandDescriptor modes[] =
 {
-  const gchar *mode;
-  const GOptionEntry *options;
-  const gchar *description;
-  gint (*main)(gint argc, gchar *argv[], const gchar *mode);
-} modes[] =
-{
-  { "stats", stats_options, "Get syslog-ng statistics in CSV format", slng_stats },
-  { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose },
-  { "debug", verbose_options, "Enable/query debug messages", slng_verbose },
-  { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
-  { "stop", no_options, "Stop syslog-ng process", slng_stop },
-  { "reload", no_options, "Reload syslog-ng", slng_reload },
-  { "reopen", no_options, "Re-open of log destination files", slng_reopen },
-  { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query },
-  { "show-license-info", license_options, "Show information about the license", slng_license },
-  { "password-add", no_options, "Add key-password pairs. syslog-ng-ctl password-add key [password]", slng_passwd_add },
-  { "password-status", no_options, "Query stored key/password status)", slng_passwd_status },
+  { "stats", stats_options, "Get syslog-ng statistics in CSV format", slng_stats, NULL },
+  { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose, NULL },
+  { "debug", verbose_options, "Enable/query debug messages", slng_verbose, NULL },
+  { "trace", verbose_options, "Enable/query trace messages", slng_verbose, NULL },
+  { "stop", no_options, "Stop syslog-ng process", slng_stop, NULL },
+  { "reload", no_options, "Reload syslog-ng", slng_reload, NULL },
+  { "reopen", no_options, "Re-open of log destination files", slng_reopen, NULL },
+  { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query, NULL },
+  { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
+  { "password-add", no_options, "Add key-password pairs. syslog-ng-ctl password-add key [password]", slng_passwd, NULL },
+  { "password-status", no_options, "Query stored key/password status)", slng_passwd, NULL },
   { NULL, NULL },
 };
 
@@ -541,12 +544,36 @@ _is_help(gchar *cmd)
   return g_str_equal(cmd, "--help");
 }
 
+
+static CommandDescriptor *
+find_active_mode(const gchar *mode_string, CommandDescriptor descriptors[])
+{
+  for (gint mode = 0; modes[mode].mode; mode++)
+    if (strcmp(modes[mode].mode, mode_string) == 0)
+      return &descriptors[mode];
+  return NULL;
+}
+
+static GOptionContext *
+setup_help_context(const gchar *mode_string, CommandDescriptor *active_mode)
+{
+  if (!active_mode)
+    return NULL;
+
+  GOptionContext *ctx = g_option_context_new(mode_string);
+#if GLIB_CHECK_VERSION (2, 12, 0)
+  g_option_context_set_summary(ctx, active_mode->description);
+#endif
+  g_option_context_add_main_entries(ctx, active_mode->options, NULL);
+  g_option_context_add_main_entries(ctx, slng_options, NULL);
+
+  return ctx;
+}
+
 int
 main(int argc, char *argv[])
 {
   const gchar *mode_string;
-  GOptionContext *ctx;
-  gint mode;
   GError *error = NULL;
   int result;
 
@@ -567,20 +594,9 @@ main(int argc, char *argv[])
       exit(1);
     }
 
-  ctx = NULL;
-  for (mode = 0; modes[mode].mode; mode++)
-    {
-      if (strcmp(modes[mode].mode, mode_string) == 0)
-        {
-          ctx = g_option_context_new(mode_string);
-#if GLIB_CHECK_VERSION (2, 12, 0)
-          g_option_context_set_summary(ctx, modes[mode].description);
-#endif
-          g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
-          g_option_context_add_main_entries(ctx, slng_options, NULL);
-          break;
-        }
-    }
+  CommandDescriptor *active_mode = find_active_mode(mode_string, modes);
+  GOptionContext *ctx = setup_help_context(mode_string, active_mode);
+
   if (!ctx)
     {
       fprintf(stderr, "Unknown command\n");
