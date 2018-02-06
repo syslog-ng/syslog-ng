@@ -126,22 +126,38 @@ _call_finalize_init(Secret *secret, gpointer user_data)
 {
   call_finalize_init_args *args = user_data;
   TransportMapperInet *self = args->transport_mapper_inet;
+
   if (!self)
     return;
+
   TLSContextSetupResult r = tls_context_setup_context(self->tls_context);
+  const gchar *key = tls_context_get_key_file(self->tls_context);
+
   switch (r)
     {
     case TLS_CONTEXT_SETUP_ERROR:
+    {
+      msg_error("Error setting up TLS context",
+                evt_tag_str("keyfile", key));
       return;
-      break;
+    }
     case TLS_CONTEXT_SETUP_BAD_PASSWORD:
     {
-      const gchar *key = tls_context_get_key_file(self->tls_context);
-      secret_storage_subscribe_for_key(key, _call_finalize_init, args);
-      break;
+      msg_error("Invalid password, error setting up TLS context",
+                evt_tag_str("keyfile", key));
+
+      if (!secret_storage_subscribe_for_key(key, _call_finalize_init, args))
+        msg_error("Failed to subscribe for key", evt_tag_str("keyfile", key));
+      else
+        msg_debug("Re-subscribe for key", evt_tag_str("keyfile", key));
+      return;
     }
     default:
-      args->func(args->func_args);
+      if (!args->func(args->func_args))
+        {
+          msg_error("Error finalize initialization",
+                    evt_tag_str("keyfile", key));
+        }
     }
 }
 
@@ -160,13 +176,20 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
 
   if (r == TLS_CONTEXT_SETUP_BAD_PASSWORD)
     {
+      const gchar *key = tls_context_get_key_file(self->tls_context);
+      msg_error("Error setting up TLS context",
+                evt_tag_str("keyfile", key));
       call_finalize_init_args *args = g_new0(call_finalize_init_args, 1);
       args->transport_mapper_inet = self;
       args->func = func;
       args->func_args = func_args;
-      const gchar *key = tls_context_get_key_file(self->tls_context);
       self->secret_store_cb_data = args;
-      return secret_storage_subscribe_for_key(key, _call_finalize_init, args);
+      gboolean r = secret_storage_subscribe_for_key(key, _call_finalize_init, args);
+      if (r)
+        msg_info("Waiting for password", evt_tag_str("keyfile", key));
+      else
+        msg_error("Failed to subscribe for key", evt_tag_str("keyfile", key));
+      return r;
     }
 
   return FALSE;
