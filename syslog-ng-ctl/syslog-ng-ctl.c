@@ -515,23 +515,37 @@ _is_help(gchar *cmd)
   return g_str_equal(cmd, "--help");
 }
 
-
 static CommandDescriptor *
-find_active_mode(const gchar *mode_string, CommandDescriptor descriptors[])
+find_active_mode(CommandDescriptor descriptors[], gint *argc, char **argv, GString *cmdname_accumulator)
 {
-  for (gint mode = 0; modes[mode].mode; mode++)
-    if (strcmp(modes[mode].mode, mode_string) == 0)
-      return &descriptors[mode];
+  const gchar *mode_string = get_mode(argc, &argv);
+  if (!mode_string)
+    {
+      print_usage(cmdname_accumulator->str, descriptors);
+      exit(1);
+    }
+
+  for (gint mode = 0; descriptors[mode].mode; mode++)
+    if (strcmp(descriptors[mode].mode, mode_string) == 0)
+      {
+        if (descriptors[mode].main)
+          return &descriptors[mode];
+
+        g_assert(descriptors[mode].subcommands);
+        g_string_append_printf(cmdname_accumulator, " %s", mode_string);
+        return find_active_mode(descriptors[mode].subcommands, argc, argv, cmdname_accumulator);
+      }
+
   return NULL;
 }
 
 static GOptionContext *
-setup_help_context(const gchar *mode_string, CommandDescriptor *active_mode)
+setup_help_context(const gchar *cmdname, CommandDescriptor *active_mode)
 {
   if (!active_mode)
     return NULL;
 
-  GOptionContext *ctx = g_option_context_new(mode_string);
+  GOptionContext *ctx = g_option_context_new(cmdname);
 #if GLIB_CHECK_VERSION (2, 12, 0)
   g_option_context_set_summary(ctx, active_mode->description);
 #endif
@@ -544,7 +558,6 @@ setup_help_context(const gchar *mode_string, CommandDescriptor *active_mode)
 int
 main(int argc, char *argv[])
 {
-  const gchar *mode_string;
   GError *error = NULL;
   int result;
 
@@ -558,15 +571,9 @@ main(int argc, char *argv[])
       exit(0);
     }
 
-  mode_string = get_mode(&argc, &argv);
-  if (!mode_string)
-    {
-      print_usage(argv[0], modes);
-      exit(1);
-    }
-
-  CommandDescriptor *active_mode = find_active_mode(mode_string, modes);
-  GOptionContext *ctx = setup_help_context(mode_string, active_mode);
+  GString *cmdname_accumulator = g_string_new(argv[0]);
+  CommandDescriptor *active_mode = find_active_mode(modes, &argc, argv, cmdname_accumulator);
+  GOptionContext *ctx = setup_help_context(cmdname_accumulator->str, active_mode);
 
   if (!ctx)
     {
