@@ -139,6 +139,7 @@ _call_finalize_init(Secret *secret, gpointer user_data)
     {
       msg_error("Error setting up TLS context",
                 evt_tag_str("keyfile", key));
+      secret_storage_update_status(key, SECRET_STORAGE_STATUS_FAILED);
       return;
     }
     case TLS_CONTEXT_SETUP_BAD_PASSWORD:
@@ -150,9 +151,13 @@ _call_finalize_init(Secret *secret, gpointer user_data)
         msg_error("Failed to subscribe for key", evt_tag_str("keyfile", key));
       else
         msg_debug("Re-subscribe for key", evt_tag_str("keyfile", key));
+
+      secret_storage_update_status(key, SECRET_STORAGE_STATUS_INVALID_PASSWORD);
+
       return;
     }
     default:
+      secret_storage_update_status(key, SECRET_STORAGE_SUCCESS);
       if (!args->func(args->func_args))
         {
           msg_error("Error finalize initialization",
