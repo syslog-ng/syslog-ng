@@ -131,11 +131,30 @@ control_connection_reopen(GString *command, gpointer user_data)
   return result;
 }
 
+static const gchar *
+secret_status_to_string(SecretStorageSecretState state)
+{
+  switch (state)
+    {
+    case SECRET_STORAGE_STATUS_PENDING:
+      return "PENDING";
+    case SECRET_STORAGE_SUCCESS:
+      return "SUCCESS";
+    case SECRET_STORAGE_STATUS_FAILED:
+      return "FAILED";
+    case SECRET_STORAGE_STATUS_INVALID_PASSWORD:
+      return "INVALID_PASSWORD";
+    default:
+      g_assert_not_reached();
+    }
+  return "SHOULD NOT BE REACHED";
+}
+
 gboolean
 secret_storage_status_iterator(SecretStatus *status, gpointer user_data)
 {
   GString *status_str = (GString *) user_data;
-  g_string_append_printf(status_str, "%s\n", status->key);
+  g_string_append_printf(status_str, "%s\t%s\n", status->key, secret_status_to_string(status->state));
   return TRUE;
 }
 
