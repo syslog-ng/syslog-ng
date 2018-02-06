@@ -45,13 +45,13 @@ typedef struct _CommandDescriptor
   const gchar *mode;
   const GOptionEntry *options;
   const gchar *description;
-  gint (*main)(gint argc, gchar *argv[], const gchar *mode);
+  gint (*main)(gint argc, gchar *argv[], const gchar *mode, GOptionContext *ctx);
   struct _CommandDescriptor *subcommands;
 } CommandDescriptor;
 
 static const gchar *control_name;
 static ControlClient *control_client;
-static void print_usage(const gchar *bin_name);
+static void print_usage(const gchar *bin_name, CommandDescriptor *descriptors);
 
 static gboolean
 slng_send_cmd(const gchar *cmd)
@@ -129,7 +129,7 @@ static GOptionEntry verbose_options[] =
 };
 
 static gint
-slng_verbose(int argc, char *argv[], const gchar *mode)
+slng_verbose(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   gint ret = 0;
   GString *rsp = NULL;
@@ -172,25 +172,25 @@ _stats_command_builder(void)
 }
 
 static gint
-slng_stats(int argc, char *argv[], const gchar *mode)
+slng_stats(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   return _dispatch_command(_stats_command_builder());
 }
 
 static gint
-slng_stop(int argc, char *argv[], const gchar *mode)
+slng_stop(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   return _dispatch_command("STOP");
 }
 
 static gint
-slng_reload(int argc, char *argv[], const gchar *mode)
+slng_reload(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   return _dispatch_command("RELOAD");
 }
 
 static gint
-slng_reopen(int argc, char *argv[], const gchar *mode)
+slng_reopen(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   return _dispatch_command("REOPEN");
 }
@@ -230,7 +230,7 @@ static GOptionEntry license_options[] =
 };
 
 static gint
-slng_license(int argc, char *argv[], const gchar *mode)
+slng_license(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   GString *rsp = NULL;
   gchar buff[256];
@@ -356,7 +356,7 @@ _get_dispatchable_query_command(void)
 }
 
 static gint
-slng_query(int argc, char *argv[], const gchar *mode)
+slng_query(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   gint result;
 
@@ -402,7 +402,7 @@ get_password_from_stdin(gchar *buffer, gulong *length)
 }
 
 static gint
-slng_passwd(int argc, char *argv[], const gchar *mode)
+slng_passwd(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   gulong buff_size = 255;
   gchar buff[buff_size+1];
@@ -411,7 +411,9 @@ slng_passwd(int argc, char *argv[], const gchar *mode)
     {
       if (argc<2 || argv[1]==NULL || strlen(argv[1])==0)
         {
-          print_usage(argv[0]);
+          gchar *usage = g_option_context_get_help(ctx, TRUE, NULL);
+          fprintf(stderr, "Error: missing arguments!\n%s\n", usage);
+          g_free(usage);
           return 1;
         }
 
@@ -437,7 +439,9 @@ slng_passwd(int argc, char *argv[], const gchar *mode)
     }
   else
     {
-      print_usage(argv[0]);
+      gchar *usage = g_option_context_get_help(ctx, TRUE, NULL);
+      fprintf(stderr, "Error: missing arguments!\n%s\n", usage);
+      g_free(usage);
       return 1;
     }
 
@@ -494,14 +498,14 @@ static CommandDescriptor modes[] =
 };
 
 static void
-print_usage(const gchar *bin_name)
+print_usage(const gchar *bin_name, CommandDescriptor *descriptors)
 {
   gint mode;
 
   fprintf(stderr, "Syntax: %s <command> [options]\nPossible commands are:\n", bin_name);
-  for (mode = 0; modes[mode].mode; mode++)
+  for (mode = 0; descriptors[mode].mode; mode++)
     {
-      fprintf(stderr, "    %-20s %s\n", modes[mode].mode, modes[mode].description);
+      fprintf(stderr, "    %-20s %s\n", descriptors[mode].mode, descriptors[mode].description);
     }
 }
 
@@ -550,14 +554,14 @@ main(int argc, char *argv[])
 
   if (argc > 1 && _is_help(argv[1]))
     {
-      print_usage(argv[0]);
+      print_usage(argv[0], modes);
       exit(0);
     }
 
   mode_string = get_mode(&argc, &argv);
   if (!mode_string)
     {
-      print_usage(argv[0]);
+      print_usage(argv[0], modes);
       exit(1);
     }
 
@@ -567,7 +571,7 @@ main(int argc, char *argv[])
   if (!ctx)
     {
       fprintf(stderr, "Unknown command\n");
-      print_usage(argv[0]);
+      print_usage(argv[0], modes);
       exit(1);
     }
 
@@ -578,13 +582,14 @@ main(int argc, char *argv[])
       g_option_context_free(ctx);
       return 1;
     }
-  g_option_context_free(ctx);
 
   control_client = control_client_new(control_name);
   if (control_client_connect(control_client))
-    result = active_mode->main(argc, argv, active_mode->mode);
+    result = active_mode->main(argc, argv, active_mode->mode, ctx);
   else
     result = FALSE;
+
+  g_option_context_free(ctx);
 
   control_client_free(control_client);
   return result;
