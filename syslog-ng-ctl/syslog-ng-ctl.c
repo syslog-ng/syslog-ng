@@ -54,6 +54,7 @@ static const gchar *control_name;
 static ControlClient *control_client;
 static gchar *credentials_key;
 static gchar *credentials_secret;
+static gchar **credentials_remaining;
 static void print_usage(const gchar *bin_name, CommandDescriptor *descriptors);
 
 static gboolean
@@ -419,10 +420,24 @@ is_syslog_ng_running()
     return FALSE;
 }
 
+static gchar *
+fetch_next_remaining(gchar **remaining, gint *available_index)
+{
+  if (!remaining)
+    return NULL;
+
+  return remaining[(*available_index)++];
+}
+
 static gint
 slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   gchar *answer;
+  gint remaining_unused_index = 0;
+
+
+  if (!credentials_key)
+    credentials_key = fetch_next_remaining(credentials_remaining, &remaining_unused_index);
 
   if (!credentials_key)
     {
@@ -434,6 +449,9 @@ slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 
   if (!is_syslog_ng_running())
     return 1;
+
+  if (!credentials_secret)
+    credentials_secret = fetch_next_remaining(credentials_remaining, &remaining_unused_index);
 
   gchar *secret_to_store;
   if (credentials_secret)
@@ -514,6 +532,7 @@ static GOptionEntry credentials_options_add[] =
 {
   { "id", 'i', 0, G_OPTION_ARG_STRING, &credentials_key, "ID of the credential", "<id>" },
   { "secret", 's', 0, G_OPTION_ARG_STRING, &credentials_secret, "Secret part of the credential", "<secret>" },
+  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &credentials_remaining, NULL, NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
