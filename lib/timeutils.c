@@ -356,12 +356,6 @@ timespec_add_msec(struct timespec *ts, glong msec)
 }
 
 glong
-timspec_diff_msec(struct timespec *t1, struct timespec *t2)
-{
-  return (t1->tv_sec - t2->tv_sec) * 1e3 + (t1->tv_nsec - t2->tv_nsec) / 1e6;
-}
-
-glong
 timespec_diff_nsec(struct timespec *t1, struct timespec *t2)
 {
   return (t1->tv_sec - t2->tv_sec) * 1e9 + (t1->tv_nsec - t2->tv_nsec);
