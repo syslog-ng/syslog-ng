@@ -169,12 +169,12 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
   if (!self->tls_context)
     return func(func_args);
 
-  TLSContextSetupResult r = tls_context_setup_context(self->tls_context);
+  TLSContextSetupResult tls_ctx_setup_res = tls_context_setup_context(self->tls_context);
 
-  if (r == TLS_CONTEXT_SETUP_OK)
+  if (tls_ctx_setup_res == TLS_CONTEXT_SETUP_OK)
     return func(func_args);
 
-  if (r == TLS_CONTEXT_SETUP_BAD_PASSWORD)
+  if (tls_ctx_setup_res == TLS_CONTEXT_SETUP_BAD_PASSWORD)
     {
       const gchar *key = tls_context_get_key_file(self->tls_context);
       msg_error("Error setting up TLS context",
@@ -184,12 +184,12 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
       args->func = func;
       args->func_args = func_args;
       self->secret_store_cb_data = args;
-      gboolean r = secret_storage_subscribe_for_key(key, _call_finalize_init, args);
-      if (r)
+      gboolean subscribe_res = secret_storage_subscribe_for_key(key, _call_finalize_init, args);
+      if (subscribe_res)
         msg_info("Waiting for password", evt_tag_str("keyfile", key));
       else
         msg_error("Failed to subscribe for key", evt_tag_str("keyfile", key));
-      return r;
+      return subscribe_res;
     }
 
   return FALSE;
