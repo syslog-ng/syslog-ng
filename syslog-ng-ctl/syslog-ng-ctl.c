@@ -629,7 +629,7 @@ main(int argc, char *argv[])
   if (control_client_connect(control_client))
     result = active_mode->main(argc, argv, active_mode->mode, ctx);
   else
-    result = FALSE;
+    result = 1;
 
   g_option_context_free(ctx);
 
