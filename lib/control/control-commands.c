@@ -178,7 +178,7 @@ process_pwd(GString *command, gpointer user_data)
         {
           if (!secret_storage_store_string(cmds[2],cmds[3]))
             {
-              g_string_assign(result,"Error during store process in secret store\n");
+              g_string_assign(result,"Error while saving credentials\n");
             }
         }
     }

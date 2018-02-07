@@ -57,7 +57,7 @@ _mmap(gsize len)
       if (logger)
         {
           char reason[32] = { 0 };
-          snprintf(reason, sizeof(reason), "len: %lu, errno: %d", len, errno);
+          snprintf(reason, sizeof(reason), "len: %lu, errno: %d\n", len, errno);
           logger("secret storage: cannot mmap buffer", reason);
         }
       return NULL;
@@ -69,7 +69,7 @@ _mmap(gsize len)
       if (logger)
         {
           char reason[32] = { 0 };
-          snprintf(reason, sizeof(reason), "errno: %d", errno);
+          snprintf(reason, sizeof(reason), "errno: %d\n", errno);
           logger("secret storage: cannot madvisebuffer", reason);
         }
       goto err_munmap;
@@ -80,8 +80,9 @@ _mmap(gsize len)
     {
       if (logger)
         {
-          char reason[32] = { 0 };
-          snprintf(reason, sizeof(reason), "len: %lu, errno: %d", len, errno);
+          char reason[200] = { 0 };
+          gchar *hint = (errno == ENOMEM) ? ". Maybe RLIMIT_MEMLOCK is too small?" : "";
+          snprintf(reason, sizeof(reason), "len: %lu, errno: %d%s\n", len, errno, hint);
           logger("secret storage: cannot lock buffer", reason);
         }
       goto err_munmap;
