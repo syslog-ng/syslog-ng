@@ -181,6 +181,7 @@ process_pwd(GString *command, gpointer user_data)
               g_string_assign(result,"Error while saving credentials\n");
             }
         }
+      g_string_assign(result, "Credentials stored\n");
     }
   else if (strcmp(cmds[1],"status")==0)
     {
