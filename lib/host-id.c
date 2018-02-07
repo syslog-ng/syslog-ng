@@ -24,6 +24,7 @@
 
 #include "host-id.h"
 #include "str-format.h"
+#include "messages.h"
 #include <openssl/rand.h>
 
 guint32 global_host_id = 0;
@@ -42,7 +43,7 @@ _create_host_id(void)
   return host_id.id;
 }
 
-void
+gboolean
 host_id_init(PersistState *state)
 {
   gsize size;
@@ -59,6 +60,12 @@ host_id_init(PersistState *state)
       handle = persist_state_alloc_entry(state, HOST_ID_PERSIST_KEY, sizeof(HostIdState));
     }
 
+  if (!handle)
+    {
+      msg_error("host-id: could not allocate persist state");
+      return FALSE;
+    }
+
   host_id_state = persist_state_map_entry(state, handle);
   {
     if (new_host_id_required)
@@ -72,6 +79,8 @@ host_id_init(PersistState *state)
       }
   }
   persist_state_unmap_entry(state, handle);
+
+  return TRUE;
 }
 
 guint32

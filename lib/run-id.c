@@ -26,6 +26,7 @@
 #include "run-id.h"
 #include "persistable-state-header.h"
 #include "str-format.h"
+#include "messages.h"
 
 #define RUN_ID_PERSIST_KEY "run_id"
 
@@ -37,7 +38,7 @@ typedef struct _RunIDState
   gint run_id;
 } RunIDState;
 
-void
+gboolean
 run_id_init(PersistState *state)
 {
   gsize size;
@@ -52,12 +53,20 @@ run_id_init(PersistState *state)
       handle = persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState) );
     }
 
+  if (!handle)
+    {
+      msg_error("run-id: could not allocate persist state");
+      return FALSE;
+    }
+
   run_id_state = persist_state_map_entry(state, handle);
 
   run_id_state->run_id++;
   cached_run_id = run_id_state->run_id;
 
   persist_state_unmap_entry(state, handle);
+
+  return TRUE;
 };
 
 int

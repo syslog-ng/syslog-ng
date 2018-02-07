@@ -35,7 +35,7 @@ typedef struct _HostIdState
   guint32 host_id;
 } HostIdState;
 
-void host_id_init(PersistState *state);
+gboolean host_id_init(PersistState *state);
 void host_id_deinit(void);
 guint32 host_id_get(void);
 void host_id_append_formatted_id(GString *str, guint32 id);

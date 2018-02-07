@@ -527,7 +527,10 @@ error:
       if (new_state_handle)
         log_proto_buffered_server_apply_state(self, new_state_handle, persist_name);
       else
-        self->state1 = new_state;
+        {
+          self->persist_state = NULL;
+          self->state1 = new_state;
+        }
     }
   if (new_state_handle)
     {
