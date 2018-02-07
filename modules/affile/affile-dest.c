@@ -130,18 +130,24 @@ affile_dw_reap(gpointer s)
 
   main_loop_assert_main_thread();
 
-  g_static_mutex_lock(&self->lock);
-  if (!log_writer_has_pending_writes(self->writer) && !self->queue_pending)
+  if (log_writer_has_pending_writes(self->writer))
     {
-      g_static_mutex_unlock(&self->lock);
+      affile_dw_arm_reaper(self);
+      return;
+    }
+
+  g_static_mutex_lock(&self->owner->lock);
+  if (!self->queue_pending)
+    {
       msg_verbose("Destination timed out, reaping",
                   evt_tag_str("template", self->owner->filename_template->template),
                   evt_tag_str("filename", self->filename));
       affile_dd_reap_writer(self->owner, self);
+      g_static_mutex_unlock(&self->owner->lock);
     }
   else
     {
-      g_static_mutex_unlock(&self->lock);
+      g_static_mutex_unlock(&self->owner->lock);
       affile_dw_arm_reaper(self);
     }
 }
@@ -418,6 +424,7 @@ affile_dd_format_persist_name(const LogPipe *s)
   return persist_name;
 }
 
+/* DestDriver lock must be held before calling this function */
 static void
 affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
 {
@@ -427,17 +434,13 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
 
   if (self->filename_is_a_template)
     {
-      g_static_mutex_lock(&self->lock);
       /* remove from hash table */
       g_hash_table_remove(self->writer_hash, dw->filename);
-      g_static_mutex_unlock(&self->lock);
     }
   else
     {
-      g_static_mutex_lock(&self->lock);
       g_assert(dw == self->single_writer);
       self->single_writer = NULL;
-      g_static_mutex_unlock(&self->lock);
     }
 
   LogQueue *queue = log_writer_get_queue(writer);
