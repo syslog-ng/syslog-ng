@@ -420,7 +420,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
             }
           else
             {
-              msg_error("Error reading message from disk-queue file (maybe currupted file) some messages will be lost",
+              msg_error("Error reading message from disk-queue file (maybe corrupted file) some messages will be lost",
                         evt_tag_str("filename", self->filename),
                         evt_tag_int("lost messages", q_count - i));
               log_msg_unref(msg);
@@ -552,6 +552,28 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   return TRUE;
 }
 
+#define STRING_BUFFER_MEMORY_LIMIT (8 * 1024)
+static inline gboolean
+string_reached_memory_limit(GString *string)
+{
+  return (string->len >= STRING_BUFFER_MEMORY_LIMIT);
+}
+
+static gboolean
+qdisk_write_serialized_string_to_file(QDisk *self, GString const *serialized, gint64 *offset)
+{
+  *offset = lseek(self->fd, 0, SEEK_END);
+  if (!pwrite_strict(self->fd, serialized->str, serialized->len, *offset))
+    {
+      msg_error("Error writing in-memory buffer of disk-queue to disk",
+                evt_tag_str("filename", self->filename),
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+  return TRUE;
+}
+
 static gboolean
 _save_queue(QDisk *self, GQueue *q, gint64 *q_ofs, gint32 *q_len)
 {
@@ -559,6 +581,10 @@ _save_queue(QDisk *self, GQueue *q, gint64 *q_ofs, gint32 *q_len)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   SerializeArchive *sa;
   GString *serialized;
+  gint64  current_offset = 0;
+  gint64  queue_start_position = 0;
+  gint32  written_bytes = 0;
+  gboolean success = FALSE;
 
   if (q->length == 0)
     {
@@ -581,20 +607,32 @@ _save_queue(QDisk *self, GQueue *q, gint64 *q_ofs, gint32 *q_len)
       log_msg_serialize(msg, sa);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
+      if (string_reached_memory_limit(serialized))
+        {
+          if (!qdisk_write_serialized_string_to_file(self, serialized, &current_offset))
+            goto error;
+          if(!queue_start_position)
+            queue_start_position = current_offset;
+          written_bytes += serialized->len;
+          g_string_truncate(serialized, 0);
+        }
     }
-  serialize_archive_free(sa);
-  *q_ofs = lseek(self->fd, 0, SEEK_END);
-  if (!pwrite_strict(self->fd, serialized->str, serialized->len, *q_ofs))
+  if(serialized->len)
     {
-      msg_error("Error writing in-memory buffer of disk-queue to disk",
-                evt_tag_str("filename", self->filename),
-                evt_tag_errno("error", errno));
-      g_string_free(serialized, TRUE);
-      return FALSE;
+      if (!qdisk_write_serialized_string_to_file(self, serialized, &current_offset))
+        goto error;
+      if(!queue_start_position)
+        queue_start_position = current_offset;
+      written_bytes += serialized->len;
     }
-  *q_len = serialized->len;
+
+  *q_len = written_bytes;
+  *q_ofs = queue_start_position;
+  success = TRUE;
+error:
   g_string_free(serialized, TRUE);
-  return TRUE;
+  serialize_archive_free(sa);
+  return success;
 }
 
 gboolean
