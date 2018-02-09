@@ -35,7 +35,6 @@ struct _KVParser
   gchar *prefix;
   gchar *stray_words_value_name;
   gsize prefix_len;
-  GString *formatted_key;
   void (*init_scanner)(KVParser *self, KVScanner *kv_scanner);
 };
 

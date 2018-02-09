@@ -21,6 +21,7 @@
 
 #include "kv-parser.h"
 #include "scanner/kv-scanner/kv-scanner.h"
+#include "scratch-buffers.h"
 
 gboolean
 kv_parser_is_valid_separator_character(char c)
@@ -75,16 +76,22 @@ kv_parser_set_stray_words_value_name(LogParser *s, const gchar *value_name)
 }
 
 static const gchar *
-_get_formatted_key(KVParser *self, const gchar *key)
+_get_formatted_key_with_prefix(KVParser *self, const gchar *key, GString *formatted_key)
+{
+  if (formatted_key->len > 0)
+    g_string_truncate(formatted_key, self->prefix_len);
+  else
+    g_string_assign(formatted_key, self->prefix);
+  g_string_append(formatted_key, key);
+  return formatted_key->str;
+}
+
+static const gchar *
+_get_formatted_key(KVParser *self, const gchar *key, GString *formatted_key)
 {
   if (!self->prefix)
     return key;
-  else if (self->formatted_key->len > 0)
-    g_string_truncate(self->formatted_key, self->prefix_len);
-  else
-    g_string_assign(self->formatted_key, self->prefix);
-  g_string_append(self->formatted_key, key);
-  return self->formatted_key->str;
+  return _get_formatted_key_with_prefix(self, key, formatted_key);
 }
 
 void
@@ -99,8 +106,9 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
 {
   KVParser *self = (KVParser *) s;
   KVScanner kv_scanner;
-
   kv_parser_init_scanner(self, &kv_scanner);
+  GString *formatted_key = scratch_buffers_alloc();
+
   log_msg_make_writable(pmsg, path_options);
   /* FIXME: input length */
   kv_scanner_input(&kv_scanner, input);
@@ -109,7 +117,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
 
       /* FIXME: value length */
       log_msg_set_value_by_name(*pmsg,
-                                _get_formatted_key(self, kv_scanner_get_current_key(&kv_scanner)),
+                                _get_formatted_key(self, kv_scanner_get_current_key(&kv_scanner), formatted_key),
                                 kv_scanner_get_current_value(&kv_scanner), -1);
     }
   if (self->stray_words_value_name)
@@ -147,7 +155,6 @@ _free(LogPipe *s)
 {
   KVParser *self = (KVParser *)s;
 
-  g_string_free(self->formatted_key, TRUE);
   g_free(self->prefix);
   g_free(self->pair_separator);
   log_parser_free_method(s);
@@ -162,7 +169,6 @@ kv_parser_init_instance(KVParser *self, GlobalConfig *cfg)
   self->init_scanner = kv_parser_init_scanner_method;
   self->value_separator = '=';
   self->pair_separator = g_strdup(", ");
-  self->formatted_key = g_string_sized_new(32);
 }
 
 LogParser *
