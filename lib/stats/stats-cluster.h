@@ -74,7 +74,7 @@ enum
   SCS_FILTER         = 38,
   SCS_PARSER         = 39,
   SCS_MONITORING     = 40,
-  SCS_STDIN      = 41,
+  SCS_STDIN          = 41,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };

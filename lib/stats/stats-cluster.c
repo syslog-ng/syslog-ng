@@ -23,6 +23,7 @@
  */
 #include "stats/stats-cluster.h"
 
+#include <assert.h>
 #include <string.h>
 
 static StatsClusterKey *
@@ -79,7 +80,7 @@ stats_cluster_get_type_name(StatsCluster *self, gint type)
 static const gchar *
 _get_module_name(gint source)
 {
-  static const gchar *module_names[SCS_MAX] =
+  static const gchar *module_names[] =
   {
     "none",
     "file",
@@ -121,8 +122,12 @@ _get_module_name(gint source)
     "python",
     "filter",
     "parser",
-    "monitoring"
+    "monitoring",
+    "stdin",
   };
+#if defined(static_assert)
+  static_assert(sizeof(module_names)/sizeof(module_names[0])==SCS_MAX, "The module_names must match the SCS_ items.");
+#endif
   return module_names[source & SCS_SOURCE_MASK];
 }
 
