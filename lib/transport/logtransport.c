@@ -38,12 +38,19 @@ log_transport_free_method(LogTransport *s)
     }
 }
 
+static gint
+_get_id(LogTransport *self)
+{
+  return self->fd;
+}
+
 void
 log_transport_init_instance(LogTransport *self, gint fd)
 {
   self->fd = fd;
   self->cond = 0;
   self->free_fn = log_transport_free_method;
+  self->get_id  = _get_id;
 }
 
 void

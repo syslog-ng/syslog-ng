@@ -49,11 +49,18 @@ log_proto_client_free(LogProtoClient *s)
   g_free(s);
 }
 
+gint
+_get_id(LogProtoClient *self)
+{
+  return log_transport_get_id(self->transport);
+}
+
 void
 log_proto_client_init(LogProtoClient *self, LogTransport *transport, const LogProtoClientOptions *options)
 {
   self->validate_options = log_proto_client_validate_options_method;
   self->free_fn = log_proto_client_free_method;
+  self->get_id  = _get_id;
   self->options = options;
   self->transport = transport;
 }
