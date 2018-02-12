@@ -339,14 +339,6 @@ typedef struct diskq_tester_parameters
   guint32 qout_size;
 } diskq_tester_parameters_t;
 
-
-typedef struct
-{
-  LogQueue *q;
-  guint32 num;
-  guint32 single_msg_size;
-} feed_and_assert_t;
-
 void
 init_statistics(LogQueue *q)
 {
