@@ -22,4 +22,4 @@ target_link_libraries(csvparser PRIVATE syslog-ng)
 
 install(TARGETS csvparser LIBRARY DESTINATION lib/syslog-ng/ COMPONENT csvparser)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

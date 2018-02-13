@@ -12,4 +12,4 @@ add_library(eventlog SHARED
 
 install(TARGETS eventlog DESTINATION lib)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

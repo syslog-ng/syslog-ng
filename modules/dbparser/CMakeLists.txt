@@ -82,4 +82,4 @@ install(TARGETS dbparser
         LIBRARY DESTINATION lib/syslog-ng/
         COMPONENT dbparser)
 add_subdirectory(pdbtool)
-add_subdirectory(tests)
+add_test_subdirectory(tests)

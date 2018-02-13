@@ -27,6 +27,6 @@ target_link_libraries(appmodel PRIVATE syslog-ng)
 
 install(TARGETS appmodel LIBRARY DESTINATION lib/syslog-ng/ COMPONENT appmodel)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)
 
 endif()

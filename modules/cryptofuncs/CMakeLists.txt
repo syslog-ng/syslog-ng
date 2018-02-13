@@ -12,5 +12,5 @@ if (OPENSSL_FOUND)
 
     install(TARGETS cryptofuncs LIBRARY DESTINATION lib/syslog-ng/ COMPONENT cryptofuncs)
 
-    add_subdirectory(tests)
+    add_test_subdirectory(tests)
 endif()

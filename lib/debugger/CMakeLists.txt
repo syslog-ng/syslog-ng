@@ -10,4 +10,4 @@ set(DEBUGGER_SOURCES
     debugger/debugger-main.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

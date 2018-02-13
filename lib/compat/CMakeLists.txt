@@ -26,4 +26,4 @@ set(COMPAT_SOURCES
     compat/getent.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

@@ -24,4 +24,4 @@ target_link_libraries(date PRIVATE syslog-ng)
 
 install(TARGETS date LIBRARY DESTINATION lib/syslog-ng/ COMPONENT date)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

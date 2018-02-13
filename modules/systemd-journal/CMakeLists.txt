@@ -41,5 +41,5 @@ if (BUILD_JOURNALD)
 
     install(TARGETS sdjournal LIBRARY DESTINATION lib/syslog-ng/)
 
-    add_subdirectory(tests)
+    add_test_subdirectory(tests)
 endif()

@@ -16,4 +16,4 @@ set(TRANSPORT_SOURCES
     transport/transport-tls.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

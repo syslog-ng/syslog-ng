@@ -10,4 +10,4 @@ target_link_libraries(linux-kmsg-format PRIVATE syslog-ng)
 
 install(TARGETS linux-kmsg-format LIBRARY DESTINATION lib/syslog-ng/ COMPONENT linux-kmsg)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

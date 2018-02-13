@@ -46,4 +46,4 @@ target_include_directories(dqtool PRIVATE ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_
 install(TARGETS dqtool RUNTIME DESTINATION bin COMPONENT diskbuffer)
 install(TARGETS disk-buffer LIBRARY DESTINATION lib/syslog-ng COMPONENT diskbuffer)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

@@ -6,4 +6,4 @@ set(LIST_SCANNER_SOURCES
     list-scanner/list-scanner.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

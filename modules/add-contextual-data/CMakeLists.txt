@@ -33,4 +33,4 @@ target_link_libraries(add_contextual_data PRIVATE syslog-ng)
 
 install(TARGETS add_contextual_data LIBRARY DESTINATION lib/syslog-ng/ COMPONENT add_contextual_data)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

@@ -26,4 +26,4 @@ target_link_libraries(kvformat PRIVATE syslog-ng)
 
 install(TARGETS kvformat LIBRARY DESTINATION lib/syslog-ng/ COMPONENT kvformat)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

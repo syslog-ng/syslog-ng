@@ -20,4 +20,4 @@ set(REWRITE_SOURCES
     PARENT_SCOPE
     )
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

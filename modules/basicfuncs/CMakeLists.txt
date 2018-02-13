@@ -11,5 +11,5 @@ if (ENABLE_BASICFUNCS)
 
   install(TARGETS basicfuncs LIBRARY DESTINATION lib/syslog-ng/ COMPONENT basicfuncs)
 
-  add_subdirectory(tests)
+  add_test_subdirectory(tests)
 endif (ENABLE_BASICFUNCS)

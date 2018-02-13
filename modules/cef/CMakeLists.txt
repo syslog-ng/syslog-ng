@@ -11,4 +11,4 @@ target_link_libraries(cef PRIVATE syslog-ng)
 
 install(TARGETS cef LIBRARY DESTINATION lib/syslog-ng/ COMPONENT cef)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

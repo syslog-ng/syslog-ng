@@ -61,4 +61,4 @@ install(TARGETS affile
     LIBRARY DESTINATION lib/syslog-ng/
     COMPONENT affile)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

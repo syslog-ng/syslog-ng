@@ -37,4 +37,4 @@ target_link_libraries(geoip2-plugin PRIVATE syslog-ng)
 
 install(TARGETS geoip2-plugin LIBRARY DESTINATION lib/syslog-ng/ COMPONENT geoip2)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)
