@@ -27,10 +27,6 @@ include (ExternalProject)
 include (external_or_find_package)
 include (add_tests)
 
-SET (CTEST_ENVIRONMENT
-  "G_SLICE=always-malloc,debug-blocks"
-  "G_DEBUG=fatal-warnings,fatal-criticals,gc-friendly"
-  )
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${CMAKE_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")
 set(MEMORYCHECK_COMMAND_OPTIONS "--num-callers=30 --sim-hints=no-nptl-pthread-stackcache --gen-suppressions=all --leak-check=full --freelist-vol=200000000 --freelist-big-blocks=10000000 --malloc-fill=55 --free-fill=AA")
 
@@ -70,11 +66,6 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
 ELSE()
   set (SYSLOG_NG_ENABLE_DEBUG 0)
 ENDIF()
-
-# The inclusion of CTest triggers enable_testing()
-# CMake will generate tests only if the enable_testing() command has been invoked.
-# The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
-include(CTest)
 
 include (CheckTypeSize)
 include (CheckStructMember)
@@ -176,6 +167,26 @@ set_target_properties(check-copyright PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES
   "copyright-run.log;copyright-err.log")
 
+# The inclusion of CTest triggers enable_testing()
+# CMake will generate tests only if the enable_testing() command has been invoked.
+# The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
+
+if (CRITERION_FOUND)
+  option(BUILD_TESTING "Enable unit tests" ON)
+else()
+  option(BUILD_TESTING  "Enable unit tests" OFF)
+endif()
+
+if (BUILD_TESTING AND NOT CRITERION_FOUND)
+  message(FATAL_ERROR "BUILD_TESTING enabled without criterion detected!")
+endif()
+
+if(CRITERION_FOUND)
+  SET (CTEST_ENVIRONMENT
+    "G_SLICE=always-malloc,debug-blocks"
+    "G_DEBUG=fatal-warnings,fatal-criticals,gc-friendly")
+  include(CTest)
+endif()
 
 include_directories (${PROJECT_BINARY_DIR}/lib)
 include_directories (${PROJECT_BINARY_DIR})
