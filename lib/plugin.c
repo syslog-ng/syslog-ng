@@ -37,6 +37,9 @@
 #ifdef _AIX
 #define G_MODULE_SUFFIX "a"
 #endif
+#ifdef __APPLE__
+#define G_MODULE_SUFFIX "dylib"
+#endif
 
 static void
 plugin_candidate_set_module_name(PluginCandidate *self, const gchar *module_name)
@@ -308,6 +311,19 @@ plugin_dlopen_module_on_path(const gchar *module_name, const gchar *module_path)
         {
           *dot = 0;
           p = g_strdup_printf("%s.a", plugin_module_name);
+          g_free(plugin_module_name);
+          plugin_module_name = p;
+        }
+      if (is_file_regular(plugin_module_name))
+        break;
+#endif
+#ifdef __APPLE__
+      /* On Mac the modules are in .dylib files */
+      dot = strrchr(plugin_module_name, '.');
+      if (dot)
+        {
+          *dot = 0;
+          p = g_strdup_printf("%s.dylib", plugin_module_name);
           g_free(plugin_module_name);
           plugin_module_name = p;
         }
