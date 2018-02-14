@@ -136,6 +136,8 @@ class TemplateLexer(LexBasedLexer):
             t.lexer.pop_state()
             return t
 
+        return None
+
     def t_dollarparen_QUOTE(self, t):
         r'"'
         t.lexer.current_token += t.value

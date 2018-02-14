@@ -57,7 +57,7 @@ class CompleterLang(object):
     def p_error(self, p):
         if p is None:
             # EOF
-            return None
+            return
         elif p.type == 'TAB':
             # We look up the current grammar state from the local variables of the caller,
             # as it doesn't publish this information in self.
@@ -75,7 +75,7 @@ class CompleterLang(object):
             elif 'state' in sys._getframe(2).f_locals:
                 parser_state = sys._getframe(2).f_locals['state']
             else:
-                return None
+                return
 
             # now handle the error that the TAB token caused
             self._token_position = p.lexpos

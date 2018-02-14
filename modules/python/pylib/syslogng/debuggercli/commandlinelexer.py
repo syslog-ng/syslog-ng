@@ -82,6 +82,8 @@ class CommandLineLexer(Lexer):
                 partial = True
             return LexerToken('ARG', value=self._current_token, partial=partial, lexpos=start_position)
 
+        return None
+
     def _skip_whitespace(self):
         while self._current_position < len(self._input) and self._input[self._current_position].isspace():
             self._current_position += 1
@@ -98,6 +100,8 @@ class CommandLineLexer(Lexer):
         else:
             self._current_token += current_char
 
+        return None
+
     def _open_paren(self, current_char):
         self._paren_balance += 1
         self._current_token += current_char
@@ -109,10 +113,14 @@ class CommandLineLexer(Lexer):
             return LexerToken('ARG', value=self._current_token)
         self._current_token += current_char
 
+        return None
+
     def _close_current_token(self, current_char):
         if self._paren_balance == 0:
             return LexerToken('ARG', value=self._current_token)
         self._current_token += current_char
+
+        return None
 
     def _process_string_character(self, current_char):
         if current_char == '\\':
