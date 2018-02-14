@@ -124,6 +124,7 @@ _get_module_name(gint source)
     "parser",
     "monitoring",
     "stdin",
+    "openbsd"
   };
 #if defined(static_assert)
   static_assert(sizeof(module_names)/sizeof(module_names[0])==SCS_MAX, "The module_names must match the SCS_ items.");
