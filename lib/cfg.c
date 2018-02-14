@@ -447,7 +447,7 @@ cfg_new(gint version)
   self->use_uniqid = FALSE;
   self->jvm_options = NULL;
 
-  self->logstore_journal_shmem_threshold = 536870912;
+  self->logstore_journal_shmem_threshold = 512 * 1024 *1024;
   self->timestamp_url = NULL;
   self->timestamp_policy = NULL;
 
