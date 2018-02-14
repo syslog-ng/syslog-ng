@@ -46,7 +46,7 @@ test_normal_working(void)
 {
   PREPARE_TEST
   assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
-  assert_true(timestamp_deserialize(26, sa, output_timestamps), "Failed to deserialize timestamps");
+  assert_true(timestamp_deserialize(sa, output_timestamps), "Failed to deserialize timestamps");
 
   assert_nstring((const gchar *)input_timestamps, sizeof(input_timestamps),
                  (const gchar *)output_timestamps, sizeof(output_timestamps),
@@ -63,19 +63,19 @@ test_derializing_injured_timestamp(void)
   assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
 
   g_string_truncate(stream, 0);
-  assert_false(timestamp_deserialize(26, sa, output_timestamps), "Should be failed");
+  assert_false(timestamp_deserialize(sa, output_timestamps), "Should be failed");
 
   serialize_archive_free(sa);
   sa = serialize_string_archive_new(stream);
   assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
   g_string_truncate(stream, sizeof(guint64));
-  assert_false(timestamp_deserialize(26, sa, output_timestamps), "Should be failed");
+  assert_false(timestamp_deserialize(sa, output_timestamps), "Should be failed");
 
   serialize_archive_free(sa);
   sa = serialize_string_archive_new(stream);
   assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
   g_string_truncate(stream, sizeof(guint64) + sizeof(guint32));
-  assert_false(timestamp_deserialize(26, sa, output_timestamps), "Should be failed");
+  assert_false(timestamp_deserialize(sa, output_timestamps), "Should be failed");
 
   CLEAN_TEST
 }
