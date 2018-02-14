@@ -447,6 +447,10 @@ cfg_new(gint version)
   self->use_uniqid = FALSE;
   self->jvm_options = NULL;
 
+  self->logstore_journal_shmem_threshold = 536870912;
+  self->timestamp_url = NULL;
+  self->timestamp_policy = NULL;
+
   stats_options_defaults(&self->stats_options);
 
   cfg_tree_init_instance(&self->tree, self);
@@ -596,6 +600,18 @@ cfg_free(GlobalConfig *self)
   log_template_unref(self->proto_template);
   log_template_options_destroy(&self->template_options);
   host_resolve_options_destroy(&self->host_resolve_options);
+
+  if (self->timestamp_url)
+    {
+      g_free(self->timestamp_url);
+      self->timestamp_url = NULL;
+    }
+
+  if (self->timestamp_policy)
+    {
+      g_free(self->timestamp_policy);
+      self->timestamp_policy = NULL;
+    }
 
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);

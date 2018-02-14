@@ -236,6 +236,11 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_JVM_OPTIONS                 10303
 %token KW_READ_OLD_RECORDS            10304
 
+/* logstore options */
+%token KW_LGS_JOURNAL_SHMEM_THRESHOLD               10305
+%token KW_TIMESTAMP_URL               10306
+%token KW_TIMESTAMP_POLICY            10307
+
 /* log statement options */
 %token KW_FLAGS                       10190
 
@@ -926,6 +931,9 @@ options_item
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
   | KW_JVM_OPTIONS '(' string ')' {configuration->jvm_options = g_strdup($3); free($3);}
+  | KW_LGS_JOURNAL_SHMEM_THRESHOLD '(' positive_integer ')'		{ configuration->logstore_journal_shmem_threshold = $3; }
+  | KW_TIMESTAMP_URL '(' string ')' {configuration->timestamp_url = g_strdup($3); free($3);}
+  | KW_TIMESTAMP_POLICY '(' string ')' {configuration->timestamp_policy = g_strdup($3); free($3);}
 	| { last_template_options = &configuration->template_options; } template_option
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
 	| { last_stats_options = &configuration->stats_options; } stat_option

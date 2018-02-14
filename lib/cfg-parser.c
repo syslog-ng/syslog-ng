@@ -133,6 +133,10 @@ static CfgLexerKeyword main_keywords[] =
   { "throttle",           KW_THROTTLE },
   { "jvm_options",        KW_JVM_OPTIONS },
 
+  { "logstore_journal_shmem_threshold", KW_LGS_JOURNAL_SHMEM_THRESHOLD },
+  { "timestamp_url",      KW_TIMESTAMP_URL },
+  { "timestamp_policy",   KW_TIMESTAMP_POLICY },
+
   { "create_dirs",        KW_CREATE_DIRS },
   { "optional",           KW_OPTIONAL },
 
