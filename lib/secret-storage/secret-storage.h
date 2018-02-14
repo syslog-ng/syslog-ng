@@ -70,4 +70,6 @@ typedef struct
 typedef gboolean (*SecretStatusCB)(SecretStatus *secret_status, gpointer user_data);
 void secret_storage_status_foreach(SecretStatusCB cb, gpointer user_data) PUBLIC;
 
+gboolean secret_storage_contains_key(const gchar *key) PUBLIC;
+
 #endif

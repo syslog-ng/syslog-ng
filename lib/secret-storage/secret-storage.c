@@ -305,3 +305,10 @@ secret_storage_update_status(const gchar *key, SecretStorageSecretState state)
 
   secret_storage->state = state;
 }
+
+gboolean
+secret_storage_contains_key(const gchar *key)
+{
+  SecretStorage *secret_storage = g_hash_table_lookup(secret_manager, key);
+  return (secret_storage != NULL);
+}
