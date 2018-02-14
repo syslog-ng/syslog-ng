@@ -31,6 +31,7 @@ from __future__ import print_function
 import fileinput
 import os
 import sys
+import codecs
 
 grammar_file = os.path.join(os.environ.get('top_srcdir', ''), 'lib/cfg-grammar.y')
 if not os.path.isfile(grammar_file):
@@ -38,11 +39,17 @@ if not os.path.isfile(grammar_file):
 if not os.path.isfile(grammar_file):
     sys.exit('Error opening cfg-grammar.y')
 
+def print_to_stdout(line):
+    if sys.hexversion >= 0x3000000:
+        sys.stdout.buffer.write(line.encode("utf-8"))
+    else:
+        print(line.encode("utf-8"), end='')
+
 def include_block(block_type):
     start_marker = 'START_' + block_type
     end_marker = 'END_' + block_type
 
-    with open(grammar_file) as f:
+    with codecs.open(grammar_file, encoding="utf-8") as f:
         in_block = False
         for line in f:
             if start_marker in line:
@@ -50,13 +57,12 @@ def include_block(block_type):
             elif end_marker in line:
                 in_block = False
             elif in_block:
-                print(line, end='')
+                print_to_stdout(line)
 
-for line in fileinput.input():
+for line in fileinput.input(openhook=fileinput.hook_encoded("utf-8")):
     if 'INCLUDE_DECLS' in line:
         include_block('DECLS')
     elif 'INCLUDE_RULES' in line:
         include_block('RULES')
     else:
-        print(line, end='')
-
+        print_to_stdout(line)
