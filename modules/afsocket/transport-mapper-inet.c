@@ -177,7 +177,12 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
   TLSContextSetupResult tls_ctx_setup_res = tls_context_setup_context(self->tls_context);
 
   if (tls_ctx_setup_res == TLS_CONTEXT_SETUP_OK)
-    return func(func_args);
+    {
+      const gchar *key = tls_context_get_key_file(self->tls_context);
+      if (secret_storage_contains_key(key))
+        secret_storage_update_status(key, SECRET_STORAGE_SUCCESS);
+      return func(func_args);
+    }
 
   if (tls_ctx_setup_res == TLS_CONTEXT_SETUP_BAD_PASSWORD)
     {
