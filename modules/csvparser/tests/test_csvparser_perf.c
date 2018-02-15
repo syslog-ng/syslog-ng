@@ -22,9 +22,9 @@
  */
 
 #include "csvparser.h"
+#include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "string-list.h"
-#include "scratch-buffers.h"
 
 LogParser *
 _construct_parser(gint max_columns, gint dialect, gchar *delimiters, gchar *quotes, gchar *null_value,
@@ -145,11 +145,8 @@ test_escaped_parsers(void)
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
-  stats_init();
-  scratch_buffers_allocator_init();
-  log_msg_global_init();
+  app_startup();
   test_escaped_parsers();
-  log_msg_global_deinit();
-  stats_destroy();
+  app_shutdown();
   return 0;
 }
