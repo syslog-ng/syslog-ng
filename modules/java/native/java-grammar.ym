@@ -32,6 +32,7 @@
 
 #include "cfg-parser.h"
 #include "cfg-grammar.h"
+#include "java-config.h"
 #include "plugin.h"
 
 }
@@ -49,6 +50,7 @@
 %token KW_CLASS_PATH
 %token KW_CLASS_NAME
 %token KW_OPTION
+%token KW_JVM_OPTIONS
 
 %%
 
@@ -58,6 +60,7 @@ start
             last_driver = *instance = java_dd_new(configuration);
           }
           '(' java_dest_options ')'		{ YYACCEPT; }
+        | LL_CONTEXT_OPTIONS java_global_option { YYACCEPT; }
         ;
 
 java_dest_options
@@ -91,6 +94,9 @@ java_dest_custom_options
 java_dest_custom_option
   : string string_or_number { java_dd_set_option(last_driver, $1, $2); free($1); free($2); }
 
+java_global_option
+        : KW_JVM_OPTIONS '(' string ')' {java_config_set_jvm_options(configuration, g_strdup($3)); free($3);}
+	;
 /* INCLUDE_RULES */
 
 %%

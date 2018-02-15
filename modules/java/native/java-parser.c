@@ -33,6 +33,8 @@ static CfgLexerKeyword java_keywords[] =
   { "class_path",  KW_CLASS_PATH},
   { "class_name",  KW_CLASS_NAME},
   { "option",      KW_OPTION},
+
+  { "jvm_options", KW_JVM_OPTIONS},
   { NULL }
 };
 

@@ -28,6 +28,7 @@
 #include "logqueue.h"
 #include "driver.h"
 #include "str-utils.h"
+#include "java-config.h"
 
 #include <stdio.h>
 
@@ -130,8 +131,9 @@ java_dd_init(LogPipe *s)
       return FALSE;
     }
 
+  const gchar *jvm_options = java_config_get_jvm_options(cfg);
   self->proxy = java_destination_proxy_new(self->class_name, self->class_path->str, self, self->template,
-                                           &self->super.seq_num, cfg->jvm_options);
+                                           &self->super.seq_num, jvm_options);
   if (!self->proxy)
     return FALSE;
 

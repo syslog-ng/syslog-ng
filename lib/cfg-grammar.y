@@ -158,6 +158,7 @@ extern struct _StatsOptions *last_stats_options;
 %token LL_CONTEXT_INNER_SRC           16
 %token LL_CONTEXT_CLIENT_PROTO        17
 %token LL_CONTEXT_SERVER_PROTO        18
+%token LL_CONTEXT_OPTIONS             19
 
 
 /* statements */
@@ -233,7 +234,6 @@ extern struct _StatsOptions *last_stats_options;
 
 %token KW_PERSIST_NAME                10302
 
-%token KW_JVM_OPTIONS                 10303
 %token KW_READ_OLD_RECORDS            10304
 
 /* log statement options */
@@ -921,16 +921,27 @@ options_item
 	| KW_LOG_MSG_SIZE '(' positive_integer ')'	{ configuration->log_msg_size = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
-        | KW_CUSTOM_DOMAIN '(' string ')'       { configuration->custom_domain = g_strdup($3); free($3); }
+  | KW_CUSTOM_DOMAIN '(' string ')'       { configuration->custom_domain = g_strdup($3); free($3); }
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
-  | KW_JVM_OPTIONS '(' string ')' {configuration->jvm_options = g_strdup($3); free($3);}
 	| { last_template_options = &configuration->template_options; } template_option
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
 	| { last_stats_options = &configuration->stats_options; } stat_option
 	| { last_dns_cache_options = &configuration->dns_cache_options; } dns_cache_option
 	| { last_file_perm_options = &configuration->file_perm_options; } file_perm_option
+	| LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_OPTIONS;
+            gpointer result;
+
+            p = cfg_find_plugin(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            cfg_parse_plugin(configuration, p, &@1, NULL);
+            free($1);
+          }
 	;
 
 stat_option
