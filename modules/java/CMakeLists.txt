@@ -10,6 +10,8 @@ set (NATIVE_SOURCES
     native/java-parser.c
     native/java-parser.h
     native/java-plugin.c
+    native/java-config.c
+    native/java-config.h
     ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.h
 )

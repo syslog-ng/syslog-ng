@@ -934,7 +934,6 @@ options_item
           {
             Plugin *p;
             gint context = LL_CONTEXT_OPTIONS;
-            gpointer result;
 
             p = cfg_find_plugin(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
