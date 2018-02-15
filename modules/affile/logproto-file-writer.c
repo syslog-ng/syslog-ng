@@ -154,7 +154,7 @@ write_error:
  * successfully sent this message, or if it should be resent by the caller.
  **/
 static LogProtoStatus
-log_proto_file_writer_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_file_writer_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
   LogProtoStatus result;

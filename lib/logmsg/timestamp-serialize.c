@@ -56,18 +56,23 @@ _read_log_stamp(SerializeArchive *sa, LogStamp *stamp)
 gboolean
 timestamp_serialize(SerializeArchive *sa, LogStamp *timestamps)
 {
-  LogStamp additional_timestamp;
+  LogStamp additional_timestamp = {0};
   return _write_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
          _write_log_stamp(sa, &timestamps[LM_TS_RECVD]) &&
          _write_log_stamp(sa, &additional_timestamp);
 }
 
+gboolean
+timestamp_deserialize_legacy(SerializeArchive *sa, LogStamp *timestamps)
+{
+  return (_read_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
+          _read_log_stamp(sa, &timestamps[LM_TS_RECVD]));
+}
 
 gboolean
 timestamp_deserialize(SerializeArchive *sa, LogStamp *timestamps)
 {
   LogStamp additional_timestamp = {0};
-  return _read_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
-         _read_log_stamp(sa, &timestamps[LM_TS_RECVD]) &&
-         _read_log_stamp(sa, &additional_timestamp);
+  return (timestamp_deserialize_legacy(sa, timestamps) &&
+          _read_log_stamp(sa, &additional_timestamp));
 }

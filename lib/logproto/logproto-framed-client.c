@@ -35,7 +35,7 @@ typedef struct _LogProtoFramedClient
 } LogProtoFramedClient;
 
 static LogProtoStatus
-log_proto_framed_client_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_framed_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoFramedClient *self = (LogProtoFramedClient *) s;
   gint frame_hdr_len;

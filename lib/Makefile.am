@@ -154,6 +154,7 @@ pkginclude_HEADERS			+= \
 	lib/str-utils.h			\
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
+	lib/misc.h                      \
 	lib/string-list.h		\
 	lib/timeutils.h			\
 	lib/tls-support.h		\

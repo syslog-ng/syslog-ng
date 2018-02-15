@@ -1,6 +1,8 @@
 /*
- * Copyright (c) 2002-2015 Balabit
- * Copyright (c) 2015 Viktor Juhasz <viktor.juhasz@balabit.com>
+ * Copyright (c) 2002-2012 Balabit
+ * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2012-2013 Viktor Juhasz
+ * Copyright (c) 2012-2013 Viktor Tusa
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,16 +24,18 @@
  *
  */
 
-#ifndef TIMESTAMP_SERIALIZE_H
-#define TIMESTAMP_SERIALIZE_H
+#ifndef NVTABLE_SERIALIZE_LEGACY_H_
+#define NVTABLE_SERIALIZE_LEGACY_H_
 
-#include "logmsg/logmsg.h"
+#include "nvtable.h"
 #include "serialize.h"
 
-gboolean timestamp_serialize(SerializeArchive *sa, LogStamp *timestamps);
+/*
+ * Contains the deserialization functions of old NVTable versions.
+ * We should be able to deserialize all previous versions of NVTable or logmsg.
+ */
 
-gboolean timestamp_deserialize_legacy(SerializeArchive *sa, LogStamp *timestamps);
-gboolean timestamp_deserialize(SerializeArchive *sa, LogStamp *timestamps);
+NVTable *nv_table_deserialize_22(SerializeArchive *sa);
+NVTable *nv_table_deserialize_legacy(SerializeArchive *sa);
 
-
-#endif
+#endif /* NVTABLE_SERIALIZE_LEGACY_H_ */
