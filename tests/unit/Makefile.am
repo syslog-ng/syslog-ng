@@ -23,6 +23,7 @@ unit_test_extra_modules			= \
 
 tests_unit_test_logwriter_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
+tests_unit_test_logwriter_CFLAGS	= $(TEST_CFLAGS)
 
 tests_unit_test_logqueue_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_logqueue_LDADD		= \
@@ -66,6 +67,7 @@ tests_unit_test_hostid_LDADD		= \
 
 tests_unit_test_zone_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
+tests_unit_test_zone_CFLAGS		= $(TEST_CFLAGS)
 
 tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_pathutils_LDADD	= \
