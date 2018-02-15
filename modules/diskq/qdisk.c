@@ -786,6 +786,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       self->hdr->write_head = QDISK_RESERVED_SPACE;
       self->hdr->backlog_head = self->hdr->read_head;
       self->hdr->length = 0;
+      self->file_size = self->hdr->write_head;
 
       if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
         {
@@ -855,6 +856,7 @@ void
 qdisk_init(QDisk *self, DiskQueueOptions *options)
 {
   self->fd = -1;
+  self->file_size = 0;
   self->options = options;
   if (!self->options->reliable)
     self->file_id = "SLQF";
