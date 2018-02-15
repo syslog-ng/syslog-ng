@@ -111,6 +111,10 @@ struct _GlobalConfig
 
   gchar *jvm_options;
 
+  gint64  logstore_journal_shmem_threshold;
+  gchar *timestamp_url;
+  gchar *timestamp_policy;
+
   LogTemplate *file_template;
   LogTemplate *proto_template;
 
