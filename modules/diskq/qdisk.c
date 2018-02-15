@@ -967,6 +967,12 @@ qdisk_reset_file_if_possible(QDisk *self)
     }
 }
 
+DiskQueueOptions *
+qdisk_get_options(QDisk *self)
+{
+  return self->options;
+}
+
 gint64
 qdisk_get_length(QDisk *self)
 {

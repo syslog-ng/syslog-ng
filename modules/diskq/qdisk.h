@@ -53,6 +53,7 @@ void qdisk_free(QDisk *self);
 
 gboolean qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
 
+DiskQueueOptions *qdisk_get_options(QDisk *self);
 gint64 qdisk_get_length(QDisk *self);
 void qdisk_set_length(QDisk *self, gint64 new_value);
 gint64 qdisk_get_size(QDisk *self);

@@ -304,6 +304,8 @@ _restart_diskq(LogQueueDisk *self, gboolean corrupted)
 {
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
   gchar *new_file = NULL;
+  DiskQueueOptions *options = qdisk_get_options(self->qdisk);
+
   qdisk_deinit(self->qdisk);
   if (corrupted)
     {
@@ -311,6 +313,7 @@ _restart_diskq(LogQueueDisk *self, gboolean corrupted)
       rename(filename,new_file);
       g_free(new_file);
     }
+  qdisk_init(self->qdisk, options);
   if (self->start)
     {
       self->start(self, filename);
