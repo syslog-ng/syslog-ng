@@ -83,9 +83,6 @@ struct _QDisk
   gchar *filename;
   gchar *file_id;
   gint fd;
-  gint64 read_qout_ofs; /* the size in bytes between read_head and qout_ofs */
-  gint64 prev_read_head;
-  gint64 prev_length;
   gint64 file_size;
   QDiskFileHeader *hdr;
   DiskQueueOptions *options;
@@ -460,7 +457,6 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   qoverflow_count = self->hdr->qoverflow_count;
   qoverflow_len = self->hdr->qoverflow_len;
   qoverflow_ofs = self->hdr->qoverflow_ofs;
-  self->read_qout_ofs = qout_ofs;
 
   if ((self->hdr->read_head < QDISK_RESERVED_SPACE) ||
       (self->hdr->write_head < QDISK_RESERVED_SPACE) ||
