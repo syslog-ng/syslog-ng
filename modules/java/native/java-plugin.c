@@ -38,6 +38,11 @@ extern CfgParser java_parser;
 static Plugin java_plugins[] =
 {
   {
+    .type = LL_CONTEXT_OPTIONS,
+    .name = "jvm_options",
+    .parser = &java_parser,
+  },
+  {
     .type = LL_CONTEXT_DESTINATION,
     .name = "java",
     .parser = &java_parser,

@@ -131,7 +131,6 @@ static CfgLexerKeyword main_keywords[] =
   { "program_override",   KW_PROGRAM_OVERRIDE },
   { "host_override",      KW_HOST_OVERRIDE },
   { "throttle",           KW_THROTTLE },
-  { "jvm_options",        KW_JVM_OPTIONS },
 
   { "create_dirs",        KW_CREATE_DIRS },
   { "optional",           KW_OPTIONAL },
