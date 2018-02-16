@@ -23,10 +23,12 @@
  */
 #include "control/control.h"
 #include "control/control-main.h"
+#include "lib/secret-storage/secret-storage.h"
 #include "mainloop.h"
 #include "messages.h"
 #include "apphook.h"
 #include "stats/stats-query-commands.h"
+#include "string.h"
 
 static GList *command_list = NULL;
 
@@ -129,6 +131,72 @@ control_connection_reopen(GString *command, gpointer user_data)
   return result;
 }
 
+static const gchar *
+secret_status_to_string(SecretStorageSecretState state)
+{
+  switch (state)
+    {
+    case SECRET_STORAGE_STATUS_PENDING:
+      return "PENDING";
+    case SECRET_STORAGE_SUCCESS:
+      return "SUCCESS";
+    case SECRET_STORAGE_STATUS_FAILED:
+      return "FAILED";
+    case SECRET_STORAGE_STATUS_INVALID_PASSWORD:
+      return "INVALID_PASSWORD";
+    default:
+      g_assert_not_reached();
+    }
+  return "SHOULD NOT BE REACHED";
+}
+
+gboolean
+secret_storage_status_iterator(SecretStatus *status, gpointer user_data)
+{
+  GString *status_str = (GString *) user_data;
+  g_string_append_printf(status_str,"%s\t%s\n",status->key, secret_status_to_string(status->state));
+  return TRUE;
+}
+
+static GString *
+process_pwd(GString *command, gpointer user_data)
+{
+  GString *result = g_string_new("\n");
+  gchar **cmds = g_strsplit(command->str, " ", 4);
+
+  if (g_strcmp0(cmds[1],"add")==0)
+    {
+      if (!cmds[2] || strlen(cmds[2])==0)
+        {
+          g_string_assign(result,"Invalid arguments received (missing key)\n");
+        }
+      else if (!cmds[3] || strlen(cmds[3])==0)
+        {
+          g_string_assign(result,"Invalid arguments received (missing secret)\n");
+        }
+      else
+        {
+          if (!secret_storage_store_string(cmds[2],cmds[3]))
+            {
+              g_string_assign(result,"Error while saving credentials\n");
+            }
+        }
+      g_string_assign(result, "Credentials stored\n");
+    }
+  else if (strcmp(cmds[1],"status")==0)
+    {
+      g_string_assign(result,"Secret store status:\n");
+      secret_store_status_foreach(secret_storage_status_iterator, (gpointer) result);
+    }
+  else
+    {
+      g_string_assign(result,"Invalid arguments received\n");
+    }
+
+  g_strfreev(cmds);
+  return result;
+}
+
 ControlCommand default_commands[] =
 {
   { "LOG", NULL, control_connection_message_log },
@@ -136,6 +204,7 @@ ControlCommand default_commands[] =
   { "RELOAD", NULL, control_connection_reload },
   { "REOPEN", NULL, control_connection_reopen },
   { "QUERY", NULL, process_query_command },
+  { "PWD", NULL, process_pwd },
   { NULL, NULL, NULL },
 };
 

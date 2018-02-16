@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "transport/transport-tls.h"
+#include "secret-storage/secret-storage.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -107,10 +108,96 @@ transport_mapper_inet_init(TransportMapper *s)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
-  if (self->tls_context && !tls_context_setup_context(self->tls_context))
+  if (self->tls_context && (tls_context_setup_context(self->tls_context) != TLS_CONTEXT_SETUP_OK))
     return FALSE;
 
   return TRUE;
+}
+
+typedef struct _call_finalize_init_args
+{
+  TransportMapperInet *transport_mapper_inet;
+  TransportMapperAsyncInitCB func;
+  gpointer func_args;
+} call_finalize_init_args;
+
+static void
+_call_finalize_init(Secret *secret, gpointer user_data)
+{
+  call_finalize_init_args *args = user_data;
+  TransportMapperInet *self = args->transport_mapper_inet;
+
+  if (!self)
+    return;
+
+  TLSContextSetupResult r = tls_context_setup_context(self->tls_context);
+  const gchar *key = tls_context_get_key_file(self->tls_context);
+
+  switch (r)
+    {
+    case TLS_CONTEXT_SETUP_ERROR:
+    {
+      msg_error("Error setting up TLS context",
+                evt_tag_str("keyfile", key));
+      secret_storage_update_status(key, SECRET_STORAGE_STATUS_FAILED);
+      return;
+    }
+    case TLS_CONTEXT_SETUP_BAD_PASSWORD:
+    {
+      msg_error("Invalid password, error setting up TLS context",
+                evt_tag_str("keyfile", key));
+
+      if (!secret_storage_subscribe_for_key(key, _call_finalize_init, args))
+        msg_error("Failed to subscribe for key", evt_tag_str("keyfile", key));
+      else
+        msg_debug("Re-subscribe for key", evt_tag_str("keyfile", key));
+
+      secret_storage_update_status(key, SECRET_STORAGE_STATUS_INVALID_PASSWORD);
+
+      return;
+    }
+    default:
+      secret_storage_update_status(key, SECRET_STORAGE_SUCCESS);
+      if (!args->func(args->func_args))
+        {
+          msg_error("Error finalize initialization",
+                    evt_tag_str("keyfile", key));
+        }
+    }
+}
+
+static gboolean
+transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB func, gpointer func_args)
+{
+  TransportMapperInet *self = (TransportMapperInet *)s;
+
+  if (!self->tls_context)
+    return func(func_args);
+
+  TLSContextSetupResult tls_ctx_setup_res = tls_context_setup_context(self->tls_context);
+
+  if (tls_ctx_setup_res == TLS_CONTEXT_SETUP_OK)
+    return func(func_args);
+
+  if (tls_ctx_setup_res == TLS_CONTEXT_SETUP_BAD_PASSWORD)
+    {
+      const gchar *key = tls_context_get_key_file(self->tls_context);
+      msg_error("Error setting up TLS context",
+                evt_tag_str("keyfile", key));
+      call_finalize_init_args *args = g_new0(call_finalize_init_args, 1);
+      args->transport_mapper_inet = self;
+      args->func = func;
+      args->func_args = func_args;
+      self->secret_store_cb_data = args;
+      gboolean subscribe_res = secret_storage_subscribe_for_key(key, _call_finalize_init, args);
+      if (subscribe_res)
+        msg_info("Waiting for password", evt_tag_str("keyfile", key));
+      else
+        msg_error("Failed to subscribe for key", evt_tag_str("keyfile", key));
+      return subscribe_res;
+    }
+
+  return FALSE;
 }
 
 void
@@ -118,8 +205,16 @@ transport_mapper_inet_free_method(TransportMapper *s)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
+  if (self->secret_store_cb_data)
+    {
+      const gchar *key = tls_context_get_key_file(self->tls_context);
+      secret_storage_unsubscribe(key, _call_finalize_init, self->secret_store_cb_data);
+      g_free(self->secret_store_cb_data);
+    }
+
   if (self->tls_context)
     tls_context_free(self->tls_context);
+
   transport_mapper_free_method(s);
 }
 
@@ -130,6 +225,7 @@ transport_mapper_inet_init_instance(TransportMapperInet *self, const gchar *tran
   self->super.apply_transport = transport_mapper_inet_apply_transport_method;
   self->super.construct_log_transport = transport_mapper_inet_construct_log_transport;
   self->super.init = transport_mapper_inet_init;
+  self->super.async_init = transport_mapper_inet_async_init;
   self->super.free_fn = transport_mapper_inet_free_method;
   self->super.address_family = AF_INET;
 }

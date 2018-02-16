@@ -37,6 +37,7 @@ typedef struct _TransportMapperInet
   TLSContext *tls_context;
   TLSSessionVerifyFunc tls_verify_callback;
   gpointer tls_verify_data;
+  gpointer secret_store_cb_data;
 } TransportMapperInet;
 
 static inline gint

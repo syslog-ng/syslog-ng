@@ -25,6 +25,7 @@
 #include "str-utils.h"
 #include "messages.h"
 #include "compat/openssl_support.h"
+#include "secret-storage/secret-storage.h"
 
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -54,6 +55,14 @@ struct _TLSContext
   GList *trusted_dn_list;
   gint ssl_options;
 };
+
+typedef enum
+{
+  TLS_CONTEXT_OK,
+  TLS_CONTEXT_ERROR,
+  TLS_CONTEXT_FILE_ACCES_ERROR,
+  TLS_CONTEXT_PASSWORD_ERROR
+} TLSContextLoadResult;
 
 gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
@@ -584,19 +593,28 @@ tls_context_load_pkcs12(TLSContext *self)
 }
 
 static gboolean
-tls_context_load_key_and_cert(TLSContext *self)
+_are_key_and_cert_files_accessible(TLSContext *self)
 {
-  if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
-    return FALSE;
-  if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
-    return FALSE;
-  if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
-    return FALSE;
-
-  return TRUE;
+  return file_exists(self->key_file) &&
+         file_exists(self->cert_file);
 }
 
-gboolean
+static TLSContextLoadResult
+tls_context_load_key_and_cert(TLSContext *self)
+{
+  if (!_are_key_and_cert_files_accessible(self))
+    return TLS_CONTEXT_FILE_ACCES_ERROR;
+  if (!SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
+    return TLS_CONTEXT_PASSWORD_ERROR;
+  if (!SSL_CTX_use_certificate_chain_file(self->ssl_ctx, self->cert_file))
+    return TLS_CONTEXT_ERROR;
+  if (self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
+    return TLS_CONTEXT_PASSWORD_ERROR;
+
+  return TLS_CONTEXT_OK;
+}
+
+TLSContextSetupResult
 tls_context_setup_context(TLSContext *self)
 {
   gint verify_flags = X509_V_FLAG_POLICY_CHECK;
@@ -614,7 +632,10 @@ tls_context_setup_context(TLSContext *self)
     }
   else
     {
-      if (!tls_context_load_key_and_cert(self))
+      TLSContextLoadResult r = tls_context_load_key_and_cert(self);
+      if (r == TLS_CONTEXT_PASSWORD_ERROR)
+        goto password_error;
+      if (r != TLS_CONTEXT_OK)
         goto error;
     }
 
@@ -635,7 +656,7 @@ tls_context_setup_context(TLSContext *self)
     {
       SSL_CTX_free(self->ssl_ctx);
       self->ssl_ctx = NULL;
-      return FALSE;
+      return TLS_CONTEXT_SETUP_ERROR;
     }
 
   if (!tls_context_setup_dh(self))
@@ -647,7 +668,7 @@ tls_context_setup_context(TLSContext *self)
         goto error;
     }
 
-  return TRUE;
+  return TLS_CONTEXT_SETUP_OK;
 
 error:
   _print_and_clear_tls_session_error();
@@ -656,7 +677,10 @@ error:
       SSL_CTX_free(self->ssl_ctx);
       self->ssl_ctx = NULL;
     }
-  return FALSE;
+  return TLS_CONTEXT_SETUP_ERROR;
+password_error:
+  _print_and_clear_tls_session_error();
+  return TLS_CONTEXT_SETUP_BAD_PASSWORD;
 }
 
 TLSSession *
@@ -768,11 +792,31 @@ void tls_context_set_verify_mode(TLSContext *self, gint verify_mode)
   self->verify_mode = verify_mode;
 }
 
+static int
+_pem_passwd_callback(char *buf, int size, int rwflag, void *user_data)
+{
+  if (!user_data)
+    return 0;
+
+  char *key = (gchar *)user_data;
+  Secret *secret = secret_storage_get_secret_by_name(key);
+  if (!secret)
+    return 0;
+
+  strncpy(buf, secret->data, secret->len);
+  buf[size-1] = '\0';
+  secret_storage_put_secret(secret);
+
+  return strlen(buf);
+}
+
 void
 tls_context_set_key_file(TLSContext *self, const gchar *key_file)
 {
   g_free(self->key_file);
   self->key_file = g_strdup(key_file);
+  SSL_CTX_set_default_passwd_cb(self->ssl_ctx, _pem_passwd_callback);
+  SSL_CTX_set_default_passwd_cb_userdata(self->ssl_ctx, self->key_file);
 }
 
 void
@@ -977,3 +1021,8 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
   return result;
 }
 
+const gchar *
+tls_context_get_key_file(TLSContext *self)
+{
+  return self->key_file;
+}
