@@ -404,6 +404,7 @@ get_password_from_stdin(gchar *buffer, gulong *length)
   set_console_echo(FALSE);
   if (-1 == getline(&buffer, length, stdin))
     {
+      set_console_echo(TRUE);
       fprintf(stderr, "error while reading password from terminal: %s", strerror(errno));
       g_assert_not_reached();
     }
@@ -414,10 +415,7 @@ get_password_from_stdin(gchar *buffer, gulong *length)
 static gboolean
 is_syslog_ng_running()
 {
-  if (control_client_connect(control_client))
-    return TRUE;
-  else
-    return FALSE;
+  return control_client_connect(control_client);
 }
 
 static gchar *

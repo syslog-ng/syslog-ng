@@ -151,7 +151,7 @@ secret_status_to_string(SecretStorageSecretState state)
 }
 
 gboolean
-secret_storage_status_iterator(SecretStatus *status, gpointer user_data)
+secret_storage_status_accumulator(SecretStatus *status, gpointer user_data)
 {
   GString *status_str = (GString *) user_data;
   g_string_append_printf(status_str, "%s\t%s\n", status->key, secret_status_to_string(status->state));
@@ -162,7 +162,7 @@ static GString *
 process_credentials_status(GString *result)
 {
   g_string_assign(result,"Credential storage status:\n");
-  secret_storage_status_foreach(secret_storage_status_iterator, (gpointer) result);
+  secret_storage_status_foreach(secret_storage_status_accumulator, (gpointer) result);
   return result;
 }
 
@@ -202,7 +202,7 @@ process_credentials(GString *command, gpointer user_data)
 
   gchar *subcommand = arguments[1];
 
-  if (strcmp(arguments[1],"status")==0)
+  if (strcmp(subcommand,"status")==0)
     result = process_credentials_status(result);
   else if (g_strcmp0(subcommand,"add") == 0)
     result = process_credentials_add(result, argc, arguments);
