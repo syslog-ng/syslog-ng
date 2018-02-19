@@ -280,7 +280,7 @@ java_dd_new(GlobalConfig *cfg)
   self->super.format.stats_instance = java_dd_format_stats_instance;
   self->super.stats_source = SCS_JAVA;
 
-  self->template = log_template_new(cfg, "java_dd_template");
+  self->template = log_template_new(cfg, NULL);
   self->class_path = g_string_new(".");
 
   java_dd_set_template_string(&self->super.super.super, "$ISODATE $HOST $MSGHDR$MSG\n");
