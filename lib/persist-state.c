@@ -177,9 +177,8 @@ static void
 _wait_until_map_release(PersistState *self)
 {
   g_mutex_lock(self->mapped_lock);
-  if (self->mapped_counter != 0)
+  while (self->mapped_counter)
     g_cond_wait(self->mapped_release_cond, self->mapped_lock);
-  g_assert(self->mapped_counter == 0);
 }
 
 static gboolean
