@@ -82,11 +82,20 @@ distclean-local: distclean-ax-prefix-config-h
 distclean-ax-prefix-config-h:
 	rm -f _configs.sed syslog-ng-config.h
 
+if ENABLE_TESTING
 local-check: subdir_tests=$(foreach ts,${${check_subdir}_test_subdirs},${${ts}_tests_TESTS})
 local-check: current_tests=$(foreach subdir,${check_subdir} ${check_subdir}_tests,${${subdir}_TESTS})
 local-check:
 	${AM_v_at}${MAKE} check check_PROGRAMS="${current_tests} ${subdir_tests}" \
 				TESTS="${current_tests} ${subdir_tests}"
+endif
+
+check: check_target_guard
+
+check_target_guard:
+if !ENABLE_TESTING
+	$(error "Unit tests disabled")
+endif
 
 ${check_PROGRAMS}: LDFLAGS+=${test_ldflags}
 

@@ -1053,6 +1053,12 @@ PKG_CHECK_MODULES(CRITERION, criterion >= $CRITERION_MIN_VERSION,
   [with_criterion="system"],
   [AC_MSG_WARN([pkg-config was not able to find Criterion >= $CRITERION_MIN_VERSION]); with_criterion="no"])
 
+if test "$with_criterion" != "no"; then
+   enable_tests=yes
+else
+  enable_tests=no
+fi
+
 dnl ***************************************************************************
 dnl ivykis headers/libraries
 dnl ***************************************************************************
@@ -1752,6 +1758,7 @@ AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_LEGACY_MONGODB_OPTIONS, [test x"$enable_legacy_mongodb_options" != x"no"])
 AM_CONDITIONAL(ENABLE_CRITERION, [test "$with_criterion" != "no"])
+AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
 AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
 
@@ -1839,6 +1846,7 @@ echo "  embedded crypto             : ${with_embedded_crypto:=no}"
 echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
 echo " Test dependencies:"
 echo "  Criterion                   : ${with_criterion:=no}"
+echo "  Unit tests                  : ${enable_tests:=no}"
 echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
 echo "  mongoc                      : $with_mongoc"
