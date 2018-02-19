@@ -55,10 +55,8 @@ TEST_LDADD		= $(top_builddir)/libtest/libsyslog-ng-test.a \
 			  $(top_builddir)/lib/libsyslog-ng.la \
 			  $(TOOL_DEPS_LIBS)
 
-if ENABLE_CRITERION
 TEST_CFLAGS		+= $(CRITERION_CFLAGS)
 TEST_LDADD		+= $(CRITERION_LIBS)
-endif
 
 test_ldflags		= -no-install $(NO_PIE_LDFLAG)
 

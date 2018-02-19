@@ -27,14 +27,11 @@ lib_filter_tests_test_filters_netmask6_LDADD     = $(TEST_LDADD)  \
     $(PREOPEN_SYSLOGFORMAT)
 endif
 
-if ENABLE_CRITERION
 lib_filter_tests_TESTS += lib/filter/tests/test_filters_statistics
 
 lib_filter_tests_test_filters_statistics_CFLAGS  = $(TEST_CFLAGS) \
     -I${top_srcdir}/lib/filter/tests
 lib_filter_tests_test_filters_statistics_LDADD     = $(TEST_LDADD)  \
     $(PREOPEN_SYSLOGFORMAT)
-
-endif
 
 include lib/filter/tests/filters-in-list/Makefile.am
