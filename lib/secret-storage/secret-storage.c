@@ -159,7 +159,7 @@ secret_storage_store_secret(const gchar *key, gchar *secret, gsize len)
   if (!secret)
     len = 0;
   else if (len == -1)
-    len = strlen(secret);
+    len = strlen(secret) + 1;
 
   SecretStorage *secret_storage;
   secret_storage = g_hash_table_lookup(secret_manager, key);

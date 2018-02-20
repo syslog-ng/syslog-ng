@@ -178,7 +178,7 @@ process_credentials_add(GString *result, guint argc, gchar **arguments)
   gchar *id = arguments[2];
   gchar *secret = arguments[3];
 
-  if (secret_storage_store_string(id,secret))
+  if (secret_storage_store_secret(id, secret, strlen(secret)))
     g_string_assign(result,"Credentials stored successfully\n");
   else
     g_string_assign(result,"Error while saving credentials\n");
