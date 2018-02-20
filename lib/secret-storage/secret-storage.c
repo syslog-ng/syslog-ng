@@ -111,7 +111,7 @@ realloc_and_write_secret(SecretStorage *secret_storage, const gchar *key, gchar 
 static SecretStorage *
 update_storage_with_secret(SecretStorage *secret_storage, const gchar *key, gchar *secret, gsize len)
 {
-  gboolean fits_into_storage = secret_storage->secret.len > len;
+  gboolean fits_into_storage = (len <= secret_storage->secret.len);
   if (fits_into_storage)
     return overwrite_secret(secret_storage, secret, len);
   else
