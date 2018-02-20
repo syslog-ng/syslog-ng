@@ -380,6 +380,9 @@ static GOptionEntry no_options[] =
 static void
 set_console_echo(gboolean new_state)
 {
+  if (!isatty(STDIN_FILENO))
+    return;
+
   struct termios t;
 
   if (tcgetattr(STDIN_FILENO, &t))
