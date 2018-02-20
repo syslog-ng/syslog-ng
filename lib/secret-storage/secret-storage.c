@@ -104,7 +104,7 @@ realloc_and_write_secret(SecretStorage *secret_storage, const gchar *key, gchar 
   SecretStorage *maybe_new_storage = nondumpable_buffer_realloc(secret_storage, len);
   write_secret(maybe_new_storage, secret, len);
   if (secret_storage != maybe_new_storage)
-    g_hash_table_insert(secret_manager, strdup(key), maybe_new_storage);
+    g_hash_table_insert(secret_manager, g_strdup(key), maybe_new_storage);
   return maybe_new_storage;
 }
 
@@ -126,7 +126,7 @@ create_secret_storage_with_secret(const gchar *key, gchar *secret, gsize len)
     return NULL;
   secret_storage->secret.len = len;
   nondumpable_memcpy(&secret_storage->secret.data, secret, len);
-  g_hash_table_insert(secret_manager, strdup(key), secret_storage);
+  g_hash_table_insert(secret_manager, g_strdup(key), secret_storage);
   secret_storage->subscriptions = g_array_new(FALSE, FALSE, sizeof(Subscription));
   secret_storage->state = SECRET_STORAGE_STATUS_PENDING;
 
@@ -248,11 +248,8 @@ void
 secret_storage_unsubscribe(const gchar *key, SecretStorageCB func, gpointer user_data)
 {
   SecretStorage *secret_storage;
-  if (!g_hash_table_contains(secret_manager, key))
-    return;
-
   secret_storage = g_hash_table_lookup(secret_manager, key);
-  if (!secret_storage->subscriptions)
+  if (!secret_storage || !secret_storage->subscriptions)
     return;
 
   GArray *subscriptions = secret_storage->subscriptions;

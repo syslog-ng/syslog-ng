@@ -401,7 +401,7 @@ set_console_echo(gboolean new_state)
 }
 
 static void
-get_password_from_stdin(gchar *buffer, gulong *length)
+read_password_from_stdin(gchar *buffer, gsize *length)
 {
   printf("enter password:");
   set_console_echo(FALSE);
@@ -422,7 +422,7 @@ is_syslog_ng_running()
 }
 
 static gchar *
-fetch_next_remaining(gchar **remaining, gint *available_index)
+consume_next_from_remaining(gchar **remaining, gint *available_index)
 {
   if (!remaining)
     return NULL;
@@ -438,7 +438,7 @@ slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 
 
   if (!credentials_key)
-    credentials_key = fetch_next_remaining(credentials_remaining, &remaining_unused_index);
+    credentials_key = consume_next_from_remaining(credentials_remaining, &remaining_unused_index);
 
   if (!credentials_key)
     {
@@ -452,7 +452,7 @@ slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     return 1;
 
   if (!credentials_secret)
-    credentials_secret = fetch_next_remaining(credentials_remaining, &remaining_unused_index);
+    credentials_secret = consume_next_from_remaining(credentials_remaining, &remaining_unused_index);
 
   gchar *secret_to_store;
   if (credentials_secret)
@@ -463,12 +463,12 @@ slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     }
   else
     {
-      gulong buff_size = 256;
+      gsize buff_size = 256;
       secret_to_store = g_malloc0(buff_size);
       if (!secret_to_store)
         g_assert_not_reached();
 
-      get_password_from_stdin(secret_to_store, &buff_size);
+      read_password_from_stdin(secret_to_store, &buff_size);
     }
 
   gint retval = asprintf(&answer, "PWD %s %s %s", "add", credentials_key, secret_to_store);

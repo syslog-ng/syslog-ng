@@ -23,7 +23,7 @@
  */
 #include "control/control.h"
 #include "control/control-main.h"
-#include "lib/secret-storage/secret-storage.h"
+#include "secret-storage/secret-storage.h"
 #include "mainloop.h"
 #include "messages.h"
 #include "apphook.h"
