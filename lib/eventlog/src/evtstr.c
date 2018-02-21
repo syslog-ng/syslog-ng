@@ -58,7 +58,11 @@ static int
 evt_str_grow(EVTSTR *es, size_t new_alloc)
 {
   es->es_buf = realloc(es->es_buf, new_alloc);
-  return es->es_buf != NULL;
+  if (!es->es_buf)
+    return 0;
+
+  es->es_allocated = new_alloc;
+  return 1;
 }
 
 int
