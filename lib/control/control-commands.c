@@ -23,10 +23,12 @@
  */
 #include "control/control.h"
 #include "control/control-main.h"
+#include "secret-storage/secret-storage.h"
 #include "mainloop.h"
 #include "messages.h"
 #include "apphook.h"
 #include "stats/stats-query-commands.h"
+#include "string.h"
 
 static GList *command_list = NULL;
 
@@ -129,6 +131,88 @@ control_connection_reopen(GString *command, gpointer user_data)
   return result;
 }
 
+static const gchar *
+secret_status_to_string(SecretStorageSecretState state)
+{
+  switch (state)
+    {
+    case SECRET_STORAGE_STATUS_PENDING:
+      return "PENDING";
+    case SECRET_STORAGE_SUCCESS:
+      return "SUCCESS";
+    case SECRET_STORAGE_STATUS_FAILED:
+      return "FAILED";
+    case SECRET_STORAGE_STATUS_INVALID_PASSWORD:
+      return "INVALID_PASSWORD";
+    default:
+      g_assert_not_reached();
+    }
+  return "SHOULD NOT BE REACHED";
+}
+
+gboolean
+secret_storage_status_accumulator(SecretStatus *status, gpointer user_data)
+{
+  GString *status_str = (GString *) user_data;
+  g_string_append_printf(status_str, "%s\t%s\n", status->key, secret_status_to_string(status->state));
+  return TRUE;
+}
+
+static GString *
+process_credentials_status(GString *result)
+{
+  g_string_assign(result,"Credential storage status:\n");
+  secret_storage_status_foreach(secret_storage_status_accumulator, (gpointer) result);
+  return result;
+}
+
+static GString *
+process_credentials_add(GString *result, guint argc, gchar **arguments)
+{
+  if (argc < 4)
+    {
+      g_string_assign(result,"error: missing arguments\n");
+      return result;
+    }
+
+  gchar *id = arguments[2];
+  gchar *secret = arguments[3];
+
+  if (secret_storage_store_secret(id, secret, strlen(secret)))
+    g_string_assign(result,"Credentials stored successfully\n");
+  else
+    g_string_assign(result,"Error while saving credentials\n");
+  return result;
+}
+
+static GString *
+process_credentials(GString *command, gpointer user_data)
+{
+  gchar **arguments = g_strsplit(command->str, " ", 4);
+  guint argc = g_strv_length(arguments);
+
+  GString *result = g_string_new(NULL);
+
+  if (argc < 1)
+    {
+      g_string_assign(result,"error: missing subcommand\n");
+      g_strfreev(arguments);
+      return result;
+    }
+
+  gchar *subcommand = arguments[1];
+
+  if (strcmp(subcommand,"status")==0)
+    result = process_credentials_status(result);
+  else if (g_strcmp0(subcommand,"add") == 0)
+    result = process_credentials_add(result, argc, arguments);
+  else
+    g_string_printf(result,"error: invalid subcommand %s\n", subcommand);
+
+  g_strfreev(arguments);
+  return result;
+}
+
 ControlCommand default_commands[] =
 {
   { "LOG", NULL, control_connection_message_log },
@@ -136,6 +220,7 @@ ControlCommand default_commands[] =
   { "RELOAD", NULL, control_connection_reload },
   { "REOPEN", NULL, control_connection_reopen },
   { "QUERY", NULL, process_query_command },
+  { "PWD", NULL, process_credentials },
   { NULL, NULL, NULL },
 };
 

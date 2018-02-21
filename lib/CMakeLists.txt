@@ -24,6 +24,7 @@ add_subdirectory(value-pairs)
 add_subdirectory(scanner)
 add_subdirectory(str-repr)
 add_subdirectory(eventlog)
+add_subdirectory(secret-storage)
 
 set(LIB_SUBDIR_HEADERS
     ${COMPAT_HEADERS}
@@ -301,6 +302,7 @@ target_link_libraries(
     ${OPENSSL_LIBRARIES}
     ${RESOLV_LIBRARIES}
     ${LIBPCRE_LIBRARIES}
+    secret-storage
     )
 
 set_target_properties(syslog-ng
