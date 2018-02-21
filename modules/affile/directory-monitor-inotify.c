@@ -102,10 +102,17 @@ directory_monitor_inotify_new(const gchar *dir, guint recheck_time)
   DirectoryMonitorInotify *self = g_new0(DirectoryMonitorInotify, 1);
   directory_monitor_init_instance(&self->super, dir, recheck_time);
 
+  IV_INOTIFY_INIT(&self->inotify);
+  if (iv_inotify_register(&self->inotify))
+    {
+      msg_error("directory-monitor-inotify: could not create inotify object", evt_tag_errno("errno", errno));
+      directory_monitor_free(&self->super);
+      return NULL;
+    }
+
   self->super.start_watches = _start_watches;
   self->super.stop_watches = _stop_watches;
   self->super.free_fn = _free;
-  IV_INOTIFY_INIT(&self->inotify);
-  iv_inotify_register(&self->inotify);
+
   return &self->super;
 }

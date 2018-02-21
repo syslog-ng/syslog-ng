@@ -208,6 +208,13 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
     .method = self->monitor_method
   };
   DirectoryMonitor *monitor = create_directory_monitor(&options);
+  if (!monitor)
+    {
+      msg_error("Wildcard source: could not create directory monitoring object! Possible message loss",
+                evt_tag_str("dir", directory),
+                log_pipe_location_tag(&self->super.super.super));
+      return;
+    }
 
   directory_monitor_set_callback(monitor, _on_directory_monitor_changed, self);
   directory_monitor_start(monitor);
