@@ -75,62 +75,6 @@ evtrec_format_plain(EVTREC *e)
   return res;
 }
 
-static char *
-evtrec_format_xmlattr(EVTREC *e)
-{
-  EVTSTR *es;
-  EVTTAG *et;
-  char *res;
-
-  if (!(es = evt_str_init(128)))
-    return NULL;
-
-  evt_str_append(es, "<event ");
-  for (et = e->ev_pairs; et; et = et->et_next)
-    {
-      evt_str_append(es, et->et_tag);
-      evt_str_append(es, "=\"");
-      evt_str_append_escape_xml_attr(es, et->et_value, strlen(et->et_value));
-      if (et->et_next)
-        evt_str_append(es, "\" ");
-      else
-        evt_str_append(es, "\">");
-    }
-  evt_str_append_escape_xml_pcdata(es, e->ev_desc, strlen(e->ev_desc));
-  evt_str_append(es, "</event>");
-  res = evt_str_get_str(es);
-  evt_str_free(es, 0);
-  return res;
-}
-
-static char *
-evtrec_format_xmltags(EVTREC *e)
-{
-  EVTSTR *es;
-  EVTTAG *et;
-  char *res;
-
-  if (!(es = evt_str_init(256)))
-    return NULL;
-
-  evt_str_append(es, "<event>");
-  for (et = e->ev_pairs; et; et = et->et_next)
-    {
-      evt_str_append(es, "<");
-      evt_str_append(es, et->et_tag);
-      evt_str_append(es, ">");
-      evt_str_append_escape_xml_pcdata(es, et->et_value, strlen(et->et_value));
-      evt_str_append(es, "</");
-      evt_str_append(es, et->et_tag);
-      evt_str_append(es, ">");
-    }
-  evt_str_append_escape_xml_pcdata(es, e->ev_desc, strlen(e->ev_desc));
-  evt_str_append(es, "</event>");
-  res = evt_str_get_str(es);
-  evt_str_free(es, 0);
-  return res;
-}
-
 static struct
 {
   char *ef_name;
@@ -138,8 +82,6 @@ static struct
 } evt_formatters[] =
 {
   { "plain", evtrec_format_plain },
-  { "xmlattr", evtrec_format_xmlattr },
-  { "xmltag", evtrec_format_xmltags },
   { NULL, NULL }
 };
 

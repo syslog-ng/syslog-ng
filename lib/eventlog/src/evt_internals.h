@@ -138,8 +138,6 @@ void evt_str_free(EVTSTR *es, int free_buf);
 int evt_str_append(EVTSTR *es, char *str);
 int evt_str_append_len(EVTSTR *es, char *str, size_t len);
 int evt_str_append_escape_bs(EVTSTR *es, char *unescaped, size_t unescaped_len, char escape_char);
-int evt_str_append_escape_xml_attr(EVTSTR *es, char *unescaped, size_t unescaped_len);
-int evt_str_append_escape_xml_pcdata(EVTSTR *es, char *unescaped, size_t unescaped_len);
 char *evt_str_get_str(EVTSTR *es);
 
 /* syslog linked wrapper */
