@@ -63,8 +63,6 @@
 
 #define EF_INITIALIZED  0x8000
 
-#define __PATH_ETC_EVENTLOG_CONF "/etc/eventlog.conf"
-
 typedef struct __evttaghook EVTTAGHOOK;
 typedef struct __evtsyslogopts EVTSYSLOGOPTS;
 typedef struct __evtstr EVTSTR;
