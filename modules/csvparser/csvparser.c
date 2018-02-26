@@ -142,8 +142,17 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
                                 csv_scanner_get_current_value_len(&scanner));
     }
 
+  gboolean result = csv_scanner_is_scan_finished(&scanner);
   csv_scanner_deinit(&scanner);
-  return csv_scanner_is_scan_finished(&scanner);
+
+  if (!result)
+    {
+      msg_debug("csv-parser() failed to parse all columns from the message, and drop-invalid flag is specified",
+                evt_tag_str("input", input),
+                log_pipe_location_tag(&s->super),
+                evt_tag_printf("msg", "%p", msg));
+    }
+  return result;
 }
 
 static LogPipe *
