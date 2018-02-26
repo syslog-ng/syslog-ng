@@ -38,17 +38,24 @@ filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   FilterPri *self = (FilterPri *) s;
   LogMessage *msg = msgs[num_msg - 1];
   guint32 fac_num = (msg->pri & LOG_FACMASK) >> 3;
+  gboolean res;
 
   if (G_UNLIKELY(self->valid & 0x80000000))
     {
       /* exact number specified */
-      return ((self->valid & ~0x80000000) == fac_num) ^ s->comp;
+      res = ((self->valid & ~0x80000000) == fac_num);
     }
   else
     {
-      return !!(self->valid & (1 << fac_num)) ^ self->super.comp;
+      res = !!(self->valid & (1 << fac_num));
     }
-  g_assert_not_reached();
+  msg_debug("  facility() evaluation result",
+            filter_result_tag(res),
+            evt_tag_int("fac", fac_num),
+            evt_tag_printf("valid_fac", "%08x", self->valid),
+            evt_tag_printf("msg", "%p", msg));
+
+  return res ^ s->comp;
 }
 
 FilterExprNode *
@@ -69,9 +76,17 @@ filter_level_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   FilterPri *self = (FilterPri *) s;
   LogMessage *msg = msgs[num_msg - 1];
   guint32 pri = msg->pri & LOG_PRIMASK;
+  gboolean res;
 
+  res = !!((1 << pri) & self->valid);
 
-  return !!((1 << pri) & self->valid) ^ self->super.comp;
+  msg_debug("  level() evaluation result",
+            filter_result_tag(res),
+            evt_tag_int("pri", pri),
+            evt_tag_printf("valid_pri", "%08x", self->valid),
+            evt_tag_printf("msg", "%p", msg));
+
+  return res ^ s->comp;
 }
 
 FilterExprNode *

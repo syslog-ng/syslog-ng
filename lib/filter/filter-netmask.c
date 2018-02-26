@@ -40,24 +40,36 @@ static gboolean
 filter_netmask_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterNetmask *self = (FilterNetmask *) s;
-  struct in_addr addr;
+  struct in_addr *addr, addr_storage;
   LogMessage *msg = msgs[num_msg - 1];
+  gboolean res;
 
   if (msg->saddr && g_sockaddr_inet_check(msg->saddr))
     {
-      addr = ((struct sockaddr_in *) &msg->saddr->sa)->sin_addr;
+      addr = &((struct sockaddr_in *) &msg->saddr->sa)->sin_addr;
     }
   else if (!msg->saddr || msg->saddr->sa.sa_family == AF_UNIX)
     {
-      addr.s_addr = htonl(INADDR_LOOPBACK);
+      addr_storage.s_addr = htonl(INADDR_LOOPBACK);
+      addr = &addr_storage;
     }
   else
     {
-      /* no address information, return FALSE */
-      return s->comp;
+      addr = NULL;
     }
-  return ((addr.s_addr & self->netmask.s_addr) == (self->address.s_addr)) ^ s->comp;
 
+  if (addr)
+    res = ((addr->s_addr & self->netmask.s_addr) == (self->address.s_addr));
+  else
+    res = FALSE;
+
+  msg_debug("  netmask() evaluation result",
+            filter_result_tag(res),
+            evt_tag_inaddr("msg_address", addr),
+            evt_tag_inaddr("address", &self->address),
+            evt_tag_inaddr("netmask", &self->netmask),
+            evt_tag_printf("msg", "%p", msg));
+  return res ^ s->comp;
 }
 
 FilterExprNode *
