@@ -32,10 +32,11 @@
 
 const gchar *log_expr_node_get_content_name(gint content);
 
-#define LC_CATCHALL 1
-#define LC_FALLBACK 2
-#define LC_FINAL    4
-#define LC_FLOW_CONTROL 8
+#define LC_CATCHALL       1
+#define LC_FALLBACK       2
+#define LC_FINAL          4
+#define LC_FLOW_CONTROL   8
+#define LC_DROP_UNMATCHED 16
 
 enum
 {

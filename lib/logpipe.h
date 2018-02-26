@@ -49,8 +49,10 @@
 #define PIF_BRANCH_FALLBACK   0x0008
 #define PIF_BRANCH_PROPERTIES (PIF_BRANCH_FINAL + PIF_BRANCH_FALLBACK)
 
+#define PIF_DROP_UNMATCHED    0x0010
+
 /* branch starting with this pipe wants hard flow control */
-#define PIF_HARD_FLOW_CONTROL 0x0010
+#define PIF_HARD_FLOW_CONTROL 0x0020
 
 /* this pipe is a source for messages, it is not meant to be used to
  * forward messages, syslog-ng will only use these pipes for the
@@ -58,7 +60,7 @@
  * sending messages to these pipes and these are expected to generate
  * messages "automatically". */
 
-#define PIF_SOURCE            0x0020
+#define PIF_SOURCE            0x0040
 
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
@@ -342,6 +344,11 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   else
     {
       log_pipe_forward_msg(s, msg, path_options);
+    }
+
+  if (path_options->matched && !(*path_options->matched) && (s->flags & PIF_DROP_UNMATCHED))
+    {
+      (*path_options->matched) = TRUE;
     }
 }
 

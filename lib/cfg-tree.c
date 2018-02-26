@@ -371,6 +371,8 @@ log_expr_node_lookup_flag(const gchar *flag)
     return LC_FINAL;
   else if (strcmp(flag, "flow_control") == 0 || strcmp(flag, "flow-control") == 0)
     return LC_FLOW_CONTROL;
+  else if (strcmp(flag, "drop_unmatched") == 0 || strcmp(flag, "drop-unmatched") == 0)
+    return LC_DROP_UNMATCHED;
   msg_error("Unknown log statement flag", evt_tag_str("flag", flag));
   return 0;
 }
@@ -616,6 +618,9 @@ cfg_tree_propagate_expr_node_properties_to_pipe(LogExprNode *node, LogPipe *pipe
 
   if (node->flags & LC_FLOW_CONTROL)
     pipe->flags |= PIF_HARD_FLOW_CONTROL;
+
+  if (node->flags & LC_DROP_UNMATCHED)
+    pipe->flags |= PIF_DROP_UNMATCHED;
 
   if (!pipe->expr_node)
     pipe->expr_node = node;
