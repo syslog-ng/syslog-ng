@@ -44,6 +44,7 @@
 # include <syslog.h>
 #endif
 #include <stdarg.h>
+#include <arpa/inet.h>
 
 #include "evtmaps.h"
 
@@ -145,6 +146,8 @@ EVTTAG *evt_tag_int(const char *tag, int value);
 EVTTAG *evt_tag_long(const char *tag, long value);
 EVTTAG *evt_tag_errno(const char *tag, int err);
 EVTTAG *evt_tag_printf(const char *tag, const char *format, ...) EVT_GNUC_PRINTF_FUNC(2, 3);
+EVTTAG *evt_tag_inaddr(const char *tag, const struct in_addr *addr);
+EVTTAG *evt_tag_inaddr6(const char *tag, const struct in6_addr *addr);
 
 /**
  * evt_format:
