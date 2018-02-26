@@ -26,7 +26,6 @@ package org.syslog_ng.elasticsearch_v2.client;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESNodeClient;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESTransportClient;
-import org.syslog_ng.elasticsearch_v2.client.esnative.ESTransportShieldClient;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESTransportSearchGuardClient;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpsClient;
@@ -40,9 +39,6 @@ public class ESClientFactory {
 		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_NODE)) {
 			return new ESNodeClient(options);
 		}
-		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_SHIELD)) {
-            return new ESTransportShieldClient(options);
-        }
 		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_HTTP)) {
 			return new ESHttpClient(options);
 		}

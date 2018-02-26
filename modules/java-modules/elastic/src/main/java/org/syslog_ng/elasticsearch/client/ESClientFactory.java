@@ -28,7 +28,7 @@ import org.syslog_ng.elasticsearch.ElasticSearchOptions;
 public class ESClientFactory {
 	public static ESClient getESClient(ElasticSearchOptions options) throws UnknownESClientModeException {
 		String client_type = options.getClientMode();
-		if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_TRANSPORT)|| client_type.equals(ElasticSearchOptions.CLIENT_MODE_SHIELD)) {
+		if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_TRANSPORT)) {
 			return new ESTransportClient(options);
 		}
 		else if (client_type.equals(ElasticSearchOptions.CLIENT_MODE_NODE)) {
