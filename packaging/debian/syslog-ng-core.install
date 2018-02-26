@@ -5,6 +5,7 @@ usr/bin/*
 usr/sbin/*
 usr/lib/syslog-ng/libsyslog-ng-*.so.*
 usr/lib/syslog-ng/libevtlog-*.so.*
+usr/lib/syslog-ng/libsecret-storage.so.*
 usr/lib/syslog-ng/*/libsdjournal.so
 usr/lib/syslog-ng/*/libaffile.so
 usr/lib/syslog-ng/*/libafprog.so
