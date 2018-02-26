@@ -48,17 +48,18 @@
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
 
 /* event string handling */
 
-static int
+static inline int
 evt_str_grow(EVTSTR *es, size_t new_alloc)
 {
   es->es_buf = realloc(es->es_buf, new_alloc);
-  return es->es_buf != NULL;
+  if (!es->es_buf)
+    return 0;
+
+  es->es_allocated = new_alloc;
+  return 1;
 }
 
 int
@@ -89,105 +90,43 @@ evt_str_append_escape_bs(EVTSTR *es,
                          char escape_char)
 {
   /* a single character is escaped to at most 4 characters: \xXX */
+  size_t escaped_char_max_len = 4;
 
-  char *buf = (char *)alloca(4*unescaped_len + 1);
+  char escaped_buffer[128];
+  size_t escaped_buffer_capacity = sizeof(escaped_buffer) / sizeof(escaped_buffer[0]);
+  size_t escaped_buffer_length = 0;
 
-  int i, dst;
+  int i;
 
-  for (i = 0, dst = 0; i < unescaped_len; i++)
+  for (i = 0; i < unescaped_len; i++)
     {
       unsigned c = (unsigned) unescaped[i];
 
       if (c < 32 && c != '\t')
         {
-          sprintf(&buf[dst], "\\x%02x", (unsigned char) unescaped[i]);
-          dst += 4;
+          sprintf(escaped_buffer + escaped_buffer_length, "\\x%02x", (unsigned char) unescaped[i]);
+          escaped_buffer_length += 4;
         }
       else if (unescaped[i] == escape_char)
         {
-          buf[dst++] = '\\';
-          buf[dst++] = escape_char;
+          escaped_buffer[escaped_buffer_length++] = '\\';
+          escaped_buffer[escaped_buffer_length++] = escape_char;
         }
       else
         {
-          buf[dst++] = unescaped[i];
+          escaped_buffer[escaped_buffer_length++] = unescaped[i];
         }
-      assert(dst <= 4*unescaped_len);
+
+      if (escaped_buffer_capacity < escaped_buffer_length + escaped_char_max_len)
+        {
+          if (!evt_str_append_len(es, escaped_buffer, escaped_buffer_length))
+            return 0;
+
+          escaped_buffer_length = 0;
+        }
     }
-  return evt_str_append_len(es, buf, dst);
-}
 
-int
-evt_str_append_escape_xml_attr(EVTSTR *es,
-                               char *unescaped, size_t unescaped_len)
-{
-  /* a single character is escaped to at most 6 characters: '&#xXX;' or '&quot;' */
-
-  /* FIXME: this is a gcc extension, alternative would be to use alloca(),
-   * which is not portable */
-
-  char *buf = (char *)alloca(6*unescaped_len + 1);
-
-  int i, dst;
-
-  for (i = 0, dst = 0; i < unescaped_len; i++)
-    {
-      if ((unsigned) unescaped[i] < 32)
-        {
-          sprintf(&buf[dst], "&#x%02x;", (unsigned char) unescaped[i]);
-          dst += 6;
-        }
-      else if (unescaped[i] == '"')
-        {
-          strcpy(&buf[dst], "&quot;");
-          dst += 6;
-        }
-      else
-        {
-          buf[dst++] = unescaped[i];
-        }
-      assert(dst <= 6*unescaped_len);
-    }
-  return evt_str_append_len(es, buf, dst);
-}
-
-int
-evt_str_append_escape_xml_pcdata(EVTSTR *es,
-                                 char *unescaped, size_t unescaped_len)
-{
-  /* a single character is escaped to at most 6 characters: '&#xXX;' or '&gt;' or '&lt;' */
-
-  /* FIXME: this is a gcc extension, alternative would be to use alloca(),
-   * which is not portable */
-
-  char *buf = (char *)alloca(6*unescaped_len + 1);
-
-  int i, dst;
-
-  for (i = 0, dst = 0; i < unescaped_len; i++)
-    {
-      if ((unsigned) unescaped[i] < 32)
-        {
-          sprintf(&buf[dst], "&#x%02x;", (unsigned char) unescaped[i]);
-          dst += 6;
-        }
-      else if (unescaped[i] == '<')
-        {
-          strcpy(&buf[dst], "&lt;");
-          dst += 4;
-        }
-      else if (unescaped[i] == '>')
-        {
-          strcpy(&buf[dst], "&gt;");
-          dst += 4;
-        }
-      else
-        {
-          buf[dst++] = unescaped[i];
-        }
-      assert(dst <= 6*unescaped_len);
-    }
-  return evt_str_append_len(es, buf, dst);
+  return evt_str_append_len(es, escaped_buffer, escaped_buffer_length);
 }
 
 char *

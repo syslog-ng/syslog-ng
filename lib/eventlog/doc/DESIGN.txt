@@ -11,13 +11,13 @@ independent parts:
 
   This is done by the application program using the library. It is a
   sequence of calling the following functions:
-  
+
     evt_rec_init(...)
     evt_tag_str(...) / evt_tag_int(...) / evt_tag_printf(...)
     evt_log(...) /* consumes the log record, no need to free it */
-    
+
   The event record itself consists of the following properties:
-  
+
     - a simple, constant human readable description of the event
     - an unordered set of tag/value pairs
     - a syslog compatible priority value (debug .. emerg)
@@ -25,23 +25,9 @@ independent parts:
   The record initialized by evt_rec_init() may contain a couple of tags by
   default (like pid, timestamp etc.)
 
-* Formatting the event record
-
-  The way an event is formatted can be customized by the administrator. 
-  Several simple formats are available within the library, each having a
-  unique identifier. The administrator refers to one of the formatters by
-  using the "format" keyword in the /etc/eventlog.conf file. See the file
-  configuration.txt to see the list of valid formatters.
-
 * Logging the event record
 
   The way an event record is sent to the log might also be customized by the
   administrator. Currently a single output method is implemented named
-  'local' which sends the message off by using syslog(). Additional methods
-  are planned to be implemented like:
-  
-    - file
-    - UDP syslog protocol (RFC3164)
-    - plain TCP syslog protocol (as used by syslog-ng)
-    - RFC3195
+  'local' which sends the message off by using syslog().
 

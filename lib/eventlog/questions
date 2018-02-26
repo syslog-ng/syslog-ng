@@ -1,7 +1,0 @@
-
-* tag naming, namespaces
-* tag ordering
-* character set?
-* output modules character conversion
-* how to store the (prio, tag name) tuple?
-* syslog facility/priority mapping?

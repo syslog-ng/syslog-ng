@@ -1100,7 +1100,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
   if (!(msg->flags & LF_INTERNAL))
     {
       msg_debug("Outgoing message",
-                evt_tag_str("message",self->line_buffer->str));
+                evt_tag_printf("message", "%.*s", (gint) self->line_buffer->len, self->line_buffer->str));
     }
 
   if (self->line_buffer->len)

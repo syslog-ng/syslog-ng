@@ -89,49 +89,6 @@ evtrec_add_standard_tags(EVTREC *e, void *userptr)
   return 1;
 }
 
-static void
-evt_read_config(EVTCONTEXT *ctx)
-{
-  FILE *fp;
-  char line[1024];
-
-  fp = fopen(__PATH_ETC_EVENTLOG_CONF, "r");
-  if (!fp)
-    return;
-  fgets(line, sizeof(line), fp);
-  while (!feof(fp))
-    {
-      char *keyword, *value;
-
-      if (line[0] == '#' || line[0] == '\n')
-        goto next;
-
-      keyword = strtok(line, " \t\n");
-      value = strtok(NULL, " \t\n");
-
-      if (!keyword || !value)
-        goto next;
-
-      while (*value == ' ' || *value == '\t' || *value == '\n')
-        value++;
-
-      if (strcmp(keyword, "format") == 0)
-        {
-          strncpy(ctx->ec_formatter, value, sizeof(ctx->ec_formatter));
-        }
-      else if (strcmp(keyword, "outmethod") == 0)
-        {
-          strncpy(ctx->ec_outmethod, value, sizeof(ctx->ec_outmethod));
-        }
-      else if (strcmp(keyword, "implicit_tags") == 0)
-        {
-          ctx->ec_flags = strtoul(value, NULL, 0) & EF_ADD_ALL;
-        }
-next:
-      fgets(line, sizeof(line), fp);
-    }
-}
-
 int
 evt_ctx_tag_hook_add(EVTCONTEXT *ctx, int (*func)(EVTREC *e, void *user_ptr), void *user_ptr)
 {
@@ -164,7 +121,6 @@ evt_ctx_init(const char *prog, int syslog_fac)
 #ifndef _MSC_VER
       evt_syslog_wrapper_init();
 #endif
-      evt_read_config(ctx);
     }
 
   return ctx;
