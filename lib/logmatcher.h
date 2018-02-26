@@ -64,6 +64,7 @@ struct _LogMatcher
 {
   gint ref_cnt;
   gint flags;
+  gchar *pattern;
   gboolean (*compile)(LogMatcher *s, const gchar *re, GError **error);
   /* value_len can be -1 to indicate unknown length */
   gboolean (*match)(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len);
