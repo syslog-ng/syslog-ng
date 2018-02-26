@@ -54,7 +54,6 @@ public class ElasticSearchOptions {
 	public static String FLUSH_LIMIT_DEFAULT = "5000";
 	public static String CLIENT_MODE_TRANSPORT = "transport";
 	public static String CLIENT_MODE_NODE = "node";
-	public static String CLIENT_MODE_SHIELD = "shield";
 	public static String CLIENT_MODE_SEARCHGUARD = "searchguard";
 	public static String CLIENT_MODE_HTTP = "http";
 	public static String CLIENT_MODE_HTTPS = "https";
@@ -70,7 +69,7 @@ public class ElasticSearchOptions {
 	public static String HTTP_AUTH_TYPE_CLIENTCERT = "clientcert";
 	public static String HTTP_AUTH_TYPE_BASIC_USERNAME = "http_auth_type_basic_username";
 	public static String HTTP_AUTH_TYPE_BASIC_PASSWORD = "http_auth_type_basic_password";
-	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD, CLIENT_MODE_HTTP, CLIENT_MODE_HTTPS, CLIENT_MODE_SEARCHGUARD));
+	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_HTTP, CLIENT_MODE_HTTPS, CLIENT_MODE_SEARCHGUARD));
 	public static HashSet<String> HTTP_AUTH_TYPES  = new HashSet<String>(Arrays.asList(HTTP_AUTH_TYPE_NONE, HTTP_AUTH_TYPE_BASIC, HTTP_AUTH_TYPE_CLIENTCERT));
 	public static final HashMap<String, Integer> DEFAULT_PORTS_BY_MODE = new HashMap<String, Integer>() {
 		{

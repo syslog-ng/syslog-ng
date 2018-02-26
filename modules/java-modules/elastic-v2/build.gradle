@@ -8,7 +8,6 @@ configurations {
 
 dependencies {
     compile 'org.elasticsearch:elasticsearch:2.4.0'
-    compile 'org.elasticsearch.plugin:shield:2.4.0'
     compile 'com.floragunn:search-guard-ssl:2.4.0.16'
     compile 'io.searchbox:jest:2.0.2'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.13'

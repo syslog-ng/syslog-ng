@@ -49,8 +49,7 @@ public class ElasticSearchOptions {
 	public static String FLUSH_LIMIT_DEFAULT = "5000";
 	public static String CLIENT_MODE_TRANSPORT = "transport";
 	public static String CLIENT_MODE_NODE = "node";
-	public static String CLIENT_MODE_SHIELD = "shield";
-	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE, CLIENT_MODE_SHIELD));
+	public static HashSet<String> CLIENT_MODES  = new HashSet<String>(Arrays.asList(CLIENT_MODE_TRANSPORT, CLIENT_MODE_NODE));
 
 	public static String CLIENT_MODE_DEFAULT = CLIENT_MODE_TRANSPORT;
 	public static String CONCURRENT_REQUESTS_DEFAULT = "1";
