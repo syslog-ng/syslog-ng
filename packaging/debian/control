@@ -39,8 +39,7 @@ Build-Depends: debhelper (>= 9~),
                libcurl4-openssl-dev,
                libmaxminddb-dev,
                openjdk-7-jdk | openjdk-8-jdk,
-               gradle (>=2.2.1),
-               criterion-dev
+               gradle (>=2.2.1)
 Build-Conflicts: autoconf2.13
 Standards-Version: 3.9.8
 Homepage: http://www.syslog-ng.org/

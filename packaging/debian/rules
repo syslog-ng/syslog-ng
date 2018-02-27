@@ -121,10 +121,7 @@ override_dh_auto_install:
 			   PYSETUP_OPTIONS="--install-layout=deb --root=$(CURDIR)/debian/tmp/"
 	find . -name \*.la | xargs --no-run-if-empty rm
 
-# To get better test results, and actually see failing tests, we need
-# to pass VERBOSE=1 to make when running the tests. Do that here.
-override_dh_auto_test:
-	dh_auto_test -- VERBOSE=1
+override_dh_auto_test: ;
 
 ##
 #* Overrides for other debhelper commands
