@@ -226,9 +226,8 @@ insert_empty_secret_storage(const gchar *key)
 gboolean
 secret_storage_subscribe_for_key(const gchar *key, SecretStorageCB func, gpointer user_data)
 {
-
   SecretStorage *secret_storage;
-  if (!g_hash_table_contains(secret_manager, key))
+  if (!g_hash_table_lookup(secret_manager, key))
     if (!insert_empty_secret_storage(key))
       return FALSE;
 
