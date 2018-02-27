@@ -299,6 +299,25 @@ _add_aux_nvpair(const gchar *name, const gchar *value, gsize value_len, gpointer
   log_msg_set_value_by_name(msg, name, value, value_len);;
 }
 
+static inline gint
+log_reader_process_handshake(LogReader *self)
+{
+  LogProtoStatus status = log_proto_server_handshake(self->proto);
+
+  switch (status)
+    {
+    case LPS_EOF:
+    case LPS_ERROR:
+      return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;
+    case LPS_SUCCESS:
+      break;
+    default:
+      g_assert_not_reached();
+      break;
+    }
+  return 0;
+}
+
 static gboolean
 log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTransportAuxData *aux)
 {
@@ -328,11 +347,16 @@ log_reader_fetch_log(LogReader *self)
   gboolean may_read = TRUE;
   LogTransportAuxData aux;
 
+  log_transport_aux_data_init(&aux);
+  if (log_proto_server_handshake_in_progress(self->proto))
+    {
+      return log_reader_process_handshake(self);
+    }
+
   /* NOTE: this loop is here to decrease the load on the main loop, we try
    * to fetch a couple of messages in a single run (but only up to
    * fetch_limit).
    */
-  log_transport_aux_data_init(&aux);
   while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
     {
       Bookmark *bookmark;
