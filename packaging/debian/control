@@ -631,7 +631,7 @@ Description: Enhanced system logging daemon (GeoIP2 plugin)
  templates. GeoIP2 uses MaxMind DB.
 
 Package: syslog-ng-mod-pacctformat
-Architecture: any  
+Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Enhanced system logging daemon (getent)
@@ -642,7 +642,7 @@ Description: Enhanced system logging daemon (getent)
  Key features:
  .
   * receive and send RFC3164 and RFC5424 style syslog messages
-  * work with any kind of unstructured data 
+  * work with any kind of unstructured data
   * receive and send JSON formatted messages
   * classify and structure logs with builtin parsers (csv-parser(),
     db-parser(), etc.)
@@ -719,7 +719,7 @@ Description: Enhanced system logging daemon (Elasticsearch destination)
   * hand on messages for further processing using message queues (like
     AMQP), files or databases (like PostgreSQL or MongoDB).
  .
- This package provides the Elasticsearch destination, allowing one to 
+ This package provides the Elasticsearch destination, allowing one to
  send syslog messages to Elasticsearch.
 
 Package: syslog-ng-mod-hdfs
@@ -744,7 +744,7 @@ Description: Enhanced system logging daemon (HDFS destination)
  .
  This package provides the HDFS destination, allowing one to send
  messages to HDFS.
- 
+
 
 Package: syslog-ng-mod-kafka
 Architecture: any
@@ -789,7 +789,7 @@ Description: Enhanced system logging daemon (HTTP destination implemented in Jav
   * hand on messages for further processing using message queues (like
     AMQP), files or databases (like PostgreSQL or MongoDB).
  .
- This package provides an HTTP destination, allowing one to send syslog messages as HTTP 
+ This package provides an HTTP destination, allowing one to send syslog messages as HTTP
  PUT messages to an http server.
 
 Package: syslog-ng-mod-http
@@ -812,7 +812,7 @@ Description: Enhanced system logging daemon (HTTP destination)
   * hand on messages for further processing using message queues (like
     AMQP), files or databases (like PostgreSQL or MongoDB).
  .
- This package provides an HTTP destination, allowing one to send syslog messages as HTTP 
+ This package provides an HTTP destination, allowing one to send syslog messages as HTTP
  PUT messages to an http server.
 
 Package: syslog-ng-mod-json
@@ -837,4 +837,3 @@ Description: Enhanced system logging daemon (HTTP destination)
  .
  This package provides a transitional package for syslog-ng-mod-json which is
  part of syslog-ng-core from 3.13.1 .
-
