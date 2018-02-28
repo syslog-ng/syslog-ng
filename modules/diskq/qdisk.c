@@ -83,9 +83,6 @@ struct _QDisk
   gchar *filename;
   gchar *file_id;
   gint fd;
-  gint64 read_qout_ofs; /* the size in bytes between read_head and qout_ofs */
-  gint64 prev_read_head;
-  gint64 prev_length;
   gint64 file_size;
   QDiskFileHeader *hdr;
   DiskQueueOptions *options;
@@ -460,7 +457,6 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   qoverflow_count = self->hdr->qoverflow_count;
   qoverflow_len = self->hdr->qoverflow_len;
   qoverflow_ofs = self->hdr->qoverflow_ofs;
-  self->read_qout_ofs = qout_ofs;
 
   if ((self->hdr->read_head < QDISK_RESERVED_SPACE) ||
       (self->hdr->write_head < QDISK_RESERVED_SPACE) ||
@@ -786,6 +782,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       self->hdr->write_head = QDISK_RESERVED_SPACE;
       self->hdr->backlog_head = self->hdr->read_head;
       self->hdr->length = 0;
+      self->file_size = self->hdr->write_head;
 
       if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
         {
@@ -855,6 +852,7 @@ void
 qdisk_init(QDisk *self, DiskQueueOptions *options)
 {
   self->fd = -1;
+  self->file_size = 0;
   self->options = options;
   if (!self->options->reliable)
     self->file_id = "SLQF";
@@ -963,6 +961,12 @@ qdisk_reset_file_if_possible(QDisk *self)
       self->hdr->backlog_head = QDISK_RESERVED_SPACE;
       _truncate_file (self, QDISK_RESERVED_SPACE);
     }
+}
+
+DiskQueueOptions *
+qdisk_get_options(QDisk *self)
+{
+  return self->options;
 }
 
 gint64

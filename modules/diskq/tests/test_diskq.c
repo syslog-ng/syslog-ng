@@ -42,6 +42,7 @@
 #include <string.h>
 #include <iv.h>
 #include <iv_thread.h>
+#include <sys/stat.h>
 
 #define OVERFLOW_SIZE 10000
 #ifdef PATH_QDISK
@@ -50,6 +51,7 @@
 #define PATH_QDISK "./"
 
 MsgFormatOptions parse_options;
+
 
 static void
 testcase_zero_diskbuf_and_normal_acks(void)
@@ -315,6 +317,72 @@ testcase_with_threads(void)
   fprintf(stderr, "Feed speed: %.2lf\n", (double) TEST_RUNS * MESSAGES_SUM * 1000000 / sum_time);
 }
 
+static void
+testcase_diskbuffer_restart_corrupted(void)
+{
+  typedef struct restart_test_parameters
+  {
+    gchar *filename;
+    LogQueue *(*lqdisk_new_func)(DiskQueueOptions *options, const gchar *persist_name);
+    gboolean reliable;
+  } restart_test_parameters;
+
+  restart_test_parameters parameters[] =
+  {
+    {"test-diskq-restart.qf", log_queue_disk_non_reliable_new, FALSE},
+    {"test-diskq-restart.rqf", log_queue_disk_reliable_new, TRUE},
+  };
+
+  guint64 const original_disk_buf_size = 1000123;
+  gsize number_of_variants = sizeof(parameters)/sizeof(restart_test_parameters);
+  for (gsize i = 0; i < number_of_variants; i++)
+    {
+      DiskQueueOptions options;
+      _construct_options(&options, original_disk_buf_size, 100000, parameters[i].reliable);
+      LogQueue *q = parameters[i].lqdisk_new_func(&options, NULL);
+      log_queue_set_use_backlog(q, FALSE);
+
+      gchar *filename = parameters[i].filename;
+      gchar filename_corrupted_dq[100];
+      g_snprintf(filename_corrupted_dq, 100, "%s.corrupted", filename);
+      unlink(filename);
+      unlink(filename_corrupted_dq);
+
+      log_queue_disk_load_queue(q, filename);
+      fed_messages = 0;
+      feed_some_messages(q, 100, &parse_options);
+      assert_gint(fed_messages, 100, "Failed to push all messages to the disk-queue!\n");
+
+      LogQueueDisk *disk_queue = (LogQueueDisk *)q;
+      disk_queue->restart_corrupted(disk_queue);
+
+      struct stat file_stat;
+      assert_gint(stat(filename, &file_stat), 0,
+                  "New disk-queue file does not exists!!");
+      assert_gint(S_ISREG(file_stat.st_mode), TRUE,
+                  "New disk-queue file expected to be a regular file!! st_mode value=",
+                  (file_stat.st_mode & S_IFMT));
+      stat(filename_corrupted_dq, &file_stat);
+      assert_gint(S_ISREG(file_stat.st_mode), TRUE,
+                  "Corrupted disk-queue file does not exists!!");
+      assert_string(qdisk_get_filename(disk_queue->qdisk), filename,
+                    "New disk-queue file's name should be the same\n");
+      assert_gint(qdisk_get_size(disk_queue->qdisk), original_disk_buf_size,
+                  "Disk-queue option does not match the original configured value!\n");
+      assert_gint(qdisk_get_length(disk_queue->qdisk), 0,
+                  "New disk-queue file should be empty!\n");
+      assert_gint(qdisk_get_writer_head(disk_queue->qdisk), QDISK_RESERVED_SPACE,
+                  "Invalid write pointer!\n");
+      assert_gint(qdisk_get_reader_head(disk_queue->qdisk), QDISK_RESERVED_SPACE,
+                  "Invalid read pointer!\n");
+
+      log_queue_unref(q);
+      unlink(filename);
+      unlink(filename_corrupted_dq);
+      disk_queue_options_destroy(&options);
+    }
+}
+
 static gboolean
 is_valid_msg_size(guint32 one_msg_size)
 {
@@ -338,14 +406,6 @@ typedef struct diskq_tester_parameters
   second_msg_asserter_t second_msg_asserter;
   guint32 qout_size;
 } diskq_tester_parameters_t;
-
-
-typedef struct
-{
-  LogQueue *q;
-  guint32 num;
-  guint32 single_msg_size;
-} feed_and_assert_t;
 
 void
 init_statistics(LogQueue *q)
@@ -532,6 +592,7 @@ main(void)
 
   testcase_zero_diskbuf_alternating_send_acks();
   testcase_zero_diskbuf_and_normal_acks();
+  testcase_diskbuffer_restart_corrupted();
 
   return 0;
 }
