@@ -7,7 +7,7 @@ endif()
 set(GETENT_SOURCES
   tfgetent.c)
 
-add_library(getent SHARED ${GETENT_SOURCES})
-target_link_libraries(getent PRIVATE syslog-ng)
+add_library(tfgetent SHARED ${GETENT_SOURCES})
+target_link_libraries(tfgetent PRIVATE syslog-ng)
 
-install(TARGETS getent LIBRARY DESTINATION lib/syslog-ng/ COMPONENT getent)
+install(TARGETS tfgetent LIBRARY DESTINATION lib/syslog-ng/ COMPONENT tfgetent)
