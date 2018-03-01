@@ -493,7 +493,9 @@ afsocket_sd_setup_transport(AFSocketSourceDriver *self)
   if (!transport_mapper_apply_transport(self->transport_mapper, cfg))
     return FALSE;
 
-  self->proto_factory = log_proto_server_get_factory(&cfg->plugin_context, self->transport_mapper->logproto);
+  if (!self->proto_factory)
+    self->proto_factory = log_proto_server_get_factory(&cfg->plugin_context, self->transport_mapper->logproto);
+
   if (!self->proto_factory)
     {
       msg_error("Unknown value specified in the transport() option, no such LogProto plugin found",
