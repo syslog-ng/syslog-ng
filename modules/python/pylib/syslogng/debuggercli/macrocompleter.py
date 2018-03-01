@@ -37,13 +37,13 @@ class MacroCompleter(Completer):
         self._macros = macros
         self._completions = []
 
-    def complete(self, entire_input, word):
-        if not self._looks_like_a_macro_prefix(entire_input):
+    def complete(self, entire_text, word_to_be_completed):
+        if not self._looks_like_a_macro_prefix(entire_text):
             return []
-        self._collect_completions(word)
+        self._collect_completions(word_to_be_completed)
         return sorted([completion
                        for completion in self._completions
-                       if len(word) == 0 or completion.startswith(word)])
+                       if len(word_to_be_completed) == 0 or completion.startswith(word_to_be_completed)])
 
     def _looks_like_a_macro_prefix(self, entire_input):
         if entire_input == '':
@@ -108,7 +108,7 @@ class MacroCompleter(Completer):
         return self._completions
 
     def _is_word_a_date_prefix(self, word):
-        return word[:3] in ['$' + x for x in self._date_wildcards.keys()]
+        return word[:3] in ['$' + x for x in self._date_wildcards]
 
     @staticmethod
     def _is_word_a_numbered_match_prefix(word):
@@ -123,7 +123,7 @@ class MacroCompleter(Completer):
         return word[0:2] == '${' and word[2:3].isdigit()
 
     def _is_word_a_date_prefix_with_brace(self, word):
-        return word[:4] in ['${' + x for x in self._date_wildcards.keys()]
+        return word[:4] in ['${' + x for x in self._date_wildcards]
 
     @staticmethod
     def _is_word_a_braced_prefix(word):

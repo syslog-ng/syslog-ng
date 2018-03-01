@@ -27,7 +27,7 @@ from .test_lexer import TestLexer
 
 class TestTemplateLexer(TestLexer):
 
-    def _construct_lexer(self):
+    def _construct_lexer(self, *args, **kwargs):
         return templatelexer.TemplateLexer()
 
     def test_template_literals_are_returned_as_literal_tokens(self):
