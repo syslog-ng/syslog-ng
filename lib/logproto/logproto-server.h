@@ -177,6 +177,13 @@ void log_proto_server_free(LogProtoServer *s);
     .construct = prefix ## _server_plugin_construct,  \
   }
 
+#define LOG_PROTO_SERVER_PLUGIN_WITH_GRAMMAR(__parser, __name) \
+  {             \
+    .type = LL_CONTEXT_SERVER_PROTO,            \
+    .name = __name,         \
+    .parser = &__parser,  \
+  }
+
 typedef struct _LogProtoServerFactory LogProtoServerFactory;
 
 struct _LogProtoServerFactory

@@ -175,6 +175,13 @@ void log_proto_client_free_method(LogProtoClient *s);
     .construct = prefix ## _client_plugin_construct,  \
   }
 
+#define LOG_PROTO_CLIENT_PLUGIN_WITH_GRAMMAR(__parser, __name) \
+  {             \
+    .type = LL_CONTEXT_CLIENT_PROTO,            \
+    .name = __name,         \
+    .parser = &__parser,  \
+  }
+
 typedef struct _LogProtoClientFactory LogProtoClientFactory;
 
 struct _LogProtoClientFactory
