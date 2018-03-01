@@ -30,7 +30,7 @@
 
 typedef struct _LogProtoClient LogProtoClient;
 
-#define LOG_PROTO_CLIENT_OPTIONS_SIZE 32
+#define LOG_PROTO_CLIENT_OPTIONS_SIZE 128
 
 typedef struct _LogProtoClientOptions
 {
