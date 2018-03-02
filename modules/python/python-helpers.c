@@ -22,6 +22,8 @@
  *
  */
 #include "python-helpers.h"
+#include "scratch-buffers.h"
+#include "str-utils.h"
 #include "messages.h"
 
 const gchar *
@@ -29,9 +31,9 @@ _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
 {
   PyObject *name = PyObject_GetAttrString(callable, "__name__");
 
-  if (name)
+  if (name && _py_is_string(name))
     {
-      g_strlcpy(buf, py_object_as_string(name), buf_len);
+      g_strlcpy(buf, _py_get_string_as_string(name), buf_len);
     }
   else
     {
@@ -56,9 +58,9 @@ _py_fetch_and_format_exception_text(gchar *buf, gsize buf_len)
   PyErr_NormalizeException(&exc, &value, &tb);
 
   str = PyObject_Str(value);
-  if (str)
+  if (str && _py_is_string(str))
     {
-      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, py_object_as_string(str));
+      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, _py_get_string_as_string(str));
     }
   else
     {
@@ -279,4 +281,45 @@ void
 _py_perform_imports(GList *imports)
 {
   g_list_foreach(imports, _foreach_import, NULL);
+}
+
+gboolean
+_py_is_string(PyObject *object)
+{
+  return PyBytes_Check(object) || PyUnicode_Check(object);
+}
+
+
+/* NOTE: this function returns a managed memory area pointing to an utf8
+ * representation of the string, with the following constraints:
+ *
+ *   1) we basically assume that non-unicode strings (both in Python2 and
+ *   Python3) are in utf8 or at least utf8 compatible (e.g.  ascii).  It
+ *   doesn't really make sense otherwise.  If we don't the resulting string
+ *   is not going to be utf8, rather it would be the system codepage.
+ *
+ *   2) in the case of Python3 we are using the utf8 cache in the unicode
+ *   instance.  In the case of Python2 we are allocating a scratch buffer to
+ *   hold the data for us.
+ **/
+
+const gchar *
+_py_get_string_as_string(PyObject *object)
+{
+  if (PyBytes_Check(object))
+    return PyBytes_AsString(object);
+#if PY_MAJOR_VERSION >= 3
+  else if (PyUnicode_Check(object))
+    return PyUnicode_AsUTF8(object);
+#elif PY_MAJOR_VERSION < 3
+  else if (PyUnicode_Check(object))
+    {
+      PyObject *utf8_bytes = PyUnicode_AsUTF8String(object);
+      GString *buffer = scratch_buffers_alloc();
+      g_string_assign_len(buffer, PyBytes_AsString(utf8_bytes), PyBytes_Size(utf8_bytes));
+      Py_XDECREF(utf8_bytes);
+      return buffer->str;
+    }
+#endif
+  g_assert_not_reached();
 }

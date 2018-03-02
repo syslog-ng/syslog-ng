@@ -27,9 +27,6 @@
 #include <Python.h>
 #include "syslog-ng.h"
 
-gboolean py_is_string(PyObject *object);
-const gchar *py_object_as_string(PyObject *object);
-
 #if (SYSLOG_NG_ENABLE_PYTHONv2)
 #define PYTHON_BUILTIN_MODULE_NAME "__builtin__"
 #endif
@@ -39,4 +36,5 @@ const gchar *py_object_as_string(PyObject *object);
 #endif
 
 void py_init_argv(void);
+
 #endif

@@ -22,6 +22,7 @@
  *
  */
 #include "python-logmsg.h"
+#include "python-helpers.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "str-utils.h"
@@ -69,13 +70,13 @@ _is_key_blacklisted(const gchar *key)
 static PyObject *
 _py_log_message_getattr(PyObject *o, PyObject *key)
 {
-  if (!py_is_string(key))
+  if (!_py_is_string(key))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return NULL;
     }
 
-  const gchar *name = py_object_as_string(key);
+  const gchar *name = _py_get_string_as_string(key);
 
   if (_is_key_blacklisted(name))
     {
@@ -101,31 +102,32 @@ _py_log_message_getattr(PyObject *o, PyObject *key)
 static int
 _py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
 {
-  if (!py_is_string(key))
+  if (!_py_is_string(key))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return -1;
     }
 
-  PyLogMessage *py_msg = (PyLogMessage *)o;
-  const gchar *name = py_object_as_string(key);
+  PyLogMessage *py_msg = (PyLogMessage *) o;
+  const gchar *name = _py_get_string_as_string(key);
   NVHandle handle = log_msg_get_value_handle(name);
   PyObject *value_as_strobj = PyObject_Str(value);
+
   if (value_as_strobj)
     {
       if(log_msg_is_write_protected(py_msg->msg))
         {
           msg_debug("python: error while modifying msg",
-                    evt_tag_printf("msg", "%p", py_msg),
+                    evt_tag_printf("msg", "%p", py_msg->msg),
                     evt_tag_str("name", name),
-                    evt_tag_str("value", py_object_as_string(value_as_strobj)));
+                    evt_tag_str("value", _py_get_string_as_string(value_as_strobj)));
 
           PyErr_SetString(PyExc_RuntimeError, "msg is write protected");
           Py_DECREF(value_as_strobj);
           return -1;
         }
 
-      log_msg_set_value(py_msg->msg, handle, py_object_as_string(value_as_strobj), -1);
+      log_msg_set_value(py_msg->msg, handle, _py_get_string_as_string(value_as_strobj), -1);
       Py_DECREF(value_as_strobj);
     }
   else
