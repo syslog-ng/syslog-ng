@@ -1,4 +1,0 @@
-# Use private EPEL for custom built packages.
-libdbi
-libdbi-drivers
-riemann-c-client-devel

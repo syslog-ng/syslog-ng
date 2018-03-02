@@ -1,59 +1,54 @@
 # required for autogen
-autoconf
 autoconf-archive
 automake
 libtool
 pkg-config
+
 # required for configure
 bison
 flex
+geoip-database
 libcap-dev
+libcurl4-openssl-dev
 libdbi-dev
 libesmtp-dev
 libgeoip-dev
 libglib2.0-dev
 libhiredis-dev
+libivykis-dev
+libjson-c-dev
+libmongo-client-dev
 libnet1-dev
 libpython-dev
 libriemann-client-dev
 libssl-dev
-libsystemd-dev
 libwrap0-dev
-libcurl4-openssl-dev
-libivykis-dev
-libmongo-client-dev
-libjson-c-dev
-openjdk-8-jdk
 python-dev
 uuid-dev
 xsltproc
+tzdata
+
 # required for make
 make
+
 # required for make check
 libxml2-utils
-# required for make check - TODO: pip alternatives detection
+pylint
 python-nose
 python-ply
-python-pep8
-pylint
+
 # other tools
 gdb
 git
 lsof
 strace
 vim
+
 # debian packaging tools
 debhelper
-dh-autoreconf
-docbook-xsl
-docbook
-dh-systemd
-devscripts
-fakeroot
 build-essential
-tzdata
-libbson-dev
-librabbitmq-dev
-libmongoc-dev
-dh-exec
-geoip-database
+devscripts
+dh-autoreconf
+dh-systemd
+docbook
+docbook-xsl

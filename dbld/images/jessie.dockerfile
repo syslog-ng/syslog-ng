@@ -9,15 +9,16 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y \
   python-setuptools \
   wget
 
-ADD required-packages/jessie-pip.txt .
-RUN cat jessie-pip.txt | grep -v "#" | xargs pip install 
+ADD required-pip/all.txt pip-all.txt
+RUN cat pip-*.txt | grep -v '^$\|^#'| xargs pip install
 
-ADD required-packages/jessie-dist.txt .
-RUN cat jessie-dist.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+ADD required-apt/all.txt apt-all.txt
+ADD required-apt/artful.txt apt-jessie.txt
+RUN cat apt-*.txt | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
-ADD required-packages/jessie-obs.txt .
-RUN ./functions.sh add_obs_repo_debian Debian_8.0
-RUN cat jessie-obs.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+RUN ./functions.sh add_obs_repo Debian_8.0
+ADD required-obs/all.txt obs-all.txt
+RUN cat obs-*.txt | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
 
 # grab gosu for easy step-down from root

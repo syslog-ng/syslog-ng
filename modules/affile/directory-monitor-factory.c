@@ -28,6 +28,7 @@
 #endif
 
 #include <string.h>
+#include <stdio.h>
 
 MonitorMethod
 directory_monitor_factory_get_monitor_method(const gchar *method)

@@ -5,23 +5,25 @@ ADD helpers/functions.sh .
 
 # Install packages
 RUN apt-get update -qq && apt-get install --no-install-recommends -y \
-    python-pip \
-    python-setuptools \
-    wget
+  python-pip \
+  python-setuptools \
+  wget
 
-ADD required-packages/artful-pip.txt .
-RUN cat artful-pip.txt | grep -v "#" | xargs pip install 
+ADD required-pip/all.txt pip-all.txt
+RUN cat pip-*.txt | grep -v '^$\|^#'| xargs pip install
 
-ADD required-packages/artful-dist.txt .
-RUN cat artful-dist.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+ADD required-apt/all.txt apt-all.txt
+ADD required-apt/artful.txt apt-artful.txt
+RUN cat apt-*.txt | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
-ADD required-packages/artful-obs.txt .
-RUN ./functions.sh add_obs_repo_debian xUbuntu_17.04
-RUN cat artful-obs.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+RUN ./functions.sh add_obs_repo xUbuntu_17.04
+ADD required-obs/all.txt obs-all.txt
+RUN cat obs-*.txt | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
 
 RUN cd /tmp && wget http://ftp.de.debian.org/debian/pool/main/libn/libnative-platform-java/libnative-platform-jni_0.11-5_$(dpkg --print-architecture).deb
 RUN cd /tmp && dpkg -i libnative-platform-jni*.deb
+
 
 # grab gosu for easy step-down from root
 ADD helpers/gosu.pubkey /tmp

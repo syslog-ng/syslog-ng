@@ -1,1 +1,0 @@
-# note: pip will accept version restrictions in the "package==version" format.

@@ -45,22 +45,30 @@ rpm: rpm-centos7
 release: release-deb release-rpm
 
 
-tarball: setup
+tarball: tarball-xenial
+tarball-%: setup
 	if [ -f $(TARBALL) ]; then \
 		count=`find $(ROOT_DIR) -newer $(TARBALL) | grep -v "^$(ROOT_DIR)/dbld/" | wc -l`; \
 	else \
 		count=1; \
 	fi; \
-	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-xenial /source/dbld/tarball || true
+	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/tarball || true
 
-pkg-tarball: tarball
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-xenial /source/dbld/pkg-tarball $(MODE)
 
-deb-%: pkg-tarball
+pkg-tarball: pkg-tarball-xenial
+pkg-tarball-%: tarball-%
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/pkg-tarball $(MODE)
+
+
+deb: deb-xenial
+deb-%: pkg-tarball-%
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
 
-rpm-%: pkg-tarball
+
+rpm: rpm-centos7
+rpm-%: pkg-tarball-xenial
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
+
 
 release: MODE=release
 release: deb-xenial
@@ -71,6 +79,7 @@ clean:
 	rm -rf $(BUILD_DIR)/*
 
 
+shell: shell-xenial
 shell-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/shell
 
@@ -78,9 +87,18 @@ images: image-jessie image-artful image-xenial image-trusty image-centos6 image-
 
 
 image-%:
-	cd $(DBLD_DIR)/images/ && docker build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
+	cd $(DBLD_DIR)/images/ && docker build --network=host --no-cache -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 setup:
 	mkdir -p dbld/build || true
 	mkdir -p dbld/install || true
 	mkdir -p dbld/release || true
+
+
+# list apt packages
+apt-%:
+	@cat $(DBLD_DIR)/images/required-apt/all.txt \
+	     $(DBLD_DIR)/images/required-apt/$*.txt  \
+	     $(DBLD_DIR)/images/required-obs/all.txt | \
+	grep -v '^$$\|^#' | \
+	sort -u

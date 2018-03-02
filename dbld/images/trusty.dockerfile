@@ -9,15 +9,16 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y \
   python-setuptools \
   wget
 
-ADD required-packages/trusty-pip.txt .
-RUN cat trusty-pip.txt | grep -v "#" | xargs pip install 
+ADD required-pip/all.txt pip-all.txt
+RUN cat pip-*.txt | grep -v '^$\|^#' | xargs pip install
 
-ADD required-packages/trusty-dist.txt .
-RUN cat trusty-dist.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+ADD required-apt/all.txt apt-all.txt
+ADD required-apt/trusty.txt apt-trusty.txt
+RUN cat apt-*.txt | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
-ADD required-packages/trusty-obs.txt .
-RUN ./functions.sh add_obs_repo_debian xUbuntu_14.04
-RUN cat trusty-obs.txt | grep -v "#" | xargs apt-get install --no-install-recommends -y
+RUN ./functions.sh add_obs_repo xUbuntu_14.04
+ADD required-obs/all.txt obs-all.txt
+RUN cat obs-*.txt | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
 
 # grab gosu for easy step-down from root

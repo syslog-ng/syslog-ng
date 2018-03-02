@@ -9,15 +9,16 @@ RUN yum install -y \
   wget \
   epel-release
 
-#ADD required-packages/centos7-pip.txt .
-#RUN cat centos7-pip.txt | grep -v "#" | xargs pip install 
+#ADD required-pip/all.txt pip-all.txt
+#RUN cat pip-*.txt | grep -v '^$\|^#' | xargs pip install 
 
-ADD required-packages/centos7-dist.txt .
-RUN cat centos7-dist.txt | grep -v "#" | xargs yum install -y
+ADD required-yum/all.txt yum-all.txt
+RUN cat yum-*.txt | grep -v '^$\|^#' | xargs yum install -y
 
-ADD required-packages/centos7-czanik.txt .
-RUN ./functions.sh add_czanik_repo_centos7
-RUN cat centos7-czanik.txt | grep -v "#" | xargs yum install -y
+RUN ./functions.sh add_epel_repo centos7
+ADD required-epel/all.txt epel-all.txt
+RUN cat epel-*.txt | grep -v '^$\|^#' | xargs yum install -y
+
 
 RUN ./functions.sh gradle_installer
 RUN echo "/usr/lib/jvm/jre/lib/amd64/server" | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf && ldconfig
