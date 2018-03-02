@@ -82,6 +82,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "listen_backlog",     KW_LISTEN_BACKLOG },
   { "keep_alive",         KW_KEEP_ALIVE },
   { "systemd_syslog",     KW_SYSTEMD_SYSLOG  },
+  { "failover_servers",   KW_FAILOVERS },
   { NULL }
 };
 

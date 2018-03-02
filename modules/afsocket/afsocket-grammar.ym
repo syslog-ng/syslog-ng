@@ -158,6 +158,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_IP
 %token KW_LOCALPORT
 %token KW_DESTPORT
+%token KW_FAILOVERS
 
 /* SSL support */
 
@@ -555,6 +556,7 @@ dest_afinet_option
 	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3); free($3); }
 	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
 	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
+	| KW_FAILOVERS '(' string_list ')' { afinet_dd_add_failovers(last_driver, $3); }
 	| inet_socket_option
 	| dest_writer_option
 	| dest_afsocket_option

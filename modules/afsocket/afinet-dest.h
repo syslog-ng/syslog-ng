@@ -47,6 +47,7 @@ typedef struct _AFInetDestDriver
   gint spoof_source_maxmsglen;
 #endif
   gchar *hostname;
+  GList *server_candidates;
 
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
@@ -62,6 +63,7 @@ void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
 void afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
+void afinet_dd_add_failovers(LogDriver *s, GList *failovers);
 
 AFInetDestDriver *afinet_dd_new_tcp(gchar *host, GlobalConfig *cfg);
 AFInetDestDriver *afinet_dd_new_tcp6(gchar *host, GlobalConfig *cfg);
