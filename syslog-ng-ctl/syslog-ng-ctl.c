@@ -32,7 +32,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <locale.h>
-#include <sgtty.h>
 #include <termios.h>
 #include <unistd.h>
 #include <errno.h>
