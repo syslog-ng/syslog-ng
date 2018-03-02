@@ -38,10 +38,24 @@ _shall_set_values_indirectly(NVHandle value_handle)
 }
 
 static void
+log_matcher_store_pattern(LogMatcher *self, const gchar *pattern)
+{
+  g_free(self->pattern);
+  self->pattern = g_strdup(pattern);
+}
+
+static void
+log_matcher_free_method(LogMatcher *self)
+{
+  g_free(self->pattern);
+}
+
+static void
 log_matcher_init(LogMatcher *self, const LogMatcherOptions *options)
 {
   self->ref_cnt = 1;
   self->flags = options->flags;
+  self->free_fn = log_matcher_free_method;
 }
 
 typedef struct _LogMatcherPosixRe
@@ -59,6 +73,7 @@ log_matcher_posix_re_compile(LogMatcher *s, const gchar *re, GError **error)
   gint flags = REG_EXTENDED;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  log_matcher_store_pattern(s, re);
 
   if (re[0] == '(' && re[1] == '?')
     {
@@ -217,6 +232,7 @@ log_matcher_posix_re_free(LogMatcher *s)
   LogMatcherPosixRe *self = (LogMatcherPosixRe *) s;
 
   regfree(&self->pattern);
+  log_matcher_free_method(s);
 }
 
 LogMatcher *
@@ -236,7 +252,6 @@ log_matcher_posix_re_new(GlobalConfig *cfg, const LogMatcherOptions *options)
 typedef struct _LogMatcherString
 {
   LogMatcher super;
-  gchar *pattern;
   gint pattern_len;
 } LogMatcherString;
 
@@ -246,9 +261,9 @@ log_matcher_string_compile(LogMatcher *s, const gchar *pattern, GError **error)
   LogMatcherString *self = (LogMatcherString *) s;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  log_matcher_store_pattern(s, pattern);
 
-  self->pattern = g_strdup(pattern);
-  self->pattern_len = strlen(self->pattern);
+  self->pattern_len = strlen(pattern);
   return TRUE;
 }
 
@@ -257,22 +272,23 @@ log_matcher_string_match_string(LogMatcherString *self, const gchar *value, gsiz
 {
   const gchar *result = NULL;
   gboolean match = FALSE;
+  const gchar *pattern = self->super.pattern;
 
   if (self->pattern_len > value_len)
     return NULL;
   if (G_LIKELY((self->super.flags & (LMF_SUBSTRING + LMF_PREFIX)) == 0))
     {
       if (self->super.flags & LMF_ICASE)
-        match = strncasecmp(value, self->pattern, value_len) == 0;
+        match = strncasecmp(value, pattern, value_len) == 0;
       else
-        match = strncmp(value, self->pattern, value_len) == 0;
+        match = strncmp(value, pattern, value_len) == 0;
     }
   else if (self->super.flags & LMF_PREFIX)
     {
       if (self->super.flags & LMF_ICASE)
-        match = strncasecmp(value, self->pattern, MIN(value_len, self->pattern_len)) == 0;
+        match = strncasecmp(value, pattern, MIN(value_len, self->pattern_len)) == 0;
       else
-        match = strncmp(value, self->pattern, MIN(value_len, self->pattern_len)) == 0;
+        match = strncmp(value, pattern, MIN(value_len, self->pattern_len)) == 0;
     }
   else if (self->super.flags & LMF_SUBSTRING)
     {
@@ -282,13 +298,13 @@ log_matcher_string_match_string(LogMatcherString *self, const gchar *value, gsiz
           gchar *res;
 
           APPEND_ZERO(buf, value, value_len);
-          res = strcasestr(buf, self->pattern);
+          res = strcasestr(buf, pattern);
           if (res)
             result = value + (res - buf);
         }
       else
         {
-          result = g_strstr_len(value, value_len, self->pattern);
+          result = g_strstr_len(value, value_len, pattern);
         }
     }
 
@@ -375,14 +391,6 @@ log_matcher_string_replace(LogMatcher *s, LogMessage *msg, gint value_handle, co
   return NULL;
 }
 
-static void
-log_matcher_string_free(LogMatcher *s)
-{
-  LogMatcherString *self = (LogMatcherString *) s;
-
-  g_free(self->pattern);
-}
-
 LogMatcher *
 log_matcher_string_new(GlobalConfig *cfg, const LogMatcherOptions *options)
 {
@@ -392,7 +400,6 @@ log_matcher_string_new(GlobalConfig *cfg, const LogMatcherOptions *options)
   self->super.compile = log_matcher_string_compile;
   self->super.match = log_matcher_string_match;
   self->super.replace = log_matcher_string_replace;
-  self->super.free_fn = log_matcher_string_free;
 
   return &self->super;
 }
@@ -409,6 +416,7 @@ log_matcher_glob_compile(LogMatcher *s, const gchar *pattern, GError **error)
   LogMatcherGlob *self = (LogMatcherGlob *)s;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  log_matcher_store_pattern(s, pattern);
 
   self->pattern = g_pattern_spec_new(pattern);
   return TRUE;
@@ -449,6 +457,7 @@ log_matcher_glob_free(LogMatcher *s)
 {
   LogMatcherGlob *self = (LogMatcherGlob *)s;
   g_pattern_spec_free(self->pattern);
+  log_matcher_free_method(s);
 }
 
 LogMatcher *
@@ -486,6 +495,7 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
   gint flags = 0;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  log_matcher_store_pattern(s, re);
 
   if (self->super.flags & LMF_ICASE)
     flags |= PCRE_CASELESS;
@@ -790,6 +800,7 @@ log_matcher_pcre_re_free(LogMatcher *s)
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
   pcre_free_study(self->extra);
   pcre_free(self->pattern);
+  log_matcher_free_method(s);
 }
 
 LogMatcher *

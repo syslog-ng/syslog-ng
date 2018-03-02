@@ -189,10 +189,19 @@ date_parser_process(LogParser *s,
    */
 
   APPEND_ZERO(input, input, input_len);
-  return _convert_timestamp_to_logstamp(self,
-                                        msg->timestamps[LM_TS_RECVD].tv_sec,
-                                        &msg->timestamps[self->time_stamp],
-                                        input);
+  gboolean res = _convert_timestamp_to_logstamp(self,
+                                                msg->timestamps[LM_TS_RECVD].tv_sec,
+                                                &msg->timestamps[self->time_stamp],
+                                                input);
+
+  if (!res)
+    {
+      msg_debug("date-parser() failed to parse its input",
+                evt_tag_str("input", input),
+                log_pipe_location_tag(&s->super),
+                evt_tag_printf("msg", "%p", msg));
+    }
+  return res;
 }
 
 static LogPipe *

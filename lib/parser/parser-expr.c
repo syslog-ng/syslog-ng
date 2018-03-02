@@ -83,16 +83,18 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   gboolean success;
 
   success = log_parser_process_message(self, &msg, path_options);
-  msg_debug("Message parsing complete",
-            evt_tag_int("result", success),
-            evt_tag_str("rule", self->name),
-            log_pipe_location_tag(s));
   if (success)
     {
+      msg_debug("Message parsing successful",
+                evt_tag_str("rule", self->name),
+                log_pipe_location_tag(s));
       log_pipe_forward_msg(s, msg, path_options);
     }
   else
     {
+      msg_debug("Message parsing failed, dropping message",
+                evt_tag_str("rule", self->name),
+                log_pipe_location_tag(s));
       if (path_options->matched)
         (*path_options->matched) = FALSE;
       log_msg_drop(msg, path_options, AT_PROCESSED);

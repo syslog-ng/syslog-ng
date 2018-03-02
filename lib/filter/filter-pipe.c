@@ -55,17 +55,17 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   LogFilterPipe *self = (LogFilterPipe *) s;
   gboolean res;
 
-  msg_debug("Filter rule evaluation begins",
-            evt_tag_printf("msg", "%p", msg),
+  msg_debug(">>>>>> filter rule evaluation begin",
             evt_tag_str("rule", self->name),
-            log_pipe_location_tag(s));
+            log_pipe_location_tag(s),
+            evt_tag_printf("msg", "%p", msg));
 
   res = filter_expr_eval_root(self->expr, &msg, path_options);
-  msg_debug("Filter rule evaluation result",
-            evt_tag_printf("msg", "%p", msg),
-            evt_tag_str("result", res ? "match" : "not-match"),
+  msg_debug("<<<<<< filter rule evaluation result",
+            filter_result_tag(res),
             evt_tag_str("rule", self->name),
-            log_pipe_location_tag(s));
+            log_pipe_location_tag(s),
+            evt_tag_printf("msg", "%p", msg));
   if (res)
     {
       log_pipe_forward_msg(s, msg, path_options);

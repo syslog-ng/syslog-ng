@@ -49,6 +49,11 @@ filter_call_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   else
     stats_counter_inc(self->super.not_matched);
 
+  msg_debug("  filter() evaluation result",
+            filter_result_tag(res),
+            evt_tag_str("called-rule", self->rule),
+            evt_tag_printf("msg", "%p", msgs[num_msg - 1]));
+
   return res ^ s->comp;
 }
 

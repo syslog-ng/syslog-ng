@@ -36,12 +36,14 @@ filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, con
 
   if (str_len < 0)
     str_len = strlen(str);
-  result = log_matcher_match(self->matcher, msg, value_handle, str, str_len) ^ self->super.comp;
-  msg_debug("Filter regexp node evaluation result",
-            evt_tag_printf("msg", "%p", msg),
+  result = log_matcher_match(self->matcher, msg, value_handle, str, str_len);
+  msg_debug("  match() evaluation result",
+            filter_result_tag(result),
             evt_tag_str("input", str),
-            evt_tag_str("result", result ? "match" : "not-match"));
-  return result;
+            evt_tag_str("pattern", self->matcher->pattern),
+            evt_tag_str("value", log_msg_get_value_name(value_handle, NULL)),
+            evt_tag_printf("msg", "%p", msg));
+  return result ^ s->comp;
 }
 
 static gboolean

@@ -216,6 +216,13 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
         matched = pattern_db_process(self->db, *pmsg);
     }
 
+  if (self->drop_unmatched && !matched)
+    {
+      msg_debug("db-parser() failed to parse its input and drop-unmatched flag was specified",
+                evt_tag_str("input", input),
+                log_pipe_location_tag(&s->super),
+                evt_tag_printf("msg", "%p", *pmsg));
+    }
   if (!self->drop_unmatched)
     matched = TRUE;
   return matched;
