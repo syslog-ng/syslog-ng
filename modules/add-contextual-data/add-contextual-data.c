@@ -45,6 +45,7 @@ typedef struct AddContextualData
   gchar *default_selector;
   gchar *filename;
   gchar *prefix;
+  gboolean ignore_case;
 } AddContextualData;
 
 void
@@ -96,6 +97,13 @@ add_contextual_data_set_selector_filter(LogParser *p, const gchar *filename)
   AddContextualData *self = (AddContextualData *) p;
   add_contextual_data_selector_free(self->selector);
   self->selector = add_contextual_data_selector_filter_new(log_pipe_get_config(&p->super), filename);
+}
+
+void
+add_contextual_data_set_ignore_case(LogParser *p, gboolean ignore)
+{
+  AddContextualData *self = (AddContextualData *)p;
+  self->ignore_case = ignore;
 }
 
 static gboolean
@@ -262,6 +270,9 @@ _init_context_info_db(AddContextualData *self)
 {
   if (self->selector && add_contextual_data_selector_is_ordering_required(self->selector))
     context_info_db_enable_ordering(self->context_info_db);
+
+  context_info_db_set_ignore_case(self->context_info_db, self->ignore_case);
+  context_info_db_init(self->context_info_db);
 
   if (self->filename == NULL)
     {
