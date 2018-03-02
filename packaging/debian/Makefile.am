@@ -23,7 +23,6 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-mod-java-common-lib.install \
 		packaging/debian/tty10.linux.conf \
 		packaging/debian/syslog-ng-mod-sql.postinst \
-		packaging/debian/scl.conf \
 		packaging/debian/syslog-ng-core.syslog-ng.logrotate \
 		packaging/debian/syslog-ng-mod-smtp.install \
 		packaging/debian/syslog-ng-core.prerm \
