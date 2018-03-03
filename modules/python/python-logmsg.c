@@ -236,7 +236,8 @@ static PyMethodDef py_log_message_methods[] =
 
 static PyTypeObject py_log_message_type =
 {
-  PyObject_HEAD_INIT(&PyType_Type)
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  0,
   .tp_name = "LogMessage",
   .tp_basicsize = sizeof(PyLogMessage),
   .tp_dealloc = (destructor) py_log_message_free,
