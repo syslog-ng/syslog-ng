@@ -565,7 +565,7 @@ main_loop_run(MainLoop *self)
   service_management_clear_status();
   if (self->options->interactive_mode)
     {
-      cfg_load_module(self->current_configuration, "python");
+      cfg_load_module(self->current_configuration, "mod-python");
       debugger_start(self, self->current_configuration);
     }
   iv_main();
