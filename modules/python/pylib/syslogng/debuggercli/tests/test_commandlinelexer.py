@@ -27,7 +27,7 @@ from .. import commandlinelexer
 
 class TestCommandLineLexer(TestLexer):
 
-    def _construct_lexer(self, *args, **kwargs):
+    def _construct_lexer(self):
         return commandlinelexer.CommandLineLexer()
 
     def test_lexer_returns_none_for_empty_string(self):
