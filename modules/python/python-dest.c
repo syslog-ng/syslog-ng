@@ -268,6 +268,14 @@ _py_free_bindings(PythonDestDriver *self)
 static gboolean
 _py_init_object(PythonDestDriver *self)
 {
+  if (!_py_get_attr_or_null(self->py.instance, "init"))
+    {
+      msg_debug("Missing Python method, init()",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("class", self->class));
+      return TRUE;
+    }
+
   if (!_py_invoke_init(self))
     {
       msg_error("Error initializing Python driver object, init() returned FALSE",
