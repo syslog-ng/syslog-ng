@@ -28,14 +28,27 @@
 #include <string.h>
 #include <errno.h>
 
+typedef enum data_type
+{
+  DATA_STRING,
+  DATA_ERROR,
+} data_type_t;
+
+typedef struct data
+{
+  data_type_t type;
+  struct iovec iov;
+  guint error_code;
+} data_t;
+
 typedef struct
 {
   LogTransport super;
   /* data is stored in a series of data chunks, that are going to be returned as individual reads */
-  struct iovec iov[32];
-  gint iov_cnt;
+  data_t value[32];
+  gint value_cnt;
   /* index currently read i/o chunk */
-  gint current_iov_ndx;
+  gint current_value_ndx;
   /* position within the current I/O chunk */
   gint current_iov_pos;
   gboolean input_is_a_stream;
@@ -49,13 +62,12 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
   LogTransportMock *self = (LogTransportMock *) s;
   struct iovec *current_iov;
 
-  if (self->current_iov_ndx >= self->iov_cnt)
+  if (self->current_value_ndx >= self->value_cnt)
     {
       count = 0;
       goto exit;
     }
 
-  current_iov = &self->iov[self->current_iov_ndx];
 
   if (self->inject_eagain)
     {
@@ -67,26 +79,33 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
     {
       self->inject_eagain = TRUE;
     }
-  if (self->input_is_a_stream)
-    count = 1;
 
-  if (count + self->current_iov_pos > current_iov->iov_len)
-    count = current_iov->iov_len - self->current_iov_pos;
-
-  if (GPOINTER_TO_UINT(current_iov->iov_base) < 4096)
+  switch (self->value[self->current_value_ndx].type)
     {
-      /* error injection */
-      errno = GPOINTER_TO_UINT(current_iov->iov_base);
+    case DATA_STRING:
+      if (self->input_is_a_stream)
+        count = 1;
+
+      current_iov = &self->value[self->current_value_ndx].iov;
+      if (count + self->current_iov_pos > current_iov->iov_len)
+        count = current_iov->iov_len - self->current_iov_pos;
+
+      memcpy(buf, current_iov->iov_base + self->current_iov_pos, count);
+      self->current_iov_pos += count;
+      if (self->current_iov_pos >= current_iov->iov_len)
+        {
+          self->current_iov_pos = 0;
+          self->current_value_ndx++;
+        }
+      break;
+    case DATA_ERROR:
+      self->current_value_ndx++;
+      errno = self->value[self->current_value_ndx].error_code;
       return -1;
+    default:
+      g_assert_not_reached();
     }
 
-  memcpy(buf, current_iov->iov_base + self->current_iov_pos, count);
-  self->current_iov_pos += count;
-  if (self->current_iov_pos >= current_iov->iov_len)
-    {
-      self->current_iov_pos = 0;
-      self->current_iov_ndx++;
-    }
   if (aux)
     aux->peer_addr = g_sockaddr_inet_new("1.2.3.4", 5555);
 
@@ -115,19 +134,28 @@ log_transport_mock_init(LogTransportMock *self, gchar *read_buffer1, gssize read
   while (buffer)
     {
       /* NOTE: our iov buffer is of a fixed size, increase if your test needs more chunks of data */
-      g_assert(self->iov_cnt < sizeof(self->iov) / sizeof(self->iov[0]));
+      g_assert(self->value_cnt < sizeof(self->value) / sizeof(self->value[0]));
 
-      if (length < 0)
-        length = strlen(buffer);
+      if (length == LTM_INJECT_ERROR_LENGTH)
+        {
+          self->value[self->value_cnt].type = DATA_ERROR;
+          self->value[self->value_cnt].error_code = GPOINTER_TO_UINT(buffer);
+        }
+      else
+        {
+          if (length == -1)
+            length = strlen(buffer);
 
-      self->iov[self->iov_cnt].iov_base = buffer;
-      self->iov[self->iov_cnt].iov_len = length;
-      self->iov_cnt++;
+          self->value[self->value_cnt].type = DATA_STRING;
+          self->value[self->value_cnt].iov.iov_base = buffer;
+          self->value[self->value_cnt].iov.iov_len = length;
+        }
+      self->value_cnt++;
       buffer = va_arg(va, gchar *);
       length = va_arg(va, gint);
     }
 
-  self->current_iov_ndx = 0;
+  self->current_value_ndx = 0;
   self->current_iov_pos = 0;
 }
 

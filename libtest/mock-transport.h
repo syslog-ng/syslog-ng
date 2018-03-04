@@ -28,7 +28,8 @@
 #include "transport/logtransport.h"
 
 /* macro to be used when injecting an error in the I/O stream */
-#define LTM_INJECT_ERROR(err)   (GUINT_TO_POINTER(err)), 0
+#define LTM_INJECT_ERROR_LENGTH -2
+#define LTM_INJECT_ERROR(err)   (GUINT_TO_POINTER(err)), LTM_INJECT_ERROR_LENGTH
 /* macro to be used at the end of the I/O stream */
 #define LTM_EOF                 NULL, 0
 #define LTM_PADDING   "padd", -1, "padd", -1, "padd", -1, "padd", -1, "padd", -1
