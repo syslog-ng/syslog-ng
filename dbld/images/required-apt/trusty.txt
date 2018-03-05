@@ -3,6 +3,7 @@ autoconf
 
 # required for configure
 libsystemd-daemon-dev
+libsystemd-journal-dev
 openjdk-7-jdk
 
 # required for make

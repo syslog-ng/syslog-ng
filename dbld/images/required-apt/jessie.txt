@@ -7,7 +7,6 @@ openjdk-7-jdk
 # required for make
 
 # required for make check
-python-pep8
 
 # other tools
 

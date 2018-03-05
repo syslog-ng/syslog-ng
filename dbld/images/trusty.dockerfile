@@ -1,7 +1,10 @@
 FROM ubuntu:14.04
-MAINTAINER Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>
+ARG DISTRO=trusty
+ARG OBS_REPO=xUbuntu_14.04
 
-ADD helpers/functions.sh .
+LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>"
+
+COPY helpers/* /helpers/
 
 # Install packages
 RUN apt-get update -qq && apt-get install --no-install-recommends -y \
@@ -9,21 +12,23 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y \
   python-setuptools \
   wget
 
-ADD required-pip/all.txt pip-all.txt
-RUN cat pip-*.txt | grep -v '^$\|^#' | xargs pip install
+COPY required-pip/all.txt required-pip/${DISTRO}*.txt /required-pip/
+RUN cat /required-pip/* | grep -v '^$\|^#' | xargs pip install
 
-ADD required-apt/all.txt apt-all.txt
-ADD required-apt/trusty.txt apt-trusty.txt
-RUN cat apt-*.txt | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
+COPY required-apt/all.txt required-apt/${DISTRO}*.txt /required-apt/
+RUN cat /required-apt/* | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
-RUN ./functions.sh add_obs_repo xUbuntu_14.04
-ADD required-obs/all.txt obs-all.txt
-RUN cat obs-*.txt | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
+RUN /helpers/functions.sh add_obs_repo ${OBS_REPO}
+COPY required-obs/all.txt required-obs/${DISTRO}*.txt /required-obs/
+RUN cat /required-obs/* | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
 
 # grab gosu for easy step-down from root
-ADD helpers/gosu.pubkey /tmp
-RUN ./functions.sh step_down_from_root_with_gosu $(dpkg --print-architecture)
+RUN /helpers/functions.sh step_down_from_root_with_gosu $(dpkg --print-architecture)
+
+
+# add a fake sudo command
+#RUN mv /helpers/fake-sudo.sh /usr/bin/sudo
 
 
 # mount points for source code
@@ -32,5 +37,4 @@ VOLUME /source
 VOLUME /build
 
 
-ADD helpers/entrypoint-debian.sh /
-ENTRYPOINT ["/entrypoint-debian.sh"]
+ENTRYPOINT ["/helpers/entrypoint.sh"]

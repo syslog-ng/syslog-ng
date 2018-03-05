@@ -22,7 +22,7 @@ function add_epel_repo {
 
 function step_down_from_root_with_gosu {
     ARCHITECTURE=$1
-    cat /tmp/gosu.pubkey | gpg --import
+    cat /helpers/gosu.pubkey | gpg --import
     wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.7/gosu-${ARCHITECTURE}"
     wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/1.7/gosu-${ARCHITECTURE}.asc"
     gpg --verify /usr/local/bin/gosu.asc

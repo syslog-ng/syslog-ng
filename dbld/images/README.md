@@ -10,6 +10,12 @@ Since Dockerfiles do not support "include" mechanism (More on the topic [here](h
 ### FROM
 We are starting from the official base images of the distributions.
 
+### ARG
+All platform specific parts are coded into variables.
+
+### copy helpers
+Copy every helper scripts/resources into the containers.
+
 ### pip and wget
 Adding the pip package handler and wget to grab the resources like custom repository keys.
 
@@ -36,16 +42,6 @@ Custom entrypoint script will create the user account inside the container, so y
 To avoid duplications, we tried to group together the list of the required packages between the different distributions. Luckily, they mostly have the same name with the same package managers, accross the different platforms.
 Unfortunately, not every requirement can be satisfied with the official packages, so we have to build some dependencies from source. We are trying to eliminate those, and for the clarification they are listed in separate folders.
 
-### all.txt
-Contains a list of packages which should be intalled on each and every distribution with the appropiate package manager.
-
-### *.txt
-Platform specific list of packages. If there is no such file for your platform yet:
- - Add a new file with the same name as the Dockerfile.
- - Make sure there is an empty line at the end of the file, because they are concatenated together.
- - Add the "ADD" line to the relevant Dockerfile.
- - NO need to modify the install part of the Dockerfiles.
-
 | Folder            | Function |
 | ----------------- | -------- |
 | required-**pip**  | List of **pip** packages (Currently the same for each platform) |
@@ -53,3 +49,12 @@ Platform specific list of packages. If there is no such file for your platform y
 | required-**obs**  | List of custom built packages for **Ubuntu** and **Debian** |
 | required-**yum**  | List of official packages for **CentOS** |
 | required-**epel** | List of custom built packages for **CentOS** |
+
+### all.txt
+Contains a list of packages which should be installed on each and every distribution with the appropiate package manager.
+
+### ${DISTRO}*.txt
+Platform specific list of packages. If there is no such file for your platform yet:
+ - Add a new file, starting with the same name as your platform.
+ - Make sure there is an empty line at the end of the file, because they are concatenated together.
+ - Rebuild you image with the dbld/rules command.

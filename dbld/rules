@@ -81,13 +81,13 @@ clean:
 
 shell: shell-xenial
 shell-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/shell
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/shell
 
 images: image-jessie image-artful image-xenial image-trusty image-centos6 image-centos7
 
 
 image-%:
-	cd $(DBLD_DIR)/images/ && docker build --network=host --no-cache -t balabit/syslog-ng-$* -f $*.dockerfile .
+	cd $(DBLD_DIR)/images/ && docker build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 setup:
 	mkdir -p dbld/build || true

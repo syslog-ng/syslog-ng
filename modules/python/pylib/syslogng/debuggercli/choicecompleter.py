@@ -38,8 +38,7 @@ class ChoiceCompleter(Completer):
     def _handle_input_without_prefix(self, entire_input):
         if self._prefix.startswith(entire_input) or entire_input == '':
             return [self._prefix]
-        else:
-            return []
+        return []
 
     def _handle_input_with_prefix(self, entire_input, word_to_be_completed):
         entire_input, word_to_be_completed = self._chop_prefixes(entire_input, word_to_be_completed)
