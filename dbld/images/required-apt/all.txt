@@ -1,0 +1,53 @@
+# required for autogen
+autoconf-archive
+automake
+libtool
+pkg-config
+
+# required for configure
+bison
+flex
+geoip-database
+libcap-dev
+libcurl4-openssl-dev
+libdbi-dev
+libesmtp-dev
+libgeoip-dev
+libglib2.0-dev
+libhiredis-dev
+libivykis-dev
+libjson-c-dev
+libmongo-client-dev
+libnet1-dev
+libpython-dev
+libssl-dev
+libwrap0-dev
+python-dev
+uuid-dev
+xsltproc
+tzdata
+
+# required for make
+make
+
+# required for make check
+libxml2-utils
+pylint
+python-nose
+python-ply
+
+# other tools
+gdb
+git
+lsof
+strace
+vim
+
+# debian packaging tools
+debhelper
+build-essential
+devscripts
+dh-autoreconf
+dh-systemd
+docbook
+docbook-xsl

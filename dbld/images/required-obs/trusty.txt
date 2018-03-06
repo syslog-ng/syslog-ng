@@ -1,0 +1,7 @@
+libmongoc-1.0-0
+libmongoc-dev
+
+libbson-1.0-0
+libbson-dev
+libriemann-client-dev
+librabbitmq-dev

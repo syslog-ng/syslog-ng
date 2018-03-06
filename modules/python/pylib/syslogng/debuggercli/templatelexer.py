@@ -42,7 +42,7 @@ class LexBasedLexer(Lexer):
         return token
 
     def input(self, text):
-        while len(self._lexer.lexstatestack) > 0:
+        while self._lexer.lexstatestack:
             self._lexer.pop_state()
         return self._lexer.input(text)
 

@@ -1,0 +1,20 @@
+# required for autogen
+autoconf
+
+# required for configure
+libsystemd-dev
+openjdk-8-jdk
+
+# required for make
+
+# required for make check
+python-pep8
+
+# other tools
+
+# debian packaging tools
+fakeroot
+libbson-dev
+librabbitmq-dev
+libmongoc-dev
+dh-exec

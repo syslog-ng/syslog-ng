@@ -136,8 +136,7 @@ class CompleterLang(object):
         if self._are_we_shifting_a_production(state):
             production = self._lookup_production(state)
             return self._shift_production(production, token)
-        else:
-            return state
+        return state
 
     def _lookup_production(self, state):
         return self._parser.productions[-state]

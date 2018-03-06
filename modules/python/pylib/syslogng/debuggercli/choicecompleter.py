@@ -30,17 +30,15 @@ class ChoiceCompleter(Completer):
         self._prefix = prefix or ''
         self._suffix = suffix if suffix is not None else ' '
 
-    def complete(self, entire_input, word_to_be_completed):
-        if entire_input.startswith(self._prefix):
-            return self._handle_input_with_prefix(entire_input, word_to_be_completed)
-        else:
-            return self._handle_input_without_prefix(entire_input)
+    def complete(self, entire_text, word_to_be_completed):
+        if entire_text.startswith(self._prefix):
+            return self._handle_input_with_prefix(entire_text, word_to_be_completed)
+        return self._handle_input_without_prefix(entire_text)
 
     def _handle_input_without_prefix(self, entire_input):
         if self._prefix.startswith(entire_input) or entire_input == '':
             return [self._prefix]
-        else:
-            return []
+        return []
 
     def _handle_input_with_prefix(self, entire_input, word_to_be_completed):
         entire_input, word_to_be_completed = self._chop_prefixes(entire_input, word_to_be_completed)
