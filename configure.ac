@@ -754,11 +754,11 @@ dnl ***************************************************************************
 AC_CHECK_FUNCS([inotify_init])
 
 dnl ***************************************************************************
-dnl libevtlog headers/libraries
+dnl libevtlog headers/libraries (remove after relicensing libevtlog)
 dnl ***************************************************************************
 
-EVTLOG_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/eventlog/src -levtlog -Wl,${NO_WHOLE_ARCHIVE_OPT}"
-EVTLOG_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/eventlog/src/.libs -levtlog -Wl,${NO_WHOLE_ARCHIVE_OPT}"
+EVTLOG_LIBS="\$(top_builddir)/lib/eventlog/src/libevtlog.la"
+EVTLOG_NO_LIBTOOL_LIBS="\$(top_builddir)/lib/eventlog/src/.libs/libevtlog.la"
 EVTLOG_CFLAGS="-I\$(top_srcdir)/lib/eventlog/src -I\$(top_builddir)/lib/eventlog/src"
 
 dnl ***************************************************************************
