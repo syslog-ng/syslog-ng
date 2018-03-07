@@ -322,7 +322,7 @@ tls_session_free(TLSSession *self)
 }
 
 static gboolean
-file_exists(const gchar *fname)
+_is_file_accessible(const gchar *fname)
 {
   if (!fname)
     return FALSE;
@@ -444,7 +444,7 @@ _is_dh_valid(DH *dh)
 static DH *
 _load_dh_from_file(const gchar *dhparam_file)
 {
-  if (!file_exists(dhparam_file))
+  if (!_is_file_accessible(dhparam_file))
     return NULL;
 
   BIO *bio = BIO_new_file(dhparam_file, "r");
@@ -528,7 +528,7 @@ tls_context_setup_dh(TLSContext *self)
 static PKCS12 *
 _load_pkcs12_file(const gchar *pkcs12_file)
 {
-  if (!file_exists(pkcs12_file))
+  if (!_is_file_accessible(pkcs12_file))
     return NULL;
 
   FILE *p12_file = fopen(pkcs12_file, "rb");
@@ -595,10 +595,10 @@ tls_context_load_pkcs12(TLSContext *self)
 static gboolean
 _are_key_and_cert_files_accessible(TLSContext *self)
 {
-  gboolean key_file_exists = file_exists(self->key_file);
-  gboolean cert_file_exists = file_exists(self->cert_file);
+  gboolean key_file_accessible = _is_file_accessible(self->key_file);
+  gboolean cert_file_accessible = _is_file_accessible(self->cert_file);
 
-  return key_file_exists && cert_file_exists;
+  return key_file_accessible && cert_file_accessible;
 }
 
 static gboolean
@@ -650,10 +650,10 @@ tls_context_setup_context(TLSContext *self)
         goto error;
     }
 
-  if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
+  if (_is_file_accessible(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
     goto error;
 
-  if (file_exists(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
+  if (_is_file_accessible(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
     goto error;
 
   if (self->crl_dir)
