@@ -595,8 +595,10 @@ tls_context_load_pkcs12(TLSContext *self)
 static gboolean
 _are_key_and_cert_files_accessible(TLSContext *self)
 {
-  return file_exists(self->key_file) &&
-         file_exists(self->cert_file);
+  gboolean key_file_exists = file_exists(self->key_file);
+  gboolean cert_file_exists = file_exists(self->cert_file);
+
+  return key_file_exists && cert_file_exists;
 }
 
 static gboolean
