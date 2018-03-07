@@ -15,4 +15,3 @@ python-pep8
 # other tools
 
 # debian packaging tools
-dh-exec

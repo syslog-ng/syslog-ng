@@ -13,8 +13,6 @@ python-pep8
 # other tools
 
 # debian packaging tools
-fakeroot
 libbson-dev
 librabbitmq-dev
 libmongoc-dev
-dh-exec

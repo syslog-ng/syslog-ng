@@ -1,1 +1,5 @@
+libbson-dev
+libmongoc-dev
+librabbitmq-dev
+libriemann-client-dev
 python-pep8
