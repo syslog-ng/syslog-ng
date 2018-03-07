@@ -35,5 +35,5 @@ if (ENABLE_GEOIP)
 
     install(TARGETS geoip-plugin LIBRARY DESTINATION lib/syslog-ng/ COMPONENT geoip)
 
-    add_subdirectory(tests)
+    add_test_subdirectory(tests)
 endif()

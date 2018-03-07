@@ -27,5 +27,5 @@ if (ENABLE_STOMP)
 
     install(TARGETS afstomp LIBRARY DESTINATION lib/syslog-ng/ COMPONENT afstomp)
 
-    add_subdirectory(tests)
+    add_test_subdirectory(tests)
 endif()

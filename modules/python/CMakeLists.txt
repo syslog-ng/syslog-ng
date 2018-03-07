@@ -79,4 +79,4 @@ endif ()
 add_dependencies(mod-python SetupPylib)
 install(TARGETS mod-python DESTINATION lib/syslog-ng/)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

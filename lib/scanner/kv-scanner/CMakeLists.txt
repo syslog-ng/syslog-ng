@@ -8,4 +8,4 @@ set(KV_SCANNER_SOURCES
     kv-scanner/kv-scanner.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

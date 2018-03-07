@@ -30,5 +30,5 @@ if (ENABLE_XML)
   LIBRARY DESTINATION lib/syslog-ng/
   COMPONENT xml)
 
-  add_subdirectory(tests)
+  add_test_subdirectory(tests)
 endif()

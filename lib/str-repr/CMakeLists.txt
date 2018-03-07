@@ -8,4 +8,4 @@ set(STR_REPR_SOURCES
     str-repr/decode.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

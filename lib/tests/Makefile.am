@@ -104,8 +104,6 @@ CLEANFILES				+= \
 lib_tests_test_userdb_LDADD	= \
 	$(TEST_LDADD)
 
-if ENABLE_CRITERION
-
 lib_tests_TESTS		+= \
 	lib/tests/test_cache		\
 	lib/tests/test_scratch_buffers 	\
@@ -125,6 +123,3 @@ lib_tests_test_scratch_buffers_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_scratch_buffers_LDADD	=	\
 	$(TEST_LDADD)
-
-
-endif

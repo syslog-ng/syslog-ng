@@ -31,4 +31,4 @@ set(LOGPROTO_SOURCES
     logproto/logproto-text-server.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

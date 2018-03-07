@@ -22,4 +22,4 @@ target_link_libraries(tags-parser PRIVATE syslog-ng)
 
 install(TARGETS tags-parser LIBRARY DESTINATION lib/syslog-ng/ COMPONENT tags-parser)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

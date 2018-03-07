@@ -12,4 +12,4 @@ set(VALUE_PAIRS_SOURCES
     value-pairs/evttag.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

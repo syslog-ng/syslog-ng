@@ -28,4 +28,4 @@ set(STATS_SOURCES
     stats/stats-cluster-single.c
     PARENT_SCOPE)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

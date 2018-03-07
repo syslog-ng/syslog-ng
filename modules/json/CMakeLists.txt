@@ -43,4 +43,4 @@ endif()
     install(TARGETS json-plugin LIBRARY DESTINATION lib/syslog-ng/ COMPONENT json)
 endif()
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

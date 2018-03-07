@@ -1,5 +1,3 @@
-if ENABLE_CRITERION
-
 tests_unit_TESTS			= \
 	tests/unit/test_logqueue	   \
 	tests/unit/test_matcher		   \
@@ -72,5 +70,3 @@ tests_unit_test_zone_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_pathutils_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
-
-endif

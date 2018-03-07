@@ -25,6 +25,11 @@
 include(CMakeParseArguments)
 
 function (add_unit_test)
+
+  if (NOT BUILD_TESTING)
+    return()
+  endif()
+
   cmake_parse_arguments(ADD_UNIT_TEST "CRITERION;LIBTEST" "TARGET" "SOURCES;DEPENDS;INCLUDES" ${ARGN})
 
   if (NOT ADD_UNIT_TEST_SOURCES)
@@ -51,3 +56,9 @@ function (add_unit_test)
 
   add_test (${ADD_UNIT_TEST_TARGET} ${ADD_UNIT_TEST_TARGET})
 endfunction ()
+
+macro (add_test_subdirectory SUBDIR)
+  if (BUILD_TESTING)
+    add_subdirectory(${SUBDIR})
+  endif()
+endmacro()

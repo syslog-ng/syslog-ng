@@ -13,4 +13,4 @@ set_target_properties(secret-storage PROPERTIES C_VISIBILITY_PRESET hidden)
 install(TARGETS secret-storage LIBRARY DESTINATION lib)
 install(FILES ${SECRET_STORAGE_HEADERS} DESTINATION include/syslog-ng)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

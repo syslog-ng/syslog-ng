@@ -9,5 +9,5 @@ if (ENABLE_STARDATE)
 
   install(TARGETS stardate LIBRARY DESTINATION lib/syslog-ng/ COMPONENT stardate) 
 
-  add_subdirectory(tests)
+  add_test_subdirectory(tests)
 endif()

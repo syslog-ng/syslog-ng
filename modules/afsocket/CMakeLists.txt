@@ -65,4 +65,4 @@ target_compile_definitions(afsocket PRIVATE ${LIBNET_DEFINES})
 
 install(TARGETS afsocket LIBRARY DESTINATION lib/syslog-ng/ COMPONENT afsocket)
 
-add_subdirectory(tests)
+add_test_subdirectory(tests)

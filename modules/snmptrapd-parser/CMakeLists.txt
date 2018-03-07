@@ -31,5 +31,5 @@ if (ENABLE_SNMPTRAPD_PARSER)
   LIBRARY DESTINATION lib/syslog-ng/
   COMPONENT snmptrapd_parser)
 
-  add_subdirectory(tests)
+  add_test_subdirectory(tests)
 endif()
