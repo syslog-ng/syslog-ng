@@ -599,9 +599,18 @@ _are_key_and_cert_files_accessible(TLSContext *self)
          file_exists(self->cert_file);
 }
 
+static gboolean
+_client_key_and_cert_files_are_not_specified(TLSContext *self)
+{
+  return self->mode == TM_CLIENT && (!self->key_file && !self->cert_file);
+}
+
 static TLSContextLoadResult
 tls_context_load_key_and_cert(TLSContext *self)
 {
+  if (_client_key_and_cert_files_are_not_specified(self))
+    return TLS_CONTEXT_OK;
+
   if (!_are_key_and_cert_files_accessible(self))
     return TLS_CONTEXT_FILE_ACCES_ERROR;
   if (!SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
