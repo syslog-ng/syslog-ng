@@ -211,7 +211,7 @@ static StatsCounterItem *count_sdata_updates;
 static StatsCounterItem *count_allocated_bytes;
 static GStaticPrivate priv_macro_value = G_STATIC_PRIVATE_INIT;
 
-static inline gboolean
+gboolean
 log_msg_is_write_protected(const LogMessage *self)
 {
   return self->protect_cnt > 0;

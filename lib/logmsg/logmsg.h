@@ -221,6 +221,7 @@ LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
 void log_msg_write_protect(LogMessage *m);
 void log_msg_write_unprotect(LogMessage *m);
+gboolean log_msg_is_write_protected(const LogMessage *m);
 LogMessage *log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options);
 LogMessage *log_msg_make_writable(LogMessage **pmsg, const LogPathOptions *path_options);
 
