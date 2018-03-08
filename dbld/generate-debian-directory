@@ -6,7 +6,7 @@ VERSION=`cat /source/VERSION`
 cp -r /source/packaging/debian .
 if [ $MODE = "snapshot" ]; then
 	echo "Generating snapshot version in debian/"
-	DEBEMAIL="dev@null" DEBFULLNAME="syslog-ng snapshot" debchange --newversion ${VERSION}-1+`date +%Y%m%dT%H%M%S` "Snapshot release based on ${GITREF}"
+	DEBEMAIL="dev@null" DEBFULLNAME="syslog-ng snapshot" debchange --newversion ${VERSION}-${MODE}+`date +%Y%m%dT%H%M%S` "Snapshot release based on ${GITREF}"
 elif [ $MODE = "release" ]; then
 	echo "Validating if your debian/ directory matches current version"
 	DEB_VERSION=`dpkg-parsechangelog -S Version | cut -d - -f1`

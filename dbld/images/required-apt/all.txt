@@ -44,6 +44,7 @@ strace
 vim
 
 # debian packaging tools
+fakeroot
 debhelper
 build-essential
 devscripts
@@ -51,3 +52,4 @@ dh-autoreconf
 dh-systemd
 docbook
 docbook-xsl
+dh-exec
