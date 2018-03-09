@@ -32,10 +32,11 @@
 
 const gchar *log_expr_node_get_content_name(gint content);
 
-#define LC_CATCHALL 1
-#define LC_FALLBACK 2
-#define LC_FINAL    4
-#define LC_FLOW_CONTROL 8
+#define LC_CATCHALL       1
+#define LC_FALLBACK       2
+#define LC_FINAL          4
+#define LC_FLOW_CONTROL   8
+#define LC_DROP_UNMATCHED 16
 
 enum
 {
@@ -147,6 +148,10 @@ LogExprNode *log_expr_node_new_rewrite_reference(const gchar *name, YYLTYPE *yyl
 LogExprNode *log_expr_node_new_log(LogExprNode *children, guint32 flags, YYLTYPE *yylloc);
 LogExprNode *log_expr_node_new_sequence(LogExprNode *children, YYLTYPE *yylloc);
 LogExprNode *log_expr_node_new_junction(LogExprNode *children, YYLTYPE *yylloc);
+void log_expr_node_conditional_set_false_branch_of_the_last_if(LogExprNode *conditional_node, LogExprNode *false_expr);
+LogExprNode *log_expr_node_new_conditional_with_filter(LogExprNode *filter_pipe, LogExprNode *true_expr,
+                                                       YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_conditional_with_block(LogExprNode *block, YYLTYPE *yylloc);
 
 typedef struct _CfgTree
 {

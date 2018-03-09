@@ -281,7 +281,6 @@ log_expr_node_new_pipe(LogPipe *pipe, YYLTYPE *yylloc)
   return node;
 }
 
-
 LogExprNode *
 log_expr_node_new_source(const gchar *name, LogExprNode *children, YYLTYPE *yylloc)
 {
@@ -360,6 +359,216 @@ log_expr_node_new_junction(LogExprNode *children, YYLTYPE *yylloc)
   return log_expr_node_new(ENL_JUNCTION, ENC_PIPE, NULL, children, 0, yylloc);
 }
 
+/****************************************************************************
+ * Functions related to conditional nodes
+ *
+ * These are higher-level functions that map if-elif-else structure to
+ * LogExprNode instances.  Rather than using a higher level data struct
+ * which then generates LogExprNode instances, we represent/manipulate the
+ * if-elif-else structure right within LogExprNode.
+ *
+ * A conditional node is simply a junction with two children:
+ *
+ *     1) the first child is the "TRUE" branch, with the filter expression
+ *     attached and the final flag
+ *
+ *     2) the second child is the "FALSE" branch, possibly empty, but also
+ *     the final flag.
+ *
+ * Basically this is the equivalent to:
+ *
+ *     junction {
+ *       channel {
+ *         filter { EXPRESSION; };
+ *         flags(final);
+ *       };
+ *       channel {
+ *         flags(final);
+ *       };
+ *     };
+ *
+ * When parsing an if block, we generate both children immediately, with the
+ * empty 2nd channel, and then if an elif or else comes, the FALSE branch
+ * gets replaced.
+ *
+ * The series of if-elif-else sequences is represented by its first
+ * LogExprNode (e.g.  the first if).  When we need to add an else or elif,
+ * we would have to locate the last dangling if statement based on this
+ * first LogExprNode.  The alternative would have been to store the last if
+ * statement in a variable, however that becomes pretty complicated if we
+ * need to handle nesting.
+ *
+ ****************************************************************************/
+
+static LogExprNode *
+log_expr_node_conditional_get_true_branch(LogExprNode *node)
+{
+  g_assert(node->layout == ENL_JUNCTION);
+
+  LogExprNode *branches = node->children;
+
+  g_assert(branches != NULL);
+  g_assert(branches->next != NULL);
+  g_assert(branches->next->next == NULL);
+
+  /* first child */
+  return branches;
+}
+
+static LogExprNode *
+log_expr_node_conditional_get_false_branch(LogExprNode *node)
+{
+  g_assert(node->layout == ENL_JUNCTION);
+
+  LogExprNode *branches = node->children;
+  g_assert(branches != NULL);
+  g_assert(branches->next != NULL);
+  g_assert(branches->next->next == NULL);
+
+  /* second child */
+  return branches->next;
+}
+
+static gboolean
+log_expr_node_conditional_is_branch_empty(LogExprNode *node)
+{
+  return node->children == NULL;
+}
+
+/* this function locates the last dangling if, based on the very first if
+ * statement in a series of ifs at the same level */
+static LogExprNode *
+_locate_last_conditional_along_nested_else_blocks(LogExprNode *head)
+{
+  while (1)
+    {
+      g_assert(log_expr_node_conditional_get_true_branch(head) != NULL);
+      g_assert(log_expr_node_conditional_get_false_branch(head) != NULL);
+
+      LogExprNode *false_branch = log_expr_node_conditional_get_false_branch(head);
+
+      /* check if this is the last else */
+      if (log_expr_node_conditional_is_branch_empty(false_branch))
+        return head;
+      head = false_branch->children;
+    }
+  g_assert_not_reached();
+}
+
+/* change the FALSE branch (e.g. the else case) of the last dangling if, specified by the head element */
+void
+log_expr_node_conditional_set_false_branch_of_the_last_if(LogExprNode *conditional_head_node, LogExprNode *false_expr)
+{
+  LogExprNode *conditional_node = _locate_last_conditional_along_nested_else_blocks(conditional_head_node);
+  LogExprNode *branches = conditional_node->children;
+
+  /* a conditional branch always have two children (see the constructor
+   * below), the first one is the "true" branch and the second one is the
+   * "false" branch, as they are constructed as final log channels with
+   * filter statement in the first one as the "if" expression.  */
+
+  /* assert that we only have two children */
+  g_assert(branches != NULL);
+  g_assert(branches->next != NULL);
+  g_assert(branches->next->next == NULL);
+
+
+  /* construct the new false branch */
+  LogExprNode *false_branch = log_expr_node_new_log(
+                                false_expr,
+                                log_expr_node_lookup_flag("final"),
+                                NULL
+                              );
+
+  /* unlink and free the old one */
+  LogExprNode *old_false_branch = branches->next;
+  branches->next = false_branch;
+  false_branch->parent = conditional_node;
+  log_expr_node_free(old_false_branch);
+}
+
+/*
+ */
+LogExprNode *
+log_expr_node_new_conditional_with_filter(LogExprNode *filter_pipe, LogExprNode *true_expr, YYLTYPE *yylloc)
+{
+  LogExprNode *filter_node = log_expr_node_new_filter(NULL, filter_pipe, NULL);
+
+  /*
+   *  channel {
+   *    filter { EXPRESSION };
+   *    true_expr;
+   *    flags(final);
+   *  };
+   */
+  LogExprNode *true_branch = log_expr_node_new_log(
+                               log_expr_node_append_tail(
+                                 filter_node,
+                                 log_expr_node_new_log(true_expr, LC_DROP_UNMATCHED, NULL)
+                               ),
+                               LC_FINAL,
+                               NULL
+                             );
+
+  /*
+   *  channel {
+   *    flags(final);
+   *  };
+   *
+   * NOTE: the false branch may be modified later, once an else or elif is
+   * encountered in the configuration, see
+   * log_expr_node_conditional_set_false_branch_of_the_last_if() function
+   * above.
+   */
+  LogExprNode *false_branch = log_expr_node_new_log(
+                                NULL,
+                                LC_FINAL,
+                                NULL
+                              );
+  return log_expr_node_new_junction(
+           log_expr_node_append_tail(true_branch, false_branch),
+           yylloc
+         );
+}
+
+LogExprNode *
+log_expr_node_new_conditional_with_block(LogExprNode *block, YYLTYPE *yylloc)
+{
+  /*
+   *  channel {
+   *    filtering_and_parsing_expr;
+   *    flags(final);
+   *  };
+   */
+  LogExprNode *true_branch = log_expr_node_new_log(
+                               block,
+                               LC_FINAL,
+                               NULL
+                             );
+
+  /*
+   *  channel {
+   *    flags(final);
+   *  };
+   *
+   * NOTE: the false branch may be modified later, once an else or elif is
+   * encountered in the configuration, see
+   * log_expr_node_conditional_set_false_branch_of_the_last_if() function
+   * above.
+   */
+  LogExprNode *false_branch = log_expr_node_new_log(
+                                NULL,
+                                LC_FINAL,
+                                NULL
+                              );
+  return log_expr_node_new_junction(
+           log_expr_node_append_tail(true_branch, false_branch),
+           yylloc
+         );
+}
+
+/****************************************************************************/
+
 gint
 log_expr_node_lookup_flag(const gchar *flag)
 {
@@ -371,6 +580,8 @@ log_expr_node_lookup_flag(const gchar *flag)
     return LC_FINAL;
   else if (strcmp(flag, "flow_control") == 0 || strcmp(flag, "flow-control") == 0)
     return LC_FLOW_CONTROL;
+  else if (strcmp(flag, "drop_unmatched") == 0 || strcmp(flag, "drop-unmatched") == 0)
+    return LC_DROP_UNMATCHED;
   msg_error("Unknown log statement flag", evt_tag_str("flag", flag));
   return 0;
 }
@@ -616,6 +827,9 @@ cfg_tree_propagate_expr_node_properties_to_pipe(LogExprNode *node, LogPipe *pipe
 
   if (node->flags & LC_FLOW_CONTROL)
     pipe->flags |= PIF_HARD_FLOW_CONTROL;
+
+  if (node->flags & LC_DROP_UNMATCHED)
+    pipe->flags |= PIF_DROP_UNMATCHED;
 
   if (!pipe->expr_node)
     pipe->expr_node = node;
