@@ -58,197 +58,6 @@ log_matcher_init(LogMatcher *self, const LogMatcherOptions *options)
   self->free_fn = log_matcher_free_method;
 }
 
-typedef struct _LogMatcherPosixRe
-{
-  LogMatcher super;
-  regex_t pattern;
-} LogMatcherPosixRe;
-
-static gboolean
-log_matcher_posix_re_compile(LogMatcher *s, const gchar *re, GError **error)
-{
-  LogMatcherPosixRe *self = (LogMatcherPosixRe *) s;
-  gint rc;
-  const gchar *re_comp = re;
-  gint flags = REG_EXTENDED;
-
-  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  log_matcher_store_pattern(s, re);
-
-  if (re[0] == '(' && re[1] == '?')
-    {
-      gint i;
-
-      for (i = 2; re[i] && re[i] != ')'; i++)
-        {
-          if (re[i] == 'i')
-            {
-              /* deprecated */
-              msg_warning_once("WARNING: Your configuration file uses an obsoleted regexp option, please update your configuration",
-                               evt_tag_str("option", "(?i)"),
-                               evt_tag_str("change", "use ignore-case flag instead of (?i)"));
-
-              flags |= REG_ICASE;
-            }
-        }
-      if (re[i])
-        {
-          re_comp = &re[i + 1];
-        }
-      else
-        {
-          g_set_error(error, LOG_MATCHER_ERROR, 0, "missing closing parentheses in regexp flags");
-          return FALSE;
-        }
-    }
-
-  if (self->super.flags & LMF_ICASE)
-    flags |= REG_ICASE;
-  if (self->super.flags & LMF_NEWLINE)
-    flags |= REG_NEWLINE;
-  if ((self->super.flags & (LMF_MATCH_ONLY + LMF_STORE_MATCHES)) == LMF_MATCH_ONLY)
-    flags |= REG_NOSUB;
-
-  rc = regcomp(&self->pattern, re_comp, flags);
-  if (rc)
-    {
-      gchar buf[256];
-
-      regerror(rc, &self->pattern, buf, sizeof(buf));
-      g_set_error(error, LOG_MATCHER_ERROR, 0, "Error compiling regular expression: %s", buf);
-      return FALSE;
-    }
-  return TRUE;
-}
-
-static void
-log_matcher_posix_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_handle, regmatch_t *matches,
-                                   const gchar *value)
-{
-  gint i;
-  gboolean indirect = _shall_set_values_indirectly(value_handle);
-
-  for (i = 0; i < RE_MAX_MATCHES && matches[i].rm_so != -1; i++)
-    {
-      if (indirect)
-        {
-          log_msg_set_match_indirect(msg, i, value_handle, 0, matches[i].rm_so, matches[i].rm_eo - matches[i].rm_so);
-        }
-      else
-        {
-          log_msg_set_match(msg, i, &value[matches[i].rm_so], matches[i].rm_eo - matches[i].rm_so);
-        }
-    }
-}
-
-static gboolean
-log_matcher_posix_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
-{
-  LogMatcherPosixRe *self = (LogMatcherPosixRe *) s;
-  regmatch_t matches[RE_MAX_MATCHES];
-  gboolean rc;
-  const gchar *buf;
-
-  APPEND_ZERO(buf, value, value_len);
-  rc = !regexec(&self->pattern, buf, RE_MAX_MATCHES, matches, 0);
-  if (rc && (s->flags & LMF_STORE_MATCHES))
-    {
-      log_matcher_posix_re_feed_backrefs(s, msg, value_handle, matches, value);
-    }
-  return rc;
-}
-
-static gchar *
-log_matcher_posix_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len,
-                             LogTemplate *replacement, gssize *new_length)
-{
-  LogMatcherPosixRe *self = (LogMatcherPosixRe *) s;
-  regmatch_t matches[RE_MAX_MATCHES];
-  gboolean rc;
-  GString *new_value = NULL;
-  gsize current_ofs = 0;
-  gboolean first_round = TRUE;
-  gchar *buf;
-
-  APPEND_ZERO(buf, value, value_len);
-
-  do
-    {
-      if (current_ofs == value_len)
-        break;
-
-      rc = !regexec(&self->pattern, buf + current_ofs, RE_MAX_MATCHES, matches, current_ofs > 0 ? REG_NOTBOL : 0);
-      if (rc)
-        {
-          /* start_ofs & end_ofs are relative to the original string */
-          gsize start_ofs = matches[0].rm_so + current_ofs;
-          gsize end_ofs = matches[0].rm_eo + current_ofs;
-
-          if (start_ofs == end_ofs && !first_round)
-            {
-              start_ofs++;
-              end_ofs++;
-            }
-
-          log_matcher_posix_re_feed_backrefs(s, msg, value_handle, matches, buf + current_ofs);
-
-          if (!new_value)
-            new_value = g_string_sized_new(value_len);
-
-          g_string_append_len(new_value, buf + current_ofs, start_ofs - current_ofs);
-          log_template_append_format(replacement, msg, NULL, LTZ_LOCAL, 0, NULL, new_value);
-          current_ofs = end_ofs;
-
-          if ((self->super.flags & LMF_GLOBAL) == 0)
-            {
-              g_string_append_len(new_value, buf + current_ofs, value_len - current_ofs);
-              break;
-            }
-        }
-      else
-        {
-          if (new_value)
-            {
-              /* no more matches, append the end of the string */
-              g_string_append_len(new_value, buf + current_ofs, value_len - current_ofs);
-            }
-        }
-      first_round = FALSE;
-    }
-  while (rc && (self->super.flags & LMF_GLOBAL));
-
-  if (new_value)
-    {
-      if (new_length)
-        *new_length = new_value->len;
-      return g_string_free(new_value, FALSE);
-    }
-  return NULL;
-}
-
-static void
-log_matcher_posix_re_free(LogMatcher *s)
-{
-  LogMatcherPosixRe *self = (LogMatcherPosixRe *) s;
-
-  regfree(&self->pattern);
-  log_matcher_free_method(s);
-}
-
-LogMatcher *
-log_matcher_posix_re_new(GlobalConfig *cfg, const LogMatcherOptions *options)
-{
-  LogMatcherPosixRe *self = g_new0(LogMatcherPosixRe, 1);
-
-  log_matcher_init(&self->super, options);
-  self->super.compile = log_matcher_posix_re_compile;
-  self->super.match = log_matcher_posix_re_match;
-  self->super.replace = log_matcher_posix_re_replace;
-  self->super.free_fn = log_matcher_posix_re_free;
-
-  return &self->super;
-}
-
 typedef struct _LogMatcherString
 {
   LogMatcher super;
@@ -826,7 +635,6 @@ struct
 } matcher_types[] =
 {
   { "pcre", log_matcher_pcre_re_new },
-  { "posix", log_matcher_posix_re_new },
   { "string", log_matcher_string_new },
   { "glob", log_matcher_glob_new },
   { NULL, NULL },
@@ -877,6 +685,15 @@ log_matcher_options_set_type(LogMatcherOptions *options, const gchar *type)
 {
   LogMatcherConstructFunc construct;
 
+  if (strcmp(type, "posix") == 0)
+    {
+      msg_warning_once("WARNING: syslog-ng dropped support for POSIX regexp implementations in " VERSION_3_14
+                       " in favour of PCRE, which should be upward compatible. All 'posix' regexps are "
+                       "automatically switched to 'pcre'. Please ensure that your regexps work with PCRE and "
+                       "specify type('pcre') explicitly or increase @version to remove this warning");
+      type = "pcre";
+    }
+
   construct = log_matcher_lookup_construct(type);
   if (!construct)
     return FALSE;
@@ -926,8 +743,6 @@ log_matcher_options_init(LogMatcherOptions *options, GlobalConfig *cfg)
 
       if (cfg_is_config_version_older(cfg, 0x0306))
         {
-          msg_warning_once("WARNING: syslog-ng changed the default regexp implementation to PCRE starting from " VERSION_3_6
-                           ", please ensure your regexp works with PCRE or please specify type(\"posix\") in filters explicitly");
           default_matcher = "posix";
         }
       if (!log_matcher_options_set_type(options, default_matcher))

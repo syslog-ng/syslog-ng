@@ -107,7 +107,6 @@ log_matcher_is_replace_supported(LogMatcher *s)
   return s->replace != NULL;
 }
 
-LogMatcher *log_matcher_posix_re_new(GlobalConfig *cfg, const LogMatcherOptions *options);
 LogMatcher *log_matcher_pcre_re_new(GlobalConfig *cfg, const LogMatcherOptions *options);
 LogMatcher *log_matcher_string_new(GlobalConfig *cfg, const LogMatcherOptions *options);
 LogMatcher *log_matcher_glob_new(GlobalConfig *cfg, const LogMatcherOptions *options);

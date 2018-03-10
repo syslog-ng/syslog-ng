@@ -142,34 +142,34 @@ teardown(void)
 
 TestSuite(matcher, .init = setup, .fini = teardown);
 
-Test(matcher, posix_regexp, .description = "POSIX regexp")
+Test(matcher, pcre_regexp, .description = "PCRE regexp")
 {
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz",
-                   "favíz", "favíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
+                   "favíz", "favíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "^tűrő",
-                   "faró", "árvíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
+                   "faró", "árvíztűrőtükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "",
-                   "árvíztükörfúrógép", _construct_matcher(0, log_matcher_posix_re_new));
+                   "árvíztükörfúrógép", _construct_matcher(0, log_matcher_pcre_re_new));
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "", "kiki",
-                   _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "kuku", "kukukikukuki",
-                   _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
 }
 
 Test(matcher, back_ref, .description = "back references are not portable, they work only on Linux")
 {
 #if __linux__
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "(wiki)\\1", "", "",
-                   _construct_matcher(LMF_STORE_MATCHES, log_matcher_posix_re_new));
+                   _construct_matcher(LMF_STORE_MATCHES, log_matcher_pcre_re_new));
 #endif
 }
 
 Test(matcher, empty_global, .description = "empty match with global flag")
 {
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "c*", "#", "#a#a# #b#b#",
-                   _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
-  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "a*", "#", "# #b#b#",
-                   _construct_matcher(LMF_GLOBAL, log_matcher_posix_re_new));
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "a*", "#", "## #b#b#",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
 
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "c*", "#", "#a#a# #b#b#",
                    _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
