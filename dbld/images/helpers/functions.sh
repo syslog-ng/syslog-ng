@@ -41,5 +41,15 @@ function gradle_installer {
     ln --symbolic "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle
 }
 
+
+function workarounds {
+    # aufs occasionally generates core files into the container root (auplink segfaults because of memory handling error)
+    # Examples:
+    #    https://github.com/tianon/docker-brew-ubuntu-core/issues/55
+    #    https://github.com/docker-library/official-images/issues/1978
+    #    https://github.com/docker-library/official-images/issues/2130
+    rm -rf /core
+}
+
 # DO NOT REMOVE!
 "$@"

@@ -42,3 +42,6 @@ VOLUME /build
 
 
 ENTRYPOINT ["/helpers/entrypoint.sh"]
+
+# Workarounds
+RUN /helpers/functions.sh workarounds
