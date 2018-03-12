@@ -37,6 +37,9 @@ Creating the /source and /build folders for our work. (note: install folder will
 ### entrypoint
 Custom entrypoint script will create the user account inside the container, so you will not have any access problem with the mounted folders.
 
+### workarounds
+Custom tweaks for temporary problems. The first problem - the reason we introduced this section - was with Docker Hub builds.
+
 
 # Package lists
 To avoid duplications, we tried to group together the list of the required packages between the different distributions. Luckily, they mostly have the same name with the same package managers, accross the different platforms.
