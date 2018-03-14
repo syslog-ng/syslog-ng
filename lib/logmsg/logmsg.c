@@ -1852,6 +1852,8 @@ log_msg_lookup_time_stamp_name(const gchar *name)
 
 gssize log_msg_get_size(LogMessage *self)
 {
+  if(!self) return 0;
+
   return
     sizeof(LogMessage) + // msg.static fields
     + self->alloc_sdata * sizeof(self->sdata[0]) +
