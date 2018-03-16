@@ -20,6 +20,7 @@ libjson-c-dev
 libmongo-client-dev
 libnet1-dev
 libpython-dev
+libpython3-dev
 libssl-dev
 libwrap0-dev
 python-dev
