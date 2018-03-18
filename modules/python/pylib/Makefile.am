@@ -63,13 +63,13 @@ clean-pylib:
 	rm -rf "$(PYLIB_BUILDDIR)/build"
 	rm -rf "$(SETUPPY_MANIFEST)"
 
-python-checks: python-unit python-pep8 python-pylint
+python-checks: python-unit python-pycodestyle python-pylint
 
 python-unit:
 	nosetests $(PYLIB_SRCDIR)/syslogng
 
-python-pep8:
-	pep8 --ignore=E501 $(PYLIB_SRCDIR)/syslogng
+python-pycodestyle:
+	pycodestyle --ignore=E501 $(PYLIB_SRCDIR)/syslogng
 
 python-pylint:
 	pylint -r n --rcfile=$(PYLIB_SRCDIR)/pylintrc $(PYLIB_SRCDIR)/syslogng
@@ -82,4 +82,4 @@ endif
 .PHONY: install-pylib
 .PHONY: uninstall-pylib
 .PHONY: clean-pylib
-.PHONY: python-checks python-unit python-pep8 python-pylint
+.PHONY: python-checks python-unit python-pycodestyle python-pylint
