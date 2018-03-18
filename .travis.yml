@@ -79,6 +79,7 @@ script:
         xargs cat;
         return $S;
       };
+      find . -name test-suite.log | xargs cat;
     else
       make --keep-going -j 3;
       S=$?;
