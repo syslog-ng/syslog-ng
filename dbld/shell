@@ -1,11 +1,11 @@
 #!/bin/bash
 
-echo -e "\n\n\nWelcome to the syslog-ng developer's shell"
+echo -e "\n\nWelcome to the syslog-ng developer's shell...\n"
 
-echo -e "\tYou can find the source in /source, you can build the source using:"
+echo -e "You can find the source in /source, you can build the source using:\n"
 echo -e "\t\$ cd /build"
 echo -e "\t\$ /source/configure"
 echo -e "\t\$ make"
-echo -e "\tIf configure is not yet available, run autogen.sh in the source dir"
+echo -e "If configure is not yet available, run dbld/rules bootstrap first or manually execute autogen.sh in the source dir"
 cd /source
 exec bash

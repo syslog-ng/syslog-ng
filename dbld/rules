@@ -99,9 +99,9 @@ login-%: setup
 	$(DOCKER) exec -ti  $$container /bin/bash
 
 setup:
-	mkdir -p dbld/build || true
-	mkdir -p dbld/install || true
-	mkdir -p dbld/release || true
+	@mkdir -p dbld/build || true
+	@mkdir -p dbld/install || true
+	@mkdir -p dbld/release || true
 
 
 # list apt packages
