@@ -4,10 +4,16 @@ set -e
 
 cd /source
 VERSION=`cat VERSION`
+SYSLOGNG_DIR=syslog-ng-${VERSION}
+SYSLOGNG_TARBALL=${SYSLOGNG_DIR}.tar.gz
+
 ./autogen.sh
 
-cd /build
+rm -rf /build/dist-build
+mkdir /build/dist-build
+cd /build/dist-build
 /source/configure --enable-manpages --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
 make dist
+mv ${SYSLOGNG_TARBALL} /build
 
 echo "Your tarball is in /build, also available on the host in \$(top_srcdir)/dbld/build"
