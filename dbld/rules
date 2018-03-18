@@ -19,6 +19,7 @@ RELEASE_DIR=$(DBLD_DIR)/release
 VERSION=$(shell cat VERSION)
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
+CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $(CONFIGURE_ADD)
 
 help:
 	@echo "This script allows you to build release/snapshot artifacts, such "
@@ -43,14 +44,20 @@ help:
 	@echo "  images: generate all docker images"
 	@echo ""
 	@echo "Development:"
+	@echo "  bootstrap: bootstrap source from a git clone (e.g. autogen.sh and friends)"
 	@echo "  shell: start a shell in the specified OS"
 	@echo "  login: start a 2nd shell (as root) alongside an already running one"
 	@echo "  tarball: generate a tarball in a controlled environment (e.g. docker)"
 	@echo "  release: generate a release deb package in a controlled environment (e.g. docker)"
 	@echo ""
 	@echo "Notable Make variables:"
+	@echo "  CONFIGURE_ADD -- add this to the configure command line in bootstrap"
 	@echo "  DEFAULT_IMAGE -- override the default image, currently $(DEFAULT_IMAGE)"
 	@echo ""
+
+bootstrap: bootstrap-$(DEFAULT_IMAGE)
+bootstrap-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" -ti  balabit/syslog-ng-$* /source/dbld/bootstrap
 
 tarball: tarball-$(DEFAULT_IMAGE)
 tarball-%: setup
