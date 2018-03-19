@@ -243,6 +243,7 @@ cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
   else if (level->include_type == CFGI_BUFFER)
     {
       g_free(level->buffer.content);
+      g_free(level->buffer.original_content);
     }
   memset(level, 0, sizeof(*level));
 }
@@ -300,7 +301,10 @@ cfg_lexer_start_next_include(CfgLexer *self)
       g_free(level->name);
 
       if (level->include_type == CFGI_BUFFER)
-        g_free(level->buffer.content);
+        {
+          g_free(level->buffer.content);
+          g_free(level->buffer.original_content);
+        }
 
       memset(level, 0, sizeof(*level));
 
@@ -660,6 +664,7 @@ cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gch
   level->include_type = CFGI_BUFFER;
   level->buffer.content = lexer_buffer;
   level->buffer.content_length = lexer_buffer_len;
+  level->buffer.original_content = g_strdup(lexer_buffer);
   level->name = g_strdup(name);
 
   return cfg_lexer_start_next_include(self);
@@ -1088,6 +1093,7 @@ cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
 
   level = &self->include_stack[0];
   level->include_type = CFGI_BUFFER;
+  level->buffer.original_content = g_strdup(buffer);
   level->buffer.content = g_malloc(length + 2);
   memcpy(level->buffer.content, buffer, length);
   level->buffer.content[length] = 0;
