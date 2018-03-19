@@ -27,6 +27,7 @@
 #include "python-dest.h"
 #include "python-tf.h"
 #include "python-logmsg.h"
+#include "python-global-code-loader.h"
 #include "python-debugger.h"
 
 #include "plugin.h"
@@ -68,6 +69,7 @@ _py_init_interpreter(void)
 
       PyEval_InitThreads();
       py_log_message_init();
+      py_global_code_loader_init();
       PyEval_SaveThread();
 
       interpreter_initialized = TRUE;

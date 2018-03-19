@@ -24,11 +24,12 @@
 #define PYTHON_MAIN_H_INCLUDED 1
 
 #include "python-config.h"
+#include "cfg-lexer.h"
 
 PyObject *_py_get_current_main_module(void);
 PyObject *_py_get_main_module(PythonConfig *pc);
 void _py_switch_main_module(PythonConfig *pc);
-gboolean python_evaluate_global_code(GlobalConfig *cfg, const gchar *code);
+gboolean python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, YYLTYPE *yylloc);
 
 
 #endif

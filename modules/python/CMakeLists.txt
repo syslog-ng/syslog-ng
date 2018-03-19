@@ -44,6 +44,8 @@ set(PYTHON_SOURCES
     python-parser.h
     python-logmsg.h
     python-logmsg.c
+    python-global-code-loader.h
+    python-global-code-loader.c
     python-debugger.c
     python-debugger.h
     python-logparser.h

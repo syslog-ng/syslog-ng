@@ -24,6 +24,8 @@
 #include "python-main.h"
 #include "python-module.h"
 #include "python-helpers.h"
+#include "python-global-code-loader.h"
+#include "cfg.h"
 #include "messages.h"
 
 /*
@@ -126,41 +128,67 @@ _py_get_main_module(PythonConfig *pc)
 }
 
 gboolean
-_py_evaluate_global_code(PythonConfig *pc, const gchar *code)
+_py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *code)
 {
-  PyObject *result;
   PyObject *module;
   PyObject *dict;
+  PyObject *code_object;
+  gchar buf[256];
 
   module = _py_get_main_module(pc);
   if (!module)
     return FALSE;
 
+  /* NOTE: this has become a tad more difficult than PyRun_SimpleString(),
+   * because we want proper backtraces originating from this module.  Should
+   * we only use PyRun_SimpleString(), we would not get source lines in our
+   * backtraces.
+   *
+   * This implementation basically mimics what an import would do, compiles
+   * the code as it was coming from a "virtual" file and then executes the
+   * compiled code in the context of the _syslogng module.
+   *
+   * Since we attach a __loader__ to the module, that will be called when
+   * the source is needed to report backtraces.  Its implementation is in
+   * the python-global-code-loader.c, that simply returns the source when
+   * its get_source() method is called.
+   */
+
   dict = PyModule_GetDict(module);
-  result = PyRun_String(code, Py_file_input, dict, dict);
+  PyDict_SetItemString(dict, "__loader__", py_global_code_loader_new(code));
 
-  if (!result)
+  code_object = Py_CompileString((char *) code, filename, Py_file_input);
+  if (!code_object)
     {
-      gchar buf[256];
+      msg_error("Error compiling Python global code block",
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
+      return FALSE;
+    }
+  module = PyImport_ExecCodeModuleEx("_syslogng", code_object, (char *) filename);
+  Py_DECREF(code_object);
 
+  if (!module)
+    {
       msg_error("Error evaluating global Python block",
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
     }
-  Py_XDECREF(result);
   return TRUE;
 }
 
 gboolean
-python_evaluate_global_code(GlobalConfig *cfg, const gchar *code)
+python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, YYLTYPE *yylloc)
 {
   PyGILState_STATE gstate;
+  gchar buf[256];
   PythonConfig *pc = python_config_get(cfg);
   gboolean result;
 
   gstate = PyGILState_Ensure();
-  result = _py_evaluate_global_code(pc, code);
+  g_snprintf(buf, sizeof(buf), "%s{python-global-code:%d}", cfg->filename, yylloc->first_line);
+  result = _py_evaluate_global_code(pc, buf, code);
   PyGILState_Release(gstate);
 
   return result;

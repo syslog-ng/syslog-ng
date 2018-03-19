@@ -44,6 +44,41 @@ _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
   return buf;
 }
 
+void
+_py_log_python_traceback_to_stderr_in_debug_mode(void)
+{
+  PyObject *traceback_module = NULL;
+  PyObject *print_exception = NULL;
+  PyObject *res = NULL;
+  PyObject *exc, *value, *tb;
+
+  PyErr_Fetch(&exc, &value, &tb);
+
+  traceback_module = _py_do_import("traceback");
+  if (!traceback_module)
+    goto exit;
+  print_exception = PyObject_GetAttrString(traceback_module, "print_exception");
+  if (!print_exception)
+    {
+      msg_error("Error printing proper Python traceback for the exception, traceback.print_exception function not found");
+      PyErr_Print();
+      PyErr_Clear();
+      goto exit;
+    }
+  res = PyObject_CallFunction(print_exception, "OOO", exc, value, tb ? : Py_None);
+  if (!res)
+    {
+      msg_error("Error printing proper Python traceback for the exception, printing the error caused by print_exception() itself");
+      PyErr_Print();
+      PyErr_Clear();
+    }
+exit:
+  Py_XDECREF(res);
+  Py_XDECREF(print_exception);
+  Py_XDECREF(traceback_module);
+  PyErr_Restore(exc, value, tb);
+}
+
 const gchar *
 _py_format_exception_text(gchar *buf, gsize buf_len)
 {
@@ -77,6 +112,7 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
 void
 _py_finish_exception_handling(void)
 {
+  _py_log_python_traceback_to_stderr_in_debug_mode();
   PyErr_Clear();
 }
 
