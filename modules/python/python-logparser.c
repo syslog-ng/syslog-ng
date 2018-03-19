@@ -121,7 +121,8 @@ _py_init_bindings(PythonParser *self)
       msg_error("Error looking Python parser class",
                 evt_tag_str("parser", self->super.name),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return FALSE;
     }
 
@@ -133,7 +134,8 @@ _py_init_bindings(PythonParser *self)
       msg_error("Error instantiating Python parser class",
                 evt_tag_str("parser", self->super.name),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return FALSE;
     }
 

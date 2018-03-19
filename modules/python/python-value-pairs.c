@@ -37,7 +37,8 @@ add_long_to_dict(PyObject *dict, const gchar *name, long num)
   if (!pyobject_to_add)
     {
       msg_error("Error while constructing python object",
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return;
     }
 
@@ -54,7 +55,8 @@ add_string_to_dict(PyObject *dict, const gchar *name, const char *value, gsize v
   if (!pyobject_to_add)
     {
       msg_error("Error while constructing python object",
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return;
     }
 

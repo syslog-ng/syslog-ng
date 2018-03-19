@@ -27,7 +27,8 @@
 #include "python-module.h"
 
 const gchar *_py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len);
-const gchar *_py_fetch_and_format_exception_text(gchar *buf, gsize buf_len);
+const gchar *_py_format_exception_text(gchar *buf, gsize buf_len);
+void _py_finish_exception_handling(void);
 PyObject *_py_get_attr_or_null(PyObject *o, const gchar *attr);
 PyObject *_py_do_import(const gchar *modname);
 PyObject *_py_resolve_qualified_name(const gchar *name);

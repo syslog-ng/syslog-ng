@@ -55,7 +55,8 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
     {
       msg_error("$(python): Error looking up Python function",
                 evt_tag_str("function", function_name),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return NULL;
     }
 
@@ -68,7 +69,8 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
     {
       msg_error("$(python): Error invoking Python function",
                 evt_tag_str("function", function_name),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return NULL;
     }
   return ret;

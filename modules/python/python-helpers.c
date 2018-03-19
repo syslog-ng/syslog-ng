@@ -45,7 +45,7 @@ _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
 }
 
 const gchar *
-_py_fetch_and_format_exception_text(gchar *buf, gsize buf_len)
+_py_format_exception_text(gchar *buf, gsize buf_len)
 {
   PyObject *exc, *value, *tb, *str;
 
@@ -58,6 +58,9 @@ _py_fetch_and_format_exception_text(gchar *buf, gsize buf_len)
   PyErr_NormalizeException(&exc, &value, &tb);
 
   str = PyObject_Str(value);
+  if (!str)
+    PyErr_Clear();
+
   if (str && _py_is_string(str))
     {
       g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, _py_get_string_as_string(str));
@@ -66,11 +69,15 @@ _py_fetch_and_format_exception_text(gchar *buf, gsize buf_len)
     {
       g_strlcpy(buf, "<unknown>", buf_len);
     }
-  Py_XDECREF(exc);
-  Py_XDECREF(value);
-  Py_XDECREF(tb);
   Py_XDECREF(str);
+  PyErr_Restore(exc, value, tb);
   return buf;
+}
+
+void
+_py_finish_exception_handling(void)
+{
+  PyErr_Clear();
 }
 
 PyObject *
@@ -111,7 +118,8 @@ _py_do_import(const gchar *modname)
 
       msg_error("Error loading Python module",
                 evt_tag_str("module", modname),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return NULL;
     }
   return modobj;
@@ -189,7 +197,8 @@ _py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gch
                 evt_tag_str("caller", caller_context),
                 evt_tag_str("class", class),
                 evt_tag_str("function", _py_get_callable_name(func, buf1, sizeof(buf1))),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf2, sizeof(buf2))));
+                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
+      _py_finish_exception_handling();
       return NULL;
     }
   return ret;
@@ -226,7 +235,8 @@ _py_get_method(PyObject *instance, const gchar *method_name, const gchar *module
       msg_error("Missing Python method ",
                 evt_tag_str("module", module),
                 evt_tag_str("method", method_name),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return NULL;
     }
   return method;

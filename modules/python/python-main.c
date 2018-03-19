@@ -64,7 +64,8 @@ _py_construct_main_module(void)
       gchar buf[256];
 
       msg_error("Error creating syslog-ng main module",
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return NULL;
     }
 
@@ -143,7 +144,8 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *code)
       gchar buf[256];
 
       msg_error("Error evaluating global Python block",
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return FALSE;
     }
   Py_XDECREF(result);
