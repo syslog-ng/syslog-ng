@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+IMAGES=centos6 centos7 jessie artful xenial trusty
+DEFAULT_IMAGE=xenial
 DOCKER=docker
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
         --network=host \
@@ -14,7 +16,6 @@ RELEASE_DIR=$(DBLD_DIR)/release
 VERSION=$(shell cat VERSION)
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
-DEFAULT_IMAGE=xenial
 
 help:
 	@echo "This script allows you to build release/snapshot artifacts, such "
@@ -71,10 +72,10 @@ shell-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/shell
 
 
-images: image-jessie image-artful image-xenial image-trusty image-centos6 image-centos7
+images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-%:
-	cd $(DBLD_DIR)/images/ && docker build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
+	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 setup:
 	mkdir -p dbld/build || true
