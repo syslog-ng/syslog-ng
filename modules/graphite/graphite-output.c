@@ -44,7 +44,7 @@ tf_graphite_set_timestamp(const gchar *option_name, const gchar *value,
 {
   TFGraphiteArgumentsUserData *args = (TFGraphiteArgumentsUserData *) data;
 
-  args->state->timestamp_template = log_template_new(args->cfg, "graphite_timestamp_template");
+  args->state->timestamp_template = log_template_new(args->cfg, NULL);
   log_template_compile(args->state->timestamp_template, value, NULL);
   return TRUE;
 };
@@ -92,7 +92,7 @@ tf_graphite_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
 
   if (!state->timestamp_template)
     {
-      state->timestamp_template = log_template_new(parent->cfg, "graphite_timestamp_template");
+      state->timestamp_template = log_template_new(parent->cfg, NULL);
       log_template_compile(state->timestamp_template, "$R_UNIXTIME", NULL);
     }
 
