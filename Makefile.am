@@ -127,6 +127,7 @@ noinst_LTLIBRARIES	=
 lib_LTLIBRARIES		=
 pkginclude_HEADERS	= syslog-ng-config.h
 module_LTLIBRARIES	=
+loggenplugin_LTLIBRARIES	=
 BUILT_SOURCES		=
 CLEANFILES 		= $(BUILT_SOURCES)
 check_PROGRAMS		=
@@ -185,6 +186,9 @@ help:
 
 install_moduleLTLIBRARIES	= install-moduleLTLIBRARIES
 $(install_moduleLTLIBRARIES): install-libLTLIBRARIES
+
+install_loggenpluginLTLIBRARIES	= install-loggenpluginLTLIBRARIES
+$(install_loggenpluginLTLIBRARIES): install-libLTLIBRARIES
 
 include Mk/lex-rules.am
 include Mk/Makefile.am
