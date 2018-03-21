@@ -68,6 +68,7 @@ typedef enum
 {
   LM_TS_STAMP = 0,
   LM_TS_RECVD = 1,
+  LM_TS_PROCESSED = 2,
   LM_TS_MAX
 } LogMessageTimeStamp;
 

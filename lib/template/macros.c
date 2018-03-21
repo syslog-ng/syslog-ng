@@ -156,6 +156,29 @@ LogMacroDef macros[] =
   { "C_TZ",             M_CSTAMP_OFS + M_TZ },
   { "C_UNIXTIME",       M_CSTAMP_OFS + M_UNIXTIME },
 
+  { "P_DATE",           M_PROCESSED_OFS + M_DATE },
+  { "P_FULLDATE",       M_PROCESSED_OFS + M_FULLDATE },
+  { "P_ISODATE",        M_PROCESSED_OFS + M_ISODATE },
+  { "P_STAMP",          M_PROCESSED_OFS + M_STAMP },
+  { "P_YEAR",           M_PROCESSED_OFS + M_YEAR },
+  { "P_YEAR_DAY",       M_PROCESSED_OFS + M_YEAR_DAY },
+  { "P_MONTH",          M_PROCESSED_OFS + M_MONTH },
+  { "P_MONTH_WEEK",     M_PROCESSED_OFS + M_MONTH_WEEK },
+  { "P_MONTH_ABBREV",   M_PROCESSED_OFS + M_MONTH_ABBREV },
+  { "P_MONTH_NAME",     M_PROCESSED_OFS + M_MONTH_NAME },
+  { "P_DAY",            M_PROCESSED_OFS + M_DAY },
+  { "P_HOUR",           M_PROCESSED_OFS + M_HOUR },
+  { "P_MIN",            M_PROCESSED_OFS + M_MIN },
+  { "P_SEC",            M_PROCESSED_OFS + M_SEC },
+  { "P_WEEKDAY",        M_PROCESSED_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
+  { "P_WEEK_DAY",       M_PROCESSED_OFS + M_WEEK_DAY },
+  { "P_WEEK_DAY_ABBREV",M_PROCESSED_OFS + M_WEEK_DAY_ABBREV },
+  { "P_WEEK_DAY_NAME",  M_PROCESSED_OFS + M_WEEK_DAY_NAME },
+  { "P_WEEK",           M_PROCESSED_OFS + M_WEEK },
+  { "P_TZOFFSET",       M_PROCESSED_OFS + M_TZOFFSET },
+  { "P_TZ",             M_PROCESSED_OFS + M_TZ },
+  { "P_UNIXTIME",       M_PROCESSED_OFS + M_UNIXTIME },
+
   { "SDATA", M_SDATA },
   { "MSGHDR", M_MSGHDR },
   { "SOURCEIP", M_SOURCE_IP },
@@ -465,6 +488,11 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           sstamp.tv_usec = tv.tv_usec;
           sstamp.zone_offset = -1;
           stamp = &sstamp;
+        }
+      else if (id >= M_TIME_FIRST + M_PROCESSED_OFS && id <= M_TIME_LAST + M_PROCESSED_OFS)
+        {
+          id -= M_PROCESSED_OFS;
+          stamp = &msg->timestamps[LM_TS_PROCESSED];
         }
       else
         {
