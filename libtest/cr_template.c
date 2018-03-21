@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 Balabit
+ * Copyright (c) 2012-2018 Balabit
  * Copyright (c) 2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -22,12 +22,31 @@
  *
  */
 
-#include "testutils.h"
-#include "template_lib.h"
-#include "msg_parse_lib.h"
+#include "cr_template.h"
 #include "stopwatch.h"
+#include "logmsg/logmsg.h"
+#include "gsockaddr.h"
+#include "cfg.h"
 
+#include <criterion/criterion.h>
 #include <string.h>
+
+static void
+init_and_load_syslogformat_module(void)
+{
+  configuration = cfg_new_snippet();
+  cfg_load_module(configuration, "syslogformat");
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, configuration);
+}
+
+static void
+deinit_syslogformat_module(void)
+{
+  if (configuration)
+    cfg_free(configuration);
+  configuration = NULL;
+}
 
 void
 init_template_tests(void)
@@ -39,8 +58,6 @@ void
 deinit_template_tests(void)
 {
   deinit_syslogformat_module();
-  if (!testutils_deinit())
-    exit(1);
 }
 
 LogMessage *
@@ -137,9 +154,9 @@ compile_template(const gchar *template, gboolean escaping)
 
   log_template_set_escape(templ, escaping);
   success = log_template_compile(templ, template, &error);
-  expect_true(success, "template expected to compile cleanly,"
-              " but it didn't, template=%s, error=%s",
-              template, error ? error->message : "(none)");
+  cr_assert(success, "template expected to compile cleanly,"
+            " but it didn't, template=%s, error=%s",
+            template, error ? error->message : "(none)");
   g_clear_error(&error);
 
   return templ;
@@ -158,9 +175,13 @@ assert_template_format_with_escaping_and_context_msgs(const gchar *template, gbo
   const gchar *context_id = "test-context-id";
 
   log_template_format_with_context(templ, msgs, num_messages, NULL, LTZ_LOCAL, 999, context_id, res);
-  expect_nstring(res->str, res->len,
-                 expected, expected_len >= 0 ? expected_len : strlen(expected),
-                 "context template test failed, template=%s", template);
+  gsize result_length = expected_len >= 0 ? expected_len : strlen(expected);
+  cr_assert_eq(res->len, result_length, "context template test failed, template=%s, actual=%.*s, expected=%.*s",
+               template, (gint) res->len, res->str, (gint) result_length, expected);
+
+  cr_assert_arr_eq(res->str, expected, result_length,
+                   "context template test failed, template=%s, actual=%.*s, expected=%.*s",
+                   template, (gint) res->len, res->str, (gint) result_length, expected);
   log_template_unref(templ);
   g_string_free(res, TRUE);
 }
@@ -231,13 +252,13 @@ assert_template_failure(const gchar *template, const gchar *expected_error)
   LogTemplate *templ = log_template_new(configuration, NULL);
   GError *error = NULL;
 
-  expect_false(log_template_compile(templ, template, &error),
-               "compilation failure expected to template,"
-               " but success was returned, template=%s, expected_error=%s\n",
-               template, expected_error);
-  expect_true(strstr(error ? error->message : "", expected_error) != NULL,
-              "FAIL: compilation error doesn't match, error=%s, expected_error=%s\n",
-              error->message, expected_error);
+  cr_assert_not(log_template_compile(templ, template, &error),
+                "compilation failure expected to template,"
+                " but success was returned, template=%s, expected_error=%s\n",
+                template, expected_error);
+  cr_assert(strstr(error ? error->message : "", expected_error) != NULL,
+            "FAIL: compilation error doesn't match, error=%s, expected_error=%s\n",
+            error->message, expected_error);
   g_clear_error(&error);
   log_template_unref(templ);
 }
@@ -256,9 +277,9 @@ perftest_template(gchar *template)
   templ = log_template_new(configuration, NULL);
   if (!log_template_compile(templ, template, &error))
     {
-      expect_true(FALSE, "template expected to compile cleanly,"
-                  " but it didn't, template=%s, error=%s",
-                  template, error ? error->message : "(none)");
+      cr_assert(FALSE, "template expected to compile cleanly,"
+                " but it didn't, template=%s, error=%s",
+                template, error ? error->message : "(none)");
       return;
     }
   msg = create_sample_message();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015-2018 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -19,10 +19,13 @@
  * COPYING for details.
  */
 
-#include "template_lib.h"
+#include <criterion/criterion.h>
+
+#include "libtest/cr_template.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
+#include "logmsg/logmsg.h"
 
 #include <stdarg.h>
 
@@ -75,8 +78,27 @@ _expect_cef_result_format_va(const gchar *format, const gchar *expected, ...)
   log_msg_unref(msg);
 }
 
-static void
-_test_null_in_value(void)
+
+void
+setup(void)
+{
+  app_startup();
+  putenv("TZ=UTC");
+  tzset();
+  init_template_tests();
+  cfg_load_module(configuration, "cef");
+}
+
+void
+teardown(void)
+{
+  deinit_template_tests();
+  app_shutdown();
+}
+
+TestSuite(format_cef, .init = setup, .fini = teardown);
+
+Test(format_cef, test_null_in_value)
 {
   LogMessage *msg = create_empty_message();
 
@@ -86,30 +108,26 @@ _test_null_in_value(void)
   log_msg_unref(msg);
 }
 
-static void
-_test_filter(void)
+Test(format_cef, test_filter)
 {
   _EXPECT_CEF_RESULT("k=v", ".cef.k", "v", "x", "w");
 }
 
-static void
-_test_multiple_properties_with_space(void)
+Test(format_cef, test_multiple_properties_with_space)
 {
   _EXPECT_CEF_RESULT("act=c:/program files dst=10.0.0.1",
                      ".cef.act", "c:/program files",
                      ".cef.dst", "10.0.0.1");
 }
 
-static void
-_test_multiple_properties(void)
+Test(format_cef, test_multiple_properties)
 {
   _EXPECT_CEF_RESULT("k=v x=y",
                      ".cef.k", "v",
                      ".cef.x", "y");
 }
 
-static void
-_test_drop_property(void)
+Test(format_cef, test_drop_property)
 {
   _EXPECT_SKIP_BAD_PROPERTY("kkk=v",
                             ".cef.a|b", "c",
@@ -117,34 +135,29 @@ _test_drop_property(void)
                             ".cef.x=y", "w");
 }
 
-static void
-_test_drop_message(void)
+Test(format_cef, test_drop_message)
 {
   _EXPECT_DROP_MESSAGE(".cef.a|b", "c",
                        ".cef.kkk", "v",
                        ".cef.x=y", "w");
 }
 
-static void
-_test_empty(void)
+Test(format_cef, test_empty)
 {
   _EXPECT_CEF_RESULT("");
 }
 
-static void
-_test_inline(void)
+Test(format_cef, test_inline)
 {
   _EXPECT_CEF_RESULT_FORMAT("$(format-cef-extension --subkeys .cef. .cef.k=v)", "k=v");
 }
 
-static void
-_test_space(void)
+Test(format_cef, test_space)
 {
   _EXPECT_CEF_RESULT("act=blocked a ping", ".cef.act", "blocked a ping");
 }
 
-static void
-_test_charset(void)
+Test(format_cef, test_charset)
 {
   _EXPECT_DROP_MESSAGE(".cef.árvíztűrőtükörfúrógép", "v");
   _EXPECT_CEF_RESULT("k=árvíztűrőtükörfúrógép", ".cef.k", "árvíztűrőtükörfúrógép");
@@ -155,8 +168,7 @@ _test_charset(void)
   _EXPECT_DROP_MESSAGE(".cef.k\xc3", "v");
 }
 
-static void
-_test_escaping(void)
+Test(format_cef, test_escaping)
 {
   _EXPECT_CEF_RESULT("act=\\\\", ".cef.act", "\\");
   _EXPECT_CEF_RESULT("act=\\\\\\\\", ".cef.act", "\\\\");
@@ -180,8 +192,7 @@ _test_escaping(void)
   _EXPECT_DROP_MESSAGE(".cef.k w", "v");
 }
 
-static void
-_test_prefix(void)
+Test(format_cef, test_prefix)
 {
   configuration->template_options.on_error = ON_ERROR_DROP_MESSAGE | ON_ERROR_SILENT;
 
@@ -202,8 +213,7 @@ _test_prefix(void)
                           "Error parsing value-pairs: --subkeys requires a non-empty argument");
 }
 
-static void
-_test_macro_parity(void)
+Test(format_cef, test_macro_parity)
 {
   _EXPECT_CEF_RESULT("", "k");
   _EXPECT_CEF_RESULT_FORMAT("", "");
@@ -212,31 +222,4 @@ _test_macro_parity(void)
   _EXPECT_DROP_MESSAGE("", "k");
   _EXPECT_SKIP_BAD_PROPERTY("");
   _EXPECT_SKIP_BAD_PROPERTY("", "k");
-}
-
-int
-main(int argc, char *argv[])
-{
-  app_startup();
-  putenv("TZ=UTC");
-  tzset();
-  init_template_tests();
-  cfg_load_module(configuration, "cef");
-
-  _test_filter();
-  _test_multiple_properties_with_space();
-  _test_multiple_properties();
-  _test_drop_property();
-  _test_drop_message();
-  _test_empty();
-  _test_inline();
-  _test_space();
-  _test_charset();
-  _test_escaping();
-  _test_prefix();
-  _test_macro_parity();
-  _test_null_in_value();
-
-  deinit_template_tests();
-  app_shutdown();
 }

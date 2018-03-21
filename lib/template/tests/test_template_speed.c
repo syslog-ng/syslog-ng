@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2014 Balabit
+ * Copyright (c) 2009-2018 Balabit
  * Copyright (c) 2009-2014 Balázs Scheidler <balazs.scheidler@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,27 +22,16 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "syslog-ng.h"
-#include "logmsg/logmsg.h"
-#include "template/templates.h"
 #include "apphook.h"
 #include "cfg.h"
-#include "timeutils.h"
-#include "plugin.h"
-#include "libtest/template_lib.h"
+#include "libtest/cr_template.h"
 #include "libtest/stopwatch.h"
 
-#include <time.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-gboolean success = TRUE;
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
+Test(template_speed, test_template_speed)
 {
-
   app_startup();
 
   init_template_tests();
@@ -69,8 +58,4 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   perftest_template("$DATE ${HOST:--} ${PROGRAM:--} ${PID:--} ${MSGID:--} ${SDATA:--} $MSG\n");
 
   app_shutdown();
-
-  if (success)
-    return 0;
-  return 1;
 }

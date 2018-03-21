@@ -1,1 +1,1 @@
-add_unit_test(LIBTEST TARGET test_basicfuncs DEPENDS syslogformat basicfuncs)
+add_unit_test(LIBTEST CRITERION TARGET test_basicfuncs DEPENDS syslogformat basicfuncs)
