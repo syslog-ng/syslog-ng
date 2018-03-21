@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+IMAGES=centos6 centos7 jessie artful xenial trusty
+DEFAULT_IMAGE=xenial
 DOCKER=docker
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
         --network=host \
@@ -11,7 +13,6 @@ ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
 BUILD_DIR=$(DBLD_DIR)/build
 RELEASE_DIR=$(DBLD_DIR)/release
-IMAGE_SHELL=balabit/syslog-ng-jessie
 VERSION=$(shell cat VERSION)
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
@@ -28,24 +29,10 @@ help:
 	@echo "  shell-<os>: start a shell in the specified OS"
 	@echo "  tarball: generate a tarball"
 	@echo ""
-	@echo "Supported OSs are: centos6, centos7, jessie, artful, xenial, trusty."
+	@echo "Supported OSs are: $(IMAGES)"
 	@echo ""
-	@echo "NOTE: this script requires that debian/rpm packaging are"
-	@echo "already merged to your tree, which is not there by default"
-	@echo "if you work in a git clone. These files live on the 'release'"
-	@echo "branch. Make sure you have that merged, OR work from a release tarball"
 
-
-deb: deb-xenial
-
-shell: shell-xenial
-
-rpm: rpm-centos7
-
-release: release-deb release-rpm
-
-
-tarball: tarball-xenial
+tarball: tarball-$(DEFAULT_IMAGE)
 tarball-%: setup
 	if [ -f $(TARBALL) ]; then \
 		count=`find $(ROOT_DIR) -newer $(TARBALL) | grep -v "^$(ROOT_DIR)/dbld/" | wc -l`; \
@@ -55,39 +42,41 @@ tarball-%: setup
 	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/tarball || true
 
 
-pkg-tarball: pkg-tarball-xenial
+pkg-tarball: pkg-tarball-$(DEFAULT_IMAGE)
 pkg-tarball-%: tarball-%
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/pkg-tarball $(MODE)
 
 
-deb: deb-xenial
+deb: deb-$(DEFAULT_IMAGE)
 deb-%: pkg-tarball-%
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
 
 
 rpm: rpm-centos7
-rpm-%: pkg-tarball-xenial
+rpm-%: pkg-tarball-$(DEFAULT_IMAGE)
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
 
 
 release: MODE=release
 release: deb-xenial
 
-
-
 clean:
 	rm -rf $(BUILD_DIR)/*
 
-
-shell: shell-xenial
+shell: shell-$(DEFAULT_IMAGE)
 shell-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/shell
 
-images: image-jessie image-artful image-xenial image-trusty image-centos6 image-centos7
 
-
+images: $(foreach image,$(IMAGES), image-$(image))
+image: image-$(DEFAULT_IMAGE)
 image-%:
-	cd $(DBLD_DIR)/images/ && docker build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
+	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
+
+login: login-$(DEFAULT_IMAGE)
+login-%: setup
+	container=`$(DOCKER) ps | grep syslog-ng-$* | head -1 | cut -d ' ' -f1`; \
+	$(DOCKER) exec -ti  $$container /bin/bash
 
 setup:
 	mkdir -p dbld/build || true
