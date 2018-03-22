@@ -22,7 +22,11 @@
 
 #include "directory-monitor.h"
 #include "directory-monitor-factory.h"
+
+#if SYSLOG_NG_HAVE_INOTIFY
 #include "directory-monitor-inotify.h"
+#endif
+
 #include "directory-monitor-poll.h"
 #include "apphook.h"
 #include <criterion/criterion.h>
