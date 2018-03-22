@@ -31,7 +31,7 @@
 #include <criterion/criterion.h>
 #include <stdlib.h>
 
-MsgFormatOptions parse_options;
+#include "msg_parse_lib.h"
 
 void
 stardate_assert(const gchar *msg_str, const int precision, const gchar *expected)
