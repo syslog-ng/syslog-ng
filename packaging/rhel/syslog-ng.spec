@@ -417,7 +417,6 @@ fi
 %{_includedir}/%{name}/
 %{_libdir}/pkgconfig/syslog-ng.pc
 %{_libdir}/pkgconfig/syslog-ng-native-connector.pc
-%{_libdir}/pkgconfig/syslog-ng-add-contextual-data.pc
 %{_datadir}/%{name}/tools/
 
 %changelog
