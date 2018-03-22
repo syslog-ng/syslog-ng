@@ -476,7 +476,8 @@ _add_key(PersistState *self, const gchar *key, PersistEntryHandle handle)
         }
       else
         {
-          self->header->key_count = GUINT32_TO_BE(GUINT32_FROM_BE(self->header->key_count) + 1);
+          const guint32 key_count = GUINT32_FROM_BE(self->header->key_count);
+          self->header->key_count = GUINT32_TO_BE(key_count + 1);
           self->current_key_ofs += serialize_buffer_archive_get_pos(sa);
           serialize_archive_free(sa);
           persist_state_unmap_entry(self, self->current_key_block);
