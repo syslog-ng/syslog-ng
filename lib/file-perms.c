@@ -181,32 +181,32 @@ file_perm_options_inherit_dont_change(FilePermOptions *self)
 }
 
 gboolean
-file_perm_options_apply_file(const FilePermOptions *self, gchar *name)
+file_perm_options_apply_file(const FilePermOptions *self, const gchar *path)
 {
 #ifndef _MSC_VER
   gboolean result = TRUE;
 
-  if (self->file_uid >= 0 && chown(name, (uid_t) self->file_uid, -1) < 0)
+  if (self->file_uid >= 0 && chown(path, (uid_t) self->file_uid, -1) < 0)
     result = FALSE;
-  if (self->file_gid >= 0 && chown(name, -1, (gid_t) self->file_gid) < 0)
+  if (self->file_gid >= 0 && chown(path, -1, (gid_t) self->file_gid) < 0)
     result = FALSE;
-  if (self->file_perm >= 0 && chmod(name, (mode_t) self->file_perm) < 0)
+  if (self->file_perm >= 0 && chmod(path, (mode_t) self->file_perm) < 0)
     result = FALSE;
   return result;
 #endif
 }
 
 gboolean
-file_perm_options_apply_dir(const FilePermOptions *self, gchar *name)
+file_perm_options_apply_dir(const FilePermOptions *self, const gchar *path)
 {
 #ifndef _MSC_VER
   gboolean result = TRUE;
 
-  if (self->dir_uid >= 0 && chown(name, (uid_t) self->dir_uid, -1) < 0)
+  if (self->dir_uid >= 0 && chown(path, (uid_t) self->dir_uid, -1) < 0)
     result = FALSE;
-  if (self->dir_gid >= 0 && chown(name, -1, (gid_t) self->dir_gid) < 0)
+  if (self->dir_gid >= 0 && chown(path, -1, (gid_t) self->dir_gid) < 0)
     result = FALSE;
-  if (self->dir_perm >= 0 && chmod(name, (mode_t) self->dir_perm) < 0)
+  if (self->dir_perm >= 0 && chmod(path, (mode_t) self->dir_perm) < 0)
     result = FALSE;
   return result;
 #endif
@@ -237,54 +237,70 @@ file_perm_options_apply_fd(const FilePermOptions *self, gint fd)
  * returns. (at least it won't fail because of missing directories).
  **/
 gboolean
-file_perm_options_create_containing_directory(const FilePermOptions *self, gchar *name)
+file_perm_options_create_containing_directory(const FilePermOptions *self, const gchar *path)
 {
+  gboolean result = FALSE;
+  gchar *_path;
   gchar *dirname;
   struct stat st;
   gint rc;
   gchar *p;
   cap_t saved_caps;
 
+  _path = g_strdup(path);
+
   /* check that the directory exists */
-  dirname = g_path_get_dirname(name);
+  dirname = g_path_get_dirname(_path);
   rc = stat(dirname, &st);
   g_free(dirname);
 
   if (rc == 0)
     {
       /* directory already exists */
-      return TRUE;
+      result = TRUE;
+      goto finish;
     }
   else if (rc < 0 && errno != ENOENT)
     {
       /* some real error occurred */
-      return FALSE;
+      result = FALSE;
+      goto finish;
     }
 
   /* directory does not exist */
-  p = name + 1;
 
-  p = strchr(p, '/');
+  p = strchr(_path + 1, '/');
   while (p)
     {
       *p = 0;
-      if (stat(name, &st) == 0)
+      if (stat(_path, &st) == 0)
         {
           if (!S_ISDIR(st.st_mode))
-            return FALSE;
+            {
+              result = FALSE;
+              goto finish;
+            }
         }
       else if (errno == ENOENT)
         {
-          if (mkdir(name, self->dir_perm < 0 ? 0700 : (mode_t) self->dir_perm) == -1)
-            return FALSE;
+          if (mkdir(_path, self->dir_perm < 0 ? 0700 : (mode_t) self->dir_perm) == -1)
+            {
+              result = FALSE;
+              goto finish;
+            }
           saved_caps = g_process_cap_save();
           g_process_cap_modify(CAP_CHOWN, TRUE);
           g_process_cap_modify(CAP_FOWNER, TRUE);
-          file_perm_options_apply_dir(self, name);
+          file_perm_options_apply_dir(self, _path);
           g_process_cap_restore(saved_caps);
         }
       *p = '/';
       p = strchr(p + 1, '/');
     }
-  return TRUE;
+
+  result = TRUE;
+
+finish:
+  g_free(_path);
+  return result;
 }

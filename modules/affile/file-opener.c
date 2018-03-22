@@ -94,7 +94,7 @@ _is_path_spurious(const gchar *name)
 }
 
 static inline gboolean
-_obtain_capabilities(FileOpener *self, gchar *name, cap_t *act_caps)
+_obtain_capabilities(FileOpener *self, const gchar *name, cap_t *act_caps)
 {
   if (self->options->needs_privileges)
     {
@@ -143,7 +143,7 @@ _open(FileOpener *self, const gchar *name, gint open_flags)
 }
 
 gboolean
-file_opener_open_fd(FileOpener *self, gchar *name, FileDirection dir, gint *fd)
+file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint *fd)
 {
   cap_t saved_caps;
 

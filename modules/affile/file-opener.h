@@ -78,7 +78,7 @@ file_opener_construct_dst_proto(FileOpener *self, LogTransport *transport, LogPr
   return self->construct_dst_proto(self, transport, proto_options);
 }
 
-gboolean file_opener_open_fd(FileOpener *self, gchar *name, FileDirection dir, gint *fd);
+gboolean file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint *fd);
 
 void file_opener_set_options(FileOpener *self, FileOpenerOptions *options);
 void file_opener_init_instance(FileOpener *self);
