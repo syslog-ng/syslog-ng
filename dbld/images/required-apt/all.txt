@@ -28,8 +28,9 @@ uuid-dev
 xsltproc
 tzdata
 
-# required for make
+# required for make/cmake
 make
+cmake
 
 # required for make check
 libxml2-utils
@@ -40,6 +41,7 @@ git
 lsof
 strace
 vim
+less
 
 # debian packaging tools
 fakeroot
