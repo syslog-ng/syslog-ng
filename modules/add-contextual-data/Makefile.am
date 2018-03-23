@@ -21,7 +21,6 @@ modules_add_contextual_data_libadd_contextual_data_la_SOURCES	=		\
 	modules/add-contextual-data/add-contextual-data-filter-selector.c
 
 add_contextual_data_includedir	= ${pkgincludedir}/modules/add-contextual-data
-pkgconfig_DATA += syslog-ng-add-contextual-data.pc
 
 add_contextual_data_include_HEADERS = 							\
 	modules/add-contextual-data/add-contextual-data.h			\

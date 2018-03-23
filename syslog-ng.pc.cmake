@@ -15,5 +15,5 @@ Name: syslog-ng-dev
 Description: Dev package for syslog-ng module
 Version: @PKG_CONFIG_PACKAGE_VERSION@
 Requires: glib-2.0 eventlog ivykis gthread-2.0 gmodule-2.0
-Libs: -L${libdir} -lsyslog-ng
+Libs: -L${libdir} -lsyslog-ng -levtlog
 Cflags: -I${includedir}/syslog-ng
