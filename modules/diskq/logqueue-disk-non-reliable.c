@@ -102,8 +102,11 @@ _get_next_message(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
   if (qdisk_get_length (self->super.qdisk) > 0)
     {
       result = self->super.read_message(&self->super, path_options);
-      stats_counter_add(self->super.super.memory_usage, log_msg_get_size(result));
-      path_options->ack_needed = FALSE;
+      if(result)
+        {
+          stats_counter_add(self->super.super.memory_usage, log_msg_get_size(result));
+          path_options->ack_needed = FALSE;
+        }
     }
   else if (self->qoverflow->length > 0)
     {
