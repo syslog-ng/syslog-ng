@@ -52,7 +52,7 @@ CLEAN_HOOKS += clean-pylib
 PYSETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --prefix="$(prefix)"
 
 install-pylib:
-	(cd $(PYLIB_SRCDIR) && $(PYTHON) setup.py \
+	(cd $(PYLIB_SRCDIR) && $(VPYTHON) setup.py \
 		build --build-base="$(PYLIB_BUILDDIR)/build" \
 		install --record=$(SETUPPY_MANIFEST) ${PYSETUP_OPTIONS})
 
@@ -66,13 +66,13 @@ clean-pylib:
 python-checks: python-unit python-pep8 python-pylint
 
 python-unit:
-	nosetests $(PYLIB_SRCDIR)/syslogng
+	$(NOSETESTS) $(PYLIB_SRCDIR)/syslogng
 
 python-pep8:
-	pep8 --ignore=E501 $(PYLIB_SRCDIR)/syslogng
+	$(PEP8) --ignore=E501 $(PYLIB_SRCDIR)/syslogng
 
 python-pylint:
-	pylint -r n --rcfile=$(PYLIB_SRCDIR)/pylintrc $(PYLIB_SRCDIR)/syslogng
+	$(PYLINT) -r n --rcfile=$(PYLIB_SRCDIR)/pylintrc $(PYLIB_SRCDIR)/syslogng
 
 modules_python_pylib_tests_TESTS = modules/python/pylib/test_pylib.sh
 check_SCRIPTS += $(modules_python_pylib_tests_TESTS)
