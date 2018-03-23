@@ -32,9 +32,6 @@ make
 
 # required for make check
 libxml2-utils
-pylint
-python-nose
-python-ply
 
 # other tools
 gdb
