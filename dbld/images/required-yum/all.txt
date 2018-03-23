@@ -47,6 +47,6 @@ lsof
 strace
 vim
 # debian packaging tools
-docbook-xsl
-python-nose
-python-ply
+python-virtualenv
+# documentation
+xsltproc
