@@ -26,6 +26,7 @@ include (CheckIncludeFiles)
 include (ExternalProject)
 include (external_or_find_package)
 include (add_tests)
+include (python_functions)
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${CMAKE_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")
 set(MEMORYCHECK_COMMAND_OPTIONS "--num-callers=30 --sim-hints=no-nptl-pthread-stackcache --gen-suppressions=all --leak-check=full --freelist-vol=200000000 --freelist-big-blocks=10000000 --malloc-fill=55 --free-fill=AA")
