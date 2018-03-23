@@ -38,6 +38,7 @@ libmongo-client-devel
 pcre-devel
 # required for make
 make
+cmake
 # required for make check
 #criterion-devel
 # other tools
@@ -46,6 +47,7 @@ git
 lsof
 strace
 vim
+less
 # debian packaging tools
 python-virtualenv
 # documentation
