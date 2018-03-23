@@ -1591,6 +1591,11 @@ dnl ***************************************************************************
 AC_VAR_TIMEZONE_EXTERNALS
 
 dnl ***************************************************************************
+dnl check fmemopen
+dnl ***************************************************************************
+AC_CHECK_FUNCS([fmemopen])
+
+dnl ***************************************************************************
 dnl default modules to be loaded
 dnl ***************************************************************************
 
@@ -1786,6 +1791,7 @@ AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_LEGACY_MONGODB_OPTIONS, [test x"$enable_legacy_mongodb_options" != x"no"])
 AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
 AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
+AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
 
 AC_SUBST(timezonedir)
