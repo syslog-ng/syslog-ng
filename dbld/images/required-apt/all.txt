@@ -32,6 +32,9 @@ tzdata
 make
 cmake
 
+# python stuff
+virtualenv
+
 # required for make check
 libxml2-utils
 
