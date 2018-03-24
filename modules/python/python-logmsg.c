@@ -113,6 +113,18 @@ _py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
   PyObject *value_as_strobj = PyObject_Str(value);
   if (value_as_strobj)
     {
+      if(log_msg_is_write_protected(py_msg->msg))
+        {
+          msg_debug("python: error while modifying msg",
+                    evt_tag_printf("msg", "%p", py_msg),
+                    evt_tag_str("name", name),
+                    evt_tag_str("value", py_object_as_string(value_as_strobj)));
+
+          PyErr_SetString(PyExc_RuntimeError, "msg is write protected");
+          Py_DECREF(value_as_strobj);
+          return -1;
+        }
+
       log_msg_set_value(py_msg->msg, handle, py_object_as_string(value_as_strobj), -1);
       Py_DECREF(value_as_strobj);
     }
