@@ -2,9 +2,12 @@
 
 IMAGES=centos6 centos7 jessie artful xenial trusty
 DEFAULT_IMAGE=xenial
+DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
+DEFAULT_RPM_IMAGE=centos7
 DOCKER=docker
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
         --network=host \
+	--ulimit nofile=1024:1024 \
 	-v $(ROOT_DIR):/source \
 	-v $(DBLD_DIR)/build:/build \
 	-v $(DBLD_DIR)/install:/install \
@@ -16,21 +19,45 @@ RELEASE_DIR=$(DBLD_DIR)/release
 VERSION=$(shell cat VERSION)
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
+CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $(CONFIGURE_ADD)
 
 help:
 	@echo "This script allows you to build release/snapshot artifacts, such "
-	@echo "as rpm, deb packages or tarballs."
+	@echo "as rpm, deb packages and tarballs in controlled environments (e.g. "
+	@echo "within docker containers)."
 	@echo ""
-	@echo "These targets are available:"
-	@echo "  image-<os>: generate docker image for building syslog-ng"
-	@echo "  images: generate all docker images"
-	@echo "  deb-<os>: generate debs in dbld/build for the specified OS"
-	@echo "  rpm-<os>: generate rpms in dbld/build for the specified OS"
-	@echo "  shell-<os>: start a shell in the specified OS"
-	@echo "  tarball: generate a tarball"
+	@echo "Please create the required docker image first using the 'image' target"
+	@echo "then you can build syslog-ng binaries or do development using the "
+	@echo "targets described below."
 	@echo ""
 	@echo "Supported OSs are: $(IMAGES)"
 	@echo ""
+	@echo "Packaging targets:"
+	@echo "  deb: generate debs in dbld/build for $(DEFAULT_DEB_IMAGE)"
+	@echo "  rpm: generate RPMs in dbld/build for $(DEFAULT_RPM_IMAGE)"
+	@echo "  deb-<os>: generate debs in dbld/build for the specified OS"
+	@echo "  rpm-<os>: generate rpms in dbld/build for the specified OS"
+	@echo ""
+	@echo "Docker images:"
+	@echo "  image: generate the default docker image"
+	@echo "  image-<os>: generate docker image with a specific OS for building syslog-ng"
+	@echo "  images: generate all docker images"
+	@echo ""
+	@echo "Development:"
+	@echo "  bootstrap: bootstrap source from a git clone (e.g. autogen.sh and friends)"
+	@echo "  shell: start a shell in the specified OS"
+	@echo "  login: start a 2nd shell (as root) alongside an already running one"
+	@echo "  tarball: generate a tarball in a controlled environment (e.g. docker)"
+	@echo "  release: generate a release deb package in a controlled environment (e.g. docker)"
+	@echo ""
+	@echo "Notable Make variables:"
+	@echo "  CONFIGURE_ADD -- add this to the configure command line in bootstrap"
+	@echo "  DEFAULT_IMAGE -- override the default image, currently $(DEFAULT_IMAGE)"
+	@echo ""
+
+bootstrap: bootstrap-$(DEFAULT_IMAGE)
+bootstrap-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" -ti  balabit/syslog-ng-$* /source/dbld/bootstrap
 
 tarball: tarball-$(DEFAULT_IMAGE)
 tarball-%: setup
@@ -47,12 +74,12 @@ pkg-tarball-%: tarball-%
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/pkg-tarball $(MODE)
 
 
-deb: deb-$(DEFAULT_IMAGE)
+deb: deb-$(DEFAULT_DEB_IMAGE)
 deb-%: pkg-tarball-%
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/deb
 
 
-rpm: rpm-centos7
+rpm: rpm-$(DEFAULT_RPM_IMAGE)
 rpm-%: pkg-tarball-$(DEFAULT_IMAGE)
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/rpm
 
@@ -79,9 +106,9 @@ login-%: setup
 	$(DOCKER) exec -ti  $$container /bin/bash
 
 setup:
-	mkdir -p dbld/build || true
-	mkdir -p dbld/install || true
-	mkdir -p dbld/release || true
+	@mkdir -p dbld/build || true
+	@mkdir -p dbld/install || true
+	@mkdir -p dbld/release || true
 
 
 # list apt packages

@@ -16,6 +16,6 @@ if [ ! -d debian ]; then
 	echo "You have no Debian packaging in debian/, this should already by in the tarball at this point"
 	exit 1
 fi
-dpkg-buildpackage -rfakeroot
+dpkg-buildpackage -rfakeroot -d
 
 echo "Your debs are in /build, also available on the host in \$(top_srcdir)/dbld/build"

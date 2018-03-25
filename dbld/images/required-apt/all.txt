@@ -20,6 +20,7 @@ libjson-c-dev
 libmongo-client-dev
 libnet1-dev
 libpython-dev
+libpython3-dev
 libssl-dev
 libwrap0-dev
 python-dev
@@ -27,14 +28,15 @@ uuid-dev
 xsltproc
 tzdata
 
-# required for make
+# required for make/cmake
 make
+cmake
+
+# python stuff
+virtualenv
 
 # required for make check
 libxml2-utils
-pylint
-python-nose
-python-ply
 
 # other tools
 gdb
@@ -42,6 +44,7 @@ git
 lsof
 strace
 vim
+less
 
 # debian packaging tools
 fakeroot
