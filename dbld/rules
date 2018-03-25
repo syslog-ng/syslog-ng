@@ -6,7 +6,7 @@ DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos7
 DOCKER=docker
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
-        --network=host \
+        --network=host --privileged \
 	--ulimit nofile=1024:1024 \
 	-v $(ROOT_DIR):/source \
 	-v $(DBLD_DIR)/build:/build \
