@@ -86,8 +86,8 @@ _list_count(gint argc, GString *argv[])
 }
 
 static void
-_adjust_list_slice(gint argc, GString *argv[],
-                   gint *first_ndx, gint *last_ndx)
+_translate_negative_list_slice_indices(gint argc, GString *argv[],
+                                       gint *first_ndx, gint *last_ndx)
 {
   gint count = -1;
 
@@ -111,7 +111,7 @@ _list_slice(gint argc, GString *argv[], GString *result,
   if (argc == 0)
     return;
 
-  _adjust_list_slice(argc, argv, &first_ndx, &last_ndx);
+  _translate_negative_list_slice_indices(argc, argv, &first_ndx, &last_ndx);
 
   /* NOTE: first_ndx and last_ndx may be negative, so these loops must cover
    * that case, by interpreting negative first_ndx as "0", and negative
@@ -140,6 +140,14 @@ _list_slice(gint argc, GString *argv[], GString *result,
 }
 
 static void
+_translate_negative_list_index(gint argc, GString *argv[],
+                               gint *ndx)
+{
+  if (*ndx < 0)
+    *ndx += _list_count(argc, argv);
+}
+
+static void
 _list_nth(gint argc, GString *argv[], GString *result, gint ndx)
 {
   ListScanner scanner;
@@ -151,11 +159,13 @@ _list_nth(gint argc, GString *argv[], GString *result, gint ndx)
   list_scanner_init(&scanner);
   list_scanner_input_gstring_array(&scanner, argc, argv);
 
+  _translate_negative_list_index(argc, argv, &ndx);
+
   i = 0;
   while (i < ndx && list_scanner_scan_next(&scanner))
     i++;
 
-  if (i >= ndx && list_scanner_scan_next(&scanner))
+  if (i == ndx && list_scanner_scan_next(&scanner))
     {
       g_string_append(result, list_scanner_get_current_value(&scanner));
     }
