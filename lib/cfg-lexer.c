@@ -920,14 +920,20 @@ relex:
       (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
       CfgArgs *args;
+      CfgIncludeLevel *level = &self->include_stack[self->include_depth];
 
       self->preprocess_suppress_tokens++;
+
+      gint saved_line = level->lloc.first_line;
+      gint saved_column = level->lloc.first_column;
       if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
         {
           gboolean success;
           gchar buf[256];
           GString *result = g_string_sized_new(256);
 
+          level->lloc.first_line = saved_line;
+          level->lloc.first_column = saved_column;
           self->preprocess_suppress_tokens--;
           success = cfg_block_generator_generate(gen, self->cfg, args, result);
 
