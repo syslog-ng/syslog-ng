@@ -24,6 +24,7 @@
 
 #include "logpipe.h"
 #include "cfg-tree.h"
+#include "mainloop-call.h"
 
 gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
 
@@ -95,7 +96,7 @@ log_pipe_unref(LogPipe *self)
 
   if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
     {
-      _free(self);
+      main_loop_call((MainLoopTaskFunc) _free, self, TRUE);
     }
 }
 
