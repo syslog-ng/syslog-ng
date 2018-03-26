@@ -313,31 +313,29 @@ void
 report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const char *msg)
 {
   CfgIncludeLevel *level = yylloc->level, *from;
-  gint file_pos;
 
-  fprintf(stderr, "Error parsing %s, %s in %n%s at line %d, column %d:\n",
-          what,
-          msg,
-          &file_pos,
-          yylloc->level->name,
-          yylloc->first_line,
-          yylloc->first_column);
-
-  from = level - 1;
-  while (from >= lexer->include_stack)
+  for (from = level; from >= lexer->include_stack; from--)
     {
-      fprintf(stderr, "%*sincluded from %s line %d, column %d\n", MAX(file_pos - 14, 0), "", from->name,
-              from->lloc.first_line, from->lloc.first_column);
-      from--;
-    }
-
-  if (level->include_type == CFGI_FILE)
-    {
-      _report_file_location(level->name, yylloc);
-    }
-  else if (level->include_type == CFGI_BUFFER)
-    {
-      _report_buffer_location(level->buffer.original_content, yylloc);
+      if (from == level)
+        {
+          fprintf(stderr, "Error parsing %s, %s in %s:\n",
+                  what,
+                  msg,
+                  yylloc->level->name);
+        }
+      else
+        {
+          fprintf(stderr, "Included from %s:\n", from->name);
+        }
+      if (from->include_type == CFGI_FILE)
+        {
+          _report_file_location(from->name, &from->lloc);
+        }
+      else if (from->include_type == CFGI_BUFFER)
+        {
+          _report_buffer_location(from->buffer.original_content, &from->lloc);
+        }
+      fprintf(stderr, "\n");
     }
 
   fprintf(stderr, "\nsyslog-ng documentation: https://www.balabit.com/support/documentation?product=%s\n"
