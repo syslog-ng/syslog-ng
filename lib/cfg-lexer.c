@@ -939,9 +939,8 @@ relex:
 
           free(yylval->cptr);
           cfg_args_unref(args);
-          g_snprintf(buf, sizeof(buf), "%s generator %s",
-                     cfg_lexer_lookup_context_name_by_type(gen->context),
-                     gen->name);
+
+          cfg_block_generator_format_name(gen, buf, sizeof(buf));
 
           if (gen->suppress_backticks)
             success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
