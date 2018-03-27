@@ -173,6 +173,13 @@ _is_immediate_check_needed(gboolean file_opened, gboolean open_deferred)
   return FALSE;
 }
 
+static void
+_reschedule(FileReader *self, gpointer _pollevents)
+{
+  PollEvents *pollevents = (PollEvents *)_pollevents;
+  poll_events_update_watches(pollevents, G_IO_IN);
+}
+
 static gboolean
 _reader_open_file(LogPipe *s, gboolean recover_state)
 {
@@ -261,6 +268,11 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
       _reopen_on_notify(s, FALSE);
       break;
 
+    case NC_FILE_MISSING:
+      if (self->missing_cb)
+        self->missing_cb(self, user_data);
+      break;
+
     default:
       break;
     }
@@ -332,6 +344,9 @@ file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *o
   self->options = options;
   self->opener = opener;
   self->owner = owner;
+
+  self->missing_cb = _reschedule;
+
   return self;
 }
 
