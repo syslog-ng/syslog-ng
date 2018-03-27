@@ -24,6 +24,7 @@
 #include "directory-monitor-factory.h"
 #include "messages.h"
 #include "file-specializations.h"
+#include "mainloop.h"
 
 #include <fcntl.h>
 
@@ -50,6 +51,13 @@ _check_required_options(WildcardSourceDriver *self)
   return TRUE;
 }
 
+static void
+_deleted_cb(FileReader *self, gpointer user_data G_GNUC_UNUSED)
+{
+  log_pipe_deinit(&self->super);
+  file_reader_remove_persist_state(self);
+}
+
 void
 _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 {
@@ -67,6 +75,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 
   reader = file_reader_new(full_path, &self->file_reader_options, self->file_opener, &self->super, cfg);
   log_pipe_append(&reader->super, &self->super.super.super);
+  reader->missing_cb = _deleted_cb;
   if (!log_pipe_init(&reader->super))
     {
       msg_warning("File reader initialization failed", evt_tag_str("filename", full_path),
@@ -89,6 +98,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
       if (!reader)
         {
           _create_file_reader(self, event->full_path);
+          msg_debug("Wildcard: file created", evt_tag_str("filename", event->full_path));
         }
       else
         {
@@ -96,6 +106,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
             {
               msg_error("Can not re-initialize reader for file", evt_tag_str("filename", event->full_path));
             }
+          msg_debug("Wildcard: file reader reinitialized", evt_tag_str("filename", event->full_path));
         }
     }
 }
@@ -120,20 +131,16 @@ _handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
   FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 
   if (reader)
-    {
-      msg_debug("Monitored file is deleted", evt_tag_str("filename", event->full_path));
-      log_pipe_deinit(&reader->super);
-      file_reader_remove_persist_state(reader);
-    }
+    msg_debug("Monitored file is deleted", evt_tag_str("filename", event->full_path));
   else if (g_hash_table_remove(self->directory_monitors, event->full_path))
-    {
-      msg_debug("Monitored directory is deleted", evt_tag_str("directory", event->full_path));
-    }
+    msg_debug("Monitored directory is deleted", evt_tag_str("directory", event->full_path));
 }
 
 static void
 _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_data)
 {
+  main_loop_assert_main_thread();
+
   WildcardSourceDriver *self = (WildcardSourceDriver *)user_data;
 
   if ((event->event_type == FILE_CREATED))
