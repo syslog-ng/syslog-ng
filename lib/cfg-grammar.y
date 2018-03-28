@@ -1137,7 +1137,11 @@ dest_driver_option
               {
                 YYERROR;
               }
-            log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
+            if (!log_driver_add_plugin(last_driver, (LogDriverPlugin *) value))
+              {
+                log_driver_plugin_free(value);
+                CHECK_ERROR(TRUE, @1, "Error while registering the plugin %s in this destination", $1);
+              }
           }
         | driver_option
         ;

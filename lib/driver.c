@@ -26,6 +26,7 @@
 #include "logqueue-fifo.h"
 #include "afinter.h"
 #include "cfg-tree.h"
+#include "messages.h"
 
 #include <string.h>
 
@@ -38,17 +39,41 @@ log_driver_plugin_free_method(LogDriverPlugin *self)
 }
 
 void
-log_driver_plugin_init_instance(LogDriverPlugin *self)
+log_driver_plugin_init_instance(LogDriverPlugin *self, const gchar *name)
 {
+  self->name = name;
   self->free_fn = log_driver_plugin_free_method;
 }
 
 /* LogDriver */
 
-void
+gboolean
 log_driver_add_plugin(LogDriver *self, LogDriverPlugin *plugin)
 {
+  g_assert(plugin->name);
+  if (log_driver_lookup_plugin(self, plugin->name))
+    {
+      msg_error("Another instance of this plugin is registered in this driver, unable to register plugin again",
+                evt_tag_str("driver", self->id),
+                evt_tag_str("plugin", plugin->name));
+      return FALSE;
+
+    }
   self->plugins = g_list_append(self->plugins, plugin);
+  return TRUE;
+}
+
+LogDriverPlugin *
+log_driver_lookup_plugin(LogDriver *self, const gchar *plugin_name)
+{
+  for (GList *l = self->plugins; l; l = l->next)
+    {
+      LogDriverPlugin *plugin = (LogDriverPlugin *) l->data;
+
+      if (strcmp(plugin->name, plugin_name) == 0)
+        return plugin;
+    }
+  return NULL;
 }
 
 gboolean
@@ -198,13 +223,10 @@ log_src_driver_free(LogPipe *s)
 
 /* returns a reference */
 static LogQueue *
-log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_name,
-                                     gpointer user_data)
+log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_name)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
   LogQueue *queue = NULL;
-
-  g_assert(user_data == NULL);
 
   if (persist_name)
     queue = cfg_persist_config_fetch(cfg, persist_name);
@@ -219,7 +241,7 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_n
 
 /* consumes the reference in @q */
 static void
-log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q, gpointer user_data)
+log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 

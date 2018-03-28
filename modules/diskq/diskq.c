@@ -30,6 +30,8 @@
 #include "logqueue-disk-non-reliable.h"
 #include "persist-state.h"
 
+#define DISKQ_PLUGIN_NAME "diskq"
+
 static gboolean
 log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
 {
@@ -41,9 +43,9 @@ log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
 }
 
 static LogQueue *
-_acquire_queue(LogDestDriver *dd, const gchar *persist_name, gpointer user_data)
+_acquire_queue(LogDestDriver *dd, const gchar *persist_name)
 {
-  DiskQDestPlugin *self = (DiskQDestPlugin *) user_data;
+  DiskQDestPlugin *self = log_driver_get_plugin(&dd->super, DiskQDestPlugin, DISKQ_PLUGIN_NAME);
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
   LogQueue *queue = NULL;
   gchar *qfile_name;
@@ -106,7 +108,7 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name, gpointer user_data)
 }
 
 void
-_release_queue(LogDestDriver *dd, LogQueue *queue, gpointer user_data)
+_release_queue(LogDestDriver *dd, LogQueue *queue)
 {
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
   gboolean persistent;
@@ -142,14 +144,6 @@ _attach(LogDriverPlugin *s, LogDriver *d)
       self->options.disk_buf_size = MIN_DISK_BUF_SIZE;
     }
 
-  if (dd->acquire_queue_data || dd->release_queue_data)
-    if (dd->acquire_queue_data != self)
-      {
-        msg_error("Another queueing plugin is registered in this destination, unable to register diskq again",
-                  evt_tag_str("driver", dd->super.id));
-        return FALSE;
-      }
-
   if (self->options.mem_buf_length < 0)
     self->options.mem_buf_length = dd->log_fifo_size;
   if (self->options.mem_buf_length < 0)
@@ -157,9 +151,7 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   if (self->options.qout_size < 0)
     self->options.qout_size = 64;
 
-  dd->acquire_queue_data = self;
   dd->acquire_queue = _acquire_queue;
-  dd->release_queue_data = self;
   dd->release_queue = _release_queue;
   return TRUE;
 }
@@ -177,7 +169,7 @@ diskq_dest_plugin_new(void)
 {
   DiskQDestPlugin *self = g_new0(DiskQDestPlugin, 1);
 
-  log_driver_plugin_init_instance(&self->super);
+  log_driver_plugin_init_instance(&self->super, DISKQ_PLUGIN_NAME);
   disk_queue_options_set_default_options(&self->options);
   self->super.attach = _attach;
   self->super.free_fn = _free;

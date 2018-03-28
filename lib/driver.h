@@ -70,7 +70,7 @@ typedef struct _LogDriverPlugin LogDriverPlugin;
 
 struct _LogDriverPlugin
 {
-
+  const gchar *name;
   /* this function is called when the plugin is attached to a LogDriver
    * instance.  It should do whatever it is necessary to extend the
    * functionality of the driver specified (e.g.  hook into various
@@ -101,7 +101,7 @@ log_driver_plugin_free(LogDriverPlugin *self)
   self->free_fn(self);
 }
 
-void log_driver_plugin_init_instance(LogDriverPlugin *self);
+void log_driver_plugin_init_instance(LogDriverPlugin *self, const gchar *name);
 void log_driver_plugin_free_method(LogDriverPlugin *self);
 
 struct _LogDriver
@@ -117,8 +117,16 @@ struct _LogDriver
 
 };
 
-void log_driver_add_plugin(LogDriver *self, LogDriverPlugin *plugin);
+gboolean log_driver_add_plugin(LogDriver *self, LogDriverPlugin *plugin);
 void log_driver_append(LogDriver *self, LogDriver *next);
+LogDriverPlugin *log_driver_lookup_plugin(LogDriver *self, const gchar *name);
+
+#define log_driver_get_plugin(self, T, name) \
+  ({ \
+    T *plugin = (T *) log_driver_lookup_plugin(self, name); \
+    g_assert(plugin != NULL); \
+    plugin; \
+  })
 
 /* methods registered to the init/deinit virtual functions */
 gboolean log_driver_init_method(LogPipe *s);
@@ -150,10 +158,8 @@ struct _LogDestDriver
 {
   LogDriver super;
 
-  gpointer acquire_queue_data;
-  LogQueue *(*acquire_queue)(LogDestDriver *s, const gchar *persist_name, gpointer user_data);
-  gpointer release_queue_data;
-  void (*release_queue)(LogDestDriver *s, LogQueue *q, gpointer user_data);
+  LogQueue *(*acquire_queue)(LogDestDriver *s, const gchar *persist_name);
+  void (*release_queue)(LogDestDriver *s, LogQueue *q);
 
   /* queues managed by this LogDestDriver, all constructed queues come
    * here and are automatically saved into cfg_persist & persist_state. */
@@ -170,7 +176,7 @@ log_dest_driver_acquire_queue(LogDestDriver *self, const gchar *persist_name)
 {
   LogQueue *q;
 
-  q = self->acquire_queue(self, persist_name, self->acquire_queue_data);
+  q = self->acquire_queue(self, persist_name);
   if (q)
     {
       self->queues = g_list_prepend(self->queues, q);
@@ -187,7 +193,7 @@ log_dest_driver_release_queue(LogDestDriver *self, LogQueue *q)
       self->queues = g_list_remove(self->queues, q);
 
       /* this drops the reference passed by the caller */
-      self->release_queue(self, q, self->release_queue_data);
+      self->release_queue(self, q);
       /* this drops the reference stored on the list */
       log_queue_unref(q);
     }
