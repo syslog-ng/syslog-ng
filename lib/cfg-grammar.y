@@ -1163,6 +1163,25 @@ source_option
         | driver_option
         ;
 
+/* LogReader related options, implies source_option */
+source_reader_option
+        /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
+
+	: KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
+	| KW_FLAGS '(' source_reader_option_flags ')'
+	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ last_reader_options->fetch_limit = $3; }
+        | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
+        | { last_source_options = &last_reader_options->super; } source_option
+        | { last_proto_server_options = &last_reader_options->proto_options.super; } source_proto_option
+        | { last_msg_format_options = &last_reader_options->parse_options; } msg_format_option
+	;
+
+source_reader_option_flags
+        : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag %s", $1); free($1); }
+        | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
+	|
+	;
+
 source_proto_option
         : KW_ENCODING '(' string ')'
           {
@@ -1196,26 +1215,6 @@ msg_format_option
 	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & 7) | $3;
           }
         ;
-
-
-/* LogReader related options, inherits from LogSource */
-source_reader_option
-        /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
-
-	: KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
-	| KW_FLAGS '(' source_reader_option_flags ')'
-	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ last_reader_options->fetch_limit = $3; }
-        | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
-        | { last_source_options = &last_reader_options->super; } source_option
-        | { last_proto_server_options = &last_reader_options->proto_options.super; } source_proto_option
-        | { last_msg_format_options = &last_reader_options->parse_options; } msg_format_option
-	;
-
-source_reader_option_flags
-        : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag %s", $1); free($1); }
-        | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
-	|
-	;
 
 dest_writer_options
 	: dest_writer_option dest_writer_options
