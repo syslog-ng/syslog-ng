@@ -1189,6 +1189,8 @@ threaded_dest_driver_option
         {
           log_threaded_dest_driver_set_max_retries(last_driver, $3);
         }
+        | dest_driver_option
+        ;
 
 dest_driver_option
         /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */
@@ -1213,7 +1215,7 @@ dest_driver_option
               }
             log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
           }
-    | driver_option
+        | driver_option
         ;
 
 dest_writer_options

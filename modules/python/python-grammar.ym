@@ -98,7 +98,6 @@ python_dd_option
           {
             python_dd_set_value_pairs(last_driver, $1);
           }
-        | dest_driver_option
         | { last_template_options = python_dd_get_template_options(last_driver); } template_option
         ;
 

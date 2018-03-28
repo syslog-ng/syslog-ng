@@ -140,7 +140,6 @@ riemann_option
           {
             riemann_dd_set_flush_lines(last_driver,  $3);
           }
-        | dest_driver_option
         | threaded_dest_driver_option
         | KW_TLS '(' riemann_tls_options ')'
         | { last_template_options = riemann_dd_get_template_options(last_driver); } template_option

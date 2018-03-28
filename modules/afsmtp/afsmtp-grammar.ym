@@ -162,7 +162,6 @@ afsmtp_option
             log_template_unref($4);
           }
         | threaded_dest_driver_option
-        | dest_driver_option
         | { last_template_options = afsmtp_dd_get_template_options(last_driver); } template_option
         ;
 
