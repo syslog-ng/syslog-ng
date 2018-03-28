@@ -1136,6 +1136,17 @@ dest_driver_option
           }
         | driver_option
         ;
+
+/* implies dest_driver_option */
+threaded_dest_driver_option
+	: KW_RETRIES '(' positive_integer ')'
+        {
+          log_threaded_dest_driver_set_max_retries(last_driver, $3);
+        }
+        | dest_driver_option
+        ;
+
+
 /* LogSource related options */
 source_option
         /* NOTE: plugins need to set "last_source_options" in order to incorporate this rule in their grammar */
@@ -1205,14 +1216,6 @@ source_reader_option_flags
         | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
 	|
 	;
-
-threaded_dest_driver_option
-	: KW_RETRIES '(' positive_integer ')'
-        {
-          log_threaded_dest_driver_set_max_retries(last_driver, $3);
-        }
-        | dest_driver_option
-        ;
 
 dest_writer_options
 	: dest_writer_option dest_writer_options
