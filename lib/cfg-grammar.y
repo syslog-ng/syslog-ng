@@ -1133,10 +1133,6 @@ source_proto_option
 	| KW_LOG_MSG_SIZE '(' positive_integer ')'	{ last_proto_server_options->max_msg_size = $3; }
         ;
 
-source_reader_options
-	: source_reader_option source_reader_options
-	;
-
 host_resolve_option
         : KW_USE_FQDN '(' yesno ')'             { last_host_resolve_options->use_fqdn = $3; }
         | KW_USE_DNS '(' dnsmode ')'            { last_host_resolve_options->use_dns = $3; }
