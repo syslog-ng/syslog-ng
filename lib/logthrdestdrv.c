@@ -25,6 +25,7 @@
 #include "stats/stats-cluster-logpipe.h"
 #include "logthrdestdrv.h"
 #include "seqnum.h"
+#include "scratch-buffers.h"
 
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 
@@ -154,7 +155,10 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
       msg_set_context(msg);
       log_msg_refcache_start_consumer(msg, &path_options);
 
+      ScratchBuffersMarker mark;
+      scratch_buffers_mark(&mark);
       result = self->worker.insert(self, msg);
+      scratch_buffers_reclaim_marked(mark);
 
       switch (result)
         {
