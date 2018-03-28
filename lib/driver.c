@@ -76,8 +76,8 @@ log_driver_lookup_plugin(LogDriver *self, const gchar *plugin_name)
   return NULL;
 }
 
-gboolean
-log_driver_init_method(LogPipe *s)
+static gboolean
+log_driver_attach_plugins(LogPipe *s)
 {
   LogDriver *self = (LogDriver *) s;
   gboolean success = TRUE;
@@ -91,18 +91,28 @@ log_driver_init_method(LogPipe *s)
   return success;
 }
 
-gboolean
-log_driver_deinit_method(LogPipe *s)
+static void
+log_driver_detach_plugins(LogPipe *s)
 {
   LogDriver *self = (LogDriver *) s;
-  gboolean success = TRUE;
   GList *l;
 
   for (l = self->plugins; l; l = l->next)
     {
       log_driver_plugin_detach((LogDriverPlugin *) l->data, self);
     }
-  return success;
+}
+
+gboolean
+log_driver_init_method(LogPipe *s)
+{
+  return TRUE;
+}
+
+gboolean
+log_driver_deinit_method(LogPipe *s)
+{
+  return TRUE;
 }
 
 /* NOTE: intentionally static, as only cDriver or LogDestDriver will derive from LogDriver */
@@ -133,8 +143,10 @@ log_driver_init_instance(LogDriver *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
   self->super.free_fn = log_driver_free;
+  self->super.pre_init = log_driver_attach_plugins;
   self->super.init = log_driver_init_method;
   self->super.deinit = log_driver_deinit_method;
+  self->super.post_deinit = log_driver_detach_plugins;
 }
 
 /* LogSrcDriver */
