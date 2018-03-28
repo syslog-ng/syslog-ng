@@ -30,7 +30,7 @@
 
 #define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
-static void _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory);
+static DirectoryMonitor *_add_directory_monitor(WildcardSourceDriver *self, const gchar *directory);
 
 
 static gboolean
@@ -205,7 +205,7 @@ _init_filename_pattern(WildcardSourceDriver *self)
   return TRUE;
 }
 
-static void
+static DirectoryMonitor *
 _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
 {
   DirectoryMonitorOptions options =
@@ -220,12 +220,13 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
       msg_error("Wildcard source: could not create directory monitoring object! Possible message loss",
                 evt_tag_str("dir", directory),
                 log_pipe_location_tag(&self->super.super.super));
-      return;
+      return NULL;
     }
 
   directory_monitor_set_callback(monitor, _on_directory_monitor_changed, self);
   directory_monitor_start(monitor);
   g_hash_table_insert(self->directory_monitors, g_strdup(directory), monitor);
+  return monitor;
 }
 
 static gboolean
@@ -251,7 +252,9 @@ _init(LogPipe *s)
   _init_reader_options(self, cfg);
   _init_opener_options(self, cfg);
 
-  _add_directory_monitor(self, self->base_dir);
+  if (!_add_directory_monitor(self, self->base_dir))
+    return FALSE;
+
   return TRUE;
 }
 
