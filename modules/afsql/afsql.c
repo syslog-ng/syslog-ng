@@ -1184,7 +1184,7 @@ afsql_dd_init(LogPipe *s)
   if (!self->columns || !self->values)
     {
       msg_error("Default columns and values must be specified for database destinations",
-                evt_tag_str("database type", self->type));
+                evt_tag_str("type", self->type));
       return FALSE;
     }
 

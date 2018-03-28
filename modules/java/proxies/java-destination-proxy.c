@@ -137,7 +137,8 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
   self->dest_impl.mi_is_opened = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "isOpenedProxy", "()Z");
   if (!self->dest_impl.mi_is_opened)
     {
-      msg_error("Can't find method in class", evt_tag_str("class_name", class_name),
+      msg_error("Can't find method in class",
+                evt_tag_str("class_name", class_name),
                 evt_tag_str("method", "boolean isOpened()"));
     }
 

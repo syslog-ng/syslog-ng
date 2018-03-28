@@ -39,7 +39,8 @@ _parse_addr(const char *str, char **host, gint *port)
   mongoc_uri_t *uri = mongoc_uri_new(proto_str);
   if (!uri)
     {
-      msg_error("Cannot parse MongoDB URI", evt_tag_str("uri", proto_str));
+      msg_error("Cannot parse MongoDB URI",
+                evt_tag_str("uri", proto_str));
       g_free(proto_str);
       return FALSE;
     }
@@ -48,9 +49,11 @@ _parse_addr(const char *str, char **host, gint *port)
   if (!hosts || hosts->next)
     {
       if (hosts)
-        msg_error("Multiple hosts found in MongoDB URI", evt_tag_str("uri", proto_str));
+        msg_error("Multiple hosts found in MongoDB URI",
+                  evt_tag_str("uri", proto_str));
       else
-        msg_error("No host found in MongoDB URI", evt_tag_str("uri", proto_str));
+        msg_error("No host found in MongoDB URI",
+                  evt_tag_str("uri", proto_str));
       g_free(proto_str);
       mongoc_uri_destroy(uri);
       return FALSE;
@@ -60,7 +63,8 @@ _parse_addr(const char *str, char **host, gint *port)
   mongoc_uri_destroy(uri);
   if (!*host)
     {
-      msg_error("NULL hostname", evt_tag_str("uri", proto_str));
+      msg_error("NULL hostname",
+                evt_tag_str("uri", proto_str));
       g_free(proto_str);
       return FALSE;
     }
@@ -219,7 +223,8 @@ _build_uri_from_legacy_options(MongoDBDestDriver *self)
 
   if (!self->recovery_cache)
     {
-      msg_error("Error in host server list", evt_tag_str("driver", self->super.super.super.id));
+      msg_error("Error in host server list",
+                evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
 
@@ -253,8 +258,8 @@ afmongodb_dd_create_uri_from_legacy(MongoDBDestDriver *self)
 
   if (self->uri_str && self->is_legacy)
     {
-      msg_error("Error: either specify a MongoDB URI (and optional collection)"
-                " or only legacy options", evt_tag_str("driver", self->super.super.super.id));
+      msg_error("Error: either specify a MongoDB URI (and optional collection) or only legacy options",
+                evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
   else if (self->is_legacy)

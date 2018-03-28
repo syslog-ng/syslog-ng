@@ -346,12 +346,14 @@ ptz_merge_clusterlists(gpointer _key, gpointer _value, gpointer _target)
 GHashTable *
 ptz_find_clusters_step(Patternizer *self, GPtrArray *logs, guint support, guint num_of_samples)
 {
-  msg_progress("Searching clusters", evt_tag_int("input lines", logs->len));
+  msg_progress("Searching clusters",
+               evt_tag_int("input_lines", logs->len));
   if (self->algo == PTZ_ALGO_SLCT)
     return ptz_find_clusters_slct(logs, support, self->delimiters, num_of_samples);
   else
     {
-      msg_error("Unknown clustering algorithm", evt_tag_int("algo_id", self->algo));
+      msg_error("Unknown clustering algorithm",
+                evt_tag_int("algo_id", self->algo));
       return NULL;
     }
 }
@@ -422,7 +424,8 @@ ptz_find_clusters(Patternizer *self)
       return ret_clusters;
     }
 
-  msg_error("Invalid iteration type", evt_tag_int("iteration_type", self->iterate));
+  msg_error("Invalid iteration type",
+            evt_tag_int("iteration_type", self->iterate));
   return NULL;
 
 }

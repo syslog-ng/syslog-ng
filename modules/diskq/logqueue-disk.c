@@ -246,7 +246,8 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
       serialize_archive_free(sa);
       log_msg_unref(*msg);
       *msg = NULL;
-      msg_error("Can't read correct message from disk-queue file",evt_tag_str("filename",qdisk_get_filename(self->qdisk)));
+      msg_error("Can't read correct message from disk-queue file",
+                evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
       return TRUE;
     }
 
@@ -269,7 +270,7 @@ _read_message(LogQueueDisk *self, LogPathOptions *path_options)
       if (!_pop_disk (self, &msg))
         {
           msg_error("Error reading from disk-queue file, dropping disk queue",
-                    evt_tag_str ("filename", qdisk_get_filename (self->qdisk)));
+                    evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
           self->restart_corrupted(self);
           if (msg)
             log_msg_unref (msg);

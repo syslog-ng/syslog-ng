@@ -148,9 +148,11 @@ _call_finalize_init(Secret *secret, gpointer user_data)
                 evt_tag_str("keyfile", key));
 
       if (!secret_storage_subscribe_for_key(key, _call_finalize_init, args))
-        msg_error("Failed to subscribe for key", evt_tag_str("keyfile", key));
+        msg_error("Failed to subscribe for key",
+                  evt_tag_str("keyfile", key));
       else
-        msg_debug("Re-subscribe for key", evt_tag_str("keyfile", key));
+        msg_debug("Re-subscribe for key",
+                  evt_tag_str("keyfile", key));
 
       secret_storage_update_status(key, SECRET_STORAGE_STATUS_INVALID_PASSWORD);
 
@@ -196,9 +198,11 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
       self->secret_store_cb_data = args;
       gboolean subscribe_res = secret_storage_subscribe_for_key(key, _call_finalize_init, args);
       if (subscribe_res)
-        msg_info("Waiting for password", evt_tag_str("keyfile", key));
+        msg_info("Waiting for password",
+                 evt_tag_str("keyfile", key));
       else
-        msg_error("Failed to subscribe for key", evt_tag_str("keyfile", key));
+        msg_error("Failed to subscribe for key",
+                  evt_tag_str("keyfile", key));
       return subscribe_res;
     }
 

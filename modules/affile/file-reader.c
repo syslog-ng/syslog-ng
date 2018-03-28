@@ -191,7 +191,8 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   file_opened = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
   if (!file_opened && self->options->follow_freq > 0)
     {
-      msg_info("Follow-mode file source not found, deferring open", evt_tag_str("filename", self->filename->str));
+      msg_info("Follow-mode file source not found, deferring open",
+               evt_tag_str("filename", self->filename->str));
       open_deferred = TRUE;
       fd = -1;
     }
@@ -214,7 +215,8 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
       _setup_logreader(s, poll_events, proto, check_immediately);
       if (!log_pipe_init((LogPipe *) self->reader))
         {
-          msg_error("Error initializing log_reader, closing fd", evt_tag_int("fd", fd));
+          msg_error("Error initializing log_reader, closing fd",
+                    evt_tag_int("fd", fd));
           log_pipe_unref((LogPipe *) self->reader);
           self->reader = NULL;
           close(fd);
