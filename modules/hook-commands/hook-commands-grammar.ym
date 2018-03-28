@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2018 Balabit
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "hook-commands-parser.h"
+#include "driver.h"
+#include "cfg-lexer.h"
+
+}
+
+
+%code {
+
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
+#include "cfg-parser.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "hook-commands.h"
+
+#include <string.h>
+
+HookCommandsPlugin *last_hook_commands;
+
+}
+
+%name-prefix "hook_commands_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriverPlugin **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_HOOK_COMMANDS
+%token KW_STARTUP
+%token KW_SETUP
+%token KW_TEARDOWN
+%token KW_SHUTDOWN
+
+%%
+
+start
+	: LL_CONTEXT_INNER_SRC hook_invocation		{ YYACCEPT; }
+	| LL_CONTEXT_INNER_DEST hook_invocation		{ YYACCEPT; }
+	;
+
+hook_invocation
+        : KW_HOOK_COMMANDS '('
+	  {
+	    last_hook_commands = hook_commands_plugin_new();
+	    *instance = (LogDriverPlugin *) last_hook_commands;
+	  }
+	  hook_options ')'
+        ;
+
+hook_options
+	: hook_option hook_options
+	|
+	;
+
+hook_option
+	: KW_STARTUP '(' string ')'		{ hook_commands_plugin_set_startup(last_hook_commands, $3); free($3); }
+	| KW_SETUP '(' string ')'		{ hook_commands_plugin_set_setup(last_hook_commands, $3); free($3); }
+	| KW_TEARDOWN '(' string ')'		{ hook_commands_plugin_set_teardown(last_hook_commands, $3); free($3); }
+	| KW_SHUTDOWN '(' string ')'		{ hook_commands_plugin_set_shutdown(last_hook_commands, $3); free($3); }
+	;
+
+/* INCLUDE_RULES */
+
+%%
