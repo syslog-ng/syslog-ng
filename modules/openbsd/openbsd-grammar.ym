@@ -59,11 +59,11 @@
 %%
 
 start
-  : LL_CONTEXT_SOURCE source_openbsd
-    {
-      YYACCEPT;
-    }
-  ;
+        : LL_CONTEXT_SOURCE source_openbsd
+          {
+            YYACCEPT;
+          }
+        ;
 
 
 source_openbsd
