@@ -332,13 +332,17 @@ Test(log_message, test_local_logmsg_created_with_the_right_flags_and_timestamps)
   cr_assert(are_equals, "The timestamps in a LogMessage created by log_msg_new_local() should be equals");
 }
 
-Test(log_message, test_sdata_sanitize_keys)
+Test(log_message, test_sdata_sanitization)
 {
   LogMessage *msg;
   /* These keys looks strange, but JSON object can be parsed to SDATA,
    * so the key could contain any character, while the specification
-   * does not declare any way to encode the the keys, just the values.
-   * The goal is to have a syntactically valid syslog message. */
+   * does not declare any way to encode the keys, just the values.
+   * The goal is to have a syntactically valid syslog message.
+   *
+   * Block names are sanitized with the same function as the keys,
+   * thus no need for exhaust testing, added just one case to the end
+   * to see if business logic applied. */
 
   msg = log_msg_new_empty();
   log_msg_set_value_by_name(msg, ".SDATA.foo.bar[0]", "value[0]", -1);
@@ -363,6 +367,11 @@ Test(log_message, test_sdata_sanitize_keys)
   msg = log_msg_new_empty();
   log_msg_set_value_by_name(msg, ".SDATA.foo.quo\"te", "quo\"te", -1);
   assert_sdata_value_equals(msg, "[foo quo%22te=\"quo\\\"te\"]");
+  log_msg_unref(msg);
+
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, ".SDATA.fo@o[0].bar", "value", -1);
+  assert_sdata_value_equals(msg, "[fo@o%5B0%5D bar=\"value\"]");
   log_msg_unref(msg);
 }
 
