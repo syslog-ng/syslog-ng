@@ -77,7 +77,7 @@ log_driver_lookup_plugin(LogDriver *self, const gchar *plugin_name)
 }
 
 static gboolean
-log_driver_attach_plugins(LogPipe *s)
+log_driver_pre_init_method(LogPipe *s)
 {
   LogDriver *self = (LogDriver *) s;
   gboolean success = TRUE;
@@ -92,7 +92,7 @@ log_driver_attach_plugins(LogPipe *s)
 }
 
 static void
-log_driver_detach_plugins(LogPipe *s)
+log_driver_post_deinit_method(LogPipe *s)
 {
   LogDriver *self = (LogDriver *) s;
   GList *l;
@@ -143,22 +143,19 @@ log_driver_init_instance(LogDriver *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
   self->super.free_fn = log_driver_free;
-  self->super.pre_init = log_driver_attach_plugins;
+  self->super.pre_init = log_driver_pre_init_method;
   self->super.init = log_driver_init_method;
   self->super.deinit = log_driver_deinit_method;
-  self->super.post_deinit = log_driver_detach_plugins;
+  self->super.post_deinit = log_driver_post_deinit_method;
 }
 
 /* LogSrcDriver */
 
-gboolean
-log_src_driver_init_method(LogPipe *s)
+static gboolean
+log_src_driver_pre_init_method(LogPipe *s)
 {
   LogSrcDriver *self = (LogSrcDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
-
-  if (!log_driver_init_method(s))
-    return FALSE;
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
   if (!self->super.group)
     {
@@ -166,6 +163,16 @@ log_src_driver_init_method(LogPipe *s)
       self->group_len = strlen(self->super.group);
       self->super.id = cfg_tree_get_child_id(&cfg->tree, ENC_SOURCE, s->expr_node);
     }
+  return log_driver_pre_init_method(s);
+}
+
+gboolean
+log_src_driver_init_method(LogPipe *s)
+{
+  LogSrcDriver *self = (LogSrcDriver *) s;
+
+  if (!log_driver_init_method(s))
+    return FALSE;
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -219,6 +226,7 @@ void
 log_src_driver_init_instance(LogSrcDriver *self, GlobalConfig *cfg)
 {
   log_driver_init_instance(&self->super, cfg);
+  self->super.super.pre_init = log_src_driver_pre_init_method;
   self->super.super.init = log_src_driver_init_method;
   self->super.super.deinit = log_src_driver_deinit_method;
   self->super.super.queue = log_src_driver_queue_method;
@@ -278,20 +286,27 @@ log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *
   log_pipe_forward_msg(s, msg, path_options);
 }
 
-gboolean
-log_dest_driver_init_method(LogPipe *s)
+static gboolean
+log_dest_driver_pre_init_method(LogPipe *s)
 {
   LogDestDriver *self = (LogDestDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
-
-  if (!log_driver_init_method(s))
-    return FALSE;
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
   if (!self->super.group)
     {
       self->super.group = cfg_tree_get_rule_name(&cfg->tree, ENC_DESTINATION, s->expr_node);
       self->super.id = cfg_tree_get_child_id(&cfg->tree, ENC_DESTINATION, s->expr_node);
     }
+  return log_driver_pre_init_method(s);
+}
+
+gboolean
+log_dest_driver_init_method(LogPipe *s)
+{
+  LogDestDriver *self = (LogDestDriver *) s;
+
+  if (!log_driver_init_method(s))
+    return FALSE;
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -342,6 +357,7 @@ void
 log_dest_driver_init_instance(LogDestDriver *self, GlobalConfig *cfg)
 {
   log_driver_init_instance(&self->super, cfg);
+  self->super.super.pre_init = log_dest_driver_pre_init_method;
   self->super.super.init = log_dest_driver_init_method;
   self->super.super.deinit = log_dest_driver_deinit_method;
   self->super.super.queue = log_dest_driver_queue_method;
