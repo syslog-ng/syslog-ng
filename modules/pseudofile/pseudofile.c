@@ -156,7 +156,7 @@ _suspend_output(PseudoFileDestDriver *self, time_t now)
 }
 
 static void
-pseudofile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+pseudofile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   PseudoFileDestDriver *self = (PseudoFileDestDriver *) s;
   GString *formatted_message = scratch_buffers_alloc();
@@ -176,7 +176,7 @@ pseudofile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_opti
     _suspend_output(self, now);
 
 finish:
-  log_dest_driver_queue_method(s, msg, path_options, user_data);
+  log_dest_driver_queue_method(s, msg, path_options);
 }
 
 static gboolean

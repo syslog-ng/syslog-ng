@@ -1360,7 +1360,7 @@ afsql_dd_deinit(LogPipe *s)
 }
 
 static void
-afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   LogPathOptions local_options;
@@ -1370,7 +1370,7 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, 
 
   log_msg_add_ack(msg, path_options);
   log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
-  log_dest_driver_queue_method(s, msg, path_options, user_data);
+  log_dest_driver_queue_method(s, msg, path_options);
 }
 
 static void

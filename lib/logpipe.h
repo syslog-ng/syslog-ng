@@ -169,11 +169,13 @@
  *   The way to override a method by an external object is as follows:
  *
  *     - it should save the current value of the method address (for
- *       example "queue" for the queue method), and the associated
- *       user_data pointer (queue_data in this case)
+ *       example "queue" for the queue method)
  *
  *     - it should change the pointer pointing to the relevant method to
  *       its own code (e.g. change "queue" in LogPipe)
+ *
+ *     - once the hook is invoked, it should take care about calling the
+ *       original function
  **/
 
 struct _LogPathOptions
@@ -218,10 +220,7 @@ struct _LogPipe
   StatsCounterItem *discarded_messages;
   const gchar *persist_name;
 
-  /* user_data pointer of the "queue" method in case it is overridden
-     by a plugin, see the explanation in the comment on the top. */
-  gpointer queue_data;
-  void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
+  void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options);
   gchar *plugin_name;
   gboolean (*init)(LogPipe *self);
   gboolean (*deinit)(LogPipe *self);
@@ -340,7 +339,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 
   if (s->queue)
     {
-      s->queue(s, msg, path_options, s->queue_data);
+      s->queue(s, msg, path_options);
     }
   else
     {

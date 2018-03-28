@@ -409,7 +409,7 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
 #endif
 
 static void
-afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   AFInetDestDriver *self = (AFInetDestDriver *) s;
@@ -467,7 +467,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
       g_static_mutex_unlock(&self->lnet_lock);
     }
 #endif
-  log_dest_driver_queue_method(s, msg, path_options, user_data);
+  log_dest_driver_queue_method(s, msg, path_options);
 }
 
 void

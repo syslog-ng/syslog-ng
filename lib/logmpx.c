@@ -62,7 +62,7 @@ log_multiplexer_deinit(LogPipe *self)
 }
 
 static void
-log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogMultiplexer *self = (LogMultiplexer *) s;
   gint i;

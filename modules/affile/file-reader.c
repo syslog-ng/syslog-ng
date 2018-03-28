@@ -281,7 +281,7 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
 }
 
 static void
-_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   FileReader *self = (FileReader *)s;
   static NVHandle filename_handle = 0;

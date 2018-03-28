@@ -777,7 +777,7 @@ log_writer_mark_timeout(void *cookie)
 
 /* NOTE: runs in the reader thread */
 static void
-log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, gpointer user_data)
+log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 {
   LogWriter *self = (LogWriter *) s;
   LogPathOptions local_options;

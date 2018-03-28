@@ -76,7 +76,7 @@ __free(LogPipe *s)
 }
 
 static void
-__queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+__queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   TestSource *self = (TestSource *)s;
   if (self->current_test_case && self->current_test_case->checker)
