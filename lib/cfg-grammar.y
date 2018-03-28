@@ -1106,6 +1106,10 @@ parser_opt
                                                 }
         ;
 
+driver_option
+        : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
+        ;
+
 /* LogSource related options */
 source_option
         /* NOTE: plugins need to set "last_source_options" in order to incorporate this rule in their grammar */
@@ -1175,10 +1179,6 @@ source_reader_option_flags
         | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
 	|
 	;
-
-driver_option
-    : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
-    ;
 
 threaded_dest_driver_option
 	: KW_RETRIES '(' positive_integer ')'
