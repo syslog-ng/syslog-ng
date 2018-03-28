@@ -1,0 +1,7 @@
+libc6-dbg
+libpcre2-dbg
+libglib2.0-0-dbgsym
+python-dbg
+python3-dbg
+libssl1.0.0-dbg
+libjemalloc1-dbgsym

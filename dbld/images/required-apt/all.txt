@@ -31,19 +31,15 @@ tzdata
 # required for make/cmake
 make
 cmake
-
-# python stuff
-virtualenv
+astyle
 
 # required for make check
 libxml2-utils
 
-# other tools
-gdb
+# required for make dist
 git
-lsof
-strace
-vim
+
+# interactive tools
 less
 
 # debian packaging tools

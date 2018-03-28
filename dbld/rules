@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-IMAGES=centos6 centos7 jessie artful xenial trusty
+IMAGES=centos6 centos7 jessie artful xenial trusty devshell
 DEFAULT_IMAGE ?= xenial
 DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos7
