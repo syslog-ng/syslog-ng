@@ -43,6 +43,7 @@ typedef struct _FileReader
   FileOpener *opener;
   LogReader *reader;
   gboolean is_pipe;
+  void (*missing_cb)(struct _FileReader *self, gpointer user_data);
 } FileReader;
 
 static inline LogProtoFileReaderOptions *
