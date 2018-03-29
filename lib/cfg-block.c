@@ -53,11 +53,11 @@ cfg_block_format_name(CfgBlockGenerator *s, gchar *buf, gsize buf_len)
 {
   CfgBlock *self = (CfgBlock *) s;
 
-  g_snprintf(buf, buf_len, "block %s %s (at %s:%d:%d)",
+  g_snprintf(buf, buf_len, "block %s %s() at %s:%d",
              cfg_lexer_lookup_context_name_by_type(self->super.context),
              self->super.name,
              self->filename ? : "#buffer",
-             self->line, self->column);
+             self->line);
   return buf;
 }
 
