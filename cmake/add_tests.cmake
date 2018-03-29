@@ -47,6 +47,11 @@ function (add_unit_test)
     target_link_libraries(${ADD_UNIT_TEST_TARGET} ${CRITERION_LIBRARIES})
     target_include_directories(${ADD_UNIT_TEST_TARGET} PUBLIC ${CRITERION_INCLUDE_DIRS})
     set_property(TARGET ${ADD_UNIT_TEST_TARGET} PROPERTY POSITION_INDEPENDENT_CODE FALSE)
+
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+      # https://gitlab.kitware.com/cmake/cmake/issues/16561
+      set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND PROPERTY LINK_FLAGS "-Wl,-no_pie")
+    endif()
   endif()
 
   if (${ADD_UNIT_TEST_LIBTEST})
