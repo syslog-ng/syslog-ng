@@ -30,6 +30,7 @@
 
 /* user defined configuration block */
 
-CfgBlockGenerator *cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs, YYLTYPE *yylloc);
+CfgBlockGenerator *cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs,
+                                 YYLTYPE *yylloc);
 
 #endif

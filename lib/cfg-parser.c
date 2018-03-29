@@ -244,7 +244,7 @@ _print_underlined_source_block(YYLTYPE *yylloc, gchar **lines, gint error_index)
 
           _print_underline(line, yylloc->first_column - 1,
                            multi_line ? strlen(&line[yylloc->first_column]) + 1
-                                      : yylloc->last_column - yylloc->first_column);
+                           : yylloc->last_column - yylloc->first_column);
         }
       else if (line_ndx >= error_index + CONTEXT)
         break;
@@ -282,7 +282,7 @@ _report_file_location(const gchar *filename, YYLTYPE *yylloc)
     }
   _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
 
- exit:
+exit:
   g_ptr_array_foreach(context, (GFunc) g_free, NULL);
   g_ptr_array_free(context, TRUE);
 }
@@ -305,7 +305,7 @@ _report_buffer_location(const gchar *buffer_content, YYLTYPE *yylloc)
     }
   _print_underlined_source_block(yylloc, &lines[start], error_index);
 
- exit:
+exit:
   g_strfreev(lines);
 }
 
