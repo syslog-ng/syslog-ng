@@ -947,6 +947,12 @@ relex:
           free(yylval->cptr);
           cfg_args_unref(args);
 
+          if (!success)
+            {
+              g_string_free(result, TRUE);
+              return LL_ERROR;
+            }
+
           cfg_block_generator_format_name(gen, buf, sizeof(buf));
 
           if (gen->suppress_backticks)
@@ -955,17 +961,17 @@ relex:
             success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
           g_string_free(result, TRUE);
 
-          if (success)
-            {
-              goto relex;
-            }
+          if (!success)
+            return LL_ERROR;
+
+          goto relex;
         }
       else
         {
           free(yylval->cptr);
           self->preprocess_suppress_tokens--;
+          return LL_ERROR;
         }
-      return LL_ERROR;
     }
 
   if (self->ignore_pragma || self->cfg == NULL)
