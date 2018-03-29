@@ -266,7 +266,7 @@ afstomp_set_frame_body(STOMPDestDriver *self, GString *body, stomp_frame *frame,
 {
   if (self->body_template)
     {
-      log_template_format(self->body_template, msg, NULL, LTZ_LOCAL,
+      log_template_format(self->body_template, msg, &self->template_options, LTZ_LOCAL,
                           self->super.seq_num, NULL, body);
       stomp_frame_set_body(frame, body->str, body->len);
     }
