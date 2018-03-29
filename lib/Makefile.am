@@ -302,4 +302,6 @@ endif
 
 .PHONY: lib/ libsyslog-ng ivykis lib/ivykis/ lib/jsonc/ jsonc
 
+if ENABLE_TESTING
 include lib/tests/Makefile.am
+endif

@@ -1,4 +1,4 @@
 add_unit_test(LIBTEST TARGET test_template_compile)
 add_unit_test(LIBTEST TARGET test_template_on_error)
-add_unit_test(LIBTEST TARGET test_template DEPENDS syslogformat basicfuncs)
-add_unit_test(LIBTEST TARGET test_template_speed DEPENDS syslogformat basicfuncs)
+add_unit_test(LIBTEST CRITERION TARGET test_template DEPENDS syslogformat basicfuncs)
+add_unit_test(LIBTEST CRITERION TARGET test_template_speed DEPENDS syslogformat basicfuncs)

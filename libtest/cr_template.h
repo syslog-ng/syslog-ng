@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 Balabit
+ * Copyright (c) 2012-2018 Balabit
  * Copyright (c) 2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -22,12 +22,15 @@
  *
  */
 
-#ifndef LIBTEST_TEMPLATE_LIB_H_INCLUDED
-#define LIBTEST_TEMPLATE_LIB_H_INCLUDED 1
+#ifndef LIBTEST_CR_TEMPLATE_H_INCLUDED
+#define LIBTEST_CR_TEMPLATE_H_INCLUDED 1
 
-#include "testutils.h"
+#include "syslog-ng.h"
 #include "template/templates.h"
+#include "msg-format.h"
 #include <stdarg.h>
+
+MsgFormatOptions parse_options;
 
 void assert_template_format(const gchar *template, const gchar *expected);
 void assert_template_format_msg(const gchar *template,

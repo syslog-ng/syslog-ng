@@ -22,11 +22,14 @@
 
 #include <syslog-ng.h>
 #include <logmsg/logmsg.h>
-#include <template_lib.h>
+#include <cr_template.h>
 #include <apphook.h>
 #include <plugin.h>
 
 #include "cfg.h"
+
+#include <criterion/criterion.h>
+#include <stdlib.h>
 
 MsgFormatOptions parse_options;
 
@@ -47,8 +50,25 @@ stardate_assert(const gchar *msg_str, const int precision, const gchar *expected
   log_msg_unref(logmsg);
 }
 
+
 void
-test_stardate(void)
+setup(void)
+{
+  app_startup();
+  init_template_tests();
+  cfg_load_module(configuration, "stardate");
+}
+
+void
+teardown(void)
+{
+  deinit_template_tests();
+  app_shutdown();
+}
+
+TestSuite(stardate, .init = setup, .fini = teardown);
+
+Test(stardate, test_stardate)
 {
   stardate_assert("2012-07-15T00:00:00", 1, "2012.5"); // 2012.01.01 + 365/2 day
   stardate_assert("2013-07-01T00:00:00", 2, "2013.49");
@@ -59,18 +79,4 @@ test_stardate(void)
 
   stardate_assert("2017-01-01T00:00:00", 0, "2017");
   stardate_assert("2018-12-01T00:00:00", 0, "2018"); // No rounding up!
-}
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-  init_template_tests();
-  cfg_load_module(configuration, "stardate");
-
-  test_stardate();
-
-  deinit_template_tests();
-  app_shutdown();
-  return 0;
 }

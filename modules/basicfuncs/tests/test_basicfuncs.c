@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 Balabit
+ * Copyright (c) 2010-2018 Balabit
  * Copyright (c) 2010-2015 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,17 +21,20 @@
  *
  */
 
-#include "template_lib.h"
+#include <criterion/criterion.h>
+
+#include "libtest/cr_template.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
+#include "logmsg/logmsg.h"
 
 static void
 add_dummy_template_to_configuration(void)
 {
   LogTemplate *dummy = log_template_new(configuration, "dummy");
-  assert_true(log_template_compile(dummy, "dummy template expanded $HOST", NULL),
-              "Unexpected error compiling dummy template");
+  cr_assert(log_template_compile(dummy, "dummy template expanded $HOST", NULL),
+            "Unexpected error compiling dummy template");
   cfg_tree_add_template(&configuration->tree, dummy);
 }
 
@@ -66,7 +69,24 @@ free_log_message_array(GPtrArray *messages)
 }
 
 void
-test_cond_funcs(void)
+setup(void)
+{
+  app_startup();
+  init_template_tests();
+  add_dummy_template_to_configuration();
+  cfg_load_module(configuration, "basicfuncs");
+}
+
+void
+teardown(void)
+{
+  deinit_template_tests();
+  app_shutdown();
+}
+
+TestSuite(basicfuncs, .init = setup, .fini = teardown);
+
+Test(basicfuncs, test_cond_funcs)
 {
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)", "23323,23323");
   assert_template_format_with_context("$(grep -m 1 'facility(local3)' $PID)", "23323");
@@ -107,8 +127,7 @@ test_cond_funcs(void)
   assert_template_format_with_context("$(or)", "");
 }
 
-void
-test_str_funcs(void)
+Test(basicfuncs, test_str_funcs)
 {
   assert_template_format("$(ipv4-to-int $SOURCEIP)", "168496141");
 
@@ -163,8 +182,7 @@ test_str_funcs(void)
   assert_template_format_with_len("$(binary 0xFF 0x00 0x40)", "\xFF\000@", 3);
 }
 
-void
-test_numeric_funcs(void)
+Test(basicfuncs, test_numeric_funcs)
 {
   assert_template_format("$(+ $FACILITY_NUM 1)", "20");
   assert_template_format("$(+ -1 -1)", "-2");
@@ -183,8 +201,7 @@ test_numeric_funcs(void)
   assert_template_format("$(- 10000000000 5000000000)", "5000000000");
 }
 
-void
-test_fname_funcs(void)
+Test(basicfuncs, test_fname_funcs)
 {
   assert_template_format("$(basename foo)", "foo");
   assert_template_format("$(basename /foo/bar)", "bar");
@@ -192,7 +209,7 @@ test_fname_funcs(void)
 
   assert_template_format("$(dirname foo)", ".");
   assert_template_format("$(dirname /foo/bar)", "/foo");
-  assert_template_format("$(dirname /foo/bar/)", "/foo");
+  assert_template_format("$(dirname /foo/bar/)", "/foo/bar");
   assert_template_format("$(dirname /foo/bar/baz)", "/foo/bar");
 }
 
@@ -215,8 +232,7 @@ _test_macros_with_context(const gchar *id, const gchar *numbers[], const MacroAn
   free_log_message_array(messages);
 }
 
-void
-test_numeric_aggregate_simple(void)
+Test(basicfuncs, test_numeric_aggregate_simple)
 {
   _test_macros_with_context(
     "NUMBER", (const gchar *[])
@@ -232,8 +248,7 @@ test_numeric_aggregate_simple(void)
   });
 }
 
-void
-test_numeric_aggregate_invalid_values(void)
+Test(basicfuncs, test_numeric_aggregate_invalid_values)
 {
   _test_macros_with_context(
     "NUMBER", (const gchar *[])
@@ -249,8 +264,7 @@ test_numeric_aggregate_invalid_values(void)
   });
 }
 
-void
-test_numeric_aggregate_full_invalid_values(void)
+Test(basicfuncs, test_numeric_aggregate_full_invalid_values)
 {
   _test_macros_with_context(
     "NUMBER", (const gchar *[])
@@ -266,16 +280,7 @@ test_numeric_aggregate_full_invalid_values(void)
   });
 }
 
-void
-test_numeric_aggregate_funcs(void)
-{
-  test_numeric_aggregate_simple();
-  test_numeric_aggregate_invalid_values();
-  test_numeric_aggregate_full_invalid_values();
-}
-
-void
-test_misc_funcs(void)
+Test(basicfuncs, test_misc_funcs)
 {
   unsetenv("OHHELLO");
   setenv("TEST_ENV", "test-env", 1);
@@ -284,15 +289,13 @@ test_misc_funcs(void)
   assert_template_format("$(env TEST_ENV)", "test-env");
 }
 
-static void
-test_tf_template(void)
+Test(basicfuncs, test_tf_template)
 {
   assert_template_format("foo $(template dummy) bar", "foo dummy template expanded bzorp bar");
   assert_template_failure("foo $(template unknown) bar", "Unknown template function or template \"unknown\"");
 }
 
-static void
-test_list_funcs(void)
+Test(basicfuncs, test_list_funcs)
 {
   assert_template_format("$(list-concat)", "");
   assert_template_format("$(list-concat foo bar baz)", "foo,bar,baz");
@@ -370,8 +373,7 @@ test_list_funcs(void)
   assert_template_format("$(list-count foo,bar,xxx, baz bad)", "5");
 }
 
-void
-test_context_funcs(void)
+Test(basicfuncs, test_context_funcs)
 {
   assert_template_format_with_context("$(context-length)", "2");
 
@@ -382,25 +384,4 @@ test_context_funcs(void)
   assert_template_format_with_context("$(context-values ${PID})", "23323,23323");
   assert_template_format_with_context("$(context-values ${comma_value})",
                                       "\"value,with,a,comma\",\"value,with,a,comma\"");
-}
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-  init_template_tests();
-  add_dummy_template_to_configuration();
-  cfg_load_module(configuration, "basicfuncs");
-
-  test_cond_funcs();
-  test_str_funcs();
-  test_numeric_funcs();
-  test_numeric_aggregate_funcs();
-  test_misc_funcs();
-  test_tf_template();
-  test_list_funcs();
-  test_context_funcs();
-
-  deinit_template_tests();
-  app_shutdown();
 }

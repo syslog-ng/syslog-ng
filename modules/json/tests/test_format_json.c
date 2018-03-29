@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 Balabit
+ * Copyright (c) 2011-2018 Balabit
  * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,13 +20,36 @@
  * COPYING for details.
  *
  */
-#include "template_lib.h"
+
+#include <criterion/criterion.h>
+
+#include "libtest/cr_template.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
+#include "logmsg/logmsg.h"
 
 void
-test_format_json(void)
+setup(void)
+{
+  app_startup();
+  putenv("TZ=UTC");
+  tzset();
+  init_template_tests();
+  cfg_load_module(configuration, "json-plugin");
+}
+
+void
+teardown(void)
+{
+  deinit_template_tests();
+  app_shutdown();
+}
+
+TestSuite(format_json, .init = setup, .fini = teardown);
+
+
+Test(format_json, test_format_json)
 {
   assert_template_format("$(format-json MSG=$MSG)", "{\"MSG\":\"árvíztűrőtükörfúrógép\"}");
   assert_template_format("$(format-json MSG=$escaping)",
@@ -69,8 +92,7 @@ test_format_json(void)
                          "{\".program\":{\"@name\":\"syslog-ng\"}}");
 }
 
-void
-test_format_json_key(void)
+Test(format_json, test_format_json_key)
 {
   assert_template_format("$(format-json --key PID)", "{\"PID\":\"23323\"}");
   assert_template_format("$(format-json --key HOST)", "{\"HOST\":\"bzorp\"}");
@@ -86,15 +108,13 @@ test_format_json_key(void)
   assert_template_format("$(format-json --key PRI)", "{\"PRI\":\"155\"}");
 }
 
-void
-test_format_json_rekey(void)
+Test(format_json, test_format_json_rekey)
 {
   assert_template_format("$(format-json .msg.text=dotted --rekey .* --shift 1 --add-prefix _)",
                          "{\"_msg\":{\"text\":\"dotted\"}}");
 }
 
-void
-test_format_json_with_type_hints(void)
+Test(format_json, test_format_json_with_type_hints)
 {
   assert_template_format("$(format-json i32=int32(1234))",
                          "{\"i32\":1234}");
@@ -104,8 +124,7 @@ test_format_json_with_type_hints(void)
                          "{\"b\":true}");
 }
 
-void
-test_format_json_on_error(void)
+Test(format_json, test_format_json_on_error)
 {
   configuration->template_options.on_error = ON_ERROR_DROP_MESSAGE | ON_ERROR_SILENT;
   assert_template_format("$(format-json x=y bad=boolean(blah) foo=bar)",
@@ -137,8 +156,7 @@ test_format_json_on_error(void)
 
 }
 
-void
-test_format_json_with_utf8(void)
+Test(format_json, test_format_json_with_utf8)
 {
   LogMessage *msg = create_empty_message();
   log_msg_set_value_by_name(msg, "UTF8-C2", "\xc2\xbf \xc2\xb6 \xc2\xa9 \xc2\xb1", -1); // ¿ ¶ © ±
@@ -151,8 +169,7 @@ test_format_json_with_utf8(void)
   log_msg_unref(msg);
 }
 
-void
-test_format_json_performance(void)
+Test(format_json, test_format_json_performance)
 {
   perftest_template("$(format-json APP.*)\n");
   perftest_template("<$PRI>1 $ISODATE $LOGHOST @syslog-ng - - ${SDATA:--} $(format-json --scope all-nv-pairs "
@@ -169,25 +186,4 @@ test_format_json_performance(void)
                     "--exclude .SDATA.* "
                     "..RSTAMP='${R_UNIXTIME}${R_TZ}' "
                     "..TAGS=${TAGS})\n");
-}
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-  putenv("TZ=UTC");
-  tzset();
-  init_template_tests();
-  cfg_load_module(configuration, "json-plugin");
-
-  test_format_json();
-  test_format_json_key();
-  test_format_json_rekey();
-  test_format_json_with_type_hints();
-  test_format_json_on_error();
-  test_format_json_with_utf8();
-  test_format_json_performance();
-
-  deinit_template_tests();
-  app_shutdown();
 }

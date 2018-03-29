@@ -14,8 +14,7 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 	libtest/stopwatch.h		\
 	libtest/msg_parse_lib.c		\
 	libtest/msg_parse_lib.h		\
-	libtest/template_lib.c		\
-	libtest/template_lib.h		\
+	libtest/cr_template.c		\
 	libtest/proto_lib.c		\
 	libtest/proto_lib.h		\
 	libtest/persist_lib.h		\
@@ -30,10 +29,12 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 libtestinclude_HEADERS		    =	\
 	libtest/testutils.h		\
 	libtest/msg_parse_lib.h		\
-	libtest/template_lib.h		\
+	libtest/cr_template.h		\
 	libtest/proto_lib.h		\
 	libtest/persist_lib.h		\
 	libtest/mock-transport.h
 
 pkgconfig_DATA			   +=	\
 	libtest/syslog-ng-test.pc
+
+LIBTEST_LIBS = $(top_builddir)/libtest/libsyslog-ng-test.a

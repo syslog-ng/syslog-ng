@@ -22,5 +22,7 @@ lib_template_tests_test_template_LDADD		= \
 	$(PREOPEN_SYSLOGFORMAT)		\
 	$(PREOPEN_BASICFUNCS)
 
-lib_template_tests_test_template_speed_LDADD	= \
-	$(TEST_LDADD) $(PREOPEN_SYSLOGFORMAT)
+
+lib_template_tests_test_template_speed_CFLAGS = $(TEST_CFLAGS)
+lib_template_tests_test_template_speed_LDADD = \
+	$(TEST_LDADD) $(PREOPEN_SYSLOGFORMAT) $(PREOPEN_BASICFUNCS)

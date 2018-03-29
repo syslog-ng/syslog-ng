@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 Balabit
+ * Copyright (c) 2011-2018 Balabit
  * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,13 +20,34 @@
  * COPYING for details.
  *
  */
-#include "template_lib.h"
+
+#include <criterion/criterion.h>
+
+#include "libtest/cr_template.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
 
 void
-test_format_welf(void)
+setup(void)
+{
+  app_startup();
+  putenv("TZ=UTC");
+  tzset();
+  init_template_tests();
+  cfg_load_module(configuration, "kvformat");
+}
+
+void
+teardown(void)
+{
+  deinit_template_tests();
+  app_shutdown();
+}
+
+TestSuite(format_welf, .init = setup, .fini = teardown);
+
+Test(format_welf, test_format_welf)
 {
   assert_template_format("$(format-welf MSG=$MSG)", "MSG=árvíztűrőtükörfúrógép");
   assert_template_format("xxx$(format-welf MSG=$MSG)yyy", "xxxMSG=árvíztűrőtükörfúrógépyyy");
@@ -38,8 +59,7 @@ test_format_welf(void)
                                       "MSG=árvíztűrőtükörfúrógép MSG=árvíztűrőtükörfúrógép");
 }
 
-void
-test_format_welf_performance(void)
+Test(format_welf, test_format_welf_performance)
 {
   perftest_template("$(format-welf APP.*)\n");
   perftest_template("<$PRI>1 $ISODATE $LOGHOST @syslog-ng - - ${SDATA:--} $(format-welf --scope all-nv-pairs "
@@ -49,20 +69,4 @@ test_format_welf_performance(void)
                     "--exclude .SDATA.* "
                     "..RSTAMP='${R_UNIXTIME}${R_TZ}' "
                     "..TAGS=${TAGS})\n");
-}
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-  putenv("TZ=UTC");
-  tzset();
-  init_template_tests();
-  cfg_load_module(configuration, "kvformat");
-
-  test_format_welf();
-  test_format_welf_performance();
-
-  deinit_template_tests();
-  app_shutdown();
 }

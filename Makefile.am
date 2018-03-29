@@ -50,7 +50,7 @@ endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)
 
-TEST_LDADD		= $(top_builddir)/libtest/libsyslog-ng-test.a \
+TEST_LDADD		= $(LIBTEST_LIBS) \
 			  $(top_builddir)/lib/libsyslog-ng.la \
 			  $(TOOL_DEPS_LIBS)
 
@@ -163,7 +163,9 @@ $(install_moduleLTLIBRARIES): install-libLTLIBRARIES
 
 include Mk/lex-rules.am
 include Mk/Makefile.am
+if ENABLE_TESTING
 include libtest/Makefile.am
+endif
 include lib/Makefile.am
 include modules/Makefile.am
 include syslog-ng/Makefile.am
