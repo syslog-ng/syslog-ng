@@ -69,7 +69,7 @@ cfg_block_format_name(CfgBlockGenerator *s, gchar *buf, gsize buf_len)
  * for the lexer.
  */
 gboolean
-cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result)
+cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result, const gchar *reference)
 {
   CfgBlock *self = (CfgBlock *) s;
   gchar *value;

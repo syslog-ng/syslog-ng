@@ -941,7 +941,8 @@ relex:
           level->lloc.first_line = saved_line;
           level->lloc.first_column = saved_column;
           self->preprocess_suppress_tokens--;
-          success = cfg_block_generator_generate(gen, self->cfg, args, result);
+          success = cfg_block_generator_generate(gen, self->cfg, args, result,
+                                                 cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
 
           free(yylval->cptr);
           cfg_args_unref(args);
