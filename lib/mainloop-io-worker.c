@@ -25,7 +25,6 @@
 #include "mainloop-worker.h"
 #include "mainloop-call.h"
 #include "logqueue.h"
-#include "scratch-buffers.h"
 
 /************************************************************************************
  * I/O worker threads
@@ -52,7 +51,7 @@ _work(MainLoopIOWorkerJob *self)
 {
   self->work(self->user_data);
   main_loop_worker_invoke_batch_callbacks();
-  scratch_buffers_explicit_gc();
+  main_loop_worker_run_gc();
 }
 
 /* NOTE: runs in the main thread */
