@@ -152,6 +152,7 @@ source_affile_option
 	| multi_line_option
 	| file_perm_option
         | source_reader_option
+	| source_driver_option
         ;
 
 source_wildcard_option
@@ -190,6 +191,7 @@ source_afpipe_option
 	| multi_line_option
 	| file_perm_option
 	| source_reader_option
+	| source_driver_option
 	;
 
 /* NOTE: don't copy this to other drivers blindly, but make it general and

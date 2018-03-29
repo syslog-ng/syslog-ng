@@ -123,6 +123,7 @@ source_systemd_journal_option
             last_journal_reader_options->fetch_limit = $3;
           }
         | source_option
+	| source_driver_option
         ;
 
 

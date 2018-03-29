@@ -89,6 +89,7 @@ source_afprogram_options
 
 source_afprogram_option
 	: source_reader_option
+	| source_driver_option
 	| KW_INHERIT_ENVIRONMENT '(' yesno ')' { afprogram_set_inherit_environment(&((AFProgramSourceDriver *)last_driver)->process_info, $3); }
 	;
 

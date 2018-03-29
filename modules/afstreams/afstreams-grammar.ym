@@ -83,6 +83,7 @@ source_afstreams_options
 
 source_afstreams_option
 	: KW_DOOR '(' string ')'		{ afstreams_sd_set_sundoor(last_driver, $3); free($3); }
+	| source_driver_option
 	;
 
 

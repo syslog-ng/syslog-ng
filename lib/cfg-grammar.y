@@ -1110,6 +1110,11 @@ driver_option
         : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
         ;
 
+/* All source drivers should incorporate this rule, implies driver_option */
+source_driver_option
+        : driver_option
+        ;
+
 /* implies driver_option */
 dest_driver_option
         /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */
@@ -1160,7 +1165,6 @@ source_option
 	| KW_READ_OLD_RECORDS '(' yesno ')'	{ last_source_options->read_old_records = $3; }
         | KW_TAGS '(' string_list ')'		{ log_source_options_set_tags(last_source_options, $3); }
         | { last_host_resolve_options = &last_source_options->host_resolve_options; } host_resolve_option
-        | driver_option
         ;
 
 /* LogReader related options, implies source_option */
@@ -1182,6 +1186,7 @@ source_reader_option_flags
 	|
 	;
 
+/* LogProtoSource related options */
 source_proto_option
         : KW_ENCODING '(' string ')'
           {
