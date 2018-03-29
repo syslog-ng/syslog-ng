@@ -1112,7 +1112,29 @@ driver_option
 
 /* All source drivers should incorporate this rule, implies driver_option */
 source_driver_option
-        : driver_option
+        : LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_INNER_SRC;
+            gpointer value;
+
+            p = cfg_find_plugin(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            value = cfg_parse_plugin(configuration, p, &@1, last_driver);
+
+            free($1);
+            if (!value)
+              {
+                YYERROR;
+              }
+            if (!log_driver_add_plugin(last_driver, (LogDriverPlugin *) value))
+              {
+                log_driver_plugin_free(value);
+                CHECK_ERROR(TRUE, @1, "Error while registering the plugin %s in this destination", $1);
+              }
+          }
+        | driver_option
         ;
 
 /* implies driver_option */
