@@ -1107,7 +1107,7 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
   gboolean result = FALSE;
   static gint indent = -1;
 
-  if (debug_flag)
+  if (trace_flag)
     {
       gchar buf[128];
       gchar compile_message[256];
