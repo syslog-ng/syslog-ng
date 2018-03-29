@@ -193,6 +193,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                            }
 {white}+		   ;
 \.\.                       { return LL_DOTDOT; }
+\.\.\.                     { return LL_DOTDOTDOT; }
 (-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
 0x{xdigit}+ 		   { yylval->num = strtoll(yytext + 2, NULL, 16); return LL_NUMBER; }
 0{odigit}+		   { yylval->num = strtoll(yytext + 1, NULL, 8); return LL_NUMBER; }

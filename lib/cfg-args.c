@@ -30,46 +30,25 @@ struct _CfgArgs
 {
   gint ref_cnt;
   GHashTable *args;
+  gboolean accept_varargs;
 };
 
-/* token block args */
-
-static void
-cfg_args_validate_callback(gpointer k, gpointer v, gpointer user_data)
+gboolean
+cfg_args_is_accepting_varargs(CfgArgs *self)
 {
-  CfgArgs *defs = ((gpointer *) user_data)[0];
-  gchar **bad_key = (gchar **) &((gpointer *) user_data)[1];
-  gchar **bad_value = (gchar **) &((gpointer *) user_data)[2];
+  return self->accept_varargs;
+}
 
-  if ((*bad_key == NULL) && (!defs || cfg_args_get(defs, k) == NULL))
-    {
-      *bad_key = k;
-      *bad_value = v;
-    }
+void
+cfg_args_accept_varargs(CfgArgs *self)
+{
+  self->accept_varargs = TRUE;
 }
 
 void
 cfg_args_foreach(CfgArgs *self, GHFunc func, gpointer user_data)
 {
   g_hash_table_foreach(self->args, func, user_data);
-}
-
-gboolean
-cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context)
-{
-  gpointer validate_params[] = { defs, NULL, NULL };
-
-  cfg_args_foreach(self, cfg_args_validate_callback, validate_params);
-
-  if (validate_params[1])
-    {
-      msg_error("Unknown argument",
-                evt_tag_str("context", context),
-                evt_tag_str("arg", validate_params[1]),
-                evt_tag_str("value", validate_params[2]));
-      return FALSE;
-    }
-  return TRUE;
 }
 
 static void

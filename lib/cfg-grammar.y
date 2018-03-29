@@ -310,16 +310,17 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_ENDIF                       10411
 
 %token LL_DOTDOT                      10420
+%token LL_DOTDOTDOT                   10421
 
-%token <cptr> LL_IDENTIFIER           10421
-%token <num>  LL_NUMBER               10422
-%token <fnum> LL_FLOAT                10423
-%token <cptr> LL_STRING               10424
-%token <token> LL_TOKEN               10425
-%token <cptr> LL_BLOCK                10426
-%token LL_PRAGMA                      10427
-%token LL_EOL                         10428
-%token LL_ERROR                       10429
+%token <cptr> LL_IDENTIFIER           10422
+%token <num>  LL_NUMBER               10423
+%token <fnum> LL_FLOAT                10424
+%token <cptr> LL_STRING               10425
+%token <token> LL_TOKEN               10426
+%token <cptr> LL_BLOCK                10427
+%token LL_PRAGMA                      10428
+%token LL_EOL                         10429
+%token LL_ERROR                       10430
 
 %destructor { free($$); } <cptr>
 
@@ -892,7 +893,7 @@ block_stmt
         : KW_BLOCK
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, block_def_keywords, "block definition"); }
           LL_IDENTIFIER LL_IDENTIFIER
-          '(' { last_block_args = cfg_args_new(); } block_args ')'
+          '(' { last_block_args = cfg_args_new(); } block_definition ')'
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }
           LL_BLOCK
           {
@@ -913,6 +914,11 @@ block_stmt
             free($10);
             last_block_args = NULL;
           }
+        ;
+
+block_definition
+        : block_args
+        | block_args LL_DOTDOTDOT			{ cfg_args_accept_varargs(last_block_args); }
         ;
 
 block_args
