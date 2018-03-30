@@ -1,1 +1,1 @@
-add_unit_test(TARGET test-debugger)
+add_unit_test(CRITERION TARGET test-debugger)
