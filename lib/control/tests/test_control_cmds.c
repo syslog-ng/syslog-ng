@@ -22,19 +22,35 @@
  *
  */
 
+
 #include "testutils.h"
+#include "lib/messages.h"
+#include "control/control.h"
+#include "lib/control/control-commands.h"
+#include "stats/stats-control.h"
 #include "control/control-server.h"
-#include "control/control-commands.c"
-#include "stats/stats-control.c"
 #include "stats/stats-cluster.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
+
+static GList *command_list = NULL;
+
+static ControlCommand *
+command_test_get(const char *cmd)
+{
+  GList *command = g_list_find_custom(command_list, cmd, (GCompareFunc)control_command_start_with_command);
+  if (NULL == command)
+    return NULL;
+  return (ControlCommand *)command->data;
+}
 
 void
 test_log(void)
 {
   GString *command = g_string_sized_new(128);
   GString *reply;
+
+  CommandFunction control_connection_message_log = command_test_get("LOG")->func;
 
   g_string_assign(command,"LOG");
   reply = control_connection_message_log(command, NULL);
@@ -95,6 +111,10 @@ test_stats(void)
   gchar **stats_result;
 
   stats_init();
+  command_list = control_register_default_commands(NULL);
+
+  CommandFunction control_connection_send_stats = command_test_get("STATS")->func;
+
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received" );
@@ -123,6 +143,11 @@ test_reset_stats(void)
   StatsCounterItem *counter = NULL;
 
   stats_init();
+  command_list = control_register_default_commands(NULL);
+
+  CommandFunction control_connection_send_stats = command_test_get("STATS")->func;
+  CommandFunction control_connection_reset_stats = command_test_get("RESET_STATS")->func;
+
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received" );
@@ -131,7 +156,7 @@ test_reset_stats(void)
   stats_unlock();
 
   g_string_assign(command, "RESET_STATS");
-  reply = control_connection_reset_stats(command, NULL);
+  reply = (*control_connection_reset_stats)(command, NULL);
   assert_string(reply->str, "The statistics of syslog-ng have been reset to 0.", "Bad reply");
   g_string_free(reply, TRUE);
 
@@ -150,8 +175,12 @@ int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   msg_init(FALSE);
+  stats_register_control_commands();
+  command_list = control_register_default_commands(NULL);
   test_log();
   test_stats();
   test_reset_stats();
+  msg_deinit();
+  reset_control_command_list();
   return 0;
 }

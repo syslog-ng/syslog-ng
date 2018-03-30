@@ -155,18 +155,8 @@ control_connection_io_input(void *s)
       return;
     }
 
-  for (iter = self->server->control_commands; iter != NULL; iter = iter->next)
-    {
-      ControlCommand *cmd_desc = (ControlCommand *) iter->data;
-
-      if (strncmp(cmd_desc->command_name, command->str,
-                  strlen(cmd_desc->command_name)) == 0)
-        {
-          reply = cmd_desc->func(command, cmd_desc->user_data);
-          control_connection_send_reply(self, reply);
-          break;
-        }
-    }
+  iter = g_list_find_custom(self->server->control_commands, command->str,
+                            (GCompareFunc)control_command_start_with_command);
   if (iter == NULL)
     {
       msg_error("Unknown command read on control channel, closing control channel",
@@ -174,6 +164,11 @@ control_connection_io_input(void *s)
       g_string_free(command, TRUE);
       goto destroy_connection;
     }
+  ControlCommand *cmd_desc = (ControlCommand *) iter->data;
+
+  reply = cmd_desc->func(command, cmd_desc->user_data);
+  control_connection_send_reply(self, reply);
+
   control_connection_update_watches(self);
   g_string_free(command, TRUE);
   return;
