@@ -126,7 +126,8 @@ log_transport_stream_socket_write_method(LogTransport *s, const gpointer buf, gs
 static void
 log_transport_stream_socket_free_method(LogTransport *s)
 {
-  shutdown(s->fd, SHUT_RDWR);
+  if (s->fd != -1)
+    shutdown(s->fd, SHUT_RDWR);
   log_transport_free_method(s);
 }
 
