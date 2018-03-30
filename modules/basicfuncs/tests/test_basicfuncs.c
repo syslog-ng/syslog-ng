@@ -328,8 +328,15 @@ Test(basicfuncs, test_list_funcs)
 
   assert_template_format("$(list-head '\"\\tfoo,\",bar,baz')", "\tfoo,");
 
+  assert_template_format("$(list-nth 0 '\"foo,\",\"bar\",\"baz\"')", "foo,");
   assert_template_format("$(list-nth 1 '\"foo,\",\"bar\",\"baz\"')", "bar");
   assert_template_format("$(list-nth 2 '\"foo,\",\"bar\",\"baz\"')", "baz");
+  assert_template_format("$(list-nth 3 '\"foo,\",\"bar\",\"baz\"')", "");
+  assert_template_format("$(list-nth 4 '\"foo,\",\"bar\",\"baz\"')", "");
+  assert_template_format("$(list-nth -1 '\"foo,\",\"bar\",\"baz\"')", "baz");
+  assert_template_format("$(list-nth -2 '\"foo,\",\"bar\",\"baz\"')", "bar");
+  assert_template_format("$(list-nth -3 '\"foo,\",\"bar\",\"baz\"')", "foo,");
+  assert_template_format("$(list-nth -4 '\"foo,\",\"bar\",\"baz\"')", "");
 
   assert_template_format("$(list-tail)", "");
   assert_template_format("$(list-tail foo)", "");
