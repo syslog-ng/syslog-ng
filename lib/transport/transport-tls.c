@@ -81,6 +81,10 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
         }
     }
   while (rc == -1 && errno == EINTR);
+  if (rc != -1)
+    {
+      self->super.cond = 0;
+    }
 
   return rc;
 tls_error:
@@ -130,6 +134,10 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
         default:
           goto tls_error;
         }
+    }
+  else
+    {
+      self->super.cond = 0;
     }
 
   return rc;
