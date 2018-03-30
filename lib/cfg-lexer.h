@@ -106,6 +106,9 @@ struct _CfgIncludeLevel
     } file;
     struct
     {
+      /* the lexer mutates content, so save it for error reporting */
+      gchar *original_content;
+      /* buffer for the lexer */
       gchar *content;
       gsize content_length;
     } buffer;

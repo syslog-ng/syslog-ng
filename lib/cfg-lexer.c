@@ -226,6 +226,28 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
   return LL_IDENTIFIER;
 }
 
+void
+cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_free(level->name);
+  if (level->yybuf)
+    _cfg_lexer__delete_buffer(level->yybuf, self->state);
+
+  if (level->include_type == CFGI_FILE)
+    {
+      if (level->file.include_file)
+        fclose(level->file.include_file);
+      g_slist_foreach(level->file.files, (GFunc) g_free, NULL);
+      g_slist_free(level->file.files);
+    }
+  else if (level->include_type == CFGI_BUFFER)
+    {
+      g_free(level->buffer.content);
+      g_free(level->buffer.original_content);
+    }
+  memset(level, 0, sizeof(*level));
+}
+
 gboolean
 cfg_lexer_start_next_include(CfgLexer *self)
 {
@@ -267,10 +289,22 @@ cfg_lexer_start_next_include(CfgLexer *self)
     {
       /* we finished with an include statement that included a series of
        * files (e.g.  directory include). */
+
+
+      /* NOTE: this couple of lines should become just a call to
+       * cfg_lexer_clear_include_level(), however this entire function is
+       * playing nasty tricks with the data members within the
+       * CfgIncludeLevel, which I can't decipher right now, so I am leaving
+       * this as is. Memory management in the lexer is clearly messed
+       * up.  */
+
       g_free(level->name);
 
       if (level->include_type == CFGI_BUFFER)
-        g_free(level->buffer.content);
+        {
+          g_free(level->buffer.content);
+          g_free(level->buffer.original_content);
+        }
 
       memset(level, 0, sizeof(*level));
 
@@ -630,6 +664,7 @@ cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gch
   level->include_type = CFGI_BUFFER;
   level->buffer.content = lexer_buffer;
   level->buffer.content_length = lexer_buffer_len;
+  level->buffer.original_content = g_strdup(lexer_buffer);
   level->name = g_strdup(name);
 
   return cfg_lexer_start_next_include(self);
@@ -885,22 +920,27 @@ relex:
       (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
       CfgArgs *args;
+      CfgIncludeLevel *level = &self->include_stack[self->include_depth];
 
       self->preprocess_suppress_tokens++;
+
+      gint saved_line = level->lloc.first_line;
+      gint saved_column = level->lloc.first_column;
       if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
         {
           gboolean success;
           gchar buf[256];
           GString *result = g_string_sized_new(256);
 
+          level->lloc.first_line = saved_line;
+          level->lloc.first_column = saved_column;
           self->preprocess_suppress_tokens--;
           success = cfg_block_generator_generate(gen, self->cfg, args, result);
 
           free(yylval->cptr);
           cfg_args_unref(args);
-          g_snprintf(buf, sizeof(buf), "%s generator %s",
-                     cfg_lexer_lookup_context_name_by_type(gen->context),
-                     gen->name);
+
+          cfg_block_generator_format_name(gen, buf, sizeof(buf));
 
           if (gen->suppress_backticks)
             success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
@@ -1058,6 +1098,7 @@ cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
 
   level = &self->include_stack[0];
   level->include_type = CFGI_BUFFER;
+  level->buffer.original_content = g_strdup(buffer);
   level->buffer.content = g_malloc(length + 2);
   memcpy(level->buffer.content, buffer, length);
   level->buffer.content[length] = 0;
@@ -1076,25 +1117,8 @@ cfg_lexer_free(CfgLexer *self)
   gint i;
 
   for (i = 0; i <= self->include_depth; i++)
-    {
-      CfgIncludeLevel *level = &self->include_stack[i];
+    cfg_lexer_clear_include_level(self, &self->include_stack[i]);
 
-      g_free(level->name);
-      if (level->yybuf)
-        _cfg_lexer__delete_buffer(level->yybuf, self->state);
-
-      if (level->include_type == CFGI_FILE)
-        {
-          if (level->file.include_file)
-            fclose(level->file.include_file);
-          g_slist_foreach(level->file.files, (GFunc) g_free, NULL);
-          g_slist_free(level->file.files);
-        }
-      else if (level->include_type == CFGI_BUFFER)
-        {
-          g_free(level->buffer.content);
-        }
-    }
   self->include_depth = 0;
   _cfg_lexer_lex_destroy(self->state);
   g_string_free(self->string_buffer, TRUE);

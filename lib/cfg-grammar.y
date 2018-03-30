@@ -903,7 +903,7 @@ block_stmt
             gint context_type = cfg_lexer_lookup_context_type_by_name($3);
             CHECK_ERROR(context_type, @3, "unknown context \"%s\"", $3);
 
-            block = cfg_block_new(context_type, $4, $10, last_block_args);
+            block = cfg_block_new(context_type, $4, $10, last_block_args, &@1);
             cfg_lexer_register_generator_plugin(&configuration->plugin_context, block);
             free($3);
             free($4);

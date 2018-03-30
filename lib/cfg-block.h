@@ -26,9 +26,11 @@
 #define CFG_BLOCK_H_INCLUDED 1
 
 #include "cfg-block-generator.h"
+#include "cfg-lexer.h"
 
 /* user defined configuration block */
 
-CfgBlockGenerator *cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs);
+CfgBlockGenerator *cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs,
+                                 YYLTYPE *yylloc);
 
 #endif
