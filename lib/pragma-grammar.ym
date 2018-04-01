@@ -44,6 +44,7 @@
 %token KW_VERSION
 %token KW_DEFINE
 %token KW_MODULE
+%token KW_LANG
 
 %code {
 
@@ -90,6 +91,7 @@ pragma_stmt
         : KW_VERSION ':' string_or_number               { configuration->parsed_version = __process_version_string($3); free($3); }
 	| define_stmt
         | module_stmt
+        | lang_stmt
 	;
 
 include_stmt
@@ -105,6 +107,8 @@ define_stmt
                                                                             evt_tag_str("define", $2),
                                                                             evt_tag_str("value", $3));
 								  cfg_args_set(configuration->globals, $2, $3); free($2); free($3); }
+lang_stmt
+	: KW_LANG LL_IDENTIFIER { if (!plugin_context_set_plugin_mapper(&configuration->plugin_context, $2)) { free($2); YYERROR; } free($2); }
 
 module_stmt
 	: KW_MODULE string { last_module_args = cfg_args_new(); } module_params

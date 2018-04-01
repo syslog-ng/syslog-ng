@@ -100,6 +100,7 @@ set (LIB_HEADERS
     persistable-state-header.h
     persistable-state-presenter.h
     plugin.h
+    plugin-mapper.h
     plugin-types.h
     poll-events.h
     poll-fd-events.h
@@ -186,6 +187,7 @@ set(LIB_SOURCES
     pathutils.c
     persist-state.c
     plugin.c
+    plugin-mapper.c
     poll-events.c
     poll-fd-events.c
     pragma-parser.c
