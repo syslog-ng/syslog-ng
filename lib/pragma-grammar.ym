@@ -46,6 +46,7 @@
 %token KW_VERSION
 %token KW_DEFINE
 %token KW_MODULE
+%token KW_REQUIRES
 
 %code {
 
@@ -92,6 +93,7 @@ pragma_stmt
         : KW_VERSION ':' string_or_number               { configuration->parsed_version = __process_version_string($3); free($3); }
 	| define_stmt
         | module_stmt
+        | requires_stmt
 	;
 
 include_stmt
@@ -115,6 +117,31 @@ module_stmt
             free($2);
             cfg_args_unref(last_module_args);
             last_module_args = NULL;
+          }
+	;
+
+requires_stmt
+	: KW_REQUIRES string
+          {
+            if (!plugin_load_module(&configuration->plugin_context, $2, NULL))
+              {
+                if (0 == lexer->include_depth)
+                  {
+                    msg_error("Cannot load required module ",
+                                evt_tag_str("module", $2),
+                                cfg_lexer_format_location_tag(lexer,&@1));
+                    free($2);
+                    YYERROR;
+                  }
+                else
+                  {
+                    msg_warning("Included file was skipped because of a missing module",
+                                evt_tag_str("module", $2),
+                                cfg_lexer_format_location_tag(lexer,&@1));
+                    cfg_lexer_start_next_include(lexer);
+                  }
+              }
+            free($2);
           }
 	;
 
