@@ -227,7 +227,26 @@ cfg_load_forced_modules(GlobalConfig *self)
 Plugin *
 cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
 {
-  return plugin_find(&cfg->plugin_context, plugin_type, plugin_name);
+  /* The name of the plugin can be mapped (see languagen support for configuration):
+   * [1] Native name (the name the plugin registered itself)
+   * [2] Plugin name mapper (this is an interface to map plugin names)
+   */
+
+  Plugin *plugin = plugin_find(&cfg->plugin_context, plugin_type, plugin_name);
+  if (plugin)
+    return plugin;
+
+  /*
+   *  The plugin name mapper call
+   */
+  if (!cfg->plugin_context.mapper)
+    return NULL;
+
+  gchar *new_plugin_name = plugin_mapper_map(cfg->plugin_context.mapper, plugin_type, plugin_name);
+  if (!new_plugin_name)
+    return NULL;
+
+  return plugin_find(&cfg->plugin_context, plugin_type, new_plugin_name);
 }
 
 /* construct a plugin instance by parsing its relevant portion from the

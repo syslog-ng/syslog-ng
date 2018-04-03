@@ -50,11 +50,14 @@ static CfgLexerKeyword main_keywords[] =
 {
   /* statements */
   { "source",             KW_SOURCE },
+  { "forrás",             KW_SOURCE },
   { "filter",             KW_FILTER },
   { "parser",             KW_PARSER },
   { "rewrite",            KW_REWRITE },
   { "destination",        KW_DESTINATION },
+  { "célállomás",         KW_DESTINATION },
   { "log",                KW_LOG },
+  { "farönk",             KW_LOG },
   { "junction",           KW_JUNCTION },
   { "channel",            KW_CHANNEL },
   { "options",            KW_OPTIONS },

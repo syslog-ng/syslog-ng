@@ -31,9 +31,12 @@ int pragma_parse(CfgLexer *lexer, gpointer *result, gpointer arg);
 static CfgLexerKeyword pragma_keywords[] =
 {
   { "version",            KW_VERSION, },
+  { "verzió",             KW_VERSION, },
   { "include",            KW_INCLUDE, },
   { "module",             KW_MODULE, },
   { "define",             KW_DEFINE, },
+  { "lang",               KW_LANG, },
+  { "nyelv",              KW_LANG, },
   { CFG_KEYWORD_STOP },
 };
 

@@ -625,6 +625,31 @@ plugin_context_init_instance(PluginContext *context)
 {
   memset(context, 0, sizeof(*context));
   plugin_context_set_module_path(context, resolvedConfigurablePaths.initial_module_path);
+  context->mapper = NULL;
+}
+
+gboolean
+plugin_context_set_plugin_mapper(PluginContext *context, gchar *mapper_name)
+{
+  PluginMapper *pm = NULL;
+  if (0 == strcmp(mapper_name, "simple"))
+    {
+      pm = simple_plugin_mapper_new();
+    }
+  else if (0 == strcmp(mapper_name, "hu"))
+    {
+      pm = hu_plugin_mapper_new();
+    }
+
+  if (!pm)
+    return FALSE;
+
+  if (context->mapper)
+    plugin_mapper_free(context->mapper);
+
+  context->mapper = pm;
+
+  return TRUE;
 }
 
 void
@@ -633,6 +658,9 @@ plugin_context_deinit_instance(PluginContext *context)
   plugin_free_plugins(context);
   _free_candidate_plugin_list(context->candidate_plugins);
   context->candidate_plugins = NULL;
+
+  if (context->mapper)
+    plugin_mapper_free(context->mapper);
 
   g_free(context->module_path);
 }
