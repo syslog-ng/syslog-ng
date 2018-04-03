@@ -22,30 +22,29 @@
  */
 
 #include "stomp.h"
-#include "testutils.h"
+#include <criterion/criterion.h>
 
-void
+static void
 assert_stomp_header(stomp_frame *frame, char *key, char *value)
 {
   char *myvalue = g_hash_table_lookup(frame->headers, key);
 
-  assert_string(myvalue, value, "Stomp header assertion failed!");
+  cr_assert_str_eq(myvalue, value, "Stomp header assertion failed!");
 }
 
-void
+static void
 assert_stomp_command(stomp_frame *frame, char *command)
 {
-  assert_string(frame->command, command, "Stomp command assertion failed");
+  cr_assert_str_eq(frame->command, command, "Stomp command assertion failed");
 }
 
-void
+static void
 assert_stomp_body(stomp_frame *frame, char *body)
 {
-  assert_string(frame->body, body, "Stomp body assertion failed");
+  cr_assert_str_eq(frame->body, body, "Stomp body assertion failed");
 }
 
-void
-test_only_command(void)
+Test(stomp_proto, test_only_command)
 {
   stomp_frame frame;
 
@@ -54,8 +53,7 @@ test_only_command(void)
   stomp_frame_deinit(&frame);
 }
 
-void
-test_command_and_data(void)
+Test(stomp_proto, test_command_and_data)
 {
   stomp_frame frame;
 
@@ -65,8 +63,7 @@ test_command_and_data(void)
   stomp_frame_deinit(&frame);
 };
 
-void
-test_command_and_header_and_data(void)
+Test(stomp_proto, test_command_and_header_and_data)
 {
   stomp_frame frame;
 
@@ -77,8 +74,7 @@ test_command_and_header_and_data(void)
   stomp_frame_deinit(&frame);
 };
 
-void
-test_command_and_header(void)
+Test(stomp_proto, test_command_and_header)
 {
   stomp_frame frame;
 
@@ -88,8 +84,7 @@ test_command_and_header(void)
   stomp_frame_deinit(&frame);
 };
 
-void
-test_generate_gstring_from_frame(void)
+Test(stomp_proto, test_generate_gstring_from_frame)
 {
   stomp_frame frame;
   GString *actual;
@@ -98,16 +93,7 @@ test_generate_gstring_from_frame(void)
   stomp_frame_add_header(&frame, "header_name", "header_value");
   stomp_frame_set_body(&frame, "body", sizeof("body"));
   actual = create_gstring_from_frame(&frame);
-  assert_string(actual->str, "SEND\nheader_name:header_value\n\nbody", "Generated stomp frame does not match");
+  cr_assert_str_eq(actual->str, "SEND\nheader_name:header_value\n\nbody", "Generated stomp frame does not match");
   stomp_frame_deinit(&frame);
 };
 
-int
-main(void)
-{
-  test_only_command();
-  test_command_and_data();
-  test_command_and_header_and_data();
-  test_command_and_header();
-  test_generate_gstring_from_frame();
-}
