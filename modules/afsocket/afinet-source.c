@@ -70,6 +70,9 @@ afinet_sd_setup_addresses(AFSocketSourceDriver *s)
   if (!afsocket_sd_setup_addresses_method(s))
     return FALSE;
 
+  if (self->super.proto_factory->default_inet_port)
+    transport_mapper_inet_set_server_port(self->super.transport_mapper, self->super.proto_factory->default_inet_port);
+
   g_sockaddr_unref(self->super.bind_addr);
 
   if (!resolve_hostname_to_sockaddr(&self->super.bind_addr, self->super.transport_mapper->address_family, self->bind_ip))

@@ -47,6 +47,12 @@ transport_mapper_inet_get_server_port(TransportMapper *self)
   return ((TransportMapperInet *) self)->server_port;
 }
 
+static inline void
+transport_mapper_inet_set_server_port(TransportMapper *self, gint server_port)
+{
+  ((TransportMapperInet *) self)->server_port = server_port;
+}
+
 static inline const gchar *
 transport_mapper_inet_get_port_change_warning(TransportMapper *s)
 {
