@@ -48,6 +48,7 @@
 extern struct _LogSourceOptions *last_source_options;
 extern struct _LogReaderOptions *last_reader_options;
 extern struct _LogProtoServerOptions *last_proto_server_options;
+extern struct _LogProtoClientOptions *last_proto_client_options;
 extern struct _LogWriterOptions *last_writer_options;
 extern struct _FilePermOptions *last_file_perm_options;
 extern struct _MsgFormatOptions *last_msg_format_options;
@@ -372,6 +373,7 @@ LogDriver *last_driver;
 LogParser *last_parser;
 LogSourceOptions *last_source_options;
 LogProtoServerOptions *last_proto_server_options;
+LogProtoClientOptions *last_proto_client_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 MsgFormatOptions *last_msg_format_options;

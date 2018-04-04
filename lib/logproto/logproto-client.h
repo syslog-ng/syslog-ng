@@ -30,7 +30,7 @@
 
 typedef struct _LogProtoClient LogProtoClient;
 
-#define LOG_PROTO_CLIENT_OPTIONS_SIZE 32
+#define LOG_PROTO_CLIENT_OPTIONS_SIZE 128
 
 typedef struct _LogProtoClientOptions
 {
@@ -66,6 +66,8 @@ struct _LogProtoClient
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProtoClient *s);
   gboolean (*validate_options)(LogProtoClient *s);
+  gboolean (*handshake_in_progess)(LogProtoClient *s);
+  LogProtoStatus (*handshake)(LogProtoClient *s);
   void (*free_fn)(LogProtoClient *s);
   LogProtoClientFlowControlFuncs flow_control_funcs;
 };
@@ -95,6 +97,26 @@ static inline gboolean
 log_proto_client_validate_options(LogProtoClient *self)
 {
   return self->validate_options(self);
+}
+
+static inline gboolean
+log_proto_client_handshake_in_progress(LogProtoClient *s)
+{
+  if (s->handshake_in_progess)
+    {
+      return s->handshake_in_progess(s);
+    }
+  return FALSE;
+}
+
+static inline LogProtoStatus
+log_proto_client_handshake(LogProtoClient *s)
+{
+  if (s->handshake)
+    {
+      return s->handshake(s);
+    }
+  return LPS_SUCCESS;
 }
 
 static inline gboolean
@@ -151,6 +173,13 @@ void log_proto_client_free_method(LogProtoClient *s);
     .type = LL_CONTEXT_CLIENT_PROTO,            \
     .name = __name,         \
     .construct = prefix ## _client_plugin_construct,  \
+  }
+
+#define LOG_PROTO_CLIENT_PLUGIN_WITH_GRAMMAR(__parser, __name) \
+  {             \
+    .type = LL_CONTEXT_CLIENT_PROTO,            \
+    .name = __name,         \
+    .parser = &__parser,  \
   }
 
 typedef struct _LogProtoClientFactory LogProtoClientFactory;

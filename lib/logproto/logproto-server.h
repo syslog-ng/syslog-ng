@@ -71,6 +71,8 @@ struct _LogProtoServer
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                           LogTransportAuxData *aux, Bookmark *bookmark);
   gboolean (*validate_options)(LogProtoServer *s);
+  gboolean (*handshake_in_progess)(LogProtoServer *s);
+  LogProtoStatus (*handshake)(LogProtoServer *s);
   void (*free_fn)(LogProtoServer *s);
 };
 
@@ -78,6 +80,26 @@ static inline gboolean
 log_proto_server_validate_options(LogProtoServer *self)
 {
   return self->validate_options(self);
+}
+
+static inline gboolean
+log_proto_server_handshake_in_progress(LogProtoServer *s)
+{
+  if (s->handshake_in_progess)
+    {
+      return s->handshake_in_progess(s);
+    }
+  return FALSE;
+}
+
+static inline LogProtoStatus
+log_proto_server_handshake(LogProtoServer *s)
+{
+  if (s->handshake)
+    {
+      return s->handshake(s);
+    }
+  return LPS_SUCCESS;
 }
 
 static inline void
@@ -153,6 +175,13 @@ void log_proto_server_free(LogProtoServer *s);
     .type = LL_CONTEXT_SERVER_PROTO,            \
     .name = __name,         \
     .construct = prefix ## _server_plugin_construct,  \
+  }
+
+#define LOG_PROTO_SERVER_PLUGIN_WITH_GRAMMAR(__parser, __name) \
+  {             \
+    .type = LL_CONTEXT_SERVER_PROTO,            \
+    .name = __name,         \
+    .parser = &__parser,  \
   }
 
 typedef struct _LogProtoServerFactory LogProtoServerFactory;

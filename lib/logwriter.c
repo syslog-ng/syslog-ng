@@ -1171,6 +1171,17 @@ log_writer_queue_pop_message(LogWriter *self, LogPathOptions *path_options, gboo
     return log_queue_pop_head(self->queue, path_options);
 }
 
+static inline gboolean
+log_writer_process_handshake(LogWriter *self)
+{
+  LogProtoStatus status = log_proto_client_handshake(self->proto);
+
+  if (status != LPS_SUCCESS)
+    return FALSE;
+
+  return TRUE;
+}
+
 /*
  * @flush_mode specifies how hard LogWriter is trying to send messages to
  * the actual destination:
@@ -1187,6 +1198,11 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 
   if (!self->proto)
     return FALSE;
+
+  if (log_proto_client_handshake_in_progress(self->proto))
+    {
+      return log_writer_process_handshake(self);
+    }
 
   /* NOTE: in case we're reloading or exiting we flush all queued items as
    * long as the destination can consume it.  This is not going to be an
