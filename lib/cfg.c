@@ -201,7 +201,7 @@ cfg_load_candidate_modules(GlobalConfig *self)
 void
 cfg_load_forced_modules(GlobalConfig *self)
 {
-  const static gchar *module_list[] =
+  static const gchar *module_list[] =
   {
 #if (!SYSLOG_NG_ENABLE_FORCED_SERVER_MODE)
     "license"

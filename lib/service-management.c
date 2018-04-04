@@ -39,9 +39,9 @@ struct _ServiceManagement
 {
   ServiceManagementType type;
   void (*publish_status)(const gchar *status);
-  void (*clear_status)();
-  void (*indicate_readiness)();
-  gboolean (*is_active)();
+  void (*clear_status)(void);
+  void (*indicate_readiness)(void);
+  gboolean (*is_active)(void);
 };
 
 ServiceManagement *current_service_mgmt = NULL;
