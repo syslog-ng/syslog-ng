@@ -234,11 +234,11 @@ _fixup_entry(NVHandle old_handle, NVEntry *entry, NVIndexEntry *index_entry, gpo
 
   new_handle = _allocate_handle_for_entry_name(old_handle, entry);
 
+  if (index_entry)
+    _fixup_handle_in_index_entry(state, index_entry, new_handle);
+
   if (new_handle != old_handle)
     {
-      if (index_entry)
-        _fixup_handle_in_index_entry(state, index_entry, new_handle);
-
       if (log_msg_is_handle_sdata(new_handle))
         _fixup_sdata_handle(state, old_handle, new_handle);
       state->handle_changed = TRUE;
