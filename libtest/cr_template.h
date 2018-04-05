@@ -30,8 +30,6 @@
 #include "msg-format.h"
 #include <stdarg.h>
 
-MsgFormatOptions parse_options;
-
 void assert_template_format(const gchar *template, const gchar *expected);
 void assert_template_format_msg(const gchar *template,
                                 const gchar *expected, LogMessage *msg);
