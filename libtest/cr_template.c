@@ -31,22 +31,7 @@
 #include <criterion/criterion.h>
 #include <string.h>
 
-static void
-init_and_load_syslogformat_module(void)
-{
-  configuration = cfg_new_snippet();
-  cfg_load_module(configuration, "syslogformat");
-  msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
-}
-
-static void
-deinit_syslogformat_module(void)
-{
-  if (configuration)
-    cfg_free(configuration);
-  configuration = NULL;
-}
+#include "msg_parse_lib.h"
 
 void
 init_template_tests(void)
