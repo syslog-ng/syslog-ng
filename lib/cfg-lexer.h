@@ -145,7 +145,7 @@ struct _CfgLexer
 /* pattern buffer */
 void cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval);
 
-void cfg_lexer_start_block_state(CfgLexer *self, gchar block_boundary[2]);
+void cfg_lexer_start_block_state(CfgLexer *self, const gchar block_boundary[2]);
 
 void cfg_lexer_append_string(CfgLexer *self, int length, char *str);
 void cfg_lexer_append_char(CfgLexer *self, char c);

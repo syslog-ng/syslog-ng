@@ -197,7 +197,7 @@ Test(logwriter, test_logwriter)
   gint i, nr_of_cases;
 
   app_startup();
-  putenv("TZ=MET-1METDST");
+  setenv("TZ", "MET-1METDST", TRUE);
   tzset();
 
   cfg_load_module(configuration, "syslogformat");

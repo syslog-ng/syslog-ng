@@ -67,10 +67,7 @@ static void global_test_deinit(void)
 void
 set_time_zone(const gchar *time_zone)
 {
-  static char envbuf[64];
-
-  snprintf(envbuf, sizeof(envbuf), "TZ=%s", time_zone);
-  putenv(envbuf);
+  setenv("TZ", time_zone, TRUE);
   tzset();
   clean_time_cache();
 }

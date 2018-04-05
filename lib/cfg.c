@@ -117,7 +117,7 @@ cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re)
 }
 
 gint
-cfg_lookup_mark_mode(gchar *mark_mode)
+cfg_lookup_mark_mode(const gchar *mark_mode)
 {
   if (!strcmp(mark_mode, "internal"))
     return MM_INTERNAL;
@@ -136,7 +136,7 @@ cfg_lookup_mark_mode(gchar *mark_mode)
 }
 
 void
-cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode)
+cfg_set_mark_mode(GlobalConfig *self, const gchar *mark_mode)
 {
   self->mark_mode = cfg_lookup_mark_mode(mark_mode);
 }

@@ -668,7 +668,7 @@ CfgFlagHandler log_reader_flag_handlers[] =
 };
 
 gboolean
-log_reader_options_process_flag(LogReaderOptions *options, gchar *flag)
+log_reader_options_process_flag(LogReaderOptions *options, const gchar *flag)
 {
   if (!msg_format_options_process_flag(&options->parse_options, flag))
     return cfg_process_flag(log_reader_flag_handlers, options, flag);

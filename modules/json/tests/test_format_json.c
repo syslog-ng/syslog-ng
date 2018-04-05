@@ -33,7 +33,7 @@ void
 setup(void)
 {
   app_startup();
-  putenv("TZ=UTC");
+  setenv("TZ", "UTC", TRUE);
   tzset();
   init_template_tests();
   cfg_load_module(configuration, "json-plugin");

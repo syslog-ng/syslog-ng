@@ -52,9 +52,14 @@ static inline uint64_t
 _mask(uint64_t base, uint64_t mask)
 {
   if (G_BYTE_ORDER == G_BIG_ENDIAN)
-    return base & mask;
+    {
+      return base & mask;
+    }
   else
-    return GUINT64_SWAP_LE_BE(GUINT64_SWAP_LE_BE(base) & mask);
+    {
+      const uint64_t reversed_base = GUINT64_SWAP_LE_BE(base);
+      return GUINT64_SWAP_LE_BE(reversed_base & mask);
+    }
 }
 
 void
@@ -133,7 +138,7 @@ _eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 }
 
 FilterExprNode *
-filter_netmask6_new(gchar *cidr)
+filter_netmask6_new(const gchar *cidr)
 {
   FilterNetmask6 *self = g_new0(FilterNetmask6, 1);
   struct in6_addr packet_addr;

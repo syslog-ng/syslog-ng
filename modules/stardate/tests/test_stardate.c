@@ -31,7 +31,7 @@
 #include <criterion/criterion.h>
 #include <stdlib.h>
 
-MsgFormatOptions parse_options;
+#include "msg_parse_lib.h"
 
 void
 stardate_assert(const gchar *msg_str, const int precision, const gchar *expected)
@@ -40,10 +40,13 @@ stardate_assert(const gchar *msg_str, const int precision, const gchar *expected
   LogMessage *logmsg = log_msg_new(msg_str, strlen(msg_str), NULL, &parse_options);
 
   char *template_command;
+  int ret_val;
   if (precision == -1)
-    asprintf(&template_command, "$(stardate $UNIXTIME)");
+    ret_val = asprintf(&template_command, "$(stardate $UNIXTIME)");
   else
-    asprintf(&template_command, "$(stardate --digits %d $UNIXTIME)", precision);
+    ret_val = asprintf(&template_command, "$(stardate --digits %d $UNIXTIME)", precision);
+
+  assert_false(ret_val == -1, "Memory allocation failed in asprintf.");
   assert_template_format_msg(template_command, expected, logmsg);
   free(template_command);
 

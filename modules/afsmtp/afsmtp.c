@@ -233,7 +233,7 @@ afsmtp_dd_format_persist_name(const LogPipe *s)
 static void
 _smtp_message_add_recipient_header(smtp_message_t self, AFSMTPRecipient *rcpt, AFSMTPDriver *driver)
 {
-  gchar *hdr;
+  const gchar *hdr;
   switch (rcpt->type)
     {
     case AFSMTP_RCPT_TYPE_TO:

@@ -1633,7 +1633,7 @@ log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enabl
 }
 
 void
-log_writer_options_set_mark_mode(LogWriterOptions *options, gchar *mark_mode)
+log_writer_options_set_mark_mode(LogWriterOptions *options, const gchar *mark_mode)
 {
   options->mark_mode = cfg_lookup_mark_mode(mark_mode);
 }

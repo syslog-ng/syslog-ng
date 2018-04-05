@@ -337,7 +337,7 @@ cfg_lexer_unput_string(CfgLexer *self, const char *str)
 }
 
 void
-cfg_lexer_start_block_state(CfgLexer *self, gchar block_boundary[2])
+cfg_lexer_start_block_state(CfgLexer *self, const gchar block_boundary[2])
 {
   memcpy(&self->block_boundary, block_boundary, sizeof(self->block_boundary));
   yy_push_state(block, self->state);

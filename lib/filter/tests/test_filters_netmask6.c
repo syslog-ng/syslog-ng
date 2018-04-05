@@ -60,7 +60,7 @@ calculate_network6(const gchar *ipv6, int prefix, gchar *calculated_network)
 }
 
 void
-assert_netmask6(const gchar *ipv6, gint prefix, gchar *expected_network)
+assert_netmask6(const gchar *ipv6, gint prefix, const gchar *expected_network)
 {
   char error_msg[64];
   sprintf(error_msg, "prefix: %d", prefix);

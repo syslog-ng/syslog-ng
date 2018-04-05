@@ -87,7 +87,7 @@ LogMessage *
 create_empty_message(void)
 {
   LogMessage *msg;
-  char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+  const char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
   GSockAddr *saddr;
 
   saddr = g_sockaddr_inet_new("10.11.12.13", 1010);

@@ -38,7 +38,7 @@
 
 struct sl_name
 {
-  char *name;
+  const char *name;
   int value;
 };
 

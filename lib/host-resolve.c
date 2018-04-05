@@ -291,9 +291,15 @@ sockaddr_to_dnscache_key(GSockAddr *saddr)
   if (saddr->sa.sa_family == AF_INET)
     return &((struct sockaddr_in *) &saddr->sa)->sin_addr;
 #if SYSLOG_NG_ENABLE_IPV6
-  else
+  else if (saddr->sa.sa_family == AF_INET6)
     return &((struct sockaddr_in6 *) &saddr->sa)->sin6_addr;
 #endif
+  else
+    {
+      msg_warning("Socket address is neither IPv4 nor IPv6",
+                  evt_tag_int("sa_family", saddr->sa.sa_family));
+      return NULL;
+    }
 }
 
 static const gchar *

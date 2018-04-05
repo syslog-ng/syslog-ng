@@ -161,7 +161,7 @@ path_resolver_new(const gchar *sysprefix)
   return &self->super;
 }
 
-static gchar *
+static const gchar *
 lookup_sysprefix(void)
 {
   gchar *v;

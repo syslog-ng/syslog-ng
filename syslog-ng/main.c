@@ -59,7 +59,6 @@
 #include <iv.h>
 #include <iv_signal.h>
 
-static gchar *installer_version = NULL;
 static gboolean display_version = FALSE;
 static gboolean display_module_registry = FALSE;
 static gboolean dummy = FALSE;
@@ -115,7 +114,7 @@ get_installer_version(gchar **inst_version)
           gchar *pos = strchr(line, '=');
           if (pos)
             {
-              *inst_version = strdup(pos+1);
+              *inst_version = g_strdup(pos+1);
               result = TRUE;
               break;
             }
@@ -131,9 +130,11 @@ get_installer_version(gchar **inst_version)
 void
 version(void)
 {
+  gchar *installer_version;
+
   if (!get_installer_version(&installer_version) || installer_version == NULL)
     {
-      installer_version = SYSLOG_NG_VERSION;
+      installer_version = g_strdup(SYSLOG_NG_VERSION);
     }
   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
          "Config version: " VERSION_CURRENT_VER_ONLY "\n"
@@ -166,6 +167,8 @@ version(void)
          ON_OFF_STR(SYSLOG_NG_ENABLE_TCP_WRAPPER),
          ON_OFF_STR(SYSLOG_NG_ENABLE_LINUX_CAPS),
          ON_OFF_STR(SYSLOG_NG_ENABLE_SYSTEMD));
+
+  g_free(installer_version);
 }
 
 #if SYSLOG_NG_ENABLE_LINUX_CAPS

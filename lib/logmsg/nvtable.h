@@ -99,7 +99,11 @@ nv_registry_get_handle_name(NVRegistry *self, NVHandle handle, gssize *length)
     }
 
   if (handle - 1 >= self->names->len)
-    return NULL;
+    {
+      if (length)
+        *length = 0;
+      return NULL;
+    }
 
   stored = &nvhandle_desc_array_index(self->names, handle - 1);
   if (G_LIKELY(length))

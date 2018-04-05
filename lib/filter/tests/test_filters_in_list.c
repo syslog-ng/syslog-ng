@@ -45,7 +45,7 @@
 static MsgFormatOptions parse_options;
 
 gboolean
-evaluate_testcase(gchar *msg,
+evaluate_testcase(const gchar *msg,
                   FilterExprNode *filter_node)
 {
   LogMessage *log_msg;

@@ -290,7 +290,7 @@ afamqp_dd_disconnect(LogThrDestDriver *s)
 }
 
 static gboolean
-afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
+afamqp_is_ok(AMQPDestDriver *self, const gchar *context, amqp_rpc_reply_t ret)
 {
   switch (ret.reply_type)
     {

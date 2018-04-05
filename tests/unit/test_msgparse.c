@@ -147,7 +147,7 @@ void
 setup(void)
 {
   app_startup();
-  putenv("TZ=MET-1METDST");
+  setenv("TZ", "MET-1METDST", TRUE);
   tzset();
   init_and_load_syslogformat_module();
 }

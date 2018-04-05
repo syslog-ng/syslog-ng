@@ -31,7 +31,6 @@
 
 #include <unistd.h>
 
-TransportMapper *transport_mapper;
 
 #define transport_mapper_inet_testcase_begin(init_name, func, args)           \
   do                                                            \

@@ -225,7 +225,7 @@ r_parser_email(guint8 *str, gint *len, const gchar *param, gpointer state, RPars
   gint end;
   int count = 0;
 
-  gchar *email = "!#$%&'*+-/=?^_`{|}~.";
+  const gchar *email = "!#$%&'*+-/=?^_`{|}~.";
 
   *len = 0;
 
@@ -1484,7 +1484,7 @@ r_find_all_applicable_nodes(RNode *root, guint8 *key, gint keylen, RNodeGetValue
  * r_new_node:
  */
 RNode *
-r_new_node(guint8 *key, gpointer value)
+r_new_node(const guint8 *key, gpointer value)
 {
   RNode *node = g_malloc(sizeof(RNode));
 
