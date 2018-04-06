@@ -52,9 +52,9 @@ AM_CFLAGS += \
 	-Wno-initializer-overrides \
 	-Wno-error=deprecated-declarations \
 	-Wimplicit-function-declaration \
-      	-Wnested-externs \
-      	-Wold-style-declaration \
-     	-Wstrict-prototypes \
+	-Wnested-externs \
+	-Wold-style-declaration \
+	-Wstrict-prototypes \
 	-Wswitch-default
 endif
 
