@@ -22,6 +22,8 @@
  */
 
 %code top {
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
 #include "afuser-parser.h"
 
 }

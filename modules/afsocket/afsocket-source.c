@@ -143,6 +143,8 @@ afsocket_sc_notify(LogPipe *s, gint notify_code, gpointer user_data)
         afsocket_sd_close_connection(self->owner, self);
       break;
     }
+    default:
+      break;
     }
 }
 
@@ -719,6 +721,8 @@ afsocket_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
       g_assert_not_reached();
       break;
     }
+    default:
+      break;
     }
 }
 

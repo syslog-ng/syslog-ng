@@ -159,6 +159,9 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
       break;
     }
 #endif
+    default:
+      g_assert_not_reached();
+      break;
     }
   return TRUE;
 }

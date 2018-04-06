@@ -421,6 +421,9 @@ cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag_)
               else
                 *field = (*field) & ~handler->param;
               return TRUE;
+            default:
+              g_assert_not_reached();
+              break;
             }
         }
     }

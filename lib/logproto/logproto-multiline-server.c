@@ -48,6 +48,10 @@ log_proto_multiline_server_new(LogTransport *transport,
                                                           options->garbage);
     case MLM_NONE:
       return log_proto_text_server_new(transport, &options->super);
+
+    default:
+      g_assert_not_reached();
+      break;
     }
   g_assert_not_reached();
 }

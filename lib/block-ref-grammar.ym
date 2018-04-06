@@ -24,6 +24,7 @@
 
 %code requires {
 
+#pragma GCC diagnostic ignored "-Wswitch-default"
 #include "block-ref-parser.h"
 
 #include <string.h>
