@@ -108,8 +108,13 @@ python_dd_custom_options
         ;
 
 python_dd_custom_option
-        : string '(' string_or_number ')' { python_dd_set_option(last_driver, $1, $3); free($1); free($3);  }
-	;
+        : string string_or_number
+        {
+          python_dd_set_option(last_driver, $1, $2);
+          free($1);
+          free($2);
+        }
+        ;
 
 python_parser_options
         : python_parser_option python_parser_options
@@ -135,9 +140,9 @@ python_parser_custom_options
 python_parser_custom_option
         : string string_or_number
         {
-           python_parser_set_option(last_parser, $1, $2);
-           free($1);
-           free($2);
+          python_parser_set_option(last_parser, $1, $2);
+          free($1);
+          free($2);
         }
 
 
