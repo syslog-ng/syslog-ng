@@ -68,7 +68,32 @@ AM_CFLAGS += \
 	-Wcast-align \
 	-Wdeprecated \
 	-Wdeprecated-declarations \
-	-Woverflow
+	-Woverflow \
+	-Winline \
+	-Waggregate-return \
+	-Wbad-function-cast \
+	-Wcast-qual \
+	-Wconversion \
+	-Wdouble-promotion \
+	-Wfloat-equal \
+	-Wmissing-field-initializers \
+	-Wmissing-prototypes \
+	-Wpointer-arith \
+	-Wpointer-sign \
+	-Wredundant-decls \
+	-Wsign-conversion \
+	-Wformat=2 \
+	-Wsuggest-attribute=noreturn \
+	-Wswitch-default \
+	-Wundef \
+	-Wmissing-declarations \
+	-Woverride-init \
+	-Wmissing-format-attribute \
+	-Wignored-qualifiers \
+	-Winline \
+	-Wold-style-definition \
+	-Wsuggest-attribute=const \
+	-Wsuggest-attribute=pure
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)
