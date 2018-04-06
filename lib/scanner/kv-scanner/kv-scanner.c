@@ -260,7 +260,6 @@ _decode_value(KVScanner *self)
   const gchar *end;
   StrReprDecodeOptions options =
   {
-    0,
     .match_delimiter = _match_delimiter,
     .match_delimiter_data = self,
     .delimiter_chars = { ' ', self->pair_separator[0], self->stop_char },

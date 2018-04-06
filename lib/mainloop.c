@@ -307,7 +307,7 @@ main_loop_reload_config_initiate(gpointer user_data)
 }
 
 static void
-block_till_workers_exit()
+block_till_workers_exit(void)
 {
   GTimeVal end_time;
 

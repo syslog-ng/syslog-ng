@@ -43,7 +43,7 @@ typedef struct _AddContextualDataFilterSelector
 } AddContextualDataFilterSelector;
 
 static FilterStore *
-_filter_store_new()
+_filter_store_new(void)
 {
   FilterStore *fs = g_new0(FilterStore, 1);
   return fs;
@@ -217,7 +217,7 @@ static AddContextualDataSelector *add_contextual_data_selector_filter_clone(AddC
     GlobalConfig *cfg);
 
 static AddContextualDataFilterSelector *
-_create_empty_add_contextual_data_filter_selector()
+_create_empty_add_contextual_data_filter_selector(void)
 {
   AddContextualDataFilterSelector *new_instance = g_new0(AddContextualDataFilterSelector, 1);
   new_instance->super.ordering_required = TRUE;

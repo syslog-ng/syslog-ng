@@ -195,7 +195,7 @@ slng_reopen(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   return _dispatch_command("REOPEN");
 }
 
-const static gint QUERY_COMMAND = 0;
+static const gint QUERY_COMMAND = 0;
 static gboolean query_is_get_sum = FALSE;
 static gboolean query_reset = FALSE;
 static gchar **raw_query_params = NULL;
@@ -218,7 +218,7 @@ enum
   QUERY_CMD_GET_SUM_RESET
 };
 
-const static gchar *QUERY_COMMANDS[] = {"LIST", "LIST_RESET", "GET", "GET_RESET", "GET_SUM", "GET_SUM_RESET"};
+static const gchar *QUERY_COMMANDS[] = {"LIST", "LIST_RESET", "GET", "GET_RESET", "GET_SUM", "GET_SUM_RESET"};
 
 
 static gboolean license_json = FALSE;
@@ -415,7 +415,7 @@ read_password_from_stdin(gchar *buffer, gsize *length)
 }
 
 static gboolean
-is_syslog_ng_running()
+is_syslog_ng_running(void)
 {
   return control_client_connect(control_client);
 }

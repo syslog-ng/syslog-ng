@@ -36,14 +36,14 @@ logger(char *summary, char *reason)
 }
 
 void
-secret_storage_testsuite_init()
+secret_storage_testsuite_init(void)
 {
   secret_storage_init();
   nondumpable_setlogger(logger);
 }
 
 void
-secret_storage_testsuite_deinit()
+secret_storage_testsuite_deinit(void)
 {
   secret_storage_deinit();
 }

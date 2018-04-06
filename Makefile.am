@@ -45,7 +45,11 @@ if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
 	-Wshadow	\
 	-Wno-initializer-overrides \
-	-Wno-error=deprecated-declarations
+	-Wno-error=deprecated-declarations \
+	-Wimplicit-function-declaration \
+      	-Wnested-externs \
+      	-Wold-style-declaration \
+     	-Wstrict-prototypes
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)

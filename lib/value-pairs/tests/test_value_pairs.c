@@ -148,7 +148,7 @@ struct value_pairs_params
 
 ParameterizedTestParameters(value_pairs, test)
 {
-  const static struct value_pairs_params params[] =
+  static const struct value_pairs_params params[] =
   {
     { "rfc3164", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL },
     {"rfc3164", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL },
