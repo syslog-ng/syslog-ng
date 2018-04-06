@@ -40,10 +40,15 @@ pkgconfig_DATA		= syslog-ng.pc
 
 AM_CPPFLAGS		= -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I$(top_builddir)/lib -I$(top_builddir)/modules
 
-AM_CFLAGS =
+# configure script gives us -g and/or -O2, but all warning related settings
+# should be here
+
+AM_CFLAGS = \
+	-Wshadow \
+	-fcommon
+
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
-	-Wshadow	\
 	-Wno-initializer-overrides \
 	-Wno-error=deprecated-declarations \
 	-Wimplicit-function-declaration \
