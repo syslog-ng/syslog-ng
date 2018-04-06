@@ -43,9 +43,16 @@ AM_CPPFLAGS		= -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I$(top_builddir)/lib
 # configure script gives us -g and/or -O2, but all warning related settings
 # should be here
 
+# Important warnings
 AM_CFLAGS = \
 	-Wshadow \
 	-fcommon
+
+# Acceptable warnings
+AM_CFLAGS += \
+	-Wno-stack-protector \
+	-Wno-unused-parameter \
+	-Wno-variadic-macros
 
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
