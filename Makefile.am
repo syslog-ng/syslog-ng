@@ -56,13 +56,19 @@ AM_CFLAGS += \
 
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
-	-Wno-initializer-overrides \
-	-Wno-error=deprecated-declarations \
 	-Wimplicit-function-declaration \
 	-Wnested-externs \
 	-Wold-style-declaration \
 	-Wstrict-prototypes \
-	-Wswitch-default
+	-Wswitch-default \
+	-Wall \
+	-Wmissing-parameter-type \
+	-Wuninitialized \
+	-Wunused-but-set-parameter \
+	-Wcast-align \
+	-Wdeprecated \
+	-Wdeprecated-declarations \
+	-Woverflow
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)
