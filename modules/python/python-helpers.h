@@ -32,9 +32,9 @@ PyObject *_py_get_attr_or_null(PyObject *o, const gchar *attr);
 PyObject *_py_do_import(const gchar *modname);
 PyObject *_py_resolve_qualified_name(const gchar *name);
 PyObject *_py_create_arg_dict(GHashTable *args);
-PyObject *_py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
-void _py_invoke_void_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
-gboolean _py_invoke_bool_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
+PyObject *_py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *caller_context);
+void _py_invoke_void_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *caller_context);
+gboolean _py_invoke_bool_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *caller_context);
 PyObject *_py_get_method(PyObject *instance, const gchar *method_name, const gchar *module);
 void _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                     const gchar *module);
