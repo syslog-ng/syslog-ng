@@ -41,5 +41,19 @@ function gradle_installer {
     ln --symbolic "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle
 }
 
+function enable_dbgsyms {
+    apt-get install --no-install-recommends -y lsb-release dirmngr
+    echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted universe multiverse
+deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main restricted universe multiverse
+deb http://ddebs.ubuntu.com $(lsb_release -cs)-proposed main restricted universe multiverse" | \
+    tee -a /etc/apt/sources.list.d/ddebs.list
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 428D7C01 C8CAB6595FDFF622
+    apt-get update
+}
+
+function install_perf {
+    apt-get install --no-install-recommends -y linux-tools-$(uname -r)
+}
+
 # DO NOT REMOVE!
 "$@"

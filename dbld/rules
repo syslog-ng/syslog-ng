@@ -1,12 +1,12 @@
 #!/usr/bin/make -f
 
-IMAGES=centos6 centos7 jessie artful xenial trusty
-DEFAULT_IMAGE=xenial
+IMAGES=centos6 centos7 jessie artful xenial trusty devshell
+DEFAULT_IMAGE ?= xenial
 DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos7
 DOCKER=docker
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
-        --network=host \
+        --network=host --privileged \
 	--ulimit nofile=1024:1024 \
 	-v $(ROOT_DIR):/source \
 	-v $(DBLD_DIR)/build:/build \
@@ -46,7 +46,8 @@ help:
 	@echo "Development:"
 	@echo "  bootstrap: bootstrap source from a git clone (e.g. autogen.sh and friends)"
 	@echo "  shell: start a shell in the specified OS"
-	@echo "  login: start a 2nd shell (as root) alongside an already running one"
+	@echo "  login: start a 2nd shell alongside an already running one"
+	@echo "  root-login: start a 2nd shell (as root) alongside an already running one"
 	@echo "  tarball: generate a tarball in a controlled environment (e.g. docker)"
 	@echo "  release: generate a release deb package in a controlled environment (e.g. docker)"
 	@echo ""
@@ -58,6 +59,9 @@ help:
 bootstrap: bootstrap-$(DEFAULT_IMAGE)
 bootstrap-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" -ti  balabit/syslog-ng-$* /source/dbld/bootstrap
+
+make-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$(DEFAULT_IMAGE) /source/dbld/make $(MAKE_ARGS) $*
 
 tarball: tarball-$(DEFAULT_IMAGE)
 tarball-%: setup
@@ -100,10 +104,21 @@ image: image-$(DEFAULT_IMAGE)
 image-%:
 	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
+exec: exec-$(DEFAULT_IMAGE)
+exec: EXEC_COMMAND=echo Specify EXEC_COMMAND to do something sensible here
+exec-%: setup
+	@container=`$(DOCKER) ps | grep syslog-ng-$* | head -1 | cut -d ' ' -f1`; \
+	$(DOCKER) exec -ti  $$container $(EXEC_COMMAND)
+
 login: login-$(DEFAULT_IMAGE)
-login-%: setup
-	container=`$(DOCKER) ps | grep syslog-ng-$* | head -1 | cut -d ' ' -f1`; \
-	$(DOCKER) exec -ti  $$container /bin/bash
+login-%: EXEC_COMMAND=gosu $(shell whoami) /source/dbld/shell
+login-%: exec-%
+	@true
+
+root-login: root-login-$(DEFAULT_IMAGE)
+root-login-%: EXEC_COMMAND=bash
+root-login-%: exec-%
+	@true
 
 setup:
 	@mkdir -p dbld/build || true
