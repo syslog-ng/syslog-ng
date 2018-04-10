@@ -10,6 +10,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/transport-prockmsg.h			\
 	modules/affile/file-reader.c				\
 	modules/affile/file-reader.h				\
+	modules/affile/file-state-handler.h			\
+	modules/affile/file-state-handler.c			\
 	modules/affile/wildcard-source.h			\
 	modules/affile/wildcard-source.c			\
 	modules/affile/directory-monitor.h			\

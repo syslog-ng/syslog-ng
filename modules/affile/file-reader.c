@@ -173,13 +173,6 @@ _is_immediate_check_needed(gboolean file_opened, gboolean open_deferred)
   return FALSE;
 }
 
-static void
-_reschedule(FileReader *self, gpointer _pollevents)
-{
-  PollEvents *pollevents = (PollEvents *)_pollevents;
-  poll_events_update_watches(pollevents, G_IO_IN);
-}
-
 static gboolean
 _reader_open_file(LogPipe *s, gboolean recover_state)
 {
@@ -270,12 +263,11 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
       _reopen_on_notify(s, FALSE);
       break;
 
-    case NC_FILE_MISSING:
-      if (self->missing_cb)
-        self->missing_cb(self, user_data);
-      break;
-
     default:
+      if (self->file_state)
+        {
+          file_state_handler_notify(self->file_state, notify_code);
+        }
       break;
     }
 }
@@ -290,12 +282,26 @@ _queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     filename_handle = log_msg_get_value_handle("FILE_NAME");
 
   log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
+  if (self->file_state)
+    {
+      file_state_handler_msg_read(self->file_state);
+    }
   log_pipe_forward_msg(s, msg, path_options);
 }
 
 static gboolean
 _init(LogPipe *s)
 {
+  FileReader *self = (FileReader *)s;
+  if (self->file_state)
+    {
+      if (!file_state_handler_init(self->file_state))
+        {
+          msg_error("Unable to initialize the file state handler",
+                    evt_tag_str("filename", self->filename->str));
+          return FALSE;
+        }
+    }
   return _reader_open_file(s, TRUE);
 }
 
@@ -303,6 +309,10 @@ static gboolean
 _deinit(LogPipe *s)
 {
   FileReader *self = (FileReader *)s;
+  if (self->file_state)
+    {
+      file_state_handler_deinit(self->file_state);
+    }
   if (self->reader)
     _deinit_sd_logreader(self);
   return TRUE;
@@ -324,13 +334,22 @@ file_reader_remove_persist_state(FileReader *self)
   GlobalConfig *cfg = log_pipe_get_config(&self->super);
   const gchar *old_persist_name = _format_persist_name(&self->super);
   gchar *new_persist_name = g_strdup_printf("%s_REMOVED", old_persist_name);
+  /* This is required to clean the persist entry from file during restart */
+  persist_state_remove_entry(cfg->state, old_persist_name);
+  /* This is required to clean the runtime persist state */
   persist_state_rename_entry(cfg->state, old_persist_name, new_persist_name);
   g_free(new_persist_name);
 }
 
+void
+file_reader_stop_follow_file(FileReader *self)
+{
+  log_reader_reopen(self->reader, NULL, NULL);
+}
+
 FileReader *
 file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
-                GlobalConfig *cfg)
+                GlobalConfig *cfg, FileStateHandler *file_state)
 {
   FileReader *self = g_new0(FileReader, 1);
 
@@ -346,8 +365,7 @@ file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *o
   self->options = options;
   self->opener = opener;
   self->owner = owner;
-
-  self->missing_cb = _reschedule;
+  self->file_state = file_state;
 
   return self;
 }

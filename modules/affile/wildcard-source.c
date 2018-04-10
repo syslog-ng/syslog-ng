@@ -52,10 +52,52 @@ _check_required_options(WildcardSourceDriver *self)
 }
 
 static void
-_deleted_cb(FileReader *self, gpointer user_data G_GNUC_UNUSED)
+_deleted_cb(FileReader *self, gpointer user_data)
 {
   log_pipe_deinit(&self->super);
   file_reader_remove_persist_state(self);
+}
+
+static void
+_stop_file_reader(FileStateHandler *state_handler, gpointer user_data)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
+  FileReader *reader = g_hash_table_lookup(self->file_readers, state_handler->filename);
+  if (!reader)
+    {
+      msg_error("File reader isn't found for file",
+                evt_tag_str("filename", state_handler->filename));
+    }
+  else
+    {
+      msg_debug("Stop following file, because of deleted and eof",
+                evt_tag_str("filename", state_handler->filename));
+      file_reader_stop_follow_file(reader);
+    }
+}
+
+static void
+_remove_file_reader(FileStateHandler *state_handler, gpointer user_data)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
+  FileReader *reader = g_hash_table_lookup(self->file_readers, state_handler->filename);
+  if (!reader)
+    {
+      msg_error("File reader isn't found for file",
+                evt_tag_str("filename", state_handler->filename));
+      return;
+    }
+  _deleted_cb(reader, user_data);
+  log_pipe_ref(&reader->super);
+  if (g_hash_table_remove(self->file_readers, reader->filename->str))
+    {
+      msg_debug("File is removed from the file list", evt_tag_str("Filename", reader->filename->str));
+    }
+  else
+    {
+      msg_error("Can't remove the file reader", evt_tag_str("Filename", reader->filename->str));
+    }
+  log_pipe_unref(&reader->super);
 }
 
 void
@@ -73,19 +115,29 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
       return;
     }
 
-  reader = file_reader_new(full_path, &self->file_reader_options, self->file_opener, &self->super, cfg);
+  gchar *filename = g_strdup(full_path);
+
+  FileStateHandler *state_handler = file_state_handler_new(filename, &self->deleted_file_events);
+
+  reader = file_reader_new(full_path,
+                           &self->file_reader_options,
+                           self->file_opener,
+                           &self->super,
+                           cfg,
+                           state_handler);
+
   log_pipe_append(&reader->super, &self->super.super.super);
-  reader->missing_cb = _deleted_cb;
   if (!log_pipe_init(&reader->super))
     {
       msg_warning("File reader initialization failed",
                   evt_tag_str("filename", full_path),
                   evt_tag_str("source_driver", self->super.super.group));
       log_pipe_unref(&reader->super);
+      g_free(filename);
     }
   else
     {
-      g_hash_table_insert(self->file_readers, g_strdup(full_path), reader);
+      g_hash_table_insert(self->file_readers, filename, reader);
     }
 }
 
@@ -103,12 +155,21 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
         }
       else
         {
-          if (!log_pipe_init(&reader->super))
+          if (reader->file_state->deleted)
+            {
+              msg_info("File is deleted, new file create with same name. "
+                       "While old file is reading, skip the new one",
+                       evt_tag_str("filename", event->full_path));
+            }
+          else if (!log_pipe_init(&reader->super))
             {
               msg_error("Can not re-initialize reader for file",
                         evt_tag_str("filename", event->full_path));
             }
-          msg_debug("Wildcard: file reader reinitialized", evt_tag_str("filename", event->full_path));
+          else
+            {
+              msg_debug("Wildcard: file reader reinitialized", evt_tag_str("filename", event->full_path));
+            }
         }
     }
 }
@@ -134,8 +195,10 @@ _handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
   FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 
   if (reader)
-    msg_debug("Monitored file is deleted",
-              evt_tag_str("filename", event->full_path));
+    {
+      msg_debug("Monitored file is deleted", evt_tag_str("filename", event->full_path));
+      log_pipe_notify(&reader->super, NC_FILE_DELETED, NULL);
+    }
   else if (g_hash_table_remove(self->directory_monitors, event->full_path))
     msg_debug("Monitored directory is deleted",
               evt_tag_str("directory", event->full_path));
@@ -381,6 +444,10 @@ wildcard_sd_new(GlobalConfig *cfg)
 
   self->max_files = DEFAULT_MAX_FILES;
   self->file_opener = file_opener_for_regular_source_files_new();
+
+  self->deleted_file_events.user_data = self;
+  self->deleted_file_events.deleted_file_eof = _stop_file_reader;
+  self->deleted_file_events.deleted_file_finised = _remove_file_reader;
 
   return &self->super.super;
 }

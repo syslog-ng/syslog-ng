@@ -25,6 +25,7 @@
 #include "syslog-ng.h"
 #include "driver.h"
 #include "file-reader.h"
+#include "file-state-handler.h"
 #include "directory-monitor.h"
 #include "directory-monitor-factory.h"
 
@@ -49,6 +50,7 @@ typedef struct _WildcardSourceDriver
   GHashTable *file_readers;
   GHashTable *directory_monitors;
   FileOpener *file_opener;
+  DeletedFileStateEvent deleted_file_events;
 } WildcardSourceDriver;
 
 LogDriver *wildcard_sd_new(GlobalConfig *cfg);

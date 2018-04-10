@@ -131,8 +131,6 @@ poll_file_changes_check_file(gpointer s)
         {
           msg_verbose("Follow mode file still does not exist",
                       evt_tag_str("filename", self->follow_filename));
-          log_pipe_notify(self->control, NC_FILE_MISSING, self);
-          return;
         }
     }
 reschedule:

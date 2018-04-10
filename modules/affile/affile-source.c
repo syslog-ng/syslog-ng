@@ -109,7 +109,7 @@ affile_sd_init(LogPipe *s)
   file_opener_set_options(self->file_opener, &self->file_opener_options);
   self->file_reader = file_reader_new(self->filename->str, &self->file_reader_options,
                                       self->file_opener,
-                                      &self->super, cfg);
+                                      &self->super, cfg, NULL);
 
   if (_are_multi_line_settings_invalid(self))
     {

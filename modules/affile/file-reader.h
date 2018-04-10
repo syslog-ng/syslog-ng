@@ -25,6 +25,8 @@
 #include "driver.h"
 #include "logreader.h"
 #include "file-opener.h"
+#include "iv_event.h"
+#include "file-state-handler.h"
 
 typedef struct _FileReaderOptions
 {
@@ -34,6 +36,8 @@ typedef struct _FileReaderOptions
   gboolean exit_on_eof;
 } FileReaderOptions;
 
+
+
 typedef struct _FileReader
 {
   LogPipe super;
@@ -42,8 +46,7 @@ typedef struct _FileReader
   FileReaderOptions *options;
   FileOpener *opener;
   LogReader *reader;
-  gboolean is_pipe;
-  void (*missing_cb)(struct _FileReader *self, gpointer user_data);
+  FileStateHandler *file_state;
 } FileReader;
 
 static inline LogProtoFileReaderOptions *
@@ -53,15 +56,17 @@ file_reader_options_get_log_proto_options(FileReaderOptions *options)
 }
 
 FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
-                            GlobalConfig *cfg);
+                            GlobalConfig *cfg, FileStateHandler *file_state);
 
 void file_reader_remove_persist_state(FileReader *self);
+void file_reader_stop_follow_file(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
 
 void file_reader_options_defaults(FileReaderOptions *options);
 void file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group);
 void file_reader_options_deinit(FileReaderOptions *options);
+
 
 
 #endif /* MODULES_AFFILE_FILE_READER_H_ */
