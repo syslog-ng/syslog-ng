@@ -8,3 +8,7 @@ add_unit_test(CRITERION TARGET test_file_opener
 add_unit_test(CRITERION TARGET test_file_state_handler
   INCLUDES "${CMAKE_SOURCE_DIR}/modules"
   DEPENDS affile)
+
+add_unit_test(CRITERION TARGET test_file_list
+  INCLUDES "${CMAKE_SOURCE_DIR}/modules"
+  DEPENDS affile)

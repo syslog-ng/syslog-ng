@@ -39,6 +39,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/affile-parser.c				\
 	modules/affile/affile-parser.h				\
 	modules/affile/affile-plugin.c \
+	modules/affile/file-list.h				\
+	modules/affile/file-list.c				\
   modules/affile/affile-dest-internal-queue-filter.h	
 
 if HAVE_INOTIFY
