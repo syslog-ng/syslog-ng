@@ -348,6 +348,12 @@ afamqp_is_ok(AMQPDestDriver *self, const gchar *context, amqp_rpc_reply_t ret)
                     evt_tag_int("time_reopen", self->super.time_reopen));
           return FALSE;
         }
+    default:
+      msg_error(context,
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_int("reply_type", ret.reply_type),
+                evt_tag_str("error", "unknown response type"),
+                evt_tag_int("time_reopen", self->super.time_reopen));
       return FALSE;
     }
   return TRUE;

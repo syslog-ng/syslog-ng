@@ -38,6 +38,8 @@ log_template_elem_free(LogTemplateElem *e)
       if (e->func.ops && e->func.ops->free_fn)
         e->func.ops->free_fn(e->func.ops);
       break;
+    default:
+      break;
     }
   if (e->default_value)
     g_free(e->default_value);

@@ -24,6 +24,8 @@
 
 %code requires {
 
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
 #include "pragma-parser.h"
 #include "plugin.h"
 #include "cfg.h"

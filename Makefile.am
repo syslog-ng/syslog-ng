@@ -49,7 +49,8 @@ AM_CFLAGS += \
 	-Wimplicit-function-declaration \
       	-Wnested-externs \
       	-Wold-style-declaration \
-     	-Wstrict-prototypes
+     	-Wstrict-prototypes \
+	-Wswitch-default
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)

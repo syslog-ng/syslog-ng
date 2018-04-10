@@ -23,6 +23,8 @@
  */
 
 %code top {
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
 #include "diskq-parser.h"
 
 }

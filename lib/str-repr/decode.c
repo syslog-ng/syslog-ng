@@ -219,6 +219,8 @@ _decode(StrReprDecodeState *state)
         case KV_UNQUOTED_CHARACTERS:
           quote_state = _process_unquoted_characters(state);
           break;
+        default:
+          break;
         }
       if (quote_state == KV_FINISH_SUCCESS || quote_state == KV_FINISH_FAILURE)
         break;

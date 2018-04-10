@@ -570,6 +570,9 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           length = format_zone_info(buf, sizeof(buf), zone_ofs);
           g_string_append_len(result, buf, length);
           break;
+        default:
+          g_assert_not_reached();
+          break;
         }
       break;
     }

@@ -29,6 +29,7 @@
    with care. If you need additional headers, please look for a
    massive list of includes further below. */
 
+#pragma GCC diagnostic ignored "-Wswitch-default"
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
 #include "afinter.h"

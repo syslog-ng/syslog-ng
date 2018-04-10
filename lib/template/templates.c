@@ -162,6 +162,9 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
           g_static_mutex_unlock(&self->arg_lock);
           break;
         }
+        default:
+          g_assert_not_reached();
+          break;
         }
     }
 }

@@ -92,6 +92,9 @@ _track_string_state(CfgLexerSubst *self, CfgLexerStringTrackState last_state, co
       if (*p == '\'')
         return CLS_NOT_STRING;
       return CLS_WITHIN_QSTRING;
+    default:
+      g_assert_not_reached();
+      break;
     }
   g_assert_not_reached();
 }

@@ -292,6 +292,8 @@ afprogram_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
       afprogram_sd_deinit(s);
       afprogram_sd_init(s);
       break;
+    default:
+      break;
     }
 }
 
@@ -563,6 +565,8 @@ afprogram_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
       /* We let this fall through, to be handled by the child manager. We do
          this to have access to the exit status, and which we use to decide
          whether to restart immediately, or stop the destination. */
+      break;
+    default:
       break;
     }
 }

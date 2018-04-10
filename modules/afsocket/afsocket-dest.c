@@ -565,6 +565,8 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
                  evt_tag_int("time_reopen", self->time_reopen));
       afsocket_dd_start_reconnect_timer(self);
       break;
+    default:
+      break;
     }
 }
 
