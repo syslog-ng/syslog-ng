@@ -130,14 +130,8 @@ affile_dw_reap(gpointer s)
 
   main_loop_assert_main_thread();
 
-  if (log_writer_has_pending_writes(self->writer))
-    {
-      affile_dw_arm_reaper(self);
-      return;
-    }
-
   g_static_mutex_lock(&self->owner->lock);
-  if (!self->queue_pending)
+  if (!log_writer_has_pending_writes((LogWriter *) self->writer) && !self->queue_pending)
     {
       msg_verbose("Destination timed out, reaping",
                   evt_tag_str("template", self->owner->filename_template->template),
