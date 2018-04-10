@@ -324,6 +324,7 @@ _free(LogPipe *s)
   FileReader *self = (FileReader *) s;
 
   g_assert(!self->reader);
+  file_state_handler_free(self->file_state);
 
   g_string_free(self->filename, TRUE);
 }
