@@ -48,6 +48,7 @@ typedef struct _AFInetDestDriver
 #endif
   gchar *hostname;
   GList *server_candidates;
+  GList *current_server_candidate;
 
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;

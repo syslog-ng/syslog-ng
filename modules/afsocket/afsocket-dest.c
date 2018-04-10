@@ -307,10 +307,9 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 }
 
 static void
-afsocket_dd_reconnect(AFSocketDestDriver *self)
+_dd_reconnect(AFSocketDestDriver *self, gboolean request_setup_addr)
 {
-  if (!afsocket_dd_setup_addresses(self) ||
-      !afsocket_dd_start_connect(self))
+  if ((request_setup_addr && !afsocket_dd_setup_addresses(self)) || !afsocket_dd_start_connect(self))
     {
       msg_error("Initiating connection failed, reconnecting",
                 evt_tag_int("time_reopen", self->time_reopen));
@@ -319,10 +318,27 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
 }
 
 static void
+_dd_reconnect_with_setup_addresses(AFSocketDestDriver *self)
+{
+  _dd_reconnect(self, TRUE);
+}
+
+static void
+_dd_reconnect_with_current_addresses(AFSocketDestDriver *self)
+{
+  _dd_reconnect(self, FALSE);
+}
+
+static void
+afsocket_dd_reconnect(AFSocketDestDriver *self)
+{
+  _dd_reconnect_with_setup_addresses(self);
+}
+
+static void
 afsocket_dd_try_connect(AFSocketDestDriver *self)
 {
-  if (!afsocket_dd_setup_addresses(self) ||
-      !afsocket_dd_setup_connection(self))
+  if ((!afsocket_dd_setup_addresses(self)) || !afsocket_dd_setup_connection(self))
     {
       msg_error("Initiating connection failed, reconnecting",
                 evt_tag_int("time_reopen", self->time_reopen));
@@ -452,7 +468,7 @@ afsocket_dd_setup_connection(AFSocketDestDriver *self)
   self->time_reopen = cfg->time_reopen;
 
   if (!log_writer_opened(self->writer))
-    afsocket_dd_reconnect(self);
+    _dd_reconnect_with_current_addresses(self);
 
   self->connection_initialized = TRUE;
   return TRUE;
