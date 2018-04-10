@@ -181,12 +181,9 @@ _handle_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
     {
       msg_debug("Monitored directory is deleted", evt_tag_str("directory", event->full_path));
     }
-  else
+  if (file_list_remove(self->waiting_list, event->full_path))
     {
-      if (file_list_remove(self->waiting_list, event->full_path))
-        {
-          msg_warning("Waiting file was deleted, it wasn't read at all", evt_tag_str("filename", event->full_path));
-        }
+      msg_warning("Waiting file was deleted, it wasn't read at all", evt_tag_str("filename", event->full_path));
     }
 }
 
