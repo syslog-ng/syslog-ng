@@ -119,11 +119,19 @@ control_connection_moc_free(ControlConnection *s)
   positioned_buffer_free(self->destination_buffer);
 }
 
+static void start_watches_stub(ControlConnection *s);
+static void update_watches_stub(ControlConnection *s);
+static void stop_watches_stub(ControlConnection *s);
+
 ControlConnection *
 control_connection_moc_new(ControlServer *server)
 {
   ControlConnectionMoc *self =  g_new0(ControlConnectionMoc,1);
   control_connection_init_instance(&self->super, server);
+
+  self->super.events.start_watches = start_watches_stub;
+  self->super.events.update_watches = update_watches_stub;
+  self->super.events.stop_watches = stop_watches_stub;
 
   self->source_buffer = positioned_buffer_new(128);
   self->destination_buffer = positioned_buffer_new(128);
@@ -150,8 +158,8 @@ ControlCommand command =
   .func = test_command
 };
 
-void
-control_connection_update_watches(ControlConnection *s)
+static void
+update_watches_stub(ControlConnection *s)
 {
   if (s->output_buffer->len > s->pos)
     {
@@ -163,8 +171,8 @@ control_connection_update_watches(ControlConnection *s)
     }
 }
 
-void
-control_connection_stop_watches(ControlConnection *s)
+static void
+stop_watches_stub(ControlConnection *s)
 {
   ControlConnectionMoc *self = (ControlConnectionMoc *)s;
   if (result_string)
@@ -176,8 +184,8 @@ control_connection_stop_watches(ControlConnection *s)
   next_step = NULL;
 }
 
-void
-control_connection_start_watches(ControlConnection *s)
+static void
+start_watches_stub(ControlConnection *s)
 {
   next_step = s->handle_input;
   while(next_step)
