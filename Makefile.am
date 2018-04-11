@@ -68,7 +68,60 @@ AM_CFLAGS += \
 	-Wcast-align \
 	-Wdeprecated \
 	-Wdeprecated-declarations \
-	-Woverflow
+	-Woverflow \
+	-Winline \
+	-Waggregate-return \
+	-Wbad-function-cast \
+	-Wcast-qual \
+	-Wconversion \
+	-Wdouble-promotion \
+	-Wfloat-equal \
+	-Wmissing-field-initializers \
+	-Wmissing-prototypes \
+	-Wpointer-arith \
+	-Wpointer-sign \
+	-Wredundant-decls \
+	-Wsign-conversion \
+	-Wformat=2 \
+	-Wsuggest-attribute=noreturn \
+	-Wswitch-default \
+	-Wundef \
+	-Wmissing-declarations \
+	-Woverride-init \
+	-Wmissing-format-attribute \
+	-Wignored-qualifiers \
+	-Winline \
+	-Wold-style-definition \
+	-Wsuggest-attribute=const \
+	-Wsuggest-attribute=pure
+
+# To satisfy travis
+AM_CFLAGS +=\
+	-Wno-error=deprecated-declarations \
+	-Wno-error=aggregate-return \
+	-Wno-error=bad-function-cast \
+	-Wno-error=cast-qual \
+	-Wno-error=conversion \
+	-Wno-error=double-promotion \
+	-Wno-error=float-equal \
+	-Wno-error=format-nonliteral \
+	-Wno-error=inline \
+	-Wno-error=missing-declarations \
+	-Wno-error=missing-format-attribute \
+	-Wno-error=missing-prototypes \
+	-Wno-error=pointer-arith \
+	-Wno-error=pointer-sign \
+	-Wno-error=redundant-decls \
+	-Wno-error=sign-compare \
+	-Wno-error=sign-conversion \
+	-Wno-error=strict-overflow \
+	-Wno-error=suggest-attribute=const \
+	-Wno-error=suggest-attribute=noreturn \
+	-Wno-error=suggest-attribute=pure \
+	-Wno-error=switch-default \
+	-Wno-error=type-limits \
+	-Wno-error=undef \
+	-Wno-error=write-strings
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)
