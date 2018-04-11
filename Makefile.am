@@ -40,17 +40,35 @@ pkgconfig_DATA		= syslog-ng.pc
 
 AM_CPPFLAGS		= -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I$(top_builddir)/lib -I$(top_builddir)/modules
 
-AM_CFLAGS =
+# configure script gives us -g and/or -O2, but all warning related settings
+# should be here
+
+# Important warnings
+AM_CFLAGS = \
+	-Wshadow \
+	-fcommon
+
+# Acceptable warnings
+AM_CFLAGS += \
+	-Wno-stack-protector \
+	-Wno-unused-parameter \
+	-Wno-variadic-macros
+
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
-	-Wshadow	\
-	-Wno-initializer-overrides \
-	-Wno-error=deprecated-declarations \
 	-Wimplicit-function-declaration \
-      	-Wnested-externs \
-      	-Wold-style-declaration \
-     	-Wstrict-prototypes \
-	-Wswitch-default
+	-Wnested-externs \
+	-Wold-style-declaration \
+	-Wstrict-prototypes \
+	-Wswitch-default \
+	-Wall \
+	-Wmissing-parameter-type \
+	-Wuninitialized \
+	-Wunused-but-set-parameter \
+	-Wcast-align \
+	-Wdeprecated \
+	-Wdeprecated-declarations \
+	-Woverflow
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)

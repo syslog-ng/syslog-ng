@@ -460,24 +460,51 @@ AC_SUBST([NO_PIE_LDFLAG])
 dnl ***************************************************************************
 dnl Set up CFLAGS
 
-if test "x$ac_compiler_gnu" = "xyes"; then
-        CFLAGS="${CFLAGS} -Wall"
-        if test "x$enable_debug" = "xyes"; then
-                CFLAGS="${ac_cv_env_CFLAGS_value} -Wall -g"
-        fi
 
+
+dnl The rest of CFLAGS. We produce
+dnl -g/-O2/-pg/-fprofile-arcs/-ftest-coverage combinations, the rest is
+dnl supplied by Makefile.am
+
+if test "x$ac_compiler_gnu" = "xyes"; then
+	# by ignoring the existing $CFLAGS setting we can override the
+	# default supplied by autoconf (which defaults to -O2), which
+	# we don't want to use with our debugging builds.
+
+	CFLAGS_ADD=""
+        if test "x$enable_debug" = "xyes"; then
+                CFLAGS_ADD="${CFLAGS_ADD} -g"
+        else
+                CFLAGS_ADD="${CFLAGS_ADD} -O2 -g"
+        fi
         if test "x$enable_gprof" = "xyes"; then
-                CFLAGS="${CFLAGS} -pg"
+                CFLAGS_ADD="${CFLAGS_ADD} -pg"
         fi
         if test "x$enable_gcov" = "xyes"; then
-                CFLAGS="${CFLAGS} -fprofile-arcs -ftest-coverage"
+                CFLAGS_ADD="${CFLAGS_ADD} -fprofile-arcs -ftest-coverage"
         fi
 else
         enable_extra_warnings="no"
 fi
-CFLAGS="${CFLAGS} -pthread"
+CFLAGS_ADD="${CFLAGS_ADD} -pthread"
+
+dnl We are checking for the postive warning flag, as gcc handles the
+dnl -Wno-XXX version oddly, so if no other warnings are present, it is not
+dnl reported at all, causing it to be unusable for detection purposes.
+
+AX_CFLAGS_GCC_OPTION(-Winitializer-overrides,
+		     CFLAGS_INITIALIZER_OVERRIDES,
+		     CFLAGS_ADD="${CFLAGS_ADD} -Wno-initializer-overrides")
+
+dnl This CFLAGS is used in db-parser, as it uses guint8 and gchar *
+dnl interchangeably, producing a lot of warnings, it is only added during the
+dnl compilation of db-parser().
+dnl
 
 AX_CFLAGS_GCC_OPTION(-Wno-pointer-sign, CFLAGS_NOWARN_POINTER_SIGN)
+
+dnl User supplied CFLAGS come last
+CFLAGS="${CFLAGS_ADD} ${ac_cv_env_CFLAGS_value}"
 
 AC_SYS_LARGEFILE
 
