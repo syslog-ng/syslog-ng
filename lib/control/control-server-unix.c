@@ -21,6 +21,9 @@
  *
  */
 
+#include "control-server.h"
+#include "messages.h"
+
 #include "gsocket.h"
 
 #include <iv.h>

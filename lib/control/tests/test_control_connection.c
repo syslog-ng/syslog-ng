@@ -27,11 +27,6 @@
 #include "control/control-server.h"
 #include "apphook.h"
 
-#define CONTROL_UNITTEST 1
-#include "control/control-server.c"
-#undef CONTROL_UNITTEST
-
-
 typedef struct _PositionedBuffer
 {
   GString *buffer;

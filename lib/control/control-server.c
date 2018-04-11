@@ -25,9 +25,6 @@
 #include "messages.h"
 #include "str-utils.h"
 
-#ifndef CONTROL_UNITTEST
-#include "control-server-unix.c"
-#endif
 #include <string.h>
 #include <errno.h>
 
