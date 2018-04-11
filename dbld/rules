@@ -11,7 +11,7 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-v $(ROOT_DIR):/source \
 	-v $(DBLD_DIR)/build:/build \
 	-v $(DBLD_DIR)/install:/install \
-	-v ~/.gitconfig:/home/$(shell whoami)/.gitconfig
+	-v ~/.gitconfig:${HOME}/.gitconfig
 ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
 BUILD_DIR=$(DBLD_DIR)/build

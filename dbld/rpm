@@ -4,8 +4,7 @@ set -e
 
 cd /source
 VERSION=`cat VERSION`
-USER=`whoami`
-RPMBUILD=/home/${USER}/rpmbuild
+RPMBUILD=${HOME}/rpmbuild
 RPMBUILD_SOURCES=$RPMBUILD/SOURCES
 
 cd /build
