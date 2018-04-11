@@ -605,7 +605,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 __thread int a;
 ]],
 [a=0;])],
-[ac_cv_have_tls=yes; AC_DEFINE_UNQUOTED(HAVE_THREAD_KEYWORD, 1, "Whether Transport Layer Security is supported by the system")])
+[ac_cv_have_tls=yes; AC_DEFINE_UNQUOTED(HAVE_THREAD_KEYWORD, 1, "Whether Thread Local Storage is supported by the system")])
 
 dnl ***************************************************************************
 dnl How to do static linking?
