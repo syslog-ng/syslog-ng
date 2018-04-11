@@ -104,9 +104,6 @@ compiler:
   - clang
 
 matrix:
-  fast_finish: true
-  allow_failures:
-    - os: osx
   include:
     - env: B=style-check
       dist: trusty
