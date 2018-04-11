@@ -14,7 +14,7 @@ function add_epel_repo {
     if [ "$1" == "centos6" ]; then
         wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng39epel6/repo/epel-6/czanik-syslog-ng39epel6-epel-6.repo
     elif [ "$1" == "centos7" ]; then
-        wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng311/repo/epel-7/czanik-syslog-ng311-epel-7.repo
+        wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng-githead/repo/epel-7/czanik-syslog-ng-githead-epel-7.repo
     else
         return 1
     fi

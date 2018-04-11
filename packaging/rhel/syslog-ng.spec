@@ -1,26 +1,23 @@
-# %global evtlog_ver 0.2.13
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
-Version: 3.12.1
-Release: 7%{?dist}
+Version: 3.15.1
+Release: 8%{?dist}
 Summary: Next-generation syslog server
 
 Group: System Environment/Daemons
 License: GPLv2+
 URL: http://www.balabit.com/network-security/syslog-ng
 Source0: https://github.com/balabit/syslog-ng/releases/download/syslog-ng-%{version}/%{name}-%{version}.tar.gz
-
-# Patch0: syslog-ng-3.7.0beta2-syslog-ng.service.patch
-# Patch1: syslog-ng-3.4.0beta1-tests-functional-control.py.patch
-# Patch2: syslog-ng-3.3.6-tests-functional-sql-test.patch
+Source1: syslog-ng.conf
+Source2: syslog-ng.logrotate
+Source3: syslog-ng.service
 
 BuildRequires: systemd-units
 BuildRequires: pkgconfig
 BuildRequires: libtool
 BuildRequires: bison, flex
 BuildRequires: libxslt
-# BuildRequires: eventlog-devel >= %{evtlog_ver}
 BuildRequires: glib2-devel >= 2.10.1
 BuildRequires: ivykis-devel >= %{ivykis_ver}
 BuildRequires: json-c-devel
@@ -29,33 +26,23 @@ BuildRequires: libdbi-devel
 BuildRequires: libnet-devel
 BuildRequires: openssl-devel
 BuildRequires: pcre-devel >= 6.1
-BuildRequires: tcp_wrappers-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
-BuildRequires: libmongo-client-devel
 BuildRequires: GeoIP-devel
 BuildRequires: systemd-devel
 BuildRequires: hiredis-devel
 BuildRequires: riemann-c-client-devel
 BuildRequires: python-devel
 BuildRequires: java-devel
-#BuildRequires: gradle
+BuildRequires: gradle
 BuildRequires: syslog-ng-java-deps
 BuildRequires: libcurl-devel
-BuildRequires: mongo-c-driver-devel
 BuildRequires: cyrus-sasl-devel
 BuildRequires: libmaxminddb-devel
-
-# Test suite
-#BuildRequires: python
-#BuildRequires: python-unittest2
-#BuildRequires: python-nose
-#BuildRequires: python-ply
-#BuildRequires: python-pep8
-#BuildRequires: pylint
-#BuildRequires: python-six
-# Test suite: the SQL tests
-#BuildRequires: libdbi-dbd-sqlite
+%if 0%{?rhel}
+BuildRequires: mongo-c-driver-devel
+BuildRequires: tcp_wrappers-devel
+%endif
 
 Requires: logrotate
 Requires: ivykis >= %{ivykis_ver}
@@ -98,6 +85,7 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description libdbi
 This module supports a large number of database systems via libdbi.
 
+%if 0%{?rhel}
 
 %package mongodb
 Summary: mongodb support for %{name}
@@ -107,6 +95,7 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description mongodb
 This module supports the mongodb database via libmongo-client.
 
+%endif
 
 %package smtp
 Summary: smtp support for %{name}
@@ -208,11 +197,21 @@ export GEOIP_LIBS=-lGeoIP
     --with-module-dir=/%{_libdir}/%{name} \
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
+%if 0%{?rhel}
     --with-mongoc=system \
+    --enable-mongodb \
+    --enable-amqp \
+    --with-librabbitmq-client=internal \
+    --enable-tcp-wrapper \
+%else
+    --with-mongoc=no \
+    --disable-mongodb \
+    --disable-amqp \
+    --disable-tcp-wrapper \
+%endif
     --with-embedded-crypto \
     --enable-manpages \
     --enable-ipv6 \
-    --enable-tcp-wrapper \
     --enable-spoof-source \
     --with-linux-caps=auto \
     --enable-sql \
@@ -225,15 +224,9 @@ export GEOIP_LIBS=-lGeoIP
     --enable-dynamic-linking \
     --enable-systemd \
     --enable-redis \
-    --disable-amqp \
-    --with-librabbitmq-client=no \
     --enable-python \
     --enable-java \
     --enable-riemann
-
-# remove rpath
-# sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-# sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 
 # disable broken test by setting a different target
 sed -i 's/libs build/libs assemble/' Makefile
@@ -245,12 +238,12 @@ make %{_smp_mflags}
 make DESTDIR=%{buildroot} install
 
 %{__install} -d -m 755 %{buildroot}%{_sysconfdir}/%{name}/conf.d
-%{__install} -p -m 644 packaging/rhel/syslog-ng.conf %{buildroot}%{_sysconfdir}/%{name}/syslog-ng.conf
+%{__install} -p -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/%{name}/syslog-ng.conf
 
 %{__install} -d -m 755 %{buildroot}%{_sysconfdir}/logrotate.d
-%{__install} -p -m 644 packaging/rhel/syslog-ng.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/syslog
+%{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
 
-%{__install} -p -m 644 packaging/rhel/syslog-ng.service %{buildroot}%{_unitdir}/%{name}.service
+%{__install} -p -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/%{name}.service
 
 
 # create the local state dir
@@ -273,15 +266,8 @@ done
 
 find %{buildroot} -name "*.la" -exec rm -f {} \;
 
-# remove some extra testing related files
-rm %{buildroot}/%{_libdir}/pkgconfig/syslog-ng-test.pc
-rm %{buildroot}/%{_libdir}/syslog-ng/libtest/libsyslog-ng-test.a
-
 # remove unused service file
 rm %{buildroot}/usr/lib/systemd/system/syslog-ng@.service
-
-# %check
-# LD_LIBRARY_PATH=%{buildroot}/%{_libdir}:%{buildroot}/%{_libdir}/%{name} VERBOSE=1 make check
 
 %post
 ldconfig
@@ -343,11 +329,14 @@ fi
 %{_bindir}/pdbtool
 %{_bindir}/dqtool
 %{_bindir}/update-patterndb
-%{_libdir}/lib%{name}-3.12.so.*
-%{_libdir}/libevtlog-3.12.so.*
+%{_libdir}/lib%{name}-3.15.so.*
+%{_libdir}/libevtlog-3.15.so.*
+%{_libdir}/libsecret-storage.so.*
 %{_libdir}/%{name}/*.so
 %exclude %{_libdir}/%{name}/libafsql.so
+%if 0%{?rhel}
 %exclude %{_libdir}/%{name}/libafmongodb.so
+%endif
 %exclude %{_libdir}/%{name}/libredis.so
 %exclude %{_libdir}/%{name}/libafsmtp.so
 %exclude %{_libdir}/%{name}/libgeoip-plugin.so
@@ -378,8 +367,10 @@ fi
 %files libdbi
 %{_libdir}/%{name}/libafsql.so
 
+%if 0%{?rhel}
 %files mongodb
 %{_libdir}/%{name}/libafmongodb.so
+%endif
 
 %files redis
 %{_libdir}/%{name}/libredis.so
@@ -413,6 +404,7 @@ fi
 %files devel
 %{_libdir}/libsyslog-ng.so
 %{_libdir}/libevtlog.so
+%{_libdir}/libsecret-storage.so
 %{_libdir}/libsyslog-ng-native-connector.a
 %{_includedir}/%{name}/
 %{_libdir}/pkgconfig/syslog-ng.pc
@@ -420,9 +412,26 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
-* Thu Sep 21 2017 Peter Czanik <peter@czanik.hu> - 3.12.1-1
+* Tue May  8 2018 Laszlo Szemere <laszlo.szemere@balabit.com> - 3.15.1-1
+- update to 3.15.1
+
+* Thu Mar 29 2018 Peter Czanik <peter@czanik.hu> - 3.14.1-7
+- remove syslog-ng-add-contextual-data.pc from file list
+
+* Tue Feb 27 2018 Peter Czanik <peter@czanik.hu> - 3.14.1-1
+- update to 3.14.1
+- re-enable amqp & mongodb on RHEL only
+- keep tcp wrappers support only on RHEL
+
+* Mon Dec  4 2017 Peter Czanik <peter@czanik.hu> - 3.13.1-2
+- update to 3.13.1
+- disable AMQP temporarily due to openssl 1.1 problems
+- disable MongoDB temporarily due to compile problems
+
+* Thu Sep 21 2017 Peter Czanik <peter@czanik.hu> - 3.12.1-3
 - update to 3.12.1
 - re-enabled AMQP (does not fix compilation on Fedora)
+- update logrotate to match rsyslog
 
 * Wed Sep 13 2017 Peter Czanik <peter@czanik.hu> - 3.11.1-5
 - update to latest git head
