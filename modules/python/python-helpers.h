@@ -46,5 +46,6 @@ gboolean _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_
 void _py_perform_imports(GList *imports);
 gboolean _py_is_string(PyObject *object);
 const gchar *_py_get_string_as_string(PyObject *object);
+PyObject *_py_string_from_string(const gchar *str, gssize len);
 
 #endif

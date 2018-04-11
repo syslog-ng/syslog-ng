@@ -206,8 +206,8 @@ exit:
 static void
 _insert_to_dict(gpointer key, gpointer value, gpointer dict)
 {
-  PyObject *key_pyobj = PyBytes_FromStringAndSize((gchar *) key, strlen((gchar *) key));
-  PyObject *value_pyobj = PyBytes_FromStringAndSize((gchar *) value, strlen((gchar *) value));
+  PyObject *key_pyobj = _py_string_from_string((gchar *) key, -1);
+  PyObject *value_pyobj = _py_string_from_string((gchar *) value, -1);
   PyDict_SetItem( (PyObject *) dict, key_pyobj, value_pyobj);
 }
 
@@ -368,4 +368,48 @@ _py_get_string_as_string(PyObject *object)
     }
 #endif
   g_assert_not_reached();
+}
+
+PyObject *
+_py_string_from_string(const gchar *str, gssize len)
+{
+#if PY_MAJOR_VERSION >= 3
+  const gchar *charset;
+
+  /* NOTE: g_get_charset() returns if the current character set is utf8 */
+  if (g_get_charset(&charset))
+    {
+      if (len < 0)
+        return PyUnicode_FromString(str);
+      else
+        return PyUnicode_FromStringAndSize(str, len);
+    }
+  else
+    {
+      GError *error = NULL;
+      gsize bytes_read, bytes_written;
+      gchar *utf8_string;
+      PyObject *res;
+
+      utf8_string = g_locale_to_utf8(str, len, &bytes_read, &bytes_written, &error);
+      if (utf8_string)
+        {
+          res = PyUnicode_FromStringAndSize(utf8_string, bytes_written);
+          g_free(utf8_string);
+          return res;
+        }
+      else
+        {
+          if (len >= 0)
+            return PyBytes_FromStringAndSize(str, len);
+          else
+            return PyBytes_FromString(str);
+        }
+    }
+#elif PY_MAJOR_VERSION < 3
+  if (len >= 0)
+    return PyBytes_FromStringAndSize(str, len);
+  else
+    return PyBytes_FromString(str);
+#endif
 }
