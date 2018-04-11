@@ -10,3 +10,4 @@ virtualenv
 valgrind
 linux-tools-generic
 libjemalloc-dev
+locales
