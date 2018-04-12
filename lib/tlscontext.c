@@ -54,6 +54,7 @@ struct _TLSContext
   GList *trusted_fingerprint_list;
   GList *trusted_dn_list;
   gint ssl_options;
+  gchar *location;
 };
 
 typedef enum
@@ -173,14 +174,16 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
   if (ok && ctx_error_depth == 0 && !tls_session_verify_fingerprint(ctx))
     {
-      msg_notice("Certificate valid, but fingerprint constraints were not met, rejecting");
+      msg_notice("Certificate valid, but fingerprint constraints were not met, rejecting",
+                 tls_context_format_location_tag(self->ctx));
       return 0;
     }
 
   X509 *current_cert = X509_STORE_CTX_get_current_cert(ctx);
   if (ok && ctx_error_depth != 0 && (X509_get_extension_flags(current_cert) & EXFLAG_CA) == 0)
     {
-      msg_notice("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate");
+      msg_notice("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate",
+                 tls_context_format_location_tag(self->ctx));
       X509_STORE_CTX_set_error(ctx, X509_V_ERR_INVALID_CA);
       return 0;
     }
@@ -188,20 +191,23 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   /* reject certificate if it is valid, but its DN is not trusted */
   if (ok && ctx_error_depth == 0 && !tls_session_verify_dn(ctx))
     {
-      msg_notice("Certificate valid, but DN constraints were not met, rejecting");
+      msg_notice("Certificate valid, but DN constraints were not met, rejecting",
+                 tls_context_format_location_tag(self->ctx));
       X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_UNTRUSTED);
       return 0;
     }
   /* if the crl_dir is set in the configuration file but the directory is empty ignore this error */
   if (!ok && X509_STORE_CTX_get_error(ctx) == X509_V_ERR_UNABLE_TO_GET_CRL)
     {
-      msg_notice("CRL directory is set but no CRLs found");
+      msg_notice("CRL directory is set but no CRLs found",
+                 tls_context_format_location_tag(self->ctx));
       return 1;
     }
 
   if (!ok && X509_STORE_CTX_get_error(ctx) == X509_V_ERR_INVALID_PURPOSE)
     {
-      msg_warning("Certificate valid, but purpose is invalid");
+      msg_warning("Certificate valid, but purpose is invalid",
+                  tls_context_format_location_tag(self->ctx));
       return 1;
     }
   return ok;
@@ -232,7 +238,8 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
           break;
         default:
           msg_notice("Error occured during certificate validation",
-                     evt_tag_int("error", X509_STORE_CTX_get_error(ctx)));
+                     evt_tag_int("error", X509_STORE_CTX_get_error(ctx)),
+                     tls_context_format_location_tag(self->ctx));
           break;
         }
     }
@@ -321,30 +328,39 @@ tls_session_free(TLSSession *self)
   g_free(self);
 }
 
+EVTTAG *
+tls_context_format_location_tag(TLSContext *self)
+{
+  return evt_tag_str("location", self->location);
+}
+
 static gboolean
-_is_file_accessible(const gchar *fname)
+_is_file_accessible(TLSContext *self, const gchar *fname)
 {
   if (!fname)
     return FALSE;
   if (access(fname, R_OK) < 0)
     {
-      msg_error("Error opening TLS file",
+      msg_error("Error opening TLS related key or certificate file",
                 evt_tag_str("filename", fname),
-                evt_tag_errno("error", errno));
+                evt_tag_errno("error", errno),
+                tls_context_format_location_tag(self));
+
       return FALSE;
     }
   return TRUE;
 }
 
 static void
-_print_and_clear_tls_session_error(void)
+_print_and_clear_tls_session_error(TLSContext *self)
 {
   gulong ssl_error = ERR_get_error();
   msg_error("Error setting up TLS session context",
             evt_tag_printf("tls_error", "%s:%s:%s",
                            ERR_lib_error_string(ssl_error),
                            ERR_func_error_string(ssl_error),
-                           ERR_reason_error_string(ssl_error)));
+                           ERR_reason_error_string(ssl_error)),
+            tls_context_format_location_tag(self));
   ERR_clear_error();
 }
 
@@ -403,7 +419,8 @@ tls_context_setup_ssl_options(TLSContext *self)
     }
   else
     {
-      msg_debug("empty ssl options");
+      msg_debug("No special SSL options were specified",
+                tls_context_format_location_tag(self));
     }
 }
 
@@ -442,9 +459,9 @@ _is_dh_valid(DH *dh)
 }
 
 static DH *
-_load_dh_from_file(const gchar *dhparam_file)
+_load_dh_from_file(TLSContext *self, const gchar *dhparam_file)
 {
-  if (!_is_file_accessible(dhparam_file))
+  if (!_is_file_accessible(self, dhparam_file))
     return NULL;
 
   BIO *bio = BIO_new_file(dhparam_file, "r");
@@ -468,7 +485,7 @@ _load_dh_from_file(const gchar *dhparam_file)
 }
 
 static DH *
-_load_dh_fallback(void)
+_load_dh_fallback(TLSContext *self)
 {
   DH *dh = DH_new();
 
@@ -514,7 +531,7 @@ tls_context_setup_ecdh(TLSContext *self)
 static gboolean
 tls_context_setup_dh(TLSContext *self)
 {
-  DH *dh = self->dhparam_file ? _load_dh_from_file(self->dhparam_file) : _load_dh_fallback();
+  DH *dh = self->dhparam_file ? _load_dh_from_file(self, self->dhparam_file) : _load_dh_fallback(self);
 
   if (!dh)
     return FALSE;
@@ -526,9 +543,9 @@ tls_context_setup_dh(TLSContext *self)
 }
 
 static PKCS12 *
-_load_pkcs12_file(const gchar *pkcs12_file)
+_load_pkcs12_file(TLSContext *self, const gchar *pkcs12_file)
 {
-  if (!_is_file_accessible(pkcs12_file))
+  if (!_is_file_accessible(self, pkcs12_file))
     return NULL;
 
   FILE *p12_file = fopen(pkcs12_file, "rb");
@@ -567,7 +584,7 @@ tls_context_add_certs(TLSContext *self, STACK_OF(X509) *ca_list)
 static gboolean
 tls_context_load_pkcs12(TLSContext *self)
 {
-  PKCS12 *pkcs12 = _load_pkcs12_file(self->pkcs12_file);
+  PKCS12 *pkcs12 = _load_pkcs12_file(self, self->pkcs12_file);
 
   if (!pkcs12)
     return FALSE;
@@ -595,8 +612,8 @@ tls_context_load_pkcs12(TLSContext *self)
 static gboolean
 _are_key_and_cert_files_accessible(TLSContext *self)
 {
-  gboolean key_file_accessible = _is_file_accessible(self->key_file);
-  gboolean cert_file_accessible = _is_file_accessible(self->cert_file);
+  gboolean key_file_accessible = _is_file_accessible(self, self->key_file);
+  gboolean cert_file_accessible = _is_file_accessible(self, self->cert_file);
 
   return key_file_accessible && cert_file_accessible;
 }
@@ -636,7 +653,8 @@ tls_context_setup_context(TLSContext *self)
   if (self->pkcs12_file)
     {
       if (self->cert_file || self->key_file)
-        msg_warning("WARNING: pkcs12-file() is specified, key-file() and cert-file() will be omitted");
+        msg_warning("WARNING: pkcs12-file() is specified, key-file() and cert-file() will be omitted",
+                    tls_context_format_location_tag(self));
 
       if (!tls_context_load_pkcs12(self))
         goto error;
@@ -650,10 +668,10 @@ tls_context_setup_context(TLSContext *self)
         goto error;
     }
 
-  if (_is_file_accessible(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
+  if (_is_file_accessible(self, self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
     goto error;
 
-  if (_is_file_accessible(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
+  if (_is_file_accessible(self, self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
     goto error;
 
   if (self->crl_dir)
@@ -682,7 +700,7 @@ tls_context_setup_context(TLSContext *self)
   return TLS_CONTEXT_SETUP_OK;
 
 error:
-  _print_and_clear_tls_session_error();
+  _print_and_clear_tls_session_error(self);
   if (self->ssl_ctx)
     {
       SSL_CTX_free(self->ssl_ctx);
@@ -690,7 +708,7 @@ error:
     }
   return TLS_CONTEXT_SETUP_ERROR;
 password_error:
-  _print_and_clear_tls_session_error();
+  _print_and_clear_tls_session_error(self);
   return TLS_CONTEXT_SETUP_BAD_PASSWORD;
 }
 
@@ -712,14 +730,16 @@ tls_context_setup_session(TLSContext *self)
   return session;
 }
 
+/* NOTE: location is a string description where this tls context was defined, e.g. the location in the config */
 TLSContext *
-tls_context_new(TLSMode mode)
+tls_context_new(TLSMode mode, const gchar *location)
 {
   TLSContext *self = g_new0(TLSContext, 1);
 
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
   self->ssl_options = TSO_NOSSLv2;
+  self->location = g_strdup(location ? : "n/a");
 
   if (self->mode == TM_CLIENT)
     self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
@@ -732,6 +752,7 @@ tls_context_new(TLSMode mode)
 void
 tls_context_free(TLSContext *self)
 {
+  g_free(self->location);
   SSL_CTX_free(self->ssl_ctx);
   g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
   g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
@@ -819,8 +840,8 @@ _pem_passwd_callback(char *buf, int size, int rwflag, void *user_data)
     {
       len = size;
       msg_warning("Password is too long, will be truncated",
-                  evt_tag_int("original length", secret->len),
-                  evt_tag_int("truncated length", size));
+                  evt_tag_int("original_length", secret->len),
+                  evt_tag_int("truncated_length", size));
     }
   memcpy(buf, secret->data, len);
   secret_storage_put_secret(secret);
