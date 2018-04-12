@@ -21,6 +21,7 @@ set(COMPAT_SOURCES
     compat/pio.c
     compat/strcasestr.c
     compat/strtok_r.c
+    compat/strnlen.c
     compat/time.c
     compat/openssl_support.c
     compat/getent.c

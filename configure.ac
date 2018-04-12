@@ -785,6 +785,7 @@ AC_CHECK_FUNCS(strdup		\
 	memrchr			\
 	localtime_r		\
 	gmtime_r		\
+	strnlen			\
 	strtok_r)
 old_LIBS=$LIBS
 LIBS=$BASE_LIBS
