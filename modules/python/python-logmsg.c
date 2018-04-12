@@ -122,16 +122,18 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
     }
 
   NVHandle handle = log_msg_get_value_handle(name);
-  PyObject *value_as_strobj = PyObject_Str(value);
 
-  if (value_as_strobj)
+  if (value && _py_is_string(value))
     {
-      log_msg_set_value(py_msg->msg, handle, _py_get_string_as_string(value_as_strobj), -1);
-      Py_DECREF(value_as_strobj);
+      log_msg_set_value(py_msg->msg, handle, _py_get_string_as_string(value), -1);
     }
   else
     {
-      /* propagate exception coming from the str() call */
+      PyErr_Format(PyExc_ValueError,
+                   "str or unicode object expected as log message values, got type %s (key %s). "
+                   "Earlier syslog-ng accepted any type, implicitly converting it to a string. "
+                   "With this version please convert it explicitly to a string using str()",
+                   value->ob_type->tp_name, name);
       return -1;
     }
 
