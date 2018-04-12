@@ -68,7 +68,7 @@ _is_key_blacklisted(const gchar *key)
 }
 
 static PyObject *
-_py_log_message_getattr(PyObject *o, PyObject *key)
+_py_log_message_subscript(PyObject *o, PyObject *key)
 {
   if (!_py_is_string(key))
     {
@@ -80,7 +80,7 @@ _py_log_message_getattr(PyObject *o, PyObject *key)
 
   if (_is_key_blacklisted(name))
     {
-      msg_error("Blacklisted attribute requested", evt_tag_str("key", name));
+      PyErr_Format(PyExc_KeyError, "Blacklisted attribute %s was requested", name);
       return NULL;
     }
   NVHandle handle = log_msg_get_value_handle(name);
@@ -90,7 +90,7 @@ _py_log_message_getattr(PyObject *o, PyObject *key)
 
   if (!value)
     {
-      PyErr_SetString(PyExc_AttributeError, "No such attribute");
+      PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
       return NULL;
     }
 
@@ -100,7 +100,7 @@ _py_log_message_getattr(PyObject *o, PyObject *key)
 }
 
 static int
-_py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
+_py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 {
   if (!_py_is_string(key))
     {
@@ -109,30 +109,30 @@ _py_log_message_setattr(PyObject *o, PyObject *key, PyObject *value)
     }
 
   PyLogMessage *py_msg = (PyLogMessage *) o;
+  LogMessage *msg = py_msg->msg;
   const gchar *name = _py_get_string_as_string(key);
+
+  if (log_msg_is_write_protected(msg))
+    {
+      PyErr_Format(PyExc_TypeError,
+                   "Log message is read only, cannot set name-value pair %s, "
+                   "you are possibly trying to change a LogMessage from a "
+                   "destination driver,  which is not allowed", name);
+      return -1;
+    }
+
   NVHandle handle = log_msg_get_value_handle(name);
   PyObject *value_as_strobj = PyObject_Str(value);
 
   if (value_as_strobj)
     {
-      if(log_msg_is_write_protected(py_msg->msg))
-        {
-          msg_debug("python: error while modifying msg",
-                    evt_tag_printf("msg", "%p", py_msg->msg),
-                    evt_tag_str("name", name),
-                    evt_tag_str("value", _py_get_string_as_string(value_as_strobj)));
-
-          PyErr_SetString(PyExc_RuntimeError, "msg is write protected");
-          Py_DECREF(value_as_strobj);
-          return -1;
-        }
-
       log_msg_set_value(py_msg->msg, handle, _py_get_string_as_string(value_as_strobj), -1);
       Py_DECREF(value_as_strobj);
     }
   else
     {
-      msg_warning("Cannot set value in logmsg", evt_tag_str("name", name));
+      /* propagate exception coming from the str() call */
+      return -1;
     }
 
   return 0;
@@ -161,8 +161,8 @@ py_log_message_new(LogMessage *msg)
 static PyMappingMethods py_log_message_mapping =
 {
   .mp_length = NULL,
-  .mp_subscript = (binaryfunc) _py_log_message_getattr,
-  .mp_ass_subscript = (objobjargproc) _py_log_message_setattr
+  .mp_subscript = (binaryfunc) _py_log_message_subscript,
+  .mp_ass_subscript = (objobjargproc) _py_log_message_ass_subscript
 };
 
 static gboolean
@@ -250,7 +250,7 @@ static PyTypeObject py_log_message_type =
 };
 
 void
-python_log_message_init(void)
+py_log_message_init(void)
 {
   PyType_Ready(&py_log_message_type);
 }

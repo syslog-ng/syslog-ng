@@ -67,7 +67,7 @@ _py_init_interpreter(void)
       py_init_argv();
 
       PyEval_InitThreads();
-      python_log_message_init();
+      py_log_message_init();
       PyEval_SaveThread();
 
       interpreter_initialized = TRUE;

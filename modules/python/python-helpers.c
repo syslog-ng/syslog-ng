@@ -232,7 +232,7 @@ _py_get_method(PyObject *instance, const gchar *method_name, const gchar *module
     {
       gchar buf[256];
 
-      msg_error("Missing Python method ",
+      msg_error("Missing Python method",
                 evt_tag_str("module", module),
                 evt_tag_str("method", method_name),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
