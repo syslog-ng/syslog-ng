@@ -47,6 +47,8 @@ INSTALL_ARGS	+= module_LTLIBRARIES="modules/afsocket/libafsocket.la"
 INSTALL_ARGS	+= INSTALL_EXEC_HOOKS=afsocket-install-exec-hook
    else ifeq (${self_sub},modules_json)
 INSTALL_ARGS	+= module_LTLIBRARIES="modules/json/libjson-plugin.la"
+   else ifeq (${self_sub},modules_python)
+INSTALL_ARGS	+= module_LTLIBRARIES="modules/python/libmod-python.la"
    else
 INSTALL_ARGS	+= module_LTLIBRARIES=${self}/lib$(word 2,$(subst /, ,${self})).la
    endif
