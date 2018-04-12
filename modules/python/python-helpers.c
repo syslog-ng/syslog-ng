@@ -261,18 +261,15 @@ _py_invoke_bool_function(PyObject *func, PyObject *arg, const gchar *class, cons
 }
 
 PyObject *
-_py_get_method(PyObject *instance, const gchar *method_name, const gchar *module)
+_py_get_optional_method(PyObject *instance, const gchar *class, const gchar *method_name, const gchar *module)
 {
   PyObject *method = _py_get_attr_or_null(instance, method_name);
   if (!method)
     {
-      gchar buf[256];
-
-      msg_error("Missing Python method",
+      msg_debug("Missing optional Python method",
                 evt_tag_str("module", module),
-                evt_tag_str("method", method_name),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-      _py_finish_exception_handling();
+                evt_tag_str("class", class),
+                evt_tag_str("method", method_name));
       return NULL;
     }
   return method;
@@ -281,7 +278,7 @@ _py_get_method(PyObject *instance, const gchar *method_name, const gchar *module
 void
 _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class, const gchar *module)
 {
-  PyObject *method = _py_get_method(instance, method_name, module);
+  PyObject *method = _py_get_optional_method(instance, class, method_name, module);
   if (method)
     {
       _py_invoke_void_function(method, NULL, class, module);
@@ -294,7 +291,7 @@ _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method
                                          GHashTable *args, const gchar *class, const gchar *module)
 {
   gboolean result = FALSE;
-  PyObject *method = _py_get_method(instance, method_name, module);
+  PyObject *method = _py_get_optional_method(instance, class, method_name, module);
 
   if (method)
     {
