@@ -398,14 +398,6 @@ python_dd_worker_init(LogThrDestDriver *d)
 }
 
 static void
-python_dd_worker_deinit(LogThrDestDriver *d)
-{
-  PythonDestDriver *self = (PythonDestDriver *)d;
-
-  python_dd_close(self);
-}
-
-static void
 python_dd_disconnect(LogThrDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *) d;
@@ -511,7 +503,6 @@ python_dd_new(GlobalConfig *cfg)
   self->super.messages.retry_over = python_dd_over_message;
 
   self->super.worker.thread_init = python_dd_worker_init;
-  self->super.worker.thread_deinit = python_dd_worker_deinit;
   self->super.worker.disconnect = python_dd_disconnect;
   self->super.worker.insert = python_dd_insert;
 
