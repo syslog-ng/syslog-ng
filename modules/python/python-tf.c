@@ -60,6 +60,10 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
       return NULL;
     }
 
+  msg_debug("$(python): Invoking Python template function",
+            evt_tag_str("function", function_name),
+            evt_tag_printf("msg", "%p", msg));
+
   args = _py_construct_args_tuple(msg, argc, argv);
   ret = PyObject_CallObject(callable, args);
   Py_DECREF(args);
@@ -80,15 +84,15 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
 static gboolean
 _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GString *result)
 {
-  if (!PyBytes_Check(ret))
+  if (!_py_is_string(ret))
     {
-      msg_error("$(python): The return value is not a string",
+      msg_error("$(python): The return value is not str or unicode",
                 evt_tag_str("function", function_name),
                 evt_tag_str("type", ret->ob_type->tp_name));
       Py_DECREF(ret);
       return FALSE;
     }
-  g_string_append(result, PyBytes_AS_STRING(ret));
+  g_string_append(result, _py_get_string_as_string(ret));
   Py_DECREF(ret);
   return TRUE;
 }
