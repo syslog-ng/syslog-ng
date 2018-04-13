@@ -109,6 +109,7 @@ void tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite);
 void tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_list);
 void tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file);
 const gchar *tls_context_get_key_file(TLSContext *self);
+EVTTAG *tls_context_format_tls_error_tag(TLSContext *self);
 EVTTAG *tls_context_format_location_tag(TLSContext *self);
 
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);

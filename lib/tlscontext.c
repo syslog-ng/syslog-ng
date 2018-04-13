@@ -329,6 +329,17 @@ tls_session_free(TLSSession *self)
 }
 
 EVTTAG *
+tls_context_format_tls_error_tag(TLSContext *self)
+{
+  gint ssl_error = ERR_get_error();
+
+  return evt_tag_printf("tls_error", "%s:%s:%s",
+                        ERR_lib_error_string(ssl_error),
+                        ERR_func_error_string(ssl_error),
+                        ERR_reason_error_string(ssl_error));
+}
+
+EVTTAG *
 tls_context_format_location_tag(TLSContext *self)
 {
   return evt_tag_str("location", self->location);
@@ -354,12 +365,8 @@ _is_file_accessible(TLSContext *self, const gchar *fname)
 static void
 _print_and_clear_tls_session_error(TLSContext *self)
 {
-  gulong ssl_error = ERR_get_error();
   msg_error("Error setting up TLS session context",
-            evt_tag_printf("tls_error", "%s:%s:%s",
-                           ERR_lib_error_string(ssl_error),
-                           ERR_func_error_string(ssl_error),
-                           ERR_reason_error_string(ssl_error)),
+            tls_context_format_tls_error_tag(self),
             tls_context_format_location_tag(self));
   ERR_clear_error();
 }
