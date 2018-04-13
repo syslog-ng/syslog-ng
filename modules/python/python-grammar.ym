@@ -71,7 +71,7 @@ start
           {
             gboolean result;
 
-	    result = python_evaluate_global_code(configuration, $4);
+	    result = python_evaluate_global_code(configuration, $4, &@2);
 	    free($4);
             CHECK_ERROR(result, @1, "Error processing global python block");
             *instance = (void *) 1;

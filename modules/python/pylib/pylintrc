@@ -40,7 +40,7 @@ load-plugins=
 # --disable=W"
 #disable=
 
-disable=C0111,W0613,R0903,I0011,W0142,E1101,R0921,R0922,R0801,C0330
+disable=C0111,W0613,R0903,I0011,W0142,E1101,R0921,R0922,R0801,C0330,R1705
 
 # C0111     missing-docstring       Our priority is to make the code document
 #                                   itself. Docstring is required only when
@@ -74,6 +74,11 @@ disable=C0111,W0613,R0903,I0011,W0142,E1101,R0921,R0922,R0801,C0330
 #                                   disabled inline. The warning itself is invalid,
 #                                   as the class is used by addons, which is not
 #                                   visible to pylint.
+#
+# R1705     no-else-return          I don't consider this a good
+#                                   recommendation, sometimes a return in
+#                                   both the if and else branches is preferred.
+#
 [REPORTS]
 
 # Set the output format. Available formats are text, parseable, colorized, msvs

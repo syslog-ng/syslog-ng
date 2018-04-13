@@ -28,6 +28,6 @@
 #include "python-module.h"
 
 PyObject *py_log_message_new(LogMessage *msg);
-void python_log_message_init(void);
+void py_log_message_init(void);
 
 #endif

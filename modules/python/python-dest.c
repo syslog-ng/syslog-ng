@@ -226,7 +226,8 @@ _py_init_bindings(PythonDestDriver *self)
       msg_error("Error looking Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return FALSE;
     }
 
@@ -238,7 +239,8 @@ _py_init_bindings(PythonDestDriver *self)
       msg_error("Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return FALSE;
     }
 
@@ -396,14 +398,6 @@ python_dd_worker_init(LogThrDestDriver *d)
 }
 
 static void
-python_dd_worker_deinit(LogThrDestDriver *d)
-{
-  PythonDestDriver *self = (PythonDestDriver *)d;
-
-  python_dd_close(self);
-}
-
-static void
 python_dd_disconnect(LogThrDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *) d;
@@ -509,7 +503,6 @@ python_dd_new(GlobalConfig *cfg)
   self->super.messages.retry_over = python_dd_over_message;
 
   self->super.worker.thread_init = python_dd_worker_init;
-  self->super.worker.thread_deinit = python_dd_worker_deinit;
   self->super.worker.disconnect = python_dd_disconnect;
   self->super.worker.insert = python_dd_insert;
 

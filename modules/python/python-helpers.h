@@ -27,14 +27,15 @@
 #include "python-module.h"
 
 const gchar *_py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len);
-const gchar *_py_fetch_and_format_exception_text(gchar *buf, gsize buf_len);
+const gchar *_py_format_exception_text(gchar *buf, gsize buf_len);
+void _py_finish_exception_handling(void);
 PyObject *_py_get_attr_or_null(PyObject *o, const gchar *attr);
 PyObject *_py_do_import(const gchar *modname);
 PyObject *_py_resolve_qualified_name(const gchar *name);
 PyObject *_py_create_arg_dict(GHashTable *args);
-PyObject *_py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
-void _py_invoke_void_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
-gboolean _py_invoke_bool_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *module);
+PyObject *_py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *caller_context);
+void _py_invoke_void_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *caller_context);
+gboolean _py_invoke_bool_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *caller_context);
 PyObject *_py_get_method(PyObject *instance, const gchar *method_name, const gchar *module);
 void _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                     const gchar *module);
@@ -43,5 +44,8 @@ gboolean _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gcha
 gboolean _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                         const gchar *module);
 void _py_perform_imports(GList *imports);
+gboolean _py_is_string(PyObject *object);
+const gchar *_py_get_string_as_string(PyObject *object);
+PyObject *_py_string_from_string(const gchar *str, gssize len);
 
 #endif

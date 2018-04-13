@@ -38,7 +38,7 @@ _py_init_interpreter(void)
   py_init_argv();
 
   PyEval_InitThreads();
-  python_log_message_init();
+  py_log_message_init();
   PyEval_SaveThread();
 }
 
@@ -56,10 +56,18 @@ _init_python_main(void)
 static gchar *
 _dict_clone_value(PyObject *dict, const gchar *key)
 {
-  PyObject *res_obj = PyObject_Str(PyDict_GetItemString(dict, key));
+  PyObject *res_obj = PyDict_GetItemString(dict, key);
+
   if (!res_obj)
     return NULL;
-  gchar *res = g_strdup(py_object_as_string(res_obj));
+
+  if (!_py_is_string(res_obj))
+    {
+      Py_XDECREF(res_obj);
+      return NULL;
+    }
+
+  gchar *res = g_strdup(_py_get_string_as_string(res_obj));
   Py_XDECREF(res_obj);
   return res;
 }

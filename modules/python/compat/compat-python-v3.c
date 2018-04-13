@@ -21,18 +21,6 @@
  *
  */
 
-gboolean
-py_is_string(PyObject *object)
-{
-  return PyUnicode_Check(object);
-}
-
-const gchar *
-py_object_as_string(PyObject *object)
-{
-  return PyUnicode_AsUTF8(object);
-}
-
 void
 py_init_argv(void)
 {

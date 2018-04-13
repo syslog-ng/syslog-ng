@@ -91,7 +91,6 @@ _pp_py_invoke_bool_method_by_name_with_args(PythonParser *self, PyObject *instan
 static gboolean
 _py_invoke_parser_process(PythonParser *self, PyObject *msg)
 {
-  msg_debug("Logmessage passed to the Python parser");
   return _pp_py_invoke_bool_function(self, self->py.parser_process, msg);
 }
 
@@ -121,7 +120,8 @@ _py_init_bindings(PythonParser *self)
       msg_error("Error looking Python parser class",
                 evt_tag_str("parser", self->super.name),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return FALSE;
     }
 
@@ -133,7 +133,8 @@ _py_init_bindings(PythonParser *self)
       msg_error("Error instantiating Python parser class",
                 evt_tag_str("parser", self->super.name),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_fetch_and_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
       return FALSE;
     }
 
@@ -180,6 +181,13 @@ python_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   gstate = PyGILState_Ensure();
   {
     LogMessage *msg = log_msg_make_writable(pmsg, path_options);
+
+    msg_debug("Invoking the Python parse() method",
+              evt_tag_str("parser", self->super.name),
+              evt_tag_str("class", self->class),
+              log_pipe_location_tag(&self->super.super),
+              evt_tag_printf("msg", "%p", msg));
+
     PyObject *msg_object = py_log_message_new(msg);
     result = _py_invoke_parser_process(self, msg_object);
     Py_DECREF(msg_object);

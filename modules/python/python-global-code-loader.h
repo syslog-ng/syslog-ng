@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2017 Balabit
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 Balazs Scheidler <balazs.scheidler@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,9 +22,12 @@
  *
  */
 
-void
-py_init_argv(void)
-{
-  static char *argv[] = {"syslog-ng"};
-  PySys_SetArgvEx(1, argv, 0);
-}
+#ifndef _SNG_PYTHON_GLOBAL_CODE_LOADER_H
+#define _SNG_PYTHON_GLOBAL_CODE_LOADER_H
+
+#include "python-module.h"
+
+PyObject *py_global_code_loader_new(const gchar *source);
+void py_global_code_loader_init(void);
+
+#endif
