@@ -6,7 +6,6 @@ set(AFFILE_HEADERS
     "collection-comporator.h"
     "directory-monitor-factory.h"
     "directory-monitor.h"
-    "directory-monitor-inotify.h"
     "directory-monitor-poll.h"
     "file-opener.h"
     "file-reader.h"
@@ -29,7 +28,6 @@ set(AFFILE_SOURCES
     "collection-comporator.c"
     "directory-monitor.c"
     "directory-monitor-factory.c"
-    "directory-monitor-inotify.c"
     "directory-monitor-poll.c"
     "file-opener.c"
     "file-reader.c"
@@ -44,6 +42,16 @@ set(AFFILE_SOURCES
     "wildcard-source.c"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c"
 )
+
+if(SYSLOG_NG_HAVE_INOTIFY)
+    list(APPEND AFFILE_HEADERS
+        "directory-monitor-inotify.h"
+    )
+
+    list(APPEND AFFILE_SOURCES
+        "directory-monitor-inotify.c"
+    )
+endif()
 
 generate_y_from_ym(modules/affile/affile-grammar)
 

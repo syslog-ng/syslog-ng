@@ -23,7 +23,10 @@
 #include "python-logmsg.h"
 #include <criterion/criterion.h>
 #include "apphook.h"
-#include "msg_parse_lib.h"
+#include "msg-format.h"
+#include "logmsg/logmsg.h"
+
+static MsgFormatOptions parse_options;
 
 static PyObject *_python_main;
 static PyObject *_python_main_dict;
@@ -64,6 +67,7 @@ _dict_clone_value(PyObject *dict, const gchar *key)
 void setup(void)
 {
   app_startup();
+  msg_format_options_defaults(&parse_options);
   _py_init_interpreter();
   _init_python_main();
 }

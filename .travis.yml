@@ -104,9 +104,6 @@ compiler:
   - clang
 
 matrix:
-  fast_finish: true
-  allow_failures:
-    - os: osx
   include:
     - env: B=style-check
       dist: trusty
@@ -163,42 +160,34 @@ matrix:
         - make --keep-going -j $(nproc) all test install
     - env: B=check
       os: osx
-      osx_image: xcode8
+      osx_image: xcode8.3
       compiler: clang
       install:
-        - brew update
-        - brew install
-            autoconf-archive
-            binutils
-            bison
-            geoip
-            geoipupdate
-            glib
-            gradle
-            hiredis
-            libdbi
-            libnet
-            riemann-client
-        - geoipupdate
-        - pip install -r requirements.txt
-        - export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PATH
+        - export PYTHONUSERBASE=$HOME/python_packages
+        - export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
         - export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+        - brew update > /dev/null
+        - brew install python@2 &> /dev/null || brew link --overwrite python@2
+        - pip2 install --user -r dbld/images/required-pip/all.txt
+        - brew bundle --file=contrib/Brewfile
       before_script:
         - ./autogen.sh
         - ./configure
+            --with-ivykis=system
             --disable-sun-streams
             --disable-systemd
             --disable-pacct
-            --enable-all-modules
             --disable-smtp
-        - make --keep-going -j 3 ||
+            --disable-geoip
+            --enable-all-modules
+        - make --keep-going -j 4 ||
           {
             S=$?;
             make V=1;
             return $S;
           }
       script:
-        - make --keep-going check ||
+        - make --keep-going check -j 4 ||
           {
             S=$?;
             make V=1 check;
