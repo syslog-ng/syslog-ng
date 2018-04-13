@@ -569,6 +569,13 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
 }
 
 void
+log_reader_close_transport(LogReader *self)
+{
+  if (self->proto)
+    log_proto_server_close_transport(self->proto);
+}
+
+void
 log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr)
 {
   LogReader *self = (LogReader *) s;
