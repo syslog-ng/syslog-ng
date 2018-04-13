@@ -59,11 +59,20 @@ void log_proto_server_options_defaults(LogProtoServerOptions *options);
 void log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg);
 void log_proto_server_options_destroy(LogProtoServerOptions *options);
 
+
+typedef void (*LogProtoServerWakeupFunc)(gpointer user_data);
+typedef struct _LogProtoServerWakeupCallback
+{
+  LogProtoServerWakeupFunc func;
+  gpointer user_data;
+} LogProtoServerWakeupCallback;
+
 struct _LogProtoServer
 {
   LogProtoStatus status;
   const LogProtoServerOptions *options;
   LogTransport *transport;
+  LogProtoServerWakeupCallback wakeup_callback;
   /* FIXME: rename to something else */
   gboolean (*is_position_tracked)(LogProtoServer *s);
   gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
@@ -153,6 +162,20 @@ log_proto_server_is_position_tracked(LogProtoServer *s)
     return s->is_position_tracked(s);
 
   return FALSE;
+}
+
+static inline void
+log_proto_server_set_wakeup_cb(LogProtoServer *s, LogProtoServerWakeupFunc wakeup, gpointer user_data)
+{
+  s->wakeup_callback.user_data = user_data;
+  s->wakeup_callback.func = wakeup;
+}
+
+static inline void
+log_proto_server_wakeup_cb_call(LogProtoServerWakeupCallback *wakeup_callback)
+{
+  if (wakeup_callback->func)
+    wakeup_callback->func(wakeup_callback->user_data);
 }
 
 gboolean log_proto_server_validate_options_method(LogProtoServer *s);

@@ -72,6 +72,8 @@ static void log_reader_idle_timeout(void *cookie);
 
 static void log_reader_update_watches(LogReader *self);
 
+static void log_reader_wakeup(LogSource *s);
+
 static void
 log_reader_apply_proto_and_poll_events(LogReader *self, LogProtoServer *proto, PollEvents *poll_events)
 {
@@ -81,6 +83,10 @@ log_reader_apply_proto_and_poll_events(LogReader *self, LogProtoServer *proto, P
     poll_events_free(self->poll_events);
 
   self->proto = proto;
+
+  if (self->proto)
+    log_proto_server_set_wakeup_cb(self->proto, (LogProtoServerWakeupFunc) log_reader_wakeup, self);
+
   self->poll_events = poll_events;
 }
 
@@ -301,8 +307,6 @@ static void
 log_reader_update_watches(LogReader *self)
 {
   GIOCondition cond;
-  gboolean free_to_send;
-  gboolean line_is_ready_in_buffer;
   gint idle_timeout = -1;
 
   main_loop_assert_main_thread();
@@ -314,14 +318,14 @@ log_reader_update_watches(LogReader *self)
 
   log_reader_start_watches_if_stopped(self);
 
-  free_to_send = log_source_free_to_send(&self->super);
+  gboolean free_to_send = log_source_free_to_send(&self->super);
   if (!free_to_send)
     {
       log_reader_suspend_until_awoken(self);
       return;
     }
 
-  line_is_ready_in_buffer = log_proto_server_prepare(self->proto, &cond, &idle_timeout);
+  gboolean line_is_ready_in_buffer = log_proto_server_prepare(self->proto, &cond, &idle_timeout);
 
   if (idle_timeout > 0)
     {
@@ -338,6 +342,13 @@ log_reader_update_watches(LogReader *self)
       log_reader_force_check_in_next_poll(self);
       return;
     }
+
+  if (!cond)
+    {
+      log_reader_suspend_until_awoken(self);
+      return;
+    }
+
   poll_events_update_watches(self->poll_events, cond);
 }
 
