@@ -28,24 +28,28 @@
 #include "lib/run-id.h"
 #include "lib/apphook.h"
 #include <unistd.h>
+#include <criterion/criterion.h>
 
+PersistState *create_persist_state(gchar *persist_file_name);
+
+TestSuite(test_run_id, .init = app_startup, .fini = app_shutdown);
 #define RUN_ID_FIRST 1
 
 PersistState *
-create_persist_state(void)
+create_persist_state(gchar *persist_file_name)
 {
-  return clean_and_create_persist_state_for_test("test_run_id.persist");
+  return clean_and_create_persist_state_for_test(persist_file_name);
 };
 
 PersistState *
-restart_persist_state_with_cancel(PersistState *state)
+restart_persist_state_with_cancel(PersistState *state, gchar *persist_file_name)
 {
   PersistState *new_state;
 
   persist_state_cancel(state);
   persist_state_free(state);
 
-  new_state = create_persist_state_for_test("test_run_id.persist");
+  new_state = create_persist_state_for_test(persist_file_name);
   return new_state;
 };
 
@@ -55,59 +59,55 @@ destroy_persist_state(PersistState *state)
   cancel_and_destroy_persist_state(state);
 };
 
-void
-test_run_id__first_run__run_id_is_one(void)
+Test(test_run_id, first_run__run_id_is_one)
 {
   PersistState *state;
 
-  state = create_persist_state();
+  state = create_persist_state("test_run_id__first_run__run_id_is_one.persist");
 
   run_id_init(state);
 
-  assert_gint(run_id_get(), RUN_ID_FIRST, "Newly initialized run id is not the first id!");
+  cr_assert_eq(run_id_get(), RUN_ID_FIRST, "Newly initialized run id is not the first id!");
 
   destroy_persist_state(state);
 };
 
-void
-test_run_id__second_run__run_id_is_two(void)
+Test(test_run_id, second_run__run_id_is_two)
 {
   PersistState *state;
 
-  state = create_persist_state();
+  state = create_persist_state("test_run_id__second_run__run_id_is_two");
 
   run_id_init(state);
 
   state = restart_persist_state(state);
 
   run_id_init(state);
-  assert_gint(run_id_get(), RUN_ID_FIRST + 1, "Running run_id_init twice is not the second id!");
+  cr_assert_eq(run_id_get(), RUN_ID_FIRST + 1, "Running run_id_init twice is not the second id!");
 
   destroy_persist_state(state);
 };
 
-void
-test_run_id__second_run_but_with_non_commit__run_id_is_one(void)
+Test(test_run_id,  second_run_but_with_non_commit__run_id_is_one)
 {
   PersistState *state;
 
-  state = create_persist_state();
+  state = create_persist_state("test_run_id__second_run_but_with_non_commit__run_id_is_one");
 
   run_id_init(state);
 
-  state = restart_persist_state_with_cancel(state);
+  state = restart_persist_state_with_cancel(state, "test_run_id__second_run_but_with_non_commit__run_id_is_one");
   run_id_init(state);
-  assert_gint(run_id_get(), RUN_ID_FIRST, "Not committing persist state still increases run_id");
+  cr_assert_eq(run_id_get(), RUN_ID_FIRST, "Not committing persist state still increases run_id");
 
   destroy_persist_state(state);
 };
 
-void
-test_run_id__is_same_run__differs_when_not_same_run(void)
+Test(test_run_id, is_same_run__differs_when_not_same_run)
 {
   PersistState *state;
 
-  state = create_persist_state();
+  state = create_persist_state("test_run_id__is_same_run__differs_when_not_same_run");
 
   run_id_init(state);
   int prev_run_id = run_id_get();
@@ -116,51 +116,34 @@ test_run_id__is_same_run__differs_when_not_same_run(void)
 
   run_id_init(state);
 
-  assert_false(run_id_is_same_run(prev_run_id), "Run_id_is_same_run returned true when the run differs");
+  cr_assert_not(run_id_is_same_run(prev_run_id), "Run_id_is_same_run returned true when the run differs");
 
   destroy_persist_state(state);
 };
 
-void
-test_run_id_macro__macro_has_the_same_value_as_run_id(void)
+Test(test_run_id, macro_has_the_same_value_as_run_id)
 {
   PersistState *state;
   GString *res = g_string_sized_new(0);
 
-  state = create_persist_state();
+  state = create_persist_state("test_run_id__macro_has_the_same_value_as_run_id");
   run_id_init(state);
 
   run_id_append_formatted_id(res);
-  assert_string(res->str, "1", "Run id is formatted incorrectly");
+  cr_assert_str_eq(res->str, "1", "Run id is formatted incorrectly: %s", res->str);
 
   destroy_persist_state(state);
   g_string_free(res, TRUE);
 };
 
-void
-test_run_id_macro__macro_is_empty_if_run_id_is_not_inited(void)
+Test(test_run_id, macro_is_empty_if_run_id_is_not_inited)
 {
   GString *res = g_string_sized_new(0);
 
   run_id_deinit();
 
   run_id_append_formatted_id(res);
-  assert_string(res->str, "", "Run id is not empty if it is not inited");
+  cr_assert_str_eq(res->str, "", "Run id is not empty if it is not inited");
 
   g_string_free(res, TRUE);
-};
-
-
-int
-main(void)
-{
-  app_startup();
-  test_run_id__first_run__run_id_is_one();
-  test_run_id__second_run__run_id_is_two();
-  test_run_id__second_run_but_with_non_commit__run_id_is_one();
-  test_run_id__is_same_run__differs_when_not_same_run();
-  test_run_id_macro__macro_has_the_same_value_as_run_id();
-  test_run_id_macro__macro_is_empty_if_run_id_is_not_inited();
-  app_shutdown();
-  return 0;
 };
