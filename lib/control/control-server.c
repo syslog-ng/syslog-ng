@@ -25,9 +25,6 @@
 #include "messages.h"
 #include "str-utils.h"
 
-#ifndef CONTROL_UNITTEST
-#include "control-server-unix.c"
-#endif
 #include <string.h>
 #include <errno.h>
 
@@ -205,4 +202,25 @@ control_server_free(ControlServer *self)
     }
   g_free(self->control_socket_name);
   g_free(self);
+}
+
+void
+control_connection_start_watches(ControlConnection *self)
+{
+  if (self->events.start_watches)
+    self->events.start_watches(self);
+}
+
+void
+control_connection_update_watches(ControlConnection *self)
+{
+  if (self->events.update_watches)
+    self->events.update_watches(self);
+}
+
+void
+control_connection_stop_watches(ControlConnection *self)
+{
+  if (self->events.stop_watches)
+    self->events.stop_watches(self);
 }

@@ -43,6 +43,13 @@ struct _ControlConnection
   void (*handle_input)(gpointer s);
   void (*handle_output)(gpointer s);
   void (*free_fn)(ControlConnection *self);
+  struct
+  {
+    void (*start_watches)(ControlConnection *self);
+    void (*update_watches)(ControlConnection *self);
+    void (*stop_watches)(ControlConnection *self);
+  } events;
+
 };
 
 struct _ControlServer

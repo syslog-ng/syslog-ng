@@ -52,18 +52,6 @@ typedef struct _TimestampFormatTestCase
   gchar *expected_format;
 } TimestampFormatTestCase;
 
-__attribute__((constructor))
-static void global_test_init(void)
-{
-  app_startup();
-}
-
-__attribute__((destructor))
-static void global_test_deinit(void)
-{
-  app_shutdown();
-}
-
 void
 set_time_zone(const gchar *time_zone)
 {
@@ -136,6 +124,8 @@ assert_timestamp_format(GString *target, LogStamp *stamp, TimestampFormatTestCas
   log_stamp_format(stamp, target, c.format, c.zone_offset, c.frac_digits);
   cr_assert_str_eq(target->str, c.expected_format, "Actual: %s, Expected: %s", target->str, c.expected_format);
 }
+
+TestSuite(zone, .init = app_startup, .fini = app_shutdown);
 
 Test(zone, test_time_zone_offset)
 {

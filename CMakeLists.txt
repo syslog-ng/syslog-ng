@@ -134,6 +134,8 @@ find_package(Resolv REQUIRED)
 find_package(Wrap)
 find_package(criterion)
 find_package(Inotify)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
 
 include (openssl_functions)
