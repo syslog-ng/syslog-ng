@@ -444,7 +444,11 @@ fi
 dnl ***************************************************************************
 dnl Set up NO_PIE_LDFLAG: -no-pie is compatible with $CC.
 
-no_pie_ldflags="-no-pie"
+if test $ostype = "Darwin"; then
+  no_pie_ldflags="-Wl,-no_pie"
+else
+  no_pie_ldflags="-no-pie"
+fi
 
 old_LDFLAGS="$LDFLAGS"
 LDFLAGS="$LDFLAGS $no_pie_ldflags"
@@ -455,20 +459,7 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([int main(void) {return 0;}])],
 
 LDFLAGS="$old_LDFLAGS"
 
-if test "$no_pie_option_available" = "no"; then
-  no_pie_ldflags="-Wl,-no_pie"
-  LDFLAGS="$LDFLAGS $no_pie_ldflags"
-
-  AC_LINK_IFELSE([AC_LANG_SOURCE([int main(void) {return 0;}])],
-                 [no_pie_option_available=yes],
-                 [no_pie_option_available=no])
-
-  LDFLAGS="$old_LDFLAGS"
-
-  if test "$no_pie_option_available" = "yes"; then
-    NO_PIE_LDFLAG="$no_pie_ldflags"
-  fi
-else
+if test "$no_pie_option_available" = "yes"; then
   NO_PIE_LDFLAG="$no_pie_ldflags"
 fi
 AC_SUBST([NO_PIE_LDFLAG])
