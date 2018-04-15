@@ -25,7 +25,7 @@
 #define TLSCONTEXT_H_INCLUDED
 
 #include "syslog-ng.h"
-
+#include "messages.h"
 #include <openssl/ssl.h>
 
 typedef enum
@@ -93,7 +93,7 @@ TLSSession *tls_context_setup_session(TLSContext *self);
 void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints);
 void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
 
-TLSContext *tls_context_new(TLSMode mode);
+TLSContext *tls_context_new(TLSMode mode, const gchar *config_location);
 void tls_context_free(TLSContext *s);
 
 gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
@@ -109,6 +109,8 @@ void tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite);
 void tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_list);
 void tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file);
 const gchar *tls_context_get_key_file(TLSContext *self);
+EVTTAG *tls_context_format_tls_error_tag(TLSContext *self);
+EVTTAG *tls_context_format_location_tag(TLSContext *self);
 
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);

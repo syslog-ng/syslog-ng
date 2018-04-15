@@ -353,7 +353,9 @@ source_afinet_tcp_option
         : source_afinet_option
 	| KW_TLS
 	  {
-	    last_tls_context = tls_context_new(TM_SERVER);
+            gchar buf[256];
+
+	    last_tls_context = tls_context_new(TM_SERVER, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
 	  }
 	  '(' tls_options ')'
 	  {
@@ -442,7 +444,9 @@ source_afsocket_transport
         ')'	{ free($3); }
 	| KW_TLS
 	  {
-	    last_tls_context = tls_context_new(TM_SERVER);
+            gchar buf[256];
+
+	    last_tls_context = tls_context_new(TM_SERVER, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
 	  }
 	  '(' tls_options ')'
 	  {
@@ -596,7 +600,8 @@ dest_afinet_tcp_option
 	: dest_afinet_option
 	| KW_TLS
 	  {
-	    last_tls_context = tls_context_new(TM_CLIENT);
+            gchar buf[256];
+	    last_tls_context = tls_context_new(TM_CLIENT, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
 	  }
 	  '(' tls_options ')'
 	  {
@@ -680,7 +685,9 @@ dest_afsocket_transport
 	| KW_SPOOF_SOURCE '(' yesno ')'		         { afinet_dd_set_spoof_source(last_driver, $3); }
 	| KW_TLS
 	  {
-            last_tls_context = tls_context_new(TM_CLIENT);
+            gchar buf[256];
+
+            last_tls_context = tls_context_new(TM_CLIENT, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
           }
           '(' tls_options ')'
           {

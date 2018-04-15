@@ -147,21 +147,27 @@ _find_closest_file_inclusion(CfgLexer *self, YYLTYPE *yylloc)
   return NULL;
 }
 
-EVTTAG *
-cfg_lexer_format_location_tag(CfgLexer *self, YYLTYPE *yylloc)
+const gchar *
+cfg_lexer_format_location(CfgLexer *self, YYLTYPE *yylloc, gchar *buf, gsize buf_len)
 {
-  gchar buf[256];
   CfgIncludeLevel *level;
 
   level = _find_closest_file_inclusion(self, yylloc);
   if (level)
-    g_snprintf(buf, sizeof(buf), "%s:%d:%d",
+    g_snprintf(buf, buf_len, "%s:%d:%d",
                level->name,
                level->lloc.first_line, level->lloc.first_column);
   else
-    g_snprintf(buf, sizeof(buf), "%s:%d:%d", "#buffer", yylloc->first_line, yylloc->first_column);
+    g_snprintf(buf, buf_len, "%s:%d:%d", "#buffer", yylloc->first_line, yylloc->first_column);
+  return buf;
+}
 
-  return evt_tag_str("location", buf);
+EVTTAG *
+cfg_lexer_format_location_tag(CfgLexer *self, YYLTYPE *yylloc)
+{
+  gchar buf[256];
+
+  return evt_tag_str("location", cfg_lexer_format_location(self, yylloc, buf, sizeof(buf)));
 }
 
 int

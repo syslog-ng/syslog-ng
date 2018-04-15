@@ -142,7 +142,7 @@ create_dummy_tls_context(void)
 {
   TLSContext *tls_context;
 
-  tls_context = tls_context_new(TM_SERVER);
+  tls_context = tls_context_new(TM_SERVER, "dummy-location");
   return tls_context;
 }
 
