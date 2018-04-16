@@ -982,7 +982,7 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
 
           /* the current SD block has changed, emit a start */
           g_string_append_c(result, '[');
-          g_string_append_len(result, sdata_elem, sdata_elem_len);
+          log_msg_sdata_append_key_escaped(result, sdata_elem, sdata_elem_len);
 
           /* update cur_elem */
           cur_elem = sdata_elem;
