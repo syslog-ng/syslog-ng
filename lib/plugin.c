@@ -35,9 +35,12 @@
 #include <gmodule.h>
 
 #ifdef _AIX
+#undef G_MODULE_SUFFIX
 #define G_MODULE_SUFFIX "a"
 #endif
+
 #ifdef __APPLE__
+#undef G_MODULE_SUFFIX
 #define G_MODULE_SUFFIX "dylib"
 #endif
 
