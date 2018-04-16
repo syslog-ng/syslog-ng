@@ -361,6 +361,8 @@ main_loop_exit_initiate(gpointer user_data)
   if (main_loop_is_terminating(self))
     return;
 
+  app_pre_shutdown();
+
   msg_notice("syslog-ng shutting down",
              evt_tag_str("version", SYSLOG_NG_VERSION));
 

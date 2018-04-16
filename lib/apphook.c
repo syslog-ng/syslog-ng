@@ -58,6 +58,18 @@ typedef struct _ApplicationHookEntry
 static GList *application_hooks = NULL;
 static gint current_state = AH_STARTUP;
 
+gboolean
+app_is_starting_up(void)
+{
+  return current_state < AH_PRE_CONFIG_LOADED;
+}
+
+gboolean
+app_is_shutting_down(void)
+{
+  return current_state >= AH_PRE_SHUTDOWN;
+}
+
 void
 register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data)
 {
@@ -181,6 +193,12 @@ app_post_config_loaded(void)
 {
   run_application_hook(AH_POST_CONFIG_LOADED, TRUE);
   res_init();
+}
+
+void
+app_pre_shutdown(void)
+{
+  run_application_hook(AH_PRE_SHUTDOWN, TRUE);
 }
 
 void
