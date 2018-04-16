@@ -479,6 +479,7 @@ prune_ignored_paths() {
    s~$~(/.*)?$~
   " |
   cat > "$IGNORE"
+  echo "*~" >> "$IGNORE"
  fi
 
  grep --invert-match --extended-regexp --file "$IGNORE"
