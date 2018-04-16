@@ -118,6 +118,55 @@ afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
                                         afinet_dd_verify_callback, self);
 }
 
+void
+afinet_dd_add_failovers(LogDriver *s, GList *failovers)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *)s;
+  if (!self->server_candidates)
+    {
+      self->server_candidates = g_list_append(self->server_candidates, self->hostname);
+    }
+  self->server_candidates = g_list_concat(self->server_candidates, failovers);
+  self->current_server_candidate = NULL;
+}
+
+static gchar *
+_current_server_candidate_hostname(AFInetDestDriver *self)
+{
+  return (gchar *)self->current_server_candidate->data;
+}
+
+static gchar *
+_get_next_destination_candidate(AFInetDestDriver *self)
+{
+  if (!self->server_candidates)
+    return self->hostname;
+
+  if (!self->current_server_candidate)
+    {
+      self->current_server_candidate = g_list_first(self->server_candidates);
+      return _current_server_candidate_hostname(self);
+    }
+
+  self->current_server_candidate = g_list_next(self->current_server_candidate);
+  if (!self->current_server_candidate)
+    {
+      self->current_server_candidate = g_list_first(self->server_candidates);
+      msg_warning("Last failover server reached, trying the original host again",
+                  evt_tag_str("host", (const gchar *)_current_server_candidate_hostname(self)),
+                  log_pipe_location_tag(&self->super.super.super.super));
+    }
+  else
+    {
+      msg_warning("Current server is inaccessible, sending the messages to the next failover server",
+                  evt_tag_str("current", self->hostname),
+                  evt_tag_str("failover", (const gchar *)_current_server_candidate_hostname(self)),
+                  log_pipe_location_tag(&self->super.super.super.super));
+    }
+
+  return _current_server_candidate_hostname(self);
+}
+
 static LogWriter *
 afinet_dd_construct_writer(AFSocketDestDriver *s)
 {
@@ -152,6 +201,12 @@ _determine_port(const AFInetDestDriver *self)
   return port;
 }
 
+static void
+_setup_next_hostname(AFInetDestDriver *self)
+{
+  self->hostname = _get_next_destination_candidate(self);
+}
+
 static gboolean
 afinet_dd_setup_addresses(AFSocketDestDriver *s)
 {
@@ -169,6 +224,7 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
   if (self->bind_port)
     g_sockaddr_set_port(self->super.bind_addr, afinet_lookup_service(self->super.transport_mapper, self->bind_port));
 
+  _setup_next_hostname(self);
   if (!resolve_hostname_to_sockaddr(&self->super.dest_addr, self->super.transport_mapper->address_family, self->hostname))
     return FALSE;
 
@@ -419,7 +475,10 @@ afinet_dd_free(LogPipe *s)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
 
-  g_free(self->hostname);
+  if (!self->server_candidates)
+    g_free(self->hostname);
+
+  g_list_free_full(self->server_candidates, g_free);
   g_free(self->bind_ip);
   g_free(self->bind_port);
   g_free(self->dest_port);
