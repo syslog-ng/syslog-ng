@@ -510,7 +510,7 @@ _load_dh_fallback(TLSContext *self)
   BIGNUM *g = NULL;
   BN_dec2bn(&g, "2");
 
-  if (!DH_set0_pqg(dh, get_rfc3526_prime_2048(NULL), NULL, g))
+  if (!DH_set0_pqg(dh, BN_get_rfc3526_prime_2048(NULL), NULL, g))
     {
       BN_free(g);
       DH_free(dh);
