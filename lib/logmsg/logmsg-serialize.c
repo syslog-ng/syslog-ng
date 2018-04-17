@@ -139,8 +139,12 @@ _deserialize_message_version_2x(LogMessageSerializationState *state)
     return FALSE;
   if (!g_sockaddr_deserialize(sa, &msg->saddr))
     return FALSE;
-  if ((state->version < LGM_V24) && !timestamp_deserialize_legacy(sa, msg->timestamps))
-    return FALSE;
+  if (state->version < LGM_V24)
+    {
+      if (!timestamp_deserialize_legacy(sa, msg->timestamps))
+        return FALSE;
+      msg->timestamps[LM_TS_PROCESSED] = msg->timestamps[LM_TS_RECVD];
+    }
   if ((state->version >= LGM_V24) && !timestamp_deserialize(sa, msg->timestamps))
     return FALSE;
   if ((state->version >= LGM_V25) && (!serialize_read_uint32(sa, &msg->host_id)))
