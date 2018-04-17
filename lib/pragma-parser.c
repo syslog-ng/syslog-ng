@@ -34,6 +34,7 @@ static CfgLexerKeyword pragma_keywords[] =
   { "include",            KW_INCLUDE, },
   { "module",             KW_MODULE, },
   { "define",             KW_DEFINE, },
+  { "requires",           KW_REQUIRES, },
   { CFG_KEYWORD_STOP },
 };
 
