@@ -30,7 +30,8 @@ function (openssl_set_defines)
     openssl/evp.h
     openssl/dh.h
     openssl/ssl.h
-    openssl/x509v3.h)
+    openssl/x509v3.h
+    openssl/bn.h)
 
   set (symbol_list
     EVP_MD_CTX_reset
@@ -38,7 +39,8 @@ function (openssl_set_defines)
     SSL_CTX_get0_param
     X509_STORE_CTX_get0_cert
     X509_get_extension_flags
-    DH_set0_pqg)
+    DH_set0_pqg
+    BN_get_rfc3526_prime_2048)
 
   foreach (symbol ${symbol_list})
     string(TOUPPER ${symbol} SYMBOL_UPPERCASE)

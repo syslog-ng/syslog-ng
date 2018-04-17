@@ -25,6 +25,7 @@
 #include "syslog-ng.h"
 #include "thread-utils.h"
 #include <openssl/ssl.h>
+#include <openssl/bn.h>
 
 #if !SYSLOG_NG_HAVE_DECL_SSL_CTX_GET0_PARAM
 X509_VERIFY_PARAM *SSL_CTX_get0_param(SSL_CTX *ctx)
@@ -210,5 +211,13 @@ int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g)
     dh->length = BN_num_bits(q);
 
   return 1;
+}
+#endif
+
+#if !SYSLOG_NG_HAVE_DECL_BN_GET_RFC3526_PRIME_2048
+BIGNUM *
+BN_get_rfc3526_prime_2048(BIGNUM *bn)
+{
+  return get_rfc3526_prime_2048(bn);
 }
 #endif

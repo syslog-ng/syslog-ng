@@ -58,6 +58,10 @@ uint32_t X509_get_extension_flags(X509 *x);
 int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g);
 #endif
 
+#if !SYSLOG_NG_HAVE_DECL_BN_GET_RFC3526_PRIME_2048
+BIGNUM *BN_get_rfc3526_prime_2048(BIGNUM *bn);
+#endif
+
 void openssl_ctx_setup_ecdh(SSL_CTX *ctx);
 
 void openssl_init(void);
