@@ -67,6 +67,15 @@ _g_strcasecmp(gconstpointer a, gconstpointer b)
   return g_ascii_strcasecmp((const gchar *)a, (const gchar *)b);
 }
 
+static gint
+_contextual_data_record_case_cmp(gconstpointer k1, gconstpointer k2)
+{
+  ContextualDataRecord *r1 = (ContextualDataRecord *) k1;
+  ContextualDataRecord *r2 = (ContextualDataRecord *) k2;
+
+  return _g_strcasecmp(r1->selector->str, r2->selector->str);
+}
+
 void
 context_info_db_enable_ordering(ContextInfoDB *self)
 {
@@ -94,9 +103,11 @@ _str_case_insensitive_dup(const gchar *str)
 void
 context_info_db_index(ContextInfoDB *self)
 {
+  GCompareFunc record_cmp = self->ignore_case ? _contextual_data_record_case_cmp : _contextual_data_record_cmp;
+
   if (self->data->len > 0)
     {
-      g_array_sort(self->data, _contextual_data_record_cmp);
+      g_array_sort(self->data, record_cmp);
       gsize range_start = 0;
       ContextualDataRecord range_start_record =
         g_array_index(self->data, ContextualDataRecord, 0);
@@ -106,8 +117,7 @@ context_info_db_index(ContextInfoDB *self)
           ContextualDataRecord current_record =
             g_array_index(self->data, ContextualDataRecord, i);
 
-          if (_contextual_data_record_cmp
-              (&range_start_record, &current_record))
+          if (record_cmp(&range_start_record, &current_record))
             {
               element_range *current_range = g_new(element_range, 1);
               current_range->offset = range_start;

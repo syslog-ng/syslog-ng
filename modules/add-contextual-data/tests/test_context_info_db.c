@@ -489,3 +489,52 @@ Test(add_contextual_data, test_ignore_case_off)
   context_info_db_free(db);
   contextual_data_record_scanner_free(scanner);
 }
+
+Test(add_contextual_data, test_selected_nvpairs_when_ignore_case_on)
+{
+  gchar csv_content[] = "selector,name1,value1\n"
+                        "SeLeCtOr,name2,value2\n"
+                        "sElEcToR,name3,value3\n"
+                        "another,name4,value4";
+
+  FILE *fp = fmemopen(csv_content, sizeof(csv_content), "r");
+
+  ContextInfoDB *db = context_info_db_new();
+  context_info_db_set_ignore_case(db, TRUE);
+  context_info_db_init(db);
+  ContextualDataRecordScanner *scanner =
+    create_contextual_data_record_scanner_by_type("csv");
+
+  cr_assert(context_info_db_import(db, fp, scanner),
+            "Failed to import valid CSV file.");
+  cr_assert(context_info_db_is_loaded(db),
+            "The context_info_db_is_loaded reports False after a successful import operation. ");
+  cr_assert(context_info_db_is_indexed(db),
+            "The context_info_db_is_indexed reports False after successful import&load operations.");
+  fclose(fp);
+
+  TestNVPair expected_nvpairs_selector1[] =
+  {
+    {.name = "name1",.value = "value1"},
+    {.name = "name2",.value = "value2"},
+    {.name = "name3",.value = "value3"},
+  };
+
+  TestNVPair expected_nvpairs_selector2[] =
+  {
+    {.name = "name4",.value = "value4"},
+  };
+
+  _assert_context_info_db_contains_name_value_pairs_by_selector(db,
+      "SELECTOR",
+      expected_nvpairs_selector1,
+      ARRAY_SIZE(expected_nvpairs_selector1));
+
+  _assert_context_info_db_contains_name_value_pairs_by_selector(db,
+      "another",
+      expected_nvpairs_selector2,
+      ARRAY_SIZE(expected_nvpairs_selector2));
+
+  context_info_db_free(db);
+  contextual_data_record_scanner_free(scanner);
+}
