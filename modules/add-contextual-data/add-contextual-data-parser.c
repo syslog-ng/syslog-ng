@@ -36,12 +36,12 @@ int add_contextual_data_parse(CfgLexer *lexer, LogParser **instance,
 static CfgLexerKeyword add_contextual_data_keywords[] =
 {
   {"add_contextual_data", KW_ADD_CONTEXTUAL_DATA},
-  {"database", KW_ADD_CONTEXTUAL_DATA_DATABASE},
-  {"selector", KW_ADD_CONTEXTUAL_DATA_SELECTOR},
-  {"default_selector", KW_ADD_CONTEXTUAL_DATA_DEFAULT_SELECTOR},
-  {"prefix", KW_ADD_CONTEXTUAL_DATA_PREFIX},
-  {"filters", KW_ADD_CONTEXTUAL_DATA_FILTERS},
-  {"ignore_case", KW_ADD_CONTEXTUAL_DATA_IGNORE_CASE},
+  {"database", KW_DATABASE},
+  {"selector", KW_SELECTOR},
+  {"default_selector", KW_DEFAULT_SELECTOR},
+  {"prefix", KW_PREFIX},
+  {"filters", KW_FILTERS},
+  {"ignore_case", KW_IGNORE_CASE},
   {NULL}
 };
 
