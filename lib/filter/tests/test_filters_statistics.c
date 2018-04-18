@@ -63,7 +63,7 @@ queue_and_assert_statistics(LogFilterPipe *pipe, gchar *msg, guint32 matched_exp
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
   LogPipe *p = (LogPipe *)pipe;
-  p->queue(p, logmsg, &path_options, NULL);
+  p->queue(p, logmsg, &path_options);
   cr_assert_eq(stats_counter_get(pipe->not_matched), not_matched_expected);
   cr_assert_eq(stats_counter_get(pipe->matched), matched_expected);
 }

@@ -21,66 +21,72 @@
  */
 
 %code top {
-#include "openbsd-parser.h"
-#include "openbsd-driver.h"
+#include "hook-commands-parser.h"
+#include "driver.h"
+#include "cfg-lexer.h"
 
 }
 
 
 %code {
 
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
 #include "cfg-parser.h"
-#include "openbsd-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
-#include "plugin.h"
-#include "cfg-grammar.h"
+#include "hook-commands.h"
 
 #include <string.h>
 
+HookCommandsPlugin *last_hook_commands;
+
 }
 
-%name-prefix "openbsd_"
+%name-prefix "hook_commands_"
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **instance}
+%parse-param {LogDriverPlugin **instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
 
-%type <ptr> source_openbsd
-
-%token KW_OPENBSD
+%token KW_HOOK_COMMANDS
+%token KW_STARTUP
+%token KW_SETUP
+%token KW_TEARDOWN
+%token KW_SHUTDOWN
 
 %%
 
 start
-        : LL_CONTEXT_SOURCE source_openbsd
-          {
-            YYACCEPT;
-          }
-        ;
-
-
-source_openbsd
-	: KW_OPENBSD '(' source_openbsd_options ')'
-	  {
-	    last_driver = *instance = openbsd_sd_new(configuration);
-	  }
-
+	: LL_CONTEXT_INNER_SRC hook_invocation		{ YYACCEPT; }
+	| LL_CONTEXT_INNER_DEST hook_invocation		{ YYACCEPT; }
 	;
 
-source_openbsd_options
-	: source_openbsd_option source_openbsd_options
+hook_invocation
+        : KW_HOOK_COMMANDS '('
+	  {
+	    last_hook_commands = hook_commands_plugin_new();
+	    *instance = (LogDriverPlugin *) last_hook_commands;
+	  }
+	  hook_options ')'
+        ;
+
+hook_options
+	: hook_option hook_options
 	|
 	;
 
-source_openbsd_option
-	: source_driver_option
+hook_option
+	: KW_STARTUP '(' string ')'		{ hook_commands_plugin_set_startup(last_hook_commands, $3); free($3); }
+	| KW_SETUP '(' string ')'		{ hook_commands_plugin_set_setup(last_hook_commands, $3); free($3); }
+	| KW_TEARDOWN '(' string ')'		{ hook_commands_plugin_set_teardown(last_hook_commands, $3); free($3); }
+	| KW_SHUTDOWN '(' string ')'		{ hook_commands_plugin_set_shutdown(last_hook_commands, $3); free($3); }
 	;
 
 /* INCLUDE_RULES */

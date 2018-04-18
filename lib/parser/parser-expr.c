@@ -77,7 +77,7 @@ log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOpti
 }
 
 static void
-log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogParser *self = (LogParser *) s;
   gboolean success;

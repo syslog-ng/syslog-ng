@@ -33,7 +33,7 @@ log_rewrite_set_condition(LogRewrite *self, FilterExprNode *condition)
 }
 
 static void
-log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogRewrite *self = (LogRewrite *) s;
   gssize length;

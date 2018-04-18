@@ -187,13 +187,13 @@ geoip_parser_init(LogPipe *s)
   if (is_country_type(self->gi->databaseType))
     {
       msg_debug("geoip: country type database detected",
-                evt_tag_int("database type", self->gi->databaseType));
+                evt_tag_int("database_type", self->gi->databaseType));
       self->add_geoip_result = add_geoip_country_code;
     }
   else
     {
       msg_debug("geoip: city type database detected",
-                evt_tag_int("database type", self->gi->databaseType));
+                evt_tag_int("database_type", self->gi->databaseType));
       self->add_geoip_result = add_geoip_record;
     }
   return log_parser_init_method(s);

@@ -83,7 +83,6 @@ afmongodb_option
         {
             afmongodb_dd_set_value_pairs(last_driver, $1);
         }
-    | dest_driver_option
     | threaded_dest_driver_option
     | { last_template_options = afmongodb_dd_get_template_options(last_driver); } template_option
     ;

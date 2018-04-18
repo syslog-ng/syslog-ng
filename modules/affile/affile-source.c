@@ -76,9 +76,9 @@ affile_sd_format_persist_name(const LogPipe *s)
 }
 
 static void
-affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
-  log_src_driver_queue_method(s, msg, path_options, user_data);
+  log_src_driver_queue_method(s, msg, path_options);
 }
 
 static gboolean

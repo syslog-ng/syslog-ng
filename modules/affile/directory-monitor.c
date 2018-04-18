@@ -114,7 +114,9 @@ resolve_to_absolute_path(const gchar *path, const gchar *basedir)
         }
       else
         {
-          msg_error("Can't resolve to absolute path", evt_tag_str("path", path), evt_tag_errno("error", errno), NULL);
+          msg_error("Can't resolve to absolute path",
+                    evt_tag_str("path", path),
+                    evt_tag_errno("error", errno));
           res = NULL;
         }
     }
@@ -248,7 +250,8 @@ directory_monitor_free(DirectoryMonitor *self)
 {
   if (self)
     {
-      msg_debug("Free directory monitor", evt_tag_str("dir", self->dir));
+      msg_debug("Free directory monitor",
+                evt_tag_str("dir", self->dir));
       if (self->free_fn)
         {
           self->free_fn(self);

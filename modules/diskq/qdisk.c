@@ -97,9 +97,9 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
     {
       if (written != -1)
         {
-          msg_error("Short written",
-                    evt_tag_int("Number of bytes want to write", count),
-                    evt_tag_int("Number of bytes written", written));
+          msg_error("Short write while writing disk buffer",
+                    evt_tag_int("bytes_to_write", count),
+                    evt_tag_int("bytes_written", written));
           errno = ENOSPC;
         }
       result = FALSE;
@@ -207,8 +207,8 @@ _truncate_file(QDisk *self, gint64 new_size)
       msg_error("Error truncating disk-queue file",
                 evt_tag_errno("error", errno),
                 evt_tag_str("filename", self->filename),
-                evt_tag_int("newsize",self->hdr->write_head),
-                evt_tag_int("fd",self->fd));
+                evt_tag_int("newsize", self->hdr->write_head),
+                evt_tag_int("fd", self->fd));
     }
 
   return success;
@@ -419,7 +419,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
             {
               msg_error("Error reading message from disk-queue file (maybe corrupted file) some messages will be lost",
                         evt_tag_str("filename", self->filename),
-                        evt_tag_int("lost messages", q_count - i));
+                        evt_tag_int("lost_messages", q_count - i));
               log_msg_unref(msg);
               break;
             }
@@ -767,8 +767,9 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       memset(&tmp, 0, sizeof(tmp));
       if (!pwrite_strict(self->fd, &tmp, sizeof(tmp), 0))
         {
-          msg_error("Error occurred while initalizing the new queue file",evt_tag_str("filename",self->filename),
-                    evt_tag_errno("error",errno));
+          msg_error("Error occurred while initalizing the new queue file",
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_errno("error", errno));
           munmap((void *)self->hdr, sizeof(QDiskFileHeader));
           self->hdr = NULL;
           close(self->fd);

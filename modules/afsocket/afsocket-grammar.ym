@@ -243,7 +243,7 @@ source_afunix
 source_afunix_dgram_params
 	: string
 	  {
-      create_and_set_unix_dgram_or_systemd_syslog_source($1, configuration);
+            create_and_set_unix_dgram_or_systemd_syslog_source($1, configuration);
 	  }
 	  source_afunix_options			{ $$ = last_driver; free($1); }
 	;
@@ -251,7 +251,7 @@ source_afunix_dgram_params
 source_afunix_stream_params
 	: string
 	  {
-      create_and_set_unix_stream_or_systemd_syslog_source($1, configuration);
+            create_and_set_unix_stream_or_systemd_syslog_source($1, configuration);
 	  }
 	  source_afunix_options			{ $$ = last_driver; free($1); }
 	;
@@ -266,6 +266,7 @@ source_afunix_option
         : file_perm_option
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
+	| source_driver_option
 	| socket_option				{}
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| KW_PASS_UNIX_CREDENTIALS '(' yesno ')'
@@ -322,6 +323,7 @@ source_afinet_option
 	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3); free($3); }
 	| KW_PORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3); free($3); }
 	| source_reader_option
+	| source_driver_option
 	| inet_socket_option
 	;
 
@@ -482,6 +484,7 @@ source_systemd_syslog_options
 source_systemd_syslog_option
         : source_reader_option
         | socket_option
+	| source_driver_option
         ;
 
 dest_afunix

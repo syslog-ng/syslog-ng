@@ -91,7 +91,6 @@ afamqp_option
 	| KW_USERNAME '(' string ')'		{ afamqp_dd_set_user(last_driver, $3); free($3); }
 	| KW_PASSWORD '(' string ')'		{ afamqp_dd_set_password(last_driver, $3); free($3); }
 	| value_pair_option			{ afamqp_dd_set_value_pairs(last_driver, $1); }
-	| dest_driver_option
 	| threaded_dest_driver_option
     | afamqp_tls_option
     | KW_TLS '(' afamqp_tls_options ')'

@@ -1106,6 +1106,78 @@ parser_opt
                                                 }
         ;
 
+driver_option
+        : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
+        ;
+
+/* All source drivers should incorporate this rule, implies driver_option */
+source_driver_option
+        : LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_INNER_SRC;
+            gpointer value;
+
+            p = cfg_find_plugin(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            value = cfg_parse_plugin(configuration, p, &@1, last_driver);
+
+            free($1);
+            if (!value)
+              {
+                YYERROR;
+              }
+            if (!log_driver_add_plugin(last_driver, (LogDriverPlugin *) value))
+              {
+                log_driver_plugin_free(value);
+                CHECK_ERROR(TRUE, @1, "Error while registering the plugin %s in this destination", $1);
+              }
+          }
+        | driver_option
+        ;
+
+/* implies driver_option */
+dest_driver_option
+        /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */
+
+	: KW_LOG_FIFO_SIZE '(' positive_integer ')'	{ ((LogDestDriver *) last_driver)->log_fifo_size = $3; }
+	| KW_THROTTLE '(' nonnegative_integer ')'         { ((LogDestDriver *) last_driver)->throttle = $3; }
+        | LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_INNER_DEST;
+            gpointer value;
+
+            p = cfg_find_plugin(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            value = cfg_parse_plugin(configuration, p, &@1, last_driver);
+
+            free($1);
+            if (!value)
+              {
+                YYERROR;
+              }
+            if (!log_driver_add_plugin(last_driver, (LogDriverPlugin *) value))
+              {
+                log_driver_plugin_free(value);
+                CHECK_ERROR(TRUE, @1, "Error while registering the plugin %s in this destination", $1);
+              }
+          }
+        | driver_option
+        ;
+
+/* implies dest_driver_option */
+threaded_dest_driver_option
+	: KW_RETRIES '(' positive_integer ')'
+        {
+          log_threaded_dest_driver_set_max_retries(last_driver, $3);
+        }
+        | dest_driver_option
+        ;
+
+
 /* LogSource related options */
 source_option
         /* NOTE: plugins need to set "last_source_options" in order to incorporate this rule in their grammar */
@@ -1119,9 +1191,28 @@ source_option
 	| KW_READ_OLD_RECORDS '(' yesno ')'	{ last_source_options->read_old_records = $3; }
         | KW_TAGS '(' string_list ')'		{ log_source_options_set_tags(last_source_options, $3); }
         | { last_host_resolve_options = &last_source_options->host_resolve_options; } host_resolve_option
-        | driver_option
         ;
 
+/* LogReader related options, implies source_option */
+source_reader_option
+        /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
+
+	: KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
+	| KW_FLAGS '(' source_reader_option_flags ')'
+	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ last_reader_options->fetch_limit = $3; }
+        | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
+        | { last_source_options = &last_reader_options->super; } source_option
+        | { last_proto_server_options = &last_reader_options->proto_options.super; } source_proto_option
+        | { last_msg_format_options = &last_reader_options->parse_options; } msg_format_option
+	;
+
+source_reader_option_flags
+        : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag %s", $1); free($1); }
+        | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
+	|
+	;
+
+/* LogProtoSource related options */
 source_proto_option
         : KW_ENCODING '(' string ')'
           {
@@ -1132,10 +1223,6 @@ source_proto_option
           }
 	| KW_LOG_MSG_SIZE '(' positive_integer ')'	{ last_proto_server_options->max_msg_size = $3; }
         ;
-
-source_reader_options
-	: source_reader_option source_reader_options
-	;
 
 host_resolve_option
         : KW_USE_FQDN '(' yesno ')'             { last_host_resolve_options->use_fqdn = $3; }
@@ -1158,62 +1245,6 @@ msg_format_option
 	      last_msg_format_options->default_pri = LOG_NOTICE;
 	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & 7) | $3;
           }
-        ;
-
-
-/* LogReader related options, inherits from LogSource */
-source_reader_option
-        /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
-
-	: KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
-	| KW_FLAGS '(' source_reader_option_flags ')'
-	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ last_reader_options->fetch_limit = $3; }
-        | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
-        | { last_source_options = &last_reader_options->super; } source_option
-        | { last_proto_server_options = &last_reader_options->proto_options.super; } source_proto_option
-        | { last_msg_format_options = &last_reader_options->parse_options; } msg_format_option
-	;
-
-source_reader_option_flags
-        : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag %s", $1); free($1); }
-        | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
-	|
-	;
-
-driver_option
-    : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
-    ;
-
-threaded_dest_driver_option
-	: KW_RETRIES '(' positive_integer ')'
-        {
-          log_threaded_dest_driver_set_max_retries(last_driver, $3);
-        }
-
-dest_driver_option
-        /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */
-
-	: KW_LOG_FIFO_SIZE '(' positive_integer ')'	{ ((LogDestDriver *) last_driver)->log_fifo_size = $3; }
-	| KW_THROTTLE '(' nonnegative_integer ')'         { ((LogDestDriver *) last_driver)->throttle = $3; }
-        | LL_IDENTIFIER
-          {
-            Plugin *p;
-            gint context = LL_CONTEXT_INNER_DEST;
-            gpointer value;
-
-            p = cfg_find_plugin(configuration, context, $1);
-            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
-
-            value = cfg_parse_plugin(configuration, p, &@1, last_driver);
-
-            free($1);
-            if (!value)
-              {
-                YYERROR;
-              }
-            log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
-          }
-    | driver_option
         ;
 
 dest_writer_options

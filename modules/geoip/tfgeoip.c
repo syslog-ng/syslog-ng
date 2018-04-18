@@ -80,13 +80,13 @@ tf_geoip_init(TFGeoIPState *state)
   if (is_country_type(state->gi->databaseType))
     {
       msg_debug("geoip: country type database detected",
-                evt_tag_int("database type", state->gi->databaseType));
+                evt_tag_int("database_type", state->gi->databaseType));
       state->add_geoip_result = add_geodata_from_geocountry;
     }
   else
     {
       msg_debug("geoip: city type database detected",
-                evt_tag_int("database type", state->gi->databaseType));
+                evt_tag_int("database_type", state->gi->databaseType));
       state->add_geoip_result = add_geodata_from_geocity;
     }
   return TRUE;

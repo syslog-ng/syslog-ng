@@ -109,7 +109,6 @@ http_option
     | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
     | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
     | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
-    | dest_driver_option
     | threaded_dest_driver_option
     | http_tls_option
     | KW_TLS '(' http_tls_options ')'

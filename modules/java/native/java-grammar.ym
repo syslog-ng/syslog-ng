@@ -82,7 +82,6 @@ java_dest_option
         | KW_TEMPLATE '(' string ')' { java_dd_set_template_string(last_driver, $3); free($3); }
         | KW_OPTION '(' java_dest_custom_options ')'
         | threaded_dest_driver_option
-        | dest_driver_option
         | { last_template_options = java_dd_get_template_options(last_driver); } template_option
         ;
 

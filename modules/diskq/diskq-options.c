@@ -32,9 +32,9 @@ disk_queue_options_qout_size_set(DiskQueueOptions *self, gint qout_size)
   if (qout_size < 64)
     {
       msg_warning("WARNING: The configured qout size is smaller than the minimum allowed",
-                  evt_tag_int("configured size", qout_size),
-                  evt_tag_int("minimum allowed size", 64),
-                  evt_tag_int("new size", 64));
+                  evt_tag_int("configured_size", qout_size),
+                  evt_tag_int("minimum_allowed_size", 64),
+                  evt_tag_int("new_size", 64));
       qout_size = 64;
     }
   self->qout_size = qout_size;
@@ -46,9 +46,9 @@ disk_queue_options_disk_buf_size_set(DiskQueueOptions *self, gint64 disk_buf_siz
   if (disk_buf_size < MIN_DISK_BUF_SIZE)
     {
       msg_warning("WARNING: The configured disk buffer size is smaller than the minimum allowed",
-                  evt_tag_int("configured size", disk_buf_size),
-                  evt_tag_int("minimum allowed size", MIN_DISK_BUF_SIZE),
-                  evt_tag_int("new size", MIN_DISK_BUF_SIZE));
+                  evt_tag_int("configured_size", disk_buf_size),
+                  evt_tag_int("minimum_allowed_size", MIN_DISK_BUF_SIZE),
+                  evt_tag_int("new_size", MIN_DISK_BUF_SIZE));
       disk_buf_size = MIN_DISK_BUF_SIZE;
     }
   self->disk_buf_size = disk_buf_size;

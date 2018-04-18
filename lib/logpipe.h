@@ -169,11 +169,13 @@
  *   The way to override a method by an external object is as follows:
  *
  *     - it should save the current value of the method address (for
- *       example "queue" for the queue method), and the associated
- *       user_data pointer (queue_data in this case)
+ *       example "queue" for the queue method)
  *
  *     - it should change the pointer pointing to the relevant method to
  *       its own code (e.g. change "queue" in LogPipe)
+ *
+ *     - once the hook is invoked, it should take care about calling the
+ *       original function
  **/
 
 struct _LogPathOptions
@@ -212,19 +214,31 @@ struct _LogPipe
 {
   GAtomicCounter ref_cnt;
   gint32 flags;
+
+  /* moving queue to the front should improve performance somewhat, although
+   * I didn't measure it at all.  Rationale: the pointer pointing to this
+   * LogPipe instance is resolved right before calling queue and the
+   * colocation of flags and the queue pointer ensures that they are on the
+   * same cache line, and since the CPU returns memory reads sequentially,
+   * it is among the first values that are read ahead.  It might need to be
+   * measured sometime, but this method is probably the single most often
+   * called virual method, so I felt, that even though the optimization is
+   * probably premature without explicit tests, I can do this simply by
+   * believing it helps :) */
+
+  void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options);
+
   GlobalConfig *cfg;
   LogExprNode *expr_node;
   LogPipe *pipe_next;
   StatsCounterItem *discarded_messages;
   const gchar *persist_name;
-
-  /* user_data pointer of the "queue" method in case it is overridden
-     by a plugin, see the explanation in the comment on the top. */
-  gpointer queue_data;
-  void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
   gchar *plugin_name;
+
+  gboolean (*pre_init)(LogPipe *self);
   gboolean (*init)(LogPipe *self);
   gboolean (*deinit)(LogPipe *self);
+  void (*post_deinit)(LogPipe *self);
 
   const gchar *(*generate_persist_name)(const LogPipe *self);
 
@@ -270,6 +284,8 @@ log_pipe_init(LogPipe *s)
 {
   if (!(s->flags & PIF_INITIALIZED))
     {
+      if (s->pre_init && !s->pre_init(s))
+        return FALSE;
       if (!s->init || s->init(s))
         {
           s->flags |= PIF_INITIALIZED;
@@ -288,6 +304,9 @@ log_pipe_deinit(LogPipe *s)
       if (!s->deinit || s->deinit(s))
         {
           s->flags &= ~PIF_INITIALIZED;
+
+          if (s->post_deinit)
+            s->post_deinit(s);
           return TRUE;
         }
       return FALSE;
@@ -340,7 +359,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 
   if (s->queue)
     {
-      s->queue(s, msg, path_options, s->queue_data);
+      s->queue(s, msg, path_options);
     }
   else
     {

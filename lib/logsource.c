@@ -288,7 +288,7 @@ _invoke_mangle_callbacks(LogPipe *s, LogMessage *msg, const LogPathOptions *path
 }
 
 static void
-log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogSource *self = (LogSource *) s;
   gint i;

@@ -100,7 +100,8 @@ start_element_cb(GMarkupParseContext  *context,
 
   if (tag_matches_patterns(state->parser->exclude_patterns, tag_length, element_name, reversed))
     {
-      msg_debug("xml: subtree skipped", evt_tag_str("tag", element_name));
+      msg_debug("xml: subtree skipped",
+                evt_tag_str("tag", element_name));
       state->pop_next_time = 1;
       g_markup_parse_context_push(context, &skip, NULL);
       g_free(reversed);
@@ -229,7 +230,8 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
   return TRUE;
 
 err:
-  msg_error("xml: error", evt_tag_str("str", error->message));
+  msg_error("xml: error",
+            evt_tag_str("str", error->message));
   g_error_free(error);
   g_markup_parse_context_free(xml_ctx);
   return self->forward_invalid;

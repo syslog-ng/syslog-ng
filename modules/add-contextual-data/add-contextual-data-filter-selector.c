@@ -85,7 +85,7 @@ _filter_store_get_first_matching_name(FilterStore *self, LogMessage *msg)
        filter_it = filter_it->next, name_it = name_it->next)
     {
       filter = (FilterExprNode *) filter_it->data;
-      msg_debug("Evaluating filter", evt_tag_str("filter name", name_it->data));
+      msg_debug("Evaluating filter", evt_tag_str("filter_name", name_it->data));
       if (filter_expr_eval(filter, msg))
         {
           name = (const gchar *) name_it->data;

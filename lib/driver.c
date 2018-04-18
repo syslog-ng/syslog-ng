@@ -26,6 +26,7 @@
 #include "logqueue-fifo.h"
 #include "afinter.h"
 #include "cfg-tree.h"
+#include "messages.h"
 
 #include <string.h>
 
@@ -38,21 +39,45 @@ log_driver_plugin_free_method(LogDriverPlugin *self)
 }
 
 void
-log_driver_plugin_init_instance(LogDriverPlugin *self)
+log_driver_plugin_init_instance(LogDriverPlugin *self, const gchar *name)
 {
+  self->name = name;
   self->free_fn = log_driver_plugin_free_method;
 }
 
 /* LogDriver */
 
-void
+gboolean
 log_driver_add_plugin(LogDriver *self, LogDriverPlugin *plugin)
 {
+  g_assert(plugin->name);
+  if (log_driver_lookup_plugin(self, plugin->name))
+    {
+      msg_error("Another instance of this plugin is registered in this driver, unable to register plugin again",
+                evt_tag_str("driver", self->id),
+                evt_tag_str("plugin", plugin->name));
+      return FALSE;
+
+    }
   self->plugins = g_list_append(self->plugins, plugin);
+  return TRUE;
 }
 
-gboolean
-log_driver_init_method(LogPipe *s)
+LogDriverPlugin *
+log_driver_lookup_plugin(LogDriver *self, const gchar *plugin_name)
+{
+  for (GList *l = self->plugins; l; l = l->next)
+    {
+      LogDriverPlugin *plugin = (LogDriverPlugin *) l->data;
+
+      if (strcmp(plugin->name, plugin_name) == 0)
+        return plugin;
+    }
+  return NULL;
+}
+
+static gboolean
+log_driver_pre_init_method(LogPipe *s)
 {
   LogDriver *self = (LogDriver *) s;
   gboolean success = TRUE;
@@ -66,18 +91,28 @@ log_driver_init_method(LogPipe *s)
   return success;
 }
 
-gboolean
-log_driver_deinit_method(LogPipe *s)
+static void
+log_driver_post_deinit_method(LogPipe *s)
 {
   LogDriver *self = (LogDriver *) s;
-  gboolean success = TRUE;
   GList *l;
 
   for (l = self->plugins; l; l = l->next)
     {
       log_driver_plugin_detach((LogDriverPlugin *) l->data, self);
     }
-  return success;
+}
+
+gboolean
+log_driver_init_method(LogPipe *s)
+{
+  return TRUE;
+}
+
+gboolean
+log_driver_deinit_method(LogPipe *s)
+{
+  return TRUE;
 }
 
 /* NOTE: intentionally static, as only cDriver or LogDestDriver will derive from LogDriver */
@@ -108,20 +143,19 @@ log_driver_init_instance(LogDriver *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
   self->super.free_fn = log_driver_free;
+  self->super.pre_init = log_driver_pre_init_method;
   self->super.init = log_driver_init_method;
   self->super.deinit = log_driver_deinit_method;
+  self->super.post_deinit = log_driver_post_deinit_method;
 }
 
 /* LogSrcDriver */
 
-gboolean
-log_src_driver_init_method(LogPipe *s)
+static gboolean
+log_src_driver_pre_init_method(LogPipe *s)
 {
   LogSrcDriver *self = (LogSrcDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
-
-  if (!log_driver_init_method(s))
-    return FALSE;
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
   if (!self->super.group)
     {
@@ -129,6 +163,16 @@ log_src_driver_init_method(LogPipe *s)
       self->group_len = strlen(self->super.group);
       self->super.id = cfg_tree_get_child_id(&cfg->tree, ENC_SOURCE, s->expr_node);
     }
+  return log_driver_pre_init_method(s);
+}
+
+gboolean
+log_src_driver_init_method(LogPipe *s)
+{
+  LogSrcDriver *self = (LogSrcDriver *) s;
+
+  if (!log_driver_init_method(s))
+    return FALSE;
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -162,7 +206,7 @@ log_src_driver_deinit_method(LogPipe *s)
 }
 
 void
-log_src_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+log_src_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogSrcDriver *self = (LogSrcDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -182,6 +226,7 @@ void
 log_src_driver_init_instance(LogSrcDriver *self, GlobalConfig *cfg)
 {
   log_driver_init_instance(&self->super, cfg);
+  self->super.super.pre_init = log_src_driver_pre_init_method;
   self->super.super.init = log_src_driver_init_method;
   self->super.super.deinit = log_src_driver_deinit_method;
   self->super.super.queue = log_src_driver_queue_method;
@@ -198,13 +243,10 @@ log_src_driver_free(LogPipe *s)
 
 /* returns a reference */
 static LogQueue *
-log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_name,
-                                     gpointer user_data)
+log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_name)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
   LogQueue *queue = NULL;
-
-  g_assert(user_data == NULL);
 
   if (persist_name)
     queue = cfg_persist_config_fetch(cfg, persist_name);
@@ -219,7 +261,7 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_n
 
 /* consumes the reference in @q */
 static void
-log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q, gpointer user_data)
+log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
@@ -235,7 +277,7 @@ log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q, gpointer 
 }
 
 void
-log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogDestDriver *self = (LogDestDriver *) s;
 
@@ -244,20 +286,27 @@ log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *
   log_pipe_forward_msg(s, msg, path_options);
 }
 
-gboolean
-log_dest_driver_init_method(LogPipe *s)
+static gboolean
+log_dest_driver_pre_init_method(LogPipe *s)
 {
   LogDestDriver *self = (LogDestDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
-
-  if (!log_driver_init_method(s))
-    return FALSE;
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
   if (!self->super.group)
     {
       self->super.group = cfg_tree_get_rule_name(&cfg->tree, ENC_DESTINATION, s->expr_node);
       self->super.id = cfg_tree_get_child_id(&cfg->tree, ENC_DESTINATION, s->expr_node);
     }
+  return log_driver_pre_init_method(s);
+}
+
+gboolean
+log_dest_driver_init_method(LogPipe *s)
+{
+  LogDestDriver *self = (LogDestDriver *) s;
+
+  if (!log_driver_init_method(s))
+    return FALSE;
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -308,6 +357,7 @@ void
 log_dest_driver_init_instance(LogDestDriver *self, GlobalConfig *cfg)
 {
   log_driver_init_instance(&self->super, cfg);
+  self->super.super.pre_init = log_dest_driver_pre_init_method;
   self->super.super.init = log_dest_driver_init_method;
   self->super.super.deinit = log_dest_driver_deinit_method;
   self->super.super.queue = log_dest_driver_queue_method;

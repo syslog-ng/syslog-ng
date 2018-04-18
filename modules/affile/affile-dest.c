@@ -250,7 +250,7 @@ affile_dw_deinit(LogPipe *s)
  * main thread.
  */
 static void
-affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, gpointer user_data)
+affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 {
   if (!affile_dw_queue_enabled_for_msg(lm))
     {
@@ -673,7 +673,7 @@ affile_dd_open_writer(gpointer args[])
 }
 
 static void
-affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   AFFileDestWriter *next;
@@ -734,7 +734,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
       log_pipe_unref(&next->super);
     }
 
-  log_dest_driver_queue_method(s, msg, path_options, user_data);
+  log_dest_driver_queue_method(s, msg, path_options);
 }
 
 static void

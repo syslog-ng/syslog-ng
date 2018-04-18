@@ -95,7 +95,7 @@ _utmp_entry_matches(UtmpEntry *ut, GString *username)
 G_LOCK_DEFINE_STATIC(utmp_lock);
 
 static void
-afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   AFUserDestDriver *self = (AFUserDestDriver *) s;
   gchar buf[8192];
@@ -155,7 +155,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   _close_utmp();
   G_UNLOCK(utmp_lock);
 finish:
-  log_dest_driver_queue_method(s, msg, path_options, user_data);
+  log_dest_driver_queue_method(s, msg, path_options);
 }
 
 void

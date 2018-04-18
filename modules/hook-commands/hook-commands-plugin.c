@@ -20,69 +20,41 @@
  *
  */
 
-%code top {
-#include "openbsd-parser.h"
-#include "openbsd-driver.h"
-
-}
-
-
-%code {
-
 #include "cfg-parser.h"
-#include "openbsd-grammar.h"
-#include "syslog-names.h"
-#include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "plugin-types.h"
 
-#include <string.h>
+extern CfgParser hook_commands_parser;
 
+static Plugin hook_commands_plugins[] =
+{
+  {
+    .type = LL_CONTEXT_INNER_DEST,
+    .name = "hook-commands",
+    .parser = &hook_commands_parser,
+  },
+  {
+    .type = LL_CONTEXT_INNER_SRC,
+    .name = "hook-commands",
+    .parser = &hook_commands_parser,
+  },
+};
+
+#ifndef STATIC
+const ModuleInfo module_info =
+{
+  .canonical_name = "hook-commands",
+  .version = SYSLOG_NG_VERSION,
+  .description = "This module provides setup/teardown commands for sources/destinations",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = hook_commands_plugins,
+  .plugins_len = G_N_ELEMENTS(hook_commands_plugins),
+};
+#endif
+
+gboolean
+hook_commands_module_init(PluginContext *context, CfgArgs *args)
+{
+  plugin_register(context, hook_commands_plugins, G_N_ELEMENTS(hook_commands_plugins));
+  return TRUE;
 }
-
-%name-prefix "openbsd_"
-
-/* this parameter is needed in order to instruct bison to use a complete
- * argument list for yylex/yyerror */
-
-%lex-param {CfgLexer *lexer}
-%parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **instance}
-%parse-param {gpointer arg}
-
-/* INCLUDE_DECLS */
-
-%type <ptr> source_openbsd
-
-%token KW_OPENBSD
-
-%%
-
-start
-        : LL_CONTEXT_SOURCE source_openbsd
-          {
-            YYACCEPT;
-          }
-        ;
-
-
-source_openbsd
-	: KW_OPENBSD '(' source_openbsd_options ')'
-	  {
-	    last_driver = *instance = openbsd_sd_new(configuration);
-	  }
-
-	;
-
-source_openbsd_options
-	: source_openbsd_option source_openbsd_options
-	|
-	;
-
-source_openbsd_option
-	: source_driver_option
-	;
-
-/* INCLUDE_RULES */
-
-%%
