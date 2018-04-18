@@ -163,6 +163,7 @@ _clone(LogPipe *s)
   add_contextual_data_set_filename(&cloned->super, self->filename);
   add_contextual_data_set_database_default_selector(&cloned->super,
                                                     self->default_selector);
+  add_contextual_data_set_ignore_case(&cloned->super, self->ignore_case);
   cloned->selector = add_contextual_data_selector_clone(self->selector, s->cfg);
 
   return &cloned->super.super;
