@@ -26,7 +26,9 @@ function (openssl_set_defines)
   set (CMAKE_REQUIRED_LIBRARIES ${OPENSSL_LIBRARIES})
   include(CheckSymbolExists)
   set (check_symbol_headers
+    openssl/asn1.h
     openssl/evp.h
+    openssl/dh.h
     openssl/ssl.h
     openssl/x509v3.h)
 
@@ -35,7 +37,8 @@ function (openssl_set_defines)
     ASN1_STRING_get0_data
     SSL_CTX_get0_param
     X509_STORE_CTX_get0_cert
-    X509_get_extension_flags DH_set0_pqg)
+    X509_get_extension_flags
+    DH_set0_pqg)
 
   foreach (symbol ${symbol_list})
     string(TOUPPER ${symbol} SYMBOL_UPPERCASE)
