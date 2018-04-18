@@ -158,7 +158,7 @@ _str_case_insensitive_djb2_hash(const gchar *str)
   guint hash = 5381;
   int c;
 
-  while (c = *str++)
+  while ((c = *str++))
     hash = ((hash << 5) + hash) + g_ascii_toupper(c);
 
   return hash;
