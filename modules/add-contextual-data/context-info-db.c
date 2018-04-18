@@ -153,12 +153,21 @@ _strcase_eq(gconstpointer a, gconstpointer b)
 }
 
 static guint
+_str_case_insensitive_djb2_hash(const gchar *str)
+{
+  guint hash = 5381;
+  int c;
+
+  while (c = *str++)
+    hash = ((hash << 5) + hash) + g_ascii_toupper(c);
+
+  return hash;
+}
+
+static guint
 _strcase_hash(gconstpointer value)
 {
-  gchar *upper_case_value = _str_case_insensitive_dup((const gchar *)value);
-  guint hash = g_str_hash(upper_case_value);
-  g_free(upper_case_value);
-  return hash;
+  return _str_case_insensitive_djb2_hash((const gchar *)value);
 }
 
 void
@@ -229,23 +238,9 @@ context_info_db_unref(ContextInfoDB *self)
 }
 
 static element_range *
-_get_range_of_records_case_insensitive(ContextInfoDB *self, const gchar *selector)
-{
-  gchar *upper_case_selector = _str_case_insensitive_dup(selector);
-  element_range *r = (element_range *) g_hash_table_lookup(self->index, upper_case_selector);
-  g_free(upper_case_selector);
-
-  return r;
-}
-
-static element_range *
 _get_range_of_records(ContextInfoDB *self, const gchar *selector)
 {
   _ensure_indexed_db(self);
-  if (self->ignore_case)
-    {
-      return _get_range_of_records_case_insensitive(self, selector);
-    }
   return (element_range *) g_hash_table_lookup(self->index, selector);
 }
 
