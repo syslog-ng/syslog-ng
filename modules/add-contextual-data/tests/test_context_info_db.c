@@ -59,6 +59,7 @@ _test_empty_db(ContextInfoDB *context_info_db)
 Test(add_contextual_data, test_empty_db)
 {
   ContextInfoDB *context_info_db = context_info_db_new();
+  context_info_db_init(context_info_db);
 
   _test_empty_db(context_info_db);
 
@@ -68,6 +69,7 @@ Test(add_contextual_data, test_empty_db)
 Test(add_contextual_data, test_purge_empty_db)
 {
   ContextInfoDB *context_info_db = context_info_db_new();
+  context_info_db_init(context_info_db);
 
   context_info_db_purge(context_info_db);
   _test_empty_db(context_info_db);
@@ -78,6 +80,7 @@ Test(add_contextual_data, test_purge_empty_db)
 Test(add_contextual_data, test_index_empty_db)
 {
   ContextInfoDB *context_info_db = context_info_db_new();
+  context_info_db_init(context_info_db);
 
   context_info_db_index(context_info_db);
   _test_empty_db(context_info_db);
@@ -120,6 +123,7 @@ Test(add_contextual_data, test_insert)
 {
   ContextInfoDB *context_info_db = context_info_db_new();
   context_info_db_enable_ordering(context_info_db);
+  context_info_db_init(context_info_db);
 
   _fill_context_info_db(context_info_db, "selector", "name", "value", 2, 5);
   int ctr = 0;
@@ -137,6 +141,7 @@ Test(add_contextual_data, test_insert)
 Test(add_contextual_data, test_get_selectors)
 {
   ContextInfoDB *context_info_db = context_info_db_new();
+  context_info_db_init(context_info_db);
 
   _fill_context_info_db(context_info_db, "selector", "name", "value", 2, 5);
 
@@ -203,6 +208,7 @@ _assert_import_csv_with_single_selector(gchar *csv_content, gchar *selector_to_c
 {
   FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
   ContextInfoDB *db = context_info_db_new();
+  context_info_db_init(db);
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("csv");
 
@@ -222,6 +228,8 @@ _assert_import_csv_with_single_selector(gchar *csv_content, gchar *selector_to_c
 Test(add_contextual_data, test_inserted_nv_pairs)
 {
   ContextInfoDB *context_info_db = context_info_db_new();
+  context_info_db_init(context_info_db);
+
   _fill_context_info_db(context_info_db, "selector", "name", "value", 1, 3);
 
   TestNVPair expected_nvpairs[] =
@@ -243,6 +251,7 @@ Test(add_contextual_data, test_import_with_valid_csv)
                         "selector2,name2,value2\n" "selector3,name3,value3";
   FILE *fp = fmemopen(csv_content, sizeof(csv_content), "r");
   ContextInfoDB *db = context_info_db_new();
+  context_info_db_init(db);
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("csv");
 
@@ -321,6 +330,7 @@ Test(add_contextual_data, test_import_with_invalid_csv_content)
   gchar csv_content[] = "xxx";
   FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
   ContextInfoDB *db = context_info_db_new();
+  context_info_db_init(db);
 
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("csv");
@@ -343,6 +353,7 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
                         ",,value1.1\n";
   FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
   ContextInfoDB *db = context_info_db_new();
+  context_info_db_init(db);
 
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("csv");
@@ -409,6 +420,7 @@ ParameterizedTest(struct TestNVPairPrefix *param, add_contextual_data, test_impo
 
   FILE *fp = fmemopen(csv_content, sizeof(csv_content), "r");
   ContextInfoDB *db = context_info_db_new();
+  context_info_db_init(db);
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("csv");
 
@@ -426,4 +438,103 @@ ParameterizedTest(struct TestNVPairPrefix *param, add_contextual_data, test_impo
       "selector1",
       &param->expected,
       1);
+}
+
+Test(add_contextual_data, test_ignore_case_on)
+{
+  gchar csv_content[] = "LoCaLhOsT,tag1,value1";
+  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  ContextInfoDB *db = context_info_db_new();
+  context_info_db_set_ignore_case(db, TRUE);
+  context_info_db_init(db);
+
+  ContextualDataRecordScanner *scanner =
+    create_contextual_data_record_scanner_by_type("csv");
+
+  cr_assert(context_info_db_import(db, fp, scanner),
+            "Failed to import valid CSV file.");
+
+  cr_assert(context_info_db_contains(db, "Localhost"));
+  cr_assert(context_info_db_contains(db, "localhost"));
+  cr_assert(context_info_db_contains(db, "localhosT"));
+  cr_assert(context_info_db_contains(db, "LOCALHOST"));
+  cr_assert(context_info_db_contains(db, "LoCaLhOsT"));
+
+  fclose(fp);
+  context_info_db_free(db);
+  contextual_data_record_scanner_free(scanner);
+}
+
+Test(add_contextual_data, test_ignore_case_off)
+{
+  gchar csv_content[] = "LoCaLhOsT,tag1,value1";
+  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  ContextInfoDB *db = context_info_db_new();
+  context_info_db_set_ignore_case(db, FALSE);
+  context_info_db_init(db);
+
+  ContextualDataRecordScanner *scanner =
+    create_contextual_data_record_scanner_by_type("csv");
+
+  cr_assert(context_info_db_import(db, fp, scanner),
+            "Failed to import valid CSV file.");
+
+  cr_assert_not(context_info_db_contains(db, "Localhost"));
+  cr_assert_not(context_info_db_contains(db, "localhost"));
+  cr_assert_not(context_info_db_contains(db, "localhosT"));
+  cr_assert_not(context_info_db_contains(db, "LOCALHOST"));
+  cr_assert(context_info_db_contains(db, "LoCaLhOsT"));
+
+  fclose(fp);
+  context_info_db_free(db);
+  contextual_data_record_scanner_free(scanner);
+}
+
+Test(add_contextual_data, test_selected_nvpairs_when_ignore_case_on)
+{
+  gchar csv_content[] = "selector,name1,value1\n"
+                        "SeLeCtOr,name2,value2\n"
+                        "sElEcToR,name3,value3\n"
+                        "another,name4,value4";
+
+  FILE *fp = fmemopen(csv_content, sizeof(csv_content), "r");
+
+  ContextInfoDB *db = context_info_db_new();
+  context_info_db_set_ignore_case(db, TRUE);
+  context_info_db_init(db);
+  ContextualDataRecordScanner *scanner =
+    create_contextual_data_record_scanner_by_type("csv");
+
+  cr_assert(context_info_db_import(db, fp, scanner),
+            "Failed to import valid CSV file.");
+  cr_assert(context_info_db_is_loaded(db),
+            "The context_info_db_is_loaded reports False after a successful import operation. ");
+  cr_assert(context_info_db_is_indexed(db),
+            "The context_info_db_is_indexed reports False after successful import&load operations.");
+  fclose(fp);
+
+  TestNVPair expected_nvpairs_selector1[] =
+  {
+    {.name = "name1",.value = "value1"},
+    {.name = "name2",.value = "value2"},
+    {.name = "name3",.value = "value3"},
+  };
+
+  TestNVPair expected_nvpairs_selector2[] =
+  {
+    {.name = "name4",.value = "value4"},
+  };
+
+  _assert_context_info_db_contains_name_value_pairs_by_selector(db,
+      "SELECTOR",
+      expected_nvpairs_selector1,
+      ARRAY_SIZE(expected_nvpairs_selector1));
+
+  _assert_context_info_db_contains_name_value_pairs_by_selector(db,
+      "another",
+      expected_nvpairs_selector2,
+      ARRAY_SIZE(expected_nvpairs_selector2));
+
+  context_info_db_free(db);
+  contextual_data_record_scanner_free(scanner);
 }

@@ -35,6 +35,7 @@ struct _ContextInfoDB
   gboolean is_data_indexed;
   gboolean is_ordering_enabled;
   GList *ordered_selectors;
+  gboolean ignore_case;
 };
 
 typedef struct _element_range
@@ -52,6 +53,29 @@ _contextual_data_record_cmp(gconstpointer k1, gconstpointer k2)
   return strcmp(r1->selector->str, r2->selector->str);
 }
 
+static gint
+_g_strcmp(gconstpointer a, gconstpointer b)
+{
+  return g_strcmp0((const gchar *) a, (const gchar *) b);
+}
+
+static gint
+_g_strcasecmp(gconstpointer a, gconstpointer b)
+{
+  if (!a || !b)
+    return 1;
+  return g_ascii_strcasecmp((const gchar *)a, (const gchar *)b);
+}
+
+static gint
+_contextual_data_record_case_cmp(gconstpointer k1, gconstpointer k2)
+{
+  ContextualDataRecord *r1 = (ContextualDataRecord *) k1;
+  ContextualDataRecord *r2 = (ContextualDataRecord *) k2;
+
+  return _g_strcasecmp(r1->selector->str, r2->selector->str);
+}
+
 void
 context_info_db_enable_ordering(ContextInfoDB *self)
 {
@@ -65,11 +89,25 @@ context_info_db_ordered_selectors(ContextInfoDB *self)
 }
 
 void
+context_info_db_set_ignore_case(ContextInfoDB *self, gboolean ignore_case)
+{
+  self->ignore_case = ignore_case;
+}
+
+gchar *
+_str_case_insensitive_dup(const gchar *str)
+{
+  return g_ascii_strup(str, -1);
+}
+
+void
 context_info_db_index(ContextInfoDB *self)
 {
+  GCompareFunc record_cmp = self->ignore_case ? _contextual_data_record_case_cmp : _contextual_data_record_cmp;
+
   if (self->data->len > 0)
     {
-      g_array_sort(self->data, _contextual_data_record_cmp);
+      g_array_sort(self->data, record_cmp);
       gsize range_start = 0;
       ContextualDataRecord range_start_record =
         g_array_index(self->data, ContextualDataRecord, 0);
@@ -79,8 +117,7 @@ context_info_db_index(ContextInfoDB *self)
           ContextualDataRecord current_record =
             g_array_index(self->data, ContextualDataRecord, i);
 
-          if (_contextual_data_record_cmp
-              (&range_start_record, &current_record))
+          if (record_cmp(&range_start_record, &current_record))
             {
               element_range *current_range = g_new(element_range, 1);
               current_range->offset = range_start;
@@ -119,14 +156,37 @@ _record_free(gpointer p)
   contextual_data_record_clean(rec);
 }
 
-static void
-_new(ContextInfoDB *self)
+static gboolean
+_strcase_eq(gconstpointer a, gconstpointer b)
 {
+  return _g_strcasecmp(a,b) == 0;
+}
+
+static guint
+_str_case_insensitive_djb2_hash(const gchar *str)
+{
+  guint hash = 5381;
+  int c;
+
+  while ((c = *str++))
+    hash = ((hash << 5) + hash) + g_ascii_toupper(c);
+
+  return hash;
+}
+
+static guint
+_strcase_hash(gconstpointer value)
+{
+  return _str_case_insensitive_djb2_hash((const gchar *)value);
+}
+
+void
+context_info_db_init(ContextInfoDB *self)
+{
+  GEqualFunc str_eq = self->ignore_case ? _strcase_eq : g_str_equal;
+  GHashFunc str_hash = self->ignore_case ? _strcase_hash : g_str_hash;
   self->data = g_array_new(FALSE, FALSE, sizeof(ContextualDataRecord));
-  self->index = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
-  self->is_data_indexed = FALSE;
-  self->ordered_selectors = NULL;
-  g_atomic_counter_set(&self->ref_cnt, 1);
+  self->index = g_hash_table_new_full(str_hash, str_eq, NULL, g_free);
 }
 
 static void
@@ -163,7 +223,7 @@ context_info_db_new(void)
 {
   ContextInfoDB *self = g_new0(ContextInfoDB, 1);
 
-  _new(self);
+  g_atomic_counter_set(&self->ref_cnt, 1);
 
   return self;
 }
@@ -210,12 +270,6 @@ context_info_db_free(ContextInfoDB *self)
       _free(self);
       g_free(self);
     }
-}
-
-static gint
-_g_strcmp(const gconstpointer a, gconstpointer b)
-{
-  return g_strcmp0((const gchar *) a, (const gchar *) b);
 }
 
 void
