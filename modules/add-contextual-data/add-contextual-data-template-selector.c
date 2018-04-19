@@ -85,6 +85,7 @@ _free(AddContextualDataSelector *s)
   AddContextualDataTemplateSelector *self = (AddContextualDataTemplateSelector *)s;
   log_template_unref(self->selector_template);
   g_free(self->selector_template_string);
+  g_free(self);
 }
 
 static AddContextualDataSelector *
