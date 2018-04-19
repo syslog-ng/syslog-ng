@@ -273,7 +273,8 @@ _init_context_info_db(AddContextualData *self)
     context_info_db_enable_ordering(self->context_info_db);
 
   context_info_db_set_ignore_case(self->context_info_db, self->ignore_case);
-  context_info_db_init(self->context_info_db);
+  if (!context_info_db_is_loaded(self->context_info_db))
+    context_info_db_init(self->context_info_db);
 
   if (self->filename == NULL)
     {
