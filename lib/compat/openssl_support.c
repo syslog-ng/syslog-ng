@@ -25,6 +25,7 @@
 #include "syslog-ng.h"
 #include "thread-utils.h"
 #include <openssl/ssl.h>
+#include <openssl/bn.h>
 
 #if !SYSLOG_NG_HAVE_DECL_SSL_CTX_GET0_PARAM
 X509_VERIFY_PARAM *SSL_CTX_get0_param(SSL_CTX *ctx)
@@ -45,6 +46,38 @@ uint32_t X509_get_extension_flags(X509 *x)
 {
   return x->ex_flags;
 }
+#endif
+
+
+/* ThreadID callbacks for various OpenSSL versions */
+#if OPENSSL_VERSION_NUMBER < 0x10000000
+
+static unsigned long
+_ssl_thread_id(void)
+{
+  return (unsigned long) get_thread_id();
+}
+
+static void
+_init_threadid_callback(void)
+{
+  CRYPTO_set_id_callback(_ssl_thread_id);
+}
+
+#elif OPENSSL_VERSION_NUMBER < 0x10100000L
+
+static void
+_ssl_thread_id2(CRYPTO_THREADID *id)
+{
+  CRYPTO_THREADID_set_numeric(id, (unsigned long) get_thread_id());
+}
+
+static void
+_init_threadid_callback(void)
+{
+  CRYPTO_THREADID_set_callback(_ssl_thread_id2);
+}
+
 #endif
 
 /* locking callbacks for OpenSSL prior to 1.1.0 */
@@ -92,52 +125,6 @@ _deinit_locks(void)
   g_free(ssl_locks);
 }
 
-#else
-
-static void
-_init_locks(void)
-{
-}
-
-static void
-_deinit_locks(void)
-{
-}
-
-#endif
-
-
-/* ThreadID callbacks for various OpenSSL versions */
-#if OPENSSL_VERSION_NUMBER < 0x10000000
-
-static unsigned long
-_ssl_thread_id(void)
-{
-  return (unsigned long) get_thread_id();
-}
-
-static void
-_init_threadid_callback(void)
-{
-  CRYPTO_set_id_callback(_ssl_thread_id);
-}
-
-#else
-
-static void
-_ssl_thread_id2(CRYPTO_THREADID *id)
-{
-  CRYPTO_THREADID_set_numeric(id, (unsigned long) get_thread_id());
-}
-
-static void
-_init_threadid_callback(void)
-{
-  CRYPTO_THREADID_set_callback(_ssl_thread_id2);
-}
-
-#endif
-
 void
 openssl_crypto_init_threading(void)
 {
@@ -150,6 +137,20 @@ openssl_crypto_deinit_threading(void)
 {
   _deinit_locks();
 }
+
+#else
+
+void
+openssl_crypto_init_threading(void)
+{
+}
+
+void
+openssl_crypto_deinit_threading(void)
+{
+}
+
+#endif
 
 void
 openssl_init(void)
@@ -210,5 +211,13 @@ int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g)
     dh->length = BN_num_bits(q);
 
   return 1;
+}
+#endif
+
+#if !SYSLOG_NG_HAVE_DECL_BN_GET_RFC3526_PRIME_2048
+BIGNUM *
+BN_get_rfc3526_prime_2048(BIGNUM *bn)
+{
+  return get_rfc3526_prime_2048(bn);
 }
 #endif
