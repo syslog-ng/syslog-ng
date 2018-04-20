@@ -225,7 +225,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
           msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
                     evt_tag_int("fd", self->fd),
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    evt_tag_error(EVT_TAG_OSERROR),
                     evt_tag_int("time_reopen", self->time_reopen));
           goto error_reconnect;
         }
@@ -298,7 +298,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
                 evt_tag_int("fd", sock),
                 evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       close(sock);
       return FALSE;
     }

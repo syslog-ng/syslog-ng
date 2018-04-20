@@ -60,7 +60,7 @@ openbsd_create_newsyslog_socket(OpenBSDDriver *self)
   if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, self->pair) == -1)
     {
       msg_error("openBSD source: cannot bind socket fd",
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       return 0;
     }
 
@@ -68,14 +68,14 @@ openbsd_create_newsyslog_socket(OpenBSDDriver *self)
     {
       msg_error("openBSD source: cannot open log device",
                 evt_tag_str(EVT_TAG_FILENAME, OPENBSD_LOG_DEV),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       return 0;
     }
 
   if (ioctl(self->klog, LIOCSFD, &(self->pair[1])) == -1)
     {
       msg_error("openBSD source: cannot do ioctl LIOCSFD",
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       return 0;
     }
 

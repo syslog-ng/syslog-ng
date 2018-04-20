@@ -102,14 +102,14 @@ afprogram_popen(AFProgramProcessInfo *process_info, GIOCondition cond, gint *fd)
     {
       msg_error("Error creating program pipe",
                 evt_tag_str("cmdline", process_info->cmdline->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       return FALSE;
     }
 
   if ((process_info->pid = fork()) < 0)
     {
       msg_error("Error in fork()",
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       close(msg_pipe[0]);
       close(msg_pipe[1]);
       return FALSE;

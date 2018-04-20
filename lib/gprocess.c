@@ -234,7 +234,7 @@ g_process_cap_modify(int capability, int onoff)
   if (cap_set_flag(caps, CAP_EFFECTIVE, 1, &capability, onoff) == -1)
     {
       msg_error("Error managing capability set, cap_set_flag returned an error",
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       cap_free(caps);
       return FALSE;
     }
@@ -246,7 +246,7 @@ g_process_cap_modify(int capability, int onoff)
       cap_text = cap_to_text(caps, NULL);
       msg_error("Error managing capability set, cap_set_proc returned an error",
                 evt_tag_str("caps", cap_text),
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       cap_free(cap_text);
       cap_free(caps);
       return FALSE;
@@ -297,7 +297,7 @@ g_process_cap_restore(cap_t r)
       cap_text = cap_to_text(r, NULL);
       msg_error("Error managing capability set, cap_set_proc returned an error",
                 evt_tag_str("caps", cap_text),
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       cap_free(cap_text);
       return;
     }

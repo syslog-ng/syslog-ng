@@ -99,7 +99,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
         {
           msg_error("Error reading RFC5428 style framed data",
                     evt_tag_int("fd", self->super.transport->fd),
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
           return LPS_ERROR;
         }
       else

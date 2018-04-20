@@ -394,7 +394,7 @@ afsocket_sd_accept(gpointer s)
       else if (status != G_IO_STATUS_NORMAL)
         {
           msg_error("Error accepting new connection",
-                    evt_tag_errno(EVT_TAG_OSERROR, errno));
+                    evt_tag_error(EVT_TAG_OSERROR));
           return;
         }
 
@@ -554,7 +554,7 @@ _finalize_init(gpointer arg)
   if (listen(self->fd, self->listen_backlog) < 0)
     {
       msg_error("Error during listen()",
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       close(self->fd);
       self->fd = -1;
       return FALSE;

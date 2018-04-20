@@ -311,7 +311,7 @@ riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
   if (!self->client)
     {
       msg_error("Error connecting to Riemann",
-                evt_tag_errno("errno", errno));
+                evt_tag_error("errno"));
       return FALSE;
     }
 

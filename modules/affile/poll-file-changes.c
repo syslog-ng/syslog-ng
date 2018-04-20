@@ -65,7 +65,7 @@ poll_file_changes_check_file(gpointer s)
       if (pos == (off_t) -1)
         {
           msg_error("Error invoking seek on followed file",
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
           goto reschedule;
         }
 
@@ -81,7 +81,7 @@ poll_file_changes_check_file(gpointer s)
           else
             {
               msg_error("Error invoking fstat() on followed file",
-                        evt_tag_errno("error", errno));
+                        evt_tag_error("error"));
               goto reschedule;
             }
         }

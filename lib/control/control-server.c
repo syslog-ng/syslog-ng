@@ -76,7 +76,7 @@ control_connection_io_output(gpointer s)
       if (errno != EAGAIN)
         {
           msg_error("Error writing control channel",
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
           control_connection_stop_watches(self);
           control_connection_free(self);
           return;
@@ -119,7 +119,7 @@ control_connection_io_input(void *s)
       if (errno != EAGAIN)
         {
           msg_error("Error reading command on control channel, closing control channel",
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
           goto destroy_connection;
         }
       /* EAGAIN, should try again when data comes */

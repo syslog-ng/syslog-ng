@@ -55,7 +55,7 @@ Test(test_messages, test_errno)
   errno = 5;
   msg_set_post_func(test_errno_asserter);
   msg_error("test errno",
-            evt_tag_errno("error", errno));
+            evt_tag_error("error"));
 }
 
 void test_errno_capture_asserter(LogMessage *msg)

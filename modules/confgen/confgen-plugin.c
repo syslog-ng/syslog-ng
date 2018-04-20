@@ -75,7 +75,7 @@ confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GS
                 evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(self->super.context)),
                 evt_tag_str("block", self->super.name),
                 evt_tag_str("exec", self->exec),
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return FALSE;
     }
   g_string_set_size(result, 1024);

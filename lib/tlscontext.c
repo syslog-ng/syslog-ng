@@ -354,7 +354,7 @@ _is_file_accessible(TLSContext *self, const gchar *fname)
     {
       msg_error("Error opening TLS related key or certificate file",
                 evt_tag_str("filename", fname),
-                evt_tag_errno("error", errno),
+                evt_tag_error("error"),
                 tls_context_format_location_tag(self));
 
       return FALSE;

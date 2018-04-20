@@ -106,7 +106,7 @@ _write_message(PseudoFileDestDriver *self, const GString *msg)
       msg_error("Error opening pseudo file",
                 evt_tag_str("pseudofile", self->pseudofile_name),
                 evt_tag_str("driver", self->super.super.id),
-                evt_tag_errno("error", errno),
+                evt_tag_error("error"),
                 _evt_tag_message(msg));
       goto exit;
     }
@@ -117,7 +117,7 @@ _write_message(PseudoFileDestDriver *self, const GString *msg)
       msg_error("Error writing to pseudo file",
                 evt_tag_str("pseudofile", self->pseudofile_name),
                 evt_tag_str("driver", self->super.super.id),
-                evt_tag_errno("error", errno),
+                evt_tag_error("error"),
                 _evt_tag_message(msg));
       goto exit;
     }

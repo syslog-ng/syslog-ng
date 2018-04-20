@@ -174,7 +174,7 @@ write_gstring_to_socket(int fd, GString *data)
   if (res < 0)
     {
       msg_error("Error happened during write",
-                evt_tag_errno("errno", errno));
+                evt_tag_error("errno"));
       return FALSE;
     }
 

@@ -187,7 +187,7 @@ affile_dw_reopen(AFFileDestWriter *self)
     {
       msg_error("Error opening file for writing",
                 evt_tag_str("filename", self->filename),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
     }
 
   log_writer_reopen(self->writer, proto);

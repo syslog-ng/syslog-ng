@@ -61,7 +61,7 @@ transport_mapper_open_socket(TransportMapper *self,
   if (sock < 0)
     {
       msg_error("Error creating socket",
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       goto error;
     }
 
@@ -77,7 +77,7 @@ transport_mapper_open_socket(TransportMapper *self,
 
       msg_error("Error binding socket",
                 evt_tag_str("addr", g_sockaddr_format(bind_addr, buf, sizeof(buf), GSA_FULL)),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       goto error_close;
     }
 

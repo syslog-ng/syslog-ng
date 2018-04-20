@@ -280,7 +280,7 @@ dns_cache_check_hosts(DNSCache *self, glong t)
         {
           msg_error("Error loading dns cache hosts file",
                     evt_tag_str("filename", self->options->hosts),
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
         }
 
     }
