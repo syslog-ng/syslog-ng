@@ -51,7 +51,7 @@ void msg_deinit(void);
 
 void msg_add_option_group(GOptionContext *ctx);
 
-#define evt_tag_capture_errno(tag) evt_tag_errno(tag, __local_copy_of_errno)
+#define evt_tag_error(tag) evt_tag_errno(tag, __local_copy_of_errno)
 
 #define CAPTURE_ERRNO(lambda) do {\
   int __local_copy_of_errno G_GNUC_UNUSED = errno; \
