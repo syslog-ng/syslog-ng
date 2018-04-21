@@ -53,8 +53,6 @@ filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
     self->init(self, cfg);
 }
 
-EVTTAG *filter_result_tag(gboolean res);
-
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
 gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg);
 gboolean filter_expr_eval_root(FilterExprNode *self, LogMessage **msg, const LogPathOptions *path_options);
