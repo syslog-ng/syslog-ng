@@ -59,21 +59,11 @@ _deleted_cb(FileReader *self, gpointer user_data)
 }
 
 static void
-_stop_file_reader(FileStateHandler *state_handler, gpointer user_data)
+_stop_file_reader(FileReader *reader, gpointer user_data)
 {
-  WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
-  FileReader *reader = g_hash_table_lookup(self->file_readers, state_handler->filename);
-  if (!reader)
-    {
-      msg_error("File reader isn't found for file",
-                evt_tag_str("filename", state_handler->filename));
-    }
-  else
-    {
-      msg_debug("Stop following file, because of deleted and eof",
-                evt_tag_str("filename", state_handler->filename));
-      file_reader_stop_follow_file(reader);
-    }
+  msg_debug("Stop following file, because of deleted and eof",
+            evt_tag_str("filename", reader->filename->str));
+  file_reader_stop_follow_file(reader);
 }
 
 void
@@ -92,16 +82,12 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
       return;
     }
 
-  gchar *filename = g_strdup(full_path);
-
-  FileStateHandler *state_handler = file_state_handler_new(filename, &self->deleted_file_events);
-
-  reader = file_reader_new(full_path,
-                           &self->file_reader_options,
-                           self->file_opener,
-                           &self->super,
-                           cfg,
-                           state_handler);
+  reader = wildcard_file_reader_new(full_path,
+                                    &self->file_reader_options,
+                                    self->file_opener,
+                                    &self->super,
+                                    cfg,
+                                    &self->deleted_file_events);
 
   log_pipe_append(&reader->super, &self->super.super.super);
   if (!log_pipe_init(&reader->super))
@@ -110,11 +96,10 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
                   evt_tag_str("filename", full_path),
                   evt_tag_str("source_driver", self->super.super.group));
       log_pipe_unref(&reader->super);
-      g_free(filename);
     }
   else
     {
-      g_hash_table_insert(self->file_readers, filename, reader);
+      g_hash_table_insert(self->file_readers, g_strdup(full_path), reader);
     }
 }
 
@@ -132,7 +117,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
         }
       else
         {
-          if (reader->file_state->deleted)
+          if (((WildcardFileReader *)reader)->file_state.deleted)
             {
               msg_info("File is deleted, new file create with same name. "
                        "While old file is reading, skip the new one",
@@ -209,16 +194,10 @@ _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_
 }
 
 static void
-_remove_file_reader(FileStateHandler *state_handler, gpointer user_data)
+_remove_file_reader(FileReader *reader, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
-  FileReader *reader = g_hash_table_lookup(self->file_readers, state_handler->filename);
-  if (!reader)
-    {
-      msg_error("File reader isn't found for file",
-                evt_tag_str("filename", state_handler->filename));
-      return;
-    }
+
   _deleted_cb(reader, user_data);
   log_pipe_ref(&reader->super);
   if (g_hash_table_remove(self->file_readers, reader->filename->str))

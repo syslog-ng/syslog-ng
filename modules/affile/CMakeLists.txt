@@ -17,7 +17,7 @@ set(AFFILE_HEADERS
     "stdin.h"
     "transport-prockmsg.h"
     "wildcard-source.h"
-    "file-state-handler.h"
+    "wildcard-file-reader.h"
     "file-list.h"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.h"
 )
@@ -42,7 +42,7 @@ set(AFFILE_SOURCES
     "stdin.c"
     "transport-prockmsg.c"
     "wildcard-source.c"
-    "file-state-handler.c"
+    "wildcard-file-reader.c"
     "file-list.c"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c"
 )

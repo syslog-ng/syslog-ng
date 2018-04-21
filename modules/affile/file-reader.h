@@ -25,8 +25,6 @@
 #include "driver.h"
 #include "logreader.h"
 #include "file-opener.h"
-#include "iv_event.h"
-#include "file-state-handler.h"
 
 typedef struct _FileReaderOptions
 {
@@ -36,8 +34,6 @@ typedef struct _FileReaderOptions
   gboolean exit_on_eof;
 } FileReaderOptions;
 
-
-
 typedef struct _FileReader
 {
   LogPipe super;
@@ -46,7 +42,6 @@ typedef struct _FileReader
   FileReaderOptions *options;
   FileOpener *opener;
   LogReader *reader;
-  FileStateHandler *file_state;
 } FileReader;
 
 static inline LogProtoFileReaderOptions *
@@ -56,7 +51,17 @@ file_reader_options_get_log_proto_options(FileReaderOptions *options)
 }
 
 FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
-                            GlobalConfig *cfg, FileStateHandler *file_state);
+                            GlobalConfig *cfg);
+
+void file_reader_init_instance(FileReader *self, const gchar *filename, FileReaderOptions *options, FileOpener *opener,
+                               LogSrcDriver *owner,
+                               GlobalConfig *cfg);
+
+gboolean file_reader_init_method(LogPipe *s);
+gboolean file_reader_deinit_method(LogPipe *s);
+void file_reader_free_method(LogPipe *s);
+void file_reader_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options);
+void file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data);
 
 void file_reader_remove_persist_state(FileReader *self);
 void file_reader_stop_follow_file(FileReader *self);

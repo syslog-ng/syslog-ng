@@ -239,8 +239,8 @@ _reopen_on_notify(LogPipe *s, gboolean recover_state)
 }
 
 /* NOTE: runs in the main thread */
-static void
-_notify(LogPipe *s, gint notify_code, gpointer user_data)
+void
+file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
 {
   FileReader *self = (FileReader *) s;
 
@@ -264,16 +264,12 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
       break;
 
     default:
-      if (self->file_state)
-        {
-          file_state_handler_notify(self->file_state, notify_code);
-        }
       break;
     }
 }
 
-static void
-_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+void
+file_reader_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   FileReader *self = (FileReader *)s;
   static NVHandle filename_handle = 0;
@@ -282,50 +278,30 @@ _queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     filename_handle = log_msg_get_value_handle("FILE_NAME");
 
   log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
-  if (self->file_state)
-    {
-      file_state_handler_msg_read(self->file_state);
-    }
   log_pipe_forward_msg(s, msg, path_options);
 }
 
-static gboolean
-_init(LogPipe *s)
+gboolean
+file_reader_init_method(LogPipe *s)
 {
-  FileReader *self = (FileReader *)s;
-  if (self->file_state)
-    {
-      if (!file_state_handler_init(self->file_state))
-        {
-          msg_error("Unable to initialize the file state handler",
-                    evt_tag_str("filename", self->filename->str));
-          return FALSE;
-        }
-    }
   return _reader_open_file(s, TRUE);
 }
 
-static gboolean
-_deinit(LogPipe *s)
+gboolean
+file_reader_deinit_method(LogPipe *s)
 {
   FileReader *self = (FileReader *)s;
-  if (self->file_state)
-    {
-      file_state_handler_deinit(self->file_state);
-    }
   if (self->reader)
     _deinit_sd_logreader(self);
   return TRUE;
 }
 
-static void
-_free(LogPipe *s)
+void
+file_reader_free_method(LogPipe *s)
 {
   FileReader *self = (FileReader *) s;
 
   g_assert(!self->reader);
-  file_state_handler_free(self->file_state);
-
   g_string_free(self->filename, TRUE);
 }
 
@@ -348,26 +324,31 @@ file_reader_stop_follow_file(FileReader *self)
   log_reader_reopen(self->reader, NULL, NULL);
 }
 
-FileReader *
-file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
-                GlobalConfig *cfg, FileStateHandler *file_state)
+void
+file_reader_init_instance (FileReader *self, const gchar *filename,
+                           FileReaderOptions *options, FileOpener *opener,
+                           LogSrcDriver *owner, GlobalConfig *cfg)
 {
-  FileReader *self = g_new0(FileReader, 1);
-
-  log_pipe_init_instance(&self->super, cfg);
-  self->super.init = _init;
-  self->super.queue = _queue;
-  self->super.deinit = _deinit;
-  self->super.notify = _notify;
-  self->super.free_fn = _free;
+  log_pipe_init_instance (&self->super, cfg);
+  self->super.init = file_reader_init_method;
+  self->super.queue = file_reader_queue_method;
+  self->super.deinit = file_reader_deinit_method;
+  self->super.notify = file_reader_notify_method;
+  self->super.free_fn = file_reader_free_method;
   self->super.generate_persist_name = _format_persist_name;
-
-  self->filename = g_string_new(filename);
+  self->filename = g_string_new (filename);
   self->options = options;
   self->opener = opener;
   self->owner = owner;
-  self->file_state = file_state;
+}
 
+FileReader *
+file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
+                GlobalConfig *cfg)
+{
+  FileReader *self = g_new0(FileReader, 1);
+
+  file_reader_init_instance (self, filename, options, opener, owner, cfg);
   return self;
 }
 

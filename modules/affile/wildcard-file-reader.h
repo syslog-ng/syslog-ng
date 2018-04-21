@@ -20,43 +20,42 @@
  *
  */
 
-#ifndef MODULES_AFFILE_FILE_STATE_HANDLER_H_
-#define MODULES_AFFILE_FILE_STATE_HANDLER_H_
 
-#include "syslog-ng.h"
-#include "iv_event.h"
+#ifndef MODULES_AFFILE_WILDCARD_FILE_READER_H_
+#define MODULES_AFFILE_WILDCARD_FILE_READER_H_
 
-typedef struct _FileStateHandler FileStateHandler;
+#include "file-reader.h"
 
-typedef void (*FileStateEventCallback)(FileStateHandler *state_handler, gpointer user_data);
+typedef struct _WildcardFileReader WildcardFileReader;
 
-typedef struct _DeletedFileStateEvent
+typedef void (*FileStateEventCallback)(FileReader *file_reader, gpointer user_data);
+
+typedef struct _FileStateEvent
 {
   FileStateEventCallback deleted_file_finised;
   FileStateEventCallback deleted_file_eof;
   gpointer user_data;
-} DeletedFileStateEvent;
+} FileStateEvent;
 
-struct _FileStateHandler
+typedef struct _FileState
 {
   gboolean deleted;
   gboolean eof;
   gboolean last_msg_sent;
-  DeletedFileStateEvent *deleted_events;
-  struct iv_event deleted_file_status_changed;
-  const gchar *filename;
+} FileState;
+
+
+struct _WildcardFileReader
+{
+  FileReader super;
+  FileState file_state;
+  FileStateEvent *file_state_event;
 };
 
-FileStateHandler *file_state_handler_new(const gchar *filename,
-                                         DeletedFileStateEvent *event);
-
-void file_state_handler_msg_read(FileStateHandler *self);
-void file_state_handler_notify(FileStateHandler *self, gint notify_code);
-
-gboolean file_state_handler_init(FileStateHandler *self);
-void file_state_handler_deinit(FileStateHandler *self);
-
-void file_state_handler_free(FileStateHandler *self);
+FileReader *
+wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options,
+                         FileOpener *opener, LogSrcDriver *owner,
+                         GlobalConfig *cfg, FileStateEvent *file_state_event);
 
 
-#endif /* MODULES_AFFILE_FILE_STATE_HANDLER_H_ */
+#endif /* MODULES_AFFILE_WILDCARD_FILE_READER_H_ */
