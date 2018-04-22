@@ -88,6 +88,16 @@ void file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
   return;
 }
 
+int iv_task_registered(const struct iv_task *_t)
+{
+  return 0;
+}
+
+void iv_task_register(struct iv_task *_t)
+{
+  _t->handler(_t->cookie);
+}
+
 
 static void
 _init(void)

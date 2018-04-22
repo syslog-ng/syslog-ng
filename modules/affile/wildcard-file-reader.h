@@ -25,6 +25,7 @@
 #define MODULES_AFFILE_WILDCARD_FILE_READER_H_
 
 #include "file-reader.h"
+#include <iv.h>
 
 typedef struct _WildcardFileReader WildcardFileReader;
 
@@ -50,6 +51,7 @@ struct _WildcardFileReader
   FileReader super;
   FileState file_state;
   FileStateEvent *file_state_event;
+  struct iv_task file_state_event_handler;
 };
 
 FileReader *
