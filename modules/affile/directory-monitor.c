@@ -148,6 +148,10 @@ directory_monitor_stop(DirectoryMonitor *self)
     {
       iv_timer_unregister(&self->check_timer);
     }
+  if (iv_task_registered(&self->scheduled_destructor))
+    {
+      iv_task_unregister(&self->scheduled_destructor);
+    }
   if (self->stop_watches && self->watches_running)
     {
       self->stop_watches(self);
@@ -230,11 +234,31 @@ directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCall
 }
 
 void
+directory_monitor_schedule_destroy(DirectoryMonitor *self)
+{
+  if (!iv_task_registered(&self->scheduled_destructor))
+    {
+      iv_task_register(&self->scheduled_destructor);
+    }
+}
+
+void
+directory_monitor_stop_and_destroy(DirectoryMonitor *self)
+{
+  msg_debug("Stopping directory monitor", evt_tag_str("dir", self->dir));
+  directory_monitor_stop(self);
+  directory_monitor_free(self);
+}
+
+void
 directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time)
 {
   self->dir = g_strdup(dir);
   self->recheck_time = recheck_time;
   IV_TIMER_INIT(&self->check_timer);
+  IV_TASK_INIT(&self->scheduled_destructor);
+  self->scheduled_destructor.cookie = self;
+  self->scheduled_destructor.handler = (GDestroyNotify)directory_monitor_stop_and_destroy;
 }
 
 DirectoryMonitor *

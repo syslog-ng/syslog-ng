@@ -56,7 +56,7 @@ _handle_deleted_entry(const gchar *filename, gpointer user_data)
   DirectoryMonitorEvent event;
 
   event.name = filename;
-  event.event_type = DELETED;
+  event.event_type = FILE_DELETED;
   event.full_path = build_filename(self->super.real_path, event.name);
   if (self->super.callback)
     {
@@ -66,19 +66,41 @@ _handle_deleted_entry(const gchar *filename, gpointer user_data)
 }
 
 static void
+_handle_deleted_self(DirectoryMonitorPoll *self)
+{
+  DirectoryMonitorEvent event;
+
+  event.name = self->super.real_path;
+  event.event_type = DIRECTORY_DELETED;
+  event.full_path = self->super.real_path;
+  if (self->super.callback)
+    {
+      self->super.callback(&event, self->super.callback_data);
+    }
+}
+
+static void
 _rescan_directory(DirectoryMonitorPoll *self)
 {
   GError *error = NULL;
   GDir *directory = g_dir_open(self->super.real_path, 0, &error);
   collection_comporator_start(self->comporator);
-  const gchar *filename = g_dir_read_name(directory);
-  while (filename)
+  if (directory)
     {
-      collection_comporator_add_value(self->comporator, filename);
-      filename = g_dir_read_name(directory);
+      const gchar *filename = g_dir_read_name(directory);
+      while (filename)
+        {
+          collection_comporator_add_value(self->comporator, filename);
+          filename = g_dir_read_name(directory);
+        }
+      g_dir_close(directory);
+      collection_comporator_stop(self->comporator);
     }
-  g_dir_close(directory);
-  collection_comporator_stop(self->comporator);
+  else
+    {
+      collection_comporator_stop(self->comporator);
+      _handle_deleted_self(self);
+    }
 }
 
 void
@@ -97,13 +119,16 @@ _start_watches(DirectoryMonitor *s)
   GDir *directory = NULL;
   GError *error = NULL;
   directory = g_dir_open(self->super.real_path, 0, &error);
-  const gchar *filename = g_dir_read_name(directory);
-  while (filename)
+  if (directory)
     {
-      collection_comporator_add_initial_value(self->comporator, filename);
-      filename = g_dir_read_name(directory);
+      const gchar *filename = g_dir_read_name(directory);
+      while (filename)
+        {
+          collection_comporator_add_initial_value(self->comporator, filename);
+          filename = g_dir_read_name(directory);
+        }
+      g_dir_close(directory);
     }
-  g_dir_close(directory);
   _rearm_rescan_timer(self);
 }
 
