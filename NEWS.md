@@ -1,63 +1,68 @@
-3.14.1
+3.15.1
 
-<!-- Fri, 23 Feb 2018 09:08:05 +0100 -->
+<!-- Thu, 19 Apr 2018 10:55:16 +0200 -->
 
 ## Features
 
- * Password protected ssl keys (#1888)
- * Add OpenBSD module to system() source (#1875)
- * Add Ubuntu Trusty support to Docker build (#1849)
- * Add filters as selectors in contextual data (#1838)
+ * Support added for `if`/`elif`/`else` blocks to the configuration file syntax.
+   (#1856)
+ * Dramatically improved debug messages during filter/parser evaluation. (#1898)
+ * Similarly improved the error messages shown on syntax errors, they now show a
+   full backtrace of inclusions, among other things. (#1932)
+ * The `hook-commands` module was added, allowing one to run custom commands on
+   source or destination setup and teardown. (#1951)
+ * Implemented a way to skip processing included config file snippets in case a
+   dependency is missing: The `@requires json` pragma. (#827, #1956)
+ * Basic client-side failover support was implemented. (#1905)
+ * Errors from python destinations are now reported together with any exception
+   text (if any). (#1931)
+ * `add-contextual-data` gained a new `ignore-case()` option. (#1911)
 
 ## Bugfixes
 
- * Fix increased memory usage during saving disk-buffer (#1867)
- * Fix maximum record length limitations of disk-buffer (#1874)
- * Fix a memory leak in cfg-lexer (#1843)
- * Fix some issues found by pylint in python module (#1881, #1830)
- * Fix a crash due to a race condition in kv-parser() (#1871)
- * Fix a crash due to a race condition in file() destination (#1858)
- * Fix deprecated API usage in python module tests (#1829)
- * Fix a race condition in internal() source (#1815)
- * Fix a locale issue in merge-grammar python tool (#1868)
- * Fix compile problems with autotools when '--disable-all-modules' used (#1853)
- * Fix a file descriptor leak in persist-state (#1847)
- * Fix a file descriptor leak in pseudofile() (#1846)
- * Fix memory/fd leaks in loggen tool (#1844, #1845)
- * Fix compile problems on Fedora, RHEL6, CentOS6 and SUSE based platforms (#1837)
- * Fix a crash when large variety of keys added to messages (#1836)
- * Fix compile problems when PATH_MAX not defined (#1828)
- * Fix integer overflow problems in grammar (#1823)
- * Fix a memory leak in filter() (#1812)
- * Fix memory leak of persist-name() option (#1816)
- * Fix message corruption caused by a bug in the subst() rewrite rule (#1801)
- * Fix silently dropped messages in elasticsearch2() when sending in bulk mode (#1800)
- * Fix broken disk-buffer() support in elasticsearch2() (#1807)
- * Fix Hy support in python module (#1754)
- * Fix an event scheduler related crash during reloading syslog-ng (#1711)
- * Fix a crash with SIGBUS when persist file cannot grow (#1785)
+ * Fix a crash that happened on disk queue restart. (#1886)
+ * Fixed another crash when a corrupted disk queue file was being moved away.
+   (#1924)
+ * Fixed a crash that could happen during nvtable deserialization. (#1967)
+ * Fixed a crash that occurred when NVTables were stored on low memory
+   addresses. (#1970)
+ * Fixed an issue with TLS session resumption, the session id context value is
+   now properly set. (#1936, #2000)
+ * We now link directly to the `evtlog` shipped with syslog-ng, and are not
+   using the system library, not even when present. (#1915)
+ * TLS destinations now work again without `key-file` or `cert-file` specified.
+   (#1916, #1917)
+ * SDATA block names are now sanitized, in order to not break the spec when we
+   get our SDATA from sources that are more lax (such as JSON). (#1948)
+ * Some internal messages contained key-value pairs where the key had spaces in
+   it, this has been addressed, they do not contain spaces anymore.
+ * The STOMP destination will now correctly use template options when formatting
+   its body part. (#1957)
+ * Fix compilation with OpenSSL 1.1.0 (#1921, #1997)
+ * Fix compilation on FreeBSD. (#1901)
+ * Fix compilation on SLES 11. (#1897)
+ * Fix compilation on Hurd. (#1912, #1914)
+ * Fix compiltaion on Solaris 10. (#1982, #1983)
+ * Fix compilation on MacOS.
+ * Fixed a value conflict in the `afstreams` module's grammar file.
+ * Various compiler warning-related fixes all over the codebase.
 
 ## Other changes
 
- * Improve error reporting in "block" definitions in config (#1809)
- * Add warning message when disk-buffer() directory is changed in configuration (#1861)
- * Syslog-ng debun improvements (#1840)
- * Refactor in rewrite() module init (#1818)
- * Missing child program (exit status 127) handling is changed in program() destination:
-    stopping destination instead of polling for the child program (#1817)
- * Refactor in filter() module (#1814)
- * Improve thread synchronization in mainloop and refactor (#1813)
- * Adapted json-c v0.13 API changes to json-parser (#1810)
+ * POSIX RegExp support was dropped from the filters, PCRE remains available. (#1899)
+ * Miscellaneous build-system related fixes and improvements (both autotools and
+   CMake).
+ * Update `lib/json-c` to `json-c-0.13-20171207`. (#1900)
 
 ## Notes to the developers
 
- * Full cmake support achieved (#1777, #1819, #1811, #1808, #1805, #1802, #1841, #1806)
- * Add support for modules to have module specific global options (#1885)
- * Improved MacOS support (#1862, #1864, #1865)
- * Add new option to exclude directories in style-checker tool (#1834)
- * Ivykis dependency updated to 0.42.2 release (#1711)
- * Journald grammar, source and header files are part of dist tarball (#1852)
- * Add valgrind support for unit tests (#1839)
+ * The `init()` function is now optional for Python destinations. (#1756)
+ * The Docker environment (`dbld/`) has seen significant changes, among them an
+   upgrade to Ubuntu Xenial. (#1876)
+ * `dbld/rules` gained two new targets: `login` and `build`, that do what their
+   names suggest. (#1927)
+ * The `LogPipe` object gained a `pre_init()` and a `post_deinit()` method, used
+   by the `hook-commands` module.
 
 ## Credits
 
@@ -69,6 +74,7 @@ feedback are all important contributions, so please if you are a user
 of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
-Andras Mitzki, Antal Nemes, Balazs Scheidler, Björn Esser, Fabien Wernli, Gabor Nagy, Gergely Nagy,
-Janos Szigetvari, Juhász Viktor, Laszlo Budai, Laszlo Szemere, László Várady, Orion Poplawski,
-Attila Szalay, Shen-Ta Hsieh, Tamas Nagy, Peter Kokai, Norbert Takacs, Zoltan Pallagi.
+Andras Mitzki, Antal Nemes, Balazs Scheidler, Budai Laszlo, Gabor Nagy, Gábor
+Nagy, Gergely Nagy, Juhasz Viktor, Kókai Péter, Laszlo Budai, László Szemere,
+László Várady, Mehul Prajapati, Norbert Takacs, Robert Fekete, SZALAY Attila,
+Tamas Nagy, Terez Nemes, Utsav Krishnan, Videet Singhai, Vivek Raj
