@@ -52,7 +52,7 @@ typedef struct _WildcardSourceDriver
   FileOpener *file_opener;
   FileStateEvent deleted_file_events;
 
-  FileList *waiting_list;
+  PendingFileList *waiting_list;
 } WildcardSourceDriver;
 
 LogDriver *wildcard_sd_new(GlobalConfig *cfg);

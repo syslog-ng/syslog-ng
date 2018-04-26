@@ -25,14 +25,14 @@
 
 #include <glib.h>
 
-typedef struct _FileList FileList;
+typedef struct _PendingFileList PendingFileList;
 
-FileList *file_list_new(void);
-void file_list_free(FileList *self);
+PendingFileList *pending_file_list_new(void);
+void pending_file_list_free(PendingFileList *self);
 
-void file_list_add(FileList *self, const gchar *value);
-gchar *file_list_pop(FileList *self);
+void pending_file_list_add(PendingFileList *self, const gchar *value);
+gchar *pending_file_list_pop(PendingFileList *self);
 
-gboolean file_list_remove(FileList *self, const gchar *value);
+gboolean pending_file_list_remove(PendingFileList *self, const gchar *value);
 
 #endif /* MODULES_AFFILE_HASHED_QUEUE_H_ */

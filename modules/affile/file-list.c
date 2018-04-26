@@ -21,57 +21,57 @@
  */
 #include "file-list.h"
 
-struct _FileList
+struct _PendingFileList
 {
-  GHashTable *hash_table;
-  GQueue *queue;
+  GHashTable *index_storage;
+  GQueue *priority_queue;
 };
 
-FileList *file_list_new(void)
+PendingFileList *pending_file_list_new(void)
 {
-  FileList *self = g_new(FileList, 1);
-  self->hash_table = g_hash_table_new(g_str_hash, g_str_equal);
-  self->queue = g_queue_new();
+  PendingFileList *self = g_new(PendingFileList, 1);
+  self->index_storage = g_hash_table_new(g_str_hash, g_str_equal);
+  self->priority_queue = g_queue_new();
   return self;
 }
 
-void file_list_free(FileList *self)
+void pending_file_list_free(PendingFileList *self)
 {
-  g_hash_table_unref(self->hash_table);
-  g_queue_free_full(self->queue, g_free);
+  g_hash_table_unref(self->index_storage);
+  g_queue_free_full(self->priority_queue, g_free);
   g_free(self);
 }
 
-void file_list_add(FileList *self, const gchar *value)
+void pending_file_list_add(PendingFileList *self, const gchar *value)
 {
-  GList *element = g_hash_table_lookup(self->hash_table, value);
+  GList *element = g_hash_table_lookup(self->index_storage, value);
   if (!element)
     {
       gchar *new_value = g_strdup(value);
-      g_queue_push_tail(self->queue, new_value);
-      g_hash_table_insert(self->hash_table, new_value, self->queue->tail);
+      g_queue_push_tail(self->priority_queue, new_value);
+      g_hash_table_insert(self->index_storage, new_value, self->priority_queue->tail);
     }
 }
 
-gchar *file_list_pop(FileList *self)
+gchar *pending_file_list_pop(PendingFileList *self)
 {
-  gchar *data = g_queue_pop_head(self->queue);
+  gchar *data = g_queue_pop_head(self->priority_queue);
   if (data)
     {
-      g_hash_table_steal(self->hash_table, data);
+      g_hash_table_steal(self->index_storage, data);
     }
   return data;
 }
 
-gboolean file_list_remove(FileList *self, const gchar *value)
+gboolean pending_file_list_remove(PendingFileList *self, const gchar *value)
 {
   gboolean is_deleted = FALSE;
-  GList *element = g_hash_table_lookup(self->hash_table, value);
+  GList *element = g_hash_table_lookup(self->index_storage, value);
   if (element)
     {
-      g_hash_table_steal(self->hash_table, element->data);
+      g_hash_table_steal(self->index_storage, element->data);
       g_free(element->data);
-      g_queue_delete_link(self->queue, element);
+      g_queue_delete_link(self->priority_queue, element);
       is_deleted = TRUE;
     }
   return is_deleted;

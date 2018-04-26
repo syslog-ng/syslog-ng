@@ -30,15 +30,15 @@ TestSuite(hashed_queue, .init = NULL, .fini = NULL);
 
 Test(hashed_queue, normal)
 {
-  FileList *queue = file_list_new();
-  file_list_add(queue, "file1");
-  file_list_add(queue, "file2");
-  file_list_add(queue, "file3");
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+  pending_file_list_add(queue, "file2");
+  pending_file_list_add(queue, "file3");
 
 
-  gchar *f1 = file_list_pop(queue);
-  gchar *f2 = file_list_pop(queue);
-  gchar *f3 = file_list_pop(queue);
+  gchar *f1 = pending_file_list_pop(queue);
+  gchar *f2 = pending_file_list_pop(queue);
+  gchar *f3 = pending_file_list_pop(queue);
   cr_assert_str_eq(f1, "file1");
   cr_assert_str_eq(f2, "file2");
   cr_assert_str_eq(f3, "file3");
@@ -46,97 +46,97 @@ Test(hashed_queue, normal)
   g_free(f1);
   g_free(f2);
   g_free(f3);
-  file_list_free(queue);
+  pending_file_list_free(queue);
 }
 
 Test(hashed_queue, delete_first)
 {
-  FileList *queue = file_list_new();
-  file_list_add(queue, "file1");
-  file_list_add(queue, "file2");
-  file_list_add(queue, "file3");
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+  pending_file_list_add(queue, "file2");
+  pending_file_list_add(queue, "file3");
 
-  cr_assert_eq(file_list_remove(queue, "file1"), TRUE);
-  gchar *f2 = file_list_pop(queue);
-  gchar *f3 = file_list_pop(queue);
+  cr_assert_eq(pending_file_list_remove(queue, "file1"), TRUE);
+  gchar *f2 = pending_file_list_pop(queue);
+  gchar *f3 = pending_file_list_pop(queue);
   cr_assert_str_eq(f2, "file2");
   cr_assert_str_eq(f3, "file3");
 
   g_free(f2);
   g_free(f3);
-  file_list_free(queue);
+  pending_file_list_free(queue);
 }
 
 Test(hashed_queue, delete_middle)
 {
-  FileList *queue = file_list_new();
-  file_list_add(queue, "file1");
-  file_list_add(queue, "file2");
-  file_list_add(queue, "file3");
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+  pending_file_list_add(queue, "file2");
+  pending_file_list_add(queue, "file3");
 
-  cr_assert_eq(file_list_remove(queue, "file2"), TRUE);
-  gchar *f1 = file_list_pop(queue);
-  gchar *f3 = file_list_pop(queue);
+  cr_assert_eq(pending_file_list_remove(queue, "file2"), TRUE);
+  gchar *f1 = pending_file_list_pop(queue);
+  gchar *f3 = pending_file_list_pop(queue);
   cr_assert_str_eq(f1, "file1");
   cr_assert_str_eq(f3, "file3");
 
   g_free(f1);
   g_free(f3);
-  file_list_free(queue);
+  pending_file_list_free(queue);
 }
 
 Test(hashed_queue, delete_last)
 {
-  FileList *queue = file_list_new();
-  file_list_add(queue, "file1");
-  file_list_add(queue, "file2");
-  file_list_add(queue, "file3");
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+  pending_file_list_add(queue, "file2");
+  pending_file_list_add(queue, "file3");
 
-  cr_assert_eq(file_list_remove(queue, "file3"), TRUE);
-  gchar *f1 = file_list_pop(queue);
-  gchar *f2 = file_list_pop(queue);
-  gchar *f3 = file_list_pop(queue);
+  cr_assert_eq(pending_file_list_remove(queue, "file3"), TRUE);
+  gchar *f1 = pending_file_list_pop(queue);
+  gchar *f2 = pending_file_list_pop(queue);
+  gchar *f3 = pending_file_list_pop(queue);
   cr_assert_str_eq(f1, "file1");
   cr_assert_str_eq(f2, "file2");
   cr_assert_eq(f3, NULL);
 
   g_free(f1);
   g_free(f2);
-  file_list_free(queue);
+  pending_file_list_free(queue);
 }
 
 Test(hashed_queue, delete_non_existent)
 {
-  FileList *queue = file_list_new();
-  file_list_add(queue, "file1");
-  file_list_add(queue, "file2");
-  file_list_add(queue, "file3");
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+  pending_file_list_add(queue, "file2");
+  pending_file_list_add(queue, "file3");
 
-  cr_assert_eq(file_list_remove(queue, "file4"), FALSE);
-  gchar *f1 = file_list_pop(queue);
-  gchar *f2 = file_list_pop(queue);
-  gchar *f3 = file_list_pop(queue);
+  cr_assert_eq(pending_file_list_remove(queue, "file4"), FALSE);
+  gchar *f1 = pending_file_list_pop(queue);
+  gchar *f2 = pending_file_list_pop(queue);
+  gchar *f3 = pending_file_list_pop(queue);
   cr_assert_str_eq(f1, "file1");
   cr_assert_str_eq(f2, "file2");
   cr_assert_str_eq(f3, "file3");
 
   g_free(f1);
   g_free(f2);
-  file_list_free(queue);
+  pending_file_list_free(queue);
 }
 
 Test(hashed_queue, no_duplication)
 {
-  FileList *queue = file_list_new();
-  file_list_add(queue, "file1");
-  file_list_add(queue, "file2");
-  file_list_add(queue, "file3");
-  file_list_add(queue, "file1");
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+  pending_file_list_add(queue, "file2");
+  pending_file_list_add(queue, "file3");
+  pending_file_list_add(queue, "file1");
 
-  gchar *f1 = file_list_pop(queue);
-  gchar *f2 = file_list_pop(queue);
-  gchar *f3 = file_list_pop(queue);
-  cr_assert(file_list_pop(queue) == NULL);
+  gchar *f1 = pending_file_list_pop(queue);
+  gchar *f2 = pending_file_list_pop(queue);
+  gchar *f3 = pending_file_list_pop(queue);
+  cr_assert(pending_file_list_pop(queue) == NULL);
   cr_assert_str_eq(f1, "file1");
   cr_assert_str_eq(f2, "file2");
   cr_assert_str_eq(f3, "file3");
@@ -144,5 +144,5 @@ Test(hashed_queue, no_duplication)
   g_free(f1);
   g_free(f2);
   g_free(f3);
-  file_list_free(queue);
+  pending_file_list_free(queue);
 }
