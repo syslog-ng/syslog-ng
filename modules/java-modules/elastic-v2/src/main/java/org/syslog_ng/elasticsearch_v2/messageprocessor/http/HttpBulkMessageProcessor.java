@@ -37,6 +37,7 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 	private Bulk.Builder bulk;
 	private int flushLimit;
 	private int messageCounter;
+  private boolean flushFailed = false;
 
 	public HttpBulkMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
 		super(options, client);
@@ -57,21 +58,24 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 		}
 		catch (IOException e)
 		{
+      flushFailed = true;
 			logger.error(e.getMessage());
 			return false;
 		}
 		if (! jestResult.isSucceeded()) {
+      flushFailed = true;
 			logger.error(jestResult.getErrorMessage());
 			return false;
 		}
 		bulk = new Bulk.Builder();
 		messageCounter = 0;
+    flushFailed = false;
 		return true;
 	}
 
 	@Override
 	public boolean send(Index index) {
-		if (messageCounter >= flushLimit)
+		if (messageCounter >= flushLimit || flushFailed)
 		{
 			if (!flush())
 				return false;
