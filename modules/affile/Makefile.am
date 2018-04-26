@@ -18,8 +18,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/directory-monitor.c			\
 	modules/affile/directory-monitor-factory.h			\
 	modules/affile/directory-monitor-factory.c			\
-	modules/affile/collection-comporator.h		\
-	modules/affile/collection-comporator.c		\
+	modules/affile/collection-comparator.h		\
+	modules/affile/collection-comparator.c		\
 	modules/affile/directory-monitor-poll.h   \
 	modules/affile/directory-monitor-poll.c   \
 	modules/affile/file-opener.c				\

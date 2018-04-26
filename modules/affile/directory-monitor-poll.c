@@ -20,8 +20,8 @@
  *
  */
 
+#include <collection-comparator.h>
 #include "directory-monitor-poll.h"
-#include "collection-comporator.h"
 #include "timeutils.h"
 
 #include <iv.h>
@@ -29,7 +29,7 @@
 typedef struct _DirectoryMonitorPoll
 {
   DirectoryMonitor super;
-  CollectionComporator *comporator;
+  CollectionComparator *comparator;
   struct iv_timer rescan_timer;
 } DirectoryMonitorPoll;
 
@@ -84,21 +84,20 @@ _rescan_directory(DirectoryMonitorPoll *self)
 {
   GError *error = NULL;
   GDir *directory = g_dir_open(self->super.real_path, 0, &error);
-  collection_comporator_start(self->comporator);
+  collection_comparator_start(self->comparator);
   if (directory)
     {
-      const gchar *filename = g_dir_read_name(directory);
-      while (filename)
+      const gchar *filename;
+      while((filename = g_dir_read_name(directory)))
         {
-          collection_comporator_add_value(self->comporator, filename);
-          filename = g_dir_read_name(directory);
+          collection_comparator_add_value(self->comparator, filename);
         }
       g_dir_close(directory);
-      collection_comporator_stop(self->comporator);
+      collection_comparator_stop(self->comparator);
     }
   else
     {
-      collection_comporator_stop(self->comporator);
+      collection_comparator_stop(self->comparator);
       _handle_deleted_self(self);
     }
 }
@@ -124,7 +123,7 @@ _start_watches(DirectoryMonitor *s)
       const gchar *filename = g_dir_read_name(directory);
       while (filename)
         {
-          collection_comporator_add_initial_value(self->comporator, filename);
+          collection_comparator_add_initial_value(self->comparator, filename);
           filename = g_dir_read_name(directory);
         }
       g_dir_close(directory);
@@ -147,7 +146,7 @@ static void
 _free_fn(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
-  collection_comporator_free(self->comporator);
+  collection_comparator_free(self->comparator);
 }
 
 static void
@@ -170,8 +169,8 @@ directory_monitor_poll_new(const gchar *dir, guint recheck_time)
   self->super.start_watches = _start_watches;
   self->super.stop_watches = _stop_watches;
   self->super.free_fn = _free_fn;
-  self->comporator = collection_comporator_new();
-  collection_comporator_set_callbacks(self->comporator,
+  self->comparator = collection_comparator_new();
+  collection_comporator_set_callbacks(self->comparator,
                                       _handle_new_entry,
                                       _handle_deleted_entry,
                                       self);
