@@ -22,7 +22,7 @@
 
 #include <criterion/criterion.h>
 
-#include "../file-list.h"
+#include "file-list.h"
 
 
 TestSuite(hashed_queue, .init = NULL, .fini = NULL);
