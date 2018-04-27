@@ -270,10 +270,7 @@ bison_target(ParserExprGrammar
     COMPILE_FLAGS ${BISON_FLAGS})
 add_flex_bison_dependency(CfgLexer ParserExprGrammar)
 
-set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/eventlog/src/")
-
 set(CORE_INCLUDE_DIRS
-    ${Eventlog_INCLUDE_DIR}
     ${GLIB_INCLUDE_DIRS}
     ${Gettext_INCLUDE_DIR}
     ${IVYKIS_INCLUDE_DIR}
@@ -281,11 +278,14 @@ set(CORE_INCLUDE_DIRS
     ${LIBPCRE_INCLUDE_DIRS}
 )
 
-include_directories(SYSTEM ${CORE_INCLUDE_DIRS})
-
 add_library(syslog-ng SHARED ${LIB_SOURCES})
 
-target_include_directories(syslog-ng SYSTEM INTERFACE ${CORE_INCLUDE_DIRS})
+target_include_directories(syslog-ng
+  SYSTEM PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CORE_INCLUDE_DIRS}
+)
 
 target_link_libraries(
     syslog-ng
@@ -310,7 +310,7 @@ set_target_properties(syslog-ng
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
     SOVERSION ${SYSLOG_NG_VERSION})
 
-if     (${IVYKIS_INTERNAL})
+if (${IVYKIS_INTERNAL})
    add_dependencies(syslog-ng IVYKIS)
 endif()
 

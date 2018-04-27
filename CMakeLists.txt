@@ -191,10 +191,8 @@ if (CRITERION_FOUND)
   include(CTest)
 endif()
 
-include_directories(${PROJECT_BINARY_DIR}/lib)
-include_directories(${PROJECT_BINARY_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/lib)
-include_directories(${PROJECT_SOURCE_DIR})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(Mk)
 add_subdirectory(scl)
@@ -206,7 +204,6 @@ add_subdirectory(syslog-ng-ctl)
 add_test_subdirectory(libtest)
 add_subdirectory(tests)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h DESTINATION include/syslog-ng)
 
 install(DIRECTORY DESTINATION var)

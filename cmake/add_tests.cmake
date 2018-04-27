@@ -56,7 +56,6 @@ function (add_unit_test)
 
   if (${ADD_UNIT_TEST_LIBTEST})
     target_link_libraries(${ADD_UNIT_TEST_TARGET} libtest)
-    target_include_directories(${ADD_UNIT_TEST_TARGET} PUBLIC "${CMAKE_SOURCE_DIR}/libtest")
   endif()
 
   add_test (${ADD_UNIT_TEST_TARGET} ${ADD_UNIT_TEST_TARGET})
