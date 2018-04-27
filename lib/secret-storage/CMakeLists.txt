@@ -13,7 +13,8 @@ target_include_directories(secret-storage
     # workaround, "compat" should be a separate static library
     ${PROJECT_SOURCE_DIR}/lib
 )
-target_link_libraries(secret-storage LINK_PUBLIC ${GLIB_LIBRARIES})
+
+target_link_libraries(secret-storage PRIVATE ${GLIB_LIBRARIES})
 set_target_properties(secret-storage PROPERTIES C_VISIBILITY_PRESET hidden)
 
 install(TARGETS secret-storage LIBRARY DESTINATION lib)
