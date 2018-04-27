@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <criterion/criterion.h>
 
-#include "nondumpable-allocator.h"
+#include "secret-storage/nondumpable-allocator.h"
 
 Test(nondumpableallocator, malloc_realloc_free)
 {

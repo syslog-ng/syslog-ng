@@ -26,8 +26,8 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-#include "secret-storage.h"
-#include "nondumpable-allocator.h"
+#include "secret-storage/secret-storage.h"
+#include "secret-storage/nondumpable-allocator.h"
 
 void
 logger(char *summary, char *reason)
