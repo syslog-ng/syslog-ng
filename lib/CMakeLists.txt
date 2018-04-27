@@ -289,10 +289,9 @@ target_include_directories(syslog-ng
 
 target_link_libraries(
     syslog-ng
-    LINK_PUBLIC
+  PUBLIC
     eventlog
     ${BISON_LIBRARIES}
-    ${Eventlog_LIBRARY}
     ${FLEX_LIBRARIES}
     ${GLIB_GMODULE_LIBRARIES}
     ${GLIB_GTHREAD_LIBRARIES}
@@ -304,7 +303,7 @@ target_link_libraries(
     ${LIBPCRE_LIBRARIES}
     Threads::Threads
     secret-storage
-    )
+)
 
 set_target_properties(syslog-ng
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
