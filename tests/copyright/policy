@@ -57,9 +57,15 @@ syslog-ng(-ctl)?
 modules/java-modules/common
 modules/java/(native|proxies|src)
 modules/native
+tests/loggen
  GPLv2+_SSL
 dev-utils/plugin_skeleton_creator/create_plugin.sh
-tests
+tests/functional
+tests/unit
+tests/valgrind
+tests/build-log-cflags-propagation.sh
+tests/collect-cov.sh
+tests/copyright/check.sh
 modules/java/(tools|[^/]*$)
 modules/java-modules/(dummy|elastic|elastic-v2|hdfs|http|kafka|[^/]*$)
 modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|basicfuncs|cef|confgen|cryptofuncs|csvparser|date|diskq|dbparser|geoip|geoip2|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|getent|system-source|stardate|snmptrapd-parser|xml|openbsd|[^/]*$)
