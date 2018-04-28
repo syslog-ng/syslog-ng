@@ -37,8 +37,8 @@ if (BUILD_JOURNALD)
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
       PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
     )
-    target_link_libraries(sdjournal PUBLIC ${Libsystemd_LIBRARIES})
-    target_link_libraries(sdjournal PUBLIC syslog-ng)
+    target_link_libraries(sdjournal PRIVATE ${Libsystemd_LIBRARIES})
+    target_link_libraries(sdjournal PRIVATE syslog-ng)
     target_include_directories(sdjournal PRIVATE SYSTEM ${Libsystemd_INCLUDE_DIRS})
 
     install(TARGETS sdjournal LIBRARY DESTINATION lib/syslog-ng/)

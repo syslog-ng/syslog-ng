@@ -33,8 +33,7 @@ target_include_directories(afamqp
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
 )
-target_link_libraries(afamqp PUBLIC ${RabbitMQ_LIBRARY})
-target_link_libraries(afamqp PRIVATE syslog-ng)
+target_link_libraries(afamqp PRIVATE ${RabbitMQ_LIBRARY} syslog-ng)
 
 if (RabbitMQ_INTERNAL)
    add_dependencies(afamqp RabbitMQ)
