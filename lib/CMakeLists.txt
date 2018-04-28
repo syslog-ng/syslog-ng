@@ -274,7 +274,6 @@ set(CORE_INCLUDE_DIRS
     ${GLIB_INCLUDE_DIRS}
     ${Gettext_INCLUDE_DIR}
     ${IVYKIS_INCLUDE_DIR}
-    ${OPENSSL_INCLUDE_DIR}
     ${LIBPCRE_INCLUDE_DIRS}
 )
 
@@ -298,9 +297,10 @@ target_link_libraries(
     ${GLIB_LIBRARIES}
     ${Gettext_LIBRARIES}
     ${IVYKIS_LIBRARY}
-    ${OPENSSL_LIBRARIES}
     ${RESOLV_LIBRARIES}
     ${LIBPCRE_LIBRARIES}
+    OpenSSL::SSL
+    OpenSSL::Crypto
     Threads::Threads
     secret-storage
 )
