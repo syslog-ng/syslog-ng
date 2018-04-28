@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 
 # use, i.e. don't skip the full RPATH for the build tree
 set(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -121,7 +121,6 @@ endif()
 set(WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g. /usr)")
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99") #only from cmake 3.1 the CMAKE_C_STANDARD supported
 
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB 2.10.1 REQUIRED)
