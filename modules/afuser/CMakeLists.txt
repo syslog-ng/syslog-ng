@@ -21,10 +21,11 @@ COMPILE_FLAGS ${BISON_FLAGS})
 option(ENABLE_AFUSER "Enable afuser module" ON)
 
 if (ENABLE_AFUSER)
-  include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  include_directories (${CMAKE_CURRENT_SOURCE_DIR})
   add_library(afuser MODULE ${AFUSER_SOURCES})
-
+  target_include_directories(afuser
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  )
   target_link_libraries(afuser PRIVATE syslog-ng)
 
   install(TARGETS afuser LIBRARY DESTINATION lib/syslog-ng COMPONENT afuser)

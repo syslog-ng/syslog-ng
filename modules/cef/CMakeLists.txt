@@ -4,9 +4,11 @@ set(CEF_SOURCES
     cef-plugin.c
 )
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 add_library(cef SHARED ${CEF_SOURCES})
+target_include_directories(cef
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
 target_link_libraries(cef PRIVATE syslog-ng)
 
 install(TARGETS cef LIBRARY DESTINATION lib/syslog-ng/ COMPONENT cef)

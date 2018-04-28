@@ -15,9 +15,11 @@ bison_target(CSVParserGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/csvparser-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 add_library(csvparser SHARED ${CSVPARSER_SOURCES})
+target_include_directories(csvparser
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
 target_link_libraries(csvparser PRIVATE syslog-ng)
 
 install(TARGETS csvparser LIBRARY DESTINATION lib/syslog-ng/ COMPONENT csvparser)

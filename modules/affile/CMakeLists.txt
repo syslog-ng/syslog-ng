@@ -60,9 +60,11 @@ bison_target(AffileGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 add_library(affile SHARED ${AFFILE_SOURCES})
+target_include_directories(affile
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
 target_link_libraries(affile PRIVATE syslog-ng)
 
 install(TARGETS affile
