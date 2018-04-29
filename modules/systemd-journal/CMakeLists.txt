@@ -32,7 +32,7 @@ else()
 endif()
 
 if (BUILD_JOURNALD)
-    add_library(sdjournal MODULE ${JOURNALD_SOURCES})
+    add_library(sdjournal SHARED ${JOURNALD_SOURCES})
     target_include_directories(sdjournal
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
       PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
