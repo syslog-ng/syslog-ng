@@ -290,8 +290,6 @@ target_link_libraries(
     syslog-ng
   PUBLIC
     eventlog
-    ${BISON_LIBRARIES}
-    ${FLEX_LIBRARIES}
     ${GLIB_GMODULE_LIBRARIES}
     ${GLIB_GTHREAD_LIBRARIES}
     ${GLIB_LIBRARIES}
