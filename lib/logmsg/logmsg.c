@@ -524,9 +524,9 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   if (_log_name_value_updates(self))
     {
       msg_debug("Setting value",
-                evt_tag_printf("msg", "%p", self),
                 evt_tag_str("name", name),
-                evt_tag_printf("value", "%.*s", (gint) value_len, value));
+                evt_tag_printf("value", "%.*s", (gint) value_len, value),
+                evt_tag_printf("msg", "%p", self));
     }
 
   if (value_len < 0)
