@@ -209,7 +209,9 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   if (self->db)
     {
       log_msg_make_writable(pmsg, path_options);
-
+      msg_debug("db-parser message processing started",
+                evt_tag_str ("input", input),
+                evt_tag_printf("msg", "%p", *pmsg));
       if (G_UNLIKELY(self->super.super.template))
         matched = pattern_db_process_with_custom_message(self->db, *pmsg, input, input_len);
       else
@@ -218,10 +220,9 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
 
   if (self->drop_unmatched && !matched)
     {
-      msg_debug("db-parser() failed to parse its input and drop-unmatched flag was specified",
-                evt_tag_str("input", input),
-                log_pipe_location_tag(&s->super),
-                evt_tag_printf("msg", "%p", *pmsg));
+      msg_debug("db-parser failed",
+                evt_tag_str("error", "db-parser() failed to parse its input and drop-unmatched flag was specified"),
+                evt_tag_str("input", input));
     }
   if (!self->drop_unmatched)
     matched = TRUE;

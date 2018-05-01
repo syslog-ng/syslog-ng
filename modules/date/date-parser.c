@@ -183,6 +183,10 @@ date_parser_process(LogParser *s,
 {
   DateParser *self = (DateParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
+  msg_debug("date-parser message processing started",
+            evt_tag_str ("input", input),
+            evt_tag_str ("format", self->date_format),
+            evt_tag_printf("msg", "%p", *pmsg));
 
   /* this macro ensures zero termination by copying input to a
    * g_alloca()-d buffer if necessary. In most cases it's not though.
@@ -194,13 +198,6 @@ date_parser_process(LogParser *s,
                                                 &msg->timestamps[self->time_stamp],
                                                 input);
 
-  if (!res)
-    {
-      msg_debug("date-parser() failed to parse its input",
-                evt_tag_str("input", input),
-                log_pipe_location_tag(&s->super),
-                evt_tag_printf("msg", "%p", msg));
-    }
   return res;
 }
 

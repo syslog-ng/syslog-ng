@@ -215,10 +215,21 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   struct json_object *jso;
   struct json_tokener *tok;
 
+  msg_debug("json-parser message processing started",
+            evt_tag_str ("input", input),
+            evt_tag_str ("prefix", self->prefix),
+            evt_tag_str ("marker", self->marker),
+            evt_tag_printf("msg", "%p", *pmsg));
   if (self->marker)
     {
       if (strncmp(input, self->marker, self->marker_len) != 0)
-        return FALSE;
+        {
+          msg_debug("json-parser failed",
+                    evt_tag_str ("error", "json marker not found at the beginning of the message"),
+                    evt_tag_str ("input", input),
+                    evt_tag_str ("marker", self->marker));
+          return FALSE;
+        }
       input += self->marker_len;
 
       while (isspace(*input))
@@ -229,9 +240,10 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   jso = json_tokener_parse_ex(tok, input, input_len);
   if (tok->err != json_tokener_success || !jso)
     {
-      msg_debug("Unparsable JSON stream encountered",
+      msg_debug("json-parser failed",
+                evt_tag_str ("error", "Unparsable JSON stream encountered"),
                 evt_tag_str ("input", input),
-                tok->err != json_tokener_success ? evt_tag_str ("error", json_tokener_error_desc(tok->err)) : NULL);
+                tok->err != json_tokener_success ? evt_tag_str ("json_error", json_tokener_error_desc(tok->err)) : NULL);
       json_tokener_free (tok);
       return FALSE;
     }
@@ -240,7 +252,8 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   log_msg_make_writable(pmsg, path_options);
   if (!json_parser_extract(self, jso, *pmsg))
     {
-      msg_error("Error extracting JSON members into LogMessage as the top-level JSON object is not an object",
+      msg_error("json-parser failed",
+                evt_tag_str ("error", "Error extracting JSON members into LogMessage as the top-level JSON object is not an object"),
                 evt_tag_str ("input", input));
       json_object_put(jso);
       return FALSE;
