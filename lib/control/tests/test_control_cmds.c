@@ -24,9 +24,9 @@
 
 #include <criterion/criterion.h>
 
-#include "lib/messages.h"
+#include "messages.h"
 #include "control/control.h"
-#include "lib/control/control-commands.h"
+#include "control/control-commands.h"
 #include "stats/stats-control.h"
 #include "control/control-server.h"
 #include "stats/stats-cluster.h"
