@@ -660,7 +660,7 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
           /* an error occurred while reading */
           msg_error("I/O error occurred while reading",
                     evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno));
+                    evt_tag_error(EVT_TAG_OSERROR));
           result = G_IO_STATUS_ERROR;
         }
     }

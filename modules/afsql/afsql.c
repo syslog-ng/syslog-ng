@@ -1301,7 +1301,7 @@ afsql_dd_init(LogPipe *s)
           /* NOTE: errno might be unreliable, but that's all we have */
           msg_error("Unable to initialize database access (DBI)",
                     evt_tag_int("rc", rc),
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
           goto error;
         }
       else if (rc == 0)

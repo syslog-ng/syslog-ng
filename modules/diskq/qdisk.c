@@ -205,7 +205,7 @@ _truncate_file(QDisk *self, gint64 new_size)
     {
       success = FALSE;
       msg_error("Error truncating disk-queue file",
-                evt_tag_errno("error", errno),
+                evt_tag_error("error"),
                 evt_tag_str("filename", self->filename),
                 evt_tag_int("newsize", self->hdr->write_head),
                 evt_tag_int("fd", self->fd));
@@ -240,7 +240,7 @@ qdisk_push_tail(QDisk *self, GString *record)
       !pwrite_strict(self->fd, record->str, record->len, self->hdr->write_head + sizeof(n)))
     {
       msg_error("Error writing disk-queue file",
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return FALSE;
     }
 
@@ -563,7 +563,7 @@ qdisk_write_serialized_string_to_file(QDisk *self, GString const *serialized, gi
     {
       msg_error("Error writing in-memory buffer of disk-queue to disk",
                 evt_tag_str("filename", self->filename),
-                evt_tag_errno("error", errno),
+                evt_tag_error("error"),
                 NULL);
       return FALSE;
     }
@@ -729,7 +729,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     {
       msg_error("Error opening disk-queue file",
                 evt_tag_str("filename", self->filename),
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return FALSE;
     }
 
@@ -739,7 +739,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   if (p == MAP_FAILED)
     {
       msg_error("Error returned by mmap",
-                evt_tag_errno("errno", errno),
+                evt_tag_error("errno"),
                 evt_tag_str("filename", self->filename));
       return FALSE;
     }
@@ -769,7 +769,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
         {
           msg_error("Error occurred while initalizing the new queue file",
                     evt_tag_str("filename", self->filename),
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
           munmap((void *)self->hdr, sizeof(QDiskFileHeader));
           self->hdr = NULL;
           close(self->fd);
@@ -802,7 +802,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
         {
           msg_error("Error loading disk-queue file",
                     evt_tag_str("filename", self->filename),
-                    evt_tag_errno("fstat error", errno),
+                    evt_tag_error("fstat error"),
                     evt_tag_int("size", st.st_size));
           munmap((void *)self->hdr, sizeof(QDiskFileHeader));
           self->hdr = NULL;

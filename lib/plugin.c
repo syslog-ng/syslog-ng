@@ -495,7 +495,7 @@ _parse_and_load_plugin_info_in_modules(int input_fd)
   if (!discovery)
     {
       msg_error("Error happened while opening plugin discovery output, fdopen() failed",
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return NULL;
     }
 
@@ -548,14 +548,14 @@ plugin_discover_candidate_modules(const gchar *module_path)
   if (pipe(discover_pipe) < 0)
     {
       msg_error("Error creating pipe for discover process",
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return NULL;
     }
 
   if ((discover_pid = fork()) < 0)
     {
       msg_error("Error creating discover process, fork() failed",
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return NULL;
     }
 
@@ -577,7 +577,7 @@ plugin_discover_candidate_modules(const gchar *module_path)
       if (waitpid(discover_pid, &exit_code, 0) < 0)
         {
           msg_error("Error waiting for discover process, waitpid() failed",
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
           _free_candidate_plugin_list(candidate_modules);
           return NULL;
         }

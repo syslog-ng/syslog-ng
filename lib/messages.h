@@ -26,6 +26,7 @@
 #define MESSAGES_H_INCLUDED
 
 #include "syslog-ng.h"
+#include <errno.h>
 #include <evtlog.h>
 
 extern int startup_debug_flag;
@@ -50,13 +51,25 @@ void msg_deinit(void);
 
 void msg_add_option_group(GOptionContext *ctx);
 
+#define evt_tag_error(tag) evt_tag_errno(tag, __local_copy_of_errno)
+
+#define CAPTURE_ERRNO(lambda) do {\
+  int __local_copy_of_errno G_GNUC_UNUSED = errno; \
+  lambda; \
+} while(0)
+
 /* fatal->warning goes out to the console during startup, notice and below
  * comes goes to the log even during startup */
-#define msg_fatal(desc, tags...)    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_CRIT, desc, ##tags, NULL ))
-#define msg_error(desc, tags...)    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_ERR, desc, ##tags, NULL ))
-#define msg_warning(desc, tags...)  msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_WARNING, desc, ##tags, NULL ))
-#define msg_notice(desc, tags...)   msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_NOTICE, desc, ##tags, NULL ))
-#define msg_info(desc, tags...)     msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_INFO, desc, ##tags, NULL ))
+#define msg_fatal(desc, tags...)    CAPTURE_ERRNO(\
+    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_CRIT, desc, ##tags, NULL )))
+#define msg_error(desc, tags...)    CAPTURE_ERRNO(\
+    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_ERR, desc, ##tags, NULL )))
+#define msg_warning(desc, tags...)  CAPTURE_ERRNO(\
+    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_WARNING, desc, ##tags, NULL )))
+#define msg_notice(desc, tags...)   CAPTURE_ERRNO(\
+    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_NOTICE, desc, ##tags, NULL )))
+#define msg_info(desc, tags...)     CAPTURE_ERRNO(\
+    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_INFO, desc, ##tags, NULL )))
 
 /* just like msg_info, but prepends the message with a timestamp -- useful in interactive
  * tools with long running time to provide some feedback */

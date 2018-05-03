@@ -129,7 +129,7 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
         {
           msg_error("Error creating syslog door file",
                     evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno));
+                    evt_tag_error(EVT_TAG_OSERROR));
           close(fd);
           return;
         }
@@ -140,7 +140,7 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
     {
       msg_error("Error creating syslog door",
                 evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       return;
     }
   g_fd_set_cloexec(self->door_fd, TRUE);
@@ -148,7 +148,7 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
     {
       msg_error("Error attaching syslog door",
                 evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       close(self->door_fd);
       self->door_fd = -1;
       return;
@@ -179,7 +179,7 @@ afstreams_sd_init(LogPipe *s)
         {
           msg_error("Error in ioctl(I_STR, I_CONSLOG)",
                     evt_tag_str(EVT_TAG_FILENAME, self->dev_filename->str),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno));
+                    evt_tag_error(EVT_TAG_OSERROR));
           close(fd);
           return FALSE;
         }
@@ -218,7 +218,7 @@ afstreams_sd_init(LogPipe *s)
     {
       msg_error("Error opening syslog device",
                 evt_tag_str(EVT_TAG_FILENAME, self->dev_filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       return FALSE;
     }
   return TRUE;

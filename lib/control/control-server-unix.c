@@ -130,7 +130,7 @@ control_socket_accept(void *cookie)
   if (status != G_IO_STATUS_NORMAL)
     {
       msg_error("Error accepting control socket connection",
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       goto error;
     }
   /* NOTE: the connection will free itself if the peer terminates */
@@ -158,14 +158,14 @@ control_server_start(ControlServer *s)
     {
       msg_error("Error opening control socket, bind() failed",
                 evt_tag_str("socket", self->super.control_socket_name),
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       goto error;
     }
   if (listen(self->control_socket, 255) < 0)
     {
       msg_error("Error opening control socket, listen() failed",
                 evt_tag_str("socket", self->super.control_socket_name),
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       goto error;
     }
 

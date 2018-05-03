@@ -245,7 +245,7 @@ _create_store(PersistState *self)
     {
       msg_error("Error creating persistent state file",
                 evt_tag_str("filename", self->temp_filename),
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return FALSE;
     }
   g_fd_set_cloexec(self->fd, TRUE);
@@ -565,7 +565,7 @@ _load_v4(PersistState *self, gboolean load_all_entries)
     {
       msg_error("Error mapping persistent file into memory",
                 evt_tag_str("filename", self->committed_filename),
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return FALSE;
     }
   header = (PersistFileHeader *) map;

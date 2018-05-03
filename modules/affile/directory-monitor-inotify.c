@@ -105,7 +105,7 @@ directory_monitor_inotify_new(const gchar *dir, guint recheck_time)
   IV_INOTIFY_INIT(&self->inotify);
   if (iv_inotify_register(&self->inotify))
     {
-      msg_error("directory-monitor-inotify: could not create inotify object", evt_tag_errno("errno", errno));
+      msg_error("directory-monitor-inotify: could not create inotify object", evt_tag_error("errno"));
       directory_monitor_free(&self->super);
       return NULL;
     }

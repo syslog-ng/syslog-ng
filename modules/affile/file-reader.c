@@ -229,7 +229,7 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
     {
       msg_error("Error opening file for reading",
                 evt_tag_str("filename", self->filename->str),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
       return self->owner->super.optional;
     }
   return TRUE;

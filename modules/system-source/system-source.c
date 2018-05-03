@@ -209,7 +209,7 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
       msg_warning("system(): The kernel message buffer is not readable, "
                   "please check permissions if this is unintentional.",
                   evt_tag_str("device", kmsg),
-                  evt_tag_errno("error", errno));
+                  evt_tag_error("error"));
     }
   else
     system_sysblock_add_file(sysblock, kmsg, -1,
@@ -262,7 +262,7 @@ system_generate_system_transports(GString *sysblock)
   if (uname(&u) < 0)
     {
       msg_error("system(): Cannot get information about the running kernel",
-                evt_tag_errno("error", errno));
+                evt_tag_error("error"));
       return FALSE;
     }
 

@@ -57,7 +57,7 @@ tf_getent_passwd(gchar *key, gchar *member_name, GString *result)
     {
       msg_error("$(getent passwd) failed",
                 evt_tag_str("key", key),
-                evt_tag_errno("errno", errno),
+                evt_tag_error("errno"),
                 NULL);
       g_free(buf);
       return FALSE;

@@ -107,7 +107,8 @@ lib_tests_test_userdb_LDADD	= \
 lib_tests_TESTS		+= \
 	lib/tests/test_cache		\
 	lib/tests/test_scratch_buffers 	\
-	lib/tests/test_timeutils
+	lib/tests/test_timeutils	\
+	lib/tests/test_messages
 
 lib_tests_test_cache_CFLAGS	=	\
 	$(TEST_CFLAGS)
@@ -122,4 +123,9 @@ lib_tests_test_timeutils_LDADD	=	\
 lib_tests_test_scratch_buffers_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_scratch_buffers_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_messages_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_messages_LDADD	=	\
 	$(TEST_LDADD)

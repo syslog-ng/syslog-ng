@@ -116,7 +116,7 @@ resolve_to_absolute_path(const gchar *path, const gchar *basedir)
         {
           msg_error("Can't resolve to absolute path",
                     evt_tag_str("path", path),
-                    evt_tag_errno("error", errno));
+                    evt_tag_error("error"));
           res = NULL;
         }
     }

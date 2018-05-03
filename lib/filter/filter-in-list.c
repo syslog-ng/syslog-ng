@@ -78,7 +78,7 @@ filter_in_list_new(const gchar *list_file, const gchar *property)
     {
       msg_error("Error opening in-list filter list file",
                 evt_tag_str("file", list_file),
-                evt_tag_errno("errno", errno));
+                evt_tag_error("errno"));
       return NULL;
     }
 
