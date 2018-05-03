@@ -24,7 +24,7 @@
 #ifndef NONDUMPABLE_ALLOCATOR_H_INCLUDED
 #define NONDUMPABLE_ALLOCATOR_H_INCLUDED
 
-#include "lib/compat/glib.h"
+#include "compat/glib.h"
 
 #define PUBLIC __attribute__ ((visibility ("default")))
 #define INTERNAL __attribute__ ((visibility ("hidden")))

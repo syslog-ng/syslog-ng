@@ -30,12 +30,13 @@ generate_y_from_ym(modules/openbsd/openbsd-grammar)
 bison_target(openbsdGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar.y
     ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar.c
-COMPILE_FLAGS ${BISON_FLAGS})
-  include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  include_directories (${CMAKE_CURRENT_SOURCE_DIR})
-  add_library(openbsd SHARED ${openbsd_SOURCES})
-  target_link_libraries(openbsd PRIVATE syslog-ng)
+    COMPILE_FLAGS ${BISON_FLAGS})
 
-  install(TARGETS openbsd
-  LIBRARY DESTINATION lib/syslog-ng/
-  COMPONENT openbsd)
+add_library(openbsd SHARED ${openbsd_SOURCES})
+target_include_directories(openbsd
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
+target_link_libraries(openbsd PRIVATE syslog-ng)
+
+install(TARGETS openbsd LIBRARY DESTINATION lib/syslog-ng/ COMPONENT openbsd)

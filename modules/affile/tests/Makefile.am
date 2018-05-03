@@ -19,6 +19,6 @@ modules_affile_tests_test_collection_comporator_CFLAGS  = $(TEST_CFLAGS) -I$(top
 modules_affile_tests_test_collection_comporator_LDADD   = $(TEST_LDADD) \
 	-dlpreopen $(top_builddir)/modules/affile/libaffile.la
 
-modules_affile_tests_test_file_opener_CFLAGS 	= $(TEST_CFLAGS)
+modules_affile_tests_test_file_opener_CFLAGS 	= $(TEST_CFLAGS) -I$(top_srcdir)/modules/affile
 modules_affile_tests_test_file_opener_LDADD	= $(TEST_LDADD) \
 	-dlpreopen $(top_builddir)/modules/affile/libaffile.la

@@ -36,7 +36,7 @@
 #include "compat/string.h"
 #include "rcptid.h"
 #include "template/macros.h"
-#include "lib/host-id.h"
+#include "host-id.h"
 #include "ack_tracker.h"
 
 #include <glib/gprintf.h>

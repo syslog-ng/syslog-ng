@@ -27,7 +27,7 @@
 #include "syslog-ng.h"
 #include "messages.h"
 #include "atomic.h"
-#include "lib/reloc.h"
+#include "reloc.h"
 #include "plugin.h"
 #include "resolved-configurable-paths.h"
 #include <string.h>

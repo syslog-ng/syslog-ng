@@ -22,9 +22,11 @@ COMPILE_FLAGS ${BISON_FLAGS})
 option(ENABLE_SNMPTRAPD_PARSER "Enable snmptrapd-parser" ON)
 
 if (ENABLE_SNMPTRAPD_PARSER)
-  include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  include_directories (${CMAKE_CURRENT_SOURCE_DIR})
   add_library(snmptrapd_parser SHARED ${SNMPTRAPD_PARSER_SOURCES})
+  target_include_directories(snmptrapd_parser
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  )
   target_link_libraries(snmptrapd_parser PRIVATE syslog-ng)
 
   install(TARGETS snmptrapd_parser

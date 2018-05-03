@@ -26,9 +26,11 @@ if (ENABLE_REDIS)
       ${CMAKE_CURRENT_BINARY_DIR}/redis-grammar.c
       COMPILE_FLAGS ${BISON_FLAGS})
 
-  include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  include_directories (${CMAKE_CURRENT_SOURCE_DIR})
   add_library(redis MODULE ${REDIS_SOURCES})
+  target_include_directories(redis
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  )
   target_include_directories (redis PRIVATE ${HIREDIS_INCLUDE_DIR})
   target_link_libraries(redis PRIVATE syslog-ng ${HIREDIS_LIBRARIES})
 

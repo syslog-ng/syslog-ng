@@ -27,12 +27,13 @@ bison_target(AMQPGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/afamqp-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 include_directories (${RabbitMQ_INCLUDE_DIR})
 add_library(afamqp SHARED ${AFAMQP_SOURCES})
-target_link_libraries(afamqp PUBLIC ${RabbitMQ_LIBRARY})
-target_link_libraries(afamqp PRIVATE syslog-ng)
+target_include_directories(afamqp
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
+target_link_libraries(afamqp PRIVATE ${RabbitMQ_LIBRARY} syslog-ng)
 
 if (RabbitMQ_INTERNAL)
    add_dependencies(afamqp RabbitMQ)

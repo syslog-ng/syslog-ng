@@ -26,9 +26,11 @@ bison_target(add_contextual_dataGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/add-contextual-data-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 add_library(add_contextual_data SHARED ${add_contextual_data_SOURCES})
+target_include_directories(add_contextual_data
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
 target_link_libraries(add_contextual_data PRIVATE syslog-ng)
 
 install(TARGETS add_contextual_data LIBRARY DESTINATION lib/syslog-ng/ COMPONENT add_contextual_data)
