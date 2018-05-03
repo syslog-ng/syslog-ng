@@ -84,12 +84,12 @@ _allocate_thread_id(void)
     {
       for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
         {
-          if ((main_loop_workers_idmap[main_loop_worker_type] & (1 << id)) == 0)
+          if ((main_loop_workers_idmap[main_loop_worker_type] & (1LL << id)) == 0)
             {
               /* id not yet used */
 
               main_loop_worker_id = (id + 1)  + (main_loop_worker_type * MAIN_LOOP_MAX_WORKER_THREADS);
-              main_loop_workers_idmap[main_loop_worker_type] |= (1 << id);
+              main_loop_workers_idmap[main_loop_worker_type] |= (1LL << id);
               break;
             }
         }
@@ -104,7 +104,7 @@ _release_thread_id(void)
   if (main_loop_worker_id)
     {
       const gint id = main_loop_worker_id & (sizeof(guint64) * CHAR_BIT - 1);
-      main_loop_workers_idmap[main_loop_worker_type] &= ~(1 << (id - 1));
+      main_loop_workers_idmap[main_loop_worker_type] &= ~(1LL << (id - 1));
       main_loop_worker_id = 0;
     }
   g_static_mutex_unlock(&main_loop_workers_idmap_lock);
