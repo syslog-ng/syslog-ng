@@ -85,7 +85,7 @@ script:
       };
       find . -name test-suite.log | xargs cat;
     else
-      make --keep-going -j 3;
+      make --keep-going -j $(nproc);
       S=$?;
       if [ "$S" = "0" ]; then
         make install
@@ -142,7 +142,7 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) all test install
+        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
         - make VERBOSE=1 func-test
     - env: B=trusty-cmake
       compiler: clang
@@ -157,7 +157,7 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) all test install
+        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
     - env: B=check
       os: osx
       osx_image: xcode9.3
@@ -180,14 +180,14 @@ matrix:
             --disable-smtp
             --disable-geoip
             --enable-all-modules
-        - make --keep-going -j 4 ||
+        - make --keep-going -j $(nproc) ||
           {
             S=$?;
             make V=1;
             return $S;
           }
       script:
-        - make --keep-going check -j 4 ||
+        - make --keep-going check -j $(nproc) ||
           {
             S=$?;
             make V=1 check;

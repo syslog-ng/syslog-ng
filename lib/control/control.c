@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 Kokan
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,20 +22,14 @@
  *
  */
 
-#ifndef CONTROL_H_INCLUDED
-#define CONTROL_H_INCLUDED
+#include "control/control.h"
 
-#include "syslog-ng.h"
+#include "compat/glib.h"
 
-typedef GString *(*CommandFunction)(GString *, gpointer user_data);
-typedef struct _ControlCommand
+#include <string.h>
+
+gboolean control_command_start_with_command(const ControlCommand *cmd, const gchar *line)
 {
-  const gchar *command_name;
-  const gchar *description;
-  CommandFunction func;
-  gpointer user_data;
-} ControlCommand;
+  return strncmp(cmd->command_name, line, strlen(cmd->command_name));
+}
 
-gboolean control_command_start_with_command(const ControlCommand *cmd, const gchar *name);
-
-#endif

@@ -22,7 +22,8 @@
  *
  */
 
-#include "testutils.h"
+#include <criterion/criterion.h>
+
 #include "control/control.h"
 #include "control/control-server.h"
 #include "apphook.h"
@@ -142,7 +143,7 @@ control_connection_moc_new(ControlServer *server)
 GString *
 test_command(GString *command, gpointer user_data)
 {
-  assert_string(command->str,"test command", "Bad command handling");
+  cr_assert_str_eq(command->str,"test command", "Bad command handling");
   return g_string_new("OK");
 }
 
@@ -196,11 +197,10 @@ test_control_connection(gsize transaction_size)
   g_string_assign(moc_connection->source_buffer->buffer,"test command\n");
   moc_connection->transaction_size = transaction_size;
   control_connection_start_watches((ControlConnection *)moc_connection);
-  assert_string(result_string->str, "OK\n.\n", "BAD Behaviour transaction_size: %d",transaction_size);
+  cr_assert_str_eq(result_string->str, "OK\n.\n", "BAD Behaviour transaction_size: %lu",transaction_size);
 }
 
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
+Test(control_connection, test_control_connection)
 {
   GList *commands = g_list_append(NULL, &command);
   moc_server.control_commands = commands;
@@ -213,5 +213,5 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
     }
   app_shutdown();
   g_list_free(commands);
-  return 0;
 }
+
