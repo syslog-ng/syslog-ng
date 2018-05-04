@@ -1128,7 +1128,7 @@ if test "x$with_ivykis" = "xinternal"; then
 else
 	with_ivykis="system"
 	PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
-	PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
+	PKG_CHECK_MODULES(IVYKIS_VERSION_CHECK, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
 
 	# in case we're using a system installed ivykis, we can link against
 	# it even without libtool and without extra linker arguments (as
