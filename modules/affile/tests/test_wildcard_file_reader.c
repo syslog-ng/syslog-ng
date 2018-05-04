@@ -88,7 +88,11 @@ void file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
   return;
 }
 
+#if SYSLOG_NG_USE_CONST_IVYKIS_MOCK
 int iv_task_registered(const struct iv_task *_t)
+#else
+int iv_task_registered(struct iv_task *_t)
+#endif
 {
   return 0;
 }
