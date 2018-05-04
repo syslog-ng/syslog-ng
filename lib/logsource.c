@@ -287,6 +287,29 @@ _invoke_mangle_callbacks(LogPipe *s, LogMessage *msg, const LogPathOptions *path
   return TRUE;
 }
 
+static inline void
+_increment_dynamic_stats_counters(const LogMessage *msg)
+{
+  if (stats_check_level(2))
+    {
+      stats_lock();
+
+      StatsClusterKey sc_key;
+      stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL) );
+      stats_register_and_increment_dynamic_counter(2, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+
+      if (stats_check_level(3))
+        {
+          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL) );
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_cluster_logpipe_key_set(&sc_key, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL) );
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+        }
+
+      stats_unlock();
+    }
+}
+
 static void
 log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -330,25 +353,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   log_msg_set_tag_by_id(msg, self->options->source_group_tag);
 
-  /* stats counters */
-  if (stats_check_level(2))
-    {
-      stats_lock();
-
-      StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SOURCE, NULL,  log_msg_get_value(msg, LM_V_HOST, NULL) );
-
-      stats_register_and_increment_dynamic_counter(2, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
-      if (stats_check_level(3))
-        {
-          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL) );
-          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL) );
-          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
-        }
-
-      stats_unlock();
-    }
+  _increment_dynamic_stats_counters(msg);
   stats_syslog_process_message_pri(msg->pri);
 
   /* message setup finished, send it out */
