@@ -288,7 +288,7 @@ _invoke_mangle_callbacks(LogPipe *s, LogMessage *msg, const LogPathOptions *path
 }
 
 static inline void
-_increment_dynamic_stats_counters(const LogMessage *msg)
+_increment_dynamic_stats_counters(const gchar *source_id, const LogMessage *msg)
 {
   if (stats_check_level(2))
     {
@@ -303,6 +303,12 @@ _increment_dynamic_stats_counters(const LogMessage *msg)
           stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL) );
           stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
           stats_cluster_logpipe_key_set(&sc_key, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL) );
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+
+          stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SOURCE, source_id, log_msg_get_value(msg, LM_V_HOST, NULL));
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, source_id, log_msg_get_value(msg, LM_V_HOST_FROM,
+                                        NULL));
           stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
         }
 
@@ -353,7 +359,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   log_msg_set_tag_by_id(msg, self->options->source_group_tag);
 
-  _increment_dynamic_stats_counters(msg);
+  _increment_dynamic_stats_counters(self->stats_id, msg);
   stats_syslog_process_message_pri(msg->pri);
 
   /* message setup finished, send it out */
