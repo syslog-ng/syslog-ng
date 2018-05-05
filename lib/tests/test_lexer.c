@@ -22,9 +22,9 @@
  *
  */
 
-#include "testutils.h"
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
+#include <criterion/criterion.h>
 
 typedef struct
 {
@@ -32,6 +32,8 @@ typedef struct
   YYLTYPE *yylloc;
   CfgLexer *lexer;
 } TestParser;
+
+TestParser *parser = NULL;
 
 static void
 test_parser_clear_token(TestParser *self)
@@ -83,26 +85,6 @@ test_parser_free(TestParser *self)
   g_free(self);
 }
 
-#define LEXER_TESTCASE(x, ...) do { lexer_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); lexer_testcase_end(); } while(0)
-
-TestParser *parser = NULL;
-
-#define lexer_testcase_begin(func, args)      \
-  do                                                \
-    {                                               \
-      testcase_begin("%s(%s)", func, args);                     \
-      parser = test_parser_new();                               \
-    }                                               \
-  while (0)
-
-#define lexer_testcase_end()                \
-  do                \
-    {               \
-      test_parser_free(parser);                                 \
-      testcase_end();           \
-    }               \
-  while (0)
-
 static void
 _input(const gchar *input)
 {
@@ -128,50 +110,50 @@ _current_lloc(void)
 }
 
 #define assert_token_type(expected)                                     \
-  assert_gint(_current_token()->type, expected, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_eq(_current_token()->type, expected, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_parser_string(expected)                          \
   _next_token();                                                        \
   assert_token_type(LL_STRING);                                        \
-  assert_string(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__); \
+  cr_assert_str_eq(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__); \
 
 #define assert_parser_block(expected) \
   _next_token();                                                        \
   assert_token_type(LL_BLOCK);                                         \
-  assert_string(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_str_eq(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__);
 
-#define assert_parser_block_bad(parser) \
+#define assert_parser_block_bad() \
   _next_token();                                                        \
   assert_token_type(LL_ERROR);
 
-#define assert_parser_pragma(parser) \
+#define assert_parser_pragma() \
   _next_token();                                                        \
   assert_token_type(LL_PRAGMA);
 
 #define assert_parser_number(expected) \
   _next_token();                                                        \
   assert_token_type(LL_NUMBER);                                        \
-  assert_gint(_current_token()->num, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_eq(_current_token()->num, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_parser_float(expected)                           \
   _next_token();                                                        \
   assert_token_type(LL_FLOAT);                                         \
-  assert_true(_current_token()->fnum == expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_float_eq(_current_token()->fnum, expected, 1e-7, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_parser_identifier(expected) \
   _next_token();                                                        \
   assert_token_type(LL_IDENTIFIER);                                         \
-  assert_string(_current_token()->cptr, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_str_eq(_current_token()->cptr, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_parser_char(expected) \
   _next_token();                                                        \
-  assert_gint(_current_token()->type, expected, "Bad character value at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_eq(_current_token()->type, expected, "Bad character value at %s:%d", __FUNCTION__, __LINE__);
 
 #define assert_location(line, column) \
-  assert_gint(_current_lloc()->first_line, line,          \
+  cr_assert_eq(_current_lloc()->first_line, line,          \
               "The line number in the location information "        \
               "does not match the expected value at %s:%d", __FUNCTION__, __LINE__);  \
-  assert_gint(_current_lloc()->first_column, column,          \
+  cr_assert_eq(_current_lloc()->first_column, column,          \
               "The column number in the location information "        \
               "does not match the expected value at %s:%d", __FUNCTION__, __LINE__);
 
@@ -198,13 +180,12 @@ _format_location_tag_message(void)
     char *msg = _format_location_tag_message(); \
     const gchar *tag_repr;        \
     tag_repr = strstr(msg, "; ");                 \
-    assert_string(tag_repr ? tag_repr + 2 : NULL, expected, "Formatted location tag does not match");  \
+    cr_assert_str_eq(tag_repr ? tag_repr + 2 : NULL, expected, "Formatted location tag does not match");  \
     free(msg);                    \
                                                                                         \
   })
 
-static void
-test_lexer_string(void)
+Test(lexer, test_string)
 {
   _input("\"test\"");
   assert_parser_string("test");
@@ -216,8 +197,7 @@ test_lexer_string(void)
   assert_parser_string("test\n\r\a\t\vc");
 }
 
-static void
-test_lexer_qstring(void)
+Test(lexer, test_qstring)
 {
   _input("'test'");
   assert_parser_string("test");
@@ -228,8 +208,7 @@ test_lexer_qstring(void)
 #define TEST_BLOCK " {'hello world' \"test value\" {other_block} other\text}"
 #define TEST_BAD_BLOCK "this is a bad block starting " TEST_BLOCK
 
-static void
-test_lexer_block(void)
+Test(lexer, test_block)
 {
   _input(TEST_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
@@ -237,16 +216,15 @@ test_lexer_block(void)
 
   _input(TEST_BAD_BLOCK);
   cfg_lexer_start_block_state(parser->lexer, "{}");
-  assert_parser_block_bad(parser);
+  assert_parser_block_bad();
 }
 
-static void
-test_lexer_others(void)
+Test(lexer, test_other)
 {
   _input("#This is a full line comment\nfoobar");
   assert_parser_identifier("foobar");
   _input("@version");
-  assert_parser_pragma(parser);
+  assert_parser_pragma();
   assert_parser_identifier("version");
   _input("():;{}|");
   assert_parser_char('(');
@@ -269,8 +247,7 @@ test_lexer_others(void)
   assert_parser_identifier("test_value");
 }
 
-static void
-test_location_tracking(void)
+Test(lexer, test_location_tracking)
 {
 
   _input("test another\nfoo\nbar\n");
@@ -286,13 +263,16 @@ test_location_tracking(void)
   assert_location_tag("location='#buffer:3:1'");
 }
 
-int
-main(int argc, char **argv)
+static void
+setup(void)
 {
-  LEXER_TESTCASE(test_lexer_string);
-  LEXER_TESTCASE(test_lexer_qstring);
-  LEXER_TESTCASE(test_lexer_block);
-  LEXER_TESTCASE(test_lexer_others);
-  LEXER_TESTCASE(test_location_tracking);
-  return 0;
+  parser = test_parser_new();
 }
+
+static void
+teardown(void)
+{
+  test_parser_free(parser);
+}
+
+TestSuite(lexer, .init = setup, .fini = teardown);
