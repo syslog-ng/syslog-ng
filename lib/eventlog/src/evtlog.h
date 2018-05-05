@@ -44,11 +44,9 @@
 # include <syslog.h>
 #endif
 #include <stdarg.h>
-#ifdef __FreeBSD__
- #include <sys/types.h>
- #include <sys/socket.h>
- #include <netinet/in.h>
-#endif
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include "evtmaps.h"
