@@ -155,7 +155,7 @@ _grouping_by_timer_tick(GroupingBy *self)
 
   if (diff > 1e6)
     {
-      glong diff_sec = diff / 1e6;
+      glong diff_sec = (glong)(diff / 1e6);
 
       timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
       msg_debug("Advancing grouping-by() current time because of timer tick",
@@ -166,7 +166,7 @@ _grouping_by_timer_tick(GroupingBy *self)
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
       self->last_tick = now;
-      g_time_val_add(&self->last_tick, -(diff - diff_sec * 1e6));
+      g_time_val_add(&self->last_tick, - (glong)(diff - diff_sec * 1e6));
     }
   else if (diff < 0)
     {

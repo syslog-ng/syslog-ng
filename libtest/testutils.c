@@ -30,6 +30,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <math.h>
 
 static gboolean testutils_global_success = TRUE;
 GString *current_testcase_description = NULL;
@@ -212,7 +213,10 @@ assert_gdouble_non_fatal(gdouble actual, gdouble expected, const gchar *error_me
 {
   va_list args;
 
-  if (actual == expected)
+  if (isinf(actual) && isinf(expected))
+    return TRUE;
+
+  if (fabs(actual - expected) < 1e-15)
     return TRUE;
 
   va_start(args, error_message);

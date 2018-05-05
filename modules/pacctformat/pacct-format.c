@@ -61,6 +61,8 @@ static NVHandle handle_ac_comm;
 
 #define PACCT_CONVERT_COMP_TO_ULONG(x) ((ulong) ((x & 0x1fff) << (((x >> 13) & 0x7) * 3)))
 
+#define PACCT_CONVERT_COMP_TO_DOUBLE(x) ((double) x)
+
 #define PACCT_FORMAT_CONVERT(msg, rec, field, format, convert)                  \
   do {                                                                  \
     gchar __buf[64];                                                    \
@@ -136,7 +138,7 @@ pacct_format_handler(const MsgFormatOptions *options, const guchar *data, gsize 
   PACCT_FORMAT(msg, rec, ac_pid, "%u");
   PACCT_FORMAT(msg, rec, ac_ppid, "%u");
   PACCT_FORMAT_CONVERT(msg, rec, ac_btime, "%lu.00", PACCT_CONVERT_COMP_TO_ULONG);
-  PACCT_FORMAT(msg, rec, ac_etime, "%9.2f");
+  PACCT_FORMAT_CONVERT(msg, rec, ac_etime, "%9.2f", PACCT_CONVERT_COMP_TO_DOUBLE);
   PACCT_FORMAT_CONVERT(msg, rec, ac_utime, "%lu.00", PACCT_CONVERT_COMP_TO_ULONG);
   PACCT_FORMAT_CONVERT(msg, rec, ac_stime, "%lu.00", PACCT_CONVERT_COMP_TO_ULONG);
   PACCT_FORMAT_CONVERT(msg, rec, ac_mem, "%lu", PACCT_CONVERT_COMP_TO_ULONG);

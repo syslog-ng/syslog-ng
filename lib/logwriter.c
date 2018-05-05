@@ -413,7 +413,7 @@ log_writer_suspend(LogWriter *self)
   /* flush code indicates that we need to suspend our writing activities
    * until time_reopen elapses */
 
-  log_writer_arm_suspend_timer(self, log_writer_error_suspend_elapsed, self->options->time_reopen * 1e3);
+  log_writer_arm_suspend_timer(self, log_writer_error_suspend_elapsed, (gint)(self->options->time_reopen * 1e3));
   self->suspended = TRUE;
 }
 

@@ -407,7 +407,7 @@ ptz_find_clusters(Patternizer *self)
                   g_ptr_array_add(curr_logs, msg);
                 }
             }
-          curr_support = curr_logs->len * (self->support_treshold / 100.0);
+          curr_support = (guint) (curr_logs->len * (self->support_treshold / 100.0));
 
           if (prev_logs != self->logs)
             {
@@ -621,7 +621,7 @@ ptz_load_file(Patternizer *self, gchar *input_file, gboolean no_parse, GError **
       g_ptr_array_add(self->logs, msg);
     }
 
-  self->support = (self->logs->len * (self->support_treshold / 100.0));
+  self->support = (guint)(self->logs->len * (self->support_treshold / 100.0));
   msg_format_options_destroy(&parse_options);
   return TRUE;
 }

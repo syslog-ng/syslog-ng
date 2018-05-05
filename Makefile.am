@@ -68,7 +68,9 @@ AM_CFLAGS += \
 	-Wcast-align \
 	-Wdeprecated \
 	-Wdeprecated-declarations \
-	-Woverflow
+	-Woverflow \
+	-Wdouble-promotion \
+      	-Wfloat-equal
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)
