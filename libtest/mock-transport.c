@@ -62,7 +62,20 @@ struct _LogTransportMock
   gboolean input_is_a_stream;
   gboolean inject_eagain;
   gboolean eof_is_eagain;
+  gpointer user_data;
 };
+
+gpointer
+log_transport_mock_get_user_data(LogTransportMock *self)
+{
+  return self->user_data;
+}
+
+void
+log_transport_mock_set_user_data(LogTransportMock *self, gpointer user_data)
+{
+  self->user_data = user_data;
+}
 
 gssize
 log_transport_mock_read_from_write_buffer(LogTransportMock *self, gchar *buffer, gsize len)

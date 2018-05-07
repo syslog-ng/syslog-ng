@@ -51,6 +51,11 @@ log_transport_mock_endless_records_new(const gchar *read_buffer1, gssize read_bu
 void
 log_transport_mock_inject_data(LogTransportMock *self, const gchar *buffer, gssize length);
 
+gpointer
+log_transport_mock_get_user_data(LogTransportMock *self);
+void
+log_transport_mock_set_user_data(LogTransportMock *self, gpointer user_data);
+
 gssize
 log_transport_mock_read_from_write_buffer(LogTransportMock *self, gchar *buffer, gsize len);
 
