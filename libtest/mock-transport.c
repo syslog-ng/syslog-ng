@@ -54,6 +54,8 @@ struct _LogTransportMock
   data_t value[32];
   gint value_cnt;
   /* index currently read i/o chunk */
+  GArray *write_buffer;
+  gint write_buffer_index;
   gint current_value_ndx;
   /* position within the current I/O chunk */
   gint current_iov_pos;
@@ -61,6 +63,15 @@ struct _LogTransportMock
   gboolean inject_eagain;
   gboolean eof_is_eagain;
 };
+
+gssize
+log_transport_mock_read_from_write_buffer(LogTransportMock *self, gchar *buffer, gsize len)
+{
+  gsize data_len = MIN(self->write_buffer->len - self->write_buffer_index, len);
+  memcpy(buffer, self->write_buffer->data + self->write_buffer_index, data_len);
+  self->write_buffer_index += data_len;
+  return data_len;
+}
 
 gssize
 log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
@@ -124,6 +135,22 @@ exit:
   return count;
 }
 
+static gssize
+log_transport_mock_write_method(LogTransport *s, const gpointer buf, gsize count)
+{
+  LogTransportMock *self = (LogTransportMock *)s;
+  g_array_append_vals(self->write_buffer, buf, count);
+  return count;
+}
+
+static void
+log_transport_mock_free_method(LogTransport *s)
+{
+  LogTransportMock *self = (LogTransportMock *)s;
+  g_array_free(self->write_buffer, TRUE);
+  log_transport_free_method(s);
+}
+
 void
 log_transport_mock_inject_data(LogTransportMock *self, const gchar *buffer, gssize length)
 {
@@ -156,7 +183,8 @@ log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssiz
   self->super.fd = 0;
   self->super.cond = 0;
   self->super.read = log_transport_mock_read_method;
-  self->super.free_fn = log_transport_free_method;
+  self->super.write = log_transport_mock_write_method;
+  self->super.free_fn = log_transport_mock_free_method;
 
   buffer = read_buffer1;
   length = read_buffer_length1;
@@ -171,10 +199,18 @@ log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssiz
   self->current_iov_pos = 0;
 }
 
+LogTransportMock *
+log_transport_mock_new(void)
+{
+  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  self->write_buffer = g_array_new(TRUE, TRUE, 1);
+  return self;
+}
+
 LogTransport *
 log_transport_mock_stream_new(const gchar *read_buffer1, gssize read_buffer_length1, ...)
 {
-  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  LogTransportMock *self = log_transport_mock_new();
   va_list va;
 
   va_start(va, read_buffer_length1);
@@ -187,7 +223,7 @@ log_transport_mock_stream_new(const gchar *read_buffer1, gssize read_buffer_leng
 LogTransport *
 log_transport_mock_endless_stream_new(const gchar *read_buffer1, gssize read_buffer_length1, ...)
 {
-  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  LogTransportMock *self = log_transport_mock_new();
   va_list va;
 
   va_start(va, read_buffer_length1);
@@ -201,7 +237,7 @@ log_transport_mock_endless_stream_new(const gchar *read_buffer1, gssize read_buf
 LogTransport *
 log_transport_mock_records_new(const gchar *read_buffer1, gssize read_buffer_length1, ...)
 {
-  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  LogTransportMock *self = log_transport_mock_new();
   va_list va;
 
   va_start(va, read_buffer_length1);
@@ -213,7 +249,7 @@ log_transport_mock_records_new(const gchar *read_buffer1, gssize read_buffer_len
 LogTransport *
 log_transport_mock_endless_records_new(const gchar *read_buffer1, gssize read_buffer_length1, ...)
 {
-  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  LogTransportMock *self = log_transport_mock_new();
   va_list va;
 
   va_start(va, read_buffer_length1);
