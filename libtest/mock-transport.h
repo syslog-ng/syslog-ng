@@ -27,6 +27,8 @@
 
 #include "transport/logtransport.h"
 
+typedef struct _LogTransportMock LogTransportMock;
+
 /* macro to be used when injecting an error in the I/O stream */
 #define LTM_INJECT_ERROR_LENGTH -2
 #define LTM_INJECT_ERROR(err)   (GUINT_TO_POINTER(err)), LTM_INJECT_ERROR_LENGTH
@@ -45,5 +47,8 @@ log_transport_mock_records_new(const gchar *read_buffer1, gssize read_buffer_len
 
 LogTransport *
 log_transport_mock_endless_records_new(const gchar *read_buffer1, gssize read_buffer_length1, ...);
+
+void
+log_transport_mock_inject_data(LogTransportMock *self, const gchar *buffer, gssize length);
 
 #endif

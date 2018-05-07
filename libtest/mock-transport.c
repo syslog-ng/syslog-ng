@@ -47,7 +47,7 @@ typedef struct data
   guint error_code;
 } data_t;
 
-typedef struct
+struct _LogTransportMock
 {
   LogTransport super;
   /* data is stored in a series of data chunks, that are going to be returned as individual reads */
@@ -60,7 +60,7 @@ typedef struct
   gboolean input_is_a_stream;
   gboolean inject_eagain;
   gboolean eof_is_eagain;
-} LogTransportMock;
+};
 
 gssize
 log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
@@ -124,6 +124,29 @@ exit:
   return count;
 }
 
+void
+log_transport_mock_inject_data(LogTransportMock *self, const gchar *buffer, gssize length)
+{
+  /* NOTE: our iov buffer is of a fixed size, increase if your test needs more chunks of data */
+  g_assert(self->value_cnt < sizeof(self->value) / sizeof(self->value[0]));
+
+  if (length == LTM_INJECT_ERROR_LENGTH)
+    {
+      self->value[self->value_cnt].type = DATA_ERROR;
+      self->value[self->value_cnt].error_code = GPOINTER_TO_UINT(buffer);
+    }
+  else
+    {
+      if (length == -1)
+        length = strlen(buffer);
+
+      self->value[self->value_cnt].type = DATA_STRING;
+      self->value[self->value_cnt].iov.iov_base = buffer;
+      self->value[self->value_cnt].iov.iov_len = length;
+    }
+  self->value_cnt++;
+}
+
 static void
 log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssize read_buffer_length1, va_list va)
 {
@@ -139,24 +162,7 @@ log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssiz
   length = read_buffer_length1;
   while (buffer)
     {
-      /* NOTE: our iov buffer is of a fixed size, increase if your test needs more chunks of data */
-      g_assert(self->value_cnt < sizeof(self->value) / sizeof(self->value[0]));
-
-      if (length == LTM_INJECT_ERROR_LENGTH)
-        {
-          self->value[self->value_cnt].type = DATA_ERROR;
-          self->value[self->value_cnt].error_code = GPOINTER_TO_UINT(buffer);
-        }
-      else
-        {
-          if (length == -1)
-            length = strlen(buffer);
-
-          self->value[self->value_cnt].type = DATA_STRING;
-          self->value[self->value_cnt].iov.iov_base = buffer;
-          self->value[self->value_cnt].iov.iov_len = length;
-        }
-      self->value_cnt++;
+      log_transport_mock_inject_data(self, buffer, length);
       buffer = va_arg(va, const gchar *);
       length = va_arg(va, gint);
     }
