@@ -92,13 +92,13 @@ add_geoip_record(GeoIPParser *self, LogMessage *msg, const gchar *ip)
       value = scratch_buffers_alloc();
 
       g_string_printf(value, "%f",
-                      record->latitude);
+                      (double)record->latitude);
       log_msg_set_value_by_name(msg, self->dest.latitude,
                                 value->str,
                                 value->len);
 
       g_string_printf(value, "%f",
-                      record->longitude);
+                      (double)record->longitude);
       log_msg_set_value_by_name(msg, self->dest.longitude,
                                 value->str,
                                 value->len);

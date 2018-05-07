@@ -456,7 +456,7 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
           /* check rate every 0.1sec */
           long new_buckets;
 
-          new_buckets = (rate * diff_usec) / USEC_PER_SEC;
+          new_buckets = (long) ((rate * diff_usec) / USEC_PER_SEC);
           if (new_buckets)
             {
               buckets = MIN(rate, buckets + new_buckets);
@@ -470,7 +470,7 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
           long msec = (1000 / rate) + 1;
 
           tspec.tv_sec = msec / 1000;
-          tspec.tv_nsec = (msec % 1000) * 1e6;
+          tspec.tv_nsec = (long) ((msec % 1000) * 1e6);
           while (nanosleep(&tspec, &tspec) < 0 && errno == EINTR)
             ;
           continue;

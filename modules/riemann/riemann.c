@@ -521,7 +521,7 @@ riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMes
     return FALSE;
 
   if (type_cast_to_double (str->str, &d, NULL))
-    riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, (float) d,
+    riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, d,
                       RIEMANN_EVENT_FIELD_NONE);
   else
     return type_cast_drop_helper(self->template_options.on_error,
