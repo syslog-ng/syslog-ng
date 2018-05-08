@@ -28,11 +28,8 @@
 #include "pathutils.h"
 #include "resolved-configurable-paths.h"
 
-#include <sys/types.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <gmodule.h>
+#include <string.h>
 
 #ifdef _AIX
 #undef G_MODULE_SUFFIX
@@ -421,27 +418,24 @@ _free_candidate_plugin_list(GList *candidate_plugins)
   g_list_foreach(candidate_plugins, (GFunc) plugin_candidate_free, NULL);
   g_list_free(candidate_plugins);
 }
-
-/* This functions runs in a separate process during startup, thus we don't
- * really have a means to report errors, stderr may not be available.  */
-static void
-_enumerate_and_dump_plugin_info_in_modules(const gchar *module_path, int output_fd)
+void
+plugin_load_candidate_modules(PluginContext *context)
 {
   GModule *mod;
   gchar **mod_paths;
   gint i, j;
-  FILE *discovery;
 
-  discovery = fdopen(output_fd, "w");
-  if (!discovery)
+  if (context->candidate_plugins)
     return;
 
-  mod_paths = g_strsplit(module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
+  mod_paths = g_strsplit(context->module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
     {
       GDir *dir;
       const gchar *fname;
 
+      msg_debug("Reading path for candidate modules",
+                evt_tag_str("path", mod_paths[i]));
       dir = g_dir_open(mod_paths[i], 0, NULL);
       if (!dir)
         continue;
@@ -457,6 +451,10 @@ _enumerate_and_dump_plugin_info_in_modules(const gchar *module_path, int output_
                 so_basename = fname + 3;
               module_name = g_strndup(so_basename, (gint) (strlen(so_basename) - strlen(G_MODULE_SUFFIX) - 1));
 
+              msg_debug("Reading shared object for a candidate module",
+                        evt_tag_str("path", mod_paths[i]),
+                        evt_tag_str("fname", fname),
+                        evt_tag_str("module", module_name));
               mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
               module_info = plugin_get_module_info(mod);
 
@@ -465,8 +463,29 @@ _enumerate_and_dump_plugin_info_in_modules(const gchar *module_path, int output_
                   for (j = 0; j < module_info->plugins_len; j++)
                     {
                       Plugin *plugin = &module_info->plugins[j];
+                      PluginCandidate *candidate_plugin;
 
-                      fprintf(discovery, "%s %d %s\n", module_name, plugin->type, plugin->name);
+                      candidate_plugin = (PluginCandidate *) plugin_find_in_list(context->candidate_plugins, plugin->type, plugin->name);
+
+                      msg_debug("Registering candidate plugin",
+                                evt_tag_str("module", module_name),
+                                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin->type)),
+                                evt_tag_str("name", plugin->name));
+                      if (candidate_plugin)
+                        {
+                          msg_debug("Duplicate plugin candidate, overriding previous registration with the new one",
+                                    evt_tag_str("old-module", candidate_plugin->module_name),
+                                    evt_tag_str("new-module", module_name),
+                                    evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin->type)),
+                                    evt_tag_str("name", plugin->name));
+                          plugin_candidate_set_module_name(candidate_plugin, module_name);
+                        }
+                      else
+                        {
+                          context->candidate_plugins = g_list_prepend(context->candidate_plugins,
+                                                                      plugin_candidate_new(plugin->type, plugin->name,
+                                                                          module_name));
+                        }
                     }
                 }
               g_free(module_name);
@@ -479,126 +498,6 @@ _enumerate_and_dump_plugin_info_in_modules(const gchar *module_path, int output_
       g_dir_close(dir);
     }
   g_strfreev(mod_paths);
-  fclose(discovery);
-}
-
-static GList *
-_parse_and_load_plugin_info_in_modules(int input_fd)
-{
-  FILE *discovery;
-  GList *candidate_plugins = NULL;
-  gchar module_name[4096];
-  gint plugin_type;
-  gchar plugin_name[256];
-
-  discovery = fdopen(input_fd, "r");
-  if (!discovery)
-    {
-      msg_error("Error happened while opening plugin discovery output, fdopen() failed",
-                evt_tag_error("error"));
-      return NULL;
-    }
-
-  while (fscanf(discovery, "%4095s %d %255s\n",
-                module_name,
-                &plugin_type,
-                plugin_name) == 3)
-    {
-      PluginCandidate *candidate_plugin;
-
-      candidate_plugin = (PluginCandidate *) plugin_find_in_list(candidate_plugins, plugin_type, plugin_name);
-
-      msg_debug("Registering candidate plugin",
-                evt_tag_str("module", module_name),
-                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin_type)),
-                evt_tag_str("name", plugin_name));
-      if (candidate_plugin)
-        {
-          msg_debug("Duplicate plugin candidate, overriding previous registration with the new one",
-                    evt_tag_str("old-module", candidate_plugin->module_name),
-                    evt_tag_str("new-module", module_name),
-                    evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin_type)),
-                    evt_tag_str("name", plugin_name));
-          plugin_candidate_set_module_name(candidate_plugin, module_name);
-        }
-      else
-        {
-          candidate_plugins = g_list_prepend(candidate_plugins,
-                                             plugin_candidate_new(plugin_type, plugin_name, module_name));
-        }
-
-    }
-
-  if (!feof(discovery))
-    {
-      msg_error("Error parsing the output of the discovery process, "
-                "not all lines were consumed, this is an internal error.");
-    }
-
-  fclose(discovery);
-  return candidate_plugins;
-}
-
-GList *
-plugin_discover_candidate_modules(const gchar *module_path)
-{
-  pid_t discover_pid;
-  int discover_pipe[2];
-
-  if (pipe(discover_pipe) < 0)
-    {
-      msg_error("Error creating pipe for discover process",
-                evt_tag_error("error"));
-      return NULL;
-    }
-
-  if ((discover_pid = fork()) < 0)
-    {
-      msg_error("Error creating discover process, fork() failed",
-                evt_tag_error("error"));
-      return NULL;
-    }
-
-  if (discover_pid == 0)
-    {
-      close(discover_pipe[0]);
-      _enumerate_and_dump_plugin_info_in_modules(module_path, dup(discover_pipe[1]));
-      close(discover_pipe[1]);
-      _exit(0);
-    }
-  else
-    {
-      int exit_code;
-      GList *candidate_modules;
-
-      close(discover_pipe[1]);
-      candidate_modules = _parse_and_load_plugin_info_in_modules(dup(discover_pipe[0]));
-      close(discover_pipe[0]);
-      if (waitpid(discover_pid, &exit_code, 0) < 0)
-        {
-          msg_error("Error waiting for discover process, waitpid() failed",
-                    evt_tag_error("error"));
-          _free_candidate_plugin_list(candidate_modules);
-          return NULL;
-        }
-      if (exit_code != 0)
-        {
-          msg_error("Error in discover process, exit code is not zero",
-                    evt_tag_int("exit_code", WEXITSTATUS(exit_code)),
-                    evt_tag_int("status", exit_code));
-          _free_candidate_plugin_list(candidate_modules);
-          return NULL;
-        }
-      return candidate_modules;
-    }
-}
-
-void
-plugin_load_candidate_modules(PluginContext *context)
-{
-  if (context->candidate_plugins)
-    return;
-  context->candidate_plugins = plugin_discover_candidate_modules(context->module_path);
 }
 
 static void
