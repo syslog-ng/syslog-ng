@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Balabit
+ * Copyright (c) 2018 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,8 @@
  * COPYING for details.
  *
  */
-#include "testutils.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 #include "str-utils.h"
 
 /* this macro defines which strchr() implementation we are testing. It is
@@ -30,43 +31,59 @@
 
 #define strchr_under_test _strchr_optimized_for_single_char_haystack
 
-static void
-assert_strchr_is_null(const gchar *str, int c)
+typedef struct _StrChrTestData
 {
-  assert_null(strchr_under_test(str, c), "expected a NULL return");
+  gchar *str;
+  int c;
+  int ofs;
+} StrChrTestData;
+
+ParameterizedTestParameters(str_utils, test_str_utils_is_null)
+{
+  static StrChrTestData test_data_list[] =
+  {
+    {"",'x',0},
+    {"\0x",'x',0},
+    {"a",'x',0},
+    {"abc",'x',0}
+  };
+
+  return cr_make_param_array(StrChrTestData, test_data_list, sizeof(test_data_list) / sizeof(test_data_list[0]));
 }
 
-static void
-assert_strchr_finds_character_at(const gchar *str, int c, int ofs)
+ParameterizedTest(StrChrTestData *test_data, str_utils, test_str_utils_is_null)
 {
-  char *result = strchr_under_test(str, c);
-
-  assert_not_null(result, "expected a non-NULL return");
-  assert_true(result - str <= strlen(str),
-              "Expected the strchr() return value to point into the input string or the terminating NUL, it points past the NUL");
-  assert_true(result >= str,
-              "Expected the strchr() return value to point into the input string or the terminating NUL, it points before the start of the string");
-  assert_gint((result - str), ofs, "Expected the strchr() return value to point right to the specified offset");
+  cr_assert_null(strchr_under_test(test_data->str, test_data->c), "expected a NULL return");
 }
 
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
+ParameterizedTestParameters(str_utils, test_str_utils_find_char)
 {
-  assert_strchr_is_null("", 'x');
-  assert_strchr_is_null("\0x", 'x');
-  assert_strchr_is_null("a", 'x');
-  assert_strchr_is_null("abc", 'x');
+  static StrChrTestData test_data_list[] =
+  {
+    {"", '\0', 0},
+    {"a", 'a', 0},
+    {"a", '\0', 1},
+    {"abc", 'a', 0},
+    {"abc", 'b', 1},
+    {"abc", 'c', 2},
+    {"abc", '\0', 3},
+    {"0123456789abcdef", '0', 0},
+    {"0123456789abcdef", '7', 7},
+    {"0123456789abcdef", 'f', 15}
+  };
 
-  assert_strchr_finds_character_at("", '\0', 0);
-  assert_strchr_finds_character_at("a", 'a', 0);
-  assert_strchr_finds_character_at("a", '\0', 1);
-  assert_strchr_finds_character_at("abc", 'a', 0);
-  assert_strchr_finds_character_at("abc", 'b', 1);
-  assert_strchr_finds_character_at("abc", 'c', 2);
-  assert_strchr_finds_character_at("abc", '\0', 3);
-  assert_strchr_finds_character_at("0123456789abcdef", '0', 0);
-  assert_strchr_finds_character_at("0123456789abcdef", '7', 7);
-  assert_strchr_finds_character_at("0123456789abcdef", 'f', 15);
+  return cr_make_param_array(StrChrTestData, test_data_list, sizeof(test_data_list) / sizeof(test_data_list[0]));
+}
 
-  return 0;
+ParameterizedTest(StrChrTestData *test_data, str_utils, test_str_utils_find_char)
+{
+  char *result = strchr_under_test(test_data->str, test_data->c);
+
+  cr_assert_not_null(result, "expected a non-NULL return");
+  cr_assert(result - test_data->str <= strlen(test_data->str),
+            "Expected the strchr() return value to point into the input string or the terminating NUL, it points past the NUL");
+  cr_assert(result >= test_data->str,
+            "Expected the strchr() return value to point into the input string or the terminating NUL, it points before the start of the string");
+  cr_assert_eq((result - test_data->str), test_data->ofs,
+               "Expected the strchr() return value to point right to the specified offset");
 }
