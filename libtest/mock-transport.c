@@ -51,8 +51,7 @@ struct _LogTransportMock
 {
   LogTransport super;
   /* data is stored in a series of data chunks, that are going to be returned as individual reads */
-  data_t value[32];
-  gint value_cnt;
+  GArray *value;
   /* index currently read i/o chunk */
   GArray *write_buffer;
   gint write_buffer_index;
@@ -72,6 +71,8 @@ log_transport_mock_clone(LogTransportMock *self)
   *clone = *self;
   clone->write_buffer = g_array_new(TRUE, TRUE, 1);
   g_array_append_vals(clone->write_buffer, self->write_buffer->data, self->write_buffer->len);
+  clone->value = g_array_new(TRUE, TRUE, sizeof(data_t));
+  g_array_append_vals(clone->value, self->value->data, self->value->len);
 
   return clone;
 }
@@ -103,7 +104,7 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
   LogTransportMock *self = (LogTransportMock *) s;
   struct iovec_const *current_iov;
 
-  if (self->current_value_ndx >= self->value_cnt)
+  if (self->current_value_ndx >= self->value->len)
     {
       count = 0;
       goto exit;
@@ -121,13 +122,13 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
       self->inject_eagain = TRUE;
     }
 
-  switch (self->value[self->current_value_ndx].type)
+  switch (g_array_index(self->value, data_t, self->current_value_ndx).type)
     {
     case DATA_STRING:
       if (self->input_is_a_stream)
         count = 1;
 
-      current_iov = &self->value[self->current_value_ndx].iov;
+      current_iov = &g_array_index(self->value, data_t, self->current_value_ndx).iov;
       if (count + self->current_iov_pos > current_iov->iov_len)
         count = current_iov->iov_len - self->current_iov_pos;
 
@@ -141,7 +142,7 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
       break;
     case DATA_ERROR:
       self->current_value_ndx++;
-      errno = self->value[self->current_value_ndx].error_code;
+      errno = g_array_index(self->value, data_t, self->current_value_ndx).error_code;
       return -1;
     default:
       g_assert_not_reached();
@@ -172,30 +173,30 @@ log_transport_mock_free_method(LogTransport *s)
 {
   LogTransportMock *self = (LogTransportMock *)s;
   g_array_free(self->write_buffer, TRUE);
+  g_array_free(self->value, TRUE);
   log_transport_free_method(s);
 }
 
 void
 log_transport_mock_inject_data(LogTransportMock *self, const gchar *buffer, gssize length)
 {
-  /* NOTE: our iov buffer is of a fixed size, increase if your test needs more chunks of data */
-  g_assert(self->value_cnt < sizeof(self->value) / sizeof(self->value[0]));
-
   if (length == LTM_INJECT_ERROR_LENGTH)
     {
-      self->value[self->value_cnt].type = DATA_ERROR;
-      self->value[self->value_cnt].error_code = GPOINTER_TO_UINT(buffer);
+      data_t data = {.type = DATA_ERROR, .error_code = GPOINTER_TO_UINT(buffer)};
+      g_array_append_val(self->value, data);
     }
   else
     {
       if (length == -1)
         length = strlen(buffer);
 
-      self->value[self->value_cnt].type = DATA_STRING;
-      self->value[self->value_cnt].iov.iov_base = buffer;
-      self->value[self->value_cnt].iov.iov_len = length;
+      data_t data = {.type = DATA_STRING, .iov = (struct iovec_const)
+      {
+        .iov_base = buffer, .iov_len = length
+      }
+                    };
+      g_array_append_val(self->value, data);
     }
-  self->value_cnt++;
 }
 
 static void
@@ -228,6 +229,7 @@ log_transport_mock_new(void)
 {
   LogTransportMock *self = g_new0(LogTransportMock, 1);
   self->write_buffer = g_array_new(TRUE, TRUE, 1);
+  self->value = g_array_new(TRUE, TRUE, sizeof(data_t));
   return self;
 }
 
