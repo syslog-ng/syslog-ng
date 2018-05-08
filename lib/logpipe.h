@@ -375,9 +375,8 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 static inline LogPipe *
 log_pipe_clone(LogPipe *self)
 {
-  if (self->clone)
-    return self->clone(self);
-  return NULL;
+  g_assert(NULL != self->clone);
+  return self->clone(self);
 }
 
 static inline void
