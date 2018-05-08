@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
+ * Copyright (c) 2018 Balabit
  * Copyright (c) 2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -22,10 +22,9 @@
  *
  */
 #include "string-list.h"
-#include "testutils.h"
+#include <criterion/criterion.h>
 
-static void
-test_string_array_to_list_converts_to_an_equivalent_glist(void)
+Test(string_list,test_string_array_to_list_converts_to_an_equivalent_glist)
 {
   const gchar *arr[] =
   {
@@ -37,15 +36,14 @@ test_string_array_to_list_converts_to_an_equivalent_glist(void)
   GList *l;
 
   l = string_array_to_list(arr);
-  assert_gint(g_list_length(l), 3, "converted list is not the expected length");
-  assert_string(l->data, "foo", "first element is expected to be foo");
-  assert_string(l->next->data, "bar", "second element is expected to be bar");
-  assert_string(l->next->next->data, "baz", "third element is expected to be baz");
+  cr_assert_eq(g_list_length(l), 3, "converted list is not the expected length");
+  cr_assert_str_eq(l->data, "foo", "first element is expected to be foo");
+  cr_assert_str_eq(l->next->data, "bar", "second element is expected to be bar");
+  cr_assert_str_eq(l->next->next->data, "baz", "third element is expected to be baz");
   string_list_free(l);
 }
 
-static void
-test_clone_string_array_duplicates_elements_while_leaving_token_values_intact(void)
+Test(string_list,test_clone_string_array_duplicates_elements_while_leaving_token_values_intact)
 {
   const gchar *arr[] =
   {
@@ -62,21 +60,14 @@ test_clone_string_array_duplicates_elements_while_leaving_token_values_intact(vo
   l2 = string_list_clone(l);
   string_list_free(l);
 
-  assert_gint(g_list_length(l2), 5, "converted list is not the expected length");
-  assert_string(l2->data, "foo", "first element is expected to be foo");
-  assert_string(l2->next->data, "bar", "second element is expected to be bar");
-  assert_string(l2->next->next->data, "baz", "third element is expected to be baz");
-  assert_gint(GPOINTER_TO_UINT(l2->next->next->next->data), 1,
-              "fourth element is expected to be a token, with a value of 1");
-  assert_gint(GPOINTER_TO_UINT(l2->next->next->next->next->data), 2,
-              "fifth element is expected to be a token, with a value of 2");
+  cr_assert_eq(g_list_length(l2), 5, "converted list is not the expected length");
+  cr_assert_str_eq(l2->data, "foo", "first element is expected to be foo");
+  cr_assert_str_eq(l2->next->data, "bar", "second element is expected to be bar");
+  cr_assert_str_eq(l2->next->next->data, "baz", "third element is expected to be baz");
+  cr_assert_eq(GPOINTER_TO_UINT(l2->next->next->next->data), 1,
+               "fourth element is expected to be a token, with a value of 1");
+  cr_assert_eq(GPOINTER_TO_UINT(l2->next->next->next->next->data), 2,
+               "fifth element is expected to be a token, with a value of 2");
 
   string_list_free(l2);
-}
-
-int
-main(int argc, char *argv[])
-{
-  test_string_array_to_list_converts_to_an_equivalent_glist();
-  test_clone_string_array_duplicates_elements_while_leaving_token_values_intact();
 }
