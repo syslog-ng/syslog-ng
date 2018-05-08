@@ -61,6 +61,8 @@ set(INCLUDEDIR "\${prefix}/include")
 set(TOOLSDIR "\${datadir}/syslog-ng/tools")
 set(SYSLOG_NG_ENABLE_FORCED_SERVER_MODE 1)
 
+set (LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen")
+
 IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
   set(SYSLOG_NG_ENABLE_DEBUG 1)
 ELSE()

@@ -128,6 +128,7 @@ if test "x$exec_prefix" = "xNONE"; then
 fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
+loggenplugindir='${exec_prefix}/lib/syslog-ng/loggen'
 toolsdir='${datadir}/syslog-ng/tools'
 xsddir='${datadir}/syslog-ng/xsd'
 
@@ -1744,6 +1745,7 @@ if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
 AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory])
+AC_DEFINE_UNQUOTED(PATH_LOGGENPLUGINDIR, "$loggenplugindir", [loggenplugin installation directory])
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 AC_DEFINE_UNQUOTED(JAVA_MODULE_PATH, "$java_module_path", [java module search path])
 AC_DEFINE_UNQUOTED(PATH_TOPSRC_DIR, "$abs_topsrcdir", [self-defined top_srcdir path])
@@ -1806,6 +1808,7 @@ AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
+AC_SUBST(loggenplugindir)
 AC_SUBST(toolsdir)
 AC_SUBST(config_includedir)
 AC_SUBST(scldir)
