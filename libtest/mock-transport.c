@@ -65,6 +65,17 @@ struct _LogTransportMock
   gpointer user_data;
 };
 
+LogTransportMock *
+log_transport_mock_clone(LogTransportMock *self)
+{
+  LogTransportMock *clone = g_new(LogTransportMock, 1);
+  *clone = *self;
+  clone->write_buffer = g_array_new(TRUE, TRUE, 1);
+  g_array_append_vals(clone->write_buffer, self->write_buffer->data, self->write_buffer->len);
+
+  return clone;
+}
+
 gpointer
 log_transport_mock_get_user_data(LogTransportMock *self)
 {
