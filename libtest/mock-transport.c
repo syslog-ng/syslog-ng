@@ -177,26 +177,35 @@ log_transport_mock_free_method(LogTransport *s)
   log_transport_free_method(s);
 }
 
+static void
+inject_error(LogTransportMock *self, const gchar *buffer, gssize length)
+{
+  data_t data = {.type = DATA_ERROR, .error_code = GPOINTER_TO_UINT(buffer)};
+  g_array_append_val(self->value, data);
+}
+
+static void
+inject_chunk(LogTransportMock *self, const gchar *buffer, gssize length)
+{
+  if (length == -1)
+    length = strlen(buffer);
+
+  data_t data = {.type = DATA_STRING, .iov = (struct iovec_const)
+  {
+    .iov_base = buffer, .iov_len = length
+  }
+                };
+  g_array_append_val(self->value, data);
+
+}
+
 void
 log_transport_mock_inject_data(LogTransportMock *self, const gchar *buffer, gssize length)
 {
   if (length == LTM_INJECT_ERROR_LENGTH)
-    {
-      data_t data = {.type = DATA_ERROR, .error_code = GPOINTER_TO_UINT(buffer)};
-      g_array_append_val(self->value, data);
-    }
+    inject_error(self, buffer, length);
   else
-    {
-      if (length == -1)
-        length = strlen(buffer);
-
-      data_t data = {.type = DATA_STRING, .iov = (struct iovec_const)
-      {
-        .iov_base = buffer, .iov_len = length
-      }
-                    };
-      g_array_append_val(self->value, data);
-    }
+    inject_chunk(self, buffer, length);
 }
 
 static void
