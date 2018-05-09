@@ -10,14 +10,16 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/transport-prockmsg.h			\
 	modules/affile/file-reader.c				\
 	modules/affile/file-reader.h				\
+	modules/affile/wildcard-file-reader.c		\
+	modules/affile/wildcard-file-reader.h		\
 	modules/affile/wildcard-source.h			\
 	modules/affile/wildcard-source.c			\
 	modules/affile/directory-monitor.h			\
 	modules/affile/directory-monitor.c			\
 	modules/affile/directory-monitor-factory.h			\
 	modules/affile/directory-monitor-factory.c			\
-	modules/affile/collection-comporator.h		\
-	modules/affile/collection-comporator.c		\
+	modules/affile/collection-comparator.h		\
+	modules/affile/collection-comparator.c		\
 	modules/affile/directory-monitor-poll.h   \
 	modules/affile/directory-monitor-poll.c   \
 	modules/affile/file-opener.c				\
@@ -37,6 +39,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/affile-parser.c				\
 	modules/affile/affile-parser.h				\
 	modules/affile/affile-plugin.c \
+	modules/affile/file-list.h				\
+	modules/affile/file-list.c				\
   modules/affile/affile-dest-internal-queue-filter.h	
 
 if HAVE_INOTIFY

@@ -45,6 +45,7 @@ OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.9.0"
 LIBRABBITMQ_MIN_VERSION="0.5.3"
 IVYKIS_MIN_VERSION="0.36.1"
+IVYKIS_UPDATED_VERSION="0.39"
 JSON_C_MIN_VERSION="0.9"
 PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="1.0.0"
@@ -1118,6 +1119,8 @@ if test "x$with_ivykis" = "xinternal"; then
 		IVYKIS_CFLAGS="-isystem \$(top_srcdir)/lib/ivykis/src/include -isystem \$(top_builddir)/lib/ivykis/src/include"
                 INTERNAL_IVYKIS_CFLAGS="-isystem \${includedir}/syslog-ng/ivykis"
 
+		IVYKIS_VERSION_UPDATED="yes"
+
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
 		IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 	else
@@ -1126,6 +1129,7 @@ if test "x$with_ivykis" = "xinternal"; then
 else
 	with_ivykis="system"
 	PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
+	PKG_CHECK_MODULES(IVYKIS_VERSION_CHECK, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
 
 	# in case we're using a system installed ivykis, we can link against
 	# it even without libtool and without extra linker arguments (as
@@ -1769,7 +1773,7 @@ AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have 
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(echo "$with_python" | grep -Eq "python-?2.*") && echo 1 || echo 0`, [Python2 c api])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(echo "$with_python" | grep -Eq "python-?3.*") && echo 1 || echo 0`, [Python3 c api])
 AC_DEFINE_UNQUOTED(HAVE_RIEMANN_MICROSECONDS, `enable_value $riemann_micros`, [Riemann microseconds support])
-
+AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])

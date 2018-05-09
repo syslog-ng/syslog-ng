@@ -20,19 +20,19 @@
  *
  */
 
-#include "collection-comporator.h"
+#include "collection-comparator.h"
 
 #define IN_OLD   0x01
 #define IN_NEW   0x02
 #define IN_BOTH  0x03
 
-typedef struct _CollectionComporatorEntry
+typedef struct _CollectionComparatorEntry
 {
   gchar *value;
   guint8 flag;
-} CollectionComporatorEntry;
+} CollectionComparatorEntry;
 
-struct _CollectionComporator
+struct _CollectionComparator
 {
   GList *original_list;
   GHashTable *original_map;
@@ -47,29 +47,29 @@ struct _CollectionComporator
 static void
 _free_poll_entry(gpointer s)
 {
-  CollectionComporatorEntry *entry = (CollectionComporatorEntry *)s;
+  CollectionComparatorEntry *entry = (CollectionComparatorEntry *)s;
   g_free(entry->value);
   g_free(entry);
 }
 
 void
-collection_comporator_free(CollectionComporator *self)
+collection_comparator_free(CollectionComparator *self)
 {
   g_hash_table_unref(self->original_map);
   g_list_free_full(self->original_list, _free_poll_entry);
   g_free(self);
 }
 
-CollectionComporator *
-collection_comporator_new(void)
+CollectionComparator *
+collection_comparator_new(void)
 {
-  CollectionComporator *self = g_new0(CollectionComporator, 1);
+  CollectionComparator *self = g_new0(CollectionComparator, 1);
   self->original_map = g_hash_table_new(g_str_hash, g_str_equal);
   return self;
 }
 
 void
-collection_comporator_start(CollectionComporator *self)
+collection_comparator_start(CollectionComparator *self)
 {
   if (!self->running)
     {
@@ -79,16 +79,16 @@ collection_comporator_start(CollectionComporator *self)
 }
 
 void
-collection_comporator_add_value(CollectionComporator *self, const gchar *value)
+collection_comparator_add_value(CollectionComparator *self, const gchar *value)
 {
-  CollectionComporatorEntry *entry = g_hash_table_lookup(self->original_map, value);
+  CollectionComparatorEntry *entry = g_hash_table_lookup(self->original_map, value);
   if (entry)
     {
       entry->flag = IN_BOTH;
     }
   else
     {
-      entry = g_new0(CollectionComporatorEntry, 1);
+      entry = g_new0(CollectionComparatorEntry, 1);
       entry->value = g_strdup(value);
       entry->flag = IN_NEW;
       self->original_list = g_list_append(self->original_list, entry);
@@ -98,9 +98,9 @@ collection_comporator_add_value(CollectionComporator *self, const gchar *value)
 }
 
 void
-collection_comporator_add_initial_value(CollectionComporator *self, const gchar *value)
+collection_comparator_add_initial_value(CollectionComparator *self, const gchar *value)
 {
-  CollectionComporatorEntry *entry = g_new0(CollectionComporatorEntry, 1);
+  CollectionComparatorEntry *entry = g_new0(CollectionComparatorEntry, 1);
   entry->value = g_strdup(value);
   entry->flag = IN_OLD;
   self->original_list = g_list_append(self->original_list, entry);
@@ -117,19 +117,19 @@ _move_link(GList *item, GList **old_list, GList **new_list)
 void
 _deleted_entries_callback(gpointer data, gpointer user_data)
 {
-  CollectionComporatorEntry *entry = (CollectionComporatorEntry *)data;
-  CollectionComporator *self = (CollectionComporator *)user_data;
+  CollectionComparatorEntry *entry = (CollectionComparatorEntry *)data;
+  CollectionComparator *self = (CollectionComparator *)user_data;
   self->handle_deleted_entry(entry->value, self->callback_data);
 }
 
 void
-collection_comporator_collect_deleted_entries(CollectionComporator *self)
+collection_comparator_collect_deleted_entries(CollectionComparator *self)
 {
   GList *iter = self->original_list;
-  CollectionComporatorEntry *entry;
+  CollectionComparatorEntry *entry;
   while (iter)
     {
-      entry = (CollectionComporatorEntry *)iter->data;
+      entry = (CollectionComparatorEntry *)iter->data;
       if (entry->flag == IN_OLD)
         {
           GList *next = iter->next;
@@ -146,16 +146,16 @@ collection_comporator_collect_deleted_entries(CollectionComporator *self)
 }
 
 void
-collection_comporator_stop(CollectionComporator *self)
+collection_comparator_stop(CollectionComparator *self)
 {
-  collection_comporator_collect_deleted_entries(self);
+  collection_comparator_collect_deleted_entries(self);
   g_list_foreach(self->deleted_entries, _deleted_entries_callback, self);
   g_list_free_full(self->deleted_entries, _free_poll_entry);
   self->running = FALSE;
 }
 
 void
-collection_comporator_set_callbacks(CollectionComporator *self, cc_callback handle_new, cc_callback handle_delete,
+collection_comporator_set_callbacks(CollectionComparator *self, cc_callback handle_new, cc_callback handle_delete,
                                     gpointer user_data)
 {
   self->callback_data = user_data;

@@ -29,7 +29,8 @@ typedef enum
 {
   FILE_CREATED,
   DIRECTORY_CREATED,
-  DELETED,
+  FILE_DELETED,
+  DIRECTORY_DELETED,
   UNKNOWN
 } DirectoryMonitorEventType;
 
@@ -54,6 +55,7 @@ struct _DirectoryMonitor
 
   guint recheck_time;
   struct iv_timer check_timer;
+  struct iv_task scheduled_destructor;
 
   gboolean watches_running;
   void (*start_watches)(DirectoryMonitor *self);
@@ -68,6 +70,9 @@ void directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEven
 
 void directory_monitor_start(DirectoryMonitor *self);
 void directory_monitor_stop(DirectoryMonitor *self);
+
+void directory_monitor_stop_and_destroy(DirectoryMonitor *self);
+void directory_monitor_schedule_destroy(DirectoryMonitor *self);
 
 gchar *build_filename(const gchar *basedir, const gchar *path);
 

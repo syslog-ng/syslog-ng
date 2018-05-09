@@ -3,7 +3,7 @@ set(AFFILE_HEADERS
     "affile-dest-internal-queue-filter.h"
     "affile-parser.h"
     "affile-source.h"
-    "collection-comporator.h"
+    "collection-comparator.h"
     "directory-monitor-factory.h"
     "directory-monitor.h"
     "directory-monitor-poll.h"
@@ -17,6 +17,8 @@ set(AFFILE_HEADERS
     "stdin.h"
     "transport-prockmsg.h"
     "wildcard-source.h"
+    "wildcard-file-reader.h"
+    "file-list.h"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.h"
 )
 
@@ -25,7 +27,7 @@ set(AFFILE_SOURCES
     "affile-parser.c"
     "affile-plugin.c"
     "affile-source.c"
-    "collection-comporator.c"
+    "collection-comparator.c"
     "directory-monitor.c"
     "directory-monitor-factory.c"
     "directory-monitor-poll.c"
@@ -40,6 +42,8 @@ set(AFFILE_SOURCES
     "stdin.c"
     "transport-prockmsg.c"
     "wildcard-source.c"
+    "wildcard-file-reader.c"
+    "file-list.c"
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c"
 )
 

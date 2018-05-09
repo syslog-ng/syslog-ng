@@ -44,6 +44,14 @@ log_source_wakeup(LogSource *self)
   msg_debug("Source has been resumed", log_pipe_location_tag(&self->super));
 }
 
+void
+log_source_window_empty(LogSource *self)
+{
+  if (self->window_empty_cb)
+    self->window_empty_cb(self);
+  msg_debug("LogSource window is empty");
+}
+
 static inline void
 _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
 {
@@ -55,6 +63,8 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
 
   if (old_window_size == 0)
     log_source_wakeup(self);
+  if (g_atomic_counter_get(&self->window_size) == self->options->init_window_size)
+    log_source_window_empty(self);
 }
 
 static void

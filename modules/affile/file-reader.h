@@ -42,8 +42,6 @@ typedef struct _FileReader
   FileReaderOptions *options;
   FileOpener *opener;
   LogReader *reader;
-  gboolean is_pipe;
-  void (*missing_cb)(struct _FileReader *self, gpointer user_data);
 } FileReader;
 
 static inline LogProtoFileReaderOptions *
@@ -55,13 +53,25 @@ file_reader_options_get_log_proto_options(FileReaderOptions *options)
 FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
                             GlobalConfig *cfg);
 
+void file_reader_init_instance(FileReader *self, const gchar *filename, FileReaderOptions *options, FileOpener *opener,
+                               LogSrcDriver *owner,
+                               GlobalConfig *cfg);
+
+gboolean file_reader_init_method(LogPipe *s);
+gboolean file_reader_deinit_method(LogPipe *s);
+void file_reader_free_method(LogPipe *s);
+void file_reader_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options);
+void file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data);
+
 void file_reader_remove_persist_state(FileReader *self);
+void file_reader_stop_follow_file(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
 
 void file_reader_options_defaults(FileReaderOptions *options);
 void file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group);
 void file_reader_options_deinit(FileReaderOptions *options);
+
 
 
 #endif /* MODULES_AFFILE_FILE_READER_H_ */

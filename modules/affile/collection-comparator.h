@@ -19,24 +19,24 @@
  * COPYING for details.
  *
  */
-#ifndef MODULES_AFFILE_COLLECTION_COMPORATOR_H_
-#define MODULES_AFFILE_COLLECTION_COMPORATOR_H_
+#ifndef MODULES_AFFILE_COLLECTION_COMPARATOR_H_
+#define MODULES_AFFILE_COLLECTION_COMPARATOR_H_
 
 #include "syslog-ng.h"
 
-typedef struct _CollectionComporator CollectionComporator;
+typedef struct _CollectionComparator CollectionComparator;
 
 typedef void (*cc_callback)(const gchar *value, gpointer user_data);
 
-CollectionComporator *collection_comporator_new(void);
-void collection_comporator_free(CollectionComporator *self);
-void collection_comporator_start(CollectionComporator *self);
-void collection_comporator_stop(CollectionComporator *self);
-void collection_comporator_add_value(CollectionComporator *self, const gchar *value);
-void collection_comporator_add_initial_value(CollectionComporator *self, const gchar *value);
+CollectionComparator *collection_comparator_new(void);
+void collection_comparator_free(CollectionComparator *self);
+void collection_comparator_start(CollectionComparator *self);
+void collection_comparator_stop(CollectionComparator *self);
+void collection_comparator_add_value(CollectionComparator *self, const gchar *value);
+void collection_comparator_add_initial_value(CollectionComparator *self, const gchar *value);
 
-void collection_comporator_set_callbacks(CollectionComporator *self, cc_callback handle_new, cc_callback handle_delete,
+void collection_comporator_set_callbacks(CollectionComparator *self, cc_callback handle_new, cc_callback handle_delete,
                                          gpointer user_data);
 
 
-#endif /* MODULES_AFFILE_COLLECTION_COMPORATOR_H_ */
+#endif /* MODULES_AFFILE_COLLECTION_COMPARATOR_H_ */

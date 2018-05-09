@@ -20,12 +20,11 @@
  *
  */
 
-#include "collection-comporator.h"
-
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 #include <glib/gstdio.h>
 #include <unistd.h>
+#include "collection-comparator.h"
 
 typedef struct _TestData
 {
@@ -96,7 +95,7 @@ ParameterizedTestParameters(params, multiple)
 ParameterizedTest(struct TestFileList *tup, params, multiple)
 {
   TestData *data = test_data_new();
-  CollectionComporator *comporator = collection_comporator_new();
+  CollectionComparator *comporator = collection_comparator_new();
   collection_comporator_set_callbacks(comporator,
                                       _handle_new,
                                       _handle_delete,
@@ -104,16 +103,16 @@ ParameterizedTest(struct TestFileList *tup, params, multiple)
   gint i;
   for (i = 0; tup->initial_files[i] != NULL; i++)
     {
-      collection_comporator_add_initial_value(comporator, tup->initial_files[i]);
+      collection_comparator_add_initial_value(comporator, tup->initial_files[i]);
     }
 
-  collection_comporator_start(comporator);
+  collection_comparator_start(comporator);
 
   for (i = 0; tup->result_files[i] != NULL; i++)
     {
-      collection_comporator_add_value(comporator, tup->result_files[i]);
+      collection_comparator_add_value(comporator, tup->result_files[i]);
     }
-  collection_comporator_stop(comporator);
+  collection_comparator_stop(comporator);
 
   for (i = 0; tup->expected_deleted_files[i] != NULL; i++)
     {
@@ -127,6 +126,6 @@ ParameterizedTest(struct TestFileList *tup, params, multiple)
     }
   cr_assert_eq(g_hash_table_size(data->new_entries), i);
 
-  collection_comporator_free(comporator);
+  collection_comparator_free(comporator);
   test_data_free(data);
 }
