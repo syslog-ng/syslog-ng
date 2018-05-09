@@ -237,9 +237,9 @@ close_ssl_connection(SSL *ssl)
       return;
     }
 
-  SSL_shutdown (ssl);
-  SSL_CTX_free (ssl->ctx);
-  SSL_free (ssl);
+  SSL_shutdown(ssl);
+  SSL_CTX_free(SSL_get_SSL_CTX(ssl));
+  SSL_free(ssl);
 
   DEBUG("SSL connection closed\n");
 }
