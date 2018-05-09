@@ -46,8 +46,8 @@ modules_diskq_libdisk_buffer_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(LIBSYSLOG_N
 
 modules_diskq_dqtool_SOURCES = modules/diskq/dqtool.c
 modules_diskq_dqtool_LDADD = \
-  $(TOOL_DEPS_LIBS) \
   $(MODULE_DEPS_LIBS) \
+  $(TOOL_DEPS_LIBS) \
   $(LIBSYSLOG_NG_DISK_BUFFER)
 
 modules/diskq modules/diskq/ mod-diskq: modules/diskq/libdisk-buffer.la \
