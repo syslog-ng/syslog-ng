@@ -214,8 +214,7 @@ log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssiz
   const gchar *buffer;
   gssize length;
 
-  self->super.fd = 0;
-  self->super.cond = 0;
+  log_transport_init_instance(&self->super, 0);
   self->super.read = log_transport_mock_read_method;
   self->super.write = log_transport_mock_write_method;
   self->super.free_fn = log_transport_mock_free_method;
