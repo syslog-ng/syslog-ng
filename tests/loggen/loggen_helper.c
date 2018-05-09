@@ -24,6 +24,7 @@
 #include "loggen_helper.h"
 #include <syslog-ng-config.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <openssl/err.h>
 
 static int debug = 0;
