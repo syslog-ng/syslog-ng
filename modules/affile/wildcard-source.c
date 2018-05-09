@@ -108,7 +108,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
 {
   if (g_pattern_match_string(self->compiled_pattern, event->name))
     {
-      FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
+      WildcardFileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 
       if (!reader)
         {
@@ -117,14 +117,14 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
         }
       else
         {
-          if (((WildcardFileReader *)reader)->file_state.deleted)
+          if (reader->file_state.deleted)
             {
               msg_info("File is deleted, new file create with same name. "
                        "While old file is reading, skip the new one",
                        evt_tag_str("filename", event->full_path));
               pending_file_list_add(self->waiting_list, event->full_path);
             }
-          else if (!log_pipe_init(&reader->super))
+          else if (!log_pipe_init(&reader->super.super))
             {
               msg_error("Can not re-initialize reader for file",
                         evt_tag_str("filename", event->full_path));
