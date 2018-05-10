@@ -63,8 +63,7 @@ filter_netmask_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   else
     res = FALSE;
 
-  msg_debug("  netmask() evaluation result",
-            filter_result_tag(res),
+  msg_debug("netmask() evaluation started",
             evt_tag_inaddr("msg_address", addr),
             evt_tag_inaddr("address", &self->address),
             evt_tag_inaddr("netmask", &self->netmask),
