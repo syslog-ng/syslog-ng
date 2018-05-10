@@ -503,7 +503,7 @@ _log_name_value_updates(LogMessage *self)
    * log_msg_new_internal() calling log_msg_set_value(), which in turn
    * generates an internal message, again calling log_msg_set_value()
    */
-  return (!self->initial_parse && (self->flags & LF_INTERNAL) == 0);
+  return (self->flags & LF_INTERNAL) == 0;
 }
 
 void
