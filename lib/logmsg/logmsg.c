@@ -1272,6 +1272,7 @@ log_msg_new(const gchar *msg, gint length,
 
   if (G_LIKELY(parse_options->format_handler))
     {
+      msg_debug("Initial message parsing follows");
       parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
     }
   else
