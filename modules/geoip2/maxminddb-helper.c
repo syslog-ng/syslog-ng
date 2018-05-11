@@ -70,7 +70,7 @@ append_mmdb_entry_data_to_gstring(GString *target, MMDB_entry_data_s *entry_data
       g_string_append_printf(target, "%d", entry_data->int32);
       break;
     case MMDB_DATA_TYPE_UINT64:
-      g_string_append_printf(target, "%lu", entry_data->uint64);
+      g_string_append_printf(target, "%"G_GUINT64_FORMAT, entry_data->uint64);
       break;
     case MMDB_DATA_TYPE_BOOLEAN:
       g_string_append_printf(target, "%s", entry_data->boolean ? "true" : "false");
