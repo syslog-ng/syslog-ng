@@ -5,6 +5,7 @@ set(TRANSPORT_HEADERS
     transport/transport-file.h
     transport/transport-pipe.h
     transport/transport-socket.h
+    transport/transport-factory-id.h
     PARENT_SCOPE)
 
 set(TRANSPORT_SOURCES
@@ -14,6 +15,7 @@ set(TRANSPORT_SOURCES
     transport/transport-pipe.c
     transport/transport-socket.c
     transport/transport-tls.c
+    transport/transport-factory-id.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)
