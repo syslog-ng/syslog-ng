@@ -6,6 +6,7 @@ set(TRANSPORT_HEADERS
     transport/transport-pipe.h
     transport/transport-socket.h
     transport/transport-factory-id.h
+    transport/transport-factory.h
     PARENT_SCOPE)
 
 set(TRANSPORT_SOURCES

@@ -7,7 +7,8 @@ transportinclude_HEADERS = \
 	lib/transport/transport-file.h	\
 	lib/transport/transport-pipe.h	\
 	lib/transport/transport-socket.h \
-	lib/transport/transport-factory-id.h
+	lib/transport/transport-factory-id.h \
+	lib/transport/transport-factory.h
 
 transport_sources = \
 	lib/transport/logtransport.c	\
