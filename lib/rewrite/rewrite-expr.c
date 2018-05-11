@@ -26,6 +26,12 @@
 
 /* rewrite */
 
+static EVTTAG *
+rewrite_result_tag(gboolean res)
+{
+  return evt_tag_str("result", res ? "MATCH - Forwarding message" : "UNMATCHED - Forwarding message");
+}
+
 void
 log_rewrite_set_condition(LogRewrite *self, FilterExprNode *condition)
 {
@@ -36,10 +42,13 @@ static void
 log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogRewrite *self = (LogRewrite *) s;
-  gssize length;
-  const gchar *value;
+  gboolean res = FALSE;
 
-  if (self->condition && !filter_expr_eval_root(self->condition, &msg, path_options))
+  msg_debug(">>>>>> rewrite rule evaluation begin",
+            evt_tag_str("rule", self->name),
+            log_pipe_location_tag(s),
+            evt_tag_printf("msg", "%p", msg));
+  if (self->condition && !(res=filter_expr_eval_root(self->condition, &msg, path_options)))
     {
       msg_debug("Rewrite condition unmatched, skipping rewrite",
                 evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)));
@@ -48,15 +57,11 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
     {
       self->process(self, &msg, path_options);
     }
-  if (G_UNLIKELY(debug_flag))
-    {
-      value = log_msg_get_value(msg, self->value_handle, &length);
-      msg_debug("Rewrite expression evaluation result",
-                evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)),
-                evt_tag_printf("new_value", "%.*s", (gint) length, value),
-                evt_tag_str("rule", self->name),
-                log_pipe_location_tag(s));
-    }
+  msg_debug("<<<<<< rewrite rule evaluation result",
+            rewrite_result_tag(res),
+            evt_tag_str("rule", self->name),
+            log_pipe_location_tag(s),
+            evt_tag_printf("msg", "%p", msg));
   log_pipe_forward_msg(s, msg, path_options);
 }
 
