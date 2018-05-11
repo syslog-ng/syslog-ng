@@ -37,10 +37,22 @@ void transport_factory_id_free(gpointer);
 gpointer transport_factory_id_clone(gconstpointer);
 const gchar *transport_factory_id_to_string(TransportFactoryId *);
 
-#define TRANSPORT_FACTORY_ID_NEW(name) ({GString *str = g_string_new(""); g_string_printf(str, "%s-%s:%s:%d", name, __FILE__, __func__, __LINE__); str;})
+#define TRANSPORT_FACTORY_ID_NEW(name) ({GString *str = g_string_new(""); g_string_printf(str, "%s-%s:%d", name, __FILE__, __LINE__); str;})
 #define TRANSPORT_FACTORY_ID_FREE_FUNC transport_factory_id_free
 #define TRANSPORT_FACTORY_ID_HASH_FUNC g_string_hash
 #define TRANSPORT_FACTORY_ID_CMP_FUNC g_string_equal
 #define TRANSPORT_FACTORY_ID_CLONE transport_factory_id_clone
+
+#define DEFINE_TRANSPORT_FACTORY_ID_FUN(name) \
+  const TransportFactoryId* name(void) \
+  {\
+    static TransportFactoryId *id;\
+    if (!id)\
+      {\
+        id = TRANSPORT_FACTORY_ID_NEW(#name);\
+        transport_factory_id_register(id);\
+      }\
+    return id;\
+  }
 
 #endif
