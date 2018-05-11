@@ -484,7 +484,7 @@ if test "x$ac_compiler_gnu" = "xyes"; then
         if test "x$enable_debug" = "xyes"; then
                 CFLAGS_ADD="${CFLAGS_ADD} -g"
         else
-                CFLAGS_ADD="${CFLAGS_ADD} -O2 -g"
+                CFLAGS_ADD="${CFLAGS_ADD} -O2"
         fi
         if test "x$enable_gprof" = "xyes"; then
                 CFLAGS_ADD="${CFLAGS_ADD} -pg"
