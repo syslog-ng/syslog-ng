@@ -340,6 +340,7 @@ file_reader_init_instance (FileReader *self, const gchar *filename,
   self->options = options;
   self->opener = opener;
   self->owner = owner;
+  self->super.expr_node = owner->super.super.expr_node;
 }
 
 FileReader *
