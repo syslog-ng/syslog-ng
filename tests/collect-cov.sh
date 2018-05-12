@@ -23,7 +23,7 @@
 
 set -e
 
-lcov --capture --directory `pwd` --compat-libtool --output-file coverage.info --base-directory "${top_srcdir}"
+lcov --capture --directory `pwd` --compat-libtool --output-file coverage.info --rc geninfo_auto_base=1
 lcov --extract coverage.info "${top_srcdir}/*" --output-file coverage.info
 lcov --remove coverage.info "${top_srcdir}/modules/afmongodb/mongo-c-driver/*" --output-file coverage.info
 lcov --remove coverage.info "${top_srcdir}/modules/afamqp/rabbitmq-c/*" --output-file coverage.info
