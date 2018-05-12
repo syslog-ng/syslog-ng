@@ -8,4 +8,3 @@ cd /source
 cd /build
 echo "Running configure with: ${CONFIGURE_OPTS}"
 /source/configure ${CONFIGURE_OPTS}
-make python-venv
