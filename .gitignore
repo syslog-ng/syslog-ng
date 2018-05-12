@@ -42,6 +42,7 @@ m4/ax*.m4
 dbld/build/
 dbld/release/
 dbld/install/
+dbld/rules.conf
 debian/build-tree/
 debian/*.log
 debian/autoreconf.*

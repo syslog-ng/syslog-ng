@@ -21,6 +21,8 @@ TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $(CONFIGURE_ADD)
 
+-include dbld/rules.conf
+
 help:
 	@echo "This script allows you to build release/snapshot artifacts, such "
 	@echo "as rpm, deb packages and tarballs in controlled environments (e.g. "
