@@ -67,13 +67,38 @@ struct _LogTransportMock
   gpointer user_data;
 };
 
+static void
+destroy_write_buffer_element(gpointer d)
+{
+  data_t *data = (data_t *)d;
+  if (data->type == DATA_STRING)
+    g_free((gchar *)data->iov.iov_base);
+};
+
+static GArray *
+clone_write_buffer(GArray *orig_write_buffer)
+{
+  GArray *write_buffer = g_array_new(TRUE, TRUE, sizeof(data_t));
+  g_array_set_clear_func(write_buffer, destroy_write_buffer_element);
+  g_array_append_vals(write_buffer, orig_write_buffer->data, orig_write_buffer->len);
+  for (int i = 0; i < write_buffer->len; i++)
+    {
+      data_t *data = &g_array_index(write_buffer, data_t, i);
+      if (data->type == DATA_STRING)
+        data->iov.iov_base = g_strndup(data->iov.iov_base, data->iov.iov_len);
+    }
+
+  return write_buffer;
+}
+
 LogTransportMock *
 log_transport_mock_clone(LogTransportMock *self)
 {
   LogTransportMock *clone = g_new(LogTransportMock, 1);
   *clone = *self;
-  clone->write_buffer = g_array_new(TRUE, TRUE, 1);
-  g_array_append_vals(clone->write_buffer, self->write_buffer->data, self->write_buffer->len);
+
+  clone->write_buffer = clone_write_buffer(self->write_buffer);
+
   clone->value = g_array_new(TRUE, TRUE, sizeof(data_t));
   g_array_append_vals(clone->value, self->value->data, self->value->len);
 
@@ -92,12 +117,29 @@ log_transport_mock_set_user_data(LogTransportMock *self, gpointer user_data)
   self->user_data = user_data;
 }
 
+static GString *
+concat_write_buffer(GArray *write_buffer)
+{
+  GString *concatenated = g_string_new("");
+  for (int i = 0; i < write_buffer->len; i++)
+    {
+      data_t *data = &g_array_index(write_buffer, data_t, i);
+      g_string_append_len(concatenated, data->iov.iov_base, data->iov.iov_len);
+    }
+
+  return concatenated;
+}
+
 gssize
 log_transport_mock_read_from_write_buffer(LogTransportMock *self, gchar *buffer, gsize len)
 {
-  gsize data_len = MIN(self->write_buffer->len - self->write_buffer_index, len);
-  memcpy(buffer, self->write_buffer->data + self->write_buffer_index, data_len);
+  GString *all_written_data = concat_write_buffer(self->write_buffer);
+  gsize data_len = MIN(all_written_data->len - self->write_buffer_index, len);
+
+  memcpy(buffer, all_written_data->str + self->write_buffer_index, data_len);
   self->write_buffer_index += data_len;
+
+  g_string_free(all_written_data, TRUE);
   return data_len;
 }
 
@@ -167,7 +209,9 @@ static gssize
 log_transport_mock_write_method(LogTransport *s, const gpointer buf, gsize count)
 {
   LogTransportMock *self = (LogTransportMock *)s;
-  g_array_append_vals(self->write_buffer, buf, count);
+  data_t data = { .type = DATA_STRING, .iov = {.iov_base = g_strndup(buf, count), .iov_len = count}};
+  g_array_append_val(self->write_buffer, data);
+
   return count;
 }
 
@@ -239,7 +283,8 @@ LogTransportMock *
 log_transport_mock_new(void)
 {
   LogTransportMock *self = g_new0(LogTransportMock, 1);
-  self->write_buffer = g_array_new(TRUE, TRUE, 1);
+  self->write_buffer = g_array_new(TRUE, TRUE, sizeof(data_t));
+  g_array_set_clear_func(self->write_buffer, destroy_write_buffer_element);
   self->value = g_array_new(TRUE, TRUE, sizeof(data_t));
   return self;
 }
