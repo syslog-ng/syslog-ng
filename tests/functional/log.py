@@ -23,7 +23,7 @@
 import time
 
 def print_user(msg):
-    print '    ', time.strftime('%Y-%M-%dT%H:%m:%S'), msg
+    print '    ', time.strftime('%Y-%m-%dT%H:%M:%S'), msg
 
 def print_start(testcase):
     print("\n\n##############################################")
