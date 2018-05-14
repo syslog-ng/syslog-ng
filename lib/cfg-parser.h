@@ -91,11 +91,14 @@ extern CfgParser main_parser;
                                                                               \
     void                                                                      \
     parser_prefix ## error(YYLTYPE *yylloc, CfgLexer *lexer, root_type instance, gpointer arg, const char *msg) \
-    {                                                                                             \
-      report_syntax_error(lexer, yylloc, cfg_lexer_get_context_description(lexer), msg);          \
+    {                                                                 \
+      gboolean in_main_grammar = __builtin_strcmp( # parser_prefix, "main_") == 0;              \
+      report_syntax_error(lexer, yylloc, cfg_lexer_get_context_description(lexer), msg,   \
+                          in_main_grammar);                                                     \
     }
 
-void report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const char *msg);
+void report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const char *msg,
+                         gboolean in_main_grammar);
 
 CFG_PARSER_DECLARE_LEXER_BINDING(main_, gpointer *)
 

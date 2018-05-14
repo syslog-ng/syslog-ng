@@ -310,7 +310,7 @@ exit:
 }
 
 void
-report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const char *msg)
+report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const char *msg, gboolean in_main_grammar)
 {
   CfgIncludeLevel *level = yylloc->level, *from;
 
@@ -338,8 +338,9 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
       fprintf(stderr, "\n");
     }
 
-  fprintf(stderr, "\nsyslog-ng documentation: https://www.balabit.com/support/documentation?product=%s\n"
-          "contact: %s\n", PRODUCT_NAME, PRODUCT_CONTACT);
+  if (in_main_grammar)
+    fprintf(stderr, "\nsyslog-ng documentation: https://www.balabit.com/support/documentation?product=%s\n"
+            "contact: %s\n", PRODUCT_NAME, PRODUCT_CONTACT);
 
 }
 
