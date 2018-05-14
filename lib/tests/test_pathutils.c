@@ -26,27 +26,59 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "libtest/testutils.h"
 #include <unistd.h>
 
-void
-test_is_directory_return_false_in_case_of_regular_file(void)
+#include <criterion/criterion.h>
+
+Test(test_pathutils, test_is_file_directory)
 {
   int fd = open("test.file", O_CREAT | O_RDWR, 0644);
-  assert_false(fd < 0, "open error");
+  cr_assert_not(fd < 0, "open error");
   ssize_t done = write(fd, "a", 1);
-  assert_false(done != 1, "write error");
+  cr_assert_eq(done, 1, "write error");
   int error = close(fd);
-  assert_false(error, "close error");
+  cr_assert_not(error, "close error");
 
-  assert_false(is_file_directory("test.file"), "File is not a directory!");
+  cr_assert_not(is_file_directory("test.file"), "File is not a directory!");
+  cr_assert(is_file_directory("./"), "File is a directory!");
 
   error = unlink("test.file");
-  assert_false(error, "unlink error");
+  cr_assert_not(error, "unlink error");
 }
 
-int
-main(void)
+Test(test_pathutils, test_is_regular)
 {
-  test_is_directory_return_false_in_case_of_regular_file();
+  int fd = open("test2.file", O_CREAT | O_RDWR, 0644);
+  int error = close(fd);
+  cr_assert_not(error, "close error");
+
+  cr_assert(is_file_regular("test2.file"), "this is a regular file");
+  cr_assert_not(is_file_regular("./"), "this is not a regular file");
+
+  error = unlink("test2.file");
+  cr_assert_not(error, "unlink error");
+}
+
+Test(test_pathutils, test_is_file_device)
+{
+  cr_assert(is_file_device("/dev/null"), "not recognized device file");
+}
+
+Test(test_pathutils, test_find_file_in_path)
+{
+  cr_assert_str_eq(find_file_in_path("/dev", "null", G_FILE_TEST_EXISTS), "/dev/null", "wrong path returned)");
+  cr_assert_str_eq(find_file_in_path("/home:/dev:/root", "null", G_FILE_TEST_EXISTS),  "/dev/null",
+                   "wrong path returned");
+}
+
+Test(test_pathutils, test_get_filename_extension)
+{
+  cr_assert_str_eq(get_filename_extension("test.foo"), "foo", "wrong file name extension returned");
+  cr_assert_str_eq(get_filename_extension("/test/test.foo.bar"), "bar", "wrong file name extension returned");
+  cr_assert_str_eq(get_filename_extension("/test/.test/test.foo.bar"), "bar", "wrong file name extension returned");
+
+  cr_assert_null(get_filename_extension("/test"), "wrong file name extension returned");
+  cr_assert_null(get_filename_extension("test."), "wrong file name extension returned");
+  cr_assert_null(get_filename_extension(""), "wrong file name extension returned");
+  cr_assert_null(get_filename_extension(NULL), "wrong file name extension returned");
 }
