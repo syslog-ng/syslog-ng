@@ -132,10 +132,16 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
 static void
 _cfg_lex_new_line(CfgLexer *lexer)
 {
-  lexer->include_stack[lexer->include_depth].lloc.first_line++;
-  lexer->include_stack[lexer->include_depth].lloc.last_line++;
-  lexer->include_stack[lexer->include_depth].lloc.first_column = 1;
-  lexer->include_stack[lexer->include_depth].lloc.last_column = 1;
+  CfgIncludeLevel *level = &lexer->include_stack[lexer->include_depth];
+
+  /* if the last token span multiple lines (e.g.  block references), it
+   * might happen that last_line != first_line, in that case, initialize the
+   * first_line of the token to the subsequent line after last_line */
+
+  level->lloc.first_line = level->lloc.last_line + 1;
+  level->lloc.last_line = level->lloc.first_line;
+  level->lloc.first_column = 1;
+  level->lloc.last_column = 1;
 }
 
 %}
