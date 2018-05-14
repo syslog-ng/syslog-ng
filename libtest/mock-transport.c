@@ -43,8 +43,11 @@ struct iovec_const
 typedef struct data
 {
   data_type_t type;
-  struct iovec_const iov;
-  guint error_code;
+  union
+  {
+    struct iovec_const iov;
+    guint error_code;
+  };
 } data_t;
 
 struct _LogTransportMock
