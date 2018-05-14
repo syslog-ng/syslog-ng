@@ -33,7 +33,6 @@
 
 typedef struct _TestFileStateEvent
 {
-  FileStateEvent super;
   gboolean deleted_eof_called;
   gboolean finished_called;
 } TestFileStateEvent;
@@ -56,9 +55,6 @@ TestFileStateEvent *
 test_deleted_file_state_event_new(void)
 {
   TestFileStateEvent *self = g_new0(TestFileStateEvent, 1);
-  self->super.user_data = self;
-  self->super.deleted_file_eof = _eof;
-  self->super.deleted_file_finised = _finished;
   return self;
 }
 
@@ -116,7 +112,9 @@ _init(void)
 {
   app_startup();
   test_event = test_deleted_file_state_event_new();
-  reader = (WildcardFileReader *)wildcard_file_reader_new(TEST_FILE_NAME, NULL, NULL, NULL, NULL, &test_event->super);
+  reader = (WildcardFileReader *)wildcard_file_reader_new(TEST_FILE_NAME, NULL, NULL, NULL, NULL);
+  wildcard_file_reader_on_deleted_file_finished(reader, _finished, test_event);
+  wildcard_file_reader_on_deleted_file_eof(reader, _eof, test_event);
   cr_assert_eq(log_pipe_init(&reader->super.super), TRUE);
 }
 

@@ -50,7 +50,6 @@ typedef struct _WildcardSourceDriver
   GHashTable *file_readers;
   GHashTable *directory_monitors;
   FileOpener *file_opener;
-  FileStateEvent deleted_file_events;
 
   PendingFileList *waiting_list;
 } WildcardSourceDriver;

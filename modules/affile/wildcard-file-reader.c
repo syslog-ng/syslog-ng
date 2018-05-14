@@ -56,9 +56,9 @@ _queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 static void
 _deleted_file_finished(FileStateEvent *self, FileReader *reader)
 {
-  if (self && self->deleted_file_finised)
+  if (self && self->deleted_file_finished)
     {
-      self->deleted_file_finised(reader, self->user_data);
+      self->deleted_file_finished(reader, self->deleted_file_finished_user_data);
     }
 }
 
@@ -67,7 +67,7 @@ _deleted_file_eof(FileStateEvent *self, FileReader *reader)
 {
   if (self && self->deleted_file_eof)
     {
-      self->deleted_file_eof(reader, self->user_data);
+      self->deleted_file_eof(reader, self->deleted_file_eof_user_data);
     }
 }
 
@@ -144,17 +144,41 @@ _handle_file_state_event(gpointer s)
             evt_tag_str("Filename", self->super.filename->str));
   if (self->file_state.deleted && self->file_state.eof)
     {
-      _deleted_file_eof(self->file_state_event, &self->super);
+      _deleted_file_eof(&self->file_state_event, &self->super);
       if (self->file_state.last_msg_sent)
         {
-          _deleted_file_finished(self->file_state_event, &self->super);
+          _deleted_file_finished(&self->file_state_event, &self->super);
         }
     }
 }
 
-FileReader *
+void
+wildcard_file_reader_on_deleted_file_finished(WildcardFileReader *self,
+                                              FileStateEventCallback cb,
+                                              gpointer user_data)
+{
+  self->file_state_event.deleted_file_finished = cb;
+  self->file_state_event.deleted_file_finished_user_data = user_data;
+}
+
+void
+wildcard_file_reader_on_deleted_file_eof(WildcardFileReader *self,
+                                         FileStateEventCallback cb,
+                                         gpointer user_data)
+{
+  self->file_state_event.deleted_file_eof = cb;
+  self->file_state_event.deleted_file_eof_user_data = user_data;
+}
+
+gboolean
+wildcard_file_reader_is_deleted(WildcardFileReader *self)
+{
+  return self->file_state.deleted;
+}
+
+WildcardFileReader *
 wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
-                         GlobalConfig *cfg, FileStateEvent *deleted_file_events)
+                         GlobalConfig *cfg)
 {
   WildcardFileReader *self = g_new0(WildcardFileReader, 1);
   file_reader_init_instance(&self->super, filename, options, opener, owner, cfg);
@@ -162,9 +186,8 @@ wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options, File
   self->super.super.queue = _queue;
   self->super.super.notify = _notify;
   self->super.super.deinit = _deinit;
-  self->file_state_event = deleted_file_events;
   IV_TASK_INIT(&self->file_state_event_handler);
   self->file_state_event_handler.cookie = self;
   self->file_state_event_handler.handler = _handle_file_state_event;
-  return &self->super;
+  return self;
 }
