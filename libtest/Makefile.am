@@ -38,3 +38,5 @@ pkgconfig_DATA			   +=	\
 	libtest/syslog-ng-test.pc
 
 LIBTEST_LIBS = $(top_builddir)/libtest/libsyslog-ng-test.a
+
+include libtest/tests/Makefile.am
