@@ -40,20 +40,21 @@ typedef struct _TransportFactory TransportFactory;
 struct _TransportFactory
 {
   const TransportFactoryId *id;
-  LogTransport *(*construct)(TransportFactory *self, gint fd);
-  void (*destroy)(TransportFactory *self);
+  LogTransport *(*construct_transport)(TransportFactory *self, gint fd);
+  void (*free_fn)(TransportFactory *self);
 };
 
-static inline LogTransport *transport_factory_construct(TransportFactory *self, gint fd)
+static inline LogTransport *transport_factory_construct_transport(TransportFactory *self, gint fd)
 {
-  g_assert(self->construct);
-  return self->construct(self, fd);
+  g_assert(self->construct_transport);
+  return self->construct_transport(self, fd);
 }
 
-static inline void transport_factory_destroy(TransportFactory *self)
+static inline void transport_factory_free(TransportFactory *self)
 {
-  if (self->destroy)
-    self->destroy(self);
+  if (self->free_fn)
+    self->free_fn(self);
+  g_free(self);
 }
 
 static inline const TransportFactoryId *transport_factory_id(TransportFactory *self)

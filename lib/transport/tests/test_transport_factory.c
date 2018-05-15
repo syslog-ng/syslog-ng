@@ -80,7 +80,7 @@ _transport_factory_construct(TransportFactory *s, gint fd)
 }
 
 static void
-_transport_factory_destroy(TransportFactory *s)
+_transport_factory_free(TransportFactory *s)
 {
   FakeTransportFactory *self = (FakeTransportFactory *)s;
   self->destroyed = TRUE;
@@ -91,8 +91,8 @@ _fake_transport_factory_new(void)
 {
   FakeTransportFactory *instance = g_new0(FakeTransportFactory, 1);
   instance->super.id = _fake_transport_factory_id();
-  instance->super.construct = _transport_factory_construct;
-  instance->super.destroy = _transport_factory_destroy; //TODO: confusing the naming: construct_transport... destroy_self
+  instance->super.construct_transport = _transport_factory_construct;
+  instance->super.free_fn = _transport_factory_free;
   return &instance->super;
 }
 
@@ -105,13 +105,13 @@ Test(transport_factory, fake_transport_factory)
   cr_expect_eq(fake_factory->destroyed, FALSE);
 
   gint fd = 11;
-  FakeTransport *fake_transport = (FakeTransport *) transport_factory_construct(&fake_factory->super, fd);
+  FakeTransport *fake_transport = (FakeTransport *) transport_factory_construct_transport(&fake_factory->super, fd);
   cr_expect_eq(fake_transport->constructed, TRUE);
   cr_expect_eq(fake_transport->super.read, _fake_read);
   cr_expect_eq(fake_transport->super.write, _fake_write);
   log_transport_free(&fake_transport->super);
 
-  transport_factory_destroy(&fake_factory->super);
+  transport_factory_free(&fake_factory->super);
   cr_expect_eq(fake_factory->destroyed, TRUE);
 }
 
