@@ -84,3 +84,33 @@ Test(mock_transport, test_mock_transport_read_from_write_buffer)
 
   log_transport_free((LogTransport *)transport);
 }
+
+Test(mock_transport, test_mock_transport_read_chunk_from_write_buffer)
+{
+  LogTransportMock *transport = (LogTransportMock *)log_transport_mock_records_new(LTM_EOF);
+  cr_assert(transport);
+
+  gchar buffer[100];
+  int rc;
+
+  log_transport_write((LogTransport *)transport, "chunk1", sizeof("chunk1"));
+  log_transport_write((LogTransport *)transport, "chunk2", sizeof("chunk2"));
+  log_transport_write((LogTransport *)transport, "chunk3", sizeof("chunk3"));
+
+  rc = log_transport_mock_read_chunk_from_write_buffer(transport, buffer);
+  cr_assert_str_eq(buffer, "chunk1");
+  cr_assert_eq(rc, sizeof("chunk1"));
+
+  /* seeking 1 position to step into the middle of the chunk */
+  log_transport_mock_read_from_write_buffer(transport, buffer, 1);
+
+  rc = log_transport_mock_read_chunk_from_write_buffer(transport, buffer);
+  cr_assert_str_eq(buffer, "hunk2");
+  cr_assert_eq(rc, sizeof("hunk2"));
+
+  rc = log_transport_mock_read_chunk_from_write_buffer(transport, buffer);
+  cr_assert_str_eq(buffer, "chunk3");
+  cr_assert_eq(rc, sizeof("chunk3"));
+
+  log_transport_free((LogTransport *)transport);
+}

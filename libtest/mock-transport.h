@@ -59,6 +59,9 @@ log_transport_mock_set_user_data(LogTransportMock *self, gpointer user_data);
 gssize
 log_transport_mock_read_from_write_buffer(LogTransportMock *self, gchar *buffer, gsize len);
 
+gssize
+log_transport_mock_read_chunk_from_write_buffer(LogTransportMock *self, gchar *buffer);
+
 LogTransportMock *
 log_transport_mock_clone(LogTransportMock *self);
 #endif

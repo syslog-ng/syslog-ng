@@ -143,6 +143,43 @@ log_transport_mock_read_from_write_buffer(LogTransportMock *self, gchar *buffer,
   return data_len;
 }
 
+static void
+find_chunk(GArray *write_buffer, gsize location, gsize *chunk_index, gsize *chunk_offset)
+{
+
+  gsize chunk_location = 0;
+  int i;
+  for (i = 0; i < write_buffer->len; i++)
+    {
+      gsize chunk_len = g_array_index(write_buffer, data_t, i).iov.iov_len;
+      if (chunk_location + chunk_len > location)
+        break;
+
+      chunk_location += chunk_len;
+    }
+
+  g_assert(i != write_buffer->len); /* location is too large */
+
+  *chunk_index = i;
+  *chunk_offset = location - chunk_location;
+}
+
+gssize
+log_transport_mock_read_chunk_from_write_buffer(LogTransportMock *self, gchar *buffer)
+{
+  gsize chunk_index;
+  gsize chunk_offset;
+
+  find_chunk(self->write_buffer, self->write_buffer_index, &chunk_index, &chunk_offset);
+  data_t data = g_array_index(self->write_buffer, data_t, chunk_index);
+  gssize written_len = data.iov.iov_len - chunk_offset;
+
+  memcpy(buffer, data.iov.iov_base + chunk_offset, written_len);
+  self->write_buffer_index += written_len;
+
+  return written_len;
+}
+
 gssize
 log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
