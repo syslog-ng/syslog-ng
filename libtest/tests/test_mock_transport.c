@@ -114,3 +114,24 @@ Test(mock_transport, test_mock_transport_read_chunk_from_write_buffer)
 
   log_transport_free((LogTransport *)transport);
 }
+
+Test(mock_transport, test_cloning)
+{
+  LogTransportMock *transport = (LogTransportMock *)log_transport_mock_records_new(LTM_EOF);
+  cr_assert(transport);
+
+  gchar buffer[100];
+
+  log_transport_write((LogTransport *)transport, "chunk1", sizeof("chunk1"));
+  log_transport_write((LogTransport *)transport, "chunk2", sizeof("chunk2"));
+
+  LogTransportMock *clone = log_transport_mock_clone(transport);
+
+  log_transport_mock_read_from_write_buffer(clone, buffer, sizeof("chunk1"));
+  cr_assert_str_eq(buffer, "chunk1");
+  log_transport_mock_read_from_write_buffer(clone, buffer, sizeof("chunk2"));
+  cr_assert_str_eq(buffer, "chunk2");
+
+  log_transport_free((LogTransport *)transport);
+  log_transport_free((LogTransport *)clone);
+}
