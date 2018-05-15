@@ -1,3 +1,4 @@
 add_unit_test(LIBTEST TARGET test_aux_data)
 add_unit_test(LIBTEST TARGET test_transport_factory_id)
 add_unit_test(LIBTEST TARGET test_transport_factory)
+add_unit_test(LIBTEST TARGET test_transport_factory_registry)
