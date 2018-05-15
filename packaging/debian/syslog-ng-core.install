@@ -16,6 +16,7 @@ usr/lib/syslog-ng/*/libconfgen.so
 usr/lib/syslog-ng/*/libcryptofuncs.so
 usr/lib/syslog-ng/*/libcsvparser.so
 usr/lib/syslog-ng/*/libdbparser.so
+usr/lib/syslog-ng/*/libhook-commands.so
 usr/lib/syslog-ng/*/libkvformat.so
 usr/lib/syslog-ng/*/libtags-parser.so
 usr/lib/syslog-ng/*/liblinux-kmsg-format.so
