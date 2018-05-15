@@ -192,7 +192,7 @@ log_proto_file_writer_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, g
 }
 
 static gboolean
-log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond)
+log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *) s;
 

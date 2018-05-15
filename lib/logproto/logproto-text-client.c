@@ -27,7 +27,7 @@
 #include <errno.h>
 
 static gboolean
-log_proto_text_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond)
+log_proto_text_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
 

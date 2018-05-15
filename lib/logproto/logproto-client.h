@@ -62,7 +62,7 @@ struct _LogProtoClient
   const LogProtoClientOptions *options;
   LogTransport *transport;
   /* FIXME: rename to something else */
-  gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond);
+  gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProtoClient *s);
   gboolean (*validate_options)(LogProtoClient *s);
@@ -120,9 +120,9 @@ log_proto_client_handshake(LogProtoClient *s)
 }
 
 static inline gboolean
-log_proto_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond)
+log_proto_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
-  return s->prepare(s, fd, cond);
+  return s->prepare(s, fd, cond, timeout);
 }
 
 static inline LogProtoStatus
