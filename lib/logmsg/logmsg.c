@@ -1212,6 +1212,10 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   memcpy(self, msg, sizeof(*msg));
   msg->allocated_bytes = allocated_bytes;
 
+  msg_debug("Message was cloned",
+            evt_tag_printf("original_msg", "%p", msg),
+            evt_tag_printf("new_msg", "%p", self));
+
   /* every field _must_ be initialized explicitly if its direct
    * copying would cause problems (like copying a pointer by value) */
 
