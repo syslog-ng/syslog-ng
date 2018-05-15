@@ -11,7 +11,7 @@ add_unit_test(LIBTEST TARGET test_str-utils)
 add_unit_test(LIBTEST TARGET test_string_list)
 add_unit_test(LIBTEST CRITERION TARGET test_runid)
 add_unit_test(LIBTEST TARGET test_pathutils)
-add_unit_test(LIBTEST TARGET test_utf8utils)
+add_unit_test(CRITERION TARGET test_utf8utils)
 add_unit_test(CRITERION TARGET test_userdb)
 
 add_unit_test(CRITERION TARGET test_cache)
