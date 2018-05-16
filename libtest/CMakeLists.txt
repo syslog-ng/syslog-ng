@@ -26,3 +26,5 @@ set(LIBTEST_SOURCES
 add_library(libtest STATIC ${LIBTEST_SOURCES})
 target_link_libraries(libtest syslog-ng ${CRITERION_LIBRARIES})
 target_include_directories(libtest INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR})
+
+add_test_subdirectory(tests)
