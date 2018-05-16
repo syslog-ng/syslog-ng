@@ -298,12 +298,11 @@ _is_query_params_empty(void)
   return raw_query_params == NULL;
 }
 
-static gchar *
+static void
 _shift_query_command_out_of_params(void)
 {
   if (raw_query_params[QUERY_COMMAND] != NULL)
-    return *(raw_query_params++);
-  return *raw_query_params;
+    ++raw_query_params;
 }
 
 static gboolean
@@ -348,7 +347,7 @@ _get_dispatchable_query_command(void)
   if (query_cmd < 0)
     return NULL;
 
-  *raw_query_params = _shift_query_command_out_of_params();
+  _shift_query_command_out_of_params();
   if(_validate_get_params(query_cmd))
     return NULL;
 
