@@ -446,10 +446,17 @@ fi
 dnl ***************************************************************************
 dnl Set up NO_PIE_LDFLAG: -no-pie is compatible with $CC.
 
+AX_COMPILER_VENDOR
+AX_COMPILER_VERSION
+
 if test $ostype = "Darwin"; then
   no_pie_ldflags="-Wl,-no_pie"
 else
-  no_pie_ldflags="-no-pie"
+  if test x$ax_cv_c_compiler_vendor = "xgnu"; then
+    AX_COMPARE_VERSION($ax_cv_c_compiler_version, gt, [4.5], [no_pie_ldflags="-no-pie"], [no_pie_ldflags=""])
+  else
+    no_pie_ldflags="-no-pie"
+  fi;
 fi
 
 old_LDFLAGS="$LDFLAGS"
