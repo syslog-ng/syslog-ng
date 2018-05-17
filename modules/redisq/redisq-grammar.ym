@@ -1,0 +1,95 @@
+/*
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 Mehul Prajapati <mehulprajapati2802@gmail.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
+#include "redisq-parser.h"
+
+}
+
+
+%code {
+
+#include "cfg-parser.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "redisq.h"
+#include "redisq-options.h"
+#include "redisq-grammar.h"
+
+#include <string.h>
+
+RedisQDestPlugin *last_plugin;
+RedisQueueOptions *last_options;
+
+}
+
+%name-prefix "redisq_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriverPlugin **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_REDIS_QUEUE
+%token KW_HOST
+%token KW_PORT
+%token KW_AUTH
+
+
+%%
+
+start
+	: LL_CONTEXT_INNER_DEST dest_redisq { YYACCEPT; }
+	;
+
+dest_redisq
+        : KW_REDIS_QUEUE
+          {
+            last_plugin = redisq_dest_plugin_new();
+            *instance = &last_plugin->super;
+            last_options = &last_plugin->options;
+          }
+          '(' dest_redisq_options ')' { redis_queue_options_check_plugin_settings(last_options); }
+        ;
+
+dest_redisq_options
+        : dest_redisq_option dest_redisq_options
+        |
+        ;
+
+dest_redisq_option
+        : KW_HOST '(' string ')'            { redis_queue_options_host_set(last_options, $3); free($3); }
+        | KW_PORT '(' positive_integer ')'  { redis_queue_options_port_set(last_options, $3); }
+        | KW_AUTH '(' string ')'            { redis_queue_options_auth_set(last_options, $3); free($3); }
+        ;
+/* INCLUDE_RULES */
+
+%%
