@@ -39,7 +39,7 @@ _transport_factory_destroy_notify(gpointer s)
   transport_factory_free(self);
 }
 
-TransportFactoryRegistry* transport_factory_registry_new(void)
+TransportFactoryRegistry *transport_factory_registry_new(void)
 {
   TransportFactoryRegistry *instance = g_new0(TransportFactoryRegistry, 1);
 
@@ -59,7 +59,8 @@ void transport_factory_registry_free(TransportFactoryRegistry *self)
 gboolean
 transport_factory_registry_add(TransportFactoryRegistry *self, TransportFactory *factory)
 {
-  return g_hash_table_insert(self->registry, factory->id, factory);
+  const TransportFactoryId *id = transport_factory_get_id(factory);
+  return g_hash_table_insert(self->registry, (TransportFactoryId *)id, factory);
 }
 
 const TransportFactory *

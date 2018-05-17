@@ -35,7 +35,7 @@ void transport_factory_id_register(TransportFactoryId *);
 GList *transport_factory_id_clone_registered_ids(void);
 void transport_factory_id_free(gpointer);
 gpointer transport_factory_id_clone(gconstpointer);
-const gchar *transport_factory_id_to_string(TransportFactoryId *);
+const gchar *transport_factory_id_to_string(const TransportFactoryId *);
 
 #define TRANSPORT_FACTORY_ID_NEW(name) ({GString *str = g_string_new(""); g_string_printf(str, "%s-%s:%d", name, __FILE__, __LINE__); str;})
 #define TRANSPORT_FACTORY_ID_FREE_FUNC transport_factory_id_free

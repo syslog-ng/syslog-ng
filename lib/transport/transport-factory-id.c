@@ -69,7 +69,7 @@ transport_factory_id_clone(gconstpointer id)
 }
 
 const gchar *
-transport_factory_id_to_string(TransportFactoryId *id)
+transport_factory_id_to_string(const TransportFactoryId *id)
 {
   GString *str = (GString *)id;
   return str->str;

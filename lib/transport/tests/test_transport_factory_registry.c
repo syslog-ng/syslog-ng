@@ -28,7 +28,7 @@
 typedef struct _TestTransportFactory
 {
   TransportFactory super;
-}TestTransportFactory;
+} TestTransportFactory;
 
 DEFINE_TRANSPORT_FACTORY_ID_FUN(test_transport_factory_id);
 
@@ -51,7 +51,8 @@ Test(transport_factory_registry, basic_functionality)
   TestTransportFactory *factory = _test_transport_factory_new();
 
   transport_factory_registry_add(registry, &factory->super);
-  const TransportFactory *looked_up_factory = (TransportFactory*)transport_factory_registry_lookup(registry, test_transport_factory_id());
+  const TransportFactory *looked_up_factory = (TransportFactory *)transport_factory_registry_lookup(registry,
+                                              test_transport_factory_id());
   cr_expect_eq(factory, looked_up_factory);
 
   transport_factory_registry_free(registry);

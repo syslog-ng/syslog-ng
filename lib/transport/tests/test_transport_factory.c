@@ -69,7 +69,7 @@ struct _FakeTransportFactory
 DEFINE_TRANSPORT_FACTORY_ID_FUN(_fake_transport_factory_id);
 
 static LogTransport *
-_transport_factory_construct(TransportFactory *s, gint fd)
+_transport_factory_construct(const TransportFactory *s, gint fd)
 {
   FakeTransportFactory *self = (FakeTransportFactory *)s;
 
