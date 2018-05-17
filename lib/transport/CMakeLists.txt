@@ -8,6 +8,7 @@ set(TRANSPORT_HEADERS
     transport/transport-factory-id.h
     transport/transport-factory.h
     transport/transport-factory-registry.h
+    transport/multitransport.h
     PARENT_SCOPE)
 
 set(TRANSPORT_SOURCES
@@ -19,6 +20,7 @@ set(TRANSPORT_SOURCES
     transport/transport-tls.c
     transport/transport-factory-id.c
     transport/transport-factory-registry.c
+    transport/multitransport.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)
