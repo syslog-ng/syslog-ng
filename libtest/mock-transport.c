@@ -246,7 +246,12 @@ static gssize
 log_transport_mock_write_method(LogTransport *s, const gpointer buf, gsize count)
 {
   LogTransportMock *self = (LogTransportMock *)s;
-  data_t data = { .type = DATA_STRING, .iov = {.iov_base = g_strndup(buf, count), .iov_len = count}};
+  data_t data;
+  data.type = DATA_STRING;
+  data.iov = (struct iovec_const)
+  {
+    .iov_base = g_strndup(buf, count), .iov_len = count
+  };
   g_array_append_val(self->write_buffer, data);
 
   return count;
@@ -264,7 +269,9 @@ log_transport_mock_free_method(LogTransport *s)
 static void
 inject_error(LogTransportMock *self, const gchar *buffer, gssize length)
 {
-  data_t data = {.type = DATA_ERROR, .error_code = GPOINTER_TO_UINT(buffer)};
+  data_t data;
+  data.type = DATA_ERROR;
+  data.error_code = GPOINTER_TO_UINT(buffer);
   g_array_append_val(self->value, data);
 }
 
@@ -274,11 +281,12 @@ inject_chunk(LogTransportMock *self, const gchar *buffer, gssize length)
   if (length == -1)
     length = strlen(buffer);
 
-  data_t data = {.type = DATA_STRING, .iov = (struct iovec_const)
+  data_t data;
+  data.type = DATA_STRING;
+  data.iov = (struct iovec_const)
   {
     .iov_base = buffer, .iov_len = length
-  }
-                };
+  };
   g_array_append_val(self->value, data);
 
 }
