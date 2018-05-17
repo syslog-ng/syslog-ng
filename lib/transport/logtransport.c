@@ -52,3 +52,13 @@ log_transport_free(LogTransport *self)
   self->free_fn(self);
   g_free(self);
 }
+
+gint
+log_transport_release_fd(LogTransport *s)
+{
+  gint fd = s->fd;
+  s->fd = -1;
+
+  return fd;
+}
+
