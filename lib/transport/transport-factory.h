@@ -40,11 +40,11 @@ typedef struct _TransportFactory TransportFactory;
 struct _TransportFactory
 {
   const TransportFactoryId *id;
-  LogTransport *(*construct_transport)(TransportFactory *self, gint fd);
+  LogTransport *(*construct_transport)(const TransportFactory *self, gint fd);
   void (*free_fn)(TransportFactory *self);
 };
 
-static inline LogTransport *transport_factory_construct_transport(TransportFactory *self, gint fd)
+static inline LogTransport *transport_factory_construct_transport(const TransportFactory *self, gint fd)
 {
   g_assert(self->construct_transport);
   return self->construct_transport(self, fd);
@@ -57,7 +57,7 @@ static inline void transport_factory_free(TransportFactory *self)
   g_free(self);
 }
 
-static inline const TransportFactoryId *transport_factory_id(TransportFactory *self)
+static inline const TransportFactoryId *transport_factory_get_id(const TransportFactory *self)
 {
   /* each concrete TransportFactory has to have an id
    */
