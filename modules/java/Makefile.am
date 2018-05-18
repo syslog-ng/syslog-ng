@@ -117,22 +117,22 @@ JAVA_FILES = \
     $(SYSLOG_NG_CORE_SRC_DIR)/DummyStructuredDestination.java
 
 JAVA_HEADER_FILES = \
-   $(JAVA_BUILDDIR)/org_syslog_ng_LogMessage.h \
-   $(JAVA_BUILDDIR)/org_syslog_ng_LogDestination.h \
-   $(JAVA_BUILDDIR)/org_syslog_ng_LogTemplate.h \
-   $(JAVA_BUILDDIR)/org_syslog_ng_InternalMessageSender.h
+    $(JAVA_BUILDDIR)/org_syslog_ng_LogMessage.h \
+    $(JAVA_BUILDDIR)/org_syslog_ng_LogDestination.h \
+    $(JAVA_BUILDDIR)/org_syslog_ng_LogTemplate.h \
+    $(JAVA_BUILDDIR)/org_syslog_ng_InternalMessageSender.h
 
 JAVA_CLASS_FILES = \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/InternalMessageSender.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/SyslogNgClassLoader.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/LogMessage.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/LogTemplate.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/LogPipe.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/LogDestination.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/TextLogDestination.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/StructuredLogDestination.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/DummyTextDestination.class \
-   $(SYSLOG_NG_CORE_PACKAGE_DIR)/DummyStructuredDestination.class
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/InternalMessageSender.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/SyslogNgClassLoader.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/LogMessage.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/LogTemplate.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/LogPipe.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/LogDestination.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/TextLogDestination.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/StructuredLogDestination.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/DummyTextDestination.class \
+    $(SYSLOG_NG_CORE_PACKAGE_DIR)/DummyStructuredDestination.class
 
 endif
 
