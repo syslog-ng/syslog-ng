@@ -32,6 +32,8 @@ typedef struct
   gint counter;
 } GAtomicCounter;
 
+typedef GAtomicCounter GAtomicBool;
+
 static inline void
 g_atomic_counter_inc(GAtomicCounter *c)
 {
@@ -70,6 +72,19 @@ static inline void
 g_atomic_counter_set(GAtomicCounter *c, gint value)
 {
   g_atomic_int_set(&c->counter, value);
+}
+
+
+static inline gboolean
+g_atomic_bool_get(GAtomicBool *b)
+{
+  return !!g_atomic_counter_get(b);
+}
+
+static inline void
+g_atomic_bool_set(GAtomicBool *b, gboolean value)
+{
+  g_atomic_counter_set(b, !!value);
 }
 
 #endif
