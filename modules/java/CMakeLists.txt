@@ -39,9 +39,6 @@ set (JAVA_SOURCES
   ${SYSLOG_NG_CORE_SRC_DIR}/DummyStructuredDestination.java
 )
 
-
-set_source_files_properties(${BUILT_HEADERS} PROPERTIES GENERATED TRUE)
-
 generate_y_from_ym(modules/java/native/java-grammar modules/java/java-grammar)
 
 bison_target(ModJavaGrammar
@@ -52,11 +49,13 @@ bison_target(ModJavaGrammar
 find_package(Java 1.7)
 
 module_switch(ENABLE_JAVA "Enable java module" JAVA_FOUND Java_JAVAH_EXECUTABLE)
+
 if (ENABLE_JAVA)
 
   find_package(JNI)
   include(UseJava)
 
+if ("${Java_VERSION}" VERSION_LESS 1.8)
   add_jar(syslog-ng-core
       SOURCES ${JAVA_SOURCES}
       OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
@@ -74,7 +73,23 @@ if (ENABLE_JAVA)
         OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS syslog-ng-core
   )
-      
+
+  set_source_files_properties(${BUILT_HEADERS} PROPERTIES GENERATED TRUE)
+else()
+  #The GENERATE_NATIVE_HEADERS variable introduced only in cmake 3.11.1
+  #This is just a dirty workaround for that:
+  set(CMAKE_JAVA_COMPILE_FLAGS "${CMAKE_JAVA_COMPILE_FLAGS};-h;${CMAKE_CURRENT_BINARY_DIR};")
+
+  add_jar(syslog-ng-core
+      SOURCES ${JAVA_SOURCES}
+      OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
+      GENERATE_NATIVE_HEADERS syslog-ng-core-headers
+  )
+
+  set(BUILT_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-core.jar")
+  set_source_files_properties(${BUILT_HEADERS} PROPERTIES GENERATED TRUE)
+endif()
+
   add_library(mod-java SHARED ${NATIVE_SOURCES} ${PROXIES_SOURCES} ${BUILT_HEADERS})
   target_include_directories (mod-java
       PRIVATE
