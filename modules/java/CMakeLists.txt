@@ -39,23 +39,8 @@ set (JAVA_SOURCES
   ${SYSLOG_NG_CORE_SRC_DIR}/DummyStructuredDestination.java
 )
 
-set(BUILT_HEADERS
-    ${CMAKE_CURRENT_BINARY_DIR}/org_syslog_ng_LogMessage.h
-    ${CMAKE_CURRENT_BINARY_DIR}/org_syslog_ng_LogDestination.h
-    ${CMAKE_CURRENT_BINARY_DIR}/org_syslog_ng_LogTemplate.h
-    ${CMAKE_CURRENT_BINARY_DIR}/org_syslog_ng_InternalMessageSender.h
-)
 
 set_source_files_properties(${BUILT_HEADERS} PROPERTIES GENERATED TRUE)
-
-function(gen_java_header OutputHeader ClassPath OutDir ClassName Depends)
-  add_custom_command(
-    OUTPUT ${OutputHeader}
-    COMMAND javah -classpath ${ClassPath} -d ${OutDir} ${ClassName}
-    DEPENDS ${Depends}
-    VERBATIM
-  )
-endfunction()
 
 generate_y_from_ym(modules/java/native/java-grammar modules/java/java-grammar)
 
@@ -89,38 +74,19 @@ endif()
       OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-  gen_java_header(
-      ${CMAKE_CURRENT_BINARY_DIR}/org_syslog_ng_LogMessage.h
-      ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-core.jar
-      ${CMAKE_CURRENT_BINARY_DIR}
-      "org.syslog_ng.LogMessage"
-      "syslog-ng-core"
-  )
+  #Both exists in different version of cmake
+  get_property(SYSLOG_NG_CLASSPATH TARGET syslog-ng-core PROPERTY CLASS_DIR)
+  if("${SYSLOG_NG_CLASSPATH}" STREQUAL "")
+    get_property(SYSLOG_NG_CLASSPATH TARGET syslog-ng-core PROPERTY CLASSDIR)
+  endif()
 
-  gen_java_header(
-      ${CMAKE_CURRENT_BINARY_DIR}/org_syslog_ng_InternalMessageSender.h
-      ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-core.jar
-      ${CMAKE_CURRENT_BINARY_DIR}
-      "org.syslog_ng.InternalMessageSender"
-      "syslog-ng-core"
+  create_javah(GENERATED_FILES BUILT_HEADERS
+        CLASSES    org.syslog_ng.LogMessage org.syslog_ng.InternalMessageSender org.syslog_ng.LogDestination org.syslog_ng.LogTemplate
+        CLASSPATH ${SYSLOG_NG_CLASSPATH}
+        OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS syslog-ng-core
   )
-
-  gen_java_header(
-      ${CMAKE_CURRENT_BINARY_DIR}/org_syslog_ng_LogDestination.h
-      ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-core.jar
-      ${CMAKE_CURRENT_BINARY_DIR}
-      "org.syslog_ng.LogDestination"
-      "syslog-ng-core"
-  )
-
-  gen_java_header(
-      ${CMAKE_CURRENT_BINARY_DIR}/org_syslog_ng_LogTemplate.h
-      ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-core.jar
-      ${CMAKE_CURRENT_BINARY_DIR}
-      "org.syslog_ng.LogTemplate"
-      "syslog-ng-core"
-  )
-
+      
   add_library(mod-java SHARED ${NATIVE_SOURCES} ${PROXIES_SOURCES} ${BUILT_HEADERS})
   target_include_directories (mod-java
       PRIVATE
