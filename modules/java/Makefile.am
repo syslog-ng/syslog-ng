@@ -116,10 +116,10 @@ modules_java_libmod_java_la_DEPENDENCIES  = \
         $(MODULE_DEPS_LIBS)
 
 JAVA_HEADER_FILES = \
-   $(JAVA_BUILDDIR)/org_syslog_ng_LogMessage.h \
-   $(JAVA_BUILDDIR)/org_syslog_ng_LogDestination.h \
-   $(JAVA_BUILDDIR)/org_syslog_ng_LogTemplate.h \
-   $(JAVA_BUILDDIR)/org_syslog_ng_InternalMessageSender.h
+    $(JAVA_BUILDDIR)/org_syslog_ng_LogMessage.h \
+    $(JAVA_BUILDDIR)/org_syslog_ng_LogDestination.h \
+    $(JAVA_BUILDDIR)/org_syslog_ng_LogTemplate.h \
+    $(JAVA_BUILDDIR)/org_syslog_ng_InternalMessageSender.h
 
 JAVA_CLASS_FILES = $(patsubst %.java, $(SYSLOG_NG_CORE_PACKAGE_DIR)/%.class, $(JAVA_FILES))
 
