@@ -162,6 +162,9 @@ afprogram_popen(AFProgramProcessInfo *process_info, GIOCondition cond, gint *fd)
       *fd = msg_pipe[1];
       close(msg_pipe[0]);
     }
+  msg_verbose(cond == G_IO_IN ? "Program source started" : "Program destination started",
+              evt_tag_str("cmdline", process_info->cmdline->str),
+              evt_tag_int("fd", *fd));
   return TRUE;
 }
 
