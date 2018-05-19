@@ -961,6 +961,8 @@ relex:
         }
       else
         {
+          level->lloc.first_line = saved_line;
+          level->lloc.first_column = saved_column;
           free(yylval->cptr);
           self->preprocess_suppress_tokens--;
         }

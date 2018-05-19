@@ -543,7 +543,7 @@ rewrite_stmt
 
 log_stmt
         : KW_LOG
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_LOG, NULL, "log"); }
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_LOG, NULL, "log statement"); }
           '{' log_content '}'
           { cfg_lexer_pop_context(lexer); }
           {
@@ -574,7 +574,7 @@ plugin_stmt
 
 source_content
         :
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_SOURCE, NULL, "source"); }
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_SOURCE, NULL, "source statement"); }
           source_items
           { cfg_lexer_pop_context(lexer); }
           {
@@ -665,7 +665,7 @@ rewrite_content
         ;
 
 dest_content
-         : { cfg_lexer_push_context(lexer, LL_CONTEXT_DESTINATION, NULL, "destination"); }
+         : { cfg_lexer_push_context(lexer, LL_CONTEXT_DESTINATION, NULL, "destination statement"); }
             dest_items
            { cfg_lexer_pop_context(lexer); }
            {
