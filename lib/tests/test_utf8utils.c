@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
+ * Copyright (c) 2018 Balabit
  * Copyright (c) 2015 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -22,89 +22,83 @@
  *
  */
 
-#include "testutils.h"
 #include "utf8utils.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
+typedef struct _StringValueList
+{
+  const gchar *str;
+  const gchar *expected_escaped_str;
+  const gchar *unsafe_chars;
+  gssize str_len;
+} StringValueList;
 
 
+ParameterizedTestParameters(test_utf8utils, test_escaped_binary)
+{
+  static StringValueList string_value_list[] =
+  {
+    {"", "", NULL, -1},
+    {"\n", "\\n", NULL, -1},
+    {"\b \f \n \r \t", "\\b \\f \\n \\r \\t", NULL, -1},
+    {"\\", "\\\\", NULL, -1},
+    {"árvíztűrőtükörfúrógép", "árvíztűrőtükörfúrógép", NULL, -1},
+    {"árvíztűrőtükörfúrógép\n", "árvíztűrőtükörfúrógép\\n", NULL, -1},
+    {"\x41", "A", NULL, -1},
+    {"\x7", "\\x07", NULL, -1},
+    {"\xad", "\\xad", NULL, -1},
+    {"Á\xadÉ", "Á\\xadÉ", NULL, -1},
+    {"\xc3\x00\xc1""", "\\xc3", NULL, -1},
+    {"\"text\"", "\\\"text\\\"", "\"", -1},
+    {"\"text\"", "\\\"te\\xt\\\"", "\"x", -1},
+    {"\xc3""\xa1 non zero terminated", "\\xc3", NULL, 1},
+    {"\xc3""\xa1 non zero terminated", "á", NULL, 2},
+  };
 
-void
-assert_escaped_binary_with_unsafe_chars_with_len(const gchar *str, gssize str_len, const gchar *expected_escaped_str,
-                                                 const gchar *unsafe_chars)
+  return cr_make_param_array(StringValueList, string_value_list,
+                             sizeof(string_value_list) / sizeof(string_value_list[0]));
+}
+
+ParameterizedTest(StringValueList *string_value_list, test_utf8utils, test_escaped_binary)
 {
   GString *escaped_str = g_string_sized_new(64);
 
-  append_unsafe_utf8_as_escaped_binary(escaped_str, str, str_len, unsafe_chars);
+  append_unsafe_utf8_as_escaped_binary(escaped_str, string_value_list->str, string_value_list->str_len,
+                                       string_value_list->unsafe_chars);
 
-  assert_string(escaped_str->str, expected_escaped_str, "Escaped UTF-8 string is not expected");
+  cr_assert_str_eq(escaped_str->str, string_value_list->expected_escaped_str, "Escaped UTF-8 string is not as expected");
   g_string_free(escaped_str, TRUE);
 }
 
-void
-assert_escaped_binary_with_unsafe_chars(const gchar *str, const gchar *expected_escaped_str, const gchar *unsafe_chars)
+
+ParameterizedTestParameters(test_utf8utils, test_escaped_text)
 {
-  assert_escaped_binary_with_unsafe_chars_with_len(str, -1, expected_escaped_str, unsafe_chars);
+  static StringValueList string_value_list[] =
+  {
+    {"", "", NULL, -1},
+    {"\n", "\\n", NULL, -1},
+    {"\b \f \n \r \t", "\\b \\f \\n \\r \\t", NULL, -1},
+    {"\\", "\\\\", NULL, -1},
+    {"árvíztűrőtükörfúrógép", "árvíztűrőtükörfúrógép", NULL, -1},
+    {"árvíztűrőtükörfúrógép\n", "árvíztűrőtükörfúrógép\\n", NULL, -1},
+    {"\x41", "A", NULL, -1},
+    {"\x7", "\\u0007", NULL, -1},
+    {"\xad", "\\\\xad", NULL, -1},
+    {"Á\xadÉ", "Á\\\\xadÉ", NULL, -1},
+    {"\"text\"", "\\\"text\\\"", "\"", -1},
+    {"\"text\"", "\\\"te\\xt\\\"", "\"x", -1},
+  };
+
+  return cr_make_param_array(StringValueList, string_value_list,
+                             sizeof(string_value_list) / sizeof(string_value_list[0]));
 }
 
-void
-assert_escaped_binary(const gchar *str, const gchar *expected_escaped_str)
+ParameterizedTest(StringValueList *string_value_list, test_utf8utils, test_escaped_text)
 {
-  assert_escaped_binary_with_unsafe_chars(str, expected_escaped_str, NULL);
-}
+  gchar *escaped_str = convert_unsafe_utf8_to_escaped_text(string_value_list->str, string_value_list->str_len,
+                                                           string_value_list->unsafe_chars);
 
-void
-assert_escaped_binary_with_len(const gchar *str, gssize str_len, const gchar *expected_escaped_str)
-{
-  assert_escaped_binary_with_unsafe_chars_with_len(str, str_len, expected_escaped_str, NULL);
-}
-
-void
-assert_escaped_text_with_unsafe_chars(const gchar *str, const gchar *expected_escaped_str, const gchar *unsafe_chars)
-{
-  gchar *escaped_str = convert_unsafe_utf8_to_escaped_text(str, -1, unsafe_chars);
-
-  assert_string(escaped_str, expected_escaped_str, "Escaped UTF-8 string is not expected");
+  cr_assert_str_eq(escaped_str, string_value_list->expected_escaped_str, "Escaped UTF-8 string is not as expected");
   g_free(escaped_str);
-}
-
-void
-assert_escaped_text(const gchar *str, const gchar *expected_escaped_str)
-{
-  assert_escaped_text_with_unsafe_chars(str, expected_escaped_str, NULL);
-}
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  assert_escaped_binary("", "");
-  assert_escaped_binary("\n", "\\n");
-  assert_escaped_binary("\b \f \n \r \t", "\\b \\f \\n \\r \\t");
-  assert_escaped_binary("\\", "\\\\");
-  assert_escaped_binary("árvíztűrőtükörfúrógép", "árvíztűrőtükörfúrógép");
-  assert_escaped_binary("árvíztűrőtükörfúrógép\n", "árvíztűrőtükörfúrógép\\n");
-  assert_escaped_binary("\x41", "A");
-  assert_escaped_binary("\x7", "\\x07");
-  assert_escaped_binary("\xad", "\\xad");
-  assert_escaped_binary("Á\xadÉ", "Á\\xadÉ");
-  assert_escaped_binary("\xc3\x00\xc1""", "\\xc3");
-  assert_escaped_binary_with_len("\xc3""\xa1 non zero terminated", 1, "\\xc3");
-  assert_escaped_binary_with_len("\xc3""\xa1 non zero terminated", 2, "á");
-
-  assert_escaped_binary_with_unsafe_chars("\"text\"", "\\\"text\\\"", "\"");
-  assert_escaped_binary_with_unsafe_chars("\"text\"", "\\\"te\\xt\\\"", "\"x");
-
-  assert_escaped_text("", "");
-  assert_escaped_text("\n", "\\n");
-  assert_escaped_text("\b \f \n \r \t", "\\b \\f \\n \\r \\t");
-  assert_escaped_text("\\", "\\\\");
-  assert_escaped_text("árvíztűrőtükörfúrógép", "árvíztűrőtükörfúrógép");
-  assert_escaped_text("árvíztűrőtükörfúrógép\n", "árvíztűrőtükörfúrógép\\n");
-  assert_escaped_text("\x41", "A");
-  assert_escaped_text("\x7", "\\u0007");
-  assert_escaped_text("\xad", "\\\\xad");
-  assert_escaped_text("Á\xadÉ", "Á\\\\xadÉ");
-
-  assert_escaped_text_with_unsafe_chars("\"text\"", "\\\"text\\\"", "\"");
-  assert_escaped_text_with_unsafe_chars("\"text\"", "\\\"te\\xt\\\"", "\"x");
-
-  return 0;
 }
