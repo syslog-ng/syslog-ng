@@ -110,17 +110,17 @@ _current_lloc(void)
 }
 
 #define assert_token_type(expected)                                     \
-  cr_assert_eq(_current_token()->type, expected, "Bad token type at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_eq(_current_token()->type, expected, "Unexpected token type %d != %d", _current_token()->type, expected);
 
 #define assert_parser_string(expected)                          \
   _next_token();                                                        \
   assert_token_type(LL_STRING);                                        \
-  cr_assert_str_eq(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__); \
+  cr_assert_str_eq(_current_token()->cptr, expected, "Unexpected string value parsed >>>%s<<< != >>>%s<<<", _current_token()->cptr, expected); \
 
 #define assert_parser_block(expected) \
   _next_token();                                                        \
   assert_token_type(LL_BLOCK);                                         \
-  cr_assert_str_eq(_current_token()->cptr, expected, "Bad parsed string at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_str_eq(_current_token()->cptr, expected, "Unexpected block value parsed >>>%s<<< != >>>%s<<<", _current_token()->cptr, expected);
 
 #define assert_parser_block_bad() \
   _next_token();                                                        \
@@ -133,29 +133,29 @@ _current_lloc(void)
 #define assert_parser_number(expected) \
   _next_token();                                                        \
   assert_token_type(LL_NUMBER);                                        \
-  cr_assert_eq(_current_token()->num, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_eq(_current_token()->num, expected, "Unexpected number parsed %" G_GINT64_FORMAT " != %" G_GINT64_FORMAT, (gint64) _current_token()->num, (gint64) expected);
 
 #define assert_parser_float(expected)                           \
   _next_token();                                                        \
   assert_token_type(LL_FLOAT);                                         \
-  cr_assert_float_eq(_current_token()->fnum, expected, 1e-7, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_float_eq(_current_token()->fnum, expected, 1e-7, "Unexpected float parsed %lf != %lf", _current_token()->fnum, expected);
 
 #define assert_parser_identifier(expected) \
   _next_token();                                                        \
   assert_token_type(LL_IDENTIFIER);                                         \
-  cr_assert_str_eq(_current_token()->cptr, expected, "Bad parsed value at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_str_eq(_current_token()->cptr, expected, "Unexpected identifier parsed >>>%s<<< != >>>%s<<<", _current_token()->cptr, expected);
 
 #define assert_parser_char(expected) \
   _next_token();                                                        \
-  cr_assert_eq(_current_token()->type, expected, "Bad character value at %s:%d", __FUNCTION__, __LINE__);
+  cr_assert_eq(_current_token()->type, expected, "Unexpected character parsed %c != %c", _current_token()->type, expected);
 
 #define assert_location(line, column) \
   cr_assert_eq(_current_lloc()->first_line, line,          \
               "The line number in the location information "        \
-              "does not match the expected value at %s:%d", __FUNCTION__, __LINE__);  \
+              "does not match the expected value, %d != %d", _current_lloc()->first_line, line);  \
   cr_assert_eq(_current_lloc()->first_column, column,          \
               "The column number in the location information "        \
-              "does not match the expected value at %s:%d", __FUNCTION__, __LINE__);
+              "does not match the expected value, %d != %d", _current_lloc()->first_column, column);
 
 
 static gchar *
