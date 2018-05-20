@@ -115,7 +115,11 @@ _current_lloc(void)
 #define assert_parser_string(expected)                          \
   _next_token();                                                        \
   assert_token_type(LL_STRING);                                        \
-  cr_assert_str_eq(_current_token()->cptr, expected, "Unexpected string value parsed >>>%s<<< != >>>%s<<<", _current_token()->cptr, expected); \
+  cr_assert_str_eq(_current_token()->cptr, expected, "Unexpected string value parsed >>>%s<<< != >>>%s<<<", _current_token()->cptr, expected);
+
+#define assert_parser_token(expected)                          \
+  _next_token();                                                        \
+  assert_token_type(expected);
 
 #define assert_parser_block(expected) \
   _next_token();                                                        \
@@ -265,6 +269,8 @@ Test(lexer, test_lexer_others)
   assert_parser_float(4.2);
   _input("test_value");
   assert_parser_identifier("test_value");
+  _input("..");
+  assert_parser_token(LL_DOTDOT);
 }
 
 Test(lexer, test_location_tracking)
