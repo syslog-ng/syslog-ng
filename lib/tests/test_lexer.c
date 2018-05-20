@@ -53,9 +53,7 @@ test_parser_next_token(TestParser *self)
 static void
 test_parser_input(TestParser *self, const gchar *buffer)
 {
-  if (self->lexer)
-    cfg_lexer_free(self->lexer);
-  self->lexer = cfg_lexer_new_buffer(configuration, buffer, strlen(buffer));
+  cfg_lexer_include_buffer(self->lexer, "#test-buffer", buffer, strlen(buffer));
 }
 
 TestParser *
@@ -71,6 +69,8 @@ test_parser_new(void)
   self->yylloc->last_column = 1;
   self->yylloc->last_line = 1;
   self->yylloc->level = &self->lexer->include_stack[0];
+
+  self->lexer = cfg_lexer_new_buffer(configuration, "", 0);
   return self;
 }
 
@@ -266,6 +266,7 @@ Test(lexer, test_location_tracking)
 static void
 setup(void)
 {
+  configuration = cfg_new_snippet();
   parser = test_parser_new();
 }
 
@@ -273,6 +274,8 @@ static void
 teardown(void)
 {
   test_parser_free(parser);
+  cfg_free(configuration);
+  configuration = NULL;
 }
 
 TestSuite(lexer, .init = setup, .fini = teardown);
