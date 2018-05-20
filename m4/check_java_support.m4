@@ -4,12 +4,15 @@ AU_ALIAS([AC_CHECK_GRADLE_VERSION], [AX_CHECK_GRADLE_VERSION])
 AC_DEFUN([AX_READLINK],
 [
   READLINK_TARGET=[$1]
-  cd $(dirname "$READLINK_TARGET")
-  while test -L "$READLINK_TARGET"; do
-    READLINK_TARGET=$(readlink "$READLINK_TARGET")
+
+  if test -n "$READLINK_TARGET"; then
     cd $(dirname "$READLINK_TARGET")
-  done
-  echo $(pwd -P)/$(basename "$READLINK_TARGET")
+    while test -L "$READLINK_TARGET"; do
+      READLINK_TARGET=$(readlink "$READLINK_TARGET")
+      cd $(dirname "$READLINK_TARGET")
+    done
+    echo $(pwd -P)/$(basename "$READLINK_TARGET")
+  fi
 ])
 AC_DEFUN([AX_CHECK_GRADLE_VERSION],
 [AC_MSG_CHECKING([for GRADLE_VERSION])
