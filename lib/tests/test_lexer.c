@@ -283,6 +283,25 @@ Test(lexer, test_location_tracking)
   assert_location_tag("location='#buffer:3:1'");
 }
 
+Test(lexer, defined_variables_are_substituted_when_enclosed_in_backticks)
+{
+  parser->lexer->ignore_pragma = FALSE;
+  _input("@define var1 value1\n\
+@define var2 value2\n\
+value0");
+
+  assert_parser_identifier("value0");
+
+  /* we need to supply the variables to be substituted in a separate
+   * _input() call as their resolution happens when 1) read from a file, 2)
+   * included */
+
+  _input("`var1`\n\
+`var2`\n");
+  assert_parser_identifier("value1");
+  assert_parser_identifier("value2");
+}
+
 static void
 setup(void)
 {
