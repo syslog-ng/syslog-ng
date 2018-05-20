@@ -129,3 +129,9 @@ lib_tests_test_messages_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_messages_LDADD	=	\
 	$(TEST_LDADD)
+
+EXTRA_DIST += \
+	lib/tests/testdata-lexer/include-test/bar.conf			\
+	lib/tests/testdata-lexer/include-test/baz.conf 			\
+	lib/tests/testdata-lexer/include-test/foo.conf 			\
+	lib/tests/testdata-lexer/include-test/invalid~include~file.conf
