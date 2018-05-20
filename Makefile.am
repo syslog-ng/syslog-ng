@@ -73,7 +73,7 @@ AM_CFLAGS += \
 	-Wfloat-equal
 endif
 
-TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)
+TEST_CFLAGS		= -I$(top_srcdir)/libtest -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS)
 
 TEST_LDADD		= $(LIBTEST_LIBS) \
 			  $(top_builddir)/lib/libsyslog-ng.la \

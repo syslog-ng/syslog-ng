@@ -5,7 +5,7 @@ modules_geoip2_tests_TESTS		= \
 check_PROGRAMS				+= ${modules_geoip2_tests_TESTS}
 
 modules_geoip2_tests_test_geoip_parser_CFLAGS	= $(TEST_CFLAGS) \
-	-I$(top_srcdir)/modules/geoip2 -DTOP_SRCDIR="\"$(abs_topsrcdir)\""
+	-I$(top_srcdir)/modules/geoip2
 modules_geoip2_tests_test_geoip_parser_LDADD	= $(TEST_LDADD)
 modules_geoip2_tests_test_geoip_parser_LDFLAGS	= \
 	$(PREOPEN_SYSLOGFORMAT)		  \
