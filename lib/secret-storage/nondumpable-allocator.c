@@ -155,7 +155,7 @@ nondumpable_memcpy(gpointer dest, gpointer src, gsize len)
 {
   gchar *_dest = dest;
   gchar *_src = src;
-  for (int i = 0; i < len; i++)
+  for (gsize i = 0; i < len; i++)
     {
       _dest[i] = _src[i];
     }
