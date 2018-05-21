@@ -117,10 +117,19 @@ nondumpable_buffer_alloc(gsize len)
 }
 
 void
+nondumpable_mem_zero(gpointer s, gsize len)
+{
+  volatile guchar *p = s;
+
+  for (gsize i = 0; i < len; ++i)
+    p[i] = 0;
+}
+
+void
 nondumpable_buffer_free(gpointer buffer)
 {
   Allocation *allocation = BUFFER_TO_ALLOCATION(buffer);
-  memset(allocation->user_data, 0, allocation->data_len);
+  nondumpable_mem_zero(allocation->user_data, allocation->data_len);
   munmap(allocation, allocation->alloc_size);
 }
 

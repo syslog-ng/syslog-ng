@@ -33,6 +33,7 @@ gpointer nondumpable_buffer_alloc(gsize len) PUBLIC;
 void nondumpable_buffer_free(gpointer buffer) PUBLIC;
 gpointer nondumpable_buffer_realloc(gpointer buffer, gsize len) PUBLIC;
 gpointer nondumpable_memcpy(gpointer dest, gpointer src, gsize len) PUBLIC;
+void nondumpable_mem_zero(gpointer s, gsize len) PUBLIC;
 void nondumpable_setlogger(void(*logger)(gchar *summary, gchar *reason)) PUBLIC;
 
 #endif
