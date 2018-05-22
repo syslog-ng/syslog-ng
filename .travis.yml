@@ -27,6 +27,7 @@ install:
       libglib2.0-dev
       libhiredis-dev
       libivykis-dev
+      librabbitmq-dev
       libjson0-dev
       libnet1-dev
       libriemann-client-dev
@@ -54,7 +55,6 @@ before_script:
       --prefix=$HOME/install/syslog-ng
       --with-ivykis=internal
       --with-mongoc=internal
-      --with-librabbitmq=internal
       --with-jsonc=system
       --disable-env-wrapper
       --disable-memtrace

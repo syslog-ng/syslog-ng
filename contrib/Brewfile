@@ -10,6 +10,7 @@ brew "bison"
 brew "libtool"
 brew "pkg-config"
 brew "ivykis"
+brew "rabbitmq-c"
 brew "openssl"
 # brew "pcre"
 

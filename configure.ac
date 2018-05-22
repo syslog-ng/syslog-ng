@@ -259,11 +259,6 @@ AC_ARG_ENABLE(amqp,
           [  --enable-amqp        Enable amqp destination (default: auto)]
               ,,enable_amqp="auto")
 
-AC_ARG_WITH(librabbitmq-client,
-              [  --with-librabbitmq-client=[system/internal]
-                                         Link against the system supplied or the built-in librabbitmq library.]
-              ,,with_librabbitmq_client="internal")
-
 AC_ARG_ENABLE(stomp,
           [  --enable-stomp        Enable stomp destination (default: yes)]
               ,,enable_stomp="yes")
@@ -1324,47 +1319,12 @@ dnl ***************************************************************************
 dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
 
+PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LIBRABBITMQ_MIN_VERSION, with_librabbitmq_client="yes", with_librabbitmq_client="no")
 
-LIBRABBITMQ_INTERNAL_SOURCE_EXISTS="test -f $srcdir/modules/afamqp/rabbitmq-c/librabbitmq/amqp.h"
-
-if $LIBRABBITMQ_INTERNAL_SOURCE_EXISTS; then
-    PYTHON_VERSION=`python -V 2>&1 | cut -d ' ' -f 2`
-    PYTHON_MAJOR=`echo $PYTHON_VERSION | cut -d '.' -f 1`
-    PYTHON_MINOR=`echo $PYTHON_VERSION | cut -d '.' -f 2`
-    if test $PYTHON_MAJOR -eq 2 && test $PYTHON_MINOR -lt 5; then
-        AC_MSG_WARN([Was about to execute rabbitmq configure script, but that requires Python >= 2.5, which you don't seem to have, reverting to system rabbitmq])
-        with_librabbitmq_client="system"
-    else
-        AC_CONFIG_SUBDIRS([modules/afamqp/rabbitmq-c])
-        LIBRABBITMQ_SUBDIRS="modules/afamqp/rabbitmq-c"
-    fi
+if test "$enable_amqp" = "yes" && test "$with_librabbitmq_client" = "no"; then
+       AC_MSG_ERROR([Could not find librabbitmq-c, and AMQP support was explicitly enabled.])
 fi
 
-if test "x$with_librabbitmq_client" = "xinternal"; then
-    if $LIBRABBITMQ_INTERNAL_SOURCE_EXISTS; then
-        # these can only be used in modules/amqp as it assumes
-        # the current directory just one below rabbitmq-c
-
-        LIBRABBITMQ_LIBS="-L\$(top_builddir)/modules/afamqp/rabbitmq-c/librabbitmq -lrabbitmq"
-        LIBRABBITMQ_CFLAGS="-I\$(top_srcdir)/modules/afamqp/rabbitmq-c/librabbitmq -I\$(top_builddir)/modules/afamqp/rabbitmq-c/librabbitmq"
-    else
-        AC_MSG_WARN([Internal librabbitmq-client sources not found in modules/afamqp/rabbitmq-c])
-        with_librabbitmq_client="no"
-    fi
-elif test "x$with_librabbitmq_client" = "xsystem"; then
-    PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LIBRABBITMQ_MIN_VERSION,, enable_amqp="no")
-fi
-
-if test "x$with_librabbitmq_client" = "xno"; then
-    if test "x$enable_amqp" = "xyes"; then
-      AC_MSG_ERROR([Could not find librabbitmq-client, and AMQP support was explicitly enabled.])
-    fi
-    enable_amqp="no"
-fi
-
-if test "x$enable_amqp" = "xno"; then
-   with_librabbitmq_client="no"
-fi
 
 if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
     AC_CONFIG_FILES([syslog-ng-native-connector.pc])
@@ -1904,7 +1864,6 @@ echo "  Unit tests                  : ${enable_tests:=no}"
 echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
 echo "  mongoc                      : $with_mongoc"
-echo "  librabbitmq                 : $with_librabbitmq_client"
 echo "  jsonc                       : $with_jsonc"
 echo " Features:"
 echo "  Forced server mode          : ${enable_forced_server_mode:=yes}"
