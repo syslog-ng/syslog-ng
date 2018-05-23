@@ -176,6 +176,10 @@ snmptrapd_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *
   ScratchBuffersMarker marker;
 
   log_msg_make_writable(pmsg, path_options);
+  msg_debug("snmptrapd-parser message processing started",
+            evt_tag_str ("input", input),
+            evt_tag_str ("prefix", self->prefix->str),
+            evt_tag_printf("msg", "%p", *pmsg));
 
   APPEND_ZERO(input, input, input_len);
 
@@ -195,10 +199,20 @@ snmptrapd_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *
   log_msg_set_value(nv_context.msg, LM_V_PROGRAM, "snmptrapd", -1);
 
   if (!snmptrapd_header_parser_parse(&nv_context, &input, &input_len))
-    return FALSE;
+    {
+      msg_debug("snmptrapd-parser failed",
+                evt_tag_str ("error", "cannot parse snmptrapd header"),
+                evt_tag_str ("input", input));
+      return FALSE;
+    };
 
   if (!_parse_varbindlist(&nv_context, &input, &input_len))
-    return FALSE;
+    {
+      msg_debug("snmptrapd-parser failed",
+                evt_tag_str ("error", "can not parse name-value pairs in the input"),
+                evt_tag_str ("input", input));
+      return FALSE;
+    };
 
 
   if (self->set_message_macro)

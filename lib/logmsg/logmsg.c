@@ -503,7 +503,7 @@ _log_name_value_updates(LogMessage *self)
    * log_msg_new_internal() calling log_msg_set_value(), which in turn
    * generates an internal message, again calling log_msg_set_value()
    */
-  return (!self->initial_parse && (self->flags & LF_INTERNAL) == 0);
+  return (self->flags & LF_INTERNAL) == 0;
 }
 
 void
@@ -524,9 +524,9 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   if (_log_name_value_updates(self))
     {
       msg_debug("Setting value",
-                evt_tag_printf("msg", "%p", self),
                 evt_tag_str("name", name),
-                evt_tag_printf("value", "%.*s", (gint) value_len, value));
+                evt_tag_printf("value", "%.*s", (gint) value_len, value),
+                evt_tag_printf("msg", "%p", self));
     }
 
   if (value_len < 0)
@@ -1212,6 +1212,10 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   memcpy(self, msg, sizeof(*msg));
   msg->allocated_bytes = allocated_bytes;
 
+  msg_debug("Message was cloned",
+            evt_tag_printf("original_msg", "%p", msg),
+            evt_tag_printf("new_msg", "%p", self));
+
   /* every field _must_ be initialized explicitly if its direct
    * copying would cause problems (like copying a pointer by value) */
 
@@ -1272,6 +1276,7 @@ log_msg_new(const gchar *msg, gint length,
 
   if (G_LIKELY(parse_options->format_handler))
     {
+      msg_debug("Initial message parsing follows");
       parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
     }
   else

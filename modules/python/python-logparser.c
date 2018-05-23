@@ -182,10 +182,10 @@ python_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   {
     LogMessage *msg = log_msg_make_writable(pmsg, path_options);
 
-    msg_debug("Invoking the Python parse() method",
+    msg_debug("python-parser message processing started",
+              evt_tag_str ("input", input),
               evt_tag_str("parser", self->super.name),
               evt_tag_str("class", self->class),
-              log_pipe_location_tag(&self->super.super),
               evt_tag_printf("msg", "%p", msg));
 
     PyObject *msg_object = py_log_message_new(msg);

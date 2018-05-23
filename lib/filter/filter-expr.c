@@ -93,9 +93,3 @@ filter_expr_unref(FilterExprNode *self)
       g_free(self);
     }
 }
-
-EVTTAG *
-filter_result_tag(gboolean res)
-{
-  return evt_tag_str("result", res ? "MATCH" : "UNMATCHED");
-}

@@ -125,6 +125,10 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   CSVParser *self = (CSVParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
 
+  msg_debug("csv-parser message processing started",
+            evt_tag_str ("input", input),
+            evt_tag_str ("prefix", self->prefix),
+            evt_tag_printf("msg", "%p", *pmsg));
   CSVScanner scanner;
   csv_scanner_init(&scanner, &self->options, input);
 
@@ -145,13 +149,6 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   gboolean result = csv_scanner_is_scan_finished(&scanner);
   csv_scanner_deinit(&scanner);
 
-  if (!result)
-    {
-      msg_debug("csv-parser() failed to parse all columns from the message, and drop-invalid flag is specified",
-                evt_tag_str("input", input),
-                log_pipe_location_tag(&s->super),
-                evt_tag_printf("msg", "%p", msg));
-    }
   return result;
 }
 

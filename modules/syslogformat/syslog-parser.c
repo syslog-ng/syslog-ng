@@ -32,6 +32,9 @@ syslog_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   LogMessage *msg;
 
   msg = log_msg_make_writable(pmsg, path_options);
+  msg_debug("syslog-parser message processing started",
+            evt_tag_str ("input", input),
+            evt_tag_printf("msg", "%p", *pmsg));
 
   syslog_format_handler(&self->parse_options, (guchar *) input, strlen(input), msg);
   return TRUE;

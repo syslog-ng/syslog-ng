@@ -332,6 +332,11 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   LogSource *self = (LogSource *) s;
   gint i;
 
+  msg_debug(">>>>>> Source side message processing begin",
+            evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
+            log_pipe_location_tag(s),
+            evt_tag_printf("msg", "%p", msg));
+
   msg_set_context(msg);
 
   if (!self->options->keep_timestamp)
@@ -392,6 +397,10 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       ts.tv_nsec = self->window_full_sleep_nsec;
       nanosleep(&ts, NULL);
     }
+  msg_debug("<<<<<< Source side message processing finish",
+            evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
+            log_pipe_location_tag(s),
+            evt_tag_printf("msg", "%p", msg));
 
 }
 

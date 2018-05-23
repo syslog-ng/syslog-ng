@@ -49,8 +49,7 @@ filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
     {
       res = !!(self->valid & (1 << fac_num));
     }
-  msg_debug("  facility() evaluation result",
-            filter_result_tag(res),
+  msg_debug("facility() evaluation started",
             evt_tag_int("fac", fac_num),
             evt_tag_printf("valid_fac", "%08x", self->valid),
             evt_tag_printf("msg", "%p", msg));
@@ -80,8 +79,7 @@ filter_level_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 
   res = !!((1 << pri) & self->valid);
 
-  msg_debug("  level() evaluation result",
-            filter_result_tag(res),
+  msg_debug("level() evaluation started",
             evt_tag_int("pri", pri),
             evt_tag_printf("valid_pri", "%08x", self->valid),
             evt_tag_printf("msg", "%p", msg));
