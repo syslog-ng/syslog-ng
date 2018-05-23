@@ -182,6 +182,8 @@ process_credentials_add(GString *result, guint argc, gchar **arguments)
     g_string_assign(result,"Credentials stored successfully\n");
   else
     g_string_assign(result,"Error while saving credentials\n");
+
+  secret_storage_wipe(secret, strlen(secret));
   return result;
 }
 

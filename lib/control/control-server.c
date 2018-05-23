@@ -24,6 +24,7 @@
 #include "control-server.h"
 #include "messages.h"
 #include "str-utils.h"
+#include "secret-storage/secret-storage.h"
 
 #include <string.h>
 #include <errno.h>
@@ -144,6 +145,7 @@ control_connection_io_input(void *s)
       command = g_string_sized_new(128);
       /* command doesn't contain NL */
       g_string_assign_len(command, self->input_buffer->str, nl - self->input_buffer->str);
+      secret_storage_wipe(self->input_buffer->str, nl - self->input_buffer->str);
       /* strip NL */
       /*g_string_erase(self->input_buffer, 0, command->len + 1);*/
       g_string_truncate(self->input_buffer, 0);
@@ -170,6 +172,7 @@ control_connection_io_input(void *s)
   control_connection_send_reply(self, reply);
 
   control_connection_update_watches(self);
+  secret_storage_wipe(command->str, command->len);
   g_string_free(command, TRUE);
   return;
 destroy_connection:
