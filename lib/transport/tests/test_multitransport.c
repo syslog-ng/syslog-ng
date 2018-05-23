@@ -55,7 +55,7 @@
   { \
     TransportFactory super; \
   }; \
-  DEFINE_TRANSPORT_FACTORY_ID_FUN(FunPrefix, FunPrefix ## _transport_factory_id); \
+  DEFINE_TRANSPORT_FACTORY_ID_FUN(#FunPrefix, FunPrefix ## _transport_factory_id); \
   static LogTransport * \
   FunPrefix ## _factory_construct(const TransportFactory *s, gint fd) \
   {\

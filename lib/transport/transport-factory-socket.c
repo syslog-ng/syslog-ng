@@ -27,7 +27,7 @@
 
 typedef struct _TransportFactorySocket TransportFactorySocket;
 
-DEFINE_TRANSPORT_FACTORY_ID_FUN(socket, transport_factory_socket_id);
+DEFINE_TRANSPORT_FACTORY_ID_FUN("socket", transport_factory_socket_id);
 
 struct _TransportFactorySocket
 {

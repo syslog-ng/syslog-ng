@@ -37,13 +37,8 @@ void transport_factory_id_free(TransportFactoryId *);
 guint transport_factory_id_hash(gconstpointer);
 gboolean transport_factory_id_equal(const TransportFactoryId *, const TransportFactoryId *);
 TransportFactoryId *transport_factory_id_clone(const TransportFactoryId *);
-TransportFactoryId *transport_factory_id_new(const gchar *transport_name, const gchar *uniq_id);
+TransportFactoryId *transport_factory_id_new(const gchar *transport_name);
 const gchar *transport_factory_id_get_transport_name(const TransportFactoryId *);
-
-#define TRANSPORT_FACTORY_ID_NEW(name) ({gchar *uniq_id = g_strdup_printf("%s-%s:%d", name, __FILE__, __LINE__); \
-                                        TransportFactoryId *id_ = transport_factory_id_new(name, uniq_id); \
-                                        g_free(uniq_id);\
-                                        id_;})
 
 #define DEFINE_TRANSPORT_FACTORY_ID_FUN(transport_name, func_name) \
   const TransportFactoryId* func_name(void) \
@@ -51,7 +46,7 @@ const gchar *transport_factory_id_get_transport_name(const TransportFactoryId *)
     static TransportFactoryId *id;\
     if (!id)\
       {\
-        id = TRANSPORT_FACTORY_ID_NEW(#transport_name);\
+        id = transport_factory_id_new(transport_name);\
         transport_factory_id_register(id);\
       }\
     return id;\
