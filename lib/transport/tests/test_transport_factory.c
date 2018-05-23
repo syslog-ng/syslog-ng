@@ -71,8 +71,6 @@ DEFINE_TRANSPORT_FACTORY_ID_FUN(_fake_transport_factory_id);
 static LogTransport *
 _transport_factory_construct(const TransportFactory *s, gint fd)
 {
-  FakeTransportFactory *self = (FakeTransportFactory *)s;
-
   LogTransport *fake_transport = _fake_transport_new();
   log_transport_init_instance(fake_transport, fd);
 

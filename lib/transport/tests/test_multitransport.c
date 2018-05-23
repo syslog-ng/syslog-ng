@@ -76,7 +76,7 @@ TestSuite(multitransport, .init = app_startup, .fini = app_shutdown);
 
 DEFINE_TEST_TRANSPORT_WITH_FACTORY(Fake, fake);
 DEFINE_TEST_TRANSPORT_WITH_FACTORY(Default, default);
-DEFINE_TEST_TRANSPORT_WITH_FACTORY(Unsupported, unsupported);
+DEFINE_TEST_TRANSPORT_WITH_FACTORY(Unregistered, unregistered);
 
 Test(multitransport, test_switch_transport)
 {
@@ -90,7 +90,7 @@ Test(multitransport, test_switch_transport)
   cr_expect_eq(multi_transport->active_transport->write, default_write);
 
   multitransport_add_factory(multi_transport, fake_factory);
-  cr_expect_not(multitransport_switch(multi_transport, unsupported_transport_factory_id()));
+  cr_expect_not(multitransport_switch(multi_transport, unregistered_transport_factory_id()));
   cr_expect_eq(multi_transport->active_transport->read, default_read);
   cr_expect_eq(multi_transport->active_transport->write, default_write);
   cr_expect_eq(multi_transport->active_transport_factory, default_factory);
