@@ -55,7 +55,7 @@
   { \
     TransportFactory super; \
   }; \
-  DEFINE_TRANSPORT_FACTORY_ID_FUN(FunPrefix ## _transport_factory_id); \
+  DEFINE_TRANSPORT_FACTORY_ID_FUN(FunPrefix, FunPrefix ## _transport_factory_id); \
   static LogTransport * \
   FunPrefix ## _factory_construct(const TransportFactory *s, gint fd) \
   {\
@@ -88,17 +88,20 @@ Test(multitransport, test_switch_transport)
 
   cr_expect_eq(multi_transport->active_transport->read, default_read);
   cr_expect_eq(multi_transport->active_transport->write, default_write);
+  cr_expect_str_eq(multi_transport->active_transport->name, "default");
 
   multitransport_add_factory(multi_transport, fake_factory);
   cr_expect_not(multitransport_switch(multi_transport, unregistered_transport_factory_id()));
   cr_expect_eq(multi_transport->active_transport->read, default_read);
   cr_expect_eq(multi_transport->active_transport->write, default_write);
   cr_expect_eq(multi_transport->active_transport_factory, default_factory);
+  cr_expect_str_eq(multi_transport->active_transport->name, "default");
 
   cr_expect(multitransport_switch(multi_transport, fake_transport_factory_id()));
   cr_expect_eq(multi_transport->active_transport->read, fake_read);
   cr_expect_eq(multi_transport->active_transport->write, fake_write);
   cr_expect_eq(multi_transport->active_transport_factory, fake_factory);
+  cr_expect_str_eq(multi_transport->active_transport->name, "fake");
 
   log_transport_free(&multi_transport->super);
 }

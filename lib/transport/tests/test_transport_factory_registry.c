@@ -30,7 +30,7 @@ typedef struct _TestTransportFactory
   TransportFactory super;
 } TestTransportFactory;
 
-DEFINE_TRANSPORT_FACTORY_ID_FUN(test_transport_factory_id);
+DEFINE_TRANSPORT_FACTORY_ID_FUN(test, test_transport_factory_id);
 
 static TestTransportFactory *
 _test_transport_factory_new(void)

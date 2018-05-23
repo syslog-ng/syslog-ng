@@ -44,20 +44,27 @@ struct _TransportFactory
   void (*free_fn)(TransportFactory *self);
 };
 
-static inline LogTransport *transport_factory_construct_transport(const TransportFactory *self, gint fd)
+static inline LogTransport
+*transport_factory_construct_transport(const TransportFactory *self, gint fd)
 {
   g_assert(self->construct_transport);
-  return self->construct_transport(self, fd);
+
+  LogTransport *transport = self->construct_transport(self, fd);
+  transport->name = transport_factory_id_get_transport_name(self->id);
+
+  return transport;
 }
 
-static inline void transport_factory_free(TransportFactory *self)
+static inline void
+transport_factory_free(TransportFactory *self)
 {
   if (self->free_fn)
     self->free_fn(self);
   g_free(self);
 }
 
-static inline const TransportFactoryId *transport_factory_get_id(const TransportFactory *self)
+static inline const
+TransportFactoryId *transport_factory_get_id(const TransportFactory *self)
 {
   /* each concrete TransportFactory has to have an id
    */

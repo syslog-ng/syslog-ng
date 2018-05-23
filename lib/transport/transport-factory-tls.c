@@ -25,7 +25,7 @@
 #include "transport/transport-factory-tls.h"
 #include "transport/transport-tls.h"
 
-DEFINE_TRANSPORT_FACTORY_ID_FUN(transport_factory_tls_id);
+DEFINE_TRANSPORT_FACTORY_ID_FUN(tls, transport_factory_tls_id);
 
 typedef struct _TransportFactoryTLS TransportFactoryTLS;
 
