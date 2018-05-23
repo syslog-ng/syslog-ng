@@ -29,7 +29,6 @@ TestSuite(transport_factory_id, .init = app_startup, .fini = app_shutdown);
 
 Test(transport_factory_id, lifecycle)
 {
-  transport_factory_id_global_init();
   GList *ids = transport_factory_id_clone_registered_ids();
 
   cr_expect_null(ids);
