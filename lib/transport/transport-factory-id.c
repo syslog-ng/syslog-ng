@@ -25,15 +25,26 @@
 #include "transport/transport-factory-id.h"
 #include "mainloop.h"
 
+struct _TransportFactoryId
+{
+  gchar *transport_name;
+  gchar *uniq_id;
+};
+
 static GList *transport_factory_ids;
 
 void transport_factory_id_global_init(void)
 {
 }
 
+static inline void _free(gpointer s)
+{
+  transport_factory_id_free((TransportFactoryId *)s);
+}
+
 void transport_factory_id_global_deinit(void)
 {
-  g_list_free_full(transport_factory_ids, transport_factory_id_free);
+  g_list_free_full(transport_factory_ids, _free);
   transport_factory_ids = NULL;
 }
 
@@ -45,9 +56,12 @@ transport_factory_id_register(TransportFactoryId *id)
 }
 
 static gpointer
-_clone(gconstpointer id)
+_clone(gconstpointer s)
 {
-  return g_string_new(((const GString *)id)->str);
+  TransportFactoryId *id = (TransportFactoryId *)s;
+  TransportFactoryId *cloned = transport_factory_id_new(g_strdup(id->transport_name),
+                                                        g_strdup(id->uniq_id));
+  return cloned;
 }
 
 TransportFactoryId *transport_factory_id_clone(const TransportFactoryId *id)
@@ -68,27 +82,39 @@ transport_factory_id_clone_registered_ids(void)
 }
 
 void
-transport_factory_id_free(gpointer id)
+transport_factory_id_free(TransportFactoryId *id)
 {
-  g_string_free((GString *)id, TRUE);
-}
-
-const gchar *
-transport_factory_id_to_string(const TransportFactoryId *id)
-{
-  GString *str = (GString *)id;
-  return str->str;
+  g_free(id->transport_name);
+  g_free(id->uniq_id);
+  g_free(id);
 }
 
 guint
 transport_factory_id_hash(gconstpointer key)
 {
-  return g_string_hash((const GString *)key);
+  TransportFactoryId *id = (TransportFactoryId *)key;
+  return g_str_hash(id->uniq_id);
 }
 
 gboolean
 transport_factory_id_equal(const TransportFactoryId *id1, const TransportFactoryId *id2)
 {
-  return g_string_equal(id1, id2);
+  return g_str_equal(id1->uniq_id, id2->uniq_id);
 }
 
+const gchar *
+transport_factory_id_get_transport_name(const TransportFactoryId *id)
+{
+  return id->transport_name;
+}
+
+TransportFactoryId *
+transport_factory_id_new(const gchar *transport_name, const gchar *uniq_id)
+{
+  TransportFactoryId *id = g_new0(TransportFactoryId, 1);
+
+  id->transport_name = g_strdup(transport_name);
+  id->uniq_id = g_strdup(uniq_id);
+
+  return id;
+}

@@ -66,7 +66,7 @@ struct _FakeTransportFactory
   gboolean destroyed;
 };
 
-DEFINE_TRANSPORT_FACTORY_ID_FUN(_fake_transport_factory_id);
+DEFINE_TRANSPORT_FACTORY_ID_FUN(fake, _fake_transport_factory_id);
 
 static LogTransport *
 _transport_factory_construct(const TransportFactory *s, gint fd)

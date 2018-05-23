@@ -34,6 +34,7 @@ struct _LogTransport
 {
   gint fd;
   GIOCondition cond;
+  const gchar *name;
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
   void (*free_fn)(LogTransport *self);

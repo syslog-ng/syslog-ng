@@ -41,7 +41,7 @@ Test(transport_factory_id, lifecycle)
   cr_assert_not_null(ids, "transport_factory_id_register failed");
   cr_expect(transport_factory_id_equal(ids->data, expected));
   transport_factory_id_free(expected);
-  g_list_free_full(ids, transport_factory_id_free);
+  g_list_free_full(ids, (GDestroyNotify)transport_factory_id_free);
 
   transport_factory_id_global_deinit();
 

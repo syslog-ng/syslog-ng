@@ -27,27 +27,31 @@
 
 #include "syslog-ng.h"
 
-typedef GString TransportFactoryId;
+typedef struct _TransportFactoryId TransportFactoryId;
 
 void transport_factory_id_global_init(void);
 void transport_factory_id_global_deinit(void);
 void transport_factory_id_register(TransportFactoryId *);
 GList *transport_factory_id_clone_registered_ids(void);
-void transport_factory_id_free(gpointer);
-const gchar *transport_factory_id_to_string(const TransportFactoryId *);
+void transport_factory_id_free(TransportFactoryId *);
 guint transport_factory_id_hash(gconstpointer);
 gboolean transport_factory_id_equal(const TransportFactoryId *, const TransportFactoryId *);
 TransportFactoryId *transport_factory_id_clone(const TransportFactoryId *);
+TransportFactoryId *transport_factory_id_new(const gchar *transport_name, const gchar *uniq_id);
+const gchar *transport_factory_id_get_transport_name(const TransportFactoryId *);
 
-#define TRANSPORT_FACTORY_ID_NEW(name) ({GString *str = g_string_new(""); g_string_printf(str, "%s-%s:%d", name, __FILE__, __LINE__); str;})
+#define TRANSPORT_FACTORY_ID_NEW(name) ({gchar *uniq_id = g_strdup_printf("%s-%s:%d", name, __FILE__, __LINE__); \
+                                        TransportFactoryId *id_ = transport_factory_id_new(name, uniq_id); \
+                                        g_free(uniq_id);\
+                                        id_;})
 
-#define DEFINE_TRANSPORT_FACTORY_ID_FUN(name) \
-  const TransportFactoryId* name(void) \
+#define DEFINE_TRANSPORT_FACTORY_ID_FUN(transport_name, func_name) \
+  const TransportFactoryId* func_name(void) \
   {\
     static TransportFactoryId *id;\
     if (!id)\
       {\
-        id = TRANSPORT_FACTORY_ID_NEW(#name);\
+        id = TRANSPORT_FACTORY_ID_NEW(#transport_name);\
         transport_factory_id_register(id);\
       }\
     return id;\

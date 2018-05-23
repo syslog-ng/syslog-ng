@@ -48,8 +48,8 @@ _lookup_transport_factory(TransportFactoryRegistry *registry, const TransportFac
 
   if (!factory)
     {
-      msg_error("multitransport_switch failed, requested transport factory not found",
-                evt_tag_str("TransportFactoryId", transport_factory_id_to_string(factory_id)));
+      msg_error("Requested transport not found",
+                evt_tag_str("transport", transport_factory_id_get_transport_name(factory_id)));
       return NULL;
     }
 
@@ -64,8 +64,8 @@ _construct_transport(const TransportFactory *factory, gint fd)
 
   if (!transport)
     {
-      msg_error("multitransport_switch failed, failed to construct new transport",
-                evt_tag_str("TransportFactoryId", transport_factory_id_to_string(factory_id)));
+      msg_error("Failed to construct transport",
+                evt_tag_str("transport", transport_factory_id_get_transport_name(factory_id)));
       return NULL;
     }
 
@@ -74,10 +74,9 @@ _construct_transport(const TransportFactory *factory, gint fd)
 
 gboolean multitransport_switch(MultiTransport *self, const TransportFactoryId *factory_id)
 {
-  const TransportFactoryId *old = transport_factory_get_id(self->active_transport_factory);
   msg_debug("Transport switch requested",
-            evt_tag_str("Old TransportFactoryId", transport_factory_id_to_string(old)),
-            evt_tag_str("Requested TransportFactoryId", transport_factory_id_to_string(factory_id)));
+            evt_tag_str("active-transport", self->active_transport->name),
+            evt_tag_str("requested-transport", transport_factory_id_get_transport_name(factory_id)));
 
   const TransportFactory *transport_factory = _lookup_transport_factory(self->registry, factory_id);
   if (!transport_factory)
@@ -89,8 +88,8 @@ gboolean multitransport_switch(MultiTransport *self, const TransportFactoryId *f
 
   _do_transport_switch(self, transport, transport_factory);
 
-  msg_debug("multitransport_switch succeded",
-            evt_tag_str("New TransportFactoryId", transport_factory_id_to_string(factory_id)));
+  msg_debug("Transport switch succeded",
+            evt_tag_str("new-active-transport", self->active_transport->name));
 
   return TRUE;
 }
