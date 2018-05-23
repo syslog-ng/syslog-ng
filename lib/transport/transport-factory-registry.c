@@ -43,8 +43,8 @@ TransportFactoryRegistry *transport_factory_registry_new(void)
 {
   TransportFactoryRegistry *instance = g_new0(TransportFactoryRegistry, 1);
 
-  instance->registry = g_hash_table_new_full((GHashFunc)TRANSPORT_FACTORY_ID_HASH_FUNC,
-                                             (GEqualFunc)TRANSPORT_FACTORY_ID_CMP_FUNC,
+  instance->registry = g_hash_table_new_full((GHashFunc)transport_factory_id_hash,
+                                             (GEqualFunc)transport_factory_id_equal,
                                              NULL,_transport_factory_destroy_notify);
 
   return instance;

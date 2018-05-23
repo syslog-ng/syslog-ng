@@ -34,14 +34,14 @@ Test(transport_factory_id, lifecycle)
   cr_expect_null(ids);
 
   TransportFactoryId *id = TRANSPORT_FACTORY_ID_NEW("tcp");
-  TransportFactoryId *expected = TRANSPORT_FACTORY_ID_CLONE(id);
+  TransportFactoryId *expected = transport_factory_id_clone(id);
   transport_factory_id_register(id);
 
   ids = transport_factory_id_clone_registered_ids();
   cr_assert_not_null(ids, "transport_factory_id_register failed");
-  cr_expect(TRANSPORT_FACTORY_ID_CMP_FUNC(ids->data, expected));
-  TRANSPORT_FACTORY_ID_FREE_FUNC(expected);
-  g_list_free_full(ids, TRANSPORT_FACTORY_ID_FREE_FUNC);
+  cr_expect(transport_factory_id_equal(ids->data, expected));
+  transport_factory_id_free(expected);
+  g_list_free_full(ids, transport_factory_id_free);
 
   transport_factory_id_global_deinit();
 
@@ -53,13 +53,13 @@ Test(transport_factory_id_basic_macros, generated_ids_are_uniq)
 {
   TransportFactoryId *id = TRANSPORT_FACTORY_ID_NEW("tcp");
   TransportFactoryId *id2 = TRANSPORT_FACTORY_ID_NEW("tcp");
-  cr_expect_not(TRANSPORT_FACTORY_ID_CMP_FUNC(id, id2));
+  cr_expect_not(transport_factory_id_equal(id, id2));
 }
 
 Test(transport_factory_id_basic_macros, clones_are_equals)
 {
   TransportFactoryId *id = TRANSPORT_FACTORY_ID_NEW("tcp");
-  TransportFactoryId *cloned = TRANSPORT_FACTORY_ID_CLONE(id);
-  cr_expect(TRANSPORT_FACTORY_ID_CMP_FUNC(id, cloned));
-  cr_expect_eq(TRANSPORT_FACTORY_ID_HASH_FUNC(id), TRANSPORT_FACTORY_ID_HASH_FUNC(cloned));
+  TransportFactoryId *cloned = transport_factory_id_clone(id);
+  cr_expect(transport_factory_id_equal(id, cloned));
+  cr_expect_eq(transport_factory_id_hash(id), transport_factory_id_hash(cloned));
 }
