@@ -93,7 +93,7 @@ write_secret(SecretStorage *storage, gchar *secret, gsize len)
 static SecretStorage *
 overwrite_secret(SecretStorage *storage, gchar *secret, gsize len)
 {
-  memset(storage->secret.data, 0, storage->secret.len);
+  nondumpable_mem_zero(storage->secret.data, storage->secret.len);
   write_secret(storage, secret, len);
   return storage;
 }
@@ -174,6 +174,12 @@ secret_storage_store_secret(const gchar *key, gchar *secret, gsize len)
   run_callbacks_initiate(key, secret_storage->subscriptions);
 
   return TRUE;
+}
+
+void
+secret_storage_wipe(gpointer s, gsize len)
+{
+  nondumpable_mem_zero(s, len);
 }
 
 gboolean

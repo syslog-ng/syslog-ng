@@ -307,3 +307,17 @@ Test(secretstorage, test_state_update)
   secret_storage_store_string("key", "wrong_password");
   secret_storage_status_foreach(assert_invalid_password_state, NULL);
 }
+
+Test(secretstorage, simple_store_get_and_wipe)
+{
+  secret_storage_store_secret("key1", "value1", -1);
+  Secret *secret = secret_storage_get_secret_by_name("key1");
+  cr_assert_str_eq(secret->data, "value1");
+
+  secret_storage_wipe(secret->data, secret->len);
+
+  for (gsize i = 0; i < secret->len; ++i)
+    cr_assert_eq(secret->data[i], 0);
+
+  secret_storage_put_secret(secret);
+}

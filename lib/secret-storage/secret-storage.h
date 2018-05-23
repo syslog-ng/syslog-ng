@@ -42,6 +42,7 @@ void secret_storage_deinit(void) PUBLIC;
 
 gboolean secret_storage_store_string(const gchar *key, gchar *secret) PUBLIC;
 gboolean secret_storage_store_secret(const gchar *key, gchar *secret, gsize len) PUBLIC;
+void secret_storage_wipe(gpointer s, gsize len) PUBLIC;
 
 void secret_storage_with_secret(const gchar *key, SecretStorageCB func, gpointer user_data) PUBLIC;
 Secret *secret_storage_get_secret_by_name(const gchar *key) PUBLIC;
