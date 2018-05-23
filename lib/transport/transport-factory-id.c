@@ -33,7 +33,7 @@ void transport_factory_id_global_init(void)
 
 void transport_factory_id_global_deinit(void)
 {
-  g_list_free_full(transport_factory_ids, TRANSPORT_FACTORY_ID_FREE_FUNC);
+  g_list_free_full(transport_factory_ids, transport_factory_id_free);
   transport_factory_ids = NULL;
 }
 
@@ -45,15 +45,26 @@ transport_factory_id_register(TransportFactoryId *id)
 }
 
 static gpointer
-_clone_func(gconstpointer src, gpointer data)
+_clone(gconstpointer id)
 {
-  return TRANSPORT_FACTORY_ID_CLONE(src);
+  return g_string_new(((const GString *)id)->str);
+}
+
+TransportFactoryId *transport_factory_id_clone(const TransportFactoryId *id)
+{
+  return (TransportFactoryId *)_clone((gconstpointer) id);
+}
+
+static gpointer
+_copy_func(gconstpointer src, gpointer data)
+{
+  return _clone(src);
 }
 
 GList *
 transport_factory_id_clone_registered_ids(void)
 {
-  return g_list_copy_deep(transport_factory_ids, _clone_func, NULL);
+  return g_list_copy_deep(transport_factory_ids, _copy_func, NULL);
 }
 
 void
@@ -62,15 +73,22 @@ transport_factory_id_free(gpointer id)
   g_string_free((GString *)id, TRUE);
 }
 
-gpointer
-transport_factory_id_clone(gconstpointer id)
-{
-  return g_string_new(((const GString *)id)->str);
-}
-
 const gchar *
 transport_factory_id_to_string(const TransportFactoryId *id)
 {
   GString *str = (GString *)id;
   return str->str;
 }
+
+guint
+transport_factory_id_hash(gconstpointer key)
+{
+  return g_string_hash((const GString *)key);
+}
+
+gboolean
+transport_factory_id_equal(const TransportFactoryId *id1, const TransportFactoryId *id2)
+{
+  return g_string_equal(id1, id2);
+}
+
