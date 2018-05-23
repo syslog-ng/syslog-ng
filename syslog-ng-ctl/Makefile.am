@@ -12,5 +12,7 @@ EXTRA_DIST					+=	\
 
 syslog_ng_ctl_syslog_ng_ctl_LDADD		= \
 	$(MODULE_DEPS_LIBS) \
-	$(TOOL_DEPS_LIBS)
-syslog_ng_ctl_syslog_ng_ctl_DEPENDENCIES	= lib/libsyslog-ng.la
+	$(TOOL_DEPS_LIBS) \
+	$(top_builddir)/lib/secret-storage/libsecret-storage.la
+
+syslog_ng_ctl_syslog_ng_ctl_DEPENDENCIES	= lib/libsyslog-ng.la lib/secret-storage/libsecret-storage.la
