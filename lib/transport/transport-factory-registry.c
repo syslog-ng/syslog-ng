@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2018 Balabit
- * Copyright (c) Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
