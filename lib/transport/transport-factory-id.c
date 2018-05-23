@@ -28,16 +28,43 @@
 struct _TransportFactoryId
 {
   gchar *transport_name;
-  gchar *uniq_id;
+  gint uniq_id;
 };
+
+typedef struct _Sequence Sequence;
+
+struct _Sequence
+{
+  gint ctr;
+} sequence;
+
+static void
+sequence_inc(Sequence *seq)
+{
+  seq->ctr++;
+}
+
+static gint
+sequence_get(Sequence *seq)
+{
+  return seq->ctr;
+}
+
+static void
+sequence_reset(Sequence *seq, gint init_value)
+{
+  seq->ctr = init_value;
+}
 
 static GList *transport_factory_ids;
 
 void transport_factory_id_global_init(void)
 {
+  sequence_reset(&sequence, 1);
 }
 
-static inline void _free(gpointer s)
+static inline void
+_free(gpointer s)
 {
   transport_factory_id_free((TransportFactoryId *)s);
 }
@@ -59,8 +86,11 @@ static gpointer
 _clone(gconstpointer s)
 {
   TransportFactoryId *id = (TransportFactoryId *)s;
-  TransportFactoryId *cloned = transport_factory_id_new(g_strdup(id->transport_name),
-                                                        g_strdup(id->uniq_id));
+  TransportFactoryId *cloned = g_new0(TransportFactoryId, 1);
+
+  cloned->transport_name = g_strdup(id->transport_name);
+  cloned->uniq_id = id->uniq_id;
+
   return cloned;
 }
 
@@ -85,7 +115,6 @@ void
 transport_factory_id_free(TransportFactoryId *id)
 {
   g_free(id->transport_name);
-  g_free(id->uniq_id);
   g_free(id);
 }
 
@@ -93,13 +122,13 @@ guint
 transport_factory_id_hash(gconstpointer key)
 {
   TransportFactoryId *id = (TransportFactoryId *)key;
-  return g_str_hash(id->uniq_id);
+  return g_direct_hash(GINT_TO_POINTER(id->uniq_id));
 }
 
 gboolean
 transport_factory_id_equal(const TransportFactoryId *id1, const TransportFactoryId *id2)
 {
-  return g_str_equal(id1->uniq_id, id2->uniq_id);
+  return (id1->uniq_id == id2->uniq_id) ? TRUE : FALSE;
 }
 
 const gchar *
@@ -109,12 +138,13 @@ transport_factory_id_get_transport_name(const TransportFactoryId *id)
 }
 
 TransportFactoryId *
-transport_factory_id_new(const gchar *transport_name, const gchar *uniq_id)
+transport_factory_id_new(const gchar *transport_name)
 {
   TransportFactoryId *id = g_new0(TransportFactoryId, 1);
 
+  sequence_inc(&sequence);
   id->transport_name = g_strdup(transport_name);
-  id->uniq_id = g_strdup(uniq_id);
+  id->uniq_id = sequence_get(&sequence);
 
   return id;
 }
