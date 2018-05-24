@@ -25,8 +25,6 @@
 #include "apphook.h"
 #include <criterion/criterion.h>
 
-TestSuite(transport_factory_id, .init = app_startup, .fini = app_shutdown);
-
 typedef struct _FakeTransport FakeTransport;
 typedef struct _FakeTransportFactory FakeTransportFactory;
 
@@ -46,6 +44,11 @@ static gssize
 _fake_write(LogTransport *s, const gpointer buf, gsize count)
 {
   return count;
+}
+
+static void
+_fake_free(LogTransport *s)
+{
 }
 
 LogTransport *
@@ -73,6 +76,7 @@ _transport_factory_construct(const TransportFactory *s, gint fd)
 {
   LogTransport *fake_transport = _fake_transport_new();
   log_transport_init_instance(fake_transport, fd);
+  fake_transport->free_fn = _fake_free;
 
   return fake_transport;
 }
@@ -112,4 +116,3 @@ Test(transport_factory, fake_transport_factory)
   transport_factory_free(&fake_factory->super);
   cr_expect_eq(fake_factory->destroyed, TRUE);
 }
-

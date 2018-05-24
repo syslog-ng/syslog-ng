@@ -35,7 +35,7 @@ DEFINE_TRANSPORT_FACTORY_ID_FUN("test", test_transport_factory_id);
 static TestTransportFactory *
 _test_transport_factory_new(void)
 {
-  TestTransportFactory *instance = g_new(TestTransportFactory, 1);
+  TestTransportFactory *instance = g_new0(TestTransportFactory, 1);
 
   instance->super.id = test_transport_factory_id();
 
@@ -53,7 +53,7 @@ Test(transport_factory_registry, basic_functionality)
   transport_factory_registry_add(registry, &factory->super);
   const TransportFactory *looked_up_factory = (TransportFactory *)transport_factory_registry_lookup(registry,
                                               test_transport_factory_id());
-  cr_expect_eq(factory, looked_up_factory);
+  cr_expect_eq((gpointer)factory, (gpointer)looked_up_factory);
 
   transport_factory_registry_free(registry);
 }
