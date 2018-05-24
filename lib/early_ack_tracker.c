@@ -62,7 +62,10 @@ early_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_typ
   EarlyAckTracker *self = (EarlyAckTracker *)s;
 
   if (ack_type == AT_SUSPENDED)
-    log_source_flow_control_suspend(self->super.source);
+    {
+      log_source_flow_control_adjust(self->super.source, 1);
+      log_source_flow_control_suspend(self->super.source);
+    }
   else
     log_source_flow_control_adjust(self->super.source, 1);
 
