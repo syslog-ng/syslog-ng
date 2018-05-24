@@ -45,7 +45,7 @@ typedef struct _LogProtoFramedServer
 } LogProtoFramedServer;
 
 static gboolean
-log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond)
+log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
 

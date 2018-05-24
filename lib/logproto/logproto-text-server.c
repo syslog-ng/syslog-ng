@@ -84,12 +84,12 @@ log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
 
 
 static gboolean
-log_proto_text_server_prepare(LogProtoServer *s, GIOCondition *cond)
+log_proto_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
   gboolean avail;
 
-  if (log_proto_buffered_server_prepare(s, cond))
+  if (log_proto_buffered_server_prepare(s, cond, timeout))
     {
       return TRUE;
     }

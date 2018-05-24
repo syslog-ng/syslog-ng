@@ -540,7 +540,7 @@ error:
 }
 
 gboolean
-log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond)
+log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
 
