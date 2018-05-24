@@ -26,6 +26,9 @@
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "transport/transport-tls.h"
+#include "transport/multitransport.h"
+#include "transport/transport-factory-tls.h"
+#include "transport/transport-factory-socket.h"
 #include "secret-storage/secret-storage.h"
 
 #include <sys/types.h>
@@ -84,23 +87,50 @@ transport_mapper_inet_apply_transport_method(TransportMapper *s, GlobalConfig *c
 }
 
 static LogTransport *
+_construct_tls_transport(TransportMapperInet *self, gint fd)
+{
+  LogTransport *transport = NULL;
+  TLSSession *tls_session = tls_context_setup_session(self->tls_context);
+  if (!tls_session)
+    return NULL;
+
+  tls_session_set_verify(tls_session, self->tls_verify_callback, self->tls_verify_data, NULL);
+  transport = log_transport_tls_new(tls_session, fd);
+
+  return transport;
+}
+
+static LogTransport *
+_construct_multitransport_with_plain_and_tls_factories(TransportMapperInet *self, gint fd)
+{
+  LogTransport *transport = NULL;
+
+  TransportFactory *default_factory = transport_factory_socket_new(self->super.sock_type);
+  transport = multitransport_new(default_factory, fd);
+  TransportFactory *tls_factory = transport_factory_tls_new(self->tls_context,
+                                                            self->tls_verify_callback,
+                                                            self->tls_verify_data);
+  multitransport_add_factory((MultiTransport *)transport, tls_factory);
+
+  return transport;
+}
+
+static LogTransport *
 transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
+  if (self->tls_context && _is_tls_allowed(self))
+    {
+      return _construct_tls_transport(self, fd);
+    }
+
   if (self->tls_context)
     {
-      TLSSession *tls_session;
-
-      tls_session = tls_context_setup_session(self->tls_context);
-      if (!tls_session)
-        return NULL;
-
-      tls_session_set_verify(tls_session, self->tls_verify_callback, self->tls_verify_data, NULL);
-      return log_transport_tls_new(tls_session, fd);
+      return _construct_multitransport_with_plain_and_tls_factories(self, fd);
     }
-  else
-    return transport_mapper_construct_log_transport_method(s, fd);
+
+  return transport_mapper_construct_log_transport_method(s, fd);
 }
 
 static gboolean
@@ -335,7 +365,23 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       /* FIXME: look up port/protocol from the logproto */
       self->server_port = TCP_PORT;
-      self->allow_tls = TRUE;
+      if (!transport)
+        {
+          /*
+           * THIS CASE IS FOR SUPPORTING TLS IN LEGACY TCP DRIVER
+           * example: source s_inetssl {
+           *              tcp(port(5555)
+           *              tls(peer-verify(none)
+           *              cert-file("ssl.crt")
+           *              key-file(ssl.key")));
+           *              };
+           *
+           * When transport("plugin") is used with with a valid TLSContext,
+           * Multitransport is used, this is why allow_tls is set only when
+           * transport() is not used.
+           * */
+          self->allow_tls = TRUE;
+        }
     }
 
   g_assert(self->server_port != 0);
