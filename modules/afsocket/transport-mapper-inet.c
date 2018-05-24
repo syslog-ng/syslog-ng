@@ -120,7 +120,7 @@ transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
-  if (self->tls_context && self->require_tls)
+  if (self->tls_context && _is_tls_allowed(self))
     {
       return _construct_tls_transport(self, fd);
     }
@@ -365,7 +365,23 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       /* FIXME: look up port/protocol from the logproto */
       self->server_port = TCP_PORT;
-      self->allow_tls = TRUE;
+      if (!transport)
+        {
+          /*
+           * THIS CASE IS FOR SUPPORTING TLS IN LEGACY TCP DRIVER
+           * example: source s_inetssl {
+           *              tcp(port(5555)
+           *              tls(peer-verify(none)
+           *              cert-file("ssl.crt")
+           *              key-file(ssl.key")));
+           *              };
+           *
+           * When transport("plugin") is used with with a valid TLSContext,
+           * Multitransport is used, this is why allow_tls is set only when
+           * transport() is not used.
+           * */
+          self->allow_tls = TRUE;
+        }
     }
 
   g_assert(self->server_port != 0);
