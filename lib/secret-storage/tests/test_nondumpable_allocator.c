@@ -22,6 +22,7 @@
  */
 
 #include <unistd.h>
+#include <string.h>
 #include <criterion/criterion.h>
 
 #include "secret-storage/nondumpable-allocator.h"
@@ -39,6 +40,25 @@ Test(nondumpableallocator, malloc_realloc_free)
   ((gchar *)buffer_realloc)[2*PAGESIZE] = 'a';
 
   nondumpable_buffer_free(buffer_realloc);
+}
+
+Test(nondumpableallocator, malloc_mem_zero)
+{
+  const gsize buffer_len = 256;
+  const guchar dummy_value = 0x44;
+
+  guchar *buffer = nondumpable_buffer_alloc(buffer_len);
+  memset(buffer, dummy_value, buffer_len);
+
+  for (gsize i = 0; i < buffer_len; ++i)
+    cr_assert_eq(buffer[i], dummy_value);
+
+  nondumpable_mem_zero(buffer, buffer_len);
+
+  for (gsize i = 0; i < buffer_len; ++i)
+    cr_assert_eq(buffer[i], 0);
+
+  nondumpable_buffer_free(buffer);
 }
 
 Test(nondumpableallocator, two_malloc)

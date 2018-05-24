@@ -27,6 +27,7 @@
 #include "control-client.h"
 #include "cfg.h"
 #include "reloc.h"
+#include "secret-storage/secret-storage.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -111,7 +112,7 @@ _dispatch_command(const gchar *cmd)
 
   clear_and_free(rsp);
 
-  memset(dispatchable_command, 0, strlen(dispatchable_command));
+  secret_storage_wipe(dispatchable_command, strlen(dispatchable_command));
   g_free(dispatchable_command);
 
   return retval;
@@ -473,15 +474,15 @@ slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   if (retval == -1)
     g_assert_not_reached();
 
-  memset(secret_to_store, 0, strlen(secret_to_store));
+  secret_storage_wipe(secret_to_store, strlen(secret_to_store));
   g_free(secret_to_store);
 
   if (credentials_secret)
-    memset(credentials_secret, 0, strlen(credentials_secret));
+    secret_storage_wipe(credentials_secret, strlen(credentials_secret));
 
   gint result = _dispatch_command(answer);
 
-  memset(answer, 0, strlen(answer));
+  secret_storage_wipe(answer, strlen(answer));
   g_free(answer);
 
   return result;
