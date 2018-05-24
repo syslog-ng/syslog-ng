@@ -92,6 +92,7 @@ typedef struct _AFSqlDestDriver
   gint flush_timeout;
   gint flush_lines_queued;
   gint flags;
+  gboolean ignore_tns_config;
   GList *session_statements;
 
   LogTemplateOptions template_options;
@@ -143,5 +144,6 @@ gint afsql_dd_lookup_flag(const gchar *flag);
 void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 void afsql_dd_add_dbd_option(LogDriver *s, const gchar *name, const gchar *value);
 void afsql_dd_add_dbd_option_numeric(LogDriver *s, const gchar *name, gint value);
+void afsql_dd_set_ignore_tns_config(LogDriver *s, const gboolean ignore_tns_config);
 
 #endif
