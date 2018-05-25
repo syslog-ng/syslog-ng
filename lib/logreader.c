@@ -325,7 +325,7 @@ log_reader_update_watches(LogReader *self)
       return;
     }
 
-  gboolean line_is_ready_in_buffer = log_proto_server_prepare(self->proto, &cond, &idle_timeout);
+  LogProtoPrepareAction prepare_action = log_proto_server_prepare(self->proto, &cond, &idle_timeout);
 
   if (idle_timeout > 0)
     {
@@ -337,19 +337,27 @@ log_reader_update_watches(LogReader *self)
       iv_timer_register(&self->idle_timer);
     }
 
-  if (self->immediate_check || line_is_ready_in_buffer)
+  if (self->immediate_check)
     {
       log_reader_force_check_in_next_poll(self);
       return;
     }
 
-  if (!cond)
+  switch (prepare_action)
     {
+    case LPPA_POLL_IO:
+      poll_events_update_watches(self->poll_events, cond);
+      break;
+    case LPPA_FORCE_SCHEDULE_FETCH:
+      log_reader_force_check_in_next_poll(self);
+      break;
+    case LPPA_SUSPEND:
       log_reader_suspend_until_awoken(self);
-      return;
+      break;
+    default:
+      g_assert_not_reached();
+      break;
     }
-
-  poll_events_update_watches(self->poll_events, cond);
 }
 
 static void

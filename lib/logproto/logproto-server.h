@@ -33,6 +33,13 @@
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
 
+typedef enum
+{
+  LPPA_POLL_IO,
+  LPPA_FORCE_SCHEDULE_FETCH,
+  LPPA_SUSPEND
+} LogProtoPrepareAction;
+
 #define LOG_PROTO_SERVER_OPTIONS_SIZE 128
 
 struct _LogProtoServerOptions
@@ -75,7 +82,7 @@ struct _LogProtoServer
   LogProtoServerWakeupCallback wakeup_callback;
   /* FIXME: rename to something else */
   gboolean (*is_position_tracked)(LogProtoServer *s);
-  gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
+  LogProtoPrepareAction (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                           LogTransportAuxData *aux, Bookmark *bookmark);
