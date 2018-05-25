@@ -1,5 +1,5 @@
 add_unit_test(LIBTEST TARGET test_cfg_lexer_subst)
-add_unit_test(LIBTEST TARGET test_cfg_tree)
+add_unit_test(CRITERION TARGET test_cfg_tree)
 add_unit_test(CRITERION TARGET test_type_hints)
 add_unit_test(CRITERION TARGET test_parse_number)
 add_unit_test(LIBTEST TARGET test_reloc)

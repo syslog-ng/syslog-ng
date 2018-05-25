@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Balabit
+ * Copyright (c) 2018 Balabit
  * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,12 +22,13 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
 #include "cfg-tree.h"
-#include "testutils.h"
 #include "apphook.h"
 #include "logpipe.h"
 
-
 /*
  * The Always Pipe. Always returns the same thing at init time.
  */
@@ -40,6 +41,10 @@ typedef struct
   gboolean init_called;
   gboolean deinit_called;
 } AlmightyAlwaysPipe;
+
+/*
+ * Helper functions
+ */
 
 static gboolean
 almighty_always_pipe_init (LogPipe *s)
@@ -76,11 +81,6 @@ almighty_always_pipe_new (gboolean return_value)
   return &self->super;
 }
 
-
-/*
- * Helper functions
- */
-
 static AlmightyAlwaysPipe *
 create_and_attach_almighty_pipe (CfgTree *tree, gboolean pipe_value)
 {
@@ -92,88 +92,73 @@ create_and_attach_almighty_pipe (CfgTree *tree, gboolean pipe_value)
   return pipe;
 }
 
-static void
-assert_almighty_always_pipe (gboolean always_pipe_value,
-                             gboolean tree_start_expected,
-                             gboolean tree_stop_expected,
-                             gboolean was_init_called,
-                             gboolean was_deinit_called)
+/*
+ * Tests
+ */
+typedef struct _PipeParameter
+{
+  gboolean always_pipe_value;
+  gboolean tree_start_expected;
+  gboolean tree_stop_expected;
+  gboolean was_init_called;
+  gboolean was_deinit_called;
+} PipeParameter;
+
+ParameterizedTestParameters(cfg_tree, test_pipe_init)
+{
+  static PipeParameter test_data_list[] =
+  {
+    {.always_pipe_value = TRUE, .tree_start_expected = TRUE, .tree_stop_expected = TRUE, .was_init_called = TRUE, .was_deinit_called = TRUE},
+    {.always_pipe_value = FALSE, .tree_start_expected = FALSE, .tree_stop_expected = TRUE, .was_init_called = TRUE, .was_deinit_called = FALSE}
+  };
+
+  return cr_make_param_array(PipeParameter, test_data_list, sizeof(test_data_list) / sizeof(test_data_list[0]));
+}
+
+ParameterizedTest(PipeParameter *test_data, cfg_tree, test_pipe_init)
 {
   CfgTree tree;
   AlmightyAlwaysPipe *pipe;
 
-  cfg_tree_init_instance (&tree, NULL);
+  cfg_tree_init_instance(&tree, NULL);
 
-  pipe = create_and_attach_almighty_pipe (&tree, always_pipe_value);
+  pipe = create_and_attach_almighty_pipe(&tree, test_data->always_pipe_value);
 
-  assert_gboolean (cfg_tree_start (&tree), tree_start_expected,
-                   "cfg_tree_start() did not return the expected value");
-  assert_gboolean (cfg_tree_stop (&tree), tree_stop_expected,
-                   "cfg_tree_stop() did not return the epxected value");
+  cr_assert_eq(cfg_tree_start(&tree), test_data->tree_start_expected,
+               "cfg_tree_start() did not return the expected value");
+  cr_assert_eq(cfg_tree_stop(&tree), test_data->tree_stop_expected,
+               "cfg_tree_stop() did not return the epxected value");
 
-  assert_gboolean (pipe->init_called, was_init_called,
-                   "->init was called state");
-  assert_gboolean (pipe->deinit_called, was_deinit_called,
-                   "->deinit was called state");
+  cr_assert_eq(pipe->init_called, test_data->was_init_called,
+               "->init was called state");
+  cr_assert_eq(pipe->deinit_called, test_data->was_deinit_called,
+               "->deinit was called state");
 
-  cfg_tree_free_instance (&tree);
+  cfg_tree_free_instance(&tree);
 }
 
-
-/*
- * Test cases
- */
-
-static void
-test_pipe_init_success (void)
-{
-  testcase_begin ("A pipe that always succeeds, results in a startable tree");
-
-  assert_almighty_always_pipe (TRUE, TRUE, TRUE, TRUE, TRUE);
-
-  testcase_end ();
-}
-
-static void
-test_pipe_init_fail (void)
-{
-  testcase_begin ("A pipe that always fails, results in an unstartable tree");
-
-  assert_almighty_always_pipe (FALSE, FALSE, TRUE, TRUE, FALSE);
-
-  testcase_end ();
-}
-
-static void
-test_pipe_init_multi_success (void)
+Test(cfg_tree, test_pipe_init_multi_success)
 {
   CfgTree tree;
 
-  testcase_begin ("A pipe of all good nodes will start & stop properly");
-
   cfg_tree_init_instance (&tree, NULL);
 
   create_and_attach_almighty_pipe (&tree, TRUE);
   create_and_attach_almighty_pipe (&tree, TRUE);
   create_and_attach_almighty_pipe (&tree, TRUE);
 
-  assert_true (cfg_tree_start (&tree),
-               "Starting a tree of all-good nodes works");
-  assert_true (cfg_tree_stop (&tree),
-               "Stopping a tree of all-good nodes works");
+  cr_assert(cfg_tree_start (&tree),
+            "Starting a tree of all-good nodes works");
+  cr_assert(cfg_tree_stop (&tree),
+            "Stopping a tree of all-good nodes works");
 
   cfg_tree_free_instance (&tree);
-
-  testcase_end ();
 }
 
-static void
-test_pipe_init_multi_with_bad_node (void)
+Test(cfg_tree, test_pipe_init_multi_with_bad_node)
 {
   AlmightyAlwaysPipe *pipe1, *pipe2, *pipe3;
   CfgTree tree;
-
-  testcase_begin ("A pipe of some bad nodes will not start, but cleans up nicely.");
 
   cfg_tree_init_instance (&tree, NULL);
 
@@ -181,46 +166,38 @@ test_pipe_init_multi_with_bad_node (void)
   pipe2 = create_and_attach_almighty_pipe (&tree, FALSE);
   pipe3 = create_and_attach_almighty_pipe (&tree, TRUE);
 
-  assert_false (cfg_tree_start (&tree),
+  cr_assert_not(cfg_tree_start (&tree),
                 "Starting a tree of all-good nodes works");
-  assert_true (cfg_tree_stop (&tree),
-               "Stopping a tree of all-good nodes works");
+  cr_assert(cfg_tree_stop (&tree),
+            "Stopping a tree of all-good nodes works");
 
-  assert_true (pipe1->init_called,
-               "The initializer of the first good pipe is called");
-  assert_true (pipe2->init_called,
-               "The initializer of the bad pipe is called");
-  assert_false (pipe3->init_called,
+  cr_assert(pipe1->init_called,
+            "The initializer of the first good pipe is called");
+  cr_assert(pipe2->init_called,
+            "The initializer of the bad pipe is called");
+  cr_assert_not(pipe3->init_called,
                 "The initializer of the second good pipe is NOT called");
 
-  assert_true (pipe1->deinit_called,
-               "The deinitializer of the first good pipe is called");
-  assert_false (pipe2->deinit_called,
+  cr_assert(pipe1->deinit_called,
+            "The deinitializer of the first good pipe is called");
+  cr_assert_not(pipe2->deinit_called,
                 "The deinitializer of the bad pipe is NOT called");
-  assert_false (pipe3->deinit_called,
+  cr_assert_not(pipe3->deinit_called,
                 "The deinitializer of the second good pipe is NOT called");
 
   cfg_tree_free_instance (&tree);
-
-  testcase_end ();
 }
 
-
-/*
- * The main program.
- */
-
-int
-main (void)
+static void
+setup(void)
 {
-  app_startup ();
-
-  test_pipe_init_success ();
-  test_pipe_init_fail ();
-  test_pipe_init_multi_success ();
-  test_pipe_init_multi_with_bad_node ();
-
-  app_shutdown ();
-
-  return 0;
+  app_startup();
 }
+
+static void
+teardown(void)
+{
+  app_shutdown();
+}
+
+TestSuite(cfg_tree, .init = setup, .fini = teardown);
