@@ -3,7 +3,9 @@ module_LTLIBRARIES += modules/redisq/libredis-queue.la
 
 modules_redisq_libsyslog_ng_redis_queue_la_SOURCES = \
   modules/redisq/redisq-options.h \
-  modules/redisq/redisq-options.c
+  modules/redisq/redisq-options.c \
+  modules/redisq/logqueue-redis.c \
+  modules/redisq/logqueue-redis.h
 
 modules_redisq_libsyslog_ng_redis_queue_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
