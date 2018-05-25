@@ -47,13 +47,13 @@
 static inline gboolean
 _is_tls_required(TransportMapperInet *self)
 {
-  return self->require_tls;
+  return self->require_tls || (self->tls_context && self->require_tls_when_has_tls_context);
 }
 
 static inline gboolean
 _is_tls_allowed(TransportMapperInet *self)
 {
-  return self->require_tls || self->allow_tls;
+  return self->require_tls || self->allow_tls || self->require_tls_when_has_tls_context;
 }
 
 static gboolean
@@ -120,7 +120,7 @@ transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
-  if (self->tls_context && self->require_tls)
+  if (self->tls_context && _is_tls_required(self))
     {
       return _construct_tls_transport(self, fd);
     }
@@ -289,7 +289,7 @@ transport_mapper_tcp_new(void)
   self->super.logproto = "text";
   self->super.stats_source = SCS_TCP;
   self->server_port = TCP_PORT;
-  self->allow_tls = TRUE;
+  self->require_tls_when_has_tls_context = TRUE;
   return &self->super;
 }
 
