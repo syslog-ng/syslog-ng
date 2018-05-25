@@ -1,6 +1,8 @@
 set(SYSLOG_NG_REDIS_QUEUE_SOURCES
     redisq-options.h
     redisq-options.c
+    logqueue-redis.c
+    logqueue-redis.h
 )
 
 add_library(syslog-ng-redis-queue ${SYSLOG_NG_REDIS_QUEUE_SOURCES})
