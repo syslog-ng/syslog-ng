@@ -1,4 +1,4 @@
-external_or_find_package(RabbitMQ)
+find_package(RabbitMQ)
 
 if (RabbitMQ_FOUND)
   option(ENABLE_AFAMQP "Enable afamqp module" ON)
@@ -34,10 +34,6 @@ target_include_directories(afamqp
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
 )
 target_link_libraries(afamqp PRIVATE ${RabbitMQ_LIBRARY} syslog-ng)
-
-if (RabbitMQ_INTERNAL)
-   add_dependencies(afamqp RabbitMQ)
-endif()
 
 install(TARGETS afamqp LIBRARY DESTINATION lib/syslog-ng/ COMPONENT afamqp)
 

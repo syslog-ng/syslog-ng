@@ -25,7 +25,7 @@
 # This script is needed to setup build environment from checked out
 # source tree.
 #
-SUBMODULES="lib/ivykis modules/afmongodb/mongo-c-driver/src/libbson modules/afmongodb/mongo-c-driver modules/afamqp/rabbitmq-c lib/jsonc"
+SUBMODULES="lib/ivykis modules/afmongodb/mongo-c-driver/src/libbson modules/afmongodb/mongo-c-driver lib/jsonc"
 GIT=`which git`
 
 include_automake_from_dir_if_exists()
@@ -56,11 +56,6 @@ autogen_submodules()
 
 	if [ -n "$GIT" ] && [ -f .gitmodules ] && [ -d .git ] && [ $submod_initialized = 0 ]; then
 		# only clone submodules if none of them present
-		git submodule update --init
-		sed -e "s#git://#https://#" \
-			< modules/afamqp/rabbitmq-c/.gitmodules \
-			> modules/afamqp/rabbitmq-c/.gitmodules.new && \
-			mv modules/afamqp/rabbitmq-c/.gitmodules.new modules/afamqp/rabbitmq-c/.gitmodules
 		git submodule update --init --recursive
 	fi
 
