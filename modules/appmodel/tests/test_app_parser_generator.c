@@ -81,7 +81,7 @@ static void
 _app_parser_generate_with_args(const gchar *topic, CfgArgs *args)
 {
   cfg_args_set(args, "topic", topic);
-  cfg_block_generator_generate(app_parser, configuration, args, result);
+  cfg_block_generator_generate(app_parser, configuration, args, result, "dummy-reference");
   cfg_args_unref(args);
 }
 

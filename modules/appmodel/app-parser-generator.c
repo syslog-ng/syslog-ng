@@ -144,7 +144,7 @@ _generate_empty_frame(AppParserGenerator *self)
 }
 
 static gboolean
-_parse_auto_parse_arg(AppParserGenerator *self, CfgArgs *args)
+_parse_auto_parse_arg(AppParserGenerator *self, CfgArgs *args, const gchar *reference)
 {
   const gchar *v = cfg_args_get(args, "auto-parse");
 
@@ -156,7 +156,7 @@ _parse_auto_parse_arg(AppParserGenerator *self, CfgArgs *args)
 }
 
 static gboolean
-_parse_auto_parse_exclude_arg(AppParserGenerator *self, CfgArgs *args)
+_parse_auto_parse_exclude_arg(AppParserGenerator *self, CfgArgs *args, const gchar *reference)
 {
   const gchar *v = cfg_args_get(args, "auto-parse-exclude");
   if (!v)
@@ -166,7 +166,7 @@ _parse_auto_parse_exclude_arg(AppParserGenerator *self, CfgArgs *args)
 }
 
 static gboolean
-_parse_auto_parse_include_arg(AppParserGenerator *self, CfgArgs *args)
+_parse_auto_parse_include_arg(AppParserGenerator *self, CfgArgs *args, const gchar *reference)
 {
   const gchar *v = cfg_args_get(args, "auto-parse-include");
   if (!v)
@@ -176,40 +176,41 @@ _parse_auto_parse_include_arg(AppParserGenerator *self, CfgArgs *args)
 }
 
 static gboolean
-_parse_topic_arg(AppParserGenerator *self, CfgArgs *args)
+_parse_topic_arg(AppParserGenerator *self, CfgArgs *args, const gchar *reference)
 {
   self->topic = cfg_args_get(args, "topic");
   if (!self->topic)
     {
-      msg_error("app-parser() requires a topic() argument");
+      msg_error("app-parser() requires a topic() argument",
+                evt_tag_str("reference", reference));
       return FALSE;
     }
   return TRUE;
 }
 
 static gboolean
-_parse_arguments(AppParserGenerator *self, CfgArgs *args)
+_parse_arguments(AppParserGenerator *self, CfgArgs *args, const gchar *reference)
 {
   g_assert(args != NULL);
 
-  if (!_parse_topic_arg(self, args))
+  if (!_parse_topic_arg(self, args, reference))
     return FALSE;
-  if (!_parse_auto_parse_arg(self, args))
+  if (!_parse_auto_parse_arg(self, args, reference))
     return FALSE;
-  if (!_parse_auto_parse_exclude_arg(self, args))
+  if (!_parse_auto_parse_exclude_arg(self, args, reference))
     return FALSE;
-  if (!_parse_auto_parse_include_arg(self, args))
+  if (!_parse_auto_parse_include_arg(self, args, reference))
     return FALSE;
   return TRUE;
 }
 
 static gboolean
-_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result)
+_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result, const gchar *reference)
 {
   AppParserGenerator *self = (AppParserGenerator *) s;
   AppModelContext *appmodel = appmodel_get_context(cfg);
 
-  if (!_parse_arguments(self, args))
+  if (!_parse_arguments(self, args, reference))
     return FALSE;
 
   self->block = result;

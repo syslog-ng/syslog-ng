@@ -55,7 +55,7 @@ typedef struct _ConfgenExec
 } ConfgenExec;
 
 gboolean
-confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result)
+confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result, const gchar *reference)
 {
   ConfgenExec *self = (ConfgenExec *) s;
   FILE *out;
@@ -72,6 +72,7 @@ confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GS
   if (!out)
     {
       msg_error("confgen: Error executing generator program",
+                evt_tag_str("reference", reference),
                 evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(self->super.context)),
                 evt_tag_str("block", self->super.name),
                 evt_tag_str("exec", self->exec),
@@ -88,6 +89,7 @@ confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GS
   if (res != 0)
     {
       msg_error("confgen: Generator program returned with non-zero exit code",
+                evt_tag_str("reference", reference),
                 evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(self->super.context)),
                 evt_tag_str("block", self->super.name),
                 evt_tag_str("exec", self->exec),
