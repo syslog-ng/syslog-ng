@@ -207,6 +207,8 @@ afsocket_dd_construct_transport(AFSocketDestDriver *self, gint fd)
 static gboolean
 afsocket_dd_connected(AFSocketDestDriver *self)
 {
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
   gchar buf1[256], buf2[256];
   int error = 0;
   socklen_t errorlen = sizeof(error);
@@ -250,6 +252,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 
   proto = log_proto_client_factory_construct(self->proto_factory, transport, &self->writer_options.proto_options.super);
 
+  log_proto_client_restart_with_state(proto, cfg->state, afsocket_dd_format_connections_name(self));
   log_writer_reopen(self->writer, proto);
   return TRUE;
 error_reconnect:
