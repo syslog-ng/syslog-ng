@@ -93,7 +93,7 @@ _shutdown_event_callback(gpointer data)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
 
-  log_queue_reset_parallel_push(self->queue);
+  log_queue_reset_parallel_push(self->worker.queue);
   _stop_watches(self);
   iv_quit();
 }
@@ -154,7 +154,7 @@ _accept_message(LogThreadedDestDriver *self, LogMessage *msg)
 {
   self->retries.counter = 0;
   step_sequence_number(&self->seq_num);
-  log_queue_ack_backlog(self->queue, 1);
+  log_queue_ack_backlog(self->worker.queue, 1);
   log_msg_unref(msg);
 }
 
@@ -170,7 +170,7 @@ _drop_message(LogThreadedDestDriver *self, LogMessage *msg)
 void
 _rewind_message(LogThreadedDestDriver *self, LogMessage *msg)
 {
-  log_queue_rewind_backlog(self->queue, 1);
+  log_queue_rewind_backlog(self->worker.queue, 1);
   log_msg_unref(msg);
 }
 
@@ -186,7 +186,7 @@ _perform_inserts(LogThreadedDestDriver *self)
 
   while (G_LIKELY(!self->under_termination) &&
          !self->suspended &&
-         (msg = log_queue_pop_head(self->queue, &path_options)) != NULL)
+         (msg = log_queue_pop_head(self->worker.queue, &path_options)) != NULL)
     {
       msg_set_context(msg);
       log_msg_refcache_start_consumer(msg, &path_options);
@@ -288,7 +288,7 @@ _perform_work(gpointer data)
       _connect(self);
     }
 
-  else if (log_queue_check_items(self->queue, &timeout_msec,
+  else if (log_queue_check_items(self->worker.queue, &timeout_msec,
                                  _message_became_available_callback,
                                  self, NULL))
     {
@@ -375,7 +375,7 @@ _worker_thread(gpointer arg)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.id));
 
-  log_queue_set_use_backlog(self->queue, TRUE);
+  log_queue_set_use_backlog(self->worker.queue, TRUE);
 
   _init_watches(self);
 
@@ -426,7 +426,7 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 
   log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
+  log_queue_push_tail(self->worker.queue, log_msg_ref(msg), path_options);
 
   stats_counter_inc(self->processed_messages);
 
@@ -436,7 +436,7 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 static void
 _update_memory_usage_counter_when_fifo_is_used(LogThreadedDestDriver *self)
 {
-  if (!g_strcmp0(self->queue->type, "FIFO") && self->memory_usage)
+  if (!g_strcmp0(self->worker.queue->type, "FIFO") && self->memory_usage)
     {
       LogPipe *_pipe = &self->super.super.super;
       load_counter_from_persistent_storage(log_pipe_get_config(_pipe), self->memory_usage);
@@ -484,17 +484,16 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
-  self->queue = log_dest_driver_acquire_queue(
-                  &self->super, self->super.super.super.generate_persist_name((const LogPipe *)self));
+  self->worker.queue = log_dest_driver_acquire_queue(
+                         &self->super,
+                         s->generate_persist_name(s));
 
-  if (self->queue == NULL)
-    {
-      return FALSE;
-    }
+  if (self->worker.queue == NULL)
+    return FALSE;
 
   _register_stats(self);
 
-  log_queue_set_counters(self->queue, self->queued_messages,
+  log_queue_set_counters(self->worker.queue, self->queued_messages,
                          self->dropped_messages, self->memory_usage);
   _update_memory_usage_counter_when_fifo_is_used(self);
 
@@ -514,7 +513,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
 
-  log_queue_set_counters(self->queue, NULL, NULL, NULL);
+  log_queue_set_counters(self->worker.queue, NULL, NULL, NULL);
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
