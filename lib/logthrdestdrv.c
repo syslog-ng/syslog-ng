@@ -232,8 +232,6 @@ _perform_inserts(LogThreadedDestDriver *self)
           _disconnect_and_suspend(self);
           break;
 
-        case WORKER_INSERT_RESULT_REWIND:
-          _rewind_message(self, msg);
           break;
 
         case WORKER_INSERT_RESULT_SUCCESS:
