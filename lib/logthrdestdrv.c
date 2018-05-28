@@ -71,6 +71,9 @@ _stop_watches(LogThrDestDriver *self)
     }
 }
 
+/* NOTE: runs in the worker thread in response to a wakeup event being
+ * posted, which happens if a new element is added to our queue while we
+ * were sleeping */
 static void
 _wakeup_event_callback(gpointer data)
 {
@@ -82,6 +85,9 @@ _wakeup_event_callback(gpointer data)
     }
 }
 
+/* NOTE: runs in the worker thread in response to the shutdown event being
+ * posted.  The shutdown event is initiated by the mainloop when the
+ * configuration is deinited */
 static void
 _shutdown_event_callback(gpointer data)
 {
@@ -91,7 +97,7 @@ _shutdown_event_callback(gpointer data)
   iv_quit();
 }
 
-
+/* NOTE: runs in the worker thread */
 static void
 _suspend(LogThrDestDriver *self)
 {
@@ -101,6 +107,7 @@ _suspend(LogThrDestDriver *self)
   iv_timer_register(&self->timer_reopen);
 }
 
+/* NOTE: runs in the worker thread */
 static void
 _connect(LogThrDestDriver *self)
 {
@@ -121,6 +128,7 @@ _connect(LogThrDestDriver *self)
     }
 }
 
+/* NOTE: runs in the worker thread */
 static void
 _disconnect(LogThrDestDriver *self)
 {
@@ -131,6 +139,7 @@ _disconnect(LogThrDestDriver *self)
   self->worker.connected = FALSE;
 }
 
+/* NOTE: runs in the worker thread */
 static void
 _disconnect_and_suspend(LogThrDestDriver *self)
 {
@@ -140,6 +149,7 @@ _disconnect_and_suspend(LogThrDestDriver *self)
   _suspend(self);
 }
 
+/* NOTE: runs in the worker thread */
 void
 _accept_message(LogThrDestDriver *self, LogMessage *msg)
 {
@@ -149,6 +159,7 @@ _accept_message(LogThrDestDriver *self, LogMessage *msg)
   log_msg_unref(msg);
 }
 
+/* NOTE: runs in the worker thread */
 void
 _drop_message(LogThrDestDriver *self, LogMessage *msg)
 {
@@ -156,6 +167,7 @@ _drop_message(LogThrDestDriver *self, LogMessage *msg)
   _accept_message(self, msg);
 }
 
+/* NOTE: runs in the worker thread */
 void
 _rewind_message(LogThrDestDriver *self, LogMessage *msg)
 {
@@ -163,7 +175,9 @@ _rewind_message(LogThrDestDriver *self, LogMessage *msg)
   log_msg_unref(msg);
 }
 
-
+/* NOTE: runs in the worker thread, whenever items on our queue are
+ * available. It iterates all elements on the queue, however will terminate
+ * if the mainloop requests that we exit. */
 static void
 _perform_inserts(LogThrDestDriver *self)
 {
@@ -244,10 +258,18 @@ _perform_inserts(LogThrDestDriver *self)
     }
 }
 
+/* this callback is invoked by LogQueue and is registered using
+ * log_queue_check_items().  This only gets registered if at that point
+ * we've decided to wait for the queue, e.g.  the work_task is not running.
+ *
+ * This callback is invoked from the source thread, e.g.  it is not safe to
+ * do anything, but ensure that our thread is woken up in response.
+ */
 static void
 _message_became_available_callback(gpointer user_data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *) user_data;
+
   if (!self->under_termination)
     iv_event_post(&self->wake_up_event);
 }
@@ -285,6 +307,23 @@ _perform_work(gpointer data)
     }
 }
 
+/* these are events of the _worker_ thread and are not registered to the
+ * actual main thread.  We basically run our workload in the handler of the
+ * do_work task, which might be invoked in a number of ways.
+ *
+ * Basic states:
+ *   1) disconnected state: _perform_work() will try to connect periodically
+ *      using the suspend() mechanism, which uses a timer to get up periodically.
+ *
+ *   2) once connected:
+ *      - if messages are already on the queue: flush them
+ *
+ *      - if no messages are on the queue: schedule
+ *        _message_became_available_callback() to be called by the LogQueue.
+ *
+ *      - if there's an error, disconnect go back to the #1 state above.
+ *
+ */
 static void
 _init_watches(LogThrDestDriver *self)
 {
@@ -357,6 +396,9 @@ _start_worker_thread(LogThrDestDriver *self)
                                  self, &self->worker_options);
 }
 
+/* the feeding side of the driver, runs in the source thread and puts an
+ * incoming message to the associated queue.
+ */
 static void
 log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
                                const LogPathOptions *path_options)
