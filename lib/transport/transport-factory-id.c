@@ -58,7 +58,8 @@ sequence_reset(Sequence *seq, gint init_value)
 
 static GList *transport_factory_ids;
 
-void transport_factory_id_global_init(void)
+void
+transport_factory_id_global_init(void)
 {
   sequence_reset(&sequence, 1);
 }
@@ -69,7 +70,8 @@ _free(gpointer s)
   transport_factory_id_free((TransportFactoryId *)s);
 }
 
-void transport_factory_id_global_deinit(void)
+void
+transport_factory_id_global_deinit(void)
 {
   g_list_free_full(transport_factory_ids, _free);
   transport_factory_ids = NULL;
@@ -94,7 +96,8 @@ _clone(gconstpointer s)
   return cloned;
 }
 
-TransportFactoryId *transport_factory_id_clone(const TransportFactoryId *id)
+TransportFactoryId *
+transport_factory_id_clone(const TransportFactoryId *id)
 {
   return (TransportFactoryId *)_clone((gconstpointer) id);
 }
