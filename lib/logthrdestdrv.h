@@ -43,6 +43,17 @@ typedef enum
 } worker_insert_result_t;
 
 typedef struct _LogThreadedDestDriver LogThreadedDestDriver;
+typedef struct _LogThreadedDestWorker
+{
+  gboolean connected;
+  void (*thread_init)(LogThreadedDestDriver *s);
+  void (*thread_deinit)(LogThreadedDestDriver *s);
+  worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
+  gboolean (*connect)(LogThreadedDestDriver *s);
+  void (*worker_message_queue_empty)(LogThreadedDestDriver *s);
+  void (*disconnect)(LogThreadedDestDriver *s);
+} LogThreadedDestWorker;
+
 struct _LogThreadedDestDriver
 {
   LogDestDriver super;
@@ -59,17 +70,7 @@ struct _LogThreadedDestDriver
 
   LogQueue *queue;
 
-  /* Worker stuff */
-  struct
-  {
-    gboolean connected;
-    void (*thread_init) (LogThreadedDestDriver *s);
-    void (*thread_deinit) (LogThreadedDestDriver *s);
-    worker_insert_result_t (*insert) (LogThreadedDestDriver *s, LogMessage *msg);
-    gboolean (*connect) (LogThreadedDestDriver *s);
-    void (*worker_message_queue_empty)(LogThreadedDestDriver *s);
-    void (*disconnect) (LogThreadedDestDriver *s);
-  } worker;
+  LogThreadedDestWorker worker;
 
   struct
   {
