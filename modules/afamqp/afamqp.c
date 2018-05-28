@@ -631,7 +631,7 @@ afamqp_dd_init(LogPipe *s)
               evt_tag_str("exchange", self->exchange),
               evt_tag_str("exchange_type", self->exchange_type));
 
-  return log_threaded_dest_driver_start(s);
+  return log_threaded_dest_driver_init_method(s);
 }
 
 static void

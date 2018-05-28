@@ -335,7 +335,7 @@ _update_memory_usage_counter_when_fifo_is_used(LogThrDestDriver *self)
 }
 
 gboolean
-log_threaded_dest_driver_start(LogPipe *s)
+log_threaded_dest_driver_init_method(LogPipe *s)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -446,7 +446,7 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
 
   self->worker_options.is_output_thread = TRUE;
 
-  self->super.super.super.init = log_threaded_dest_driver_start;
+  self->super.super.super.init = log_threaded_dest_driver_init_method;
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;

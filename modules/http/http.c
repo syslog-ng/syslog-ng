@@ -516,7 +516,7 @@ http_dd_init(LogPipe *s)
 
   _set_curl_opt(self);
 
-  return log_threaded_dest_driver_start(s);
+  return log_threaded_dest_driver_init_method(s);
 }
 
 gboolean

@@ -99,7 +99,7 @@ struct _LogThrDestDriver
 };
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
-gboolean log_threaded_dest_driver_start(LogPipe *s);
+gboolean log_threaded_dest_driver_init_method(LogPipe *s);
 
 void log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg);
 void log_threaded_dest_driver_free(LogPipe *s);
