@@ -325,11 +325,10 @@ _worker_thread(gpointer arg)
 
   _init_watches(self);
 
-  _start_watches(self);
-
   if (self->worker.thread_init)
     self->worker.thread_init(self);
 
+  _start_watches(self);
   iv_main();
 
   _disconnect(self);
