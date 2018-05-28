@@ -89,7 +89,6 @@ struct _LogThrDestDriver
     gint max;
   } retries;
 
-  void (*queue_method) (LogThrDestDriver *s);
   WorkerOptions worker_options;
   struct iv_event wake_up_event;
   struct iv_event shutdown_event;
