@@ -87,6 +87,7 @@ struct _LogWriter
   MlBatchedTimer suppress_timer;
   MlBatchedTimer mark_timer;
   struct iv_timer reopen_timer;
+  struct iv_timer idle_timer;
   gboolean work_result;
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
@@ -123,6 +124,7 @@ static gboolean log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
+static void log_writer_stop_idle_timer(LogWriter *self);
 static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
 static void log_writer_free_proto(LogWriter *self);
@@ -423,12 +425,15 @@ log_writer_update_watches(LogWriter *self)
   gint fd;
   GIOCondition cond = 0;
   gint timeout_msec = 0;
+  gint idle_timeout = -1;
 
   main_loop_assert_main_thread();
 
+  log_writer_stop_idle_timer(self);
+
   /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
 
-  if (log_proto_client_prepare(self->proto, &fd, &cond) ||
+  if (log_proto_client_prepare(self->proto, &fd, &cond, &idle_timeout) ||
       self->waiting_for_throttle ||
       log_queue_check_items(self->queue, &timeout_msec,
                             (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
@@ -451,6 +456,16 @@ log_writer_update_watches(LogWriter *self)
        * log_queue_check_items and its parallel_push argument above
        */
       log_writer_update_fd_callbacks(self, 0);
+    }
+
+  if (idle_timeout > 0)
+    {
+      iv_validate_now();
+
+      self->idle_timer.expires = iv_now;
+      self->idle_timer.expires.tv_sec += idle_timeout;
+
+      iv_timer_register(&self->idle_timer);
     }
 }
 
@@ -475,11 +490,12 @@ log_writer_start_watches(LogWriter *self)
 {
   gint fd;
   GIOCondition cond;
+  gint idle_timeout = -1;
 
   if (self->watches_running)
     return;
 
-  log_proto_client_prepare(self->proto, &fd, &cond);
+  log_proto_client_prepare(self->proto, &fd, &cond, &idle_timeout);
 
   self->fd_watch.fd = fd;
 
@@ -515,6 +531,13 @@ log_writer_stop_watches(LogWriter *self)
 
       self->watches_running = FALSE;
     }
+}
+
+static void
+log_writer_stop_idle_timer(LogWriter *self)
+{
+  if (iv_timer_registered(&self->idle_timer))
+    iv_timer_unregister(&self->idle_timer);
 }
 
 static void
@@ -1050,6 +1073,7 @@ static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
   log_writer_stop_watches(self);
+  log_writer_stop_idle_timer(self);
   log_pipe_notify(self->control, notify_code, self);
 }
 
@@ -1245,6 +1269,17 @@ log_writer_reopen_timeout(void *cookie)
 }
 
 static void
+log_writer_idle_timeout(void *cookie)
+{
+  LogWriter *self = (LogWriter *) cookie;
+
+  msg_notice("Destination timeout has elapsed, closing connection",
+             evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
+
+  log_pipe_notify(self->control, NC_CLOSE, self);
+}
+
+static void
 log_writer_init_watches(LogWriter *self)
 {
   IV_FD_INIT(&self->fd_watch);
@@ -1265,13 +1300,17 @@ log_writer_init_watches(LogWriter *self)
 
   ml_batched_timer_init(&self->mark_timer);
   self->mark_timer.cookie = self;
-  self->mark_timer.handler = (void (*)(void *)) log_writer_mark_timeout;
+  self->mark_timer.handler = log_writer_mark_timeout;
   self->mark_timer.ref_cookie = (gpointer (*)(gpointer)) log_pipe_ref;
   self->mark_timer.unref_cookie = (void (*)(gpointer)) log_pipe_unref;
 
   IV_TIMER_INIT(&self->reopen_timer);
   self->reopen_timer.cookie = self;
-  self->reopen_timer.handler = (void (*)(void *)) log_writer_reopen_timeout;
+  self->reopen_timer.handler = log_writer_reopen_timeout;
+
+  IV_TIMER_INIT(&self->idle_timer);
+  self->idle_timer.cookie = self;
+  self->idle_timer.handler = log_writer_idle_timeout;
 
   IV_EVENT_INIT(&self->queue_filled);
   self->queue_filled.cookie = self;
@@ -1391,6 +1430,8 @@ log_writer_deinit(LogPipe *s)
    * some kind of locking. */
 
   log_writer_stop_watches(self);
+  log_writer_stop_idle_timer(self);
+
   iv_event_unregister(&self->queue_filled);
 
   if (iv_timer_registered(&self->reopen_timer))
@@ -1509,6 +1550,7 @@ log_writer_reopen_deferred(gpointer s)
     }
 
   log_writer_stop_watches(self);
+  log_writer_stop_idle_timer(self);
 
   log_writer_free_proto(self);
   log_writer_set_proto(self, proto);

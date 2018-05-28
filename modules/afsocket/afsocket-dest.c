@@ -578,7 +578,7 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
     case NC_WRITE_ERROR:
       log_writer_reopen(self->writer, NULL);
 
-      msg_notice("Syslog connection broken",
+      msg_notice((notify_code == NC_CLOSE) ? "Syslog connection closed" : "Syslog connection broken",
                  evt_tag_int("fd", self->fd),
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                  evt_tag_int("time_reopen", self->time_reopen));

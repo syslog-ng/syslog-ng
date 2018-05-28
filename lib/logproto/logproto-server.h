@@ -66,7 +66,7 @@ struct _LogProtoServer
   LogTransport *transport;
   /* FIXME: rename to something else */
   gboolean (*is_position_tracked)(LogProtoServer *s);
-  gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond);
+  gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                           LogTransportAuxData *aux, Bookmark *bookmark);
@@ -109,9 +109,9 @@ log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptions *
 }
 
 static inline gboolean
-log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond)
+log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
-  return s->prepare(s, cond);
+  return s->prepare(s, cond, timeout);
 }
 
 static inline gboolean
