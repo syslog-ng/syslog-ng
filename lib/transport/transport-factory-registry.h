@@ -34,7 +34,7 @@ typedef struct _TransportFactoryRegistry TransportFactoryRegistry;
 TransportFactoryRegistry *transport_factory_registry_new(void);
 void transport_factory_registry_free(TransportFactoryRegistry *self);
 
-gboolean transport_factory_registry_add(TransportFactoryRegistry *self, TransportFactory *factory);
+void transport_factory_registry_add(TransportFactoryRegistry *self, TransportFactory *factory);
 const TransportFactory *transport_factory_registry_lookup(TransportFactoryRegistry *self, const TransportFactoryId *id);
 
 #endif

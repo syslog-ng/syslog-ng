@@ -56,11 +56,11 @@ void transport_factory_registry_free(TransportFactoryRegistry *self)
   g_free(self);
 }
 
-gboolean
+void
 transport_factory_registry_add(TransportFactoryRegistry *self, TransportFactory *factory)
 {
   const TransportFactoryId *id = transport_factory_get_id(factory);
-  return g_hash_table_insert(self->registry, (TransportFactoryId *)id, factory);
+  g_hash_table_insert(self->registry, (TransportFactoryId *)id, factory);
 }
 
 const TransportFactory *
