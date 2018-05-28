@@ -50,7 +50,8 @@ TransportFactoryRegistry *transport_factory_registry_new(void)
   return instance;
 }
 
-void transport_factory_registry_free(TransportFactoryRegistry *self)
+void
+transport_factory_registry_free(TransportFactoryRegistry *self)
 {
   g_hash_table_unref(self->registry);
   g_free(self);
