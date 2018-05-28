@@ -40,7 +40,7 @@
 
 typedef struct
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
 
   /* Shared between main/writer; only read by the writer, never written */
   gchar *exchange;
@@ -234,7 +234,7 @@ afamqp_dd_set_peer_verify(LogDriver *d, gboolean verify)
  */
 
 static gchar *
-afamqp_dd_format_stats_instance(LogThrDestDriver *s)
+afamqp_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) s;
   static gchar persist_name[1024];
@@ -279,7 +279,7 @@ _amqp_connection_disconnect(AMQPDestDriver *self)
 }
 
 static void
-afamqp_dd_disconnect(LogThrDestDriver *s)
+afamqp_dd_disconnect(LogThreadedDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
 
@@ -581,7 +581,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
 }
 
 static worker_insert_result_t
-afamqp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
+afamqp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
 
@@ -595,7 +595,7 @@ afamqp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 }
 
 static void
-afamqp_worker_thread_init(LogThrDestDriver *d)
+afamqp_worker_thread_init(LogThreadedDestDriver *d)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)d;
 
@@ -659,7 +659,7 @@ afamqp_dd_free(LogPipe *d)
 }
 
 static gboolean
-afamqp_dd_worker_connect(LogThrDestDriver *s)
+afamqp_dd_worker_connect(LogThreadedDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
   return afamqp_dd_connect(self, FALSE);

@@ -41,7 +41,7 @@ _format_persist_name(const LogPipe *s)
 }
 
 static gchar *
-_format_stats_instance(LogThrDestDriver *s)
+_format_stats_instance(LogThreadedDestDriver *s)
 {
   static gchar stats[1024];
 
@@ -60,7 +60,7 @@ _http_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 }
 
 static void
-_thread_init(LogThrDestDriver *s)
+_thread_init(LogThreadedDestDriver *s)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
@@ -71,18 +71,18 @@ _thread_init(LogThrDestDriver *s)
 }
 
 static void
-_thread_deinit(LogThrDestDriver *s)
+_thread_deinit(LogThreadedDestDriver *s)
 {
 }
 
 static gboolean
-_connect(LogThrDestDriver *s)
+_connect(LogThreadedDestDriver *s)
 {
   return TRUE;
 }
 
 static void
-_disconnect(LogThrDestDriver *s)
+_disconnect(LogThreadedDestDriver *s)
 {
 }
 
@@ -261,7 +261,7 @@ _map_http_status_to_worker_status(glong http_code)
 }
 
 static worker_insert_result_t
-_insert(LogThrDestDriver *s, LogMessage *msg)
+_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   CURLcode ret;
   worker_insert_result_t retval;

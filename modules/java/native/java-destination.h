@@ -40,7 +40,7 @@
 
 typedef struct
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
   JavaDestinationProxy *proxy;
   GString *class_path;
   gchar *class_name;

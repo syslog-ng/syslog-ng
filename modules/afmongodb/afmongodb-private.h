@@ -35,7 +35,7 @@
 
 typedef struct _MongoDBDestDriver
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
 
   /* Shared between main/writer; only read by the writer, never
    written */

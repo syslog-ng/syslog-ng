@@ -35,7 +35,7 @@
 
 typedef struct
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
 
   gchar *class;
   GList *loaders;
@@ -108,7 +108,7 @@ python_dd_get_template_options(LogDriver *d)
 /** Helpers for stats & persist_name formatting **/
 
 static gchar *
-python_dd_format_stats_instance(LogThrDestDriver *d)
+python_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
   static gchar persist_name[1024];
@@ -310,7 +310,7 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
 
 
 static worker_insert_result_t
-python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
+python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
   worker_insert_result_t result = WORKER_INSERT_RESULT_ERROR;
@@ -390,7 +390,7 @@ python_dd_close(PythonDestDriver *self)
 }
 
 static void
-python_dd_worker_init(LogThrDestDriver *d)
+python_dd_worker_init(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
@@ -398,7 +398,7 @@ python_dd_worker_init(LogThrDestDriver *d)
 }
 
 static void
-python_dd_disconnect(LogThrDestDriver *d)
+python_dd_disconnect(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *) d;
 
@@ -406,7 +406,7 @@ python_dd_disconnect(LogThrDestDriver *d)
 }
 
 static void
-python_dd_over_message(LogThrDestDriver *s, LogMessage *msg)
+python_dd_over_message(LogThreadedDestDriver *s, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)s;
   python_dd_retry_error(self, msg);

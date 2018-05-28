@@ -31,7 +31,7 @@
 
 typedef struct
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
   gchar *curl;
   gchar *url;
   gchar *user;

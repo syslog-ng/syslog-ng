@@ -39,7 +39,7 @@
 
 typedef struct
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
 
   gchar *destination;
   LogTemplate *body_template;
@@ -158,7 +158,7 @@ afstomp_dd_get_template_options(LogDriver *s)
  */
 
 static gchar *
-afstomp_dd_format_stats_instance(LogThrDestDriver *s)
+afstomp_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) s;
   static gchar persist_name[1024];
@@ -241,7 +241,7 @@ afstomp_dd_connect(STOMPDestDriver *self, gboolean reconnect)
 }
 
 static void
-afstomp_dd_disconnect(LogThrDestDriver *s)
+afstomp_dd_disconnect(LogThreadedDestDriver *s)
 {
   STOMPDestDriver *self = (STOMPDestDriver *)s;
 
@@ -319,7 +319,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
 }
 
 static worker_insert_result_t
-afstomp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
+afstomp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   STOMPDestDriver *self = (STOMPDestDriver *)s;
 
@@ -333,7 +333,7 @@ afstomp_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 }
 
 static void
-afstomp_worker_thread_init(LogThrDestDriver *s)
+afstomp_worker_thread_init(LogThreadedDestDriver *s)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) s;
 

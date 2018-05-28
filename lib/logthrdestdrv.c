@@ -32,13 +32,13 @@
 void
 log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)s;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
   self->retries.max = max_retries;
 }
 
 static gchar *
-_format_seqnum_persist_name(LogThrDestDriver *self)
+_format_seqnum_persist_name(LogThreadedDestDriver *self)
 {
   static gchar persist_name[256];
 
@@ -49,13 +49,13 @@ _format_seqnum_persist_name(LogThrDestDriver *self)
 }
 
 static void
-_start_watches(LogThrDestDriver *self)
+_start_watches(LogThreadedDestDriver *self)
 {
   iv_task_register(&self->do_work);
 }
 
 static void
-_stop_watches(LogThrDestDriver *self)
+_stop_watches(LogThreadedDestDriver *self)
 {
   if (iv_task_registered(&self->do_work))
     {
@@ -77,7 +77,7 @@ _stop_watches(LogThrDestDriver *self)
 static void
 _wakeup_event_callback(gpointer data)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)data;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
 
   if (!iv_task_registered(&self->do_work))
     {
@@ -91,7 +91,7 @@ _wakeup_event_callback(gpointer data)
 static void
 _shutdown_event_callback(gpointer data)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)data;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
 
   _stop_watches(self);
   iv_quit();
@@ -99,7 +99,7 @@ _shutdown_event_callback(gpointer data)
 
 /* NOTE: runs in the worker thread */
 static void
-_suspend(LogThrDestDriver *self)
+_suspend(LogThreadedDestDriver *self)
 {
   iv_validate_now();
   self->timer_reopen.expires  = iv_now;
@@ -109,7 +109,7 @@ _suspend(LogThrDestDriver *self)
 
 /* NOTE: runs in the worker thread */
 static void
-_connect(LogThrDestDriver *self)
+_connect(LogThreadedDestDriver *self)
 {
   self->worker.connected = TRUE;
   if (self->worker.connect)
@@ -130,7 +130,7 @@ _connect(LogThrDestDriver *self)
 
 /* NOTE: runs in the worker thread */
 static void
-_disconnect(LogThrDestDriver *self)
+_disconnect(LogThreadedDestDriver *self)
 {
   if (self->worker.disconnect)
     {
@@ -141,7 +141,7 @@ _disconnect(LogThrDestDriver *self)
 
 /* NOTE: runs in the worker thread */
 static void
-_disconnect_and_suspend(LogThrDestDriver *self)
+_disconnect_and_suspend(LogThreadedDestDriver *self)
 {
   self->suspended = TRUE;
   _disconnect(self);
@@ -151,7 +151,7 @@ _disconnect_and_suspend(LogThrDestDriver *self)
 
 /* NOTE: runs in the worker thread */
 void
-_accept_message(LogThrDestDriver *self, LogMessage *msg)
+_accept_message(LogThreadedDestDriver *self, LogMessage *msg)
 {
   self->retries.counter = 0;
   step_sequence_number(&self->seq_num);
@@ -161,7 +161,7 @@ _accept_message(LogThrDestDriver *self, LogMessage *msg)
 
 /* NOTE: runs in the worker thread */
 void
-_drop_message(LogThrDestDriver *self, LogMessage *msg)
+_drop_message(LogThreadedDestDriver *self, LogMessage *msg)
 {
   stats_counter_inc(self->dropped_messages);
   _accept_message(self, msg);
@@ -169,7 +169,7 @@ _drop_message(LogThrDestDriver *self, LogMessage *msg)
 
 /* NOTE: runs in the worker thread */
 void
-_rewind_message(LogThrDestDriver *self, LogMessage *msg)
+_rewind_message(LogThreadedDestDriver *self, LogMessage *msg)
 {
   log_queue_rewind_backlog(self->queue, 1);
   log_msg_unref(msg);
@@ -179,7 +179,7 @@ _rewind_message(LogThrDestDriver *self, LogMessage *msg)
  * available. It iterates all elements on the queue, however will terminate
  * if the mainloop requests that we exit. */
 static void
-_perform_inserts(LogThrDestDriver *self)
+_perform_inserts(LogThreadedDestDriver *self)
 {
   LogMessage *msg;
   worker_insert_result_t result;
@@ -268,7 +268,7 @@ _perform_inserts(LogThrDestDriver *self)
 static void
 _message_became_available_callback(gpointer user_data)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *) user_data;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) user_data;
 
   if (!self->under_termination)
     iv_event_post(&self->wake_up_event);
@@ -277,7 +277,7 @@ _message_became_available_callback(gpointer user_data)
 static void
 _perform_work(gpointer data)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)data;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
   gint timeout_msec = 0;
 
   self->suspended = FALSE;
@@ -325,7 +325,7 @@ _perform_work(gpointer data)
  *
  */
 static void
-_init_watches(LogThrDestDriver *self)
+_init_watches(LogThreadedDestDriver *self)
 {
   IV_EVENT_INIT(&self->wake_up_event);
   self->wake_up_event.cookie = self;
@@ -353,7 +353,7 @@ _init_watches(LogThrDestDriver *self)
 static void
 _worker_thread(gpointer arg)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)arg;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)arg;
 
   iv_init();
 
@@ -382,14 +382,14 @@ _worker_thread(gpointer arg)
 static void
 _request_worker_exit(gpointer s)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *) s;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
 
   self->under_termination = TRUE;
   iv_event_post(&self->shutdown_event);
 }
 
 static void
-_start_worker_thread(LogThrDestDriver *self)
+_start_worker_thread(LogThreadedDestDriver *self)
 {
   main_loop_create_worker_thread(_worker_thread,
                                  _request_worker_exit,
@@ -403,7 +403,7 @@ static void
 log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
                                const LogPathOptions *path_options)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)s;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
   LogPathOptions local_options;
 
   if (!path_options->flow_control_requested)
@@ -418,7 +418,7 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 }
 
 static void
-_update_memory_usage_counter_when_fifo_is_used(LogThrDestDriver *self)
+_update_memory_usage_counter_when_fifo_is_used(LogThreadedDestDriver *self)
 {
   if (!g_strcmp0(self->queue->type, "FIFO") && self->memory_usage)
     {
@@ -428,7 +428,7 @@ _update_memory_usage_counter_when_fifo_is_used(LogThrDestDriver *self)
 }
 
 static void
-_register_stats(LogThrDestDriver *self)
+_register_stats(LogThreadedDestDriver *self)
 {
   stats_lock();
   StatsClusterKey sc_key;
@@ -444,7 +444,7 @@ _register_stats(LogThrDestDriver *self)
 }
 
 static void
-_unregister_stats(LogThrDestDriver *self)
+_unregister_stats(LogThreadedDestDriver *self)
 {
   stats_lock();
   StatsClusterKey sc_key;
@@ -462,7 +462,7 @@ _unregister_stats(LogThrDestDriver *self)
 gboolean
 log_threaded_dest_driver_init_method(LogPipe *s)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)s;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (cfg && self->time_reopen == -1)
@@ -495,7 +495,7 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 gboolean
 log_threaded_dest_driver_deinit_method(LogPipe *s)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)s;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
   log_queue_reset_parallel_push(self->queue);
 
@@ -516,13 +516,13 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 void
 log_threaded_dest_driver_free(LogPipe *s)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)s;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
   log_dest_driver_free((LogPipe *)self);
 }
 
 void
-log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg)
+log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig *cfg)
 {
   log_dest_driver_init_instance(&self->super, cfg);
 

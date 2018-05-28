@@ -42,8 +42,8 @@ typedef enum
   WORKER_INSERT_RESULT_NOT_CONNECTED
 } worker_insert_result_t;
 
-typedef struct _LogThrDestDriver LogThrDestDriver;
-struct _LogThrDestDriver
+typedef struct _LogThreadedDestDriver LogThreadedDestDriver;
+struct _LogThreadedDestDriver
 {
   LogDestDriver super;
 
@@ -63,22 +63,22 @@ struct _LogThrDestDriver
   struct
   {
     gboolean connected;
-    void (*thread_init) (LogThrDestDriver *s);
-    void (*thread_deinit) (LogThrDestDriver *s);
-    worker_insert_result_t (*insert) (LogThrDestDriver *s, LogMessage *msg);
-    gboolean (*connect) (LogThrDestDriver *s);
-    void (*worker_message_queue_empty)(LogThrDestDriver *s);
-    void (*disconnect) (LogThrDestDriver *s);
+    void (*thread_init) (LogThreadedDestDriver *s);
+    void (*thread_deinit) (LogThreadedDestDriver *s);
+    worker_insert_result_t (*insert) (LogThreadedDestDriver *s, LogMessage *msg);
+    gboolean (*connect) (LogThreadedDestDriver *s);
+    void (*worker_message_queue_empty)(LogThreadedDestDriver *s);
+    void (*disconnect) (LogThreadedDestDriver *s);
   } worker;
 
   struct
   {
-    void (*retry_over) (LogThrDestDriver *s, LogMessage *msg);
+    void (*retry_over) (LogThreadedDestDriver *s, LogMessage *msg);
   } messages;
 
   struct
   {
-    gchar *(*stats_instance) (LogThrDestDriver *s);
+    gchar *(*stats_instance) (LogThreadedDestDriver *s);
   } format;
   gint stats_source;
   gint32 seq_num;
@@ -100,7 +100,7 @@ struct _LogThrDestDriver
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
 gboolean log_threaded_dest_driver_init_method(LogPipe *s);
 
-void log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg);
+void log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig *cfg);
 void log_threaded_dest_driver_free(LogPipe *s);
 
 void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
