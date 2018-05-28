@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2002-2018 Balabit
+ * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,43 +22,20 @@
  *
  */
 
-#include "logtransport.h"
-#include "messages.h"
+#ifndef TRANSPORT_FACTORY_REGISTRY_H_INCLUDED
+#define TRANSPORT_FACTORY_REGISTRY_H_INCLUDED
 
-#include <unistd.h>
+#include "syslog-ng.h"
+#include "transport/transport-factory.h"
+#include "transport/transport-factory-id.h"
 
-void
-log_transport_free_method(LogTransport *s)
-{
-  if (s->fd != -1)
-    {
-      msg_verbose("Closing log transport fd",
-                  evt_tag_int("fd", s->fd));
-      close(s->fd);
-    }
-}
+typedef struct _TransportFactoryRegistry TransportFactoryRegistry;
 
-void
-log_transport_init_instance(LogTransport *self, gint fd)
-{
-  self->fd = fd;
-  self->cond = 0;
-  self->free_fn = log_transport_free_method;
-}
+TransportFactoryRegistry *transport_factory_registry_new(void);
+void transport_factory_registry_free(TransportFactoryRegistry *self);
 
-void
-log_transport_free(LogTransport *self)
-{
-  self->free_fn(self);
-  g_free(self);
-}
+gboolean transport_factory_registry_add(TransportFactoryRegistry *self, TransportFactory *factory);
+const TransportFactory *transport_factory_registry_lookup(TransportFactoryRegistry *self, const TransportFactoryId *id);
 
-gint
-log_transport_release_fd(LogTransport *s)
-{
-  gint fd = s->fd;
-  s->fd = -1;
-
-  return fd;
-}
+#endif
 

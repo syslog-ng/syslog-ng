@@ -43,6 +43,7 @@
 #include "mainloop.h"
 #include "secret-storage/nondumpable-allocator.h"
 #include "secret-storage/secret-storage.h"
+#include "transport/transport-factory-id.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -166,6 +167,7 @@ app_startup(void)
   main_loop_thread_resource_init();
   nondumpable_setlogger(nondumpable_allocator_logger);
   secret_storage_init();
+  transport_factory_id_global_init();
 }
 
 void
@@ -224,6 +226,7 @@ app_shutdown(void)
   hostname_global_deinit();
   crypto_deinit();
   msg_deinit();
+  transport_factory_id_global_deinit();
 
 
   /* NOTE: the iv_deinit() call should come here, but there's some exit

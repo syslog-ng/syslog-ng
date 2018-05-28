@@ -34,6 +34,7 @@ typedef struct _TransportMapperInet
   const gchar *server_port_change_warning;
   gboolean require_tls;
   gboolean allow_tls;
+  gboolean require_tls_when_has_tls_context;
   TLSContext *tls_context;
   TLSSessionVerifyFunc tls_verify_callback;
   gpointer tls_verify_data;

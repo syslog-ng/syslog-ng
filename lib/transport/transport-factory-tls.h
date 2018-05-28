@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2002-2018 Balabit
+ * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,43 +22,16 @@
  *
  */
 
-#include "logtransport.h"
-#include "messages.h"
+#ifndef TRANSPORT_FACTORY_TLS_H_INCLUDED
+#define TRANSPORT_FACTORY_TLS_H_INCLUDED
 
-#include <unistd.h>
+#include "transport/transport-factory.h"
+#include "tlscontext.h"
 
-void
-log_transport_free_method(LogTransport *s)
-{
-  if (s->fd != -1)
-    {
-      msg_verbose("Closing log transport fd",
-                  evt_tag_int("fd", s->fd));
-      close(s->fd);
-    }
-}
+TransportFactory *transport_factory_tls_new(TLSContext *ctx,
+                                            TLSSessionVerifyFunc tls_verify_cb,
+                                            gpointer tls_verify_data);
 
-void
-log_transport_init_instance(LogTransport *self, gint fd)
-{
-  self->fd = fd;
-  self->cond = 0;
-  self->free_fn = log_transport_free_method;
-}
+const TransportFactoryId *transport_factory_tls_id(void);
 
-void
-log_transport_free(LogTransport *self)
-{
-  self->free_fn(self);
-  g_free(self);
-}
-
-gint
-log_transport_release_fd(LogTransport *s)
-{
-  gint fd = s->fd;
-  s->fd = -1;
-
-  return fd;
-}
-
+#endif
