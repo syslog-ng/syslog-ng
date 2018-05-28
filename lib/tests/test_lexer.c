@@ -366,6 +366,36 @@ include \"foo.conf\";\n");
   cfg_lexer_pop_context(lexer);
 }
 
+static gboolean
+_fake_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result,
+                         const gchar *reference)
+{
+  g_string_append(result, "fake_generator_content");
+  return TRUE;
+}
+
+CfgBlockGenerator *
+fake_generator_new(void)
+{
+  CfgBlockGenerator *self = g_new0(CfgBlockGenerator, 1);
+  cfg_block_generator_init_instance(self, LL_CONTEXT_ROOT, "fake-generator");
+  self->generate = _fake_generator_generate;
+  return self;
+}
+
+Test(lexer, generator_plugins_are_expanded)
+{
+  CfgLexer *lexer = parser->lexer;
+
+  CfgBlockGenerator *gen = fake_generator_new();
+  cfg_lexer_register_generator_plugin(&configuration->plugin_context, gen);
+  parser->lexer->ignore_pragma = FALSE;
+  cfg_lexer_push_context(parser->lexer, main_parser.context, main_parser.keywords, main_parser.name);
+  _input("fake-generator();\n");
+  assert_parser_identifier("fake_generator_content");
+  cfg_lexer_pop_context(lexer);
+}
+
 static void
 setup(void)
 {
