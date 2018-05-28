@@ -54,8 +54,6 @@ typedef struct _MongoDBDestDriver
 
   LogTemplateOptions template_options;
 
-  time_t last_msg_stamp;
-
   ValuePairs *vp;
 
   /* Writer-only stuff */

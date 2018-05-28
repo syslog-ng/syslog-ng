@@ -563,14 +563,6 @@ _free(LogPipe *d)
   log_threaded_dest_driver_free(d);
 }
 
-static void
-_logthrdest_queue_method(LogThrDestDriver *d)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  self->last_msg_stamp = cached_g_current_time_sec();
-}
-
 /*
  * Plugin glue.
  */
@@ -587,7 +579,6 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = _init;
   self->super.super.super.super.free_fn = _free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
-  self->super.queue_method = _logthrdest_queue_method;
 
   self->super.worker.thread_init = _worker_thread_init;
   self->super.worker.thread_deinit = _worker_thread_deinit;
