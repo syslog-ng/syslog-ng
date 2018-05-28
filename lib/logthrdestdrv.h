@@ -103,13 +103,6 @@ gboolean log_threaded_dest_driver_init_method(LogPipe *s);
 void log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg);
 void log_threaded_dest_driver_free(LogPipe *s);
 
-void log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
-                                             LogMessage *msg);
-void log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
-                                           LogMessage *msg);
-void log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
-                                             LogMessage *msg);
-
 void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
 
 #endif

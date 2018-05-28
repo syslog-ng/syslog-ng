@@ -140,6 +140,30 @@ _disconnect_and_suspend(LogThrDestDriver *self)
   _suspend(self);
 }
 
+void
+_accept_message(LogThrDestDriver *self, LogMessage *msg)
+{
+  self->retries.counter = 0;
+  step_sequence_number(&self->seq_num);
+  log_queue_ack_backlog(self->queue, 1);
+  log_msg_unref(msg);
+}
+
+void
+_drop_message(LogThrDestDriver *self, LogMessage *msg)
+{
+  stats_counter_inc(self->dropped_messages);
+  _accept_message(self, msg);
+}
+
+void
+_rewind_message(LogThrDestDriver *self, LogMessage *msg)
+{
+  log_queue_rewind_backlog(self->queue, 1);
+  log_msg_unref(msg);
+}
+
+
 static void
 _perform_inserts(LogThrDestDriver *self)
 {
@@ -165,7 +189,7 @@ _perform_inserts(LogThrDestDriver *self)
           msg_error("Message dropped while sending message to destination",
                     evt_tag_str("driver", self->super.super.id));
 
-          log_threaded_dest_driver_message_drop(self, msg);
+          _drop_message(self, msg);
           _disconnect_and_suspend(self);
           break;
 
@@ -181,27 +205,27 @@ _perform_inserts(LogThrDestDriver *self)
                         evt_tag_str("driver", self->super.super.id),
                         evt_tag_int("number_of_retries", self->retries.max));
 
-              log_threaded_dest_driver_message_drop(self, msg);
+              _drop_message(self, msg);
             }
           else
             {
-              log_threaded_dest_driver_message_rewind(self, msg);
+              _rewind_message(self, msg);
               _disconnect_and_suspend(self);
             }
           break;
 
         case WORKER_INSERT_RESULT_NOT_CONNECTED:
-          log_threaded_dest_driver_message_rewind(self, msg);
+          _rewind_message(self, msg);
           _disconnect_and_suspend(self);
           break;
 
         case WORKER_INSERT_RESULT_REWIND:
-          log_threaded_dest_driver_message_rewind(self, msg);
+          _rewind_message(self, msg);
           break;
 
         case WORKER_INSERT_RESULT_SUCCESS:
           stats_counter_inc(self->written_messages);
-          log_threaded_dest_driver_message_accept(self, msg);
+          _accept_message(self, msg);
           break;
 
         default:
@@ -461,30 +485,4 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg
   self->time_reopen = -1;
 
   self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
-}
-
-void
-log_threaded_dest_driver_message_accept(LogThrDestDriver *self,
-                                        LogMessage *msg)
-{
-  self->retries.counter = 0;
-  step_sequence_number(&self->seq_num);
-  log_queue_ack_backlog(self->queue, 1);
-  log_msg_unref(msg);
-}
-
-void
-log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
-                                      LogMessage *msg)
-{
-  stats_counter_inc(self->dropped_messages);
-  log_threaded_dest_driver_message_accept(self, msg);
-}
-
-void
-log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
-                                        LogMessage *msg)
-{
-  log_queue_rewind_backlog(self->queue, 1);
-  log_msg_unref(msg);
 }
