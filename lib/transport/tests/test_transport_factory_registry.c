@@ -57,3 +57,16 @@ Test(transport_factory_registry, basic_functionality)
 
   transport_factory_registry_free(registry);
 }
+
+Test(transport_factory_registry, abort_when_add_different_factory_with_same_id, .signal=SIGABRT)
+{
+  TransportFactoryRegistry *registry = transport_factory_registry_new();
+
+  TestTransportFactory *factory = _test_transport_factory_new();
+  TestTransportFactory *factory2 = _test_transport_factory_new();
+
+  transport_factory_registry_add(registry, &factory->super);
+  transport_factory_registry_add(registry, &factory2->super);
+
+  transport_factory_registry_free(registry);
+}

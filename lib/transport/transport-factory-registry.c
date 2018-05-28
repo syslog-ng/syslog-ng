@@ -61,6 +61,13 @@ void
 transport_factory_registry_add(TransportFactoryRegistry *self, TransportFactory *factory)
 {
   const TransportFactoryId *id = transport_factory_get_id(factory);
+
+  const TransportFactory *old = transport_factory_registry_lookup(self, id);
+  if (old)
+    {
+      g_assert(old == factory);
+    }
+
   g_hash_table_insert(self->registry, (TransportFactoryId *)id, factory);
 }
 
