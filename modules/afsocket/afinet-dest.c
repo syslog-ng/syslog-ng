@@ -50,6 +50,9 @@
 #  define _GNU_SOURCE 1
 #endif
 
+static const int TCP_PROBE_INTERVAL_DEFAULT = 60;
+static const int SUCCESSFUL_PROBES_REQUIRED_DEFAULT = 3;
+
 typedef struct _AFInetDestDriverTLSVerifyData
 {
   TLSContext *tls_context;
@@ -162,6 +165,27 @@ afinet_dd_add_failovers(LogDriver *s, GList *failovers)
     }
   self->server_candidates = g_list_concat(self->server_candidates, failovers);
   self->current_server_candidate = NULL;
+}
+
+void
+afinet_dd_set_failback_mode(LogDriver *s, gboolean enable)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *)s;
+  self->is_failback_mode = enable;
+}
+
+void
+afinet_dd_set_failback_tcp_probe_interval(LogDriver *s, gint tcp_probe_interval)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *)s;
+  self->tcp_probe_interval = tcp_probe_interval;
+}
+
+void
+afinet_dd_set_failback_successful_probes_required(LogDriver *s, gint successful_probes_required)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *)s;
+  self->successful_probes_required = successful_probes_required;
 }
 
 static gchar *
@@ -327,6 +351,12 @@ afinet_dd_init(LogPipe *s)
         }
     }
 #endif
+
+  if (self->tcp_probe_interval == -1)
+    self->tcp_probe_interval = TCP_PROBE_INTERVAL_DEFAULT;
+
+  if (self->successful_probes_required == -1)
+    self->successful_probes_required = SUCCESSFUL_PROBES_REQUIRED_DEFAULT;
 
   return TRUE;
 }
@@ -542,6 +572,10 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, Globa
   self->super.get_dest_name = afinet_dd_get_dest_name;
 
   self->hostname = g_strdup(hostname);
+
+  self->tcp_probe_interval = -1;
+  self->successful_probes_required = -1;
+  self->is_failback_mode = FALSE;
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   g_static_mutex_init(&self->lnet_lock);

@@ -159,6 +159,9 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_LOCALPORT
 %token KW_DESTPORT
 %token KW_FAILOVER_SERVERS
+%token KW_FAILOVER_FAILBACK
+%token KW_FAILOVER_TCP_PROBE_INTERVAL
+%token KW_FAILOVER_SUCCESSFUL_PROBES_REQUIRED
 
 /* SSL support */
 
@@ -209,6 +212,9 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %type   <ptr> dest_afnetwork_params
 
 %type   <num> inet_ip_protocol_option
+
+%type <ptr> dest_failover_params
+%type <ptr> dest_afinet_option
 
 %%
 
@@ -563,11 +569,39 @@ dest_afinet_option
 	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3); free($3); }
 	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
 	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
-	| KW_FAILOVER_SERVERS '(' string_list ')' { afinet_dd_add_failovers(last_driver, $3); }
+	| KW_FAILOVER_SERVERS '(' dest_failover_params ')'	{ $$ = $3; }
 	| inet_socket_option
 	| dest_writer_option
 	| dest_afsocket_option
 	| dest_driver_option
+	;
+
+
+dest_failover_params
+	: string_list
+	  {
+			afinet_dd_add_failovers(last_driver, $1);
+		}
+		dest_failover_options
+	;
+
+dest_failover_options
+	: dest_failover_options dest_failover_option
+	|
+	;
+
+dest_failover_option
+  : KW_FAILOVER_FAILBACK { afinet_dd_set_failback_mode(last_driver, TRUE); } '(' dest_failover_failback_options ')'
+	;
+
+dest_failover_failback_options
+	: dest_failover_failback_options dest_failover_failback_option
+	|
+	;
+
+dest_failover_failback_option
+	: KW_FAILOVER_TCP_PROBE_INTERVAL '(' positive_integer ')' { afinet_dd_set_failback_tcp_probe_interval(last_driver, $3); }
+	| KW_FAILOVER_SUCCESSFUL_PROBES_REQUIRED '(' positive_integer ')' { afinet_dd_set_failback_successful_probes_required(last_driver, $3); }
 	;
 
 

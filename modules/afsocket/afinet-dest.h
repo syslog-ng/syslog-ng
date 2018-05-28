@@ -50,6 +50,10 @@ typedef struct _AFInetDestDriver
   GList *server_candidates;
   GList *current_server_candidate;
 
+  gboolean is_failback_mode;
+  guint tcp_probe_interval;
+  guint successful_probes_required;
+
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
   gchar *bind_ip;
@@ -65,6 +69,9 @@ void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
 void afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 void afinet_dd_add_failovers(LogDriver *s, GList *failovers);
+void afinet_dd_set_failback_mode(LogDriver *s, gboolean enable);
+void afinet_dd_set_failback_tcp_probe_interval(LogDriver *s, gint tcp_probe_interval);
+void afinet_dd_set_failback_successful_probes_required(LogDriver *s, gint successful_probes_required);
 
 AFInetDestDriver *afinet_dd_new_tcp(gchar *host, GlobalConfig *cfg);
 AFInetDestDriver *afinet_dd_new_tcp6(gchar *host, GlobalConfig *cfg);

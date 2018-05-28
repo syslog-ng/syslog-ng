@@ -83,6 +83,9 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "keep_alive",         KW_KEEP_ALIVE },
   { "systemd_syslog",     KW_SYSTEMD_SYSLOG  },
   { "failover_servers",   KW_FAILOVER_SERVERS },
+  { "failback",           KW_FAILOVER_FAILBACK },
+  { "tcp_probe_interval", KW_FAILOVER_TCP_PROBE_INTERVAL },
+  { "successful_probes_required", KW_FAILOVER_SUCCESSFUL_PROBES_REQUIRED },
   { NULL }
 };
 
