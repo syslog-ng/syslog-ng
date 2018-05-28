@@ -93,6 +93,7 @@ _shutdown_event_callback(gpointer data)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
 
+  log_queue_reset_parallel_push(self->queue);
   _stop_watches(self);
   iv_quit();
 }
@@ -119,7 +120,6 @@ _connect(LogThreadedDestDriver *self)
 
   if (!self->worker.connected)
     {
-      log_queue_reset_parallel_push(self->queue);
       _suspend(self);
     }
   else
@@ -145,7 +145,6 @@ _disconnect_and_suspend(LogThreadedDestDriver *self)
 {
   self->suspended = TRUE;
   _disconnect(self);
-  log_queue_reset_parallel_push(self->queue);
   _suspend(self);
 }
 
@@ -299,11 +298,27 @@ _perform_work(gpointer data)
     }
   else if (timeout_msec != 0)
     {
-      log_queue_reset_parallel_push(self->queue);
+      /* NOTE: in this case we don't need to reset parallel push
+       * notification, as check_items returned with a timeout.  No callback
+       * is set up at this time.  */
+
       iv_validate_now();
       self->timer_throttle.expires = iv_now;
       timespec_add_msec(&self->timer_throttle.expires, timeout_msec);
       iv_timer_register(&self->timer_throttle);
+    }
+  else
+    {
+      /* NOTE: at this point we are not doing anything but keep the
+       * parallel_push callback alive, which will call
+       * _message_became_available_callback(), which in turn wakes us up by
+       * posting an event which causes this function to be run again
+       *
+       * NOTE/2: the parallel_push callback may need to be cancelled if we
+       * need to exit.  That happens in the shutdown_event_callback(), or
+       * here in this very function, as log_queue_check_items() will cancel
+       * outstanding parallel push callbacks automatically.
+       */
     }
 }
 
@@ -371,6 +386,7 @@ _worker_thread(gpointer arg)
   iv_main();
 
   _disconnect(self);
+
   if (self->worker.thread_deinit)
     self->worker.thread_deinit(self);
 
@@ -497,7 +513,6 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
-  log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL, NULL);
 
