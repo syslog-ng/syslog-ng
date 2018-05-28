@@ -1300,13 +1300,13 @@ log_writer_init_watches(LogWriter *self)
 
   ml_batched_timer_init(&self->mark_timer);
   self->mark_timer.cookie = self;
-  self->mark_timer.handler = (void (*)(void *)) log_writer_mark_timeout;
+  self->mark_timer.handler = log_writer_mark_timeout;
   self->mark_timer.ref_cookie = (gpointer (*)(gpointer)) log_pipe_ref;
   self->mark_timer.unref_cookie = (void (*)(gpointer)) log_pipe_unref;
 
   IV_TIMER_INIT(&self->reopen_timer);
   self->reopen_timer.cookie = self;
-  self->reopen_timer.handler = (void (*)(void *)) log_writer_reopen_timeout;
+  self->reopen_timer.handler = log_writer_reopen_timeout;
 
   IV_TIMER_INIT(&self->idle_timer);
   self->idle_timer.cookie = self;
