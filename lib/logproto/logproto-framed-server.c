@@ -44,7 +44,7 @@ typedef struct _LogProtoFramedServer
   gboolean half_message_in_buffer;
 } LogProtoFramedServer;
 
-static gboolean
+static LogProtoPrepareAction
 log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
@@ -57,7 +57,7 @@ log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *tim
       if (self->buffer_pos != self->buffer_end)
         {
           /* we have a full message in our buffer so parse it without reading new data from the transport layer */
-          return TRUE;
+          return LPPA_FORCE_SCHEDULE_FETCH;
         }
     }
 
@@ -65,7 +65,7 @@ log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *tim
   if (*cond == 0)
     *cond = G_IO_IN;
 
-  return FALSE;
+  return LPPA_POLL_IO;
 }
 
 static LogProtoStatus
